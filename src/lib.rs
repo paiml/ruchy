@@ -92,7 +92,7 @@ pub mod testing;
 
 // Re-export commonly used types
 pub use backend::transpiler::Transpiler;
-pub use frontend::{ast::{Expr, ExprKind}, parser::{Parser, RecoveryParser}};
+pub use frontend::{ast::{Expr, ExprKind}, parser::Parser, error_recovery::RecoveryParser};
 pub use runtime::repl::Repl;
 
 /// Parse and transpile Ruchy code to Rust in one step.
