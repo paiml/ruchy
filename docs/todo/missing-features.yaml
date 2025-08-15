@@ -1,0 +1,350 @@
+# Ruchy Missing Features - PDMT Format
+# Project Debt Management Tool - YAML Format
+# PMAT Compatible - Toyota Way Compliant
+
+project:
+  name: ruchy
+  version: 0.1.0
+  quality_standard: toyota_way
+  satd_tolerance: 0
+  complexity_limit: 10
+  coverage_minimum: 80
+
+metadata:
+  created: 2025-08-15
+  format: pdmt-v1.0
+  pmat_compatible: true
+
+feature_gaps:
+  - id: FG-001
+    title: Incremental Compilation Infrastructure
+    priority: CRITICAL
+    effort: XL
+    impact: REPL_PERFORMANCE
+    description: The REPL requires sub-15ms response times but lacks incremental compilation
+    target_metrics:
+      response_time_ms: 15
+      cache_hit_rate: 0.95
+    components:
+      - salsa_database_integration
+      - hir_cache_implementation
+      - dependency_graph_tracking
+      - hot_reload_mechanism
+    acceptance_criteria:
+      - REPL responds within 15ms for single-line changes
+      - Module dependency graph correctly tracks changes
+      - Cache invalidation is minimal and correct
+    dependencies: []
+    github_issue: null
+    
+  - id: FG-002
+    title: Escape Analysis Implementation
+    priority: HIGH
+    effort: L
+    impact: MEMORY_EFFICIENCY
+    description: Automatic memory management via escape analysis not implemented
+    target_metrics:
+      heap_allocations_reduction: 0.60
+      stack_allocation_rate: 0.80
+    components:
+      - steensgaard_points_to_analysis
+      - escape_lattice_implementation
+      - stack_heap_decision_engine
+    acceptance_criteria:
+      - Correctly identifies stack-allocatable values
+      - Zero false negatives for escaping values
+      - Benchmark shows 60% reduction in heap allocations
+    dependencies: [FG-001]
+    github_issue: null
+    
+  - id: FG-003
+    title: Error Recovery Parser
+    priority: HIGH
+    effort: M
+    impact: DEVELOPER_EXPERIENCE
+    description: Parser must handle malformed input gracefully for REPL/IDE scenarios
+    target_metrics:
+      partial_ast_generation_rate: 0.95
+      error_recovery_rate: 0.90
+    components:
+      - panic_mode_recovery
+      - synchronization_points
+      - ghost_node_generation
+      - partial_ast_construction
+    acceptance_criteria:
+      - Parser produces partial AST for 95% of malformed inputs
+      - IDE features work with incomplete code
+      - Clear error messages with recovery suggestions
+    dependencies: []
+    github_issue: null
+    
+  - id: FG-004
+    title: Polars DataFrame Integration
+    priority: MEDIUM
+    effort: L
+    impact: DATA_SCIENCE_FEATURES
+    description: DataFrame-first design lacks concrete Polars bridging
+    target_metrics:
+      zero_copy_operations: true
+      performance_vs_native: 0.90
+    components:
+      - arrow_array_conversion
+      - lazy_frame_pipeline_mapping
+      - series_interop
+      - dataframe_native_syntax
+    acceptance_criteria:
+      - Zero-copy conversion between Ruchy arrays and Polars Series
+      - Pipeline operators map to LazyFrame operations
+      - Performance within 10% of native Polars
+    dependencies: []
+    github_issue: null
+    
+  - id: FG-005
+    title: Module Resolution Cache
+    priority: MEDIUM
+    effort: M
+    impact: BUILD_PERFORMANCE
+    description: No persistent module cache for Cargo dependencies
+    target_metrics:
+      incremental_build_speedup: 10
+      cache_hit_rate: 0.95
+    components:
+      - cargo_metadata_parsing
+      - crate_resolution_cache
+      - parallel_compilation
+      - version_conflict_resolution
+    acceptance_criteria:
+      - Cargo dependencies resolved once and cached
+      - Parallel compilation of independent modules
+      - Correct handling of feature flags
+    dependencies: [FG-001]
+    github_issue: null
+
+quality_infrastructure:
+  - id: QI-001
+    title: Property Test Generators
+    priority: HIGH
+    effort: M
+    impact: CORRECTNESS_GUARANTEE
+    description: No QuickCheck generators for AST nodes
+    target_metrics:
+      property_test_coverage: 0.80
+      shrinking_effectiveness: 0.95
+    components:
+      - arbitrary_implementations
+      - weighted_generation
+      - shrinking_strategies
+      - semantic_preservation_tests
+    acceptance_criteria:
+      - All AST nodes have Arbitrary implementations
+      - Shrinking produces minimal counterexamples
+      - Property tests catch regressions
+    dependencies: []
+    github_issue: null
+    
+  - id: QI-002
+    title: Benchmarking Infrastructure
+    priority: MEDIUM
+    effort: S
+    impact: PERFORMANCE_VALIDATION
+    description: No concrete performance validation against targets
+    target_metrics:
+      benchmark_suite_coverage: 1.00
+      vs_polars_performance: 0.90
+      vs_python_performance: 1.50
+    components:
+      - criterion_benchmarks
+      - baseline_comparisons
+      - regression_detection
+      - performance_dashboard
+    acceptance_criteria:
+      - Benchmarks for all major operations
+      - Automated regression detection in CI
+      - Performance within targets
+    dependencies: []
+    github_issue: null
+
+runtime_components:
+  - id: RC-001
+    title: Actor Mailbox Implementation
+    priority: LOW
+    effort: M
+    impact: CONCURRENCY_MODEL
+    description: No concrete lock-free mailbox for actor system
+    target_metrics:
+      message_throughput_per_sec: 1000000
+      latency_p99_us: 100
+    components:
+      - lock_free_queue
+      - selective_receive
+      - priority_handling
+      - backpressure_mechanism
+    acceptance_criteria:
+      - 1M messages/second throughput
+      - Selective receive without starvation
+      - Memory bounded with backpressure
+    dependencies: []
+    github_issue: null
+    
+  - id: RC-002
+    title: JIT Compilation Strategy
+    priority: LOW
+    effort: XL
+    impact: RUNTIME_PERFORMANCE
+    description: No Cranelift integration for hot path optimization
+    target_metrics:
+      hot_path_speedup: 5
+      compilation_overhead_ms: 10
+    components:
+      - cranelift_backend
+      - profile_guided_optimization
+      - inline_caching
+      - deoptimization_support
+    acceptance_criteria:
+      - Hot functions compiled to native code
+      - 5x speedup on compute-intensive benchmarks
+      - Correct deoptimization on assumption violation
+    dependencies: [FG-002]
+    github_issue: null
+    
+  - id: RC-003
+    title: Session Type Validator
+    priority: LOW
+    effort: L
+    impact: PROTOCOL_SAFETY
+    description: MCP protocol verification unimplemented
+    target_metrics:
+      protocol_violations_caught: 1.00
+      compile_time_verification: true
+    components:
+      - linear_type_checking
+      - deadlock_detection
+      - protocol_state_machine
+      - compile_time_verification
+    acceptance_criteria:
+      - All protocol violations caught at compile time
+      - Deadlock freedom statically verified
+      - Clear error messages for protocol violations
+    dependencies: []
+    github_issue: null
+
+integration_gaps:
+  - id: IG-001
+    title: LSP Implementation
+    priority: HIGH
+    effort: L
+    impact: IDE_SUPPORT
+    description: No concrete Language Server Protocol implementation
+    target_metrics:
+      ide_feature_completeness: 0.90
+      response_time_ms: 100
+    components:
+      - completion_provider
+      - goto_definition
+      - hover_information
+      - refactoring_actions
+    acceptance_criteria:
+      - Type-directed completion works
+      - Sub-100ms response time
+      - All major IDE features supported
+    dependencies: [FG-001, FG-003]
+    github_issue: null
+    
+  - id: IG-002
+    title: Source Map Generation
+    priority: MEDIUM
+    effort: S
+    impact: DEBUGGING_SUPPORT
+    description: No debugging support for transpiled code
+    target_metrics:
+      source_map_accuracy: 1.00
+      breakpoint_hit_rate: 1.00
+    components:
+      - line_column_mapping
+      - variable_name_preservation
+      - stack_trace_translation
+      - breakpoint_mapping
+    acceptance_criteria:
+      - Accurate source maps for all transpiled code
+      - Debugger breakpoints work correctly
+      - Stack traces show Ruchy source locations
+    dependencies: []
+    github_issue: null
+
+metrics:
+  total_features: 12
+  by_priority:
+    CRITICAL: 1
+    HIGH: 4
+    MEDIUM: 3
+    LOW: 4
+  by_effort:
+    S: 2
+    M: 5
+    L: 4
+    XL: 2
+  quality:
+    current_coverage: 0.16
+    target_coverage: 0.80
+    current_complexity_p99: 8
+    target_complexity_p99: 10
+    satd_count: 0
+    property_test_coverage: 0.10
+
+roadmap:
+  phase_1_mvp:
+    features: [FG-003, QI-001, IG-001]
+    duration_weeks: 2
+    
+  phase_2_performance:
+    features: [FG-001, FG-002, QI-002]
+    duration_weeks: 3
+    
+  phase_3_integrations:
+    features: [FG-004, FG-005, IG-002]
+    duration_weeks: 2
+    
+  phase_4_advanced:
+    features: [RC-001, RC-002, RC-003]
+    duration_weeks: 4
+
+toyota_way_compliance:
+  kaizen:
+    - automated_refactoring_for_complexity
+    - continuous_performance_regression_detection
+    - self_improving_error_messages
+    
+  jidoka:
+    - compile_time_quality_gates
+    - runtime_telemetry_detection
+    - automatic_rollback_on_regression
+    
+  genchi_genbutsu:
+    - direct_measurement_of_metrics
+    - user_behavior_analytics
+    - production_telemetry_optimization
+
+pmat_integration:
+  quality_gates:
+    - cyclomatic_complexity: 10
+    - cognitive_complexity: 7
+    - test_coverage: 0.80
+    - property_test_coverage: 0.80
+    - mutation_score: 0.75
+    - satd_tolerance: 0
+    
+  enforcement:
+    compile_time: true
+    development_time: true
+    ci_cd_time: true
+    
+  auto_fix:
+    enabled: true
+    threshold: 0.90
+    
+validation_rules:
+  - all_features_must_have_acceptance_criteria
+  - all_features_must_have_target_metrics
+  - no_feature_without_github_issue_before_implementation
+  - performance_targets_are_mandatory
+  - zero_satd_policy_enforced
