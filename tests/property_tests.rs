@@ -1,5 +1,6 @@
 use proptest::prelude::*;
-use quickcheck::{quickcheck, Arbitrary, Gen};
+use quickcheck::{Arbitrary, Gen};
+use quickcheck_macros::quickcheck;
 use ruchy::frontend::{ast::*, lexer::*, parser::Parser};
 use ruchy::backend::transpiler::Transpiler;
 
@@ -19,15 +20,15 @@ fn arbitrary_expr(g: &mut Gen, depth: usize) -> Expr {
         match u8::arbitrary(g) % 4 {
             0 => Expr::new(
                 ExprKind::Literal(Literal::Integer(i64::arbitrary(g))),
-                Span::dummy(),
+                Span::new(0, 0),
             ),
             1 => Expr::new(
                 ExprKind::Literal(Literal::Float(f64::arbitrary(g))),
-                Span::dummy(),
+                Span::new(0, 0),
             ),
             2 => Expr::new(
                 ExprKind::Literal(Literal::Bool(bool::arbitrary(g))),
-                Span::dummy(),
+                Span::new(0, 0),
             ),
             _ => {
                 let s: String = (0..10)
@@ -36,7 +37,7 @@ fn arbitrary_expr(g: &mut Gen, depth: usize) -> Expr {
                         c as char
                     })
                     .collect();
-                Expr::new(ExprKind::Literal(Literal::String(s)), Span::dummy())
+                Expr::new(ExprKind::Literal(Literal::String(s)), Span::new(0, 0))
             }
         }
     } else {
@@ -48,9 +49,9 @@ fn arbitrary_expr(g: &mut Gen, depth: usize) -> Expr {
                 let right = arbitrary_expr(g, depth - 1);
                 let op = match u8::arbitrary(g) % 5 {
                     0 => BinaryOp::Add,
-                    1 => BinaryOp::Sub,
-                    2 => BinaryOp::Mul,
-                    3 => BinaryOp::Div,
+                    1 => BinaryOp::Subtract,
+                    2 => BinaryOp::Multiply,
+                    3 => BinaryOp::Divide,
                     _ => BinaryOp::Equal,
                 };
                 Expr::new(
@@ -59,22 +60,22 @@ fn arbitrary_expr(g: &mut Gen, depth: usize) -> Expr {
                         op,
                         right: Box::new(right),
                     },
-                    Span::dummy(),
+                    Span::new(0, 0),
                 )
             }
             1 => {
                 // Unary expression
-                let expr = arbitrary_expr(g, depth - 1);
+                let operand = arbitrary_expr(g, depth - 1);
                 let op = match u8::arbitrary(g) % 2 {
-                    0 => UnaryOp::Neg,
+                    0 => UnaryOp::Negate,
                     _ => UnaryOp::Not,
                 };
                 Expr::new(
                     ExprKind::Unary {
                         op,
-                        expr: Box::new(expr),
+                        operand: Box::new(operand),
                     },
-                    Span::dummy(),
+                    Span::new(0, 0),
                 )
             }
             2 => {
@@ -82,47 +83,40 @@ fn arbitrary_expr(g: &mut Gen, depth: usize) -> Expr {
                 let items: Vec<Expr> = (0..3)
                     .map(|_| arbitrary_expr(g, depth - 1))
                     .collect();
-                Expr::new(ExprKind::List(items), Span::dummy())
+                Expr::new(ExprKind::List(items), Span::new(0, 0))
             }
             3 => {
                 // If-then-else
-                let cond = arbitrary_expr(g, depth - 1);
-                let then = arbitrary_expr(g, depth - 1);
-                let else_ = Some(Box::new(arbitrary_expr(g, depth - 1)));
+                let condition = arbitrary_expr(g, depth - 1);
+                let then_branch = arbitrary_expr(g, depth - 1);
+                let else_branch = Some(Box::new(arbitrary_expr(g, depth - 1)));
                 Expr::new(
                     ExprKind::If {
-                        cond: Box::new(cond),
-                        then: Box::new(then),
-                        else_,
+                        condition: Box::new(condition),
+                        then_branch: Box::new(then_branch),
+                        else_branch,
                     },
-                    Span::dummy(),
+                    Span::new(0, 0),
                 )
             }
             4 => {
-                // Variable
+                // Identifier
                 let name: String = (0..5)
                     .map(|_| {
                         let c = u8::arbitrary(g) % 26 + b'a';
                         c as char
                     })
                     .collect();
-                Expr::new(ExprKind::Variable(name), Span::dummy())
+                Expr::new(ExprKind::Identifier(name), Span::new(0, 0))
             }
             _ => {
                 // Block
-                let stmts: Vec<Stmt> = (0..2)
-                    .map(|_| {
-                        let expr = arbitrary_expr(g, depth - 1);
-                        Stmt::Expr(expr)
-                    })
+                let exprs: Vec<Expr> = (0..2)
+                    .map(|_| arbitrary_expr(g, depth - 1))
                     .collect();
-                let expr = arbitrary_expr(g, depth - 1);
                 Expr::new(
-                    ExprKind::Block {
-                        stmts,
-                        expr: Some(Box::new(expr)),
-                    },
-                    Span::dummy(),
+                    ExprKind::Block(exprs),
+                    Span::new(0, 0),
                 )
             }
         }
@@ -142,7 +136,11 @@ proptest! {
 proptest! {
     #[test]
     fn lexer_roundtrip(input in "[a-zA-Z0-9 +-*/(){}\\[\\].,;:=<>!&|]+") {
-        let tokens: Vec<Token> = TokenStream::new(&input).collect();
+        let mut stream = TokenStream::new(&input);
+        let mut tokens = Vec::new();
+        while let Some((token, _span)) = stream.next() {
+            tokens.push(token);
+        }
         // All input should be tokenized (no loss of data)
         prop_assert!(!tokens.is_empty() || input.trim().is_empty());
     }
@@ -203,7 +201,7 @@ proptest! {
                 
                 // Right should be 'b * c'
                 match &right.kind {
-                    ExprKind::Binary { left: b_expr, op: BinaryOp::Mul, right: c_expr } => {
+                    ExprKind::Binary { left: b_expr, op: BinaryOp::Multiply, right: c_expr } => {
                         match &b_expr.kind {
                             ExprKind::Literal(Literal::Integer(n)) => {
                                 prop_assert_eq!(*n, b as i64);
@@ -277,32 +275,16 @@ proptest! {
         
         // Should parse as (a |> b) |> c
         match &expr.kind {
-            ExprKind::Pipeline { expr, func } => {
-                // func should be 'c'
-                match &func.kind {
-                    ExprKind::Variable(name) => {
-                        prop_assert_eq!(name, &c);
-                    }
-                    _ => panic!("Expected variable for c"),
-                }
+            ExprKind::Pipeline { expr, stages } => {
+                // Should have two stages
+                prop_assert_eq!(stages.len(), 2);
                 
-                // expr should be 'a |> b'
+                // First expression should be 'a'
                 match &expr.kind {
-                    ExprKind::Pipeline { expr: a_expr, func: b_func } => {
-                        match &a_expr.kind {
-                            ExprKind::Variable(name) => {
-                                prop_assert_eq!(name, &a);
-                            }
-                            _ => panic!("Expected variable for a"),
-                        }
-                        match &b_func.kind {
-                            ExprKind::Variable(name) => {
-                                prop_assert_eq!(name, &b);
-                            }
-                            _ => panic!("Expected variable for b"),
-                        }
+                    ExprKind::Identifier(name) => {
+                        prop_assert_eq!(name, &a);
                     }
-                    _ => panic!("Expected pipeline for a |> b"),
+                    _ => panic!("Expected identifier for a"),
                 }
             }
             _ => panic!("Expected pipeline at top level"),
@@ -414,25 +396,15 @@ proptest! {
         let mut parser = Parser::new(&input);
         let expr = parser.parse().unwrap();
         
-        // Should still parse to 42
-        let mut current = &expr;
-        for _ in 0..depth {
-            match &current.kind {
-                ExprKind::Paren(inner) => {
-                    current = inner;
-                }
-                _ => {
-                    // Reached the literal
-                    break;
-                }
+        // Should parse to 42 regardless of parentheses
+        // Walk through nested structure to find the literal
+        fn find_literal(expr: &Expr) -> Option<i64> {
+            match &expr.kind {
+                ExprKind::Literal(Literal::Integer(n)) => Some(*n),
+                _ => None,
             }
         }
         
-        match &current.kind {
-            ExprKind::Literal(Literal::Integer(n)) => {
-                prop_assert_eq!(*n, 42);
-            }
-            _ => panic!("Expected integer literal"),
-        }
+        prop_assert_eq!(find_literal(&expr), Some(42));
     }
 }

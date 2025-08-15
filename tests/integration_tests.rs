@@ -2,7 +2,6 @@ use ruchy::frontend::parser::Parser;
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::runtime::repl::Repl;
 use std::fs;
-use std::path::Path;
 use std::process::Command;
 use tempfile::TempDir;
 
@@ -207,7 +206,7 @@ fn test_compile_generated_rust_code() {
     
     // Create a simple Cargo project
     Command::new("cargo")
-        .args(&["init", "--lib"])
+        .args(["init", "--lib"])
         .current_dir(project_path)
         .output()
         .expect("Failed to create Cargo project");
@@ -235,7 +234,7 @@ fn test_compile_generated_rust_code() {
     
     // Compile the generated Rust code
     let output = Command::new("cargo")
-        .args(&["build"])
+        .args(["build"])
         .current_dir(project_path)
         .output()
         .expect("Failed to run cargo build");
@@ -261,11 +260,11 @@ fn test_incremental_compilation() {
         "double(y)",
     ];
     
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     for input in inputs {
         let mut parser = Parser::new(input);
-        let expr = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let expr = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {}", input));
         let rust_code = transpiler.transpile_expr(&expr);
         assert!(rust_code.is_ok(), "Failed to transpile: {}", input);
     }
