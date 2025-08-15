@@ -39,6 +39,7 @@ pub struct RecoveryParser<'a> {
     errors: Vec<ParseError>,
     recovery_mode: bool,
     ghost_node_count: usize,
+    recursion_depth: usize,
 }
 
 impl<'a> RecoveryParser<'a> {
@@ -48,6 +49,7 @@ impl<'a> RecoveryParser<'a> {
             errors: Vec::new(),
             recovery_mode: false,
             ghost_node_count: 0,
+            recursion_depth: 0,
         }
     }
 
@@ -92,8 +94,19 @@ impl<'a> RecoveryParser<'a> {
 
     fn parse_expr_with_precedence_recovery(&mut self, min_prec: i32) -> Result<Expr> {
         let mut left = self.parse_prefix_recovery()?;
+        let mut iteration_count = 0;
+        const MAX_ITERATIONS: usize = 1000; // Prevent infinite loops
 
         loop {
+            iteration_count += 1;
+            if iteration_count > MAX_ITERATIONS {
+                self.record_error(
+                    "Expression too complex or malformed".to_string(),
+                    Some("Simplify the expression".to_string()),
+                );
+                break;
+            }
+
             let Some((token, _)) = self.tokens.peek() else {
                 break;
             };
@@ -114,6 +127,7 @@ impl<'a> RecoveryParser<'a> {
                         Ok(op) => op,
                         Err(e) => {
                             self.record_error(format!("Invalid operator: {}", e), None);
+                            // Skip the invalid operator and continue
                             continue;
                         }
                     };
@@ -149,7 +163,19 @@ impl<'a> RecoveryParser<'a> {
     }
 
     fn parse_prefix_recovery(&mut self) -> Result<Expr> {
-        match self.tokens.peek() {
+        const MAX_RECURSION_DEPTH: usize = 100;
+        
+        self.recursion_depth += 1;
+        if self.recursion_depth > MAX_RECURSION_DEPTH {
+            self.recursion_depth -= 1;
+            self.record_error(
+                "Expression too deeply nested".to_string(),
+                Some("Simplify the expression".to_string()),
+            );
+            return Ok(self.create_ghost_node("Max recursion depth"));
+        }
+        
+        let result = match self.tokens.peek() {
             Some((Token::Integer(n), span)) => {
                 let n = *n;
                 let span = *span;
@@ -187,6 +213,18 @@ impl<'a> RecoveryParser<'a> {
             Some((Token::LeftParen, _)) => self.parse_paren_recovery(),
             Some((token, _span)) => {
                 let token_clone = token.clone();
+                
+                // Special handling for binary operators in prefix position
+                if token.is_binary_op() {
+                    self.tokens.advance(); // Consume the misplaced operator
+                    self.record_error(
+                        format!("Unexpected operator: {:?}", token_clone),
+                        Some("An expression was expected here, not an operator".to_string()),
+                    );
+                    // Try to parse what comes after the misplaced operator
+                    return self.parse_prefix_recovery();
+                }
+                
                 self.tokens.advance(); // Advance before recording error
                 self.record_error(
                     format!("Unexpected token: {:?}", token_clone),
@@ -203,7 +241,10 @@ impl<'a> RecoveryParser<'a> {
                 );
                 Ok(self.create_ghost_node("Unexpected EOF"))
             }
-        }
+        };
+        
+        self.recursion_depth -= 1;
+        result
     }
 
     fn parse_if_recovery(&mut self) -> Result<Expr> {
@@ -542,7 +583,15 @@ impl<'a> RecoveryParser<'a> {
             Token::Match,
         ];
 
+        let mut tokens_consumed = 0;
+        const MAX_SYNC_TOKENS: usize = 100; // Prevent infinite loops
+        
         while let Some((token, _)) = self.tokens.peek() {
+            if tokens_consumed >= MAX_SYNC_TOKENS {
+                // Force exit to prevent infinite loop
+                break;
+            }
+            
             if sync_tokens.iter().any(|t| t == token) {
                 if matches!(token, Token::Semicolon) {
                     self.tokens.advance(); // consume semicolon
@@ -550,6 +599,7 @@ impl<'a> RecoveryParser<'a> {
                 break;
             }
             self.tokens.advance();
+            tokens_consumed += 1;
         }
         
         self.recovery_mode = false;
@@ -557,11 +607,20 @@ impl<'a> RecoveryParser<'a> {
 
     /// Synchronize to specific tokens
     fn synchronize_to(&mut self, targets: &[Token]) {
+        let mut tokens_consumed = 0;
+        const MAX_SYNC_TOKENS: usize = 100; // Prevent infinite loops
+        
         while let Some((token, _)) = self.tokens.peek() {
+            if tokens_consumed >= MAX_SYNC_TOKENS {
+                // Force exit to prevent infinite loop
+                break;
+            }
+            
             if targets.iter().any(|t| t == token) {
                 break;
             }
             self.tokens.advance();
+            tokens_consumed += 1;
         }
     }
 
