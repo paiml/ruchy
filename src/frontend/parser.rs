@@ -432,6 +432,16 @@ impl<'a> Parser<'a> {
                 self.tokens.advance();
                 Ok(Pattern::Literal(Literal::Integer(n)))
             }
+            Some((Token::String(s), _)) => {
+                let s = s.clone();
+                self.tokens.advance();
+                Ok(Pattern::Literal(Literal::String(s)))
+            }
+            Some((Token::Bool(b), _)) => {
+                let b = *b;
+                self.tokens.advance();
+                Ok(Pattern::Literal(Literal::Bool(b)))
+            }
             Some((Token::Identifier(name), _)) => {
                 let name = name.clone();
                 self.tokens.advance();
@@ -635,6 +645,97 @@ mod tests {
                 assert_eq!(stages.len(), 2);
             }
             _ => panic!("Expected pipeline"),
+        }
+    }
+
+    #[test]
+    fn test_parse_match() {
+        let mut parser = Parser::new(r#"match x { 1 => "one", 2 => "two", _ => "other" }"#);
+        let expr = parser.parse().unwrap();
+        match expr.kind {
+            ExprKind::Match { arms, .. } => {
+                assert_eq!(arms.len(), 3);
+            }
+            _ => panic!("Expected match expression"),
+        }
+    }
+
+    #[test]
+    fn test_parse_let() {
+        let mut parser = Parser::new("let x = 42 in x + 1");
+        let expr = parser.parse().unwrap();
+        match expr.kind {
+            ExprKind::Let { name, .. } => {
+                assert_eq!(name, "x");
+            }
+            _ => panic!("Expected let expression"),
+        }
+    }
+
+    #[test]
+    fn test_parse_for() {
+        let mut parser = Parser::new("for i in 1..10 { print(i) }");
+        let expr = parser.parse().unwrap();
+        match expr.kind {
+            ExprKind::For { var, .. } => {
+                assert_eq!(var, "i");
+            }
+            _ => panic!("Expected for expression"),
+        }
+    }
+
+    #[test]
+    fn test_parse_range() {
+        let mut parser = Parser::new("1..10");
+        let expr = parser.parse().unwrap();
+        match expr.kind {
+            ExprKind::Range { inclusive, .. } => {
+                assert!(!inclusive);
+            }
+            _ => panic!("Expected range expression"),
+        }
+        
+        let mut parser = Parser::new("1..=10");
+        let expr = parser.parse().unwrap();
+        match expr.kind {
+            ExprKind::Range { inclusive, .. } => {
+                assert!(inclusive);
+            }
+            _ => panic!("Expected inclusive range expression"),
+        }
+    }
+
+    #[test]
+    fn test_parse_list() {
+        let mut parser = Parser::new("[]");
+        let expr = parser.parse().unwrap();
+        match expr.kind {
+            ExprKind::List(ref elements) => {
+                assert_eq!(elements.len(), 0);
+            }
+            _ => panic!("Expected empty list"),
+        }
+        
+        let mut parser = Parser::new("[1, 2, 3]");
+        let expr = parser.parse().unwrap();
+        match expr.kind {
+            ExprKind::List(ref elements) => {
+                assert_eq!(elements.len(), 3);
+            }
+            _ => panic!("Expected list with 3 elements"),
+        }
+    }
+
+    #[test]
+    fn test_parse_import() {
+        let mut parser = Parser::new("import std::io");
+        let expr = parser.parse().unwrap();
+        match expr.kind {
+            ExprKind::Import { path, items } => {
+                assert_eq!(path, "std::io");
+                assert!(items.is_empty());
+            }
+            _ => panic!("Expected import"),
         }
     }
 }

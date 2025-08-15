@@ -2,12 +2,12 @@
 // Version A: Ultra-minimal implementation
 
 fun main() {
-    let args = ["marco"]  // Placeholder - we need to implement args()
+    let command = "marco"  // Simplified - would be from args
     
-    match args {
-        ["marco"] => marco()
-        ["polo", name] => polo(name)
-        ["play", times] => play(3)  // Simplified for now
+    match command {
+        "marco" => marco()
+        "polo" => polo("World")
+        "play" => play(3)
         _ => help()
     }
 }
