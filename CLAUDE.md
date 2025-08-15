@@ -171,13 +171,93 @@ impl ContextAnalyzer {
 }
 ```
 
-## Quality Gates (via PMAT)
+## Quality Gates (via PMAT MCP Integration)
 
-Every commit must pass:
+**MANDATORY**: All code must be developed using PMAT quality proxy via MCP (v2.4.0). Every commit must pass:
+
+### MCP Server Configuration
+PMAT MCP server is configured at `~/.config/claude/mcps/pmat.json` and provides:
+- Real-time code quality analysis during development
+- Automated quality gate enforcement
+- Test coverage monitoring
+- Complexity metrics tracking
+- Property test validation
+
+To verify PMAT MCP is running:
+```bash
+~/.local/bin/pmat serve --mode mcp --port 0
+```
+
+### PMAT Quality Requirements
 - Cyclomatic complexity ≤10 per function
 - Zero SATD comments (TODO/FIXME/HACK)
-- Property test coverage >80%
 - Mutation score >75%
+- Cognitive complexity ≤15 per function
+- Halstead effort ≤5000 per function
+- Maintainability index >70
+
+### Test Coverage Requirements (80% Minimum)
+- **Unit test coverage**: 80% minimum for all modules
+- **Property test coverage**: Every public function must have property tests
+- **Fuzz test coverage**: All parsers and serializers must have fuzz tests
+- **Doctest coverage**: Every public API must have executable doctests
+- **Integration tests**: Full end-to-end tests for all major workflows
+- **Example coverage**: Every feature must have runnable examples via `cargo run --example`
+
+### Testing Implementation
+```rust
+// Every module must have:
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+    
+    // Unit tests
+    #[test]
+    fn test_basic_functionality() { /* ... */ }
+    
+    // Property tests
+    proptest! {
+        #[test]
+        fn prop_invariant_holds(input: ArbitraryInput) {
+            // Verify invariants
+        }
+    }
+}
+
+// Fuzz targets in fuzz/
+#[cfg(fuzzing)]
+pub fn fuzz_parser(data: &[u8]) {
+    let _ = parse(data);
+}
+
+// Doctests in public APIs
+/// Parse a Ruchy expression.
+/// 
+/// # Examples
+/// ```
+/// use ruchy::parse_expr;
+/// let expr = parse_expr("x + 1")?;
+/// assert_eq!(expr.node_type(), NodeType::Binary);
+/// ```
+pub fn parse_expr(input: &str) -> Result<Expr> { /* ... */ }
+```
+
+### Example Requirements
+Every major feature must have a corresponding example in `examples/`:
+```bash
+cargo run --example parser_demo
+cargo run --example type_inference
+cargo run --example actor_system
+cargo run --example mcp_integration
+cargo run --example repl_session
+```
+
+### Continuous Quality Monitoring
+- PMAT MCP tool runs on every file save during development
+- Pre-commit hooks enforce all quality gates
+- CI/CD pipeline blocks merges below 80% coverage
+- Weekly quality reports generated via PMAT dashboard
 
 ## Architecture Decisions
 

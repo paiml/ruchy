@@ -1,0 +1,326 @@
+# ruchy-mvp-with-repl.yaml
+## Minimal Viable Implementation Specification
+
+  ```yaml
+project: ruchy-mvp
+version: 0.1.0
+target_completion: 4_weeks
+developer_hours: 160
+
+goals:
+  primary: Working REPL with Rust transpilation
+  constraints:
+    - Zero external dependencies beyond pest/syn/quote
+    - Single-pass transpilation (no optimization)
+    - Subset grammar (60% of full spec)
+    - Direct Rust mapping only (no custom semantics)
+
+architecture:
+  components:
+    parser:
+      implementation: pest
+      grammar_file: src/grammar/ruchy_mvp.pest
+      complexity: 20_hours
+
+    transpiler:
+      implementation: Direct AST transformation
+      target: syn::File
+      complexity: 30_hours
+
+    repl:
+      implementation: rustyline + in-memory compilation
+      features: [history, multiline, error_recovery]
+      complexity: 25_hours
+
+    runtime:
+      implementation: None (pure transpilation)
+      execution: Via rustc + tempfile
+      complexity: 10_hours
+
+core_features:
+  week_1:
+    parsing:
+      - identifiers_and_keywords
+      - basic_types: [i32, f64, bool, String]
+      - literals: [integers, floats, strings, bools]
+      - binary_operators: [arithmetic, comparison, logical]
+      - function_definitions: "fun name(params) -> type { body }"
+      - let_bindings: "let x = expr"
+      - if_expressions: "if cond { then } else { else }"
+
+    transpilation:
+      - Direct syntax mapping to Rust
+      - Type annotations required everywhere
+      - No inference in MVP
+
+    deliverable: |
+      # Working example:
+      fun add(a: i32, b: i32) -> i32 {
+        let sum = a + b
+        sum
+      }
+
+  week_2:
+    parsing:
+      - collections: "[1, 2, 3]" -> Vec
+      - for_loops: "for x in items { }"
+      - pattern_matching: "match x { 1 => a, _ => b }"
+      - method_calls: "obj.method(args)"
+      - modules: "import std::collections::HashMap"
+
+    transpilation:
+      - Collection literals to Vec::from
+      - Match exhaustiveness via rustc
+      - Import resolution passthrough
+
+    repl_features:
+      - Persistent bindings across commands
+      - :type command for type inspection
+      - :ast command for AST viewing
+
+    deliverable: |
+      # Working in REPL:
+      ruchy> let nums = [1, 2, 3, 4, 5]
+      ruchy> for n in nums { println(n * 2) }
+      2
+      4
+      6
+      8
+      10
+
+  week_3:
+    parsing:
+      - pipeline_operator: "data |> filter(f) |> map(g)"
+      - optional_types: "String?"
+      - safe_navigation: "obj?.field?.method()"
+      - string_interpolation: '"Hello, \(name)"'
+      - lambda_expressions: "|x| x * 2"
+
+    transpilation:
+      - Pipeline to method chaining
+      - Optional to Option<T>
+      - Safe nav to and_then chains
+      - String interp to format!
+
+    quality:
+      - Error messages with source positions
+      - Syntax highlighting in REPL
+      - Tab completion for keywords
+
+    deliverable: |
+      # Pipeline working:
+      ruchy> [1, 2, 3] |> map(|x| x * 2) |> filter(|x| x > 2)
+      [4, 6]
+
+  week_4:
+    features:
+      - struct_definitions: "struct Point { x: f64, y: f64 }"
+      - impl_blocks: "impl Point { fun distance() -> f64 }"
+      - generic_functions: "fun identity<T>(x: T) -> T { x }"
+      - result_types: "Result<i32>"
+      - try_operator: "risky_op()?"
+
+    repl_improvements:
+      - Multi-line editing with { detection
+      - Save/load session
+      - :bench command for timing
+
+    integration:
+      - Cargo.toml generation
+      - --emit-rust flag for saving output
+      - Basic test framework
+
+    deliverable: |
+      # Full program transpilation:
+      $ ruchy compile examples/point.ruchy --emit-rust
+      Generated: target/point.rs
+      $ rustc target/point.rs && ./point
+      Distance: 5.0
+
+implementation_plan:
+  week_1_tasks:
+    - Setup project structure with cargo workspace
+    - Define pest grammar for MVP subset
+    - Implement parser with error recovery
+    - Create AST datatypes with serde derives
+    - Build basic transpiler for functions and expressions
+    - Test harness with 20 parse tests
+
+  week_2_tasks:
+    - Extend grammar for collections and control flow
+    - Add transpilation for iterators and pattern matching
+    - Implement REPL state management
+    - Create in-memory rustc compilation pipeline
+    - Integration tests for 10 example programs
+
+  week_3_tasks:
+    - Implement syntax sugar transformations
+    - Add pipeline operator desugaring
+    - Build error message formatter with snippets
+    - REPL UI improvements (colors, completion)
+    - Benchmark suite comparing with Rust
+
+  week_4_tasks:
+    - Complete type system features
+    - Add generic transpilation
+    - Polish REPL experience
+    - Documentation and examples
+    - Performance optimization pass
+
+technical_decisions:
+  parser:
+    choice: pest
+    rationale: "Declarative PEG grammar, good error messages"
+    alternative_considered: "nom (too verbose), lalrpop (overkill)"
+
+  ast_representation:
+    choice: "Custom AST → syn::File"
+    rationale: "syn provides excellent Rust AST with pretty-printing"
+    transformation: |
+      RuchyAST -> Desugar -> SimplifiedAST -> syn::File -> TokenStream
+
+  repl_execution:
+    choice: "Transpile + rustc + dlopen"
+    approach: |
+      1. Accumulate definitions in session context
+      2. Transpile new input with context
+      3. Compile to .so with rustc
+      4. Load and execute via libloading
+      5. Capture output and return value
+
+  type_checking:
+    choice: "Delegate to rustc"
+    rationale: "Avoid reimplementing Rust's type system"
+    implementation: "Type annotations mandatory in MVP"
+
+testing_strategy:
+  unit_tests:
+    parser: 50 tests covering each grammar rule
+    transpiler: 30 tests for AST transformations
+    repl: 20 tests for state management
+
+  integration_tests:
+    golden_files: 25 .ruchy files with expected .rs output
+    round_trip: Parse -> Transpile -> Compile -> Execute
+    error_cases: 15 malformed inputs with expected errors
+
+  property_tests:
+    parse_unparse: "parse(unparse(ast)) == ast"
+    semantic_preservation: "execute(ruchy) == execute(transpiled)"
+
+performance_targets:
+  parsing: 100K LOC/sec
+  transpilation: 50K LOC/sec
+  repl_latency: <50ms for simple expressions
+  memory_usage: <20MB for REPL session
+  binary_size: <10MB including rustc metadata
+
+excluded_from_mvp:
+  - Actor system (too complex)
+  - Type inference (use explicit annotations)
+  - JIT compilation (transpilation only)
+  - Async/await (sync only)
+  - Refinement types (basic types only)
+  - MCP integration (future milestone)
+  - Custom operators (built-in only)
+  - Macros (no metaprogramming)
+
+success_criteria:
+  - REPL can execute 50-line programs
+  - Transpiled code compiles with rustc
+  - Performance within 10% of equivalent Rust
+  - Error messages point to Ruchy source
+  - Examples cover 10 real use cases
+
+example_programs:
+  fibonacci.ruchy: |
+    fun fib(n: i32) -> i32 {
+      if n <= 1 { n } else { fib(n-1) + fib(n-2) }
+    }
+
+  quicksort.ruchy: |
+    fun quicksort(arr: [i32]) -> [i32] {
+      if arr.len() <= 1 {
+        arr
+      } else {
+        let pivot = arr[0]
+        let less = arr |> filter(|x| x < pivot)
+        let greater = arr |> filter(|x| x > pivot)
+        quicksort(less) + [pivot] + quicksort(greater)
+      }
+    }
+
+  point_distance.ruchy: |
+    struct Point { x: f64, y: f64 }
+    
+    impl Point {
+      fun distance(self, other: Point) -> f64 {
+        let dx = self.x - other.x
+        let dy = self.y - other.y
+        (dx * dx + dy * dy).sqrt()
+      }
+    }
+
+deliverables:
+  binary: target/release/ruchy
+  library: target/release/libruchy.rlib
+  documentation: target/doc/ruchy/index.html
+  examples: examples/*.ruchy with README
+  benchmarks: benches/transpilation.rs
+  ```
+  
+  ## Implementation Priority
+  
+  ```rust
+// Week 1: Core parser and transpiler
+#[derive(Debug)]
+  enum CoreExpr {
+  Literal(Literal),
+  Binary(Box<CoreExpr>, BinOp, Box<CoreExpr>),
+  If(Box<CoreExpr>, Box<CoreExpr>, Option<Box<CoreExpr>>),
+  Let(String, Box<CoreExpr>),
+  Function(String, Vec<Param>, Type, Box<CoreExpr>),
+}
+
+  // Direct mapping to syn
+  impl Transpile for CoreExpr {
+  fn to_rust(&self) -> syn::Expr {
+  match self {
+  CoreExpr::Binary(l, op, r) => {
+  syn::parse_quote! { #l #op #r }
+  }
+  CoreExpr::If(cond, then, els) => {
+  syn::parse_quote! {
+  if #cond { #then } else { #els }
+  }
+  }
+  // ...
+  }
+  }
+}
+
+// Week 2-3: REPL state machine
+  struct ReplContext {
+definitions: Vec<syn::Item>,
+bindings: HashMap<String, Type>,
+rustc_session: RustcSession,
+}
+
+  impl ReplContext {
+fn eval(&mut self, input: &str) -> Result<Value> {
+  let ast = parse(input)?;
+  let rust = transpile(ast)?;
+  
+  // Compile incrementally
+  let lib = self.rustc_session.compile_incremental(
+  &self.definitions,
+  rust
+  )?;
+  
+  // Execute via FFI
+  unsafe { lib.call("__ruchy_eval") }
+}
+}
+  ```
+  
+  This MVP focuses on **mechanical correctness** over features - proving the transpilation pipeline works end-to-end with a usable REPL. The 4-week timeline is aggressive but achievable by excluding type inference, async, and other complex features. The key insight is leveraging `rustc` as a library for type checking and compilation rather than reimplementing these systems.

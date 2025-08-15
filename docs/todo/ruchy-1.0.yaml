@@ -1,0 +1,459 @@
+  # docs/todo/implementation-ruchy-1.0.yaml
+  # Deterministic Todo List for Ruchy Language Implementation
+  # Generated: 2025-01-01 | Seed: 42 | Quality: Toyota Way Standards
+
+  version: "1.0.0"
+  metadata:
+    project: "Ruchy Language Compiler"
+    complexity_threshold: 10
+    satd_tolerance: 0
+    test_coverage_min: 0.85
+    property_test_required: true
+
+  phases:
+    - name: "Phase 1: Parser Foundation"
+      duration: "2 weeks"
+      todos:
+        - id: "PARSE-001"
+          content: "Implement lexer with logos for token generation"
+          estimated_hours: 8
+          complexity: 3
+          dependencies: []
+          validation_command: "cargo test --package ruchy-lexer --lib tests::tokenize_all_operators"
+          success_criteria:
+            - "Tokenizes all 47 operators from specification"
+            - "Handles Unicode identifiers correctly"
+            - "Performance: >1M tokens/sec on reference corpus"
+          implementation_notes: |
+            Use logos derive macro for zero-cost lexer generation.
+            Benchmark against rustc's lexer (librustc_lexer).
+
+        - id: "PARSE-002"
+          content: "Build recursive descent parser with Pratt operator precedence"
+          estimated_hours: 16
+          complexity: 7
+          dependencies: ["PARSE-001"]
+          validation_command: "cargo test --package ruchy-parser --lib tests::parse_precedence"
+          success_criteria:
+            - "Correctly parses 15 precedence levels"
+            - "Handles left/right associativity"
+            - "Error recovery with synchronization points"
+          implementation_notes: |
+            ```rust
+            struct Parser {
+                tokens: TokenStream,
+                bindings: HashMap<Symbol, Precedence>,
+            }
+            impl Parser {
+                fn parse_infix(&mut self, left: Expr, op: Token) -> Result<Expr> {
+                    let (prec, assoc) = self.bindings[&op];
+                    let right = self.parse_expr(prec + assoc.offset())?;
+                    Ok(Expr::Binary(Box::new(left), op, Box::new(right)))
+                }
+            }
+            ```
+
+        - id: "PARSE-003"
+          content: "Define AST with span tracking for error reporting"
+          estimated_hours: 6
+          complexity: 4
+          dependencies: []
+          validation_command: "cargo test --package ruchy-ast --lib tests::ast_size_optimization"
+          success_criteria:
+            - "AST node size ≤ 48 bytes for common nodes"
+            - "Span information preserved through transformations"
+            - "Arena allocation for recursive structures"
+          implementation_notes: |
+            Use typed-arena for AST allocation.
+            Box large enum variants to maintain cache-line alignment.
+
+        - id: "PARSE-004"
+          content: "Implement source map for position tracking"
+          estimated_hours: 4
+          complexity: 3
+          dependencies: ["PARSE-003"]
+          validation_command: "cargo bench --package ruchy-parser source_map_lookup"
+          success_criteria:
+            - "O(log n) position lookups via binary search"
+            - "Memory overhead < 5% of source size"
+            - "Supports incremental updates for REPL"
+
+    - name: "Phase 2: Type System Core"
+      duration: "3 weeks"
+      todos:
+        - id: "TYPE-001"
+          content: "Implement type representation with interning"
+          estimated_hours: 10
+          complexity: 5
+          dependencies: []
+          validation_command: "cargo test --package ruchy-types --lib tests::type_interning"
+          success_criteria:
+            - "Pointer equality for type comparison"
+            - "Memory usage < 100 bytes per unique type"
+            - "Lock-free concurrent interning"
+          implementation_notes: |
+            Use dashmap for concurrent type interning.
+            Implement small-type optimization for primitives.
+
+        - id: "TYPE-002"
+          content: "Build unification engine with observable sharing"
+          estimated_hours: 12
+          complexity: 8
+          dependencies: ["TYPE-001"]
+          validation_command: "cargo test --package ruchy-infer --lib tests::unification_soundness"
+          success_criteria:
+            - "Occurs check prevents infinite types"
+            - "Path compression optimizes find operations"
+            - "Rollback support for speculative typing"
+          implementation_notes: |
+            ```rust
+            struct UnificationTable {
+                vars: ena::unify::InPlaceUnificationTable<TyVar>,
+                snapshots: Vec<ena::snapshot::Snapshot>,
+            }
+            ```
+
+        - id: "TYPE-003"
+          content: "Implement Algorithm W with level-based generalization"
+          estimated_hours: 20
+          complexity: 9
+          dependencies: ["TYPE-002"]
+          validation_command: "cargo test --package ruchy-infer --lib tests::hindley_milner"
+          success_criteria:
+            - "Infers principal types for all valid programs"
+            - "Generalization at let-bindings only"
+            - "Performance: <1ms for 100-line functions"
+          implementation_notes: |
+            Track type variable levels for efficient generalization.
+            Use difference lists for constraint collection.
+
+        - id: "TYPE-004"
+          content: "Add row polymorphism for extensible records"
+          estimated_hours: 16
+          complexity: 8
+          dependencies: ["TYPE-003"]
+          validation_command: "cargo test --package ruchy-infer --lib tests::row_polymorphism"
+          success_criteria:
+            - "Supports record extension and restriction"
+            - "Maintains sorted field order for O(n) unification"
+            - "Generates minimal row variable constraints"
+
+        - id: "TYPE-005"
+          content: "Integrate refinement types with Z3 SMT solver"
+          estimated_hours: 24
+          complexity: 10
+          dependencies: ["TYPE-003"]
+          validation_command: "cargo test --package ruchy-refinement --lib tests::smt_verification"
+          success_criteria:
+            - "Proves array bounds safety"
+            - "Verifies numeric invariants"
+            - "Timeout: 100ms per function"
+          implementation_notes: |
+            Use z3-sys for FFI bindings.
+            Cache SMT queries with structural hashing.
+
+    - name: "Phase 3: Code Generation"
+      duration: "2 weeks"
+      todos:
+        - id: "GEN-001"
+          content: "Transform Ruchy AST to syn Rust AST"
+          estimated_hours: 12
+          complexity: 6
+          dependencies: ["PARSE-003", "TYPE-003"]
+          validation_command: "cargo test --package ruchy-codegen --lib tests::ast_transformation"
+          success_criteria:
+            - "All Ruchy constructs map to valid Rust"
+            - "Preserves type information in generated code"
+            - "Maintains source mapping for debugging"
+          implementation_notes: |
+            Use quote! macro for template-based generation.
+            Implement visitor pattern for AST traversal.
+
+        - id: "GEN-002"
+          content: "Implement pipeline operator desugaring"
+          estimated_hours: 6
+          complexity: 4
+          dependencies: ["GEN-001"]
+          validation_command: "cargo test --package ruchy-codegen --lib tests::pipeline_desugar"
+          success_criteria:
+            - "Transforms to method chains without allocation"
+            - "Preserves lazy evaluation semantics"
+            - "Supports custom pipeline operators"
+
+        - id: "GEN-003"
+          content: "Generate memory management annotations via escape analysis"
+          estimated_hours: 16
+          complexity: 9
+          dependencies: ["GEN-001", "TYPE-003"]
+          validation_command: "cargo test --package ruchy-codegen --lib tests::escape_analysis"
+          success_criteria:
+            - "Identifies stack-allocatable values"
+            - "Inserts Rc/Arc only when necessary"
+            - "Zero heap allocations for pure computations"
+          implementation_notes: |
+            Implement Steensgaard's points-to analysis.
+            Use abstract interpretation for escape detection.
+
+        - id: "GEN-004"
+          content: "Optimize generated code with peephole patterns"
+          estimated_hours: 8
+          complexity: 5
+          dependencies: ["GEN-001"]
+          validation_command: "cargo bench --package ruchy-codegen optimization_impact"
+          success_criteria:
+            - "Eliminates redundant clones"
+            - "Fuses iterator chains"
+            - "Performance within 5% of handwritten Rust"
+
+    - name: "Phase 4: Runtime Infrastructure"
+      duration: "2 weeks"
+      todos:
+        - id: "RT-001"
+          content: "Build tree-walking interpreter for REPL"
+          estimated_hours: 10
+          complexity: 6
+          dependencies: ["PARSE-003", "TYPE-003"]
+          validation_command: "cargo test --package ruchy-interpreter --lib tests::eval_semantics"
+          success_criteria:
+            - "Evaluates all language constructs"
+            - "Maintains environment across REPL sessions"
+            - "Performance: >100k expressions/sec"
+          implementation_notes: |
+            Use im::HashMap for persistent environments.
+            Implement tail-call optimization via trampolining.
+
+        - id: "RT-002"
+          content: "Integrate Cranelift JIT for hot path compilation"
+          estimated_hours: 20
+          complexity: 9
+          dependencies: ["RT-001", "GEN-001"]
+          validation_command: "cargo bench --package ruchy-jit jit_compilation_speedup"
+          success_criteria:
+            - "10x speedup for numeric loops"
+            - "JIT threshold: 1000 iterations"
+            - "Compilation time < 10ms per function"
+          implementation_notes: |
+            Use cranelift-codegen for machine code generation.
+            Implement OSR (on-stack replacement) for loop transitions.
+
+        - id: "RT-003"
+          content: "Implement incremental compilation cache"
+          estimated_hours: 8
+          complexity: 5
+          dependencies: ["TYPE-003", "GEN-001"]
+          validation_command: "cargo test --package ruchy-incremental --lib tests::cache_invalidation"
+          success_criteria:
+            - "Recompiles only changed functions"
+            - "Cache hit rate > 90% for typical edits"
+            - "Persistent cache with mmap support"
+
+        - id: "RT-004"
+          content: "Create REPL with rustyline and syntax highlighting"
+          estimated_hours: 6
+          complexity: 3
+          dependencies: ["RT-001", "PARSE-002"]
+          validation_command: "cargo test --package ruchy-repl --lib tests::repl_commands"
+          success_criteria:
+            - "Multi-line input with proper indentation"
+            - "Tab completion for identifiers"
+            - "History persistence across sessions"
+
+    - name: "Phase 5: Actor System"
+      duration: "3 weeks"
+      todos:
+        - id: "ACTOR-001"
+          content: "Design lock-free mailbox with priority lanes"
+          estimated_hours: 12
+          complexity: 8
+          dependencies: []
+          validation_command: "cargo bench --package ruchy-actors mailbox_throughput"
+          success_criteria:
+            - "10M messages/sec single producer"
+            - "5M messages/sec multi-producer"
+            - "Bounded memory with backpressure"
+          implementation_notes: |
+            Use crossbeam::channel::bounded for MPSC.
+            Implement priority via separate channels.
+
+        - id: "ACTOR-002"
+          content: "Implement actor spawn and supervision tree"
+          estimated_hours: 16
+          complexity: 7
+          dependencies: ["ACTOR-001"]
+          validation_command: "cargo test --package ruchy-actors --lib tests::supervision_strategies"
+          success_criteria:
+            - "One-for-one restart strategy"
+            - "Restart intensity limits"
+            - "Graceful shutdown propagation"
+
+        - id: "ACTOR-003"
+          content: "Build selective receive with pattern matching"
+          estimated_hours: 10
+          complexity: 6
+          dependencies: ["ACTOR-001", "PARSE-003"]
+          validation_command: "cargo test --package ruchy-actors --lib tests::selective_receive"
+          success_criteria:
+            - "O(n) message scanning"
+            - "Pattern compilation to decision tree"
+            - "Timeout support with cancellation"
+
+        - id: "ACTOR-004"
+          content: "Add distributed actor registry with CRDT sync"
+          estimated_hours: 20
+          complexity: 10
+          dependencies: ["ACTOR-002"]
+          validation_command: "cargo test --package ruchy-distributed --lib tests::registry_convergence"
+          success_criteria:
+            - "Eventual consistency via δ-CRDTs"
+            - "Gossip protocol with HyParView"
+            - "Registry lookup < 1ms P99"
+
+    - name: "Phase 6: MCP Integration"
+      duration: "1 week"
+      todos:
+        - id: "MCP-001"
+          content: "Generate MCP tool definitions from actor signatures"
+          estimated_hours: 8
+          complexity: 5
+          dependencies: ["ACTOR-002", "TYPE-003"]
+          validation_command: "cargo test --package ruchy-mcp --lib tests::tool_generation"
+          success_criteria:
+            - "JSON Schema from type annotations"
+            - "Automatic parameter validation"
+            - "OpenAPI 3.0 compatibility"
+
+        - id: "MCP-002"
+          content: "Implement MCP-to-actor message bridge"
+          estimated_hours: 10
+          complexity: 6
+          dependencies: ["MCP-001", "ACTOR-001"]
+          validation_command: "cargo test --package ruchy-mcp --lib tests::protocol_bridge"
+          success_criteria:
+            - "Zero-copy for local actors"
+            - "JSON-RPC 2.0 compliance"
+            - "Request timeout handling"
+
+        - id: "MCP-003"
+          content: "Add session type verification for protocols"
+          estimated_hours: 12
+          complexity: 8
+          dependencies: ["MCP-002", "TYPE-003"]
+          validation_command: "cargo test --package ruchy-mcp --lib tests::session_types"
+          success_criteria:
+            - "Compile-time protocol verification"
+            - "Linear type checking for resources"
+            - "Deadlock freedom proof"
+
+    - name: "Phase 7: Quality & Testing"
+      duration: "2 weeks"
+      todos:
+        - id: "TEST-001"
+          content: "Implement property-based test generators"
+          estimated_hours: 10
+          complexity: 6
+          dependencies: ["PARSE-003", "TYPE-003"]
+          validation_command: "cargo test --package ruchy-tests --lib proptest"
+          success_criteria:
+            - "AST generators with size control"
+            - "Well-typed program generation"
+            - "Shrinking strategies for counterexamples"
+
+        - id: "TEST-002"
+          content: "Create fuzzing harnesses for parser robustness"
+          estimated_hours: 6
+          complexity: 4
+          dependencies: ["PARSE-002"]
+          validation_command: "cargo fuzz run parser_fuzzer -- -max_len=10000"
+          success_criteria:
+            - "No panics on arbitrary input"
+            - "Coverage-guided fuzzing with libFuzzer"
+            - "Corpus minimization < 1KB"
+
+        - id: "TEST-003"
+          content: "Build benchmark suite against Python/Rust"
+          estimated_hours: 8
+          complexity: 4
+          dependencies: ["GEN-001", "RT-001"]
+          validation_command: "cargo bench --package ruchy-benchmarks"
+          success_criteria:
+            - "Within 5% of Rust performance"
+            - "50x faster than Python 3.11"
+            - "Statistical significance via criterion"
+
+        - id: "TEST-004"
+          content: "Integrate PMAT quality gates in CI"
+          estimated_hours: 4
+          complexity: 3
+          dependencies: []
+          validation_command: "pmat quality-gate --strict --fail-on-violation"
+          success_criteria:
+            - "Complexity ≤ 10 per function"
+            - "Zero SATD comments"
+            - "Test coverage ≥ 85%"
+
+    - name: "Phase 8: Tooling & Developer Experience"
+      duration: "2 weeks"
+      todos:
+        - id: "TOOL-001"
+          content: "Implement LSP with incremental analysis"
+          estimated_hours: 20
+          complexity: 8
+          dependencies: ["TYPE-003", "RT-003"]
+          validation_command: "cargo test --package ruchy-lsp --lib tests::lsp_compliance"
+          success_criteria:
+            - "Diagnostics within 50ms of typing"
+            - "Go-to-definition with cross-module support"
+            - "Hover types with monomorphization"
+          implementation_notes: |
+            Use tower-lsp for protocol implementation.
+            Maintain salsa-style query cache.
+
+        - id: "TOOL-002"
+          content: "Create formatter with configurable style"
+          estimated_hours: 8
+          complexity: 5
+          dependencies: ["PARSE-003"]
+          validation_command: "cargo test --package ruchy-fmt --lib tests::idempotency"
+          success_criteria:
+            - "Idempotent formatting"
+            - "Preserves comments and attributes"
+            - "Performance: >100k LOC/sec"
+
+        - id: "TOOL-003"
+          content: "Build cargo integration via build.rs"
+          estimated_hours: 6
+          complexity: 4
+          dependencies: ["GEN-001"]
+          validation_command: "cargo test --package ruchy-cargo --lib tests::build_script"
+          success_criteria:
+            - "Incremental compilation support"
+            - "Source mapping for debugging"
+            - "Parallel compilation of modules"
+
+        - id: "TOOL-004"
+          content: "Package VSCode extension with syntax highlighting"
+          estimated_hours: 8
+          complexity: 3
+          dependencies: ["TOOL-001"]
+          validation_command: "npm test --prefix editors/vscode"
+          success_criteria:
+            - "TextMate grammar for syntax"
+            - "Snippet completion"
+            - "Integrated terminal REPL"
+
+  quality_metrics:
+    total_estimated_hours: 366
+    max_complexity: 10
+    critical_path: ["PARSE-001", "PARSE-002", "TYPE-001", "TYPE-002", "TYPE-003", "GEN-001", "RT-001"]
+    parallelizable_work: 0.45
+    risk_factors:
+      - "Z3 integration may require custom bindings"
+      - "Cranelift API stability for JIT"
+      - "CRDT performance at scale"
+
+  validation_suite:
+    unit_tests: 2847
+    property_tests: 156
+    integration_tests: 89
+    benchmarks: 34
+    fuzz_targets: 5
