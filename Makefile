@@ -64,14 +64,15 @@ clean:
 	@rm -rf ~/.ruchy/cache/
 	@echo "✓ Clean complete"
 
-# Generate test coverage
+# Generate test coverage using cargo-llvm-cov
 coverage:
-	@echo "Generating coverage report..."
-	@cargo install cargo-tarpaulin 2>/dev/null || true
-	@cargo tarpaulin --out Html --output-dir coverage --workspace --timeout 120 --exclude-files "*/tests/*" --exclude-files "*/examples/*"
-	@echo "✓ Coverage report generated in coverage/index.html"
+	@echo "Generating coverage report with cargo-llvm-cov..."
+	@cargo install cargo-llvm-cov 2>/dev/null || true
+	@cargo llvm-cov clean --workspace
+	@cargo llvm-cov --all-features --workspace --html --output-dir target/coverage/html --lcov --output-path target/coverage/lcov.info --ignore-filename-regex "tests/|benches/|examples/"
+	@echo "✓ Coverage report generated in target/coverage/html/index.html"
 	@echo "Coverage summary:"
-	@cargo tarpaulin --print-summary --workspace --timeout 120 --exclude-files "*/tests/*" --exclude-files "*/examples/*" 2>/dev/null | tail -n 1
+	@cargo llvm-cov --summary-only --all-features --workspace 2>&1 | grep "TOTAL" || cargo llvm-cov --summary-only --all-features --workspace
 
 # Run all examples
 examples:
