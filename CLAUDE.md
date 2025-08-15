@@ -219,12 +219,28 @@ To verify PMAT MCP is running:
 - Maintainability index >70
 
 ### Test Coverage Requirements (80% Minimum)
-- **Unit test coverage**: 80% minimum for all modules
+- **Unit test coverage**: 80% minimum for all modules (measured with `cargo llvm-cov`)
 - **Property test coverage**: Every public function must have property tests
 - **Fuzz test coverage**: All parsers and serializers must have fuzz tests
 - **Doctest coverage**: Every public API must have executable doctests
 - **Integration tests**: Full end-to-end tests for all major workflows
 - **Example coverage**: Every feature must have runnable examples via `cargo run --example`
+
+### Code Coverage Measurement
+**MANDATORY**: Use `cargo-llvm-cov` for all coverage measurements:
+```bash
+# Install cargo-llvm-cov
+cargo install cargo-llvm-cov
+
+# Generate coverage report
+cargo llvm-cov --html --output-dir target/llvm-cov-html
+
+# Check coverage percentage
+cargo llvm-cov --summary-only
+
+# Coverage with all test types
+cargo llvm-cov --all-features --workspace --doctests
+```
 
 ### Testing Implementation
 ```rust
