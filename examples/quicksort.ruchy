@@ -1,0 +1,10 @@
+fun quicksort(arr: [i32]) -> [i32] {
+    if arr.len() <= 1 {
+        arr
+    } else {
+        let pivot = arr[0]
+        let less = arr |> filter(|x| x < pivot)
+        let greater = arr |> filter(|x| x > pivot)
+        quicksort(less) + [pivot] + quicksort(greater)
+    }
+}

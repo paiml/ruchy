@@ -1,0 +1,21 @@
+[package]
+name = "ruchy-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "ruchy"
+path = "src/main.rs"
+
+[dependencies]
+ruchy = { path = ".." }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+rustyline = { workspace = true }
+clap = { version = "4.5", features = ["derive", "env"] }
+colored = "2.1"

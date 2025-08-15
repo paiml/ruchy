@@ -1,0 +1,92 @@
+[workspace]
+members = [
+    ".",
+    "ruchy-cli",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Ruchy Contributors"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ruchy-lang/ruchy"
+rust-version = "1.75"
+
+[workspace.dependencies]
+anyhow = "1.0"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Parsing
+logos = "0.14"
+pest = "2.7"
+pest_derive = "2.7"
+
+# Code generation
+syn = { version = "2.0", features = ["full", "extra-traits", "visit-mut"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+prettyplease = "0.2"
+
+# REPL
+rustyline = "14.0"
+rustyline-derive = "0.10"
+
+# Testing
+proptest = "1.4"
+criterion = "0.5"
+insta = { version = "1.40", features = ["yaml"] }
+quickcheck = "1.0"
+quickcheck_macros = "1.0"
+
+[package]
+name = "ruchy"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+logos = { workspace = true }
+pest = { workspace = true }
+pest_derive = { workspace = true }
+syn = { workspace = true }
+quote = { workspace = true }
+proc-macro2 = { workspace = true }
+prettyplease = { workspace = true }
+rustyline = { workspace = true }
+colored = "2.1"
+
+[dev-dependencies]
+proptest = { workspace = true }
+criterion = { workspace = true }
+insta = { workspace = true }
+tracing-subscriber = { workspace = true }
+quickcheck = { workspace = true }
+quickcheck_macros = { workspace = true }
+
+[[bench]]
+name = "parser"
+harness = false
+
+[[bench]]
+name = "transpiler"
+harness = false
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

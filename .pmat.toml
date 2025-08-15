@@ -1,0 +1,28 @@
+[quality]
+cyclomatic_complexity = 10
+cognitive_complexity = 15
+halstead_effort = 5000
+maintainability_index = 70
+test_coverage = 80
+mutation_score = 75
+
+[rules]
+no_satd = true  # No TODO/FIXME/HACK comments
+max_line_length = 120
+max_function_lines = 50
+
+[testing]
+require_property_tests = true
+require_doctests = true
+require_examples = true
+min_test_coverage = 80
+
+[benchmarks]
+parser_speed = "100000"  # LOC/sec
+transpiler_speed = "50000"  # LOC/sec
+repl_latency = "50"  # ms
+
+[ci]
+fail_on_violation = true
+generate_reports = true
+block_merge_on_failure = true
