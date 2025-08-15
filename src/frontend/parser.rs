@@ -1,4 +1,8 @@
-use crate::frontend::ast::*;
+//! Parser for converting tokens into AST
+
+#![allow(clippy::expect_used)] // Parser needs expect for checked conditions
+
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, PipelineStage, Span, Type, TypeKind, UnaryOp};
 use crate::frontend::lexer::{Token, TokenStream};
 use anyhow::{bail, Result};
 
@@ -7,7 +11,7 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(input: &'a str) -> Self {
+    #[must_use] pub fn new(input: &'a str) -> Self {
         Self {
             tokens: TokenStream::new(input),
         }
@@ -34,15 +38,15 @@ impl<'a> Parser<'a> {
             }
 
             let token_clone = token.clone();
-            let prec = self.precedence(&token_clone);
+            let prec = Self::precedence(&token_clone);
             if prec < min_prec {
                 break;
             }
 
-            let (op_token, _op_span) = self.tokens.advance().unwrap();
-            let op = self.token_to_binary_op(&op_token)?;
+            let (op_token, _op_span) = self.tokens.advance().expect("Token disappeared after peek");
+            let op = Self::token_to_binary_op(&op_token)?;
 
-            let right = if self.is_right_associative(&op) {
+            let right = if Self::is_right_associative(op) {
                 self.parse_expr_with_precedence(prec)?
             } else {
                 self.parse_expr_with_precedence(prec + 1)?
@@ -115,7 +119,7 @@ impl<'a> Parser<'a> {
             Some((Token::Fun, _)) => self.parse_function(),
             Some((Token::Match, _)) => self.parse_match(),
             Some((Token::For, _)) => self.parse_for(),
-            Some((Token::Import, _)) | Some((Token::Use, _)) => self.parse_import(),
+            Some((Token::Import | Token::Use, _)) => self.parse_import(),
             Some((Token::LeftBracket, _)) => self.parse_list(),
             Some((Token::LeftParen, _span)) => {
                 self.tokens.advance();
@@ -127,7 +131,7 @@ impl<'a> Parser<'a> {
                 let token_clone = token.clone();
                 let span = *span;
                 self.tokens.advance();
-                let op = self.token_to_unary_op(&token_clone)?;
+                let op = Self::token_to_unary_op(&token_clone)?;
                 let operand = self.parse_prefix()?;
                 let full_span = span.merge(operand.span);
                 Ok(Expr::new(
@@ -290,8 +294,7 @@ impl<'a> Parser<'a> {
         let start_span = self
             .tokens
             .peek()
-            .map(|(_, span)| *span)
-            .unwrap_or(Span::new(0, 0));
+            .map_or(Span::new(0, 0), |(_, span)| *span);
 
         while !matches!(self.tokens.peek(), Some((Token::RightBrace, _)) | None) {
             exprs.push(self.parse_expr()?);
@@ -363,7 +366,7 @@ impl<'a> Parser<'a> {
         let mut stages = Vec::new();
 
         while let Some((Token::Pipeline, _)) = self.tokens.peek() {
-            let pipe_span = self.tokens.advance().unwrap().1;
+            let pipe_span = self.tokens.advance().expect("checked by parser logic").1;
             let stage_expr = self.parse_prefix()?;
             let stage_span = pipe_span.merge(stage_expr.span);
 
@@ -373,7 +376,7 @@ impl<'a> Parser<'a> {
             });
         }
 
-        let span = expr.span.merge(stages.last().unwrap().span);
+        let span = expr.span.merge(stages.last().expect("checked by parser logic").span);
         Ok(Expr::new(
             ExprKind::Pipeline {
                 expr: Box::new(expr),
@@ -470,7 +473,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_range_from(&mut self, start: Expr) -> Result<Expr> {
-        let (op_token, _op_span) = self.tokens.advance().unwrap();
+        let (op_token, _op_span) = self.tokens.advance().expect("checked by parser logic");
         let inclusive = matches!(op_token, Token::DotDotEqual);
 
         let end = Box::new(self.parse_prefix()?);
@@ -487,7 +490,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_import(&mut self) -> Result<Expr> {
-        let start_span = self.tokens.advance().unwrap().1; // consume import/use
+        let start_span = self.tokens.advance().expect("checked by parser logic").1; // consume import/use
 
         let mut path_parts = Vec::new();
 
@@ -532,7 +535,7 @@ impl<'a> Parser<'a> {
         Ok(Expr::new(ExprKind::Import { path, items }, span))
     }
 
-    fn precedence(&self, token: &Token) -> i32 {
+    fn precedence(token: &Token) -> i32 {
         match token {
             Token::OrOr => 1,
             Token::AndAnd => 2,
@@ -549,11 +552,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn is_right_associative(&self, op: &BinaryOp) -> bool {
+    fn is_right_associative(op: BinaryOp) -> bool {
         matches!(op, BinaryOp::Power)
     }
 
-    fn token_to_binary_op(&self, token: &Token) -> Result<BinaryOp> {
+    fn token_to_binary_op(token: &Token) -> Result<BinaryOp> {
         Ok(match token {
             Token::Plus => BinaryOp::Add,
             Token::Minus => BinaryOp::Subtract,
@@ -578,7 +581,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn token_to_unary_op(&self, token: &Token) -> Result<UnaryOp> {
+    fn token_to_unary_op(token: &Token) -> Result<UnaryOp> {
         Ok(match token {
             Token::Bang => UnaryOp::Not,
             Token::Minus => UnaryOp::Negate,
@@ -596,14 +599,14 @@ mod tests {
     #[allow(clippy::approx_constant)] // Intentional literal for test
     fn test_parse_literals() {
         let mut parser = Parser::new("42");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::Literal(Literal::Integer(42)) => {}
             _ => panic!("Expected integer literal"),
         }
 
         let mut parser = Parser::new("3.14");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::Literal(Literal::Float(f)) => assert!((f - 3.14).abs() < 0.001), // Intentional literal for test
             _ => panic!("Expected float literal"),
@@ -613,7 +616,7 @@ mod tests {
     #[test]
     fn test_parse_binary_ops() {
         let mut parser = Parser::new("1 + 2 * 3");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         // Should parse as 1 + (2 * 3) due to precedence
         match expr.kind {
             ExprKind::Binary {
@@ -626,7 +629,7 @@ mod tests {
     #[test]
     fn test_parse_function() {
         let mut parser = Parser::new("fun add(x: i32, y: i32) -> i32 { x + y }");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::Function { name, params, .. } => {
                 assert_eq!(name, "add");
@@ -639,7 +642,7 @@ mod tests {
     #[test]
     fn test_parse_pipeline() {
         let mut parser = Parser::new("[1, 2, 3] |> map(double) |> filter(even)");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::Pipeline { stages, .. } => {
                 assert_eq!(stages.len(), 2);
@@ -651,7 +654,7 @@ mod tests {
     #[test]
     fn test_parse_match() {
         let mut parser = Parser::new(r#"match x { 1 => "one", 2 => "two", _ => "other" }"#);
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::Match { arms, .. } => {
                 assert_eq!(arms.len(), 3);
@@ -663,7 +666,7 @@ mod tests {
     #[test]
     fn test_parse_let() {
         let mut parser = Parser::new("let x = 42 in x + 1");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::Let { name, .. } => {
                 assert_eq!(name, "x");
@@ -675,7 +678,7 @@ mod tests {
     #[test]
     fn test_parse_for() {
         let mut parser = Parser::new("for i in 1..10 { print(i) }");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::For { var, .. } => {
                 assert_eq!(var, "i");
@@ -687,7 +690,7 @@ mod tests {
     #[test]
     fn test_parse_range() {
         let mut parser = Parser::new("1..10");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::Range { inclusive, .. } => {
                 assert!(!inclusive);
@@ -696,7 +699,7 @@ mod tests {
         }
 
         let mut parser = Parser::new("1..=10");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::Range { inclusive, .. } => {
                 assert!(inclusive);
@@ -708,7 +711,7 @@ mod tests {
     #[test]
     fn test_parse_list() {
         let mut parser = Parser::new("[]");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::List(ref elements) => {
                 assert_eq!(elements.len(), 0);
@@ -717,7 +720,7 @@ mod tests {
         }
 
         let mut parser = Parser::new("[1, 2, 3]");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::List(ref elements) => {
                 assert_eq!(elements.len(), 3);
@@ -729,7 +732,7 @@ mod tests {
     #[test]
     fn test_parse_import() {
         let mut parser = Parser::new("import std::io");
-        let expr = parser.parse().unwrap();
+        let expr = parser.parse().expect("checked by parser logic");
         match expr.kind {
             ExprKind::Import { path, items } => {
                 assert_eq!(path, "std::io");

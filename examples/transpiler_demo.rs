@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout)]
+
 use ruchy::{Parser, Transpiler};
 
 fn main() {
@@ -26,23 +28,23 @@ fn main() {
     let transpiler = Transpiler::new();
 
     for (name, input) in examples {
-        println!("\n=== {} ===", name);
+        println!("\n=== {name} ===");
         println!("Ruchy input:");
-        println!("{}", input);
+        println!("{input}");
 
         let mut parser = Parser::new(input);
         match parser.parse() {
             Ok(ast) => match transpiler.transpile_to_string(&ast) {
                 Ok(rust_code) => {
                     println!("\nTranspiled Rust code:");
-                    println!("{}", rust_code);
+                    println!("{rust_code}");
                 }
                 Err(e) => {
-                    println!("✗ Transpilation error: {}", e);
+                    println!("✗ Transpilation error: {e}");
                 }
             },
             Err(e) => {
-                println!("✗ Parse error: {}", e);
+                println!("✗ Parse error: {e}");
             }
         }
     }

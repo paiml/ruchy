@@ -1,4 +1,8 @@
-use crate::frontend::ast::*;
+//! Error recovery parser for better error messages and IDE support
+
+#![allow(clippy::items_after_statements)] // Recovery parser needs constants in local scopes
+
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Param, Span, Type, TypeKind};
 use crate::frontend::lexer::{Token, TokenStream};
 use anyhow::Result;
 use std::fmt;
@@ -17,7 +21,7 @@ impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} at {:?}", self.message, self.span)?;
         if let Some(ref hint) = self.recovery_hint {
-            write!(f, " (hint: {})", hint)?;
+            write!(f, " (hint: {hint})")?;
         }
         Ok(())
     }
@@ -43,7 +47,7 @@ pub struct RecoveryParser<'a> {
 }
 
 impl<'a> RecoveryParser<'a> {
-    pub fn new(input: &'a str) -> Self {
+    #[must_use] pub fn new(input: &'a str) -> Self {
         Self {
             tokens: TokenStream::new(input),
             errors: Vec::new(),
@@ -94,8 +98,8 @@ impl<'a> RecoveryParser<'a> {
 
     fn parse_expr_with_precedence_recovery(&mut self, min_prec: i32) -> Result<Expr> {
         let mut left = self.parse_prefix_recovery()?;
-        let mut iteration_count = 0;
         const MAX_ITERATIONS: usize = 1000; // Prevent infinite loops
+        let mut iteration_count = 0;
 
         loop {
             iteration_count += 1;
@@ -126,23 +130,20 @@ impl<'a> RecoveryParser<'a> {
                     let op = match self.token_to_binary_op(&op_token) {
                         Ok(op) => op,
                         Err(e) => {
-                            self.record_error(format!("Invalid operator: {}", e), None);
+                            self.record_error(format!("Invalid operator: {e}"), None);
                             // Skip the invalid operator and continue
                             continue;
                         }
                     };
 
-                    let right = match self.parse_expr_with_precedence_recovery(prec + 1) {
-                        Ok(expr) => expr,
-                        Err(_) => {
-                            // Create ghost node for missing right operand
-                            let ghost = self.create_ghost_node("Missing right operand");
-                            self.record_error(
-                                format!("Expected expression after '{:?}'", op_token),
-                                Some("Add the right side of the operation".to_string()),
-                            );
-                            ghost
-                        }
+                    let right = if let Ok(expr) = self.parse_expr_with_precedence_recovery(prec + 1) { expr } else {
+                        // Create ghost node for missing right operand
+                        let ghost = self.create_ghost_node("Missing right operand");
+                        self.record_error(
+                            format!("Expected expression after '{op_token:?}'"),
+                            Some("Add the right side of the operation".to_string()),
+                        );
+                        ghost
                     };
 
                     let span = left.span.merge(right.span);
@@ -164,7 +165,7 @@ impl<'a> RecoveryParser<'a> {
 
     fn parse_prefix_recovery(&mut self) -> Result<Expr> {
         const MAX_RECURSION_DEPTH: usize = 100;
-        
+
         self.recursion_depth += 1;
         if self.recursion_depth > MAX_RECURSION_DEPTH {
             self.recursion_depth -= 1;
@@ -174,7 +175,7 @@ impl<'a> RecoveryParser<'a> {
             );
             return Ok(self.create_ghost_node("Max recursion depth"));
         }
-        
+
         let result = match self.tokens.peek() {
             Some((Token::Integer(n), span)) => {
                 let n = *n;
@@ -213,21 +214,21 @@ impl<'a> RecoveryParser<'a> {
             Some((Token::LeftParen, _)) => self.parse_paren_recovery(),
             Some((token, _span)) => {
                 let token_clone = token.clone();
-                
+
                 // Special handling for binary operators in prefix position
                 if token.is_binary_op() {
                     self.tokens.advance(); // Consume the misplaced operator
                     self.record_error(
-                        format!("Unexpected operator: {:?}", token_clone),
+                        format!("Unexpected operator: {token_clone:?}"),
                         Some("An expression was expected here, not an operator".to_string()),
                     );
                     // Try to parse what comes after the misplaced operator
                     return self.parse_prefix_recovery();
                 }
-                
+
                 self.tokens.advance(); // Advance before recording error
                 self.record_error(
-                    format!("Unexpected token: {:?}", token_clone),
+                    format!("Unexpected token: {token_clone:?}"),
                     Some("Expected an expression".to_string()),
                 );
                 // Try to recover
@@ -242,38 +243,29 @@ impl<'a> RecoveryParser<'a> {
                 Ok(self.create_ghost_node("Unexpected EOF"))
             }
         };
-        
+
         self.recursion_depth -= 1;
         result
     }
 
     fn parse_if_recovery(&mut self) -> Result<Expr> {
-        let start_span = self.expect_or_recover(Token::If)?;
-        
-        let condition = match self.parse_expr_recovery() {
-            Ok(expr) => Box::new(expr),
-            Err(_) => {
-                self.record_error(
-                    "Missing condition in if expression".to_string(),
-                    Some("Add a condition after 'if'".to_string()),
-                );
-                Box::new(self.create_ghost_node("Missing condition"))
-            }
+        let start_span = self.expect_or_recover(&Token::If);
+
+        let condition = if let Ok(expr) = self.parse_expr_recovery() { Box::new(expr) } else {
+            self.record_error(
+                "Missing condition in if expression".to_string(),
+                Some("Add a condition after 'if'".to_string()),
+            );
+            Box::new(self.create_ghost_node("Missing condition"))
         };
 
-        let _ = self.expect_or_recover(Token::LeftBrace);
-        let then_branch = match self.parse_block_recovery() {
-            Ok(expr) => Box::new(expr),
-            Err(_) => Box::new(self.create_ghost_node("Missing then branch"))
-        };
+        let _ = self.expect_or_recover(&Token::LeftBrace);
+        let then_branch = Box::new(self.parse_block_recovery());
 
         let else_branch = if matches!(self.tokens.peek(), Some((Token::Else, _))) {
             self.tokens.advance();
-            let _ = self.expect_or_recover(Token::LeftBrace);
-            match self.parse_block_recovery() {
-                Ok(expr) => Some(Box::new(expr)),
-                Err(_) => Some(Box::new(self.create_ghost_node("Missing else branch")))
-            }
+            let _ = self.expect_or_recover(&Token::LeftBrace);
+            Some(Box::new(self.parse_block_recovery()))
         } else {
             None
         };
@@ -295,37 +287,31 @@ impl<'a> RecoveryParser<'a> {
     }
 
     fn parse_let_recovery(&mut self) -> Result<Expr> {
-        let start_span = self.expect_or_recover(Token::Let)?;
-        
-        let name = match self.tokens.advance() {
-            Some((Token::Identifier(name), _)) => name,
-            _ => {
-                self.record_error(
-                    "Expected identifier after 'let'".to_string(),
-                    Some("Add a variable name".to_string()),
-                );
-                format!("_ghost_{}", self.ghost_node_count)
-            }
+        let start_span = self.expect_or_recover(&Token::Let);
+
+        let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() { name } else {
+            self.record_error(
+                "Expected identifier after 'let'".to_string(),
+                Some("Add a variable name".to_string()),
+            );
+            format!("_ghost_{}", self.ghost_node_count)
         };
 
-        let _ = self.expect_or_recover(Token::Equal);
-        
-        let value = match self.parse_expr_recovery() {
-            Ok(expr) => Box::new(expr),
-            Err(_) => {
-                self.record_error(
-                    "Missing value in let binding".to_string(),
-                    Some("Add a value after '='".to_string()),
-                );
-                Box::new(self.create_ghost_node("Missing value"))
-            }
+        let _ = self.expect_or_recover(&Token::Equal);
+
+        let value = if let Ok(expr) = self.parse_expr_recovery() { Box::new(expr) } else {
+            self.record_error(
+                "Missing value in let binding".to_string(),
+                Some("Add a value after '='".to_string()),
+            );
+            Box::new(self.create_ghost_node("Missing value"))
         };
 
         let body = if matches!(self.tokens.peek(), Some((Token::In, _))) {
             self.tokens.advance();
             match self.parse_expr_recovery() {
                 Ok(expr) => Box::new(expr),
-                Err(_) => Box::new(self.create_ghost_node("Missing body"))
+                Err(_) => Box::new(self.create_ghost_node("Missing body")),
             }
         } else {
             Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value.span))
@@ -336,35 +322,29 @@ impl<'a> RecoveryParser<'a> {
     }
 
     fn parse_function_recovery(&mut self) -> Result<Expr> {
-        let start_span = self.expect_or_recover(Token::Fun)?;
-        
-        let name = match self.tokens.advance() {
-            Some((Token::Identifier(name), _)) => name,
-            _ => {
-                self.record_error(
-                    "Expected function name".to_string(),
-                    Some("Add a function name after 'fun'".to_string()),
-                );
-                format!("_ghost_fn_{}", self.ghost_node_count)
-            }
+        let start_span = self.expect_or_recover(&Token::Fun);
+
+        let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() { name } else {
+            self.record_error(
+                "Expected function name".to_string(),
+                Some("Add a function name after 'fun'".to_string()),
+            );
+            format!("_ghost_fn_{}", self.ghost_node_count)
         };
 
-        let _ = self.expect_or_recover(Token::LeftParen);
-        let params = self.parse_params_recovery()?;
-        let _ = self.expect_or_recover(Token::RightParen);
+        let _ = self.expect_or_recover(&Token::LeftParen);
+        let params = self.parse_params_recovery().unwrap_or_default();
+        let _ = self.expect_or_recover(&Token::RightParen);
 
         let return_type = if matches!(self.tokens.peek(), Some((Token::Arrow, _))) {
             self.tokens.advance();
-            Some(self.parse_type_recovery()?)
+            Some(self.parse_type_recovery())
         } else {
             None
         };
 
-        let _ = self.expect_or_recover(Token::LeftBrace);
-        let body = match self.parse_block_recovery() {
-            Ok(expr) => Box::new(expr),
-            Err(_) => Box::new(self.create_ghost_node("Missing function body"))
-        };
+        let _ = self.expect_or_recover(&Token::LeftBrace);
+        let body = Box::new(self.parse_block_recovery());
 
         let span = start_span.merge(body.span);
         Ok(Expr::new(
@@ -378,21 +358,19 @@ impl<'a> RecoveryParser<'a> {
         ))
     }
 
-    fn parse_block_recovery(&mut self) -> Result<Expr> {
+    fn parse_block_recovery(&mut self) -> Expr {
         let mut exprs = Vec::new();
-        let start_span = self.tokens.peek()
-            .map(|(_, span)| *span)
-            .unwrap_or(Span::new(0, 0));
+        let start_span = self
+            .tokens
+            .peek()
+            .map_or(Span::new(0, 0), |(_, span)| *span);
 
         while !matches!(self.tokens.peek(), Some((Token::RightBrace, _)) | None) {
-            match self.parse_expr_recovery() {
-                Ok(expr) => exprs.push(expr),
-                Err(_) => {
-                    // Try to recover by finding next statement
-                    self.synchronize();
-                    if self.recovery_mode {
-                        exprs.push(self.create_ghost_node("Recovery statement"));
-                    }
+            if let Ok(expr) = self.parse_expr_recovery() { exprs.push(expr) } else {
+                // Try to recover by finding next statement
+                self.synchronize();
+                if self.recovery_mode {
+                    exprs.push(self.create_ghost_node("Recovery statement"));
                 }
             }
 
@@ -402,7 +380,7 @@ impl<'a> RecoveryParser<'a> {
             }
         }
 
-        let _ = self.expect_or_recover(Token::RightBrace);
+        let _ = self.expect_or_recover(&Token::RightBrace);
 
         let span = if let Some(last) = exprs.last() {
             start_span.merge(last.span)
@@ -410,11 +388,11 @@ impl<'a> RecoveryParser<'a> {
             start_span
         };
 
-        Ok(Expr::new(ExprKind::Block(exprs), span))
+        Expr::new(ExprKind::Block(exprs), span)
     }
 
     fn parse_list_recovery(&mut self) -> Result<Expr> {
-        let start_span = self.expect_or_recover(Token::LeftBracket)?;
+        let start_span = self.expect_or_recover(&Token::LeftBracket);
         let mut elements = Vec::new();
 
         while !matches!(self.tokens.peek(), Some((Token::RightBracket, _))) {
@@ -432,7 +410,7 @@ impl<'a> RecoveryParser<'a> {
             }
         }
 
-        let end_span = self.expect_or_recover(Token::RightBracket)?;
+        let end_span = self.expect_or_recover(&Token::RightBracket);
         let span = start_span.merge(end_span);
 
         Ok(Expr::new(ExprKind::List(elements), span))
@@ -441,7 +419,7 @@ impl<'a> RecoveryParser<'a> {
     fn parse_paren_recovery(&mut self) -> Result<Expr> {
         self.tokens.advance(); // consume (
         let expr = self.parse_expr_recovery()?;
-        let _ = self.expect_or_recover(Token::RightParen);
+        let _ = self.expect_or_recover(&Token::RightParen);
         Ok(expr)
     }
 
@@ -453,21 +431,18 @@ impl<'a> RecoveryParser<'a> {
         }
 
         loop {
-            let (name, name_span) = match self.tokens.advance() {
-                Some((Token::Identifier(name), span)) => (name, span),
-                _ => {
-                    self.record_error(
-                        "Expected parameter name".to_string(),
-                        Some("Add a parameter name".to_string()),
-                    );
-                    self.synchronize_to(&[Token::Comma, Token::RightParen]);
-                    continue;
-                }
+            let Some((Token::Identifier(name), name_span)) = self.tokens.advance() else {
+                self.record_error(
+                    "Expected parameter name".to_string(),
+                    Some("Add a parameter name".to_string()),
+                );
+                self.synchronize_to(&[Token::Comma, Token::RightParen]);
+                continue;
             };
 
             let ty = if matches!(self.tokens.peek(), Some((Token::Colon, _))) {
                 self.tokens.advance();
-                self.parse_type_recovery()?
+                self.parse_type_recovery()
             } else {
                 // Default to inferred type
                 Type {
@@ -488,10 +463,7 @@ impl<'a> RecoveryParser<'a> {
                 }
                 Some((Token::RightParen, _)) => break,
                 _ => {
-                    self.record_error(
-                        "Expected ',' or ')' in parameter list".to_string(),
-                        None,
-                    );
+                    self.record_error("Expected ',' or ')' in parameter list".to_string(), None);
                     break;
                 }
             }
@@ -500,16 +472,13 @@ impl<'a> RecoveryParser<'a> {
         Ok(params)
     }
 
-    fn parse_type_recovery(&mut self) -> Result<Type> {
-        let (base_type, span) = match self.tokens.advance() {
-            Some((Token::Identifier(name), span)) => (TypeKind::Named(name), span),
-            _ => {
-                self.record_error(
-                    "Expected type".to_string(),
-                    Some("Add a type annotation".to_string()),
-                );
-                (TypeKind::Named("_".to_string()), Span::new(0, 0))
-            }
+    fn parse_type_recovery(&mut self) -> Type {
+        let (base_type, span) = if let Some((Token::Identifier(name), span)) = self.tokens.advance() { (TypeKind::Named(name), span) } else {
+            self.record_error(
+                "Expected type".to_string(),
+                Some("Add a type annotation".to_string()),
+            );
+            (TypeKind::Named("_".to_string()), Span::new(0, 0))
         };
 
         let kind = if matches!(self.tokens.peek(), Some((Token::Question, _))) {
@@ -522,24 +491,29 @@ impl<'a> RecoveryParser<'a> {
             base_type
         };
 
-        Ok(Type { kind, span })
+        Type { kind, span }
     }
 
     /// Create a ghost node for error recovery
     fn create_ghost_node(&mut self, reason: &str) -> Expr {
         self.ghost_node_count += 1;
         Expr::new(
-            ExprKind::Identifier(format!("_ghost_{}_{}", self.ghost_node_count, reason.replace(' ', "_"))),
+            ExprKind::Identifier(format!(
+                "_ghost_{}_{}",
+                self.ghost_node_count,
+                reason.replace(' ', "_")
+            )),
             Span::new(0, 0),
         )
     }
 
     /// Record an error for later reporting
     fn record_error(&mut self, message: String, hint: Option<String>) {
-        let span = self.tokens.peek()
-            .map(|(_, s)| *s)
-            .unwrap_or(Span::new(0, 0));
-        
+        let span = self
+            .tokens
+            .peek()
+            .map_or(Span::new(0, 0), |(_, s)| *s);
+
         self.errors.push(ParseError {
             message,
             span,
@@ -550,20 +524,20 @@ impl<'a> RecoveryParser<'a> {
     }
 
     /// Expect a token or record error and try to recover
-    fn expect_or_recover(&mut self, expected: Token) -> Result<Span> {
+    fn expect_or_recover(&mut self, expected: &Token) -> Span {
         match self.tokens.peek() {
-            Some((token, span)) if *token == expected => {
+            Some((token, span)) if token == expected => {
                 let span = *span;
                 self.tokens.advance();
-                Ok(span)
+                span
             }
             _ => {
                 self.record_error(
-                    format!("Expected {:?}", expected),
-                    Some(format!("Add '{:?}' here", expected)),
+                    format!("Expected {expected:?}"),
+                    Some(format!("Add '{expected:?}' here")),
                 );
                 self.recovery_mode = true;
-                Ok(Span::new(0, 0))
+                Span::new(0, 0)
             }
         }
     }
@@ -571,7 +545,7 @@ impl<'a> RecoveryParser<'a> {
     /// Synchronize to a known recovery point
     fn synchronize(&mut self) {
         self.recovery_mode = true;
-        
+
         // Synchronization tokens - statement boundaries
         let sync_tokens = [
             Token::Semicolon,
@@ -585,13 +559,13 @@ impl<'a> RecoveryParser<'a> {
 
         let mut tokens_consumed = 0;
         const MAX_SYNC_TOKENS: usize = 100; // Prevent infinite loops
-        
+
         while let Some((token, _)) = self.tokens.peek() {
             if tokens_consumed >= MAX_SYNC_TOKENS {
                 // Force exit to prevent infinite loop
                 break;
             }
-            
+
             if sync_tokens.iter().any(|t| t == token) {
                 if matches!(token, Token::Semicolon) {
                     self.tokens.advance(); // consume semicolon
@@ -601,7 +575,7 @@ impl<'a> RecoveryParser<'a> {
             self.tokens.advance();
             tokens_consumed += 1;
         }
-        
+
         self.recovery_mode = false;
     }
 
@@ -609,13 +583,13 @@ impl<'a> RecoveryParser<'a> {
     fn synchronize_to(&mut self, targets: &[Token]) {
         let mut tokens_consumed = 0;
         const MAX_SYNC_TOKENS: usize = 100; // Prevent infinite loops
-        
+
         while let Some((token, _)) = self.tokens.peek() {
             if tokens_consumed >= MAX_SYNC_TOKENS {
                 // Force exit to prevent infinite loop
                 break;
             }
-            
+
             if targets.iter().any(|t| t == token) {
                 break;
             }
@@ -675,7 +649,7 @@ mod tests {
     fn test_recovery_missing_operand() {
         let mut parser = RecoveryParser::new("1 +");
         let result = parser.parse_with_recovery();
-        
+
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
         assert!(result.partial_ast);
@@ -685,7 +659,7 @@ mod tests {
     fn test_recovery_missing_paren() {
         let mut parser = RecoveryParser::new("(1 + 2");
         let result = parser.parse_with_recovery();
-        
+
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
     }
@@ -694,7 +668,7 @@ mod tests {
     fn test_recovery_invalid_token() {
         let mut parser = RecoveryParser::new("let x = @ + 1");
         let result = parser.parse_with_recovery();
-        
+
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
     }
@@ -703,7 +677,7 @@ mod tests {
     fn test_recovery_incomplete_if() {
         let mut parser = RecoveryParser::new("if x > 0 { print(x)");
         let result = parser.parse_with_recovery();
-        
+
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
         assert!(result.partial_ast);
@@ -713,7 +687,7 @@ mod tests {
     fn test_recovery_missing_function_body() {
         let mut parser = RecoveryParser::new("fun foo(x: i32)");
         let result = parser.parse_with_recovery();
-        
+
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
     }
@@ -722,7 +696,7 @@ mod tests {
     fn test_no_errors_on_valid_code() {
         let mut parser = RecoveryParser::new("1 + 2 * 3");
         let result = parser.parse_with_recovery();
-        
+
         assert!(result.ast.is_some());
         assert!(result.errors.is_empty());
         assert!(!result.partial_ast);

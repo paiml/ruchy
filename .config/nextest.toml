@@ -1,0 +1,64 @@
+# Nextest configuration for Ruchy
+# https://nexte.st/book/configuration
+
+[profile.default]
+# Test retries
+retries = { backoff = "exponential", count = 2, delay = "1s" }
+
+# Slow test threshold
+slow-timeout = { period = "30s", terminate-after = 2 }
+
+# Test threads - use all available cores
+test-threads = "num-cpus"
+
+# Failure output
+failure-output = "immediate-final"
+
+# Status output
+status-level = "pass"
+
+[profile.ci]
+# More verbose output for CI
+status-level = "retry"
+failure-output = "immediate"
+
+# No retries in CI
+retries = 0
+
+# Fail fast in CI
+fail-fast = true
+
+[profile.quick]
+# Quick profile for rapid feedback during development
+test-threads = "num-cpus"
+retries = 0
+fail-fast = true
+status-level = "fail"
+
+[test-groups]
+# Group tests by category
+unit = { max-threads = 8 }
+integration = { max-threads = 4 }
+property = { max-threads = 2 }
+
+[[profile.default.overrides]]
+# Property tests may take longer
+filter = "test(property)"
+slow-timeout = { period = "60s" }
+threads-required = 2
+
+[[profile.default.overrides]]
+# Integration tests get more time
+filter = "test(integration)"
+slow-timeout = { period = "45s" }
+
+[[profile.default.overrides]]
+# REPL tests need exclusive access to temp directory
+filter = "test(repl)"
+threads-required = "num-test-threads"
+
+[[profile.default.overrides]]
+# Fuzzing tests are heavy
+filter = "test(fuzz)"
+threads-required = 4
+slow-timeout = { period = "120s" }

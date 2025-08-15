@@ -1,4 +1,6 @@
-use crate::frontend::ast::*;
+//! Transpiler from Ruchy AST to Rust code
+
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, PipelineStage, Type, TypeKind, UnaryOp};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -19,16 +21,24 @@ impl Default for Transpiler {
 }
 
 impl Transpiler {
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self::default()
     }
 
-    /// Transpile a Ruchy expression to Rust TokenStream
+    /// Transpile a Ruchy expression to Rust `TokenStream`
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the expression cannot be transpiled to valid Rust code.
     pub fn transpile(&self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_expr(expr)
     }
 
     /// Transpile to a formatted Rust string
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the expression cannot be transpiled or parsed as valid Rust.
     pub fn transpile_to_string(&self, expr: &Expr) -> Result<String> {
         let tokens = self.transpile(expr)?;
         let file = syn::parse2::<syn::File>(quote! {
@@ -39,9 +49,14 @@ impl Transpiler {
         Ok(prettyplease::unparse(&file))
     }
 
+    /// Transpile an expression to Rust tokens
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the expression type is not supported or contains invalid constructs.
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
-            ExprKind::Literal(lit) => self.transpile_literal(lit),
+            ExprKind::Literal(lit) => Ok(Self::transpile_literal(lit)),
             ExprKind::Identifier(name) => {
                 let ident = syn::Ident::new(name, proc_macro2::Span::call_site());
                 Ok(quote! { #ident })
@@ -71,18 +86,18 @@ impl Transpiler {
                 end,
                 inclusive,
             } => self.transpile_range(start, end, *inclusive),
-            ExprKind::Import { path, items } => self.transpile_import(path, items),
+            ExprKind::Import { path, items } => Ok(Self::transpile_import(path, items)),
         }
     }
 
-    fn transpile_literal(&self, lit: &Literal) -> Result<TokenStream> {
-        Ok(match lit {
+    fn transpile_literal(lit: &Literal) -> TokenStream {
+        match lit {
             Literal::Integer(n) => quote! { #n },
             Literal::Float(f) => quote! { #f },
             Literal::String(s) => quote! { #s },
             Literal::Bool(b) => quote! { #b },
             Literal::Unit => quote! { () },
-        })
+        }
     }
 
     fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Result<TokenStream> {
@@ -121,9 +136,8 @@ impl Transpiler {
         let operand_tokens = self.transpile_expr(operand)?;
 
         Ok(match op {
-            UnaryOp::Not => quote! { !(#operand_tokens) },
+            UnaryOp::Not | UnaryOp::BitwiseNot => quote! { !(#operand_tokens) }, // Rust uses ! for both logical and bitwise not
             UnaryOp::Negate => quote! { -(#operand_tokens) },
-            UnaryOp::BitwiseNot => quote! { !(#operand_tokens) },
         })
     }
 
@@ -290,10 +304,11 @@ impl Transpiler {
         })
     }
 
+    #[allow(clippy::only_used_in_recursion)] // Self parameter needed for consistency
     fn transpile_pattern(&self, pattern: &Pattern) -> Result<TokenStream> {
         Ok(match pattern {
             Pattern::Wildcard => quote! { _ },
-            Pattern::Literal(lit) => self.transpile_literal(lit)?,
+            Pattern::Literal(lit) => Self::transpile_literal(lit),
             Pattern::Identifier(name) => {
                 let ident = syn::Ident::new(name, proc_macro2::Span::call_site());
                 quote! { #ident }
@@ -340,10 +355,10 @@ impl Transpiler {
         }
     }
 
-    fn transpile_import(&self, _path: &str, _items: &[String]) -> Result<TokenStream> {
+    fn transpile_import(_path: &str, _items: &[String]) -> TokenStream {
         // For now, just skip imports - they would be handled at module level
         // In a full implementation, we'd collect these and emit them at the top
-        Ok(quote! {})
+        quote! {}
     }
 
     fn transpile_type(&self, ty: &Type) -> Result<TokenStream> {
@@ -415,11 +430,11 @@ mod tests {
     fn test_transpile_binary_ops() {
         let result = transpile_str("1 + 2 * 3").unwrap();
         // Check that the operations are present (formatting may vary)
-        assert!(result.contains("1"));
-        assert!(result.contains("2"));
-        assert!(result.contains("3"));
-        assert!(result.contains("+"));
-        assert!(result.contains("*"));
+        assert!(result.contains('1'));
+        assert!(result.contains('2'));
+        assert!(result.contains('3'));
+        assert!(result.contains('+'));
+        assert!(result.contains('*'));
     }
 
     #[test]
@@ -442,16 +457,16 @@ mod tests {
     fn test_transpile_list() {
         let result = transpile_str("[1, 2, 3]").unwrap();
         assert!(result.contains("vec!"));
-        assert!(result.contains("1"));
-        assert!(result.contains("2"));
-        assert!(result.contains("3"));
+        assert!(result.contains('1'));
+        assert!(result.contains('2'));
+        assert!(result.contains('3'));
     }
 
     #[test]
     fn test_transpile_match() {
         let result = transpile_str(r#"match x { 1 => "one", _ => "other" }"#).unwrap();
         assert!(result.contains("match"));
-        assert!(result.contains("1"));
+        assert!(result.contains('1'));
         assert!(result.contains("\"one\""));
         assert!(result.contains("\"other\""));
     }
@@ -484,18 +499,18 @@ mod tests {
     fn test_transpile_pipeline() {
         let result = transpile_str("x |> f |> g").unwrap();
         // Pipeline becomes nested function calls: g(f(x))
-        assert!(result.contains("g"));
-        assert!(result.contains("f"));
+        assert!(result.contains('g'));
+        assert!(result.contains('f'));
     }
 
     #[test]
     fn test_transpile_unary() {
         let result = transpile_str("!true").unwrap();
-        assert!(result.contains("!"));
+        assert!(result.contains('!'));
         assert!(result.contains("true"));
 
         let result = transpile_str("-42").unwrap();
-        assert!(result.contains("-"));
+        assert!(result.contains('-'));
         assert!(result.contains("42"));
     }
 
@@ -504,8 +519,8 @@ mod tests {
         // Blocks are part of function bodies or if expressions
         let result = transpile_str("if true { let x = 1; x + 1 } else { 0 }").unwrap();
         // Block should have braces
-        assert!(result.contains("{"));
-        assert!(result.contains("}"));
+        assert!(result.contains('{'));
+        assert!(result.contains('}'));
         assert!(result.contains("let x"));
     }
 }

@@ -5,7 +5,7 @@ fn transpile_simple(c: &mut Criterion) {
         b.iter(|| {
             // Placeholder for transpiler benchmarks
             black_box(42)
-        })
+        });
     });
 }
 

@@ -1,3 +1,5 @@
+//! Property-based test generators for AST nodes
+
 use crate::frontend::ast::*;
 use proptest::prelude::*;
 use proptest::strategy::{BoxedStrategy, Strategy};
@@ -29,8 +31,7 @@ impl Default for AstGenConfig {
 pub fn arb_literal() -> BoxedStrategy<Literal> {
     prop_oneof![
         (any::<i64>()).prop_map(Literal::Integer),
-        (any::<f64>().prop_filter("not NaN", |f| !f.is_nan()))
-            .prop_map(Literal::Float),
+        (any::<f64>().prop_filter("not NaN", |f| !f.is_nan())).prop_map(Literal::Float),
         ("[a-zA-Z0-9 ]{0,50}").prop_map(Literal::String),
         (any::<bool>()).prop_map(Literal::Bool),
         Just(Literal::Unit),
@@ -48,9 +49,28 @@ pub fn arb_identifier() -> BoxedStrategy<String> {
 fn is_keyword(s: &str) -> bool {
     matches!(
         s,
-        "fun" | "let" | "if" | "else" | "match" | "for" | "in" | "while" | 
-        "return" | "break" | "continue" | "struct" | "impl" | "trait" | 
-        "type" | "const" | "static" | "mut" | "pub" | "import" | "use" | "as"
+        "fun"
+            | "let"
+            | "if"
+            | "else"
+            | "match"
+            | "for"
+            | "in"
+            | "while"
+            | "return"
+            | "break"
+            | "continue"
+            | "struct"
+            | "impl"
+            | "trait"
+            | "type"
+            | "const"
+            | "static"
+            | "mut"
+            | "pub"
+            | "import"
+            | "use"
+            | "as"
     )
 }
 
@@ -124,12 +144,13 @@ pub fn arb_type() -> BoxedStrategy<Type> {
 
 /// Generate arbitrary parameters
 pub fn arb_param() -> BoxedStrategy<Param> {
-    (arb_identifier(), arb_type()).prop_map(|(name, ty)| Param {
-        name,
-        ty,
-        span: Span::new(0, 0),
-    })
-    .boxed()
+    (arb_identifier(), arb_type())
+        .prop_map(|(name, ty)| Param {
+            name,
+            ty,
+            span: Span::new(0, 0),
+        })
+        .boxed()
 }
 
 /// Generate arbitrary expressions with depth control
@@ -138,23 +159,20 @@ pub fn arb_expr_with_depth(depth: u32) -> BoxedStrategy<Expr> {
         // Base case: only literals and identifiers
         prop_oneof![
             arb_literal().prop_map(|lit| Expr::new(ExprKind::Literal(lit), Span::new(0, 0))),
-            arb_identifier()
-                .prop_map(|id| Expr::new(ExprKind::Identifier(id), Span::new(0, 0))),
+            arb_identifier().prop_map(|id| Expr::new(ExprKind::Identifier(id), Span::new(0, 0))),
         ]
         .boxed()
     } else {
         // Recursive cases with reduced depth
         let smaller_expr = arb_expr_with_depth(depth - 1);
-        
+
         prop_oneof![
             // Literals and identifiers (base cases)
             arb_literal().prop_map(|lit| Expr::new(ExprKind::Literal(lit), Span::new(0, 0))),
-            arb_identifier()
-                .prop_map(|id| Expr::new(ExprKind::Identifier(id), Span::new(0, 0))),
-            
+            arb_identifier().prop_map(|id| Expr::new(ExprKind::Identifier(id), Span::new(0, 0))),
             // Binary operations
-            (smaller_expr.clone(), arb_binary_op(), smaller_expr.clone())
-                .prop_map(|(left, op, right)| {
+            (smaller_expr.clone(), arb_binary_op(), smaller_expr.clone()).prop_map(
+                |(left, op, right)| {
                     Expr::new(
                         ExprKind::Binary {
                             left: Box::new(left),
@@ -163,22 +181,24 @@ pub fn arb_expr_with_depth(depth: u32) -> BoxedStrategy<Expr> {
                         },
                         Span::new(0, 0),
                     )
-                }),
-            
+                }
+            ),
             // Unary operations
-            (arb_unary_op(), smaller_expr.clone())
-                .prop_map(|(op, operand)| {
-                    Expr::new(
-                        ExprKind::Unary {
-                            op,
-                            operand: Box::new(operand),
-                        },
-                        Span::new(0, 0),
-                    )
-                }),
-            
+            (arb_unary_op(), smaller_expr.clone()).prop_map(|(op, operand)| {
+                Expr::new(
+                    ExprKind::Unary {
+                        op,
+                        operand: Box::new(operand),
+                    },
+                    Span::new(0, 0),
+                )
+            }),
             // If expressions
-            (smaller_expr.clone(), smaller_expr.clone(), prop::option::of(smaller_expr.clone()))
+            (
+                smaller_expr.clone(),
+                smaller_expr.clone(),
+                prop::option::of(smaller_expr.clone())
+            )
                 .prop_map(|(condition, then_branch, else_branch)| {
                     Expr::new(
                         ExprKind::If {
@@ -189,10 +209,9 @@ pub fn arb_expr_with_depth(depth: u32) -> BoxedStrategy<Expr> {
                         Span::new(0, 0),
                     )
                 }),
-            
             // Let bindings
-            (arb_identifier(), smaller_expr.clone(), smaller_expr.clone())
-                .prop_map(|(name, value, body)| {
+            (arb_identifier(), smaller_expr.clone(), smaller_expr.clone()).prop_map(
+                |(name, value, body)| {
                     Expr::new(
                         ExprKind::Let {
                             name,
@@ -201,23 +220,17 @@ pub fn arb_expr_with_depth(depth: u32) -> BoxedStrategy<Expr> {
                         },
                         Span::new(0, 0),
                     )
-                }),
-            
+                }
+            ),
             // Lists
             prop::collection::vec(smaller_expr.clone(), 0..5)
-                .prop_map(|elements| {
-                    Expr::new(ExprKind::List(elements), Span::new(0, 0))
-                }),
-            
+                .prop_map(|elements| { Expr::new(ExprKind::List(elements), Span::new(0, 0)) }),
             // Blocks
             prop::collection::vec(smaller_expr.clone(), 1..4)
-                .prop_map(|exprs| {
-                    Expr::new(ExprKind::Block(exprs), Span::new(0, 0))
-                }),
-            
+                .prop_map(|exprs| { Expr::new(ExprKind::Block(exprs), Span::new(0, 0)) }),
             // Ranges
-            (smaller_expr.clone(), smaller_expr.clone(), any::<bool>())
-                .prop_map(|(start, end, inclusive)| {
+            (smaller_expr.clone(), smaller_expr, any::<bool>()).prop_map(
+                |(start, end, inclusive)| {
                     Expr::new(
                         ExprKind::Range {
                             start: Box::new(start),
@@ -226,7 +239,8 @@ pub fn arb_expr_with_depth(depth: u32) -> BoxedStrategy<Expr> {
                         },
                         Span::new(0, 0),
                     )
-                }),
+                }
+            ),
         ]
         .boxed()
     }
@@ -258,7 +272,6 @@ pub fn arb_well_typed_expr() -> BoxedStrategy<Expr> {
                 Span::new(0, 0),
             )
         }),
-        
         // Simple let binding
         (arb_identifier(), 1i64..100).prop_map(|(name, value)| {
             Expr::new(
@@ -268,15 +281,11 @@ pub fn arb_well_typed_expr() -> BoxedStrategy<Expr> {
                         ExprKind::Literal(Literal::Integer(value)),
                         Span::new(0, 0),
                     )),
-                    body: Box::new(Expr::new(
-                        ExprKind::Identifier(name),
-                        Span::new(0, 0),
-                    )),
+                    body: Box::new(Expr::new(ExprKind::Identifier(name), Span::new(0, 0))),
                 },
                 Span::new(0, 0),
             )
         }),
-        
         // Simple if expression
         any::<bool>().prop_map(|b| {
             Expr::new(
@@ -304,9 +313,9 @@ pub fn arb_well_typed_expr() -> BoxedStrategy<Expr> {
 /// Shrinking strategy for expressions
 impl Expr {
     /// Shrink an expression to simpler forms
-    pub fn shrink_expr(&self) -> Vec<Expr> {
+    #[must_use] pub fn shrink_expr(&self) -> Vec<Expr> {
         let mut shrunk = Vec::new();
-        
+
         match &self.kind {
             ExprKind::Binary { left, right, .. } => {
                 // Try just the left operand
@@ -315,10 +324,7 @@ impl Expr {
                 shrunk.push((**right).clone());
                 // Try with simpler operands
                 for l in left.shrink_expr() {
-                    shrunk.push(Expr::new(
-                        self.kind.clone_with_left(Box::new(l)),
-                        self.span,
-                    ));
+                    shrunk.push(Expr::new(self.kind.clone_with_left(Box::new(l)), self.span));
                 }
                 for r in right.shrink_expr() {
                     shrunk.push(Expr::new(
@@ -338,7 +344,11 @@ impl Expr {
                     ));
                 }
             }
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 // Try just the then branch
                 shrunk.push((**then_branch).clone());
                 // Try just the else branch if it exists
@@ -360,10 +370,7 @@ impl Expr {
             ExprKind::List(elements) if !elements.is_empty() => {
                 // Try with fewer elements
                 for i in 1..elements.len() {
-                    shrunk.push(Expr::new(
-                        ExprKind::List(elements[..i].to_vec()),
-                        self.span,
-                    ));
+                    shrunk.push(Expr::new(ExprKind::List(elements[..i].to_vec()), self.span));
                 }
                 // Try empty list
                 shrunk.push(Expr::new(ExprKind::List(vec![]), self.span));
@@ -371,10 +378,7 @@ impl Expr {
             ExprKind::Block(exprs) if exprs.len() > 1 => {
                 // Try with fewer expressions
                 for i in 1..exprs.len() {
-                    shrunk.push(Expr::new(
-                        ExprKind::Block(exprs[..i].to_vec()),
-                        self.span,
-                    ));
+                    shrunk.push(Expr::new(ExprKind::Block(exprs[..i].to_vec()), self.span));
                 }
                 // Try just the last expression
                 if let Some(last) = exprs.last() {
@@ -393,7 +397,7 @@ impl Expr {
                 ));
             }
         }
-        
+
         shrunk
     }
 }
@@ -410,7 +414,7 @@ impl ExprKind {
             _ => self.clone(),
         }
     }
-    
+
     fn clone_with_right(&self, new_right: Box<Expr>) -> ExprKind {
         match self {
             ExprKind::Binary { left, op, .. } => ExprKind::Binary {
@@ -421,7 +425,7 @@ impl ExprKind {
             _ => self.clone(),
         }
     }
-    
+
     fn clone_with_operand(&self, new_operand: Box<Expr>) -> ExprKind {
         match self {
             ExprKind::Unary { op, .. } => ExprKind::Unary {
@@ -436,7 +440,7 @@ impl ExprKind {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     proptest! {
         #[test]
         fn test_generated_expr_has_valid_structure(expr in arb_expr()) {
@@ -459,14 +463,14 @@ mod tests {
                 }
             }
         }
-        
+
         #[test]
         fn test_well_typed_expr_simpler(expr in arb_well_typed_expr()) {
             // Well-typed expressions should be relatively simple
             let depth = measure_depth(&expr);
             prop_assert!(depth <= 3, "Well-typed expressions should be simple, got depth {}", depth);
         }
-        
+
         #[test]
         fn test_shrinking_reduces_size(expr in arb_expr()) {
             let shrunk = expr.shrink_expr();
@@ -478,7 +482,7 @@ mod tests {
             }
         }
     }
-    
+
     fn measure_depth(expr: &Expr) -> usize {
         match &expr.kind {
             ExprKind::Literal(_) | ExprKind::Identifier(_) => 1,
@@ -486,7 +490,11 @@ mod tests {
                 1 + measure_depth(left).max(measure_depth(right))
             }
             ExprKind::Unary { operand, .. } => 1 + measure_depth(operand),
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 let if_depth = 1 + measure_depth(condition).max(measure_depth(then_branch));
                 if let Some(else_br) = else_branch {
                     if_depth.max(1 + measure_depth(else_br))
@@ -500,15 +508,17 @@ mod tests {
             _ => 1,
         }
     }
-    
+
     fn expr_size(expr: &Expr) -> usize {
         match &expr.kind {
             ExprKind::Literal(_) | ExprKind::Identifier(_) => 1,
-            ExprKind::Binary { left, right, .. } => {
-                1 + expr_size(left) + expr_size(right)
-            }
+            ExprKind::Binary { left, right, .. } => 1 + expr_size(left) + expr_size(right),
             ExprKind::Unary { operand, .. } => 1 + expr_size(operand),
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 let size = 1 + expr_size(condition) + expr_size(then_branch);
                 if let Some(else_br) = else_branch {
                     size + expr_size(else_br)

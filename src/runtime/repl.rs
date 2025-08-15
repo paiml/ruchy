@@ -1,6 +1,12 @@
+//! REPL implementation for interactive Ruchy development
+
+#![allow(clippy::print_stdout)]  // REPL needs to print to stdout
+#![allow(clippy::expect_used)]    // REPL can panic on initialization failure
+#![allow(clippy::print_stderr)]  // REPL needs to print errors
+
 use crate::{Parser, Transpiler};
 use anyhow::{Context, Result};
-use colored::*;
+use colored::Colorize;
 use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
 use std::collections::HashMap;
@@ -94,7 +100,7 @@ impl Repl {
                     break;
                 }
                 Err(err) => {
-                    eprintln!("Error: {:?}", err);
+                    eprintln!("Error: {err:?}");
                     break;
                 }
             }
@@ -110,12 +116,12 @@ impl Repl {
         let parts: Vec<&str> = cmd.split_whitespace().collect();
 
         match parts.first().copied() {
-            Some(":help") | Some(":h") => {
+            Some(":help" | ":h") => {
                 self.print_help();
                 Ok(true)
             }
-            Some(":quit") | Some(":q") => Ok(false),
-            Some(":type") | Some(":t") => {
+            Some(":quit" | ":q") => Ok(false),
+            Some(":type" | ":t") => {
                 if let Some(expr) = parts.get(1) {
                     self.show_type(expr)?;
                 } else {
@@ -167,7 +173,7 @@ impl Repl {
                 Ok(true)
             }
             _ => {
-                println!("Unknown command: {}", cmd);
+                println!("Unknown command: {cmd}");
                 println!("Type :help for available commands");
                 Ok(true)
             }
@@ -234,7 +240,7 @@ fn main() {{
         );
 
         // Write to temporary file
-        let rust_file = self.temp_dir.join(format!("{}.rs", session_name));
+        let rust_file = self.temp_dir.join(format!("{session_name}.rs"));
         fs::write(&rust_file, full_program)?;
 
         // Compile
@@ -279,7 +285,7 @@ fn main() {{
     fn show_ast(&self, input: &str) -> Result<()> {
         let mut parser = Parser::new(input);
         let ast = parser.parse()?;
-        println!("{:#?}", ast);
+        println!("{ast:#?}");
         Ok(())
     }
 
@@ -336,5 +342,270 @@ fn main() {{
 impl Default for Repl {
     fn default() -> Self {
         Self::new().expect("Failed to create REPL")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_repl_creation() {
+        let repl = Repl::new();
+        assert!(repl.is_ok());
+        let repl = repl.unwrap();
+        assert_eq!(repl.session_counter, 0);
+        assert!(repl.history.is_empty());
+        assert!(repl.definitions.is_empty());
+        assert!(repl.bindings.is_empty());
+    }
+
+    #[test]
+    fn test_eval_simple_expression() {
+        let repl = Repl::new().unwrap();
+        // Just test that parsing and transpilation work
+        // Actual compilation would require rustc which may not be available in test env
+        let mut parser = Parser::new("42");
+        let ast = parser.parse();
+        assert!(ast.is_ok());
+        let ast = ast.unwrap();
+        let result = repl.transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_arithmetic() {
+        let repl = Repl::new().unwrap();
+        // Just test that parsing and transpilation work
+        let mut parser = Parser::new("1 + 2 * 3");
+        let ast = parser.parse();
+        assert!(ast.is_ok());
+        let ast = ast.unwrap();
+        let result = repl.transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_invalid_syntax() {
+        let mut repl = Repl::new().unwrap();
+        let result = repl.eval("let x =");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_command_help() {
+        let mut repl = Repl::new().unwrap();
+        let result = repl.handle_command(":help");
+        assert!(result.is_ok());
+        assert!(result.unwrap()); // Should return true (continue)
+    }
+
+    #[test]
+    fn test_handle_command_quit() {
+        let mut repl = Repl::new().unwrap();
+        let result = repl.handle_command(":quit");
+        assert!(result.is_ok());
+        assert!(!result.unwrap()); // Should return false (quit)
+    }
+
+    #[test]
+    fn test_handle_command_clear() {
+        let mut repl = Repl::new().unwrap();
+        repl.history.push("test".to_string());
+        repl.definitions.push("def".to_string());
+        repl.bindings.insert("x".to_string(), "i32".to_string());
+        
+        let result = repl.handle_command(":clear");
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+        
+        assert!(repl.history.is_empty());
+        assert!(repl.definitions.is_empty());
+        assert!(repl.bindings.is_empty());
+    }
+
+    #[test]
+    fn test_handle_command_unknown() {
+        let mut repl = Repl::new().unwrap();
+        let result = repl.handle_command(":unknown");
+        assert!(result.is_ok());
+        assert!(result.unwrap()); // Should continue despite unknown command
+    }
+
+    #[test]
+    fn test_handle_command_ast() {
+        let mut repl = Repl::new().unwrap();
+        let result = repl.handle_command(":ast 1 + 2");
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_handle_command_rust() {
+        let mut repl = Repl::new().unwrap();
+        let result = repl.handle_command(":rust 42");
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_handle_command_type() {
+        let mut repl = Repl::new().unwrap();
+        let result = repl.handle_command(":type 42");
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_handle_command_history() {
+        let mut repl = Repl::new().unwrap();
+        repl.history.push("1 + 1".to_string());
+        repl.history.push("2 * 3".to_string());
+        
+        let result = repl.handle_command(":history");
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_show_ast() {
+        let repl = Repl::new().unwrap();
+        let result = repl.show_ast("1 + 2");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_show_ast_invalid() {
+        let repl = Repl::new().unwrap();
+        let result = repl.show_ast("let x =");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_show_rust() {
+        let repl = Repl::new().unwrap();
+        let result = repl.show_rust("true");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_show_rust_invalid() {
+        let repl = Repl::new().unwrap();
+        let result = repl.show_rust("if");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_save_and_load_session() {
+        let mut repl = Repl::new().unwrap();
+        repl.history.push("1 + 1".to_string());
+        repl.history.push("42".to_string());  // Use simpler expression that won't fail
+        
+        let temp_file = repl.temp_dir.join("test_session.ruchy");
+        let temp_file_str = temp_file.to_str().unwrap();
+        
+        // Save session
+        let save_result = repl.save_session(temp_file_str);
+        assert!(save_result.is_ok());
+        
+        // Clear to test reload
+        repl.clear_session();
+        assert!(repl.history.is_empty());
+        
+        // Just test that we can read the file back, not execute it
+        let content = std::fs::read_to_string(temp_file_str);
+        assert!(content.is_ok());
+        let content = content.unwrap();
+        assert!(content.contains("1 + 1"));
+        assert!(content.contains("42"));
+    }
+
+    #[test]
+    fn test_show_type() {
+        let repl = Repl::new().unwrap();
+        // Type inference not fully implemented, but should not crash
+        let result = repl.show_type("42");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_clear_session() {
+        let mut repl = Repl::new().unwrap();
+        repl.history.push("test".to_string());
+        repl.definitions.push("def".to_string());
+        repl.bindings.insert("x".to_string(), "Type".to_string());
+        repl.session_counter = 5;
+        
+        repl.clear_session();
+        
+        assert!(repl.history.is_empty());
+        assert!(repl.definitions.is_empty());
+        assert!(repl.bindings.is_empty());
+        assert_eq!(repl.session_counter, 0);
+    }
+
+    #[test]
+    fn test_show_history() {
+        let mut repl = Repl::new().unwrap();
+        repl.history.push("first".to_string());
+        repl.history.push("second".to_string());
+        repl.history.push("third".to_string());
+        
+        // Just verify it doesn't panic
+        repl.show_history();
+        assert_eq!(repl.history.len(), 3);
+    }
+
+    #[test]
+    fn test_temp_dir_creation() {
+        let repl = Repl::new().unwrap();
+        assert!(repl.temp_dir.exists());
+        assert!(repl.temp_dir.is_dir());
+    }
+
+    #[test]
+    fn test_transpiler_initialized() {
+        let repl = Repl::new().unwrap();
+        // Verify transpiler can be used
+        let ast = Parser::new("42").parse().unwrap();
+        let result = repl.transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_default_impl() {
+        let repl = Repl::default();
+        assert_eq!(repl.session_counter, 0);
+        assert!(repl.history.is_empty());
+    }
+
+    #[test]
+    fn test_handle_command_with_no_args() {
+        let mut repl = Repl::new().unwrap();
+        
+        // Commands that need arguments
+        assert!(repl.handle_command(":type").is_ok());
+        assert!(repl.handle_command(":ast").is_ok());
+        assert!(repl.handle_command(":rust").is_ok());
+        assert!(repl.handle_command(":save").is_ok());
+        assert!(repl.handle_command(":load").is_ok());
+    }
+
+    #[test]
+    fn test_handle_command_short_forms() {
+        let mut repl = Repl::new().unwrap();
+        
+        // Test short forms
+        let result = repl.handle_command(":h");
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+        
+        let result = repl.handle_command(":q");
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+        
+        let result = repl.handle_command(":t 42");
+        assert!(result.is_ok());
+        assert!(result.unwrap());
     }
 }

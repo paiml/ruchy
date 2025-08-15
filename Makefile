@@ -31,12 +31,31 @@ build:
 	@cargo build --release
 	@echo "✓ Build complete"
 
-# Run all tests
+# Run all tests with nextest for speed
 test:
-	@echo "Running tests..."
+	@echo "Running tests with nextest..."
+	@cargo nextest run --all-features --workspace --no-fail-fast
+	@cargo test --doc
+	@echo "✓ Tests completed"
+
+# Run only library tests (fast, reliable)
+test-lib:
+	@echo "Running library tests with nextest..."
+	@cargo nextest run --lib --all-features
+	@echo "✓ Library tests passed"
+
+# Run tests with standard cargo test (fallback)
+test-cargo:
+	@echo "Running tests with cargo test..."
 	@cargo test --all-features --workspace
 	@cargo test --doc
 	@echo "✓ All tests passed"
+
+# Quick test for development
+test-quick:
+	@echo "Running quick tests..."
+	@cargo nextest run --lib --profile quick
+	@echo "✓ Quick tests passed"
 
 # Run linter
 lint:
