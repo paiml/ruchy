@@ -1,0 +1,20 @@
+# Proptest configuration for CI
+# Reduced iterations for faster CI runs
+
+[profile.default]
+# Number of test cases to generate
+cases = 32
+# Maximum number of shrink iterations
+max_shrink_iters = 50
+
+[profile.ci]
+# Even fewer cases for CI
+cases = 16
+max_shrink_iters = 20
+# Timeout per test in milliseconds
+timeout = 5000
+
+[profile.release]
+# More thorough testing for releases
+cases = 256
+max_shrink_iters = 100

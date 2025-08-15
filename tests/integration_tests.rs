@@ -331,10 +331,11 @@ fn test_error_recovery() {
 
 #[test]
 fn test_large_file_handling() {
+    use std::fmt::Write;
     // Generate a large input file
     let mut large_input = String::new();
     for i in 0..1000 {
-        large_input.push_str(&format!("let var_{i} = {i};\n"));
+        writeln!(&mut large_input, "let var_{i} = {i};").unwrap();
     }
 
     let mut parser = Parser::new(&large_input);

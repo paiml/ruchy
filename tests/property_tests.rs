@@ -399,6 +399,7 @@ proptest! {
 proptest! {
     #[test]
     fn whitespace_insensitive(a: i32, b: i32, spaces in prop::collection::vec(prop::bool::ANY, 0..5)) {
+        use std::fmt::Write;
         let mut input1 = format!("{}", a);
         let mut input2 = format!("{}", a);
 
@@ -409,8 +410,8 @@ proptest! {
             }
         }
 
-        input1.push_str(&format!("+{}", b));
-        input2.push_str(&format!("+ {}", b));
+        write!(&mut input1, "+{}", b).unwrap();
+        write!(&mut input2, "+ {}", b).unwrap();
 
         let mut parser1 = Parser::new(&input1);
         let mut parser2 = Parser::new(&input2);
