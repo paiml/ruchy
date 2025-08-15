@@ -146,9 +146,10 @@ fn parse_actor(c: &mut Criterion) {
 
 // Helper function to generate large input
 fn generate_large_input(num_statements: usize) -> String {
+    use std::fmt::Write;
     let mut input = String::new();
     for i in 0..num_statements {
-        input.push_str(&format!("let var_{i} = {i}; "));
+        let _ = write!(&mut input, "let var_{i} = {i}; ");
     }
     input
 }

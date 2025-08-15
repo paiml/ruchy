@@ -219,7 +219,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // FIXME: This test hangs due to infinite loop in recovery parser
+    #[ignore = "This test hangs due to infinite loop in recovery parser"]
     fn test_specific_recovery_cases() {
         // Test specific error recovery scenarios
         let cases = vec![
