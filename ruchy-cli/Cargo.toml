@@ -5,6 +5,13 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Command-line interface for the Ruchy language"
+readme = "../README.md"
+keywords = ["cli", "language", "compiler", "transpiler", "rust"]
+categories = ["command-line-utilities", "development-tools"]
+
+[lints]
+workspace = true
 
 [[bin]]
 name = "ruchy"

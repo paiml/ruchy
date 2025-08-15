@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout)]
+
 use ruchy::Parser;
 
 fn main() {
@@ -24,16 +26,16 @@ fn main() {
 
     for (i, input) in examples.iter().enumerate() {
         println!("\n=== Example {} ===", i + 1);
-        println!("Input: {}", input);
+        println!("Input: {input}");
 
         let mut parser = Parser::new(input);
         match parser.parse() {
             Ok(ast) => {
                 println!("✓ Parsed successfully!");
-                println!("AST: {:#?}", ast);
+                println!("AST: {ast:#?}");
             }
             Err(e) => {
-                println!("✗ Parse error: {}", e);
+                println!("✗ Parse error: {e}");
             }
         }
     }

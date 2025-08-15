@@ -1,0 +1,150 @@
+# Coverage Improvement Plan - Target 80%
+# Current: 65.92% | Target: 80% | Gap: 14.08%
+
+metadata:
+  created: 2024-01-15
+  priority: high
+  target_date: 2024-01-20
+  current_coverage: 65.92%
+  target_coverage: 80%
+
+coverage_gaps:
+  critical:
+    - file: lib.rs
+      current: 0%
+      target: 90%
+      lines_uncovered: 15
+      priority: 1
+      tasks:
+        - Add tests for compile() function
+        - Add tests for is_valid_syntax()
+        - Add tests for get_parse_error()
+        - Test error cases and edge conditions
+
+    - file: runtime/repl.rs
+      current: 0%
+      target: 70%
+      lines_uncovered: 140
+      priority: 2
+      tasks:
+        - Add REPL initialization tests
+        - Test command parsing
+        - Test evaluation loop
+        - Mock stdin/stdout for testing
+        - Test error handling in REPL
+
+    - file: frontend/ast.rs
+      current: 17.65%
+      target: 80%
+      lines_uncovered: 28
+      priority: 3
+      tasks:
+        - Test all AST node creation
+        - Test span operations
+        - Test Display implementations
+        - Test Clone/Debug traits
+        - Test pattern matching helpers
+
+  moderate:
+    - file: testing/properties.rs
+      current: 57.47%
+      target: 75%
+      lines_uncovered: 37
+      priority: 4
+      tasks:
+        - Add more property test scenarios
+        - Test shrinking strategies
+        - Test generator edge cases
+
+    - file: frontend/error_recovery.rs
+      current: 71.11%
+      target: 85%
+      lines_uncovered: 91
+      priority: 5
+      tasks:
+        - Test all error recovery paths
+        - Test synchronization methods
+        - Test ghost node creation
+        - Test complex error scenarios
+
+implementation_plan:
+  phase1_critical_gaps:
+    - task: Add lib.rs tests
+      estimated_coverage_gain: 5%
+      effort: 1h
+      files:
+        - tests/lib_tests.rs (expand existing)
+      
+    - task: Add AST tests
+      estimated_coverage_gain: 4%
+      effort: 2h
+      files:
+        - src/frontend/ast.rs (add test module)
+    
+    - task: Add REPL tests with mocking
+      estimated_coverage_gain: 3%
+      effort: 3h
+      files:
+        - src/runtime/repl.rs (add test module)
+        - tests/repl_tests.rs (new file)
+
+  phase2_moderate_gaps:
+    - task: Expand property tests
+      estimated_coverage_gain: 2%
+      effort: 1h
+      files:
+        - src/testing/properties.rs
+    
+    - task: Add error recovery edge cases
+      estimated_coverage_gain: 2%
+      effort: 2h
+      files:
+        - src/frontend/error_recovery.rs
+
+  phase3_integration:
+    - task: Add integration test coverage
+      estimated_coverage_gain: 1%
+      effort: 1h
+      files:
+        - tests/integration_tests.rs
+
+test_categories:
+  unit_tests:
+    - AST node construction
+    - Span operations
+    - Token operations
+    - Error creation
+    - REPL command parsing
+
+  integration_tests:
+    - End-to-end compilation
+    - Error recovery scenarios
+    - REPL interaction sequences
+
+  property_tests:
+    - Parser invariants
+    - Transpiler correctness
+    - AST well-formedness
+
+  doctest_additions:
+    - Add examples to all public APIs
+    - Ensure examples are executable
+
+excluded_from_coverage:
+  - tests/**
+  - benches/**
+  - examples/**
+  - build.rs
+  - main.rs files
+
+success_criteria:
+  - Line coverage >= 80%
+  - Function coverage >= 85%
+  - No file below 50% coverage
+  - All public APIs have tests
+  - All error paths tested
+
+tracking:
+  - Run: cargo llvm-cov --lib --summary-only
+  - Check: make coverage
+  - Report: target/coverage/html/index.html

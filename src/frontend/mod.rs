@@ -1,3 +1,7 @@
+//! Frontend parsing and lexical analysis
+//!
+//! This module handles tokenization, parsing, and AST construction.
+
 pub mod ast;
 pub mod error_recovery;
 pub mod lexer;

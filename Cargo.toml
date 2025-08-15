@@ -5,6 +5,149 @@ members = [
 ]
 resolver = "2"
 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "allow"  # TODO: Add comprehensive documentation
+
+[workspace.lints.clippy]
+# Correctness
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+# Specific lints to deny  
+enum_glob_use = "deny"
+unimplemented = "warn"
+todo = "warn"
+dbg_macro = "deny"
+
+# Additional pedantic lints
+cast_lossless = "warn"
+cast_possible_truncation = "warn"
+cast_possible_wrap = "warn"
+cast_precision_loss = "warn"
+cast_sign_loss = "warn"
+checked_conversions = "warn"
+cloned_instead_of_copied = "warn"
+cognitive_complexity = "warn"
+default_trait_access = "warn"
+doc_markdown = "warn"
+empty_enum = "warn"
+enum_variant_names = "warn"
+expl_impl_clone_on_copy = "warn"
+explicit_deref_methods = "warn"
+explicit_into_iter_loop = "warn"
+explicit_iter_loop = "warn"
+filter_map_next = "warn"
+flat_map_option = "warn"
+float_cmp = "warn"
+float_cmp_const = "warn"
+fn_params_excessive_bools = "warn"
+from_iter_instead_of_collect = "warn"
+if_not_else = "warn"
+implicit_clone = "warn"
+implicit_hasher = "warn"
+implicit_saturating_sub = "warn"
+inconsistent_struct_constructor = "warn"
+inefficient_to_string = "warn"
+inline_always = "warn"
+invalid_upcast_comparisons = "warn"
+items_after_statements = "warn"
+large_digit_groups = "warn"
+large_stack_arrays = "warn"
+large_types_passed_by_value = "warn"
+let_unit_value = "warn"
+linkedlist = "warn"
+macro_use_imports = "warn"
+manual_assert = "warn"
+manual_instant_elapsed = "warn"
+manual_let_else = "warn"
+manual_ok_or = "warn"
+manual_string_new = "warn"
+map_flatten = "warn"
+map_unwrap_or = "warn"
+match_bool = "warn"
+match_on_vec_items = "warn"
+match_same_arms = "warn"
+match_wild_err_arm = "warn"
+match_wildcard_for_single_variants = "warn"
+maybe_infinite_iter = "warn"
+mismatching_type_param_order = "warn"
+missing_errors_doc = "warn"
+missing_fields_in_debug = "warn"
+missing_panics_doc = "warn"
+module_name_repetitions = "warn"
+must_use_candidate = "warn"
+mut_mut = "warn"
+naive_bytecount = "warn"
+needless_bitwise_bool = "warn"
+needless_continue = "warn"
+needless_for_each = "warn"
+needless_pass_by_value = "warn"
+needless_raw_string_hashes = "warn"
+negative_feature_names = "warn"
+no_effect_underscore_binding = "warn"
+no_mangle_with_rust_abi = "warn"
+option_option = "warn"
+pub_without_shorthand = "warn"
+range_minus_one = "warn"
+range_plus_one = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+redundant_clone = "warn"
+redundant_closure_for_method_calls = "warn"
+redundant_else = "warn"
+redundant_feature_names = "warn"
+redundant_pub_crate = "warn"
+ref_binding_to_reference = "warn"
+ref_option_ref = "warn"
+return_self_not_must_use = "warn"
+same_functions_in_if_condition = "warn"
+semicolon_if_nothing_returned = "warn"
+should_panic_without_expect = "warn"
+similar_names = "warn"
+single_match_else = "warn"
+stable_sort_primitive = "warn"
+string_add = "warn"
+string_add_assign = "warn"
+struct_excessive_bools = "warn"
+struct_field_names = "warn"
+too_many_lines = "warn"
+trait_duplication_in_bounds = "warn"
+transmute_ptr_to_ptr = "warn"
+trivially_copy_pass_by_ref = "warn"
+type_repetition_in_bounds = "warn"
+unchecked_duration_subtraction = "warn"
+unicode_not_nfc = "warn"
+uninlined_format_args = "warn"
+unnecessary_box_returns = "warn"
+unnecessary_join = "warn"
+unnecessary_wraps = "warn"
+unnested_or_patterns = "warn"
+unreadable_literal = "warn"
+unused_async = "warn"
+unused_self = "warn"
+used_underscore_binding = "warn"
+verbose_bit_mask = "warn"
+verbose_file_reads = "warn"
+wildcard_imports = "warn"
+zero_sized_map_values = "warn"
+
+# Cargo lints
+cargo_common_metadata = "warn"
+
+# Allow some things that are too strict
+module_inception = "allow"
+# Allow unwrap/expect/panic/print in tests - they are appropriate there
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
@@ -50,6 +193,13 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "A systems-oriented scripting language that transpiles to Rust"
+readme = "README.md"
+keywords = ["language", "compiler", "transpiler", "rust", "scripting"]
+categories = ["compilers", "development-tools", "parser-implementations"]
+
+[lints]
+workspace = true
 
 [dependencies]
 anyhow = { workspace = true }

@@ -1,3 +1,5 @@
+//! Abstract Syntax Tree definitions for Ruchy
+
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -9,11 +11,11 @@ pub struct Span {
 }
 
 impl Span {
-    pub fn new(start: usize, end: usize) -> Self {
+    #[must_use] pub fn new(start: usize, end: usize) -> Self {
         Self { start, end }
     }
 
-    pub fn merge(self, other: Self) -> Self {
+    #[must_use] pub fn merge(self, other: Self) -> Self {
         Self {
             start: self.start.min(other.start),
             end: self.end.max(other.end),
@@ -29,7 +31,7 @@ pub struct Expr {
 }
 
 impl Expr {
-    pub fn new(kind: ExprKind, span: Span) -> Self {
+    #[must_use] pub fn new(kind: ExprKind, span: Span) -> Self {
         Self { kind, span }
     }
 }
@@ -243,11 +245,624 @@ mod tests {
         // Track AST node sizes for optimization
         let expr_size = std::mem::size_of::<Expr>();
         let kind_size = std::mem::size_of::<ExprKind>();
-        println!("Expr size: {} bytes", expr_size);
-        println!("ExprKind size: {} bytes", kind_size);
         // Current sizes are larger than ideal but acceptable for MVP
         // Future optimization: Use arena allocation and indices
-        assert!(expr_size <= 128, "Expr too large: {} bytes", expr_size);
-        assert!(kind_size <= 112, "ExprKind too large: {} bytes", kind_size);
+        assert!(expr_size <= 128, "Expr too large: {expr_size} bytes");
+        assert!(kind_size <= 112, "ExprKind too large: {kind_size} bytes");
+    }
+
+    #[test]
+    fn test_span_creation() {
+        let span = Span::new(10, 20);
+        assert_eq!(span.start, 10);
+        assert_eq!(span.end, 20);
+    }
+
+    #[test]
+    fn test_span_merge_simple() {
+        let span1 = Span::new(5, 10);
+        let span2 = Span::new(8, 15);
+        let merged = span1.merge(span2);
+        assert_eq!(merged.start, 5);
+        assert_eq!(merged.end, 15);
+    }
+
+    #[test]
+    fn test_span_merge_disjoint() {
+        let span1 = Span::new(0, 5);
+        let span2 = Span::new(10, 15);
+        let merged = span1.merge(span2);
+        assert_eq!(merged.start, 0);
+        assert_eq!(merged.end, 15);
+    }
+
+    #[test]
+    fn test_expr_creation() {
+        let span = Span::new(0, 10);
+        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), span);
+        assert_eq!(expr.span.start, 0);
+        assert_eq!(expr.span.end, 10);
+        match expr.kind {
+            ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 42),
+            _ => panic!("Wrong expression kind"),
+        }
+    }
+
+    #[test]
+    fn test_literal_variants() {
+        let literals = vec![
+            Literal::Integer(42),
+            #[allow(clippy::approx_constant)]
+            Literal::Float(3.14),  // Not PI, just a test value
+            Literal::String("hello".to_string()),
+            Literal::Bool(true),
+            Literal::Unit,
+        ];
+
+        for lit in literals {
+            let expr = Expr::new(ExprKind::Literal(lit.clone()), Span::new(0, 0));
+            match expr.kind {
+                ExprKind::Literal(l) => assert_eq!(l, lit),
+                _ => panic!("Expected literal"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_binary_op_display() {
+        assert_eq!(BinaryOp::Add.to_string(), "+");
+        assert_eq!(BinaryOp::Subtract.to_string(), "-");
+        assert_eq!(BinaryOp::Multiply.to_string(), "*");
+        assert_eq!(BinaryOp::Divide.to_string(), "/");
+        assert_eq!(BinaryOp::Modulo.to_string(), "%");
+        assert_eq!(BinaryOp::Power.to_string(), "**");
+        assert_eq!(BinaryOp::Equal.to_string(), "==");
+        assert_eq!(BinaryOp::NotEqual.to_string(), "!=");
+        assert_eq!(BinaryOp::Less.to_string(), "<");
+        assert_eq!(BinaryOp::LessEqual.to_string(), "<=");
+        assert_eq!(BinaryOp::Greater.to_string(), ">");
+        assert_eq!(BinaryOp::GreaterEqual.to_string(), ">=");
+        assert_eq!(BinaryOp::And.to_string(), "&&");
+        assert_eq!(BinaryOp::Or.to_string(), "||");
+        assert_eq!(BinaryOp::BitwiseAnd.to_string(), "&");
+        assert_eq!(BinaryOp::BitwiseOr.to_string(), "|");
+        assert_eq!(BinaryOp::BitwiseXor.to_string(), "^");
+        assert_eq!(BinaryOp::LeftShift.to_string(), "<<");
+        assert_eq!(BinaryOp::RightShift.to_string(), ">>");
+    }
+
+    #[test]
+    fn test_unary_op_display() {
+        assert_eq!(UnaryOp::Not.to_string(), "!");
+        assert_eq!(UnaryOp::Negate.to_string(), "-");
+        assert_eq!(UnaryOp::BitwiseNot.to_string(), "~");
+    }
+
+    #[test]
+    fn test_binary_expression() {
+        let left = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1)),
+            Span::new(0, 1),
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(2)),
+            Span::new(4, 5),
+        ));
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left,
+                op: BinaryOp::Add,
+                right,
+            },
+            Span::new(0, 5),
+        );
+
+        match expr.kind {
+            ExprKind::Binary { left: l, op, right: r } => {
+                assert_eq!(op, BinaryOp::Add);
+                match l.kind {
+                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 1),
+                    _ => panic!("Wrong left operand"),
+                }
+                match r.kind {
+                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 2),
+                    _ => panic!("Wrong right operand"),
+                }
+            }
+            _ => panic!("Expected binary expression"),
+        }
+    }
+
+    #[test]
+    fn test_unary_expression() {
+        let operand = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::new(1, 5),
+        ));
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Not,
+                operand,
+            },
+            Span::new(0, 5),
+        );
+
+        match expr.kind {
+            ExprKind::Unary { op, operand } => {
+                assert_eq!(op, UnaryOp::Not);
+                match operand.kind {
+                    ExprKind::Literal(Literal::Bool(b)) => assert!(b),
+                    _ => panic!("Wrong operand"),
+                }
+            }
+            _ => panic!("Expected unary expression"),
+        }
+    }
+
+    #[test]
+    fn test_if_expression() {
+        let condition = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::new(3, 7),
+        ));
+        let then_branch = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1)),
+            Span::new(10, 11),
+        ));
+        let else_branch = Some(Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(2)),
+            Span::new(17, 18),
+        )));
+
+        let expr = Expr::new(
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            },
+            Span::new(0, 18),
+        );
+
+        match expr.kind {
+            ExprKind::If { condition: c, then_branch: t, else_branch: e } => {
+                match c.kind {
+                    ExprKind::Literal(Literal::Bool(b)) => assert!(b),
+                    _ => panic!("Wrong condition"),
+                }
+                match t.kind {
+                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 1),
+                    _ => panic!("Wrong then branch"),
+                }
+                assert!(e.is_some());
+                if let Some(else_expr) = e {
+                    match else_expr.kind {
+                        ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 2),
+                        _ => panic!("Wrong else branch"),
+                    }
+                }
+            }
+            _ => panic!("Expected if expression"),
+        }
+    }
+
+    #[test]
+    fn test_let_expression() {
+        let value = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span::new(8, 10),
+        ));
+        let body = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(14, 15),
+        ));
+
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                value,
+                body,
+            },
+            Span::new(0, 15),
+        );
+
+        match expr.kind {
+            ExprKind::Let { name, value: v, body: b } => {
+                assert_eq!(name, "x");
+                match v.kind {
+                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 42),
+                    _ => panic!("Wrong value"),
+                }
+                match b.kind {
+                    ExprKind::Identifier(id) => assert_eq!(id, "x"),
+                    _ => panic!("Wrong body"),
+                }
+            }
+            _ => panic!("Expected let expression"),
+        }
+    }
+
+    #[test]
+    fn test_function_expression() {
+        let params = vec![
+            Param {
+                name: "x".to_string(),
+                ty: Type {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::new(10, 13),
+                },
+                span: Span::new(8, 13),
+            },
+        ];
+        let body = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(20, 21),
+        ));
+
+        let expr = Expr::new(
+            ExprKind::Function {
+                name: "identity".to_string(),
+                params,
+                return_type: Some(Type {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::new(16, 19),
+                }),
+                body,
+            },
+            Span::new(0, 22),
+        );
+
+        match expr.kind {
+            ExprKind::Function { name, params: p, return_type, body: b } => {
+                assert_eq!(name, "identity");
+                assert_eq!(p.len(), 1);
+                assert_eq!(p[0].name, "x");
+                assert!(return_type.is_some());
+                match b.kind {
+                    ExprKind::Identifier(id) => assert_eq!(id, "x"),
+                    _ => panic!("Wrong body"),
+                }
+            }
+            _ => panic!("Expected function expression"),
+        }
+    }
+
+    #[test]
+    fn test_call_expression() {
+        let func = Box::new(Expr::new(
+            ExprKind::Identifier("add".to_string()),
+            Span::new(0, 3),
+        ));
+        let args = vec![
+            Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(4, 5)),
+            Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(7, 8)),
+        ];
+
+        let expr = Expr::new(
+            ExprKind::Call { func, args },
+            Span::new(0, 9),
+        );
+
+        match expr.kind {
+            ExprKind::Call { func: f, args: a } => {
+                match f.kind {
+                    ExprKind::Identifier(name) => assert_eq!(name, "add"),
+                    _ => panic!("Wrong function"),
+                }
+                assert_eq!(a.len(), 2);
+            }
+            _ => panic!("Expected call expression"),
+        }
+    }
+
+    #[test]
+    fn test_block_expression() {
+        let exprs = vec![
+            Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(2, 3)),
+            Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(5, 6)),
+        ];
+
+        let expr = Expr::new(ExprKind::Block(exprs), Span::new(0, 8));
+
+        match expr.kind {
+            ExprKind::Block(block) => {
+                assert_eq!(block.len(), 2);
+            }
+            _ => panic!("Expected block expression"),
+        }
+    }
+
+    #[test]
+    fn test_list_expression() {
+        let items = vec![
+            Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(1, 2)),
+            Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(4, 5)),
+            Expr::new(ExprKind::Literal(Literal::Integer(3)), Span::new(7, 8)),
+        ];
+
+        let expr = Expr::new(ExprKind::List(items), Span::new(0, 9));
+
+        match expr.kind {
+            ExprKind::List(list) => {
+                assert_eq!(list.len(), 3);
+            }
+            _ => panic!("Expected list expression"),
+        }
+    }
+
+    #[test]
+    fn test_for_expression() {
+        let iter = Box::new(Expr::new(
+            ExprKind::Range {
+                start: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(0)),
+                    Span::new(10, 11),
+                )),
+                end: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10)),
+                    Span::new(13, 15),
+                )),
+                inclusive: false,
+            },
+            Span::new(10, 15),
+        ));
+        let body = Box::new(Expr::new(
+            ExprKind::Identifier("i".to_string()),
+            Span::new(20, 21),
+        ));
+
+        let expr = Expr::new(
+            ExprKind::For {
+                var: "i".to_string(),
+                iter,
+                body,
+            },
+            Span::new(0, 22),
+        );
+
+        match expr.kind {
+            ExprKind::For { var, iter: it, body: b } => {
+                assert_eq!(var, "i");
+                match it.kind {
+                    ExprKind::Range { .. } => {},
+                    _ => panic!("Wrong iterator"),
+                }
+                match b.kind {
+                    ExprKind::Identifier(id) => assert_eq!(id, "i"),
+                    _ => panic!("Wrong body"),
+                }
+            }
+            _ => panic!("Expected for expression"),
+        }
+    }
+
+    #[test]
+    fn test_range_expression() {
+        let start = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1)),
+            Span::new(0, 1),
+        ));
+        let end = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(10)),
+            Span::new(3, 5),
+        ));
+
+        let expr = Expr::new(
+            ExprKind::Range {
+                start,
+                end,
+                inclusive: false,
+            },
+            Span::new(0, 5),
+        );
+
+        match expr.kind {
+            ExprKind::Range { start: s, end: e, inclusive } => {
+                assert!(!inclusive);
+                match s.kind {
+                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 1),
+                    _ => panic!("Wrong start"),
+                }
+                match e.kind {
+                    ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 10),
+                    _ => panic!("Wrong end"),
+                }
+            }
+            _ => panic!("Expected range expression"),
+        }
+    }
+
+    #[test]
+    fn test_import_expression() {
+        let expr = Expr::new(
+            ExprKind::Import {
+                path: "std::collections".to_string(),
+                items: vec!["HashMap".to_string(), "HashSet".to_string()],
+            },
+            Span::new(0, 30),
+        );
+
+        match expr.kind {
+            ExprKind::Import { path, items } => {
+                assert_eq!(path, "std::collections");
+                assert_eq!(items.len(), 2);
+                assert_eq!(items[0], "HashMap");
+                assert_eq!(items[1], "HashSet");
+            }
+            _ => panic!("Expected import expression"),
+        }
+    }
+
+    #[test]
+    fn test_pipeline_expression() {
+        let expr_start = Box::new(Expr::new(
+            ExprKind::List(vec![
+                Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(1, 2)),
+                Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(4, 5)),
+            ]),
+            Span::new(0, 6),
+        ));
+        let stages = vec![
+            PipelineStage {
+                op: Box::new(Expr::new(
+                    ExprKind::Identifier("filter".to_string()),
+                    Span::new(10, 16),
+                )),
+                span: Span::new(10, 16),
+            },
+        ];
+
+        let expr = Expr::new(
+            ExprKind::Pipeline {
+                expr: expr_start,
+                stages,
+            },
+            Span::new(0, 16),
+        );
+
+        match expr.kind {
+            ExprKind::Pipeline { expr: e, stages: s } => {
+                assert_eq!(s.len(), 1);
+                match e.kind {
+                    ExprKind::List(list) => assert_eq!(list.len(), 2),
+                    _ => panic!("Wrong pipeline start"),
+                }
+            }
+            _ => panic!("Expected pipeline expression"),
+        }
+    }
+
+    #[test]
+    fn test_match_expression() {
+        let expr_to_match = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(6, 7),
+        ));
+        let arms = vec![
+            MatchArm {
+                pattern: Pattern::Literal(Literal::Integer(1)),
+                guard: None,
+                body: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("one".to_string())),
+                    Span::new(15, 20),
+                )),
+                span: Span::new(10, 20),
+            },
+            MatchArm {
+                pattern: Pattern::Wildcard,
+                guard: None,
+                body: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("other".to_string())),
+                    Span::new(28, 35),
+                )),
+                span: Span::new(25, 35),
+            },
+        ];
+
+        let expr = Expr::new(
+            ExprKind::Match {
+                expr: expr_to_match,
+                arms,
+            },
+            Span::new(0, 36),
+        );
+
+        match expr.kind {
+            ExprKind::Match { expr: e, arms: a } => {
+                assert_eq!(a.len(), 2);
+                match e.kind {
+                    ExprKind::Identifier(id) => assert_eq!(id, "x"),
+                    _ => panic!("Wrong match expression"),
+                }
+            }
+            _ => panic!("Expected match expression"),
+        }
+    }
+
+    #[test]
+    fn test_pattern_variants() {
+        let patterns = vec![
+            Pattern::Wildcard,
+            Pattern::Literal(Literal::Integer(42)),
+            Pattern::Identifier("x".to_string()),
+            Pattern::List(vec![
+                Pattern::Literal(Literal::Integer(1)),
+                Pattern::Literal(Literal::Integer(2)),
+            ]),
+        ];
+
+        for pattern in patterns {
+            match pattern {
+                Pattern::Wildcard => {},
+                Pattern::Literal(_) => {},
+                Pattern::Identifier(_) => {},
+                Pattern::List(list) => assert!(!list.is_empty()),
+            }
+        }
+    }
+
+    #[test]
+    fn test_type_kinds() {
+        let types = vec![
+            Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::new(0, 3),
+            },
+            Type {
+                kind: TypeKind::Optional(Box::new(Type {
+                    kind: TypeKind::Named("String".to_string()),
+                    span: Span::new(0, 6),
+                })),
+                span: Span::new(0, 7),
+            },
+            Type {
+                kind: TypeKind::List(Box::new(Type {
+                    kind: TypeKind::Named("f64".to_string()),
+                    span: Span::new(1, 4),
+                })),
+                span: Span::new(0, 5),
+            },
+            Type {
+                kind: TypeKind::Function {
+                    params: vec![
+                        Type {
+                            kind: TypeKind::Named("i32".to_string()),
+                            span: Span::new(0, 3),
+                        },
+                    ],
+                    ret: Box::new(Type {
+                        kind: TypeKind::Named("String".to_string()),
+                        span: Span::new(7, 13),
+                    }),
+                },
+                span: Span::new(0, 13),
+            },
+        ];
+
+        for ty in types {
+            match ty.kind {
+                TypeKind::Named(name) => assert!(!name.is_empty()),
+                TypeKind::Optional(_) => {},
+                TypeKind::List(_) => {},
+                TypeKind::Function { params, .. } => assert!(!params.is_empty()),
+            }
+        }
+    }
+
+    #[test]
+    fn test_param_creation() {
+        let param = Param {
+            name: "count".to_string(),
+            ty: Type {
+                kind: TypeKind::Named("usize".to_string()),
+                span: Span::new(6, 11),
+            },
+            span: Span::new(0, 11),
+        };
+
+        assert_eq!(param.name, "count");
+        match param.ty.kind {
+            TypeKind::Named(name) => assert_eq!(name, "usize"),
+            _ => panic!("Wrong type kind"),
+        }
     }
 }

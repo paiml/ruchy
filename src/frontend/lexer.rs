@@ -1,3 +1,5 @@
+//! Lexical analysis and tokenization
+
 use crate::frontend::ast::Span;
 use logos::{Lexer, Logos};
 
@@ -176,7 +178,7 @@ pub enum Token {
 }
 
 impl Token {
-    pub fn is_binary_op(&self) -> bool {
+    #[must_use] pub fn is_binary_op(&self) -> bool {
         matches!(
             self,
             Token::Plus
@@ -201,7 +203,7 @@ impl Token {
         )
     }
 
-    pub fn is_unary_op(&self) -> bool {
+    #[must_use] pub fn is_unary_op(&self) -> bool {
         matches!(self, Token::Bang | Token::Minus | Token::Tilde)
     }
 }
@@ -212,7 +214,7 @@ pub struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
-    pub fn new(input: &'a str) -> Self {
+    #[must_use] pub fn new(input: &'a str) -> Self {
         Self {
             lexer: Token::lexer(input),
             peeked: None,
@@ -306,12 +308,12 @@ mod tests {
             match stream.advance() {
                 Some((Token::Identifier(id), _)) => prop_assert_eq!(id, s),
                 Some((Token::Underscore, _)) if s == "_" => {}, // Special case for underscore
-                _ => panic!("Failed to tokenize identifier: {}", s),
+                _ => panic!("Failed to tokenize identifier: {s}"),
             }
         }
 
         #[test]
-        fn test_tokenize_integers(n in 0i64..1000000) {
+        fn test_tokenize_integers(n in 0i64..1_000_000) {
             let s = n.to_string();
             let mut stream = TokenStream::new(&s);
             match stream.advance() {
