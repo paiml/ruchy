@@ -1,0 +1,220 @@
+name: First Release - v0.1.0
+version: 0.1.0
+date: 2025-01-15
+status: in-progress
+
+description: |
+  Initial release of Ruchy programming language to crates.io and GitHub.
+  This establishes the foundation for the language with basic parsing,
+  transpilation, and REPL capabilities.
+
+pre-release-checklist:
+  - task: Update version numbers
+    status: pending
+    files:
+      - Cargo.toml (workspace)
+      - ruchy/Cargo.toml
+      - ruchy-cli/Cargo.toml
+      - README.md
+    
+  - task: Verify crate metadata
+    status: pending
+    requirements:
+      - description field
+      - repository URL
+      - documentation URL
+      - README path
+      - keywords (max 5)
+      - categories (max 5)
+      - license
+      - authors
+    
+  - task: Create CHANGELOG.md
+    status: pending
+    content: |
+      - Initial parser implementation
+      - Basic transpiler to Rust
+      - Interactive REPL
+      - CLI with multiple commands
+      - 146 passing tests
+      - 80%+ code coverage
+    
+  - task: Update documentation
+    status: pending
+    items:
+      - README.md with installation instructions
+      - API documentation
+      - Usage examples
+      - REPL demonstration
+    
+  - task: Legal compliance
+    status: pending
+    items:
+      - LICENSE file (MIT OR Apache-2.0)
+      - Copyright headers
+      - Third-party attributions
+
+testing-checklist:
+  - task: Run full test suite
+    status: pending
+    command: cargo test --all-features --workspace
+    
+  - task: Check code coverage
+    status: pending
+    command: cargo llvm-cov --all-features --workspace
+    requirement: ">= 80%"
+    
+  - task: Run linter
+    status: pending
+    command: cargo clippy --all-targets --all-features -- -D warnings
+    
+  - task: Check formatting
+    status: pending
+    command: cargo fmt --all -- --check
+    
+  - task: Run benchmarks
+    status: pending
+    command: cargo bench --workspace
+    
+  - task: Test examples
+    status: pending
+    command: cargo run --example parser_demo
+
+crates-io-publication:
+  - task: Dry run for ruchy crate
+    status: pending
+    command: cargo publish --dry-run -p ruchy
+    
+  - task: Dry run for ruchy-cli crate
+    status: pending
+    command: cargo publish --dry-run -p ruchy-cli
+    
+  - task: Publish ruchy crate
+    status: pending
+    command: cargo publish -p ruchy
+    notes: Must publish library before CLI
+    
+  - task: Wait for crates.io indexing
+    status: pending
+    duration: 1-2 minutes
+    
+  - task: Publish ruchy-cli crate
+    status: pending
+    command: cargo publish -p ruchy-cli
+
+github-release:
+  - task: Create release workflow
+    status: pending
+    file: .github/workflows/release.yml
+    features:
+      - Multi-platform builds (Linux, macOS, Windows)
+      - ARM64 support
+      - Automatic binary uploads
+      - Changelog generation
+    
+  - task: Tag the release
+    status: pending
+    commands:
+      - git tag -a v0.1.0 -m "Release v0.1.0"
+      - git push origin v0.1.0
+    
+  - task: Create GitHub release
+    status: pending
+    command: gh release create v0.1.0 --title "v0.1.0 - Initial Release" --notes-file CHANGELOG.md
+    
+  - task: Upload binaries
+    status: pending
+    platforms:
+      - linux-x86_64
+      - linux-aarch64
+      - macos-x86_64
+      - macos-aarch64
+      - windows-x86_64
+
+binary-distribution:
+  - task: Build release binaries
+    status: pending
+    commands:
+      linux: cargo build --release --target x86_64-unknown-linux-gnu
+      macos: cargo build --release --target x86_64-apple-darwin
+      windows: cargo build --release --target x86_64-pc-windows-msvc
+    
+  - task: Create archives
+    status: pending
+    format:
+      linux: tar.gz
+      macos: tar.gz
+      windows: zip
+    
+  - task: Generate checksums
+    status: pending
+    command: sha256sum ruchy-*
+
+post-release-checklist:
+  - task: Verify crates.io publication
+    status: pending
+    urls:
+      - https://crates.io/crates/ruchy
+      - https://crates.io/crates/ruchy-cli
+    
+  - task: Test installation
+    status: pending
+    command: cargo install ruchy-cli
+    
+  - task: Verify documentation
+    status: pending
+    url: https://docs.rs/ruchy
+    
+  - task: Update website/blog
+    status: pending
+    content: Release announcement
+    
+  - task: Social media announcement
+    status: pending
+    platforms:
+      - Twitter/X
+      - Reddit (r/rust, r/ProgrammingLanguages)
+      - Hacker News
+
+known-issues:
+  - REPL eval function needs refinement for expression execution
+  - Type inference not yet implemented
+  - MCP integration pending
+
+release-notes: |
+  # Ruchy v0.1.0 - Initial Release
+  
+  We're excited to announce the first public release of Ruchy, a systems-oriented
+  scripting language that transpiles to zero-cost Rust!
+  
+  ## Features
+  - Full parser with error recovery
+  - Transpiler generating idiomatic Rust code
+  - Interactive REPL with AST visualization
+  - CLI with parse, transpile, and run commands
+  - 146 passing tests with 80%+ coverage
+  
+  ## Installation
+  ```bash
+  cargo install ruchy-cli
+  ```
+  
+  ## Quick Start
+  ```bash
+  # Start REPL
+  ruchy
+  
+  # Transpile to Rust
+  ruchy transpile script.ruchy
+  
+  # Parse and show AST
+  ruchy parse script.ruchy
+  ```
+
+success-criteria:
+  - All tests passing
+  - Zero clippy warnings
+  - Successfully published to crates.io
+  - Binaries available for all major platforms
+  - Documentation live on docs.rs
+  - Installation via cargo install works
