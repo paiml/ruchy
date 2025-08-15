@@ -1,0 +1,62 @@
+// Marco Polo - Complete Example with All Features
+// Demonstrates imports, for loops, pattern matching
+
+import std::env
+import std::thread::sleep
+import std::time::Duration
+
+fun main() {
+    // Get command-line arguments (simulated for now)
+    let args = get_args()
+    
+    match args {
+        ["marco"] => marco()
+        ["polo", name] => polo(name)
+        ["play", times_str] => {
+            let times = parse_int(times_str)
+            play(times)
+        }
+        _ => help()
+    }
+}
+
+fun get_args() -> [String] {
+    // Simulated - would use std::env::args()
+    ["play", "3"]
+}
+
+fun marco() {
+    println("Marco!")
+    println("(waiting for polo...)")
+}
+
+fun polo(name: String) {
+    println("Polo from " + name + "!")
+}
+
+fun play(times: i32) {
+    for i in 1..=times {
+        println(i + ". Marco!")
+        // sleep(Duration::from_millis(500))
+        println("   Polo!")
+    }
+}
+
+fun help() {
+    println("Usage: marco-polo COMMAND")
+    println("")
+    println("Commands:")
+    println("  marco       Send a Marco call")
+    println("  polo NAME   Respond with Polo from NAME")
+    println("  play TIMES  Play TIMES rounds")
+}
+
+fun println(msg: String) {
+    // Placeholder - would use actual println!
+    msg
+}
+
+fun parse_int(s: String) -> i32 {
+    // Simplified - would use s.parse()
+    3
+}

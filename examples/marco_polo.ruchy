@@ -1,0 +1,34 @@
+// Marco Polo - Simple Ruchy Demo Script
+// Version A: Ultra-minimal implementation
+
+fun main() {
+    let args = ["marco"]  // Placeholder - we need to implement args()
+    
+    match args {
+        ["marco"] => marco()
+        ["polo", name] => polo(name)
+        ["play", times] => play(3)  // Simplified for now
+        _ => help()
+    }
+}
+
+fun marco() {
+    "Marco!"
+}
+
+fun polo(name: String) -> String {
+    "Polo from " + name + "!"
+}
+
+fun play(times: i32) {
+    let i = 1
+    if i <= times {
+        marco()
+    } else {
+        ()
+    }
+}
+
+fun help() {
+    "Usage: marco-polo [marco|polo NAME|play TIMES]"
+}

@@ -64,6 +64,11 @@ impl<'a> Parser<'a> {
             left = self.parse_pipeline(left)?;
         }
         
+        // Check for range operator
+        if let Some((Token::DotDot | Token::DotDotEqual, _)) = self.tokens.peek() {
+            left = self.parse_range_from(left)?;
+        }
+        
         Ok(left)
     }
     
@@ -109,6 +114,8 @@ impl<'a> Parser<'a> {
             Some((Token::Let, _)) => self.parse_let(),
             Some((Token::Fun, _)) => self.parse_function(),
             Some((Token::Match, _)) => self.parse_match(),
+            Some((Token::For, _)) => self.parse_for(),
+            Some((Token::Import, _)) | Some((Token::Use, _)) => self.parse_import(),
             Some((Token::LeftBracket, _)) => self.parse_list(),
             Some((Token::LeftParen, _span)) => {
                 self.tokens.next();
@@ -435,6 +442,98 @@ impl<'a> Parser<'a> {
             }
             _ => bail!("Expected pattern"),
         }
+    }
+    
+    fn parse_for(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.expect(Token::For)?;
+        
+        let var = match self.tokens.next() {
+            Some((Token::Identifier(name), _)) => name,
+            _ => bail!("Expected variable name after 'for'"),
+        };
+        
+        self.tokens.expect(Token::In)?;
+        let iter = Box::new(self.parse_expr()?);
+        
+        self.tokens.expect(Token::LeftBrace)?;
+        let body = Box::new(self.parse_block()?);
+        
+        let span = start_span.merge(body.span);
+        Ok(Expr::new(
+            ExprKind::For { var, iter, body },
+            span,
+        ))
+    }
+    
+    fn parse_range_from(&mut self, start: Expr) -> Result<Expr> {
+        let (op_token, _op_span) = self.tokens.next().unwrap();
+        let inclusive = matches!(op_token, Token::DotDotEqual);
+        
+        let end = Box::new(self.parse_prefix()?);
+        let span = start.span.merge(end.span);
+        
+        Ok(Expr::new(
+            ExprKind::Range {
+                start: Box::new(start),
+                end,
+                inclusive,
+            },
+            span,
+        ))
+    }
+    
+    fn parse_import(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.next().unwrap().1; // consume import/use
+        
+        let mut path_parts = Vec::new();
+        
+        // Parse the path (e.g., std::io::prelude)
+        loop {
+            match self.tokens.next() {
+                Some((Token::Identifier(part), _)) => {
+                    path_parts.push(part);
+                }
+                _ => break,
+            }
+            
+            // Check for ::
+            if !matches!(self.tokens.peek(), Some((Token::ColonColon, _))) {
+                break;
+            }
+            self.tokens.next(); // consume ::
+        }
+        
+        let path = path_parts.join("::");
+        
+        // Check for specific imports like ::{Read, Write}
+        let items = if matches!(self.tokens.peek(), Some((Token::LeftBrace, _))) {
+            self.tokens.next(); // consume {
+            let mut items = Vec::new();
+            
+            loop {
+                match self.tokens.next() {
+                    Some((Token::Identifier(item), _)) => {
+                        items.push(item);
+                    }
+                    Some((Token::RightBrace, _)) => break,
+                    _ => {}
+                }
+                
+                if matches!(self.tokens.peek(), Some((Token::Comma, _))) {
+                    self.tokens.next();
+                }
+            }
+            
+            items
+        } else {
+            Vec::new()
+        };
+        
+        let span = start_span; // simplified for now
+        Ok(Expr::new(
+            ExprKind::Import { path, items },
+            span,
+        ))
     }
     
     fn precedence(&self, token: &Token) -> i32 {

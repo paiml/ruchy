@@ -1,0 +1,59 @@
+// Marco Polo - Advanced Ruchy Demo with Pattern Matching
+// Shows more language features
+
+fun main() {
+    // Simulate command-line args
+    play_game(["play", "3"])
+}
+
+fun play_game(args: [String]) {
+    match args {
+        ["marco"] => {
+            println("Marco!")
+            println("(waiting for polo...)")
+        }
+        ["polo", name] => {
+            println("Polo from " + name + "!")
+        }
+        ["play", times_str] => {
+            let times = parse_int(times_str)
+            play(times)
+        }
+        _ => {
+            help()
+        }
+    }
+}
+
+fun play(times: i32) {
+    play_round(1, times)
+}
+
+fun play_round(current: i32, total: i32) {
+    if current <= total {
+        println(current + ". Marco!")
+        println("   Polo!")
+        play_round(current + 1, total)
+    } else {
+        ()
+    }
+}
+
+fun println(msg: String) {
+    // Built-in function placeholder
+    msg
+}
+
+fun parse_int(s: String) -> i32 {
+    // Simplified - would use proper parsing
+    3
+}
+
+fun help() {
+    println("Usage: marco-polo COMMAND")
+    println("")
+    println("Commands:")
+    println("  marco       Send a Marco call")
+    println("  polo NAME   Respond with Polo from NAME")
+    println("  play TIMES  Play TIMES rounds")
+}
