@@ -446,4 +446,66 @@ mod tests {
         assert!(result.contains("2"));
         assert!(result.contains("3"));
     }
+
+    #[test]
+    fn test_transpile_match() {
+        let result = transpile_str(r#"match x { 1 => "one", _ => "other" }"#).unwrap();
+        assert!(result.contains("match"));
+        assert!(result.contains("1"));
+        assert!(result.contains("\"one\""));
+        assert!(result.contains("\"other\""));
+    }
+
+    #[test]
+    fn test_transpile_let() {
+        let result = transpile_str("let x = 42 in x + 1").unwrap();
+        assert!(result.contains("let x"));
+        assert!(result.contains("42"));
+    }
+
+    #[test]
+    fn test_transpile_for() {
+        let result = transpile_str("for i in 1..10 { print(i) }").unwrap();
+        assert!(result.contains("for i"));
+        assert!(result.contains("in"));
+    }
+
+    #[test]
+    fn test_transpile_range() {
+        let result = transpile_str("1..10").unwrap();
+        assert!(result.contains(".."));
+        assert!(!result.contains("..="));
+        
+        let result = transpile_str("1..=10").unwrap();
+        assert!(result.contains("..="));
+    }
+
+    #[test]
+    fn test_transpile_pipeline() {
+        let result = transpile_str("x |> f |> g").unwrap();
+        // Pipeline becomes nested function calls: g(f(x))
+        assert!(result.contains("g"));
+        assert!(result.contains("f"));
+    }
+
+    #[test]
+    fn test_transpile_unary() {
+        let result = transpile_str("!true").unwrap();
+        assert!(result.contains("!"));
+        assert!(result.contains("true"));
+        
+        let result = transpile_str("-42").unwrap();
+        assert!(result.contains("-"));
+        assert!(result.contains("42"));
+    }
+
+    #[test]
+    fn test_transpile_block() {
+        // Blocks are part of function bodies or if expressions
+        let result = transpile_str("if true { let x = 1; x + 1 } else { 0 }").unwrap();
+        // Block should have braces
+        assert!(result.contains("{"));
+        assert!(result.contains("}"));
+        assert!(result.contains("let x"));
+    }
 }
