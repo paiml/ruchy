@@ -18,7 +18,7 @@ fn parse_complex_expr(c: &mut Criterion) {
             fibonacci(n - 1) + fibonacci(n - 2)
         }
     }";
-    
+
     c.bench_function("parse_complex_expr", |b| {
         b.iter(|| {
             let mut parser = Parser::new(black_box(input));
@@ -29,7 +29,7 @@ fn parse_complex_expr(c: &mut Criterion) {
 
 fn parse_pipeline(c: &mut Criterion) {
     let input = "[1, 2, 3, 4, 5] |> map(double) |> filter(even) |> reduce(sum)";
-    
+
     c.bench_function("parse_pipeline", |b| {
         b.iter(|| {
             let mut parser = Parser::new(black_box(input));
@@ -38,5 +38,10 @@ fn parse_pipeline(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, parse_simple_expr, parse_complex_expr, parse_pipeline);
+criterion_group!(
+    benches,
+    parse_simple_expr,
+    parse_complex_expr,
+    parse_pipeline
+);
 criterion_main!(benches);

@@ -1,5 +1,5 @@
-use logos::{Logos, Lexer};
 use crate::frontend::ast::Span;
+use logos::{Lexer, Logos};
 
 #[derive(Logos, Debug, PartialEq, Clone)]
 #[logos(skip r"[ \t\n\f]+")]
@@ -9,20 +9,20 @@ pub enum Token {
     // Literals
     #[regex(r"[0-9]+", |lex| lex.slice().parse::<i64>().ok())]
     Integer(i64),
-    
+
     #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
     Float(f64),
-    
+
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {
         let s = lex.slice();
         Some(s[1..s.len()-1].to_string())
     })]
     String(String),
-    
+
     #[token("true", |_| true)]
     #[token("false", |_| false)]
     Bool(bool),
-    
+
     // Keywords
     #[token("fun")]
     Fun,
@@ -68,11 +68,11 @@ pub enum Token {
     Use,
     #[token("as")]
     As,
-    
+
     // Identifiers (lower priority than keywords and underscore)
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string(), priority = 1)]
     Identifier(String),
-    
+
     // Operators
     #[token("+")]
     Plus,
@@ -86,7 +86,7 @@ pub enum Token {
     Percent,
     #[token("**")]
     Power,
-    
+
     #[token("==")]
     EqualEqual,
     #[token("!=")]
@@ -99,14 +99,14 @@ pub enum Token {
     Greater,
     #[token(">=")]
     GreaterEqual,
-    
+
     #[token("&&")]
     AndAnd,
     #[token("||")]
     OrOr,
     #[token("!")]
     Bang,
-    
+
     #[token("&")]
     Ampersand,
     #[token("|")]
@@ -119,7 +119,7 @@ pub enum Token {
     LeftShift,
     #[token(">>")]
     RightShift,
-    
+
     #[token("=")]
     Equal,
     #[token("+=")]
@@ -130,7 +130,7 @@ pub enum Token {
     StarEqual,
     #[token("/=")]
     SlashEqual,
-    
+
     #[token("|>")]
     Pipeline,
     #[token("->")]
@@ -145,7 +145,7 @@ pub enum Token {
     Question,
     #[token("?.")]
     SafeNav,
-    
+
     // Delimiters
     #[token("(")]
     LeftParen,
@@ -159,7 +159,7 @@ pub enum Token {
     LeftBrace,
     #[token("}")]
     RightBrace,
-    
+
     // Punctuation
     #[token(",")]
     Comma,
@@ -177,15 +177,30 @@ pub enum Token {
 
 impl Token {
     pub fn is_binary_op(&self) -> bool {
-        matches!(self,
-            Token::Plus | Token::Minus | Token::Star | Token::Slash | Token::Percent |
-            Token::Power | Token::EqualEqual | Token::NotEqual | Token::Less |
-            Token::LessEqual | Token::Greater | Token::GreaterEqual | Token::AndAnd |
-            Token::OrOr | Token::Ampersand | Token::Pipe | Token::Caret |
-            Token::LeftShift | Token::RightShift
+        matches!(
+            self,
+            Token::Plus
+                | Token::Minus
+                | Token::Star
+                | Token::Slash
+                | Token::Percent
+                | Token::Power
+                | Token::EqualEqual
+                | Token::NotEqual
+                | Token::Less
+                | Token::LessEqual
+                | Token::Greater
+                | Token::GreaterEqual
+                | Token::AndAnd
+                | Token::OrOr
+                | Token::Ampersand
+                | Token::Pipe
+                | Token::Caret
+                | Token::LeftShift
+                | Token::RightShift
         )
     }
-    
+
     pub fn is_unary_op(&self) -> bool {
         matches!(self, Token::Bang | Token::Minus | Token::Tilde)
     }
@@ -203,26 +218,27 @@ impl<'a> TokenStream<'a> {
             peeked: None,
         }
     }
-    
+
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<(Token, Span)> {
         if let Some(peeked) = self.peeked.take() {
             return Some(peeked);
         }
-        
+
         self.lexer.next().map(|result| {
             let token = result.unwrap_or(Token::Bang); // Error recovery
             let span = Span::new(self.lexer.span().start, self.lexer.span().end);
             (token, span)
         })
     }
-    
+
     pub fn peek(&mut self) -> Option<&(Token, Span)> {
         if self.peeked.is_none() {
             self.peeked = self.next();
         }
         self.peeked.as_ref()
     }
-    
+
     pub fn expect(&mut self, expected: Token) -> anyhow::Result<Span> {
         match self.next() {
             Some((token, span)) if token == expected => Ok(span),
@@ -230,60 +246,75 @@ impl<'a> TokenStream<'a> {
             None => anyhow::bail!("Expected {:?}, found EOF", expected),
         }
     }
+
+    // Alias for next() to avoid clippy warning about Iterator trait
+    pub fn advance(&mut self) -> Option<(Token, Span)> {
+        self.next()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use proptest::prelude::*;
-    
+
     #[test]
+    #[allow(clippy::approx_constant)] // Intentional literal for test
     fn test_tokenize_basic() {
         let mut stream = TokenStream::new("let x = 42 + 3.14");
-        
+
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Let));
-        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("x".to_string())));
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Identifier("x".to_string()))
+        );
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Equal));
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Integer(42)));
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Plus));
-        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Float(3.14)));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Float(3.14))); // Intentional literal for test
         assert_eq!(stream.next().map(|(t, _)| t), None);
     }
-    
+
     #[test]
     fn test_tokenize_pipeline() {
         let mut stream = TokenStream::new("[1, 2, 3] |> map(x => x * 2)");
-        
+
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::LeftBracket));
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Integer(1)));
         // ... rest of tokens
     }
-    
+
     #[test]
     fn test_tokenize_comments() {
         let mut stream = TokenStream::new("x // comment\n+ /* block */ y");
-        
-        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("x".to_string())));
+
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Identifier("x".to_string()))
+        );
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Plus));
-        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("y".to_string())));
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Identifier("y".to_string()))
+        );
     }
-    
+
     proptest! {
         #[test]
         fn test_tokenize_identifiers(s in "[a-zA-Z_][a-zA-Z0-9_]{0,100}") {
             let mut stream = TokenStream::new(&s);
-            match stream.next() {
+            match stream.advance() {
                 Some((Token::Identifier(id), _)) => prop_assert_eq!(id, s),
                 Some((Token::Underscore, _)) if s == "_" => {}, // Special case for underscore
                 _ => panic!("Failed to tokenize identifier: {}", s),
             }
         }
-        
+
         #[test]
         fn test_tokenize_integers(n in 0i64..1000000) {
             let s = n.to_string();
             let mut stream = TokenStream::new(&s);
-            match stream.next() {
+            match stream.advance() {
                 Some((Token::Integer(i), _)) => prop_assert_eq!(i, n),
                 _ => panic!("Failed to tokenize integer"),
             }
