@@ -1,0 +1,23 @@
+# Mutation testing configuration
+[mutants]
+# Timeout for each mutation test (in seconds)
+timeout = 20
+
+# Exclude certain files from mutation testing
+exclude_globs = [
+    "tests/**",
+    "benches/**",
+    "examples/**",
+]
+
+# Specific mutation types to apply
+mutation_types = [
+    "replace_with_default",
+    "skip_function_call",
+    "invert_boolean",
+    "change_comparison",
+    "arithmetic",
+]
+
+# Minimum mutation score required
+minimum_test_score = 75
