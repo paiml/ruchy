@@ -76,6 +76,15 @@ impl Transpiler {
             ExprKind::List(elements) => {
                 self.transpile_list(elements)
             }
+            ExprKind::For { var, iter, body } => {
+                self.transpile_for(var, iter, body)
+            }
+            ExprKind::Range { start, end, inclusive } => {
+                self.transpile_range(start, end, *inclusive)
+            }
+            ExprKind::Import { path, items } => {
+                self.transpile_import(path, items)
+            }
         }
     }
     
@@ -303,6 +312,35 @@ impl Transpiler {
         Ok(quote! {
             vec![#(#element_tokens),*]
         })
+    }
+    
+    fn transpile_for(&self, var: &str, iter: &Expr, body: &Expr) -> Result<TokenStream> {
+        let var_ident = syn::Ident::new(var, proc_macro2::Span::call_site());
+        let iter_tokens = self.transpile_expr(iter)?;
+        let body_tokens = self.transpile_expr(body)?;
+        
+        Ok(quote! {
+            for #var_ident in #iter_tokens {
+                #body_tokens
+            }
+        })
+    }
+    
+    fn transpile_range(&self, start: &Expr, end: &Expr, inclusive: bool) -> Result<TokenStream> {
+        let start_tokens = self.transpile_expr(start)?;
+        let end_tokens = self.transpile_expr(end)?;
+        
+        if inclusive {
+            Ok(quote! { (#start_tokens..=#end_tokens) })
+        } else {
+            Ok(quote! { (#start_tokens..#end_tokens) })
+        }
+    }
+    
+    fn transpile_import(&self, _path: &str, _items: &[String]) -> Result<TokenStream> {
+        // For now, just skip imports - they would be handled at module level
+        // In a full implementation, we'd collect these and emit them at the top
+        Ok(quote! {})
     }
     
     fn transpile_type(&self, ty: &Type) -> Result<TokenStream> {

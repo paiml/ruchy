@@ -77,6 +77,20 @@ pub enum ExprKind {
         arms: Vec<MatchArm>,
     },
     List(Vec<Expr>),
+    For {
+        var: String,
+        iter: Box<Expr>,
+        body: Box<Expr>,
+    },
+    Range {
+        start: Box<Expr>,
+        end: Box<Expr>,
+        inclusive: bool,
+    },
+    Import {
+        path: String,
+        items: Vec<String>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -64,6 +64,8 @@ pub enum Token {
     Pub,
     #[token("import")]
     Import,
+    #[token("use")]
+    Use,
     #[token("as")]
     As,
     
@@ -135,6 +137,10 @@ pub enum Token {
     Arrow,
     #[token("=>")]
     FatArrow,
+    #[token("..")]
+    DotDot,
+    #[token("..=")]
+    DotDotEqual,
     #[token("?")]
     Question,
     #[token("?.")]
