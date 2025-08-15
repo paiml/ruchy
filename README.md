@@ -2,7 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
-[![CI](https://github.com/ruchy-lang/ruchy/workflows/CI/badge.svg)](https://github.com/ruchy-lang/ruchy/actions)
+[![CI](https://github.com/paiml/ruchy/workflows/CI/badge.svg)](https://github.com/paiml/ruchy/actions)
+[![Coverage](https://github.com/paiml/ruchy/workflows/Coverage/badge.svg)](https://github.com/paiml/ruchy/actions)
 
 A systems-oriented scripting language that transpiles to zero-cost Rust, combining Python's ergonomics with Rust's performance guarantees.
 

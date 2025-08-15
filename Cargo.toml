@@ -152,7 +152,9 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Ruchy Contributors"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/ruchy-lang/ruchy"
+repository = "https://github.com/paiml/ruchy"
+homepage = "https://github.com/paiml/ruchy"
+documentation = "https://docs.rs/ruchy"
 rust-version = "1.75"
 
 [workspace.dependencies]
