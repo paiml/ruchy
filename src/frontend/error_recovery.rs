@@ -185,9 +185,8 @@ impl<'a> RecoveryParser<'a> {
             Some((Token::Fun, _)) => self.parse_function_recovery(),
             Some((Token::LeftBracket, _)) => self.parse_list_recovery(),
             Some((Token::LeftParen, _)) => self.parse_paren_recovery(),
-            Some((token, span)) => {
+            Some((token, _span)) => {
                 let token_clone = token.clone();
-                let span = *span;
                 self.tokens.advance(); // Advance before recording error
                 self.record_error(
                     format!("Unexpected token: {:?}", token_clone),

@@ -39,7 +39,7 @@ impl Transpiler {
         Ok(prettyplease::unparse(&file))
     }
 
-    fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
+    pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Literal(lit) => self.transpile_literal(lit),
             ExprKind::Identifier(name) => {
