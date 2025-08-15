@@ -475,7 +475,7 @@ mod tests {
         let result = transpile_str("1..10").unwrap();
         assert!(result.contains(".."));
         assert!(!result.contains("..="));
-        
+
         let result = transpile_str("1..=10").unwrap();
         assert!(result.contains("..="));
     }
@@ -493,7 +493,7 @@ mod tests {
         let result = transpile_str("!true").unwrap();
         assert!(result.contains("!"));
         assert!(result.contains("true"));
-        
+
         let result = transpile_str("-42").unwrap();
         assert!(result.contains("-"));
         assert!(result.contains("42"));

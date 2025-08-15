@@ -694,7 +694,7 @@ mod tests {
             }
             _ => panic!("Expected range expression"),
         }
-        
+
         let mut parser = Parser::new("1..=10");
         let expr = parser.parse().unwrap();
         match expr.kind {
@@ -715,7 +715,7 @@ mod tests {
             }
             _ => panic!("Expected empty list"),
         }
-        
+
         let mut parser = Parser::new("[1, 2, 3]");
         let expr = parser.parse().unwrap();
         match expr.kind {
