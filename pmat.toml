@@ -1,0 +1,101 @@
+# PMAT Configuration for Ruchy Language
+# Quality gates as per CLAUDE.md requirements
+
+[quality_gates]
+# Complexity thresholds
+cyclomatic_complexity = 10
+cognitive_complexity = 15
+halstead_effort = 5000
+maintainability_index = 70
+
+# Code coverage requirements
+minimum_coverage = 80
+minimum_mutation_score = 75
+
+# Code quality
+max_satd_comments = 0  # No TODO/FIXME/HACK comments allowed
+max_duplicate_lines = 20
+max_file_length = 500
+max_function_length = 50
+
+[test_requirements]
+# Every public function must have tests
+require_unit_tests = true
+require_property_tests = true
+require_doctests = true
+require_examples = true
+
+# Fuzzing requirements
+fuzz_targets = [
+    "parser",
+    "lexer",
+    "transpiler",
+]
+
+[performance_benchmarks]
+# Performance requirements from CLAUDE.md
+parser_throughput = 100000  # LOC/sec
+type_checking_throughput = 50000  # LOC/sec
+transpilation_throughput = 200000  # LOC/sec
+repl_latency = 15  # milliseconds
+binary_size = 5242880  # 5MB in bytes
+
+[memory_limits]
+# Actor system constraints
+actor_stack_size = 2097152  # 2MB
+mailbox_size = 65536  # 64KB
+message_inline_size = 496  # bytes
+
+[analysis]
+# Static analysis tools to run
+enabled_linters = [
+    "clippy",
+    "rustfmt",
+    "cargo-audit",
+    "cargo-deny",
+]
+
+# Clippy configuration
+clippy_flags = [
+    "-W clippy::all",
+    "-W clippy::pedantic",
+    "-W clippy::nursery",
+    "-W clippy::cargo",
+    "-D warnings",
+]
+
+[reporting]
+# Output formats for quality reports
+formats = ["json", "html", "markdown"]
+output_dir = "target/quality-reports"
+
+# Dashboard settings
+generate_dashboard = true
+dashboard_port = 8080
+
+[hooks]
+# Pre-commit hooks
+pre_commit = [
+    "cargo fmt --check",
+    "cargo clippy -- -D warnings",
+    "cargo test",
+    "cargo mutants --minimum-test-score 75",
+]
+
+# Pre-push hooks
+pre_push = [
+    "cargo test --all",
+    "cargo bench --no-run",
+    "scripts/coverage.sh",
+]
+
+[exceptions]
+# Files/patterns to exclude from analysis
+exclude_patterns = [
+    "target/**",
+    ".git/**",
+    "*.generated.rs",
+]
+
+# Temporary exceptions (should be removed)
+allow_todo_in = []  # No exceptions allowed per requirements
