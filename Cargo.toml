@@ -74,6 +74,7 @@ insta = { workspace = true }
 tracing-subscriber = { workspace = true }
 quickcheck = { workspace = true }
 quickcheck_macros = { workspace = true }
+tempfile = "3.8"
 
 [[bench]]
 name = "parser"

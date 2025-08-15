@@ -157,7 +157,7 @@ fn is_well_typed(expr: &Expr) -> bool {
         }
         ExprKind::If { condition, then_branch, else_branch } => {
             is_boolean(condition) && is_well_typed(then_branch) && 
-            else_branch.as_ref().map_or(true, |e| is_well_typed(e))
+            else_branch.as_ref().is_none_or(|e| is_well_typed(e))
         }
         _ => false, // Conservative for complex expressions
     }
@@ -177,7 +177,6 @@ fn is_boolean(expr: &Expr) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::*;
     
     proptest! {
         #[test]
