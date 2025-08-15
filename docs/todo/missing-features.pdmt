@@ -1,0 +1,317 @@
+# Ruchy Missing Features Tracking
+# PDMT Format v1.0 - Project Debt Management Tool
+# Toyota Way Compliant - Zero SATD Policy
+
+project: ruchy
+version: 0.1.0
+quality_standard: toyota_way
+satd_tolerance: 0
+complexity_limit: 10
+coverage_minimum: 80
+
+## Feature Gaps
+
+### FG-001: Incremental Compilation Infrastructure
+priority: CRITICAL
+effort: XL
+impact: REPL_PERFORMANCE
+description: |
+  The REPL requires sub-15ms response times but lacks incremental compilation
+target_metric: response_time < 15ms
+dependencies: []
+components:
+  - salsa_database_integration
+  - hir_cache_implementation
+  - dependency_graph_tracking
+  - hot_reload_mechanism
+acceptance_criteria:
+  - REPL responds within 15ms for single-line changes
+  - Module dependency graph correctly tracks changes
+  - Cache invalidation is minimal and correct
+github_issue: #TBD
+
+### FG-002: Escape Analysis Implementation
+priority: HIGH
+effort: L
+impact: MEMORY_EFFICIENCY
+description: |
+  Automatic memory management via escape analysis not implemented
+target_metric: heap_allocations_reduced_by: 60%
+dependencies: [FG-001]
+components:
+  - steensgaard_points_to_analysis
+  - escape_lattice_implementation
+  - stack_heap_decision_engine
+acceptance_criteria:
+  - Correctly identifies stack-allocatable values
+  - Zero false negatives for escaping values
+  - Benchmark shows 60% reduction in heap allocations
+github_issue: #TBD
+
+### FG-003: Error Recovery Parser
+priority: HIGH
+effort: M
+impact: DEVELOPER_EXPERIENCE
+description: |
+  Parser must handle malformed input gracefully for REPL/IDE scenarios
+target_metric: partial_ast_generation_rate: 95%
+dependencies: []
+components:
+  - panic_mode_recovery
+  - synchronization_points
+  - ghost_node_generation
+  - partial_ast_construction
+acceptance_criteria:
+  - Parser produces partial AST for 95% of malformed inputs
+  - IDE features work with incomplete code
+  - Clear error messages with recovery suggestions
+github_issue: #TBD
+
+### FG-004: Polars DataFrame Integration
+priority: MEDIUM
+effort: L
+impact: DATA_SCIENCE_FEATURES
+description: |
+  DataFrame-first design lacks concrete Polars bridging
+target_metric: zero_copy_operations: true
+dependencies: []
+components:
+  - arrow_array_conversion
+  - lazy_frame_pipeline_mapping
+  - series_interop
+  - dataframe_native_syntax
+acceptance_criteria:
+  - Zero-copy conversion between Ruchy arrays and Polars Series
+  - Pipeline operators map to LazyFrame operations
+  - Performance within 10% of native Polars
+github_issue: #TBD
+
+### FG-005: Module Resolution Cache
+priority: MEDIUM
+effort: M
+impact: BUILD_PERFORMANCE
+description: |
+  No persistent module cache for Cargo dependencies
+target_metric: incremental_build_speedup: 10x
+dependencies: [FG-001]
+components:
+  - cargo_metadata_parsing
+  - crate_resolution_cache
+  - parallel_compilation
+  - version_conflict_resolution
+acceptance_criteria:
+  - Cargo dependencies resolved once and cached
+  - Parallel compilation of independent modules
+  - Correct handling of feature flags
+github_issue: #TBD
+
+## Quality Infrastructure Gaps
+
+### QI-001: Property Test Generators
+priority: HIGH
+effort: M
+impact: CORRECTNESS_GUARANTEE
+description: |
+  No QuickCheck generators for AST nodes
+target_metric: property_test_coverage: 80%
+dependencies: []
+components:
+  - arbitrary_implementations
+  - weighted_generation
+  - shrinking_strategies
+  - semantic_preservation_tests
+acceptance_criteria:
+  - All AST nodes have Arbitrary implementations
+  - Shrinking produces minimal counterexamples
+  - Property tests catch regressions
+github_issue: #TBD
+
+### QI-002: Benchmarking Infrastructure
+priority: MEDIUM
+effort: S
+impact: PERFORMANCE_VALIDATION
+description: |
+  No concrete performance validation against targets
+target_metric: benchmark_suite_coverage: 100%
+dependencies: []
+components:
+  - criterion_benchmarks
+  - baseline_comparisons
+  - regression_detection
+  - performance_dashboard
+acceptance_criteria:
+  - Benchmarks for all major operations
+  - Automated regression detection in CI
+  - Performance within targets (Polars: 90%, Python: 150%)
+github_issue: #TBD
+
+## Runtime Component Gaps
+
+### RC-001: Actor Mailbox Implementation
+priority: LOW
+effort: M
+impact: CONCURRENCY_MODEL
+description: |
+  No concrete lock-free mailbox for actor system
+target_metric: message_throughput: 1M_msgs/sec
+dependencies: []
+components:
+  - lock_free_queue
+  - selective_receive
+  - priority_handling
+  - backpressure_mechanism
+acceptance_criteria:
+  - 1M messages/second throughput
+  - Selective receive without starvation
+  - Memory bounded with backpressure
+github_issue: #TBD
+
+### RC-002: JIT Compilation Strategy
+priority: LOW
+effort: XL
+impact: RUNTIME_PERFORMANCE
+description: |
+  No Cranelift integration for hot path optimization
+target_metric: hot_path_speedup: 5x
+dependencies: [FG-002]
+components:
+  - cranelift_backend
+  - profile_guided_optimization
+  - inline_caching
+  - deoptimization_support
+acceptance_criteria:
+  - Hot functions compiled to native code
+  - 5x speedup on compute-intensive benchmarks
+  - Correct deoptimization on assumption violation
+github_issue: #TBD
+
+### RC-003: Session Type Validator
+priority: LOW
+effort: L
+impact: PROTOCOL_SAFETY
+description: |
+  MCP protocol verification unimplemented
+target_metric: protocol_violations_caught: 100%
+dependencies: []
+components:
+  - linear_type_checking
+  - deadlock_detection
+  - protocol_state_machine
+  - compile_time_verification
+acceptance_criteria:
+  - All protocol violations caught at compile time
+  - Deadlock freedom statically verified
+  - Clear error messages for protocol violations
+github_issue: #TBD
+
+## Integration Gaps
+
+### IG-001: LSP Implementation
+priority: HIGH
+effort: L
+impact: IDE_SUPPORT
+description: |
+  No concrete Language Server Protocol implementation
+target_metric: ide_feature_completeness: 90%
+dependencies: [FG-001, FG-003]
+components:
+  - completion_provider
+  - goto_definition
+  - hover_information
+  - refactoring_actions
+acceptance_criteria:
+  - Type-directed completion works
+  - Sub-100ms response time
+  - All major IDE features supported
+github_issue: #TBD
+
+### IG-002: Source Map Generation
+priority: MEDIUM
+effort: S
+impact: DEBUGGING_SUPPORT
+description: |
+  No debugging support for transpiled code
+target_metric: source_map_accuracy: 100%
+dependencies: []
+components:
+  - line_column_mapping
+  - variable_name_preservation
+  - stack_trace_translation
+  - breakpoint_mapping
+acceptance_criteria:
+  - Accurate source maps for all transpiled code
+  - Debugger breakpoints work correctly
+  - Stack traces show Ruchy source locations
+github_issue: #TBD
+
+## Metrics
+
+total_features: 12
+critical_features: 1
+high_priority_features: 4
+medium_priority_features: 3
+low_priority_features: 4
+
+estimated_effort:
+  S: 2
+  M: 5
+  L: 4
+  XL: 2
+
+quality_metrics:
+  current_coverage: 16%  # Based on minimal MVP
+  target_coverage: 80%
+  current_complexity_p99: 8
+  target_complexity_p99: 10
+  satd_count: 0
+  property_test_coverage: 10%
+
+## Implementation Roadmap
+
+phase_1_mvp:
+  - FG-003  # Error Recovery Parser
+  - QI-001  # Property Test Generators
+  - IG-001  # LSP Implementation
+  timeline: 2_weeks
+
+phase_2_performance:
+  - FG-001  # Incremental Compilation
+  - FG-002  # Escape Analysis
+  - QI-002  # Benchmarking
+  timeline: 3_weeks
+
+phase_3_integrations:
+  - FG-004  # Polars DataFrame
+  - FG-005  # Module Resolution
+  - IG-002  # Source Maps
+  timeline: 2_weeks
+
+phase_4_advanced:
+  - RC-001  # Actor Mailbox
+  - RC-002  # JIT Compilation
+  - RC-003  # Session Types
+  timeline: 4_weeks
+
+## Toyota Way Compliance
+
+kaizen_opportunities:
+  - Automated refactoring for complexity violations
+  - Continuous performance regression detection
+  - Self-improving error messages based on user confusion
+
+jidoka_enforcement:
+  - Compile-time quality gates prevent bad code
+  - Runtime telemetry detects quality issues
+  - Automatic rollback on performance regression
+
+genchi_genbutsu:
+  - Direct measurement of all metrics
+  - User behavior analytics inform priorities
+  - Production telemetry drives optimization
+
+## Notes
+
+- All features must pass PMAT quality gates before implementation
+- No feature is complete without property tests
+- Performance targets are mandatory, not aspirational
+- Zero SATD policy means tracking here, not in code comments

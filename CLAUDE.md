@@ -171,6 +171,27 @@ impl ContextAnalyzer {
 }
 ```
 
+## Quality Philosophy: The Toyota Way
+
+### Core Principles
+1. **Kaizen (Continuous Improvement)**: Every commit improves the codebase
+2. **Jidoka (Built-in Quality)**: Quality is built in, not inspected in  
+3. **Genchi Genbutsu (Go and See)**: Understand by direct observation and testing
+4. **Respect for People**: Write code that respects future maintainers
+
+### Zero Tolerance Policy
+- **NO SATD (Self-Admitted Technical Debt)**: Zero TODO/FIXME/HACK/XXX comments
+- **NO Broken Windows**: Fix issues immediately, don't accumulate debt
+- **NO Shortcuts**: Do it right the first time
+- If something needs doing later, track it in GitHub Issues, not code comments
+
+### The Andon Cord Principle
+Stop the line when quality issues are detected:
+- Failing tests block all progress
+- Linter warnings are errors
+- Coverage drops are unacceptable
+- Performance regressions trigger immediate fixes
+
 ## Quality Gates (via PMAT MCP Integration)
 
 **MANDATORY**: All code must be developed using PMAT quality proxy via MCP (v2.4.0). Every commit must pass:
@@ -179,9 +200,10 @@ impl ContextAnalyzer {
 PMAT MCP server is configured at `~/.config/claude/mcps/pmat.json` and provides:
 - Real-time code quality analysis during development
 - Automated quality gate enforcement
-- Test coverage monitoring
-- Complexity metrics tracking
-- Property test validation
+- Test coverage monitoring (minimum 80%)
+- Complexity metrics tracking (cyclomatic complexity ≤10)
+- Property test validation (>80% coverage)
+- Zero SATD enforcement (no TODO/FIXME/HACK/XXX comments)
 
 To verify PMAT MCP is running:
 ```bash
