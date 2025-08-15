@@ -111,7 +111,7 @@ pub enum BinaryOp {
     Divide,
     Modulo,
     Power,
-    
+
     // Comparison
     Equal,
     NotEqual,
@@ -119,11 +119,11 @@ pub enum BinaryOp {
     LessEqual,
     Greater,
     GreaterEqual,
-    
+
     // Logical
     And,
     Or,
-    
+
     // Bitwise
     BitwiseAnd,
     BitwiseOr,
@@ -157,10 +157,7 @@ pub enum TypeKind {
     Named(String),
     Optional(Box<Type>),
     List(Box<Type>),
-    Function {
-        params: Vec<Type>,
-        ret: Box<Type>,
-    },
+    Function { params: Vec<Type>, ret: Box<Type> },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -233,14 +230,14 @@ mod tests {
             let span1 = Span::new(start1, end1);
             let span2 = Span::new(start2, end2);
             let merged = span1.merge(span2);
-            
+
             prop_assert!(merged.start <= span1.start);
             prop_assert!(merged.start <= span2.start);
             prop_assert!(merged.end >= span1.end);
             prop_assert!(merged.end >= span2.end);
         }
     }
-    
+
     #[test]
     fn test_ast_size() {
         // Track AST node sizes for optimization
