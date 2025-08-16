@@ -149,7 +149,7 @@ print_stdout = "warn"
 print_stderr = "warn"
 
 [workspace.package]
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 authors = ["Ruchy Contributors"]
 license = "MIT OR Apache-2.0"
@@ -224,6 +224,10 @@ rustyline = { workspace = true }
 colored = "2.1"
 # DataFrame support
 polars = { version = "0.35", features = ["lazy"], optional = true }
+# Snapshot testing
+sha2 = "0.10"
+toml = "0.8"
+chrono = "0.4"
 
 [dev-dependencies]
 proptest = { workspace = true }

@@ -4,17 +4,28 @@
 
 use crate::frontend::ast::{ActorHandler, Attribute, BinaryOp, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param, Pattern, PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp};
 use crate::frontend::lexer::{Token, TokenStream};
+use crate::parser::error_recovery::{ErrorRecovery, ErrorNode, SourceLocation, RecoveryRules};
 use anyhow::{bail, Result};
 
 pub struct Parser<'a> {
     tokens: TokenStream<'a>,
+    error_recovery: ErrorRecovery,
+    errors: Vec<ErrorNode>,
 }
 
 impl<'a> Parser<'a> {
     #[must_use] pub fn new(input: &'a str) -> Self {
         Self {
             tokens: TokenStream::new(input),
+            error_recovery: ErrorRecovery::new(),
+            errors: Vec::new(),
         }
+    }
+    
+    /// Get all errors encountered during parsing
+    #[must_use]
+    pub fn get_errors(&self) -> &[ErrorNode] {
+        &self.errors
     }
 
     /// Parse the input into an expression or block of expressions
@@ -362,15 +373,53 @@ impl<'a> Parser<'a> {
         };
         
         let start_span = self.tokens.expect(Token::Fun)?;
-
-        let name = match self.tokens.advance() {
-            Some((Token::Identifier(name), _)) => name,
-            _ => bail!("Expected function name"),
+        
+        // Get current position for error location
+        let current_pos = self.tokens.position();
+        let location = SourceLocation {
+            line: current_pos.0,
+            column: current_pos.1,
+            file: None,
         };
 
-        self.tokens.expect(Token::LeftParen)?;
-        let params = self.parse_params()?;
-        self.tokens.expect(Token::RightParen)?;
+        // Parse function name with error recovery
+        let name = match self.tokens.advance() {
+            Some((Token::Identifier(name), _)) => name,
+            _ => {
+                // Missing function name - recover with synthetic name
+                if self.error_recovery.should_continue() {
+                    let error = self.error_recovery.missing_function_name(location.clone());
+                    self.errors.push(error.clone());
+                    
+                    // Skip to next synchronization point
+                    if let Some((Token::LeftParen, _)) = self.tokens.peek() {
+                        // Continue parsing if we see params
+                        "error_fn".to_string()
+                    } else {
+                        // Skip until we find a sync token
+                        self.skip_to_sync();
+                        return Ok(RecoveryRules::synthesize_ast(&error));
+                    }
+                } else {
+                    bail!("Expected function name");
+                }
+            }
+        };
+
+        // Parse parameters with error recovery
+        let params = if self.tokens.expect(Token::LeftParen).is_err() {
+            if self.error_recovery.should_continue() {
+                let error = self.error_recovery.missing_function_params(name.clone(), location.clone());
+                self.errors.push(error);
+                Vec::new() // Use empty params as recovery
+            } else {
+                bail!("Expected '(' after function name");
+            }
+        } else {
+            let params = self.parse_params()?;
+            self.tokens.expect(Token::RightParen)?;
+            params
+        };
 
         let return_type = if let Some((Token::Arrow, _)) = self.tokens.peek() {
             self.tokens.advance();
@@ -379,8 +428,22 @@ impl<'a> Parser<'a> {
             None
         };
 
-        self.tokens.expect(Token::LeftBrace)?;
-        let body = Box::new(self.parse_block()?);
+        // Parse body with error recovery
+        let body = if self.tokens.expect(Token::LeftBrace).is_err() {
+            if self.error_recovery.should_continue() {
+                let error = self.error_recovery.missing_function_body(
+                    name.clone(),
+                    params.clone(),
+                    location
+                );
+                self.errors.push(error);
+                Box::new(Expr::new(ExprKind::Literal(crate::frontend::ast::Literal::Unit), start_span))
+            } else {
+                bail!("Expected '{{' for function body");
+            }
+        } else {
+            Box::new(self.parse_block()?)
+        };
 
         let span = start_span.merge(body.span);
         Ok(Expr::new(
@@ -1371,6 +1434,17 @@ impl<'a> Parser<'a> {
         })
     }
 
+    /// Skip tokens until we find a synchronization point for error recovery
+    fn skip_to_sync(&mut self) {
+        while let Some((token, _)) = self.tokens.peek() {
+            let token_str = format!("{:?}", token);
+            if self.error_recovery.is_sync_token(&token_str) {
+                break;
+            }
+            self.tokens.advance();
+        }
+    }
+    
     fn parse_range_from(&mut self, start: Expr) -> Result<Expr> {
         let (op_token, _op_span) = self.tokens.advance().expect("checked by parser logic");
         let inclusive = matches!(op_token, Token::DotDotEqual);

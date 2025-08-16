@@ -125,7 +125,9 @@
 pub mod backend;
 pub mod frontend;
 pub mod middleend;
+pub mod parser;
 pub mod runtime;
+pub mod transpiler;
 
 #[cfg(test)]
 pub mod testing;
@@ -134,9 +136,9 @@ pub mod testing;
 pub use backend::transpiler::Transpiler;
 pub use frontend::{
     ast::{Expr, ExprKind},
-    error_recovery::RecoveryParser,
     parser::Parser,
 };
+pub use parser::error_recovery::{ErrorNode, ErrorRecovery};
 pub use runtime::repl::Repl;
 
 /// Parse and transpile Ruchy code to Rust in one step.

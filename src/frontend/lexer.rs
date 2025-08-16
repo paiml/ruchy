@@ -240,6 +240,15 @@ impl<'a> TokenStream<'a> {
             peeked: None,
         }
     }
+    
+    /// Get the current position (line, column) in the source
+    #[must_use]
+    pub fn position(&self) -> (usize, usize) {
+        // For now, return a simple position based on current span
+        // In a real implementation, we'd track line/column properly
+        let span = self.lexer.span();
+        (1, span.start) // Simplified: all on line 1, column is byte offset
+    }
 
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<(Token, Span)> {
