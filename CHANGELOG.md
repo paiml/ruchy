@@ -5,6 +5,28 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-01-16
+
+### Added
+- **Actor System Implementation**
+  - Actor definitions with state fields and receive blocks
+  - Message passing operators: `!` (send) and `?` (ask) with space-separated syntax
+  - Comprehensive test suite for actor parsing and transpilation
+  - AST support for actors, send operations, and ask operations
+
+### Fixed
+- **Parser Improvements**
+  - Fixed operator precedence for actor message passing
+  - Improved binary operator parsing to handle `!` and `?` correctly
+  - Fixed receive block parsing to avoid consuming extra closing braces
+  - Enhanced lexer with `receive`, `send`, and `ask` keywords
+
+### Changed
+- **Message Passing Syntax**
+  - Changed from `actor!(message)` to `actor ! message` (space-separated)
+  - Changed from `actor?(message)` to `actor ? message` (space-separated)
+  - This improves parsing consistency and fixes REPL bugs
+
 ## [0.3.0] - 2025-01-16
 
 ### Added
