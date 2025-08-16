@@ -28,19 +28,23 @@ fun analyze(data: DataFrame) -> Result<Statistics> {
 **The Problem**: Python's ease-of-use comes at a 50-100x performance cost. Rust's performance requires managing lifetimes, traits, and complex syntax.
 
 **The Solution**: Ruchy provides Python-like syntax that mechanically transforms to idiomatic Rust, achieving:
-- **<10ms REPL startup** for interactive development
+- **Interactive REPL** with type inference for rapid development
 - **Zero runtime overhead** - compiles to native Rust
 - **Direct Cargo integration** - use any Rust crate unchanged
-- **Native DataFrame operations** via Polars
+- **Method call syntax** - familiar `x.method()` style
+- **Type inference** - Hindley-Milner with gradual typing
 
 ## Key Features
 
 ### 🚀 Multiple Execution Modes
 ```bash
-# Interactive REPL with JIT compilation
+# Interactive REPL with type inference
 $ ruchy
-ruchy> [1..100] |> filter(_ % 2 == 0) |> sum()
-2550
+ruchy> let x = 42
+ruchy> :type x
+x: i32
+ruchy> "hello".len()
+5
 
 # Script execution
 $ ruchy run analysis.ruchy
@@ -64,10 +68,13 @@ let top_performers = df
 
 ### 🎯 Zero-Cost Abstractions
 ```rust
-// Ruchy source
+// Ruchy source with type inference
 fun process(items: [T]) -> [T] {
     items |> map(transform) |> filter(validate)
 }
+
+// Method call syntax
+let result = data.filter(|x| x > 0).map(|x| x * 2)
 
 // Generated Rust (identical performance)
 fn process<T>(items: Vec<T>) -> Vec<T> {
@@ -222,11 +229,13 @@ Source (.ruchy) → Parser → Type Inference → Rust AST → rustc → Native 
                   REPL     Type Errors    Optimization
 ```
 
-### Type System
-- Bidirectional type checking with Hindley-Milner inference
-- Row polymorphism for extensible records
-- Refinement types with SMT verification
-- Gradual typing with runtime boundary checks
+### Type System (✅ Implemented)
+- **Hindley-Milner type inference** with Algorithm W
+- **Gradual typing** - mix typed and untyped code
+- **Method call syntax** - `x.method()` style
+- **Automatic type inference** in REPL
+- Row polymorphism for extensible records (planned)
+- Refinement types with SMT verification (planned)
 
 ### Memory Model
 - Affine types with escape analysis
@@ -294,6 +303,46 @@ $ ruchy build --quality-gate
 ✓ Coverage: 94% (threshold: 80%)
 ✓ Properties: 127 passing
 ```
+
+## Current Implementation Status (v0.2.0)
+
+### ✅ Implemented Features
+- **Core Language**
+  - Variables and literals (integers, floats, strings, booleans)
+  - Functions with type annotations
+  - Pattern matching with guards
+  - If/else expressions
+  - For loops and ranges
+  - Pipeline operators
+  - Import statements
+  - String interpolation
+  
+- **Type System**
+  - Complete Hindley-Milner type inference
+  - Gradual typing (mix typed and untyped)
+  - Method call syntax (`x.method()`)
+  - Type inference in REPL (`:type` command)
+  
+- **REPL**
+  - Interactive evaluation
+  - Type inspection (`:type`)
+  - AST inspection (`:ast`)
+  - Rust code preview (`:rust`)
+  - Session management
+
+### 🚧 In Progress
+- DataFrame support with Polars
+- Actor system for concurrency
+- Async/await support
+- Property testing attributes
+- JIT compilation for faster REPL
+
+### 📋 Planned
+- MCP protocol integration
+- Package manager
+- Language server (LSP)
+- Debugger support
+- WebAssembly target
 
 ## Documentation
 

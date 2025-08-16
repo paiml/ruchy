@@ -1,0 +1,44 @@
+// Example: Type Inference in Ruchy
+
+// Variables get their types inferred
+let x = 42          // inferred as i32
+let y = 3.14        // inferred as f64
+let name = "Alice"  // inferred as String
+
+// Functions can have gradual typing
+fun add(a, b) {     // untyped parameters default to Any
+    a + b
+}
+
+// Or explicit types
+fun multiply(x: i32, y: i32) -> i32 {
+    x * y
+}
+
+// Method calls work naturally
+let text = "Hello, World!"
+let length = text.len()      // Returns i32
+
+let numbers = [1, 2, 3, 4, 5]
+let count = numbers.len()    // List methods also work
+
+// String interpolation
+let greeting = "Hello, {name}!"
+println(greeting)
+
+// Type inference works through complex expressions
+let result = [1, 2, 3]
+    |> map(|x| x * 2)
+    |> filter(|x| x > 2)
+    |> sum()
+
+// Pattern matching preserves types
+let message = match x {
+    0 => "zero",
+    1 => "one",
+    _ => "many"
+}
+
+println("x = {x}, type is i32")
+println("name = {name}, type is String")
+println("result = {result}")

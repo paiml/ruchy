@@ -1,0 +1,49 @@
+// Example: Method Call Syntax in Ruchy
+
+// String methods
+let text = "Hello, Ruchy!"
+println("Length: {}", text.len())
+println("Uppercase: {}", text.to_upper())
+println("Contains 'Ruchy': {}", text.contains("Ruchy"))
+
+// List methods
+let mut numbers = [1, 2, 3]
+numbers.push(4)
+numbers.push(5)
+
+let first = numbers.pop()  // Returns Option<T>
+println("Popped: {first}")
+
+// Method chaining
+let result = "  hello world  "
+    .trim()
+    .to_upper()
+    .replace("WORLD", "RUCHY")
+
+println("Result: {result}")
+
+// Custom types with methods (future)
+struct Point {
+    x: f64,
+    y: f64,
+}
+
+impl Point {
+    fun distance(&self, other: &Point) -> f64 {
+        let dx = self.x - other.x
+        let dy = self.y - other.y
+        (dx * dx + dy * dy).sqrt()
+    }
+}
+
+let p1 = Point { x: 0.0, y: 0.0 }
+let p2 = Point { x: 3.0, y: 4.0 }
+let dist = p1.distance(&p2)
+println("Distance: {dist}")
+
+// DataFrame methods (when implemented)
+// let df = DataFrame::read_csv("data.csv")
+//     .filter(col("age") > 18)
+//     .select(["name", "email"])
+//     .sort("name")
+//     .limit(100)

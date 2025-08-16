@@ -1,7 +1,15 @@
 //! Ruchy - A systems-oriented scripting language that transpiles to Rust
 //!
 //! Ruchy provides a high-level, expressive syntax with features like pipeline operators,
-//! pattern matching, and actor-based concurrency, all while transpiling to efficient Rust code.
+//! pattern matching, type inference, and method calls, all while transpiling to efficient Rust code.
+//!
+//! ## Features
+//! 
+//! - **Type Inference**: Hindley-Milner type system with Algorithm W
+//! - **Method Calls**: Familiar `x.method()` syntax
+//! - **Gradual Typing**: Mix typed and untyped code
+//! - **Pipeline Operators**: Chain operations with `|>`
+//! - **Pattern Matching**: Powerful pattern matching with exhaustiveness checking
 
 #![cfg_attr(test, allow(clippy::unwrap_used))]
 #![cfg_attr(test, allow(clippy::expect_used))]
@@ -18,10 +26,16 @@
 //! ```
 //! use ruchy::frontend::parser::Parser;
 //! use ruchy::backend::transpiler::Transpiler;
+//! use ruchy::middleend::InferenceContext;
 //!
 //! // Parse Ruchy code
 //! let mut parser = Parser::new("1 + 2 * 3");
 //! let expr = parser.parse().expect("Failed to parse");
+//!
+//! // Infer types
+//! let mut ctx = InferenceContext::new();
+//! let ty = ctx.infer(&expr).expect("Failed to infer type");
+//! println!("Type: {}", ty); // Type: i32
 //!
 //! // Transpile to Rust
 //! let transpiler = Transpiler::new();
@@ -52,6 +66,20 @@
 //!
 //! let mut parser = Parser::new(code);
 //! let expr = parser.parse().expect("Failed to parse pipeline");
+//! ```
+//!
+//! ## Method Calls
+//!
+//! ```
+//! use ruchy::frontend::parser::Parser;
+//!
+//! let code = r#"
+//!     let text = "hello"
+//!     text.len()
+//! "#;
+//!
+//! let mut parser = Parser::new(code);
+//! let expr = parser.parse().expect("Failed to parse method call");
 //! ```
 //!
 //! ## Pattern Matching
