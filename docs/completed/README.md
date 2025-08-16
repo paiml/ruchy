@@ -130,7 +130,7 @@ Current performance (unoptimized):
 
 ## 🔗 Resources
 
-- [TODO.md](/docs/TODO.md) - Detailed task tracking
+- [TODO.md](/docs/todo/TODO.md) - Detailed task tracking
 - [CLAUDE.md](/CLAUDE.md) - Project context and guidelines
 - [Grammar Spec](/docs/architecture/grammer.md) - Language grammar
 - [Examples](/examples/) - Ruchy code examples
