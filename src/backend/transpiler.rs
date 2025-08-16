@@ -1545,7 +1545,7 @@ mod tests {
     
     #[test]
     fn test_transpile_send() {
-        let code = "counter!(Increment)";
+        let code = "counter ! Increment";
         let result = transpile_str(code).unwrap();
         assert!(result.contains(".send("));
         assert!(result.contains(".await"));
@@ -1553,7 +1553,7 @@ mod tests {
     
     #[test]
     fn test_transpile_ask() {
-        let code = "counter?(Get)";
+        let code = "counter ? Get";
         let result = transpile_str(code).unwrap();
         assert!(result.contains(".ask("));
         assert!(result.contains(".await"));
