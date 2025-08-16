@@ -17,6 +17,11 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Parse the input into an expression or block of expressions
+    /// 
+    /// # Panics
+    /// 
+    /// Should not panic in normal operation. Uses `expect` on verified conditions.
     pub fn parse(&mut self) -> Result<Expr> {
         // Parse multiple top-level expressions/statements as a block
         let mut exprs = Vec::new();
@@ -33,7 +38,7 @@ impl<'a> Parser<'a> {
         if exprs.is_empty() {
             bail!("Empty program");
         } else if exprs.len() == 1 {
-            Ok(exprs.into_iter().next().unwrap())
+            Ok(exprs.into_iter().next().expect("checked: non-empty vec"))
         } else {
             Ok(Expr {
                 kind: ExprKind::Block(exprs),
@@ -300,17 +305,17 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_type(&mut self) -> Result<Type> {
-        let (mut base_type, mut span) = match self.tokens.peek() {
+        let (mut base_type, span) = match self.tokens.peek() {
             Some((Token::LeftBracket, _)) => {
                 // List type: [T]
-                let start_span = self.tokens.advance().unwrap().1;
+                let start_span = self.tokens.advance().expect("checked: peeked token exists").1;
                 let inner = self.parse_type()?;
                 self.tokens.expect(Token::RightBracket)?;
                 (TypeKind::List(Box::new(inner)), start_span)
             }
             Some((Token::LeftParen, _)) => {
                 // Function type: (T1, T2) -> T3
-                let start = self.tokens.advance().unwrap().1;
+                let start = self.tokens.advance().expect("checked: peeked token exists").1;
                 let mut params = Vec::new();
                 
                 while !matches!(self.tokens.peek(), Some((Token::RightParen, _))) {
@@ -344,9 +349,9 @@ impl<'a> Parser<'a> {
                     
                     // For now, represent generics as Named with special formatting
                     let generic_name = if type_args.len() == 1 {
-                        format!("{}<{:?}>", name, type_args[0])
+                        format!("{name}<{:?}>", type_args[0])
                     } else {
-                        format!("{}<{:?}>", name, type_args)
+                        format!("{name}<{type_args:?}>")
                     };
                     (TypeKind::Named(generic_name), span)
                 } else {
@@ -574,8 +579,14 @@ impl<'a> Parser<'a> {
         let mut path_parts = Vec::new();
 
         // Parse the path (e.g., std::io::prelude)
-        while let Some((Token::Identifier(part), _)) = self.tokens.advance() {
-            path_parts.push(part);
+        loop {
+            match self.tokens.peek() {
+                Some((Token::Identifier(part), _)) => {
+                    path_parts.push(part.clone());
+                    self.tokens.advance();
+                }
+                _ => break,
+            }
 
             // Check for ::
             if !matches!(self.tokens.peek(), Some((Token::ColonColon, _))) {

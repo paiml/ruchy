@@ -267,20 +267,20 @@ impl Transpiler {
             if ch == '{' && chars.peek() != Some(&'{') {
                 // Found interpolation start
                 let mut var_name = String::new();
-                while let Some(ch) = chars.next() {
+                for ch in chars.by_ref() {
                     if ch == '}' {
                         break;
                     }
                     var_name.push(ch);
                 }
-                if !var_name.is_empty() {
+                if var_name.is_empty() {
+                    // Empty braces, keep as-is
+                    format_str.push_str("{}");
+                } else {
                     format_str.push_str("{}");
                     // Convert variable name to identifier token
                     let ident = syn::Ident::new(&var_name, proc_macro2::Span::call_site());
                     args.push(quote! { #ident });
-                } else {
-                    // Empty braces, keep as-is
-                    format_str.push_str("{}");
                 }
             } else if ch == '{' && chars.peek() == Some(&'{') {
                 // Escaped brace
@@ -433,10 +433,23 @@ impl Transpiler {
         }
     }
 
-    fn transpile_import(_path: &str, _items: &[String]) -> TokenStream {
-        // For now, just skip imports - they would be handled at module level
-        // In a full implementation, we'd collect these and emit them at the top
-        quote! {}
+    fn transpile_import(path: &str, items: &[String]) -> TokenStream {
+        // Convert path string to token stream
+        // For now, we'll just generate a comment since use statements need special handling
+        if items.is_empty() {
+            // Simple import: import std::io
+            let comment = format!("// use {};", path);
+            quote! {
+                // Import would be: use #path;
+            }
+        } else {
+            // Import with items: import std::io::{Read, Write}
+            let items_str = items.join(", ");
+            let comment = format!("// use {}::{{{}}};", path, items_str);
+            quote! {
+                // Import would be: use #path::{#items_str};
+            }
+        }
     }
 
     fn transpile_type(&self, ty: &Type) -> Result<TokenStream> {

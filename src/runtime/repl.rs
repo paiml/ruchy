@@ -251,12 +251,12 @@ fn main() {{
         } else {
             // For statements, just execute them
             format!(
-                r#"
+                r"
 fn main() {{
     {}
     {{{}}}
 }}
-"#,
+",
                 self.definitions.join("\n"),
                 rust_code
             )
