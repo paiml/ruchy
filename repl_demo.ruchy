@@ -1,0 +1,58 @@
+# Ruchy REPL Demonstration Script
+# This demonstrates the working features of the Ruchy REPL
+
+# Basic arithmetic and literals
+42
+3.14
+true
+false
+
+# String interpolation
+"Hello, {42}!"
+"Result: {1 + 2 * 3}"
+
+# Binary operations
+1 + 2
+5 - 3
+4 * 6
+8 / 2
+10 % 3
+2 ** 3
+
+# Comparison operations
+5 == 5
+3 != 4
+2 < 5
+7 > 4
+
+# Logical operations
+true && false
+true || false
+
+# Bitwise operations
+5 & 3
+5 | 3
+5 ^ 3
+
+# Unary operations
+!true
+-42
+~5
+
+# If expressions
+if true { 42 } else { 0 }
+
+# Function definitions
+fun add(a: i32, b: i32) -> i32 { a + b }
+
+# Show compilation to Rust
+:rust 1 + 2
+
+# Show AST
+:ast if true { 1 } else { 0 }
+
+# Show type inference
+:type add
+
+# Test string interpolation transpilation
+:rust "Hello, {name}!"

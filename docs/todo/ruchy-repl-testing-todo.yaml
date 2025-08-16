@@ -1,0 +1,367 @@
+# REPL Testing Specification - PDMT Format
+# Priority-Driven Monotonic Task specification for Ruchy REPL testing
+
+meta:
+  version: "1.0.0"
+  project: ruchy
+  component: repl
+  owner: compiler-team
+  created: 2024-01-15
+  priority: CRITICAL
+  estimated_effort: 4_weeks
+  tracking_issue: "ruchy/issues/001"
+
+objectives:
+  primary: "Achieve 100% confidence in REPL correctness, performance, and robustness"
+  metrics:
+    - line_coverage: ">= 95%"
+    - branch_coverage: ">= 90%"
+    - mutation_score: ">= 95%"
+    - latency_p99: "< 15ms"
+    - memory_limit: "< 100MB"
+    - fuzz_stability: "24h_without_crash"
+
+constraints:
+  - no_external_dependencies_for_core_tests
+  - all_tests_must_be_deterministic
+  - performance_tests_must_block_on_regression
+  - zero_flaky_tests_tolerance
+
+phases:
+  - phase_1:
+      name: "Foundation"
+      duration: 1_week
+      tasks:
+        - task_1_1:
+            name: "State Machine Property Testing"
+            priority: P0
+            effort: 2_days
+            dependencies: []
+            implementation:
+              module: "tests/repl/properties.rs"
+              test_count: 15
+              property_iterations: 100_000
+            deliverables:
+              - state_transition_properties
+              - invariant_preservation_tests
+              - recovery_path_verification
+            acceptance:
+              - all_state_transitions_covered
+              - no_invariant_violations_in_100k_iterations
+
+        - task_1_2:
+            name: "Basic Fuzzing Harness"
+            priority: P0
+            effort: 1_day
+            dependencies: []
+            implementation:
+              module: "fuzz/targets/repl_input.rs"
+              fuzzer: libfuzzer
+              corpus_size: 1000
+            deliverables:
+              - grammar_aware_fuzzer
+              - crash_reproduction_suite
+              - memory_leak_detection
+            acceptance:
+              - 1_hour_continuous_fuzzing_without_crash
+
+        - task_1_3:
+            name: "Performance Benchmarks"
+            priority: P0
+            effort: 2_days
+            dependencies: []
+            implementation:
+              module: "benches/repl_latency.rs"
+              framework: criterion
+              measurements:
+                - startup_time
+                - incremental_compilation
+                - type_lookup
+                - cache_hit_rate
+            deliverables:
+              - latency_benchmark_suite
+              - memory_usage_tracking
+              - regression_detection_scripts
+            acceptance:
+              - startup: "< 10ms"
+              - eval: "< 1ms"
+              - type_lookup: "< 10µs"
+
+  - phase_2:
+      name: "Robustness"
+      duration: 1_week
+      tasks:
+        - task_2_1:
+            name: "Grammar Coverage Fuzzing"
+            priority: P0
+            effort: 2_days
+            dependencies: [task_1_2]
+            implementation:
+              module: "fuzz/targets/grammar_coverage.rs"
+              coverage_target: "100%"
+              ast_variants: 47
+            deliverables:
+              - complete_grammar_exerciser
+              - coverage_report_generator
+              - edge_case_corpus
+            acceptance:
+              - all_47_ast_variants_reached
+              - 10k_unique_valid_programs_generated
+
+        - task_2_2:
+            name: "Mutation Testing Setup"
+            priority: P1
+            effort: 2_days
+            dependencies: [task_1_1]
+            implementation:
+              tool: cargo-mutants
+              targets:
+                - error_recovery
+                - incremental_compilation
+                - type_inference_cache
+            deliverables:
+              - mutation_test_harness
+              - survivor_analysis_report
+              - test_improvement_patches
+            acceptance:
+              - mutation_score: ">= 95%"
+              - all_error_paths_mutated
+
+        - task_2_3:
+            name: "Chaos Engineering Tests"
+            priority: P1
+            effort: 1_day
+            dependencies: []
+            implementation:
+              module: "tests/repl/chaos.rs"
+              scenarios:
+                - memory_exhaustion
+                - stack_overflow
+                - infinite_loops
+                - concurrent_sessions
+            deliverables:
+              - resource_limit_tests
+              - recovery_verification
+              - degradation_metrics
+            acceptance:
+              - graceful_oom_handling
+              - timeout_enforcement: "< 150ms"
+              - session_isolation_guaranteed
+
+  - phase_3:
+      name: "Integration"
+      duration: 1_week
+      tasks:
+        - task_3_1:
+            name: "Doctest Coverage"
+            priority: P0
+            effort: 2_days
+            dependencies: []
+            implementation:
+              target_coverage: "100%"
+              modules:
+                - repl::eval
+                - repl::types
+                - repl::cache
+                - repl::recovery
+            deliverables:
+              - comprehensive_doctests
+              - usage_examples
+              - api_documentation
+            acceptance:
+              - all_public_apis_documented
+              - doctests_as_specification
+
+        - task_3_2:
+            name: "Example Workflows"
+            priority: P1
+            effort: 1_day
+            dependencies: [task_3_1]
+            implementation:
+              directory: "examples/repl/"
+              workflows:
+                - data_science_pipeline
+                - interactive_debugging
+                - type_exploration
+                - performance_profiling
+            deliverables:
+              - executable_examples
+              - workflow_documentation
+              - integration_tests
+            acceptance:
+              - all_examples_compile_and_run
+              - real_world_usage_patterns_covered
+
+        - task_3_3:
+            name: "Golden Master Suite"
+            priority: P1
+            effort: 2_days
+            dependencies: []
+            implementation:
+              directory: "tests/golden/"
+              test_count: 50
+              categories:
+                - basic_expressions
+                - type_inference
+                - error_messages
+                - dataframe_output
+            deliverables:
+              - golden_test_harness
+              - baseline_outputs
+              - diff_visualizer
+            acceptance:
+              - all_output_formats_covered
+              - regression_detection_validated
+
+  - phase_4:
+      name: "CI Integration"
+      duration: 1_week
+      tasks:
+        - task_4_1:
+            name: "Benchmark Regression Detection"
+            priority: P0
+            effort: 1_day
+            dependencies: [task_1_3]
+            implementation:
+              ci_system: github_actions
+              threshold: 5_percent
+              storage: benchmark_db
+            deliverables:
+              - ci_benchmark_job
+              - regression_alerting
+              - performance_dashboard
+            acceptance:
+              - automatic_pr_blocking_on_regression
+              - historical_trend_tracking
+
+        - task_4_2:
+            name: "Continuous Fuzzing"
+            priority: P0
+            effort: 2_days
+            dependencies: [task_1_2, task_2_1]
+            implementation:
+              platform: oss-fuzz
+              targets: 3
+              duration: continuous
+            deliverables:
+              - fuzzing_integration
+              - crash_reproduction
+              - coverage_reports
+            acceptance:
+              - 24h_stability_proven
+              - automatic_issue_filing
+
+        - task_4_3:
+            name: "Coverage Reporting"
+            priority: P1
+            effort: 1_day
+            dependencies: []
+            implementation:
+              tool: tarpaulin
+              format: lcov
+              integration: codecov
+            deliverables:
+              - coverage_ci_job
+              - pr_coverage_diff
+              - badge_generation
+            acceptance:
+              - per_pr_coverage_report
+              - enforcement_rules_active
+
+        - task_4_4:
+            name: "Cross-Platform Matrix"
+            priority: P0
+            effort: 1_day
+            dependencies: []
+            implementation:
+              platforms:
+                - linux_x86_64
+                - linux_aarch64
+                - macos_x86_64
+                - macos_arm64
+                - windows_x86_64
+              rust_versions:
+                - stable
+                - beta
+                - "1.75"  # MSRV
+            deliverables:
+              - platform_test_matrix
+              - platform_specific_tests
+              - compatibility_report
+            acceptance:
+              - all_platforms_green
+              - msrv_maintained
+
+test_categories:
+  correctness:
+    - state_machine_properties
+    - differential_testing
+    - type_system_invariants
+
+  robustness:
+    - fuzzing
+    - mutation_testing
+    - error_recovery
+
+  performance:
+    - latency_benchmarks
+    - memory_usage
+    - cache_efficiency
+
+  integration:
+    - doctests
+    - examples
+    - golden_masters
+
+quality_gates:
+  pre_commit:
+    - cargo_test: "< 1s"
+    - cargo_clippy: "zero_warnings"
+    - cargo_fmt: "formatted"
+
+  pre_merge:
+    - all_tests_pass
+    - coverage_maintained
+    - benchmarks_no_regression
+    - fuzz_1hour_stable
+
+  release:
+    - mutation_score: ">= 95%"
+    - fuzz_24hour_stable
+    - all_platforms_tested
+    - golden_masters_updated
+
+risk_mitigation:
+  high_risk_areas:
+    - incremental_compilation_cache:
+        mitigation: "extensive_property_testing"
+        validation: "differential_testing"
+    - error_recovery_paths:
+        mitigation: "mutation_testing"
+        validation: "fuzzing"
+    - concurrent_sessions:
+        mitigation: "thread_sanitizer"
+        validation: "stress_testing"
+
+success_metrics:
+  technical:
+    - zero_repl_crashes_in_production
+    - p99_latency_under_15ms
+    - memory_usage_under_100mb
+
+  quality:
+    - test_coverage_above_95_percent
+    - mutation_score_above_95_percent
+    - zero_flaky_tests
+
+  user_impact:
+    - repl_satisfaction_score: ">= 4.5/5"
+    - bug_reports_per_release: "< 3"
+    - performance_complaints: "0"
+
+notes:
+  - "State machine testing is highest priority - REPL is fundamentally stateful"
+  - "Fuzzing must be grammar-aware to achieve meaningful coverage"
+  - "Performance regression detection must be automated and blocking"
+  - "Golden master tests prevent output format drift"
+  - "Cross-platform testing essential for ecosystem adoption"

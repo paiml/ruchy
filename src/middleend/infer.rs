@@ -48,6 +48,16 @@ impl InferenceContext {
         match &expr.kind {
             ExprKind::Literal(lit) => Ok(self.infer_literal(lit)),
             ExprKind::Identifier(name) => self.infer_identifier(name),
+            ExprKind::StringInterpolation { parts } => {
+                // Check that all expression parts are well-typed
+                for part in parts {
+                    if let crate::frontend::ast::StringPart::Expr(expr) = part {
+                        let _ = self.infer_expr(expr)?;
+                    }
+                }
+                // String interpolation always produces a String
+                Ok(MonoType::Named("String".to_string()))
+            }
             ExprKind::Binary { left, op, right } => self.infer_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.infer_unary(*op, operand),
             ExprKind::Try { expr } => self.infer_try(expr),
@@ -73,6 +83,9 @@ impl InferenceContext {
             ExprKind::MethodCall { receiver, method, args } => self.infer_method_call(receiver, method, args),
             ExprKind::Block(exprs) => self.infer_block(exprs),
             ExprKind::List(elements) => self.infer_list(elements),
+            ExprKind::ListComprehension { element, variable, iterable, condition } => {
+                self.infer_list_comprehension(element, variable, iterable, condition.as_deref())
+            }
             ExprKind::Match { expr, arms } => self.infer_match(expr, arms),
             ExprKind::For { var, iter, body } => self.infer_for(var, iter, body),
             ExprKind::While { condition, body } => self.infer_while(condition, body),
@@ -567,6 +580,38 @@ impl InferenceContext {
         }
 
         Ok(MonoType::List(Box::new(self.unifier.apply(&first_ty))))
+    }
+
+    fn infer_list_comprehension(
+        &mut self,
+        element: &Expr,
+        variable: &str,
+        iterable: &Expr,
+        condition: Option<&Expr>,
+    ) -> Result<MonoType> {
+        // Type check the iterable - must be a list
+        let iterable_ty = self.infer_expr(iterable)?;
+        let elem_ty = MonoType::Var(self.gen.fresh());
+        self.unifier.unify(&iterable_ty, &MonoType::List(Box::new(elem_ty.clone())))?;
+
+        // Save the old environment and add the loop variable
+        let old_env = self.env.clone();
+        self.env = self.env.extend(variable, TypeScheme::mono(self.unifier.apply(&elem_ty)));
+
+        // Type check the optional condition (must be bool)
+        if let Some(cond) = condition {
+            let cond_ty = self.infer_expr(cond)?;
+            self.unifier.unify(&cond_ty, &MonoType::Bool)?;
+        }
+
+        // Type check the element expression
+        let result_elem_ty = self.infer_expr(element)?;
+
+        // Restore the environment
+        self.env = old_env;
+
+        // Return List<T> where T is the type of the element expression
+        Ok(MonoType::List(Box::new(self.unifier.apply(&result_elem_ty))))
     }
 
     fn infer_match(

@@ -47,6 +47,24 @@ pub fn prop_transpilation_preserves_structure(expr: Expr) -> Result<(), TestCase
     Ok(())
 }
 
+/// Property: String interpolation transpiles correctly
+pub fn prop_string_interpolation_transpiles(parts: Vec<StringPart>) -> Result<(), TestCaseError> {
+    let transpiler = Transpiler::new();
+    let result = transpiler.transpile_string_interpolation(&parts);
+    
+    // Should either succeed or fail cleanly, never panic
+    if let Ok(tokens) = result {
+        let code = tokens.to_string();
+        // Should either be a format! call or a simple string literal
+        prop_assert!(
+            code.contains("format!") || code.starts_with('"') || code == "()",
+            "String interpolation should produce format! call or string literal"
+        );
+    }
+    // Transpilation errors are acceptable for malformed parts
+    Ok(())
+}
+
 /// Property: Parse-print roundtrip
 pub fn prop_parse_print_roundtrip(expr: Expr) -> Result<(), TestCaseError> {
     // This would require a pretty-printer, which we'll implement later

@@ -1,0 +1,334 @@
+# Docker Infrastructure - PDMT Specification
+# Priority-Driven Monotonic Task specification for Ruchy containerization
+
+meta:
+  version: "1.0.0"
+  project: ruchy
+  component: docker-infrastructure
+  owner: platform-team
+  created: 2024-01-15
+  priority: P0
+  estimated_effort: 2_weeks
+  tracking_issue: "ruchy/issues/docker-001"
+
+objectives:
+  primary: "Production-grade containerization with <20MB runtime, <1MB WASM"
+  metrics:
+    - runtime_image_size: "< 20MB"
+    - wasm_module_size: "< 1MB"
+    - cold_start_latency: "< 50ms"
+    - build_time_incremental: "< 30s"
+    - cve_count: 0
+    - multi_arch_support: ["amd64", "arm64"]
+
+constraints:
+  - zero_runtime_dependencies
+  - static_binary_only
+  - no_network_access_in_runtime
+  - reproducible_builds
+
+dependencies:
+  external:
+    - rust: "1.75+"
+    - docker: "24.0+"
+    - buildkit: "0.12+"
+  internal:
+    - ruchy-parser: "0.1.0"
+    - ruchy-typeck: "0.1.0"
+    - ruchy-codegen: "0.1.0"
+
+tasks:
+  - phase_1_foundation:
+      name: "Build Infrastructure"
+      priority: P0
+      duration: 3_days
+
+        - task_1_1:
+            name: "Multi-stage Dockerfile"
+            effort: 1_day
+            deliverables:
+              - dockerfile: "Dockerfile"
+              - stages: ["builder", "wasm-builder", "runtime", "development", "wasm-runtime"]
+            acceptance:
+              - all_stages_build_successfully
+              - cargo_cache_mount_working
+              - musl_static_linking_verified
+            implementation: |
+              FROM rust:1.75-alpine AS builder
+              ARG TARGETARCH=amd64
+              RUN apk add --no-cache musl-dev
+              WORKDIR /build
+              # Cargo chef pattern for dependency caching
+              COPY Cargo.toml Cargo.lock ./
+              RUN mkdir src && echo "fn main() {}" > src/main.rs
+              RUN cargo build --release --target ${RUST_TARGET}
+
+        - task_1_2:
+            name: "BuildKit Optimization"
+            effort: 4_hours
+            dependencies: [task_1_1]
+            deliverables:
+              - cache_mounts: "/usr/local/cargo/registry"
+              - heredoc_configs: true
+              - parallel_stages: true
+            acceptance:
+              - incremental_build: "< 30s"
+              - cache_hit_rate: "> 90%"
+
+        - task_1_3:
+            name: "Multi-arch Support"
+            effort: 1_day
+            dependencies: [task_1_1]
+            deliverables:
+              - buildx_config: ".docker/buildx.yaml"
+              - platforms: ["linux/amd64", "linux/arm64"]
+            acceptance:
+              - amd64_binary_runs
+              - arm64_binary_runs
+              - manifest_list_created
+            implementation: |
+              docker buildx create --name ruchy-builder
+              docker buildx build --platform linux/amd64,linux/arm64
+
+        - task_1_4:
+            name: "Size Optimization Pipeline"
+            effort: 4_hours
+            dependencies: [task_1_1]
+            deliverables:
+              - rustflags: "-C link-arg=-s -C opt-level=z"
+              - strip_binary: true
+              - upx_compression: false  # Avoid - breaks static analysis
+            acceptance:
+              - binary_size: "< 20MB"
+              - startup_time: "< 50ms"
+
+  - phase_2_wasm:
+      name: "WASM Module"
+      priority: P0
+      duration: 3_days
+
+        - task_2_1:
+            name: "WASM Build Pipeline"
+            effort: 1_day
+            deliverables:
+              - wasm_target: "wasm32-unknown-unknown"
+              - wasm_pack_config: "wasm-pack.toml"
+              - optimization_passes: ["Oz", "converge", "enable-simd"]
+            acceptance:
+              - module_size: "< 500KB"
+              - gzip_size: "< 200KB"
+              - load_time: "< 100ms"
+            implementation: |
+              wasm-pack build --target web --release
+              wasm-opt -Oz --enable-simd pkg/ruchy_wasm_bg.wasm -o pkg/ruchy_wasm_bg.wasm
+
+        - task_2_2:
+            name: "Minimal Allocator"
+            effort: 4_hours
+            dependencies: [task_2_1]
+            deliverables:
+              - allocator: "wee_alloc"
+              - panic_handler: "abort"
+              - lto: true
+            acceptance:
+              - allocator_overhead: "< 10KB"
+              - no_unwinding_code
+
+        - task_2_3:
+            name: "WASM REPL Interface"
+            effort: 1_day
+            dependencies: [task_2_1]
+            deliverables:
+              - html_interface: "index.html"
+              - javascript_size: "< 5KB"
+              - features: ["parsing", "type_checking", "completions"]
+            acceptance:
+              - works_offline
+              - sub_100ms_response
+              - mobile_compatible
+
+        - task_2_4:
+            name: "WASM Module API"
+            effort: 1_day
+            dependencies: [task_2_2]
+            deliverables:
+              - exports: ["new", "eval", "complete", "format"]
+              - error_handling: "Result<String, JsValue>"
+              - memory_management: "explicit_drop"
+            acceptance:
+              - no_memory_leaks
+              - graceful_error_recovery
+
+  - phase_3_runtime:
+      name: "Runtime Images"
+      priority: P0
+      duration: 2_days
+
+        - task_3_1:
+            name: "Scratch Runtime"
+            effort: 4_hours
+            dependencies: [task_1_1]
+            deliverables:
+              - base_image: "scratch"
+              - contents: ["/ruchy"]
+              - capabilities: []
+            acceptance:
+              - image_size: "< 20MB"
+              - zero_cves: true
+              - runs_without_libc
+
+        - task_3_2:
+            name: "Development Image"
+            effort: 4_hours
+            dependencies: [task_3_1, task_2_3]
+            deliverables:
+              - base_image: "alpine:3.19"
+              - additional_tools: ["ca-certificates", "tini"]
+              - wasm_server: "busybox httpd"
+            acceptance:
+              - image_size: "< 30MB"
+              - repl_functional
+              - wasm_server_starts
+
+        - task_3_3:
+            name: "Security Hardening"
+            effort: 4_hours
+            dependencies: [task_3_1]
+            deliverables:
+              - read_only_root: true
+              - no_new_privileges: true
+              - cap_drop: "ALL"
+              - user: "65534:65534"  # nobody
+            acceptance:
+              - passes_docker_bench_security
+              - no_writable_directories
+              - no_suid_binaries
+
+  - phase_4_orchestration:
+      name: "Container Orchestration"
+      priority: P1
+      duration: 2_days
+
+        - task_4_1:
+            name: "Docker Compose"
+            effort: 4_hours
+            deliverables:
+              - compose_file: "docker-compose.yml"
+              - services: ["runtime", "development", "wasm", "compiler"]
+              - networks: ["ruchy-net"]
+            acceptance:
+              - all_services_start
+              - proper_isolation
+              - health_checks_pass
+
+        - task_4_2:
+            name: "CI Integration"
+            effort: 1_day
+            dependencies: [task_4_1]
+            deliverables:
+              - github_workflow: ".github/workflows/docker.yml"
+              - registry_push: "ghcr.io/ruchy/*"
+              - vulnerability_scanning: "trivy"
+            acceptance:
+              - builds_on_pr
+              - scans_for_vulnerabilities
+              - publishes_on_merge
+
+        - task_4_3:
+            name: "Release Automation"
+            effort: 4_hours
+            dependencies: [task_4_2]
+            deliverables:
+              - semantic_versioning: true
+              - changelog_generation: true
+              - multi_arch_manifest: true
+            acceptance:
+              - tags_match_versions
+              - manifest_includes_all_archs
+
+  - phase_5_validation:
+      name: "Testing & Benchmarks"
+      priority: P1
+      duration: 2_days
+
+        - task_5_1:
+            name: "Container Tests"
+            effort: 1_day
+            deliverables:
+              - structure_tests: "container-structure-test.yaml"
+              - smoke_tests: "test/smoke.sh"
+              - integration_tests: "test/integration/"
+            acceptance:
+              - all_tests_pass
+              - coverage: "> 80%"
+
+        - task_5_2:
+            name: "Performance Benchmarks"
+            effort: 4_hours
+            dependencies: [task_5_1]
+            deliverables:
+              - startup_benchmark: "bench/startup.sh"
+              - memory_benchmark: "bench/memory.sh"
+              - size_tracking: "bench/size.sh"
+            acceptance:
+              - startup: "< 50ms"
+              - memory: "< 10MB"
+              - no_regressions
+
+        - task_5_3:
+            name: "Security Audit"
+            effort: 4_hours
+            dependencies: [task_3_3]
+            deliverables:
+              - docker_bench: "PASS"
+              - trivy_scan: "0 HIGH, 0 CRITICAL"
+              - snyk_report: "clean"
+            acceptance:
+              - zero_known_vulnerabilities
+              - passes_cis_benchmark
+
+quality_gates:
+  build:
+    - dockerfile_linted: "hadolint"
+    - shellcheck_clean: true
+    - yaml_valid: true
+
+  runtime:
+    - image_size_under_limit: true
+    - zero_cve_policy: enforced
+    - static_binary_verified: true
+
+  performance:
+    - cold_start: "< 50ms"
+    - warm_start: "< 10ms"
+    - memory_overhead: "< 2MB"
+
+monitoring:
+  metrics:
+    - image_size_bytes
+    - build_duration_seconds
+    - layer_count
+    - vulnerability_count
+
+  alerts:
+    - size_regression: "> 5%"
+    - build_failure: true
+    - cve_detected: true
+
+rollback:
+  strategy: "blue-green"
+  conditions:
+    - performance_regression
+    - security_vulnerability
+    - build_failure
+  procedure:
+    - revert_to_previous_tag
+    - notify_team
+    - create_incident
+
+notes:
+  - "Scratch base eliminates entire OS attack surface"
+  - "musl static linking required for glibc-free execution"
+  - "wee_alloc saves 10KB in WASM at minor perf cost"
+  - "BuildKit cache mounts critical for CI performance"
+  - "Multi-arch builds essential for cloud cost optimization"

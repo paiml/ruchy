@@ -183,7 +183,11 @@ impl ContextAnalyzer {
 - **NO SATD (Self-Admitted Technical Debt)**: Zero TODO/FIXME/HACK/XXX comments
 - **NO Broken Windows**: Fix issues immediately, don't accumulate debt
 - **NO Shortcuts**: Do it right the first time
+- **NO Temporary Solutions**: Never implement "for now" or "temporarily" solutions
+- **NO Placeholders**: Every feature must be fully implemented when committed
+- **NO Deferred Implementation**: Comments like "will be handled later" are forbidden
 - If something needs doing later, track it in GitHub Issues, not code comments
+- **IMMEDIATE FIX PRINCIPLE**: If you identify a missing feature during development, implement it completely before proceeding
 
 ### The Andon Cord Principle
 Stop the line when quality issues are detected:

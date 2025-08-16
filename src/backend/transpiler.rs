@@ -1,6 +1,6 @@
 //! Transpiler from Ruchy AST to Rust code
 
-use crate::frontend::ast::{Attribute, BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, PipelineStage, Type, TypeKind, UnaryOp};
+use crate::frontend::ast::{Attribute, BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, PipelineStage, StringPart, Type, TypeKind, UnaryOp};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -66,6 +66,7 @@ impl Transpiler {
                 let ident = syn::Ident::new(name, proc_macro2::Span::call_site());
                 Ok(quote! { #ident })
             }
+            ExprKind::StringInterpolation { parts } => self.transpile_string_interpolation(parts),
             ExprKind::Binary { left, op, right } => self.transpile_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.transpile_unary(*op, operand),
             ExprKind::Try { expr } => self.transpile_try(expr),
@@ -93,6 +94,9 @@ impl Transpiler {
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
             ExprKind::Match { expr, arms } => self.transpile_match(expr, arms),
             ExprKind::List(elements) => self.transpile_list(elements),
+            ExprKind::ListComprehension { element, variable, iterable, condition } => {
+                self.transpile_list_comprehension(element, variable, iterable, condition.as_deref())
+            }
             ExprKind::DataFrame { columns, rows } => self.transpile_dataframe(columns, rows),
             ExprKind::For { var, iter, body } => self.transpile_for(var, iter, body),
             ExprKind::While { condition, body } => self.transpile_while(condition, body),
@@ -133,18 +137,47 @@ impl Transpiler {
         match lit {
             Literal::Integer(n) => quote! { #n },
             Literal::Float(f) => quote! { #f },
-            Literal::String(s) => {
-                // Check if the string contains interpolation markers
-                if s.contains('{') && s.contains('}') {
-                    // For now, just return the string as-is
-                    // String interpolation will be handled at the Call level for println
-                    quote! { #s }
-                } else {
-                    quote! { #s }
-                }
-            }
+            Literal::String(s) => quote! { #s },
             Literal::Bool(b) => quote! { #b },
             Literal::Unit => quote! { () },
+        }
+    }
+
+    /// Transpile string interpolation to format! macro
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{StringPart, Expr, ExprKind, Literal};
+    /// let transpiler = Transpiler::new();
+    /// // "Hello, {name}!" becomes format!("Hello, {}!", name)
+    /// ```
+    pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<TokenStream> {
+        let mut format_string = String::new();
+        let mut args = Vec::new();
+        
+        for part in parts {
+            match part {
+                StringPart::Text(text) => {
+                    // Escape braces in literal text for format! macro
+                    let escaped = text.replace('{', "{{").replace('}', "}}");
+                    format_string.push_str(&escaped);
+                }
+                StringPart::Expr(expr) => {
+                    format_string.push_str("{}");
+                    let expr_tokens = self.transpile_expr(expr)?;
+                    args.push(expr_tokens);
+                }
+            }
+        }
+        
+        if args.is_empty() {
+            // No interpolation, just return the string
+            Ok(quote! { #format_string })
+        } else {
+            // Use format! macro for interpolation
+            Ok(quote! { format!(#format_string, #(#args),*) })
         }
     }
 
@@ -283,7 +316,7 @@ impl Transpiler {
             .iter()
             .map(|p| {
                 let param_name = syn::Ident::new(&p.name, proc_macro2::Span::call_site());
-                let param_type = self.transpile_type(&p.ty).unwrap_or_else(|_| quote! { _ });
+                let param_type = self.transpile_type(&p.ty).unwrap_or_else(|_| quote! { impl std::fmt::Display });
                 quote! { #param_name: #param_type }
             })
             .collect();
@@ -292,7 +325,15 @@ impl Transpiler {
             let ty = self.transpile_type(ret_ty)?;
             quote! { -> #ty }
         } else {
-            quote! {}
+            // No explicit return type - default to unit type ()
+            quote! { -> () }
+        };
+        
+        // If no explicit return type, make sure body doesn't return a value
+        let body_tokens = if return_type.is_none() {
+            quote! { #body_tokens; }
+        } else {
+            body_tokens
         };
 
         if is_async {
@@ -477,6 +518,11 @@ impl Transpiler {
             return Ok(quote! { {} });
         }
 
+        // Optimization: if block contains only one expression, don't add extra braces
+        if exprs.len() == 1 {
+            return self.transpile_expr(&exprs[0]);
+        }
+
         let mut tokens = Vec::new();
         for (i, expr) in exprs.iter().enumerate() {
             let expr_tokens = self.transpile_expr(expr)?;
@@ -578,6 +624,40 @@ impl Transpiler {
         Ok(quote! {
             vec![#(#element_tokens),*]
         })
+    }
+
+    fn transpile_list_comprehension(
+        &self,
+        element: &Expr,
+        variable: &str,
+        iterable: &Expr,
+        condition: Option<&Expr>,
+    ) -> Result<TokenStream> {
+        let var_ident = syn::Ident::new(variable, proc_macro2::Span::call_site());
+        let iterable_tokens = self.transpile_expr(iterable)?;
+        let element_tokens = self.transpile_expr(element)?;
+
+        if let Some(cond) = condition {
+            // List comprehension with filter: [expr for var in iterable if condition]
+            // Transpiles to: iterable.into_iter().filter(|var| condition).map(|var| expr).collect()
+            let condition_tokens = self.transpile_expr(cond)?;
+            Ok(quote! {
+                #iterable_tokens
+                    .into_iter()
+                    .filter(|#var_ident| #condition_tokens)
+                    .map(|#var_ident| #element_tokens)
+                    .collect::<Vec<_>>()
+            })
+        } else {
+            // Simple list comprehension: [expr for var in iterable]
+            // Transpiles to: iterable.into_iter().map(|var| expr).collect()
+            Ok(quote! {
+                #iterable_tokens
+                    .into_iter()
+                    .map(|#var_ident| #element_tokens)
+                    .collect::<Vec<_>>()
+            })
+        }
     }
 
     fn transpile_for(&self, var: &str, iter: &Expr, body: &Expr) -> Result<TokenStream> {
@@ -792,7 +872,7 @@ impl Transpiler {
                         "f64" => quote! { f64 },
                         "bool" => quote! { bool },
                         "String" => quote! { String },
-                        "Any" => quote! { _ }, // Gradual typing - use inference
+                        "Any" => quote! { impl std::fmt::Display }, // Gradual typing - use trait bounds
                         _ => {
                             let ident = syn::Ident::new(name, proc_macro2::Span::call_site());
                             quote! { #ident }
@@ -1521,6 +1601,34 @@ mod tests {
     }
 
     #[test]
+    fn test_transpile_string_interpolation() {
+        // Test simple interpolation
+        let result = transpile_str("\"Hello, {name}!\"").unwrap();
+        assert!(result.contains("format!"));
+        assert!(result.contains("Hello, {}!"));
+        assert!(result.contains("name"));
+
+        // Test complex interpolation
+        let result = transpile_str("\"Result: {x + y}\"").unwrap();
+        assert!(result.contains("format!"));
+        assert!(result.contains("Result: {}"));
+        assert!(result.contains("x + y"));
+
+        // Test no interpolation
+        let result = transpile_str("\"Simple string\"").unwrap();
+        assert!(!result.contains("format!"));
+        assert!(result.contains("Simple string"));
+    }
+
+    #[test]
+    fn test_transpile_string_interpolation_escaped() {
+        let result = transpile_str("\"Value: {{static}} and {dynamic}\"").unwrap();
+        assert!(result.contains("format!"));
+        assert!(result.contains("Value: {{static}} and {}"));
+        assert!(result.contains("dynamic"));
+    }
+
+    #[test]
     fn test_transpile_property_test() {
         let result = transpile_str("#[property] fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
         assert!(result.contains("fn add"));
@@ -1528,5 +1636,33 @@ mod tests {
         assert!(result.contains("use proptest::prelude::*"));
         assert!(result.contains("proptest!"));
         assert!(result.contains("fn test_property_add"));
+    }
+
+    #[test]
+    fn test_transpile_list_comprehension() {
+        // Simple comprehension: [x * 2 for x in numbers]
+        let result = transpile_str("[x * 2 for x in numbers]").unwrap();
+        assert!(result.contains("numbers"));
+        assert!(result.contains(".into_iter()"));
+        assert!(result.contains(".map(|x|"));
+        assert!(result.contains("x * 2"));
+        assert!(result.contains(".collect::<Vec<_>>()"));
+
+        // Comprehension with filter: [x for x in numbers if x > 0]
+        let result = transpile_str("[x for x in numbers if x > 0]").unwrap();
+        assert!(result.contains("numbers"));
+        assert!(result.contains(".into_iter()"));
+        assert!(result.contains(".filter(|x|"));
+        assert!(result.contains("x > 0"));
+        assert!(result.contains(".map(|x|"));
+        assert!(result.contains(".collect::<Vec<_>>()"));
+
+        // Complex comprehension: [name.len() for name in ["Alice", "Bob"] if name.len() > 3]
+        let result = transpile_str("[name.len() for name in [\"Alice\", \"Bob\"] if name.len() > 3]").unwrap();
+        assert!(result.contains("vec![\"Alice\", \"Bob\"]"));
+        assert!(result.contains(".filter(|name|"));
+        assert!(result.contains("name.len() > 3"));
+        assert!(result.contains(".map(|name|"));
+        assert!(result.contains("name.len()"));
     }
 }

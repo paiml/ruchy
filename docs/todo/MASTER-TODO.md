@@ -3,20 +3,22 @@
 This is the **single source of truth** for all Ruchy development tasks.
 
 ## 📊 Summary
-- **Completed**: 43 features (see `docs/done/`)
+- **Completed**: 45 features (see `docs/done/`)
 - **In Progress**: 0 features  
-- **Pending**: 19 features
-- **Total Progress**: 69.4% complete
-- **Coverage**: 76.37%
+- **Pending**: 17 features
+- **Total Progress**: 72.6% complete
+- **Coverage**: 78.25%
 
-## ✅ RECENTLY COMPLETED (2025-01-16 Afternoon Session)
+## ✅ RECENTLY COMPLETED (Latest Session)
 
-1. **Async/Await Support** - Modern async programming ✅
-2. **Vec Extension Methods** - sorted(), sum(), reversed(), unique(), min(), max() ✅
-3. **Try/Catch Syntax** - Exception-style error handling ✅
-4. **Coverage Command Fix** - Fixed make coverage to generate both HTML and LCOV ✅
+1. **Property Testing Attributes** - #[property] syntax for property-based testing ✅
+2. **List Comprehensions** - Python-style [x for x in list] syntax with filters ✅
+3. **Async/Await Support** - Modern async programming ✅
+4. **Vec Extension Methods** - sorted(), sum(), reversed(), unique(), min(), max() ✅
+5. **Try/Catch Syntax** - Exception-style error handling ✅
+6. **Coverage Command Fix** - Fixed make coverage to generate both HTML and LCOV ✅
 
-*Full details in `docs/done/session-2025-01-16-completed.md`*
+*Property Testing and List Comprehensions completed with full parsing, type inference, transpilation, and comprehensive test coverage*
 
 ## 🚧 PENDING FEATURES
 
@@ -87,25 +89,25 @@ This is the **single source of truth** for all Ruchy development tasks.
 
 ### Medium Priority (Enhanced Features)
 
-#### 7. Property Testing Attributes
-- **Status**: Not Started
+#### 7. Property Testing Attributes ✅ COMPLETED
+- **Status**: COMPLETED
 - **Priority**: MEDIUM
 - **Description**: #[property] for property-based tests
 - **Tasks**:
-  - [ ] Parse property attributes
-  - [ ] Integrate with proptest
-  - [ ] Generate property test code
-  - [ ] Support custom generators
+  - [x] Parse property attributes
+  - [x] Integrate with proptest
+  - [x] Generate property test code
+  - [x] Support custom generators
 
-#### 8. List Comprehensions
-- **Status**: Not Started
+#### 8. List Comprehensions ✅ COMPLETED
+- **Status**: COMPLETED
 - **Priority**: MEDIUM
 - **Description**: Python-style list comprehensions
 - **Tasks**:
-  - [ ] Parse [x for x in list] syntax
-  - [ ] Support if filters
-  - [ ] Support nested comprehensions
-  - [ ] Transpile to iterator chains
+  - [x] Parse [x for x in list] syntax
+  - [x] Support if filters
+  - [x] Transpile to iterator chains
+  - [ ] Support nested comprehensions (future enhancement)
 
 #### 9. Generic Type Parameters
 - **Status**: Not Started
@@ -224,7 +226,7 @@ This is the **single source of truth** for all Ruchy development tasks.
 ### By Priority
 - **CRITICAL**: 0/2 complete (0%)
 - **HIGH**: 2/4 partially complete (50%)
-- **MEDIUM**: 0/4 complete (0%)
+- **MEDIUM**: 2/4 complete (50%)
 - **LOW**: 0/9 complete (0%)
 
 ### By Component
@@ -236,11 +238,11 @@ This is the **single source of truth** for all Ruchy development tasks.
 
 ## 🎯 Next Sprint Priority Order
 
-1. **Actor System** - Essential for concurrent programming model
-2. **DataFrame Column Operations** - Complete the DataFrame support
-3. **Impl Blocks** - Methods for structs
-4. **Pattern Matching Guards** - Enhanced pattern matching
-5. **Property Testing Attributes** - Better testing support
+1. **Generic Type Parameters** - Essential for type system completeness
+2. **Object Literals** - JavaScript-style object syntax
+3. **Actor System** - Essential for concurrent programming model
+4. **DataFrame Column Operations** - Complete the DataFrame support
+5. **Impl Blocks** - Methods for structs
 
 ## 📝 Implementation Guidelines
 
@@ -278,5 +280,5 @@ cargo llvm-cov --html --output-dir target/coverage/html
 ```
 
 ---
-*Last Updated: 2025-01-16 15:35*
-*Next Review: When starting next feature implementation*
+*Last Updated: 2025-08-16 (Post List Comprehensions & Property Testing completion)*
+*Next Review: When starting Generic Type Parameters implementation*

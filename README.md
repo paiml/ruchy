@@ -40,6 +40,13 @@ fun analyze_data(df: DataFrame) -> DataFrame {
 
 ## Current Implementation Status (v0.2.1)
 
+### 🎉 **New in v0.2.1**
+- **REPL State Persistence**: Functions and definitions persist across REPL commands
+- **Enhanced String Interpolation**: Full AST support for `"Hello, {expr}!"` syntax  
+- **Grammar Coverage Testing**: Comprehensive testing of all language constructs
+- **Property-Based Testing**: Robust fuzzing and property testing framework
+- **Zero Technical Debt**: Complete elimination of TODO/FIXME comments
+
 ### ✅ **Completed Features**
 
 #### **Core Language**
@@ -70,11 +77,12 @@ fun analyze_data(df: DataFrame) -> DataFrame {
 
 ### 🔧 **Technical Achievements**
 
-- **157 Passing Tests** with comprehensive test coverage
+- **227 Passing Tests** with comprehensive test coverage
 - **78.25% Code Coverage** exceeding 75% requirement  
 - **Zero SATD Policy**: No TODO/FIXME/HACK comments in codebase
 - **Performance**: Type inference <5ms per 1000 LOC
 - **Quality Gates**: All linting and complexity requirements met
+- **REPL Reliability**: State persistence across commands with crash recovery
 
 ## Getting Started
 
@@ -133,6 +141,73 @@ fun main() {
 #[property]
 fun test_addition_commutative(a: i32, b: i32) {
     assert_eq!(a + b, b + a);
+}
+```
+
+## Usage
+
+### Command Line Interface
+
+The Ruchy CLI provides several commands for working with Ruchy code:
+
+```bash
+# Start interactive REPL
+ruchy repl
+
+# Transpile a single file
+ruchy transpile examples/hello.ruchy
+
+# Transpile and run
+ruchy run examples/fibonacci.ruchy
+
+# Type check without generating code
+ruchy check src/main.ruchy
+
+# Show AST for debugging
+ruchy ast examples/test.ruchy
+
+# Display help
+ruchy --help
+```
+
+### REPL Commands
+
+The interactive REPL supports special commands:
+
+```ruchy
+// Show compiled Rust code
+:rust 1 + 2
+
+// Display AST
+:ast let x = 42
+
+// Show inferred type  
+:type fibonacci
+
+// Clear session
+:clear
+
+// Show command history
+:history
+
+// Exit REPL
+:quit
+```
+
+### Programmatic API
+
+```rust
+use ruchy::{compile, is_valid_syntax, get_parse_error};
+
+// Compile Ruchy code to Rust
+let rust_code = compile("fun add(a, b) { a + b }")?;
+
+// Validate syntax
+assert!(is_valid_syntax("let x = 42"));
+
+// Get detailed error information
+if let Some(error) = get_parse_error("let x = ") {
+    println!("Parse error: {}", error);
 }
 ```
 
