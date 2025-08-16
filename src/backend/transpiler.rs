@@ -94,7 +94,16 @@ impl Transpiler {
         match lit {
             Literal::Integer(n) => quote! { #n },
             Literal::Float(f) => quote! { #f },
-            Literal::String(s) => quote! { #s },
+            Literal::String(s) => {
+                // Check if the string contains interpolation markers
+                if s.contains('{') && s.contains('}') {
+                    // For now, just return the string as-is
+                    // String interpolation will be handled at the Call level for println
+                    quote! { #s }
+                } else {
+                    quote! { #s }
+                }
+            }
             Literal::Bool(b) => quote! { #b },
             Literal::Unit => quote! { () },
         }
@@ -170,15 +179,24 @@ impl Transpiler {
 
     fn transpile_let(&self, name: &str, value: &Expr, body: &Expr) -> Result<TokenStream> {
         let value_tokens = self.transpile_expr(value)?;
-        let body_tokens = self.transpile_expr(body)?;
         let name_ident = syn::Ident::new(name, proc_macro2::Span::call_site());
 
-        Ok(quote! {
-            {
-                let #name_ident = #value_tokens;
-                #body_tokens
-            }
-        })
+        // Check if body is just Unit (meaning simple let statement, not let-in expression)
+        if matches!(body.kind, ExprKind::Literal(Literal::Unit)) {
+            // Simple let statement
+            Ok(quote! {
+                let #name_ident = #value_tokens
+            })
+        } else {
+            // Let-in expression
+            let body_tokens = self.transpile_expr(body)?;
+            Ok(quote! {
+                {
+                    let #name_ident = #value_tokens;
+                    #body_tokens
+                }
+            })
+        }
     }
 
     fn transpile_function(
@@ -215,6 +233,21 @@ impl Transpiler {
     }
 
     fn transpile_call(&self, func: &Expr, args: &[Expr]) -> Result<TokenStream> {
+        // Special handling for println with string interpolation
+        if let ExprKind::Identifier(name) = &func.kind {
+            if name == "println" && args.len() == 1 {
+                if let ExprKind::Literal(Literal::String(s)) = &args[0].kind {
+                    // Parse string interpolation: "Hello, {name}!" -> "Hello, {}!", name
+                    if let Some((format_str, format_args)) = Self::parse_interpolation(s) {
+                        let format_str_lit = format_str.as_str();
+                        return Ok(quote! {
+                            println!(#format_str_lit, #(#format_args),*)
+                        });
+                    }
+                }
+            }
+        }
+        
         let func_tokens = self.transpile_expr(func)?;
         let arg_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
@@ -222,6 +255,51 @@ impl Transpiler {
         Ok(quote! {
             #func_tokens(#(#arg_tokens),*)
         })
+    }
+    
+    fn parse_interpolation(s: &str) -> Option<(String, Vec<TokenStream>)> {
+        // Simple interpolation parser for {variable} patterns
+        let mut format_str = String::new();
+        let mut args = Vec::new();
+        let mut chars = s.chars().peekable();
+        
+        while let Some(ch) = chars.next() {
+            if ch == '{' && chars.peek() != Some(&'{') {
+                // Found interpolation start
+                let mut var_name = String::new();
+                while let Some(ch) = chars.next() {
+                    if ch == '}' {
+                        break;
+                    }
+                    var_name.push(ch);
+                }
+                if !var_name.is_empty() {
+                    format_str.push_str("{}");
+                    // Convert variable name to identifier token
+                    let ident = syn::Ident::new(&var_name, proc_macro2::Span::call_site());
+                    args.push(quote! { #ident });
+                } else {
+                    // Empty braces, keep as-is
+                    format_str.push_str("{}");
+                }
+            } else if ch == '{' && chars.peek() == Some(&'{') {
+                // Escaped brace
+                format_str.push('{');
+                chars.next(); // consume second '{'
+            } else if ch == '}' && chars.peek() == Some(&'}') {
+                // Escaped brace
+                format_str.push('}');
+                chars.next(); // consume second '}'
+            } else {
+                format_str.push(ch);
+            }
+        }
+        
+        if args.is_empty() {
+            None
+        } else {
+            Some((format_str, args))
+        }
     }
 
     fn transpile_block(&self, exprs: &[Expr]) -> Result<TokenStream> {
@@ -365,20 +443,38 @@ impl Transpiler {
         let _ = self; // Suppress unused self warning
         Ok(match &ty.kind {
             TypeKind::Named(name) => {
-                // Map common Ruchy types to Rust types
-                let rust_type = match name.as_str() {
-                    "i32" => quote! { i32 },
-                    "i64" => quote! { i64 },
-                    "f32" => quote! { f32 },
-                    "f64" => quote! { f64 },
-                    "bool" => quote! { bool },
-                    "String" => quote! { String },
-                    _ => {
-                        let ident = syn::Ident::new(name, proc_macro2::Span::call_site());
-                        quote! { #ident }
+                // Check if this is a generic type (contains '<')
+                if name.contains('<') {
+                    // Parse generic type: Vec<i32> -> Vec, [i32]
+                    if let Some(bracket_pos) = name.find('<') {
+                        let base_type = &name[..bracket_pos];
+                        // For now, handle common generic types
+                        match base_type {
+                            "Vec" => quote! { Vec<i32> }, // Default to i32 for now
+                            "Option" => quote! { Option<i32> },
+                            "Result" => quote! { Result<i32, String> },
+                            _ => quote! { #base_type },
+                        }
+                    } else {
+                        quote! { #name }
                     }
-                };
-                rust_type
+                } else {
+                    // Map common Ruchy types to Rust types
+                    let rust_type = match name.as_str() {
+                        "i32" => quote! { i32 },
+                        "i64" => quote! { i64 },
+                        "f32" => quote! { f32 },
+                        "f64" => quote! { f64 },
+                        "bool" => quote! { bool },
+                        "String" => quote! { String },
+                        "Any" => quote! { _ }, // Gradual typing - use inference
+                        _ => {
+                            let ident = syn::Ident::new(name, proc_macro2::Span::call_site());
+                            quote! { #ident }
+                        }
+                    };
+                    rust_type
+                }
             }
             TypeKind::Optional(inner) => {
                 let inner_tokens = self.transpile_type(inner)?;

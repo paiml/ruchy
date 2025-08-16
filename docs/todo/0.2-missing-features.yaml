@@ -1,0 +1,377 @@
+name: Ruchy v0.2.0 - Complete Missing Features
+version: 0.2.0
+date_created: 2025-01-15
+target_date: 2025-02-01
+status: pending
+
+quality_requirements:
+  description: |
+    ZERO TOLERANCE POLICY:
+    - NO SATD (Self-Admitted Technical Debt): No TODO/FIXME/HACK/XXX comments
+    - NO Broken Windows: Fix issues immediately
+    - NO Shortcuts: Do it right the first time
+    - All code must pass PMAT MCP quality gates
+    - Every feature must have >80% test coverage
+    - Every public API must have property tests
+    
+  pmat_mcp_integration:
+    - Use PMAT MCP v2.4.0 for all development
+    - Run quality checks on every file save
+    - Block commits that don't meet quality gates
+    - Cyclomatic complexity ≤10 per function
+    - Cognitive complexity ≤15 per function
+    - Mutation score >75%
+    - Maintainability index >70
+
+missing_features_from_readme:
+  description: Features shown in README examples that don't work yet
+  
+  dataframe_support:
+    - task: Implement DataFrame literal syntax (df![...])
+      status: pending
+      priority: high
+      files_to_modify:
+        - src/frontend/lexer.rs
+        - src/frontend/parser.rs
+        - src/frontend/ast.rs
+        - src/backend/transpiler.rs
+      tests_required:
+        - DataFrame literal parsing
+        - DataFrame transpilation to Polars
+        - Column operations (col, mean, std, alias)
+        - Filter, groupby, agg operations
+        
+    - task: Add Polars integration
+      status: pending
+      priority: high
+      dependencies:
+        - Add polars to Cargo.toml
+        - Create DataFrame type wrapper
+        - Implement DataFrame methods
+      
+  type_system:
+    - task: Implement type inference engine
+      status: pending
+      priority: critical
+      description: Currently shows "not yet implemented" placeholder
+      subtasks:
+        - Implement Algorithm W for Hindley-Milner inference
+        - Add unification engine
+        - Implement type environment
+        - Add bidirectional type checking
+        - Support generic type parameters
+      files_to_create:
+        - src/middleend/infer.rs
+        - src/middleend/types.rs
+        - src/middleend/unify.rs
+        - src/middleend/environment.rs
+      tests_required:
+        - Basic type inference tests
+        - Polymorphic type tests
+        - Type error tests
+        - Generic function tests
+        
+    - task: Add type annotations parsing
+      status: pending
+      priority: high
+      description: Parse ": Type" and "-> Type" annotations
+      affected_examples:
+        - fun analyze(data: DataFrame) -> Result<Statistics>
+        - fun production(data: ValidatedData) -> Result<Output>
+        
+    - task: Implement Result type
+      status: pending
+      priority: high
+      description: Support Result<T> return types with ? operator
+      
+  actor_system:
+    - task: Implement actor syntax parsing
+      status: pending
+      priority: high
+      description: Parse "actor" keyword and receive blocks
+      example_from_readme: |
+        actor Counter {
+            mut count: i32 = 0,
+            receive {
+                Increment => self.count += 1,
+                Get(reply) => reply.send(self.count)
+            }
+        }
+      
+    - task: Implement actor runtime
+      status: pending
+      priority: high
+      dependencies:
+        - Integrate Bastion or build custom actor system
+        - Implement message passing (!)
+        - Implement synchronous ask (?)
+        - Add supervision trees
+        
+  async_await:
+    - task: Parse async/await syntax
+      status: pending
+      priority: medium
+      example_from_readme: |
+        async fun fetch_and_analyze(url: String) -> DataFrame {
+            let response = get(url).await?
+            let data = response.json().await?
+            DataFrame::from(data)
+        }
+        
+    - task: Transpile to Rust async/await
+      status: pending
+      priority: medium
+      
+  import_system:
+    - task: Implement import statement parsing
+      status: pending
+      priority: high
+      example_from_readme: |
+        import tokio::time::sleep
+        import reqwest::get
+        import polars::prelude::*
+        
+    - task: Resolve and validate imports
+      status: pending
+      priority: high
+      
+  pattern_matching_enhancements:
+    - task: Add guard clauses (if conditions)
+      status: pending
+      priority: medium
+      example: Some(x) if x > 0 => x * 2
+      
+    - task: Add range patterns
+      status: pending
+      priority: medium
+      example: 1..10 => "single digit"
+      
+    - task: Support panic! in match arms
+      status: pending
+      priority: low
+      example: Some(0) => panic("zero not allowed")
+      
+  property_testing:
+    - task: Implement #[property] attribute
+      status: pending
+      priority: medium
+      example_from_readme: |
+        #[property]
+        fun prop_sort_idempotent(xs: Vec<i32>) {
+            let once = xs.sorted()
+            let twice = once.sorted()
+            assert_eq!(once, twice)
+        }
+        
+    - task: Add sorted() method for Vec
+      status: pending
+      priority: low
+      
+  refinement_types:
+    - task: Parse #[ensures] attribute
+      status: pending
+      priority: low
+      example: #[ensures(result.is_sorted())]
+      
+    - task: Implement SMT solver integration
+      status: pending
+      priority: low
+      
+  gradual_typing:
+    - task: Support untyped functions
+      status: pending
+      priority: medium
+      example: fun quick_prototype(data) = process(data)
+      
+    - task: Add runtime type checks at boundaries
+      status: pending
+      priority: medium
+      
+  string_interpolation:
+    - task: Implement string interpolation
+      status: pending
+      priority: high
+      example: println("Hello, {name}!")
+      current_status: Parser likely doesn't handle {} in strings
+      
+  method_syntax:
+    - task: Support method call syntax
+      status: pending
+      priority: medium
+      example: xs.sorted() instead of sorted(xs)
+      
+  vector_methods:
+    - task: Add Vec extension methods
+      status: pending
+      priority: medium
+      methods_needed:
+        - sorted()
+        - sum()
+        - is_sorted()
+        
+  mcp_integration:
+    - task: Parse MCP attributes
+      status: pending
+      priority: low
+      examples:
+        - #[mcp_tool("code_analyzer")]
+        - #[mcp_handler]
+        
+    - task: Generate MCP protocol bindings
+      status: pending
+      priority: low
+      
+  repl_improvements:
+    - task: Fix REPL evaluation
+      status: pending
+      priority: high
+      description: Currently tries to compile expressions as statements
+      solution: Wrap expressions in println! or assignment
+      
+    - task: Add JIT compilation
+      status: pending
+      priority: medium
+      description: For <10ms REPL startup goal
+      
+  build_system:
+    - task: Implement ruchy::compile_glob
+      status: pending
+      priority: medium
+      description: For Cargo.toml build.rs integration
+      
+    - task: Add --release flag to build command
+      status: pending
+      priority: low
+      example: ruchy build --release analysis.ruchy
+
+core_fixes_required:
+  - task: Remove all placeholder code
+    status: pending
+    priority: critical
+    locations:
+      - src/runtime/repl.rs:279 - "<type inference not yet implemented>"
+      
+  - task: Implement all AST node transpilation
+    status: pending
+    priority: critical
+    missing_implementations:
+      - While loops (partial)
+      - Lambda expressions (partial)
+      - Struct definitions
+      - Trait definitions
+      - Impl blocks
+      
+test_requirements:
+  - task: Add property tests for every public function
+    status: pending
+    priority: critical
+    coverage_target: 80%
+    
+  - task: Add fuzzing for all parsers
+    status: pending
+    priority: high
+    targets:
+      - Import parser
+      - Type annotation parser
+      - Actor syntax parser
+      
+  - task: Create integration tests for README examples
+    status: pending
+    priority: critical
+    description: Every README example must have a passing test
+    
+  - task: Add mutation testing
+    status: pending
+    priority: medium
+    target_score: 75%
+    
+documentation_requirements:
+  - task: Add doctests for all public APIs
+    status: pending
+    priority: high
+    
+  - task: Create examples for each feature
+    status: pending
+    priority: high
+    location: examples/
+    
+performance_requirements:
+  - task: Achieve parser benchmark targets
+    status: pending
+    target: 100k LOC/sec
+    current: Unknown
+    
+  - task: Achieve REPL startup target
+    status: pending
+    target: <10ms
+    current: Unknown
+    
+  - task: Minimize binary size
+    status: pending
+    target: <5MB
+    current: ~10MB
+
+implementation_order:
+  phase_1_critical:
+    description: Core functionality for README examples
+    tasks:
+      - Type inference engine
+      - String interpolation
+      - Type annotations parsing
+      - Import system
+      - Fix REPL evaluation
+    estimated_time: 1 week
+    
+  phase_2_essential:
+    description: Key language features
+    tasks:
+      - DataFrame support with Polars
+      - Actor system
+      - Async/await
+      - Method syntax
+      - Pattern matching guards
+    estimated_time: 1 week
+    
+  phase_3_enhancement:
+    description: Advanced features
+    tasks:
+      - Property testing attributes
+      - MCP integration
+      - Refinement types
+      - Gradual typing
+      - JIT compilation
+    estimated_time: 1 week
+    
+quality_checklist:
+  before_each_commit:
+    - [ ] Run cargo clippy -- -D warnings
+    - [ ] Run cargo fmt --check
+    - [ ] Run cargo test
+    - [ ] Run cargo llvm-cov (>80% coverage)
+    - [ ] Check for TODO/FIXME/HACK comments
+    - [ ] Run PMAT quality gates
+    
+  before_each_feature:
+    - [ ] Write tests first (TDD)
+    - [ ] Add property tests
+    - [ ] Add fuzzing if parser-related
+    - [ ] Add benchmarks if performance-critical
+    - [ ] Document with examples
+    
+  after_each_feature:
+    - [ ] All tests passing
+    - [ ] Coverage >80%
+    - [ ] No quality gate violations
+    - [ ] README examples work
+    - [ ] Documentation complete
+
+success_criteria:
+  - All README examples compile and run correctly
+  - Type inference working for all constructs
+  - Zero SATD comments in codebase
+  - All quality gates passing
+  - Test coverage >80%
+  - Mutation score >75%
+  - All public APIs have property tests
+  - Performance benchmarks met
+  - Binary size <5MB

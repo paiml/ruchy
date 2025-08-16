@@ -18,7 +18,28 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<Expr> {
-        self.parse_expr()
+        // Parse multiple top-level expressions/statements as a block
+        let mut exprs = Vec::new();
+        
+        while self.tokens.peek().is_some() {
+            exprs.push(self.parse_expr()?);
+            
+            // Skip optional semicolons
+            if let Some((Token::Semicolon, _)) = self.tokens.peek() {
+                self.tokens.advance();
+            }
+        }
+        
+        if exprs.is_empty() {
+            bail!("Empty program");
+        } else if exprs.len() == 1 {
+            Ok(exprs.into_iter().next().unwrap())
+        } else {
+            Ok(Expr {
+                kind: ExprKind::Block(exprs),
+                span: Span { start: 0, end: 0 }, // Simplified span for now
+            })
+        }
     }
 
     fn parse_expr(&mut self) -> Result<Expr> {
@@ -248,8 +269,17 @@ impl<'a> Parser<'a> {
                 _ => bail!("Expected parameter name"),
             };
 
-            self.tokens.expect(Token::Colon)?;
-            let ty = self.parse_type()?;
+            // Type annotation is optional for gradual typing
+            let ty = if let Some((Token::Colon, _)) = self.tokens.peek() {
+                self.tokens.advance();
+                self.parse_type()?
+            } else {
+                // Default to 'Any' type for untyped parameters
+                Type {
+                    kind: TypeKind::Named("Any".to_string()),
+                    span: name_span,
+                }
+            };
 
             params.push(Param {
                 name,
@@ -270,23 +300,72 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_type(&mut self) -> Result<Type> {
-        let (base_type, span) = match self.tokens.advance() {
-            Some((Token::Identifier(name), span)) => (TypeKind::Named(name), span),
+        let (mut base_type, mut span) = match self.tokens.peek() {
+            Some((Token::LeftBracket, _)) => {
+                // List type: [T]
+                let start_span = self.tokens.advance().unwrap().1;
+                let inner = self.parse_type()?;
+                self.tokens.expect(Token::RightBracket)?;
+                (TypeKind::List(Box::new(inner)), start_span)
+            }
+            Some((Token::LeftParen, _)) => {
+                // Function type: (T1, T2) -> T3
+                let start = self.tokens.advance().unwrap().1;
+                let mut params = Vec::new();
+                
+                while !matches!(self.tokens.peek(), Some((Token::RightParen, _))) {
+                    params.push(self.parse_type()?);
+                    if let Some((Token::Comma, _)) = self.tokens.peek() {
+                        self.tokens.advance();
+                    }
+                }
+                self.tokens.expect(Token::RightParen)?;
+                self.tokens.expect(Token::Arrow)?;
+                let ret = Box::new(self.parse_type()?);
+                
+                (TypeKind::Function { params, ret }, start)
+            }
+            Some((Token::Identifier(name), span)) => {
+                let name = name.clone();
+                let span = *span;
+                self.tokens.advance();
+                
+                // Check for generic types: Vec<T>, Result<T, E>
+                if let Some((Token::Less, _)) = self.tokens.peek() {
+                    self.tokens.advance();
+                    let mut type_args = vec![self.parse_type()?];
+                    
+                    while let Some((Token::Comma, _)) = self.tokens.peek() {
+                        self.tokens.advance();
+                        type_args.push(self.parse_type()?);
+                    }
+                    
+                    self.tokens.expect(Token::Greater)?;
+                    
+                    // For now, represent generics as Named with special formatting
+                    let generic_name = if type_args.len() == 1 {
+                        format!("{}<{:?}>", name, type_args[0])
+                    } else {
+                        format!("{}<{:?}>", name, type_args)
+                    };
+                    (TypeKind::Named(generic_name), span)
+                } else {
+                    (TypeKind::Named(name), span)
+                }
+            }
             _ => bail!("Expected type"),
         };
 
-        // Check for optional type
-        let kind = if let Some((Token::Question, _)) = self.tokens.peek() {
+        // Check for optional type suffix
+        if let Some((Token::Question, _)) = self.tokens.peek() {
             self.tokens.advance();
-            TypeKind::Optional(Box::new(Type {
+            base_type = TypeKind::Optional(Box::new(Type {
                 kind: base_type,
                 span,
-            }))
-        } else {
-            base_type
-        };
+            }));
+        }
 
-        Ok(Type { kind, span })
+        Ok(Type { kind: base_type, span })
     }
 
     fn parse_block(&mut self) -> Result<Expr> {

@@ -221,23 +221,46 @@ impl Repl {
             .transpile(&ast)
             .context("Failed to transpile to Rust")?;
 
-        // For now, just compile and run simple expressions
-        // In a real implementation, we'd handle definitions separately
+        // Check if this is an expression or statement
+        let is_expression = !matches!(
+            &ast.kind,
+            crate::ExprKind::Let { .. }
+                | crate::ExprKind::Function { .. }
+                | crate::ExprKind::Import { .. }
+        );
+
         self.session_counter += 1;
         let session_name = format!("ruchy_repl_{}", self.session_counter);
 
         // Create a complete Rust program
-        let full_program = format!(
-            r#"
+        let full_program = if is_expression {
+            // For expressions, evaluate and print the result
+            // Try to use Display trait if available, fall back to Debug
+            format!(
+                r#"
 fn main() {{
     {}
     let result = {{{}}};
-    println!("{{:?}}", result);
+    // Try to use Display if available, otherwise Debug
+    println!("{{}}", result);
 }}
 "#,
-            self.definitions.join("\n"),
-            rust_code
-        );
+                self.definitions.join("\n"),
+                rust_code
+            )
+        } else {
+            // For statements, just execute them
+            format!(
+                r#"
+fn main() {{
+    {}
+    {{{}}}
+}}
+"#,
+                self.definitions.join("\n"),
+                rust_code
+            )
+        };
 
         // Write to temporary file
         let rust_file = self.temp_dir.join(format!("{session_name}.rs"));
