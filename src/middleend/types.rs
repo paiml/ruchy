@@ -34,6 +34,8 @@ pub enum MonoType {
     List(Box<MonoType>),
     /// Optional type: T?
     Optional(Box<MonoType>),
+    /// Result type: Result<T, E>
+    Result(Box<MonoType>, Box<MonoType>),
     /// Named type (user-defined or gradual typing 'Any')
     Named(String),
 }
@@ -50,6 +52,7 @@ impl fmt::Display for MonoType {
             MonoType::Function(arg, ret) => write!(f, "({arg} -> {ret})"),
             MonoType::List(elem) => write!(f, "[{elem}]"),
             MonoType::Optional(inner) => write!(f, "{inner}?"),
+            MonoType::Result(ok, err) => write!(f, "Result<{ok}, {err}>"),
             MonoType::Named(name) => write!(f, "{name}"),
         }
     }
@@ -145,6 +148,10 @@ impl MonoType {
             ),
             MonoType::List(elem) => MonoType::List(Box::new(elem.substitute(subst))),
             MonoType::Optional(inner) => MonoType::Optional(Box::new(inner.substitute(subst))),
+            MonoType::Result(ok, err) => MonoType::Result(
+                Box::new(ok.substitute(subst)),
+                Box::new(err.substitute(subst)),
+            ),
             _ => self.clone(),
         }
     }
@@ -164,6 +171,10 @@ impl MonoType {
                 }
                 MonoType::List(elem) => collect_vars(elem, vars),
                 MonoType::Optional(inner) => collect_vars(inner, vars),
+                MonoType::Result(ok, err) => {
+                    collect_vars(ok, vars);
+                    collect_vars(err, vars);
+                }
                 _ => {}
             }
         }

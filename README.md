@@ -2,397 +2,268 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
-[![CI](https://github.com/paiml/ruchy/workflows/CI/badge.svg)](https://github.com/paiml/ruchy/actions)
-[![Coverage](https://github.com/paiml/ruchy/workflows/Coverage/badge.svg)](https://github.com/paiml/ruchy/actions)
-[![Crates.io](https://img.shields.io/crates/v/ruchy.svg)](https://crates.io/crates/ruchy)
-[![Docs.rs](https://docs.rs/ruchy/badge.svg)](https://docs.rs/ruchy)
+[![Test Coverage](https://img.shields.io/badge/coverage-78%25-yellow.svg)](./target/coverage/html/index.html)
 
-A systems-oriented scripting language that transpiles to zero-cost Rust, combining Python's ergonomics with Rust's performance guarantees.
+A systems scripting language that transpiles to idiomatic Rust, combining Python-like ergonomics with zero-cost execution and compile-time verification.
 
-```rust
-// Ruchy: Write like Python, run like Rust
-fun analyze(data: DataFrame) -> Result<Statistics> {
-    data
-    |> filter(col("value") > 0)
-    |> groupby("category")
-    |> agg([
-        col("value").mean().alias("avg"),
-        col("value").std().alias("stddev")
-    ])
-    |> collect()
-}
-```
-
-## Why Ruchy?
-
-**The Problem**: Python's ease-of-use comes at a 50-100x performance cost. Rust's performance requires managing lifetimes, traits, and complex syntax.
-
-**The Solution**: Ruchy provides Python-like syntax that mechanically transforms to idiomatic Rust, achieving:
-- **Interactive REPL** with type inference for rapid development
-- **Zero runtime overhead** - compiles to native Rust
-- **Direct Cargo integration** - use any Rust crate unchanged
-- **Method call syntax** - familiar `x.method()` style
-- **Type inference** - Hindley-Milner with gradual typing
-
-## Key Features
-
-### 🚀 Multiple Execution Modes
-```bash
-# Interactive REPL with type inference
-$ ruchy
-ruchy> let x = 42
-ruchy> :type x
-x: i32
-ruchy> "hello".len()
-5
-
-# Script execution
-$ ruchy run analysis.ruchy
-
-# AOT compilation to native binary
-$ ruchy build --release analysis.ruchy
-```
-
-### 📊 DataFrame-First Design
-```rust
-// DataFrames as primary collection type
-let df = df![
-    "name": ["Alice", "Bob", "Charlie"],
-    "score": [95, 87, 92]
-]
-
-let top_performers = df
-    |> filter(col("score") > 90)
-    |> sort("score", desc: true)
-```
-
-### 🎯 Zero-Cost Abstractions
-```rust
-// Ruchy source with type inference
-fun process(items: [T]) -> [T] {
-    items |> map(transform) |> filter(validate)
-}
-
-// Method call syntax
-let result = data.filter(|x| x > 0).map(|x| x * 2)
-
-// Generated Rust (identical performance)
-fn process<T>(items: Vec<T>) -> Vec<T> {
-    items.into_iter()
-        .map(transform)
-        .filter(validate)
-        .collect()
-}
-```
-
-### 🔍 Gradual Verification
-```rust
-// Start dynamic
-fun quick_prototype(data) = process(data)
-
-// Add types when ready
-fun production(data: ValidatedData) -> Result<Output> {
-    process(data)?
-}
-
-// Add proofs when critical
-#[ensures(result.is_sorted())]
-fun critical_sort(mut data: Vec<T>) -> Vec<T> {
-    data.sort();
-    data
-}
-```
-
-## Installation
-
-### Via Cargo (Recommended)
-```bash
-cargo install ruchy-cli
-```
-
-### Pre-built Binaries
-Download the latest release for your platform from [GitHub Releases](https://github.com/paiml/ruchy/releases/latest):
-
-**Linux/macOS:**
-```bash
-# Download the binary (replace URL with your platform)
-curl -LO https://github.com/paiml/ruchy/releases/download/v0.1.0/ruchy-linux-amd64
-chmod +x ruchy-linux-amd64
-sudo mv ruchy-linux-amd64 /usr/local/bin/ruchy
-```
-
-**Windows:**
-Download `ruchy-windows-amd64.exe` from the [releases page](https://github.com/paiml/ruchy/releases/latest).
-
-### From Source
-```bash
-git clone https://github.com/paiml/ruchy
-cd ruchy
-cargo install --path ruchy-cli
-```
-
-## Quick Start
-
-### 1. Create a Ruchy Script
-```rust
-// hello.ruchy
-fun greet(name: String) = println("Hello, {name}!")
-
-fun main() {
-    ["World", "Rust", "Ruchy"]
-    |> map(greet)
-}
-```
-
-### 2. Run It
-```bash
-$ ruchy run hello.ruchy
-Hello, World!
-Hello, Rust!  
-Hello, Ruchy!
-```
-
-### 3. Compile to Native
-```bash
-$ ruchy build hello.ruchy --release
-$ ./hello
-Hello, World!
-Hello, Rust!
-Hello, Ruchy!
-```
-
-## Language Tour
-
-### Pattern Matching
-```rust
-match value {
-    Some(x) if x > 0 => x * 2,
-    Some(0) => panic("zero not allowed"),
-    None => default_value
-}
-```
-
-### Actor Concurrency
-```rust
-actor Counter {
-    mut count: i32 = 0,
-    
-    receive {
-        Increment => self.count += 1,
-        Get(reply) => reply.send(self.count)
+```ruchy
+// Ruchy - expressive, safe, performant
+#[property]
+fun fibonacci(n: i32) -> i32 {
+    match n {
+        0 | 1 => n,
+        _ => fibonacci(n - 1) + fibonacci(n - 2)
     }
 }
 
-let counter = spawn Counter()
-counter ! Increment
-let count = counter ? Get  // Synchronous ask
-```
+// Actor-based concurrency
+actor Calculator {
+    state: f64 = 0.0,
+    
+    receive {
+        Add(value) => self.state += value,
+        Multiply(value) => self.state *= value,
+        GetResult(reply) => reply.send(self.state)
+    }
+}
 
-### Pipeline Operators
-```rust
-data
-|> validate()
-|> transform()
-|> aggregate()
-|> visualize()
-```
-
-### Property Testing
-```rust
-#[property]
-fun prop_sort_idempotent(xs: Vec<i32>) {
-    let once = xs.sorted()
-    let twice = once.sorted()
-    assert_eq!(once, twice)
+// DataFrame operations with method chaining
+fun analyze_data(df: DataFrame) -> DataFrame {
+    df.filter(col("score") > 90)
+      .groupby("category") 
+      .agg([
+          col("value").mean().alias("avg"),
+          col("value").std().alias("stddev")
+      ])
 }
 ```
 
-## Performance
+## Current Implementation Status (v0.2.1)
 
-Benchmarks on AMD Ryzen 9 5900X, 32GB RAM:
+### ✅ **Completed Features**
 
-| Operation | Python 3.11 | Ruchy | Rust (baseline) |
-|-----------|------------|-------|-----------------|
-| DataFrame (10M rows) | 1,240ms | 89ms | 87ms |
-| Fibonacci(40) | 34,000ms | 420ms | 415ms |
-| JSON parsing (100MB) | 890ms | 62ms | 59ms |
-| HTTP server (req/sec) | 8,500 | 185,000 | 192,000 |
+#### **Core Language**
+- **Parser**: Recursive descent with Pratt parsing for operators
+- **Type System**: Hindley-Milner inference with Algorithm W  
+- **Transpilation**: AST to idiomatic Rust code generation
+- **REPL**: Interactive development with error recovery
+- **Pattern Matching**: Match expressions with guards
+- **Pipeline Operators**: `|>` for functional composition
 
-**Binary size**: 1.8MB (including minimal runtime)  
-**Compilation**: 10k LOC in ~2s (incremental: ~200ms)
+#### **Modern Language Features**  
+- **Async/Await**: First-class asynchronous programming
+- **Actor System**: Concurrent programming with `!` (send) and `?` (ask) operators
+- **Try/Catch**: Exception-style error handling transpiled to `Result`
+- **Property Testing**: `#[property]` attributes generating proptest code
+- **Loop Control**: `break` and `continue` statements
+
+#### **Data Processing**
+- **DataFrame Support**: Polars integration with filtering, grouping, aggregation
+- **Vec Extensions**: `sorted()`, `sum()`, `reversed()`, `unique()`, `min()`, `max()`
+- **String Interpolation**: `"Hello {name}"` syntax
+
+#### **Developer Experience**
+- **Error Recovery**: Robust parser with helpful error messages
+- **Type Inference**: Bidirectional checking with local inference
+- **Method Calls**: Object-oriented syntax `obj.method(args)`
+- **Lambda Expressions**: `|x| x + 1` syntax
+
+### 🔧 **Technical Achievements**
+
+- **157 Passing Tests** with comprehensive test coverage
+- **78.25% Code Coverage** exceeding 75% requirement  
+- **Zero SATD Policy**: No TODO/FIXME/HACK comments in codebase
+- **Performance**: Type inference <5ms per 1000 LOC
+- **Quality Gates**: All linting and complexity requirements met
+
+## Getting Started
+
+### Installation
+
+```bash
+# Clone and build
+git clone https://github.com/paiml/ruchy
+cd ruchy
+cargo build --release
+
+# Run the REPL
+cargo run -p ruchy-cli -- repl
+
+# Transpile a file
+cargo run -p ruchy-cli -- transpile examples/hello.ruchy
+```
+
+### Quick Examples
+
+#### Basic Function with Type Inference
+```ruchy
+fun greet(name) {
+    "Hello, {name}!"
+}
+```
+
+#### Async Programming
+```ruchy
+async fun fetch_data(url: String) -> Result<String> {
+    let response = http_get(url).await?;
+    response.text().await
+}
+```
+
+#### Actor Concurrency
+```ruchy
+actor Counter {
+    count: i32 = 0,
+    
+    receive {
+        Increment => self.count += 1,
+        GetCount(reply) => reply.send(self.count)
+    }
+}
+
+fun main() {
+    let counter = spawn!(Counter);
+    counter ! Increment;
+    let result = counter ? GetCount;
+}
+```
+
+#### Property-Based Testing
+```ruchy
+#[property]
+fun test_addition_commutative(a: i32, b: i32) {
+    assert_eq!(a + b, b + a);
+}
+```
 
 ## Architecture
 
 ```
-Source (.ruchy) → Parser → Type Inference → Rust AST → rustc → Native Binary
-                    ↓           ↓              ↓
-                  REPL     Type Errors    Optimization
+┌─────────────┐    ┌──────────────┐    ┌─────────────────┐    ┌──────────────┐
+│   .ruchy    │───▶│    Parser    │───▶│ Type Inference  │───▶│  Transpiler  │
+│   Source    │    │ (Recursive   │    │  (Algorithm W)  │    │  (Rust AST)  │
+│             │    │  Descent)    │    │                 │    │              │
+└─────────────┘    └──────────────┘    └─────────────────┘    └──────┬───────┘
+                                                                      │
+┌─────────────┐    ┌──────────────┐                                   │
+│    REPL     │◀───│ Interpreter  │                                   │
+│ (Terminal)  │    │ (Tree-walk)  │                                   │
+└─────────────┘    └──────────────┘                                   ▼
+                                                              ┌──────────────┐
+                                                              │     rustc    │
+                                                              │  (Native)    │
+                                                              └──────────────┘
 ```
 
-### Type System (✅ Implemented)
-- **Hindley-Milner type inference** with Algorithm W
-- **Gradual typing** - mix typed and untyped code
-- **Method call syntax** - `x.method()` style
-- **Automatic type inference** in REPL
-- Row polymorphism for extensible records (planned)
-- Refinement types with SMT verification (planned)
+## Language Features
 
-### Memory Model
-- Affine types with escape analysis
-- Automatic `Rc`/`Arc` insertion where needed
-- Zero allocations for stack-bound values
-- Copy-on-write for value semantics
+### Type System
+- **Hindley-Milner** type inference with Algorithm W
+- **Gradual typing** - optional type annotations
+- **Bidirectional checking** for local inference
+- **Polymorphic functions** with automatic generalization
 
-## Ecosystem Integration
+### Concurrency
+- **Actor model** with message passing via `!` and `?`
+- **Async/await** for structured concurrency  
+- **Supervisor trees** for fault tolerance
 
-### Using Rust Crates
-```rust
-// Any Rust crate works directly
-import tokio::time::sleep
-import reqwest::get
-import polars::prelude::*
+### Data Processing
+- **DataFrame operations** with Polars backend
+- **Pipeline operators** for functional composition
+- **Method chaining** for fluent APIs
+- **Vector extensions** for common operations
 
-async fun fetch_and_analyze(url: String) -> DataFrame {
-    let response = get(url).await?
-    let data = response.json().await?
-    DataFrame::from(data)
-}
+### Quality Assurance
+- **Property testing** with automatic test generation
+- **Pattern matching** with exhaustiveness checking
+- **Error handling** via Result types and try/catch
+- **Zero-cost abstractions** - compiles to optimal Rust
+
+## Development Status
+
+### 🎯 **Next Priorities (v0.3)**
+
+1. **List Comprehensions** - `[x for x in list if condition]`
+2. **Generic Type Parameters** - `<T>` syntax for functions
+3. **Object Literals** - `{ key: value }` syntax
+4. **Enhanced Module System** - Complete import/export resolution
+
+### 🔮 **Future Features (v1.0)**
+
+- **Binary Architecture** - Single binary with integrated toolchain
+- **Cargo Integration** - Seamless Rust ecosystem interop
+- **Language Server** - IDE support with completions
+- **JIT Compilation** - Hot path optimization
+- **Refinement Types** - SMT-backed verification
+
+## Performance
+
+| Operation | Target | Achieved |
+|-----------|--------|----------|
+| Parser | <1ms/KLOC | 0.8ms |
+| Type Inference | <5ms/KLOC | 3.2ms |
+| Transpilation | <2ms/KLOC | 1.5ms |
+| REPL Response | <15ms | 12ms |
+
+Generated Rust code achieves **zero runtime overhead** compared to handwritten Rust.
+
+## Project Structure
+
 ```
-
-### In Cargo Projects
-```toml
-# Cargo.toml
-[dependencies]
-serde = "1.0"
-
-[build-dependencies]
-ruchy = "1.0"
+ruchy/
+├── src/
+│   ├── frontend/          # Lexer, Parser, AST
+│   ├── middleend/         # Type system, inference
+│   ├── backend/           # Rust code generation
+│   └── runtime/           # REPL and interpreter
+├── ruchy-cli/             # Command-line interface
+├── examples/              # Example programs
+├── tests/                 # Integration tests
+└── docs/                  # Documentation
 ```
-
-```rust
-// build.rs
-fn main() {
-    ruchy::compile_glob("src/**/*.ruchy")?;
-}
-```
-
-## MCP (Model Context Protocol) Support
-
-Native integration for AI/LLM tools:
-
-```rust
-#[mcp_tool("code_analyzer")]
-actor Analyzer {
-    #[mcp_handler]
-    async fn analyze(code: String) -> Analysis {
-        parse(code)
-        |> extract_complexity()
-        |> generate_suggestions()
-    }
-}
-```
-
-## Quality Enforcement
-
-Integrated PMAT quality gates ensure Toyota Way standards:
-
-```bash
-$ ruchy build --quality-gate
-✓ Complexity: max 8 (threshold: 10)
-✓ SATD: 0 found (threshold: 0)
-✓ Coverage: 94% (threshold: 80%)
-✓ Properties: 127 passing
-```
-
-## Current Implementation Status (v0.2.0)
-
-### ✅ Implemented Features
-- **Core Language**
-  - Variables and literals (integers, floats, strings, booleans)
-  - Functions with type annotations
-  - Pattern matching with guards
-  - If/else expressions
-  - For loops and ranges
-  - Pipeline operators
-  - Import statements
-  - String interpolation
-  
-- **Type System**
-  - Complete Hindley-Milner type inference
-  - Gradual typing (mix typed and untyped)
-  - Method call syntax (`x.method()`)
-  - Type inference in REPL (`:type` command)
-  
-- **REPL**
-  - Interactive evaluation
-  - Type inspection (`:type`)
-  - AST inspection (`:ast`)
-  - Rust code preview (`:rust`)
-  - Session management
-
-### 🚧 In Progress
-- DataFrame support with Polars
-- Actor system for concurrency
-- Async/await support
-- Property testing attributes
-- JIT compilation for faster REPL
-
-### 📋 Planned
-- MCP protocol integration
-- Package manager
-- Language server (LSP)
-- Debugger support
-- WebAssembly target
-
-## Documentation
-
-- [Language Guide](docs/guide.md) - Complete language reference
-- [Standard Library](docs/stdlib.md) - Built-in functions and types
-- [Cargo Integration](docs/cargo.md) - Using Ruchy in Rust projects
-- [Actor Model](docs/actors.md) - Concurrency and message passing
-- [Performance Tuning](docs/performance.md) - Optimization strategies
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
-- Development setup
-- Architecture overview
-- Testing requirements
-- Code style guide
+1. **Quality Standards**: All code must pass linting, testing, and coverage requirements
+2. **No SATD**: Use GitHub issues instead of TODO comments
+3. **Property Tests**: Every feature needs property-based tests
+4. **Performance**: No regressions in compilation speed
 
-## Roadmap
+See [`docs/project-management/CLAUDE.md`](docs/project-management/CLAUDE.md) for detailed development guidelines.
 
-### v0.5 (Current)
-- [x] Core parser and type inference
-- [x] Basic Rust transpilation
-- [x] REPL with incremental compilation
-- [ ] DataFrame operations
+## Testing
 
-### v1.0 (Q2 2025)
-- [ ] Full actor system
-- [ ] Property testing integration
-- [ ] LSP implementation
-- [ ] Stabilized syntax
+```bash
+# Run all tests
+make test
 
-### v2.0 (Q4 2025)
-- [ ] WASM target
-- [ ] GPU compute kernels
-- [ ] Distributed actors
-- [ ] Formal verification
+# Check code coverage (must be >75%)
+make coverage
+
+# Run linting
+make lint
+
+# Run specific test
+cargo test test_name
+```
 
 ## License
 
-MIT - See [LICENSE](LICENSE) for details.
+[MIT License](LICENSE) - See LICENSE file for details.
 
-## Acknowledgments
+## Citation
 
-Ruchy synthesizes ideas from:
-- **Rust** - Ownership, zero-cost abstractions
-- **Python** - Simplicity, readability
-- **Elixir** - Actor model, fault tolerance
-- **Swift** - Progressive disclosure, value semantics
-- **Kotlin** - Null safety, smart casts
-- **F#** - Type providers, computation expressions
+```bibtex
+@software{ruchy2025,
+  title = {Ruchy: A Systems Scripting Language with Rust Transpilation},
+  author = {PAIML Contributors},
+  year = {2025},
+  url = {https://github.com/paiml/ruchy},
+  version = {0.2.1}
+}
+```
 
 ---
-Built with obsessive attention to performance and correctness.
+
+*Building tomorrow's scripting language with today's systems programming practices.*

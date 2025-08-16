@@ -1,0 +1,337 @@
+# Ruchy Visual Design Hello World Specification
+# PDMT Format for Systematic Implementation
+
+metadata:
+  project: ruchy-visual-design
+  version: 1.0.0
+  priority: critical
+  timeline: Q1 2025
+  dependencies: ["parser", "type-inference", "rust-codegen"]
+
+objective: |
+  Demonstrate Ruchy's mechanical transparency through a complete hello world
+  implementation showcasing every compilation stage from source to binary.
+  This serves as both proof-of-concept and architectural validation.
+
+phases:
+  - phase_1:
+      name: "Core Pipeline Implementation"
+      timeline: "Week 1-2"
+
+      tasks:
+        - task_1_1:
+            id: "minimal-parser"
+            description: "Parse hello world subset"
+            pdmt:
+              plan:
+                - Implement println expression parser
+                - Support string literals with interpolation
+                - Add main function wrapper inference
+              do:
+                - src/frontend/parser_minimal.rs
+                - src/frontend/lexer_minimal.rs
+                - src/ast/hello_world.rs
+              measure:
+                - Parse time <1ms
+                - AST size <100 bytes
+                - Zero allocations for literals
+              track:
+                - Property: deterministic AST generation
+                - Benchmark: 10K parses/sec minimum
+            effort: 2d
+
+        - task_1_2:
+            id: "type-inference-minimal"
+            description: "Infer types for hello world"
+            pdmt:
+              plan:
+                - String literal → String type
+                - println → () return type
+                - main wrapper generation
+              do:
+                - src/middleend/infer_minimal.rs
+                - src/types/hello_world.rs
+              measure:
+                - Inference <0.5ms
+                - Type environment <1KB
+              track:
+                - Test: string interpolation types
+                - Test: effect inference (IO)
+            effort: 1d
+            depends_on: ["minimal-parser"]
+
+        - task_1_3:
+            id: "rust-transpiler-minimal"
+            description: "Generate idiomatic Rust"
+            pdmt:
+              plan:
+                - Map println → println! macro
+                - String interpolation → format! macro
+                - Generate main function wrapper
+              do:
+                - src/backend/rust_gen_minimal.rs
+                - src/backend/templates/hello.rs
+              measure:
+                - Generated Rust compiles first try
+                - Output identical to handwritten
+                - Zero overhead vs manual Rust
+              track:
+                - Test: cargo check passes
+                - Test: clippy clean
+                - Benchmark: identical assembly
+            effort: 2d
+            depends_on: ["type-inference-minimal"]
+
+  - phase_2:
+      name: "Observable Compilation"
+      timeline: "Week 2-3"
+
+      tasks:
+        - task_2_1:
+            id: "ast-visualizer"
+            description: "JSON AST representation"
+            pdmt:
+              plan:
+                - Implement AST → JSON serializer
+                - Add source location mapping
+                - Include type annotations
+              do:
+                - src/disasm/ast_json.rs
+                - src/disasm/source_map.rs
+              measure:
+                - JSON size <2x source
+                - Serialization <1ms
+                - Round-trip preserves semantics
+              track:
+                - Property: bijective mapping
+                - Test: all node types covered
+            effort: 2d
+
+        - task_2_2:
+            id: "mir-visualizer"
+            description: "Mid-level IR display"
+            pdmt:
+              plan:
+                - Design minimal MIR for hello world
+                - S-expression formatter
+                - Control flow graph generator
+              do:
+                - src/middleend/mir_minimal.rs
+                - src/disasm/mir_display.rs
+              measure:
+                - MIR generation <1ms
+                - CFG has single basic block
+              track:
+                - Test: MIR → Rust preserves semantics
+                - Validate: no redundant temporaries
+            effort: 3d
+            depends_on: ["type-inference-minimal"]
+
+        - task_2_3:
+            id: "metrics-calculator"
+            description: "Complexity metrics for hello world"
+            pdmt:
+              plan:
+                - Cyclomatic complexity (1)
+                - Halstead metrics
+                - Lines of code counter
+              do:
+                - src/metrics/basic.rs
+                - src/metrics/display.rs
+              measure:
+                - Metrics computation <0.1ms
+                - Accurate vs reference impl
+              track:
+                - Test: known code samples
+                - Validate: academic formulas
+            effort: 1d
+            depends_on: ["ast-visualizer"]
+
+  - phase_3:
+      name: "Interactive Demonstration"
+      timeline: "Week 3-4"
+
+      tasks:
+        - task_3_1:
+            id: "cli-show-command"
+            description: "Implement 'ruchy show' subcommands"
+            pdmt:
+              plan:
+                - show ast - JSON output
+                - show mir - S-expression output
+                - show rust - Generated code
+                - show metrics - Complexity table
+                - show all - Combined view
+              do:
+                - src/cli/show.rs
+                - src/cli/formatters.rs
+              measure:
+                - Response time <10ms
+                - Output formatting clean
+              track:
+                - Test: all formats work
+                - UX: clear, readable output
+            effort: 2d
+            depends_on: ["ast-visualizer", "mir-visualizer"]
+
+        - task_3_2:
+            id: "repl-integration"
+            description: "REPL with inspection commands"
+            pdmt:
+              plan:
+                - :ast command for AST view
+                - :type command for type info
+                - :rust command for generated code
+                - Persistent session state
+              do:
+                - src/repl/commands.rs
+                - src/repl/state.rs
+              measure:
+                - Command response <15ms
+                - State persistence works
+              track:
+                - Test: command parsing
+                - Test: incremental compilation
+            effort: 3d
+            depends_on: ["cli-show-command"]
+
+        - task_3_3:
+            id: "performance-trace"
+            description: "Compilation performance visibility"
+            pdmt:
+              plan:
+                - Time each compilation phase
+                - Memory allocation tracking
+                - Generate flame graphs
+              do:
+                - src/profile/tracer.rs
+                - src/profile/allocator.rs
+              measure:
+                - Overhead <5% when enabled
+                - Accurate timing (μs precision)
+              track:
+                - Benchmark: with/without tracing
+                - Validate: sum equals total time
+            effort: 2d
+
+  - phase_4:
+      name: "Documentation & Polish"
+      timeline: "Week 4"
+
+      tasks:
+        - task_4_1:
+            id: "visual-documentation"
+            description: "Create visual compilation guide"
+            pdmt:
+              plan:
+                - ASCII diagrams for each stage
+                - Side-by-side comparisons
+                - Interactive examples
+              do:
+                - docs/visual-guide.md
+                - docs/examples/hello_stages.md
+              measure:
+                - Clear to newcomers
+                - Technically accurate
+              track:
+                - Review: by target users
+                - Test: examples run correctly
+            effort: 2d
+
+        - task_4_2:
+            id: "benchmark-suite"
+            description: "Hello world benchmarks"
+            pdmt:
+              plan:
+                - Startup time measurement
+                - Compilation speed test
+                - Binary size comparison
+                - vs Rust, Python, Node
+              do:
+                - benches/hello_world.rs
+                - scripts/compare_languages.sh
+              measure:
+                - Reproducible results
+                - Statistical significance
+              track:
+                - CI: regression detection
+                - Report: performance metrics
+            effort: 1d
+
+validation:
+  correctness:
+    - "Hello world compiles and runs correctly"
+    - "Generated Rust is idiomatic and warning-free"
+    - "All inspection commands produce valid output"
+    - "Type inference handles string interpolation"
+
+  performance:
+    - "End-to-end compilation <10ms"
+    - "REPL response <15ms"
+    - "Binary size <2MB"
+    - "Zero heap allocations for literals"
+
+  observability:
+    - "Every compilation stage inspectable"
+    - "Source mapping preserved throughout"
+    - "Metrics match reference implementations"
+    - "Performance tracing adds <5% overhead"
+
+deliverables:
+  - working_binary:
+      description: "ruchy binary that compiles hello.ruchy"
+      acceptance:
+        - Runs on Linux/macOS/Windows
+        - Produces working executable
+        - All show commands functional
+
+  - visual_demo:
+      description: "Terminal recording showing compilation stages"
+      acceptance:
+        - Shows source → AST → MIR → Rust → Binary
+        - Demonstrates metrics and analysis
+        - Under 2 minutes total
+
+  - benchmark_report:
+      description: "Performance comparison document"
+      acceptance:
+        - Compares with Rust, Python, Node.js
+        - Includes startup time, compile time, binary size
+        - Shows Ruchy advantages clearly
+
+success_metrics:
+  - "Hello world demos at conference generate interest"
+  - "HN/Reddit threads focus on transparency features"
+  - "Developers try REPL within 5 minutes of seeing demo"
+  - "Generated Rust code quality surprises Rust developers"
+  - "Performance within 10% of hand-written Rust"
+
+risks:
+  - risk_1:
+      description: "Type inference too complex for hello world"
+      mitigation: "Start with hardcoded String type, iterate"
+
+  - risk_2:
+      description: "Show commands slow down compilation"
+      mitigation: "Lazy computation, cache intermediates"
+
+  - risk_3:
+      description: "Generated Rust not idiomatic"
+      mitigation: "Study rustfmt output, match patterns"
+
+dependencies:
+  external:
+    - "serde_json: ^1.0 (AST serialization)"
+    - "colored: ^2.0 (terminal output)"
+    - "criterion: ^0.5 (benchmarking)"
+
+  internal:
+    - "Basic lexer/parser infrastructure"
+    - "Type representation system"
+    - "Rust code generator framework"
+
+notes: |
+  This specification focuses solely on making hello world compelling through
+  mechanical transparency. Every feature demonstrates our core philosophy:
+  the compiler is glass, not black box. Success means developers immediately
+  understand what Ruchy does differently and why it matters.

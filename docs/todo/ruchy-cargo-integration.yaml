@@ -1,0 +1,413 @@
+# Ruchy Cargo Integration Implementation Plan
+# PDMT-compliant todo specification for zero-friction Cargo ecosystem integration
+
+project:
+  name: ruchy-cargo-integration
+  description: Transparent Rust code generation system for Cargo/crates.io ecosystem
+  version: "0.1.0"
+  owner: ruchy-team
+  priority: critical
+  tags: [compiler, build-system, ecosystem]
+
+metadata:
+  created: 2025-01-01
+  updated: 2025-01-01
+  estimated_duration: 6_months
+  complexity: high
+  quality_gates:
+    - zero_cargo_modifications
+    - compilation_overhead_under_10_percent
+    - full_crates_io_compatibility
+    - source_map_accuracy_100_percent
+
+phases:
+  - phase_1:
+      name: "Core Transpilation Pipeline"
+      duration: 2_months
+      priority: p0
+
+      tasks:
+        - task_1_1:
+            id: "build-script-framework"
+            description: "Implement build.rs transpilation orchestrator"
+            owner: compiler-team
+            priority: p0
+            complexity: medium
+            estimated_hours: 40
+
+            subtasks:
+              - "Create ruchy::build module structure"
+              - "Implement .ruchy file discovery via walkdir"
+              - "Design incremental compilation cache format"
+              - "Emit cargo:rerun-if-changed directives"
+
+            acceptance_criteria:
+              - "Discovers all .ruchy files in src/"
+              - "Generates .rs files in target/ruchy-gen/"
+              - "Skips unchanged files via mtime comparison"
+              - "Integrates with cargo build without modification"
+
+            technical_notes: |
+              Use notify-rs for file watching during development.
+              Cache key: blake3(source_content + compiler_version).
+              Store cache in target/.ruchy-cache for cargo clean compatibility.
+
+            dependencies: []
+
+        - task_1_2:
+            id: "module-hierarchy-generator"
+            description: "Generate idiomatic Rust module structure"
+            owner: compiler-team
+            priority: p0
+            complexity: high
+            estimated_hours: 60
+
+            subtasks:
+              - "Parse src/ directory structure"
+              - "Generate mod.rs files for directories"
+              - "Create #[path] attribute injections"
+              - "Preserve pub/private visibility"
+
+            acceptance_criteria:
+              - "Generates target/ruchy-gen/*/mod.rs for each directory"
+              - "User writes standard 'mod data;' declarations"
+              - "Visibility modifiers preserved from .ruchy files"
+              - "Supports nested module hierarchies"
+
+            technical_notes: |
+              Module tree must mirror src/ structure exactly.
+              Use syn for AST manipulation of visibility modifiers.
+              Generate deterministic output for reproducible builds.
+
+            dependencies: ["build-script-framework"]
+
+        - task_1_3:
+            id: "source-map-generation"
+            description: "Bidirectional source mapping infrastructure"
+            owner: tooling-team
+            priority: p0
+            complexity: high
+            estimated_hours: 80
+
+            subtasks:
+              - "Design source map format (v3 spec)"
+              - "Track AST node → generated line mappings"
+              - "Implement reverse lookup for errors"
+              - "Integrate with rustc error reporter"
+
+            acceptance_criteria:
+              - "Error in .rs maps to exact .ruchy location"
+              - "Supports column-level precision"
+              - "Works with rust-analyzer diagnostics"
+              - "Debugger breakpoints map correctly"
+
+            technical_notes: |
+              Use sourcemap crate for v3 format generation.
+              Store maps adjacent to generated files.
+              Implement custom panic handler for runtime errors.
+
+            dependencies: ["build-script-framework"]
+
+  - phase_2:
+      name: "Dependency Management System"
+      duration: 1_month
+      priority: p0
+
+      tasks:
+        - task_2_1:
+            id: "ruchy-add-command"
+            description: "CLI wrapper for cargo add with metadata tracking"
+            owner: cli-team
+            priority: p0
+            complexity: medium
+            estimated_hours: 30
+
+            subtasks:
+              - "Parse cargo add arguments"
+              - "Update Cargo.toml via toml_edit"
+              - "Maintain Ruchy.toml metadata"
+              - "Validate dependency availability"
+
+            acceptance_criteria:
+              - "ruchy add serde updates Cargo.toml"
+              - "Preserves cargo add semantics exactly"
+              - "Tracks Ruchy-specific options in metadata"
+              - "Provides helpful error on missing dependencies"
+
+            technical_notes: |
+              Shell out to cargo add for maximum compatibility.
+              Use toml_edit to preserve Cargo.toml formatting.
+              Store transpilation hints in [package.metadata.ruchy].
+
+            dependencies: []
+
+        - task_2_2:
+            id: "dependency-analyzer"
+            description: "Static analysis for missing crate detection"
+            owner: compiler-team
+            priority: p1
+            complexity: high
+            estimated_hours: 50
+
+            subtasks:
+              - "Parse use statements in .ruchy files"
+              - "Cross-reference with Cargo.toml"
+              - "Suggest ruchy add commands"
+              - "Detect unused dependencies"
+
+            acceptance_criteria:
+              - "Identifies all external crate usage"
+              - "Zero false positives on std items"
+              - "Suggests exact ruchy add command"
+              - "Warns on orphaned dependencies"
+
+            technical_notes: |
+              Use rustc's name resolution algorithm.
+              Cache crate metadata from crates.io index.
+              Integrate with rust-analyzer for IDE hints.
+
+            dependencies: ["ruchy-add-command"]
+
+  - phase_3:
+      name: "IDE Integration Layer"
+      duration: 1_month
+      priority: p1
+
+      tasks:
+        - task_3_1:
+            id: "virtual-manifest-generator"
+            description: "Create synthetic Cargo.toml for rust-analyzer"
+            owner: tooling-team
+            priority: p1
+            complexity: medium
+            estimated_hours: 25
+
+            subtasks:
+              - "Generate target/ruchy-gen/Cargo.toml"
+              - "Mirror parent project settings"
+              - "Create root lib.rs with paths"
+              - "Update on each transpilation"
+
+            acceptance_criteria:
+              - "rust-analyzer recognizes generated project"
+              - "Go-to-definition crosses .ruchy/.rs boundary"
+              - "Completions work in .ruchy files"
+              - "No duplicate symbol errors"
+
+            technical_notes: |
+              Virtual manifest must specify workspace membership.
+              Use same edition and resolver as parent.
+              Generate relative paths for workspace dependencies.
+
+            dependencies: ["module-hierarchy-generator", "source-map-generation"]
+
+        - task_3_2:
+            id: "lsp-protocol-extension"
+            description: "Ruchy-specific LSP extensions"
+            owner: tooling-team
+            priority: p2
+            complexity: high
+            estimated_hours: 60
+
+            subtasks:
+              - "Implement ruchy/transpile request"
+              - "Add ruchy/showGeneratedRust command"
+              - "Create semantic token provider"
+              - "Implement quick-fix code actions"
+
+            acceptance_criteria:
+              - "Shows generated Rust on demand"
+              - "Syntax highlighting for Ruchy constructs"
+              - "Quick fixes for common patterns"
+              - "Hover shows type inference results"
+
+            technical_notes: |
+              Extend rust-analyzer via custom capabilities.
+              Use tower-lsp for protocol implementation.
+              Cache transpilation results for responsiveness.
+
+            dependencies: ["virtual-manifest-generator"]
+
+  - phase_4:
+      name: "FFI Safety Automation"
+      duration: 1.5_months
+      priority: p2
+
+      tasks:
+        - task_4_1:
+            id: "ffi-signature-analyzer"
+            description: "Analyze C function signatures for safety patterns"
+            owner: compiler-team
+            priority: p2
+            complexity: high
+            estimated_hours: 50
+
+            subtasks:
+              - "Parse extern block declarations"
+              - "Identify pointer ownership patterns"
+              - "Detect buffer size relationships"
+              - "Classify return value semantics"
+
+            acceptance_criteria:
+              - "Recognizes malloc/free patterns"
+              - "Identifies length parameters"
+              - "Detects string return types"
+              - "Handles nullable pointers"
+
+            technical_notes: |
+              Use bindgen's heuristics as reference.
+              Build pattern database from common C libraries.
+              Allow manual override via attributes.
+
+            dependencies: ["build-script-framework"]
+
+        - task_4_2:
+            id: "safety-wrapper-injection"
+            description: "Generate defensive FFI wrappers"
+            owner: compiler-team
+            priority: p2
+            complexity: high
+            estimated_hours: 60
+
+            subtasks:
+              - "Insert null pointer checks"
+              - "Add bounds validation"
+              - "Generate drop guards"
+              - "Validate UTF-8 for strings"
+
+            acceptance_criteria:
+              - "Zero unsafe code in user-facing API"
+              - "Panics replaced with Result types"
+              - "Memory leaks prevented via guards"
+              - "Performance overhead < 5% for hot paths"
+
+            technical_notes: |
+              Use MaybeUninit for uninitialized memory.
+              Generate #[inline] hints for simple checks.
+              Allow opt-out via #[ruchy::unsafe_ffi].
+
+            dependencies: ["ffi-signature-analyzer"]
+
+  - phase_5:
+      name: "Publishing Infrastructure"
+      duration: 0.5_months
+      priority: p1
+
+      tasks:
+        - task_5_1:
+            id: "crate-packaging"
+            description: "Package Ruchy projects for crates.io"
+            owner: cli-team
+            priority: p1
+            complexity: medium
+            estimated_hours: 30
+
+            subtasks:
+              - "Include .ruchy sources in package"
+              - "Pre-generate .rs files"
+              - "Add ruchy build-dependency"
+              - "Create fallback for non-Ruchy users"
+
+            acceptance_criteria:
+              - "cargo publish works unchanged"
+              - "Consumers don't need Ruchy installed"
+              - "Source maps included for debugging"
+              - "Reproducible builds from .ruchy sources"
+
+            technical_notes: |
+              Use include field in Cargo.toml for .ruchy files.
+              Generate .rs files in package.publish hook.
+              Add [package.metadata.ruchy] version marker.
+
+            dependencies: ["build-script-framework"]
+
+  - phase_6:
+      name: "Performance Optimization"
+      duration: 1_month
+      priority: p3
+
+      tasks:
+        - task_6_1:
+            id: "incremental-compilation"
+            description: "Fine-grained dependency tracking"
+            owner: compiler-team
+            priority: p3
+            complexity: high
+            estimated_hours: 80
+
+            subtasks:
+              - "Build module dependency graph"
+              - "Track type signature changes"
+              - "Implement selective retranspilation"
+              - "Share cache with rustc"
+
+            acceptance_criteria:
+              - "Only retranspiles changed modules"
+              - "Tracks transitive dependencies"
+              - "Cache hit rate > 90% for small changes"
+              - "Integrates with cargo's fingerprinting"
+
+            technical_notes: |
+              Use salsa for incremental computation.
+              Store dependency graph in target/.fingerprint.
+              Parallelize transpilation via rayon.
+
+            dependencies: ["build-script-framework", "module-hierarchy-generator"]
+
+        - task_6_2:
+            id: "parallel-transpilation"
+            description: "Multi-threaded code generation"
+            owner: compiler-team
+            priority: p3
+            complexity: medium
+            estimated_hours: 40
+
+            subtasks:
+              - "Identify parallelizable units"
+              - "Implement work-stealing scheduler"
+              - "Manage shared type context"
+              - "Merge generated outputs"
+
+            acceptance_criteria:
+              - "Linear speedup to 4 cores"
+              - "No race conditions in type inference"
+              - "Deterministic output ordering"
+              - "Memory usage < 2x sequential"
+
+            technical_notes: |
+              Use crossbeam for lock-free data structures.
+              Share immutable type context via Arc.
+              Generate files atomically via tempfile + rename.
+
+            dependencies: ["incremental-compilation"]
+
+validation:
+  rules:
+    - "All tasks must have estimated_hours"
+    - "P0 tasks cannot depend on P1+ tasks"
+    - "Each phase must have clear deliverables"
+    - "Technical notes must reference specific crates"
+
+  quality_metrics:
+    - metric: "compilation_overhead"
+      target: "< 10%"
+      measurement: "time(cargo build hybrid) / time(cargo build rust-only)"
+
+    - metric: "ecosystem_compatibility"
+      target: "100%"
+      measurement: "top-100 crates.io packages compile unchanged"
+
+    - metric: "ide_latency"
+      target: "< 100ms"
+      measurement: "rust-analyzer response time for completions"
+
+    - metric: "source_map_accuracy"
+      target: "100%"
+      measurement: "error locations map to exact line/column"
+
+success_criteria:
+  - "Standard cargo commands work without modification"
+  - "Any crates.io dependency usable from Ruchy"
+  - "IDE experience equivalent to pure Rust"
+  - "Zero runtime overhead vs handwritten Rust"
+  - "Debugging preserves Ruchy source context"

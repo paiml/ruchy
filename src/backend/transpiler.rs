@@ -1,6 +1,6 @@
 //! Transpiler from Ruchy AST to Rust code
 
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, PipelineStage, Type, TypeKind, UnaryOp};
+use crate::frontend::ast::{Attribute, BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, PipelineStage, Type, TypeKind, UnaryOp};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -55,6 +55,11 @@ impl Transpiler {
     /// 
     /// Returns an error if the expression type is not supported or contains invalid constructs.
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
+        // Handle attributes first
+        if let Some(property_attr) = expr.attributes.iter().find(|attr| attr.name == "property") {
+            return self.transpile_property_test(expr, property_attr);
+        }
+
         match &expr.kind {
             ExprKind::Literal(lit) => Ok(Self::transpile_literal(lit)),
             ExprKind::Identifier(name) => {
@@ -63,6 +68,11 @@ impl Transpiler {
             }
             ExprKind::Binary { left, op, right } => self.transpile_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.transpile_unary(*op, operand),
+            ExprKind::Try { expr } => self.transpile_try(expr),
+            ExprKind::TryCatch { try_block, catch_var, catch_block } => {
+                self.transpile_try_catch(try_block, catch_var, catch_block)
+            }
+            ExprKind::Await { expr } => self.transpile_await(expr),
             ExprKind::If {
                 condition,
                 then_branch,
@@ -74,20 +84,48 @@ impl Transpiler {
                 params,
                 return_type,
                 body,
-            } => self.transpile_function(name, params, return_type.as_ref(), body),
+                is_async,
+            } => self.transpile_function(name, params, return_type.as_ref(), body, *is_async),
+            ExprKind::Lambda { params, body } => self.transpile_lambda(params, body),
             ExprKind::Call { func, args } => self.transpile_call(func, args),
             ExprKind::MethodCall { receiver, method, args } => self.transpile_method_call(receiver, method, args),
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
             ExprKind::Match { expr, arms } => self.transpile_match(expr, arms),
             ExprKind::List(elements) => self.transpile_list(elements),
+            ExprKind::DataFrame { columns, rows } => self.transpile_dataframe(columns, rows),
             ExprKind::For { var, iter, body } => self.transpile_for(var, iter, body),
+            ExprKind::While { condition, body } => self.transpile_while(condition, body),
             ExprKind::Range {
                 start,
                 end,
                 inclusive,
             } => self.transpile_range(start, end, *inclusive),
             ExprKind::Import { path, items } => Ok(Self::transpile_import(path, items)),
+            ExprKind::Struct { name, fields } => self.transpile_struct(name, fields),
+            ExprKind::StructLiteral { name, fields } => self.transpile_struct_literal(name, fields),
+            ExprKind::FieldAccess { object, field } => self.transpile_field_access(object, field),
+            ExprKind::Trait { name, methods } => self.transpile_trait(name, methods),
+            ExprKind::Impl { trait_name, for_type, methods } => self.transpile_impl(trait_name.as_deref(), for_type, methods),
+            ExprKind::Actor { name, state, handlers } => self.transpile_actor(name, state, handlers),
+            ExprKind::Send { actor, message } => self.transpile_send(actor, message),
+            ExprKind::Ask { actor, message, timeout } => self.transpile_ask(actor, message, timeout.as_deref()),
+            ExprKind::Break { label } => {
+                if let Some(_label) = label {
+                    // For now, just emit simple break (labels need more complex handling)
+                    Ok(quote! { break })
+                } else {
+                    Ok(quote! { break })
+                }
+            }
+            ExprKind::Continue { label } => {
+                if let Some(_label) = label {
+                    // For now, just emit simple continue (labels need more complex handling)
+                    Ok(quote! { continue })
+                } else {
+                    Ok(quote! { continue })
+                }
+            }
         }
     }
 
@@ -151,6 +189,36 @@ impl Transpiler {
         })
     }
 
+    fn transpile_try(&self, expr: &Expr) -> Result<TokenStream> {
+        let expr_tokens = self.transpile_expr(expr)?;
+        // In Rust, the ? operator is just appended
+        Ok(quote! { #expr_tokens? })
+    }
+
+    fn transpile_try_catch(&self, try_block: &Expr, catch_var: &str, catch_block: &Expr) -> Result<TokenStream> {
+        // Transpile try/catch to a Rust match expression on a Result
+        // We wrap the try block in a closure that returns Result
+        let try_tokens = self.transpile_expr(try_block)?;
+        let catch_var_ident = syn::Ident::new(catch_var, proc_macro2::Span::call_site());
+        let catch_tokens = self.transpile_expr(catch_block)?;
+        
+        // Generate: match (|| -> Result<_, _> { try_block })() { Ok(v) => v, Err(catch_var) => catch_block }
+        Ok(quote! {
+            match (|| -> Result<_, Box<dyn std::error::Error>> {
+                Ok(#try_tokens)
+            })() {
+                Ok(__v) => __v,
+                Err(#catch_var_ident) => #catch_tokens,
+            }
+        })
+    }
+    
+    fn transpile_await(&self, expr: &Expr) -> Result<TokenStream> {
+        let expr_tokens = self.transpile_expr(expr)?;
+        // In Rust, await is a postfix operator
+        Ok(quote! { #expr_tokens.await })
+    }
+
     fn transpile_if(
         &self,
         condition: &Expr,
@@ -206,6 +274,7 @@ impl Transpiler {
         params: &[Param],
         return_type: Option<&Type>,
         body: &Expr,
+        is_async: bool,
     ) -> Result<TokenStream> {
         let name_ident = syn::Ident::new(name, proc_macro2::Span::call_site());
         let body_tokens = self.transpile_expr(body)?;
@@ -226,10 +295,37 @@ impl Transpiler {
             quote! {}
         };
 
+        if is_async {
+            Ok(quote! {
+                async fn #name_ident(#(#param_tokens),*) #return_type_tokens {
+                    #body_tokens
+                }
+            })
+        } else {
+            Ok(quote! {
+                fn #name_ident(#(#param_tokens),*) #return_type_tokens {
+                    #body_tokens
+                }
+            })
+        }
+    }
+
+    fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
+        let body_tokens = self.transpile_expr(body)?;
+        
+        // Create parameter list for the closure
+        let param_tokens: Vec<_> = params
+            .iter()
+            .map(|p| {
+                let param_name = syn::Ident::new(&p.name, proc_macro2::Span::call_site());
+                // For closures, we typically don't specify types and let Rust infer them
+                quote! { #param_name }
+            })
+            .collect();
+        
+        // Generate closure syntax
         Ok(quote! {
-            fn #name_ident(#(#param_tokens),*) #return_type_tokens {
-                #body_tokens
-            }
+            |#(#param_tokens),*| #body_tokens
         })
     }
 
@@ -260,14 +356,75 @@ impl Transpiler {
     
     fn transpile_method_call(&self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<TokenStream> {
         let receiver_tokens = self.transpile_expr(receiver)?;
-        let method_ident = syn::Ident::new(method, proc_macro2::Span::call_site());
         
-        let arg_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
-        let arg_tokens = arg_tokens?;
+        // Special handling for DataFrame methods - only if receiver is actually a DataFrame
+        if matches!(receiver.kind, ExprKind::DataFrame { .. }) &&
+           (method == "filter" || method == "select" || method == "groupby" || 
+            method == "agg" || method == "mean" || method == "std" || 
+            method == "sum" || method == "count" || method == "col") {
+            return self.transpile_dataframe_method(receiver, method, args);
+        }
         
-        Ok(quote! {
-            #receiver_tokens.#method_ident(#(#arg_tokens),*)
-        })
+        // Special handling for Vec extension methods
+        match method {
+            "sorted" => {
+                // vec.sorted() -> { let mut v = vec.clone(); v.sort(); v }
+                Ok(quote! {
+                    {
+                        let mut __sorted = #receiver_tokens.clone();
+                        __sorted.sort();
+                        __sorted
+                    }
+                })
+            }
+            "sum" => {
+                // vec.sum() -> vec.iter().sum()
+                Ok(quote! {
+                    #receiver_tokens.iter().sum()
+                })
+            }
+            "reversed" => {
+                // vec.reversed() -> { let mut v = vec.clone(); v.reverse(); v }
+                Ok(quote! {
+                    {
+                        let mut __reversed = #receiver_tokens.clone();
+                        __reversed.reverse();
+                        __reversed
+                    }
+                })
+            }
+            "unique" => {
+                // vec.unique() -> vec.into_iter().collect::<std::collections::HashSet<_>>().into_iter().collect()
+                Ok(quote! {
+                    {
+                        let __set: std::collections::HashSet<_> = #receiver_tokens.iter().cloned().collect();
+                        __set.into_iter().collect::<Vec<_>>()
+                    }
+                })
+            }
+            "min" => {
+                // vec.min() -> vec.iter().min().cloned()
+                Ok(quote! {
+                    #receiver_tokens.iter().min().cloned()
+                })
+            }
+            "max" => {
+                // vec.max() -> vec.iter().max().cloned()
+                Ok(quote! {
+                    #receiver_tokens.iter().max().cloned()
+                })
+            }
+            _ => {
+                // Default method call
+                let method_ident = syn::Ident::new(method, proc_macro2::Span::call_site());
+                let arg_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
+                let arg_tokens = arg_tokens?;
+                
+                Ok(quote! {
+                    #receiver_tokens.#method_ident(#(#arg_tokens),*)
+                })
+            }
+        }
     }
     
     fn parse_interpolation(s: &str) -> Option<(String, Vec<TokenStream>)> {
@@ -435,6 +592,17 @@ impl Transpiler {
         })
     }
 
+    fn transpile_while(&self, condition: &Expr, body: &Expr) -> Result<TokenStream> {
+        let cond_tokens = self.transpile_expr(condition)?;
+        let body_tokens = self.transpile_expr(body)?;
+
+        Ok(quote! {
+            while #cond_tokens {
+                #body_tokens
+            }
+        })
+    }
+
     fn transpile_range(&self, start: &Expr, end: &Expr, inclusive: bool) -> Result<TokenStream> {
         let start_tokens = self.transpile_expr(start)?;
         let end_tokens = self.transpile_expr(end)?;
@@ -444,6 +612,137 @@ impl Transpiler {
         } else {
             Ok(quote! { (#start_tokens..#end_tokens) })
         }
+    }
+
+    fn transpile_dataframe_method(&self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<TokenStream> {
+        let receiver_tokens = self.transpile_expr(receiver)?;
+        
+        match method {
+            "filter" => {
+                // df.filter(condition)
+                if args.len() != 1 {
+                    bail!("filter expects exactly one argument");
+                }
+                let condition = self.transpile_expr(&args[0])?;
+                Ok(quote! {
+                    #receiver_tokens.lazy().filter(#condition).collect()?
+                })
+            }
+            "select" => {
+                // df.select([col1, col2, ...])
+                let col_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
+                let col_tokens = col_tokens?;
+                Ok(quote! {
+                    #receiver_tokens.select([#(#col_tokens),*])?
+                })
+            }
+            "groupby" => {
+                // df.groupby(columns)
+                if args.is_empty() {
+                    bail!("groupby expects at least one column");
+                }
+                let col_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
+                let col_tokens = col_tokens?;
+                Ok(quote! {
+                    #receiver_tokens.groupby([#(#col_tokens),*])?
+                })
+            }
+            "agg" => {
+                // df.agg(aggregations)
+                let agg_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
+                let agg_tokens = agg_tokens?;
+                Ok(quote! {
+                    #receiver_tokens.agg([#(#agg_tokens),*])?
+                })
+            }
+            "mean" => {
+                // df.mean() or series.mean()
+                if !args.is_empty() {
+                    bail!("mean takes no arguments");
+                }
+                Ok(quote! {
+                    #receiver_tokens.mean()
+                })
+            }
+            "std" => {
+                // df.std() or series.std()
+                if !args.is_empty() {
+                    bail!("std takes no arguments");
+                }
+                Ok(quote! {
+                    #receiver_tokens.std()
+                })
+            }
+            "sum" => {
+                // df.sum() or series.sum()
+                if !args.is_empty() {
+                    bail!("sum takes no arguments");
+                }
+                Ok(quote! {
+                    #receiver_tokens.sum()
+                })
+            }
+            "count" => {
+                // df.count() or series.count()
+                if !args.is_empty() {
+                    bail!("count takes no arguments");
+                }
+                Ok(quote! {
+                    #receiver_tokens.shape().0
+                })
+            }
+            "col" => {
+                // df.col("column_name")
+                if args.len() != 1 {
+                    bail!("col expects exactly one argument");
+                }
+                let col_name = self.transpile_expr(&args[0])?;
+                Ok(quote! {
+                    polars::prelude::col(#col_name)
+                })
+            }
+            _ => bail!("Unknown DataFrame method: {}", method),
+        }
+    }
+    
+    fn transpile_dataframe(&self, columns: &[String], rows: &[Vec<Expr>]) -> Result<TokenStream> {
+        // Generate Polars DataFrame creation code
+        // df! macro equivalent in Polars:
+        // DataFrame::new(vec![
+        //     Series::new("col1", vec![val1, val2, ...]),
+        //     Series::new("col2", vec![val1, val2, ...]),
+        // ])
+        
+        if columns.is_empty() {
+            return Ok(quote! { polars::frame::DataFrame::empty() });
+        }
+        
+        // Transpose rows to columns for Polars Series creation
+        let mut series_data: Vec<Vec<TokenStream>> = vec![Vec::new(); columns.len()];
+        
+        for row in rows {
+            for (i, value) in row.iter().enumerate() {
+                let value_tokens = self.transpile_expr(value)?;
+                series_data[i].push(value_tokens);
+            }
+        }
+        
+        // Create Series for each column
+        let series_tokens: Vec<TokenStream> = columns
+            .iter()
+            .zip(series_data.iter())
+            .map(|(col_name, col_data)| {
+                quote! {
+                    polars::series::Series::new(#col_name, vec![#(#col_data),*])
+                }
+            })
+            .collect();
+        
+        Ok(quote! {
+            polars::frame::DataFrame::new(vec![
+                #(#series_tokens),*
+            ]).expect("Failed to create DataFrame")
+        })
     }
 
     fn transpile_import(path: &str, items: &[String]) -> TokenStream {
@@ -518,6 +817,320 @@ impl Transpiler {
                 quote! { fn(#(#param_tokens),*) -> #ret_tokens }
             }
         })
+    }
+
+    fn transpile_struct(&self, name: &str, fields: &[crate::frontend::ast::StructField]) -> Result<TokenStream> {
+        let struct_name = syn::Ident::new(name, proc_macro2::Span::call_site());
+        
+        let field_tokens: Result<Vec<_>> = fields.iter().map(|field| {
+            let field_name = syn::Ident::new(&field.name, proc_macro2::Span::call_site());
+            let field_type = self.transpile_type(&field.ty)?;
+            
+            if field.is_pub {
+                Ok(quote! { pub #field_name: #field_type })
+            } else {
+                Ok(quote! { #field_name: #field_type })
+            }
+        }).collect();
+        let field_tokens = field_tokens?;
+        
+        Ok(quote! {
+            struct #struct_name {
+                #(#field_tokens),*
+            }
+        })
+    }
+
+    fn transpile_struct_literal(&self, name: &str, fields: &[(String, Expr)]) -> Result<TokenStream> {
+        let struct_name = syn::Ident::new(name, proc_macro2::Span::call_site());
+        
+        let field_tokens: Result<Vec<_>> = fields.iter().map(|(field_name, value)| {
+            let field_ident = syn::Ident::new(field_name, proc_macro2::Span::call_site());
+            let value_tokens = self.transpile_expr(value)?;
+            Ok(quote! { #field_ident: #value_tokens })
+        }).collect();
+        let field_tokens = field_tokens?;
+        
+        Ok(quote! {
+            #struct_name {
+                #(#field_tokens),*
+            }
+        })
+    }
+
+    fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<TokenStream> {
+        let object_tokens = self.transpile_expr(object)?;
+        let field_ident = syn::Ident::new(field, proc_macro2::Span::call_site());
+        
+        Ok(quote! {
+            #object_tokens.#field_ident
+        })
+    }
+
+    fn transpile_trait(&self, name: &str, methods: &[crate::frontend::ast::TraitMethod]) -> Result<TokenStream> {
+        let trait_name = syn::Ident::new(name, proc_macro2::Span::call_site());
+        
+        let method_tokens: Result<Vec<_>> = methods.iter().map(|method| {
+            let method_name = syn::Ident::new(&method.name, proc_macro2::Span::call_site());
+            
+            // Parse parameters (skip self for now, assume first param is self)
+            let param_tokens: Result<Vec<_>> = method.params.iter().skip(1).map(|p| {
+                let param_name = syn::Ident::new(&p.name, proc_macro2::Span::call_site());
+                let param_type = self.transpile_type(&p.ty)?;
+                Ok(quote! { #param_name: #param_type })
+            }).collect();
+            let param_tokens = param_tokens?;
+            
+            // Return type
+            let return_type_tokens = if let Some(ret_ty) = &method.return_type {
+                let ty = self.transpile_type(ret_ty)?;
+                quote! { -> #ty }
+            } else {
+                quote! {}
+            };
+            
+            // Method body (for default implementations)
+            if let Some(body) = &method.body {
+                let body_tokens = self.transpile_expr(body)?;
+                Ok(quote! {
+                    fn #method_name(&self, #(#param_tokens),*) #return_type_tokens {
+                        #body_tokens
+                    }
+                })
+            } else {
+                // Just the signature
+                Ok(quote! {
+                    fn #method_name(&self, #(#param_tokens),*) #return_type_tokens;
+                })
+            }
+        }).collect();
+        let method_tokens = method_tokens?;
+        
+        Ok(quote! {
+            trait #trait_name {
+                #(#method_tokens)*
+            }
+        })
+    }
+
+    fn transpile_impl(&self, trait_name: Option<&str>, for_type: &str, methods: &[crate::frontend::ast::ImplMethod]) -> Result<TokenStream> {
+        let type_name = syn::Ident::new(for_type, proc_macro2::Span::call_site());
+        
+        let method_tokens: Result<Vec<_>> = methods.iter().map(|method| {
+            let method_name = syn::Ident::new(&method.name, proc_macro2::Span::call_site());
+            
+            // Parse parameters (skip self for now, assume first param is self)
+            let param_tokens: Result<Vec<_>> = method.params.iter().skip(1).map(|p| {
+                let param_name = syn::Ident::new(&p.name, proc_macro2::Span::call_site());
+                let param_type = self.transpile_type(&p.ty)?;
+                Ok(quote! { #param_name: #param_type })
+            }).collect();
+            let param_tokens = param_tokens?;
+            
+            // Return type
+            let return_type_tokens = if let Some(ret_ty) = &method.return_type {
+                let ty = self.transpile_type(ret_ty)?;
+                quote! { -> #ty }
+            } else {
+                quote! {}
+            };
+            
+            // Method body
+            let body_tokens = self.transpile_expr(&method.body)?;
+            
+            Ok(quote! {
+                fn #method_name(&self, #(#param_tokens),*) #return_type_tokens {
+                    #body_tokens
+                }
+            })
+        }).collect();
+        let method_tokens = method_tokens?;
+        
+        if let Some(trait_name) = trait_name {
+            let trait_ident = syn::Ident::new(trait_name, proc_macro2::Span::call_site());
+            Ok(quote! {
+                impl #trait_ident for #type_name {
+                    #(#method_tokens)*
+                }
+            })
+        } else {
+            // Inherent impl
+            Ok(quote! {
+                impl #type_name {
+                    #(#method_tokens)*
+                }
+            })
+        }
+    }
+    
+    fn transpile_actor(&self, name: &str, state: &[crate::frontend::ast::StructField], handlers: &[crate::frontend::ast::ActorHandler]) -> Result<TokenStream> {
+        let actor_name = syn::Ident::new(name, proc_macro2::Span::call_site());
+        
+        // Generate state struct
+        let field_tokens: Result<Vec<_>> = state.iter().map(|f| {
+            let field_name = syn::Ident::new(&f.name, proc_macro2::Span::call_site());
+            let field_type = self.transpile_type(&f.ty)?;
+            Ok(quote! { #field_name: #field_type })
+        }).collect();
+        let field_tokens = field_tokens?;
+        
+        // Generate message enum
+        let message_variants: Vec<_> = handlers.iter().map(|h| {
+            let variant_name = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
+            // For simplicity, assuming messages have no parameters for now
+            quote! { #variant_name }
+        }).collect();
+        
+        let message_enum_name = syn::Ident::new(&format!("{name}Message"), proc_macro2::Span::call_site());
+        
+        // Generate handler match arms
+        let handler_arms: Result<Vec<_>> = handlers.iter().map(|h| {
+            let variant_name = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
+            let body = self.transpile_expr(&h.body)?;
+            Ok(quote! {
+                #message_enum_name::#variant_name => {
+                    #body
+                }
+            })
+        }).collect();
+        let handler_arms = handler_arms?;
+        
+        // Generate actor implementation using tokio
+        Ok(quote! {
+            struct #actor_name {
+                #(#field_tokens,)*
+            }
+            
+            #[derive(Debug, Clone)]
+            enum #message_enum_name {
+                #(#message_variants,)*
+            }
+            
+            impl #actor_name {
+                async fn handle_message(&mut self, msg: #message_enum_name) {
+                    match msg {
+                        #(#handler_arms)*
+                    }
+                }
+                
+                fn spawn(self) -> tokio::sync::mpsc::Sender<#message_enum_name> {
+                    let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+                    let mut actor = self;
+                    tokio::spawn(async move {
+                        while let Some(msg) = rx.recv().await {
+                            actor.handle_message(msg).await;
+                        }
+                    });
+                    tx
+                }
+            }
+        })
+    }
+    
+    fn transpile_send(&self, actor: &Expr, message: &Expr) -> Result<TokenStream> {
+        let actor_tokens = self.transpile_expr(actor)?;
+        let message_tokens = self.transpile_expr(message)?;
+        
+        // Generate send operation
+        Ok(quote! {
+            #actor_tokens.send(#message_tokens).await
+        })
+    }
+    
+    fn transpile_ask(&self, actor: &Expr, message: &Expr, timeout: Option<&Expr>) -> Result<TokenStream> {
+        let actor_tokens = self.transpile_expr(actor)?;
+        let message_tokens = self.transpile_expr(message)?;
+        
+        if let Some(timeout_expr) = timeout {
+            let timeout_tokens = self.transpile_expr(timeout_expr)?;
+            // Generate ask with timeout
+            Ok(quote! {
+                tokio::time::timeout(
+                    std::time::Duration::from_millis(#timeout_tokens),
+                    #actor_tokens.ask(#message_tokens)
+                ).await
+            })
+        } else {
+            // Generate ask without timeout
+            Ok(quote! {
+                #actor_tokens.ask(#message_tokens).await
+            })
+        }
+    }
+
+    fn transpile_property_test(&self, expr: &Expr, _attr: &Attribute) -> Result<TokenStream> {
+        // Property tests must be functions
+        if let ExprKind::Function { name, params, body, .. } = &expr.kind {
+            let fn_name = syn::Ident::new(name, proc_macro2::Span::call_site());
+            let test_fn_name = syn::Ident::new(&format!("test_property_{name}"), proc_macro2::Span::call_site());
+            
+            // Generate parameter types for proptest
+            let mut param_strategies = Vec::new();
+            let mut param_names = Vec::new();
+            
+            for param in params {
+                let param_name = syn::Ident::new(&param.name, proc_macro2::Span::call_site());
+                param_names.push(param_name.clone());
+                
+                let strategy = match &param.ty.kind {
+                    TypeKind::Named(name) => match name.as_str() {
+                        "i32" | "i64" => quote! { any::<i32>() },
+                        "f32" | "f64" => quote! { any::<f64>() },
+                        "bool" => quote! { any::<bool>() },
+                        "String" => quote! { any::<String>() },
+                        _ => quote! { any::<i32>() }, // Default fallback
+                    },
+                    TypeKind::List(elem_ty) => {
+                        let elem_strategy = if let TypeKind::Named(name) = &elem_ty.kind { 
+                            match name.as_str() {
+                                "i32" | "i64" => quote! { any::<i32>() },
+                                "f32" | "f64" => quote! { any::<f64>() },
+                                "bool" => quote! { any::<bool>() },
+                                "String" => quote! { any::<String>() },
+                                _ => quote! { any::<i32>() },
+                            }
+                        } else { 
+                            quote! { any::<i32>() } 
+                        };
+                        quote! { prop::collection::vec(#elem_strategy, 0..100) }
+                    },
+                    _ => quote! { any::<i32>() }, // Default fallback
+                };
+                
+                param_strategies.push(quote! { #param_name in #strategy });
+            }
+            
+            // Transpile the function body
+            let _body_tokens = self.transpile_expr(body)?;
+            
+            // Generate the original function
+            let original_fn = self.transpile_function(name, params, None, body, false)?;
+            
+            // Generate the property test
+            let test_tokens = quote! {
+                #original_fn
+                
+                #[cfg(test)]
+                mod property_tests {
+                    use super::*;
+                    use proptest::prelude::*;
+                    
+                    proptest! {
+                        #[test]
+                        fn #test_fn_name(#(#param_strategies),*) {
+                            // Call the function and verify it doesn't panic
+                            let _result = #fn_name(#(#param_names),*);
+                            // Property test passes if function completes without panic
+                            prop_assert!(true);
+                        }
+                    }
+                }
+            };
+            
+            Ok(test_tokens)
+        } else {
+            bail!("#[property] attribute can only be applied to functions");
+        }
     }
 }
 
@@ -644,5 +1257,276 @@ mod tests {
         assert!(result.contains('{'));
         assert!(result.contains('}'));
         assert!(result.contains("let x"));
+    }
+
+    #[test]
+    fn test_transpile_lambda() {
+        // Simple lambda
+        let result = transpile_str("|x| x + 1").unwrap();
+        assert!(result.contains("|x|"));
+        assert!(result.contains("x + 1"));
+
+        // Lambda with multiple parameters
+        let result = transpile_str("|x, y| x * y").unwrap();
+        assert!(result.contains("|x, y|"));
+        assert!(result.contains("x * y"));
+
+        // Lambda with no parameters
+        let result = transpile_str("|| 42").unwrap();
+        assert!(result.contains("||"));
+        assert!(result.contains("42"));
+
+        // Lambda in a function call context
+        let result = transpile_str("map(|x| x * 2)").unwrap();
+        assert!(result.contains("map"));
+        assert!(result.contains("|x|"));
+        assert!(result.contains("x * 2"));
+    }
+
+    #[test]
+    #[cfg(feature = "dataframe")]
+    fn test_transpile_dataframe() {
+        // Simple DataFrame
+        let result = transpile_str("df![name, age; \"Alice\", 30; \"Bob\", 25]").unwrap();
+        assert!(result.contains("DataFrame::new"));
+        assert!(result.contains("Series::new"));
+        assert!(result.contains("\"name\""));
+        assert!(result.contains("\"age\""));
+
+        // Empty DataFrame
+        let result = transpile_str("df![]").unwrap();
+        assert!(result.contains("DataFrame::empty"));
+
+        // Single column DataFrame
+        let result = transpile_str("df![values; 1; 2; 3]").unwrap();
+        assert!(result.contains("Series::new"));
+        assert!(result.contains("\"values\""));
+    }
+    
+    #[test]
+    fn test_transpile_dataframe_operations() {
+        // Create a DataFrame and test operations
+        let code = "df![name, age; \"Alice\", 30; \"Bob\", 25].mean()";
+        let result = transpile_str(code).unwrap();
+        assert!(result.contains(".mean()"));
+    }
+
+    #[test]
+    fn test_transpile_try_operator() {
+        // Simple try
+        let result = transpile_str("foo()?").unwrap();
+        assert!(result.contains("foo()?"));
+
+        // Try with method call
+        let result = transpile_str("x.method()?").unwrap();
+        assert!(result.contains("x.method()?"));
+
+        // Chained try operations (use parentheses to avoid SafeNav token)
+        let result = transpile_str("(get_data()?).process()?").unwrap();
+        assert!(result.contains("get_data()?"));
+    }
+
+    #[test]
+    fn test_transpile_while() {
+        // Simple while loop
+        let result = transpile_str("while x < 10 { println(x) }").unwrap();
+        assert!(result.contains("while"));
+        assert!(result.contains("x < 10"));
+        assert!(result.contains("println"));
+
+        // While with boolean literal
+        let result = transpile_str("while true { println(\"loop\") }").unwrap();
+        assert!(result.contains("while true"));
+        assert!(result.contains("println"));
+    }
+
+    #[test]
+    fn test_transpile_struct() {
+        // Simple struct definition
+        let result = transpile_str("struct Point { x: i32, y: i32 }").unwrap();
+        assert!(result.contains("struct Point"));
+        assert!(result.contains("x: i32"));
+        assert!(result.contains("y: i32"));
+
+        // Struct with public fields
+        let result = transpile_str("struct Person { pub name: String, pub age: i32 }").unwrap();
+        assert!(result.contains("struct Person"));
+        assert!(result.contains("pub name: String"));
+        assert!(result.contains("pub age: i32"));
+    }
+
+    #[test]
+    fn test_transpile_struct_literal() {
+        // Simple struct instantiation
+        let result = transpile_str("Point { x: 10, y: 20 }").unwrap();
+        assert!(result.contains("Point"));
+        assert!(result.contains("x: 10"));
+        assert!(result.contains("y: 20"));
+
+        // Struct literal with expressions
+        let result = transpile_str("Person { name: \"Alice\", age: 25 + 5 }").unwrap();
+        assert!(result.contains("Person"));
+        assert!(result.contains("name: \"Alice\""));
+        assert!(result.contains("age:"));
+        assert!(result.contains("25"));
+        assert!(result.contains('5'));
+    }
+
+    #[test]
+    fn test_transpile_field_access() {
+        // Simple field access
+        let result = transpile_str("point.x").unwrap();
+        assert!(result.contains("point.x"));
+
+        // Chained field access
+        let result = transpile_str("obj.field1.field2").unwrap();
+        assert!(result.contains(".field1"));
+        assert!(result.contains(".field2"));
+    }
+
+    #[test]
+    fn test_transpile_trait() {
+        // Simple trait
+        let result = transpile_str("trait Display { fun show(self) -> String }").unwrap();
+        assert!(result.contains("trait Display"));
+        assert!(result.contains("fn show(&self) -> String"));
+
+        // Trait with default implementation
+        let result = transpile_str("trait Greet { fun hello(self) { println(\"Hi\") } }").unwrap();
+        assert!(result.contains("trait Greet"));
+        assert!(result.contains("fn hello(&self)"));
+        assert!(result.contains("println"));
+    }
+
+    #[test]
+    fn test_transpile_vec_methods() {
+        // sorted method
+        let result = transpile_str("[3, 1, 2].sorted()").unwrap();
+        assert!(result.contains("sort()"));
+        assert!(result.contains("clone()"));
+
+        // sum method
+        let result = transpile_str("[1, 2, 3].sum()").unwrap();
+        assert!(result.contains("iter().sum()"));
+
+        // reversed method
+        let result = transpile_str("[1, 2, 3].reversed()").unwrap();
+        assert!(result.contains("reverse()"));
+
+        // unique method
+        let result = transpile_str("[1, 2, 2, 3].unique()").unwrap();
+        assert!(result.contains("HashSet"));
+
+        // min/max methods
+        let result = transpile_str("[1, 2, 3].min()").unwrap();
+        assert!(result.contains("iter().min()"));
+        
+        let result = transpile_str("[1, 2, 3].max()").unwrap();
+        assert!(result.contains("iter().max()"));
+    }
+
+    #[test]
+    fn test_transpile_try_catch() {
+        let code = r"
+            try {
+                42
+            } catch (e) {
+                0
+            }
+        ";
+        let result = transpile_str(code).unwrap();
+        assert!(result.contains("match"));
+        assert!(result.contains("Ok"));
+        assert!(result.contains("Err"));
+        assert!(result.contains("Result"));
+    }
+
+    #[test]
+    fn test_transpile_actor() {
+        let code = r"
+            actor Counter {
+                count: i32
+                
+                on Increment {
+                    42
+                }
+                
+                on Get {
+                    100
+                }
+            }
+        ";
+        let result = transpile_str(code).unwrap();
+        assert!(result.contains("struct Counter"));
+        assert!(result.contains("enum CounterMessage"));
+        assert!(result.contains("async fn handle_message"));
+        assert!(result.contains("tokio::spawn"));
+    }
+    
+    #[test]
+    fn test_transpile_send() {
+        let code = "counter!(Increment)";
+        let result = transpile_str(code).unwrap();
+        assert!(result.contains(".send("));
+        assert!(result.contains(".await"));
+    }
+    
+    #[test]
+    fn test_transpile_ask() {
+        let code = "counter?(Get)";
+        let result = transpile_str(code).unwrap();
+        assert!(result.contains(".ask("));
+        assert!(result.contains(".await"));
+    }
+    
+    #[test]
+    fn test_transpile_break_continue() {
+        // Test break
+        let code = "while true { break }";
+        let result = transpile_str(code).unwrap();
+        assert!(result.contains("break"));
+        
+        // Test continue
+        let code = "while true { continue }";
+        let result = transpile_str(code).unwrap();
+        assert!(result.contains("continue"));
+    }
+    
+    #[test]
+    fn test_transpile_async() {
+        // Async function
+        let result = transpile_str("async fun fetch() -> String { \"data\" }").unwrap();
+        assert!(result.contains("async fn fetch"));
+        assert!(result.contains("-> String"));
+        assert!(result.contains("\"data\""));
+
+        // Await expression
+        let result = transpile_str("await fetch()").unwrap();
+        assert!(result.contains("fetch().await"));
+    }
+
+    #[test]
+    fn test_transpile_impl() {
+        // Inherent impl
+        let result = transpile_str("impl Point { fun distance(self) -> f64 { 0.0 } }").unwrap();
+        assert!(result.contains("impl Point"));
+        assert!(result.contains("fn distance(&self) -> f64"));
+        assert!(result.contains("0f64")); // Rust formats 0.0 as 0f64
+
+        // Trait impl
+        let result = transpile_str("impl Display for Point { fun show(self) -> String { \"Point\" } }").unwrap();
+        assert!(result.contains("impl Display for Point"));
+        assert!(result.contains("fn show(&self) -> String"));
+        assert!(result.contains("\"Point\""));
+    }
+
+    #[test]
+    fn test_transpile_property_test() {
+        let result = transpile_str("#[property] fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
+        assert!(result.contains("fn add"));
+        assert!(result.contains("mod property_tests"));
+        assert!(result.contains("use proptest::prelude::*"));
+        assert!(result.contains("proptest!"));
+        assert!(result.contains("fn test_property_add"));
     }
 }

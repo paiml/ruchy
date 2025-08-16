@@ -53,6 +53,10 @@ impl Unifier {
             }
             (MonoType::List(e1), MonoType::List(e2)) => self.unify(&e1, &e2),
             (MonoType::Optional(i1), MonoType::Optional(i2)) => self.unify(&i1, &i2),
+            (MonoType::Result(ok1, err1), MonoType::Result(ok2, err2)) => {
+                self.unify(&ok1, &ok2)?;
+                self.unify(&err1, &err2)
+            }
             (t1, t2) => bail!("Cannot unify {} with {}", t1, t2),
         }
     }
@@ -91,6 +95,7 @@ impl Unifier {
             MonoType::Function(arg, ret) => Self::occurs(var, arg) || Self::occurs(var, ret),
             MonoType::List(elem) => Self::occurs(var, elem),
             MonoType::Optional(inner) => Self::occurs(var, inner),
+            MonoType::Result(ok, err) => Self::occurs(var, ok) || Self::occurs(var, err),
             _ => false,
         }
     }

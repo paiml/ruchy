@@ -1,0 +1,356 @@
+version: "1.0"
+project: ruchy
+category: edge-cases
+priority: critical
+estimated_effort: 15000_loc
+
+metadata:
+  created: 2025-01-16
+  spec_ref: docs/ruchy-edge-cases-spec.md
+  blocking: parser_implementation
+
+implementation_phases:
+  - phase: module_resolution
+    priority: P0
+    effort: 2000_loc
+    tasks:
+      - id: MR-001
+        task: Implement ModuleResolver core
+        subtasks:
+          - Create ModuleCache with cargo/local/repl module tracking
+          - Build dependency graph using petgraph
+          - Implement canonicalize_path for relative imports
+        tests:
+          - Circular dependency detection
+          - Diamond dependency resolution
+          - Path normalization edge cases
+
+      - id: MR-002
+        task: Crate metadata extraction pipeline
+        subtasks:
+          - Integrate cargo-metadata crate
+          - Parse rustdoc JSON output
+          - Build trait_impls index from rustdoc
+          - Cache metadata in ~/.ruchy/crate_index
+        tests:
+          - Extract std traits correctly
+          - Handle version conflicts
+          - Incremental metadata updates
+
+      - id: MR-003
+        task: Import path mapping
+        subtasks:
+          - Map Ruchy imports to Rust use statements
+          - Generate mod declarations for local files
+          - Handle re-exports and glob imports
+        tests:
+          - Orphan rule preservation
+          - Visibility semantics
+          - Nested module paths
+
+  - phase: effect_system
+    priority: P0
+    effort: 1500_loc
+    tasks:
+      - id: EF-001
+        task: Effect algebra implementation
+        subtasks:
+          - Implement Effects bitmask with lattice operations
+          - Define effect propagation rules
+          - Build EffectInference engine
+        tests:
+          - join/meet/subsumes operations
+          - Effect monotonicity
+          - Conservative effect inference
+
+      - id: EF-002
+        task: Polymorphic effect variables
+        subtasks:
+          - Implement EffectVar with unification
+          - Handle higher-order effect polymorphism
+          - Generate effect constraints from AST
+        tests:
+          - map/filter effect inheritance
+          - Async colored function propagation
+          - Effect subtyping
+
+      - id: EF-003
+        task: Effect checking and errors
+        subtasks:
+          - Validate effect annotations
+          - Generate readable effect mismatch errors
+          - Implement effect cast insertion
+        tests:
+          - Pure functions can't call IO
+          - Async contamination
+          - Unsafe boundary enforcement
+
+  - phase: ownership_transfer
+    priority: P0
+    effort: 2500_loc
+    tasks:
+      - id: OW-001
+        task: Ownership analyzer core
+        subtasks:
+          - Build LifetimeRange tracking
+          - Implement UsagePattern detection
+          - Create escape analysis
+        tests:
+          - Single-use move detection
+          - Shared immutable borrow inference
+          - Cross-await-point cloning
+
+      - id: OW-002
+        task: Transfer strategy selection
+        subtasks:
+          - Implement context-aware strategy selection
+          - Handle REPL Rc wrapping
+          - Insert clone/borrow/move annotations
+        tests:
+          - Minimal clone insertion
+          - Correct Arc vs Rc selection
+          - Escape to closure handling
+
+      - id: OW-003
+        task: Borrow checker integration
+        subtasks:
+          - Generate lifetime annotations
+          - Handle mutable vs immutable borrows
+          - Implement NLL-style analysis
+        tests:
+          - No use-after-move
+          - Aliasing XOR mutation
+          - Lifetime variance
+
+  - phase: trait_resolution
+    priority: P0
+    effort: 2000_loc
+    tasks:
+      - id: TR-001
+        task: TraitRegistry construction
+        subtasks:
+          - Index all trait methods from dependencies
+          - Build type->trait impl mapping
+          - Implement orphan checker
+        tests:
+          - Iterator methods resolved
+          - Deref coercion chains
+          - Associated type projection
+
+      - id: TR-002
+        task: Method resolution algorithm
+        subtasks:
+          - Implement candidate selection
+          - Build disambiguation by arguments
+          - Handle UFCS when ambiguous
+        tests:
+          - Correct trait selection
+          - Ambiguity errors
+          - Method not found diagnostics
+
+      - id: TR-003
+        task: Auto-import generation
+        subtasks:
+          - Track used traits per module
+          - Inject minimal use statements
+          - Handle prelude traits
+        tests:
+          - No duplicate imports
+          - Correct trait paths
+          - Prelude exclusion
+
+  - phase: error_propagation
+    priority: P1
+    effort: 1000_loc
+    tasks:
+      - id: EP-001
+        task: Result type inference
+        subtasks:
+          - Detect ? operator usage
+          - Infer Result return types
+          - Unify multiple error types
+        tests:
+          - Automatic Result wrapping
+          - Error type unification
+          - Option vs Result disambiguation
+
+      - id: EP-002
+        task: Error strategy selection
+        subtasks:
+          - Classify operations by error strategy
+          - Generate appropriate error handling
+          - Insert panic vs Result boundaries
+        tests:
+          - Index panics
+          - IO returns Result
+          - Map returns Option
+
+  - phase: compilation_cache
+    priority: P1
+    effort: 1500_loc
+    tasks:
+      - id: CC-001
+        task: Content-addressed cache
+        subtasks:
+          - Implement AST hashing
+          - Build TypedAST cache with DashMap
+          - Create binary artifact cache
+        tests:
+          - Cache hit rates >90%
+          - Correct invalidation
+          - Thread-safe access
+
+      - id: CC-002
+        task: Dependency tracking
+        subtasks:
+          - Build forward/reverse dependency maps
+          - Implement incremental invalidation
+          - Handle REPL redefinitions
+        tests:
+          - Transitive invalidation
+          - REPL definition updates
+          - Minimal recompilation
+
+      - id: CC-003
+        task: Cache persistence
+        subtasks:
+          - Serialize cache to disk
+          - Implement cache eviction policy
+          - Handle version migrations
+        tests:
+          - Cold start performance
+          - Cache size limits
+          - Version compatibility
+
+  - phase: runtime_bridge
+    priority: P1
+    effort: 2000_loc
+    tasks:
+      - id: RB-001
+        task: FFI marshalling layer
+        subtasks:
+          - Implement type marshallers
+          - Handle POD vs complex types
+          - Build serde-based serialization
+        tests:
+          - String marshalling
+          - Vec/HashMap conversion
+          - Custom struct serialization
+
+      - id: RB-002
+        task: Dynamic library loading
+        subtasks:
+          - Load compiled .so/.dll artifacts
+          - Resolve symbols dynamically
+          - Handle ABI compatibility
+        tests:
+          - Symbol resolution
+          - Cross-platform loading
+          - Version mismatch detection
+
+      - id: RB-003
+        task: REPL/compiled interop
+        subtasks:
+          - Share values between contexts
+          - Handle Rc<->owned conversions
+          - Implement value pinning
+        tests:
+          - REPL can call compiled
+          - Compiled can use REPL values
+          - Memory safety preserved
+
+  - phase: diagnostics
+    priority: P2
+    effort: 1500_loc
+    tasks:
+      - id: DG-001
+        task: Error message framework
+        subtasks:
+          - Create Diagnostic type with rules
+          - Build transformation traces
+          - Generate fix suggestions
+        tests:
+          - Clear error messages
+          - Actionable suggestions
+          - Show failed transformations
+
+      - id: DG-002
+        task: Source location tracking
+        subtasks:
+          - Preserve spans through compilation
+          - Map generated Rust to Ruchy source
+          - Handle macro expansion locations
+        tests:
+          - Accurate error positions
+          - Multi-file spans
+          - Macro backtrace
+
+validation_criteria:
+  - criterion: correctness
+    tests:
+      - All Rust code compiles without warnings
+      - No ownership violations
+      - Effect safety guaranteed
+
+  - criterion: performance
+    tests:
+      - <10ms REPL response
+      - <5% overhead vs handwritten Rust
+      - >90% cache hit rate
+
+  - criterion: ergonomics
+    tests:
+      - Zero manual imports needed
+      - Automatic ownership handling
+      - Clear error messages
+
+dependencies:
+  external:
+    - cargo_metadata: "0.18"
+    - petgraph: "0.6"
+    - dashmap: "5.5"
+    - libloading: "0.8"
+    - serde_json: "1.0"
+
+  internal:
+    - parser: "AST structure defined"
+    - lexer: "Token stream available"
+    - prelude: "Core types defined"
+
+risk_mitigation:
+  - risk: rustdoc JSON instability
+    mitigation: Pin rustc version, fallback to cargo-expand
+
+  - risk: Effect inference undecidable
+    mitigation: Conservative approximation with opt-in precise mode
+
+  - risk: Compilation cache explosion
+    mitigation: LRU eviction, size-bounded cache
+
+  - risk: ABI incompatibility
+    mitigation: Version lock between compiler and runtime
+
+success_metrics:
+  - metric: Test coverage
+    target: ">95%"
+
+  - metric: Benchmark performance
+    target: "Within 10% of handwritten Rust"
+
+  - metric: Error message quality
+    target: "User study satisfaction >4.5/5"
+
+  - metric: Implementation complexity
+    target: "<15K LOC total"
+
+notes: |
+  This TODO represents the critical path for Ruchy MVP. Each phase
+  builds on the previous, with P0 items blocking all downstream work.
+  
+  The implementation order is deliberately sequenced to enable
+  incremental testing: module resolution enables basic compilation,
+  effects and ownership enable safety, trait resolution enables
+  ergonomics.
+  
+  Total effort estimate: 15,000 LOC across all phases.
+  Timeline: 3-4 months with 2 engineers.

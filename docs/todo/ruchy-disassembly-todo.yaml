@@ -1,0 +1,486 @@
+# Ruchy Poly-representational Disassembly Implementation
+# PDMT format for systematic task tracking
+
+metadata:
+  project: ruchy-disassembly
+  version: 1.0.0
+  priority: high
+  timeline: Q1-Q3 2025
+  dependencies: ["typed-ast", "semantic-analyzer"]
+
+phases:
+  - phase_1:
+      name: "Core Disassembly Infrastructure"
+      timeline: "Q1 2025 Week 1-4"
+
+      tasks:
+        - task_1_1:
+            id: "disassembler-trait"
+            description: "Generic disassembler trait architecture"
+            pdmt:
+              plan:
+                - Define generic Input/Output trait
+                - Establish primary vs derived hierarchy
+                - Design cache strategy for derived formats
+              do:
+                - src/disassembly/mod.rs - Trait definitions
+                - src/disassembly/cache.rs - PrimaryCache impl
+                - tests/disassembly/trait_tests.rs
+              measure:
+                - Zero-copy between representations
+                - Cache hit rate >95% for derived formats
+              track:
+                - Property: identical output for identical AST
+                - Benchmark: <1ms trait dispatch overhead
+            effort: 3d
+
+        - task_1_2:
+            id: "json-ast-primary"
+            description: "Canonical JSON AST representation"
+            pdmt:
+              plan:
+                - Design stable v1.0 schema
+                - Implement content-hash ID generation
+                - Define type presence rules
+              do:
+                - src/disassembly/json_ast.rs - Serializer
+                - src/disassembly/schema/v1.rs - Type definitions
+                - docs/json-ast-schema.json - Formal schema
+              measure:
+                - Serialization <10ms per 1000 LOC
+                - Output size <2x source size
+                - Schema validation 100% pass
+              track:
+                - Test all AST node types
+                - Validate deterministic IDs
+                - Round-trip property test
+            effort: 5d
+            depends_on: ["disassembler-trait"]
+
+        - task_1_3:
+            id: "symbol-table-primary"
+            description: "Flat indexed symbol extraction"
+            pdmt:
+              plan:
+                - Extract from type environment
+                - Build name/kind/scope indices
+                - Track cross-references
+              do:
+                - src/disassembly/symbol_table.rs
+                - src/disassembly/symbol_visitor.rs
+              measure:
+                - O(n) single-pass extraction
+                - Index lookup O(1)
+              track:
+                - Complete symbol coverage
+                - Reference accuracy 100%
+            effort: 3d
+            depends_on: ["disassembler-trait"]
+
+        - task_1_4:
+            id: "cli-interface"
+            description: "ruchy disassemble command"
+            pdmt:
+              plan:
+                - Arg parsing for formats
+                - Pipeline composition support
+                - Batch processing mode
+              do:
+                - src/cli/disassemble.rs - Command handler
+                - src/cli/args.rs - Format parsing
+              measure:
+                - Zero overhead vs direct API
+                - Stream processing capable
+              track:
+                - Integration test all formats
+                - Validate pipe composition
+            effort: 2d
+            depends_on: ["json-ast-primary"]
+
+  - phase_2:
+      name: "Metrics Collection System"
+      timeline: "Q1 2025 Week 5-8"
+
+      tasks:
+        - task_2_1:
+            id: "complexity-analyzers"
+            description: "McCabe and cognitive complexity"
+            pdmt:
+              plan:
+                - Implement McCabe cyclomatic algorithm
+                - Implement Sonar cognitive algorithm
+                - Single-pass AST visitor
+              do:
+                - src/metrics/complexity.rs - Analyzers
+                - src/metrics/visitor.rs - AST walker
+              measure:
+                - Accuracy vs reference implementation 100%
+                - <1ms per function analysis
+              track:
+                - Test against known examples
+                - Validate nesting penalties
+                - Property: monotonic with branches
+            effort: 4d
+
+        - task_2_2:
+            id: "halstead-metrics"
+            description: "Complete Halstead suite"
+            pdmt:
+              plan:
+                - Operator/operand classification
+                - Volume/difficulty/effort calculation
+                - Maintainability index derivation
+              do:
+                - src/metrics/halstead.rs
+                - src/metrics/maintainability.rs
+              measure:
+                - Match academic formulas exactly
+                - <0.5ms computation per function
+              track:
+                - Validate against C/Java tools
+                - Cross-check with research papers
+            effort: 3d
+
+        - task_2_3:
+            id: "big-o-detector"
+            description: "Algorithmic complexity with confidence"
+            pdmt:
+              plan:
+                - Loop depth analysis
+                - Recursion pattern detection
+                - Confidence scoring algorithm
+              do:
+                - src/metrics/big_o.rs - Detector
+                - src/metrics/patterns.rs - Pattern library
+              measure:
+                - 80% accuracy on standard algorithms
+                - Confidence calibration within 10%
+              track:
+                - Test sort/search algorithms
+                - Validate confidence scores
+            effort: 5d
+
+        - task_2_4:
+            id: "satd-detector"
+            description: "Self-admitted technical debt"
+            pdmt:
+              plan:
+                - Comment parser integration
+                - Keyword classification
+                - Severity scoring
+              do:
+                - src/metrics/satd.rs
+                - src/metrics/debt_patterns.rs
+              measure:
+                - 95% recall on TODO/FIXME
+                - <0.1ms per comment
+              track:
+                - Test comment variations
+                - Validate categorization
+            effort: 2d
+
+        - task_2_5:
+            id: "defect-predictor"
+            description: "ML-based bug probability"
+            pdmt:
+              plan:
+                - Feature extraction from metrics
+                - Pre-trained model integration
+                - Calibration mechanism
+              do:
+                - src/metrics/defect_model.rs
+                - assets/defect_model.onnx
+              measure:
+                - AUC >0.75 on test set
+                - Inference <2ms per function
+              track:
+                - Cross-validate on OSS projects
+                - Monitor false positive rate
+            effort: 4d
+            depends_on: ["complexity-analyzers", "halstead-metrics"]
+
+  - phase_3:
+      name: "Derived Representations"
+      timeline: "Q2 2025 Week 1-4"
+
+      tasks:
+        - task_3_1:
+            id: "annotated-ast"
+            description: "Human-readable markdown with full metrics"
+            pdmt:
+              plan:
+                - Template engine for markdown
+                - Metrics integration from cache
+                - Project-level aggregation
+              do:
+                - src/disassembly/annotated.rs
+                - src/disassembly/templates/
+                - src/disassembly/aggregator.rs
+              measure:
+                - Generation <20ms per file
+                - Markdown size <5x source
+              track:
+                - Visual inspection quality
+                - Metrics accuracy preservation
+            effort: 3d
+            depends_on: ["json-ast-primary", "defect-predictor"]
+
+        - task_3_2:
+            id: "dependency-graph"
+            description: "petgraph-based dependency extraction"
+            pdmt:
+              plan:
+                - Visitor for reference collection
+                - Graph construction with EdgeKind
+                - Extensible edge taxonomy
+              do:
+                - src/disassembly/dep_graph.rs
+                - src/disassembly/graph_visitor.rs
+              measure:
+                - O(n) construction time
+                - Memory <10MB for 10k nodes
+              track:
+                - Transitive closure correctness
+                - Cycle detection accuracy
+            effort: 3d
+            depends_on: ["symbol-table-primary"]
+
+        - task_3_3:
+            id: "mermaid-generators"
+            description: "Graph visualizations"
+            pdmt:
+              plan:
+                - Dependency graph generator
+                - Control flow graph generator
+                - Layout optimization
+              do:
+                - src/disassembly/mermaid/deps.rs
+                - src/disassembly/mermaid/cfg.rs
+              measure:
+                - Valid Mermaid syntax 100%
+                - <50ms generation for 100 nodes
+              track:
+                - Render in Mermaid Live Editor
+                - Edge case handling
+            effort: 3d
+            depends_on: ["dependency-graph"]
+
+        - task_3_4:
+            id: "typed-ruchy"
+            description: "Source with type annotations"
+            pdmt:
+              plan:
+                - Source position mapping
+                - Type comment injection
+                - Format preservation
+              do:
+                - src/disassembly/typed_overlay.rs
+                - src/disassembly/source_map.rs
+              measure:
+                - Correct type placement 100%
+                - Original formatting preserved
+              track:
+                - Round-trip compilation test
+                - Visual inspection
+            effort: 2d
+            depends_on: ["json-ast-primary"]
+
+  - phase_4:
+      name: "REPL Integration"
+      timeline: "Q2 2025 Week 5-8"
+
+      tasks:
+        - task_4_1:
+            id: "repl-commands"
+            description: "Interactive disassembly commands"
+            pdmt:
+              plan:
+                - :dis command parser
+                - :metrics command handler
+                - :quality gate system
+              do:
+                - src/repl/commands/disassemble.rs
+                - src/repl/commands/metrics.rs
+                - src/repl/quality_gate.rs
+              measure:
+                - Response time <10ms
+                - Zero session state corruption
+              track:
+                - Test all command variations
+                - Error recovery validation
+            effort: 3d
+            depends_on: ["annotated-ast"]
+
+        - task_4_2:
+            id: "incremental-metrics"
+            description: "Live metrics during evaluation"
+            pdmt:
+              plan:
+                - Hook into type checker
+                - Incremental cache updates
+                - Threshold enforcement
+              do:
+                - src/repl/metrics_cache.rs
+                - src/repl/incremental.rs
+              measure:
+                - <5ms overhead per evaluation
+                - Cache consistency 100%
+              track:
+                - Benchmark overhead
+                - Test cache invalidation
+            effort: 4d
+            depends_on: ["defect-predictor"]
+
+        - task_4_3:
+            id: "quality-enforcement"
+            description: "Reject high-complexity code"
+            pdmt:
+              plan:
+                - Configurable rule engine
+                - Advisory/Reject/AutoFix modes
+                - Refactoring suggestions
+              do:
+                - src/repl/enforcement.rs
+                - src/repl/refactor_suggest.rs
+              measure:
+                - Rule evaluation <1ms
+                - Suggestion quality >80% useful
+              track:
+                - Test threshold violations
+                - Validate suggestions compile
+            effort: 4d
+            depends_on: ["incremental-metrics"]
+
+        - task_4_4:
+            id: "session-export"
+            description: "Export REPL session as artifacts"
+            pdmt:
+              plan:
+                - Concatenate session items
+                - Preserve evaluation order
+                - Add session metadata
+              do:
+                - src/repl/export.rs
+                - src/repl/session_format.rs
+              measure:
+                - Export <100ms for 1000 items
+                - Lossless representation
+              track:
+                - Round-trip import test
+                - Format validation
+            effort: 2d
+            depends_on: ["repl-commands"]
+
+  - phase_5:
+      name: "Low-Level Representations"
+      timeline: "Q3 2025 Week 1-4"
+
+      tasks:
+        - task_5_1:
+            id: "mir-lowering"
+            description: "Mid-level IR generation"
+            pdmt:
+              plan:
+                - Basic block construction
+                - SSA transformation
+                - Source mapping preservation
+              do:
+                - src/disassembly/mir/lowering.rs
+                - src/disassembly/mir/printer.rs
+              measure:
+                - Correct semantics preservation
+                - <50ms per 1000 LOC
+              track:
+                - Execution equivalence test
+                - Optimization opportunity detection
+            effort: 6d
+
+        - task_5_2:
+            id: "assembly-annotation"
+            description: "Annotated native code"
+            pdmt:
+              plan:
+                - Platform-specific generation
+                - Source correlation comments
+                - Symbol preservation
+              do:
+                - src/disassembly/asm/x86_64.rs
+                - src/disassembly/asm/aarch64.rs
+              measure:
+                - Valid assembly 100%
+                - Debug symbols preserved
+              track:
+                - Assembler validation
+                - Debugger integration test
+            effort: 4d
+            depends_on: ["mir-lowering"]
+
+        - task_5_3:
+            id: "mcp-protocol"
+            description: "Agent stdio interface"
+            pdmt:
+              plan:
+                - JSON-RPC handler
+                - Streaming response support
+                - Error recovery protocol
+              do:
+                - src/disassembly/mcp/server.rs
+                - src/disassembly/mcp/protocol.rs
+              measure:
+                - Latency <5ms per request
+                - Protocol compliance 100%
+              track:
+                - MCP test suite pass
+                - Agent integration test
+            effort: 3d
+            depends_on: ["json-ast-primary"]
+
+validation:
+  correctness:
+    - "Deterministic output for identical input"
+    - "Type preservation in all formats"
+    - "Metrics accuracy vs reference implementations"
+    - "Round-trip property for editable formats"
+
+  performance:
+    - "JSON AST <10ms per 1000 LOC"
+    - "Metrics computation <5ms per function"
+    - "REPL overhead <10ms per command"
+    - "Memory usage <2x source size"
+
+  quality:
+    - "Schema stability (semver)"
+    - "100% AST node coverage"
+    - "MCP protocol compliance"
+    - "Cross-platform assembly generation"
+
+success_criteria:
+  - "Every Ruchy program fully introspectable"
+  - "Zero-overhead metrics in REPL"
+  - "Agent-driven optimization workflows operational"
+  - "Quality gates preventing defects"
+  - "Complete pmat parity for annotations"
+
+risk_mitigation:
+  - risk_1:
+      description: "Performance regression from metrics"
+      mitigation: "Lazy computation with aggressive caching"
+
+  - risk_2:
+      description: "Schema evolution breaking tools"
+      mitigation: "Strict semver, migration tools"
+
+  - risk_3:
+      description: "MIR complexity explosion"
+      mitigation: "Start with simplified subset"
+
+dependencies:
+  external:
+    - "petgraph: ^0.6"
+    - "serde_json: ^1.0"
+    - "onnxruntime: ^0.1"  # For defect model
+
+  internal:
+    - "TypedAst from semantic analyzer"
+    - "TypeEnvironment from type checker"
+    - "SourceMap from parser"

@@ -3,133 +3,91 @@
 This is the **single source of truth** for all Ruchy development tasks.
 
 ## 📊 Summary
-- **Completed**: 24 features (see `docs/done/completed-features.md`)
-- **In Progress**: 0 features
-- **Pending**: 24 features
-- **Total Progress**: 50% complete
+- **Completed**: 43 features (see `docs/done/`)
+- **In Progress**: 0 features  
+- **Pending**: 19 features
+- **Total Progress**: 69.4% complete
+- **Coverage**: 76.37%
+
+## ✅ RECENTLY COMPLETED (2025-01-16 Afternoon Session)
+
+1. **Async/Await Support** - Modern async programming ✅
+2. **Vec Extension Methods** - sorted(), sum(), reversed(), unique(), min(), max() ✅
+3. **Try/Catch Syntax** - Exception-style error handling ✅
+4. **Coverage Command Fix** - Fixed make coverage to generate both HTML and LCOV ✅
+
+*Full details in `docs/done/session-2025-01-16-completed.md`*
 
 ## 🚧 PENDING FEATURES
 
-### Critical Priority (Blocking README Examples)
+### Critical Priority (Core Language)
 
-#### 1. DataFrame Support with Polars
+#### 1. Actor System
 - **Status**: Not Started
 - **Priority**: CRITICAL
-- **Description**: DataFrame literal syntax and operations shown in README
-- **Tasks**:
-  - [ ] Add polars to Cargo.toml dependencies
-  - [ ] Implement DataFrame literal syntax `df![...]`
-  - [ ] Create DataFrame AST node
-  - [ ] Implement transpilation to Polars
-  - [ ] Add column operations (col, mean, std, alias)
-  - [ ] Implement filter, groupby, agg operations
-  - [ ] Add comprehensive tests
-- **Files to modify**: `src/frontend/lexer.rs`, `src/frontend/parser.rs`, `src/frontend/ast.rs`, `src/backend/transpiler.rs`
-
-#### 2. Lambda Expressions
-- **Status**: Not Started
-- **Priority**: CRITICAL
-- **Description**: Anonymous functions like `|x| x * 2`
-- **Tasks**:
-  - [ ] Parse lambda syntax with pipes
-  - [ ] Handle closure capture analysis
-  - [ ] Type inference for lambdas
-  - [ ] Transpile to Rust closures
-- **Blocked by**: None
-
-#### 3. Result Type with ? Operator
-- **Status**: Not Started
-- **Priority**: CRITICAL
-- **Description**: Error handling with Result<T, E>
-- **Tasks**:
-  - [ ] Parse ? operator
-  - [ ] Implement Result type in type system
-  - [ ] Add error propagation in transpiler
-  - [ ] Support try/catch syntax (optional)
-
-### High Priority (Core Language Features)
-
-#### 4. Async/Await Support
-- **Status**: Not Started
-- **Priority**: HIGH
-- **Description**: Asynchronous programming
-- **Tasks**:
-  - [ ] Parse async keyword for functions
-  - [ ] Parse await expressions
-  - [ ] Add Future type support
-  - [ ] Transpile to Rust async/await
-
-#### 5. Actor System
-- **Status**: Not Started
-- **Priority**: HIGH
 - **Description**: Concurrent programming with actors
 - **Tasks**:
   - [ ] Parse actor keyword
   - [ ] Implement message passing (!)
   - [ ] Implement synchronous ask (?)
   - [ ] Add supervision trees
-  - [ ] Integrate with Bastion or custom implementation
+  - [ ] Integrate with Bastion
 
-#### 6. Struct Definitions
-- **Status**: Not Started
-- **Priority**: HIGH
-- **Description**: Custom types
+#### 2. DataFrame Column Operations
+- **Status**: Not Started (basic DataFrame support exists)
+- **Priority**: CRITICAL
+- **Description**: Complete DataFrame operations
 - **Tasks**:
-  - [ ] Parse struct keyword
-  - [ ] Support field definitions
-  - [ ] Add visibility modifiers (pub)
-  - [ ] Generate Rust structs
+  - [ ] Implement col() function
+  - [ ] Add mean, std, alias operations
+  - [ ] Implement filter operation
+  - [ ] Implement groupby operation
+  - [ ] Add agg operations
 
-#### 7. Impl Blocks
+### High Priority (Language Features)
+
+#### 3. Impl Blocks
 - **Status**: Not Started
 - **Priority**: HIGH
-- **Description**: Method implementations
+- **Description**: Method implementations for structs
 - **Tasks**:
   - [ ] Parse impl keyword
   - [ ] Support associated functions
   - [ ] Support methods with self
   - [ ] Handle trait implementations
 
-#### 8. While Loops
-- **Status**: Not Started
+#### 4. Trait Definitions
+- **Status**: Not Started (basic parsing exists)
 - **Priority**: HIGH
-- **Description**: Basic while loop support
+- **Description**: Full trait system
 - **Tasks**:
-  - [ ] Parse while keyword
-  - [ ] Support break/continue
-  - [ ] Type check loop conditions
-
-### Medium Priority (Enhanced Features)
-
-#### 9. Trait Definitions
-- **Status**: Not Started
-- **Priority**: MEDIUM
-- **Description**: Trait system for polymorphism
-- **Tasks**:
-  - [ ] Parse trait keyword
   - [ ] Support associated types
   - [ ] Support default implementations
   - [ ] Trait bounds in generics
+  - [ ] Trait objects
 
-#### 10. Pattern Matching Guards
-- **Status**: Not Started  
-- **Priority**: MEDIUM
+#### 5. Pattern Matching Guards
+- **Status**: Not Started
+- **Priority**: HIGH
 - **Description**: if conditions in match arms
 - **Tasks**:
-  - [ ] Parse if guards in patterns
+  - [ ] Parse if/when guards in patterns
   - [ ] Type check guard expressions
   - [ ] Transpile to Rust match guards
 
-#### 11. List Comprehensions
+#### 6. Break/Continue in Loops
 - **Status**: Not Started
-- **Priority**: MEDIUM
-- **Description**: Python-style list comprehensions
+- **Priority**: HIGH
+- **Description**: Loop control flow
 - **Tasks**:
-  - [ ] Parse [x for x in list] syntax
-  - [ ] Support if filters
-  - [ ] Transpile to iterator chains
+  - [ ] Parse break/continue keywords
+  - [ ] Type check in loop context
+  - [ ] Support labeled breaks
+  - [ ] Transpile to Rust
 
-#### 12. Property Testing Attributes
+### Medium Priority (Enhanced Features)
+
+#### 7. Property Testing Attributes
 - **Status**: Not Started
 - **Priority**: MEDIUM
 - **Description**: #[property] for property-based tests
@@ -137,74 +95,71 @@ This is the **single source of truth** for all Ruchy development tasks.
   - [ ] Parse property attributes
   - [ ] Integrate with proptest
   - [ ] Generate property test code
+  - [ ] Support custom generators
 
-#### 13. Vec Extension Methods
+#### 8. List Comprehensions
 - **Status**: Not Started
 - **Priority**: MEDIUM
-- **Description**: Methods like sorted(), sum()
+- **Description**: Python-style list comprehensions
 - **Tasks**:
-  - [ ] Implement sorted() method
-  - [ ] Implement sum() method  
-  - [ ] Implement is_sorted() method
-  - [ ] Add to type inference
+  - [ ] Parse [x for x in list] syntax
+  - [ ] Support if filters
+  - [ ] Support nested comprehensions
+  - [ ] Transpile to iterator chains
 
-### Low Priority (Future Enhancements)
-
-#### 14. MCP Protocol Integration
+#### 9. Generic Type Parameters
 - **Status**: Not Started
-- **Priority**: LOW
-- **Description**: AI/LLM tool support
-- **Tasks**:
-  - [ ] Parse MCP attributes
-  - [ ] Generate MCP protocol bindings
-  - [ ] Create MCP server implementation
-
-#### 15. Refinement Types
-- **Status**: Not Started
-- **Priority**: LOW
-- **Description**: SMT verification
-- **Tasks**:
-  - [ ] Parse #[ensures] attributes
-  - [ ] Integrate SMT solver
-  - [ ] Verify refinement predicates
-
-#### 16. JIT Compilation
-- **Status**: Not Started
-- **Priority**: LOW
-- **Description**: <10ms REPL startup
-- **Tasks**:
-  - [ ] Integrate Cranelift or similar
-  - [ ] Cache compiled code
-  - [ ] Optimize startup time
-
-#### 17. Object Literals
-- **Status**: Not Started
-- **Priority**: LOW
-- **Description**: JavaScript-style object literals
-- **Tasks**:
-  - [ ] Parse { key: value } syntax
-  - [ ] Type inference for objects
-  - [ ] Transpile to Rust structs
-
-#### 18. Try/Catch Syntax
-- **Status**: Not Started
-- **Priority**: LOW
-- **Description**: Exception-style error handling
-- **Tasks**:
-  - [ ] Parse try/catch blocks
-  - [ ] Convert to Result types
-  - [ ] Handle finally blocks
-
-#### 19. Generic Type Parameters
-- **Status**: Not Started
-- **Priority**: LOW
+- **Priority**: MEDIUM
 - **Description**: Full generics support
 - **Tasks**:
   - [ ] Parse <T> syntax
   - [ ] Type parameter bounds
   - [ ] Generic inference
+  - [ ] Associated type projections
 
-#### 20. Row Polymorphism
+#### 10. Object Literals
+- **Status**: Not Started
+- **Priority**: MEDIUM
+- **Description**: JavaScript-style object literals
+- **Tasks**:
+  - [ ] Parse { key: value } syntax
+  - [ ] Type inference for objects
+  - [ ] Spread operator support
+  - [ ] Transpile to Rust structs
+
+### Low Priority (Future Enhancements)
+
+#### 11. MCP Protocol Integration
+- **Status**: Not Started
+- **Priority**: LOW
+- **Description**: AI/LLM tool support via MCP
+- **Tasks**:
+  - [ ] Parse MCP attributes
+  - [ ] Generate MCP protocol bindings
+  - [ ] Create MCP server implementation
+  - [ ] Bridge actors to MCP tools
+
+#### 12. Refinement Types
+- **Status**: Not Started
+- **Priority**: LOW
+- **Description**: SMT verification
+- **Tasks**:
+  - [ ] Parse #[ensures] attributes
+  - [ ] Integrate Z3 or similar SMT solver
+  - [ ] Verify refinement predicates
+  - [ ] Generate proof obligations
+
+#### 13. JIT Compilation for REPL
+- **Status**: Not Started
+- **Priority**: LOW
+- **Description**: <10ms REPL startup
+- **Tasks**:
+  - [ ] Integrate Cranelift or LLVM JIT
+  - [ ] Cache compiled code
+  - [ ] Incremental compilation
+  - [ ] Hot code reload
+
+#### 14. Row Polymorphism
 - **Status**: Not Started
 - **Priority**: LOW
 - **Description**: Extensible records
@@ -212,17 +167,19 @@ This is the **single source of truth** for all Ruchy development tasks.
   - [ ] Implement row types
   - [ ] Record extension syntax
   - [ ] Type inference for rows
+  - [ ] Transpile to Rust enums/structs
 
-#### 21. Package Manager
+#### 15. Package Manager
 - **Status**: Not Started
 - **Priority**: LOW
 - **Description**: Ruchy package management
 - **Tasks**:
-  - [ ] Design package format
-  - [ ] Create registry
+  - [ ] Design package format (.ruchy files)
+  - [ ] Create package registry
   - [ ] Implement dependency resolution
+  - [ ] Integration with crates.io
 
-#### 22. Language Server (LSP)
+#### 16. Language Server (LSP)
 - **Status**: Not Started
 - **Priority**: LOW
 - **Description**: IDE support
@@ -232,7 +189,7 @@ This is the **single source of truth** for all Ruchy development tasks.
   - [ ] Add go-to-definition
   - [ ] Add refactoring support
 
-#### 23. Debugger Support
+#### 17. Debugger Support
 - **Status**: Not Started
 - **Priority**: LOW
 - **Description**: Debugging capabilities
@@ -240,8 +197,9 @@ This is the **single source of truth** for all Ruchy development tasks.
   - [ ] Generate source maps
   - [ ] Integrate with lldb/gdb
   - [ ] Add breakpoint support
+  - [ ] Stack trace translation
 
-#### 24. WebAssembly Target
+#### 18. WebAssembly Target
 - **Status**: Not Started
 - **Priority**: LOW
 - **Description**: Compile to WASM
@@ -249,35 +207,76 @@ This is the **single source of truth** for all Ruchy development tasks.
   - [ ] Add WASM backend
   - [ ] Handle WASM-specific features
   - [ ] Create JavaScript bindings
+  - [ ] Optimize for size
+
+#### 19. Incremental Compilation
+- **Status**: Not Started
+- **Priority**: LOW
+- **Description**: Faster rebuilds
+- **Tasks**:
+  - [ ] Implement dependency tracking
+  - [ ] Cache intermediate results
+  - [ ] Partial recompilation
+  - [ ] Module-level caching
 
 ## 📈 Progress Tracking
 
 ### By Priority
-- **CRITICAL**: 0/3 complete (0%)
-- **HIGH**: 0/5 complete (0%)
-- **MEDIUM**: 0/5 complete (0%)
-- **LOW**: 0/11 complete (0%)
+- **CRITICAL**: 0/2 complete (0%)
+- **HIGH**: 2/4 partially complete (50%)
+- **MEDIUM**: 0/4 complete (0%)
+- **LOW**: 0/9 complete (0%)
 
 ### By Component
-- **Parser**: 3 pending features
+- **Parser**: 6 pending features
 - **Type System**: 4 pending features
 - **Transpiler**: 5 pending features
-- **Runtime**: 3 pending features
-- **Tooling**: 4 pending features
-- **Experimental**: 5 pending features
+- **Runtime**: 2 pending features
+- **Tooling**: 2 pending features
 
-## 🎯 Next Sprint (Recommended Order)
+## 🎯 Next Sprint Priority Order
 
-1. **DataFrame Support** - Most critical for README examples
-2. **Lambda Expressions** - Enables functional programming
-3. **Result Type** - Proper error handling
-4. **Async/Await** - Modern async programming
-5. **Structs & Impl** - Custom types
+1. **Actor System** - Essential for concurrent programming model
+2. **DataFrame Column Operations** - Complete the DataFrame support
+3. **Impl Blocks** - Methods for structs
+4. **Pattern Matching Guards** - Enhanced pattern matching
+5. **Property Testing Attributes** - Better testing support
 
-## 📝 Notes
+## 📝 Implementation Guidelines
 
-- All completed features have been moved to `docs/done/completed-features.md`
-- This file should be updated whenever a feature is started, completed, or reprioritized
-- Each feature should maintain zero SATD policy
-- Minimum 80% test coverage for new features
-- All features must pass PMAT quality gates
+- **Zero SATD Policy**: No TODO/FIXME/HACK comments in code
+- **Test Coverage**: Minimum 80% for all new features
+- **Complexity**: Cyclomatic complexity ≤10 per function
+- **Documentation**: Every public API must have doctests
+- **Quality Gate**: All features must pass PMAT validation
+
+## 🗂️ Archived TODO Files
+
+The following TODO files have been consolidated into this master file and should be archived:
+- `docs/todo/v0.3-todo.yaml` - Merged, contains duplicate tasks
+- `docs/todo/ruchy-disassembly-todo.yaml` - Low priority, keep for reference
+- `docs/todo/repl-todo.yaml` - Merged into JIT Compilation task
+- `docs/todo/ruchy-visual-design-hello-world-todo.yaml` - Documentation task, separate concern
+
+## ⚡ Quick Command Reference
+
+```bash
+# Run all tests
+make test
+
+# Check coverage (now fixed!)
+make coverage
+
+# Run linting
+make lint
+
+# Run specific test
+cargo test test_name
+
+# Generate coverage report
+cargo llvm-cov --html --output-dir target/coverage/html
+```
+
+---
+*Last Updated: 2025-01-16 15:35*
+*Next Review: When starting next feature implementation*

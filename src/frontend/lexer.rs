@@ -42,6 +42,14 @@ pub enum Token {
     In,
     #[token("while")]
     While,
+    #[token("async")]
+    Async,
+    #[token("await")]
+    Await,
+    #[token("try")]
+    Try,
+    #[token("catch")]
+    Catch,
     #[token("return")]
     Return,
     #[token("break")]
@@ -54,6 +62,12 @@ pub enum Token {
     Impl,
     #[token("trait")]
     Trait,
+    #[token("actor")]
+    Actor,
+    #[token("send")]
+    Send,
+    #[token("ask")]
+    Ask,
     #[token("type")]
     Type,
     #[token("const")]
@@ -70,6 +84,8 @@ pub enum Token {
     Use,
     #[token("as")]
     As,
+    #[token("df")]
+    DataFrame,
 
     // Identifiers (lower priority than keywords and underscore)
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string(), priority = 1)]
@@ -175,6 +191,10 @@ pub enum Token {
     Semicolon,
     #[token("_", priority = 2)]
     Underscore,
+
+    // Attribute support
+    #[token("#")]
+    Hash,
 }
 
 impl Token {
@@ -239,6 +259,29 @@ impl<'a> TokenStream<'a> {
             self.peeked = self.next();
         }
         self.peeked.as_ref()
+    }
+
+    pub fn peek_nth(&mut self, n: usize) -> Option<(Token, Span)> {
+        // For simplicity, we'll only support peek_nth(1) by cloning the lexer
+        if n == 1 {
+            let saved_peeked = self.peeked.clone();
+            let saved_lexer = self.lexer.clone();
+            
+            // Get first token
+            let _first = self.peek();
+            self.advance();
+            
+            // Get second token
+            let result = self.peek().cloned();
+            
+            // Restore state
+            self.lexer = saved_lexer;
+            self.peeked = saved_peeked;
+            
+            result
+        } else {
+            None // Not supported for n > 1
+        }
     }
 
     pub fn expect(&mut self, expected: Token) -> anyhow::Result<Span> {
