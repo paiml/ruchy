@@ -96,6 +96,7 @@
 
 pub mod backend;
 pub mod frontend;
+pub mod middleend;
 pub mod runtime;
 
 #[cfg(test)]

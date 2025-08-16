@@ -1,0 +1,15 @@
+// Test type inference
+let x = 42
+let y = "hello"
+let z = [1, 2, 3]
+let sum = x + 10
+
+fun add(a: i32, b: i32) -> i32 {
+    a + b
+}
+
+fun identity(x) {
+    x
+}
+
+println("Type inference working!")

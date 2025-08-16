@@ -293,14 +293,22 @@ fn main() {{
         Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
     }
 
-    /// Show type of expression (placeholder)
+    /// Show type of expression
     fn show_type(&self, expr: &str) -> Result<()> {
-        // In a real implementation, we'd have type inference
-        println!(
-            "{}: {}",
-            expr,
-            "<type inference not yet implemented>".bright_black()
-        );
+        use crate::middleend::InferenceContext;
+        
+        let mut parser = Parser::new(expr);
+        let ast = parser.parse()?;
+        
+        let mut ctx = InferenceContext::new();
+        match ctx.infer(&ast) {
+            Ok(ty) => {
+                println!("{}: {}", expr, format!("{ty}").bright_cyan());
+            }
+            Err(e) => {
+                println!("{}: {}", expr, format!("Type error: {e}").bright_red());
+            }
+        }
         Ok(())
     }
 
