@@ -2,7 +2,7 @@
 
 #![allow(clippy::expect_used)] // Parser needs expect for checked conditions
 
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, PipelineStage, Span, Type, TypeKind, UnaryOp};
+use crate::frontend::ast::{ActorHandler, Attribute, BinaryOp, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param, Pattern, PipelineStage, Span, StructField, TraitMethod, Type, TypeKind, UnaryOp};
 use crate::frontend::lexer::{Token, TokenStream};
 use anyhow::{bail, Result};
 
@@ -27,7 +27,10 @@ impl<'a> Parser<'a> {
         let mut exprs = Vec::new();
         
         while self.tokens.peek().is_some() {
-            exprs.push(self.parse_expr()?);
+            let attributes = self.parse_attributes()?;
+            let mut expr = self.parse_expr()?;
+            expr.attributes = attributes;
+            exprs.push(expr);
             
             // Skip optional semicolons
             if let Some((Token::Semicolon, _)) = self.tokens.peek() {
@@ -43,6 +46,7 @@ impl<'a> Parser<'a> {
             Ok(Expr {
                 kind: ExprKind::Block(exprs),
                 span: Span { start: 0, end: 0 }, // Simplified span for now
+                attributes: Vec::new(),
             })
         }
     }
@@ -89,17 +93,115 @@ impl<'a> Parser<'a> {
             );
         }
 
-        // Check for pipeline operator
-        if let Some((Token::Pipeline, _)) = self.tokens.peek() {
-            left = self.parse_pipeline(left)?;
-        }
-
-        // Check for range operator
-        if let Some((Token::DotDot | Token::DotDotEqual, _)) = self.tokens.peek() {
-            left = self.parse_range_from(left)?;
+        // Check for postfix operators
+        loop {
+            match self.tokens.peek() {
+                Some((Token::Question, _)) => {
+                    let span = self.tokens.advance().expect("checked: Question token exists").1;
+                    let full_span = left.span.merge(span);
+                    left = Expr::new(
+                        ExprKind::Try {
+                            expr: Box::new(left),
+                        },
+                        full_span,
+                    );
+                }
+                Some((Token::Pipeline, _)) => {
+                    left = self.parse_pipeline(left)?;
+                }
+                Some((Token::DotDot | Token::DotDotEqual, _)) => {
+                    left = self.parse_range_from(left)?;
+                }
+                _ => break,
+            }
         }
 
         Ok(left)
+    }
+
+    fn handle_postfix_operators(&mut self, mut expr: Expr) -> Result<Expr> {
+        loop {
+            match self.tokens.peek() {
+                Some((Token::Dot, _)) => {
+                    self.tokens.advance();
+                    expr = self.parse_method_call(expr)?;
+                }
+                Some((Token::LeftParen, _)) => {
+                    expr = self.parse_call(expr)?;
+                }
+                Some((Token::Question, _)) => {
+                    let span = self.tokens.advance().expect("checked: Question token exists").1;
+                    // Check if next token is a parenthesis (ask operation)
+                    if let Some((Token::LeftParen, _)) = self.tokens.peek() {
+                        self.tokens.advance();
+                        let message = Box::new(self.parse_expr()?);
+                        
+                        // Optional timeout after comma
+                        let timeout = if let Some((Token::Comma, _)) = self.tokens.peek() {
+                            self.tokens.advance();
+                            Some(Box::new(self.parse_expr()?))
+                        } else {
+                            None
+                        };
+                        
+                        self.tokens.expect(Token::RightParen)?;
+                        let full_span = expr.span.merge(span);
+                        expr = Expr::new(
+                            ExprKind::Ask {
+                                actor: Box::new(expr),
+                                message,
+                                timeout,
+                            },
+                            full_span,
+                        );
+                    } else {
+                        // Regular try operator
+                        let full_span = expr.span.merge(span);
+                        expr = Expr::new(
+                            ExprKind::Try {
+                                expr: Box::new(expr),
+                            },
+                            full_span,
+                        );
+                    }
+                }
+                Some((Token::Bang, _)) => {
+                    let span = self.tokens.advance().expect("checked: Bang token exists").1;
+                    // Check if next token is a parenthesis (send operation)  
+                    if let Some((Token::LeftParen, _)) = self.tokens.peek() {
+                        self.tokens.advance();
+                        let message = Box::new(self.parse_expr()?);
+                        self.tokens.expect(Token::RightParen)?;
+                        let full_span = expr.span.merge(span);
+                        expr = Expr::new(
+                            ExprKind::Send {
+                                actor: Box::new(expr),
+                                message,
+                            },
+                            full_span,
+                        );
+                    } else {
+                        // Not a send operation, stop parsing
+                        break;
+                    }
+                }
+                Some((Token::LeftBrace, _)) => {
+                    // Check if this could be a struct literal
+                    // Only parse as struct literal if the expression is a simple identifier
+                    // and it starts with an uppercase letter (convention for types)
+                    if let ExprKind::Identifier(name) = &expr.kind {
+                        if name.chars().next().is_some_and(char::is_uppercase) {
+                            let span = expr.span;
+                            return self.parse_struct_literal(name.clone(), span);
+                        }
+                    }
+                    // Otherwise, not a struct literal, stop parsing postfix
+                    break;
+                }
+                _ => break,
+            }
+        }
+        Ok(expr)
     }
 
     fn parse_prefix(&mut self) -> Result<Expr> {
@@ -133,37 +235,41 @@ impl<'a> Parser<'a> {
                 let span = *span;
                 self.tokens.advance();
 
-                let mut expr = Expr::new(ExprKind::Identifier(name), span);
-                
-                // Check for method calls or function calls
-                loop {
-                    match self.tokens.peek() {
-                        Some((Token::Dot, _)) => {
-                            self.tokens.advance();
-                            expr = self.parse_method_call(expr)?;
-                        }
-                        Some((Token::LeftParen, _)) => {
-                            expr = self.parse_call(expr)?;
-                            break;
-                        }
-                        _ => break,
-                    }
-                }
-                
-                Ok(expr)
+                let expr = Expr::new(ExprKind::Identifier(name), span);
+                self.handle_postfix_operators(expr)
             }
             Some((Token::If, _)) => self.parse_if(),
             Some((Token::Let, _)) => self.parse_let(),
+            Some((Token::Async, _)) => {
+                // Could be async function or async block
+                let next = self.tokens.peek_nth(1);
+                if matches!(next, Some((Token::Fun, _))) {
+                    self.parse_function()
+                } else {
+                    self.parse_async_block()
+                }
+            }
+            Some((Token::Await, _)) => self.parse_await(),
             Some((Token::Fun, _)) => self.parse_function(),
             Some((Token::Match, _)) => self.parse_match(),
             Some((Token::For, _)) => self.parse_for(),
+            Some((Token::While, _)) => self.parse_while(),
+            Some((Token::Try, _)) => self.parse_try_catch(),
+            Some((Token::Struct, _)) => self.parse_struct(),
+            Some((Token::Trait, _)) => self.parse_trait(),
+            Some((Token::Impl, _)) => self.parse_impl(),
+            Some((Token::Actor, _)) => self.parse_actor(),
             Some((Token::Import | Token::Use, _)) => self.parse_import(),
+            Some((Token::Break, _)) => self.parse_break(),
+            Some((Token::Continue, _)) => self.parse_continue(),
             Some((Token::LeftBracket, _)) => self.parse_list(),
+            Some((Token::DataFrame, _)) => self.parse_dataframe(),
+            Some((Token::Pipe | Token::OrOr, _)) => self.parse_lambda(),
             Some((Token::LeftParen, _span)) => {
                 self.tokens.advance();
                 let expr = self.parse_expr()?;
                 self.tokens.expect(Token::RightParen)?;
-                Ok(expr)
+                self.handle_postfix_operators(expr)
             }
             Some((token, span)) if token.is_unary_op() => {
                 let token_clone = token.clone();
@@ -240,6 +346,14 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function(&mut self) -> Result<Expr> {
+        // Check for async modifier
+        let is_async = if let Some((Token::Async, _)) = self.tokens.peek() {
+            self.tokens.advance();
+            true
+        } else {
+            false
+        };
+        
         let start_span = self.tokens.expect(Token::Fun)?;
 
         let name = match self.tokens.advance() {
@@ -268,11 +382,87 @@ impl<'a> Parser<'a> {
                 params,
                 return_type,
                 body,
+                is_async,
             },
             span,
         ))
     }
 
+    fn parse_lambda(&mut self) -> Result<Expr> {
+        // Handle || as a special case for empty parameter lambdas
+        if let Some((Token::OrOr, span)) = self.tokens.peek() {
+            let start_span = *span;
+            self.tokens.advance();
+            
+            // Parse the body
+            let body = Box::new(self.parse_expr()?);
+            let end_span = body.span;
+            
+            return Ok(Expr::new(
+                ExprKind::Lambda { 
+                    params: Vec::new(), 
+                    body 
+                },
+                start_span.merge(end_span),
+            ));
+        }
+        
+        let start_span = self.tokens.expect(Token::Pipe)?;
+        
+        // Parse parameters between pipes: |x, y|
+        let mut params = Vec::new();
+        
+        // Check for empty params with single |
+        if let Some((Token::Pipe, _)) = self.tokens.peek() {
+            self.tokens.advance();
+        } else {
+            loop {
+                let (name, name_span) = match self.tokens.advance() {
+                    Some((Token::Identifier(name), span)) => (name, span),
+                    _ => bail!("Expected parameter name in lambda"),
+                };
+                
+                // Type annotation is optional for lambdas
+                let ty = if let Some((Token::Colon, _)) = self.tokens.peek() {
+                    self.tokens.advance();
+                    self.parse_type()?
+                } else {
+                    // Default to 'Any' type for untyped parameters
+                    Type {
+                        kind: TypeKind::Named("Any".to_string()),
+                        span: name_span,
+                    }
+                };
+                
+                params.push(Param {
+                    name,
+                    ty,
+                    span: name_span,
+                });
+                
+                match self.tokens.peek() {
+                    Some((Token::Comma, _)) => {
+                        self.tokens.advance();
+                    }
+                    Some((Token::Pipe, _)) => {
+                        self.tokens.advance();
+                        break;
+                    }
+                    _ => bail!("Expected ',' or '|' in lambda parameter list"),
+                }
+            }
+        }
+        
+        // Parse the body
+        let body = Box::new(self.parse_expr()?);
+        let end_span = body.span;
+        
+        Ok(Expr::new(
+            ExprKind::Lambda { params, body },
+            start_span.merge(end_span),
+        ))
+    }
+    
     fn parse_params(&mut self) -> Result<Vec<Param>> {
         let mut params = Vec::new();
 
@@ -429,7 +619,74 @@ impl<'a> Parser<'a> {
         let end_span = self.tokens.expect(Token::RightBracket)?;
         let span = start_span.merge(end_span);
 
-        Ok(Expr::new(ExprKind::List(elements), span))
+        let list_expr = Expr::new(ExprKind::List(elements), span);
+        self.handle_postfix_operators(list_expr)
+    }
+
+    fn parse_dataframe(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.expect(Token::DataFrame)?;
+        self.tokens.expect(Token::Bang)?;
+        self.tokens.expect(Token::LeftBracket)?;
+        
+        let mut columns = Vec::new();
+        let mut rows = Vec::new();
+        
+        // Parse column names (first row should be column identifiers)
+        let mut first_row = true;
+        
+        while !matches!(self.tokens.peek(), Some((Token::RightBracket, _))) {
+            if !first_row {
+                // Expect semicolon between rows
+                if let Some((Token::Semicolon, _)) = self.tokens.peek() {
+                    self.tokens.advance();
+                } else if !matches!(self.tokens.peek(), Some((Token::RightBracket, _))) {
+                    bail!("Expected ';' or ']' in DataFrame literal");
+                }
+            }
+            
+            if matches!(self.tokens.peek(), Some((Token::RightBracket, _))) {
+                break;
+            }
+            
+            let mut row = Vec::new();
+            loop {
+                if first_row {
+                    // Parse column names
+                    match self.tokens.advance() {
+                        Some((Token::Identifier(name), _)) => columns.push(name),
+                        _ => bail!("Expected column name in DataFrame literal"),
+                    }
+                } else {
+                    // Parse data values
+                    row.push(self.parse_expr()?);
+                }
+                
+                // Check for comma or end of row
+                match self.tokens.peek() {
+                    Some((Token::Comma, _)) => {
+                        self.tokens.advance();
+                    }
+                    Some((Token::Semicolon | Token::RightBracket, _)) => break,
+                    _ => bail!("Expected ',' ';' or ']' in DataFrame literal"),
+                }
+            }
+            
+            if !first_row {
+                if row.len() != columns.len() {
+                    bail!("DataFrame row has {} values but {} columns were defined", row.len(), columns.len());
+                }
+                rows.push(row);
+            }
+            first_row = false;
+        }
+        
+        let end_span = self.tokens.expect(Token::RightBracket)?;
+        
+        let dataframe_expr = Expr::new(
+            ExprKind::DataFrame { columns, rows },
+            start_span.merge(end_span),
+        );
+        self.handle_postfix_operators(dataframe_expr)
     }
 
     fn parse_call(&mut self, func: Expr) -> Result<Expr> {
@@ -491,14 +748,12 @@ impl<'a> Parser<'a> {
                 span,
             ))
         } else {
-            // For now, treat field access as a method call with no args
-            // In the future, we might want a separate FieldAccess variant
+            // Field access
             let span = receiver.span;
             Ok(Expr::new(
-                ExprKind::MethodCall {
-                    receiver: Box::new(receiver),
-                    method,
-                    args: Vec::new(),
+                ExprKind::FieldAccess {
+                    object: Box::new(receiver),
+                    field: method,
                 },
                 span,
             ))
@@ -613,6 +868,440 @@ impl<'a> Parser<'a> {
 
         let span = start_span.merge(body.span);
         Ok(Expr::new(ExprKind::For { var, iter, body }, span))
+    }
+
+    fn parse_while(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.expect(Token::While)?;
+        
+        // Parse the condition
+        let condition = Box::new(self.parse_expr()?);
+        
+        // Parse the body block
+        self.tokens.expect(Token::LeftBrace)?;
+        let body = Box::new(self.parse_block()?);
+        
+        let span = start_span.merge(body.span);
+        Ok(Expr::new(ExprKind::While { condition, body }, span))
+    }
+    
+    fn parse_break(&mut self) -> Result<Expr> {
+        let span = self.tokens.expect(Token::Break)?;
+        
+        // Check for optional label
+        let label = if let Some((Token::Identifier(name), _)) = self.tokens.peek() {
+            let name = name.clone();
+            self.tokens.advance();
+            Some(name)
+        } else {
+            None
+        };
+        
+        Ok(Expr::new(ExprKind::Break { label }, span))
+    }
+    
+    fn parse_continue(&mut self) -> Result<Expr> {
+        let span = self.tokens.expect(Token::Continue)?;
+        
+        // Check for optional label
+        let label = if let Some((Token::Identifier(name), _)) = self.tokens.peek() {
+            let name = name.clone();
+            self.tokens.advance();
+            Some(name)
+        } else {
+            None
+        };
+        
+        Ok(Expr::new(ExprKind::Continue { label }, span))
+    }
+
+    fn parse_try_catch(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.expect(Token::Try)?;
+        
+        // Parse the try block
+        self.tokens.expect(Token::LeftBrace)?;
+        let try_block = Box::new(self.parse_block()?);
+        
+        // Expect catch keyword
+        self.tokens.expect(Token::Catch)?;
+        
+        // Parse catch variable (error binding)
+        self.tokens.expect(Token::LeftParen)?;
+        let catch_var = match self.tokens.advance() {
+            Some((Token::Identifier(name), _)) => name,
+            _ => bail!("Expected identifier for catch variable"),
+        };
+        self.tokens.expect(Token::RightParen)?;
+        
+        // Parse the catch block
+        self.tokens.expect(Token::LeftBrace)?;
+        let catch_block = Box::new(self.parse_block()?);
+        
+        let span = start_span.merge(catch_block.span);
+        Ok(Expr::new(
+            ExprKind::TryCatch {
+                try_block,
+                catch_var,
+                catch_block,
+            },
+            span,
+        ))
+    }
+
+    fn parse_async_block(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.expect(Token::Async)?;
+        self.tokens.expect(Token::LeftBrace)?;
+        let block = self.parse_block()?;
+        let span = start_span.merge(block.span);
+        
+        // For now, wrap the async block in a lambda that returns a future
+        // In a full implementation, we'd have a dedicated AsyncBlock AST node
+        Ok(Expr::new(
+            ExprKind::Lambda {
+                params: Vec::new(),
+                body: Box::new(block),
+            },
+            span,
+        ))
+    }
+
+    fn parse_await(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.expect(Token::Await)?;
+        let expr = Box::new(self.parse_prefix()?);
+        let span = start_span.merge(expr.span);
+        Ok(Expr::new(ExprKind::Await { expr }, span))
+    }
+
+    fn parse_struct(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.expect(Token::Struct)?;
+        
+        // Parse struct name
+        let name = match self.tokens.advance() {
+            Some((Token::Identifier(name), _)) => name,
+            _ => bail!("Expected struct name"),
+        };
+        
+        // Parse struct fields
+        self.tokens.expect(Token::LeftBrace)?;
+        let mut fields = Vec::new();
+        
+        while !matches!(self.tokens.peek(), Some((Token::RightBrace, _))) {
+            // Parse field visibility (pub is optional)
+            let is_pub = if let Some((Token::Pub, _)) = self.tokens.peek() {
+                self.tokens.advance();
+                true
+            } else {
+                false
+            };
+            
+            // Parse field name
+            let field_name = match self.tokens.advance() {
+                Some((Token::Identifier(name), _)) => name,
+                _ => bail!("Expected field name in struct"),
+            };
+            
+            // Parse type annotation
+            self.tokens.expect(Token::Colon)?;
+            let field_type = self.parse_type()?;
+            
+            fields.push(StructField {
+                name: field_name,
+                ty: field_type,
+                is_pub,
+            });
+            
+            // Handle comma or end of struct
+            match self.tokens.peek() {
+                Some((Token::Comma, _)) => {
+                    self.tokens.advance();
+                }
+                Some((Token::RightBrace, _)) => break,
+                _ => bail!("Expected ',' or '}}' in struct definition"),
+            }
+        }
+        
+        let end_span = self.tokens.expect(Token::RightBrace)?;
+        let span = start_span.merge(end_span);
+        
+        Ok(Expr::new(ExprKind::Struct { name, fields }, span))
+    }
+
+    fn parse_struct_literal(&mut self, name: String, start_span: Span) -> Result<Expr> {
+        self.tokens.expect(Token::LeftBrace)?;
+        
+        let mut fields = Vec::new();
+        
+        while !matches!(self.tokens.peek(), Some((Token::RightBrace, _))) {
+            // Parse field name
+            let field_name = match self.tokens.advance() {
+                Some((Token::Identifier(name), _)) => name,
+                _ => bail!("Expected field name in struct literal"),
+            };
+            
+            // Parse colon and value
+            self.tokens.expect(Token::Colon)?;
+            let value = self.parse_expr()?;
+            
+            fields.push((field_name, value));
+            
+            // Handle comma or end of struct literal
+            match self.tokens.peek() {
+                Some((Token::Comma, _)) => {
+                    self.tokens.advance();
+                }
+                Some((Token::RightBrace, _)) => break,
+                _ => bail!("Expected ',' or '}}' in struct literal"),
+            }
+        }
+        
+        let end_span = self.tokens.expect(Token::RightBrace)?;
+        let span = start_span.merge(end_span);
+        
+        Ok(Expr::new(ExprKind::StructLiteral { name, fields }, span))
+    }
+
+    fn parse_trait(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.expect(Token::Trait)?;
+        
+        // Parse trait name
+        let name = match self.tokens.advance() {
+            Some((Token::Identifier(name), _)) => name,
+            _ => bail!("Expected trait name"),
+        };
+        
+        // Parse trait body
+        self.tokens.expect(Token::LeftBrace)?;
+        let mut methods = Vec::new();
+        
+        while !matches!(self.tokens.peek(), Some((Token::RightBrace, _))) {
+            // Parse method
+            let method = self.parse_trait_method()?;
+            methods.push(method);
+            
+            // Handle semicolon or comma
+            if let Some((Token::Semicolon | Token::Comma, _)) = self.tokens.peek() {
+                self.tokens.advance();
+            }
+        }
+        
+        let end_span = self.tokens.expect(Token::RightBrace)?;
+        let span = start_span.merge(end_span);
+        
+        Ok(Expr::new(ExprKind::Trait { name, methods }, span))
+    }
+
+    fn parse_trait_method(&mut self) -> Result<TraitMethod> {
+        // Parse fn keyword
+        self.tokens.expect(Token::Fun)?;
+        
+        // Parse method name
+        let name = match self.tokens.advance() {
+            Some((Token::Identifier(name), _)) => name,
+            _ => bail!("Expected method name"),
+        };
+        
+        // Parse parameters
+        self.tokens.expect(Token::LeftParen)?;
+        let params = self.parse_params()?;
+        self.tokens.expect(Token::RightParen)?;
+        
+        // Parse return type if present
+        let return_type = if let Some((Token::Arrow, _)) = self.tokens.peek() {
+            self.tokens.advance();
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
+        
+        // Check for method body (default implementation) or just signature
+        let body = if let Some((Token::LeftBrace, _)) = self.tokens.peek() {
+            self.tokens.expect(Token::LeftBrace)?;
+            let body_expr = self.parse_block()?;
+            Some(Box::new(body_expr))
+        } else {
+            None
+        };
+        
+        Ok(TraitMethod {
+            name,
+            params,
+            return_type,
+            body,
+        })
+    }
+
+    fn parse_impl(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.expect(Token::Impl)?;
+        
+        // Parse trait name (optional) and for_type
+        let (trait_name, for_type) = if let Some((Token::Identifier(name), _)) = self.tokens.peek() {
+            let first_name = name.clone();
+            self.tokens.advance();
+            
+            if let Some((Token::For, _)) = self.tokens.peek() {
+                // impl TraitName for TypeName
+                self.tokens.advance();
+                let type_name = match self.tokens.advance() {
+                    Some((Token::Identifier(name), _)) => name,
+                    _ => bail!("Expected type name after 'for'"),
+                };
+                (Some(first_name), type_name)
+            } else {
+                // impl TypeName (inherent impl)
+                (None, first_name)
+            }
+        } else {
+            bail!("Expected trait or type name after 'impl'")
+        };
+        
+        // Parse impl body
+        self.tokens.expect(Token::LeftBrace)?;
+        let mut methods = Vec::new();
+        
+        while !matches!(self.tokens.peek(), Some((Token::RightBrace, _))) {
+            // Parse method implementation
+            let method = self.parse_impl_method()?;
+            methods.push(method);
+            
+            // Skip optional semicolons
+            if let Some((Token::Semicolon, _)) = self.tokens.peek() {
+                self.tokens.advance();
+            }
+        }
+        
+        let end_span = self.tokens.expect(Token::RightBrace)?;
+        let span = start_span.merge(end_span);
+        
+        Ok(Expr::new(
+            ExprKind::Impl {
+                trait_name,
+                for_type,
+                methods,
+            },
+            span,
+        ))
+    }
+
+    fn parse_actor(&mut self) -> Result<Expr> {
+        let start_span = self.tokens.expect(Token::Actor)?;
+        
+        // Parse actor name
+        let name = match self.tokens.advance() {
+            Some((Token::Identifier(name), _)) => name,
+            _ => bail!("Expected actor name after 'actor'"),
+        };
+        
+        self.tokens.expect(Token::LeftBrace)?;
+        
+        let mut state = Vec::new();
+        let mut handlers = Vec::new();
+        
+        // Parse actor body (state fields and message handlers)
+        while !matches!(self.tokens.peek(), Some((Token::RightBrace, _))) {
+            // Check if it's a state field or handler
+            if let Some((Token::Identifier(_), _)) = self.tokens.peek() {
+                // Could be a field (name: Type) or handler (on MessageType)
+                let ident_name = if let Some((Token::Identifier(n), _)) = self.tokens.advance() {
+                    n
+                } else {
+                    bail!("Expected identifier");
+                };
+                
+                if let Some((Token::Colon, _)) = self.tokens.peek() {
+                    // It's a state field
+                    self.tokens.advance();
+                    let ty = self.parse_type()?;
+                    state.push(StructField {
+                        name: ident_name,
+                        ty,
+                        is_pub: false,
+                    });
+                    
+                    // Optional comma or semicolon
+                    if matches!(self.tokens.peek(), Some((Token::Comma | Token::Semicolon, _))) {
+                        self.tokens.advance();
+                    }
+                } else if ident_name == "on" {
+                    // It's a message handler
+                    let message_type = match self.tokens.advance() {
+                        Some((Token::Identifier(name), _)) => name,
+                        _ => bail!("Expected message type after 'on'"),
+                    };
+                    
+                    // Parse optional parameters
+                    let params = if let Some((Token::LeftParen, _)) = self.tokens.peek() {
+                        self.tokens.advance();
+                        let p = self.parse_params()?;
+                        self.tokens.expect(Token::RightParen)?;
+                        p
+                    } else {
+                        Vec::new()
+                    };
+                    
+                    // Parse handler body
+                    self.tokens.expect(Token::LeftBrace)?;
+                    let body = Box::new(self.parse_block()?);
+                    
+                    handlers.push(ActorHandler {
+                        message_type,
+                        params,
+                        body,
+                    });
+                } else {
+                    // Must be an 'on' handler without the 'on' keyword being recognized
+                    // Try to recover by treating it as a potential handler
+                    bail!("Expected ':' for field or 'on' for handler, got '{}'", ident_name);
+                }
+            } else {
+                bail!("Expected field or handler in actor body");
+            }
+        }
+        
+        let end_span = self.tokens.expect(Token::RightBrace)?;
+        let span = start_span.merge(end_span);
+        
+        Ok(Expr::new(
+            ExprKind::Actor {
+                name,
+                state,
+                handlers,
+            },
+            span,
+        ))
+    }
+    
+    fn parse_impl_method(&mut self) -> Result<ImplMethod> {
+        // Parse fn keyword
+        self.tokens.expect(Token::Fun)?;
+        
+        // Parse method name
+        let name = match self.tokens.advance() {
+            Some((Token::Identifier(name), _)) => name,
+            _ => bail!("Expected method name"),
+        };
+        
+        // Parse parameters
+        self.tokens.expect(Token::LeftParen)?;
+        let params = self.parse_params()?;
+        self.tokens.expect(Token::RightParen)?;
+        
+        // Parse return type if present
+        let return_type = if let Some((Token::Arrow, _)) = self.tokens.peek() {
+            self.tokens.advance();
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
+        
+        // Parse method body (required for impl)
+        self.tokens.expect(Token::LeftBrace)?;
+        let body = Box::new(self.parse_block()?);
+        
+        Ok(ImplMethod {
+            name,
+            params,
+            return_type,
+            body,
+        })
     }
 
     fn parse_range_from(&mut self, start: Expr) -> Result<Expr> {
@@ -732,6 +1421,58 @@ impl<'a> Parser<'a> {
             Token::Tilde => UnaryOp::BitwiseNot,
             _ => bail!("Not a unary operator: {:?}", token),
         })
+    }
+
+    fn parse_attributes(&mut self) -> Result<Vec<Attribute>> {
+        let mut attributes = Vec::new();
+        
+        while let Some((Token::Hash, start_span)) = self.tokens.peek().cloned() {
+            self.tokens.advance(); // consume #
+            
+            if !matches!(self.tokens.peek(), Some((Token::LeftBracket, _))) {
+                bail!("Expected '[' after '#'");
+            }
+            self.tokens.advance(); // consume [
+            
+            let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() {
+                name
+            } else {
+                bail!("Expected attribute name");
+            };
+            
+            let mut args = Vec::new();
+            if matches!(self.tokens.peek(), Some((Token::LeftParen, _))) {
+                self.tokens.advance(); // consume (
+                
+                while !matches!(self.tokens.peek(), Some((Token::RightParen, _))) {
+                    if let Some((Token::Identifier(arg), _)) = self.tokens.advance() {
+                        args.push(arg);
+                    }
+                    
+                    if matches!(self.tokens.peek(), Some((Token::Comma, _))) {
+                        self.tokens.advance();
+                    }
+                }
+                
+                if !matches!(self.tokens.peek(), Some((Token::RightParen, _))) {
+                    bail!("Expected ')' to close attribute arguments");
+                }
+                self.tokens.advance(); // consume )
+            }
+            
+            if !matches!(self.tokens.peek(), Some((Token::RightBracket, _))) {
+                bail!("Expected ']' to close attribute");
+            }
+            let end_span = self.tokens.advance().expect("Expected ']' token").1; // consume ]
+            
+            attributes.push(Attribute {
+                name,
+                args,
+                span: start_span.merge(end_span),
+            });
+        }
+        
+        Ok(attributes)
     }
 }
 
@@ -914,6 +1655,449 @@ mod tests {
             ExprKind::MethodCall { method, args, .. } => {
                 assert_eq!(method, "method");
                 assert_eq!(args.len(), 3);
+            }
+            _ => panic!("Expected method call"),
+        }
+    }
+
+    #[test]
+    fn test_parse_lambda() {
+        // Test simple lambda
+        let mut parser = Parser::new("|x| x + 1");
+        let expr = parser.parse().expect("Failed to parse simple lambda");
+        match expr.kind {
+            ExprKind::Lambda { params, body } => {
+                assert_eq!(params.len(), 1);
+                assert_eq!(params[0].name, "x");
+                // Check body is x + 1
+                match body.kind {
+                    ExprKind::Binary { op, .. } => {
+                        assert_eq!(op, BinaryOp::Add);
+                    }
+                    _ => panic!("Expected binary expression in lambda body"),
+                }
+            }
+            _ => panic!("Expected lambda expression"),
+        }
+
+        // Test lambda with multiple parameters
+        let mut parser = Parser::new("|x, y| x * y");
+        let expr = parser.parse().expect("Failed to parse multi-param lambda");
+        match expr.kind {
+            ExprKind::Lambda { params, .. } => {
+                assert_eq!(params.len(), 2);
+                assert_eq!(params[0].name, "x");
+                assert_eq!(params[1].name, "y");
+            }
+            _ => panic!("Expected lambda expression"),
+        }
+
+        // Test lambda with no parameters
+        let mut parser = Parser::new("|| 42");
+        let expr = parser.parse().expect("Failed to parse no-param lambda");
+        match expr.kind {
+            ExprKind::Lambda { params, body } => {
+                assert_eq!(params.len(), 0);
+                match body.kind {
+                    ExprKind::Literal(Literal::Integer(i)) => {
+                        assert_eq!(i, 42);
+                    }
+                    _ => panic!("Expected literal in lambda body"),
+                }
+            }
+            _ => panic!("Expected lambda expression"),
+        }
+
+        // Test lambda with typed parameters
+        let mut parser = Parser::new("|x: i32, y: f64| x + y");
+        let expr = parser.parse().expect("Failed to parse typed lambda");
+        match expr.kind {
+            ExprKind::Lambda { params, .. } => {
+                assert_eq!(params.len(), 2);
+                assert_eq!(params[0].name, "x");
+                assert!(matches!(params[0].ty.kind, TypeKind::Named(ref s) if s == "i32"));
+                assert_eq!(params[1].name, "y");
+                assert!(matches!(params[1].ty.kind, TypeKind::Named(ref s) if s == "f64"));
+            }
+            _ => panic!("Expected lambda expression"),
+        }
+    }
+
+    #[test]
+    fn test_parse_dataframe() {
+        // Test simple DataFrame
+        let mut parser = Parser::new("df![name, age; \"Alice\", 30; \"Bob\", 25]");
+        let expr = parser.parse().expect("Failed to parse DataFrame");
+        match expr.kind {
+            ExprKind::DataFrame { columns, rows } => {
+                assert_eq!(columns.len(), 2);
+                assert_eq!(columns[0], "name");
+                assert_eq!(columns[1], "age");
+                assert_eq!(rows.len(), 2);
+                assert_eq!(rows[0].len(), 2);
+                assert_eq!(rows[1].len(), 2);
+            }
+            _ => panic!("Expected DataFrame expression"),
+        }
+
+        // Test empty DataFrame
+        let mut parser = Parser::new("df![]");
+        let expr = parser.parse().expect("Failed to parse empty DataFrame");
+        match expr.kind {
+            ExprKind::DataFrame { columns, rows } => {
+                assert_eq!(columns.len(), 0);
+                assert_eq!(rows.len(), 0);
+            }
+            _ => panic!("Expected DataFrame expression"),
+        }
+
+        // Test DataFrame with single column
+        let mut parser = Parser::new("df![values; 1; 2; 3]");
+        let expr = parser.parse().expect("Failed to parse single column DataFrame");
+        match expr.kind {
+            ExprKind::DataFrame { columns, rows } => {
+                assert_eq!(columns.len(), 1);
+                assert_eq!(columns[0], "values");
+                assert_eq!(rows.len(), 3);
+            }
+            _ => panic!("Expected DataFrame expression"),
+        }
+    }
+
+    #[test]
+    fn test_parse_try_operator() {
+        // Test simple try
+        let mut parser = Parser::new("foo()?");
+        let expr = parser.parse().expect("Failed to parse try operator");
+        match expr.kind {
+            ExprKind::Try { expr } => {
+                match expr.kind {
+                    ExprKind::Call { .. } => {},
+                    _ => panic!("Expected call expression inside try"),
+                }
+            }
+            _ => panic!("Expected try expression"),
+        }
+
+        // Test chained try (use parentheses to avoid SafeNav token)
+        let mut parser = Parser::new("(foo()?).bar()?");
+        let expr = parser.parse().expect("Failed to parse chained try");
+        match expr.kind {
+            ExprKind::Try { .. } => {},
+            _ => panic!("Expected try expression"),
+        }
+
+        // Test try with method call
+        let mut parser = Parser::new("x.method()?");
+        let expr = parser.parse().expect("Failed to parse try with method");
+        match expr.kind {
+            ExprKind::Try { expr } => {
+                match expr.kind {
+                    ExprKind::MethodCall { .. } => {},
+                    _ => panic!("Expected method call inside try"),
+                }
+            }
+            _ => panic!("Expected try expression"),
+        }
+    }
+
+    #[test]
+    fn test_parse_while() {
+        // Test simple while loop
+        let mut parser = Parser::new("while x < 10 { println(x) }");
+        let expr = parser.parse().expect("Failed to parse while loop");
+        match expr.kind {
+            ExprKind::While { condition, body } => {
+                // Check condition is comparison
+                match condition.kind {
+                    ExprKind::Binary { op, .. } => {
+                        assert_eq!(op, BinaryOp::Less);
+                    }
+                    _ => panic!("Expected binary comparison in while condition"),
+                }
+                // Check body is block
+                match body.kind {
+                    ExprKind::Block(_) => {},
+                    _ => panic!("Expected block in while body"),
+                }
+            }
+            _ => panic!("Expected while expression"),
+        }
+
+        // Test while with boolean literal
+        let mut parser = Parser::new("while true { println(\"loop\") }");
+        let expr = parser.parse().expect("Failed to parse infinite while");
+        match expr.kind {
+            ExprKind::While { condition, .. } => {
+                match condition.kind {
+                    ExprKind::Literal(Literal::Bool(true)) => {},
+                    _ => panic!("Expected true literal in condition"),
+                }
+            }
+            _ => panic!("Expected while expression"),
+        }
+    }
+
+    #[test]
+    fn test_parse_struct_definition() {
+        // Simple struct
+        let mut parser = Parser::new("struct Point { x: i32, y: i32 }");
+        let expr = parser.parse().expect("Failed to parse struct");
+        match expr.kind {
+            ExprKind::Struct { name, fields } => {
+                assert_eq!(name, "Point");
+                assert_eq!(fields.len(), 2);
+                assert_eq!(fields[0].name, "x");
+                assert_eq!(fields[1].name, "y");
+                assert!(!fields[0].is_pub);
+                assert!(!fields[1].is_pub);
+            }
+            _ => panic!("Expected struct definition"),
+        }
+
+        // Struct with public fields
+        let mut parser = Parser::new("struct Person { pub name: String, pub age: i32 }");
+        let expr = parser.parse().expect("Failed to parse struct with pub fields");
+        match expr.kind {
+            ExprKind::Struct { name, fields } => {
+                assert_eq!(name, "Person");
+                assert_eq!(fields.len(), 2);
+                assert_eq!(fields[0].name, "name");
+                assert!(fields[0].is_pub);
+                assert_eq!(fields[1].name, "age");
+                assert!(fields[1].is_pub);
+            }
+            _ => panic!("Expected struct definition"),
+        }
+
+        // Empty struct
+        let mut parser = Parser::new("struct Empty { }");
+        let expr = parser.parse().expect("Failed to parse empty struct");
+        match expr.kind {
+            ExprKind::Struct { name, fields } => {
+                assert_eq!(name, "Empty");
+                assert_eq!(fields.len(), 0);
+            }
+            _ => panic!("Expected struct definition"),
+        }
+    }
+
+    #[test]
+    fn test_parse_struct_literal() {
+        // Simple struct instantiation
+        let mut parser = Parser::new("Point { x: 10, y: 20 }");
+        let expr = parser.parse().expect("Failed to parse struct literal");
+        match expr.kind {
+            ExprKind::StructLiteral { name, fields } => {
+                assert_eq!(name, "Point");
+                assert_eq!(fields.len(), 2);
+                assert_eq!(fields[0].0, "x");
+                assert_eq!(fields[1].0, "y");
+                match &fields[0].1.kind {
+                    ExprKind::Literal(Literal::Integer(10)) => {},
+                    _ => panic!("Expected integer literal for x"),
+                }
+                match &fields[1].1.kind {
+                    ExprKind::Literal(Literal::Integer(20)) => {},
+                    _ => panic!("Expected integer literal for y"),
+                }
+            }
+            _ => panic!("Expected struct literal"),
+        }
+
+        // Struct literal with expressions
+        let mut parser = Parser::new("Person { name: \"Alice\", age: 25 + 5 }");
+        let expr = parser.parse().expect("Failed to parse struct literal with expressions");
+        match expr.kind {
+            ExprKind::StructLiteral { name, fields } => {
+                assert_eq!(name, "Person");
+                assert_eq!(fields.len(), 2);
+                assert_eq!(fields[0].0, "name");
+                match &fields[0].1.kind {
+                    ExprKind::Literal(Literal::String(s)) => assert_eq!(s, "Alice"),
+                    _ => panic!("Expected string literal for name"),
+                }
+                assert_eq!(fields[1].0, "age");
+                match &fields[1].1.kind {
+                    ExprKind::Binary { op, .. } => assert_eq!(*op, BinaryOp::Add),
+                    _ => panic!("Expected binary expression for age"),
+                }
+            }
+            _ => panic!("Expected struct literal"),
+        }
+    }
+
+    #[test]
+    fn test_parse_trait() {
+        // Simple trait
+        let mut parser = Parser::new("trait Display { fun show(self) -> String }");
+        let expr = parser.parse().expect("Failed to parse trait");
+        match expr.kind {
+            ExprKind::Trait { name, methods } => {
+                assert_eq!(name, "Display");
+                assert_eq!(methods.len(), 1);
+                assert_eq!(methods[0].name, "show");
+                assert!(methods[0].body.is_none()); // No default implementation
+            }
+            _ => panic!("Expected trait definition"),
+        }
+
+        // Trait with default implementation
+        let mut parser = Parser::new("trait Greet { fun hello(self) { println(\"Hello\") } }");
+        let expr = parser.parse().expect("Failed to parse trait with default");
+        match expr.kind {
+            ExprKind::Trait { name, methods } => {
+                assert_eq!(name, "Greet");
+                assert!(methods[0].body.is_some()); // Has default implementation
+            }
+            _ => panic!("Expected trait definition"),
+        }
+
+        // Trait with multiple methods
+        let mut parser = Parser::new("trait Math { fun add(self, x: i32) -> i32; fun sub(self, x: i32) -> i32 }");
+        let expr = parser.parse().expect("Failed to parse trait with multiple methods");
+        match expr.kind {
+            ExprKind::Trait { methods, .. } => {
+                assert_eq!(methods.len(), 2);
+                assert_eq!(methods[0].name, "add");
+                assert_eq!(methods[1].name, "sub");
+            }
+            _ => panic!("Expected trait definition"),
+        }
+    }
+
+    #[test]
+    fn test_parse_impl() {
+        // Inherent impl
+        let mut parser = Parser::new("impl Point { fun distance(self) -> f64 { 0.0 } }");
+        let expr = parser.parse().expect("Failed to parse inherent impl");
+        match expr.kind {
+            ExprKind::Impl { trait_name, for_type, methods } => {
+                assert!(trait_name.is_none());
+                assert_eq!(for_type, "Point");
+                assert_eq!(methods.len(), 1);
+                assert_eq!(methods[0].name, "distance");
+            }
+            _ => panic!("Expected impl block"),
+        }
+
+        // Trait impl
+        let mut parser = Parser::new("impl Display for Point { fun show(self) -> String { \"Point\" } }");
+        let expr = parser.parse().expect("Failed to parse trait impl");
+        match expr.kind {
+            ExprKind::Impl { trait_name, for_type, methods } => {
+                assert_eq!(trait_name, Some("Display".to_string()));
+                assert_eq!(for_type, "Point");
+                assert_eq!(methods.len(), 1);
+                assert_eq!(methods[0].name, "show");
+            }
+            _ => panic!("Expected impl block"),
+        }
+
+        // Multiple methods in impl
+        let mut parser = Parser::new("impl Math for Calculator { fun add(self, x: i32) -> i32 { x } fun sub(self, x: i32) -> i32 { x } }");
+        let expr = parser.parse().expect("Failed to parse impl with multiple methods");
+        match expr.kind {
+            ExprKind::Impl { methods, .. } => {
+                assert_eq!(methods.len(), 2);
+                assert_eq!(methods[0].name, "add");
+                assert_eq!(methods[1].name, "sub");
+            }
+            _ => panic!("Expected impl block"),
+        }
+    }
+
+    #[test]
+    fn test_parse_async() {
+        // Async function
+        let mut parser = Parser::new("async fun fetch() -> String { \"data\" }");
+        let expr = parser.parse().expect("Failed to parse async function");
+        match expr.kind {
+            ExprKind::Function { name, is_async, .. } => {
+                assert_eq!(name, "fetch");
+                assert!(is_async);
+            }
+            _ => panic!("Expected async function"),
+        }
+
+        // Await expression
+        let mut parser = Parser::new("await fetch()");
+        let expr = parser.parse().expect("Failed to parse await");
+        match expr.kind {
+            ExprKind::Await { expr } => {
+                match expr.kind {
+                    ExprKind::Call { .. } => {},
+                    _ => panic!("Expected call in await"),
+                }
+            }
+            _ => panic!("Expected await expression"),
+        }
+
+        // Async block
+        let mut parser = Parser::new("async { fetch() }");
+        let expr = parser.parse().expect("Failed to parse async block");
+        // Async blocks are parsed as lambdas for now
+        match expr.kind {
+            ExprKind::Lambda { params, .. } => {
+                assert_eq!(params.len(), 0);
+            }
+            _ => panic!("Expected lambda (async block)"),
+        }
+    }
+
+    #[test]
+    fn test_parse_field_access() {
+        // Simple field access
+        let mut parser = Parser::new("point.x");
+        let expr = parser.parse().expect("Failed to parse field access");
+        match expr.kind {
+            ExprKind::FieldAccess { object, field } => {
+                match object.kind {
+                    ExprKind::Identifier(name) => assert_eq!(name, "point"),
+                    _ => panic!("Expected identifier as object"),
+                }
+                assert_eq!(field, "x");
+            }
+            _ => panic!("Expected field access"),
+        }
+
+        // Chained field access
+        let mut parser = Parser::new("obj.field1.field2");
+        let expr = parser.parse().expect("Failed to parse chained field access");
+        match expr.kind {
+            ExprKind::FieldAccess { object, field } => {
+                assert_eq!(field, "field2");
+                match object.kind {
+                    ExprKind::FieldAccess { object: inner_obj, field: inner_field } => {
+                        assert_eq!(inner_field, "field1");
+                        match inner_obj.kind {
+                            ExprKind::Identifier(name) => assert_eq!(name, "obj"),
+                            _ => panic!("Expected identifier at base"),
+                        }
+                    }
+                    _ => panic!("Expected nested field access"),
+                }
+            }
+            _ => panic!("Expected field access"),
+        }
+
+        // Field access with method call
+        let mut parser = Parser::new("point.x.abs()");
+        let expr = parser.parse().expect("Failed to parse field access with method");
+        match expr.kind {
+            ExprKind::MethodCall { receiver, method, args } => {
+                assert_eq!(method, "abs");
+                assert_eq!(args.len(), 0);
+                match receiver.kind {
+                    ExprKind::FieldAccess { object, field } => {
+                        assert_eq!(field, "x");
+                        match object.kind {
+                            ExprKind::Identifier(name) => assert_eq!(name, "point"),
+                            _ => panic!("Expected identifier"),
+                        }
+                    }
+                    _ => panic!("Expected field access as receiver"),
+                }
             }
             _ => panic!("Expected method call"),
         }

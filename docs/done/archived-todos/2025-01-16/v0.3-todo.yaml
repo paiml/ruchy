@@ -1,0 +1,185 @@
+# Ruchy v0.3.0 Work Plan
+# PDMT-compliant deterministic todo list with pmat quality enforcement
+# Generated: 2025-01-16
+
+version: "0.3.0"
+metadata:
+  provider: "deterministic"
+  temperature: 0.0
+  seed: 42
+  project: "ruchy"
+
+quality_gates:
+  test_coverage_min: 80
+  complexity_max: 15
+  satd_tolerance: 0
+  enforcement: "pmat-mcp-quality-proxy"  # MANDATORY: All code changes validated through pmat MCP
+
+dependencies:
+  - "T001 blocks all P1 tasks"
+  - "T005 blocks T006"
+  - "T007 blocks T008"
+
+todos:
+  # P0: Quality debt elimination (40 hours total)
+  - id: T001
+    priority: P0
+    task: "Achieve 80% test coverage using cargo-llvm-cov"
+    estimated_hours: 16
+    validation: "cargo llvm-cov --html && pmat mcp-call quality_proxy --coverage-min 80"
+    files: ["src/middleend/infer.rs", "src/middleend/unify.rs", "src/frontend/parser.rs"]
+    blocks: ["T005", "T006", "T007", "T008", "T009"]
+
+  - id: T002
+    priority: P0
+    task: "Refactor property test generators below complexity 10"
+    estimated_hours: 12
+    investigation_hours: 2  # Time-boxed scope validation
+    validation: "pmat mcp-call quality_proxy --file tests/property_tests.rs --complexity-max 10"
+    files: ["tests/property_tests.rs", "src/testing/generators.rs"]
+
+  - id: T003
+    priority: P0
+    task: "Decompose ruchy-cli main to complexity <15"
+    estimated_hours: 8
+    investigation_hours: 2  # Time-boxed scope validation
+    validation: "pmat mcp-call quality_proxy --file ruchy-cli/src/main.rs --complexity-max 15"
+    files: ["ruchy-cli/src/main.rs"]
+
+  - id: T004
+    priority: P0
+    task: "Eliminate SATD from REPL implementation"
+    estimated_hours: 4
+    validation: "pmat mcp-call quality_proxy --satd-check --zero-tolerance"
+    files: ["src/runtime/repl.rs"]
+    integration_test: "cargo test --workspace"  # Post-task integration check
+
+  # P1: Critical features for README examples
+  - id: T005
+    priority: P1
+    task: "Implement DataFrame literal syntax df![...]"
+    estimated_hours: 24
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test dataframe_tests"
+    files: ["src/frontend/lexer.rs", "src/frontend/parser.rs", "src/frontend/ast.rs"]
+    integration_test: "cargo test --workspace"
+
+  - id: T006
+    priority: P1
+    task: "Add DataFrame transpilation to Polars"
+    estimated_hours: 16
+    depends_on: "T005"  # Explicit dependency
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test transpiler_dataframe"
+    files: ["src/backend/transpiler.rs", "src/backend/codegen.rs"]
+    integration_test: "cargo test --workspace"
+
+  - id: T007
+    priority: P1
+    task: "Parse lambda expressions |x| x * 2"
+    estimated_hours: 12
+    status: "completed"
+    completed_hours: 3
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test lambda_parsing"
+    files: ["src/frontend/parser.rs", "src/frontend/ast.rs", "src/backend/transpiler.rs", "src/middleend/infer.rs"]
+    integration_test: "cargo test --workspace"
+    subtasks:
+      - "Add Lambda variant to AST - COMPLETED"
+      - "Implement parse_lambda function - COMPLETED"
+      - "Add transpile_lambda for Rust closures - COMPLETED"
+      - "Implement lambda type inference - COMPLETED"
+      - "Add comprehensive tests for lambdas - COMPLETED"
+      - "Support typed lambda parameters |x: i32| - COMPLETED"
+    completion_notes: |
+      - Successfully implemented lambda expression support with |params| body syntax
+      - Handles empty params (||), single param (|x|), and multiple params (|x, y|)
+      - Supports typed parameters (|x: i32, y: f64|)
+      - Type inference working correctly for lambdas
+      - Transpiles to Rust closures
+      - All tests passing (172 tests, 0 failures)
+
+  - id: T008
+    priority: P1
+    task: "Implement lambda closure capture analysis"
+    estimated_hours: 16
+    depends_on: "T007"  # Explicit dependency
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test closure_analysis"
+    files: ["src/middleend/capture.rs", "src/middleend/infer.rs"]
+    integration_test: "cargo test --workspace"
+
+  - id: T009
+    priority: P1
+    task: "Add Result<T,E> type with ? operator"
+    estimated_hours: 12
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test result_type"
+    files: ["src/frontend/parser.rs", "src/middleend/types.rs", "src/backend/transpiler.rs"]
+    integration_test: "cargo test --workspace"
+
+  # P2: Core language features
+  - id: T010
+    priority: P2
+    task: "Parse async/await keywords"
+    estimated_hours: 8
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test async_parsing"
+    files: ["src/frontend/lexer.rs", "src/frontend/parser.rs"]
+
+  - id: T011
+    priority: P2
+    task: "Transpile async to Rust futures"
+    estimated_hours: 16
+    depends_on: "T010"
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test async_transpilation"
+    files: ["src/backend/transpiler.rs", "src/backend/async_transform.rs"]
+
+  - id: T012
+    priority: P2
+    task: "Implement struct definitions"
+    estimated_hours: 12
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test struct_definitions"
+    files: ["src/frontend/parser.rs", "src/middleend/types.rs"]
+
+  - id: T013
+    priority: P2
+    task: "Add impl blocks with methods"
+    estimated_hours: 16
+    depends_on: "T012"
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test impl_blocks"
+    files: ["src/frontend/parser.rs", "src/backend/transpiler.rs"]
+
+  - id: T014
+    priority: P2
+    task: "Implement while loops with break/continue"
+    estimated_hours: 8
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test control_flow"
+    files: ["src/frontend/parser.rs", "src/backend/transpiler.rs"]
+
+  # P3: Enhanced features
+  - id: T015
+    priority: P3
+    task: "Add pattern matching guards"
+    estimated_hours: 8
+    validation: "pmat mcp-call quality_proxy --validate && cargo test --test pattern_guards"
+    files: ["src/frontend/parser.rs", "src/middleend/pattern.rs"]
+
+validation_protocol:
+  pre_merge:
+    - "All P0 tasks must pass pmat quality-proxy validation"
+    - "Coverage must exceed 80% via cargo llvm-cov"
+    - "Zero SATD tolerance enforced by pmat mcp-call quality_proxy"
+    - "Integration tests required after each P1 feature"
+  continuous:
+    - "Every commit validated through pmat MCP quality proxy"
+    - "Complexity metrics tracked per-function"
+    - "Property tests run for 10,000 iterations minimum"
+
+operational_notes:
+  performance:
+    - "pmat validation latency target: <3 seconds"
+    - "Cache pmat results where deterministic"
+    - "Profile quality proxy bottlenecks weekly"
+  onboarding:
+    - "Update CONTRIBUTING.md with pmat workflow"
+    - "Provide local validation quickstart guide"
+    - "Document quality proxy rejection reasons"
+  transparency:
+    - "Document all pmat --validate checks"
+    - "Maintain rejection reason catalog"
+    - "Provide fix templates for common failures"

@@ -88,10 +88,12 @@ coverage:
 	@echo "Generating coverage report with cargo-llvm-cov..."
 	@cargo install cargo-llvm-cov 2>/dev/null || true
 	@cargo llvm-cov clean --workspace
-	@cargo llvm-cov --all-features --workspace --html --output-dir target/coverage/html --lcov --output-path target/coverage/lcov.info --ignore-filename-regex "tests/|benches/|examples/"
+	@cargo llvm-cov --all-features --workspace --html --output-dir target/coverage/html --ignore-filename-regex "tests/|benches/|examples/"
+	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info
 	@echo "✓ Coverage report generated in target/coverage/html/index.html"
+	@echo "✓ LCOV report generated in target/coverage/lcov.info"
 	@echo "Coverage summary:"
-	@cargo llvm-cov --summary-only --all-features --workspace 2>&1 | grep "TOTAL" || cargo llvm-cov --summary-only --all-features --workspace
+	@cargo llvm-cov report --summary-only 2>&1 | tail -1
 
 # Run all examples
 examples:

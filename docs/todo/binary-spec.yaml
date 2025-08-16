@@ -1,0 +1,354 @@
+# Ruchy Binary Architecture - Implementation Specification
+# Generated via pdmt for zero-tolerance quality enforcement
+
+metadata:
+  version: "1.0.0"
+  priority: critical
+  estimated_hours: 480
+  complexity: high
+  dependencies:
+    - parser_complete
+    - type_system_stable
+    - transpiler_functional
+
+binary_architecture:
+  - id: core_structure
+    category: foundation
+    priority: 1
+    components:
+      - task: implement_main_entry_point
+        description: "Single binary entry with semantic exit codes"
+        requirements:
+          - "Define RuchyError enum with exit codes 1-8"
+          - "Lazy-load subsystems via OnceCell pattern"
+          - "Memory budget: <50MB base, <1MB per subsystem"
+        estimated_hours: 8
+
+      - task: implement_shared_ast_cache
+        description: "Unified AST infrastructure for all tools"
+        requirements:
+          - "DashMap for concurrent access"
+          - "Blake3 content hashing for invalidation"
+          - "Cascade invalidation for dependencies"
+          - "Zero-copy Arc<TypedAst> sharing"
+        estimated_hours: 16
+
+      - task: implement_lazy_loading
+        description: "On-demand subsystem initialization"
+        requirements:
+          - "Sub-10ms cold startup"
+          - "OnceCell for interpreter, compiler, toolchain, MCP"
+          - "Preload strategy per command type"
+        estimated_hours: 12
+
+  - id: toolchain_integration
+    category: developer_experience
+    priority: 2
+    components:
+      - task: implement_formatter
+        description: "Integrated code formatter sharing AST cache"
+        requirements:
+          - "Leverage dprint-core engine"
+          - "Visitor pattern for AST traversal"
+          - "Performance: <20ms per 1000 LOC"
+          - "YAML config: line_width, indent, quote_style"
+        estimated_hours: 20
+
+      - task: implement_linter
+        description: "Pluggable linting system with security sandbox"
+        requirements:
+          - "Parallel file processing via rayon"
+          - "Custom lint plugin support with trust model"
+          - "Auto-fix capability for supported rules"
+          - "Performance: <30ms per 1000 LOC"
+        estimated_hours: 24
+
+      - task: implement_type_checker
+        description: "Incremental type checking with caching"
+        requirements:
+          - "Bidirectional type checking algorithm"
+          - "Dirty file detection for incremental checks"
+          - "SMT solver integration for refinement types"
+          - "Performance: <100ms per 1000 LOC"
+        estimated_hours: 32
+
+      - task: implement_test_runner
+        description: "Parallel test execution with coverage"
+        requirements:
+          - "Property-based testing via pmat"
+          - "Coverage collection with source mapping"
+          - "Isolated sandbox per test"
+          - "Performance: parallel execution by default"
+        estimated_hours: 20
+
+  - id: mcp_integration
+    category: ai_native
+    priority: 2
+    components:
+      - task: integrate_pmcp_sdk
+        description: "Native MCP support via pmcp library"
+        requirements:
+          - "Server and client modes"
+          - "Automatic tool generation from annotations"
+          - "Zero-copy message passing with rkyv"
+          - "Protocol validation at compile time"
+        estimated_hours: 24
+
+      - task: implement_mcp_codegen
+        description: "Generate MCP tools from Ruchy functions"
+        requirements:
+          - "Extract #[mcp::tool] annotations"
+          - "Generate JSON schemas from type signatures"
+          - "Runtime handler registration"
+        estimated_hours: 16
+
+  - id: permission_system
+    category: security
+    priority: 1
+    components:
+      - task: implement_permission_model
+        description: "Deno-style capability-based permissions"
+        requirements:
+          - "Secure by default: zero permissions baseline"
+          - "Granular: read, write, net, env, ffi, shell"
+          - "Interactive prompts with trust memory"
+          - "CLI flags: --allow-read, --allow-write, etc."
+        estimated_hours: 28
+
+      - task: implement_sandbox_runtime
+        description: "Intercept and validate all system calls"
+        requirements:
+          - "Hook filesystem operations"
+          - "Hook network operations"
+          - "Hook environment access"
+          - "Performance overhead: <5%"
+        estimated_hours: 32
+
+      - task: implement_audit_trail
+        description: "Security audit logging"
+        requirements:
+          - "Log all permission grants/denials"
+          - "Generate risk reports"
+          - "Optional file-based persistence"
+        estimated_hours: 12
+
+  - id: configuration_system
+    category: usability
+    priority: 2
+    components:
+      - task: implement_yaml_loader
+        description: "Hierarchical YAML configuration"
+        requirements:
+          - "Priority: CLI > env > project > workspace > user > defaults"
+          - "Schema validation with helpful errors"
+          - "Directory traversal for project discovery"
+          - "Support for environment-specific overrides"
+        estimated_hours: 16
+
+      - task: implement_config_schema
+        description: "Validate and merge configurations"
+        requirements:
+          - "JSON Schema validation"
+          - "Semantic conflict detection"
+          - "Path existence verification"
+          - "Version compatibility checks"
+        estimated_hours: 12
+
+  - id: self_updater
+    category: maintenance
+    priority: 3
+    components:
+      - task: implement_upgrade_mechanism
+        description: "Self-updating binary capability"
+        requirements:
+          - "GitHub releases integration"
+          - "Windows-specific replacement strategy"
+          - "Rollback capability on failure"
+          - "Progress indication during download"
+        estimated_hours: 16
+
+  - id: performance_optimization
+    category: performance
+    priority: 1
+    components:
+      - task: optimize_binary_size
+        description: "Achieve <5MB standard binary"
+        requirements:
+          - "LTO and codegen-units=1"
+          - "Strip symbols in release"
+          - "Feature flags for minimal/standard/full"
+          - "Optional UPX compression"
+        estimated_hours: 12
+
+      - task: optimize_startup_time
+        description: "Achieve <10ms cold start"
+        requirements:
+          - "Lazy subsystem loading"
+          - "Minimal static initialization"
+          - "Profile-guided optimization"
+        estimated_hours: 16
+
+  - id: testing_strategy
+    category: quality
+    priority: 1
+    components:
+      - task: implement_integration_tests
+        description: "End-to-end binary testing"
+        requirements:
+          - "Test all CLI commands"
+          - "Test permission model"
+          - "Test toolchain integration"
+          - "Test cross-platform behavior"
+        estimated_hours: 24
+
+      - task: implement_benchmarks
+        description: "Performance regression suite"
+        requirements:
+          - "Startup time benchmarks"
+          - "Tool performance benchmarks"
+          - "Memory usage tracking"
+          - "Binary size monitoring"
+        estimated_hours: 16
+
+quality_gates:
+  - metric: startup_time
+    threshold: 10ms
+    measurement: "time to first response"
+
+  - metric: binary_size_minimal
+    threshold: 2MB
+    measurement: "stripped release binary"
+
+  - metric: binary_size_standard
+    threshold: 5MB
+    measurement: "standard feature set"
+
+  - metric: ast_cache_hit_rate
+    threshold: 90%
+    measurement: "cache effectiveness"
+
+  - metric: permission_overhead
+    threshold: 5%
+    measurement: "sandbox performance impact"
+
+  - metric: tool_latency
+    threshold:
+      format: 20ms
+      lint: 30ms
+      check: 100ms
+    measurement: "per 1000 LOC"
+
+technical_decisions:
+  - decision: single_binary_architecture
+    rationale: "Eliminates dependency management, ensures consistent tooling"
+    alternatives_rejected:
+      - "Separate tool binaries: complexity overhead"
+      - "Plugin system: runtime overhead, versioning issues"
+
+  - decision: shared_ast_cache
+    rationale: "Parse once, use everywhere - fundamental efficiency gain"
+    implementation: "DashMap with Blake3 hashing"
+
+  - decision: pmcp_integration
+    rationale: "Leverage existing robust MCP implementation"
+    benefits: "Time to market, proven reliability"
+
+  - decision: deno_permission_model
+    rationale: "Industry-proven security model, user familiarity"
+    implementation: "Capability-based with interactive prompts"
+
+dependencies:
+  external_crates:
+    - name: pmcp
+      version: "1.0"
+      purpose: "MCP protocol implementation"
+
+    - name: self_update
+      version: "0.39"
+      purpose: "Binary self-updating"
+
+    - name: dprint-core
+      version: "0.60"
+      purpose: "Formatting engine"
+
+    - name: blake3
+      version: "1.5"
+      purpose: "Content hashing"
+
+    - name: dashmap
+      version: "5.5"
+      purpose: "Concurrent cache"
+
+    - name: rayon
+      version: "1.8"
+      purpose: "Parallel processing"
+
+    - name: rkyv
+      version: "0.7"
+      purpose: "Zero-copy serialization"
+
+implementation_phases:
+  phase_1:
+    name: "Core Infrastructure"
+    duration: "4 weeks"
+    deliverables:
+      - "Main entry point with error handling"
+      - "Shared AST cache"
+      - "Basic configuration loading"
+      - "Minimal permission system"
+
+  phase_2:
+    name: "Toolchain Integration"
+    duration: "6 weeks"
+    deliverables:
+      - "Formatter implementation"
+      - "Linter with plugin support"
+      - "Type checker with incremental compilation"
+      - "Test runner with coverage"
+
+  phase_3:
+    name: "Advanced Features"
+    duration: "4 weeks"
+    deliverables:
+      - "MCP server/client via pmcp"
+      - "Full permission system with audit"
+      - "Self-updater"
+      - "Performance optimizations"
+
+  phase_4:
+    name: "Polish and Release"
+    duration: "2 weeks"
+    deliverables:
+      - "Cross-platform testing"
+      - "Documentation"
+      - "CI/CD pipeline"
+      - "Release automation"
+
+success_criteria:
+  - "Binary starts in <10ms on modern hardware"
+  - "Standard binary <5MB after optimization"
+  - "All tools share single AST parse"
+  - "Zero external runtime dependencies"
+  - "Permission system prevents unauthorized I/O"
+  - "MCP tools auto-generate from annotations"
+  - "Configuration validates at load time"
+  - "100% backwards compatibility maintained"
+
+risks:
+  - risk: binary_size_bloat
+    mitigation: "Aggressive feature gating, LTO, symbol stripping"
+
+  - risk: permission_system_overhead
+    mitigation: "Fast-path for granted permissions, caching decisions"
+
+  - risk: ast_cache_memory_growth
+    mitigation: "LRU eviction, configurable size limits"
+
+  - risk: cross_platform_compatibility
+    mitigation: "CI matrix testing, platform-specific code isolation"
+
+notes:
+  - "Priority on correctness over features - Toyota principle"
+  - "Every component must have integration tests"
+  - "Performance benchmarks run on every commit"
+  - "Security is non-negotiable - default deny everything"

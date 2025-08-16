@@ -1,0 +1,448 @@
+# REPL Implementation Tasks
+# Generated from Ruchy REPL Full Specification v2.0
+# Format: PMAT (Plan, Measure, Act, Track) / PDMT (Plan, Do, Measure, Track)
+
+metadata:
+  project: ruchy-repl
+  version: 1.0.0
+  spec_version: 2.0
+  priority: critical
+  timeline: Q1-Q4 2025
+
+phases:
+  - phase_1:
+      name: "Core Interpreter & State"
+      timeline: "Q1 2025"
+      dependencies: ["parser", "lexer"]
+
+      tasks:
+        - task_1_1:
+            id: "repl-core-loop"
+            description: "Implement basic REPL read-eval-print loop"
+            pmat:
+              plan:
+                - Define ReplCore struct with minimal components
+                - Setup rustyline for input handling
+                - Implement tree-walk interpreter for AST evaluation
+              measure:
+                - Simple expression evaluation <15ms
+                - Memory footprint <50MB base
+              act:
+                - src/repl/core.rs - Main loop implementation
+                - src/repl/interpreter.rs - Tree-walk evaluator
+                - src/repl/state.rs - Session state management
+              track:
+                - Unit tests for each arithmetic operation
+                - Benchmark suite for latency validation
+                - Property test: eval(parse(s)) deterministic
+            effort: 5d
+            assignee: TBD
+
+        - task_1_2:
+            id: "session-state"
+            description: "Session state with result history"
+            pmat:
+              plan:
+                - HashMap-based binding storage with generations
+                - ResultHistory with underscore bindings
+                - Type environment tracking
+              measure:
+                - Binding lookup O(1) average
+                - Generation increment <1μs
+              act:
+                - src/repl/session.rs - SessionState implementation
+                - src/repl/binding.rs - Binding with generation tracking
+                - src/repl/history.rs - Result history management
+              track:
+                - Test redefinition semantics
+                - Test underscore binding (_1, _2, etc.)
+                - Memory growth <1MB per 1000 bindings
+            effort: 3d
+            depends_on: ["repl-core-loop"]
+
+        - task_1_3:
+            id: "multi-mode-prompt"
+            description: "Multi-mode operation system"
+            pmat:
+              plan:
+                - Enum-based mode representation
+                - Prefix character detection
+                - Mode-specific parsing dispatch
+              measure:
+                - Mode switch <1ms
+                - Zero allocation for mode detection
+              act:
+                - src/repl/modes/mod.rs - Mode manager
+                - src/repl/modes/cargo.rs - Package mode
+                - src/repl/modes/shell.rs - Shell mode
+                - src/repl/modes/help.rs - Documentation mode
+              track:
+                - Test all mode transitions
+                - Test mode persistence across inputs
+                - Integration test with rustyline
+            effort: 4d
+            depends_on: ["repl-core-loop"]
+
+        - task_1_4:
+            id: "error-recovery"
+            description: "Parse recovery and panic isolation"
+            pmat:
+              plan:
+                - Implement parse_until_error recovery
+                - catch_unwind for panic isolation
+                - Partial AST execution support
+              measure:
+                - Recovery rate >80% for common errors
+                - Zero REPL crashes from user code panics
+              act:
+                - src/repl/error.rs - Error recovery strategies
+                - src/repl/isolation.rs - Panic boundaries
+              track:
+                - Fuzz test with malformed input
+                - Test panic in user-defined functions
+                - Test stack overflow recovery
+            effort: 3d
+            depends_on: ["session-state"]
+
+  - phase_2:
+      name: "Compilation & Caching"
+      timeline: "Q2 2025"
+      dependencies: ["phase_1"]
+
+      tasks:
+        - task_2_1:
+            id: "compilation-cache"
+            description: "Incremental compilation with disk cache"
+            pmat:
+              plan:
+                - Design AstHash for cache keys
+                - Implement two-tier cache (memory + disk)
+                - SQLite for metadata storage
+              measure:
+                - Cache hit for unchanged code >99%
+                - Disk cache size <500MB limit
+                - Cache lookup <100μs
+              act:
+                - src/repl/cache/mod.rs - Cache manager
+                - src/repl/cache/disk.rs - Persistent storage
+                - src/repl/cache/memory.rs - In-memory tier
+              track:
+                - Test cache invalidation correctness
+                - Benchmark cache performance
+                - Test cache size limits
+            effort: 5d
+
+        - task_2_2:
+            id: "dependency-graph"
+            description: "Build dependency tracking system"
+            pmat:
+              plan:
+                - AST visitor for reference extraction
+                - Graph structure with three dependency types
+                - Efficient invalidation algorithm
+              measure:
+                - Graph build <10ms for 1000 nodes
+                - Invalidation calculation <1ms
+              act:
+                - src/repl/deps/graph.rs - Dependency graph
+                - src/repl/deps/visitor.rs - AST visitor
+                - src/repl/deps/invalidation.rs - Invalidation logic
+              track:
+                - Test transitive dependency detection
+                - Test circular dependency handling
+                - Property: minimal invalidation set
+            effort: 4d
+            depends_on: ["compilation-cache"]
+
+        - task_2_3:
+            id: "jit-engine"
+            description: "Cranelift JIT compilation"
+            pmat:
+              plan:
+                - Integrate Cranelift backend
+                - Profile-guided compilation triggers
+                - Hot path detection (>100 executions)
+              measure:
+                - JIT compilation <100ms
+                - 10x speedup for hot loops
+                - Memory overhead <2x interpreted
+              act:
+                - src/repl/jit/mod.rs - JIT coordinator
+                - src/repl/jit/cranelift.rs - Cranelift integration
+                - src/repl/jit/profile.rs - Execution profiling
+              track:
+                - Benchmark JIT vs interpreted
+                - Test JIT threshold triggers
+                - Memory leak detection
+            effort: 8d
+            depends_on: ["dependency-graph"]
+
+        - task_2_4:
+            id: "zero-copy-ffi"
+            description: "Direct Cargo crate loading"
+            pmat:
+              plan:
+                - Dynamic library compilation via Cargo
+                - Symbol extraction with libloading
+                - Type information preservation
+              measure:
+                - First crate load <500ms
+                - Cached load <50ms
+                - Zero memory copy for FFI calls
+              act:
+                - src/repl/ffi/loader.rs - Module loader
+                - src/repl/ffi/cargo.rs - Cargo integration
+                - src/repl/ffi/symbols.rs - Symbol resolution
+              track:
+                - Test top 100 crates.io packages
+                - Test ABI compatibility
+                - Security: validate crate signatures
+            effort: 6d
+            depends_on: ["compilation-cache"]
+
+        - task_2_5:
+            id: "security-framework"
+            description: "Trust levels and sandboxing"
+            pmat:
+              plan:
+                - Three-tier trust model
+                - Capability-based permissions
+                - User approval workflows
+              measure:
+                - Permission check <1μs
+                - Zero unauthorized operations
+              act:
+                - src/repl/security/mod.rs - Security context
+                - src/repl/security/sandbox.rs - Sandboxing
+                - src/repl/security/permissions.rs - Permission system
+              track:
+                - Test privilege escalation prevention
+                - Test crate allowlist enforcement
+                - Audit log generation
+            effort: 4d
+
+  - phase_3:
+      name: "Advanced Features"
+      timeline: "Q3 2025"
+      dependencies: ["phase_2"]
+
+      tasks:
+        - task_3_1:
+            id: "type-redefinition"
+            description: "Safe type redefinition with cache invalidation"
+            pmat:
+              plan:
+                - Type generation tracking
+                - Cascading cache invalidation
+                - Layout change detection
+              measure:
+                - Type redefinition <100ms
+                - Correct invalidation 100%
+              act:
+                - src/repl/types/redefine.rs - Redefinition logic
+                - src/repl/types/generation.rs - Generation tracking
+                - src/repl/types/layout.rs - Layout analysis
+              track:
+                - Test struct field addition/removal
+                - Test enum variant changes
+                - Property: type safety preserved
+            effort: 5d
+
+        - task_3_2:
+            id: "async-runtime"
+            description: "Tokio integration with auto-await"
+            pmat:
+              plan:
+                - Persistent Tokio runtime
+                - Future detection in type system
+                - Automatic await insertion
+              measure:
+                - Async overhead <5ms
+                - Task spawn <100μs
+              act:
+                - src/repl/async/runtime.rs - Runtime management
+                - src/repl/async/await.rs - Auto-await logic
+                - src/repl/async/tasks.rs - Task tracking
+              track:
+                - Test concurrent task execution
+                - Test async/sync interop
+                - Deadlock detection
+            effort: 4d
+
+        - task_3_3:
+            id: "introspection"
+            description: "Complete introspection system"
+            pmat:
+              plan:
+                - Implement ? ?? ??? operators
+                - Source retention for ??
+                - MIR generation for ???
+              measure:
+                - Doc lookup <10ms
+                - Source retrieval <5ms
+              act:
+                - src/repl/introspect/mod.rs - Query dispatcher
+                - src/repl/introspect/docs.rs - Documentation
+                - src/repl/introspect/mir.rs - MIR display
+              track:
+                - Test all introspection operators
+                - Test cross-crate documentation
+                - Format quality validation
+            effort: 3d
+
+        - task_3_4:
+            id: "history-persistence"
+            description: "SQLite history with FTS5"
+            pmat:
+              plan:
+                - Schema with security tracking
+                - Full-text search indexing
+                - Cross-session history
+              measure:
+                - History write <1ms
+                - Search <10ms for 100k entries
+              act:
+                - src/repl/history/sqlite.rs - Database layer
+                - src/repl/history/search.rs - FTS5 search
+                - src/repl/history/sync.rs - Cross-session sync
+              track:
+                - Test history recovery
+                - Benchmark search performance
+                - Test concurrent access
+            effort: 3d
+
+        - task_3_5:
+            id: "smart-display"
+            description: "Context-aware output formatting"
+            pmat:
+              plan:
+                - Display trait with context
+                - DataFrame pagination
+                - Loop output suppression
+              measure:
+                - Format decision <1ms
+                - Render time <frame budget
+              act:
+                - src/repl/display/mod.rs - Display system
+                - src/repl/display/dataframe.rs - Table rendering
+                - src/repl/display/suppress.rs - Output control
+              track:
+                - Test all display modes
+                - Terminal compatibility
+                - Performance with large data
+            effort: 3d
+
+  - phase_4:
+      name: "Polish & Integration"
+      timeline: "Q4 2025"
+      dependencies: ["phase_3"]
+
+      tasks:
+        - task_4_1:
+            id: "mcp-integration"
+            description: "Model Context Protocol for LLM tools"
+            pmat:
+              plan:
+                - Async streaming responses
+                - Request ID tracking
+                - Non-blocking operation
+              measure:
+                - Initial response <100ms
+                - Stream chunks <10ms latency
+              act:
+                - src/repl/mcp/mod.rs - MCP client
+                - src/repl/mcp/stream.rs - Response streaming
+                - src/repl/mcp/tools.rs - Tool definitions
+              track:
+                - Test timeout handling
+                - Test partial response display
+                - Rate limiting compliance
+            effort: 5d
+
+        - task_4_2:
+            id: "onboarding"
+            description: "First-run experience and wizard"
+            pmat:
+              plan:
+                - Configuration wizard
+                - Default directory setup
+                - Interactive tutorial
+              measure:
+                - Setup completion <30s
+                - Zero configuration errors
+              act:
+                - src/repl/onboard/wizard.rs - Setup wizard
+                - src/repl/onboard/defaults.rs - Default configs
+                - src/repl/onboard/tutorial.rs - Interactive guide
+              track:
+                - User testing feedback
+                - Configuration validation
+                - Cross-platform compatibility
+            effort: 3d
+
+        - task_4_3:
+            id: "performance-optimization"
+            description: "Final performance tuning"
+            pmat:
+              plan:
+                - Profile-guided optimization
+                - Memory pool allocation
+                - Parser fast paths
+              measure:
+                - All latency targets met
+                - Memory growth controlled
+              act:
+                - Profiling and optimization
+                - Memory allocator tuning
+                - Fast path identification
+              track:
+                - Continuous benchmarking
+                - Regression detection
+                - Real-world workload testing
+            effort: 5d
+
+        - task_4_4:
+            id: "integration-testing"
+            description: "End-to-end test suite"
+            pmat:
+              plan:
+                - Property-based test suite
+                - Fuzzing harness
+                - Performance regression suite
+              measure:
+                - >95% code coverage
+                - Zero crashes in 24h fuzzing
+              act:
+                - tests/integration/ - E2E tests
+                - tests/properties/ - QuickCheck suite
+                - tests/fuzz/ - Fuzzing targets
+              track:
+                - Coverage reports
+                - Fuzzing findings
+                - Performance trends
+            effort: 4d
+
+validation:
+  performance:
+    - "Simple eval <15ms"
+    - "Module import cached <50ms"
+    - "JIT trigger <100ms"
+    - "Memory base <50MB"
+
+  correctness:
+    - "Property: deterministic evaluation"
+    - "Property: cache transparency"
+    - "Property: type safety preserved"
+    - "Zero panics reach user"
+
+  security:
+    - "No unauthorized shell execution"
+    - "Crate allowlist enforced"
+    - "Sandbox escape impossible"
+
+success_criteria:
+  - "Python-level interactivity achieved"
+  - "Rust-level performance maintained"
+  - "Zero-copy FFI operational"
+  - "Sub-15ms response time"
+  - "Seamless Cargo integration"

@@ -1,5 +1,37 @@
 # Completed Features
 
+## v0.2.1 (2025-01-16)
+
+### Lambda Expressions ✅
+- **Lambda Expression Parsing**
+  - Modified: `src/frontend/parser.rs`, `src/frontend/ast.rs`
+  - Parse `|params| body` syntax for anonymous functions
+  - Support empty params `||`, single `|x|`, and multiple `|x, y|`
+  - Support typed parameters `|x: i32, y: f64|`
+  - Handle `||` token ambiguity (OrOr vs empty lambda)
+  - Completed: 2025-01-16
+
+- **Lambda Type Inference**
+  - Modified: `src/middleend/infer.rs`
+  - Extended Algorithm W for lambda expressions
+  - Automatic parameter type inference
+  - Function type construction for lambdas
+  - Completed: 2025-01-16
+
+- **Lambda Transpilation**
+  - Modified: `src/backend/transpiler.rs`
+  - Transpile to Rust closures with correct syntax
+  - Preserve parameter names
+  - Type inference delegation to rustc
+  - Completed: 2025-01-16
+
+- **Lambda Test Coverage**
+  - Added comprehensive tests in parser, transpiler, and type inference
+  - Test empty params, single param, multiple params, typed params
+  - Test lambda in let bindings and function calls
+  - All 172 tests passing
+  - Completed: 2025-01-16
+
 ## v0.2.0 (2025-01-16)
 
 ### Type System Implementation ✅

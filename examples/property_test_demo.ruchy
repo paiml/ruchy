@@ -1,0 +1,10 @@
+// Property Testing Example
+
+// This function demonstrates property testing with the #[property] attribute
+#[property]
+fun add(x: i32, y: i32) -> i32 {
+    x + y
+}
+
+// This would generate a property test that verifies the add function
+// doesn't panic for arbitrary i32 inputs

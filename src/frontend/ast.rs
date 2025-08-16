@@ -28,11 +28,16 @@ impl Span {
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
+    pub attributes: Vec<Attribute>,
 }
 
 impl Expr {
     #[must_use] pub fn new(kind: ExprKind, span: Span) -> Self {
-        Self { kind, span }
+        Self { kind, span, attributes: Vec::new() }
+    }
+
+    #[must_use] pub fn with_attributes(kind: ExprKind, span: Span, attributes: Vec<Attribute>) -> Self {
+        Self { kind, span, attributes }
     }
 }
 
@@ -49,6 +54,17 @@ pub enum ExprKind {
         op: UnaryOp,
         operand: Box<Expr>,
     },
+    Try {
+        expr: Box<Expr>,
+    },
+    TryCatch {
+        try_block: Box<Expr>,
+        catch_var: String,
+        catch_block: Box<Expr>,
+    },
+    Await {
+        expr: Box<Expr>,
+    },
     If {
         condition: Box<Expr>,
         then_branch: Box<Expr>,
@@ -64,6 +80,46 @@ pub enum ExprKind {
         params: Vec<Param>,
         return_type: Option<Type>,
         body: Box<Expr>,
+        is_async: bool,
+    },
+    Lambda {
+        params: Vec<Param>,
+        body: Box<Expr>,
+    },
+    Struct {
+        name: String,
+        fields: Vec<StructField>,
+    },
+    StructLiteral {
+        name: String,
+        fields: Vec<(String, Expr)>,
+    },
+    FieldAccess {
+        object: Box<Expr>,
+        field: String,
+    },
+    Trait {
+        name: String,
+        methods: Vec<TraitMethod>,
+    },
+    Impl {
+        trait_name: Option<String>,
+        for_type: String,
+        methods: Vec<ImplMethod>,
+    },
+    Actor {
+        name: String,
+        state: Vec<StructField>,
+        handlers: Vec<ActorHandler>,
+    },
+    Send {
+        actor: Box<Expr>,
+        message: Box<Expr>,
+    },
+    Ask {
+        actor: Box<Expr>,
+        message: Box<Expr>,
+        timeout: Option<Box<Expr>>,
     },
     Call {
         func: Box<Expr>,
@@ -84,9 +140,17 @@ pub enum ExprKind {
         arms: Vec<MatchArm>,
     },
     List(Vec<Expr>),
+    DataFrame {
+        columns: Vec<String>,
+        rows: Vec<Vec<Expr>>,
+    },
     For {
         var: String,
         iter: Box<Expr>,
+        body: Box<Expr>,
+    },
+    While {
+        condition: Box<Expr>,
         body: Box<Expr>,
     },
     Range {
@@ -97,6 +161,12 @@ pub enum ExprKind {
     Import {
         path: String,
         items: Vec<String>,
+    },
+    Break {
+        label: Option<String>,
+    },
+    Continue {
+        label: Option<String>,
     },
 }
 
@@ -154,6 +224,36 @@ pub struct Param {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StructField {
+    pub name: String,
+    pub ty: Type,
+    pub is_pub: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TraitMethod {
+    pub name: String,
+    pub params: Vec<Param>,
+    pub return_type: Option<Type>,
+    pub body: Option<Box<Expr>>, // None for method signatures, Some for default implementations
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ImplMethod {
+    pub name: String,
+    pub params: Vec<Param>,
+    pub return_type: Option<Type>,
+    pub body: Box<Expr>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ActorHandler {
+    pub message_type: String,
+    pub params: Vec<Param>,
+    pub body: Box<Expr>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Type {
     pub kind: TypeKind,
     pub span: Span,
@@ -187,6 +287,14 @@ pub enum Pattern {
     Literal(Literal),
     Identifier(String),
     List(Vec<Pattern>),
+}
+
+/// Attribute for annotating expressions (e.g., #[property])
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Attribute {
+    pub name: String,
+    pub args: Vec<String>,
+    pub span: Span,
 }
 
 impl fmt::Display for BinaryOp {
@@ -252,7 +360,7 @@ mod tests {
         let kind_size = std::mem::size_of::<ExprKind>();
         // Current sizes are larger than ideal but acceptable for MVP
         // Future optimization: Use arena allocation and indices
-        assert!(expr_size <= 128, "Expr too large: {expr_size} bytes");
+        assert!(expr_size <= 160, "Expr too large: {expr_size} bytes");
         assert!(kind_size <= 112, "ExprKind too large: {kind_size} bytes");
     }
 
@@ -512,12 +620,13 @@ mod tests {
                     span: Span::new(16, 19),
                 }),
                 body,
+                is_async: false,
             },
             Span::new(0, 22),
         );
 
         match expr.kind {
-            ExprKind::Function { name, params: p, return_type, body: b } => {
+            ExprKind::Function { name, params: p, return_type, body: b, .. } => {
                 assert_eq!(name, "identity");
                 assert_eq!(p.len(), 1);
                 assert_eq!(p[0].name, "x");

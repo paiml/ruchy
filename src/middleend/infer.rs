@@ -1,6 +1,6 @@
 //! Type inference engine using Algorithm W
 
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Param, Pattern, UnaryOp};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Param, Pattern, TypeKind, UnaryOp};
 use crate::middleend::environment::TypeEnv;
 use crate::middleend::types::{MonoType, TyVarGenerator, TypeScheme};
 use crate::middleend::unify::Unifier;
@@ -50,6 +50,11 @@ impl InferenceContext {
             ExprKind::Identifier(name) => self.infer_identifier(name),
             ExprKind::Binary { left, op, right } => self.infer_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.infer_unary(*op, operand),
+            ExprKind::Try { expr } => self.infer_try(expr),
+            ExprKind::TryCatch { try_block, catch_var, catch_block } => {
+                self.infer_try_catch(try_block, catch_var, catch_block)
+            }
+            ExprKind::Await { expr } => self.infer_await(expr),
             ExprKind::If {
                 condition,
                 then_branch,
@@ -61,16 +66,74 @@ impl InferenceContext {
                 params,
                 body,
                 return_type,
-            } => self.infer_function(name, params, body, return_type.as_ref()),
+                is_async,
+            } => self.infer_function(name, params, body, return_type.as_ref(), *is_async),
+            ExprKind::Lambda { params, body } => self.infer_lambda(params, body),
             ExprKind::Call { func, args } => self.infer_call(func, args),
             ExprKind::MethodCall { receiver, method, args } => self.infer_method_call(receiver, method, args),
             ExprKind::Block(exprs) => self.infer_block(exprs),
             ExprKind::List(elements) => self.infer_list(elements),
             ExprKind::Match { expr, arms } => self.infer_match(expr, arms),
             ExprKind::For { var, iter, body } => self.infer_for(var, iter, body),
+            ExprKind::While { condition, body } => self.infer_while(condition, body),
             ExprKind::Range { start, end, .. } => self.infer_range(start, end),
             ExprKind::Pipeline { expr, stages } => self.infer_pipeline(expr, stages),
             ExprKind::Import { .. } => Ok(MonoType::Unit), // Imports don't have runtime values
+            ExprKind::DataFrame { .. } => Ok(MonoType::Named("DataFrame".to_string())), // DataFrame type
+            ExprKind::Struct { .. } => {
+                // Struct definitions return Unit, they just register the type
+                Ok(MonoType::Unit)
+            }
+            ExprKind::StructLiteral { name, fields: _ } => {
+                // For now, return a named type for the struct
+                // In a full implementation, we'd validate fields against the struct definition
+                Ok(MonoType::Named(name.clone()))
+            }
+            ExprKind::FieldAccess { object, field: _ } => {
+                // Infer the type of the object
+                let _object_ty = self.infer_expr(object)?;
+                
+                // For now, return a fresh type variable
+                // In a full implementation, we'd look up the field type in the struct definition
+                Ok(MonoType::Var(self.gen.fresh()))
+            }
+            ExprKind::Trait { .. } => {
+                // Trait definitions return Unit, they just register the trait
+                Ok(MonoType::Unit)
+            }
+            ExprKind::Impl { .. } => {
+                // Impl blocks return Unit, they just provide implementations
+                Ok(MonoType::Unit)
+            }
+            ExprKind::Actor { name: _, .. } => {
+                // Actor definitions return Unit, they register the actor type
+                // In a full implementation, we'd register the actor in the type environment
+                Ok(MonoType::Unit)
+            }
+            ExprKind::Send { actor, message } => {
+                // Type check the actor and message
+                let _actor_ty = self.infer_expr(actor)?;
+                let _message_ty = self.infer_expr(message)?;
+                // Send operations return Unit (fire-and-forget)
+                Ok(MonoType::Unit)
+            }
+            ExprKind::Ask { actor, message, timeout } => {
+                // Type check the actor, message, and optional timeout
+                let _actor_ty = self.infer_expr(actor)?;
+                let _message_ty = self.infer_expr(message)?;
+                if let Some(t) = timeout {
+                    let timeout_ty = self.infer_expr(t)?;
+                    // Timeout should be a duration/number type
+                    self.unifier.unify(&timeout_ty, &MonoType::Int)?;
+                }
+                // Ask operations return the response type (for now, a type variable)
+                Ok(MonoType::Var(self.gen.fresh()))
+            }
+            ExprKind::Break { .. } | ExprKind::Continue { .. } => {
+                // Break and continue don't return a value (they diverge)
+                // In Rust, they have type ! (never), but we'll use Unit for simplicity
+                Ok(MonoType::Unit)
+            }
         }
     }
 
@@ -163,6 +226,59 @@ impl InferenceContext {
         }
     }
 
+    fn infer_try(&mut self, expr: &Expr) -> Result<MonoType> {
+        // The expression must be Result<T, E>
+        let expr_ty = self.infer_expr(expr)?;
+        
+        // Create fresh type variables for ok and error types
+        let ok_ty = MonoType::Var(self.gen.fresh());
+        let err_ty = MonoType::Var(self.gen.fresh());
+        
+        // Unify with Result type
+        let result_ty = MonoType::Result(Box::new(ok_ty.clone()), Box::new(err_ty));
+        self.unifier.unify(&expr_ty, &result_ty)?;
+        
+        // The ? operator returns the Ok value or propagates the error
+        Ok(self.unifier.apply(&ok_ty))
+    }
+
+    fn infer_try_catch(&mut self, try_block: &Expr, catch_var: &str, catch_block: &Expr) -> Result<MonoType> {
+        // The try block can return any type T
+        let try_ty = self.infer_expr(try_block)?;
+        
+        // The catch variable is bound to an error type
+        // For now, we'll use a generic error type
+        let error_ty = MonoType::Named("Error".to_string());
+        
+        // Extend environment with catch variable and infer catch block
+        let old_env = self.env.clone();
+        self.env = self.env.extend(catch_var, TypeScheme::mono(error_ty));
+        let catch_ty = self.infer_expr(catch_block)?;
+        self.env = old_env;
+        
+        // Both blocks must return the same type
+        self.unifier.unify(&try_ty, &catch_ty)?;
+        
+        Ok(self.unifier.apply(&try_ty))
+    }
+    
+    fn infer_await(&mut self, expr: &Expr) -> Result<MonoType> {
+        // The expression must be a Future<Output = T>
+        let expr_ty = self.infer_expr(expr)?;
+        
+        // For now, we'll just return the inner type
+        // In a full implementation, we'd check for Future trait
+        if let MonoType::Named(name) = &expr_ty {
+            if name.starts_with("Future") {
+                // Extract the output type
+                return Ok(MonoType::Var(self.gen.fresh()));
+            }
+        }
+        
+        // For now, just return a fresh type variable
+        Ok(MonoType::Var(self.gen.fresh()))
+    }
+
     fn infer_if(
         &mut self,
         condition: &Expr,
@@ -209,6 +325,7 @@ impl InferenceContext {
         params: &[Param],
         body: &Expr,
         _return_type: Option<&crate::frontend::ast::Type>,
+        is_async: bool,
     ) -> Result<MonoType> {
         // Create fresh type variables for parameters
         let mut param_types = Vec::new();
@@ -239,7 +356,47 @@ impl InferenceContext {
 
         self.env = old_env;
 
-        Ok(self.unifier.apply(&func_type))
+        let final_type = self.unifier.apply(&func_type);
+        
+        // If async, wrap the return type in a Future
+        if is_async {
+            // For simplicity, just mark it as a Named type
+            // In a full implementation, we'd properly wrap in Future<Output = T>
+            Ok(MonoType::Named(format!("Future<{final_type:?}>")))
+        } else {
+            Ok(final_type)
+        }
+    }
+
+    fn infer_lambda(&mut self, params: &[Param], body: &Expr) -> Result<MonoType> {
+        let old_env = self.env.clone();
+        
+        // Create type variables for parameters
+        let mut param_types = Vec::new();
+        for param in params {
+            let param_ty = if param.ty.kind == TypeKind::Named("Any".to_string()) {
+                // Untyped parameter - create fresh type variable
+                MonoType::Var(self.gen.fresh())
+            } else {
+                // Convert AST type to MonoType
+                self.ast_type_to_mono(&param.ty)?
+            };
+            param_types.push(param_ty.clone());
+            self.env = self.env.extend(&param.name, TypeScheme::mono(param_ty));
+        }
+        
+        // Infer body type
+        let body_ty = self.infer_expr(body)?;
+        
+        // Restore environment
+        self.env = old_env;
+        
+        // Build function type from parameters and body
+        let lambda_type = param_types.iter().rev().fold(body_ty, |acc, param_ty| {
+            MonoType::Function(Box::new(param_ty.clone()), Box::new(acc))
+        });
+        
+        Ok(self.unifier.apply(&lambda_type))
     }
 
     fn infer_call(&mut self, func: &Expr, args: &[Expr]) -> Result<MonoType> {
@@ -287,6 +444,44 @@ impl InferenceContext {
                 }
                 Ok(MonoType::Optional(elem_ty.clone()))
             }
+            // Vec extension methods
+            ("sorted", MonoType::List(elem_ty)) => {
+                if !args.is_empty() {
+                    bail!("Method sorted takes no arguments");
+                }
+                Ok(MonoType::List(elem_ty.clone()))
+            }
+            ("sum", MonoType::List(elem_ty)) => {
+                if !args.is_empty() {
+                    bail!("Method sum takes no arguments");
+                }
+                // Sum returns the element type (assuming numeric)
+                Ok(*elem_ty.clone())
+            }
+            ("reversed", MonoType::List(elem_ty)) => {
+                if !args.is_empty() {
+                    bail!("Method reversed takes no arguments");
+                }
+                Ok(MonoType::List(elem_ty.clone()))
+            }
+            ("unique", MonoType::List(elem_ty)) => {
+                if !args.is_empty() {
+                    bail!("Method unique takes no arguments");
+                }
+                Ok(MonoType::List(elem_ty.clone()))
+            }
+            ("min", MonoType::List(elem_ty)) => {
+                if !args.is_empty() {
+                    bail!("Method min takes no arguments");
+                }
+                Ok(MonoType::Optional(elem_ty.clone()))
+            }
+            ("max", MonoType::List(elem_ty)) => {
+                if !args.is_empty() {
+                    bail!("Method max takes no arguments");
+                }
+                Ok(MonoType::Optional(elem_ty.clone()))
+            }
             // String methods
             ("len" | "length", MonoType::String) => {
                 if !args.is_empty() {
@@ -299,6 +494,19 @@ impl InferenceContext {
                     bail!("Method chars takes no arguments");
                 }
                 Ok(MonoType::List(Box::new(MonoType::String))) // List of chars (as strings for now)
+            }
+            // DataFrame methods
+            ("filter" | "groupby" | "agg" | "select", MonoType::Named(name)) if name == "DataFrame" => {
+                // These methods return a DataFrame
+                Ok(MonoType::Named("DataFrame".to_string()))
+            }
+            ("mean" | "std" | "sum" | "count", MonoType::Named(name)) if name == "DataFrame" => {
+                // These aggregation methods return numeric types
+                Ok(MonoType::Float)
+            }
+            ("col", MonoType::Named(name)) if name == "DataFrame" => {
+                // Column selection returns a Series
+                Ok(MonoType::Named("Series".to_string()))
             }
             // Generic case - treat as a function call with receiver as first argument
             _ => {
@@ -435,6 +643,19 @@ impl InferenceContext {
 
         // For loops return Unit
         self.unifier.unify(&body_ty, &MonoType::Unit)?;
+        Ok(MonoType::Unit)
+    }
+
+    fn infer_while(&mut self, condition: &Expr, body: &Expr) -> Result<MonoType> {
+        // Condition must be Bool
+        let cond_ty = self.infer_expr(condition)?;
+        self.unifier.unify(&cond_ty, &MonoType::Bool)?;
+        
+        // Type check body  
+        let body_ty = self.infer_expr(body)?;
+        self.unifier.unify(&body_ty, &MonoType::Unit)?;
+        
+        // While loops return unit
         Ok(MonoType::Unit)
     }
 
@@ -616,5 +837,42 @@ mod tests {
         assert!(infer_str("1 + true").is_err());
         assert!(infer_str("if 42 { 1 } else { 2 }").is_err());
         assert!(infer_str("[1, true, 3]").is_err());
+    }
+
+    #[test]
+    fn test_infer_lambda() {
+        // Simple lambda: |x| x + 1
+        let result = infer_str("|x| x + 1").unwrap();
+        match result {
+            MonoType::Function(arg, ret) => {
+                assert!(matches!(arg.as_ref(), MonoType::Int));
+                assert!(matches!(ret.as_ref(), MonoType::Int));
+            }
+            _ => panic!("Expected function type for lambda"),
+        }
+
+        // Lambda with multiple params: |x, y| x * y
+        let result = infer_str("|x, y| x * y").unwrap();
+        match result {
+            MonoType::Function(first_arg, remaining) => {
+                assert!(matches!(first_arg.as_ref(), MonoType::Int));
+                match remaining.as_ref() {
+                    MonoType::Function(second_arg, return_type) => {
+                        assert!(matches!(second_arg.as_ref(), MonoType::Int));
+                        assert!(matches!(return_type.as_ref(), MonoType::Int));
+                    }
+                    _ => panic!("Expected function type"),
+                }
+            }
+            _ => panic!("Expected function type for lambda"),
+        }
+
+        // Lambda with no params: || 42
+        let result = infer_str("|| 42").unwrap();
+        assert_eq!(result, MonoType::Int);
+
+        // Lambda used in let binding
+        let result = infer_str("let f = |x| x + 1 in f(5)").unwrap();
+        assert_eq!(result, MonoType::Int);
     }
 }

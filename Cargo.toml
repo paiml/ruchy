@@ -148,7 +148,7 @@ print_stdout = "warn"
 print_stderr = "warn"
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Ruchy Contributors"]
 license = "MIT OR Apache-2.0"
@@ -202,6 +202,10 @@ categories = ["compilers", "development-tools", "parser-implementations"]
 [lints]
 workspace = true
 
+[features]
+default = []
+dataframe = ["polars"]
+
 [dependencies]
 anyhow = { workspace = true }
 thiserror = { workspace = true }
@@ -217,6 +221,8 @@ proc-macro2 = { workspace = true }
 prettyplease = { workspace = true }
 rustyline = { workspace = true }
 colored = "2.1"
+# DataFrame support
+polars = { version = "0.35", features = ["lazy"], optional = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

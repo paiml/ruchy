@@ -1,0 +1,27 @@
+# DataFrame demonstration in Ruchy
+# Requires --features dataframe when compiling
+
+# Create a DataFrame with sales data
+let sales = df![
+    product, quantity, price;
+    "Apple", 100, 0.5;
+    "Banana", 150, 0.3;
+    "Orange", 80, 0.6;
+    "Grape", 200, 0.25
+]
+
+# Display the DataFrame
+println("Sales Data:")
+println(sales)
+
+# Create another DataFrame with inventory
+let inventory = df![
+    product, stock;
+    "Apple", 500;
+    "Banana", 300;
+    "Orange", 250;
+    "Grape", 400
+]
+
+println("\nInventory Data:")
+println(inventory)
