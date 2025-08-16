@@ -64,6 +64,8 @@ pub enum Token {
     Trait,
     #[token("actor")]
     Actor,
+    #[token("receive")]
+    Receive,
     #[token("send")]
     Send,
     #[token("ask")]
@@ -87,7 +89,7 @@ pub enum Token {
     #[token("df")]
     DataFrame,
 
-    // Identifiers (lower priority than keywords and underscore)
+    // Identifiers (lower priority than keywords)
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string(), priority = 1)]
     Identifier(String),
 
