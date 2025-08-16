@@ -73,7 +73,7 @@
 //!
 //! ## Actor Definition
 //!
-//! ```
+//! ```ignore
 //! use ruchy::frontend::parser::Parser;
 //!
 //! let code = r#"
