@@ -73,12 +73,60 @@ impl<'a> Parser<'a> {
             let Some((token, _)) = self.tokens.peek() else {
                 break;
             };
+            
+            let token_clone = token.clone();
+            
+            // Check for actor message passing operators (! and ?) when not followed by (
+            // These are special binary-like operators for actors  
+            if matches!(token_clone, Token::Bang | Token::Question) {
+                // Only treat as binary operator if NOT followed by (
+                let is_binary_op = if let Some(next_token) = self.tokens.peek_nth(1) {
+                    !matches!(next_token.0, Token::LeftParen)
+                } else {
+                    true // At end of input, treat as binary
+                };
+                
+                if is_binary_op {
+                    let prec = 10; // Same precedence as method calls
+                    if prec < min_prec {
+                        break;
+                    }
+                    
+                    if matches!(token_clone, Token::Bang) {
+                        // Send operation: actor ! message
+                        let _op_span = self.tokens.advance().expect("Token disappeared after peek").1;
+                        let message = Box::new(self.parse_prefix()?);
+                        let span = left.span.merge(message.span);
+                        left = Expr::new(
+                            ExprKind::Send {
+                                actor: Box::new(left),
+                                message,
+                            },
+                            span,
+                        );
+                        continue;
+                    } else if matches!(token_clone, Token::Question) {
+                        // Ask operation: actor ? message  
+                        let _op_span = self.tokens.advance().expect("Token disappeared after peek").1;
+                        let message = Box::new(self.parse_prefix()?);
+                        let span = left.span.merge(message.span);
+                        left = Expr::new(
+                            ExprKind::Ask {
+                                actor: Box::new(left),
+                                message,
+                                timeout: None,
+                            },
+                            span,
+                        );
+                        continue;
+                    }
+                }
+            }
 
-            if !token.is_binary_op() {
+            if !token_clone.is_binary_op() {
                 break;
             }
 
-            let token_clone = token.clone();
             let prec = Self::precedence(&token_clone);
             if prec < min_prec {
                 break;
@@ -108,14 +156,26 @@ impl<'a> Parser<'a> {
         loop {
             match self.tokens.peek() {
                 Some((Token::Question, _)) => {
-                    let span = self.tokens.advance().expect("checked: Question token exists").1;
-                    let full_span = left.span.merge(span);
-                    left = Expr::new(
-                        ExprKind::Try {
-                            expr: Box::new(left),
-                        },
-                        full_span,
-                    );
+                    // Only treat as try operator if followed by something that can't be a message
+                    // (like . or ( or end of expression)
+                    let is_try_op = if let Some(next) = self.tokens.peek_nth(1) {
+                        matches!(next.0, Token::Dot | Token::LeftParen | Token::Pipeline | Token::RightParen | Token::RightBrace | Token::RightBracket | Token::Comma | Token::Semicolon)
+                    } else {
+                        true // At end of input, treat as try
+                    };
+                    
+                    if is_try_op {
+                        let span = self.tokens.advance().expect("checked: Question token exists").1;
+                        let full_span = left.span.merge(span);
+                        left = Expr::new(
+                            ExprKind::Try {
+                                expr: Box::new(left),
+                            },
+                            full_span,
+                        );
+                    } else {
+                        break; // Will be handled as binary operator in next iteration
+                    }
                 }
                 Some((Token::Pipeline, _)) => {
                     left = self.parse_pipeline(left)?;
@@ -128,6 +188,23 @@ impl<'a> Parser<'a> {
         }
 
         Ok(left)
+    }
+
+    fn handle_limited_postfix_operators(&mut self, mut expr: Expr) -> Result<Expr> {
+        // Only handle . and ( postfix operators to avoid conflicts with ! and ? binary operators
+        loop {
+            match self.tokens.peek() {
+                Some((Token::Dot, _)) => {
+                    self.tokens.advance();
+                    expr = self.parse_method_call(expr)?;
+                }
+                Some((Token::LeftParen, _)) => {
+                    expr = self.parse_call(expr)?;
+                }
+                _ => break,
+            }
+        }
+        Ok(expr)
     }
 
     fn handle_postfix_operators(&mut self, mut expr: Expr) -> Result<Expr> {
@@ -254,7 +331,8 @@ impl<'a> Parser<'a> {
                 self.tokens.advance();
 
                 let expr = Expr::new(ExprKind::Identifier(name), span);
-                self.handle_postfix_operators(expr)
+                // Only handle postfix operators that can't be confused with binary operators
+                self.handle_limited_postfix_operators(expr)
             }
             Some((Token::If, _)) => self.parse_if(),
             Some((Token::Let, _)) => self.parse_let(),
@@ -1325,23 +1403,80 @@ impl<'a> Parser<'a> {
         let mut state = Vec::new();
         let mut handlers = Vec::new();
         
-        // Parse actor body (state fields and message handlers)
+        // Parse actor body (state fields and receive block)
         while !matches!(self.tokens.peek(), Some((Token::RightBrace, _))) {
-            // Check if it's a state field or handler
-            if let Some((Token::Identifier(_), _)) = self.tokens.peek() {
-                // Could be a field (name: Type) or handler (on MessageType)
-                let ident_name = if let Some((Token::Identifier(n), _)) = self.tokens.advance() {
-                    n
-                } else {
-                    bail!("Expected identifier");
-                };
-                
-                if let Some((Token::Colon, _)) = self.tokens.peek() {
-                    // It's a state field
-                    self.tokens.advance();
+            match self.tokens.peek() {
+                Some((Token::Receive, _)) => {
+                    // Parse receive block
+                    self.tokens.advance(); // consume 'receive'
+                    self.tokens.expect(Token::LeftBrace)?;
+                    
+                    // Parse message handlers
+                    while !matches!(self.tokens.peek(), Some((Token::RightBrace, _))) {
+                        // Parse message pattern (e.g., MessageType(params))
+                        let message_type = match self.tokens.advance() {
+                            Some((Token::Identifier(name), _)) => name,
+                            _ => bail!("Expected message type in receive block"),
+                        };
+                        
+                        // Parse optional parameters
+                        let params = if let Some((Token::LeftParen, _)) = self.tokens.peek() {
+                            self.tokens.advance();
+                            let p = self.parse_params()?;
+                            self.tokens.expect(Token::RightParen)?;
+                            p
+                        } else {
+                            Vec::new()
+                        };
+                        
+                        // Expect => or ->
+                        if !matches!(self.tokens.peek(), Some((Token::Arrow | Token::FatArrow, _))) {
+                            bail!("Expected '=>' or '->' after message pattern");
+                        }
+                        self.tokens.advance();
+                        
+                        // Parse handler body (either block or expression)
+                        let body = if matches!(self.tokens.peek(), Some((Token::LeftBrace, _))) {
+                            self.tokens.advance(); // Consume the LeftBrace
+                            Box::new(self.parse_block()?) // parse_block consumes the closing brace
+                        } else {
+                            Box::new(self.parse_expr()?)
+                        };
+                        
+                        handlers.push(ActorHandler {
+                            message_type,
+                            params,
+                            body,
+                        });
+                        
+                        // Optional comma or semicolon between handlers
+                        if matches!(self.tokens.peek(), Some((Token::Comma | Token::Semicolon, _))) {
+                            self.tokens.advance();
+                        }
+                    }
+                    
+                    self.tokens.expect(Token::RightBrace)?; // Close receive block
+                }
+                Some((Token::Identifier(_), _)) => {
+                    // State field
+                    let field_name = if let Some((Token::Identifier(n), _)) = self.tokens.advance() {
+                        n
+                    } else {
+                        bail!("Expected field name");
+                    };
+                    
+                    self.tokens.expect(Token::Colon)?;
                     let ty = self.parse_type()?;
+                    
+                    // Parse optional default value
+                    if matches!(self.tokens.peek(), Some((Token::Equal, _))) {
+                        self.tokens.advance();
+                        // Skip the default value for now (not stored in AST yet)
+                        self.parse_expr()?;
+                    }
+                    
                     state.push(StructField {
-                        name: ident_name,
+                        name: field_name,
                         ty,
                         is_pub: false,
                     });
@@ -1350,39 +1485,8 @@ impl<'a> Parser<'a> {
                     if matches!(self.tokens.peek(), Some((Token::Comma | Token::Semicolon, _))) {
                         self.tokens.advance();
                     }
-                } else if ident_name == "on" {
-                    // It's a message handler
-                    let message_type = match self.tokens.advance() {
-                        Some((Token::Identifier(name), _)) => name,
-                        _ => bail!("Expected message type after 'on'"),
-                    };
-                    
-                    // Parse optional parameters
-                    let params = if let Some((Token::LeftParen, _)) = self.tokens.peek() {
-                        self.tokens.advance();
-                        let p = self.parse_params()?;
-                        self.tokens.expect(Token::RightParen)?;
-                        p
-                    } else {
-                        Vec::new()
-                    };
-                    
-                    // Parse handler body
-                    self.tokens.expect(Token::LeftBrace)?;
-                    let body = Box::new(self.parse_block()?);
-                    
-                    handlers.push(ActorHandler {
-                        message_type,
-                        params,
-                        body,
-                    });
-                } else {
-                    // Must be an 'on' handler without the 'on' keyword being recognized
-                    // Try to recover by treating it as a potential handler
-                    bail!("Expected ':' for field or 'on' for handler, got '{}'", ident_name);
                 }
-            } else {
-                bail!("Expected field or handler in actor body");
+                _ => bail!("Expected 'receive' block or state field in actor body"),
             }
         }
         
