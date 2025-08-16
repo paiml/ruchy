@@ -2,7 +2,7 @@
 //! Based on docs/ruchy-transpiler-docs.md Section 4
 
 use ruchy::frontend::parser::Parser;
-use ruchy::parser::error_recovery::{ErrorNode, ErrorContext};
+use ruchy::parser::error_recovery::ErrorContext;
 
 #[test]
 fn test_missing_function_name_recovery() {

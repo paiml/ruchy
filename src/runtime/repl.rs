@@ -226,11 +226,8 @@ impl Repl {
         
         // CRITICAL: Ensure statements have semicolons
         // Check if this is a statement that needs a semicolon
-        let needs_semicolon = match &ast.kind {
-            crate::ExprKind::Let { .. } => true,
-            crate::ExprKind::Import { .. } => true,
-            _ => false,
-        };
+        let needs_semicolon = matches!(&ast.kind, 
+            crate::ExprKind::Let { .. } | crate::ExprKind::Import { .. });
         
         if needs_semicolon && !rust_code.ends_with(';') {
             rust_code.push(';');

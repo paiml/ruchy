@@ -9,6 +9,10 @@
 //! - Under 1000 LOC
 //! - Direct operational semantics
 
+#![allow(clippy::cast_possible_truncation)] // Reference interpreter prioritizes simplicity
+#![allow(clippy::cast_sign_loss)] // Reference interpreter uses simple casts
+#![allow(clippy::cast_possible_wrap)] // Reference interpreter uses simple casts
+
 use crate::transpiler::canonical_ast::{CoreExpr, CoreLiteral, DeBruijnIndex, PrimOp};
 use std::rc::Rc;
 
@@ -35,8 +39,14 @@ pub struct Environment {
     bindings: Vec<Value>,
 }
 
+impl Default for Environment {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Environment {
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self { bindings: Vec::new() }
     }
     
@@ -48,7 +58,7 @@ impl Environment {
         self.bindings.pop();
     }
     
-    pub fn lookup(&self, index: &DeBruijnIndex) -> Option<&Value> {
+    #[must_use] pub fn lookup(&self, index: &DeBruijnIndex) -> Option<&Value> {
         // De Bruijn indices count from the end
         let pos = self.bindings.len().checked_sub(index.0 + 1)?;
         self.bindings.get(pos)
@@ -61,8 +71,14 @@ pub struct ReferenceInterpreter {
     trace: Vec<String>, // For debugging
 }
 
+impl Default for ReferenceInterpreter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReferenceInterpreter {
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             env: Environment::new(),
             trace: Vec::new(),
@@ -72,13 +88,13 @@ impl ReferenceInterpreter {
     /// Evaluate an expression to a value
     /// This is the core of the interpreter - direct operational semantics
     pub fn eval(&mut self, expr: &CoreExpr) -> Result<Value, String> {
-        self.trace.push(format!("Evaluating: {:?}", expr));
+        self.trace.push(format!("Evaluating: {expr:?}"));
         
         match expr {
             CoreExpr::Var(idx) => {
                 self.env.lookup(idx)
                     .cloned()
-                    .ok_or_else(|| format!("Unbound variable: {:?}", idx))
+                    .ok_or_else(|| format!("Unbound variable: {idx:?}"))
             }
             
             CoreExpr::Lambda { body, .. } => {
@@ -114,18 +130,18 @@ impl ReferenceInterpreter {
                         
                         Ok(result)
                     }
-                    _ => Err(format!("Cannot apply non-function: {:?}", func_val))
+                    _ => Err(format!("Cannot apply non-function: {func_val:?}"))
                 }
             }
             
             CoreExpr::Let { value, body, name } => {
-                self.trace.push(format!("Let binding: {:?}", name));
+                self.trace.push(format!("Let binding: {name:?}"));
                 
                 // Evaluate the value
                 let val = self.eval(value)?;
                 
                 // Bind it in the environment
-                self.env.push(val.clone());
+                self.env.push(val);
                 
                 // Evaluate the body
                 let result = self.eval(body)?;
@@ -153,6 +169,7 @@ impl ReferenceInterpreter {
     }
     
     /// Evaluate primitive operations
+    #[allow(clippy::too_many_lines)] // Comprehensive primitive operations
     fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, String> {
         // Evaluate all arguments first (strict evaluation)
         let mut values = Vec::new();
@@ -174,7 +191,7 @@ impl ReferenceInterpreter {
                         Ok(Value::Float(a + b))
                     }
                     (Value::String(a), Value::String(b)) => {
-                        Ok(Value::String(format!("{}{}", a, b)))
+                        Ok(Value::String(format!("{a}{b}")))
                     }
                     _ => Err(format!("Type error in addition: {:?} + {:?}", values[0], values[1]))
                 }
@@ -339,7 +356,7 @@ impl ReferenceInterpreter {
                 match (&values[0], &values[1]) {
                     (Value::Array(arr), Value::Integer(idx)) => {
                         if *idx < 0 || *idx as usize >= arr.len() {
-                            Err(format!("Array index out of bounds: {}", idx))
+                            Err(format!("Array index out of bounds: {idx}"))
                         } else {
                             Ok(arr[*idx as usize].clone())
                         }
@@ -358,12 +375,12 @@ impl ReferenceInterpreter {
                 }
             }
             
-            _ => Err(format!("Unsupported primitive: {:?}", op))
+            _ => Err(format!("Unsupported primitive: {op:?}"))
         }
     }
     
     /// Get execution trace for debugging
-    pub fn get_trace(&self) -> &[String] {
+    #[must_use] pub fn get_trace(&self) -> &[String] {
         &self.trace
     }
     

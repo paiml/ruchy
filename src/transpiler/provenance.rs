@@ -77,7 +77,7 @@ pub struct ProvenanceTracker {
 
 impl ProvenanceTracker {
     /// Create a new provenance tracker for the given source
-    pub fn new(source: &str) -> Self {
+    #[must_use] pub fn new(source: &str) -> Self {
         Self {
             source_hash: Self::hash(source),
             transformations: Vec::new(),
@@ -111,7 +111,7 @@ impl ProvenanceTracker {
     }
     
     /// Generate the complete compilation trace
-    pub fn finish(mut self) -> CompilationTrace {
+    #[must_use] pub fn finish(mut self) -> CompilationTrace {
         // Finish any pending transformation
         if let Some(builder) = self.current_transformation.take() {
             self.transformations.push(builder.finish());
@@ -185,12 +185,12 @@ pub struct TraceDiffer {
 }
 
 impl TraceDiffer {
-    pub fn new(trace1: CompilationTrace, trace2: CompilationTrace) -> Self {
+    #[must_use] pub fn new(trace1: CompilationTrace, trace2: CompilationTrace) -> Self {
         Self { trace1, trace2 }
     }
     
     /// Find the first point where the traces diverge
-    pub fn find_divergence(&self) -> Option<DivergencePoint> {
+    #[must_use] pub fn find_divergence(&self) -> Option<DivergencePoint> {
         // Check source hash
         if self.trace1.source_hash != self.trace2.source_hash {
             return Some(DivergencePoint {
@@ -246,7 +246,7 @@ pub struct DivergencePoint {
 impl crate::Transpiler {
     /// Transpile with provenance tracking
     pub fn transpile_with_provenance(&self, expr: &crate::Expr) -> (Result<proc_macro2::TokenStream, anyhow::Error>, CompilationTrace) {
-        let source = format!("{:?}", expr); // Simplified - would serialize properly
+        let source = format!("{expr:?}"); // Simplified - would serialize properly
         let mut tracker = ProvenanceTracker::new(&source);
         
         // Track the transpilation

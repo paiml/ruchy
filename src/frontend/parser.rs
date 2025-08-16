@@ -1437,7 +1437,7 @@ impl<'a> Parser<'a> {
     /// Skip tokens until we find a synchronization point for error recovery
     fn skip_to_sync(&mut self) {
         while let Some((token, _)) = self.tokens.peek() {
-            let token_str = format!("{:?}", token);
+            let token_str = format!("{token:?}");
             if self.error_recovery.is_sync_token(&token_str) {
                 break;
             }
