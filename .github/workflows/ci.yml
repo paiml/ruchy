@@ -24,3 +24,66 @@ jobs:
         run: cargo nextest run --all-features --workspace --no-fail-fast
       - name: Run doctests
         run: cargo test --doc --all-features
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run clippy on library
+        run: cargo clippy --lib -- -D warnings
+      - name: Run clippy on bins
+        run: cargo clippy --bins -- -D warnings
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build debug
+        run: cargo build --all-features --workspace
+      - name: Build release
+        run: cargo build --release --all-features --workspace
+      - name: Check examples
+        run: cargo build --examples
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Generate coverage
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: lcov.info
+          fail_ci_if_error: false
+
+  check-release:
+    name: Check Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Check package metadata
+        run: |
+          cargo package --list -p ruchy
+          cargo package --list -p ruchy-cli
+      - name: Dry run publish
+        run: |
+          cargo publish --dry-run -p ruchy
+          cargo publish --dry-run -p ruchy-cli
