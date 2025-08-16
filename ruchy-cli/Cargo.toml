@@ -18,7 +18,7 @@ name = "ruchy"
 path = "src/main.rs"
 
 [dependencies]
-ruchy = { version = "0.2.1", path = ".." }
+ruchy = { version = "0.3.0", path = ".." }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

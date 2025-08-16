@@ -4,6 +4,8 @@
 
 pub mod generators;
 pub mod properties;
+pub mod snapshot;
 
 pub use generators::*;
 pub use properties::*;
+pub use snapshot::*;

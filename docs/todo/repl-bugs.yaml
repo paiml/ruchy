@@ -1,0 +1,318 @@
+# REPL Bug Fixes - PDMT Format
+# Priority-Driven Monotonic Task specification for Ruchy REPL bug remediation
+# Generated from QA Report: 2025-08-16
+
+meta:
+  version: "1.0.0"
+  project: ruchy
+  component: repl
+  owner: compiler-team
+  created: 2025-08-16
+  priority: CRITICAL
+  estimated_effort: 2_weeks
+  tracking_issue: "ruchy/bugs/repl-qa-report"
+  pmat_mode: quality_gate_proxy
+
+objectives:
+  primary: "Fix all critical REPL bugs and achieve production-ready stability"
+  metrics:
+    - bug_count: 0
+    - test_coverage: ">= 95%"
+    - mutation_score: ">= 85%"
+    - property_test_coverage: 100%
+    - fuzz_duration_without_crash: ">= 24h"
+    - doctest_coverage: 100%
+    - example_success_rate: 100%
+
+quality_gates:
+  pre_fix:
+    - run: "pmat analyze --mode=proxy"
+    - require: "all_tests_passing"
+    - require: "no_new_clippy_warnings"
+  
+  post_fix:
+    - run: "pmat verify --mode=proxy --strict"
+    - require: "coverage_increased"
+    - require: "no_regression"
+    - require: "all_examples_work"
+
+constraints:
+  - toyota_way: "Stop the line when defect found"
+  - quality_first: "No fix without test"
+  - continuous_improvement: "Each fix must add property tests"
+  - documentation: "Each fix must add doctests"
+
+bugs:
+  - id: BUG-001
+    severity: CRITICAL
+    title: "Variable Declaration Persistence"
+    description: "Variables declared with 'let' don't persist across REPL lines"
+    root_cause: "Each REPL line compiled in isolation without context"
+    test_case: |
+      let x = 10
+      x  // Error: cannot find value 'x' in this scope
+    fix_approach:
+      - Implement persistent compilation context
+      - Maintain symbol table across REPL sessions
+      - Add incremental compilation support
+    validation:
+      - unit_tests:
+          - test_variable_persistence
+          - test_multiple_variables
+          - test_variable_shadowing
+      - property_tests:
+          - prop_any_variable_persists
+          - prop_variable_type_consistency
+      - doctests:
+          - variable_declaration_examples
+      - examples:
+          - examples/repl_variables.rs
+      - fuzz_targets:
+          - fuzz_variable_names
+          - fuzz_variable_values
+
+  - id: BUG-002
+    severity: CRITICAL
+    title: "Function Definition Type Issues"
+    description: "Functions can't be properly defined due to incorrect type inference"
+    root_cause: "Functions default to 'impl Display' which breaks arithmetic"
+    test_case: |
+      fun add(a, b) { a + b }
+      fun greet(name) { "Hello, {name}!" }
+    fix_approach:
+      - Implement proper generic type inference
+      - Fix return type inference
+      - Support string interpolation in functions
+    validation:
+      - unit_tests:
+          - test_function_definition
+          - test_function_call
+          - test_generic_functions
+      - property_tests:
+          - prop_function_type_inference
+          - prop_function_return_types
+      - doctests:
+          - function_examples
+      - examples:
+          - examples/repl_functions.rs
+      - fuzz_targets:
+          - fuzz_function_params
+          - fuzz_function_bodies
+
+  - id: BUG-003
+    severity: HIGH
+    title: "String Operations"
+    description: "String concatenation and interpolation fail"
+    root_cause: "Generates '&str + &str' instead of String operations"
+    test_case: |
+      "Hello" + " World"
+      let name = "Ruchy"
+      "Hello, {name}!"
+    fix_approach:
+      - Convert to String for concatenation
+      - Implement proper string interpolation
+      - Maintain variable context for interpolation
+    validation:
+      - unit_tests:
+          - test_string_concatenation
+          - test_string_interpolation
+          - test_string_with_variables
+      - property_tests:
+          - prop_any_strings_concatenate
+          - prop_interpolation_preserves_values
+      - doctests:
+          - string_operation_examples
+      - examples:
+          - examples/repl_strings.rs
+      - fuzz_targets:
+          - fuzz_string_content
+          - fuzz_interpolation_patterns
+
+  - id: BUG-004
+    severity: HIGH
+    title: "Loop Constructs"
+    description: "For and while loops generate compilation errors"
+    root_cause: "Loop bodies expected to return () but have expressions"
+    test_case: |
+      for i in 1..5 { i }
+      while false { "loop" }
+    fix_approach:
+      - Handle loop expression values properly
+      - Support break with value
+      - Fix loop body type expectations
+    validation:
+      - unit_tests:
+          - test_for_loops
+          - test_while_loops
+          - test_loop_break_values
+      - property_tests:
+          - prop_loop_iterations
+          - prop_loop_termination
+      - doctests:
+          - loop_examples
+      - examples:
+          - examples/repl_loops.rs
+      - fuzz_targets:
+          - fuzz_loop_ranges
+          - fuzz_loop_conditions
+
+  - id: BUG-005
+    severity: MEDIUM
+    title: "Array and Struct Display"
+    description: "Arrays and structs can't be displayed in REPL output"
+    root_cause: "Using Display trait instead of Debug trait"
+    test_case: |
+      [1, 2, 3]
+      struct Point { x: 10, y: 20 }
+    fix_approach:
+      - Use Debug trait for complex types
+      - Implement pretty printing
+      - Support custom Display implementations
+    validation:
+      - unit_tests:
+          - test_array_display
+          - test_struct_display
+          - test_nested_structures
+      - property_tests:
+          - prop_any_array_displays
+          - prop_struct_field_preservation
+      - doctests:
+          - collection_display_examples
+      - examples:
+          - examples/repl_collections.rs
+      - fuzz_targets:
+          - fuzz_array_contents
+          - fuzz_struct_fields
+
+  - id: BUG-006
+    severity: MEDIUM
+    title: "Struct Definition Syntax"
+    description: "Struct definitions aren't parsed correctly"
+    root_cause: "Parser doesn't support struct definitions in REPL mode"
+    test_case: |
+      struct Point { x: 10, y: 20 }
+    fix_approach:
+      - Extend parser for struct definitions
+      - Support struct instantiation
+      - Maintain struct types in context
+    validation:
+      - unit_tests:
+          - test_struct_definition
+          - test_struct_instantiation
+          - test_struct_methods
+      - property_tests:
+          - prop_struct_field_types
+          - prop_struct_construction
+      - doctests:
+          - struct_definition_examples
+      - examples:
+          - examples/repl_structs.rs
+      - fuzz_targets:
+          - fuzz_struct_syntax
+          - fuzz_field_names
+
+test_strategy:
+  layers:
+    - unit: "Test each fix in isolation"
+    - integration: "Test fixes work together"
+    - property: "Test invariants hold for all inputs"
+    - fuzz: "Test robustness against random inputs"
+    - end_to_end: "Test complete REPL sessions"
+    - performance: "Ensure no performance regression"
+
+  coverage_requirements:
+    - line: ">= 95%"
+    - branch: ">= 90%"
+    - mutation: ">= 85%"
+    - property: "100% of public APIs"
+    - doctest: "100% of examples"
+
+  test_files:
+    - tests/repl/test_variables.rs
+    - tests/repl/test_functions.rs
+    - tests/repl/test_strings.rs
+    - tests/repl/test_loops.rs
+    - tests/repl/test_collections.rs
+    - tests/repl/test_structs.rs
+    - tests/repl/test_integration.rs
+    - tests/repl/prop_tests.rs
+    - fuzz/fuzz_targets/repl_fuzzer.rs
+    - examples/repl_showcase.rs
+
+implementation_plan:
+  phase_1_critical:
+    duration: 3_days
+    bugs: [BUG-001, BUG-002]
+    deliverables:
+      - Persistent compilation context
+      - Function type inference
+      - Unit tests with 95% coverage
+      - Property tests for invariants
+      - Doctests for all public APIs
+
+  phase_2_high:
+    duration: 3_days
+    bugs: [BUG-003, BUG-004]
+    deliverables:
+      - String operations fix
+      - Loop construct fixes
+      - Integration tests
+      - Fuzz targets
+
+  phase_3_medium:
+    duration: 2_days
+    bugs: [BUG-005, BUG-006]
+    deliverables:
+      - Display/Debug trait fixes
+      - Struct parser support
+      - End-to-end examples
+      - Performance benchmarks
+
+  phase_4_validation:
+    duration: 2_days
+    deliverables:
+      - Full test suite execution
+      - 24-hour fuzz testing
+      - Performance regression tests
+      - Documentation updates
+      - Release notes
+
+toyota_way_practices:
+  jidoka:
+    - "Automated quality checks via PMAT"
+    - "Stop on first failure"
+    - "Human verification required for release"
+  
+  kaizen:
+    - "Each bug fix improves test coverage"
+    - "Continuous refactoring during fixes"
+    - "Document learnings for future"
+  
+  genchi_genbutsu:
+    - "Reproduce each bug locally"
+    - "Understand root cause deeply"
+    - "Verify fix in real REPL sessions"
+
+success_criteria:
+  - all_bugs_fixed: true
+  - no_regressions: true
+  - test_coverage: ">= 95%"
+  - mutation_score: ">= 85%"
+  - fuzz_stability: "24h_without_crash"
+  - all_examples_passing: true
+  - pmat_quality_gate: PASSED
+  - user_acceptance: "Manual testing confirms all fixes"
+
+monitoring:
+  - track: "Bug fix completion rate"
+  - track: "Test coverage trend"
+  - track: "Performance metrics"
+  - track: "Code quality metrics"
+  - alert_on: "Any regression"
+  - report_to: "compiler-team"
+
+notes:
+  - "Use PMAT in quality-gate proxy mode for all changes"
+  - "No merge without full test suite passing"
+  - "Each fix must be independently verifiable"
+  - "Maintain backward compatibility where possible"

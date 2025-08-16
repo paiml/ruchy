@@ -216,10 +216,25 @@ impl Repl {
         let ast = parser.parse().context("Failed to parse input")?;
 
         // Transpile to Rust
-        let rust_code = self
+        let rust_tokens = self
             .transpiler
             .transpile(&ast)
             .context("Failed to transpile to Rust")?;
+        
+        // Convert to string for manipulation
+        let mut rust_code = rust_tokens.to_string();
+        
+        // CRITICAL: Ensure statements have semicolons
+        // Check if this is a statement that needs a semicolon
+        let needs_semicolon = match &ast.kind {
+            crate::ExprKind::Let { .. } => true,
+            crate::ExprKind::Import { .. } => true,
+            _ => false,
+        };
+        
+        if needs_semicolon && !rust_code.ends_with(';') {
+            rust_code.push(';');
+        }
 
         // Check if this is an expression or statement
         let is_expression = !matches!(
@@ -232,20 +247,34 @@ impl Repl {
                 | crate::ExprKind::Import { .. }
         );
 
+        // Store definitions (including let bindings) for persistence
+        let is_definition = matches!(
+            &ast.kind,
+            crate::ExprKind::Let { .. }
+                | crate::ExprKind::Function { .. }
+                | crate::ExprKind::Struct { .. }
+                | crate::ExprKind::Trait { .. }
+                | crate::ExprKind::Impl { .. }
+        );
+
         self.session_counter += 1;
         let session_name = format!("ruchy_repl_{}", self.session_counter);
 
-        // Create a complete Rust program
+        // Create a complete Rust program with all accumulated definitions
         let full_program = if is_expression {
-            // For expressions, evaluate and print the result
-            // Try to use Display trait if available, fall back to Debug
+            // For expressions, evaluate and print the result with appropriate trait
             format!(
                 r#"
+use std::fmt::{{Display, Debug}};
+
+fn print_result<T: Debug>(value: T) {{
+    println!("{{:?}}", value);
+}}
+
 fn main() {{
     {}
     let result = {{{}}};
-    // Try to use Display if available, otherwise Debug
-    println!("{{}}", result);
+    print_result(result);
 }}
 "#,
                 self.definitions.join("\n"),
@@ -268,7 +297,7 @@ fn main() {{
 
         // Write to temporary file
         let rust_file = self.temp_dir.join(format!("{session_name}.rs"));
-        fs::write(&rust_file, full_program)?;
+        fs::write(&rust_file, &full_program)?;
 
         // Compile
         let output = Command::new("rustc")
@@ -293,15 +322,16 @@ fn main() {{
         // Store successful input in history
         self.history.push(input.to_string());
 
-        // If this was a definition (function, struct, trait, impl), add it to our definitions for future use
-        match &ast.kind {
-            crate::ExprKind::Function { .. } 
-            | crate::ExprKind::Struct { .. }
-            | crate::ExprKind::Trait { .. }
-            | crate::ExprKind::Impl { .. } => {
-                self.definitions.push(rust_code.to_string());
+        // If this was a definition, add it to our definitions for future use
+        if is_definition {
+            // Store the definition code for future compilations
+            self.definitions.push(rust_code.to_string());
+            
+            // Track variable bindings for type information
+            if let crate::ExprKind::Let { name, .. } = &ast.kind {
+                // Store the binding name for future reference
+                self.bindings.insert(name.clone(), "inferred".to_string());
             }
-            _ => {}
         }
 
         // Return output
