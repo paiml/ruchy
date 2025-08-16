@@ -4,6 +4,8 @@
 //! This module eliminates syntactic ambiguity by converting all surface syntax to a
 //! normalized core form before transpilation.
 
+#![allow(clippy::panic)] // Panics represent genuine errors in normalization
+
 use crate::frontend::ast::{Expr, ExprKind, Literal};
 
 /// De Bruijn index for variables - eliminates variable capture bugs
@@ -94,8 +96,14 @@ pub struct AstNormalizer {
     context: DeBruijnContext,
 }
 
+impl Default for AstNormalizer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AstNormalizer {
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             context: DeBruijnContext::new(),
         }
@@ -107,6 +115,7 @@ impl AstNormalizer {
     }
     
     /// Desugar surface syntax and convert to core form with De Bruijn indices
+    #[allow(clippy::too_many_lines)] // Complex but necessary for complete desugaring
     fn desugar_and_convert(&mut self, expr: &Expr) -> CoreExpr {
         match &expr.kind {
             ExprKind::Literal(lit) => self.convert_literal(lit),
@@ -117,7 +126,7 @@ impl AstNormalizer {
                 } else {
                     // Free variable - this shouldn't happen in well-formed programs
                     // For REPL, we might want to handle this differently
-                    panic!("Unbound variable: {}", name);
+                    panic!("Unbound variable: {name}");
                 }
             }
             
@@ -232,8 +241,7 @@ impl AstNormalizer {
                 let cond = self.desugar_and_convert(condition);
                 let then_b = self.desugar_and_convert(then_branch);
                 let else_b = else_branch.as_ref()
-                    .map(|e| self.desugar_and_convert(e))
-                    .unwrap_or(CoreExpr::Literal(CoreLiteral::Unit));
+                    .map_or(CoreExpr::Literal(CoreLiteral::Unit), |e| self.desugar_and_convert(e));
                 
                 CoreExpr::Prim(PrimOp::If, vec![cond, then_b, else_b])
             }
@@ -275,19 +283,19 @@ impl AstNormalizer {
 /// Invariant checking
 impl CoreExpr {
     /// Check that the expression is in normal form
-    pub fn is_normalized(&self) -> bool {
+    #[must_use] pub fn is_normalized(&self) -> bool {
         match self {
             CoreExpr::Var(_) => true,
             CoreExpr::Lambda { body, .. } => body.is_normalized(),
             CoreExpr::App(f, x) => f.is_normalized() && x.is_normalized(),
             CoreExpr::Let { value, body, .. } => value.is_normalized() && body.is_normalized(),
             CoreExpr::Literal(_) => true,
-            CoreExpr::Prim(_, args) => args.iter().all(|a| a.is_normalized()),
+            CoreExpr::Prim(_, args) => args.iter().all(CoreExpr::is_normalized),
         }
     }
     
     /// Check that all variables are bound (no free variables)
-    pub fn is_closed(&self) -> bool {
+    #[must_use] pub fn is_closed(&self) -> bool {
         self.is_closed_at(0)
     }
     

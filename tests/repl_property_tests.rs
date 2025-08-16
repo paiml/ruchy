@@ -1,3 +1,6 @@
+#![allow(clippy::unreadable_literal)] // Property tests generate random values
+#![allow(unused_imports)] // Test utilities may not all be used
+
 use proptest::prelude::*;
 use ruchy::{Parser, Transpiler, ExprKind};
 

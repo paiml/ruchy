@@ -3,6 +3,9 @@
 //! Based on docs/ruchy-transpiler-docs.md Section 3: Snapshot Testing
 //! Detects any output changes immediately through content-addressed storage
 
+#![allow(clippy::print_stdout)] // Testing infrastructure needs stdout for feedback
+#![allow(clippy::print_stderr)] // Testing infrastructure needs stderr for errors
+
 use sha2::{Sha256, Digest};
 use std::fs;
 use std::path::PathBuf;
@@ -94,11 +97,14 @@ impl SnapshotRunner {
         
         // Find existing snapshot
         if let Some(existing) = self.suite.tests.iter().find(|t| t.name == name) {
-            if existing.output_hash != output_hash {
+            if existing.output_hash == output_hash {
+                // Test passed
+                println!("✓ Snapshot matched: {name}");
+            } else {
                 if self.config.auto_update {
                     // Update the snapshot
                     self.update_snapshot(name, input, &output, &output_hash)?;
-                    println!("✓ Updated snapshot: {}", name);
+                    println!("✓ Updated snapshot: {name}");
                 } else {
                     // Fail the test
                     bail!(
@@ -106,9 +112,6 @@ impl SnapshotRunner {
                         name, existing.output_hash, output_hash, output
                     );
                 }
-            } else {
-                // Test passed
-                println!("✓ Snapshot matched: {}", name);
             }
         } else {
             // No existing snapshot
@@ -117,7 +120,7 @@ impl SnapshotRunner {
             }
             // Create new snapshot
             self.create_snapshot(name, input, &output, &output_hash)?;
-            println!("✓ Created snapshot: {}", name);
+            println!("✓ Created snapshot: {name}");
         }
         
         Ok(())
@@ -186,7 +189,7 @@ impl SnapshotRunner {
         
         for test in self.suite.tests.clone() {
             match self.test(&test.name, &test.input, |input| transform(input)) {
-                Ok(_) => passed += 1,
+                Ok(()) => passed += 1,
                 Err(e) => {
                     eprintln!("✗ {}: {}", test.name, e);
                     failed += 1;
@@ -195,10 +198,10 @@ impl SnapshotRunner {
         }
         
         println!("\nSnapshot Test Results:");
-        println!("  Passed: {}", passed);
-        println!("  Failed: {}", failed);
+        println!("  Passed: {passed}");
+        println!("  Failed: {failed}");
         if updated > 0 {
-            println!("  Updated: {}", updated);
+            println!("  Updated: {updated}");
         }
         
         if failed > 0 {
@@ -210,13 +213,14 @@ impl SnapshotRunner {
 }
 
 /// Automatic bisection to identify regression source
+#[allow(clippy::module_name_repetitions)]
 pub struct SnapshotBisector {
     #[allow(dead_code)]
     snapshots: Vec<SnapshotTest>,
 }
 
 impl SnapshotBisector {
-    pub fn new(snapshots: Vec<SnapshotTest>) -> Self {
+    #[must_use] pub fn new(snapshots: Vec<SnapshotTest>) -> Self {
         Self { snapshots }
     }
     
@@ -227,9 +231,41 @@ impl SnapshotBisector {
     {
         // This would integrate with git bisect
         // For now, just a placeholder
-        println!("Would bisect to find regression in test: {}", test_name);
+        println!("Would bisect to find regression in test: {test_name}");
         None
     }
+}
+
+/// Snapshot test definitions for core Ruchy features
+#[must_use] pub fn core_snapshot_tests() -> Vec<(&'static str, &'static str)> {
+    vec![
+        ("literal_int", "42"),
+        ("literal_float", "3.14"),
+        ("literal_string", r#""hello""#),
+        ("literal_bool_true", "true"),
+        ("literal_bool_false", "false"),
+        
+        ("binary_add", "1 + 2"),
+        ("binary_mul", "3 * 4"),
+        ("binary_complex", "1 + 2 * 3"),
+        ("binary_parens", "(1 + 2) * 3"),
+        
+        ("let_simple", "let x = 10"),
+        ("let_nested", "let x = 10 in x + 1"),
+        
+        ("function_simple", "fun f(x) { x + 1 }"),
+        ("function_multi_param", "fun add(x, y) { x + y }"),
+        
+        ("if_simple", "if true { 1 } else { 2 }"),
+        ("if_no_else", "if x > 0 { x }"),
+        
+        ("list_empty", "[]"),
+        ("list_numbers", "[1, 2, 3]"),
+        
+        ("pipeline_simple", "data |> filter |> map"),
+        
+        ("match_simple", "match x { 1 => \"one\", _ => \"other\" }"),
+    ]
 }
 
 #[cfg(test)]
@@ -269,7 +305,7 @@ mod tests {
         
         // Run the same test multiple times - should produce identical hashes
         for i in 0..3 {
-            runner.test(&format!("determinism_test_{}", i), "x * 2 + 1", |input| {
+            runner.test(&format!("determinism_test_{i}"), "x * 2 + 1", |input| {
                 let mut parser = Parser::new(input);
                 let ast = parser.parse()?;
                 let transpiler = Transpiler::new();
@@ -278,36 +314,4 @@ mod tests {
             }).unwrap();
         }
     }
-}
-
-/// Snapshot test definitions for core Ruchy features
-pub fn core_snapshot_tests() -> Vec<(&'static str, &'static str)> {
-    vec![
-        ("literal_int", "42"),
-        ("literal_float", "3.14"),
-        ("literal_string", r#""hello""#),
-        ("literal_bool_true", "true"),
-        ("literal_bool_false", "false"),
-        
-        ("binary_add", "1 + 2"),
-        ("binary_mul", "3 * 4"),
-        ("binary_complex", "1 + 2 * 3"),
-        ("binary_parens", "(1 + 2) * 3"),
-        
-        ("let_simple", "let x = 10"),
-        ("let_nested", "let x = 10 in x + 1"),
-        
-        ("function_simple", "fun f(x) { x + 1 }"),
-        ("function_multi_param", "fun add(x, y) { x + y }"),
-        
-        ("if_simple", "if true { 1 } else { 2 }"),
-        ("if_no_else", "if x > 0 { x }"),
-        
-        ("list_empty", "[]"),
-        ("list_numbers", "[1, 2, 3]"),
-        
-        ("pipeline_simple", "data |> filter |> map"),
-        
-        ("match_simple", "match x { 1 => \"one\", _ => \"other\" }"),
-    ]
 }

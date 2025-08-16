@@ -3,6 +3,9 @@
 //! This implementation fixes all the bugs identified in docs/bugs/repl-qa-report.md
 //! by using the normalized AST and reference interpreter for consistency
 
+#![allow(clippy::print_stdout)] // REPL needs to print to stdout by design
+#![allow(clippy::print_stderr)] // REPL needs to print errors to stderr
+
 use crate::{Parser, Transpiler};
 use crate::transpiler::{AstNormalizer, CoreExpr, ReferenceInterpreter, Value};
 use anyhow::{Context, Result};
@@ -220,7 +223,7 @@ fn main() {{
         };
         
         // Write to file
-        let rust_file = self.temp_dir.join(format!("{}.rs", session_name));
+        let rust_file = self.temp_dir.join(format!("{session_name}.rs"));
         fs::write(&rust_file, full_program)?;
         
         // Compile
@@ -253,7 +256,7 @@ fn main() {{
         match value {
             Value::Integer(i) => i.to_string(),
             Value::Float(f) => f.to_string(),
-            Value::String(s) => format!("\"{}\"", s),
+            Value::String(s) => format!("\"{s}\""),
             Value::Bool(b) => b.to_string(),
             Value::Unit => "()".to_string(),
             Value::Closure { .. } => "<function>".to_string(),
@@ -289,7 +292,7 @@ fn main() {{
                     }
                 } else {
                     let mode = if self.use_interpreter { "interpreter" } else { "compile" };
-                    println!("Current mode: {}", mode);
+                    println!("Current mode: {mode}");
                 }
                 Ok(true)
             }
@@ -305,13 +308,13 @@ fn main() {{
                     println!("No bindings");
                 } else {
                     for (name, ty) in &self.bindings {
-                        println!("  {}: {}", name, ty);
+                        println!("  {name}: {ty}");
                     }
                 }
                 Ok(true)
             }
             _ => {
-                println!("Unknown command: {}", cmd);
+                println!("Unknown command: {cmd}");
                 println!("Type :help for available commands");
                 Ok(true)
             }

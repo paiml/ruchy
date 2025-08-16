@@ -14,6 +14,11 @@
 #![cfg_attr(test, allow(clippy::unwrap_used))]
 #![cfg_attr(test, allow(clippy::expect_used))]
 #![cfg_attr(test, allow(clippy::panic))]
+#![allow(clippy::module_name_repetitions)] // Common pattern in Rust
+#![allow(clippy::cast_possible_truncation)] // Acceptable in specific contexts
+#![allow(clippy::only_used_in_recursion)] // Recursive functions are valid
+#![allow(clippy::items_after_statements)] // Sometimes clearer organization
+#![allow(clippy::match_wildcard_for_single_variants)] // Future-proofing
 #![allow(clippy::missing_errors_doc)] // Many functions return Result, docs would be repetitive
 #![allow(clippy::unnecessary_wraps)] // Some functions need Result for consistency
 #![allow(clippy::match_same_arms)] // Sometimes clearer to show all arms explicitly

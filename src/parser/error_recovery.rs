@@ -122,6 +122,7 @@ impl Default for ErrorRecovery {
 }
 
 impl ErrorRecovery {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -201,6 +202,7 @@ impl ErrorRecovery {
     }
     
     /// Check if we should continue parsing or give up
+    #[must_use]
     pub fn should_continue(&self) -> bool {
         self.error_count < self.max_errors
     }
@@ -211,6 +213,7 @@ impl ErrorRecovery {
     }
     
     /// Check if token is a synchronization point
+    #[must_use]
     pub fn is_sync_token(&self, token: &str) -> bool {
         self.sync_tokens.contains(&token.to_string())
     }
@@ -234,6 +237,7 @@ pub struct RecoveryRules;
 
 impl RecoveryRules {
     /// Determine recovery strategy based on context
+    #[must_use]
     pub fn select_strategy(context: &ErrorContext) -> RecoveryStrategy {
         match context {
             ErrorContext::FunctionDecl { name, params, body } => {
@@ -256,6 +260,7 @@ impl RecoveryRules {
     }
     
     /// Generate synthetic AST for error recovery
+    #[must_use]
     pub fn synthesize_ast(error: &ErrorNode) -> Expr {
         let default_span = Span::new(0, 0);
         match &error.context {
