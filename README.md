@@ -4,6 +4,8 @@
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![CI](https://github.com/paiml/ruchy/workflows/CI/badge.svg)](https://github.com/paiml/ruchy/actions)
 [![Coverage](https://github.com/paiml/ruchy/workflows/Coverage/badge.svg)](https://github.com/paiml/ruchy/actions)
+[![Crates.io](https://img.shields.io/crates/v/ruchy.svg)](https://crates.io/crates/ruchy)
+[![Docs.rs](https://docs.rs/ruchy/badge.svg)](https://docs.rs/ruchy)
 
 A systems-oriented scripting language that transpiles to zero-cost Rust, combining Python's ergonomics with Rust's performance guarantees.
 
@@ -96,16 +98,30 @@ fun critical_sort(mut data: Vec<T>) -> Vec<T> {
 
 ## Installation
 
-### From Source
+### Via Cargo (Recommended)
 ```bash
-git clone https://github.com/ruchy-lang/ruchy
-cd ruchy
-cargo install --path .
+cargo install ruchy-cli
 ```
 
-### Via Cargo (Coming Soon)
+### Pre-built Binaries
+Download the latest release for your platform from [GitHub Releases](https://github.com/paiml/ruchy/releases/latest):
+
+**Linux/macOS:**
 ```bash
-cargo install ruchy
+# Download the binary (replace URL with your platform)
+curl -LO https://github.com/paiml/ruchy/releases/download/v0.1.0/ruchy-linux-amd64
+chmod +x ruchy-linux-amd64
+sudo mv ruchy-linux-amd64 /usr/local/bin/ruchy
+```
+
+**Windows:**
+Download `ruchy-windows-amd64.exe` from the [releases page](https://github.com/paiml/ruchy/releases/latest).
+
+### From Source
+```bash
+git clone https://github.com/paiml/ruchy
+cd ruchy
+cargo install --path ruchy-cli
 ```
 
 ## Quick Start
