@@ -76,6 +76,7 @@ impl Transpiler {
                 body,
             } => self.transpile_function(name, params, return_type.as_ref(), body),
             ExprKind::Call { func, args } => self.transpile_call(func, args),
+            ExprKind::MethodCall { receiver, method, args } => self.transpile_method_call(receiver, method, args),
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
             ExprKind::Match { expr, arms } => self.transpile_match(expr, arms),
@@ -254,6 +255,18 @@ impl Transpiler {
 
         Ok(quote! {
             #func_tokens(#(#arg_tokens),*)
+        })
+    }
+    
+    fn transpile_method_call(&self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<TokenStream> {
+        let receiver_tokens = self.transpile_expr(receiver)?;
+        let method_ident = syn::Ident::new(method, proc_macro2::Span::call_site());
+        
+        let arg_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
+        let arg_tokens = arg_tokens?;
+        
+        Ok(quote! {
+            #receiver_tokens.#method_ident(#(#arg_tokens),*)
         })
     }
     

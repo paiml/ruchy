@@ -69,6 +69,11 @@ pub enum ExprKind {
         func: Box<Expr>,
         args: Vec<Expr>,
     },
+    MethodCall {
+        receiver: Box<Expr>,
+        method: String,
+        args: Vec<Expr>,
+    },
     Block(Vec<Expr>),
     Pipeline {
         expr: Box<Expr>,

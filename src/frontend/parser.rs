@@ -133,12 +133,24 @@ impl<'a> Parser<'a> {
                 let span = *span;
                 self.tokens.advance();
 
-                // Check for function call
-                if let Some((Token::LeftParen, _)) = self.tokens.peek() {
-                    self.parse_call(Expr::new(ExprKind::Identifier(name), span))
-                } else {
-                    Ok(Expr::new(ExprKind::Identifier(name), span))
+                let mut expr = Expr::new(ExprKind::Identifier(name), span);
+                
+                // Check for method calls or function calls
+                loop {
+                    match self.tokens.peek() {
+                        Some((Token::Dot, _)) => {
+                            self.tokens.advance();
+                            expr = self.parse_method_call(expr)?;
+                        }
+                        Some((Token::LeftParen, _)) => {
+                            expr = self.parse_call(expr)?;
+                            break;
+                        }
+                        _ => break,
+                    }
                 }
+                
+                Ok(expr)
             }
             Some((Token::If, _)) => self.parse_if(),
             Some((Token::Let, _)) => self.parse_let(),
@@ -444,6 +456,53 @@ impl<'a> Parser<'a> {
             },
             span,
         ))
+    }
+
+    fn parse_method_call(&mut self, receiver: Expr) -> Result<Expr> {
+        let method = match self.tokens.advance() {
+            Some((Token::Identifier(name), _)) => name,
+            _ => bail!("Expected method name after '.'"),
+        };
+
+        // Check if it's a method call (with parentheses) or field access
+        if let Some((Token::LeftParen, _)) = self.tokens.peek() {
+            self.tokens.advance();
+            let mut args = Vec::new();
+
+            while !matches!(self.tokens.peek(), Some((Token::RightParen, _))) {
+                args.push(self.parse_expr()?);
+
+                if let Some((Token::Comma, _)) = self.tokens.peek() {
+                    self.tokens.advance();
+                } else {
+                    break;
+                }
+            }
+
+            let end_span = self.tokens.expect(Token::RightParen)?;
+            let span = receiver.span.merge(end_span);
+
+            Ok(Expr::new(
+                ExprKind::MethodCall {
+                    receiver: Box::new(receiver),
+                    method,
+                    args,
+                },
+                span,
+            ))
+        } else {
+            // For now, treat field access as a method call with no args
+            // In the future, we might want a separate FieldAccess variant
+            let span = receiver.span;
+            Ok(Expr::new(
+                ExprKind::MethodCall {
+                    receiver: Box::new(receiver),
+                    method,
+                    args: Vec::new(),
+                },
+                span,
+            ))
+        }
     }
 
     fn parse_pipeline(&mut self, expr: Expr) -> Result<Expr> {
@@ -824,6 +883,39 @@ mod tests {
                 assert!(items.is_empty());
             }
             _ => panic!("Expected import"),
+        }
+    }
+
+    #[test]
+    fn test_parse_method_call() {
+        let mut parser = Parser::new("x.foo()");
+        let expr = parser.parse().expect("Failed to parse method call");
+        match expr.kind {
+            ExprKind::MethodCall { method, args, .. } => {
+                assert_eq!(method, "foo");
+                assert_eq!(args.len(), 0);
+            }
+            _ => panic!("Expected method call"),
+        }
+
+        let mut parser = Parser::new("list.push(42)");
+        let expr = parser.parse().expect("Failed to parse method call with args");
+        match expr.kind {
+            ExprKind::MethodCall { method, args, .. } => {
+                assert_eq!(method, "push");
+                assert_eq!(args.len(), 1);
+            }
+            _ => panic!("Expected method call"),
+        }
+
+        let mut parser = Parser::new("obj.method(1, 2, 3)");
+        let expr = parser.parse().expect("Failed to parse method call with multiple args");
+        match expr.kind {
+            ExprKind::MethodCall { method, args, .. } => {
+                assert_eq!(method, "method");
+                assert_eq!(args.len(), 3);
+            }
+            _ => panic!("Expected method call"),
         }
     }
 }
