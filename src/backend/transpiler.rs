@@ -438,14 +438,14 @@ impl Transpiler {
         // For now, we'll just generate a comment since use statements need special handling
         if items.is_empty() {
             // Simple import: import std::io
-            let comment = format!("// use {};", path);
+            let _comment = format!("// use {path};");
             quote! {
                 // Import would be: use #path;
             }
         } else {
             // Import with items: import std::io::{Read, Write}
             let items_str = items.join(", ");
-            let comment = format!("// use {}::{{{}}};", path, items_str);
+            let _comment = format!("// use {path}::{{{items_str}}};");
             quote! {
                 // Import would be: use #path::{#items_str};
             }

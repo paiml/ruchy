@@ -579,14 +579,9 @@ impl<'a> Parser<'a> {
         let mut path_parts = Vec::new();
 
         // Parse the path (e.g., std::io::prelude)
-        loop {
-            match self.tokens.peek() {
-                Some((Token::Identifier(part), _)) => {
-                    path_parts.push(part.clone());
-                    self.tokens.advance();
-                }
-                _ => break,
-            }
+        while let Some((Token::Identifier(part), _)) = self.tokens.peek() {
+            path_parts.push(part.clone());
+            self.tokens.advance();
 
             // Check for ::
             if !matches!(self.tokens.peek(), Some((Token::ColonColon, _))) {
