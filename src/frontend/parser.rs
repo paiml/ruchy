@@ -2,7 +2,7 @@
 
 #![allow(clippy::expect_used)] // Parser needs expect for checked conditions
 
-use crate::frontend::ast::{ActorHandler, Attribute, BinaryOp, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param, Pattern, PipelineStage, Span, StructField, TraitMethod, Type, TypeKind, UnaryOp};
+use crate::frontend::ast::{ActorHandler, Attribute, BinaryOp, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param, Pattern, PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp};
 use crate::frontend::lexer::{Token, TokenStream};
 use anyhow::{bail, Result};
 
@@ -222,7 +222,14 @@ impl<'a> Parser<'a> {
                 let s = s.clone();
                 let span = *span;
                 self.tokens.advance();
-                Ok(Expr::new(ExprKind::Literal(Literal::String(s)), span))
+                
+                // Check if the string contains interpolation markers
+                if s.contains('{') && s.contains('}') {
+                    let parts = self.parse_string_interpolation(&s)?;
+                    Ok(Expr::new(ExprKind::StringInterpolation { parts }, span))
+                } else {
+                    Ok(Expr::new(ExprKind::Literal(Literal::String(s)), span))
+                }
             }
             Some((Token::Bool(b), span)) => {
                 let b = *b;
@@ -604,16 +611,34 @@ impl<'a> Parser<'a> {
 
     fn parse_list(&mut self) -> Result<Expr> {
         let start_span = self.tokens.expect(Token::LeftBracket)?;
-        let mut elements = Vec::new();
-
-        while !matches!(self.tokens.peek(), Some((Token::RightBracket, _))) {
-            elements.push(self.parse_expr()?);
-
-            if let Some((Token::Comma, _)) = self.tokens.peek() {
-                self.tokens.advance();
-            } else {
-                break;
+        
+        // Check for empty list
+        if matches!(self.tokens.peek(), Some((Token::RightBracket, _))) {
+            let end_span = self.tokens.expect(Token::RightBracket)?;
+            let span = start_span.merge(end_span);
+            let list_expr = Expr::new(ExprKind::List(Vec::new()), span);
+            return self.handle_postfix_operators(list_expr);
+        }
+        
+        // Parse the first element
+        let first_element = self.parse_expr()?;
+        
+        // Check if this is a list comprehension by looking for 'for'
+        if matches!(self.tokens.peek(), Some((Token::For, _))) {
+            return self.parse_list_comprehension(start_span, first_element);
+        }
+        
+        // Regular list - continue parsing elements
+        let mut elements = vec![first_element];
+        
+        while let Some((Token::Comma, _)) = self.tokens.peek() {
+            self.tokens.advance(); // consume comma
+            
+            if matches!(self.tokens.peek(), Some((Token::RightBracket, _))) {
+                break; // trailing comma
             }
+            
+            elements.push(self.parse_expr()?);
         }
 
         let end_span = self.tokens.expect(Token::RightBracket)?;
@@ -621,6 +646,48 @@ impl<'a> Parser<'a> {
 
         let list_expr = Expr::new(ExprKind::List(elements), span);
         self.handle_postfix_operators(list_expr)
+    }
+
+    fn parse_list_comprehension(&mut self, start_span: Span, element: Expr) -> Result<Expr> {
+        // We've already parsed the element expression
+        // Now expect: for variable in iterable [if condition]
+        
+        self.tokens.expect(Token::For)?;
+        
+        // Parse variable name
+        let variable = if let Some((Token::Identifier(name), _)) = self.tokens.advance() {
+            name
+        } else {
+            bail!("Expected variable name after 'for' in list comprehension");
+        };
+        
+        self.tokens.expect(Token::In)?;
+        
+        // Parse iterable expression
+        let iterable = self.parse_expr()?;
+        
+        // Check for optional if condition
+        let condition = if matches!(self.tokens.peek(), Some((Token::If, _))) {
+            self.tokens.advance(); // consume 'if'
+            Some(Box::new(self.parse_expr()?))
+        } else {
+            None
+        };
+        
+        let end_span = self.tokens.expect(Token::RightBracket)?;
+        let span = start_span.merge(end_span);
+        
+        let comprehension_expr = Expr::new(
+            ExprKind::ListComprehension {
+                element: Box::new(element),
+                variable,
+                iterable: Box::new(iterable),
+                condition,
+            },
+            span,
+        );
+        
+        self.handle_postfix_operators(comprehension_expr)
     }
 
     fn parse_dataframe(&mut self) -> Result<Expr> {
@@ -1474,6 +1541,69 @@ impl<'a> Parser<'a> {
         
         Ok(attributes)
     }
+
+    /// Parse string interpolation from a string containing {expr} patterns
+    fn parse_string_interpolation(&mut self, s: &str) -> Result<Vec<StringPart>> {
+        let mut parts = Vec::new();
+        let mut current_text = String::new();
+        let mut chars = s.chars().peekable();
+        
+        while let Some(ch) = chars.next() {
+            if ch == '{' && chars.peek() == Some(&'{') {
+                // Escaped brace: {{
+                chars.next(); // consume second '{'
+                current_text.push('{');
+            } else if ch == '}' && chars.peek() == Some(&'}') {
+                // Escaped brace: }}
+                chars.next(); // consume second '}'
+                current_text.push('}');
+            } else if ch == '{' {
+                // Start of interpolation
+                if !current_text.is_empty() {
+                    parts.push(StringPart::Text(current_text.clone()));
+                    current_text.clear();
+                }
+                
+                // Collect expression until closing '}'
+                let mut expr_text = String::new();
+                let mut brace_count = 1;
+                
+                #[allow(clippy::while_let_on_iterator)]
+                while let Some(ch) = chars.next() {
+                    if ch == '{' {
+                        brace_count += 1;
+                        expr_text.push(ch);
+                    } else if ch == '}' {
+                        brace_count -= 1;
+                        if brace_count == 0 {
+                            break;
+                        }
+                        expr_text.push(ch);
+                    } else {
+                        expr_text.push(ch);
+                    }
+                }
+                
+                if brace_count > 0 {
+                    bail!("Unclosed interpolation expression in string");
+                }
+                
+                // Parse the expression
+                let mut expr_parser = Parser::new(&expr_text);
+                let expr = expr_parser.parse_expr()?;
+                parts.push(StringPart::Expr(Box::new(expr)));
+            } else {
+                current_text.push(ch);
+            }
+        }
+        
+        // Add remaining text
+        if !current_text.is_empty() {
+            parts.push(StringPart::Text(current_text));
+        }
+        
+        Ok(parts)
+    }
 }
 
 #[cfg(test)]
@@ -2100,6 +2230,273 @@ mod tests {
                 }
             }
             _ => panic!("Expected method call"),
+        }
+    }
+
+    #[test]
+    fn test_parse_list_comprehension_basic() {
+        let mut parser = Parser::new("[x * 2 for x in numbers]");
+        let expr = parser.parse_expr().unwrap();
+
+        match expr.kind {
+            ExprKind::ListComprehension { element, variable, iterable, condition } => {
+                assert_eq!(variable, "x");
+                assert!(condition.is_none());
+                
+                match element.kind {
+                    ExprKind::Binary { left, op, right } => {
+                        assert_eq!(op, BinaryOp::Multiply);
+                        match left.kind {
+                            ExprKind::Identifier(name) => assert_eq!(name, "x"),
+                            _ => panic!("Expected identifier in element"),
+                        }
+                        match right.kind {
+                            ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 2),
+                            _ => panic!("Expected integer literal"),
+                        }
+                    }
+                    _ => panic!("Expected binary expression in element"),
+                }
+
+                match iterable.kind {
+                    ExprKind::Identifier(name) => assert_eq!(name, "numbers"),
+                    _ => panic!("Expected identifier in iterable"),
+                }
+            }
+            _ => panic!("Expected list comprehension"),
+        }
+    }
+
+    #[test]
+    fn test_parse_list_comprehension_with_condition() {
+        let mut parser = Parser::new("[x for x in numbers if x > 0]");
+        let expr = parser.parse_expr().unwrap();
+
+        match expr.kind {
+            ExprKind::ListComprehension { element, variable, iterable, condition } => {
+                assert_eq!(variable, "x");
+                assert!(condition.is_some());
+                
+                match element.kind {
+                    ExprKind::Identifier(name) => assert_eq!(name, "x"),
+                    _ => panic!("Expected identifier in element"),
+                }
+
+                match iterable.kind {
+                    ExprKind::Identifier(name) => assert_eq!(name, "numbers"),
+                    _ => panic!("Expected identifier in iterable"),
+                }
+
+                if let Some(cond) = condition {
+                    match cond.kind {
+                        ExprKind::Binary { left, op, right } => {
+                            assert_eq!(op, BinaryOp::Greater);
+                            match left.kind {
+                                ExprKind::Identifier(name) => assert_eq!(name, "x"),
+                                _ => panic!("Expected identifier in condition"),
+                            }
+                            match right.kind {
+                                ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 0),
+                                _ => panic!("Expected integer literal"),
+                            }
+                        }
+                        _ => panic!("Expected binary expression in condition"),
+                    }
+                }
+            }
+            _ => panic!("Expected list comprehension"),
+        }
+    }
+
+    #[test]
+    fn test_parse_list_comprehension_complex() {
+        let mut parser = Parser::new("[x.value * y for x in items if x.active]");
+        let expr = parser.parse_expr().unwrap();
+
+        match expr.kind {
+            ExprKind::ListComprehension { element, variable, iterable, condition } => {
+                assert_eq!(variable, "x");
+                assert!(condition.is_some());
+
+                match iterable.kind {
+                    ExprKind::Identifier(name) => assert_eq!(name, "items"),
+                    _ => panic!("Expected identifier in iterable"),
+                }
+                
+                match element.kind {
+                    ExprKind::Binary { left, op, right } => {
+                        assert_eq!(op, BinaryOp::Multiply);
+                        match left.kind {
+                            ExprKind::FieldAccess { object, field } => {
+                                assert_eq!(field, "value");
+                                match object.kind {
+                                    ExprKind::Identifier(name) => assert_eq!(name, "x"),
+                                    _ => panic!("Expected identifier in field access"),
+                                }
+                            }
+                            _ => panic!("Expected field access in left side"),
+                        }
+                        match right.kind {
+                            ExprKind::Identifier(name) => assert_eq!(name, "y"),
+                            _ => panic!("Expected identifier in right side"),
+                        }
+                    }
+                    _ => panic!("Expected binary expression in element"),
+                }
+
+                if let Some(cond) = condition {
+                    match cond.kind {
+                        ExprKind::FieldAccess { object, field } => {
+                            assert_eq!(field, "active");
+                            match object.kind {
+                                ExprKind::Identifier(name) => assert_eq!(name, "x"),
+                                _ => panic!("Expected identifier in condition field access"),
+                            }
+                        }
+                        _ => panic!("Expected field access in condition"),
+                    }
+                }
+            }
+            _ => panic!("Expected list comprehension"),
+        }
+    }
+
+    #[test]
+    fn test_parse_regular_list_vs_comprehension() {
+        // Test that regular lists still parse correctly
+        let mut parser = Parser::new("[1, 2, 3]");
+        let expr = parser.parse_expr().unwrap();
+
+        match expr.kind {
+            ExprKind::List(items) => {
+                assert_eq!(items.len(), 3);
+                for (i, item) in items.iter().enumerate() {
+                    match item.kind {
+                        #[allow(clippy::cast_possible_wrap)] // Test data small enough for cast
+                        ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, (i + 1) as i64),
+                        _ => panic!("Expected integer literal"),
+                    }
+                }
+            }
+            _ => panic!("Expected regular list"),
+        }
+
+        // Test that list with 'for' name gets parsed correctly with proper spacing  
+        let mut parser = Parser::new("[x + 1, y * 2]");
+        let expr = parser.parse_expr().unwrap();
+
+        match expr.kind {
+            ExprKind::List(items) => {
+                assert_eq!(items.len(), 2);
+                // Should parse arithmetic expressions correctly
+                for item in &items {
+                    match item.kind {
+                        ExprKind::Binary { .. } => {},
+                        _ => panic!("Expected binary expression"),
+                    }
+                }
+            }
+            _ => panic!("Expected regular list"),
+        }
+    }
+
+    #[test]
+    fn test_parse_string_interpolation_simple() {
+        let mut parser = Parser::new("\"Hello, {name}!\"");
+        let expr = parser.parse().expect("Failed to parse string interpolation");
+        match expr.kind {
+            ExprKind::StringInterpolation { parts } => {
+                assert_eq!(parts.len(), 3);
+                match &parts[0] {
+                    StringPart::Text(text) => assert_eq!(text, "Hello, "),
+                    StringPart::Expr(_) => panic!("Expected text part"),
+                }
+                match &parts[1] {
+                    StringPart::Expr(expr) => match &expr.kind {
+                        ExprKind::Identifier(name) => assert_eq!(name, "name"),
+                        _ => panic!("Expected identifier"),
+                    },
+                    StringPart::Text(_) => panic!("Expected expression part"),
+                }
+                match &parts[2] {
+                    StringPart::Text(text) => assert_eq!(text, "!"),
+                    StringPart::Expr(_) => panic!("Expected text part"),
+                }
+            }
+            _ => panic!("Expected string interpolation"),
+        }
+    }
+
+    #[test]
+    fn test_parse_string_interpolation_complex() {
+        let mut parser = Parser::new("\"Result: {x + y} (calculated at {time})\"");
+        let expr = parser.parse().expect("Failed to parse complex interpolation");
+        match expr.kind {
+            ExprKind::StringInterpolation { parts } => {
+                assert_eq!(parts.len(), 5);
+                match &parts[0] {
+                    StringPart::Text(text) => assert_eq!(text, "Result: "),
+                    StringPart::Expr(_) => panic!("Expected text part"),
+                }
+                match &parts[1] {
+                    StringPart::Expr(expr) => match &expr.kind {
+                        ExprKind::Binary { .. } => {}, // x + y
+                        _ => panic!("Expected binary expression"),
+                    },
+                    StringPart::Text(_) => panic!("Expected expression part"),
+                }
+                match &parts[2] {
+                    StringPart::Text(text) => assert_eq!(text, " (calculated at "),
+                    StringPart::Expr(_) => panic!("Expected text part"),
+                }
+                match &parts[3] {
+                    StringPart::Expr(expr) => match &expr.kind {
+                        ExprKind::Identifier(name) => assert_eq!(name, "time"),
+                        _ => panic!("Expected identifier"),
+                    },
+                    StringPart::Text(_) => panic!("Expected expression part"),
+                }
+                match &parts[4] {
+                    StringPart::Text(text) => assert_eq!(text, ")"),
+                    StringPart::Expr(_) => panic!("Expected text part"),
+                }
+            }
+            _ => panic!("Expected string interpolation"),
+        }
+    }
+
+    #[test]
+    fn test_parse_string_interpolation_escaped_braces() {
+        let mut parser = Parser::new("\"Value: {{static}} and {dynamic}\"");
+        let expr = parser.parse().expect("Failed to parse escaped braces");
+        match expr.kind {
+            ExprKind::StringInterpolation { parts } => {
+                assert_eq!(parts.len(), 2);
+                match &parts[0] {
+                    StringPart::Text(text) => assert_eq!(text, "Value: {static} and "),
+                    StringPart::Expr(_) => panic!("Expected text part"),
+                }
+                match &parts[1] {
+                    StringPart::Expr(expr) => match &expr.kind {
+                        ExprKind::Identifier(name) => assert_eq!(name, "dynamic"),
+                        _ => panic!("Expected identifier"),
+                    },
+                    StringPart::Text(_) => panic!("Expected expression part"),
+                }
+            }
+            _ => panic!("Expected string interpolation"),
+        }
+    }
+
+    #[test]
+    fn test_parse_string_no_interpolation() {
+        let mut parser = Parser::new("\"Simple string\"");
+        let expr = parser.parse().expect("Failed to parse simple string");
+        match expr.kind {
+            ExprKind::Literal(Literal::String(s)) => {
+                assert_eq!(s, "Simple string");
+            }
+            _ => panic!("Expected string literal"),
         }
     }
 }

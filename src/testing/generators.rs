@@ -46,6 +46,26 @@ pub fn arb_identifier() -> BoxedStrategy<String> {
         .boxed()
 }
 
+/// Generate arbitrary string parts for interpolation
+pub fn arb_string_part() -> BoxedStrategy<StringPart> {
+    prop_oneof![
+        // Text parts (avoiding braces to prevent confusion)
+        "[a-zA-Z0-9 .,!?]+".prop_map(StringPart::Text),
+        // Expression parts (simple expressions for now)
+        arb_simple_expr().prop_map(|expr| StringPart::Expr(Box::new(expr))),
+    ]
+    .boxed()
+}
+
+/// Generate simple expressions for use in string interpolation
+pub fn arb_simple_expr() -> BoxedStrategy<Expr> {
+    prop_oneof![
+        arb_literal().prop_map(|lit| Expr::new(ExprKind::Literal(lit), Span::default())),
+        arb_identifier().prop_map(|id| Expr::new(ExprKind::Identifier(id), Span::default())),
+    ]
+    .boxed()
+}
+
 fn is_keyword(s: &str) -> bool {
     matches!(
         s,

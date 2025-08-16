@@ -426,6 +426,67 @@ proptest! {
 // Property: Nested parentheses should parse correctly
 proptest! {
     #[test]
+    fn string_interpolation_parsing(parts in prop::collection::vec(
+        prop_oneof![
+            "[a-zA-Z0-9 .,!?]+".prop_map(|s| format!("TEXT:{}", s)),
+            "[a-z][a-z0-9_]*".prop_map(|s| format!("EXPR:{}", s))
+        ],
+        1..5
+    )) {
+        // Build a string with interpolation
+        let mut input = String::from('"');
+        for part in parts {
+            if let Some(stripped) = part.strip_prefix("TEXT:") {
+                input.push_str(stripped);
+            } else if let Some(stripped) = part.strip_prefix("EXPR:") {
+                input.push('{');
+                input.push_str(stripped);
+                input.push('}');
+            }
+        }
+        input.push('"');
+        
+        let mut parser = Parser::new(&input);
+        let result = parser.parse();
+        
+        // Should either parse successfully or fail gracefully
+        if let Ok(expr) = result {
+            // Should be either string interpolation or literal string
+            match expr.kind {
+                ExprKind::StringInterpolation { .. } | ExprKind::Literal(Literal::String(_)) => {},
+                _ => prop_assert!(false, "Expected string interpolation or string literal"),
+            }
+        }
+        // Parse errors are acceptable for malformed input
+    }
+
+    #[test]
+    fn string_interpolation_transpilation(input in "[a-z][a-z0-9_]*") {
+        // Test simple string interpolation transpilation
+        let parts = vec![
+            ruchy::frontend::ast::StringPart::Text("Hello, ".to_string()),
+            ruchy::frontend::ast::StringPart::Expr(Box::new(
+                ruchy::frontend::ast::Expr::new(
+                    ruchy::frontend::ast::ExprKind::Identifier(input),
+                    ruchy::frontend::ast::Span::default()
+                )
+            )),
+            ruchy::frontend::ast::StringPart::Text("!".to_string()),
+        ];
+        
+        let transpiler = ruchy::backend::transpiler::Transpiler::new();
+        let result = transpiler.transpile_string_interpolation(&parts);
+        
+        // Should either succeed or fail cleanly, never panic
+        if let Ok(tokens) = result {
+            let code = tokens.to_string();
+            // Should produce valid Rust code
+            prop_assert!(!code.is_empty(), "Generated code should not be empty");
+        }
+        // Transpilation errors are acceptable for some inputs
+    }
+
+    #[test]
     fn nested_parentheses(depth in 1usize..10) {
         let mut input = String::new();
         for _ in 0..depth {

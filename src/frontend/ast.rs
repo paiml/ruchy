@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Source location tracking for error reporting
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct Span {
     pub start: usize,
     pub end: usize,
@@ -45,6 +45,9 @@ impl Expr {
 pub enum ExprKind {
     Literal(Literal),
     Identifier(String),
+    StringInterpolation {
+        parts: Vec<StringPart>,
+    },
     Binary {
         left: Box<Expr>,
         op: BinaryOp,
@@ -140,6 +143,12 @@ pub enum ExprKind {
         arms: Vec<MatchArm>,
     },
     List(Vec<Expr>),
+    ListComprehension {
+        element: Box<Expr>,
+        variable: String,
+        iterable: Box<Expr>,
+        condition: Option<Box<Expr>>,
+    },
     DataFrame {
         columns: Vec<String>,
         rows: Vec<Vec<Expr>>,
@@ -177,6 +186,15 @@ pub enum Literal {
     String(String),
     Bool(bool),
     Unit,
+}
+
+/// String interpolation parts - either literal text or an expression
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum StringPart {
+    /// Literal text portion of the string
+    Text(String),
+    /// Expression to be interpolated
+    Expr(Box<Expr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
