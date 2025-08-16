@@ -63,6 +63,7 @@ impl InferenceContext {
                 return_type,
             } => self.infer_function(name, params, body, return_type.as_ref()),
             ExprKind::Call { func, args } => self.infer_call(func, args),
+            ExprKind::MethodCall { receiver, method, args } => self.infer_method_call(receiver, method, args),
             ExprKind::Block(exprs) => self.infer_block(exprs),
             ExprKind::List(elements) => self.infer_list(elements),
             ExprKind::Match { expr, arms } => self.infer_match(expr, arms),
@@ -259,6 +260,77 @@ impl InferenceContext {
         Ok(self.unifier.apply(&result_ty))
     }
 
+    fn infer_method_call(&mut self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<MonoType> {
+        let receiver_ty = self.infer_expr(receiver)?;
+        
+        // For now, we'll handle some common methods
+        // In a complete implementation, we'd have a method resolution system
+        match (method, &receiver_ty) {
+            // List methods
+            ("len" | "length", MonoType::List(_)) => {
+                if !args.is_empty() {
+                    bail!("Method {} takes no arguments", method);
+                }
+                Ok(MonoType::Int)
+            }
+            ("push", MonoType::List(elem_ty)) => {
+                if args.len() != 1 {
+                    bail!("Method push takes exactly one argument");
+                }
+                let arg_ty = self.infer_expr(&args[0])?;
+                self.unifier.unify(&arg_ty, elem_ty)?;
+                Ok(MonoType::Unit)
+            }
+            ("pop", MonoType::List(elem_ty)) => {
+                if !args.is_empty() {
+                    bail!("Method pop takes no arguments");
+                }
+                Ok(MonoType::Optional(elem_ty.clone()))
+            }
+            // String methods
+            ("len" | "length", MonoType::String) => {
+                if !args.is_empty() {
+                    bail!("Method {} takes no arguments", method);
+                }
+                Ok(MonoType::Int)
+            }
+            ("chars", MonoType::String) => {
+                if !args.is_empty() {
+                    bail!("Method chars takes no arguments");
+                }
+                Ok(MonoType::List(Box::new(MonoType::String))) // List of chars (as strings for now)
+            }
+            // Generic case - treat as a function call with receiver as first argument
+            _ => {
+                // Look up method in environment
+                if let Some(scheme) = self.env.lookup(method) {
+                    let method_ty = self.env.instantiate(scheme, &mut self.gen);
+                    
+                    // Create type for the method call (receiver is first argument)
+                    let result_ty = MonoType::Var(self.gen.fresh());
+                    let mut expected_func_ty = result_ty.clone();
+                    
+                    for arg in args.iter().rev() {
+                        let arg_ty = self.infer_expr(arg)?;
+                        expected_func_ty = MonoType::Function(Box::new(arg_ty), Box::new(expected_func_ty));
+                    }
+                    
+                    // Add receiver as first argument
+                    expected_func_ty = MonoType::Function(
+                        Box::new(receiver_ty),
+                        Box::new(expected_func_ty),
+                    );
+                    
+                    self.unifier.unify(&method_ty, &expected_func_ty)?;
+                    Ok(self.unifier.apply(&result_ty))
+                } else {
+                    // Unknown method - for now just return a type variable
+                    Ok(MonoType::Var(self.gen.fresh()))
+                }
+            }
+        }
+    }
+    
     fn infer_block(&mut self, exprs: &[Expr]) -> Result<MonoType> {
         if exprs.is_empty() {
             return Ok(MonoType::Unit);
