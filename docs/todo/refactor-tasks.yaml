@@ -1,0 +1,211 @@
+  ```yaml
+  # Ruchy Compiler Refactoring Report
+  # Critical Path to v1.0 Production Readiness
+  # Generated: 2025-01-17
+
+  project_health_assessment:
+    critical_metrics:
+      - parser_complexity: "1575 LoC in single file - architectural emergency"
+      - transpiler_complexity: "897 LoC monolith - violates single responsibility"
+      - test_coverage: "65% - unacceptable for compiler infrastructure"
+      - technical_debt: "158 SATD markers - normalized corner-cutting"
+      - defect_probability: "70% in CLI entry point - systemic quality issues"
+
+    root_cause_analysis:
+      primary_failure: "Feature velocity prioritized over foundational quality"
+      secondary_failures:
+        - "Insufficient modularization boundaries"
+        - "Absent intermediate representation layer"
+        - "Missing property-based invariant testing"
+        - "Coupling between parsing and code generation"
+
+  execution_phases:
+    phase_1_fortification:
+      freeze_directive: "NO NEW FEATURES until completion"
+      duration: "2 weeks"
+      success_criteria: "80% test coverage, zero SATD comments"
+
+      tasks:
+        test_coverage_improvement:
+          priority: P0
+          current: "65%"
+          target: "85%"
+          focus_areas:
+            - transpiler_edge_cases: "Pattern exhaustiveness, type lowering"
+            - parser_precedence: "Operator associativity, error recovery"
+            - type_inference: "Polymorphic instantiation, constraint solving"
+          implementation:
+            - property_tests: "QuickCheck invariants for AST transformations"
+            - mutation_testing: "Verify test effectiveness with cargo-mutants"
+            - coverage_enforcement: "CI gate at 80% minimum"
+
+        repl_technical_debt:
+          priority: P0
+          satd_count: 158
+          actions:
+            - replace_println_with_structured_errors: "Use thiserror crate"
+            - implement_result_types: "No unwrap() in production paths"
+            - add_integration_tests: "Full REPL session property tests"
+
+        parser_modularization:
+          priority: P0
+          current_complexity: 1575
+          target_per_module: "<300"
+          decomposition:
+            - expression_parser: "src/frontend/expr_parser.rs"
+            - statement_parser: "src/frontend/stmt_parser.rs"
+            - pattern_parser: "src/frontend/pattern_parser.rs"
+            - precedence_climber: "src/frontend/precedence.rs"
+            - error_recovery: "src/frontend/recovery.rs"
+
+    phase_2_architectural_rebirth:
+      duration: "3 weeks"
+      success_criteria: "MIR pipeline operational, <5% performance regression"
+
+      tasks:
+        mir_implementation:
+          priority: P0
+          description: "Decouple frontend from backend via intermediate representation"
+
+          core_types:
+            location: "src/middleend/mir/mod.rs"
+            structures:
+              - BasicBlock: "Label, statements, terminator"
+              - Statement: "Assignment, StorageLive, StorageDead"
+              - Terminator: "Return, Jump, Switch, Call"
+              - Rvalue: "Use, BinaryOp, UnaryOp, Aggregate"
+              - Place: "Local variable or projection"
+
+          lowering_pipeline:
+            location: "src/middleend/lower.rs"
+            phases:
+              - name_resolution: "Resolve all identifiers to De Bruijn indices"
+              - pattern_compilation: "Decision trees from match arms"
+              - closure_conversion: "Lambda lifting with explicit captures"
+              - control_flow_graph: "Linear code to basic blocks"
+
+          optimization_passes:
+            location: "src/middleend/optimize/"
+            mandatory:
+              - dead_code_elimination: "Mark-and-sweep on CFG"
+              - constant_propagation: "SCCP algorithm"
+              - common_subexpression: "Value numbering"
+            optional:
+              - inline_expansion: "Cost model based on IR size"
+              - loop_invariant_motion: "LICM with alias analysis"
+
+          backend_trait:
+            location: "src/backend/codegen.rs"
+            interface: |
+              trait CodeGenerator {
+                type Output;
+                fn generate(&mut self, mir: &Mir) -> Result<Self::Output>;
+              }
+            implementations:
+              - RustBackend: "MIR -> syn::File"
+              - CraneliftBackend: "MIR -> cranelift_codegen::ir::Function"
+              - InterpreterBackend: "MIR -> runtime::Value"
+
+    phase_3_controlled_innovation:
+      duration: "4 weeks"
+      success_criteria: "Feature parity with specification"
+
+      tasks:
+        actor_system:
+          priority: P0
+          architecture: "Erlang OTP principles with Rust ownership"
+
+          supervision_tree:
+            location: "src/runtime/actors/supervisor.rs"
+            strategies:
+              - one_for_one: "Restart failed child only"
+              - one_for_all: "Restart all children on any failure"
+              - rest_for_one: "Restart failed child and younger siblings"
+            implementation:
+              - "Arc<Mutex<SupervisorState>> for shared state"
+              - "tokio::select! for concurrent child monitoring"
+              - "Exponential backoff with jitter for restarts"
+
+          message_passing:
+            location: "src/runtime/actors/mailbox.rs"
+            design:
+              - bounded_mpsc: "tokio::sync::mpsc with backpressure"
+              - selective_receive: "Pattern guards on message queue"
+              - priority_queue: "Binary heap for message ordering"
+
+          lifecycle_hooks:
+            - pre_start: "Resource acquisition"
+            - post_stop: "Cleanup handlers"
+            - pre_restart: "State preservation"
+
+        mcp_integration:
+          priority: P0
+          description: "Compiler-aware Model Context Protocol"
+
+          type_system_integration:
+            location: "src/middleend/mcp_types.rs"
+            features:
+              - tool_signatures: "Function types map to MCP tools"
+              - context_types: "Conversation state as refinement types"
+              - capability_types: "Static verification of protocol adherence"
+
+          code_generation:
+            location: "src/backend/mcp_codegen.rs"
+            outputs:
+              - client_stubs: "Async trait implementations"
+              - server_scaffolding: "Handler registration boilerplate"
+              - transport_adapters: "stdio/WebSocket/pipe abstractions"
+
+  quality_gates:
+    phase_transitions:
+      phase_1_to_2:
+        - "Test coverage >= 80%"
+        - "Zero SATD comments"
+        - "Parser complexity < 300 per module"
+
+      phase_2_to_3:
+        - "MIR pipeline passes all tests"
+        - "Performance regression < 5%"
+        - "Clean architecture validation via cargo-deny"
+
+      release_1_0:
+        - "Test coverage >= 85%"
+        - "Zero known defects > P2"
+        - "Benchmark parity with handwritten Rust"
+        - "Property tests for all invariants"
+
+  risk_mitigation:
+    complexity_creep:
+      monitoring: "Weekly complexity metrics via rust-code-analysis"
+      threshold: "Alert if any module > 300 LoC complexity"
+      action: "Immediate refactoring sprint"
+
+    performance_regression:
+      monitoring: "Continuous benchmarking via criterion"
+      threshold: "5% degradation blocks merge"
+      action: "Profile with perf, optimize hot paths"
+
+    test_quality:
+      monitoring: "Mutation testing coverage"
+      threshold: "80% mutant kill rate"
+      action: "Strengthen test assertions"
+
+  success_metrics:
+    technical:
+      - startup_time: "< 10ms"
+      - repl_latency: "< 15ms"
+      - transpilation_overhead: "< 5% vs handwritten"
+      - binary_size: "< 5MB minimal runtime"
+
+    quality:
+      - test_coverage: "> 85%"
+      - cyclomatic_complexity: "< 10 per function"
+      - cognitive_complexity: "< 15 per function"
+      - defect_density: "< 0.1 per KLOC"
+
+  conclusion:
+    status: "Project at critical inflection point"
+    prescription: "Disciplined execution of three-phase plan"
+    timeline: "9 weeks to stable v1.0 foundation"
+    outcome: "Transform from fragile prototype to industrial-strength compiler"
+    ```

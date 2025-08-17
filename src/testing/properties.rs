@@ -51,7 +51,7 @@ pub fn prop_transpilation_preserves_structure(expr: Expr) -> Result<(), TestCase
 pub fn prop_string_interpolation_transpiles(parts: Vec<StringPart>) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
     let result = transpiler.transpile_string_interpolation(&parts);
-    
+
     // Should either succeed or fail cleanly, never panic
     if let Ok(tokens) = result {
         let code = tokens.to_string();

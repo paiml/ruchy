@@ -41,13 +41,10 @@ fn arb_valid_expression() -> impl Strategy<Value = String> {
         any::<i32>().prop_map(|n| n.to_string()),
         "true|false",
         r#""[a-zA-Z0-9 ]*""#,
-        
         // Simple arithmetic
         (any::<i32>(), any::<i32>()).prop_map(|(a, b)| format!("{a} + {b}")),
-        
         // Variables
         "[a-z][a-z0-9]*",
-        
         // Let bindings
         ("[a-z][a-z0-9]*", any::<i32>()).prop_map(|(var, val)| format!("let {var} = {val}")),
     ]
@@ -66,21 +63,11 @@ fn arb_repl_action() -> impl Strategy<Value = ReplAction> {
 
 fn apply_action(repl: &mut Repl, action: &ReplAction) -> Result<String, String> {
     match action {
-        ReplAction::Eval(expr) => {
-            repl.eval(expr).map_err(|e| e.to_string())
-        }
-        ReplAction::ShowHistory => {
-            Ok(repl.show_history())
-        }
-        ReplAction::ShowType(var) => {
-            repl.show_type(var).map_err(|e| e.to_string())
-        }
-        ReplAction::ShowRust(expr) => {
-            repl.show_rust(expr).map_err(|e| e.to_string())
-        }
-        ReplAction::ShowAst(expr) => {
-            repl.show_ast(expr).map_err(|e| e.to_string())
-        }
+        ReplAction::Eval(expr) => repl.eval(expr).map_err(|e| e.to_string()),
+        ReplAction::ShowHistory => Ok(repl.show_history()),
+        ReplAction::ShowType(var) => repl.show_type(var).map_err(|e| e.to_string()),
+        ReplAction::ShowRust(expr) => repl.show_rust(expr).map_err(|e| e.to_string()),
+        ReplAction::ShowAst(expr) => repl.show_ast(expr).map_err(|e| e.to_string()),
         ReplAction::Clear => {
             repl.clear_session();
             Ok("Session cleared".to_string())
@@ -95,7 +82,7 @@ proptest! {
     #[test]
     fn test_repl_never_panics(actions in prop::collection::vec(arb_repl_action(), 0..10)) {
         let mut repl = Repl::new().expect("Failed to create REPL");
-        
+
         for action in actions {
             // This should never panic - all errors should be handled gracefully
             let _result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -110,11 +97,11 @@ proptest! {
     fn test_session_counter_behavior(actions in prop::collection::vec(arb_repl_action(), 0..5)) {
         let mut repl = Repl::new().expect("Failed to create REPL");
         let mut prev_counter = 0;
-        
+
         for action in actions {
             let _ = apply_action(&mut repl, &action);
             let current_counter = repl.session_counter();
-            
+
             match action {
                 ReplAction::Clear => {
                     // Clear resets session counter to 0
@@ -123,13 +110,13 @@ proptest! {
                 }
                 ReplAction::Eval(_) => {
                     // Eval should increase session counter (if successful compilation happens)
-                    prop_assert!(current_counter >= prev_counter, 
+                    prop_assert!(current_counter >= prev_counter,
                         "Session counter should not decrease for eval: {} -> {}", prev_counter, current_counter);
                     prev_counter = current_counter;
                 }
                 _ => {
                     // Other operations should not change session counter
-                    prop_assert_eq!(current_counter, prev_counter, 
+                    prop_assert_eq!(current_counter, prev_counter,
                         "Show operations should not change session counter");
                 }
             }
@@ -142,17 +129,17 @@ proptest! {
         setup_actions in prop::collection::vec(arb_repl_action(), 1..5)
     ) {
         let mut repl = Repl::new().expect("Failed to create REPL");
-        
+
         // Perform some operations to build up state
         for action in setup_actions {
             let _ = apply_action(&mut repl, &action);
         }
-        
+
         // Clear the session
         apply_action(&mut repl, &ReplAction::Clear).expect("Clear should not fail");
-        
+
         let post_clear_state = ReplState::extract_from_repl(&repl);
-        
+
         // Verify reset
         prop_assert_eq!(post_clear_state.history_count, 0);
         prop_assert_eq!(post_clear_state.definitions_count, 0);
@@ -171,15 +158,15 @@ proptest! {
         ]
     ) {
         let mut repl = Repl::new().expect("Failed to create REPL");
-        
+
         // Set up some state
         let _ = apply_action(&mut repl, &ReplAction::Eval(setup_expr));
         let pre_state = ReplState::extract_from_repl(&repl);
-        
+
         // Perform show operation
         let _ = apply_action(&mut repl, &show_action);
         let post_state = ReplState::extract_from_repl(&repl);
-        
+
         // State should be unchanged
         prop_assert_eq!(pre_state.history_count, post_state.history_count);
         prop_assert_eq!(pre_state.definitions_count, post_state.definitions_count);
@@ -190,14 +177,14 @@ proptest! {
     #[test]
     fn test_valid_expressions_produce_output(expr in arb_valid_expression()) {
         let mut repl = Repl::new().expect("Failed to create REPL");
-        
+
         let result = apply_action(&mut repl, &ReplAction::Eval(expr.clone()));
-        
+
         // Should either succeed or fail gracefully with non-empty error
         match result {
             Ok(_) => {}, // Success is always good
             Err(error) => {
-                prop_assert!(!error.trim().is_empty(), 
+                prop_assert!(!error.trim().is_empty(),
                     "Expression '{}' produced empty error message", expr);
             }
         }
@@ -212,7 +199,7 @@ mod unit_tests {
     fn test_repl_state_extraction() {
         let repl = Repl::new().expect("Failed to create REPL");
         let state = ReplState::extract_from_repl(&repl);
-        
+
         assert_eq!(state.history_count, 0);
         assert_eq!(state.definitions_count, 0);
         assert_eq!(state.bindings_count, 0);
@@ -222,15 +209,15 @@ mod unit_tests {
     #[test]
     fn test_repl_basic_operations() {
         let mut repl = Repl::new().expect("Failed to create REPL");
-        
+
         // Test history
         let history = repl.show_history();
         assert!(history.contains("No history"));
-        
+
         // Test clear
         repl.clear_session();
         assert_eq!(repl.history().len(), 0);
-        
+
         // Test type checking
         let type_result = repl.show_type("unknown_var");
         assert!(type_result.is_ok());
@@ -239,7 +226,7 @@ mod unit_tests {
     #[test]
     fn test_apply_action_coverage() {
         let mut repl = Repl::new().expect("Failed to create REPL");
-        
+
         // Test all action types
         let actions = vec![
             ReplAction::Eval("42".to_string()),
@@ -249,7 +236,7 @@ mod unit_tests {
             ReplAction::ShowAst("1 + 1".to_string()),
             ReplAction::Clear,
         ];
-        
+
         for action in actions {
             let result = apply_action(&mut repl, &action);
             // Should not panic and should return some result

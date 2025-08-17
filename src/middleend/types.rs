@@ -157,9 +157,10 @@ impl MonoType {
     }
 
     /// Get free type variables in this type
-    #[must_use] pub fn free_vars(&self) -> Vec<TyVar> {
+    #[must_use]
+    pub fn free_vars(&self) -> Vec<TyVar> {
         use std::collections::HashSet;
-        
+
         fn collect_vars(ty: &MonoType, vars: &mut HashSet<TyVar>) {
             match ty {
                 MonoType::Var(v) => {
@@ -178,7 +179,7 @@ impl MonoType {
                 _ => {}
             }
         }
-        
+
         let mut vars = HashSet::new();
         collect_vars(self, &mut vars);
         vars.into_iter().collect()
@@ -204,7 +205,7 @@ mod tests {
     fn test_type_scheme_instantiation() {
         let mut gen = TyVarGenerator::new();
         let var = gen.fresh();
-        
+
         let scheme = TypeScheme {
             vars: vec![var.clone()],
             ty: MonoType::Function(
@@ -212,7 +213,7 @@ mod tests {
                 Box::new(MonoType::Var(var)),
             ),
         };
-        
+
         let instantiated = scheme.instantiate(&mut gen);
         match instantiated {
             MonoType::Function(arg, ret) => {
@@ -228,10 +229,10 @@ mod tests {
         let mut subst = HashMap::new();
         let var = TyVar(0);
         subst.insert(var.clone(), MonoType::Int);
-        
+
         let ty = MonoType::List(Box::new(MonoType::Var(var)));
         let result = ty.substitute(&subst);
-        
+
         assert_eq!(result, MonoType::List(Box::new(MonoType::Int)));
     }
 
@@ -239,17 +240,17 @@ mod tests {
     fn test_free_vars() {
         let var1 = TyVar(0);
         let var2 = TyVar(1);
-        
+
         let ty = MonoType::Function(
             Box::new(MonoType::Var(var1.clone())),
             Box::new(MonoType::List(Box::new(MonoType::Var(var2.clone())))),
         );
-        
+
         let free = ty.free_vars();
         assert_eq!(free.len(), 2);
         assert!(free.contains(&var1));
         assert!(free.contains(&var2));
-        
+
         // Test that duplicate variables are deduplicated
         let ty_dup = MonoType::Function(
             Box::new(MonoType::Var(var1.clone())),

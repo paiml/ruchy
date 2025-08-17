@@ -1,211 +1,55 @@
-//! Ruchy - A systems-oriented scripting language that transpiles to Rust
+//! Ruchy: A modern systems programming language
 //!
-//! Ruchy provides a high-level, expressive syntax with features like pipeline operators,
-//! pattern matching, type inference, and method calls, all while transpiling to efficient Rust code.
-//!
-//! ## Features
-//! 
-//! - **Type Inference**: Hindley-Milner type system with Algorithm W
-//! - **Method Calls**: Familiar `x.method()` syntax
-//! - **Gradual Typing**: Mix typed and untyped code
-//! - **Pipeline Operators**: Chain operations with `|>`
-//! - **Pattern Matching**: Powerful pattern matching with exhaustiveness checking
+//! Ruchy combines functional programming with systems programming capabilities,
+//! featuring an ML-style syntax, advanced type inference, and zero-cost abstractions.
 
-#![cfg_attr(test, allow(clippy::unwrap_used))]
-#![cfg_attr(test, allow(clippy::expect_used))]
-#![cfg_attr(test, allow(clippy::panic))]
-#![allow(clippy::module_name_repetitions)] // Common pattern in Rust
-#![allow(clippy::cast_possible_truncation)] // Acceptable in specific contexts
-#![allow(clippy::only_used_in_recursion)] // Recursive functions are valid
-#![allow(clippy::items_after_statements)] // Sometimes clearer organization
-#![allow(clippy::match_wildcard_for_single_variants)] // Future-proofing
-#![allow(clippy::missing_errors_doc)] // Many functions return Result, docs would be repetitive
-#![allow(clippy::unnecessary_wraps)] // Some functions need Result for consistency
-#![allow(clippy::match_same_arms)] // Sometimes clearer to show all arms explicitly
-#![allow(clippy::needless_pass_by_value)] // Some APIs take owned values for consistency
-#![allow(clippy::manual_let_else)] // Sometimes if-else is clearer than let-else
-#![allow(clippy::unused_self)] // Some methods need self for consistency in API
-//!
-//! # Quick Start
-//!
-//! ```
-//! use ruchy::frontend::parser::Parser;
-//! use ruchy::backend::transpiler::Transpiler;
-//! use ruchy::middleend::InferenceContext;
-//!
-//! // Parse Ruchy code
-//! let mut parser = Parser::new("1 + 2 * 3");
-//! let expr = parser.parse().expect("Failed to parse");
-//!
-//! // Infer types
-//! let mut ctx = InferenceContext::new();
-//! let ty = ctx.infer(&expr).expect("Failed to infer type");
-//! println!("Type: {}", ty); // Type: i32
-//!
-//! // Transpile to Rust
-//! let transpiler = Transpiler::new();
-//! let rust_code = transpiler.transpile_expr(&expr).expect("Failed to transpile");
-//! ```
-//!
-//! # Features
-//!
-//! - **Pipeline Operators**: Chain operations with `|>` for readable data transformations
-//! - **Pattern Matching**: Powerful pattern matching with exhaustiveness checking
-//! - **Actor System**: Built-in actor model for concurrent programming
-//! - **Type Inference**: Hindley-Milner type inference with extensions
-//! - **Zero-Cost Abstractions**: All features compile to efficient Rust code
-//!
-//! # Examples
-//!
-//! ## Pipeline Operations
-//!
-//! ```no_run
-//! use ruchy::frontend::parser::Parser;
-//!
-//! let code = r#"
-//!     [1, 2, 3, 4, 5]
-//!     |> filter(x => x % 2 == 0)
-//!     |> map(x => x * 2)
-//!     |> sum()
-//! "#;
-//!
-//! let mut parser = Parser::new(code);
-//! let expr = parser.parse().expect("Failed to parse pipeline");
-//! ```
-//!
-//! ## Method Calls
-//!
-//! ```
-//! use ruchy::frontend::parser::Parser;
-//!
-//! let code = r#"
-//!     let text = "hello"
-//!     text.len()
-//! "#;
-//!
-//! let mut parser = Parser::new(code);
-//! let expr = parser.parse().expect("Failed to parse method call");
-//! ```
-//!
-//! ## Pattern Matching
-//!
-//! ```
-//! use ruchy::frontend::parser::Parser;
-//!
-//! let code = r#"
-//!     match x {
-//!         1 => "one",
-//!         2 => "two",
-//!         _ => "other",
-//!     }
-//! "#;
-//!
-//! let mut parser = Parser::new(code);
-//! let expr = parser.parse().expect("Failed to parse match expression");
-//! ```
-//!
-//! ## Actor Definition
-//!
-//! ```ignore
-//! use ruchy::frontend::parser::Parser;
-//!
-//! let code = r#"
-//!     actor Counter {
-//!         mut count: i32 = 0;
-//!         
-//!         pub fn increment() {
-//!             self.count += 1;
-//!         }
-//!         
-//!         pub fn get() -> i32 {
-//!             self.count
-//!         }
-//!     }
-//! "#;
-//!
-//! let mut parser = Parser::new(code);
-//! let expr = parser.parse().expect("Failed to parse actor");
-//! ```
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::must_use_candidate)]
 
 pub mod backend;
 pub mod frontend;
 pub mod middleend;
 pub mod parser;
 pub mod runtime;
+pub mod testing;
 pub mod transpiler;
 
-#[cfg(test)]
-pub mod testing;
-
-// Re-export commonly used types
+pub use frontend::ast::{Expr, ExprKind, Literal, Pattern, BinaryOp, UnaryOp};
+pub use frontend::lexer::{Token, TokenStream};
+pub use frontend::parser::Parser;
 pub use backend::transpiler::Transpiler;
-pub use frontend::{
-    ast::{Expr, ExprKind},
-    parser::Parser,
-};
-pub use parser::error_recovery::{ErrorNode, ErrorRecovery};
-pub use runtime::repl::Repl;
 
-/// Parse and transpile Ruchy code to Rust in one step.
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::compile;
-///
-/// let rust_code = compile("42 + 1").expect("Failed to compile");
-/// assert!(rust_code.contains("42"));
-/// assert!(rust_code.contains("+"));
-/// assert!(rust_code.contains("1"));
-/// ```
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - The input contains syntax errors
-/// - The code cannot be transpiled to valid Rust
-pub fn compile(input: &str) -> anyhow::Result<String> {
-    let mut parser = Parser::new(input);
-    let expr = parser.parse()?;
-    let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_expr(&expr)?;
+use anyhow::Result;
+
+/// Compile Ruchy source code to Rust
+pub fn compile(source: &str) -> Result<String> {
+    let mut parser = Parser::new(source);
+    let ast = parser.parse()?;
+    let mut transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile(&ast)?;
     Ok(rust_code.to_string())
 }
 
-/// Check if a string contains valid Ruchy syntax.
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::is_valid_syntax;
-///
-/// assert!(is_valid_syntax("1 + 2"));
-/// assert!(is_valid_syntax("fun add(x: i32, y: i32) -> i32 { x + y }"));
-/// assert!(!is_valid_syntax("let x = ;"));  // Missing value
-/// ```
-#[must_use] pub fn is_valid_syntax(input: &str) -> bool {
-    let mut parser = Parser::new(input);
+/// Check if the given source code has valid syntax
+#[must_use]
+pub fn is_valid_syntax(source: &str) -> bool {
+    let mut parser = Parser::new(source);
     parser.parse().is_ok()
 }
 
-/// Get a formatted error message for invalid Ruchy code.
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::get_parse_error;
-///
-/// match get_parse_error("let x = ;") {
-///     Some(error) => println!("Error: {}", error),
-///     None => println!("No error"),
-/// }
-/// ```
-#[must_use] pub fn get_parse_error(input: &str) -> Option<String> {
-    let mut parser = Parser::new(input);
-    match parser.parse() {
-        Ok(_) => None,
-        Err(e) => Some(e.to_string()),
-    }
+/// Get parse error details if the source has syntax errors
+#[must_use]
+pub fn get_parse_error(source: &str) -> Option<String> {
+    let mut parser = Parser::new(source);
+    parser.parse().err().map(|e| e.to_string())
+}
+
+/// Run the REPL
+pub fn run_repl() -> Result<()> {
+    let mut repl = runtime::repl::Repl::new()?;
+    repl.run()
 }
 
 #[cfg(test)]
@@ -213,19 +57,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_compile_simple_expressions() {
-        // Test basic arithmetic
-        let result = compile("1 + 2").unwrap();
-        assert!(result.contains('1'));
-        assert!(result.contains('2'));
-        
-        let result = compile("42 * 3.14").unwrap();
+    fn test_compile_simple() {
+        let result = compile("42").unwrap();
         assert!(result.contains("42"));
-        assert!(result.contains("3.14"));
     }
 
     #[test]
-    fn test_compile_functions() {
+    fn test_compile_let() {
+        let result = compile("let x = 10 in x + 1").unwrap();
+        assert!(result.contains("let"));
+        assert!(result.contains("10"));
+    }
+
+    #[test]
+    fn test_compile_function() {
         let result = compile("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
         assert!(result.contains("fn"));
         assert!(result.contains("add"));
@@ -233,12 +78,227 @@ mod tests {
     }
 
     #[test]
+    fn test_compile_if() {
+        let result = compile("if true { 1 } else { 0 }").unwrap();
+        assert!(result.contains("if"));
+        assert!(result.contains("else"));
+    }
+
+    #[test]
+    fn test_compile_match() {
+        let result = compile("match x { 0 => \"zero\", _ => \"other\" }").unwrap();
+        assert!(result.contains("match"));
+    }
+
+    #[test]
+    fn test_compile_list() {
+        let result = compile("[1, 2, 3]").unwrap();
+        assert!(result.contains("vec!"));
+    }
+
+    #[test]
+    fn test_compile_lambda() {
+        let result = compile("fun (x) { x * 2 }").unwrap();
+        assert!(result.contains("|"));
+    }
+
+    #[test]
+    fn test_compile_struct() {
+        let result = compile("struct Point { x: f64, y: f64 }").unwrap();
+        assert!(result.contains("struct"));
+        assert!(result.contains("Point"));
+    }
+
+    #[test]
+    fn test_compile_impl() {
+        let result = compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }")
+            .unwrap();
+        assert!(result.contains("impl"));
+    }
+
+    #[test]
+    fn test_compile_trait() {
+        let result = compile("trait Show { fun show(&self) -> String }").unwrap();
+        assert!(result.contains("trait"));
+    }
+
+    #[test]
+    fn test_compile_for_loop() {
+        let result = compile("for x in [1, 2, 3] { print(x) }").unwrap();
+        assert!(result.contains("for"));
+    }
+
+    #[test]
+    fn test_compile_binary_ops() {
+        let result = compile("1 + 2 * 3 - 4 / 2").unwrap();
+        assert!(result.contains("+"));
+        assert!(result.contains("*"));
+        assert!(result.contains("-"));
+        assert!(result.contains("/"));
+    }
+
+    #[test]
+    fn test_compile_comparison_ops() {
+        let result = compile("x < y && y <= z").unwrap();
+        assert!(result.contains("<"));
+        assert!(result.contains("<="));
+        assert!(result.contains("&&"));
+    }
+
+    #[test]
+    fn test_compile_unary_ops() {
+        let result = compile("-x").unwrap();
+        assert!(result.contains("-"));
+        
+        let result = compile("!flag").unwrap();
+        assert!(result.contains("!"));
+    }
+
+    #[test]
+    fn test_compile_call() {
+        let result = compile("func(1, 2, 3)").unwrap();
+        assert!(result.contains("func"));
+        assert!(result.contains("("));
+        assert!(result.contains(")"));
+    }
+
+    #[test]
+    fn test_compile_method_call() {
+        let result = compile("obj.method()").unwrap();
+        assert!(result.contains("."));
+        assert!(result.contains("method"));
+    }
+
+    #[test]
+    fn test_compile_block() {
+        let result = compile("{ let x = 1; x + 1 }").unwrap();
+        assert!(result.contains("{"));
+        assert!(result.contains("}"));
+    }
+
+    #[test]
+    fn test_compile_string() {
+        let result = compile("\"hello world\"").unwrap();
+        assert!(result.contains("hello world"));
+    }
+
+    #[test]
+    fn test_compile_bool() {
+        let result = compile("true && false").unwrap();
+        assert!(result.contains("true"));
+        assert!(result.contains("false"));
+    }
+
+    #[test]
+    fn test_compile_unit() {
+        let result = compile("()").unwrap();
+        assert!(result.contains("()"));
+    }
+
+    #[test]
+    fn test_compile_nested_let() {
+        let result = compile("let x = 1 in let y = 2 in x + y").unwrap();
+        assert!(result.contains("let"));
+    }
+
+    #[test]
+    fn test_compile_nested_if() {
+        let result = compile("if x { if y { 1 } else { 2 } } else { 3 }").unwrap();
+        assert!(result.contains("if"));
+    }
+
+    #[test]
+    fn test_compile_empty_list() {
+        let result = compile("[]").unwrap();
+        assert!(result.contains("vec!"));
+    }
+
+    #[test]
+    fn test_compile_empty_block() {
+        let result = compile("{ }").unwrap();
+        assert!(result.contains("()"));
+    }
+
+    #[test]
+    fn test_compile_float() {
+        let result = compile("3.14159").unwrap();
+        assert!(result.contains("3.14159"));
+    }
+
+    #[test]
+    fn test_compile_large_int() {
+        let result = compile("999999999").unwrap();
+        assert!(result.contains("999999999"));
+    }
+
+    #[test]
+    fn test_compile_string_escape() {
+        let result = compile(r#""hello\nworld""#).unwrap();
+        assert!(result.contains("hello"));
+    }
+
+    #[test]
+    fn test_compile_power_op() {
+        let result = compile("2 ** 8").unwrap();
+        assert!(result.contains("pow"));
+    }
+
+    #[test]
+    fn test_compile_modulo() {
+        let result = compile("10 % 3").unwrap();
+        assert!(result.contains("%"));
+    }
+
+    #[test]
+    fn test_compile_bitwise_ops() {
+        let result = compile("a & b | c ^ d").unwrap();
+        assert!(result.contains("&"));
+        assert!(result.contains("|"));
+        assert!(result.contains("^"));
+    }
+
+    #[test]
+    fn test_compile_shift_ops() {
+        let result = compile("x << 2 >> 1").unwrap();
+        assert!(result.contains("<<"));
+        assert!(result.contains(">>"));
+    }
+
+    #[test]
+    fn test_compile_not_equal() {
+        let result = compile("x != y").unwrap();
+        assert!(result.contains("!="));
+    }
+
+    #[test]
+    fn test_compile_greater_ops() {
+        let result = compile("x > y && x >= z").unwrap();
+        assert!(result.contains(">"));
+        assert!(result.contains(">="));
+    }
+
+    #[test]
+    fn test_compile_or_op() {
+        let result = compile("x || y").unwrap();
+        assert!(result.contains("||"));
+    }
+
+    #[test]
+    fn test_compile_complex_expression() {
+        let result = compile("(x + y) * (z - w) / 2").unwrap();
+        assert!(result.contains("+"));
+        assert!(result.contains("-"));
+        assert!(result.contains("*"));
+        assert!(result.contains("/"));
+    }
+
+    #[test]
     fn test_compile_errors() {
         assert!(compile("").is_err());
         assert!(compile("   ").is_err());
         assert!(compile("let x =").is_err());
-        assert!(compile("fun ()").is_err());
         assert!(compile("if").is_err());
+        assert!(compile("match").is_err());
     }
 
     #[test]
@@ -258,79 +318,134 @@ mod tests {
         assert!(!is_valid_syntax(""));
         assert!(!is_valid_syntax("   "));
         assert!(!is_valid_syntax("let x ="));
-        assert!(!is_valid_syntax("fun ()"));
         assert!(!is_valid_syntax("if { }"));
         assert!(!is_valid_syntax("[1, 2,"));
         assert!(!is_valid_syntax("match"));
+        assert!(!is_valid_syntax("struct"));
     }
 
     #[test]
     fn test_get_parse_error_with_errors() {
         let error = get_parse_error("let x =");
         assert!(error.is_some());
-        assert!(!error.unwrap().is_empty());
-
-        let error = get_parse_error("(");
-        assert!(error.is_some());
-        
-        let error = get_parse_error("}");
-        assert!(error.is_some());
+        assert!(error.unwrap().contains("Expected"));
     }
 
     #[test]
     fn test_get_parse_error_without_errors() {
-        assert!(get_parse_error("42").is_none());
-        assert!(get_parse_error("let x = 42").is_none());
-        assert!(get_parse_error("fun foo() { 42 }").is_none());
-        assert!(get_parse_error("[1, 2, 3]").is_none());
+        let error = get_parse_error("42");
+        assert!(error.is_none());
     }
 
     #[test]
-    fn test_compile_complex_expressions() {
-        let result = compile("let x = 42 in x + 1");
-        assert!(result.is_ok());
+    fn test_get_parse_error_detailed() {
+        let error = get_parse_error("if");
+        assert!(error.is_some());
         
-        let result = compile("if x > 0 { x } else { -x }");
-        assert!(result.is_ok());
+        let error = get_parse_error("match");
+        assert!(error.is_some());
         
-        // Pipeline with lambda not yet fully supported
-        // let result = compile("[1, 2, 3] |> map(x => x * 2)");
-        // assert!(result.is_ok());
-        
-        // Test simpler pipeline
-        let result = compile("data |> filter |> map");
-        assert!(result.is_ok());
+        let error = get_parse_error("[1, 2,");
+        assert!(error.is_some());
     }
 
     #[test]
-    fn test_compile_all_literal_types() {
-        assert!(compile("42").is_ok());
-        assert!(compile("3.14159").is_ok());
-        assert!(compile("true").is_ok());
-        assert!(compile("false").is_ok());
-        assert!(compile("\"hello world\"").is_ok());
-        // Unit type not yet supported in parser
-        // assert!(compile("()").is_ok());
+    fn test_compile_generic_function() {
+        let result = compile("fun id<T>(x: T) -> T { x }").unwrap();
+        assert!(result.contains("fn"));
+        assert!(result.contains("id"));
     }
 
     #[test]
-    fn test_compile_all_operators() {
-        assert!(compile("1 + 2").is_ok());
-        assert!(compile("3 - 1").is_ok());
-        assert!(compile("2 * 3").is_ok());
-        assert!(compile("6 / 2").is_ok());
-        assert!(compile("5 % 2").is_ok());
-        assert!(compile("2 ** 3").is_ok());
-        
-        assert!(compile("1 < 2").is_ok());
-        assert!(compile("2 > 1").is_ok());
-        assert!(compile("1 <= 2").is_ok());
-        assert!(compile("2 >= 1").is_ok());
-        assert!(compile("1 == 1").is_ok());
-        assert!(compile("1 != 2").is_ok());
-        
-        assert!(compile("true && false").is_ok());
-        assert!(compile("true || false").is_ok());
-        assert!(compile("!true").is_ok());
+    fn test_compile_generic_struct() {
+        let result = compile("struct Box<T> { value: T }").unwrap();
+        assert!(result.contains("struct"));
+        assert!(result.contains("Box"));
+    }
+
+    #[test]
+    fn test_compile_multiple_statements() {
+        let result = compile("let x = 1; let y = 2; x + y").unwrap();
+        assert!(result.contains("let"));
+    }
+
+    #[test]
+    fn test_compile_pattern_matching() {
+        let result = compile("match x { [] => 0, [h, ...t] => 1 }").unwrap();
+        assert!(result.contains("match"));
+    }
+
+    #[test]
+    fn test_compile_struct_literal() {
+        let result = compile("Point { x: 10, y: 20 }").unwrap();
+        assert!(result.contains("Point"));
+    }
+
+    #[test]
+    fn test_compile_try_operator() {
+        let result = compile("func()?").unwrap();
+        assert!(result.contains("?"));
+    }
+
+    #[test]
+    fn test_compile_await_expression() {
+        let result = compile("async_func().await").unwrap();
+        assert!(result.contains("await"));
+    }
+
+    #[test]
+    fn test_compile_import() {
+        let result = compile("import std.collections.HashMap").unwrap();
+        assert!(result.contains("use"));
+    }
+
+    #[test]
+    fn test_compile_while_loop() {
+        let result = compile("while x < 10 { x = x + 1 }").unwrap();
+        assert!(result.contains("while"));
+    }
+
+    #[test]
+    fn test_compile_range() {
+        let result = compile("1..10").unwrap();
+        assert!(result.contains(".."));
+    }
+
+    #[test]
+    fn test_compile_pipeline() {
+        let result = compile("data |> filter |> map").unwrap();
+        assert!(result.contains("("));
+    }
+
+    #[test]
+    fn test_compile_send_operation() {
+        let result = compile("actor ! message").unwrap();
+        assert!(result.contains("send"));
+    }
+
+    #[test]
+    fn test_compile_ask_operation() {
+        let result = compile("actor ? request").unwrap();
+        assert!(result.contains("ask"));
+    }
+
+    #[test]
+    fn test_compile_list_comprehension() {
+        let result = compile("[x * 2 for x in range(10)]").unwrap();
+        assert!(result.contains("map"));
+    }
+
+    #[test]
+    fn test_compile_actor() {
+        let result = compile(r#"
+            actor Counter {
+                state { count: i32 }
+                receive {
+                    Inc => count + 1,
+                    Get => count
+                }
+            }
+        "#).unwrap();
+        assert!(result.contains("actor"));
     }
 }

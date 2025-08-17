@@ -30,9 +30,9 @@ impl Unifier {
     }
 
     /// Unify two types, updating the substitution
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the types cannot be unified (type mismatch or occurs check failure)
     pub fn unify(&mut self, t1: &MonoType, t2: &MonoType) -> Result<()> {
         let t1 = self.apply(t1);
@@ -104,7 +104,8 @@ impl Unifier {
     #[must_use]
     pub fn solve(&self, var: &TyVar) -> MonoType {
         self.subst
-            .get(var).map_or_else(|| MonoType::Var(var.clone()), |ty| self.apply(ty))
+            .get(var)
+            .map_or_else(|| MonoType::Var(var.clone()), |ty| self.apply(ty))
     }
 }
 
@@ -123,9 +124,7 @@ mod tests {
         let mut unifier = Unifier::new();
         assert!(unifier.unify(&MonoType::Int, &MonoType::Int).is_ok());
         assert!(unifier.unify(&MonoType::Bool, &MonoType::Bool).is_ok());
-        assert!(unifier
-            .unify(&MonoType::String, &MonoType::String)
-            .is_ok());
+        assert!(unifier.unify(&MonoType::String, &MonoType::String).is_ok());
     }
 
     #[test]
@@ -151,7 +150,10 @@ mod tests {
         let mut unifier = Unifier::new();
         let var = TyVar(0);
 
-        let f1 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Var(var.clone())));
+        let f1 = MonoType::Function(
+            Box::new(MonoType::Int),
+            Box::new(MonoType::Var(var.clone())),
+        );
         let f2 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool));
 
         assert!(unifier.unify(&f1, &f2).is_ok());

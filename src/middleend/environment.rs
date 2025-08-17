@@ -27,27 +27,39 @@ impl TypeEnv {
             "add",
             TypeScheme::mono(MonoType::Function(
                 Box::new(MonoType::Int),
-                Box::new(MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Int))),
+                Box::new(MonoType::Function(
+                    Box::new(MonoType::Int),
+                    Box::new(MonoType::Int),
+                )),
             )),
         );
 
         // IO functions
-        env.bind("print", TypeScheme::mono(MonoType::Function(
-            Box::new(MonoType::String),
-            Box::new(MonoType::Unit),
-        )));
+        env.bind(
+            "print",
+            TypeScheme::mono(MonoType::Function(
+                Box::new(MonoType::String),
+                Box::new(MonoType::Unit),
+            )),
+        );
 
-        env.bind("println", TypeScheme::mono(MonoType::Function(
-            Box::new(MonoType::String),
-            Box::new(MonoType::Unit),
-        )));
+        env.bind(
+            "println",
+            TypeScheme::mono(MonoType::Function(
+                Box::new(MonoType::String),
+                Box::new(MonoType::Unit),
+            )),
+        );
 
         // Comparison functions
         env.bind(
             "eq",
             TypeScheme::mono(MonoType::Function(
                 Box::new(MonoType::Int),
-                Box::new(MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool))),
+                Box::new(MonoType::Function(
+                    Box::new(MonoType::Int),
+                    Box::new(MonoType::Bool),
+                )),
             )),
         );
 
@@ -74,7 +86,8 @@ impl TypeEnv {
     }
 
     /// Get free type variables in the environment
-    #[must_use] pub fn free_vars(&self) -> Vec<crate::middleend::types::TyVar> {
+    #[must_use]
+    pub fn free_vars(&self) -> Vec<crate::middleend::types::TyVar> {
         let mut vars = Vec::new();
         for scheme in self.bindings.values() {
             // Only collect free variables not bound by the scheme
@@ -100,10 +113,7 @@ impl TypeEnv {
             .filter(|v| !env_vars.contains(v))
             .collect();
 
-        TypeScheme {
-            vars: gen_vars,
-            ty,
-        }
+        TypeScheme { vars: gen_vars, ty }
     }
 
     /// Instantiate a type scheme with fresh variables
@@ -165,16 +175,10 @@ mod tests {
         let var = TyVar(0);
 
         // Add a binding with the same variable to the environment
-        env.bind(
-            "y",
-            TypeScheme::mono(MonoType::Var(var.clone())),
-        );
+        env.bind("y", TypeScheme::mono(MonoType::Var(var.clone())));
 
         // Try to generalize a type with the same variable
-        let ty = MonoType::Function(
-            Box::new(MonoType::Var(var)),
-            Box::new(MonoType::Int),
-        );
+        let ty = MonoType::Function(Box::new(MonoType::Var(var)), Box::new(MonoType::Int));
 
         let scheme = env.generalize(ty);
 
