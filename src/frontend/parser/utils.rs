@@ -13,12 +13,40 @@ pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
 
     let mut params = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-        let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-            let name = n.clone();
-            state.tokens.advance();
-            name
-        } else {
-            bail!("Expected parameter name");
+        let name = match state.tokens.peek() {
+            Some((Token::Identifier(n), _)) => {
+                let name = n.clone();
+                state.tokens.advance();
+                name
+            }
+            Some((Token::Ampersand, _)) => {
+                // Handle &self or &mut self patterns
+                state.tokens.advance(); // consume &
+                
+                if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+                    state.tokens.advance(); // consume mut
+                    if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+                        if n == "self" {
+                            state.tokens.advance();
+                            "&mut self".to_string()
+                        } else {
+                            bail!("Expected 'self' after '&mut'");
+                        }
+                    } else {
+                        bail!("Expected 'self' after '&mut'");
+                    }
+                } else if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+                    if n == "self" {
+                        state.tokens.advance();
+                        "&self".to_string()
+                    } else {
+                        bail!("Expected 'self' after '&'");
+                    }
+                } else {
+                    bail!("Expected 'self' after '&'");
+                }
+            }
+            _ => bail!("Expected parameter name"),
         };
 
         // Type annotation is optional for gradual typing
