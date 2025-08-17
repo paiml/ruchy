@@ -6,6 +6,7 @@
 
 #![allow(clippy::panic)] // Panics represent genuine errors in normalization
 
+#![allow(clippy::panic)]
 use crate::frontend::ast::{Expr, ExprKind, Literal};
 
 /// De Bruijn index for variables - eliminates variable capture bugs

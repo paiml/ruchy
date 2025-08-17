@@ -2,6 +2,9 @@
 
 use super::{ParserState, *};
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_if(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume if
 
@@ -29,6 +32,9 @@ pub fn parse_if(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume let
 
@@ -64,6 +70,9 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_match(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume match
 
@@ -137,6 +146,9 @@ pub fn parse_pattern(state: &mut ParserState) -> Pattern {
     }
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_for(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume for
 
@@ -168,6 +180,9 @@ pub fn parse_for(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_while(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume while
 
@@ -216,6 +231,9 @@ pub fn parse_continue(state: &mut ParserState) -> Expr {
     Expr::new(ExprKind::Continue { label }, start_span)
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume try
 
@@ -256,6 +274,9 @@ pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_async_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume async
 

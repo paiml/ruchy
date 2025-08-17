@@ -1,3 +1,4 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
 //! REPL implementation for interactive Ruchy development
 
 #![allow(clippy::print_stdout)] // REPL needs to print to stdout

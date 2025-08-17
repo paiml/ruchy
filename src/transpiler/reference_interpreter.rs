@@ -92,6 +92,9 @@ impl ReferenceInterpreter {
 
     /// Evaluate an expression to a value
     /// This is the core of the interpreter - direct operational semantics
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn eval(&mut self, expr: &CoreExpr) -> Result<Value, String> {
         self.trace.push(format!("Evaluating: {expr:?}"));
 

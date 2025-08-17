@@ -43,7 +43,7 @@ impl LoweringContext {
                 return_type,
                 body,
                 ..
-            } => self.lower_function(name, params, return_type, body),
+            } => self.lower_function(name, params, return_type.as_ref(), body),
             _ => {
                 // For non-function expressions, create a main function
                 self.lower_main_expr(expr)
@@ -54,14 +54,13 @@ impl LoweringContext {
     /// Lower a function expression
     fn lower_function(
         &mut self,
-        name: &String,
+        name: &str,
         params: &[Param],
-        return_type: &Option<AstType>,
+        return_type: Option<&AstType>,
         body: &Expr,
     ) -> Result<Program> {
-        let func_name = name.clone();
+        let func_name = name.to_string();
         let ret_ty = return_type
-            .as_ref()
             .map_or(Type::Unit, |t| self.ast_to_mir_type(t));
 
         self.builder.start_function(func_name.clone(), ret_ty);
@@ -131,7 +130,7 @@ impl LoweringContext {
             .ok_or_else(|| anyhow!("No current block"))?;
 
         match &expr.kind {
-            ExprKind::Literal(lit) => Ok(Operand::Constant(Self::lower_literal(lit)?)),
+            ExprKind::Literal(lit) => Ok(Operand::Constant(Self::lower_literal(lit))),
             ExprKind::Identifier(name) => {
                 if let Some(local) = self.builder.get_local(name) {
                     Ok(Operand::Copy(Place::Local(local)))
@@ -142,7 +141,7 @@ impl LoweringContext {
             ExprKind::Binary { op, left, right } => {
                 let left_op = self.lower_expr_to_operand(left)?;
                 let right_op = self.lower_expr_to_operand(right)?;
-                let mir_op = Self::lower_binary_op(*op)?;
+                let mir_op = Self::lower_binary_op(*op);
 
                 // Create a temporary for the result
                 let result_ty = Self::infer_binary_result_type(*op);
@@ -154,7 +153,7 @@ impl LoweringContext {
             }
             ExprKind::Unary { op, operand } => {
                 let operand_mir = self.lower_expr_to_operand(operand)?;
-                let mir_op = Self::lower_unary_op(*op)?;
+                let mir_op = Self::lower_unary_op(*op);
 
                 let result_ty = Self::infer_unary_result_type(*op);
                 let temp = self.builder.alloc_local(result_ty, false, None);
@@ -259,47 +258,47 @@ impl LoweringContext {
     }
 
     /// Lower a literal to a constant
-    fn lower_literal(lit: &Literal) -> Result<Constant> {
+    fn lower_literal(lit: &Literal) -> Constant {
         match lit {
-            Literal::Integer(i) => Ok(Constant::Int(i128::from(*i), Type::I32)),
-            Literal::Float(f) => Ok(Constant::Float(*f, Type::F64)),
-            Literal::String(s) => Ok(Constant::String(s.clone())),
-            Literal::Bool(b) => Ok(Constant::Bool(*b)),
-            Literal::Unit => Ok(Constant::Unit),
+            Literal::Integer(i) => Constant::Int(i128::from(*i), Type::I32),
+            Literal::Float(f) => Constant::Float(*f, Type::F64),
+            Literal::String(s) => Constant::String(s.clone()),
+            Literal::Bool(b) => Constant::Bool(*b),
+            Literal::Unit => Constant::Unit,
         }
     }
 
     /// Lower binary operator
-    fn lower_binary_op(op: AstBinOp) -> Result<BinOp> {
+    fn lower_binary_op(op: AstBinOp) -> BinOp {
         match op {
-            AstBinOp::Add => Ok(BinOp::Add),
-            AstBinOp::Subtract => Ok(BinOp::Sub),
-            AstBinOp::Multiply => Ok(BinOp::Mul),
-            AstBinOp::Divide => Ok(BinOp::Div),
-            AstBinOp::Modulo => Ok(BinOp::Rem),
-            AstBinOp::Power => Ok(BinOp::Pow),
-            AstBinOp::Equal => Ok(BinOp::Eq),
-            AstBinOp::NotEqual => Ok(BinOp::Ne),
-            AstBinOp::Less => Ok(BinOp::Lt),
-            AstBinOp::LessEqual => Ok(BinOp::Le),
-            AstBinOp::Greater => Ok(BinOp::Gt),
-            AstBinOp::GreaterEqual => Ok(BinOp::Ge),
-            AstBinOp::And => Ok(BinOp::And),
-            AstBinOp::Or => Ok(BinOp::Or),
-            AstBinOp::BitwiseAnd => Ok(BinOp::BitAnd),
-            AstBinOp::BitwiseOr => Ok(BinOp::BitOr),
-            AstBinOp::BitwiseXor => Ok(BinOp::BitXor),
-            AstBinOp::LeftShift => Ok(BinOp::Shl),
-            AstBinOp::RightShift => Ok(BinOp::Shr),
+            AstBinOp::Add => BinOp::Add,
+            AstBinOp::Subtract => BinOp::Sub,
+            AstBinOp::Multiply => BinOp::Mul,
+            AstBinOp::Divide => BinOp::Div,
+            AstBinOp::Modulo => BinOp::Rem,
+            AstBinOp::Power => BinOp::Pow,
+            AstBinOp::Equal => BinOp::Eq,
+            AstBinOp::NotEqual => BinOp::Ne,
+            AstBinOp::Less => BinOp::Lt,
+            AstBinOp::LessEqual => BinOp::Le,
+            AstBinOp::Greater => BinOp::Gt,
+            AstBinOp::GreaterEqual => BinOp::Ge,
+            AstBinOp::And => BinOp::And,
+            AstBinOp::Or => BinOp::Or,
+            AstBinOp::BitwiseAnd => BinOp::BitAnd,
+            AstBinOp::BitwiseOr => BinOp::BitOr,
+            AstBinOp::BitwiseXor => BinOp::BitXor,
+            AstBinOp::LeftShift => BinOp::Shl,
+            AstBinOp::RightShift => BinOp::Shr,
         }
     }
 
     /// Lower unary operator
-    fn lower_unary_op(op: AstUnOp) -> Result<UnOp> {
+    fn lower_unary_op(op: AstUnOp) -> UnOp {
         match op {
-            AstUnOp::Negate => Ok(UnOp::Neg),
-            AstUnOp::Not => Ok(UnOp::Not),
-            AstUnOp::BitwiseNot => Ok(UnOp::BitNot),
+            AstUnOp::Negate => UnOp::Neg,
+            AstUnOp::Not => UnOp::Not,
+            AstUnOp::BitwiseNot => UnOp::BitNot,
         }
     }
 

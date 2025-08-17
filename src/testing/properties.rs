@@ -10,6 +10,9 @@ use proptest::prelude::*;
 use proptest::test_runner::TestCaseError;
 
 /// Property: Parser should never panic on any input
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn prop_parser_never_panics(input: String) -> Result<(), TestCaseError> {
     let mut parser = Parser::new(&input);
     // Parser should either succeed or return an error, never panic
@@ -18,6 +21,9 @@ pub fn prop_parser_never_panics(input: String) -> Result<(), TestCaseError> {
 }
 
 /// Property: Recovery parser should always produce some AST
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn prop_recovery_parser_always_produces_ast(input: String) -> Result<(), TestCaseError> {
     let mut parser = RecoveryParser::new(&input);
     let result = parser.parse_with_recovery();
@@ -33,6 +39,9 @@ pub fn prop_recovery_parser_always_produces_ast(input: String) -> Result<(), Tes
 }
 
 /// Property: Transpilation preserves expression structure
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn prop_transpilation_preserves_structure(expr: Expr) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
 
@@ -48,6 +57,9 @@ pub fn prop_transpilation_preserves_structure(expr: Expr) -> Result<(), TestCase
 }
 
 /// Property: String interpolation transpiles correctly
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn prop_string_interpolation_transpiles(parts: Vec<StringPart>) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
     let result = transpiler.transpile_string_interpolation(&parts);
@@ -66,6 +78,9 @@ pub fn prop_string_interpolation_transpiles(parts: Vec<StringPart>) -> Result<()
 }
 
 /// Property: Parse-print roundtrip
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn prop_parse_print_roundtrip(expr: Expr) -> Result<(), TestCaseError> {
     // This would require a pretty-printer, which we'll implement later
     // For now, just check that we can transpile and the result is valid
@@ -106,6 +121,9 @@ pub fn prop_parse_print_roundtrip(expr: Expr) -> Result<(), TestCaseError> {
 }
 
 /// Property: Well-typed expressions should always transpile successfully
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn prop_well_typed_always_transpiles(expr: Expr) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
 
@@ -130,6 +148,9 @@ pub fn prop_well_typed_always_transpiles(expr: Expr) -> Result<(), TestCaseError
 }
 
 /// Property: Error recovery should handle truncated input gracefully
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn prop_recovery_handles_truncation(input: String) -> Result<(), TestCaseError> {
     if input.is_empty() {
         return Ok(());

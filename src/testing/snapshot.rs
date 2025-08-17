@@ -70,6 +70,9 @@ pub struct SnapshotRunner {
 
 impl SnapshotRunner {
     /// Load snapshot suite from disk
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn load(config: SnapshotConfig) -> Result<Self> {
         let snapshot_file = config.snapshot_dir.join("snapshots.toml");
 
@@ -87,6 +90,9 @@ impl SnapshotRunner {
     }
 
     /// Run a snapshot test
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn test<F>(&mut self, name: &str, input: &str, transform: F) -> Result<()>
     where
         F: FnOnce(&str) -> Result<String>,
@@ -177,6 +183,9 @@ impl SnapshotRunner {
     }
 
     /// Run all snapshots and report results
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn run_all<F>(&mut self, transform: F) -> Result<()>
     where
         F: Fn(&str) -> Result<String>,
