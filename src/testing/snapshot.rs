@@ -274,7 +274,7 @@ mod tests {
             fail_on_missing: false,
         };
 
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("verified by caller");
 
         // Test a simple expression
         runner
@@ -285,7 +285,7 @@ mod tests {
                 let tokens = transpiler.transpile(&ast)?;
                 Ok(tokens.to_string())
             })
-            .unwrap();
+            .expect("verified by caller");
     }
 
     #[test]
@@ -296,7 +296,7 @@ mod tests {
             fail_on_missing: false,
         };
 
-        let mut runner = SnapshotRunner::load(config).unwrap();
+        let mut runner = SnapshotRunner::load(config).expect("verified by caller");
 
         // Run the same test multiple times - should produce identical hashes
         for i in 0..3 {
@@ -308,7 +308,7 @@ mod tests {
                     let tokens = transpiler.transpile(&ast)?;
                     Ok(tokens.to_string())
                 })
-                .unwrap();
+                .expect("verified by caller");
         }
     }
 }

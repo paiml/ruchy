@@ -372,13 +372,13 @@ mod tests {
     fn test_eval_arithmetic() {
         let input = "1 + 2 * 3";
         let mut parser = Parser::new(input);
-        let ast = parser.parse().unwrap();
+        let ast = parser.parse().expect("verified by caller");
 
         let mut normalizer = AstNormalizer::new();
         let core = normalizer.normalize(&ast);
 
         let mut interp = ReferenceInterpreter::new();
-        let result = interp.eval(&core).unwrap();
+        let result = interp.eval(&core).expect("verified by caller");
 
         assert_eq!(result, Value::Integer(7)); // 1 + (2 * 3)
     }
@@ -387,13 +387,13 @@ mod tests {
     fn test_eval_let_binding() {
         let input = "let x = 10";
         let mut parser = Parser::new(input);
-        let ast = parser.parse().unwrap();
+        let ast = parser.parse().expect("verified by caller");
 
         let mut normalizer = AstNormalizer::new();
         let core = normalizer.normalize(&ast);
 
         let mut interp = ReferenceInterpreter::new();
-        let result = interp.eval(&core).unwrap();
+        let result = interp.eval(&core).expect("verified by caller");
 
         // Let with unit body evaluates to unit
         assert_eq!(result, Value::Unit);

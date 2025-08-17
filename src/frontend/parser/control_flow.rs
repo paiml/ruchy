@@ -73,7 +73,7 @@ pub fn parse_match(state: &mut ParserState) -> Result<Expr> {
 
     let mut arms = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        let pattern = parse_pattern(state)?;
+        let pattern = parse_pattern(state);
 
         // Optional guard
         let guard = if matches!(state.tokens.peek(), Some((Token::If, _))) {
@@ -117,23 +117,23 @@ pub fn parse_match(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
-pub fn parse_pattern(state: &mut ParserState) -> Result<Pattern> {
+pub fn parse_pattern(state: &mut ParserState) -> Pattern {
     match state.tokens.peek() {
         Some((Token::Underscore, _)) => {
             state.tokens.advance();
-            Ok(Pattern::Wildcard)
+            Pattern::Wildcard
         }
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
-            Ok(Pattern::Identifier(name))
+            Pattern::Identifier(name)
         }
         Some((Token::Integer(i), _)) => {
             let i = *i;
             state.tokens.advance();
-            Ok(Pattern::Literal(Literal::Integer(i)))
+            Pattern::Literal(Literal::Integer(i))
         }
-        _ => Ok(Pattern::Wildcard), // Default fallback
+        _ => Pattern::Wildcard, // Default fallback
     }
 }
 
@@ -230,7 +230,7 @@ pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
     if has_parens {
         state.tokens.advance(); // consume (
     }
-    
+
     let catch_var = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         let name = name.clone();
         state.tokens.advance();
@@ -238,7 +238,7 @@ pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected identifier after 'catch'");
     };
-    
+
     if has_parens {
         state.tokens.expect(&Token::RightParen)?; // consume )
     }

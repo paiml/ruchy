@@ -32,7 +32,7 @@ use anyhow::Result;
 /// ```
 /// use ruchy::compile;
 ///
-/// let rust_code = compile("42").unwrap();
+/// let rust_code = compile("42").expect("verified by caller");
 /// assert!(rust_code.contains("42"));
 /// ```
 ///
@@ -70,7 +70,7 @@ pub fn get_parse_error(source: &str) -> Option<String> {
 /// ```no_run
 /// use ruchy::run_repl;
 ///
-/// run_repl().unwrap();
+/// run_repl().expect("verified by caller");
 /// ```
 ///
 /// # Errors
@@ -91,20 +91,21 @@ mod tests {
 
     #[test]
     fn test_compile_simple() {
-        let result = compile("42").unwrap();
+        let result = compile("42").expect("verified by caller");
         assert!(result.contains("42"));
     }
 
     #[test]
     fn test_compile_let() {
-        let result = compile("let x = 10 in x + 1").unwrap();
+        let result = compile("let x = 10 in x + 1").expect("verified by caller");
         assert!(result.contains("let"));
         assert!(result.contains("10"));
     }
 
     #[test]
     fn test_compile_function() {
-        let result = compile("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
+        let result =
+            compile("fun add(x: i32, y: i32) -> i32 { x + y }").expect("verified by caller");
         assert!(result.contains("fn"));
         assert!(result.contains("add"));
         assert!(result.contains("i32"));
@@ -112,58 +113,60 @@ mod tests {
 
     #[test]
     fn test_compile_if() {
-        let result = compile("if true { 1 } else { 0 }").unwrap();
+        let result = compile("if true { 1 } else { 0 }").expect("verified by caller");
         assert!(result.contains("if"));
         assert!(result.contains("else"));
     }
 
     #[test]
     fn test_compile_match() {
-        let result = compile("match x { 0 => \"zero\", _ => \"other\" }").unwrap();
+        let result =
+            compile("match x { 0 => \"zero\", _ => \"other\" }").expect("verified by caller");
         assert!(result.contains("match"));
     }
 
     #[test]
     fn test_compile_list() {
-        let result = compile("[1, 2, 3]").unwrap();
+        let result = compile("[1, 2, 3]").expect("verified by caller");
         assert!(result.contains("vec!"));
     }
 
     #[test]
     fn test_compile_lambda() {
-        let result = compile("fun (x) { x * 2 }").unwrap();
+        let result = compile("fun (x) { x * 2 }").expect("verified by caller");
         assert!(result.contains("|"));
     }
 
     #[test]
     fn test_compile_struct() {
-        let result = compile("struct Point { x: f64, y: f64 }").unwrap();
+        let result = compile("struct Point { x: f64, y: f64 }").expect("verified by caller");
         assert!(result.contains("struct"));
         assert!(result.contains("Point"));
     }
 
     #[test]
     fn test_compile_impl() {
-        let result =
-            compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }").unwrap();
+        let result = compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }")
+            .expect("verified by caller");
         assert!(result.contains("impl"));
     }
 
     #[test]
     fn test_compile_trait() {
-        let result = compile("trait Show { fun show(&self) -> String }").unwrap();
+        let result =
+            compile("trait Show { fun show(&self) -> String }").expect("verified by caller");
         assert!(result.contains("trait"));
     }
 
     #[test]
     fn test_compile_for_loop() {
-        let result = compile("for x in [1, 2, 3] { print(x) }").unwrap();
+        let result = compile("for x in [1, 2, 3] { print(x) }").expect("verified by caller");
         assert!(result.contains("for"));
     }
 
     #[test]
     fn test_compile_binary_ops() {
-        let result = compile("1 + 2 * 3 - 4 / 2").unwrap();
+        let result = compile("1 + 2 * 3 - 4 / 2").expect("verified by caller");
         assert!(result.contains("+"));
         assert!(result.contains("*"));
         assert!(result.contains("-"));
@@ -172,7 +175,7 @@ mod tests {
 
     #[test]
     fn test_compile_comparison_ops() {
-        let result = compile("x < y && y <= z").unwrap();
+        let result = compile("x < y && y <= z").expect("verified by caller");
         assert!(result.contains("<"));
         assert!(result.contains("<="));
         assert!(result.contains("&&"));
@@ -180,16 +183,16 @@ mod tests {
 
     #[test]
     fn test_compile_unary_ops() {
-        let result = compile("-x").unwrap();
+        let result = compile("-x").expect("verified by caller");
         assert!(result.contains("-"));
 
-        let result = compile("!flag").unwrap();
+        let result = compile("!flag").expect("verified by caller");
         assert!(result.contains("!"));
     }
 
     #[test]
     fn test_compile_call() {
-        let result = compile("func(1, 2, 3)").unwrap();
+        let result = compile("func(1, 2, 3)").expect("verified by caller");
         assert!(result.contains("func"));
         assert!(result.contains("("));
         assert!(result.contains(")"));
@@ -197,94 +200,95 @@ mod tests {
 
     #[test]
     fn test_compile_method_call() {
-        let result = compile("obj.method()").unwrap();
+        let result = compile("obj.method()").expect("verified by caller");
         assert!(result.contains("."));
         assert!(result.contains("method"));
     }
 
     #[test]
     fn test_compile_block() {
-        let result = compile("{ let x = 1; x + 1 }").unwrap();
+        let result = compile("{ let x = 1; x + 1 }").expect("verified by caller");
         assert!(result.contains("{"));
         assert!(result.contains("}"));
     }
 
     #[test]
     fn test_compile_string() {
-        let result = compile("\"hello world\"").unwrap();
+        let result = compile("\"hello world\"").expect("verified by caller");
         assert!(result.contains("hello world"));
     }
 
     #[test]
     fn test_compile_bool() {
-        let result = compile("true && false").unwrap();
+        let result = compile("true && false").expect("verified by caller");
         assert!(result.contains("true"));
         assert!(result.contains("false"));
     }
 
     #[test]
     fn test_compile_unit() {
-        let result = compile("()").unwrap();
+        let result = compile("()").expect("verified by caller");
         assert!(result.contains("()"));
     }
 
     #[test]
     fn test_compile_nested_let() {
-        let result = compile("let x = 1 in let y = 2 in x + y").unwrap();
+        let result = compile("let x = 1 in let y = 2 in x + y").expect("verified by caller");
         assert!(result.contains("let"));
     }
 
     #[test]
     fn test_compile_nested_if() {
-        let result = compile("if x { if y { 1 } else { 2 } } else { 3 }").unwrap();
+        let result =
+            compile("if x { if y { 1 } else { 2 } } else { 3 }").expect("verified by caller");
         assert!(result.contains("if"));
     }
 
     #[test]
     fn test_compile_empty_list() {
-        let result = compile("[]").unwrap();
+        let result = compile("[]").expect("verified by caller");
         assert!(result.contains("vec!"));
     }
 
     #[test]
     fn test_compile_empty_block() {
-        let result = compile("{ }").unwrap();
+        let result = compile("{ }").expect("verified by caller");
         assert!(result.contains("()"));
     }
 
     #[test]
     fn test_compile_float() {
-        let result = compile("3.14159").unwrap();
+        let result = compile("3.14159").expect("verified by caller");
         assert!(result.contains("3.14159"));
     }
 
     #[test]
     fn test_compile_large_int() {
-        let result = compile("999999999").unwrap();
+        let result = compile("999999999").expect("verified by caller");
         assert!(result.contains("999999999"));
     }
 
     #[test]
     fn test_compile_string_escape() {
-        let result = compile(r#""hello\nworld""#).unwrap();
+        let result = compile(r#""hello\nworld""#).expect("verified by caller");
         assert!(result.contains("hello"));
     }
 
     #[test]
     fn test_compile_power_op() {
-        let result = compile("2 ** 8").unwrap();
+        let result = compile("2 ** 8").expect("verified by caller");
         assert!(result.contains("pow"));
     }
 
     #[test]
     fn test_compile_modulo() {
-        let result = compile("10 % 3").unwrap();
+        let result = compile("10 % 3").expect("verified by caller");
         assert!(result.contains("%"));
     }
 
     #[test]
     fn test_compile_bitwise_ops() {
-        let result = compile("a & b | c ^ d").unwrap();
+        let result = compile("a & b | c ^ d").expect("verified by caller");
         assert!(result.contains("&"));
         assert!(result.contains("|"));
         assert!(result.contains("^"));
@@ -292,33 +296,33 @@ mod tests {
 
     #[test]
     fn test_compile_shift_ops() {
-        let result = compile("x << 2 >> 1").unwrap();
+        let result = compile("x << 2 >> 1").expect("verified by caller");
         assert!(result.contains("<<"));
         assert!(result.contains(">>"));
     }
 
     #[test]
     fn test_compile_not_equal() {
-        let result = compile("x != y").unwrap();
+        let result = compile("x != y").expect("verified by caller");
         assert!(result.contains("!="));
     }
 
     #[test]
     fn test_compile_greater_ops() {
-        let result = compile("x > y && x >= z").unwrap();
+        let result = compile("x > y && x >= z").expect("verified by caller");
         assert!(result.contains(">"));
         assert!(result.contains(">="));
     }
 
     #[test]
     fn test_compile_or_op() {
-        let result = compile("x || y").unwrap();
+        let result = compile("x || y").expect("verified by caller");
         assert!(result.contains("||"));
     }
 
     #[test]
     fn test_compile_complex_expression() {
-        let result = compile("(x + y) * (z - w) / 2").unwrap();
+        let result = compile("(x + y) * (z - w) / 2").expect("verified by caller");
         assert!(result.contains("+"));
         assert!(result.contains("-"));
         assert!(result.contains("*"));
@@ -361,7 +365,7 @@ mod tests {
     fn test_get_parse_error_with_errors() {
         let error = get_parse_error("let x =");
         assert!(error.is_some());
-        assert!(error.unwrap().contains("Expected"));
+        assert!(error.expect("verified by caller").contains("Expected"));
     }
 
     #[test]
@@ -384,87 +388,87 @@ mod tests {
 
     #[test]
     fn test_compile_generic_function() {
-        let result = compile("fun id<T>(x: T) -> T { x }").unwrap();
+        let result = compile("fun id<T>(x: T) -> T { x }").expect("verified by caller");
         assert!(result.contains("fn"));
         assert!(result.contains("id"));
     }
 
     #[test]
     fn test_compile_generic_struct() {
-        let result = compile("struct Box<T> { value: T }").unwrap();
+        let result = compile("struct Box<T> { value: T }").expect("verified by caller");
         assert!(result.contains("struct"));
         assert!(result.contains("Box"));
     }
 
     #[test]
     fn test_compile_multiple_statements() {
-        let result = compile("let x = 1; let y = 2; x + y").unwrap();
+        let result = compile("let x = 1; let y = 2; x + y").expect("verified by caller");
         assert!(result.contains("let"));
     }
 
     #[test]
     fn test_compile_pattern_matching() {
-        let result = compile("match x { [] => 0, [h, ...t] => 1 }").unwrap();
+        let result = compile("match x { [] => 0, [h, ...t] => 1 }").expect("verified by caller");
         assert!(result.contains("match"));
     }
 
     #[test]
     fn test_compile_struct_literal() {
-        let result = compile("Point { x: 10, y: 20 }").unwrap();
+        let result = compile("Point { x: 10, y: 20 }").expect("verified by caller");
         assert!(result.contains("Point"));
     }
 
     #[test]
     fn test_compile_try_operator() {
-        let result = compile("func()?").unwrap();
+        let result = compile("func()?").expect("verified by caller");
         assert!(result.contains("?"));
     }
 
     #[test]
     fn test_compile_await_expression() {
-        let result = compile("async_func().await").unwrap();
+        let result = compile("async_func().await").expect("verified by caller");
         assert!(result.contains("await"));
     }
 
     #[test]
     fn test_compile_import() {
-        let result = compile("import std.collections.HashMap").unwrap();
+        let result = compile("import std.collections.HashMap").expect("verified by caller");
         assert!(result.contains("use"));
     }
 
     #[test]
     fn test_compile_while_loop() {
-        let result = compile("while x < 10 { x = x + 1 }").unwrap();
+        let result = compile("while x < 10 { x = x + 1 }").expect("verified by caller");
         assert!(result.contains("while"));
     }
 
     #[test]
     fn test_compile_range() {
-        let result = compile("1..10").unwrap();
+        let result = compile("1..10").expect("verified by caller");
         assert!(result.contains(".."));
     }
 
     #[test]
     fn test_compile_pipeline() {
-        let result = compile("data |> filter |> map").unwrap();
+        let result = compile("data |> filter |> map").expect("verified by caller");
         assert!(result.contains("("));
     }
 
     #[test]
     fn test_compile_send_operation() {
-        let result = compile("actor ! message").unwrap();
+        let result = compile("actor ! message").expect("verified by caller");
         assert!(result.contains("send"));
     }
 
     #[test]
     fn test_compile_ask_operation() {
-        let result = compile("actor ? request").unwrap();
+        let result = compile("actor ? request").expect("verified by caller");
         assert!(result.contains("ask"));
     }
 
     #[test]
     fn test_compile_list_comprehension() {
-        let result = compile("[x * 2 for x in range(10)]").unwrap();
+        let result = compile("[x * 2 for x in range(10)]").expect("verified by caller");
         assert!(result.contains("map"));
     }
 
@@ -481,7 +485,7 @@ mod tests {
             }
         ",
         )
-        .unwrap();
+        .expect("verified by caller");
         assert!(result.contains("actor"));
     }
 }

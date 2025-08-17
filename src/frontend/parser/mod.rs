@@ -41,6 +41,7 @@ pub(crate) struct ParserState<'a> {
 }
 
 impl<'a> ParserState<'a> {
+    #[must_use]
     pub fn new(input: &'a str) -> Self {
         Self {
             tokens: TokenStream::new(input),
@@ -120,7 +121,7 @@ pub(crate) fn parse_expr_with_precedence_recursive(
 
         // Handle binary operators
         if let Some(bin_op) = expressions::token_to_binary_op(&token_clone) {
-            let prec = expressions::get_precedence(&bin_op);
+            let prec = expressions::get_precedence(bin_op);
             if prec < min_prec {
                 break;
             }

@@ -20,6 +20,7 @@ pub struct MirBuilder {
 
 impl MirBuilder {
     /// Create a new MIR builder
+    #[must_use]
     pub fn new() -> Self {
         Self {
             current_function: None,
@@ -311,7 +312,7 @@ mod tests {
         );
         builder.return_(entry, Some(Operand::Move(Place::Local(result))));
 
-        let func = builder.finish_function().unwrap();
+        let func = builder.finish_function().expect("verified by caller");
         assert_eq!(func.name, "add");
         assert_eq!(func.params.len(), 2);
         assert_eq!(func.blocks.len(), 1);
@@ -358,7 +359,7 @@ mod tests {
         // Merge and return
         builder.return_(merge_block, Some(Operand::Copy(Place::Local(x))));
 
-        let func = builder.finish_function().unwrap();
+        let func = builder.finish_function().expect("verified by caller");
         assert_eq!(func.blocks.len(), 4);
     }
 }

@@ -146,7 +146,7 @@ pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {
     }
 }
 
-pub fn get_precedence(op: &BinaryOp) -> i32 {
+pub fn get_precedence(op: BinaryOp) -> i32 {
     match op {
         BinaryOp::Or => 1,
         BinaryOp::And => 2,
