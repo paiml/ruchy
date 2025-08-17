@@ -61,6 +61,7 @@ pub(crate) fn parse_expr_recursive(state: &mut ParserState) -> Result<Expr> {
     parse_expr_with_precedence_recursive(state, 0)
 }
 
+#[allow(clippy::too_many_lines)]
 pub(crate) fn parse_expr_with_precedence_recursive(
     state: &mut ParserState,
     min_prec: i32,

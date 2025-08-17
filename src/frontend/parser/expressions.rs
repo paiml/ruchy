@@ -2,6 +2,7 @@
 
 use super::{ParserState, *};
 
+#[allow(clippy::too_many_lines)]
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input");
@@ -26,7 +27,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             state.tokens.advance();
             // Check if the string contains interpolation markers
             if s.contains('{') && s.contains('}') {
-                let parts = utils::parse_string_interpolation(state, &s)?;
+                let parts = utils::parse_string_interpolation(state, &s);
                 Ok(Expr::new(
                     ExprKind::StringInterpolation { parts },
                     span_clone,
@@ -76,8 +77,8 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Match => control_flow::parse_match(state),
         Token::For => control_flow::parse_for(state),
         Token::While => control_flow::parse_while(state),
-        Token::Break => control_flow::parse_break(state),
-        Token::Continue => control_flow::parse_continue(state),
+        Token::Break => Ok(control_flow::parse_break(state)),
+        Token::Continue => Ok(control_flow::parse_continue(state)),
         Token::Try => control_flow::parse_try_catch(state),
         Token::Await => {
             // Parse as prefix but it will transpile to postfix

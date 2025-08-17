@@ -61,6 +61,7 @@ impl InferenceContext {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn infer_expr(&mut self, expr: &Expr) -> Result<MonoType> {
         match &expr.kind {
             ExprKind::Literal(lit) => Ok(Self::infer_literal(lit)),
@@ -497,8 +498,8 @@ impl InferenceContext {
         // For now, we'll handle some common methods
         // In a complete implementation, we'd have a method resolution system
         match (method, &receiver_ty) {
-            // List methods
-            ("len" | "length", MonoType::List(_)) => {
+            // List and String length methods
+            ("len" | "length", MonoType::List(_) | MonoType::String) => {
                 if !args.is_empty() {
                     bail!("Method {} takes no arguments", method);
                 }
@@ -555,13 +556,6 @@ impl InferenceContext {
                     bail!("Method max takes no arguments");
                 }
                 Ok(MonoType::Optional(elem_ty.clone()))
-            }
-            // String methods
-            ("len" | "length", MonoType::String) => {
-                if !args.is_empty() {
-                    bail!("Method {} takes no arguments", method);
-                }
-                Ok(MonoType::Int)
             }
             ("chars", MonoType::String) => {
                 if !args.is_empty() {
