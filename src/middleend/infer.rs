@@ -755,6 +755,36 @@ impl InferenceContext {
                 }
                 Ok(())
             }
+            Pattern::Ok(inner) => {
+                // Expected type should be Result<T, E>, extract T for inner pattern
+                match expected_ty {
+                    MonoType::Result(ok_ty, _) => self.infer_pattern(inner, ok_ty),
+                    _ => {
+                        // Create a fresh Result type
+                        let error_ty = MonoType::Var(self.gen.fresh());
+                        let inner_ty = MonoType::Var(self.gen.fresh());
+                        let result_ty =
+                            MonoType::Result(Box::new(inner_ty.clone()), Box::new(error_ty));
+                        self.unifier.unify(expected_ty, &result_ty)?;
+                        self.infer_pattern(inner, &inner_ty)
+                    }
+                }
+            }
+            Pattern::Err(inner) => {
+                // Expected type should be Result<T, E>, extract E for inner pattern
+                match expected_ty {
+                    MonoType::Result(_, err_ty) => self.infer_pattern(inner, err_ty),
+                    _ => {
+                        // Create a fresh Result type
+                        let ok_ty = MonoType::Var(self.gen.fresh());
+                        let inner_ty = MonoType::Var(self.gen.fresh());
+                        let result_ty =
+                            MonoType::Result(Box::new(ok_ty), Box::new(inner_ty.clone()));
+                        self.unifier.unify(expected_ty, &result_ty)?;
+                        self.infer_pattern(inner, &inner_ty)
+                    }
+                }
+            }
         }
     }
 
