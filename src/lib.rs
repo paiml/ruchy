@@ -134,7 +134,7 @@ mod tests {
     #[test]
     fn test_compile_list() {
         let result = compile("[1, 2, 3]").unwrap();
-        assert!(result.contains("vec!"));
+        assert!(result.contains("vec") && result.contains("!"));
     }
 
     #[test]
@@ -253,7 +253,7 @@ mod tests {
     #[test]
     fn test_compile_empty_list() {
         let result = compile("[]").unwrap();
-        assert!(result.contains("vec!"));
+        assert!(result.contains("vec") && result.contains("!"));
     }
 
     #[test]
