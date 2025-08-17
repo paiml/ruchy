@@ -269,13 +269,8 @@ pub struct StructField {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ObjectField {
-    KeyValue {
-        key: String,
-        value: Expr,
-    },
-    Spread {
-        expr: Expr,
-    },
+    KeyValue { key: String, value: Expr },
+    Spread { expr: Expr },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

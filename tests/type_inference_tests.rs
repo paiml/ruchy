@@ -1,7 +1,7 @@
 //! Type inference tests to improve coverage
 
-use ruchy::{Parser, middleend::InferenceContext};
 use anyhow::Result;
+use ruchy::{middleend::InferenceContext, Parser};
 
 #[test]
 fn test_infer_integer_literal() -> Result<()> {
@@ -9,10 +9,10 @@ fn test_infer_integer_literal() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Should infer as integer type
     assert!(ty.to_string().contains("i"));
-    
+
     Ok(())
 }
 
@@ -22,10 +22,10 @@ fn test_infer_float_literal() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Should infer as float type
     assert!(ty.to_string().contains("f"));
-    
+
     Ok(())
 }
 
@@ -35,9 +35,9 @@ fn test_infer_bool_literal() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     assert_eq!(ty.to_string(), "bool");
-    
+
     Ok(())
 }
 
@@ -47,9 +47,9 @@ fn test_infer_string_literal() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     assert_eq!(ty.to_string(), "String");
-    
+
     Ok(())
 }
 
@@ -59,11 +59,11 @@ fn test_infer_list_literal() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Should infer as list/vector type
     let ty_str = ty.to_string();
     assert!(ty_str.contains("[") || ty_str.contains("List") || ty_str.contains("Vec"));
-    
+
     Ok(())
 }
 
@@ -73,10 +73,10 @@ fn test_infer_binary_arithmetic() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Should infer as numeric type
     assert!(ty.to_string().contains("i"));
-    
+
     Ok(())
 }
 
@@ -86,9 +86,9 @@ fn test_infer_binary_comparison() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     assert_eq!(ty.to_string(), "bool");
-    
+
     Ok(())
 }
 
@@ -98,9 +98,9 @@ fn test_infer_binary_logical() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     assert_eq!(ty.to_string(), "bool");
-    
+
     Ok(())
 }
 
@@ -110,10 +110,10 @@ fn test_infer_if_expression() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Should infer as the common type of branches
     assert!(ty.to_string().contains("i"));
-    
+
     Ok(())
 }
 
@@ -123,10 +123,10 @@ fn test_infer_let_binding() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Should infer as numeric type
     assert!(ty.to_string().contains("i"));
-    
+
     Ok(())
 }
 
@@ -136,10 +136,10 @@ fn test_infer_function_type() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Function should have unit type when used as statement
     assert_eq!(ty.to_string(), "()");
-    
+
     Ok(())
 }
 
@@ -149,10 +149,10 @@ fn test_infer_lambda() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Lambda should have function type
     assert!(ty.to_string().contains("->"));
-    
+
     Ok(())
 }
 
@@ -162,10 +162,10 @@ fn test_infer_unary_negation() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Should preserve numeric type
     assert!(ty.to_string().contains("i"));
-    
+
     Ok(())
 }
 
@@ -175,9 +175,9 @@ fn test_infer_unary_not() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     assert_eq!(ty.to_string(), "bool");
-    
+
     Ok(())
 }
 
@@ -188,28 +188,30 @@ fn test_infer_call_expression() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Should infer return type of function
     assert!(ty.to_string().contains("i"));
-    
+
     Ok(())
 }
 
 #[test]
 fn test_infer_match_expression() -> Result<()> {
-    let mut parser = Parser::new(r#"
+    let mut parser = Parser::new(
+        r#"
         match 1 {
             0 => false,
             _ => true
         }
-    "#);
+    "#,
+    );
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // All branches return bool
     assert_eq!(ty.to_string(), "bool");
-    
+
     Ok(())
 }
 
@@ -219,10 +221,10 @@ fn test_infer_struct_type() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // Struct definition has unit type
     assert_eq!(ty.to_string(), "()");
-    
+
     Ok(())
 }
 
@@ -232,9 +234,9 @@ fn test_infer_for_loop() -> Result<()> {
     let ast = parser.parse()?;
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
-    
+
     // For loop has unit type
     assert_eq!(ty.to_string(), "()");
-    
+
     Ok(())
 }

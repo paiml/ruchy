@@ -69,11 +69,20 @@ pub enum Type {
     /// Boolean
     Bool,
     /// Signed integers
-    I8, I16, I32, I64, I128,
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
     /// Unsigned integers
-    U8, U16, U32, U64, U128,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
     /// Floating point
-    F32, F64,
+    F32,
+    F64,
     /// String
     String,
     /// Reference (borrowed)
@@ -178,13 +187,28 @@ pub enum Constant {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinOp {
     // Arithmetic
-    Add, Sub, Mul, Div, Rem, Pow,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    Pow,
     // Bitwise
-    BitAnd, BitOr, BitXor, Shl, Shr,
+    BitAnd,
+    BitOr,
+    BitXor,
+    Shl,
+    Shr,
     // Comparison
-    Eq, Ne, Lt, Le, Gt, Ge,
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
     // Logical (short-circuiting is handled by control flow)
-    And, Or,
+    And,
+    Or,
 }
 
 /// Unary operations
@@ -287,7 +311,9 @@ impl fmt::Display for Type {
             Type::Tuple(tys) => {
                 write!(f, "(")?;
                 for (i, ty) in tys.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{ty}")?;
                 }
                 write!(f, ")")
@@ -295,7 +321,9 @@ impl fmt::Display for Type {
             Type::FnPtr(params, ret) => {
                 write!(f, "fn(")?;
                 for (i, param) in params.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{param}")?;
                 }
                 write!(f, ") -> {ret}")

@@ -28,14 +28,14 @@ use crate::frontend::ast::ObjectField;
 /// - Invalid object literal syntax when detected as object
 pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume {
-    
+
     // Check if this might be an object literal
     // Object literals have: identifier/string : expr, or ...expr patterns
     // Blocks have statements and expressions
     if is_object_literal(state)? {
         return parse_object_literal_body(state, start_span);
     }
-    
+
     let mut exprs = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Check if this is a let statement (let without 'in')
@@ -43,19 +43,19 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
             // Peek ahead to see if this is a let-statement or let-expression
             let saved_pos = state.tokens.position();
             state.tokens.advance(); // consume let
-            
+
             // Parse variable name
             if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
                 let name = name.clone();
                 state.tokens.advance();
-                
-                // Check for = 
+
+                // Check for =
                 if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
                     state.tokens.advance(); // consume =
-                    
+
                     // Parse the value expression
                     let value = super::parse_expr_recursive(state)?;
-                    
+
                     // Check if followed by 'in' (let-expression) or semicolon/brace (let-statement)
                     if matches!(state.tokens.peek(), Some((Token::In, _))) {
                         // It's a let-expression, restore position and parse normally
@@ -67,30 +67,30 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
                         if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
                             state.tokens.advance();
                         }
-                        
+
                         // Parse the rest of the block as the body
                         let mut body_exprs = Vec::new();
                         while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
                             body_exprs.push(super::parse_expr_recursive(state)?);
-                            
+
                             if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
                                 state.tokens.advance();
                             }
-                            
+
                             if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
                                 break;
                             }
                         }
-                        
+
                         // Create the body expression
                         let body = if body_exprs.is_empty() {
                             Expr::new(ExprKind::Literal(Literal::Unit), start_span)
                         } else if body_exprs.len() == 1 {
-                            body_exprs.into_iter().next().unwrap()
+                            body_exprs.into_iter().next().expect("checked: len == 1")
                         } else {
                             Expr::new(ExprKind::Block(body_exprs), start_span)
                         };
-                        
+
                         // Create let-in expression
                         exprs.push(Expr::new(
                             ExprKind::Let {
@@ -115,19 +115,19 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
         } else {
             exprs.push(super::parse_expr_recursive(state)?);
         }
-        
+
         // Optional semicolon
         if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
             state.tokens.advance();
         }
-        
+
         if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
             break;
         }
     }
-    
-    state.tokens.expect(Token::RightBrace)?;
-    
+
+    state.tokens.expect(&Token::RightBrace)?;
+
     Ok(Expr::new(ExprKind::Block(exprs), start_span))
 }
 
@@ -158,17 +158,17 @@ fn is_object_literal(state: &mut ParserState) -> Result<bool> {
     // 1. { key: value, ... }
     // 2. { ...spread }
     // 3. { } (empty)
-    
+
     // Empty braces could be either - default to block
     if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         return Ok(false);
     }
-    
+
     // Check for spread operator
     if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
         return Ok(true);
     }
-    
+
     // Check for identifier/string followed by colon
     match state.tokens.peek() {
         Some((Token::Identifier(_) | Token::String(_), _)) => {
@@ -211,7 +211,7 @@ fn is_object_literal(state: &mut ParserState) -> Result<bool> {
 /// - Missing closing brace
 fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Result<Expr> {
     let mut fields = Vec::new();
-    
+
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Check for spread operator
         if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
@@ -233,12 +233,12 @@ fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Resul
                 }
                 _ => bail!("Expected identifier or string key in object literal"),
             };
-            
-            state.tokens.expect(Token::Colon)?;
+
+            state.tokens.expect(&Token::Colon)?;
             let value = super::parse_expr_recursive(state)?;
             fields.push(ObjectField::KeyValue { key, value });
         }
-        
+
         // Check for comma
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
@@ -246,9 +246,9 @@ fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Resul
             bail!("Expected comma or closing brace in object literal");
         }
     }
-    
-    state.tokens.expect(Token::RightBrace)?;
-    
+
+    state.tokens.expect(&Token::RightBrace)?;
+
     Ok(Expr::new(ExprKind::ObjectLiteral { fields }, start_span))
 }
 
@@ -280,36 +280,36 @@ fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Resul
 /// - Malformed comma-separated elements
 pub fn parse_list(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume [
-    
+
     // Check for empty list
     if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
         state.tokens.advance(); // consume ]
         return Ok(Expr::new(ExprKind::List(Vec::new()), start_span));
     }
-    
+
     // Parse the first element
     let first_element = super::parse_expr_recursive(state)?;
-    
+
     // Check if this is a list comprehension by looking for 'for'
     if matches!(state.tokens.peek(), Some((Token::For, _))) {
         return parse_list_comprehension(state, start_span, first_element);
     }
-    
+
     // Regular list - continue parsing elements
     let mut elements = vec![first_element];
-    
+
     while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
         state.tokens.advance(); // consume comma
-        
+
         if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
             break; // trailing comma
         }
-        
+
         elements.push(super::parse_expr_recursive(state)?);
     }
-    
-    state.tokens.expect(Token::RightBracket)?;
-    
+
+    state.tokens.expect(&Token::RightBracket)?;
+
     Ok(Expr::new(ExprKind::List(elements), start_span))
 }
 
@@ -337,12 +337,16 @@ pub fn parse_list(state: &mut ParserState) -> Result<Expr> {
 /// - Failed to parse iterable expression
 /// - Failed to parse condition expression (when present)
 /// - Missing closing bracket
-pub fn parse_list_comprehension(state: &mut ParserState, start_span: Span, element: Expr) -> Result<Expr> {
+pub fn parse_list_comprehension(
+    state: &mut ParserState,
+    start_span: Span,
+    element: Expr,
+) -> Result<Expr> {
     // We've already parsed the element expression
     // Now expect: for variable in iterable [if condition]
-    
-    state.tokens.expect(Token::For)?;
-    
+
+    state.tokens.expect(&Token::For)?;
+
     // Parse variable name
     let variable = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         let name = name.clone();
@@ -351,12 +355,12 @@ pub fn parse_list_comprehension(state: &mut ParserState, start_span: Span, eleme
     } else {
         bail!("Expected variable name in list comprehension");
     };
-    
-    state.tokens.expect(Token::In)?;
-    
+
+    state.tokens.expect(&Token::In)?;
+
     // Parse iterable expression
     let iterable = super::parse_expr_recursive(state)?;
-    
+
     // Check for optional if condition
     let condition = if matches!(state.tokens.peek(), Some((Token::If, _))) {
         state.tokens.advance(); // consume 'if'
@@ -364,8 +368,8 @@ pub fn parse_list_comprehension(state: &mut ParserState, start_span: Span, eleme
     } else {
         None
     };
-    
-    state.tokens.expect(Token::RightBracket)?;
+
+    state.tokens.expect(&Token::RightBracket)?;
 
     Ok(Expr::new(
         ExprKind::ListComprehension {
@@ -378,9 +382,9 @@ pub fn parse_list_comprehension(state: &mut ParserState, start_span: Span, eleme
     ))
 }
 
-/// Parse a DataFrame literal expression
+/// Parse a `DataFrame` literal expression
 ///
-/// Parses DataFrame literals with column headers and data rows. The first
+/// Parses `DataFrame` literals with column headers and data rows. The first
 /// row defines column names, subsequent rows contain data values.
 ///
 /// # Examples
@@ -404,13 +408,13 @@ pub fn parse_list_comprehension(state: &mut ParserState, start_span: Span, eleme
 /// - Inconsistent number of values per row
 pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume DataFrame
-    
-    state.tokens.expect(Token::LeftBrace)?;
-    
+
+    state.tokens.expect(&Token::LeftBrace)?;
+
     // Parse column names (first row should be column identifiers)
     let mut columns = Vec::new();
     let mut rows = Vec::new();
-    
+
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         if !columns.is_empty() {
             // Expect semicolon between rows
@@ -418,24 +422,27 @@ pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
                 bail!("Expected ';' between DataFrame rows");
             }
             state.tokens.advance(); // consume ;
-            
+
             if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
                 break; // trailing semicolon
             }
         }
-        
+
         let mut row = Vec::new();
-        
+
         if columns.is_empty() {
             // Parse column names
-            while !matches!(state.tokens.peek(), Some((Token::Semicolon | Token::RightBrace, _))) {
+            while !matches!(
+                state.tokens.peek(),
+                Some((Token::Semicolon | Token::RightBrace, _))
+            ) {
                 if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
                     columns.push(name.clone());
                     state.tokens.advance();
                 } else {
                     bail!("Expected column name");
                 }
-                
+
                 if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     state.tokens.advance();
                 } else {
@@ -444,9 +451,12 @@ pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
             }
         } else {
             // Parse data values
-            while !matches!(state.tokens.peek(), Some((Token::Semicolon | Token::RightBrace, _))) {
+            while !matches!(
+                state.tokens.peek(),
+                Some((Token::Semicolon | Token::RightBrace, _))
+            ) {
                 row.push(super::parse_expr_recursive(state)?);
-                
+
                 // Check for comma or end of row
                 if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     state.tokens.advance();
@@ -457,11 +467,8 @@ pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
             rows.push(row);
         }
     }
-    
-    state.tokens.expect(Token::RightBrace)?;
 
-    Ok(Expr::new(
-        ExprKind::DataFrame { columns, rows },
-        start_span,
-    ))
+    state.tokens.expect(&Token::RightBrace)?;
+
+    Ok(Expr::new(ExprKind::DataFrame { columns, rows }, start_span))
 }

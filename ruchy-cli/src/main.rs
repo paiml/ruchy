@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::*;
-use ruchy::{Parser as RuchyParser, runtime::repl::Repl, Transpiler};
+use ruchy::{runtime::repl::Repl, Parser as RuchyParser, Transpiler};
 use std::fs;
 use std::path::PathBuf;
 

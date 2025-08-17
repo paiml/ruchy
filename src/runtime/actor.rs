@@ -3,12 +3,12 @@
 //! This module implements a robust actor system inspired by Erlang/OTP and Akka,
 //! with supervision trees for fault tolerance and message passing capabilities.
 
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, mpsc};
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
-use anyhow::{Result, anyhow};
-use serde::{Serialize, Deserialize};
 
 /// Unique identifier for actors
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -35,7 +35,8 @@ impl ActorRef {
     ///
     /// Returns an error if the actor is no longer running
     pub fn send(&self, message: Message) -> Result<()> {
-        self.sender.send(ActorMessage::UserMessage(message))
+        self.sender
+            .send(ActorMessage::UserMessage(message))
             .map_err(|_| anyhow!("Actor {} is no longer running", self.id))?;
         Ok(())
     }
@@ -49,13 +50,16 @@ impl ActorRef {
     /// - The timeout expires before receiving a response
     pub fn ask(&self, message: Message, timeout: Duration) -> Result<Message> {
         let (response_tx, response_rx) = mpsc::channel();
-        
-        self.sender.send(ActorMessage::AskMessage {
-            message,
-            response: response_tx,
-        }).map_err(|_| anyhow!("Actor {} is no longer running", self.id))?;
-        
-        response_rx.recv_timeout(timeout)
+
+        self.sender
+            .send(ActorMessage::AskMessage {
+                message,
+                response: response_tx,
+            })
+            .map_err(|_| anyhow!("Actor {} is no longer running", self.id))?;
+
+        response_rx
+            .recv_timeout(timeout)
             .map_err(|_| anyhow!("Timeout waiting for response from {}", self.id))
     }
 }
@@ -192,7 +196,8 @@ impl ActorContext {
     /// Returns an error if the actor reference cannot be retrieved
     pub fn get_self(&self) -> Result<ActorRef> {
         let system = self.system.lock().unwrap();
-        system.get_actor_ref(self.actor_id)
+        system
+            .get_actor_ref(self.actor_id)
             .ok_or_else(|| anyhow!("Actor not found"))
     }
 
@@ -225,7 +230,7 @@ impl ActorRuntime {
         system: Arc<Mutex<ActorSystem>>,
     ) -> Self {
         let (sender, receiver) = mpsc::channel();
-        
+
         Self {
             id,
             name,
@@ -277,7 +282,7 @@ impl ActorRuntime {
                 match receiver.recv() {
                     Ok(ActorMessage::UserMessage(msg)) => {
                         match behavior.receive(msg, &mut ctx) {
-                            Ok(_) => {},
+                            Ok(_) => {}
                             Err(e) => {
                                 eprintln!("Actor {name} error handling message: {e}");
                                 // Notify supervisor of failure
@@ -361,11 +366,7 @@ impl ActorSystem {
     /// # Errors
     ///
     /// Returns an error if an actor with the same name already exists
-    pub fn spawn<B: ActorBehavior>(
-        &mut self,
-        name: String,
-        behavior: B,
-    ) -> Result<ActorRef> {
+    pub fn spawn<B: ActorBehavior>(&mut self, name: String, behavior: B) -> Result<ActorRef> {
         self.spawn_supervised(name, Box::new(behavior), None)
     }
 
@@ -415,7 +416,8 @@ impl ActorSystem {
 
     /// Find actor by name
     pub fn find_actor_by_name(&self, name: &str) -> Option<ActorRef> {
-        self.actor_names.get(name)
+        self.actor_names
+            .get(name)
             .and_then(|&id| self.get_actor_ref(id))
     }
 
@@ -535,9 +537,10 @@ mod tests {
             sys.spawn("echo".to_string(), EchoActor).unwrap()
         };
 
-        let message = Message::User("test".to_string(), vec![
-            MessageValue::String("hello".to_string())
-        ]);
+        let message = Message::User(
+            "test".to_string(),
+            vec![MessageValue::String("hello".to_string())],
+        );
 
         let response = actor_ref.ask(message, Duration::from_millis(100)).unwrap();
         match response {
@@ -551,13 +554,16 @@ mod tests {
         let system = ActorSystem::new();
         let supervisor_ref = {
             let mut sys = system.lock().unwrap();
-            sys.spawn("supervisor".to_string(), SupervisorActor::new(3)).unwrap()
+            sys.spawn("supervisor".to_string(), SupervisorActor::new(3))
+                .unwrap()
         };
 
         let child_id = ActorId(999);
         let failure_message = Message::ChildFailed(child_id, "Test failure".to_string());
-        
-        let response = supervisor_ref.ask(failure_message, Duration::from_millis(100)).unwrap();
+
+        let response = supervisor_ref
+            .ask(failure_message, Duration::from_millis(100))
+            .unwrap();
         match response {
             Message::ChildRestarted(id) => assert_eq!(id, child_id),
             _ => panic!("Expected ChildRestarted message"),

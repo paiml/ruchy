@@ -13,7 +13,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     match token_clone {
         Token::Integer(i) => {
             state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Integer(i)), span_clone))
+            Ok(Expr::new(
+                ExprKind::Literal(Literal::Integer(i)),
+                span_clone,
+            ))
         }
         Token::Float(f) => {
             state.tokens.advance();
@@ -35,7 +38,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Bool(b) => {
             let value = b;
             state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Bool(value)), span_clone))
+            Ok(Expr::new(
+                ExprKind::Literal(Literal::Bool(value)),
+                span_clone,
+            ))
         }
         Token::Identifier(name) => {
             state.tokens.advance();
@@ -45,7 +51,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::LeftParen => {
             state.tokens.advance(); // consume (
             let expr = super::parse_expr_recursive(state)?;
-            state.tokens.expect(Token::RightParen)?;
+            state.tokens.expect(&Token::RightParen)?;
             Ok(expr)
         }
         Token::Async => {
@@ -78,7 +84,9 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             state.tokens.advance(); // consume await
             let expr = parse_prefix(state)?;
             Ok(Expr::new(
-                ExprKind::Await { expr: Box::new(expr) },
+                ExprKind::Await {
+                    expr: Box::new(expr),
+                },
                 span_clone,
             ))
         }

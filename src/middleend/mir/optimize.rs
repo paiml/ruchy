@@ -1,7 +1,10 @@
 //! MIR optimization passes
 
-use super::types::*;
-use std::collections::{HashSet, HashMap};
+use super::types::{
+    BinOp, BlockId, Constant, Function, Local, Operand, Place, Program, Rvalue, Statement,
+    Terminator, UnOp,
+};
+use std::collections::{HashMap, HashSet};
 
 /// Dead Code Elimination pass
 pub struct DeadCodeElimination {
@@ -9,6 +12,12 @@ pub struct DeadCodeElimination {
     live_locals: HashSet<Local>,
     /// Set of live blocks
     live_blocks: HashSet<BlockId>,
+}
+
+impl Default for DeadCodeElimination {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DeadCodeElimination {
@@ -24,13 +33,13 @@ impl DeadCodeElimination {
     pub fn run(&mut self, func: &mut Function) {
         // Mark live locals and blocks
         self.mark_live(func);
-        
+
         // Remove dead statements
         self.remove_dead_statements(func);
-        
+
         // Remove dead blocks
         self.remove_dead_blocks(func);
-        
+
         // Remove dead locals
         self.remove_dead_locals(func);
     }
@@ -39,23 +48,23 @@ impl DeadCodeElimination {
     fn mark_live(&mut self, func: &Function) {
         self.live_locals.clear();
         self.live_blocks.clear();
-        
+
         // Start from entry block
         let mut worklist = vec![func.entry_block];
         self.live_blocks.insert(func.entry_block);
-        
+
         while let Some(block_id) = worklist.pop() {
             if let Some(block) = func.blocks.iter().find(|b| b.id == block_id) {
                 // Mark locals used in statements
                 for stmt in &block.statements {
                     self.mark_statement_live(stmt);
                 }
-                
+
                 // Mark locals used in terminator and add successor blocks
                 self.mark_terminator_live(&block.terminator, &mut worklist);
             }
         }
-        
+
         // Mark parameters as live
         for param in &func.params {
             self.live_locals.insert(*param);
@@ -146,7 +155,11 @@ impl DeadCodeElimination {
                     worklist.push(*target);
                 }
             }
-            Terminator::If { condition, then_block, else_block } => {
+            Terminator::If {
+                condition,
+                then_block,
+                else_block,
+            } => {
                 self.mark_operand_live(condition);
                 if self.live_blocks.insert(*then_block) {
                     worklist.push(*then_block);
@@ -155,7 +168,11 @@ impl DeadCodeElimination {
                     worklist.push(*else_block);
                 }
             }
-            Terminator::Switch { discriminant, targets, default } => {
+            Terminator::Switch {
+                discriminant,
+                targets,
+                default,
+            } => {
                 self.mark_operand_live(discriminant);
                 for (_, target) in targets {
                     if self.live_blocks.insert(*target) {
@@ -173,7 +190,11 @@ impl DeadCodeElimination {
                     self.mark_operand_live(op);
                 }
             }
-            Terminator::Call { func, args, destination } => {
+            Terminator::Call {
+                func,
+                args,
+                destination,
+            } => {
                 self.mark_operand_live(func);
                 for arg in args {
                     self.mark_operand_live(arg);
@@ -195,12 +216,10 @@ impl DeadCodeElimination {
             if !self.live_blocks.contains(&block.id) {
                 continue;
             }
-            
+
             block.statements.retain(|stmt| {
                 match stmt {
-                    Statement::Assign(place, _) => {
-                        self.is_place_live(place)
-                    }
+                    Statement::Assign(place, _) => self.is_place_live(place),
                     Statement::StorageLive(local) | Statement::StorageDead(local) => {
                         self.live_locals.contains(local)
                     }
@@ -212,12 +231,14 @@ impl DeadCodeElimination {
 
     /// Remove dead blocks
     fn remove_dead_blocks(&self, func: &mut Function) {
-        func.blocks.retain(|block| self.live_blocks.contains(&block.id));
+        func.blocks
+            .retain(|block| self.live_blocks.contains(&block.id));
     }
 
     /// Remove dead locals
     fn remove_dead_locals(&self, func: &mut Function) {
-        func.locals.retain(|local_decl| self.live_locals.contains(&local_decl.id));
+        func.locals
+            .retain(|local_decl| self.live_locals.contains(&local_decl.id));
     }
 
     /// Check if a place is live
@@ -237,6 +258,12 @@ pub struct ConstantPropagation {
     constants: HashMap<Local, Constant>,
 }
 
+impl Default for ConstantPropagation {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConstantPropagation {
     /// Create a new constant propagation pass
     pub fn new() -> Self {
@@ -248,7 +275,7 @@ impl ConstantPropagation {
     /// Run constant propagation on a function
     pub fn run(&mut self, func: &mut Function) {
         self.constants.clear();
-        
+
         // Find constant assignments
         for block in &func.blocks {
             for stmt in &block.statements {
@@ -259,7 +286,7 @@ impl ConstantPropagation {
                 }
             }
         }
-        
+
         // Replace uses of constants
         for block in &mut func.blocks {
             for stmt in &mut block.statements {
@@ -273,12 +300,8 @@ impl ConstantPropagation {
     fn extract_constant(&self, rvalue: &Rvalue) -> Option<Constant> {
         match rvalue {
             Rvalue::Use(Operand::Constant(c)) => Some(c.clone()),
-            Rvalue::BinaryOp(op, left, right) => {
-                self.eval_binary_op(*op, left, right)
-            }
-            Rvalue::UnaryOp(op, operand) => {
-                self.eval_unary_op(*op, operand)
-            }
+            Rvalue::BinaryOp(op, left, right) => self.eval_binary_op(*op, left, right),
+            Rvalue::UnaryOp(op, operand) => self.eval_unary_op(*op, operand),
             _ => None,
         }
     }
@@ -287,7 +310,7 @@ impl ConstantPropagation {
     fn eval_binary_op(&self, op: BinOp, left: &Operand, right: &Operand) -> Option<Constant> {
         let left_val = self.get_constant_value(left)?;
         let right_val = self.get_constant_value(right)?;
-        
+
         match (op, &left_val, &right_val) {
             (BinOp::Add, Constant::Int(a, ty), Constant::Int(b, _)) => {
                 Some(Constant::Int(a + b, ty.clone()))
@@ -298,18 +321,10 @@ impl ConstantPropagation {
             (BinOp::Mul, Constant::Int(a, ty), Constant::Int(b, _)) => {
                 Some(Constant::Int(a * b, ty.clone()))
             }
-            (BinOp::Eq, Constant::Int(a, _), Constant::Int(b, _)) => {
-                Some(Constant::Bool(a == b))
-            }
-            (BinOp::Lt, Constant::Int(a, _), Constant::Int(b, _)) => {
-                Some(Constant::Bool(a < b))
-            }
-            (BinOp::And, Constant::Bool(a), Constant::Bool(b)) => {
-                Some(Constant::Bool(*a && *b))
-            }
-            (BinOp::Or, Constant::Bool(a), Constant::Bool(b)) => {
-                Some(Constant::Bool(*a || *b))
-            }
+            (BinOp::Eq, Constant::Int(a, _), Constant::Int(b, _)) => Some(Constant::Bool(a == b)),
+            (BinOp::Lt, Constant::Int(a, _), Constant::Int(b, _)) => Some(Constant::Bool(a < b)),
+            (BinOp::And, Constant::Bool(a), Constant::Bool(b)) => Some(Constant::Bool(*a && *b)),
+            (BinOp::Or, Constant::Bool(a), Constant::Bool(b)) => Some(Constant::Bool(*a || *b)),
             _ => None,
         }
     }
@@ -317,14 +332,10 @@ impl ConstantPropagation {
     /// Evaluate unary operation on constant
     fn eval_unary_op(&self, op: UnOp, operand: &Operand) -> Option<Constant> {
         let val = self.get_constant_value(operand)?;
-        
+
         match (op, &val) {
-            (UnOp::Neg, Constant::Int(i, ty)) => {
-                Some(Constant::Int(-i, ty.clone()))
-            }
-            (UnOp::Not, Constant::Bool(b)) => {
-                Some(Constant::Bool(!b))
-            }
+            (UnOp::Neg, Constant::Int(i, ty)) => Some(Constant::Int(-i, ty.clone())),
+            (UnOp::Not, Constant::Bool(b)) => Some(Constant::Bool(!b)),
             _ => None,
         }
     }
@@ -342,11 +353,8 @@ impl ConstantPropagation {
 
     /// Propagate constants in a statement
     fn propagate_in_statement(&self, stmt: &mut Statement) {
-        match stmt {
-            Statement::Assign(_, rvalue) => {
-                self.propagate_in_rvalue(rvalue);
-            }
-            _ => {}
+        if let Statement::Assign(_, rvalue) = stmt {
+            self.propagate_in_rvalue(rvalue);
         }
     }
 
@@ -409,6 +417,12 @@ pub struct CommonSubexpressionElimination {
     expressions: HashMap<String, Local>,
 }
 
+impl Default for CommonSubexpressionElimination {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CommonSubexpressionElimination {
     /// Create a new CSE pass
     pub fn new() -> Self {
@@ -420,7 +434,7 @@ impl CommonSubexpressionElimination {
     /// Run CSE on a function
     pub fn run(&mut self, func: &mut Function) {
         self.expressions.clear();
-        
+
         for block in &mut func.blocks {
             for stmt in &mut block.statements {
                 self.process_statement(stmt);
@@ -432,12 +446,12 @@ impl CommonSubexpressionElimination {
     fn process_statement(&mut self, stmt: &mut Statement) {
         if let Statement::Assign(Place::Local(local), rvalue) = stmt {
             let expr_key = self.rvalue_key(rvalue);
-            
+
             if let Some(existing_local) = self.expressions.get(&expr_key) {
                 // Replace with copy from existing local
                 *stmt = Statement::Assign(
                     Place::Local(*local),
-                    Rvalue::Use(Operand::Copy(Place::Local(*existing_local)))
+                    Rvalue::Use(Operand::Copy(Place::Local(*existing_local))),
                 );
             } else {
                 // Record this expression
@@ -451,7 +465,12 @@ impl CommonSubexpressionElimination {
         match rvalue {
             Rvalue::Use(operand) => format!("use({})", self.operand_key(operand)),
             Rvalue::BinaryOp(op, left, right) => {
-                format!("binop({:?}, {}, {})", op, self.operand_key(left), self.operand_key(right))
+                format!(
+                    "binop({:?}, {}, {})",
+                    op,
+                    self.operand_key(left),
+                    self.operand_key(right)
+                )
             }
             Rvalue::UnaryOp(op, operand) => {
                 format!("unop({:?}, {})", op, self.operand_key(operand))
@@ -474,7 +493,9 @@ impl CommonSubexpressionElimination {
         match place {
             Place::Local(local) => format!("local({})", local.0),
             Place::Field(base, field) => format!("field({}, {})", self.place_key(base), field.0),
-            Place::Index(base, index) => format!("index({}, {})", self.place_key(base), self.place_key(index)),
+            Place::Index(base, index) => {
+                format!("index({}, {})", self.place_key(base), self.place_key(index))
+            }
             Place::Deref(base) => format!("deref({})", self.place_key(base)),
         }
     }
@@ -485,7 +506,7 @@ pub fn optimize_function(func: &mut Function) {
     let mut dce = DeadCodeElimination::new();
     let mut const_prop = ConstantPropagation::new();
     let mut cse = CommonSubexpressionElimination::new();
-    
+
     // Run multiple rounds for better results
     for _ in 0..3 {
         const_prop.run(func);

@@ -18,10 +18,10 @@ pub mod runtime;
 pub mod testing;
 pub mod transpiler;
 
-pub use frontend::ast::{Expr, ExprKind, Literal, Pattern, BinaryOp, UnaryOp};
+pub use backend::transpiler::Transpiler;
+pub use frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, UnaryOp};
 pub use frontend::lexer::{Token, TokenStream};
 pub use frontend::parser::Parser;
-pub use backend::transpiler::Transpiler;
 
 use anyhow::Result;
 
@@ -144,8 +144,8 @@ mod tests {
 
     #[test]
     fn test_compile_impl() {
-        let result = compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }")
-            .unwrap();
+        let result =
+            compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }").unwrap();
         assert!(result.contains("impl"));
     }
 
@@ -182,7 +182,7 @@ mod tests {
     fn test_compile_unary_ops() {
         let result = compile("-x").unwrap();
         assert!(result.contains("-"));
-        
+
         let result = compile("!flag").unwrap();
         assert!(result.contains("!"));
     }
@@ -374,10 +374,10 @@ mod tests {
     fn test_get_parse_error_detailed() {
         let error = get_parse_error("if");
         assert!(error.is_some());
-        
+
         let error = get_parse_error("match");
         assert!(error.is_some());
-        
+
         let error = get_parse_error("[1, 2,");
         assert!(error.is_some());
     }
@@ -470,7 +470,8 @@ mod tests {
 
     #[test]
     fn test_compile_actor() {
-        let result = compile(r"
+        let result = compile(
+            r"
             actor Counter {
                 state { count: i32 }
                 receive {
@@ -478,7 +479,9 @@ mod tests {
                     Get => count
                 }
             }
-        ").unwrap();
+        ",
+        )
+        .unwrap();
         assert!(result.contains("actor"));
     }
 }

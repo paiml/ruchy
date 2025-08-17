@@ -291,13 +291,16 @@ impl Transpiler {
         let catch_var_ident = syn::Ident::new(catch_var, proc_macro2::Span::call_site());
         let catch_tokens = self.transpile_expr(catch_block)?;
 
-        // Generate: match (|| -> Result<_, _> { try_block })() { Ok(v) => v, Err(catch_var) => catch_block }
+        // Generate proper try/catch pattern
         Ok(quote! {
             match (|| -> Result<_, Box<dyn std::error::Error>> {
                 Ok(#try_tokens)
             })() {
-                Ok(__v) => __v,
-                Err(#catch_var_ident) => #catch_tokens,
+                Ok(val) => val,
+                Err(e) => {
+                    let #catch_var_ident = e;
+                    #catch_tokens
+                }
             }
         })
     }
@@ -937,7 +940,7 @@ impl Transpiler {
         // Convert Ruchy import paths to Rust use statements
         // Replace dots with double colons for Rust-style paths
         let rust_path = path.replace('.', "::");
-        
+
         if items.is_empty() {
             // Simple import: import std.collections.HashMap -> use std::collections::HashMap;
             let path_tokens: TokenStream = rust_path.parse().unwrap_or_else(|_| quote! { std });
@@ -1075,11 +1078,11 @@ impl Transpiler {
         fields: &[crate::frontend::ast::ObjectField],
     ) -> Result<TokenStream> {
         use crate::frontend::ast::ObjectField;
-        
+
         // Object literals in Ruchy translate to anonymous structs or HashMap in Rust
         // For now, we'll use HashMap for dynamic object literals
         let mut field_insertions = Vec::new();
-        
+
         for field in fields {
             match field {
                 ObjectField::KeyValue { key, value } => {
@@ -1099,7 +1102,7 @@ impl Transpiler {
                 }
             }
         }
-        
+
         Ok(quote! {
             {
                 let mut __object = std::collections::HashMap::<String, Box<dyn std::any::Any>>::new();
@@ -1356,7 +1359,8 @@ impl Transpiler {
         handlers: &[crate::frontend::ast::ActorHandler],
     ) -> Result<TokenStream> {
         let actor_name = syn::Ident::new(name, proc_macro2::Span::call_site());
-        let message_enum_name = syn::Ident::new(&format!("{}Message", name), proc_macro2::Span::call_site());
+        let message_enum_name =
+            syn::Ident::new(&format!("{name}Message"), proc_macro2::Span::call_site());
 
         // Generate state struct fields
         let field_tokens: Result<Vec<_>> = state
@@ -1368,7 +1372,7 @@ impl Transpiler {
             })
             .collect();
         let field_tokens = field_tokens?;
-        
+
         // Generate message enum variants
         let message_variants: Vec<_> = handlers
             .iter()
@@ -1382,9 +1386,9 @@ impl Transpiler {
         let handler_arms: Result<Vec<_>> = handlers
             .iter()
             .map(|h| {
-                let variant = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
+                let _variant = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
                 let body_tokens = self.transpile_expr(&h.body)?;
-                let enum_prefix = format!("{}Message", name);
+                let enum_prefix = format!("{name}Message");
                 let variant_path: TokenStream = format!("{}::{}", enum_prefix, h.message_type)
                     .parse()
                     .unwrap_or_else(|_| quote! { Message });
@@ -1395,7 +1399,6 @@ impl Transpiler {
             })
             .collect();
         let handler_arms = handler_arms?;
-
 
         // Generate field initializers
         let field_inits: Vec<_> = state
@@ -1456,12 +1459,9 @@ impl Transpiler {
         let actor_tokens = self.transpile_expr(actor)?;
         let message_tokens = self.transpile_expr(message)?;
 
-        // Generate send operation using our actor runtime
+        // Generate send operation using the actor's message type directly
         Ok(quote! {
-            #actor_tokens.send(ruchy::runtime::Message::User(
-                "message".to_string(),
-                vec![ruchy::runtime::MessageValue::String(#message_tokens.to_string())]
-            )).unwrap()
+            #actor_tokens.send(#message_tokens).unwrap()
         })
     }
 
@@ -1476,13 +1476,10 @@ impl Transpiler {
 
         if let Some(timeout_expr) = timeout {
             let timeout_tokens = self.transpile_expr(timeout_expr)?;
-            // Generate ask with timeout using our actor runtime
+            // Generate ask with timeout using the actor's message type directly
             Ok(quote! {
                 #actor_tokens.ask(
-                    ruchy::runtime::Message::User(
-                        "message".to_string(),
-                        vec![ruchy::runtime::MessageValue::String(#message_tokens.to_string())]
-                    ),
+                    #message_tokens,
                     std::time::Duration::from_millis(#timeout_tokens as u64)
                 ).unwrap()
             })
@@ -1490,10 +1487,7 @@ impl Transpiler {
             // Generate ask without timeout (default 5 seconds)
             Ok(quote! {
                 #actor_tokens.ask(
-                    ruchy::runtime::Message::User(
-                        "message".to_string(),
-                        vec![ruchy::runtime::MessageValue::String(#message_tokens.to_string())]
-                    ),
+                    #message_tokens,
                     std::time::Duration::from_secs(5)
                 ).unwrap()
             })
