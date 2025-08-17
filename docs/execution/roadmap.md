@@ -1,59 +1,81 @@
 # Ruchy Compiler Execution Roadmap
 *Generated from roadmap.yaml - Do not edit manually*
 
-## Current Sprint: Test Suite Stabilization ✅ COMPLETED
+## Previous Sprint: Test Suite Stabilization ✅ COMPLETED
+- **Duration**: 1 day
+- **Completion**: 2025-08-17
+- **Story Points**: 14/14 completed
+- **Test Pass Rate**: 99% (237/239)
+- **Failures Reduced**: 71% (7 → 2)
+
+## Current Sprint: DataFrame Support Implementation 🚀 ACTIVE
+
+### Sprint Overview
+- **Duration**: 3 days
+- **Total Complexity**: 36 story points
+- **Priority**: Critical (blocking all examples)
+- **Dependencies**: Test Suite Stabilization ✅
 
 ### Active Tasks (P0 Priority)
 
-#### QA-P1-001: Fix let statement syntax parsing ✅
-- **Specification**: SPECIFICATION.md Section 2.4
-- **Complexity**: 3/10
-- **Status**: COMPLETED
-- **Issue**: Parser expects ML-style `let x = value in body` but tests use `let x = value`
+#### DF-P2-001: DataFrame literal parsing (df![columns])
+- **Specification**: SPECIFICATION.md Section 3.5
+- **Complexity**: 8/10
+- **Status**: PENDING
+- **Acceptance Criteria**:
+  - Parse `df![col => values]` syntax
+  - Support multiple column definitions
+  - Type inference for column types
 - **Dependencies**: None
-- **Performance Target**: Maintain 50MB/s parsing throughput ✅
-- **Completed**: 2025-08-17T01:00:00Z
+- **Performance Target**: Maintain 50MB/s parsing throughput
 
-#### QA-P1-002: Fix trait parameter parsing ✅
-- **Specification**: SPECIFICATION.md Section 2.2
-- **Complexity**: 5/10
-- **Status**: COMPLETED
-- **Issue**: Parameter parser fails on `&self` syntax in trait methods
-- **Dependencies**: QA-P1-001 ✅
-- **Performance Target**: <15ms type inference latency ✅
-- **Completed**: 2025-08-17T01:15:00Z
+#### DF-P2-002: DataFrame type system integration
+- **Specification**: SPECIFICATION.md Section 4.2
+- **Complexity**: 10/10
+- **Status**: PENDING
+- **Acceptance Criteria**:
+  - DataFrame and Series types in type system
+  - Column type tracking
+  - Operation type checking
+- **Dependencies**: DF-P2-001
+- **Performance Target**: <15ms type inference latency
 
-#### QA-P1-003: Fix actor send/ask transpilation ✅
-- **Specification**: SPECIFICATION.md Section 3.1
-- **Complexity**: 4/10
-- **Status**: COMPLETED
-- **Issue**: Transpiler output format doesn't match test expectations
-- **Dependencies**: QA-P1-001 ✅, QA-P1-002 ✅
-- **Performance Target**: 100K LOC/s transpilation speed ✅
-- **Completed**: 2025-08-17T01:30:00Z
+#### DF-P2-003: Polars transpilation backend
+- **Specification**: SPECIFICATION.md Section 5.3
+- **Complexity**: 12/10
+- **Status**: PENDING
+- **Acceptance Criteria**:
+  - Generate Polars DataFrame code
+  - Lazy evaluation support
+  - Method chaining translation
+- **Dependencies**: DF-P2-001, DF-P2-002
+- **Performance Target**: 100K LOC/s transpilation speed
 
-#### QA-P1-004: Fix error message formatting ✅
-- **Specification**: SPECIFICATION.md Section 7
-- **Complexity**: 2/10
-- **Status**: COMPLETED
-- **Issue**: Error messages don't contain expected "Expected" text
-- **Dependencies**: QA-P1-001 ✅
-- **Performance Target**: N/A ✅
-- **Completed**: 2025-08-17T01:45:00Z
+#### DF-P2-004: DataFrame operation pipeline
+- **Specification**: SPECIFICATION.md Section 3.5
+- **Complexity**: 6/10
+- **Status**: PENDING
+- **Acceptance Criteria**:
+  - Filter, map, groupby operations
+  - Aggregation functions
+  - Join operations
+- **Dependencies**: DF-P2-003
+- **Performance Target**: O(n) operation complexity
 
 ## Execution DAG
 
 ```mermaid
 graph TD
-    QA-P1-001[Fix let parsing] --> QA-P1-002[Fix trait parsing]
-    QA-P1-001 --> QA-P1-004[Fix error messages]
-    QA-P1-002 --> QA-P1-003[Fix actor transpilation]
+    DF-P2-001[DataFrame parsing] --> DF-P2-002[Type system]
+    DF-P2-001 --> DF-P2-003[Polars backend]
+    DF-P2-002 --> DF-P2-003
+    DF-P2-003 --> DF-P2-004[Operations]
     
-    QA-P1-003 --> DF-P2-001[DataFrame parsing]
-    QA-P1-003 --> RT-P3-001[Result type support]
+    DF-P2-004 --> RT-P3-001[Result type support]
+    DF-P2-004 --> AC-P4-001[Actor system]
     
-    DF-P2-001 --> AC-P4-001[Actor system]
-    RT-P3-001 --> AC-P4-001
+    RT-P3-001 --> AC-P4-002[Message types]
+    AC-P4-001 --> AC-P4-002
 ```
 
 ## Next Phases (Post-Sprint)

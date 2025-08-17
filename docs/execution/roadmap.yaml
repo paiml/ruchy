@@ -81,29 +81,57 @@ task_template:
     
 # Current Critical Issues (Active Sprint)
 current_sprint:
+  name: "DataFrame Support Implementation"
+  duration: "3 days"
+  status: "ACTIVE"
+  tasks:
+    - id: "DF-P2-001"
+      title: "DataFrame literal parsing (df![columns])"
+      priority: "P0"
+      complexity: 8
+      specification: "SPECIFICATION.md Section 3.5"
+      acceptance_criteria:
+        - "Parse df![col => values] syntax"
+        - "Support multiple column definitions"
+        - "Type inference for column types"
+      
+    - id: "DF-P2-002" 
+      title: "DataFrame type system integration"
+      priority: "P0"
+      complexity: 10
+      specification: "SPECIFICATION.md Section 4.2"
+      acceptance_criteria:
+        - "DataFrame and Series types in type system"
+        - "Column type tracking"
+        - "Operation type checking"
+      
+    - id: "DF-P2-003"
+      title: "Polars transpilation backend"
+      priority: "P0"
+      complexity: 12
+      specification: "SPECIFICATION.md Section 5.3"
+      acceptance_criteria:
+        - "Generate Polars DataFrame code"
+        - "Lazy evaluation support"
+        - "Method chaining translation"
+      
+    - id: "DF-P2-004"
+      title: "DataFrame operation pipeline"
+      priority: "P1"
+      complexity: 6
+      specification: "SPECIFICATION.md Section 3.5"
+      acceptance_criteria:
+        - "Filter, map, groupby operations"
+        - "Aggregation functions"
+        - "Join operations"
+
+previous_sprint:
   name: "Test Suite Stabilization"
   duration: "1 day"
-  tasks:
-    - id: "QA-P1-001"
-      title: "Fix let statement syntax parsing"
-      priority: "P0"
-      complexity: 3
-      specification: "SPECIFICATION.md Section 2.4"
-      
-    - id: "QA-P1-002" 
-      title: "Fix trait parameter parsing"
-      priority: "P0"
-      complexity: 5
-      specification: "SPECIFICATION.md Section 2.2"
-      
-    - id: "QA-P1-003"
-      title: "Fix actor send/ask transpilation"
-      priority: "P0"
-      complexity: 4
-      specification: "SPECIFICATION.md Section 3.1"
-      
-    - id: "QA-P1-004"
-      title: "Fix error message formatting"
-      priority: "P1"
-      complexity: 2
-      specification: "SPECIFICATION.md Section 7"
+  status: "COMPLETED"
+  completion_date: "2025-08-17"
+  tasks_completed: ["QA-P1-001", "QA-P1-002", "QA-P1-003", "QA-P1-004"]
+  metrics:
+    story_points: 14
+    test_pass_rate: 0.99
+    failures_reduced: "71%"
