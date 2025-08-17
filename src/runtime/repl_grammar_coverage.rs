@@ -197,7 +197,7 @@ impl GrammarTestSuite {
     #[must_use]
     #[allow(clippy::expect_used, clippy::print_stderr)]
     pub fn run_coverage_test(&self) -> GrammarCoverage {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new().unwrap();
         let mut coverage = GrammarCoverage::new();
 
         for (description, code) in &self.test_cases {
@@ -353,7 +353,7 @@ mod tests {
     #[test]
     #[ignore = "Requires rustc at runtime"]
     fn test_basic_arithmetic_coverage() {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new().unwrap();
         let mut coverage = GrammarCoverage::new();
 
         let basic_tests = vec![

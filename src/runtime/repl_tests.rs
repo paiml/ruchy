@@ -82,7 +82,7 @@ proptest! {
     /// Property: REPL never panics on any valid action sequence
     #[test]
     fn test_repl_never_panics(actions in prop::collection::vec(arb_repl_action(), 0..10)) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new().unwrap();
 
         for action in actions {
             // This should never panic - all errors should be handled gracefully
@@ -96,7 +96,7 @@ proptest! {
     /// Property: Session counter increases with eval, resets with clear
     #[test]
     fn test_session_counter_behavior(actions in prop::collection::vec(arb_repl_action(), 0..5)) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new().unwrap();
         let mut prev_counter = 0;
 
         for action in actions {
@@ -129,7 +129,7 @@ proptest! {
     fn test_clear_resets_state(
         setup_actions in prop::collection::vec(arb_repl_action(), 1..5)
     ) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new().unwrap();
 
         // Perform some operations to build up state
         for action in setup_actions {
@@ -158,7 +158,7 @@ proptest! {
             arb_valid_expression().prop_map(ReplAction::ShowAst),
         ]
     ) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new().unwrap();
 
         // Set up some state
         let _ = apply_action(&mut repl, &ReplAction::Eval(setup_expr));
@@ -177,7 +177,7 @@ proptest! {
     /// Property: Valid expressions produce output
     #[test]
     fn test_valid_expressions_produce_output(expr in arb_valid_expression()) {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new().unwrap();
 
         let result = apply_action(&mut repl, &ReplAction::Eval(expr.clone()));
 
@@ -198,7 +198,7 @@ mod unit_tests {
 
     #[test]
     fn test_repl_state_extraction() {
-        let repl = Repl::new().expect("Failed to create REPL");
+        let repl = Repl::new().unwrap();
         let state = ReplState::extract_from_repl(&repl);
 
         assert_eq!(state.history_count, 0);
@@ -209,7 +209,7 @@ mod unit_tests {
 
     #[test]
     fn test_repl_basic_operations() {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new().unwrap();
 
         // Test history
         let history = repl.show_history();
@@ -226,7 +226,7 @@ mod unit_tests {
 
     #[test]
     fn test_apply_action_coverage() {
-        let mut repl = Repl::new().expect("Failed to create REPL");
+        let mut repl = Repl::new().unwrap();
 
         // Test all action types
         let actions = vec![
