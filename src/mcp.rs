@@ -70,6 +70,9 @@ impl RuchyMCP {
     /// Returns an error if:
     /// - The type is not registered
     /// - The value doesn't match the expected type
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn validate_against_type(&self, value: &Value, type_name: &str) -> Result<()> {
         if let Some(expected_type) = self.type_registry.get(type_name) {
             self.validate_json_value(value, expected_type)
@@ -125,6 +128,9 @@ impl RuchyMCP {
     /// # Errors
     ///
     /// Returns an error if the server cannot be created or configured
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn create_server(&mut self, name: &str, version: &str) -> Result<&mut Server> {
         let server = Server::builder()
             .name(name)
@@ -154,6 +160,9 @@ impl RuchyMCP {
     /// # Errors
     ///
     /// Returns an error if the client cannot be created with the given transport
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn create_client<T: Transport + 'static>(&mut self, transport: T) -> Result<()> {
         let client = Client::new(transport);
         self.client = Some(Box::new(client));
@@ -322,7 +331,7 @@ pub fn create_ruchy_tools() -> Vec<(&'static str, RuchyMCPTool)> {
 /// # Errors
 ///
 /// Returns an error if the server cannot be built or configured
-pub async fn create_ruchy_mcp_server() -> Result<Server> {
+pub fn create_ruchy_mcp_server() -> Result<Server> {
     let server = Server::builder()
         .name("ruchy-mcp-server")
         .version(env!("CARGO_PKG_VERSION"))
@@ -353,7 +362,7 @@ pub async fn create_ruchy_mcp_server() -> Result<Server> {
 /// # Errors
 ///
 /// Returns an error if the client cannot be created or connected
-pub async fn create_ruchy_mcp_client() -> Result<Client<StdioTransport>> {
+pub fn create_ruchy_mcp_client() -> Result<Client<StdioTransport>> {
     // Use stdio transport by default
     let transport = StdioTransport::new();
     let client = Client::new(transport);

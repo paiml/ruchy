@@ -34,6 +34,9 @@ impl Unifier {
     /// # Errors
     ///
     /// Returns an error if the types cannot be unified (type mismatch or occurs check failure)
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn unify(&mut self, t1: &MonoType, t2: &MonoType) -> Result<()> {
         let t1 = self.apply(t1);
         let t2 = self.apply(t2);

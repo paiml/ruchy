@@ -50,6 +50,9 @@ impl<'a> Parser<'a> {
     /// # Panics
     ///
     /// Should not panic in normal operation. Uses `expect` on verified conditions.
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn parse(&mut self) -> Result<Expr> {
         // Parse multiple top-level expressions/statements as a block
         let mut exprs = Vec::new();
@@ -93,6 +96,9 @@ impl<'a> Parser<'a> {
     /// # Errors
     ///
     /// Returns an error if the input cannot be parsed as a valid expression
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn parse_expr(&mut self) -> Result<Expr> {
         super::parse_expr_recursive(&mut self.state)
     }
@@ -112,6 +118,9 @@ impl<'a> Parser<'a> {
     /// # Errors
     ///
     /// Returns an error if the expression cannot be parsed or contains syntax errors
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn parse_expr_with_precedence(&mut self, min_prec: i32) -> Result<Expr> {
         super::parse_expr_with_precedence_recursive(&mut self.state, min_prec)
     }

@@ -73,6 +73,9 @@ impl SnapshotRunner {
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn load(config: SnapshotConfig) -> Result<Self> {
         let snapshot_file = config.snapshot_dir.join("snapshots.toml");
 
@@ -90,6 +93,9 @@ impl SnapshotRunner {
     }
 
     /// Run a snapshot test
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails
@@ -183,6 +189,9 @@ impl SnapshotRunner {
     }
 
     /// Run all snapshots and report results
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails

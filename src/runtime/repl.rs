@@ -45,6 +45,9 @@ impl Repl {
     /// # Errors
     ///
     /// Returns an error if the temporary directory cannot be created
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn new() -> Result<Self> {
         let temp_dir = std::env::temp_dir().join("ruchy_repl");
         fs::create_dir_all(&temp_dir)?;
@@ -76,6 +79,9 @@ impl Repl {
     /// - Readline initialization fails
     /// - User input cannot be read
     /// - Commands fail to execute
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn run(&mut self) -> Result<()> {
         println!("{}", "Welcome to Ruchy REPL v0.1.0".bright_cyan().bold());
         println!(
@@ -263,6 +269,9 @@ impl Repl {
     /// - The transpilation fails
     /// - The Rust compilation fails
     /// - The execution fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn eval(&mut self, input: &str) -> Result<String> {
         // Parse the input
         let mut parser = Parser::new(input);
@@ -399,6 +408,9 @@ fn main() {{
     /// # Errors
     ///
     /// Returns an error if the expression cannot be parsed or type inference fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn show_type(&self, expr: &str) -> Result<String> {
         use crate::middleend::InferenceContext;
 
@@ -424,6 +436,9 @@ fn main() {{
     /// # Errors
     ///
     /// Returns an error if the expression cannot be parsed
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn show_ast(&self, input: &str) -> Result<String> {
         let mut parser = Parser::new(input);
         let ast = parser.parse()?;
@@ -436,6 +451,9 @@ fn main() {{
     /// # Errors
     ///
     /// Returns an error if parsing or transpilation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn show_rust(&mut self, input: &str) -> Result<String> {
         let mut parser = Parser::new(input);
         let ast = parser.parse()?;
@@ -472,6 +490,9 @@ fn main() {{
     /// # Errors
     ///
     /// Returns an error if the file cannot be written
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn save_session(&self, filename: &str) -> Result<()> {
         let content = self.history.join("\n");
         fs::write(filename, content)?;
@@ -485,6 +506,9 @@ fn main() {{
     /// # Errors
     ///
     /// Returns an error if the file cannot be read or contains invalid data
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn load_session(&mut self, filename: &str) -> Result<()> {
         let content = fs::read_to_string(filename)?;
         for line in content.lines() {

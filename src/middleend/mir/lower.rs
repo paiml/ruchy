@@ -35,6 +35,9 @@ impl LoweringContext {
     /// # Errors
     ///
     /// Returns an error if the expression cannot be lowered to MIR
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
         match &expr.kind {
             ExprKind::Function {
@@ -303,6 +306,7 @@ impl LoweringContext {
     }
 
     /// Convert AST Type to MIR Type
+    #[allow(clippy::only_used_in_recursion)]
     fn ast_to_mir_type(&self, ast_ty: &AstType) -> Type {
         use crate::frontend::ast::TypeKind;
         match &ast_ty.kind {
@@ -356,7 +360,12 @@ impl LoweringContext {
             | AstBinOp::Multiply
             | AstBinOp::Divide
             | AstBinOp::Modulo
-            | AstBinOp::Power => Type::I32,
+            | AstBinOp::Power
+            | AstBinOp::BitwiseAnd
+            | AstBinOp::BitwiseOr
+            | AstBinOp::BitwiseXor
+            | AstBinOp::LeftShift
+            | AstBinOp::RightShift => Type::I32,
             AstBinOp::Equal
             | AstBinOp::NotEqual
             | AstBinOp::Less
@@ -365,11 +374,6 @@ impl LoweringContext {
             | AstBinOp::GreaterEqual
             | AstBinOp::And
             | AstBinOp::Or => Type::Bool,
-            AstBinOp::BitwiseAnd
-            | AstBinOp::BitwiseOr
-            | AstBinOp::BitwiseXor
-            | AstBinOp::LeftShift
-            | AstBinOp::RightShift => Type::I32,
         }
     }
 

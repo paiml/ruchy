@@ -34,6 +34,9 @@ impl Transpiler {
     /// # Errors
     ///
     /// Returns an error if the expression cannot be transpiled to valid Rust code.
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn transpile(&self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_expr(expr)
     }
@@ -43,6 +46,9 @@ impl Transpiler {
     /// # Errors
     ///
     /// Returns an error if the expression cannot be transpiled or parsed as valid Rust.
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn transpile_to_string(&self, expr: &Expr) -> Result<String> {
         let tokens = self.transpile(expr)?;
         let file = syn::parse2::<syn::File>(quote! {
@@ -59,6 +65,9 @@ impl Transpiler {
     ///
     /// Returns an error if the expression type is not supported or contains invalid constructs.
     #[allow(clippy::too_many_lines)]
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         // Handle attributes first
         if let Some(property_attr) = expr.attributes.iter().find(|attr| attr.name == "property") {
@@ -204,6 +213,9 @@ impl Transpiler {
     /// # Errors
     ///
     /// Returns an error if any expression inside the interpolation fails to transpile
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<TokenStream> {
         let mut format_string = String::new();
         let mut args = Vec::new();

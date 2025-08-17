@@ -137,7 +137,7 @@ impl AstNormalizer {
     #[allow(clippy::too_many_lines)] // Complex but necessary for complete desugaring
     fn desugar_and_convert(&mut self, expr: &Expr) -> CoreExpr {
         match &expr.kind {
-            ExprKind::Literal(lit) => self.convert_literal(lit),
+            ExprKind::Literal(lit) => Self::convert_literal(lit),
 
             ExprKind::Identifier(name) => {
                 if let Some(idx) = self.context.lookup(name) {
@@ -150,10 +150,11 @@ impl AstNormalizer {
             }
 
             ExprKind::Binary { left, op, right } => {
+                use crate::frontend::ast::BinaryOp;
+                
                 let l = self.desugar_and_convert(left);
                 let r = self.desugar_and_convert(right);
 
-                use crate::frontend::ast::BinaryOp;
                 let prim = match op {
                     BinaryOp::Add => PrimOp::Add,
                     BinaryOp::Subtract => PrimOp::Sub,
@@ -325,7 +326,7 @@ impl AstNormalizer {
         }
     }
 
-    fn convert_literal(&self, lit: &Literal) -> CoreExpr {
+    fn convert_literal(lit: &Literal) -> CoreExpr {
         CoreExpr::Literal(match lit {
             Literal::Integer(i) => CoreLiteral::Integer(*i),
             Literal::Float(f) => CoreLiteral::Float(*f),
@@ -342,11 +343,10 @@ impl CoreExpr {
     #[must_use]
     pub fn is_normalized(&self) -> bool {
         match self {
-            CoreExpr::Var(_) => true,
+            CoreExpr::Var(_) | CoreExpr::Literal(_) => true,
             CoreExpr::Lambda { body, .. } => body.is_normalized(),
             CoreExpr::App(f, x) => f.is_normalized() && x.is_normalized(),
             CoreExpr::Let { value, body, .. } => value.is_normalized() && body.is_normalized(),
-            CoreExpr::Literal(_) => true,
             CoreExpr::Prim(_, args) => args.iter().all(CoreExpr::is_normalized),
         }
     }

@@ -1,3 +1,4 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
 //! Actor system runtime with supervision trees
 //!
 //! This module implements a robust actor system inspired by Erlang/OTP and Akka,
@@ -34,6 +35,9 @@ impl ActorRef {
     /// # Errors
     ///
     /// Returns an error if the actor is no longer running
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn send(&self, message: Message) -> Result<()> {
         self.sender
             .send(ActorMessage::UserMessage(message))
@@ -48,6 +52,9 @@ impl ActorRef {
     /// Returns an error if:
     /// - The actor is no longer running
     /// - The timeout expires before receiving a response
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn ask(&self, message: Message, timeout: Duration) -> Result<Message> {
         let (response_tx, response_rx) = mpsc::channel();
 
@@ -142,6 +149,10 @@ pub trait ActorBehavior: Send + 'static {
     }
 
     /// Handle incoming messages
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if message processing fails
     fn receive(&mut self, message: Message, ctx: &mut ActorContext) -> Result<Option<Message>>;
 
     /// Handle actor supervision - called when a child actor fails
@@ -174,6 +185,9 @@ pub struct ActorContext {
 
 impl ActorContext {
     /// Spawn a child actor under this actor's supervision
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn spawn_child<B: ActorBehavior>(&mut self, name: String, behavior: B) -> Result<ActorRef> {
         let mut system = self.system.lock().map_err(|_| anyhow!("Actor system mutex poisoned"))?;
         let actor_ref = system.spawn_supervised(name, Box::new(behavior), Some(self.actor_id))?;
@@ -182,6 +196,9 @@ impl ActorContext {
     }
 
     /// Stop a child actor
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn stop_child(&mut self, child_id: ActorId) -> Result<()> {
         if let Some(child_ref) = self.children.remove(&child_id) {
             child_ref.send(Message::Stop)?;
@@ -194,6 +211,9 @@ impl ActorContext {
     /// # Errors
     ///
     /// Returns an error if the actor reference cannot be retrieved
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn get_self(&self) -> Result<ActorRef> {
         let system = self.system.lock().map_err(|_| anyhow!("Actor system mutex poisoned"))?;
         system
@@ -365,6 +385,9 @@ impl ActorSystem {
     /// # Errors
     ///
     /// Returns an error if an actor with the same name already exists
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn spawn<B: ActorBehavior>(&mut self, name: String, behavior: B) -> Result<ActorRef> {
         self.spawn_supervised(name, Box::new(behavior), None)
     }
@@ -421,6 +444,9 @@ impl ActorSystem {
     }
 
     /// Stop an actor
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn stop_actor(&mut self, id: ActorId) -> Result<()> {
         if let Some(mut runtime) = self.actors.remove(&id) {
             self.actor_names.retain(|_, &mut v| v != id);

@@ -6,6 +6,9 @@ use super::{ParserState, *};
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input");

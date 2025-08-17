@@ -95,6 +95,9 @@ impl ReferenceInterpreter {
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn eval(&mut self, expr: &CoreExpr) -> Result<Value, String> {
         self.trace.push(format!("Evaluating: {expr:?}"));
 
@@ -348,7 +351,7 @@ impl ReferenceInterpreter {
                 }
             }
 
-            _ => Err(format!("Unsupported primitive: {op:?}")),
+            PrimOp::Concat => Err(format!("Unsupported primitive: {op:?}")),
         }
     }
 

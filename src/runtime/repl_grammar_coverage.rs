@@ -3,6 +3,8 @@
 //! This module implements comprehensive grammar coverage testing to ensure
 //! all language constructs are reachable and properly handled by the REPL.
 
+#![allow(clippy::unwrap_used)] // Test code can use unwrap
+
 use crate::{frontend::ast::ExprKind, runtime::repl::Repl};
 use std::collections::HashSet;
 

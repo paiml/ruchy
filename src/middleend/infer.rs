@@ -44,6 +44,9 @@ impl InferenceContext {
     /// # Errors
     ///
     /// Returns an error if type inference fails (type error, undefined variable, etc.)
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
         let result = self.infer_expr(expr)?;
         self.solve_constraints();

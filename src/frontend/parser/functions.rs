@@ -5,6 +5,9 @@ use super::{ParserState, *};
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume fun
 
@@ -105,6 +108,9 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume ||
 
@@ -120,6 +126,9 @@ pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails
@@ -164,6 +173,9 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_call(state: &mut ParserState, func: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume (
 
@@ -190,6 +202,9 @@ pub fn parse_call(state: &mut ParserState, func: Expr) -> Result<Expr> {
     })
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails
