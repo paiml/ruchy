@@ -3,6 +3,12 @@
 debug
 target
 
+# Debug test binaries and executables
+test_*
+debug_*
+!*.rs
+!*.toml
+
 #context
 deep_context.md
 

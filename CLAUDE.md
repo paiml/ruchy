@@ -395,6 +395,43 @@ Bulk deallocation. No per-node overhead. Cache-friendly traversal.
 6. COMMIT with task reference
 ```
 
+## Sprint Hygiene Protocol
+
+### Pre-Sprint Cleanup (MANDATORY)
+```bash
+# Remove all debug binaries before starting sprint
+rm -f test_* debug_* 
+find . -type f -executable -not -path "./target/*" -not -path "./.git/*" -delete
+
+# Verify no large files
+find . -type f -size +100M -not -path "./target/*" -not -path "./.git/*"
+
+# Clean build artifacts
+cargo clean
+```
+
+### Post-Sprint Checklist
+```bash
+# 1. Remove debug artifacts
+rm -f test_* debug_* *.o *.a
+
+# 2. Update tracking
+git add docs/execution/velocity.json docs/execution/roadmap.md
+
+# 3. Verify no cruft
+git status --ignored
+
+# 4. Push with clean history
+git push origin main
+```
+
+### .gitignore Requirements
+Always maintain in .gitignore:
+- `test_*` (debug test binaries)
+- `debug_*` (debug executables) 
+- `!*.rs` (except rust source files)
+- `!*.toml` (except config files)
+
 ---
 
 **Remember**: Compiler engineering is about systematic transformation, not clever hacks. Every abstraction must have zero runtime cost. Every error must be actionable. Every line of code must justify its complexity budget.
