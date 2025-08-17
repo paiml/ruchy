@@ -40,7 +40,7 @@ impl Unifier {
 
         match (t1, t2) {
             (MonoType::Var(v1), MonoType::Var(v2)) if v1 == v2 => Ok(()),
-            (MonoType::Var(v), t) | (t, MonoType::Var(v)) => self.bind(v, t),
+            (MonoType::Var(v), t) | (t, MonoType::Var(v)) => self.bind(&v, &t),
             (MonoType::Int, MonoType::Int) => Ok(()),
             (MonoType::Float, MonoType::Float) => Ok(()),
             (MonoType::Bool, MonoType::Bool) => Ok(()),
@@ -62,9 +62,9 @@ impl Unifier {
     }
 
     /// Bind a type variable to a type
-    fn bind(&mut self, var: TyVar, ty: MonoType) -> Result<()> {
+    fn bind(&mut self, var: &TyVar, ty: &MonoType) -> Result<()> {
         // Occurs check: ensure var doesn't occur in ty
-        if Self::occurs(&var, &ty) {
+        if Self::occurs(var, ty) {
             bail!("Infinite type: {} occurs in {}", var, ty);
         }
 
@@ -76,7 +76,7 @@ impl Unifier {
             .subst
             .iter()
             .map(|(k, v)| {
-                if k == &var {
+                if k == var {
                     (k.clone(), ty.clone())
                 } else {
                     (k.clone(), v.substitute(&[(var.clone(), ty.clone())].into()))
