@@ -324,7 +324,7 @@ pub fn create_ruchy_tools() -> Vec<(&'static str, RuchyMCPTool)> {
 /// # async fn example() {
 /// use ruchy::mcp::create_ruchy_mcp_server;
 ///
-/// let server = create_ruchy_mcp_server().await.expect("Failed to create MCP server");
+/// let server = create_ruchy_mcp_server().expect("Failed to create MCP server");
 /// # }
 /// ```
 ///
@@ -355,7 +355,7 @@ pub fn create_ruchy_mcp_server() -> Result<Server> {
 /// # async fn example() {
 /// use ruchy::mcp::create_ruchy_mcp_client;
 ///
-/// let client = create_ruchy_mcp_client().await.expect("Failed to create MCP client");
+/// let client = create_ruchy_mcp_client().expect("Failed to create MCP client");
 /// # }
 /// ```
 ///
@@ -443,13 +443,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_server_creation() {
-        let server = create_ruchy_mcp_server().await;
+        let server = create_ruchy_mcp_server();
         assert!(server.is_ok());
     }
 
     #[tokio::test]
     async fn test_client_creation() {
-        let client = create_ruchy_mcp_client().await;
+        let client = create_ruchy_mcp_client();
         assert!(client.is_ok());
     }
 }
