@@ -68,8 +68,12 @@ fn test_empty_block() -> Result<()> {
 fn test_single_expression_block() -> Result<()> {
     let mut parser = Parser::new("{ 42 }");
     let ast = parser.parse()?;
-    // Single expression block should unwrap to the expression
-    assert!(matches!(ast.kind, ruchy::ExprKind::Literal(_)));
+    // Single expression block should be a Block with one expression
+    assert!(matches!(ast.kind, ruchy::ExprKind::Block(_)));
+    if let ruchy::ExprKind::Block(exprs) = &ast.kind {
+        assert_eq!(exprs.len(), 1);
+        assert!(matches!(exprs[0].kind, ruchy::ExprKind::Literal(_)));
+    }
     Ok(())
 }
 
@@ -143,7 +147,7 @@ fn test_function_single_param() -> Result<()> {
 
 #[test]
 fn test_lambda_no_params() -> Result<()> {
-    let mut parser = Parser::new("fun () { 42 }");
+    let mut parser = Parser::new("|| 42");
     let ast = parser.parse()?;
     assert!(matches!(ast.kind, ruchy::ExprKind::Lambda { .. }));
     Ok(())

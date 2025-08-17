@@ -22,7 +22,7 @@ pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
             Some((Token::Ampersand, _)) => {
                 // Handle &self or &mut self patterns
                 state.tokens.advance(); // consume &
-                
+
                 if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
                     state.tokens.advance(); // consume mut
                     if let Some((Token::Identifier(n), _)) = state.tokens.peek() {

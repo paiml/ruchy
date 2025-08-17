@@ -1,0 +1,54 @@
+// DataFrame demonstration in Ruchy
+// This shows the new DataFrame literal syntax and operations
+
+// Create a simple DataFrame
+let sales = df![
+    product => ["Apple", "Banana", "Orange", "Apple", "Banana"],
+    quantity => [10, 20, 15, 5, 30],
+    price => [1.5, 0.8, 2.0, 1.5, 0.8]
+]
+
+// Calculate total sales per product
+let totals = sales
+    .groupby(["product"])
+    .agg([
+        sum("quantity"),
+        mean("price")
+    ])
+
+// Filter high-volume products
+let high_volume = totals.filter(quantity > 20)
+
+// Sort by total quantity
+let sorted = high_volume.sort(["quantity"], descending: true)
+
+// Select specific columns
+let summary = sorted.select(["product", "quantity"])
+
+// Create a more complex DataFrame with nested data
+let customers = df![
+    id => [1, 2, 3, 4],
+    name => ["Alice", "Bob", "Charlie", "Diana"],
+    purchases => [[100, 200], [150], [300, 400, 500], [250]],
+    active => [true, true, false, true]
+]
+
+// Chain multiple operations
+let analysis = customers
+    .filter(active == true)
+    .select(["name", "purchases"])
+    .head(10)
+
+// Join two DataFrames
+let joined = sales
+    .join(customers, on: ["id"], how: "inner")
+    .select(["product", "name", "quantity"])
+
+println("Sales Summary:")
+println(summary)
+
+println("\nActive Customers:")
+println(analysis)
+
+println("\nJoined Data:")
+println(joined)

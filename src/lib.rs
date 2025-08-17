@@ -459,15 +459,15 @@ mod tests {
     #[test]
     fn test_compile_send_operation() {
         let result = compile("myactor ! message").unwrap();
-        assert!(result.contains(". send ("));  // Formatted with spaces
-        assert!(result.contains(". await"));   // Formatted with spaces
+        assert!(result.contains(". send (")); // Formatted with spaces
+        assert!(result.contains(". await")); // Formatted with spaces
     }
 
     #[test]
     fn test_compile_ask_operation() {
         let result = compile("myactor ? request").unwrap();
-        assert!(result.contains(". ask ("));  // Formatted with spaces
-        assert!(result.contains(". await"));  // Formatted with spaces
+        assert!(result.contains(". ask (")); // Formatted with spaces
+        assert!(result.contains(". await")); // Formatted with spaces
     }
 
     #[test]

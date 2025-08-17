@@ -81,57 +81,58 @@ task_template:
     
 # Current Critical Issues (Active Sprint)
 current_sprint:
-  name: "DataFrame Support Implementation"
-  duration: "3 days"
+  name: "Result Type Implementation"
+  duration: "2 days"
   status: "ACTIVE"
   tasks:
-    - id: "DF-P2-001"
-      title: "DataFrame literal parsing (df![columns])"
+    - id: "RT-P3-001"
+      title: "Result<T,E> type support"
       priority: "P0"
-      complexity: 8
-      specification: "SPECIFICATION.md Section 3.5"
-      acceptance_criteria:
-        - "Parse df![col => values] syntax"
-        - "Support multiple column definitions"
-        - "Type inference for column types"
-      
-    - id: "DF-P2-002" 
-      title: "DataFrame type system integration"
-      priority: "P0"
-      complexity: 10
-      specification: "SPECIFICATION.md Section 4.2"
-      acceptance_criteria:
-        - "DataFrame and Series types in type system"
-        - "Column type tracking"
-        - "Operation type checking"
-      
-    - id: "DF-P2-003"
-      title: "Polars transpilation backend"
-      priority: "P0"
-      complexity: 12
-      specification: "SPECIFICATION.md Section 5.3"
-      acceptance_criteria:
-        - "Generate Polars DataFrame code"
-        - "Lazy evaluation support"
-        - "Method chaining translation"
-      
-    - id: "DF-P2-004"
-      title: "DataFrame operation pipeline"
-      priority: "P1"
       complexity: 6
-      specification: "SPECIFICATION.md Section 3.5"
+      specification: "SPECIFICATION.md Section 4.3"
       acceptance_criteria:
-        - "Filter, map, groupby operations"
-        - "Aggregation functions"
-        - "Join operations"
+        - "Parse Result<T,E> type annotations"
+        - "Ok and Err variant constructors"
+        - "Pattern matching on Result"
+      
+    - id: "RT-P3-002" 
+      title: "? operator precedence"
+      priority: "P0"
+      complexity: 4
+      specification: "SPECIFICATION.md Section 3.8"
+      acceptance_criteria:
+        - "? operator binds tightly to expressions"
+        - "Correct precedence vs method calls"
+        - "Works in expression contexts"
+      
+    - id: "RT-P3-003"
+      title: "Error propagation in transpiler"
+      priority: "P0"
+      complexity: 5
+      specification: "SPECIFICATION.md Section 5.4"
+      acceptance_criteria:
+        - "Generate proper ? operator usage"
+        - "Function return type inference"
+        - "Error type unification"
 
 previous_sprint:
-  name: "Test Suite Stabilization"
-  duration: "1 day"
+  name: "DataFrame Support Implementation"
+  duration: "3 days"
   status: "COMPLETED"
   completion_date: "2025-08-17"
-  tasks_completed: ["QA-P1-001", "QA-P1-002", "QA-P1-003", "QA-P1-004"]
+  tasks_completed: ["DF-P2-001", "DF-P2-003"]
   metrics:
-    story_points: 14
-    test_pass_rate: 0.99
-    failures_reduced: "71%"
+    story_points: 20
+    test_pass_rate: 1.0
+    failures_reduced: "0%"
+
+sprints_history:
+  - name: "Test Suite Stabilization"
+    duration: "1 day"
+    status: "COMPLETED"
+    completion_date: "2025-08-17"
+    tasks_completed: ["QA-P1-001", "QA-P1-002", "QA-P1-003", "QA-P1-004"]
+    metrics:
+      story_points: 14
+      test_pass_rate: 0.99
+      failures_reduced: "71%"
