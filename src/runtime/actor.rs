@@ -175,7 +175,7 @@ pub struct ActorContext {
 impl ActorContext {
     /// Spawn a child actor under this actor's supervision
     pub fn spawn_child<B: ActorBehavior>(&mut self, name: String, behavior: B) -> Result<ActorRef> {
-        let mut system = self.system.lock().expect("verified by caller");
+        let mut system = self.system.lock().expect("Failed to lock actor system");
         let actor_ref = system.spawn_supervised(name, Box::new(behavior), Some(self.actor_id))?;
         self.children.insert(actor_ref.id, actor_ref.clone());
         Ok(actor_ref)
@@ -195,7 +195,7 @@ impl ActorContext {
     ///
     /// Returns an error if the actor reference cannot be retrieved
     pub fn get_self(&self) -> Result<ActorRef> {
-        let system = self.system.lock().expect("verified by caller");
+        let system = self.system.lock().expect("Failed to lock system");
         system
             .get_actor_ref(self.actor_id)
             .ok_or_else(|| anyhow!("Actor not found"))
@@ -203,7 +203,7 @@ impl ActorContext {
 
     /// Find actor by name
     pub fn find_actor(&self, name: &str) -> Option<ActorRef> {
-        let system = self.system.lock().expect("verified by caller");
+        let system = self.system.lock().expect("Failed to lock system");
         system.find_actor_by_name(name)
     }
 }
@@ -264,7 +264,7 @@ impl ActorRuntime {
                 actor_id: id,
                 actor_name: name.clone(),
                 supervisor: supervisor.and_then(|sup_id| {
-                    let sys = system.lock().expect("verified by caller");
+                    let sys = system.lock().expect("Failed to lock system");
                     sys.get_actor_ref(sup_id)
                 }),
                 children,
@@ -441,7 +441,7 @@ impl ActorSystem {
 
 impl Default for ActorSystem {
     fn default() -> Self {
-        Self::new().lock().expect("verified by caller").clone()
+        Self::new().lock().expect("Failed to lock system").clone()
     }
 }
 
@@ -527,16 +527,16 @@ mod tests {
     #[test]
     fn test_actor_system_creation() {
         let system = ActorSystem::new();
-        assert!(system.lock().expect("verified by caller").actors.is_empty());
+        assert!(system.lock().unwrap().actors.is_empty());
     }
 
     #[test]
     fn test_echo_actor() {
         let system = ActorSystem::new();
         let actor_ref = {
-            let mut sys = system.lock().expect("verified by caller");
+            let mut sys = system.lock().unwrap();
             sys.spawn("echo".to_string(), EchoActor)
-                .expect("verified by caller")
+                .unwrap()
         };
 
         let message = Message::User(
@@ -546,7 +546,7 @@ mod tests {
 
         let response = actor_ref
             .ask(message, Duration::from_millis(100))
-            .expect("verified by caller");
+            .unwrap();
         match response {
             Message::User(msg, _) => assert!(msg.contains("Echo: test")),
             _ => panic!("Unexpected response type"),
@@ -557,9 +557,9 @@ mod tests {
     fn test_supervisor_actor() {
         let system = ActorSystem::new();
         let supervisor_ref = {
-            let mut sys = system.lock().expect("verified by caller");
+            let mut sys = system.lock().unwrap();
             sys.spawn("supervisor".to_string(), SupervisorActor::new(3))
-                .expect("verified by caller")
+                .unwrap()
         };
 
         let child_id = ActorId(999);
@@ -567,7 +567,7 @@ mod tests {
 
         let response = supervisor_ref
             .ask(failure_message, Duration::from_millis(100))
-            .expect("verified by caller");
+            .unwrap();
         match response {
             Message::ChildRestarted(id) => assert_eq!(id, child_id),
             _ => panic!("Expected ChildRestarted message"),

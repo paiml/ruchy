@@ -312,7 +312,7 @@ mod tests {
         );
         builder.return_(entry, Some(Operand::Move(Place::Local(result))));
 
-        let func = builder.finish_function().expect("verified by caller");
+        let func = builder.finish_function().unwrap();
         assert_eq!(func.name, "add");
         assert_eq!(func.params.len(), 2);
         assert_eq!(func.blocks.len(), 1);
@@ -359,7 +359,7 @@ mod tests {
         // Merge and return
         builder.return_(merge_block, Some(Operand::Copy(Place::Local(x))));
 
-        let func = builder.finish_function().expect("verified by caller");
+        let func = builder.finish_function().unwrap();
         assert_eq!(func.blocks.len(), 4);
     }
 }

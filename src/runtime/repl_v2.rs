@@ -365,10 +365,10 @@ mod tests {
 
     #[test]
     fn test_repl_v2_variable_persistence() {
-        let mut repl = ReplV2::new().expect("verified by caller");
+        let mut repl = ReplV2::new().unwrap();
 
         // Test that variables persist
-        let result1 = repl.eval("let x = 10").expect("verified by caller");
+        let result1 = repl.eval("let x = 10").unwrap();
         assert!(result1.is_empty() || result1 == "()");
 
         // This should work now with accumulated definitions
@@ -382,14 +382,14 @@ mod tests {
 
     #[test]
     fn test_repl_v2_interpreter_mode() {
-        let mut repl = ReplV2::new().expect("verified by caller");
+        let mut repl = ReplV2::new().unwrap();
         repl.use_interpreter = true;
 
         // Test simple arithmetic
-        let result = repl.eval("1 + 2").expect("verified by caller");
+        let result = repl.eval("1 + 2").unwrap();
         assert_eq!(result, "3");
 
-        let result = repl.eval("3 * 4").expect("verified by caller");
+        let result = repl.eval("3 * 4").unwrap();
         assert_eq!(result, "12");
     }
 }

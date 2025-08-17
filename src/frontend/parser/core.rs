@@ -30,14 +30,14 @@ impl<'a> Parser<'a> {
     /// use ruchy::Parser;
     ///
     /// let mut parser = Parser::new("42");
-    /// let ast = parser.parse().expect("verified by caller");
+    /// let ast = parser.parse().expect("Failed to parse");
     /// ```
     ///
     /// ```
     /// use ruchy::Parser;
     ///
     /// let mut parser = Parser::new("let x = 10 in x + 1");
-    /// let ast = parser.parse().expect("verified by caller");
+    /// let ast = parser.parse().expect("Failed to parse");
     /// ```
     ///
     /// # Errors
@@ -87,7 +87,7 @@ impl<'a> Parser<'a> {
     /// use ruchy::Parser;
     ///
     /// let mut parser = Parser::new("1 + 2 * 3");
-    /// let expr = parser.parse_expr().expect("verified by caller");
+    /// let expr = parser.parse_expr().expect("Failed to parse expression");
     /// ```
     ///
     /// # Errors
@@ -106,7 +106,7 @@ impl<'a> Parser<'a> {
     ///
     /// let mut parser = Parser::new("1 + 2 * 3");
     /// // Parse with minimum precedence 0 to get all operators
-    /// let expr = parser.parse_expr_with_precedence(0).expect("verified by caller");
+    /// let expr = parser.parse_expr_with_precedence(0).expect("Failed to parse expression");
     /// ```
     ///
     /// # Errors

@@ -379,7 +379,7 @@ mod tests {
     fn test_normalize_let_statement() {
         let input = "let x = 10";
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect("verified by caller");
+        let ast = parser.parse().unwrap();
 
         let mut normalizer = AstNormalizer::new();
         let core = normalizer.normalize(&ast);
@@ -393,7 +393,7 @@ mod tests {
     fn test_normalize_lambda() {
         let input = "fun add(x, y) { x + y }";
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect("verified by caller");
+        let ast = parser.parse().unwrap();
 
         let mut normalizer = AstNormalizer::new();
         let core = normalizer.normalize(&ast);
