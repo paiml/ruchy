@@ -95,7 +95,8 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Await => {
             // Parse as prefix but it will transpile to postfix
             state.tokens.advance(); // consume await
-            let expr = parse_prefix(state)?;
+            // Parse the full expression including postfix operations like calls
+            let expr = super::parse_expr_recursive(state)?;
             Ok(Expr::new(
                 ExprKind::Await {
                     expr: Box::new(expr),
