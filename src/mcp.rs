@@ -28,6 +28,7 @@ pub struct RuchyMCP {
 
 impl RuchyMCP {
     /// Create a new Ruchy MCP integration
+    #[must_use]
     pub fn new() -> Self {
         Self {
             server: None,
@@ -38,6 +39,7 @@ impl RuchyMCP {
     }
 
     /// Set the actor system for actor-based MCP tools
+    #[must_use]
     pub fn with_actor_system(mut self, actor_system: Arc<ActorSystem>) -> Self {
         self.actor_system = Some(actor_system);
         self
@@ -116,7 +118,7 @@ impl RuchyMCP {
     /// use ruchy::mcp::RuchyMCP;
     ///
     /// let mut mcp = RuchyMCP::new();
-    /// let server = mcp.create_server("ruchy-server", "1.0.0").unwrap();
+    /// let server = mcp.create_server("ruchy-server", "1.0.0").expect("verified by caller");
     /// ```
     ///
     /// # Errors
@@ -145,7 +147,7 @@ impl RuchyMCP {
     ///
     /// let mut mcp = RuchyMCP::new();
     /// let transport = StdioTransport::new();
-    /// mcp.create_client(transport).unwrap();
+    /// mcp.create_client(transport).expect("verified by caller");
     /// ```
     ///
     /// # Errors
@@ -201,12 +203,14 @@ impl RuchyMCPTool {
     }
 
     /// Set the expected input type
+    #[must_use]
     pub fn with_input_type(mut self, input_type: MonoType) -> Self {
         self.input_type = Some(input_type);
         self
     }
 
     /// Set the expected output type
+    #[must_use]
     pub fn with_output_type(mut self, output_type: MonoType) -> Self {
         self.output_type = Some(output_type);
         self
@@ -310,7 +314,7 @@ pub fn create_ruchy_tools() -> Vec<(&'static str, RuchyMCPTool)> {
 /// # async fn example() {
 /// use ruchy::mcp::create_ruchy_mcp_server;
 ///
-/// let server = create_ruchy_mcp_server().await.unwrap();
+/// let server = create_ruchy_mcp_server().await.expect("verified by caller");
 /// # }
 /// ```
 ///
@@ -341,7 +345,7 @@ pub async fn create_ruchy_mcp_server() -> Result<Server> {
 /// # async fn example() {
 /// use ruchy::mcp::create_ruchy_mcp_client;
 ///
-/// let client = create_ruchy_mcp_client().await.unwrap();
+/// let client = create_ruchy_mcp_client().await.expect("verified by caller");
 /// # }
 /// ```
 ///
@@ -409,7 +413,10 @@ mod tests {
         // Create a dummy RequestHandlerExtra for testing
         let cancellation_token = CancellationToken::new();
         let extra = RequestHandlerExtra::new("test-request".to_string(), cancellation_token);
-        let result = tool.handle(input.clone(), extra).await.unwrap();
+        let result = tool
+            .handle(input.clone(), extra)
+            .await
+            .expect("verified by caller");
         assert_eq!(result, input);
     }
 

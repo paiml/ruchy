@@ -21,6 +21,7 @@ pub struct LoweringContext {
 
 impl LoweringContext {
     /// Create a new lowering context
+    #[must_use]
     pub fn new() -> Self {
         Self {
             builder: MirBuilder::new(),
@@ -141,10 +142,10 @@ impl LoweringContext {
             ExprKind::Binary { op, left, right } => {
                 let left_op = self.lower_expr_to_operand(left)?;
                 let right_op = self.lower_expr_to_operand(right)?;
-                let mir_op = Self::lower_binary_op(op)?;
+                let mir_op = Self::lower_binary_op(*op)?;
 
                 // Create a temporary for the result
-                let result_ty = Self::infer_binary_result_type(op);
+                let result_ty = Self::infer_binary_result_type(*op);
                 let temp = self.builder.alloc_local(result_ty, false, None);
 
                 self.builder
@@ -153,9 +154,9 @@ impl LoweringContext {
             }
             ExprKind::Unary { op, operand } => {
                 let operand_mir = self.lower_expr_to_operand(operand)?;
-                let mir_op = Self::lower_unary_op(op)?;
+                let mir_op = Self::lower_unary_op(*op)?;
 
-                let result_ty = Self::infer_unary_result_type(op);
+                let result_ty = Self::infer_unary_result_type(*op);
                 let temp = self.builder.alloc_local(result_ty, false, None);
 
                 self.builder.unary_op(block, temp, mir_op, operand_mir);
@@ -269,7 +270,7 @@ impl LoweringContext {
     }
 
     /// Lower binary operator
-    fn lower_binary_op(op: &AstBinOp) -> Result<BinOp> {
+    fn lower_binary_op(op: AstBinOp) -> Result<BinOp> {
         match op {
             AstBinOp::Add => Ok(BinOp::Add),
             AstBinOp::Subtract => Ok(BinOp::Sub),
@@ -294,7 +295,7 @@ impl LoweringContext {
     }
 
     /// Lower unary operator
-    fn lower_unary_op(op: &AstUnOp) -> Result<UnOp> {
+    fn lower_unary_op(op: AstUnOp) -> Result<UnOp> {
         match op {
             AstUnOp::Negate => Ok(UnOp::Neg),
             AstUnOp::Not => Ok(UnOp::Not),
@@ -349,7 +350,7 @@ impl LoweringContext {
     }
 
     /// Infer result type for binary operations
-    fn infer_binary_result_type(op: &AstBinOp) -> Type {
+    fn infer_binary_result_type(op: AstBinOp) -> Type {
         match op {
             AstBinOp::Add
             | AstBinOp::Subtract
@@ -374,7 +375,7 @@ impl LoweringContext {
     }
 
     /// Infer result type for unary operations
-    fn infer_unary_result_type(op: &AstUnOp) -> Type {
+    fn infer_unary_result_type(op: AstUnOp) -> Type {
         match op {
             AstUnOp::Negate | AstUnOp::BitwiseNot => Type::I32,
             AstUnOp::Not => Type::Bool,

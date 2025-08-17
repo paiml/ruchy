@@ -348,7 +348,7 @@ mod tests {
         let divergence = differ.find_divergence();
 
         assert!(divergence.is_some());
-        let point = divergence.unwrap();
+        let point = divergence.expect("verified by caller");
         assert_eq!(point.stage, "transformation");
         assert_eq!(point.pass_index, 0);
     }

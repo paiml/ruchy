@@ -32,7 +32,7 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
     // Check if this might be an object literal
     // Object literals have: identifier/string : expr, or ...expr patterns
     // Blocks have statements and expressions
-    if is_object_literal(state)? {
+    if is_object_literal(state) {
         return parse_object_literal_body(state, start_span);
     }
 
@@ -152,7 +152,7 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
 /// # Errors
 ///
 /// Returns an error if token stream operations fail during lookahead.
-fn is_object_literal(state: &mut ParserState) -> Result<bool> {
+fn is_object_literal(state: &mut ParserState) -> bool {
     // Peek at the next few tokens to determine if this is an object literal
     // Object literal patterns:
     // 1. { key: value, ... }
@@ -161,12 +161,12 @@ fn is_object_literal(state: &mut ParserState) -> Result<bool> {
 
     // Empty braces could be either - default to block
     if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        return Ok(false);
+        return false;
     }
 
     // Check for spread operator
     if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
-        return Ok(true);
+        return true;
     }
 
     // Check for identifier/string followed by colon
@@ -177,9 +177,9 @@ fn is_object_literal(state: &mut ParserState) -> Result<bool> {
             state.tokens.advance(); // skip identifier/string
             let has_colon = matches!(state.tokens.peek(), Some((Token::Colon, _)));
             state.tokens.set_position(saved_pos); // restore position
-            Ok(has_colon)
+            has_colon
         }
-        _ => Ok(false),
+        _ => false,
     }
 }
 

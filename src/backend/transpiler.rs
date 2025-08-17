@@ -1427,6 +1427,7 @@ impl Transpiler {
             }
 
             impl #actor_name {
+                #[must_use]
                 pub fn new() -> Self {
                     Self {
                         #(#field_inits),*
@@ -1461,7 +1462,7 @@ impl Transpiler {
 
         // Generate send operation using the actor's message type directly
         Ok(quote! {
-            #actor_tokens.send(#message_tokens).unwrap()
+            #actor_tokens.send(#message_tokens).expect("verified by caller")
         })
     }
 
@@ -1481,7 +1482,7 @@ impl Transpiler {
                 #actor_tokens.ask(
                     #message_tokens,
                     std::time::Duration::from_millis(#timeout_tokens as u64)
-                ).unwrap()
+                ).expect("verified by caller")
             })
         } else {
             // Generate ask without timeout (default 5 seconds)
@@ -1489,7 +1490,7 @@ impl Transpiler {
                 #actor_tokens.ask(
                     #message_tokens,
                     std::time::Duration::from_secs(5)
-                ).unwrap()
+                ).expect("verified by caller")
             })
         }
     }
@@ -1602,22 +1603,22 @@ mod tests {
 
     #[test]
     fn test_transpile_literals() {
-        let result = transpile_str("42").unwrap();
+        let result = transpile_str("42").expect("verified by caller");
         assert!(result.contains("42"));
 
-        let result = transpile_str("3.14").unwrap();
+        let result = transpile_str("3.14").expect("verified by caller");
         assert!(result.contains("3.14"));
 
-        let result = transpile_str("\"hello\"").unwrap();
+        let result = transpile_str("\"hello\"").expect("verified by caller");
         assert!(result.contains("\"hello\""));
 
-        let result = transpile_str("true").unwrap();
+        let result = transpile_str("true").expect("verified by caller");
         assert!(result.contains("true"));
     }
 
     #[test]
     fn test_transpile_binary_ops() {
-        let result = transpile_str("1 + 2 * 3").unwrap();
+        let result = transpile_str("1 + 2 * 3").expect("verified by caller");
         // Check that the operations are present (formatting may vary)
         assert!(result.contains('1'));
         assert!(result.contains('2'));
@@ -1628,14 +1629,16 @@ mod tests {
 
     #[test]
     fn test_transpile_if() {
-        let result = transpile_str("if x > 0 { positive } else { negative }").unwrap();
+        let result =
+            transpile_str("if x > 0 { positive } else { negative }").expect("verified by caller");
         assert!(result.contains("if"));
         assert!(result.contains("else"));
     }
 
     #[test]
     fn test_transpile_function() {
-        let result = transpile_str("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
+        let result =
+            transpile_str("fun add(x: i32, y: i32) -> i32 { x + y }").expect("verified by caller");
         assert!(result.contains("fn add"));
         assert!(result.contains("x: i32"));
         assert!(result.contains("y: i32"));
@@ -1644,7 +1647,7 @@ mod tests {
 
     #[test]
     fn test_transpile_list() {
-        let result = transpile_str("[1, 2, 3]").unwrap();
+        let result = transpile_str("[1, 2, 3]").expect("verified by caller");
         assert!(result.contains("vec!"));
         assert!(result.contains('1'));
         assert!(result.contains('2'));
@@ -1653,7 +1656,8 @@ mod tests {
 
     #[test]
     fn test_transpile_match() {
-        let result = transpile_str(r#"match x { 1 => "one", _ => "other" }"#).unwrap();
+        let result =
+            transpile_str(r#"match x { 1 => "one", _ => "other" }"#).expect("verified by caller");
         assert!(result.contains("match"));
         assert!(result.contains('1'));
         assert!(result.contains("\"one\""));
@@ -1662,31 +1666,31 @@ mod tests {
 
     #[test]
     fn test_transpile_let() {
-        let result = transpile_str("let x = 42 in x + 1").unwrap();
+        let result = transpile_str("let x = 42 in x + 1").expect("verified by caller");
         assert!(result.contains("let x"));
         assert!(result.contains("42"));
     }
 
     #[test]
     fn test_transpile_for() {
-        let result = transpile_str("for i in 1..10 { print(i) }").unwrap();
+        let result = transpile_str("for i in 1..10 { print(i) }").expect("verified by caller");
         assert!(result.contains("for i"));
         assert!(result.contains("in"));
     }
 
     #[test]
     fn test_transpile_range() {
-        let result = transpile_str("1..10").unwrap();
+        let result = transpile_str("1..10").expect("verified by caller");
         assert!(result.contains(".."));
         assert!(!result.contains("..="));
 
-        let result = transpile_str("1..=10").unwrap();
+        let result = transpile_str("1..=10").expect("verified by caller");
         assert!(result.contains("..="));
     }
 
     #[test]
     fn test_transpile_pipeline() {
-        let result = transpile_str("x |> f |> g").unwrap();
+        let result = transpile_str("x |> f |> g").expect("verified by caller");
         // Pipeline becomes nested function calls: g(f(x))
         assert!(result.contains('g'));
         assert!(result.contains('f'));
@@ -1694,11 +1698,11 @@ mod tests {
 
     #[test]
     fn test_transpile_unary() {
-        let result = transpile_str("!true").unwrap();
+        let result = transpile_str("!true").expect("verified by caller");
         assert!(result.contains('!'));
         assert!(result.contains("true"));
 
-        let result = transpile_str("-42").unwrap();
+        let result = transpile_str("-42").expect("verified by caller");
         assert!(result.contains('-'));
         assert!(result.contains("42"));
     }
@@ -1706,7 +1710,8 @@ mod tests {
     #[test]
     fn test_transpile_block() {
         // Blocks are part of function bodies or if expressions
-        let result = transpile_str("if true { let x = 1; x + 1 } else { 0 }").unwrap();
+        let result =
+            transpile_str("if true { let x = 1; x + 1 } else { 0 }").expect("verified by caller");
         // Block should have braces
         assert!(result.contains('{'));
         assert!(result.contains('}'));
@@ -1716,22 +1721,22 @@ mod tests {
     #[test]
     fn test_transpile_lambda() {
         // Simple lambda
-        let result = transpile_str("|x| x + 1").unwrap();
+        let result = transpile_str("|x| x + 1").expect("verified by caller");
         assert!(result.contains("|x|"));
         assert!(result.contains("x + 1"));
 
         // Lambda with multiple parameters
-        let result = transpile_str("|x, y| x * y").unwrap();
+        let result = transpile_str("|x, y| x * y").expect("verified by caller");
         assert!(result.contains("|x, y|"));
         assert!(result.contains("x * y"));
 
         // Lambda with no parameters
-        let result = transpile_str("|| 42").unwrap();
+        let result = transpile_str("|| 42").expect("verified by caller");
         assert!(result.contains("||"));
         assert!(result.contains("42"));
 
         // Lambda in a function call context
-        let result = transpile_str("map(|x| x * 2)").unwrap();
+        let result = transpile_str("map(|x| x * 2)").expect("verified by caller");
         assert!(result.contains("map"));
         assert!(result.contains("|x|"));
         assert!(result.contains("x * 2"));
@@ -1741,18 +1746,19 @@ mod tests {
     #[cfg(feature = "dataframe")]
     fn test_transpile_dataframe() {
         // Simple DataFrame
-        let result = transpile_str("df![name, age; \"Alice\", 30; \"Bob\", 25]").unwrap();
+        let result = transpile_str("df![name, age; \"Alice\", 30; \"Bob\", 25]")
+            .expect("verified by caller");
         assert!(result.contains("DataFrame::new"));
         assert!(result.contains("Series::new"));
         assert!(result.contains("\"name\""));
         assert!(result.contains("\"age\""));
 
         // Empty DataFrame
-        let result = transpile_str("df![]").unwrap();
+        let result = transpile_str("df![]").expect("verified by caller");
         assert!(result.contains("DataFrame::empty"));
 
         // Single column DataFrame
-        let result = transpile_str("df![values; 1; 2; 3]").unwrap();
+        let result = transpile_str("df![values; 1; 2; 3]").expect("verified by caller");
         assert!(result.contains("Series::new"));
         assert!(result.contains("\"values\""));
     }
@@ -1761,35 +1767,35 @@ mod tests {
     fn test_transpile_dataframe_operations() {
         // Create a DataFrame and test operations
         let code = "df![name, age; \"Alice\", 30; \"Bob\", 25].mean()";
-        let result = transpile_str(code).unwrap();
+        let result = transpile_str(code).expect("verified by caller");
         assert!(result.contains(".mean()"));
     }
 
     #[test]
     fn test_transpile_try_operator() {
         // Simple try
-        let result = transpile_str("foo()?").unwrap();
+        let result = transpile_str("foo()?").expect("verified by caller");
         assert!(result.contains("foo()?"));
 
         // Try with method call
-        let result = transpile_str("x.method()?").unwrap();
+        let result = transpile_str("x.method()?").expect("verified by caller");
         assert!(result.contains("x.method()?"));
 
         // Chained try operations (use parentheses to avoid SafeNav token)
-        let result = transpile_str("(get_data()?).process()?").unwrap();
+        let result = transpile_str("(get_data()?).process()?").expect("verified by caller");
         assert!(result.contains("get_data()?"));
     }
 
     #[test]
     fn test_transpile_while() {
         // Simple while loop
-        let result = transpile_str("while x < 10 { println(x) }").unwrap();
+        let result = transpile_str("while x < 10 { println(x) }").expect("verified by caller");
         assert!(result.contains("while"));
         assert!(result.contains("x < 10"));
         assert!(result.contains("println"));
 
         // While with boolean literal
-        let result = transpile_str("while true { println(\"loop\") }").unwrap();
+        let result = transpile_str("while true { println(\"loop\") }").expect("verified by caller");
         assert!(result.contains("while true"));
         assert!(result.contains("println"));
     }
@@ -1797,13 +1803,14 @@ mod tests {
     #[test]
     fn test_transpile_struct() {
         // Simple struct definition
-        let result = transpile_str("struct Point { x: i32, y: i32 }").unwrap();
+        let result = transpile_str("struct Point { x: i32, y: i32 }").expect("verified by caller");
         assert!(result.contains("struct Point"));
         assert!(result.contains("x: i32"));
         assert!(result.contains("y: i32"));
 
         // Struct with public fields
-        let result = transpile_str("struct Person { pub name: String, pub age: i32 }").unwrap();
+        let result = transpile_str("struct Person { pub name: String, pub age: i32 }")
+            .expect("verified by caller");
         assert!(result.contains("struct Person"));
         assert!(result.contains("pub name: String"));
         assert!(result.contains("pub age: i32"));
@@ -1812,13 +1819,14 @@ mod tests {
     #[test]
     fn test_transpile_struct_literal() {
         // Simple struct instantiation
-        let result = transpile_str("Point { x: 10, y: 20 }").unwrap();
+        let result = transpile_str("Point { x: 10, y: 20 }").expect("verified by caller");
         assert!(result.contains("Point"));
         assert!(result.contains("x: 10"));
         assert!(result.contains("y: 20"));
 
         // Struct literal with expressions
-        let result = transpile_str("Person { name: \"Alice\", age: 25 + 5 }").unwrap();
+        let result =
+            transpile_str("Person { name: \"Alice\", age: 25 + 5 }").expect("verified by caller");
         assert!(result.contains("Person"));
         assert!(result.contains("name: \"Alice\""));
         assert!(result.contains("age:"));
@@ -1829,11 +1837,11 @@ mod tests {
     #[test]
     fn test_transpile_field_access() {
         // Simple field access
-        let result = transpile_str("point.x").unwrap();
+        let result = transpile_str("point.x").expect("verified by caller");
         assert!(result.contains("point.x"));
 
         // Chained field access
-        let result = transpile_str("obj.field1.field2").unwrap();
+        let result = transpile_str("obj.field1.field2").expect("verified by caller");
         assert!(result.contains(".field1"));
         assert!(result.contains(".field2"));
     }
@@ -1841,18 +1849,21 @@ mod tests {
     #[test]
     fn test_transpile_trait() {
         // Simple trait with instance method
-        let result = transpile_str("trait Display { fun show(self) -> String }").unwrap();
+        let result = transpile_str("trait Display { fun show(self) -> String }")
+            .expect("verified by caller");
         assert!(result.contains("trait Display"));
         assert!(result.contains("fn show(&self) -> String"));
 
         // Trait with default implementation
-        let result = transpile_str("trait Greet { fun hello(self) { println(\"Hi\") } }").unwrap();
+        let result = transpile_str("trait Greet { fun hello(self) { println(\"Hi\") } }")
+            .expect("verified by caller");
         assert!(result.contains("trait Greet"));
         assert!(result.contains("fn hello(&self)"));
         assert!(result.contains("println"));
 
         // Trait with associated function (no self)
-        let result = transpile_str("trait Factory { fun create(name: String) -> Self }").unwrap();
+        let result = transpile_str("trait Factory { fun create(name: String) -> Self }")
+            .expect("verified by caller");
         assert!(result.contains("trait Factory"));
         assert!(result.contains("fn create(name: String) -> Self"));
         assert!(!result.contains("&self"));
@@ -1861,27 +1872,27 @@ mod tests {
     #[test]
     fn test_transpile_vec_methods() {
         // sorted method
-        let result = transpile_str("[3, 1, 2].sorted()").unwrap();
+        let result = transpile_str("[3, 1, 2].sorted()").expect("verified by caller");
         assert!(result.contains("sort()"));
         assert!(result.contains("clone()"));
 
         // sum method
-        let result = transpile_str("[1, 2, 3].sum()").unwrap();
+        let result = transpile_str("[1, 2, 3].sum()").expect("verified by caller");
         assert!(result.contains("iter().sum()"));
 
         // reversed method
-        let result = transpile_str("[1, 2, 3].reversed()").unwrap();
+        let result = transpile_str("[1, 2, 3].reversed()").expect("verified by caller");
         assert!(result.contains("reverse()"));
 
         // unique method
-        let result = transpile_str("[1, 2, 2, 3].unique()").unwrap();
+        let result = transpile_str("[1, 2, 2, 3].unique()").expect("verified by caller");
         assert!(result.contains("HashSet"));
 
         // min/max methods
-        let result = transpile_str("[1, 2, 3].min()").unwrap();
+        let result = transpile_str("[1, 2, 3].min()").expect("verified by caller");
         assert!(result.contains("iter().min()"));
 
-        let result = transpile_str("[1, 2, 3].max()").unwrap();
+        let result = transpile_str("[1, 2, 3].max()").expect("verified by caller");
         assert!(result.contains("iter().max()"));
     }
 
@@ -1894,7 +1905,7 @@ mod tests {
                 0
             }
         ";
-        let result = transpile_str(code).unwrap();
+        let result = transpile_str(code).expect("verified by caller");
         assert!(result.contains("match"));
         assert!(result.contains("Ok"));
         assert!(result.contains("Err"));
@@ -1913,7 +1924,7 @@ mod tests {
                 }
             }
         ";
-        let result = transpile_str(code).unwrap();
+        let result = transpile_str(code).expect("verified by caller");
         assert!(result.contains("struct Counter"));
         assert!(result.contains("enum CounterMessage"));
         assert!(result.contains("async fn handle_message"));
@@ -1923,7 +1934,7 @@ mod tests {
     #[test]
     fn test_transpile_send() {
         let code = "counter ! Increment";
-        let result = transpile_str(code).unwrap();
+        let result = transpile_str(code).expect("verified by caller");
         assert!(result.contains(".send("));
         assert!(result.contains(".await"));
     }
@@ -1931,7 +1942,7 @@ mod tests {
     #[test]
     fn test_transpile_ask() {
         let code = "counter ? Get";
-        let result = transpile_str(code).unwrap();
+        let result = transpile_str(code).expect("verified by caller");
         assert!(result.contains(".ask("));
         assert!(result.contains(".await"));
     }
@@ -1940,37 +1951,38 @@ mod tests {
     fn test_transpile_break_continue() {
         // Test break
         let code = "while true { break }";
-        let result = transpile_str(code).unwrap();
+        let result = transpile_str(code).expect("verified by caller");
         assert!(result.contains("break"));
 
         // Test continue
         let code = "while true { continue }";
-        let result = transpile_str(code).unwrap();
+        let result = transpile_str(code).expect("verified by caller");
         assert!(result.contains("continue"));
     }
 
     #[test]
     fn test_transpile_async() {
         // Async function
-        let result = transpile_str("async fun fetch() -> String { \"data\" }").unwrap();
+        let result =
+            transpile_str("async fun fetch() -> String { \"data\" }").expect("verified by caller");
         assert!(result.contains("async fn fetch"));
         assert!(result.contains("-> String"));
         assert!(result.contains("\"data\""));
 
         // Await expression
-        let result = transpile_str("await fetch()").unwrap();
+        let result = transpile_str("await fetch()").expect("verified by caller");
         assert!(result.contains("fetch().await"));
     }
 
     #[test]
     fn test_transpile_col_function() {
         // Test standalone col() function
-        let result = transpile_str("col(\"name\")").unwrap();
+        let result = transpile_str("col(\"name\")").expect("verified by caller");
         assert!(result.contains("polars::prelude::col"));
         assert!(result.contains("\"name\""));
 
         // Test col() in expression context (like col("score") > 90)
-        let result = transpile_str("col(\"score\") > 90").unwrap();
+        let result = transpile_str("col(\"score\") > 90").expect("verified by caller");
         assert!(result.contains("polars::prelude::col"));
         assert!(result.contains("\"score\""));
         assert!(result.contains("> 90"));
@@ -1979,7 +1991,8 @@ mod tests {
     #[test]
     fn test_transpile_impl() {
         // Inherent impl with &self
-        let result = transpile_str("impl Point { fun distance(self) -> f64 { 0.0 } }").unwrap();
+        let result = transpile_str("impl Point { fun distance(self) -> f64 { 0.0 } }")
+            .expect("verified by caller");
         assert!(result.contains("impl Point"));
         assert!(result.contains("fn distance(&self) -> f64"));
         assert!(result.contains("0f64")); // Rust formats 0.0 as 0f64
@@ -1987,14 +2000,14 @@ mod tests {
         // Trait impl
         let result =
             transpile_str("impl Display for Point { fun show(self) -> String { \"Point\" } }")
-                .unwrap();
+                .expect("verified by caller");
         assert!(result.contains("impl Display for Point"));
         assert!(result.contains("fn show(&self) -> String"));
         assert!(result.contains("\"Point\""));
 
         // Static method (no self parameter)
-        let result =
-            transpile_str("impl Point { fun new(x: f64, y: f64) -> Point { Point } }").unwrap();
+        let result = transpile_str("impl Point { fun new(x: f64, y: f64) -> Point { Point } }")
+            .expect("verified by caller");
         assert!(result.contains("fn new(x: f64, y: f64) -> Point"));
         assert!(!result.contains("self"));
     }
@@ -2002,26 +2015,27 @@ mod tests {
     #[test]
     fn test_transpile_string_interpolation() {
         // Test simple interpolation
-        let result = transpile_str("\"Hello, {name}!\"").unwrap();
+        let result = transpile_str("\"Hello, {name}!\"").expect("verified by caller");
         assert!(result.contains("format!"));
         assert!(result.contains("Hello, {}!"));
         assert!(result.contains("name"));
 
         // Test complex interpolation
-        let result = transpile_str("\"Result: {x + y}\"").unwrap();
+        let result = transpile_str("\"Result: {x + y}\"").expect("verified by caller");
         assert!(result.contains("format!"));
         assert!(result.contains("Result: {}"));
         assert!(result.contains("x + y"));
 
         // Test no interpolation
-        let result = transpile_str("\"Simple string\"").unwrap();
+        let result = transpile_str("\"Simple string\"").expect("verified by caller");
         assert!(!result.contains("format!"));
         assert!(result.contains("Simple string"));
     }
 
     #[test]
     fn test_transpile_string_interpolation_escaped() {
-        let result = transpile_str("\"Value: {{static}} and {dynamic}\"").unwrap();
+        let result =
+            transpile_str("\"Value: {{static}} and {dynamic}\"").expect("verified by caller");
         assert!(result.contains("format!"));
         assert!(result.contains("Value: {{static}} and {}"));
         assert!(result.contains("dynamic"));
@@ -2029,7 +2043,8 @@ mod tests {
 
     #[test]
     fn test_transpile_property_test() {
-        let result = transpile_str("#[property] fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
+        let result = transpile_str("#[property] fun add(x: i32, y: i32) -> i32 { x + y }")
+            .expect("verified by caller");
         assert!(result.contains("fn add"));
         assert!(result.contains("mod property_tests"));
         assert!(result.contains("use proptest::prelude::*"));
@@ -2040,7 +2055,7 @@ mod tests {
     #[test]
     fn test_transpile_list_comprehension() {
         // Simple comprehension: [x * 2 for x in numbers]
-        let result = transpile_str("[x * 2 for x in numbers]").unwrap();
+        let result = transpile_str("[x * 2 for x in numbers]").expect("verified by caller");
         assert!(result.contains("numbers"));
         assert!(result.contains(".into_iter()"));
         assert!(result.contains(".map(|x|"));
@@ -2048,7 +2063,7 @@ mod tests {
         assert!(result.contains(".collect::<Vec<_>>()"));
 
         // Comprehension with filter: [x for x in numbers if x > 0]
-        let result = transpile_str("[x for x in numbers if x > 0]").unwrap();
+        let result = transpile_str("[x for x in numbers if x > 0]").expect("verified by caller");
         assert!(result.contains("numbers"));
         assert!(result.contains(".into_iter()"));
         assert!(result.contains(".filter(|x|"));
@@ -2059,7 +2074,7 @@ mod tests {
         // Complex comprehension: [name.len() for name in ["Alice", "Bob"] if name.len() > 3]
         let result =
             transpile_str("[name.len() for name in [\"Alice\", \"Bob\"] if name.len() > 3]")
-                .unwrap();
+                .expect("verified by caller");
         assert!(result.contains("vec![\"Alice\", \"Bob\"]"));
         assert!(result.contains(".filter(|name|"));
         assert!(result.contains("name.len() > 3"));

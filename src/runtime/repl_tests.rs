@@ -24,6 +24,7 @@ pub struct ReplState {
 }
 
 impl ReplState {
+    #[must_use]
     pub fn extract_from_repl(repl: &Repl) -> Self {
         Self {
             history_count: repl.history().len(),

@@ -22,6 +22,7 @@ impl Default for DeadCodeElimination {
 
 impl DeadCodeElimination {
     /// Create a new DCE pass
+    #[must_use]
     pub fn new() -> Self {
         Self {
             live_locals: HashSet::new(),
@@ -266,6 +267,7 @@ impl Default for ConstantPropagation {
 
 impl ConstantPropagation {
     /// Create a new constant propagation pass
+    #[must_use]
     pub fn new() -> Self {
         Self {
             constants: HashMap::new(),
@@ -425,6 +427,7 @@ impl Default for CommonSubexpressionElimination {
 
 impl CommonSubexpressionElimination {
     /// Create a new CSE pass
+    #[must_use]
     pub fn new() -> Self {
         Self {
             expressions: HashMap::new(),

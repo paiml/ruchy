@@ -315,8 +315,7 @@ impl<'a> TokenStream<'a> {
 
     pub fn peek_nth_is_colon(&mut self, n: usize) -> bool {
         if n == 0 {
-            self.peek()
-                .is_some_and(|(t, _)| matches!(t, Token::Colon))
+            self.peek().is_some_and(|(t, _)| matches!(t, Token::Colon))
         } else {
             self.peek_nth(n)
                 .is_some_and(|(t, _)| matches!(t, Token::Colon))
