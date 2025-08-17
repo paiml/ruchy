@@ -118,7 +118,7 @@ impl RuchyMCP {
     /// use ruchy::mcp::RuchyMCP;
     ///
     /// let mut mcp = RuchyMCP::new();
-    /// let server = mcp.create_server("ruchy-server", "1.0.0").expect("verified by caller");
+    /// let server = mcp.create_server("ruchy-server", "1.0.0").expect("Failed to create server");
     /// ```
     ///
     /// # Errors
@@ -147,7 +147,7 @@ impl RuchyMCP {
     ///
     /// let mut mcp = RuchyMCP::new();
     /// let transport = StdioTransport::new();
-    /// mcp.create_client(transport).expect("verified by caller");
+    /// mcp.create_client(transport).expect("Failed to create client");
     /// ```
     ///
     /// # Errors
@@ -314,7 +314,7 @@ pub fn create_ruchy_tools() -> Vec<(&'static str, RuchyMCPTool)> {
 /// # async fn example() {
 /// use ruchy::mcp::create_ruchy_mcp_server;
 ///
-/// let server = create_ruchy_mcp_server().await.expect("verified by caller");
+/// let server = create_ruchy_mcp_server().await.expect("Failed to create MCP server");
 /// # }
 /// ```
 ///
@@ -345,7 +345,7 @@ pub async fn create_ruchy_mcp_server() -> Result<Server> {
 /// # async fn example() {
 /// use ruchy::mcp::create_ruchy_mcp_client;
 ///
-/// let client = create_ruchy_mcp_client().await.expect("verified by caller");
+/// let client = create_ruchy_mcp_client().await.expect("Failed to create MCP client");
 /// # }
 /// ```
 ///
@@ -416,7 +416,7 @@ mod tests {
         let result = tool
             .handle(input.clone(), extra)
             .await
-            .expect("verified by caller");
+            .unwrap();
         assert_eq!(result, input);
     }
 

@@ -900,17 +900,17 @@ mod tests {
 
     #[test]
     fn test_infer_literals() {
-        assert_eq!(infer_str("42").expect("verified by caller"), MonoType::Int);
+        assert_eq!(infer_str("42").unwrap(), MonoType::Int);
         assert_eq!(
-            infer_str("3.14").expect("verified by caller"),
+            infer_str("3.14").unwrap(),
             MonoType::Float
         );
         assert_eq!(
-            infer_str("true").expect("verified by caller"),
+            infer_str("true").unwrap(),
             MonoType::Bool
         );
         assert_eq!(
-            infer_str("\"hello\"").expect("verified by caller"),
+            infer_str("\"hello\"").unwrap(),
             MonoType::String
         );
     }
@@ -918,15 +918,15 @@ mod tests {
     #[test]
     fn test_infer_arithmetic() {
         assert_eq!(
-            infer_str("1 + 2").expect("verified by caller"),
+            infer_str("1 + 2").unwrap(),
             MonoType::Int
         );
         assert_eq!(
-            infer_str("3 * 4").expect("verified by caller"),
+            infer_str("3 * 4").unwrap(),
             MonoType::Int
         );
         assert_eq!(
-            infer_str("5 - 2").expect("verified by caller"),
+            infer_str("5 - 2").unwrap(),
             MonoType::Int
         );
     }
@@ -934,15 +934,15 @@ mod tests {
     #[test]
     fn test_infer_comparison() {
         assert_eq!(
-            infer_str("1 < 2").expect("verified by caller"),
+            infer_str("1 < 2").unwrap(),
             MonoType::Bool
         );
         assert_eq!(
-            infer_str("3 == 3").expect("verified by caller"),
+            infer_str("3 == 3").unwrap(),
             MonoType::Bool
         );
         assert_eq!(
-            infer_str("true != false").expect("verified by caller"),
+            infer_str("true != false").unwrap(),
             MonoType::Bool
         );
     }
@@ -950,11 +950,11 @@ mod tests {
     #[test]
     fn test_infer_if() {
         assert_eq!(
-            infer_str("if true { 1 } else { 2 }").expect("verified by caller"),
+            infer_str("if true { 1 } else { 2 }").unwrap(),
             MonoType::Int
         );
         assert_eq!(
-            infer_str("if false { \"yes\" } else { \"no\" }").expect("verified by caller"),
+            infer_str("if false { \"yes\" } else { \"no\" }").unwrap(),
             MonoType::String
         );
     }
@@ -962,11 +962,11 @@ mod tests {
     #[test]
     fn test_infer_let() {
         assert_eq!(
-            infer_str("let x = 42 in x + 1").expect("verified by caller"),
+            infer_str("let x = 42 in x + 1").unwrap(),
             MonoType::Int
         );
         assert_eq!(
-            infer_str("let f = 3.14 in let g = 2.71 in f").expect("verified by caller"),
+            infer_str("let f = 3.14 in let g = 2.71 in f").unwrap(),
             MonoType::Float
         );
     }
@@ -974,11 +974,11 @@ mod tests {
     #[test]
     fn test_infer_list() {
         assert_eq!(
-            infer_str("[1, 2, 3]").expect("verified by caller"),
+            infer_str("[1, 2, 3]").unwrap(),
             MonoType::List(Box::new(MonoType::Int))
         );
         assert_eq!(
-            infer_str("[true, false]").expect("verified by caller"),
+            infer_str("[true, false]").unwrap(),
             MonoType::List(Box::new(MonoType::Bool))
         );
     }
@@ -986,7 +986,7 @@ mod tests {
     #[test]
     fn test_infer_function() {
         let result =
-            infer_str("fun add(x: i32, y: i32) -> i32 { x + y }").expect("verified by caller");
+            infer_str("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
         match result {
             MonoType::Function(first_arg, remaining) => {
                 assert!(matches!(first_arg.as_ref(), MonoType::Int));
@@ -1012,7 +1012,7 @@ mod tests {
     #[test]
     fn test_infer_lambda() {
         // Simple lambda: |x| x + 1
-        let result = infer_str("|x| x + 1").expect("verified by caller");
+        let result = infer_str("|x| x + 1").unwrap();
         match result {
             MonoType::Function(arg, ret) => {
                 assert!(matches!(arg.as_ref(), MonoType::Int));
@@ -1022,7 +1022,7 @@ mod tests {
         }
 
         // Lambda with multiple params: |x, y| x * y
-        let result = infer_str("|x, y| x * y").expect("verified by caller");
+        let result = infer_str("|x, y| x * y").unwrap();
         match result {
             MonoType::Function(first_arg, remaining) => {
                 assert!(matches!(first_arg.as_ref(), MonoType::Int));
@@ -1038,11 +1038,11 @@ mod tests {
         }
 
         // Lambda with no params: || 42
-        let result = infer_str("|| 42").expect("verified by caller");
+        let result = infer_str("|| 42").unwrap();
         assert_eq!(result, MonoType::Int);
 
         // Lambda used in let binding
-        let result = infer_str("let f = |x| x + 1 in f(5)").expect("verified by caller");
+        let result = infer_str("let f = |x| x + 1 in f(5)").unwrap();
         assert_eq!(result, MonoType::Int);
     }
 }

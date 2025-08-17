@@ -38,7 +38,7 @@ impl Repl {
     /// ```no_run
     /// use ruchy::runtime::repl::Repl;
     ///
-    /// let mut repl = Repl::new().expect("verified by caller");
+    /// let mut repl = Repl::new().expect("Failed to create REPL");
     /// ```
     ///
     /// # Errors
@@ -65,8 +65,8 @@ impl Repl {
     /// ```no_run
     /// use ruchy::runtime::repl::Repl;
     ///
-    /// let mut repl = Repl::new().expect("verified by caller");
-    /// repl.run().expect("verified by caller");
+    /// let mut repl = Repl::new().expect("Failed to create REPL");
+    /// repl.run().expect("Failed to run REPL");
     /// ```
     ///
     /// # Errors
@@ -250,8 +250,8 @@ impl Repl {
     /// ```no_run
     /// use ruchy::runtime::repl::Repl;
     ///
-    /// let mut repl = Repl::new().expect("verified by caller");
-    /// let result = repl.eval("1 + 2").expect("verified by caller");
+    /// let mut repl = Repl::new().expect("Failed to create REPL");
+    /// let result = repl.eval("1 + 2").expect("Failed to evaluate");
     /// assert_eq!(result, "3");
     /// ```
     ///
@@ -537,7 +537,7 @@ mod tests {
     fn test_repl_creation() {
         let repl = Repl::new();
         assert!(repl.is_ok());
-        let repl = repl.expect("verified by caller");
+        let repl = repl.unwrap();
         assert_eq!(repl.session_counter, 0);
         assert!(repl.history.is_empty());
         assert!(repl.definitions.is_empty());
@@ -546,25 +546,25 @@ mod tests {
 
     #[test]
     fn test_eval_simple_expression() {
-        let repl = Repl::new().expect("verified by caller");
+        let repl = Repl::new().unwrap();
         // Just test that parsing and transpilation work
         // Actual compilation would require rustc which may not be available in test env
         let mut parser = Parser::new("42");
         let ast = parser.parse();
         assert!(ast.is_ok());
-        let ast = ast.expect("verified by caller");
+        let ast = ast.unwrap();
         let result = repl.transpiler.transpile(&ast);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_eval_arithmetic() {
-        let repl = Repl::new().expect("verified by caller");
+        let repl = Repl::new().unwrap();
         // Just test that parsing and transpilation work
         let mut parser = Parser::new("1 + 2 * 3");
         let ast = parser.parse();
         assert!(ast.is_ok());
-        let ast = ast.expect("verified by caller");
+        let ast = ast.unwrap();
         let result = repl.transpiler.transpile(&ast);
         assert!(result.is_ok());
     }
@@ -572,37 +572,37 @@ mod tests {
     #[test]
     #[ignore = "Requires rustc at runtime"]
     fn test_eval_invalid_syntax() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         let result = repl.eval("let x =");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_handle_command_help() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         let result = repl.handle_command(":help");
         assert!(result.is_ok());
-        assert!(result.expect("verified by caller")); // Should return true (continue)
+        assert!(result.unwrap()); // Should return true (continue)
     }
 
     #[test]
     fn test_handle_command_quit() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         let result = repl.handle_command(":quit");
         assert!(result.is_ok());
-        assert!(!result.expect("verified by caller")); // Should return false (quit)
+        assert!(!result.unwrap()); // Should return false (quit)
     }
 
     #[test]
     fn test_handle_command_clear() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         repl.history.push("test".to_string());
         repl.definitions.push("def".to_string());
         repl.bindings.insert("x".to_string(), "i32".to_string());
 
         let result = repl.handle_command(":clear");
         assert!(result.is_ok());
-        assert!(result.expect("verified by caller"));
+        assert!(result.unwrap());
 
         assert!(repl.history.is_empty());
         assert!(repl.definitions.is_empty());
@@ -611,83 +611,83 @@ mod tests {
 
     #[test]
     fn test_handle_command_unknown() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         let result = repl.handle_command(":unknown");
         assert!(result.is_ok());
-        assert!(result.expect("verified by caller")); // Should continue despite unknown command
+        assert!(result.unwrap()); // Should continue despite unknown command
     }
 
     #[test]
     fn test_handle_command_ast() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         let result = repl.handle_command(":ast 1 + 2");
         assert!(result.is_ok());
-        assert!(result.expect("verified by caller"));
+        assert!(result.unwrap());
     }
 
     #[test]
     fn test_handle_command_rust() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         let result = repl.handle_command(":rust 42");
         assert!(result.is_ok());
-        assert!(result.expect("verified by caller"));
+        assert!(result.unwrap());
     }
 
     #[test]
     fn test_handle_command_type() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         let result = repl.handle_command(":type 42");
         assert!(result.is_ok());
-        assert!(result.expect("verified by caller"));
+        assert!(result.unwrap());
     }
 
     #[test]
     fn test_handle_command_history() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         repl.history.push("1 + 1".to_string());
         repl.history.push("2 * 3".to_string());
 
         let result = repl.handle_command(":history");
         assert!(result.is_ok());
-        assert!(result.expect("verified by caller"));
+        assert!(result.unwrap());
     }
 
     #[test]
     fn test_show_ast() {
-        let repl = Repl::new().expect("verified by caller");
+        let repl = Repl::new().unwrap();
         let result = repl.show_ast("1 + 2");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_show_ast_invalid() {
-        let repl = Repl::new().expect("verified by caller");
+        let repl = Repl::new().unwrap();
         let result = repl.show_ast("let x =");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_show_rust() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         let result = repl.show_rust("true");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_show_rust_invalid() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         let result = repl.show_rust("if");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_save_and_load_session() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         repl.history.push("1 + 1".to_string());
         repl.history.push("42".to_string()); // Use simpler expression that won't fail
 
         let temp_file = repl.temp_dir.join("test_session.ruchy");
-        let temp_file_str = temp_file.to_str().expect("verified by caller");
+        let temp_file_str = temp_file.to_str().unwrap();
 
         // Save session
         let save_result = repl.save_session(temp_file_str);
@@ -700,14 +700,14 @@ mod tests {
         // Just test that we can read the file back, not execute it
         let content = std::fs::read_to_string(temp_file_str);
         assert!(content.is_ok());
-        let content = content.expect("verified by caller");
+        let content = content.unwrap();
         assert!(content.contains("1 + 1"));
         assert!(content.contains("42"));
     }
 
     #[test]
     fn test_show_type() {
-        let repl = Repl::new().expect("verified by caller");
+        let repl = Repl::new().unwrap();
         // Type inference not fully implemented, but should not crash
         let result = repl.show_type("42");
         assert!(result.is_ok());
@@ -715,7 +715,7 @@ mod tests {
 
     #[test]
     fn test_clear_session() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         repl.history.push("test".to_string());
         repl.definitions.push("def".to_string());
         repl.bindings.insert("x".to_string(), "Type".to_string());
@@ -731,7 +731,7 @@ mod tests {
 
     #[test]
     fn test_show_history() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
         repl.history.push("first".to_string());
         repl.history.push("second".to_string());
         repl.history.push("third".to_string());
@@ -743,16 +743,16 @@ mod tests {
 
     #[test]
     fn test_temp_dir_creation() {
-        let repl = Repl::new().expect("verified by caller");
+        let repl = Repl::new().unwrap();
         assert!(repl.temp_dir.exists());
         assert!(repl.temp_dir.is_dir());
     }
 
     #[test]
     fn test_transpiler_initialized() {
-        let repl = Repl::new().expect("verified by caller");
+        let repl = Repl::new().unwrap();
         // Verify transpiler can be used
-        let ast = Parser::new("42").parse().expect("verified by caller");
+        let ast = Parser::new("42").parse().unwrap();
         let result = repl.transpiler.transpile(&ast);
         assert!(result.is_ok());
     }
@@ -760,7 +760,7 @@ mod tests {
     #[test]
     #[ignore = "Requires rustc and polars at runtime"]
     fn test_function_persistence() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
 
         // Define a function (use i64 which is the default)
         let result = repl.eval("fun add(a: i64, b: i64) -> i64 { a + b }");
@@ -773,21 +773,21 @@ mod tests {
         // Call the function in a new expression (literals default to i64)
         let result = repl.eval("add(5, 3)");
         assert!(result.is_ok(), "Function call should succeed: {result:?}");
-        assert_eq!(result.expect("verified by caller"), "8");
+        assert_eq!(result.unwrap(), "8");
     }
 
     #[test]
     #[ignore = "Requires rustc and polars at runtime"]
     fn test_multiple_function_persistence() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
 
         // Define first function (use i64)
         repl.eval("fun double(x: i64) -> i64 { x * 2 }")
-            .expect("verified by caller");
+            .unwrap();
 
         // Define second function (use i64)
         repl.eval("fun triple(x: i64) -> i64 { x * 3 }")
-            .expect("verified by caller");
+            .unwrap();
 
         // Both functions should be available
         assert_eq!(repl.definitions.len(), 2);
@@ -798,13 +798,13 @@ mod tests {
             result.is_ok(),
             "Combined function call should succeed: {result:?}"
         );
-        assert_eq!(result.expect("verified by caller"), "19"); // 10 + 9
+        assert_eq!(result.unwrap(), "19"); // 10 + 9
     }
 
     #[test]
     #[ignore = "Requires rustc and polars at runtime"]
     fn test_function_with_string_interpolation() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
 
         // Test string interpolation in a simpler context (not in function parameters)
         // This tests that string interpolation itself works in the REPL
@@ -813,7 +813,7 @@ mod tests {
             result.is_ok(),
             "String interpolation should work: {result:?}"
         );
-        let output = result.expect("verified by caller");
+        let output = result.unwrap();
         // Check for expected output (might have escaped exclamation)
         assert!(output.contains("Hello") || output.contains("World"));
     }
@@ -821,7 +821,7 @@ mod tests {
     #[test]
     #[ignore = "Requires rustc and polars at runtime"]
     fn test_struct_persistence() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
 
         // Define a struct
         let result = repl.eval("struct Point { x: f64, y: f64 }");
@@ -835,11 +835,11 @@ mod tests {
     #[test]
     #[ignore = "Requires rustc and polars at runtime"]
     fn test_clear_session_removes_definitions() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
 
         // Add some definitions (use i64 for return type)
         repl.eval("fun test() -> i64 { 42 }")
-            .expect("verified by caller");
+            .unwrap();
         assert_eq!(repl.definitions.len(), 1);
 
         // Clear session
@@ -853,7 +853,7 @@ mod tests {
     #[test]
     #[ignore = "Requires rustc and polars at runtime"]
     fn test_recursive_function() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
 
         // Define a recursive factorial function (use i64)
         let result =
@@ -869,7 +869,7 @@ mod tests {
             result.is_ok(),
             "Recursive function call should succeed: {result:?}"
         );
-        assert_eq!(result.expect("verified by caller"), "120");
+        assert_eq!(result.unwrap(), "120");
     }
 
     #[test]
@@ -881,7 +881,7 @@ mod tests {
 
     #[test]
     fn test_handle_command_with_no_args() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
 
         // Commands that need arguments
         assert!(repl.handle_command(":type").is_ok());
@@ -893,19 +893,19 @@ mod tests {
 
     #[test]
     fn test_handle_command_short_forms() {
-        let mut repl = Repl::new().expect("verified by caller");
+        let mut repl = Repl::new().unwrap();
 
         // Test short forms
         let result = repl.handle_command(":h");
         assert!(result.is_ok());
-        assert!(result.expect("verified by caller"));
+        assert!(result.unwrap());
 
         let result = repl.handle_command(":q");
         assert!(result.is_ok());
-        assert!(!result.expect("verified by caller"));
+        assert!(!result.unwrap());
 
         let result = repl.handle_command(":t 42");
         assert!(result.is_ok());
-        assert!(result.expect("verified by caller"));
+        assert!(result.unwrap());
     }
 }
