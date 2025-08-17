@@ -95,16 +95,16 @@ Priority order:
     - [No spec - needs creation]
 
 #### P1: Core Language
-- [ ] **Impl Blocks** (3d) - Methods for structs
-- [ ] **Trait System** (4d) - Full trait support
-- [ ] **Pattern Guards** (2d) - if conditions in match
-- [ ] **Break/Continue** (2d) - Loop control flow
+- [x] **Impl Blocks** (3d) - Methods for structs ✅
+- [x] **Trait System** (4d) - Full trait support ✅
+- [x] **Pattern Guards** (2d) - if conditions in match ✅
+- [x] **Break/Continue** (2d) - Loop control flow ✅
 
 #### P2: Enhanced Features
-- [ ] **Property Testing** (3d) - #[property] attributes
-- [ ] **List Comprehensions** (3d) - [x for x in list]
-- [ ] **Generics** (5d) - Full type parameters
-- [ ] **Object Literals** (2d) - {key: value} syntax
+- [x] **Property Testing** (3d) - #[property] attributes ✅
+- [x] **List Comprehensions** (3d) - [x for x in list] ✅
+- [x] **Generics** (5d) - Full type parameters ✅
+- [x] **Object Literals** (2d) - {key: value} syntax ✅
 
 #### P3: Future
 - [ ] MCP Protocol Integration
