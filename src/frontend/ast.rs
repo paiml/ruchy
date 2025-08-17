@@ -111,6 +111,9 @@ pub enum ExprKind {
         name: String,
         fields: Vec<(String, Expr)>,
     },
+    ObjectLiteral {
+        fields: Vec<ObjectField>,
+    },
     FieldAccess {
         object: Box<Expr>,
         field: String,
@@ -265,6 +268,17 @@ pub struct StructField {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ObjectField {
+    KeyValue {
+        key: String,
+        value: Expr,
+    },
+    Spread {
+        expr: Expr,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TraitMethod {
     pub name: String,
     pub params: Vec<Param>,
@@ -369,6 +383,8 @@ impl fmt::Display for UnaryOp {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
+#[allow(clippy::panic)]
 mod tests {
     use super::*;
     use proptest::prelude::*;

@@ -203,7 +203,7 @@ fn test_pattern_wildcard() -> Result<()> {
     let ast = parser.parse()?;
     match ast.kind {
         ruchy::ExprKind::Match { arms, .. } => {
-            assert!(matches!(arms[0].0, ruchy::Pattern::Wildcard));
+            assert!(matches!(arms[0].pattern, ruchy::Pattern::Wildcard));
         }
         _ => panic!("Expected match"),
     }
@@ -216,7 +216,7 @@ fn test_pattern_literal() -> Result<()> {
     let ast = parser.parse()?;
     match ast.kind {
         ruchy::ExprKind::Match { arms, .. } => {
-            assert!(matches!(arms[0].0, ruchy::Pattern::Literal(_)));
+            assert!(matches!(arms[0].pattern, ruchy::Pattern::Literal(_)));
         }
         _ => panic!("Expected match"),
     }
@@ -229,7 +229,7 @@ fn test_pattern_identifier() -> Result<()> {
     let ast = parser.parse()?;
     match ast.kind {
         ruchy::ExprKind::Match { arms, .. } => {
-            assert!(matches!(arms[0].0, ruchy::Pattern::Identifier(_)));
+            assert!(matches!(arms[0].pattern, ruchy::Pattern::Identifier(_)));
         }
         _ => panic!("Expected match"),
     }

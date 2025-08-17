@@ -240,6 +240,7 @@ impl ExprKind {
             ExprKind::Lambda { .. } => "Lambda",
             ExprKind::Struct { .. } => "Struct",
             ExprKind::StructLiteral { .. } => "StructLiteral",
+            ExprKind::ObjectLiteral { .. } => "ObjectLiteral",
             ExprKind::FieldAccess { .. } => "FieldAccess",
             ExprKind::Trait { .. } => "Trait",
             ExprKind::Impl { .. } => "Impl",
@@ -312,6 +313,7 @@ impl ExprKind {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

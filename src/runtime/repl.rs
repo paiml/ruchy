@@ -31,6 +31,19 @@ pub struct Repl {
 }
 
 impl Repl {
+    /// Create a new REPL instance
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ruchy::runtime::repl::Repl;
+    ///
+    /// let mut repl = Repl::new().unwrap();
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the temporary directory cannot be created
     pub fn new() -> Result<Self> {
         let temp_dir = std::env::temp_dir().join("ruchy_repl");
         fs::create_dir_all(&temp_dir)?;
@@ -46,6 +59,22 @@ impl Repl {
     }
 
     /// Run the REPL
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ruchy::runtime::repl::Repl;
+    ///
+    /// let mut repl = Repl::new().unwrap();
+    /// repl.run().unwrap();
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Readline initialization fails
+    /// - User input cannot be read
+    /// - Commands fail to execute
     pub fn run(&mut self) -> Result<()> {
         println!("{}", "Welcome to Ruchy REPL v0.1.0".bright_cyan().bold());
         println!(
@@ -112,12 +141,17 @@ impl Repl {
     }
 
     /// Handle REPL commands
+    /// Handle REPL commands
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if command execution fails
     fn handle_command(&mut self, cmd: &str) -> Result<bool> {
         let parts: Vec<&str> = cmd.split_whitespace().collect();
 
         match parts.first().copied() {
             Some(":help" | ":h") => {
-                self.print_help();
+                Self::print_help();
                 Ok(true)
             }
             Some(":quit" | ":q") => Ok(false),
@@ -181,7 +215,7 @@ impl Repl {
     }
 
     /// Print help message
-    fn print_help(&self) {
+    fn print_help() {
         println!("{}", "Available commands:".bright_cyan());
         println!("  {}  - Show this help message", ":help".bright_green());
         println!("  {}  - Exit the REPL", ":quit".bright_green());
@@ -210,6 +244,24 @@ impl Repl {
     }
 
     /// Evaluate an expression
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ruchy::runtime::repl::Repl;
+    ///
+    /// let mut repl = Repl::new().unwrap();
+    /// let result = repl.eval("1 + 2").unwrap();
+    /// assert_eq!(result, "3");
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The input cannot be parsed
+    /// - The transpilation fails
+    /// - The Rust compilation fails
+    /// - The execution fails
     pub fn eval(&mut self, input: &str) -> Result<String> {
         // Parse the input
         let mut parser = Parser::new(input);
@@ -341,6 +393,11 @@ fn main() {{
     }
 
     /// Show type of expression
+    /// Show the inferred type of an expression
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the expression cannot be parsed or type inference fails
     pub fn show_type(&self, expr: &str) -> Result<String> {
         use crate::middleend::InferenceContext;
 
@@ -361,6 +418,11 @@ fn main() {{
     }
 
     /// Show AST of expression
+    /// Show the AST of an expression
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the expression cannot be parsed
     pub fn show_ast(&self, input: &str) -> Result<String> {
         let mut parser = Parser::new(input);
         let ast = parser.parse()?;
@@ -368,6 +430,11 @@ fn main() {{
     }
 
     /// Show Rust transpilation
+    /// Show the Rust transpilation of an expression
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if parsing or transpilation fails
     pub fn show_rust(&mut self, input: &str) -> Result<String> {
         let mut parser = Parser::new(input);
         let ast = parser.parse()?;
@@ -399,6 +466,11 @@ fn main() {{
     }
 
     /// Save session to file
+    /// Save the current session to a file
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be written
     pub fn save_session(&self, filename: &str) -> Result<()> {
         let content = self.history.join("\n");
         fs::write(filename, content)?;
@@ -407,6 +479,11 @@ fn main() {{
     }
 
     /// Load session from file
+    /// Load a session from a file
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be read or contains invalid data
     pub fn load_session(&mut self, filename: &str) -> Result<()> {
         let content = fs::read_to_string(filename)?;
         for line in content.lines() {
@@ -452,6 +529,7 @@ impl Default for Repl {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 
