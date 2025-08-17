@@ -144,6 +144,23 @@ pub fn parse_pattern(state: &mut ParserState) -> Pattern {
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
+
+            // Check for Ok/Err patterns
+            if name == "Ok" || name == "Err" {
+                if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                    state.tokens.advance(); // consume (
+                    let inner = parse_pattern(state);
+                    if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                        state.tokens.advance(); // consume )
+                    }
+                    if name == "Ok" {
+                        return Pattern::Ok(Box::new(inner));
+                    } else {
+                        return Pattern::Err(Box::new(inner));
+                    }
+                }
+            }
+
             Pattern::Identifier(name)
         }
         Some((Token::Integer(i), _)) => {

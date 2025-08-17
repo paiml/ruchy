@@ -340,6 +340,8 @@ pub enum Pattern {
     Literal(Literal),
     Identifier(String),
     List(Vec<Pattern>),
+    Ok(Box<Pattern>),
+    Err(Box<Pattern>),
 }
 
 /// Attribute for annotating expressions (e.g., #[property])
@@ -1026,6 +1028,7 @@ mod tests {
             match pattern {
                 Pattern::Wildcard | Pattern::Literal(_) | Pattern::Identifier(_) => {}
                 Pattern::List(list) => assert!(!list.is_empty()),
+                Pattern::Ok(_) | Pattern::Err(_) => {} // Result patterns
             }
         }
     }

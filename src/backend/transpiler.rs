@@ -733,6 +733,14 @@ impl Transpiler {
                 let ident = syn::Ident::new(name, proc_macro2::Span::call_site());
                 quote! { #ident }
             }
+            Pattern::Ok(inner) => {
+                let inner_pattern = self.transpile_pattern(inner)?;
+                quote! { Ok(#inner_pattern) }
+            }
+            Pattern::Err(inner) => {
+                let inner_pattern = self.transpile_pattern(inner)?;
+                quote! { Err(#inner_pattern) }
+            }
             Pattern::List(patterns) => {
                 let pattern_tokens: Result<Vec<_>> =
                     patterns.iter().map(|p| self.transpile_pattern(p)).collect();
