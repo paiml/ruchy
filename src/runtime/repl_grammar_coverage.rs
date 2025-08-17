@@ -263,6 +263,7 @@ impl ExprKind {
             ExprKind::Import { .. } => "Import",
             ExprKind::Break { .. } => "Break",
             ExprKind::Continue { .. } => "Continue",
+            ExprKind::DataFrameOperation { .. } => "DataFrameOperation",
         }
     }
 

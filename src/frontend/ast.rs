@@ -169,8 +169,11 @@ pub enum ExprKind {
         condition: Option<Box<Expr>>,
     },
     DataFrame {
-        columns: Vec<String>,
-        rows: Vec<Vec<Expr>>,
+        columns: Vec<DataFrameColumn>,
+    },
+    DataFrameOperation {
+        source: Box<Expr>,
+        operation: DataFrameOp,
     },
     For {
         var: String,
@@ -339,6 +342,48 @@ pub struct Attribute {
     pub name: String,
     pub args: Vec<String>,
     pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DataFrameColumn {
+    pub name: String,
+    pub values: Vec<Expr>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum DataFrameOp {
+    Filter(Box<Expr>),
+    Select(Vec<String>),
+    GroupBy(Vec<String>),
+    Sort(Vec<String>),
+    Join {
+        other: Box<Expr>,
+        on: Vec<String>,
+        how: JoinType,
+    },
+    Aggregate(Vec<AggregateOp>),
+    Limit(usize),
+    Head(usize),
+    Tail(usize),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum JoinType {
+    Inner,
+    Left,
+    Right,
+    Outer,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AggregateOp {
+    Sum(String),
+    Mean(String),
+    Min(String),
+    Max(String),
+    Count(String),
+    Std(String),
+    Var(String),
 }
 
 impl fmt::Display for BinaryOp {

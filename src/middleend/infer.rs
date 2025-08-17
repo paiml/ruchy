@@ -198,6 +198,11 @@ impl InferenceContext {
                 // In Rust, they have type ! (never), but we'll use Unit for simplicity
                 Ok(MonoType::Unit)
             }
+            ExprKind::DataFrameOperation { source, .. } => {
+                // DataFrameOperation returns a DataFrame
+                let _source_ty = self.infer_expr(source)?;
+                Ok(MonoType::Named("DataFrame".to_string()))
+            }
         }
     }
 
