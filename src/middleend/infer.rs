@@ -87,6 +87,18 @@ impl InferenceContext {
                 catch_var,
                 catch_block,
             } => self.infer_try_catch(try_block, catch_var, catch_block),
+            ExprKind::Ok { value } => {
+                let value_type = self.infer_expr(value)?;
+                // Ok wraps the value in Result<T, E> where E is inferred
+                let error_type = MonoType::Var(self.gen.fresh());
+                Ok(MonoType::Result(Box::new(value_type), Box::new(error_type)))
+            }
+            ExprKind::Err { error } => {
+                let error_type = self.infer_expr(error)?;
+                // Err wraps the error in Result<T, E> where T is inferred
+                let value_type = MonoType::Var(self.gen.fresh());
+                Ok(MonoType::Result(Box::new(value_type), Box::new(error_type)))
+            }
             ExprKind::Await { expr } => self.infer_await(expr),
             ExprKind::If {
                 condition,

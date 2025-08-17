@@ -52,6 +52,33 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::Identifier(name) => {
             state.tokens.advance();
+
+            // Check for Result constructors Ok and Err
+            if name == "Ok" || name == "Err" {
+                // Expect parentheses with value
+                if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                    state.tokens.advance(); // consume (
+                    let value = super::parse_expr_recursive(state)?;
+                    state.tokens.expect(&Token::RightParen)?;
+
+                    if name == "Ok" {
+                        return Ok(Expr::new(
+                            ExprKind::Ok {
+                                value: Box::new(value),
+                            },
+                            span_clone,
+                        ));
+                    } else {
+                        return Ok(Expr::new(
+                            ExprKind::Err {
+                                error: Box::new(value),
+                            },
+                            span_clone,
+                        ));
+                    }
+                }
+            }
+
             // Only handle postfix operators that can't be confused with binary operators
             Ok(Expr::new(ExprKind::Identifier(name), span_clone))
         }

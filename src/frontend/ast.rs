@@ -77,6 +77,12 @@ pub enum ExprKind {
         catch_var: String,
         catch_block: Box<Expr>,
     },
+    Ok {
+        value: Box<Expr>,
+    },
+    Err {
+        error: Box<Expr>,
+    },
     Await {
         expr: Box<Expr>,
     },

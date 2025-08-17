@@ -607,7 +607,7 @@ pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
 }
 
 /// Parse legacy row-based `DataFrame` syntax for backward compatibility
-#[allow(clippy::ptr_arg)]  // We need to mutate the Vec, not just read it
+#[allow(clippy::ptr_arg)] // We need to mutate the Vec, not just read it
 fn parse_legacy_dataframe_rows(
     state: &mut ParserState,
     columns: &mut Vec<DataFrameColumn>,

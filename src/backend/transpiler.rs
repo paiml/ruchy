@@ -89,6 +89,14 @@ impl Transpiler {
                 catch_var,
                 catch_block,
             } => self.transpile_try_catch(try_block, catch_var, catch_block),
+            ExprKind::Ok { value } => {
+                let value_tokens = self.transpile_expr(value)?;
+                Ok(quote! { Ok(#value_tokens) })
+            }
+            ExprKind::Err { error } => {
+                let error_tokens = self.transpile_expr(error)?;
+                Ok(quote! { Err(#error_tokens) })
+            }
             ExprKind::Await { expr } => self.transpile_await(expr),
             ExprKind::If {
                 condition,
@@ -1212,7 +1220,7 @@ impl Transpiler {
                         // Method with self parameter
                         let self_tok = match first_param.name.as_str() {
                             "mut self" | "&mut self" => quote! { &mut self },
-                            "self" => quote! { &self },  // In traits, self defaults to &self
+                            "self" => quote! { &self }, // In traits, self defaults to &self
                             "&self" => quote! { &self },
                             _ => {
                                 // Fallback to type annotation
@@ -1220,7 +1228,7 @@ impl Transpiler {
                                     TypeKind::Named(name) if name == "&mut self" => {
                                         quote! { &mut self }
                                     }
-                                    TypeKind::Named(name) if name == "self" => quote! { &self },  // In traits, self defaults to &self
+                                    TypeKind::Named(name) if name == "self" => quote! { &self }, // In traits, self defaults to &self
                                     _ => quote! { &self }, // Default to immutable reference
                                 }
                             }
@@ -1336,7 +1344,7 @@ impl Transpiler {
                         // Method with self parameter
                         let self_tok = match first_param.name.as_str() {
                             "mut self" | "&mut self" => quote! { &mut self },
-                            "self" => quote! { &self },  // In impl blocks, self defaults to &self
+                            "self" => quote! { &self }, // In impl blocks, self defaults to &self
                             "&self" => quote! { &self },
                             _ => {
                                 // Fallback to type annotation
@@ -1344,7 +1352,7 @@ impl Transpiler {
                                     TypeKind::Named(name) if name == "&mut self" => {
                                         quote! { &mut self }
                                     }
-                                    TypeKind::Named(name) if name == "self" => quote! { &self },  // In impl blocks, self defaults to &self
+                                    TypeKind::Named(name) if name == "self" => quote! { &self }, // In impl blocks, self defaults to &self
                                     _ => quote! { &self }, // Default to immutable reference
                                 }
                             }
