@@ -1,8 +1,8 @@
 //! Transpiler from Ruchy AST to Rust code
 
 use crate::frontend::ast::{
-    Attribute, BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, PipelineStage,
-    StringPart, Type, TypeKind, UnaryOp,
+    Attribute, BinaryOp, DataFrameColumn, DataFrameOp, Expr, ExprKind, Literal, MatchArm, 
+    Param, Pattern, PipelineStage, StringPart, Type, TypeKind, UnaryOp,
 };
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
@@ -130,7 +130,8 @@ impl Transpiler {
             } => {
                 self.transpile_list_comprehension(element, variable, iterable, condition.as_deref())
             }
-            ExprKind::DataFrame { columns, rows } => self.transpile_dataframe(columns, rows),
+            ExprKind::DataFrame { columns } => self.transpile_dataframe(columns),
+            ExprKind::DataFrameOperation { source, operation } => self.transpile_dataframe_operation(source, operation),
             ExprKind::For { var, iter, body } => self.transpile_for(var, iter, body),
             ExprKind::While { condition, body } => self.transpile_while(condition, body),
             ExprKind::Range {
@@ -908,7 +909,7 @@ impl Transpiler {
         }
     }
 
-    fn transpile_dataframe(&self, columns: &[String], rows: &[Vec<Expr>]) -> Result<TokenStream> {
+    fn transpile_dataframe(&self, columns: &[DataFrameColumn]) -> Result<TokenStream> {
         // Generate Polars DataFrame creation code
         // df! macro equivalent in Polars:
         // DataFrame::new(vec![
@@ -917,35 +918,73 @@ impl Transpiler {
         // ])
 
         if columns.is_empty() {
-            return Ok(quote! { polars::frame::DataFrame::empty() });
+            return Ok(quote! { DataFrame::empty() });
         }
 
-        // Transpose rows to columns for Polars Series creation
-        let mut series_data: Vec<Vec<TokenStream>> = vec![Vec::new(); columns.len()];
-
-        for row in rows {
-            for (i, value) in row.iter().enumerate() {
-                let value_tokens = self.transpile_expr(value)?;
-                series_data[i].push(value_tokens);
-            }
-        }
-
-        // Create Series for each column
-        let series_tokens: Vec<TokenStream> = columns
+        // Create Series for each column using new column structure
+        let series_tokens: Result<Vec<TokenStream>> = columns
             .iter()
-            .zip(series_data.iter())
-            .map(|(col_name, col_data)| {
-                quote! {
-                    polars::series::Series::new(#col_name, vec![#(#col_data),*])
-                }
+            .map(|col| {
+                let col_name = &col.name;
+                let values: Result<Vec<TokenStream>> = col.values
+                    .iter()
+                    .map(|v| self.transpile_expr(v))
+                    .collect();
+                let values = values?;
+                Ok(quote! {
+                    Series::new(#col_name, vec![#(#values),*])
+                })
             })
             .collect();
+        let series_tokens = series_tokens?;
 
         Ok(quote! {
-            polars::frame::DataFrame::new(vec![
+            DataFrame::new(vec![
                 #(#series_tokens),*
             ]).expect("Failed to create DataFrame")
         })
+    }
+
+    fn transpile_dataframe_operation(&self, source: &Expr, operation: &DataFrameOp) -> Result<TokenStream> {
+        let source_tokens = self.transpile_expr(source)?;
+        
+        match operation {
+            DataFrameOp::Filter(condition) => {
+                let cond_tokens = self.transpile_expr(condition)?;
+                Ok(quote! {
+                    #source_tokens.lazy().filter(#cond_tokens).collect()?
+                })
+            }
+            DataFrameOp::Select(columns) => {
+                let cols: Vec<_> = columns.iter().map(|c| quote! { #c }).collect();
+                Ok(quote! {
+                    #source_tokens.select(&[#(#cols),*])?
+                })
+            }
+            DataFrameOp::GroupBy(columns) => {
+                let cols: Vec<_> = columns.iter().map(|c| quote! { #c }).collect();
+                Ok(quote! {
+                    #source_tokens.groupby(&[#(#cols),*])?
+                })
+            }
+            DataFrameOp::Sort(columns) => {
+                let cols: Vec<_> = columns.iter().map(|c| quote! { #c }).collect();
+                Ok(quote! {
+                    #source_tokens.sort(&[#(#cols),*], false)?
+                })
+            }
+            DataFrameOp::Limit(n) | DataFrameOp::Head(n) => {
+                Ok(quote! {
+                    #source_tokens.head(Some(#n))
+                })
+            }
+            DataFrameOp::Tail(n) => {
+                Ok(quote! {
+                    #source_tokens.tail(Some(#n))
+                })
+            }
+            _ => bail!("Unsupported DataFrame operation")
+        }
     }
 
     fn transpile_import(path: &str, items: &[String]) -> TokenStream {

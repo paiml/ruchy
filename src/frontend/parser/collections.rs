@@ -1,7 +1,7 @@
 //! Collections parsing (lists, dataframes, comprehensions, blocks, object literals)
 
 use super::{ParserState, *};
-use crate::frontend::ast::ObjectField;
+use crate::frontend::ast::{DataFrameColumn, ObjectField};
 
 /// Parse a block expression or object literal
 ///
@@ -519,98 +519,137 @@ pub fn parse_list_comprehension(
 ///
 /// Returns an error if the operation fails
 pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume DataFrame
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume df
 
-    // Support both df![] and df{} syntax
-    let use_bracket_syntax = if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
-        state.tokens.advance(); // consume !
-        state.tokens.expect(&Token::LeftBracket)?;
-        true
-    } else {
-        state.tokens.expect(&Token::LeftBrace)?;
-        false
-    };
+    // Expect ! after df
+    state.tokens.expect(&Token::Bang)?;
+    state.tokens.expect(&Token::LeftBracket)?;
 
-    // Parse column names (first row should be column identifiers)
     let mut columns = Vec::new();
-    let mut rows = Vec::new();
 
-    let end_token = if use_bracket_syntax {
-        Token::RightBracket
-    } else {
-        Token::RightBrace
-    };
+    // Check for empty DataFrame df![]
+    if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+        state.tokens.advance();
+        return Ok(Expr::new(ExprKind::DataFrame { columns }, start_span));
+    }
 
+    // Parse column definitions using the new syntax: df![col => values, ...]
     loop {
-        // Check for end token
-        if let Some((ref t, _)) = state.tokens.peek() {
-            if *t == end_token {
-                break;
-            }
-        }
-
-        if !columns.is_empty() {
-            // Expect semicolon between rows
-            if !matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
-                bail!("Expected ';' between DataFrame rows");
-            }
-            state.tokens.advance(); // consume ;
-
-            // Check for trailing semicolon
-            if let Some((ref t, _)) = state.tokens.peek() {
-                if *t == end_token {
-                    break;
-                }
-            }
-        }
-
-        let mut row = Vec::new();
-
-        if columns.is_empty() {
-            // Parse column names
-            loop {
-                // Check for end of columns
-                if let Some((ref t, _)) = state.tokens.peek() {
-                    if *t == Token::Semicolon || *t == end_token {
-                        break;
-                    }
-                }
-                if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                    columns.push(name.clone());
-                    state.tokens.advance();
-                } else {
-                    bail!("Expected column name");
-                }
-
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                } else {
-                    break;
-                }
-            }
+        // Parse column name
+        let col_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            let name = name.clone();
+            state.tokens.advance();
+            name
         } else {
-            // Parse data values
-            loop {
-                // Check for end of row
-                if let Some((ref t, _)) = state.tokens.peek() {
-                    if *t == Token::Semicolon || *t == end_token {
-                        break;
-                    }
-                }
-                row.push(super::parse_expr_recursive(state)?);
+            bail!("Expected column name in DataFrame literal");
+        };
 
-                // Check for comma or end of row
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                } else {
-                    break;
-                }
-            }
-            rows.push(row);
+        // Check for => or semicolon (legacy syntax support)
+        if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+            // New syntax: col => [values]
+            state.tokens.advance(); // consume =>
+
+            // Parse values - could be a list or individual values
+            let values = if matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
+                // Values are in a list
+                parse_list(state)?
+            } else {
+                // Parse individual expression
+                super::parse_expr_recursive(state)?
+            };
+
+            // Convert to vector of expressions
+            let value_vec = match values.kind {
+                ExprKind::List(exprs) => exprs,
+                _ => vec![values],
+            };
+
+            columns.push(DataFrameColumn {
+                name: col_name,
+                values: value_vec,
+            });
+        } else if matches!(state.tokens.peek(), Some((Token::Comma, _))) 
+               || matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
+               || matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+            // Legacy syntax: just column names, then semicolon and rows
+            // For backward compatibility, create empty column for now
+            columns.push(DataFrameColumn {
+                name: col_name,
+                values: Vec::new(),
+            });
+        } else {
+            bail!("Expected '=>' or ',' after column name in DataFrame literal");
+        }
+
+        // Check for continuation
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        } else if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+            // Legacy row-based syntax
+            state.tokens.advance();
+            // Parse legacy rows if present
+            parse_legacy_dataframe_rows(state, &mut columns)?;
+            break;
+        } else {
+            break;
         }
     }
 
-    state.tokens.expect(&end_token)?;
+    state.tokens.expect(&Token::RightBracket)?;
 
-    Ok(Expr::new(ExprKind::DataFrame { columns, rows }, start_span))
+    Ok(Expr::new(ExprKind::DataFrame { columns }, start_span))
+}
+
+/// Parse legacy row-based DataFrame syntax for backward compatibility
+fn parse_legacy_dataframe_rows(state: &mut ParserState, columns: &mut Vec<DataFrameColumn>) -> Result<()> {
+    let mut rows: Vec<Vec<Expr>> = Vec::new();
+    
+    loop {
+        // Check for end bracket
+        if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+            break;
+        }
+
+        let mut row = Vec::new();
+        
+        // Parse row values
+        loop {
+            if matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
+            || matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+                break;
+            }
+            
+            row.push(super::parse_expr_recursive(state)?);
+            
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance();
+            } else {
+                break;
+            }
+        }
+        
+        if !row.is_empty() {
+            rows.push(row);
+        }
+        
+        // Check for row separator
+        if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+            state.tokens.advance();
+        } else {
+            break;
+        }
+    }
+    
+    // Convert rows to column-based format
+    if !rows.is_empty() {
+        for (col_idx, column) in columns.iter_mut().enumerate() {
+            for row in &rows {
+                if col_idx < row.len() {
+                    column.values.push(row[col_idx].clone());
+                }
+            }
+        }
+    }
+    
+    Ok(())
 }
