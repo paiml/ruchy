@@ -57,9 +57,15 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::LeftParen => {
             state.tokens.advance(); // consume (
-            let expr = super::parse_expr_recursive(state)?;
-            state.tokens.expect(&Token::RightParen)?;
-            Ok(expr)
+            // Check for unit literal ()
+            if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                state.tokens.advance(); // consume )
+                Ok(Expr::new(ExprKind::Literal(Literal::Unit), span_clone))
+            } else {
+                let expr = super::parse_expr_recursive(state)?;
+                state.tokens.expect(&Token::RightParen)?;
+                Ok(expr)
+            }
         }
         Token::Async => {
             // Check if it's async function or async block

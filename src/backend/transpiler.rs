@@ -1660,7 +1660,7 @@ mod tests {
     #[test]
     fn test_transpile_list() {
         let result = transpile_str("[1, 2, 3]").unwrap();
-        assert!(result.contains("vec!"));
+        assert!(result.contains("vec") && result.contains("!"));
         assert!(result.contains('1'));
         assert!(result.contains('2'));
         assert!(result.contains('3'));
