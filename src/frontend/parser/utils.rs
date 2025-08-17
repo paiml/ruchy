@@ -258,7 +258,7 @@ pub fn parse_attributes(state: &mut ParserState) -> Result<Vec<Attribute>> {
 }
 
 /// Parse string interpolation from a string containing {expr} patterns
-pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Result<Vec<StringPart>> {
+pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Vec<StringPart> {
     let mut parts = Vec::new();
     let mut chars = s.chars().peekable();
     let mut current_text = String::new();
@@ -322,5 +322,5 @@ pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Result<V
         parts.push(StringPart::Text(current_text));
     }
 
-    Ok(parts)
+    parts
 }

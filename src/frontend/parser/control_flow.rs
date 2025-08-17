@@ -186,7 +186,7 @@ pub fn parse_while(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
-pub fn parse_break(state: &mut ParserState) -> Result<Expr> {
+pub fn parse_break(state: &mut ParserState) -> Expr {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume break
 
     // Check for optional label
@@ -198,10 +198,10 @@ pub fn parse_break(state: &mut ParserState) -> Result<Expr> {
         None
     };
 
-    Ok(Expr::new(ExprKind::Break { label }, start_span))
+    Expr::new(ExprKind::Break { label }, start_span)
 }
 
-pub fn parse_continue(state: &mut ParserState) -> Result<Expr> {
+pub fn parse_continue(state: &mut ParserState) -> Expr {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume continue
 
     // Check for optional label
@@ -213,7 +213,7 @@ pub fn parse_continue(state: &mut ParserState) -> Result<Expr> {
         None
     };
 
-    Ok(Expr::new(ExprKind::Continue { label }, start_span))
+    Expr::new(ExprKind::Continue { label }, start_span)
 }
 
 pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {

@@ -79,6 +79,7 @@ impl RuchyMCP {
     }
 
     /// Validate JSON value against `MonoType`
+    #[allow(clippy::only_used_in_recursion)]
     fn validate_json_value(&self, value: &Value, expected_type: &MonoType) -> Result<()> {
         match (value, expected_type) {
             (Value::String(_), MonoType::String) 
