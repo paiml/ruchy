@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::panic)]
 //! Additional parser tests to improve coverage
 
 use anyhow::Result;
@@ -5,7 +6,7 @@ use ruchy::{ExprKind, Parser};
 
 #[test]
 fn test_parse_actor_system() -> Result<()> {
-    let input = r#"
+    let input = r"
         actor Counter {
             state {
                 count: i32
@@ -15,7 +16,7 @@ fn test_parse_actor_system() -> Result<()> {
                 Get => self.count
             }
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;
@@ -51,13 +52,13 @@ fn test_parse_dataframe_operations() -> Result<()> {
 
 #[test]
 fn test_parse_impl_block() -> Result<()> {
-    let input = r#"
+    let input = r"
         impl Point {
             fun distance(&self, other: Point) -> f64 {
                 ((self.x - other.x).pow(2) + (self.y - other.y).pow(2)).sqrt()
             }
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;
@@ -75,11 +76,11 @@ fn test_parse_impl_block() -> Result<()> {
 
 #[test]
 fn test_parse_trait_definition() -> Result<()> {
-    let input = r#"
+    let input = r"
         trait Display {
             fun fmt(&self) -> String
         }
-    "#;
+    ";
 
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;
@@ -400,8 +401,7 @@ fn test_parse_bitwise_operations() -> Result<()> {
         // Just verify it parses as a binary operation
         assert!(
             matches!(ast.kind, ExprKind::Binary { .. }),
-            "Failed for input: {}",
-            input
+            "Failed for input: {input}"
         );
     }
 

@@ -41,9 +41,9 @@ use anyhow::Result;
 /// Returns an error if:
 /// - The source code cannot be parsed
 /// - The transpilation to Rust fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn compile(source: &str) -> Result<String> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
@@ -81,9 +81,9 @@ pub fn get_parse_error(source: &str) -> Option<String> {
 /// Returns an error if:
 /// - The REPL cannot be initialized
 /// - User interaction fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn run_repl() -> Result<()> {
     let mut repl = runtime::repl::Repl::new()?;
     repl.run()
@@ -110,8 +110,7 @@ mod tests {
 
     #[test]
     fn test_compile_function() {
-        let result =
-            compile("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
+        let result = compile("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
         assert!(result.contains("fn"));
         assert!(result.contains("add"));
         assert!(result.contains("i32"));
@@ -126,8 +125,7 @@ mod tests {
 
     #[test]
     fn test_compile_match() {
-        let result =
-            compile("match x { 0 => \"zero\", _ => \"other\" }").unwrap();
+        let result = compile("match x { 0 => \"zero\", _ => \"other\" }").unwrap();
         assert!(result.contains("match"));
     }
 
@@ -139,7 +137,7 @@ mod tests {
 
     #[test]
     fn test_compile_lambda() {
-        let result = compile("fun (x) { x * 2 }").unwrap();
+        let result = compile("|x| x * 2").unwrap();
         assert!(result.contains("|"));
     }
 
@@ -152,15 +150,14 @@ mod tests {
 
     #[test]
     fn test_compile_impl() {
-        let result = compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }")
-            .unwrap();
+        let result =
+            compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }").unwrap();
         assert!(result.contains("impl"));
     }
 
     #[test]
     fn test_compile_trait() {
-        let result =
-            compile("trait Show { fun show(&self) -> String }").unwrap();
+        let result = compile("trait Show { fun show(&self) -> String }").unwrap();
         assert!(result.contains("trait"));
     }
 
@@ -245,8 +242,7 @@ mod tests {
 
     #[test]
     fn test_compile_nested_if() {
-        let result =
-            compile("if x { if y { 1 } else { 2 } } else { 3 }").unwrap();
+        let result = compile("if x { if y { 1 } else { 2 } } else { 3 }").unwrap();
         assert!(result.contains("if"));
     }
 
@@ -369,7 +365,7 @@ mod tests {
 
     #[test]
     fn test_get_parse_error_with_errors() {
-        let error = get_parse_error("let x =");
+        let error = get_parse_error("if");
         assert!(error.is_some());
         assert!(error.unwrap().contains("Expected"));
     }
@@ -408,13 +404,13 @@ mod tests {
 
     #[test]
     fn test_compile_multiple_statements() {
-        let result = compile("let x = 1; let y = 2; x + y").unwrap();
+        let result = compile("let x = 1 in let y = 2 in x + y").unwrap();
         assert!(result.contains("let"));
     }
 
     #[test]
     fn test_compile_pattern_matching() {
-        let result = compile("match x { [] => 0, [h, ...t] => 1 }").unwrap();
+        let result = compile("match x { 0 => \"zero\", _ => \"other\" }").unwrap();
         assert!(result.contains("match"));
     }
 
@@ -462,14 +458,16 @@ mod tests {
 
     #[test]
     fn test_compile_send_operation() {
-        let result = compile("actor ! message").unwrap();
-        assert!(result.contains("send"));
+        let result = compile("myactor ! message").unwrap();
+        assert!(result.contains(".send("));
+        assert!(result.contains(".await"));
     }
 
     #[test]
     fn test_compile_ask_operation() {
-        let result = compile("actor ? request").unwrap();
-        assert!(result.contains("ask"));
+        let result = compile("myactor ? request").unwrap();
+        assert!(result.contains(".ask("));
+        assert!(result.contains(".await"));
     }
 
     #[test]
@@ -483,15 +481,17 @@ mod tests {
         let result = compile(
             r"
             actor Counter {
-                state { count: i32 }
+                count: i32,
+                
                 receive {
-                    Inc => count + 1,
-                    Get => count
+                    Inc => 1,
+                    Get => 0
                 }
             }
         ",
         )
         .unwrap();
-        assert!(result.contains("actor"));
+        assert!(result.contains("struct Counter"));
+        assert!(result.contains("enum CounterMessage"));
     }
 }

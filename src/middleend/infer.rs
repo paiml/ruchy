@@ -447,12 +447,15 @@ impl InferenceContext {
         // Create type variables for parameters
         let mut param_types = Vec::new();
         for param in params {
-            let param_ty = if param.ty.kind == TypeKind::Named("Any".to_string()) {
-                // Untyped parameter - create fresh type variable
-                MonoType::Var(self.gen.fresh())
-            } else {
-                // Convert AST type to MonoType
-                Self::ast_type_to_mono_static(&param.ty)?
+            let param_ty = match &param.ty.kind {
+                TypeKind::Named(name) if name == "Any" || name == "_" => {
+                    // Untyped parameter - create fresh type variable
+                    MonoType::Var(self.gen.fresh())
+                }
+                _ => {
+                    // Convert AST type to MonoType
+                    Self::ast_type_to_mono_static(&param.ty)?
+                }
             };
             param_types.push(param_ty.clone());
             self.env = self.env.extend(&param.name, TypeScheme::mono(param_ty));
@@ -898,50 +901,23 @@ mod tests {
     #[test]
     fn test_infer_literals() {
         assert_eq!(infer_str("42").unwrap(), MonoType::Int);
-        assert_eq!(
-            infer_str("3.14").unwrap(),
-            MonoType::Float
-        );
-        assert_eq!(
-            infer_str("true").unwrap(),
-            MonoType::Bool
-        );
-        assert_eq!(
-            infer_str("\"hello\"").unwrap(),
-            MonoType::String
-        );
+        assert_eq!(infer_str("3.14").unwrap(), MonoType::Float);
+        assert_eq!(infer_str("true").unwrap(), MonoType::Bool);
+        assert_eq!(infer_str("\"hello\"").unwrap(), MonoType::String);
     }
 
     #[test]
     fn test_infer_arithmetic() {
-        assert_eq!(
-            infer_str("1 + 2").unwrap(),
-            MonoType::Int
-        );
-        assert_eq!(
-            infer_str("3 * 4").unwrap(),
-            MonoType::Int
-        );
-        assert_eq!(
-            infer_str("5 - 2").unwrap(),
-            MonoType::Int
-        );
+        assert_eq!(infer_str("1 + 2").unwrap(), MonoType::Int);
+        assert_eq!(infer_str("3 * 4").unwrap(), MonoType::Int);
+        assert_eq!(infer_str("5 - 2").unwrap(), MonoType::Int);
     }
 
     #[test]
     fn test_infer_comparison() {
-        assert_eq!(
-            infer_str("1 < 2").unwrap(),
-            MonoType::Bool
-        );
-        assert_eq!(
-            infer_str("3 == 3").unwrap(),
-            MonoType::Bool
-        );
-        assert_eq!(
-            infer_str("true != false").unwrap(),
-            MonoType::Bool
-        );
+        assert_eq!(infer_str("1 < 2").unwrap(), MonoType::Bool);
+        assert_eq!(infer_str("3 == 3").unwrap(), MonoType::Bool);
+        assert_eq!(infer_str("true != false").unwrap(), MonoType::Bool);
     }
 
     #[test]
@@ -958,10 +934,7 @@ mod tests {
 
     #[test]
     fn test_infer_let() {
-        assert_eq!(
-            infer_str("let x = 42 in x + 1").unwrap(),
-            MonoType::Int
-        );
+        assert_eq!(infer_str("let x = 42 in x + 1").unwrap(), MonoType::Int);
         assert_eq!(
             infer_str("let f = 3.14 in let g = 2.71 in f").unwrap(),
             MonoType::Float
@@ -982,8 +955,7 @@ mod tests {
 
     #[test]
     fn test_infer_function() {
-        let result =
-            infer_str("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
+        let result = infer_str("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
         match result {
             MonoType::Function(first_arg, remaining) => {
                 assert!(matches!(first_arg.as_ref(), MonoType::Int));

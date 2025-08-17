@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::panic)]
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::expect_used)]
 #![allow(clippy::panic)] // Tests can panic

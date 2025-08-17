@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::panic)]
 //! Comprehensive tests for the Actor System implementation
 
 #![allow(clippy::unwrap_used)] // Tests are allowed to unwrap

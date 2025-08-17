@@ -2,12 +2,12 @@
 
 use super::{ParserState, *};
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
     state.tokens.expect(&Token::LeftParen)?;
 
@@ -50,12 +50,12 @@ pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
     Ok(params)
 }
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_type_parameters(state: &mut ParserState) -> Result<Vec<String>> {
     state.tokens.expect(&Token::Less)?;
 
@@ -80,12 +80,12 @@ pub fn parse_type_parameters(state: &mut ParserState) -> Result<Vec<String>> {
     Ok(type_params)
 }
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_type(state: &mut ParserState) -> Result<Type> {
     let span = Span { start: 0, end: 0 }; // Simplified for now
 
@@ -169,12 +169,12 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
     }
 }
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume import/use
 
@@ -228,12 +228,12 @@ pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
     Ok(Expr::new(ExprKind::Import { path, items }, span))
 }
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_attributes(state: &mut ParserState) -> Result<Vec<Attribute>> {
     let mut attributes = Vec::new();
 

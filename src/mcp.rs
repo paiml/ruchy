@@ -85,8 +85,8 @@ impl RuchyMCP {
     #[allow(clippy::only_used_in_recursion)]
     fn validate_json_value(&self, value: &Value, expected_type: &MonoType) -> Result<()> {
         match (value, expected_type) {
-            (Value::String(_), MonoType::String) 
-            | (Value::Bool(_), MonoType::Bool) 
+            (Value::String(_), MonoType::String)
+            | (Value::Bool(_), MonoType::Bool)
             | (Value::Null, MonoType::Unit) => Ok(()),
             (Value::Number(n), MonoType::Int) if n.is_i64() => Ok(()),
             (Value::Number(n), MonoType::Float) if n.is_f64() => Ok(()),
@@ -423,10 +423,7 @@ mod tests {
         // Create a dummy RequestHandlerExtra for testing
         let cancellation_token = CancellationToken::new();
         let extra = RequestHandlerExtra::new("test-request".to_string(), cancellation_token);
-        let result = tool
-            .handle(input.clone(), extra)
-            .await
-            .unwrap();
+        let result = tool.handle(input.clone(), extra).await.unwrap();
         assert_eq!(result, input);
     }
 

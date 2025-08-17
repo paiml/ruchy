@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::panic)]
 //! State Machine Property Testing for REPL
 //! Implements comprehensive property-based testing for REPL state transitions,
 //! invariant preservation, and recovery paths as specified in ruchy-repl-testing-todo.yaml

@@ -26,9 +26,9 @@ use crate::frontend::ast::ObjectField;
 /// - Failed to parse any expression within the block
 /// - Missing closing brace
 /// - Invalid object literal syntax when detected as object
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume {
 
@@ -281,9 +281,9 @@ fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Resul
 /// - Missing closing bracket
 /// - Invalid list comprehension syntax
 /// - Malformed comma-separated elements
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_list(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume [
 
@@ -343,6 +343,106 @@ pub fn parse_list(state: &mut ParserState) -> Result<Expr> {
 /// - Failed to parse iterable expression
 /// - Failed to parse condition expression (when present)
 /// - Missing closing bracket
+///
+/// Parse a condition expression for list comprehension that stops at ]
+fn parse_condition_expr(state: &mut ParserState) -> Result<Expr> {
+    // Save the current position in case we need to backtrack
+    let _start_pos = state.tokens.position();
+
+    // Try to parse an expression, but we need to be careful about ]
+    // We'll parse terms and operators manually to avoid consuming ]
+    let mut left = parse_condition_term(state)?;
+
+    // Check for comparison operators
+    while let Some((token, _)) = state.tokens.peek() {
+        match token {
+            Token::Greater
+            | Token::Less
+            | Token::GreaterEqual
+            | Token::LessEqual
+            | Token::EqualEqual
+            | Token::NotEqual
+            | Token::AndAnd
+            | Token::OrOr => {
+                let op = expressions::token_to_binary_op(token).expect("checked: valid op");
+                state.tokens.advance(); // consume operator
+                let right = parse_condition_term(state)?;
+                left = Expr::new(
+                    ExprKind::Binary {
+                        left: Box::new(left),
+                        op,
+                        right: Box::new(right),
+                    },
+                    Span { start: 0, end: 0 },
+                );
+            }
+            _ => break, // Stop at closing bracket or any other token
+        }
+    }
+
+    Ok(left)
+}
+
+/// Parse a single term in a condition expression
+fn parse_condition_term(state: &mut ParserState) -> Result<Expr> {
+    // Parse a primary expression (identifier, literal, call, etc.)
+    let mut expr = expressions::parse_prefix(state)?;
+
+    // Handle postfix operations like method calls and field access
+    while let Some((token, _)) = state.tokens.peek() {
+        match token {
+            Token::Dot => {
+                state.tokens.advance(); // consume .
+                if let Some((Token::Identifier(method), _)) = state.tokens.peek() {
+                    let method = method.clone();
+                    state.tokens.advance();
+
+                    // Check for method call
+                    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                        state.tokens.advance(); // consume (
+                        let mut args = Vec::new();
+
+                        while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                            args.push(super::parse_expr_recursive(state)?);
+                            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                                state.tokens.advance();
+                            } else {
+                                break;
+                            }
+                        }
+
+                        state.tokens.expect(&Token::RightParen)?;
+                        expr = Expr::new(
+                            ExprKind::MethodCall {
+                                receiver: Box::new(expr),
+                                method,
+                                args,
+                            },
+                            Span { start: 0, end: 0 },
+                        );
+                    } else {
+                        // Field access
+                        expr = Expr::new(
+                            ExprKind::FieldAccess {
+                                object: Box::new(expr),
+                                field: method,
+                            },
+                            Span { start: 0, end: 0 },
+                        );
+                    }
+                }
+            }
+            Token::LeftParen => {
+                // Function call
+                expr = functions::parse_call(state, expr)?;
+            }
+            _ => break, // Stop at other tokens
+        }
+    }
+
+    Ok(expr)
+}
+
 pub fn parse_list_comprehension(
     state: &mut ParserState,
     start_span: Span,
@@ -370,7 +470,10 @@ pub fn parse_list_comprehension(
     // Check for optional if condition
     let condition = if matches!(state.tokens.peek(), Some((Token::If, _))) {
         state.tokens.advance(); // consume 'if'
-        Some(Box::new(super::parse_expr_recursive(state)?))
+                                // Parse condition expression - this needs to stop at the closing bracket
+                                // We'll parse a simple expression that stops at ]
+        let cond = parse_condition_expr(state)?;
+        Some(Box::new(cond))
     } else {
         None
     };
@@ -412,19 +515,40 @@ pub fn parse_list_comprehension(
 /// - Failed to parse data value expressions
 /// - Missing closing brace
 /// - Inconsistent number of values per row
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume DataFrame
 
-    state.tokens.expect(&Token::LeftBrace)?;
+    // Support both df![] and df{} syntax
+    let use_bracket_syntax = if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
+        state.tokens.advance(); // consume !
+        state.tokens.expect(&Token::LeftBracket)?;
+        true
+    } else {
+        state.tokens.expect(&Token::LeftBrace)?;
+        false
+    };
 
     // Parse column names (first row should be column identifiers)
     let mut columns = Vec::new();
     let mut rows = Vec::new();
 
-    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+    let end_token = if use_bracket_syntax {
+        Token::RightBracket
+    } else {
+        Token::RightBrace
+    };
+
+    loop {
+        // Check for end token
+        if let Some((ref t, _)) = state.tokens.peek() {
+            if *t == end_token {
+                break;
+            }
+        }
+
         if !columns.is_empty() {
             // Expect semicolon between rows
             if !matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
@@ -432,8 +556,11 @@ pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
             }
             state.tokens.advance(); // consume ;
 
-            if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                break; // trailing semicolon
+            // Check for trailing semicolon
+            if let Some((ref t, _)) = state.tokens.peek() {
+                if *t == end_token {
+                    break;
+                }
             }
         }
 
@@ -441,10 +568,13 @@ pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
 
         if columns.is_empty() {
             // Parse column names
-            while !matches!(
-                state.tokens.peek(),
-                Some((Token::Semicolon | Token::RightBrace, _))
-            ) {
+            loop {
+                // Check for end of columns
+                if let Some((ref t, _)) = state.tokens.peek() {
+                    if *t == Token::Semicolon || *t == end_token {
+                        break;
+                    }
+                }
                 if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
                     columns.push(name.clone());
                     state.tokens.advance();
@@ -460,10 +590,13 @@ pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
             }
         } else {
             // Parse data values
-            while !matches!(
-                state.tokens.peek(),
-                Some((Token::Semicolon | Token::RightBrace, _))
-            ) {
+            loop {
+                // Check for end of row
+                if let Some((ref t, _)) = state.tokens.peek() {
+                    if *t == Token::Semicolon || *t == end_token {
+                        break;
+                    }
+                }
                 row.push(super::parse_expr_recursive(state)?);
 
                 // Check for comma or end of row
@@ -477,7 +610,7 @@ pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
         }
     }
 
-    state.tokens.expect(&Token::RightBrace)?;
+    state.tokens.expect(&end_token)?;
 
     Ok(Expr::new(ExprKind::DataFrame { columns, rows }, start_span))
 }

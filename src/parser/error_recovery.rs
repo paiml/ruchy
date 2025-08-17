@@ -268,7 +268,9 @@ impl RecoveryRules {
             }
             ErrorContext::LetBinding { .. } => RecoveryStrategy::SkipUntilSync,
             ErrorContext::IfExpression { .. } => RecoveryStrategy::DefaultValue,
-            ErrorContext::ArrayLiteral { .. } | ErrorContext::StructLiteral { .. } => RecoveryStrategy::PartialParse,
+            ErrorContext::ArrayLiteral { .. } | ErrorContext::StructLiteral { .. } => {
+                RecoveryStrategy::PartialParse
+            }
             ErrorContext::BinaryOp { .. } => RecoveryStrategy::PanicMode,
         }
     }
@@ -369,6 +371,7 @@ pub trait ErrorRecoverable {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
 

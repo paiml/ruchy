@@ -378,6 +378,7 @@ impl fmt::Display for UnaryOp {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::panic, clippy::expect_used)]
 #[allow(clippy::unwrap_used)]
 #[allow(clippy::panic)]
 mod tests {
@@ -972,9 +973,7 @@ mod tests {
 
         for pattern in patterns {
             match pattern {
-                Pattern::Wildcard => {}
-                Pattern::Literal(_) => {}
-                Pattern::Identifier(_) => {}
+                Pattern::Wildcard | Pattern::Literal(_) | Pattern::Identifier(_) => {}
                 Pattern::List(list) => assert!(!list.is_empty()),
             }
         }
@@ -1023,8 +1022,7 @@ mod tests {
                     assert!(!base.is_empty());
                     assert!(!params.is_empty());
                 }
-                TypeKind::Optional(_) => {}
-                TypeKind::List(_) => {}
+                TypeKind::Optional(_) | TypeKind::List(_) => {}
                 TypeKind::Function { params, .. } => assert!(!params.is_empty()),
             }
         }

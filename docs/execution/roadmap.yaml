@@ -1,0 +1,109 @@
+# PDMT Task Generation Template
+# Ruchy Compiler Implementation Task Hierarchy
+
+metadata:
+  version: "1.0"
+  generator: "PDMT v2.1"
+  project: "Ruchy Compiler"
+  created: "2025-08-17"
+
+# Task Categories and Prefixes
+task_categories:
+  DF: "DataFrame Support"          # Blocking all examples
+  RT: "Result Type"               # Error handling foundation  
+  AC: "Actor System"              # Concurrency model
+  PR: "Parser Infrastructure"     # Core parsing
+  TC: "Type Checking"             # Type inference
+  TR: "Transpilation"             # Code generation
+  QA: "Quality Assurance"         # Testing and validation
+  RF: "Refactoring"               # Technical debt
+
+# Execution Phases (Critical Path)
+phases:
+  P1_Foundation:
+    description: "Core parser and type system"
+    tasks:
+      - PR-001: "Fix let statement parsing (ML-style let..in)"
+      - PR-002: "Fix trait parameter parsing (&self support)"
+      - PR-003: "Fix actor send/ask operator parsing"
+      - TC-001: "Type inference for let bindings"
+      - QA-001: "Fix failing parser tests"
+      
+  P2_DataFrame:
+    description: "DataFrame support implementation"
+    depends_on: ["P1_Foundation"]
+    tasks:
+      - DF-001: "DataFrame literal parsing (df![columns])"
+      - DF-002: "DataFrame type system integration"
+      - DF-003: "Polars transpilation backend"
+      - DF-004: "DataFrame operation pipeline"
+      
+  P3_ErrorHandling:
+    description: "Result type and error propagation"
+    depends_on: ["P1_Foundation"]
+    tasks:
+      - RT-001: "Result<T,E> type support"
+      - RT-002: "? operator precedence"
+      - RT-003: "Error propagation in transpiler"
+      
+  P4_ActorSystem:
+    description: "Concurrency and message passing"
+    depends_on: ["P1_Foundation", "P2_DataFrame"]
+    tasks:
+      - AC-001: "Actor definition syntax"
+      - AC-002: "Message type system"
+      - AC-003: "Mailbox runtime implementation"
+      - AC-004: "Send/ask operation transpilation"
+
+# Performance Requirements
+performance_targets:
+  parsing_throughput: "50MB/s"
+  type_inference_latency: "15ms"
+  transpilation_speed: "100K LOC/s"
+  memory_per_ast_node: "64 bytes"
+
+# Quality Gates
+quality_gates:
+  cyclomatic_complexity: 10
+  cognitive_complexity: 15
+  test_coverage: 80
+  satd_comments: 0
+  clippy_warnings: 0
+
+# Task Templates
+task_template:
+  format: "{category}-{phase}-{number:03d}"
+  required_fields:
+    - specification_section
+    - performance_requirement
+    - test_coverage_target
+    - dependencies
+    
+# Current Critical Issues (Active Sprint)
+current_sprint:
+  name: "Test Suite Stabilization"
+  duration: "1 day"
+  tasks:
+    - id: "QA-P1-001"
+      title: "Fix let statement syntax parsing"
+      priority: "P0"
+      complexity: 3
+      specification: "SPECIFICATION.md Section 2.4"
+      
+    - id: "QA-P1-002" 
+      title: "Fix trait parameter parsing"
+      priority: "P0"
+      complexity: 5
+      specification: "SPECIFICATION.md Section 2.2"
+      
+    - id: "QA-P1-003"
+      title: "Fix actor send/ask transpilation"
+      priority: "P0"
+      complexity: 4
+      specification: "SPECIFICATION.md Section 3.1"
+      
+    - id: "QA-P1-004"
+      title: "Fix error message formatting"
+      priority: "P1"
+      complexity: 2
+      specification: "SPECIFICATION.md Section 7"

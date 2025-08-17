@@ -5,7 +5,6 @@
 //! normalized core form before transpilation.
 
 #![allow(clippy::panic)] // Panics represent genuine errors in normalization
-
 #![allow(clippy::panic)]
 use crate::frontend::ast::{Expr, ExprKind, Literal};
 
@@ -151,7 +150,7 @@ impl AstNormalizer {
 
             ExprKind::Binary { left, op, right } => {
                 use crate::frontend::ast::BinaryOp;
-                
+
                 let l = self.desugar_and_convert(left);
                 let r = self.desugar_and_convert(right);
 
@@ -379,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_normalize_let_statement() {
-        let input = "let x = 10";
+        let input = "let x = 10 in x + 1";
         let mut parser = Parser::new(input);
         let ast = parser.parse().unwrap();
 

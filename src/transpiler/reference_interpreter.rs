@@ -391,7 +391,7 @@ mod tests {
 
     #[test]
     fn test_eval_let_binding() {
-        let input = "let x = 10";
+        let input = "let x = 10 in ()";
         let mut parser = Parser::new(input);
         let ast = parser.parse().unwrap();
 

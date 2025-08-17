@@ -459,6 +459,8 @@ impl ExprKind {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::panic, clippy::expect_used)]
+#[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
 
@@ -467,9 +469,6 @@ mod tests {
         fn test_generated_expr_has_valid_structure(expr in arb_expr()) {
             // Every generated expression should have some content
             match expr.kind {
-                ExprKind::Literal(_) | ExprKind::Identifier(_) => {
-                    // Base cases are always valid
-                }
                 ExprKind::Binary { ref left, ref right, .. } => {
                     // Binary ops should have both operands
                     prop_assert!(left.span.start <= left.span.end);
@@ -480,7 +479,7 @@ mod tests {
                     prop_assert!(elements.len() <= 100); // Reasonable size
                 }
                 _ => {
-                    // Other cases are valid by construction
+                    // All other cases (literals, identifiers, etc.) are valid by construction
                 }
             }
         }
@@ -506,7 +505,6 @@ mod tests {
 
     fn measure_depth(expr: &Expr) -> usize {
         match &expr.kind {
-            ExprKind::Literal(_) | ExprKind::Identifier(_) => 1,
             ExprKind::Binary { left, right, .. } => {
                 1 + measure_depth(left).max(measure_depth(right))
             }
@@ -526,13 +524,12 @@ mod tests {
             ExprKind::Block(exprs) | ExprKind::List(exprs) => {
                 1 + exprs.iter().map(measure_depth).max().unwrap_or(0)
             }
-            _ => 1,
+            _ => 1, // Literals, identifiers, and other leaf expressions
         }
     }
 
     fn expr_size(expr: &Expr) -> usize {
         match &expr.kind {
-            ExprKind::Literal(_) | ExprKind::Identifier(_) => 1,
             ExprKind::Binary { left, right, .. } => 1 + expr_size(left) + expr_size(right),
             ExprKind::Unary { operand, .. } => 1 + expr_size(operand),
             ExprKind::If {
@@ -550,7 +547,7 @@ mod tests {
             ExprKind::Block(exprs) | ExprKind::List(exprs) => {
                 1 + exprs.iter().map(expr_size).sum::<usize>()
             }
-            _ => 1,
+            _ => 1, // Literals, identifiers, and other single-node expressions
         }
     }
 }

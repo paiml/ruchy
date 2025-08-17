@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::panic)]
 #![allow(clippy::unwrap_used)]
 
 use ruchy::{compile, get_parse_error, is_valid_syntax};

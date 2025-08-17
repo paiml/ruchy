@@ -1474,7 +1474,7 @@ impl Transpiler {
 
         // Generate send operation using the actor's message type directly
         Ok(quote! {
-            #actor_tokens.send(#message_tokens).expect("Failed to send message")
+            #actor_tokens.send(#message_tokens).await
         })
     }
 
@@ -1494,7 +1494,7 @@ impl Transpiler {
                 #actor_tokens.ask(
                     #message_tokens,
                     std::time::Duration::from_millis(#timeout_tokens as u64)
-                ).expect("Failed to ask actor")
+                ).await
             })
         } else {
             // Generate ask without timeout (default 5 seconds)
@@ -1502,7 +1502,7 @@ impl Transpiler {
                 #actor_tokens.ask(
                     #message_tokens,
                     std::time::Duration::from_secs(5)
-                ).expect("Failed to ask actor")
+                ).await
             })
         }
     }
@@ -1641,16 +1641,14 @@ mod tests {
 
     #[test]
     fn test_transpile_if() {
-        let result =
-            transpile_str("if x > 0 { positive } else { negative }").unwrap();
+        let result = transpile_str("if x > 0 { positive } else { negative }").unwrap();
         assert!(result.contains("if"));
         assert!(result.contains("else"));
     }
 
     #[test]
     fn test_transpile_function() {
-        let result =
-            transpile_str("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
+        let result = transpile_str("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
         assert!(result.contains("fn add"));
         assert!(result.contains("x: i32"));
         assert!(result.contains("y: i32"));
@@ -1660,7 +1658,7 @@ mod tests {
     #[test]
     fn test_transpile_list() {
         let result = transpile_str("[1, 2, 3]").unwrap();
-        assert!(result.contains("vec") && result.contains("!"));
+        assert!(result.contains("vec") && result.contains('!'));
         assert!(result.contains('1'));
         assert!(result.contains('2'));
         assert!(result.contains('3'));
@@ -1668,8 +1666,7 @@ mod tests {
 
     #[test]
     fn test_transpile_match() {
-        let result =
-            transpile_str(r#"match x { 1 => "one", _ => "other" }"#).unwrap();
+        let result = transpile_str(r#"match x { 1 => "one", _ => "other" }"#).unwrap();
         assert!(result.contains("match"));
         assert!(result.contains('1'));
         assert!(result.contains("\"one\""));
@@ -1722,8 +1719,7 @@ mod tests {
     #[test]
     fn test_transpile_block() {
         // Blocks are part of function bodies or if expressions
-        let result =
-            transpile_str("if true { let x = 1; x + 1 } else { 0 }").unwrap();
+        let result = transpile_str("if true { let x = 1; x + 1 } else { 0 }").unwrap();
         // Block should have braces
         assert!(result.contains('{'));
         assert!(result.contains('}'));
@@ -1758,8 +1754,7 @@ mod tests {
     #[cfg(feature = "dataframe")]
     fn test_transpile_dataframe() {
         // Simple DataFrame
-        let result = transpile_str("df![name, age; \"Alice\", 30; \"Bob\", 25]")
-            .unwrap();
+        let result = transpile_str("df![name, age; \"Alice\", 30; \"Bob\", 25]").unwrap();
         assert!(result.contains("DataFrame::new"));
         assert!(result.contains("Series::new"));
         assert!(result.contains("\"name\""));
@@ -1821,8 +1816,7 @@ mod tests {
         assert!(result.contains("y: i32"));
 
         // Struct with public fields
-        let result = transpile_str("struct Person { pub name: String, pub age: i32 }")
-            .unwrap();
+        let result = transpile_str("struct Person { pub name: String, pub age: i32 }").unwrap();
         assert!(result.contains("struct Person"));
         assert!(result.contains("pub name: String"));
         assert!(result.contains("pub age: i32"));
@@ -1837,8 +1831,7 @@ mod tests {
         assert!(result.contains("y: 20"));
 
         // Struct literal with expressions
-        let result =
-            transpile_str("Person { name: \"Alice\", age: 25 + 5 }").unwrap();
+        let result = transpile_str("Person { name: \"Alice\", age: 25 + 5 }").unwrap();
         assert!(result.contains("Person"));
         assert!(result.contains("name: \"Alice\""));
         assert!(result.contains("age:"));
@@ -1861,21 +1854,18 @@ mod tests {
     #[test]
     fn test_transpile_trait() {
         // Simple trait with instance method
-        let result = transpile_str("trait Display { fun show(self) -> String }")
-            .unwrap();
+        let result = transpile_str("trait Display { fun show(self) -> String }").unwrap();
         assert!(result.contains("trait Display"));
         assert!(result.contains("fn show(&self) -> String"));
 
         // Trait with default implementation
-        let result = transpile_str("trait Greet { fun hello(self) { println(\"Hi\") } }")
-            .unwrap();
+        let result = transpile_str("trait Greet { fun hello(self) { println(\"Hi\") } }").unwrap();
         assert!(result.contains("trait Greet"));
         assert!(result.contains("fn hello(&self)"));
         assert!(result.contains("println"));
 
         // Trait with associated function (no self)
-        let result = transpile_str("trait Factory { fun create(name: String) -> Self }")
-            .unwrap();
+        let result = transpile_str("trait Factory { fun create(name: String) -> Self }").unwrap();
         assert!(result.contains("trait Factory"));
         assert!(result.contains("fn create(name: String) -> Self"));
         assert!(!result.contains("&self"));
@@ -1975,8 +1965,7 @@ mod tests {
     #[test]
     fn test_transpile_async() {
         // Async function
-        let result =
-            transpile_str("async fun fetch() -> String { \"data\" }").unwrap();
+        let result = transpile_str("async fun fetch() -> String { \"data\" }").unwrap();
         assert!(result.contains("async fn fetch"));
         assert!(result.contains("-> String"));
         assert!(result.contains("\"data\""));
@@ -2003,8 +1992,7 @@ mod tests {
     #[test]
     fn test_transpile_impl() {
         // Inherent impl with &self
-        let result = transpile_str("impl Point { fun distance(self) -> f64 { 0.0 } }")
-            .unwrap();
+        let result = transpile_str("impl Point { fun distance(self) -> f64 { 0.0 } }").unwrap();
         assert!(result.contains("impl Point"));
         assert!(result.contains("fn distance(&self) -> f64"));
         assert!(result.contains("0f64")); // Rust formats 0.0 as 0f64
@@ -2018,8 +2006,8 @@ mod tests {
         assert!(result.contains("\"Point\""));
 
         // Static method (no self parameter)
-        let result = transpile_str("impl Point { fun new(x: f64, y: f64) -> Point { Point } }")
-            .unwrap();
+        let result =
+            transpile_str("impl Point { fun new(x: f64, y: f64) -> Point { Point } }").unwrap();
         assert!(result.contains("fn new(x: f64, y: f64) -> Point"));
         assert!(!result.contains("self"));
     }
@@ -2046,8 +2034,7 @@ mod tests {
 
     #[test]
     fn test_transpile_string_interpolation_escaped() {
-        let result =
-            transpile_str("\"Value: {{static}} and {dynamic}\"").unwrap();
+        let result = transpile_str("\"Value: {{static}} and {dynamic}\"").unwrap();
         assert!(result.contains("format!"));
         assert!(result.contains("Value: {{static}} and {}"));
         assert!(result.contains("dynamic"));
@@ -2055,8 +2042,7 @@ mod tests {
 
     #[test]
     fn test_transpile_property_test() {
-        let result = transpile_str("#[property] fun add(x: i32, y: i32) -> i32 { x + y }")
-            .unwrap();
+        let result = transpile_str("#[property] fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
         assert!(result.contains("fn add"));
         assert!(result.contains("mod property_tests"));
         assert!(result.contains("use proptest::prelude::*"));
