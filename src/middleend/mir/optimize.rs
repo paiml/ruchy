@@ -92,15 +92,12 @@ impl DeadCodeElimination {
             Place::Local(local) => {
                 self.live_locals.insert(*local);
             }
-            Place::Field(base, _) => {
+            Place::Field(base, _) | Place::Deref(base) => {
                 self.mark_place_live(base);
             }
             Place::Index(base, index) => {
                 self.mark_place_live(base);
                 self.mark_place_live(index);
-            }
-            Place::Deref(base) => {
-                self.mark_place_live(base);
             }
         }
     }
@@ -108,15 +105,12 @@ impl DeadCodeElimination {
     /// Mark locals in an rvalue as live
     fn mark_rvalue_live(&mut self, rvalue: &Rvalue) {
         match rvalue {
-            Rvalue::Use(operand) => {
+            Rvalue::Use(operand) | Rvalue::UnaryOp(_, operand) => {
                 self.mark_operand_live(operand);
             }
             Rvalue::BinaryOp(_, left, right) => {
                 self.mark_operand_live(left);
                 self.mark_operand_live(right);
-            }
-            Rvalue::UnaryOp(_, operand) => {
-                self.mark_operand_live(operand);
             }
             Rvalue::Ref(_, place) => {
                 self.mark_place_live(place);
@@ -246,9 +240,8 @@ impl DeadCodeElimination {
     fn is_place_live(&self, place: &Place) -> bool {
         match place {
             Place::Local(local) => self.live_locals.contains(local),
-            Place::Field(base, _) => self.is_place_live(base),
+            Place::Field(base, _) | Place::Deref(base) => self.is_place_live(base),
             Place::Index(base, index) => self.is_place_live(base) || self.is_place_live(index),
-            Place::Deref(base) => self.is_place_live(base),
         }
     }
 }
@@ -363,15 +356,12 @@ impl ConstantPropagation {
     /// Propagate constants in an rvalue
     fn propagate_in_rvalue(&self, rvalue: &mut Rvalue) {
         match rvalue {
-            Rvalue::Use(operand) => {
+            Rvalue::Use(operand) | Rvalue::UnaryOp(_, operand) => {
                 self.propagate_in_operand(operand);
             }
             Rvalue::BinaryOp(_, left, right) => {
                 self.propagate_in_operand(left);
                 self.propagate_in_operand(right);
-            }
-            Rvalue::UnaryOp(_, operand) => {
-                self.propagate_in_operand(operand);
             }
             Rvalue::Call(func, args) => {
                 self.propagate_in_operand(func);
