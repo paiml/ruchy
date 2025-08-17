@@ -441,7 +441,11 @@ impl ActorSystem {
 
 impl Default for ActorSystem {
     fn default() -> Self {
-        Self::new().lock().expect("Failed to lock system").clone()
+        Self {
+            actors: HashMap::new(),
+            actor_names: HashMap::new(),
+            next_id: 1,
+        }
     }
 }
 
