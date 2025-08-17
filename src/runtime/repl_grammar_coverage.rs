@@ -235,6 +235,8 @@ impl ExprKind {
             ExprKind::Unary { .. } => "Unary",
             ExprKind::Try { .. } => "Try",
             ExprKind::TryCatch { .. } => "TryCatch",
+            ExprKind::Ok { .. } => "Ok",
+            ExprKind::Err { .. } => "Err",
             ExprKind::Await { .. } => "Await",
             ExprKind::If { .. } => "If",
             ExprKind::Let { .. } => "Let",

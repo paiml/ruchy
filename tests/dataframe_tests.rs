@@ -1,6 +1,6 @@
 //! `DataFrame` functionality tests
 
-#![allow(clippy::unwrap_used)]  // OK in tests
+#![allow(clippy::unwrap_used)] // OK in tests
 
 use ruchy::{compile, get_parse_error, is_valid_syntax};
 
