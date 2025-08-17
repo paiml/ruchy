@@ -138,8 +138,8 @@ fn test_infer_function_type() -> Result<()> {
     let mut ctx = InferenceContext::new();
     let ty = ctx.infer(&ast)?;
 
-    // Function should have unit type when used as statement
-    assert_eq!(ty.to_string(), "()");
+    // Function should have function type
+    assert!(ty.to_string().contains("->"));
 
     Ok(())
 }

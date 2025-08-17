@@ -1026,9 +1026,12 @@ mod tests {
 
         for pattern in patterns {
             match pattern {
-                Pattern::Wildcard | Pattern::Literal(_) | Pattern::Identifier(_) => {}
                 Pattern::List(list) => assert!(!list.is_empty()),
-                Pattern::Ok(_) | Pattern::Err(_) => {} // Result patterns
+                Pattern::Wildcard
+                | Pattern::Literal(_)
+                | Pattern::Identifier(_)
+                | Pattern::Ok(_)
+                | Pattern::Err(_) => {} // Result patterns
             }
         }
     }

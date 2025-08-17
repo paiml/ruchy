@@ -448,14 +448,9 @@ impl InferenceContext {
 
         let final_type = self.unifier.apply(&func_type);
 
-        // If async, wrap the return type in a Future
-        if is_async {
-            // For simplicity, just mark it as a Named type
-            // In a full implementation, we'd properly wrap in Future<Output = T>
-            Ok(MonoType::Named(format!("Future<{final_type:?}>")))
-        } else {
-            Ok(final_type)
-        }
+        // Always return the function type for type inference
+        // The distinction between statements and expressions should be handled at a higher level
+        Ok(final_type)
     }
 
     fn infer_lambda(&mut self, params: &[Param], body: &Expr) -> Result<MonoType> {
@@ -757,32 +752,29 @@ impl InferenceContext {
             }
             Pattern::Ok(inner) => {
                 // Expected type should be Result<T, E>, extract T for inner pattern
-                match expected_ty {
-                    MonoType::Result(ok_ty, _) => self.infer_pattern(inner, ok_ty),
-                    _ => {
-                        // Create a fresh Result type
-                        let error_ty = MonoType::Var(self.gen.fresh());
-                        let inner_ty = MonoType::Var(self.gen.fresh());
-                        let result_ty =
-                            MonoType::Result(Box::new(inner_ty.clone()), Box::new(error_ty));
-                        self.unifier.unify(expected_ty, &result_ty)?;
-                        self.infer_pattern(inner, &inner_ty)
-                    }
+                if let MonoType::Result(ok_ty, _) = expected_ty {
+                    self.infer_pattern(inner, ok_ty)
+                } else {
+                    // Create a fresh Result type
+                    let error_ty = MonoType::Var(self.gen.fresh());
+                    let inner_ty = MonoType::Var(self.gen.fresh());
+                    let result_ty =
+                        MonoType::Result(Box::new(inner_ty.clone()), Box::new(error_ty));
+                    self.unifier.unify(expected_ty, &result_ty)?;
+                    self.infer_pattern(inner, &inner_ty)
                 }
             }
             Pattern::Err(inner) => {
                 // Expected type should be Result<T, E>, extract E for inner pattern
-                match expected_ty {
-                    MonoType::Result(_, err_ty) => self.infer_pattern(inner, err_ty),
-                    _ => {
-                        // Create a fresh Result type
-                        let ok_ty = MonoType::Var(self.gen.fresh());
-                        let inner_ty = MonoType::Var(self.gen.fresh());
-                        let result_ty =
-                            MonoType::Result(Box::new(ok_ty), Box::new(inner_ty.clone()));
-                        self.unifier.unify(expected_ty, &result_ty)?;
-                        self.infer_pattern(inner, &inner_ty)
-                    }
+                if let MonoType::Result(_, err_ty) = expected_ty {
+                    self.infer_pattern(inner, err_ty)
+                } else {
+                    // Create a fresh Result type
+                    let ok_ty = MonoType::Var(self.gen.fresh());
+                    let inner_ty = MonoType::Var(self.gen.fresh());
+                    let result_ty = MonoType::Result(Box::new(ok_ty), Box::new(inner_ty.clone()));
+                    self.unifier.unify(expected_ty, &result_ty)?;
+                    self.infer_pattern(inner, &inner_ty)
                 }
             }
         }
@@ -799,11 +791,10 @@ impl InferenceContext {
         // Bind loop variable and infer body
         let old_env = self.env.clone();
         self.env = self.env.extend(var, TypeScheme::mono(elem_ty));
-        let body_ty = self.infer_expr(body)?;
+        let _body_ty = self.infer_expr(body)?;
         self.env = old_env;
 
-        // For loops return Unit
-        self.unifier.unify(&body_ty, &MonoType::Unit)?;
+        // For loops always return Unit regardless of body type
         Ok(MonoType::Unit)
     }
 

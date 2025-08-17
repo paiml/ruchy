@@ -68,14 +68,13 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                             },
                             span_clone,
                         ));
-                    } else {
-                        return Ok(Expr::new(
-                            ExprKind::Err {
-                                error: Box::new(value),
-                            },
-                            span_clone,
-                        ));
                     }
+                    return Ok(Expr::new(
+                        ExprKind::Err {
+                            error: Box::new(value),
+                        },
+                        span_clone,
+                    ));
                 }
             }
 
