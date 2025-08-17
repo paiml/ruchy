@@ -2,7 +2,7 @@
 
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Param, Pattern, TypeKind, UnaryOp};
 use crate::middleend::environment::TypeEnv;
-use crate::middleend::types::{MonoType, TyVarGenerator, TypeScheme};
+use crate::middleend::types::{MonoType, TyVar, TyVarGenerator, TypeScheme};
 use crate::middleend::unify::Unifier;
 use anyhow::{bail, Result};
 
@@ -14,6 +14,8 @@ pub struct InferenceContext {
     unifier: Unifier,
     /// Type environment
     env: TypeEnv,
+    /// Deferred constraints for later resolution
+    constraints: Vec<(TyVar, TyVar)>,
 }
 
 impl InferenceContext {
@@ -23,6 +25,7 @@ impl InferenceContext {
             gen: TyVarGenerator::new(),
             unifier: Unifier::new(),
             env: TypeEnv::standard(),
+            constraints: Vec::new(),
         }
     }
 
@@ -32,6 +35,7 @@ impl InferenceContext {
             gen: TyVarGenerator::new(),
             unifier: Unifier::new(),
             env,
+            constraints: Vec::new(),
         }
     }
 
@@ -41,7 +45,20 @@ impl InferenceContext {
     ///
     /// Returns an error if type inference fails (type error, undefined variable, etc.)
     pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
-        self.infer_expr(expr)
+        let result = self.infer_expr(expr)?;
+        self.solve_constraints();
+        Ok(result)
+    }
+
+    /// Solve deferred constraints
+    fn solve_constraints(&mut self) {
+        while let Some((a, b)) = self.constraints.pop() {
+            // Convert TyVar to MonoType for unification
+            let ty_a = MonoType::Var(a);
+            let ty_b = MonoType::Var(b);
+            // Ignore failures for now - this is a simplified implementation
+            let _ = self.unifier.unify(&ty_a, &ty_b);
+        }
     }
 
     fn infer_expr(&mut self, expr: &Expr) -> Result<MonoType> {
@@ -790,7 +807,6 @@ impl InferenceContext {
 
         Ok(current_ty)
     }
-
 
     fn ast_type_to_mono_static(ty: &crate::frontend::ast::Type) -> Result<MonoType> {
         use crate::frontend::ast::TypeKind;

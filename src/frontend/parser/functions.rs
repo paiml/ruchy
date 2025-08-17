@@ -4,10 +4,10 @@ use super::{ParserState, *};
 
 pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume fun
-    
+
     // Check for async modifier
     let is_async = false; // TODO: handle async properly
-    
+
     // Parse function name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -16,17 +16,17 @@ pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
     } else {
         "anonymous".to_string()
     };
-    
+
     // Parse optional type parameters <T, U, ...>
     let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
         utils::parse_type_parameters(state)?
     } else {
         Vec::new()
     };
-    
+
     // Parse parameters
     let params = utils::parse_params(state)?;
-    
+
     // Parse return type if present
     let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
         state.tokens.advance(); // consume ->
@@ -34,7 +34,7 @@ pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
     } else {
         None
     };
-    
+
     // Parse body
     let body = super::parse_expr_recursive(state)?;
 
@@ -53,14 +53,14 @@ pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
 
 fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
     let mut params = Vec::new();
-    
+
     // Parse parameters until we hit a pipe or arrow
     loop {
         // Check if we've reached the end of parameters
         if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
             break;
         }
-        
+
         // Parse parameter name
         let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
             let name = n.clone();
@@ -69,7 +69,7 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
         } else {
             break; // No more parameters
         };
-        
+
         // Parse optional type annotation
         let ty = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
             state.tokens.advance(); // consume :
@@ -81,13 +81,13 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
                 span: Span { start: 0, end: 0 },
             }
         };
-        
+
         params.push(Param {
             name,
             ty,
             span: Span { start: 0, end: 0 },
         });
-        
+
         // Check for comma
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
@@ -95,16 +95,16 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
             break;
         }
     }
-    
+
     Ok(params)
 }
 
 pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume ||
-    
+
     // Parse the body
     let body = super::parse_expr_recursive(state)?;
-    
+
     Ok(Expr::new(
         ExprKind::Lambda {
             params: Vec::new(),
@@ -116,11 +116,11 @@ pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
 
 pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume |
-    
+
     // Handle || as a special case for empty parameter lambdas
     if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         state.tokens.advance(); // consume second |
-        // Parse the body
+                                // Parse the body
         let body = super::parse_expr_recursive(state)?;
         return Ok(Expr::new(
             ExprKind::Lambda {
@@ -130,16 +130,16 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
             start_span,
         ));
     }
-    
+
     // Parse parameters between pipes: |x, y|
     let params = parse_lambda_params(state)?;
-    
+
     // Check for empty params with single |
     if !matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         bail!("Expected '|' after lambda parameters");
     }
     state.tokens.advance(); // consume |
-    
+
     // Parse the body
     let body = super::parse_expr_recursive(state)?;
 
@@ -154,20 +154,20 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
 
 pub fn parse_call(state: &mut ParserState, func: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume (
-    
+
     let mut args = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         args.push(super::parse_expr_recursive(state)?);
-        
+
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
         } else {
             break;
         }
     }
-    
-    state.tokens.expect(Token::RightParen)?;
-    
+
+    state.tokens.expect(&Token::RightParen)?;
+
     Ok(Expr {
         kind: ExprKind::Call {
             func: Box::new(func),
@@ -190,7 +190,7 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
             attributes: Vec::new(),
         });
     }
-    
+
     // Parse method name
     let method = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         let name = name.clone();
@@ -199,25 +199,25 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
     } else {
         bail!("Expected method name or 'await' after '.'");
     };
-    
+
     // Check if it's a method call (with parentheses) or field access
     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
         // Method call
         state.tokens.advance(); // consume (
-        
+
         let mut args = Vec::new();
         while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
             args.push(super::parse_expr_recursive(state)?);
-            
+
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance(); // consume comma
             } else {
                 break;
             }
         }
-        
-        state.tokens.expect(Token::RightParen)?;
-        
+
+        state.tokens.expect(&Token::RightParen)?;
+
         Ok(Expr {
             kind: ExprKind::MethodCall {
                 receiver: Box::new(receiver),

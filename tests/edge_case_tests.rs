@@ -1,7 +1,7 @@
 //! Edge case tests to improve coverage
 
-use ruchy::{Parser, compile, is_valid_syntax, get_parse_error};
 use anyhow::Result;
+use ruchy::{compile, get_parse_error, is_valid_syntax, Parser};
 
 #[test]
 fn test_empty_list() -> Result<()> {
@@ -56,7 +56,10 @@ fn test_empty_block() -> Result<()> {
     let mut parser = Parser::new("{ }");
     let ast = parser.parse()?;
     // Empty block should be unit literal
-    assert!(matches!(ast.kind, ruchy::ExprKind::Literal(ruchy::Literal::Unit)));
+    assert!(matches!(
+        ast.kind,
+        ruchy::ExprKind::Literal(ruchy::Literal::Unit)
+    ));
     Ok(())
 }
 
@@ -279,7 +282,7 @@ fn test_parse_all_literal_types() -> Result<()> {
         ("true", ruchy::Literal::Bool(true)),
         ("false", ruchy::Literal::Bool(false)),
     ];
-    
+
     for (input, expected) in literals {
         let mut parser = Parser::new(input);
         let ast = parser.parse()?;
@@ -290,40 +293,45 @@ fn test_parse_all_literal_types() -> Result<()> {
             _ => panic!("Expected literal for input: {}", input),
         }
     }
-    
+
     Ok(())
 }
 
 #[test]
 fn test_parse_all_binary_operators() -> Result<()> {
     let operators = vec![
-        "+", "-", "*", "/", "%", "**",
-        "==", "!=", "<", "<=", ">", ">=",
-        "&&", "||", "&", "|", "^", "<<", ">>"
+        "+", "-", "*", "/", "%", "**", "==", "!=", "<", "<=", ">", ">=", "&&", "||", "&", "|", "^",
+        "<<", ">>",
     ];
-    
+
     for op in operators {
         let input = format!("a {} b", op);
         let mut parser = Parser::new(&input);
         let ast = parser.parse()?;
-        assert!(matches!(ast.kind, ruchy::ExprKind::Binary { .. }), 
-                "Failed for operator: {}", op);
+        assert!(
+            matches!(ast.kind, ruchy::ExprKind::Binary { .. }),
+            "Failed for operator: {}",
+            op
+        );
     }
-    
+
     Ok(())
 }
 
 #[test]
 fn test_parse_all_unary_operators() -> Result<()> {
     let operators = vec!["-", "!"];
-    
+
     for op in operators {
         let input = format!("{}x", op);
         let mut parser = Parser::new(&input);
         let ast = parser.parse()?;
-        assert!(matches!(ast.kind, ruchy::ExprKind::Unary { .. }), 
-                "Failed for operator: {}", op);
+        assert!(
+            matches!(ast.kind, ruchy::ExprKind::Unary { .. }),
+            "Failed for operator: {}",
+            op
+        );
     }
-    
+
     Ok(())
 }

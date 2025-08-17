@@ -1,6 +1,9 @@
 //! MIR Builder - Provides a convenient API for constructing MIR
 
-use super::types::*;
+use super::types::{
+    BasicBlock, BinOp, BlockId, CastKind, Constant, Function, Local, LocalDecl, Mutability,
+    Operand, Place, Rvalue, Statement, Terminator, Type, UnOp,
+};
 use std::collections::HashMap;
 
 /// Builder for constructing MIR programs
@@ -44,7 +47,7 @@ impl MirBuilder {
 
     /// Add a parameter to the current function
     pub fn add_param(&mut self, name: String, ty: Type) -> Local {
-        let local = self.alloc_local(ty.clone(), true, Some(name.clone()));
+        let local = self.alloc_local(ty, true, Some(name.clone()));
         if let Some(ref mut func) = self.current_function {
             func.params.push(local);
         }
@@ -56,22 +59,22 @@ impl MirBuilder {
     pub fn alloc_local(&mut self, ty: Type, mutable: bool, name: Option<String>) -> Local {
         let id = Local(self.next_local);
         self.next_local += 1;
-        
+
         let decl = LocalDecl {
             id,
             ty,
             mutable,
             name: name.clone(),
         };
-        
+
         if let Some(ref mut func) = self.current_function {
             func.locals.push(decl);
         }
-        
+
         if let Some(n) = name {
             self.local_map.insert(n, id);
         }
-        
+
         id
     }
 
@@ -84,7 +87,7 @@ impl MirBuilder {
     pub fn new_block(&mut self) -> BlockId {
         let id = BlockId(self.next_block);
         self.next_block += 1;
-        
+
         if let Some(ref mut func) = self.current_function {
             func.blocks.push(BasicBlock {
                 id,
@@ -92,7 +95,7 @@ impl MirBuilder {
                 terminator: Terminator::Unreachable,
             });
         }
-        
+
         id
     }
 
@@ -143,12 +146,21 @@ impl MirBuilder {
     }
 
     /// Build an if terminator
-    pub fn branch(&mut self, block: BlockId, cond: Operand, then_block: BlockId, else_block: BlockId) {
-        self.set_terminator(block, Terminator::If {
-            condition: cond,
-            then_block,
-            else_block,
-        });
+    pub fn branch(
+        &mut self,
+        block: BlockId,
+        cond: Operand,
+        then_block: BlockId,
+        else_block: BlockId,
+    ) {
+        self.set_terminator(
+            block,
+            Terminator::If {
+                condition: cond,
+                then_block,
+                else_block,
+            },
+        );
     }
 
     /// Build a return terminator
@@ -157,110 +169,109 @@ impl MirBuilder {
     }
 
     /// Build a call terminator
-    pub fn call_term(&mut self, 
-                     block: BlockId, 
-                     func: Operand, 
-                     args: Vec<Operand>, 
-                     dest: Option<(Place, BlockId)>) {
-        self.set_terminator(block, Terminator::Call {
-            func,
-            args,
-            destination: dest,
-        });
+    pub fn call_term(
+        &mut self,
+        block: BlockId,
+        func: Operand,
+        args: Vec<Operand>,
+        dest: Option<(Place, BlockId)>,
+    ) {
+        self.set_terminator(
+            block,
+            Terminator::Call {
+                func,
+                args,
+                destination: dest,
+            },
+        );
     }
 
     /// Build a switch terminator
-    pub fn switch(&mut self, 
-                  block: BlockId,
-                  discriminant: Operand,
-                  targets: Vec<(Constant, BlockId)>,
-                  default: Option<BlockId>) {
-        self.set_terminator(block, Terminator::Switch {
-            discriminant,
-            targets,
-            default,
-        });
+    pub fn switch(
+        &mut self,
+        block: BlockId,
+        discriminant: Operand,
+        targets: Vec<(Constant, BlockId)>,
+        default: Option<BlockId>,
+    ) {
+        self.set_terminator(
+            block,
+            Terminator::Switch {
+                discriminant,
+                targets,
+                default,
+            },
+        );
     }
 }
 
 /// Helper functions for creating common patterns
 impl MirBuilder {
     /// Create a binary operation and assign to a local
-    pub fn binary_op(&mut self, 
-                     block: BlockId,
-                     dest: Local,
-                     op: BinOp,
-                     left: Operand,
-                     right: Operand) {
+    pub fn binary_op(
+        &mut self,
+        block: BlockId,
+        dest: Local,
+        op: BinOp,
+        left: Operand,
+        right: Operand,
+    ) {
         let rvalue = Rvalue::BinaryOp(op, left, right);
         self.assign(block, Place::Local(dest), rvalue);
     }
 
     /// Create a unary operation and assign to a local
-    pub fn unary_op(&mut self,
-                    block: BlockId,
-                    dest: Local,
-                    op: UnOp,
-                    operand: Operand) {
+    pub fn unary_op(&mut self, block: BlockId, dest: Local, op: UnOp, operand: Operand) {
         let rvalue = Rvalue::UnaryOp(op, operand);
         self.assign(block, Place::Local(dest), rvalue);
     }
 
     /// Create a function call and assign result to a local
-    pub fn call(&mut self,
-                block: BlockId,
-                dest: Local,
-                func: Operand,
-                args: Vec<Operand>) -> BlockId {
+    pub fn call(
+        &mut self,
+        block: BlockId,
+        dest: Local,
+        func: Operand,
+        args: Vec<Operand>,
+    ) -> BlockId {
         let next_block = self.new_block();
         self.call_term(block, func, args, Some((Place::Local(dest), next_block)));
         next_block
     }
 
     /// Create a cast and assign to a local
-    pub fn cast(&mut self,
-                block: BlockId,
-                dest: Local,
-                kind: CastKind,
-                operand: Operand,
-                target_ty: Type) {
+    pub fn cast(
+        &mut self,
+        block: BlockId,
+        dest: Local,
+        kind: CastKind,
+        operand: Operand,
+        target_ty: Type,
+    ) {
         let rvalue = Rvalue::Cast(kind, operand, target_ty);
         self.assign(block, Place::Local(dest), rvalue);
     }
 
     /// Create a reference and assign to a local
-    pub fn ref_(&mut self,
-                block: BlockId,
-                dest: Local,
-                mutability: Mutability,
-                place: Place) {
+    pub fn ref_(&mut self, block: BlockId, dest: Local, mutability: Mutability, place: Place) {
         let rvalue = Rvalue::Ref(mutability, place);
         self.assign(block, Place::Local(dest), rvalue);
     }
 
     /// Move a value from one place to another
-    pub fn move_(&mut self,
-                 block: BlockId,
-                 dest: Place,
-                 source: Place) {
+    pub fn move_(&mut self, block: BlockId, dest: Place, source: Place) {
         let rvalue = Rvalue::Use(Operand::Move(source));
         self.assign(block, dest, rvalue);
     }
 
     /// Copy a value from one place to another
-    pub fn copy(&mut self,
-                block: BlockId,
-                dest: Place,
-                source: Place) {
+    pub fn copy(&mut self, block: BlockId, dest: Place, source: Place) {
         let rvalue = Rvalue::Use(Operand::Copy(source));
         self.assign(block, dest, rvalue);
     }
 
     /// Assign a constant to a place
-    pub fn const_(&mut self,
-                  block: BlockId,
-                  dest: Place,
-                  constant: Constant) {
+    pub fn const_(&mut self, block: BlockId, dest: Place, constant: Constant) {
         let rvalue = Rvalue::Use(Operand::Constant(constant));
         self.assign(block, dest, rvalue);
     }
@@ -280,26 +291,26 @@ mod tests {
     #[test]
     fn test_build_simple_function() {
         let mut builder = MirBuilder::new();
-        
+
         // Build: fn add(a: i32, b: i32) -> i32 { a + b }
         builder.start_function("add".to_string(), Type::I32);
-        
+
         let a = builder.add_param("a".to_string(), Type::I32);
         let b = builder.add_param("b".to_string(), Type::I32);
-        
+
         let entry = builder.new_block();
         let result = builder.alloc_local(Type::I32, false, Some("result".to_string()));
-        
+
         builder.storage_live(entry, result);
         builder.binary_op(
             entry,
             result,
             BinOp::Add,
             Operand::Copy(Place::Local(a)),
-            Operand::Copy(Place::Local(b))
+            Operand::Copy(Place::Local(b)),
         );
         builder.return_(entry, Some(Operand::Move(Place::Local(result))));
-        
+
         let func = builder.finish_function().unwrap();
         assert_eq!(func.name, "add");
         assert_eq!(func.params.len(), 2);
@@ -309,17 +320,17 @@ mod tests {
     #[test]
     fn test_build_if_else() {
         let mut builder = MirBuilder::new();
-        
+
         // Build: fn abs(x: i32) -> i32 { if x < 0 { -x } else { x } }
         builder.start_function("abs".to_string(), Type::I32);
-        
+
         let x = builder.add_param("x".to_string(), Type::I32);
-        
+
         let entry = builder.new_block();
         let then_block = builder.new_block();
         let else_block = builder.new_block();
         let merge_block = builder.new_block();
-        
+
         // Check if x < 0
         let cond = builder.alloc_local(Type::Bool, false, None);
         builder.binary_op(
@@ -327,21 +338,26 @@ mod tests {
             cond,
             BinOp::Lt,
             Operand::Copy(Place::Local(x)),
-            Operand::Constant(Constant::Int(0, Type::I32))
+            Operand::Constant(Constant::Int(0, Type::I32)),
         );
-        builder.branch(entry, Operand::Copy(Place::Local(cond)), then_block, else_block);
-        
+        builder.branch(
+            entry,
+            Operand::Copy(Place::Local(cond)),
+            then_block,
+            else_block,
+        );
+
         // Then branch: -x
         let neg_x = builder.alloc_local(Type::I32, false, None);
         builder.unary_op(then_block, neg_x, UnOp::Neg, Operand::Copy(Place::Local(x)));
         builder.goto(then_block, merge_block);
-        
+
         // Else branch: x
         builder.goto(else_block, merge_block);
-        
+
         // Merge and return
         builder.return_(merge_block, Some(Operand::Copy(Place::Local(x))));
-        
+
         let func = builder.finish_function().unwrap();
         assert_eq!(func.blocks.len(), 4);
     }

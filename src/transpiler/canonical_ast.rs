@@ -405,11 +405,7 @@ mod tests {
 
     #[test]
     fn test_idempotent_normalization() {
-        let inputs = vec![
-            "42",
-            "let x = 10 in x + 1",
-            "fun f(x) { x * 2 }",
-        ];
+        let inputs = vec!["42", "let x = 10 in x + 1", "fun f(x) { x * 2 }"];
 
         for input in inputs {
             let mut parser = Parser::new(input);

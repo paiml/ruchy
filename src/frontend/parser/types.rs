@@ -4,7 +4,7 @@ use super::{ParserState, *};
 
 pub fn parse_struct(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume struct
-    
+
     // Parse struct name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -13,17 +13,17 @@ pub fn parse_struct(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected struct name");
     };
-    
+
     // Parse optional type parameters <T, U, ...>
     let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
         utils::parse_type_parameters(state)?
     } else {
         Vec::new()
     };
-    
+
     // Parse struct fields
-    state.tokens.expect(Token::LeftBrace)?;
-    
+    state.tokens.expect(&Token::LeftBrace)?;
+
     let mut fields = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Parse field visibility (pub is optional)
@@ -33,7 +33,7 @@ pub fn parse_struct(state: &mut ParserState) -> Result<Expr> {
         } else {
             false
         };
-        
+
         // Parse field name
         let field_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             let name = name.clone();
@@ -42,17 +42,17 @@ pub fn parse_struct(state: &mut ParserState) -> Result<Expr> {
         } else {
             bail!("Expected field name");
         };
-        
+
         // Parse type annotation
-        state.tokens.expect(Token::Colon)?;
+        state.tokens.expect(&Token::Colon)?;
         let ty = utils::parse_type(state)?;
-        
+
         fields.push(StructField {
             name: field_name,
             ty,
             is_pub,
         });
-        
+
         // Handle comma or end of struct
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
@@ -60,8 +60,8 @@ pub fn parse_struct(state: &mut ParserState) -> Result<Expr> {
             break;
         }
     }
-    
-    state.tokens.expect(Token::RightBrace)?;
+
+    state.tokens.expect(&Token::RightBrace)?;
 
     Ok(Expr::new(
         ExprKind::Struct {
@@ -73,9 +73,13 @@ pub fn parse_struct(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
-pub fn parse_struct_literal(state: &mut ParserState, name: String, start_span: Span) -> Result<Expr> {
-    state.tokens.expect(Token::LeftBrace)?;
-    
+pub fn parse_struct_literal(
+    state: &mut ParserState,
+    name: String,
+    start_span: Span,
+) -> Result<Expr> {
+    state.tokens.expect(&Token::LeftBrace)?;
+
     let mut fields = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Parse field name
@@ -86,13 +90,13 @@ pub fn parse_struct_literal(state: &mut ParserState, name: String, start_span: S
         } else {
             bail!("Expected field name");
         };
-        
+
         // Parse colon and value
-        state.tokens.expect(Token::Colon)?;
+        state.tokens.expect(&Token::Colon)?;
         let value = super::parse_expr_recursive(state)?;
-        
+
         fields.push((field_name, value));
-        
+
         // Handle comma or end of struct literal
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
@@ -100,15 +104,18 @@ pub fn parse_struct_literal(state: &mut ParserState, name: String, start_span: S
             break;
         }
     }
-    
-    state.tokens.expect(Token::RightBrace)?;
 
-    Ok(Expr::new(ExprKind::StructLiteral { name, fields }, start_span))
+    state.tokens.expect(&Token::RightBrace)?;
+
+    Ok(Expr::new(
+        ExprKind::StructLiteral { name, fields },
+        start_span,
+    ))
 }
 
 pub fn parse_trait(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume trait
-    
+
     // Parse trait name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -117,30 +124,33 @@ pub fn parse_trait(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected trait name");
     };
-    
+
     // Parse optional type parameters <T, U, ...>
     let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
         utils::parse_type_parameters(state)?
     } else {
         Vec::new()
     };
-    
+
     // Parse trait body
-    state.tokens.expect(Token::LeftBrace)?;
-    
+    state.tokens.expect(&Token::LeftBrace)?;
+
     let mut methods = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Parse method
         let method = parse_trait_method(state)?;
         methods.push(method);
-        
+
         // Handle semicolon or comma
-        if matches!(state.tokens.peek(), Some((Token::Semicolon | Token::Comma, _))) {
+        if matches!(
+            state.tokens.peek(),
+            Some((Token::Semicolon | Token::Comma, _))
+        ) {
             state.tokens.advance();
         }
     }
-    
-    state.tokens.expect(Token::RightBrace)?;
+
+    state.tokens.expect(&Token::RightBrace)?;
 
     Ok(Expr::new(
         ExprKind::Trait {
@@ -154,8 +164,8 @@ pub fn parse_trait(state: &mut ParserState) -> Result<Expr> {
 
 pub fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
     // Parse fn keyword
-    state.tokens.expect(Token::Fun)?;
-    
+    state.tokens.expect(&Token::Fun)?;
+
     // Parse method name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -164,10 +174,10 @@ pub fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
     } else {
         bail!("Expected method name");
     };
-    
+
     // Parse parameters
     let params = utils::parse_params(state)?;
-    
+
     // Parse return type if present
     let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
         state.tokens.advance(); // consume ->
@@ -175,7 +185,7 @@ pub fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
     } else {
         None
     };
-    
+
     // Check for method body (default implementation) or just signature
     let body = if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
         Some(Box::new(super::parse_expr_recursive(state)?))
@@ -193,53 +203,54 @@ pub fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
 
 pub fn parse_impl(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume impl
-    
+
     // Parse optional type parameters <T, U, ...>
     let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
         utils::parse_type_parameters(state)?
     } else {
         Vec::new()
     };
-    
+
     // Parse trait name (optional) and for_type
-    let (trait_name, for_type) = if let Some((Token::Identifier(first_name), _)) = state.tokens.peek() {
-        let first_name = first_name.clone();
-        state.tokens.advance();
-        
-        if matches!(state.tokens.peek(), Some((Token::For, _))) {
-            // impl TraitName for TypeName
-            state.tokens.advance(); // consume for
-            if let Some((Token::Identifier(type_name), _)) = state.tokens.peek() {
-                let type_name = type_name.clone();
-                state.tokens.advance();
-                (Some(first_name), type_name)
+    let (trait_name, for_type) =
+        if let Some((Token::Identifier(first_name), _)) = state.tokens.peek() {
+            let first_name = first_name.clone();
+            state.tokens.advance();
+
+            if matches!(state.tokens.peek(), Some((Token::For, _))) {
+                // impl TraitName for TypeName
+                state.tokens.advance(); // consume for
+                if let Some((Token::Identifier(type_name), _)) = state.tokens.peek() {
+                    let type_name = type_name.clone();
+                    state.tokens.advance();
+                    (Some(first_name), type_name)
+                } else {
+                    bail!("Expected type name after 'for'");
+                }
             } else {
-                bail!("Expected type name after 'for'");
+                // impl TypeName (inherent impl)
+                (None, first_name)
             }
         } else {
-            // impl TypeName (inherent impl)
-            (None, first_name)
-        }
-    } else {
-        bail!("Expected identifier after 'impl'");
-    };
-    
+            bail!("Expected identifier after 'impl'");
+        };
+
     // Parse impl body
-    state.tokens.expect(Token::LeftBrace)?;
-    
+    state.tokens.expect(&Token::LeftBrace)?;
+
     let mut methods = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Parse method implementation
         let method = parse_impl_method(state)?;
         methods.push(method);
-        
+
         // Skip optional semicolons
         if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
             state.tokens.advance();
         }
     }
-    
-    state.tokens.expect(Token::RightBrace)?;
+
+    state.tokens.expect(&Token::RightBrace)?;
 
     Ok(Expr::new(
         ExprKind::Impl {
@@ -254,8 +265,8 @@ pub fn parse_impl(state: &mut ParserState) -> Result<Expr> {
 
 pub fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
     // Parse fn keyword
-    state.tokens.expect(Token::Fun)?;
-    
+    state.tokens.expect(&Token::Fun)?;
+
     // Parse method name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -264,10 +275,10 @@ pub fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
     } else {
         bail!("Expected method name");
     };
-    
+
     // Parse parameters
     let params = utils::parse_params(state)?;
-    
+
     // Parse return type if present
     let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
         state.tokens.advance(); // consume ->
@@ -275,7 +286,7 @@ pub fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
     } else {
         None
     };
-    
+
     // Parse method body (required for impl)
     let body = super::parse_expr_recursive(state)?;
 

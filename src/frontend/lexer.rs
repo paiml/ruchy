@@ -313,14 +313,24 @@ impl<'a> TokenStream<'a> {
         }
     }
 
+    pub fn peek_nth_is_colon(&mut self, n: usize) -> bool {
+        if n == 0 {
+            self.peek()
+                .is_some_and(|(t, _)| matches!(t, Token::Colon))
+        } else {
+            self.peek_nth(n)
+                .is_some_and(|(t, _)| matches!(t, Token::Colon))
+        }
+    }
+
     /// Expect a specific token and return its span
     ///
     /// # Errors
     ///
     /// Returns an error if the next token doesn't match the expected token or if we reached EOF
-    pub fn expect(&mut self, expected: Token) -> anyhow::Result<Span> {
+    pub fn expect(&mut self, expected: &Token) -> anyhow::Result<Span> {
         match self.next() {
-            Some((token, span)) if token == expected => Ok(span),
+            Some((token, span)) if token == *expected => Ok(span),
             Some((token, _)) => anyhow::bail!("Expected {:?}, found {:?}", expected, token),
             None => anyhow::bail!("Expected {:?}, found EOF", expected),
         }

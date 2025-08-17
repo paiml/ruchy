@@ -1,14 +1,17 @@
 //! Middle Intermediate Representation (MIR) module
 
-mod types;
-mod lower;
 mod builder;
+mod lower;
 mod optimize;
+mod types;
 
-pub use types::*;
-pub use lower::LoweringContext;
 pub use builder::MirBuilder;
-pub use optimize::{optimize_function, optimize_program, DeadCodeElimination, ConstantPropagation, CommonSubexpressionElimination};
+pub use lower::LoweringContext;
+pub use optimize::{
+    optimize_function, optimize_program, CommonSubexpressionElimination, ConstantPropagation,
+    DeadCodeElimination,
+};
+pub use types::*;
 
 // Re-export main types
-pub use types::{Program, Function, BasicBlock, Statement, Terminator, Type};
+pub use types::{BasicBlock, Function, Program, Statement, Terminator, Type};

@@ -6,14 +6,14 @@
 
 // Re-export all pmcp types except Result to avoid conflicts
 pub use pmcp::{
-    async_trait, Client, Server, ServerCapabilities, ClientCapabilities,
-    Transport, StdioTransport, ToolHandler, PromptHandler, ResourceHandler,
-    RequestHandlerExtra, Error as PmcpError
+    async_trait, Client, ClientCapabilities, Error as PmcpError, PromptHandler,
+    RequestHandlerExtra, ResourceHandler, Server, ServerCapabilities, StdioTransport, ToolHandler,
+    Transport,
 };
 
 use crate::middleend::types::MonoType;
 use crate::runtime::ActorSystem;
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -58,7 +58,7 @@ impl RuchyMCP {
     ///
     /// let mut mcp = RuchyMCP::new();
     /// mcp.register_type("count", ruchy::middleend::infer::MonoType::Int);
-    /// 
+    ///
     /// let value = json!(42);
     /// assert!(mcp.validate_against_type(&value, "count").is_ok());
     /// ```
@@ -76,7 +76,7 @@ impl RuchyMCP {
         }
     }
 
-    /// Validate JSON value against MonoType
+    /// Validate JSON value against `MonoType`
     fn validate_json_value(&self, value: &Value, expected_type: &MonoType) -> Result<()> {
         match (value, expected_type) {
             (Value::String(_), MonoType::String) => Ok(()),
@@ -128,9 +128,11 @@ impl RuchyMCP {
             .version(version)
             .capabilities(ServerCapabilities::default())
             .build()?;
-        
+
         self.server = Some(server);
-        self.server.as_mut().ok_or_else(|| anyhow::anyhow!("Server was just set but is None"))
+        self.server
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("Server was just set but is None"))
     }
 
     /// Create a client with Ruchy integration
@@ -185,11 +187,7 @@ pub struct RuchyMCPTool {
 
 impl RuchyMCPTool {
     /// Create a new Ruchy MCP tool
-    pub fn new<F>(
-        name: String,
-        description: String,
-        handler: F,
-    ) -> Self 
+    pub fn new<F>(name: String, description: String, handler: F) -> Self
     where
         F: Fn(Value) -> Result<Value> + Send + Sync + 'static,
     {
@@ -225,8 +223,7 @@ impl ToolHandler for RuchyMCPTool {
         }
 
         // Call the handler
-        let result = (self.handler)(args)
-            .map_err(|e| PmcpError::internal(e.to_string()))?;
+        let result = (self.handler)(args).map_err(|e| PmcpError::internal(e.to_string()))?;
 
         // Validate output type if specified
         if let Some(ref _output_type) = self.output_type {
@@ -247,9 +244,10 @@ pub fn create_ruchy_tools() -> Vec<(&'static str, RuchyMCPTool)> {
                 "ruchy-eval".to_string(),
                 "Evaluate Ruchy expressions with type safety".to_string(),
                 |args| {
-                    let expression = args["expression"].as_str()
+                    let expression = args["expression"]
+                        .as_str()
                         .ok_or_else(|| anyhow!("Missing 'expression' field"))?;
-                    
+
                     // This would integrate with Ruchy's REPL/evaluation system
                     Ok(serde_json::json!({
                         "result": format!("Evaluated: {}", expression),
@@ -266,9 +264,10 @@ pub fn create_ruchy_tools() -> Vec<(&'static str, RuchyMCPTool)> {
                 "ruchy-transpile".to_string(),
                 "Transpile Ruchy code to Rust".to_string(),
                 |args| {
-                    let code = args["code"].as_str()
+                    let code = args["code"]
+                        .as_str()
                         .ok_or_else(|| anyhow!("Missing 'code' field"))?;
-                    
+
                     // This would integrate with Ruchy's transpiler
                     Ok(serde_json::json!({
                         "rust_code": format!("// Transpiled from Ruchy\n{}", code),
@@ -285,9 +284,10 @@ pub fn create_ruchy_tools() -> Vec<(&'static str, RuchyMCPTool)> {
                 "ruchy-type-check".to_string(),
                 "Type check Ruchy expressions".to_string(),
                 |args| {
-                    let expression = args["expression"].as_str()
+                    let expression = args["expression"]
+                        .as_str()
                         .ok_or_else(|| anyhow!("Missing 'expression' field"))?;
-                    
+
                     // This would integrate with Ruchy's type inference system
                     Ok(serde_json::json!({
                         "inferred_type": "String",
@@ -352,7 +352,7 @@ pub async fn create_ruchy_mcp_client() -> Result<Client<StdioTransport>> {
     // Use stdio transport by default
     let transport = StdioTransport::new();
     let client = Client::new(transport);
-    
+
     Ok(client)
 }
 
@@ -379,22 +379,20 @@ mod tests {
     fn test_type_validation() {
         let mcp = RuchyMCP::new();
         let value = serde_json::json!("test string");
-        
+
         // Test validation against String type
         assert!(mcp.validate_json_value(&value, &MonoType::String).is_ok());
-        
+
         // Test validation against Int type (should fail)
         assert!(mcp.validate_json_value(&value, &MonoType::Int).is_err());
     }
 
     #[test]
     fn test_ruchy_tool_creation() {
-        let tool = RuchyMCPTool::new(
-            "test-tool".to_string(),
-            "A test tool".to_string(),
-            |args| Ok(args),
-        );
-        
+        let tool = RuchyMCPTool::new("test-tool".to_string(), "A test tool".to_string(), |args| {
+            Ok(args)
+        });
+
         assert_eq!(tool.name, "test-tool");
         assert_eq!(tool.description, "A test tool");
     }
@@ -402,13 +400,11 @@ mod tests {
     #[tokio::test]
     async fn test_ruchy_tool_handler() {
         use tokio_util::sync::CancellationToken;
-        
-        let tool = RuchyMCPTool::new(
-            "echo-tool".to_string(),
-            "Echo input".to_string(),
-            |args| Ok(args),
-        );
-        
+
+        let tool = RuchyMCPTool::new("echo-tool".to_string(), "Echo input".to_string(), |args| {
+            Ok(args)
+        });
+
         let input = serde_json::json!({"message": "hello"});
         // Create a dummy RequestHandlerExtra for testing
         let cancellation_token = CancellationToken::new();
@@ -421,7 +417,7 @@ mod tests {
     fn test_create_ruchy_tools() {
         let tools = create_ruchy_tools();
         assert!(!tools.is_empty());
-        
+
         let tool_names: Vec<&str> = tools.iter().map(|(name, _)| *name).collect();
         assert!(tool_names.contains(&"ruchy-eval"));
         assert!(tool_names.contains(&"ruchy-transpile"));
@@ -434,7 +430,7 @@ mod tests {
         assert!(server.is_ok());
     }
 
-    #[tokio::test] 
+    #[tokio::test]
     async fn test_client_creation() {
         let client = create_ruchy_mcp_client().await;
         assert!(client.is_ok());

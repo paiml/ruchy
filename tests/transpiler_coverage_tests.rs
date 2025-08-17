@@ -1,7 +1,7 @@
 //! Additional transpiler tests to improve coverage
 
-use ruchy::{Parser, Transpiler};
 use anyhow::Result;
+use ruchy::{Parser, Transpiler};
 
 #[test]
 fn test_transpile_literals() -> Result<()> {
@@ -12,17 +12,21 @@ fn test_transpile_literals() -> Result<()> {
         ("false", "false"),
         ("\"hello\"", "\"hello\""),
     ];
-    
+
     for (input, expected_contains) in cases {
         let mut parser = Parser::new(input);
         let ast = parser.parse()?;
         let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast)?;
         let code_str = rust_code.to_string();
-        assert!(code_str.contains(expected_contains), 
-                "Failed for input: {}, got: {}", input, code_str);
+        assert!(
+            code_str.contains(expected_contains),
+            "Failed for input: {}, got: {}",
+            input,
+            code_str
+        );
     }
-    
+
     Ok(())
 }
 
@@ -34,10 +38,10 @@ fn test_transpile_let_binding() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("let x"));
     assert!(code_str.contains("42"));
-    
+
     Ok(())
 }
 
@@ -49,10 +53,10 @@ fn test_transpile_function() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("fn add"));
     assert!(code_str.contains("i32"));
-    
+
     Ok(())
 }
 
@@ -64,10 +68,10 @@ fn test_transpile_if_expression() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("if"));
     assert!(code_str.contains("else"));
-    
+
     Ok(())
 }
 
@@ -79,16 +83,16 @@ fn test_transpile_match_expression() -> Result<()> {
             _ => "other"
         }
     "#;
-    
+
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("match"));
     assert!(code_str.contains("=>"));
-    
+
     Ok(())
 }
 
@@ -100,10 +104,10 @@ fn test_transpile_struct() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("struct Point"));
     assert!(code_str.contains("f64"));
-    
+
     Ok(())
 }
 
@@ -116,16 +120,16 @@ fn test_transpile_impl_block() -> Result<()> {
             }
         }
     "#;
-    
+
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("impl Point"));
     assert!(code_str.contains("fn new"));
-    
+
     Ok(())
 }
 
@@ -136,16 +140,16 @@ fn test_transpile_trait() -> Result<()> {
             fun fmt(&self) -> String
         }
     "#;
-    
+
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("trait Display"));
     assert!(code_str.contains("fn fmt"));
-    
+
     Ok(())
 }
 
@@ -157,9 +161,9 @@ fn test_transpile_for_loop() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("for x in"));
-    
+
     Ok(())
 }
 
@@ -171,9 +175,9 @@ fn test_transpile_while_loop() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("while"));
-    
+
     Ok(())
 }
 
@@ -185,9 +189,9 @@ fn test_transpile_list_literal() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("vec!"));
-    
+
     Ok(())
 }
 
@@ -199,9 +203,9 @@ fn test_transpile_lambda() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("|"));
-    
+
     Ok(())
 }
 
@@ -213,9 +217,9 @@ fn test_transpile_method_call() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains(".method"));
-    
+
     Ok(())
 }
 
@@ -236,37 +240,42 @@ fn test_transpile_binary_ops() -> Result<()> {
         ("a && b", "&&"),
         ("a || b", "||"),
     ];
-    
+
     for (input, expected_op) in cases {
         let mut parser = Parser::new(input);
         let ast = parser.parse()?;
         let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast)?;
         let code_str = rust_code.to_string();
-        assert!(code_str.contains(expected_op), 
-                "Failed for input: {}, got: {}", input, code_str);
+        assert!(
+            code_str.contains(expected_op),
+            "Failed for input: {}, got: {}",
+            input,
+            code_str
+        );
     }
-    
+
     Ok(())
 }
 
 #[test]
 fn test_transpile_unary_ops() -> Result<()> {
-    let cases = vec![
-        ("-x", "-"),
-        ("!x", "!"),
-    ];
-    
+    let cases = vec![("-x", "-"), ("!x", "!")];
+
     for (input, expected_op) in cases {
         let mut parser = Parser::new(input);
         let ast = parser.parse()?;
         let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast)?;
         let code_str = rust_code.to_string();
-        assert!(code_str.contains(expected_op), 
-                "Failed for input: {}, got: {}", input, code_str);
+        assert!(
+            code_str.contains(expected_op),
+            "Failed for input: {}, got: {}",
+            input,
+            code_str
+        );
     }
-    
+
     Ok(())
 }
 
@@ -278,10 +287,10 @@ fn test_transpile_block() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("{"));
     assert!(code_str.contains("}"));
-    
+
     Ok(())
 }
 
@@ -293,11 +302,11 @@ fn test_transpile_call_expression() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("func"));
     assert!(code_str.contains("arg1"));
     assert!(code_str.contains("arg2"));
-    
+
     Ok(())
 }
 
@@ -309,10 +318,10 @@ fn test_transpile_generic_function() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("fn identity"));
     assert!(code_str.contains("<T>"));
-    
+
     Ok(())
 }
 
@@ -324,10 +333,10 @@ fn test_transpile_generic_struct() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("struct Container"));
     assert!(code_str.contains("<T>"));
-    
+
     Ok(())
 }
 
@@ -339,10 +348,10 @@ fn test_transpile_struct_literal() -> Result<()> {
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     let code_str = rust_code.to_string();
-    
+
     assert!(code_str.contains("Point"));
     assert!(code_str.contains("x :"));
     assert!(code_str.contains("y :"));
-    
+
     Ok(())
 }
