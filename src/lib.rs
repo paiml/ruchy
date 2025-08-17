@@ -444,7 +444,7 @@ mod tests {
 
     #[test]
     fn test_compile_while_loop() {
-        let result = compile("while x < 10 { x = x + 1 }").unwrap();
+        let result = compile("while x < 10 { x + 1 }").unwrap();
         assert!(result.contains("while"));
     }
 

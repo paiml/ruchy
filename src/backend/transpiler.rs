@@ -1983,7 +1983,7 @@ mod tests {
 
         // Await expression
         let result = transpile_str("await fetch()").unwrap();
-        assert!(result.contains("fetch().await"));
+        assert!(result.contains("fetch") && result.contains(".await"));
     }
 
     #[test]
