@@ -2,12 +2,12 @@
 
 use super::{ParserState, *};
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_actor(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume actor
 

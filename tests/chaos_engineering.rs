@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::panic)]
 //! Chaos Engineering Tests
 //!
 //! Based on docs/ruchy-transpiler-docs.md Phase 3: Formal Methods

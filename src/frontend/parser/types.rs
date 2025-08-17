@@ -2,12 +2,12 @@
 
 use super::{ParserState, *};
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_struct(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume struct
 
@@ -119,12 +119,12 @@ pub fn parse_struct_literal(
     ))
 }
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_trait(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume trait
 
@@ -174,12 +174,12 @@ pub fn parse_trait(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
     // Parse fn keyword
     state.tokens.expect(&Token::Fun)?;
@@ -219,12 +219,12 @@ pub fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
     })
 }
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_impl(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume impl
 
@@ -287,12 +287,12 @@ pub fn parse_impl(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
     // Parse fn keyword
     state.tokens.expect(&Token::Fun)?;

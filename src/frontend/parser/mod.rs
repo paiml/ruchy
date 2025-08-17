@@ -62,6 +62,7 @@ pub(crate) fn parse_expr_recursive(state: &mut ParserState) -> Result<Expr> {
 }
 
 #[allow(clippy::too_many_lines)]
+#[allow(clippy::cognitive_complexity)]
 pub(crate) fn parse_expr_with_precedence_recursive(
     state: &mut ParserState,
     min_prec: i32,
@@ -69,6 +70,85 @@ pub(crate) fn parse_expr_with_precedence_recursive(
     let mut left = expressions::parse_prefix(state)?;
 
     loop {
+        // First, handle postfix operators
+        let mut handled_postfix = true;
+        while handled_postfix {
+            handled_postfix = false;
+            match state.tokens.peek() {
+                Some((Token::Dot, _)) => {
+                    state.tokens.advance(); // consume .
+                    left = functions::parse_method_call(state, left)?;
+                    handled_postfix = true;
+                }
+                Some((Token::LeftParen, _)) => {
+                    left = functions::parse_call(state, left)?;
+                    handled_postfix = true;
+                }
+                Some((Token::LeftBracket, _)) => {
+                    // Array/list indexing
+                    state.tokens.advance(); // consume [
+                    let index = parse_expr_recursive(state)?;
+                    state.tokens.expect(&Token::RightBracket)?;
+                    left = Expr {
+                        kind: ExprKind::Call {
+                            func: Box::new(Expr {
+                                kind: ExprKind::Identifier("get".to_string()),
+                                span: Span { start: 0, end: 0 },
+                                attributes: Vec::new(),
+                            }),
+                            args: vec![left, index],
+                        },
+                        span: Span { start: 0, end: 0 },
+                        attributes: Vec::new(),
+                    };
+                    handled_postfix = true;
+                }
+                Some((Token::Question, _)) => {
+                    // Check if it's a try operator
+                    // Try operator should only be used when ? is truly at the end
+                    let next_token = state.tokens.peek_nth(1);
+                    let is_try = match next_token {
+                        None => true, // End of input - definitely a try operator
+                        Some((token, _)) => matches!(
+                            token,
+                            Token::Semicolon
+                                | Token::Comma
+                                | Token::RightParen
+                                | Token::RightBracket
+                                | Token::RightBrace
+                                | Token::Else
+                                | Token::In
+                        ),
+                    };
+                    if is_try {
+                        // Try operator (postfix)
+                        state.tokens.advance(); // consume ?
+                        left = Expr {
+                            kind: ExprKind::Try {
+                                expr: Box::new(left),
+                            },
+                            span: Span { start: 0, end: 0 },
+                            attributes: Vec::new(),
+                        };
+                        handled_postfix = true;
+                    }
+                }
+                Some((Token::LeftBrace, _)) => {
+                    // Check if left is an identifier starting with uppercase - could be struct literal
+                    if let ExprKind::Identifier(name) = &left.kind {
+                        if name.chars().next().is_some_and(char::is_uppercase) {
+                            let name = name.clone();
+                            let span = left.span;
+                            left = types::parse_struct_literal(state, name, span)?;
+                            handled_postfix = true;
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // Now handle binary operators and other infix operations
         let Some((token, _)) = state.tokens.peek() else {
             break;
         };
@@ -93,7 +173,9 @@ pub(crate) fn parse_expr_with_precedence_recursive(
 
                 if matches!(token_clone, Token::Bang) {
                     state.tokens.advance(); // consume !
-                    let message = parse_expr_with_precedence_recursive(state, prec + 1)?;
+                                            // For send, just parse a primary expression (identifier, literal, etc)
+                                            // Don't use parse_expr_with_precedence as it would parse ! as unary
+                    let message = expressions::parse_prefix(state)?;
                     left = Expr {
                         kind: ExprKind::Send {
                             actor: Box::new(left),
@@ -106,7 +188,8 @@ pub(crate) fn parse_expr_with_precedence_recursive(
                 }
                 // Question mark - ask operation
                 state.tokens.advance(); // consume ?
-                let message = parse_expr_with_precedence_recursive(state, prec + 1)?;
+                                        // For ask, also just parse a primary expression
+                let message = expressions::parse_prefix(state)?;
                 left = Expr {
                     kind: ExprKind::Ask {
                         actor: Box::new(left),
@@ -203,62 +286,6 @@ pub(crate) fn parse_expr_with_precedence_recursive(
         }
 
         break;
-    }
-
-    // Handle postfix operators
-    loop {
-        match state.tokens.peek() {
-            Some((Token::Dot, _)) => {
-                state.tokens.advance(); // consume .
-                left = functions::parse_method_call(state, left)?;
-            }
-            Some((Token::LeftParen, _)) => {
-                left = functions::parse_call(state, left)?;
-            }
-            Some((Token::LeftBracket, _)) => {
-                // Array/list indexing
-                state.tokens.advance(); // consume [
-                let index = parse_expr_recursive(state)?;
-                state.tokens.expect(&Token::RightBracket)?;
-                left = Expr {
-                    kind: ExprKind::Call {
-                        func: Box::new(Expr {
-                            kind: ExprKind::Identifier("get".to_string()),
-                            span: Span { start: 0, end: 0 },
-                            attributes: Vec::new(),
-                        }),
-                        args: vec![left, index],
-                    },
-                    span: Span { start: 0, end: 0 },
-                    attributes: Vec::new(),
-                };
-            }
-            Some((Token::Try, _)) => {
-                state.tokens.advance(); // consume ?
-                left = Expr {
-                    kind: ExprKind::Try {
-                        expr: Box::new(left),
-                    },
-                    span: Span { start: 0, end: 0 },
-                    attributes: Vec::new(),
-                };
-            }
-            Some((Token::LeftBrace, _)) => {
-                // Check if left is an identifier starting with uppercase - could be struct literal
-                if let ExprKind::Identifier(name) = &left.kind {
-                    if name.chars().next().is_some_and(char::is_uppercase) {
-                        let name = name.clone();
-                        let span = left.span;
-                        left = types::parse_struct_literal(state, name, span)?;
-                    } else {
-                        break; // Not a struct literal
-                    }
-                } else {
-                    break; // Not a struct literal
-                }
-            }
-            _ => break,
-        }
     }
 
     Ok(left)

@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::panic)]
 //! Tests for deterministic error recovery in the parser
 //! Based on docs/ruchy-transpiler-docs.md Section 4
 

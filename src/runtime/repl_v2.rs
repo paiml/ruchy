@@ -151,9 +151,9 @@ impl ReplV2 {
 
         // Handle the case where we have free variables (from previous definitions)
         // For now, we'll handle this by maintaining context differently
-        let Ok(core) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            normalizer.normalize(&ast)
-        })) else {
+        let Ok(core) =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| normalizer.normalize(&ast)))
+        else {
             // If normalization fails due to unbound variables,
             // fall back to compilation-based approach
             return self.eval_with_compilation(input, &ast);
@@ -376,7 +376,7 @@ mod tests {
         let mut repl = ReplV2::new().unwrap();
 
         // Test that variables persist
-        let result1 = repl.eval("let x = 10").unwrap();
+        let result1 = repl.eval("let x = 10 in x").unwrap();
         assert!(result1.is_empty() || result1 == "()");
 
         // This should work now with accumulated definitions

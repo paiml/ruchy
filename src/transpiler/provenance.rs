@@ -123,7 +123,11 @@ impl ProvenanceTracker {
         CompilationTrace {
             source_hash: self.source_hash,
             transformations: self.transformations,
-            total_duration_ns: self.start_time.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64,
+            total_duration_ns: self
+                .start_time
+                .elapsed()
+                .as_nanos()
+                .min(u128::from(u64::MAX)) as u64,
             metadata: CompilationMetadata {
                 ruchy_version: env!("CARGO_PKG_VERSION").to_string(),
                 rustc_version: "1.75.0".to_string(), // Would get from rustc --version
@@ -177,7 +181,11 @@ impl TransformationBuilder {
             input_hash: self.input_hash,
             output_hash: self.output_hash.unwrap_or_else(|| "incomplete".to_string()),
             rules_applied: self.rules_applied,
-            duration_ns: self.start_time.elapsed().as_nanos().min(u128::from(u64::MAX)) as u64,
+            duration_ns: self
+                .start_time
+                .elapsed()
+                .as_nanos()
+                .min(u128::from(u64::MAX)) as u64,
         }
     }
 }
@@ -280,6 +288,7 @@ impl crate::Transpiler {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
 

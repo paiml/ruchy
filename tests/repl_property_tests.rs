@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::panic)]
 #![allow(clippy::unreadable_literal)] // Property tests generate random values
 #![allow(unused_imports)] // Test utilities may not all be used
 #![allow(clippy::uninlined_format_args)] // Test code formatting style

@@ -1,3 +1,4 @@
+#![allow(clippy::unwrap_used, clippy::panic)]
 //! Edge case tests to improve coverage
 
 use anyhow::Result;
@@ -278,7 +279,7 @@ fn test_get_parse_error_cases() {
 fn test_parse_all_literal_types() -> Result<()> {
     let literals = vec![
         ("42", ruchy::Literal::Integer(42)),
-        ("3.14", ruchy::Literal::Float(3.14)),
+        ("2.71", ruchy::Literal::Float(2.71)),
         ("true", ruchy::Literal::Bool(true)),
         ("false", ruchy::Literal::Bool(false)),
     ];
@@ -288,9 +289,9 @@ fn test_parse_all_literal_types() -> Result<()> {
         let ast = parser.parse()?;
         match ast.kind {
             ruchy::ExprKind::Literal(ref lit) => {
-                assert_eq!(*lit, expected, "Failed for input: {}", input);
+                assert_eq!(*lit, expected, "Failed for input: {input}");
             }
-            _ => panic!("Expected literal for input: {}", input),
+            _ => panic!("Expected literal for input: {input}"),
         }
     }
 
@@ -305,13 +306,12 @@ fn test_parse_all_binary_operators() -> Result<()> {
     ];
 
     for op in operators {
-        let input = format!("a {} b", op);
+        let input = format!("a {op} b");
         let mut parser = Parser::new(&input);
         let ast = parser.parse()?;
         assert!(
             matches!(ast.kind, ruchy::ExprKind::Binary { .. }),
-            "Failed for operator: {}",
-            op
+            "Failed for operator: {op}"
         );
     }
 
@@ -323,13 +323,12 @@ fn test_parse_all_unary_operators() -> Result<()> {
     let operators = vec!["-", "!"];
 
     for op in operators {
-        let input = format!("{}x", op);
+        let input = format!("{op}x");
         let mut parser = Parser::new(&input);
         let ast = parser.parse()?;
         assert!(
             matches!(ast.kind, ruchy::ExprKind::Unary { .. }),
-            "Failed for operator: {}",
-            op
+            "Failed for operator: {op}"
         );
     }
 

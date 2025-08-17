@@ -10,28 +10,28 @@ use proptest::prelude::*;
 use proptest::test_runner::TestCaseError;
 
 /// Property: Parser should never panic on any input
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-pub fn prop_parser_never_panics(input: String) -> Result<(), TestCaseError> {
-    let mut parser = Parser::new(&input);
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+pub fn prop_parser_never_panics(input: &str) -> Result<(), TestCaseError> {
+    let mut parser = Parser::new(input);
     // Parser should either succeed or return an error, never panic
     let _ = parser.parse();
     Ok(())
 }
 
 /// Property: Recovery parser should always produce some AST
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-pub fn prop_recovery_parser_always_produces_ast(input: String) -> Result<(), TestCaseError> {
-    let mut parser = RecoveryParser::new(&input);
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+pub fn prop_recovery_parser_always_produces_ast(input: &str) -> Result<(), TestCaseError> {
+    let mut parser = RecoveryParser::new(input);
     let result = parser.parse_with_recovery();
 
     // For non-empty input, we should get some AST or errors
@@ -45,17 +45,17 @@ pub fn prop_recovery_parser_always_produces_ast(input: String) -> Result<(), Tes
 }
 
 /// Property: Transpilation preserves expression structure
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-pub fn prop_transpilation_preserves_structure(expr: Expr) -> Result<(), TestCaseError> {
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+pub fn prop_transpilation_preserves_structure(expr: &Expr) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
 
     // Transpilation should either succeed or fail cleanly
-    if let Ok(rust_code) = transpiler.transpile(&expr) {
+    if let Ok(rust_code) = transpiler.transpile(expr) {
         // The generated Rust code should not be empty
         let code_str = rust_code.to_string();
         prop_assert!(!code_str.is_empty(), "Transpiled code should not be empty");
@@ -66,15 +66,15 @@ pub fn prop_transpilation_preserves_structure(expr: Expr) -> Result<(), TestCase
 }
 
 /// Property: String interpolation transpiles correctly
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-pub fn prop_string_interpolation_transpiles(parts: Vec<StringPart>) -> Result<(), TestCaseError> {
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+pub fn prop_string_interpolation_transpiles(parts: &[StringPart]) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
-    let result = transpiler.transpile_string_interpolation(&parts);
+    let result = transpiler.transpile_string_interpolation(parts);
 
     // Should either succeed or fail cleanly, never panic
     if let Ok(tokens) = result {
@@ -90,17 +90,17 @@ pub fn prop_string_interpolation_transpiles(parts: Vec<StringPart>) -> Result<()
 }
 
 /// Property: Parse-print roundtrip
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-pub fn prop_parse_print_roundtrip(expr: Expr) -> Result<(), TestCaseError> {
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+pub fn prop_parse_print_roundtrip(expr: &Expr) -> Result<(), TestCaseError> {
     // This would require a pretty-printer, which we'll implement later
     // For now, just check that we can transpile and the result is valid
     let transpiler = Transpiler::new();
-    if let Ok(rust_code) = transpiler.transpile(&expr) {
+    if let Ok(rust_code) = transpiler.transpile(expr) {
         // Check that the Rust code contains expected elements based on expr type
         let code_str = rust_code.to_string();
 
@@ -136,18 +136,18 @@ pub fn prop_parse_print_roundtrip(expr: Expr) -> Result<(), TestCaseError> {
 }
 
 /// Property: Well-typed expressions should always transpile successfully
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-pub fn prop_well_typed_always_transpiles(expr: Expr) -> Result<(), TestCaseError> {
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+pub fn prop_well_typed_always_transpiles(expr: &Expr) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
 
     // Check if this is a simple, well-typed expression
-    if is_well_typed(&expr) {
-        match transpiler.transpile(&expr) {
+    if is_well_typed(expr) {
+        match transpiler.transpile(expr) {
             Ok(_) => Ok(()),
             Err(e) => {
                 prop_assert!(
@@ -166,13 +166,13 @@ pub fn prop_well_typed_always_transpiles(expr: Expr) -> Result<(), TestCaseError
 }
 
 /// Property: Error recovery should handle truncated input gracefully
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-pub fn prop_recovery_handles_truncation(input: String) -> Result<(), TestCaseError> {
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+pub fn prop_recovery_handles_truncation(input: &str) -> Result<(), TestCaseError> {
     if input.is_empty() {
         return Ok(());
     }
@@ -198,8 +198,7 @@ pub fn prop_recovery_handles_truncation(input: String) -> Result<(), TestCaseErr
 /// Helper to check if an expression is well-typed (simplified)
 fn is_well_typed(expr: &Expr) -> bool {
     match &expr.kind {
-        ExprKind::Literal(_) => true,
-        ExprKind::Identifier(_) => true,
+        ExprKind::Literal(_) | ExprKind::Identifier(_) => true,
         ExprKind::Binary { left, right, op } => {
             match op {
                 BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply | BinaryOp::Divide => {
@@ -215,8 +214,7 @@ fn is_well_typed(expr: &Expr) -> bool {
         }
         ExprKind::Unary { operand, op } => match op {
             UnaryOp::Not => is_boolean(operand),
-            UnaryOp::Negate => is_numeric(operand),
-            UnaryOp::BitwiseNot => is_numeric(operand),
+            UnaryOp::Negate | UnaryOp::BitwiseNot => is_numeric(operand),
         },
         ExprKind::If {
             condition,
@@ -243,38 +241,39 @@ fn is_boolean(expr: &Expr) -> bool {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
 
     proptest! {
         #[test]
         fn test_parser_never_panics(input in ".*") {
-            prop_parser_never_panics(input)?;
+            prop_parser_never_panics(&input)?;
         }
 
         #[test]
         fn test_recovery_parser_always_produces_ast(input in ".*") {
-            prop_recovery_parser_always_produces_ast(input)?;
+            prop_recovery_parser_always_produces_ast(&input)?;
         }
 
         #[test]
         fn test_transpilation_preserves_structure(expr in arb_expr()) {
-            prop_transpilation_preserves_structure(expr)?;
+            prop_transpilation_preserves_structure(&expr)?;
         }
 
         #[test]
         fn test_well_typed_always_transpiles(expr in arb_well_typed_expr()) {
-            prop_well_typed_always_transpiles(expr)?;
+            prop_well_typed_always_transpiles(&expr)?;
         }
 
         #[test]
         fn test_recovery_handles_truncation(input in "[a-zA-Z0-9 +\\-*/()]+") {
-            prop_recovery_handles_truncation(input)?;
+            prop_recovery_handles_truncation(&input)?;
         }
 
         #[test]
         fn test_parse_print_roundtrip(expr in arb_well_typed_expr()) {
-            prop_parse_print_roundtrip(expr)?;
+            prop_parse_print_roundtrip(&expr)?;
         }
     }
 

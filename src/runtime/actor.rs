@@ -189,7 +189,10 @@ impl ActorContext {
     ///
     /// Returns an error if the operation fails
     pub fn spawn_child<B: ActorBehavior>(&mut self, name: String, behavior: B) -> Result<ActorRef> {
-        let mut system = self.system.lock().map_err(|_| anyhow!("Actor system mutex poisoned"))?;
+        let mut system = self
+            .system
+            .lock()
+            .map_err(|_| anyhow!("Actor system mutex poisoned"))?;
         let actor_ref = system.spawn_supervised(name, Box::new(behavior), Some(self.actor_id))?;
         self.children.insert(actor_ref.id, actor_ref.clone());
         Ok(actor_ref)
@@ -215,7 +218,10 @@ impl ActorContext {
     ///
     /// Returns an error if the operation fails
     pub fn get_self(&self) -> Result<ActorRef> {
-        let system = self.system.lock().map_err(|_| anyhow!("Actor system mutex poisoned"))?;
+        let system = self
+            .system
+            .lock()
+            .map_err(|_| anyhow!("Actor system mutex poisoned"))?;
         system
             .get_actor_ref(self.actor_id)
             .ok_or_else(|| anyhow!("Actor not found"))
@@ -283,9 +289,7 @@ impl ActorRuntime {
             let mut ctx = ActorContext {
                 actor_id: id,
                 actor_name: name.clone(),
-                supervisor: supervisor.and_then(|sup_id| {
-                    system.lock().ok()?.get_actor_ref(sup_id)
-                }),
+                supervisor: supervisor.and_then(|sup_id| system.lock().ok()?.get_actor_ref(sup_id)),
                 children,
                 system: system.clone(),
             };
@@ -564,8 +568,7 @@ mod tests {
         let system = ActorSystem::new();
         let actor_ref = {
             let mut sys = system.lock().unwrap();
-            sys.spawn("echo".to_string(), EchoActor)
-                .unwrap()
+            sys.spawn("echo".to_string(), EchoActor).unwrap()
         };
 
         let message = Message::User(
@@ -573,9 +576,7 @@ mod tests {
             vec![MessageValue::String("hello".to_string())],
         );
 
-        let response = actor_ref
-            .ask(message, Duration::from_millis(100))
-            .unwrap();
+        let response = actor_ref.ask(message, Duration::from_millis(100)).unwrap();
         match response {
             Message::User(msg, _) => assert!(msg.contains("Echo: test")),
             _ => panic!("Unexpected response type"),

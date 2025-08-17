@@ -807,12 +807,10 @@ mod tests {
         let mut repl = Repl::new().unwrap();
 
         // Define first function (use i64)
-        repl.eval("fun double(x: i64) -> i64 { x * 2 }")
-            .unwrap();
+        repl.eval("fun double(x: i64) -> i64 { x * 2 }").unwrap();
 
         // Define second function (use i64)
-        repl.eval("fun triple(x: i64) -> i64 { x * 3 }")
-            .unwrap();
+        repl.eval("fun triple(x: i64) -> i64 { x * 3 }").unwrap();
 
         // Both functions should be available
         assert_eq!(repl.definitions.len(), 2);
@@ -863,8 +861,7 @@ mod tests {
         let mut repl = Repl::new().unwrap();
 
         // Add some definitions (use i64 for return type)
-        repl.eval("fun test() -> i64 { 42 }")
-            .unwrap();
+        repl.eval("fun test() -> i64 { 42 }").unwrap();
         assert_eq!(repl.definitions.len(), 1);
 
         // Clear session

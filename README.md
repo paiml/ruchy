@@ -6,6 +6,14 @@
 
 A systems scripting language that transpiles to idiomatic Rust, combining Python-like ergonomics with zero-cost execution and compile-time verification.
 
+## 📋 Development Process
+
+**New Task Execution Framework**: See [CLAUDE.md](./CLAUDE.md) for implementation protocol.
+
+- **Specification**: [SPECIFICATION.md](./docs/SPECIFICATION.md) - What to build
+- **Roadmap**: [docs/execution/roadmap.md](./docs/execution/roadmap.md) - Task DAG
+- **Velocity**: [docs/execution/velocity.json](./docs/execution/velocity.json) - Performance tracking
+
 ```ruchy
 // Ruchy - expressive, safe, performant
 #[property]

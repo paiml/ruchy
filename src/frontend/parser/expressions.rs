@@ -3,12 +3,12 @@
 use super::{ParserState, *};
 
 #[allow(clippy::too_many_lines)]
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
-    /// # Errors
-    ///
-    /// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
+/// # Errors
+///
+/// Returns an error if the operation fails
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input");
@@ -57,7 +57,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::LeftParen => {
             state.tokens.advance(); // consume (
-            // Check for unit literal ()
+                                    // Check for unit literal ()
             if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                 state.tokens.advance(); // consume )
                 Ok(Expr::new(ExprKind::Literal(Literal::Unit), span_clone))
@@ -95,7 +95,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Await => {
             // Parse as prefix but it will transpile to postfix
             state.tokens.advance(); // consume await
-            // Parse the full expression including postfix operations like calls
+                                    // Parse the full expression including postfix operations like calls
             let expr = super::parse_expr_recursive(state)?;
             Ok(Expr::new(
                 ExprKind::Await {

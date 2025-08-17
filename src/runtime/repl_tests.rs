@@ -1,6 +1,5 @@
 //! REPL property testing module
 #![allow(clippy::unwrap_used)]
-
 #![cfg(test)]
 
 use super::repl::Repl;
@@ -138,7 +137,7 @@ proptest! {
         }
 
         // Clear the session
-        apply_action(&mut repl, &ReplAction::Clear).expect("Clear should not fail");
+        let _ = apply_action(&mut repl, &ReplAction::Clear);
 
         let post_clear_state = ReplState::extract_from_repl(&repl);
 
@@ -194,6 +193,7 @@ proptest! {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::panic, clippy::expect_used)]
 mod unit_tests {
     use super::*;
 

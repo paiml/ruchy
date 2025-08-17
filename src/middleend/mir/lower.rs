@@ -63,8 +63,7 @@ impl LoweringContext {
         body: &Expr,
     ) -> Result<Program> {
         let func_name = name.to_string();
-        let ret_ty = return_type
-            .map_or(Type::Unit, |t| self.ast_to_mir_type(t));
+        let ret_ty = return_type.map_or(Type::Unit, |t| self.ast_to_mir_type(t));
 
         self.builder.start_function(func_name.clone(), ret_ty);
 
@@ -393,6 +392,7 @@ impl Default for LoweringContext {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
     use crate::frontend::Parser;

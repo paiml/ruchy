@@ -44,7 +44,7 @@ impl Unifier {
         match (t1, t2) {
             (MonoType::Var(v1), MonoType::Var(v2)) if v1 == v2 => Ok(()),
             (MonoType::Var(v), t) | (t, MonoType::Var(v)) => self.bind(&v, &t),
-            (MonoType::Int, MonoType::Int) 
+            (MonoType::Int, MonoType::Int)
             | (MonoType::Float, MonoType::Float)
             | (MonoType::Bool, MonoType::Bool)
             | (MonoType::String, MonoType::String)
@@ -119,6 +119,7 @@ impl Default for Unifier {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
 
