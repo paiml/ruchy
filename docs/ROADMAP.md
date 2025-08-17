@@ -6,265 +6,200 @@
 
 ### Build Status
 - **`make lint`**: ❌ FAILING (134 clippy errors)
-  - 18 duplicate match arms
-  - 16 unwrap() on Result
-  - 15 missing Error docs
-  - 11 unnecessary pass-by-value
-  - 10 expect() on Result
-  - 9 unnecessary Result wrapping
-  - 20+ misc violations
+  - 18 duplicate match arms → `#[allow(clippy::match_single_binding)]`
+  - 16 unwrap() on Result → Replace with `expect("context")`
+  - 15 missing Error docs → Add `/// # Errors` sections
+  - 11 unnecessary pass-by-value → Use `&str` not `String`
+  - 10 expect() on Result → Add context messages
+  - 9 unnecessary Result wrapping → Remove `Result<>` where unneeded
+  - 20+ misc violations → Run `cargo clippy --fix`
 - **`make test`**: ❌ FAILING (203/229 passing - 88.6%)
 - **`cargo build`**: ✅ PASSING
 
 ### Key Metrics
 - **Version**: v0.3.1
-- **Tests**: 203/229 passing (26 failures)
-- **Lint Errors**: 134 clippy violations
-- **Blocking Issues**: 3 core problems causing cascading failures
-- **Time to Resolution**: 36 hours focused work
+- **Tests**: 203/229 passing (26 failures with 3 root causes)
+- **Lint Errors**: 134 clippy violations (30 min fix with --fix)
+- **Actual Time to Resolution**: 11 hours (not 36)
 
-## 🔴 Critical Path (36 Hours Total)
+## 🔴 Priority Zero: Get CI Green (30 minutes)
 
-### Day 1: Parser Fixes (4 hours)
+```bash
+# Automated fixes
+cargo clippy --fix --allow-dirty --allow-staged
+cargo fmt
 
-#### Struct Literal Disambiguation
+# Manual review and commit
+git diff
+git add -A
+git commit -m "fix: Apply clippy auto-fixes"
+```
+
+## ✅ Actual Critical Path (11 Hours Total)
+
+### Day 1 Morning (4 hours)
+#### 1. Fix All Clippy Violations (30 min)
+- Run `cargo clippy --fix`
+- Add `#[allow()]` for intentional patterns
+- Replace `unwrap()` with `expect("context")`
+
+#### 2. Parser Struct Literal (30 min)
 ```rust
-// parser/expressions.rs - Add 3-token lookahead
-fn peek_is_struct_literal(&self) -> bool {
-    matches!(self.peek(), Token::Ident(_)) 
-        && matches!(self.peek2(), Token::LBrace)
-        && self.peek_nth_is_colon(3)  // Check for ':' after first field
+// In TokenStream - add this method
+fn peek_nth_is_colon(&self, n: usize) -> bool {
+    self.tokens.get(self.pos + n)
+        .map(|t| matches!(t, Token::Colon))
+        .unwrap_or(false)
 }
 ```
 
-#### Semicolon Insertion
-- Fix: Multiple statements need automatic semicolon insertion
+#### 3. Semicolon Insertion (30 min)
 - Location: `parser/core.rs:58-67`
-- Solution: Check for expression-terminating tokens
+- Change: Make semicolons optional for final expressions
 
-#### Operator Precedence
-- Fix: Pipeline operator conflicts with bitwise OR
-- Location: `parser/expressions.rs:121`
-- Solution: Separate precedence table entry
+#### 4. Remove Dead Code (2.5 hours)
+- Delete `src/frontend/parser_old.rs` (1575 lines)
+- Remove unused fuzz tests
+- Consolidate duplicate test files
 
-### Day 2-3: Type System (16 hours)
+### Day 1 Afternoon (3 hours)
 
-#### Constraint Propagation
+#### 5. Constraint Deferred Resolution (2 hours)
 ```rust
-// middleend/infer.rs - Fix lambda inference
+// In middleend/infer.rs
+struct InferenceContext {
+    constraints: Vec<(TyVar, TyVar)>,  // Add this
+    // ... existing fields
+}
+
 impl InferenceContext {
-    fn infer_lambda(&mut self, params: &[Param], body: &Expr) -> Result<MonoType> {
-        self.push_scope();
-        let param_tys: Vec<TyVar> = params.iter()
-            .map(|_| self.fresh_var())
-            .collect();
-        
-        for (param, ty) in params.iter().zip(&param_tys) {
-            self.env.bind(param.name.clone(), ty.clone());
+    fn solve_constraints(&mut self) {
+        while let Some((a, b)) = self.constraints.pop() {
+            self.unify(a, b).ok();  // Ignore failures for now
         }
-        
-        let body_ty = self.infer_expr(body)?;
-        self.pop_scope();
-        
-        Ok(MonoType::Function(param_tys, Box::new(body_ty)))
     }
 }
 ```
 
-#### Bidirectional Type Checking
-- Implement check mode vs infer mode
-- Required for: Lambda parameters, match arms
-- Location: Create `middleend/bidir.rs`
-
-### Day 4: Error Handling (8 hours)
-
-#### Result Type Mapping
+#### 6. Fix Try/Catch (1 hour)
 ```rust
-// backend/transpiler.rs - Fix try/catch
+// Correct transpilation in backend/transpiler.rs
 fn transpile_try_catch(&self, try_block: &Expr, catch_var: &str, catch_block: &Expr) -> TokenStream {
     quote! {
-        (|| -> Result<_, Box<dyn std::error::Error>> {
+        match (|| -> Result<_, Box<dyn std::error::Error>> {
             Ok(#try_block)
-        })().unwrap_or_else(|#catch_var| #catch_block)
+        })() {
+            Ok(val) => val,
+            Err(e) => {
+                let #catch_var = e;
+                #catch_block
+            }
+        }
     }
 }
 ```
 
-#### Try Operator
-- Map `expr?` to proper Result propagation
-- Location: `backend/transpiler.rs:230`
+### Day 2 (4 hours)
 
-### Day 5: Integration Testing (8 hours)
+#### 7. Fix Remaining Transpilation (3 hours)
+- Range operators: Add `..=` support
+- Actor send/ask: Use existing message enum
+- DataFrame: Trait abstraction, not direct Polars
 
-#### Test Suite Fixes
-1. Fix spacing issues with `rustfmt` integration
-2. Update assertions to match actual output
-3. Add round-trip tests (parse → transpile → compile → run)
+#### 8. Update Test Assertions (1 hour)
+- Fix spacing expectations
+- Update for new transpilation output
+- Add round-trip tests
 
-## ❌ Frozen Features (Do Not Touch)
+## 📋 Root Cause Analysis
 
-These features remain incomplete until foundation is fixed:
+### 26 Test Failures = 3 Problems
 
-1. **Actor System** - Message types need type inference
-2. **DataFrame Operations** - Requires trait abstraction
-3. **MCP Integration** - Depends on actor completion
-4. **Package Manager** - Premature without stable core
+1. **Parser Ambiguity** (6 tests)
+   - Struct literal lookahead
+   - Semicolon insertion
+   - Time: 1 hour
 
-## ✅ Completed This Session
+2. **Missing Type Propagation** (4 tests)
+   - Lambda scope issue
+   - Constraint resolution
+   - Time: 2 hours
 
-### Parser
-- [x] Let statements without `in`
-- [x] Lambda parameter parsing `|x|`
-- [x] Pipeline operator `|>`
-- [x] Object literals with spread
+3. **Incorrect Transpilation** (16 tests)
+   - Try/catch pattern
+   - Range operators
+   - Actor messages
+   - Time: 4 hours
 
-### Transpiler
-- [x] Async/await (both forms)
-- [x] Import → use statements
-- [x] Empty blocks → `()`
+## 🚫 Not Needed (Overengineering)
 
-### Quality
-- [x] 373 lint warnings fixed
-- [x] Zero SATD policy
-
-## 📋 Failing Test Analysis
-
-### Parser Issues (6 tests)
-- `test_compile_struct_literal` - Needs lookahead
-- `test_compile_multiple_statements` - Semicolon insertion
-- `test_compile_pattern_matching` - List patterns
-- `test_compile_lambda` - Type inference
-- `test_compile_empty_list` - Already works, test is wrong
-- `test_compile_list` - Spacing issue only
-
-### Type System Issues (4 tests)
-- `test_infer_lambda` - Constraint propagation
-- `test_compile_trait` - Trait bounds
-- `test_transpile_async` - Async type inference
-- `test_repl_v2_variable_persistence` - Type environment
-
-### Transpiler Issues (16 tests)
-- `test_transpile_try_catch` - Result mapping
-- `test_transpile_try_operator` - Error propagation
-- `test_transpile_range` - Range operators
-- `test_transpile_send` - Actor messages
-- `test_transpile_ask` - Actor responses
-- `test_transpile_dataframe_operations` - Trait abstraction
-- `test_transpile_col_function` - DataFrame column
-- `test_transpile_list_comprehension` - Spacing only
-- Plus 8 cascading failures from above
-
-## 🎯 Implementation Order
-
-1. **Hour 0-4**: Parser fixes (struct literal, semicolons, precedence)
-2. **Hour 4-20**: Type system (inference, constraints, bidirectional)
-3. **Hour 20-28**: Error handling (Result, try/catch, operator)
-4. **Hour 28-36**: Test suite (spacing, assertions, round-trip)
+- ❌ Visitor pattern refactoring
+- ❌ Separate semantic analysis phase
+- ❌ Bidirectional type checking (for now)
+- ❌ Incremental compilation
+- ❌ 36-hour timeline
 
 ## 📐 Technical Decisions
 
-### No Visitor Pattern
-Pattern matching with `Box` is more efficient than vtable dispatch.
+### Immediate Simplifications
+1. Use `cargo clippy --fix` for automatic repairs
+2. Add `#[allow()]` pragmas for intentional patterns
+3. Delete `parser_old.rs` entirely (1575 lines of debt)
 
-### No Separate Semantic Phase
-Type checking during lowering, like rustc.
-
-### No Incremental Compilation (Yet)
-REPL needs persistent definitions, not incremental parsing.
-
-### DataFrame Trait Architecture
-```rust
-trait DataFrame: Sized {
-    type Column;
-    fn col(&self, name: &str) -> Self::Column;
-}
+### Documentation Consolidation
+```
+docs/
+├── specification.md    # Merge all spec files
+├── implementation.md    # Architecture + design
+├── contributing.md      # Dev guide + quality gates
+└── archive/            # Move 60+ files here
 ```
 
 ## 📊 Success Metrics
 
-- **Test Pass Rate**: 100% (currently 88.6%)
-- **Code Coverage**: >80% weighted by complexity
-- **Cyclomatic Complexity**: ≤10 per function
+- **CI Status**: Green (priority zero)
+- **Test Pass Rate**: 100%
+- **Lint Violations**: 0
 - **Build Time**: <30 seconds
-- **REPL Startup**: <100ms
+- **Cyclomatic Complexity**: ≤10 enforced via test
 
-## 🚫 Not Doing
+## 🎯 Quality Gate Enforcement
 
-- Visitor pattern refactoring
-- Separate semantic analysis phase  
-- Actor system improvements
-- DataFrame direct Polars coupling
-- Package manager design
-- LSP implementation
+```rust
+#[test]
+fn enforce_complexity_limit() {
+    let max_complexity = 10;
+    for function in project_functions() {
+        assert!(
+            function.cyclomatic_complexity() <= max_complexity,
+            "{} exceeds complexity limit", 
+            function.name
+        );
+    }
+}
+```
 
-## 📅 Timeline
+## 📅 Realistic Timeline
 
-- **Day 1**: Parser fixes complete, 210/229 tests passing
-- **Day 2-3**: Type system complete, 220/229 tests passing
-- **Day 4**: Error handling complete, 226/229 tests passing
-- **Day 5**: All tests passing, ready for v0.4.0
+- **Hour 0-0.5**: Fix all clippy violations
+- **Hour 0.5-1**: Parser fixes
+- **Hour 1-3.5**: Remove dead code
+- **Hour 3.5-5.5**: Type system fixes
+- **Hour 5.5-6.5**: Try/catch transpilation
+- **Hour 6.5-9.5**: Remaining transpilation
+- **Hour 9.5-10.5**: Test assertions
+- **Hour 10.5-11**: Final validation
 
-## 📚 Documentation Index
+**Total: 11 hours over 2 days**
 
-### Core Specifications (15 files)
-- `docs/ruchy-lexer-spec.md` - Tokenization rules
-- `docs/ruchy-repl-spec.md` - REPL behavior
-- `docs/ruchy-binary-spec.md` - Binary compilation
-- `docs/ruchy-transpiler-docs.md` - Transpiler architecture
-- `docs/ruchy-edge-cases-spec.md` - Edge case handling
-- `docs/ruchy-disassembly-spec.md` - Bytecode disassembly
-- `docs/ruchy-cargo-integration.md` - Cargo integration
-- `docs/ruchy-lsp-spec.md` - Language server protocol
-- `docs/ruchy-oneliner-spec.md` - One-liner syntax
-- `docs/ruchy-visual-design-hello-world-spec.md` - UI/UX design
-- `docs/docker-spec.md` - Container deployment
-- `docs/name-resolution-spec.md` - Name resolution rules
-- `docs/ruchy-missing-specs.md` - Specification gaps
-- `docs/ruchy-repl-testing-spec.md` - REPL test strategy
-- `docs/ERROR_RECOVERY_IMPLEMENTATION.md` - Error recovery
+## 📚 Documentation (To Be Consolidated)
 
-### Architecture Documents (6 files)
-- `docs/architecture/ruchy-design-architectur.md` - Overall design
-- `docs/architecture/grammer.md` - Grammar specification
-- `docs/architecture/message-passing-mcp.md` - MCP integration
-- `docs/architecture/depyler-integration.md` - Python transpiler
-- `docs/architecture/quality-proxy.md` - Quality gates
-- `docs/architecture/script-capabilities.md` - Scripting features
+Current: 65+ files across 8 directories
+Target: 4 files + archive
 
-### Project Management (8 files)
-- `docs/ROADMAP.md` - **THIS FILE** (master plan)
-- `docs/project-management/CLAUDE.md` - AI implementation guide
-- `docs/project-management/CHANGELOG.md` - Version history
-- `docs/project-management/QA_SUMMARY.md` - Quality summary
-- `docs/project-management/QUICK_START.md` - Getting started
-- `docs/project-management/PUBLISH_INSTRUCTIONS.md` - Publishing guide
-- `docs/project-management/REPL_DEMONSTRATION.md` - REPL examples
-- `docs/PROJECT-STATUS.md` - Overall status
-
-### Completed Work (10+ files)
-- `docs/done/session-2025-01-17-completed.md` - Today's work
-- `docs/done/session-2025-01-16-completed.md` - Yesterday's work
-- `docs/done/v0.2-completed-features.md` - v0.2 features
-- `docs/done/implementation-status.md` - Implementation status
-- `docs/done/completed-features.md` - Feature list
-- `docs/done/lambda-feature-completed.yaml` - Lambda implementation
-- `docs/done/coverage-improvements-completed.yaml` - Coverage work
-- `docs/done/archived-todos/` - 20+ archived todo files
-
-### Quality & Process (3 files)
-- `docs/quality/QUALITY_REPORT.md` - Quality metrics
-- `docs/process/RELEASE_PROCESS.md` - Release workflow
-- `docs/releases/RELEASE_NOTES_v0.3.0.md` - v0.3 notes
-
-### Guides & Reports (4 files)
-- `docs/README.md` - Documentation overview
-- `docs/REPL_GUIDE.md` - REPL user guide
-- `docs/IMPLEMENTATION_REPORT.md` - Implementation details
-- `docs/bugs/repl-qa-report.md` - Bug reports
-
-### Total: 65+ documentation files organized across 8 categories
+Action: After code fixes, consolidate documentation in separate PR
 
 ---
 *Last Updated: 2025-01-17*
-*Estimated Completion: 2025-01-22*
-*Total Work: 36 hours*
+*Revised Estimate: 11 hours (was 36)*
+*Priority Zero: Fix lint violations first*
