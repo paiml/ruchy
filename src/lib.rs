@@ -365,7 +365,7 @@ mod tests {
 
     #[test]
     fn test_get_parse_error_with_errors() {
-        let error = get_parse_error("if");
+        let error = get_parse_error("fun (");
         assert!(error.is_some());
         assert!(error.unwrap().contains("Expected"));
     }
