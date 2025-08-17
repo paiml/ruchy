@@ -1,4 +1,5 @@
 //! REPL property testing module
+#![allow(clippy::unwrap_used)]
 
 #![cfg(test)]
 

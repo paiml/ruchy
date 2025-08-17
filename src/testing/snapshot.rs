@@ -263,6 +263,7 @@ pub fn core_snapshot_tests() -> Vec<(&'static str, &'static str)> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
     use crate::{Parser, Transpiler};
 

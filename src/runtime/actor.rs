@@ -175,7 +175,7 @@ pub struct ActorContext {
 impl ActorContext {
     /// Spawn a child actor under this actor's supervision
     pub fn spawn_child<B: ActorBehavior>(&mut self, name: String, behavior: B) -> Result<ActorRef> {
-        let mut system = self.system.lock().expect("Failed to lock actor system");
+        let mut system = self.system.lock().map_err(|_| anyhow!("Actor system mutex poisoned"))?;
         let actor_ref = system.spawn_supervised(name, Box::new(behavior), Some(self.actor_id))?;
         self.children.insert(actor_ref.id, actor_ref.clone());
         Ok(actor_ref)
@@ -195,7 +195,7 @@ impl ActorContext {
     ///
     /// Returns an error if the actor reference cannot be retrieved
     pub fn get_self(&self) -> Result<ActorRef> {
-        let system = self.system.lock().expect("Failed to lock system");
+        let system = self.system.lock().map_err(|_| anyhow!("Actor system mutex poisoned"))?;
         system
             .get_actor_ref(self.actor_id)
             .ok_or_else(|| anyhow!("Actor not found"))
@@ -203,7 +203,7 @@ impl ActorContext {
 
     /// Find actor by name
     pub fn find_actor(&self, name: &str) -> Option<ActorRef> {
-        let system = self.system.lock().expect("Failed to lock system");
+        let system = self.system.lock().ok()?;
         system.find_actor_by_name(name)
     }
 }
@@ -264,8 +264,7 @@ impl ActorRuntime {
                 actor_id: id,
                 actor_name: name.clone(),
                 supervisor: supervisor.and_then(|sup_id| {
-                    let sys = system.lock().expect("Failed to lock system");
-                    sys.get_actor_ref(sup_id)
+                    system.lock().ok()?.get_actor_ref(sup_id)
                 }),
                 children,
                 system: system.clone(),

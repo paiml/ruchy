@@ -81,11 +81,11 @@ impl RuchyMCP {
     /// Validate JSON value against `MonoType`
     fn validate_json_value(&self, value: &Value, expected_type: &MonoType) -> Result<()> {
         match (value, expected_type) {
-            (Value::String(_), MonoType::String) => Ok(()),
+            (Value::String(_), MonoType::String) 
+            | (Value::Bool(_), MonoType::Bool) 
+            | (Value::Null, MonoType::Unit) => Ok(()),
             (Value::Number(n), MonoType::Int) if n.is_i64() => Ok(()),
             (Value::Number(n), MonoType::Float) if n.is_f64() => Ok(()),
-            (Value::Bool(_), MonoType::Bool) => Ok(()),
-            (Value::Null, MonoType::Unit) => Ok(()),
             (Value::Array(arr), MonoType::List(inner_type)) => {
                 for item in arr {
                     self.validate_json_value(item, inner_type)?;
