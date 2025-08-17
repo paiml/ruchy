@@ -5,6 +5,9 @@ use super::{ParserState, *};
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_if(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume if
 
@@ -32,6 +35,9 @@ pub fn parse_if(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails
@@ -70,6 +76,9 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails
@@ -149,6 +158,9 @@ pub fn parse_pattern(state: &mut ParserState) -> Pattern {
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_for(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume for
 
@@ -180,6 +192,9 @@ pub fn parse_for(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails
@@ -234,6 +249,9 @@ pub fn parse_continue(state: &mut ParserState) -> Expr {
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume try
 
@@ -274,6 +292,9 @@ pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails

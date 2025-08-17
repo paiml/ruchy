@@ -268,9 +268,8 @@ impl RecoveryRules {
             }
             ErrorContext::LetBinding { .. } => RecoveryStrategy::SkipUntilSync,
             ErrorContext::IfExpression { .. } => RecoveryStrategy::DefaultValue,
-            ErrorContext::ArrayLiteral { .. } => RecoveryStrategy::PartialParse,
+            ErrorContext::ArrayLiteral { .. } | ErrorContext::StructLiteral { .. } => RecoveryStrategy::PartialParse,
             ErrorContext::BinaryOp { .. } => RecoveryStrategy::PanicMode,
-            ErrorContext::StructLiteral { .. } => RecoveryStrategy::PartialParse,
         }
     }
 

@@ -26,6 +26,9 @@ use crate::frontend::ast::ObjectField;
 /// - Failed to parse any expression within the block
 /// - Missing closing brace
 /// - Invalid object literal syntax when detected as object
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume {
 
@@ -278,6 +281,9 @@ fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Resul
 /// - Missing closing bracket
 /// - Invalid list comprehension syntax
 /// - Malformed comma-separated elements
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_list(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume [
 
@@ -406,6 +412,9 @@ pub fn parse_list_comprehension(
 /// - Failed to parse data value expressions
 /// - Missing closing brace
 /// - Inconsistent number of values per row
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume DataFrame
 

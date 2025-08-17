@@ -41,6 +41,9 @@ use anyhow::Result;
 /// Returns an error if:
 /// - The source code cannot be parsed
 /// - The transpilation to Rust fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn compile(source: &str) -> Result<String> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
@@ -78,6 +81,9 @@ pub fn get_parse_error(source: &str) -> Option<String> {
 /// Returns an error if:
 /// - The REPL cannot be initialized
 /// - User interaction fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn run_repl() -> Result<()> {
     let mut repl = runtime::repl::Repl::new()?;
     repl.run()

@@ -13,6 +13,9 @@ use proptest::test_runner::TestCaseError;
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn prop_parser_never_panics(input: String) -> Result<(), TestCaseError> {
     let mut parser = Parser::new(&input);
     // Parser should either succeed or return an error, never panic
@@ -21,6 +24,9 @@ pub fn prop_parser_never_panics(input: String) -> Result<(), TestCaseError> {
 }
 
 /// Property: Recovery parser should always produce some AST
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails
@@ -42,6 +48,9 @@ pub fn prop_recovery_parser_always_produces_ast(input: String) -> Result<(), Tes
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn prop_transpilation_preserves_structure(expr: Expr) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
 
@@ -57,6 +66,9 @@ pub fn prop_transpilation_preserves_structure(expr: Expr) -> Result<(), TestCase
 }
 
 /// Property: String interpolation transpiles correctly
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails
@@ -78,6 +90,9 @@ pub fn prop_string_interpolation_transpiles(parts: Vec<StringPart>) -> Result<()
 }
 
 /// Property: Parse-print roundtrip
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails
@@ -124,6 +139,9 @@ pub fn prop_parse_print_roundtrip(expr: Expr) -> Result<(), TestCaseError> {
     /// # Errors
     ///
     /// Returns an error if the operation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
 pub fn prop_well_typed_always_transpiles(expr: Expr) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
 
@@ -148,6 +166,9 @@ pub fn prop_well_typed_always_transpiles(expr: Expr) -> Result<(), TestCaseError
 }
 
 /// Property: Error recovery should handle truncated input gracefully
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     /// # Errors
     ///
     /// Returns an error if the operation fails

@@ -41,6 +41,9 @@ impl ReplV2 {
     /// # Errors
     ///
     /// Returns an error if the temporary directory cannot be created
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn new() -> Result<Self> {
         let temp_dir = std::env::temp_dir().join("ruchy_repl_v2");
         fs::create_dir_all(&temp_dir)?;
@@ -64,6 +67,9 @@ impl ReplV2 {
     /// - Readline initialization fails
     /// - User input cannot be read
     /// - Commands fail to execute
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn run(&mut self) -> Result<()> {
         println!("{}", "Welcome to Ruchy REPL v2.0".bright_cyan().bold());
         println!(
@@ -88,7 +94,7 @@ impl ReplV2 {
                     rl.add_history_entry(line.as_str())?;
 
                     if line.starts_with(':') {
-                        if !self.handle_command(&line)? {
+                        if !self.handle_command(&line) {
                             break;
                         }
                         continue;
@@ -132,6 +138,9 @@ impl ReplV2 {
     /// # Errors
     ///
     /// Returns an error if parsing, canonicalization, or evaluation fails
+    /// # Errors
+    ///
+    /// Returns an error if the operation fails
     pub fn eval(&mut self, input: &str) -> Result<String> {
         // Parse the input
         let mut parser = Parser::new(input);
@@ -142,15 +151,12 @@ impl ReplV2 {
 
         // Handle the case where we have free variables (from previous definitions)
         // For now, we'll handle this by maintaining context differently
-        let core = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let Ok(core) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             normalizer.normalize(&ast)
-        })) {
-            Ok(expr) => expr,
-            Err(_) => {
-                // If normalization fails due to unbound variables,
-                // fall back to compilation-based approach
-                return self.eval_with_compilation(input, &ast);
-            }
+        })) else {
+            // If normalization fails due to unbound variables,
+            // fall back to compilation-based approach
+            return self.eval_with_compilation(input, &ast);
         };
 
         if self.use_interpreter {
@@ -273,6 +279,7 @@ fn main() {{
     }
 
     /// Format a value for display
+    #[allow(clippy::only_used_in_recursion)]
     fn format_value(&self, value: &Value) -> String {
         match value {
             Value::Integer(i) => i.to_string(),
@@ -289,15 +296,15 @@ fn main() {{
     }
 
     /// Handle REPL commands
-    fn handle_command(&mut self, cmd: &str) -> Result<bool> {
+    fn handle_command(&mut self, cmd: &str) -> bool {
         let parts: Vec<&str> = cmd.split_whitespace().collect();
 
         match parts.first().copied() {
             Some(":help") => {
-                self.print_help();
-                Ok(true)
+                Self::print_help();
+                true
             }
-            Some(":quit" | ":exit") => Ok(false), // BUG fix: Support :exit as alias
+            Some(":quit" | ":exit") => false, // BUG fix: Support :exit as alias
             Some(":mode") => {
                 if let Some(mode) = parts.get(1) {
                     match *mode {
@@ -319,14 +326,14 @@ fn main() {{
                     };
                     println!("Current mode: {mode}");
                 }
-                Ok(true)
+                true
             }
             Some(":clear") => {
                 self.rust_definitions.clear();
                 self.bindings.clear();
                 self.interpreter = ReferenceInterpreter::new();
                 println!("Session cleared");
-                Ok(true)
+                true
             }
             Some(":bindings") => {
                 if self.bindings.is_empty() {
@@ -336,17 +343,17 @@ fn main() {{
                         println!("  {name}: {ty}");
                     }
                 }
-                Ok(true)
+                true
             }
             _ => {
                 println!("Unknown command: {cmd}");
                 println!("Type :help for available commands");
-                Ok(true)
+                true
             }
         }
     }
 
-    fn print_help(&self) {
+    fn print_help() {
         println!("{}", "Available commands:".bright_cyan());
         println!("  {} - Show this help message", ":help".bright_green());
         println!("  {} - Exit the REPL", ":quit, :exit".bright_green());

@@ -105,7 +105,7 @@ impl DeadCodeElimination {
     /// Mark locals in an rvalue as live
     fn mark_rvalue_live(&mut self, rvalue: &Rvalue) {
         match rvalue {
-            Rvalue::Use(operand) | Rvalue::UnaryOp(_, operand) => {
+            Rvalue::Use(operand) | Rvalue::UnaryOp(_, operand) | Rvalue::Cast(_, operand, _) => {
                 self.mark_operand_live(operand);
             }
             Rvalue::BinaryOp(_, left, right) => {
@@ -125,9 +125,6 @@ impl DeadCodeElimination {
                 for arg in args {
                     self.mark_operand_live(arg);
                 }
-            }
-            Rvalue::Cast(_, operand, _) => {
-                self.mark_operand_live(operand);
             }
         }
     }
@@ -482,6 +479,7 @@ impl CommonSubexpressionElimination {
     }
 
     /// Generate a key for a place
+    #[allow(clippy::only_used_in_recursion)]
     fn place_key(&self, place: &Place) -> String {
         match place {
             Place::Local(local) => format!("local({})", local.0),
