@@ -41,11 +41,11 @@ impl Unifier {
         match (t1, t2) {
             (MonoType::Var(v1), MonoType::Var(v2)) if v1 == v2 => Ok(()),
             (MonoType::Var(v), t) | (t, MonoType::Var(v)) => self.bind(&v, &t),
-            (MonoType::Int, MonoType::Int) => Ok(()),
-            (MonoType::Float, MonoType::Float) => Ok(()),
-            (MonoType::Bool, MonoType::Bool) => Ok(()),
-            (MonoType::String, MonoType::String) => Ok(()),
-            (MonoType::Unit, MonoType::Unit) => Ok(()),
+            (MonoType::Int, MonoType::Int) 
+            | (MonoType::Float, MonoType::Float)
+            | (MonoType::Bool, MonoType::Bool)
+            | (MonoType::String, MonoType::String)
+            | (MonoType::Unit, MonoType::Unit) => Ok(()),
             (MonoType::Named(n1), MonoType::Named(n2)) if n1 == n2 => Ok(()),
             (MonoType::Function(a1, r1), MonoType::Function(a2, r2)) => {
                 self.unify(&a1, &a2)?;
