@@ -1,8 +1,8 @@
 //! Transpiler from Ruchy AST to Rust code
 
 use crate::frontend::ast::{
-    Attribute, BinaryOp, DataFrameColumn, DataFrameOp, Expr, ExprKind, Literal, MatchArm, 
-    Param, Pattern, PipelineStage, StringPart, Type, TypeKind, UnaryOp,
+    Attribute, BinaryOp, DataFrameColumn, DataFrameOp, Expr, ExprKind, Literal, MatchArm, Param,
+    Pattern, PipelineStage, StringPart, Type, TypeKind, UnaryOp,
 };
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
@@ -131,7 +131,9 @@ impl Transpiler {
                 self.transpile_list_comprehension(element, variable, iterable, condition.as_deref())
             }
             ExprKind::DataFrame { columns } => self.transpile_dataframe(columns),
-            ExprKind::DataFrameOperation { source, operation } => self.transpile_dataframe_operation(source, operation),
+            ExprKind::DataFrameOperation { source, operation } => {
+                self.transpile_dataframe_operation(source, operation)
+            }
             ExprKind::For { var, iter, body } => self.transpile_for(var, iter, body),
             ExprKind::While { condition, body } => self.transpile_while(condition, body),
             ExprKind::Range {
@@ -926,10 +928,8 @@ impl Transpiler {
             .iter()
             .map(|col| {
                 let col_name = &col.name;
-                let values: Result<Vec<TokenStream>> = col.values
-                    .iter()
-                    .map(|v| self.transpile_expr(v))
-                    .collect();
+                let values: Result<Vec<TokenStream>> =
+                    col.values.iter().map(|v| self.transpile_expr(v)).collect();
                 let values = values?;
                 Ok(quote! {
                     Series::new(#col_name, vec![#(#values),*])
@@ -945,9 +945,13 @@ impl Transpiler {
         })
     }
 
-    fn transpile_dataframe_operation(&self, source: &Expr, operation: &DataFrameOp) -> Result<TokenStream> {
+    fn transpile_dataframe_operation(
+        &self,
+        source: &Expr,
+        operation: &DataFrameOp,
+    ) -> Result<TokenStream> {
         let source_tokens = self.transpile_expr(source)?;
-        
+
         match operation {
             DataFrameOp::Filter(condition) => {
                 let cond_tokens = self.transpile_expr(condition)?;
@@ -973,17 +977,13 @@ impl Transpiler {
                     #source_tokens.sort(&[#(#cols),*], false)?
                 })
             }
-            DataFrameOp::Limit(n) | DataFrameOp::Head(n) => {
-                Ok(quote! {
-                    #source_tokens.head(Some(#n))
-                })
-            }
-            DataFrameOp::Tail(n) => {
-                Ok(quote! {
-                    #source_tokens.tail(Some(#n))
-                })
-            }
-            _ => bail!("Unsupported DataFrame operation")
+            DataFrameOp::Limit(n) | DataFrameOp::Head(n) => Ok(quote! {
+                #source_tokens.head(Some(#n))
+            }),
+            DataFrameOp::Tail(n) => Ok(quote! {
+                #source_tokens.tail(Some(#n))
+            }),
+            _ => bail!("Unsupported DataFrame operation"),
         }
     }
 
@@ -1205,11 +1205,14 @@ impl Transpiler {
                     (quote! {}, &method.params[..])
                 } else {
                     let first_param = &method.params[0];
-                    if matches!(first_param.name.as_str(), "self" | "mut self" | "&self" | "&mut self") {
+                    if matches!(
+                        first_param.name.as_str(),
+                        "self" | "mut self" | "&self" | "&mut self"
+                    ) {
                         // Method with self parameter
                         let self_tok = match first_param.name.as_str() {
                             "mut self" | "&mut self" => quote! { &mut self },
-                            "self" => quote! { self },
+                            "self" => quote! { &self },  // In traits, self defaults to &self
                             "&self" => quote! { &self },
                             _ => {
                                 // Fallback to type annotation
@@ -1217,7 +1220,7 @@ impl Transpiler {
                                     TypeKind::Named(name) if name == "&mut self" => {
                                         quote! { &mut self }
                                     }
-                                    TypeKind::Named(name) if name == "self" => quote! { self },
+                                    TypeKind::Named(name) if name == "self" => quote! { &self },  // In traits, self defaults to &self
                                     _ => quote! { &self }, // Default to immutable reference
                                 }
                             }
@@ -1326,11 +1329,14 @@ impl Transpiler {
                     (quote! {}, &method.params[..])
                 } else {
                     let first_param = &method.params[0];
-                    if matches!(first_param.name.as_str(), "self" | "mut self" | "&self" | "&mut self") {
+                    if matches!(
+                        first_param.name.as_str(),
+                        "self" | "mut self" | "&self" | "&mut self"
+                    ) {
                         // Method with self parameter
                         let self_tok = match first_param.name.as_str() {
                             "mut self" | "&mut self" => quote! { &mut self },
-                            "self" => quote! { self },
+                            "self" => quote! { &self },  // In impl blocks, self defaults to &self
                             "&self" => quote! { &self },
                             _ => {
                                 // Fallback to type annotation
@@ -1338,7 +1344,7 @@ impl Transpiler {
                                     TypeKind::Named(name) if name == "&mut self" => {
                                         quote! { &mut self }
                                     }
-                                    TypeKind::Named(name) if name == "self" => quote! { self },
+                                    TypeKind::Named(name) if name == "self" => quote! { &self },  // In impl blocks, self defaults to &self
                                     _ => quote! { &self }, // Default to immutable reference
                                 }
                             }

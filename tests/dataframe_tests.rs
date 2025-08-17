@@ -1,4 +1,6 @@
-//! DataFrame functionality tests
+//! `DataFrame` functionality tests
+
+#![allow(clippy::unwrap_used)]  // OK in tests
 
 use ruchy::{compile, get_parse_error, is_valid_syntax};
 
@@ -59,9 +61,8 @@ fn test_dataframe_legacy_syntax() {
 
 #[test]
 fn test_dataframe_operations() {
-    // Filter operation
-    let _code = "df![age => [25, 30, 35]].filter(age > 25)";
-    // This test might fail until we implement method chaining
+    // Filter operation - will test this when method chaining is implemented
+    // let code = "df![age => [25, 30, 35]].filter(age > 25)";
     // For now, just test that the DataFrame literal compiles
     let df_code = "df![age => [25, 30, 35]]";
     assert!(is_valid_syntax(df_code));
@@ -71,10 +72,10 @@ fn test_dataframe_operations() {
 fn test_dataframe_invalid_syntax() {
     // Missing closing bracket
     assert!(get_parse_error("df![name => [\"Alice\"").is_some());
-    
+
     // Invalid arrow syntax
     assert!(get_parse_error("df![name -> [\"Alice\"]]").is_some());
-    
+
     // Empty column name
     assert!(get_parse_error("df![ => [1, 2, 3]]").is_some());
 }
@@ -98,7 +99,7 @@ fn test_dataframe_polars_integration() {
         price => [1.5, 0.8, 2.0],
         quantity => [10, 20, 15]
     ]";
-    
+
     let result = compile(code).unwrap();
     // Check for polars-related types
     assert!(result.contains("DataFrame") || result.contains("Series"));

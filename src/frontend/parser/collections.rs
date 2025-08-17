@@ -1,7 +1,7 @@
 //! Collections parsing (lists, dataframes, comprehensions, blocks, object literals)
 
 use super::{ParserState, *};
-use crate::frontend::ast::{DataFrameColumn, ObjectField};
+use crate::frontend::ast::{DataFrameColumn, Literal, ObjectField};
 
 /// Parse a block expression or object literal
 ///
@@ -131,7 +131,12 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
 
     state.tokens.expect(&Token::RightBrace)?;
 
-    Ok(Expr::new(ExprKind::Block(exprs), start_span))
+    // Empty blocks should be unit literals
+    if exprs.is_empty() {
+        Ok(Expr::new(ExprKind::Literal(Literal::Unit), start_span))
+    } else {
+        Ok(Expr::new(ExprKind::Block(exprs), start_span))
+    }
 }
 
 /// Check if the current position looks like an object literal
@@ -568,9 +573,10 @@ pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
                 name: col_name,
                 values: value_vec,
             });
-        } else if matches!(state.tokens.peek(), Some((Token::Comma, _))) 
-               || matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
-               || matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+        } else if matches!(state.tokens.peek(), Some((Token::Comma, _)))
+            || matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
+            || matches!(state.tokens.peek(), Some((Token::RightBracket, _)))
+        {
             // Legacy syntax: just column names, then semicolon and rows
             // For backward compatibility, create empty column for now
             columns.push(DataFrameColumn {
@@ -600,10 +606,14 @@ pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
     Ok(Expr::new(ExprKind::DataFrame { columns }, start_span))
 }
 
-/// Parse legacy row-based DataFrame syntax for backward compatibility
-fn parse_legacy_dataframe_rows(state: &mut ParserState, columns: &mut Vec<DataFrameColumn>) -> Result<()> {
+/// Parse legacy row-based `DataFrame` syntax for backward compatibility
+#[allow(clippy::ptr_arg)]  // We need to mutate the Vec, not just read it
+fn parse_legacy_dataframe_rows(
+    state: &mut ParserState,
+    columns: &mut Vec<DataFrameColumn>,
+) -> Result<()> {
     let mut rows: Vec<Vec<Expr>> = Vec::new();
-    
+
     loop {
         // Check for end bracket
         if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
@@ -611,27 +621,28 @@ fn parse_legacy_dataframe_rows(state: &mut ParserState, columns: &mut Vec<DataFr
         }
 
         let mut row = Vec::new();
-        
+
         // Parse row values
         loop {
             if matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
-            || matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+                || matches!(state.tokens.peek(), Some((Token::RightBracket, _)))
+            {
                 break;
             }
-            
+
             row.push(super::parse_expr_recursive(state)?);
-            
+
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance();
             } else {
                 break;
             }
         }
-        
+
         if !row.is_empty() {
             rows.push(row);
         }
-        
+
         // Check for row separator
         if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
             state.tokens.advance();
@@ -639,7 +650,7 @@ fn parse_legacy_dataframe_rows(state: &mut ParserState, columns: &mut Vec<DataFr
             break;
         }
     }
-    
+
     // Convert rows to column-based format
     if !rows.is_empty() {
         for (col_idx, column) in columns.iter_mut().enumerate() {
@@ -650,6 +661,6 @@ fn parse_legacy_dataframe_rows(state: &mut ParserState, columns: &mut Vec<DataFr
             }
         }
     }
-    
+
     Ok(())
 }

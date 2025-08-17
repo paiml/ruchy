@@ -108,7 +108,7 @@ pub(crate) fn parse_expr_with_precedence_recursive(
                     // Try operator should only be used when ? is truly at the end
                     let next_token = state.tokens.peek_nth(1);
                     let is_try = match next_token {
-                        None => true, // End of input - definitely a try operator
+                        None => true,                             // End of input - definitely a try operator
                         Some((Token::Identifier(_), _)) => false, // Never try when followed by identifier (ask operation)
                         Some((token, _)) => matches!(
                             token,
