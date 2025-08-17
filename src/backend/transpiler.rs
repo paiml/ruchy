@@ -1228,8 +1228,7 @@ impl Transpiler {
                         // Method with self parameter
                         let self_tok = match first_param.name.as_str() {
                             "mut self" | "&mut self" => quote! { &mut self },
-                            "self" => quote! { &self }, // In traits, self defaults to &self
-                            "&self" => quote! { &self },
+                            "self" | "&self" => quote! { &self }, // In traits, self defaults to &self
                             _ => {
                                 // Fallback to type annotation
                                 match &first_param.ty.kind {
@@ -1352,8 +1351,7 @@ impl Transpiler {
                         // Method with self parameter
                         let self_tok = match first_param.name.as_str() {
                             "mut self" | "&mut self" => quote! { &mut self },
-                            "self" => quote! { &self }, // In impl blocks, self defaults to &self
-                            "&self" => quote! { &self },
+                            "self" | "&self" => quote! { &self }, // In impl blocks, self defaults to &self
                             _ => {
                                 // Fallback to type annotation
                                 match &first_param.ty.kind {

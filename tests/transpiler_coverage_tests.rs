@@ -168,7 +168,7 @@ fn test_transpile_for_loop() -> Result<()> {
 
 #[test]
 fn test_transpile_while_loop() -> Result<()> {
-    let input = "while x < 10 { x = x + 1 }";
+    let input = "while x < 10 { x + 1 }";
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;
     let transpiler = Transpiler::new();
