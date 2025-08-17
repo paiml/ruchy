@@ -1,1 +1,0 @@
-trait Show { fun show(&self) -> String }
