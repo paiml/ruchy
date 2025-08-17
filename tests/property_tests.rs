@@ -192,7 +192,7 @@ proptest! {
     #[test]
     fn float_parsing(f in -1_000_000.0..1_000_000.0) {
         // Use a reasonable range of floats that don't need scientific notation
-        
+
         let input = format!("{}", f);
         let mut parser = Parser::new(&input);
         let expr = parser.parse().unwrap();
@@ -445,10 +445,10 @@ proptest! {
             }
         }
         input.push('"');
-        
+
         let mut parser = Parser::new(&input);
         let result = parser.parse();
-        
+
         // Should either parse successfully or fail gracefully
         if let Ok(expr) = result {
             // Should be either string interpolation or literal string
@@ -473,10 +473,10 @@ proptest! {
             )),
             ruchy::frontend::ast::StringPart::Text("!".to_string()),
         ];
-        
+
         let transpiler = ruchy::backend::transpiler::Transpiler::new();
         let result = transpiler.transpile_string_interpolation(&parts);
-        
+
         // Should either succeed or fail cleanly, never panic
         if let Ok(tokens) = result {
             let code = tokens.to_string();

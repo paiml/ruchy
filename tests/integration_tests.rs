@@ -243,9 +243,13 @@ fn test_compile_generated_rust_code() {
         .current_dir(project_path)
         .output()
         .expect("Failed to create Cargo project");
-    
-    assert!(init_output.status.success(), "cargo init failed: {}", String::from_utf8_lossy(&init_output.stderr));
-    
+
+    assert!(
+        init_output.status.success(),
+        "cargo init failed: {}",
+        String::from_utf8_lossy(&init_output.stderr)
+    );
+
     // Ensure src directory exists
     let src_dir = project_path.join("src");
     fs::create_dir_all(&src_dir).expect("Failed to create src directory");

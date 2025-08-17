@@ -333,7 +333,8 @@ pub fn arb_well_typed_expr() -> BoxedStrategy<Expr> {
 /// Shrinking strategy for expressions
 impl Expr {
     /// Shrink an expression to simpler forms
-    #[must_use] pub fn shrink_expr(&self) -> Vec<Expr> {
+    #[must_use]
+    pub fn shrink_expr(&self) -> Vec<Expr> {
         let mut shrunk = Vec::new();
 
         match &self.kind {

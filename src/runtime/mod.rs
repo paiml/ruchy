@@ -4,8 +4,8 @@
 
 pub mod repl;
 pub mod repl_grammar_coverage;
-pub mod repl_v2;
 mod repl_tests;
+pub mod repl_v2;
 
 // Export ReplV2 as the default Repl
 pub use repl_v2::ReplV2 as Repl;

@@ -11,11 +11,13 @@ pub struct Span {
 }
 
 impl Span {
-    #[must_use] pub fn new(start: usize, end: usize) -> Self {
+    #[must_use]
+    pub fn new(start: usize, end: usize) -> Self {
         Self { start, end }
     }
 
-    #[must_use] pub fn merge(self, other: Self) -> Self {
+    #[must_use]
+    pub fn merge(self, other: Self) -> Self {
         Self {
             start: self.start.min(other.start),
             end: self.end.max(other.end),
@@ -32,12 +34,22 @@ pub struct Expr {
 }
 
 impl Expr {
-    #[must_use] pub fn new(kind: ExprKind, span: Span) -> Self {
-        Self { kind, span, attributes: Vec::new() }
+    #[must_use]
+    pub fn new(kind: ExprKind, span: Span) -> Self {
+        Self {
+            kind,
+            span,
+            attributes: Vec::new(),
+        }
     }
 
-    #[must_use] pub fn with_attributes(kind: ExprKind, span: Span, attributes: Vec<Attribute>) -> Self {
-        Self { kind, span, attributes }
+    #[must_use]
+    pub fn with_attributes(kind: ExprKind, span: Span, attributes: Vec<Attribute>) -> Self {
+        Self {
+            kind,
+            span,
+            attributes,
+        }
     }
 }
 
@@ -80,6 +92,7 @@ pub enum ExprKind {
     },
     Function {
         name: String,
+        type_params: Vec<String>,
         params: Vec<Param>,
         return_type: Option<Type>,
         body: Box<Expr>,
@@ -91,6 +104,7 @@ pub enum ExprKind {
     },
     Struct {
         name: String,
+        type_params: Vec<String>,
         fields: Vec<StructField>,
     },
     StructLiteral {
@@ -103,9 +117,11 @@ pub enum ExprKind {
     },
     Trait {
         name: String,
+        type_params: Vec<String>,
         methods: Vec<TraitMethod>,
     },
     Impl {
+        type_params: Vec<String>,
         trait_name: Option<String>,
         for_type: String,
         methods: Vec<ImplMethod>,
@@ -280,6 +296,7 @@ pub struct Type {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TypeKind {
     Named(String),
+    Generic { base: String, params: Vec<Type> },
     Optional(Box<Type>),
     List(Box<Type>),
     Function { params: Vec<Type>, ret: Box<Type> },
@@ -378,8 +395,8 @@ mod tests {
         let kind_size = std::mem::size_of::<ExprKind>();
         // Current sizes are larger than ideal but acceptable for MVP
         // Future optimization: Use arena allocation and indices
-        assert!(expr_size <= 160, "Expr too large: {expr_size} bytes");
-        assert!(kind_size <= 112, "ExprKind too large: {kind_size} bytes");
+        assert!(expr_size <= 192, "Expr too large: {expr_size} bytes");
+        assert!(kind_size <= 152, "ExprKind too large: {kind_size} bytes");
     }
 
     #[test]
@@ -424,7 +441,7 @@ mod tests {
         let literals = vec![
             Literal::Integer(42),
             #[allow(clippy::approx_constant)]
-            Literal::Float(3.14),  // Not PI, just a test value
+            Literal::Float(3.14), // Not PI, just a test value
             Literal::String("hello".to_string()),
             Literal::Bool(true),
             Literal::Unit,
@@ -489,7 +506,11 @@ mod tests {
         );
 
         match expr.kind {
-            ExprKind::Binary { left: l, op, right: r } => {
+            ExprKind::Binary {
+                left: l,
+                op,
+                right: r,
+            } => {
                 assert_eq!(op, BinaryOp::Add);
                 match l.kind {
                     ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 1),
@@ -555,7 +576,11 @@ mod tests {
         );
 
         match expr.kind {
-            ExprKind::If { condition: c, then_branch: t, else_branch: e } => {
+            ExprKind::If {
+                condition: c,
+                then_branch: t,
+                else_branch: e,
+            } => {
                 match c.kind {
                     ExprKind::Literal(Literal::Bool(b)) => assert!(b),
                     _ => panic!("Wrong condition"),
@@ -597,7 +622,11 @@ mod tests {
         );
 
         match expr.kind {
-            ExprKind::Let { name, value: v, body: b } => {
+            ExprKind::Let {
+                name,
+                value: v,
+                body: b,
+            } => {
                 assert_eq!(name, "x");
                 match v.kind {
                     ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 42),
@@ -614,16 +643,14 @@ mod tests {
 
     #[test]
     fn test_function_expression() {
-        let params = vec![
-            Param {
-                name: "x".to_string(),
-                ty: Type {
-                    kind: TypeKind::Named("i32".to_string()),
-                    span: Span::new(10, 13),
-                },
-                span: Span::new(8, 13),
+        let params = vec![Param {
+            name: "x".to_string(),
+            ty: Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::new(10, 13),
             },
-        ];
+            span: Span::new(8, 13),
+        }];
         let body = Box::new(Expr::new(
             ExprKind::Identifier("x".to_string()),
             Span::new(20, 21),
@@ -632,6 +659,7 @@ mod tests {
         let expr = Expr::new(
             ExprKind::Function {
                 name: "identity".to_string(),
+                type_params: vec![],
                 params,
                 return_type: Some(Type {
                     kind: TypeKind::Named("i32".to_string()),
@@ -644,7 +672,13 @@ mod tests {
         );
 
         match expr.kind {
-            ExprKind::Function { name, params: p, return_type, body: b, .. } => {
+            ExprKind::Function {
+                name,
+                params: p,
+                return_type,
+                body: b,
+                ..
+            } => {
                 assert_eq!(name, "identity");
                 assert_eq!(p.len(), 1);
                 assert_eq!(p[0].name, "x");
@@ -669,10 +703,7 @@ mod tests {
             Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(7, 8)),
         ];
 
-        let expr = Expr::new(
-            ExprKind::Call { func, args },
-            Span::new(0, 9),
-        );
+        let expr = Expr::new(ExprKind::Call { func, args }, Span::new(0, 9));
 
         match expr.kind {
             ExprKind::Call { func: f, args: a } => {
@@ -752,10 +783,14 @@ mod tests {
         );
 
         match expr.kind {
-            ExprKind::For { var, iter: it, body: b } => {
+            ExprKind::For {
+                var,
+                iter: it,
+                body: b,
+            } => {
                 assert_eq!(var, "i");
                 match it.kind {
-                    ExprKind::Range { .. } => {},
+                    ExprKind::Range { .. } => {}
                     _ => panic!("Wrong iterator"),
                 }
                 match b.kind {
@@ -788,7 +823,11 @@ mod tests {
         );
 
         match expr.kind {
-            ExprKind::Range { start: s, end: e, inclusive } => {
+            ExprKind::Range {
+                start: s,
+                end: e,
+                inclusive,
+            } => {
                 assert!(!inclusive);
                 match s.kind {
                     ExprKind::Literal(Literal::Integer(n)) => assert_eq!(n, 1),
@@ -833,15 +872,13 @@ mod tests {
             ]),
             Span::new(0, 6),
         ));
-        let stages = vec![
-            PipelineStage {
-                op: Box::new(Expr::new(
-                    ExprKind::Identifier("filter".to_string()),
-                    Span::new(10, 16),
-                )),
-                span: Span::new(10, 16),
-            },
-        ];
+        let stages = vec![PipelineStage {
+            op: Box::new(Expr::new(
+                ExprKind::Identifier("filter".to_string()),
+                Span::new(10, 16),
+            )),
+            span: Span::new(10, 16),
+        }];
 
         let expr = Expr::new(
             ExprKind::Pipeline {
@@ -924,9 +961,9 @@ mod tests {
 
         for pattern in patterns {
             match pattern {
-                Pattern::Wildcard => {},
-                Pattern::Literal(_) => {},
-                Pattern::Identifier(_) => {},
+                Pattern::Wildcard => {}
+                Pattern::Literal(_) => {}
+                Pattern::Identifier(_) => {}
                 Pattern::List(list) => assert!(!list.is_empty()),
             }
         }
@@ -955,12 +992,10 @@ mod tests {
             },
             Type {
                 kind: TypeKind::Function {
-                    params: vec![
-                        Type {
-                            kind: TypeKind::Named("i32".to_string()),
-                            span: Span::new(0, 3),
-                        },
-                    ],
+                    params: vec![Type {
+                        kind: TypeKind::Named("i32".to_string()),
+                        span: Span::new(0, 3),
+                    }],
                     ret: Box::new(Type {
                         kind: TypeKind::Named("String".to_string()),
                         span: Span::new(7, 13),
@@ -973,8 +1008,12 @@ mod tests {
         for ty in types {
             match ty.kind {
                 TypeKind::Named(name) => assert!(!name.is_empty()),
-                TypeKind::Optional(_) => {},
-                TypeKind::List(_) => {},
+                TypeKind::Generic { base, params } => {
+                    assert!(!base.is_empty());
+                    assert!(!params.is_empty());
+                }
+                TypeKind::Optional(_) => {}
+                TypeKind::List(_) => {}
                 TypeKind::Function { params, .. } => assert!(!params.is_empty()),
             }
         }

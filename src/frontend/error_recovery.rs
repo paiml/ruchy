@@ -47,7 +47,8 @@ pub struct RecoveryParser<'a> {
 }
 
 impl<'a> RecoveryParser<'a> {
-    #[must_use] pub fn new(input: &'a str) -> Self {
+    #[must_use]
+    pub fn new(input: &'a str) -> Self {
         Self {
             tokens: TokenStream::new(input),
             errors: Vec::new(),
@@ -136,7 +137,10 @@ impl<'a> RecoveryParser<'a> {
                         }
                     };
 
-                    let right = if let Ok(expr) = self.parse_expr_with_precedence_recovery(prec + 1) { expr } else {
+                    let right = if let Ok(expr) = self.parse_expr_with_precedence_recovery(prec + 1)
+                    {
+                        expr
+                    } else {
                         // Create ghost node for missing right operand
                         let ghost = self.create_ghost_node("Missing right operand");
                         self.record_error(
@@ -251,7 +255,9 @@ impl<'a> RecoveryParser<'a> {
     fn parse_if_recovery(&mut self) -> Result<Expr> {
         let start_span = self.expect_or_recover(&Token::If);
 
-        let condition = if let Ok(expr) = self.parse_expr_recovery() { Box::new(expr) } else {
+        let condition = if let Ok(expr) = self.parse_expr_recovery() {
+            Box::new(expr)
+        } else {
             self.record_error(
                 "Missing condition in if expression".to_string(),
                 Some("Add a condition after 'if'".to_string()),
@@ -289,7 +295,9 @@ impl<'a> RecoveryParser<'a> {
     fn parse_let_recovery(&mut self) -> Result<Expr> {
         let start_span = self.expect_or_recover(&Token::Let);
 
-        let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() { name } else {
+        let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() {
+            name
+        } else {
             self.record_error(
                 "Expected identifier after 'let'".to_string(),
                 Some("Add a variable name".to_string()),
@@ -299,7 +307,9 @@ impl<'a> RecoveryParser<'a> {
 
         let _ = self.expect_or_recover(&Token::Equal);
 
-        let value = if let Ok(expr) = self.parse_expr_recovery() { Box::new(expr) } else {
+        let value = if let Ok(expr) = self.parse_expr_recovery() {
+            Box::new(expr)
+        } else {
             self.record_error(
                 "Missing value in let binding".to_string(),
                 Some("Add a value after '='".to_string()),
@@ -324,7 +334,9 @@ impl<'a> RecoveryParser<'a> {
     fn parse_function_recovery(&mut self) -> Result<Expr> {
         let start_span = self.expect_or_recover(&Token::Fun);
 
-        let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() { name } else {
+        let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() {
+            name
+        } else {
             self.record_error(
                 "Expected function name".to_string(),
                 Some("Add a function name after 'fun'".to_string()),
@@ -350,6 +362,7 @@ impl<'a> RecoveryParser<'a> {
         Ok(Expr::new(
             ExprKind::Function {
                 name,
+                type_params: vec![],
                 params,
                 return_type,
                 body,
@@ -367,7 +380,9 @@ impl<'a> RecoveryParser<'a> {
             .map_or(Span::new(0, 0), |(_, span)| *span);
 
         while !matches!(self.tokens.peek(), Some((Token::RightBrace, _)) | None) {
-            if let Ok(expr) = self.parse_expr_recovery() { exprs.push(expr) } else {
+            if let Ok(expr) = self.parse_expr_recovery() {
+                exprs.push(expr);
+            } else {
                 // Try to recover by finding next statement
                 self.synchronize();
                 if self.recovery_mode {
@@ -474,7 +489,10 @@ impl<'a> RecoveryParser<'a> {
     }
 
     fn parse_type_recovery(&mut self) -> Type {
-        let (base_type, span) = if let Some((Token::Identifier(name), span)) = self.tokens.advance() { (TypeKind::Named(name), span) } else {
+        let (base_type, span) = if let Some((Token::Identifier(name), span)) = self.tokens.advance()
+        {
+            (TypeKind::Named(name), span)
+        } else {
             self.record_error(
                 "Expected type".to_string(),
                 Some("Add a type annotation".to_string()),
@@ -510,10 +528,7 @@ impl<'a> RecoveryParser<'a> {
 
     /// Record an error for later reporting
     fn record_error(&mut self, message: String, hint: Option<String>) {
-        let span = self
-            .tokens
-            .peek()
-            .map_or(Span::new(0, 0), |(_, s)| *s);
+        let span = self.tokens.peek().map_or(Span::new(0, 0), |(_, s)| *s);
 
         self.errors.push(ParseError {
             message,

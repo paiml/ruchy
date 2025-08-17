@@ -200,7 +200,8 @@ pub enum Token {
 }
 
 impl Token {
-    #[must_use] pub fn is_binary_op(&self) -> bool {
+    #[must_use]
+    pub fn is_binary_op(&self) -> bool {
         matches!(
             self,
             Token::Plus
@@ -225,7 +226,8 @@ impl Token {
         )
     }
 
-    #[must_use] pub fn is_unary_op(&self) -> bool {
+    #[must_use]
+    pub fn is_unary_op(&self) -> bool {
         matches!(self, Token::Bang | Token::Minus | Token::Tilde)
     }
 }
@@ -236,13 +238,14 @@ pub struct TokenStream<'a> {
 }
 
 impl<'a> TokenStream<'a> {
-    #[must_use] pub fn new(input: &'a str) -> Self {
+    #[must_use]
+    pub fn new(input: &'a str) -> Self {
         Self {
             lexer: Token::lexer(input),
             peeked: None,
         }
     }
-    
+
     /// Get the current position (line, column) in the source
     #[must_use]
     pub fn position(&self) -> (usize, usize) {
@@ -277,18 +280,18 @@ impl<'a> TokenStream<'a> {
         if n == 1 {
             let saved_peeked = self.peeked.clone();
             let saved_lexer = self.lexer.clone();
-            
+
             // Get first token
             let _first = self.peek();
             self.advance();
-            
+
             // Get second token
             let result = self.peek().cloned();
-            
+
             // Restore state
             self.lexer = saved_lexer;
             self.peeked = saved_peeked;
-            
+
             result
         } else {
             None // Not supported for n > 1

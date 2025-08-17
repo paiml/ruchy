@@ -1,6 +1,9 @@
 //! Transpiler from Ruchy AST to Rust code
 
-use crate::frontend::ast::{Attribute, BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, PipelineStage, StringPart, Type, TypeKind, UnaryOp};
+use crate::frontend::ast::{
+    Attribute, BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, PipelineStage,
+    StringPart, Type, TypeKind, UnaryOp,
+};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -21,23 +24,24 @@ impl Default for Transpiler {
 }
 
 impl Transpiler {
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self::default()
     }
 
     /// Transpile a Ruchy expression to Rust `TokenStream`
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the expression cannot be transpiled to valid Rust code.
     pub fn transpile(&self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_expr(expr)
     }
 
     /// Transpile to a formatted Rust string
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the expression cannot be transpiled or parsed as valid Rust.
     pub fn transpile_to_string(&self, expr: &Expr) -> Result<String> {
         let tokens = self.transpile(expr)?;
@@ -50,10 +54,11 @@ impl Transpiler {
     }
 
     /// Transpile an expression to Rust tokens
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if the expression type is not supported or contains invalid constructs.
+    #[allow(clippy::too_many_lines)]
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         // Handle attributes first
         if let Some(property_attr) = expr.attributes.iter().find(|attr| attr.name == "property") {
@@ -70,9 +75,11 @@ impl Transpiler {
             ExprKind::Binary { left, op, right } => self.transpile_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.transpile_unary(*op, operand),
             ExprKind::Try { expr } => self.transpile_try(expr),
-            ExprKind::TryCatch { try_block, catch_var, catch_block } => {
-                self.transpile_try_catch(try_block, catch_var, catch_block)
-            }
+            ExprKind::TryCatch {
+                try_block,
+                catch_var,
+                catch_block,
+            } => self.transpile_try_catch(try_block, catch_var, catch_block),
             ExprKind::Await { expr } => self.transpile_await(expr),
             ExprKind::If {
                 condition,
@@ -82,19 +89,36 @@ impl Transpiler {
             ExprKind::Let { name, value, body } => self.transpile_let(name, value, body),
             ExprKind::Function {
                 name,
+                type_params,
                 params,
                 return_type,
                 body,
                 is_async,
-            } => self.transpile_function(name, params, return_type.as_ref(), body, *is_async),
+            } => self.transpile_function(
+                name,
+                type_params,
+                params,
+                return_type.as_ref(),
+                body,
+                *is_async,
+            ),
             ExprKind::Lambda { params, body } => self.transpile_lambda(params, body),
             ExprKind::Call { func, args } => self.transpile_call(func, args),
-            ExprKind::MethodCall { receiver, method, args } => self.transpile_method_call(receiver, method, args),
+            ExprKind::MethodCall {
+                receiver,
+                method,
+                args,
+            } => self.transpile_method_call(receiver, method, args),
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
             ExprKind::Match { expr, arms } => self.transpile_match(expr, arms),
             ExprKind::List(elements) => self.transpile_list(elements),
-            ExprKind::ListComprehension { element, variable, iterable, condition } => {
+            ExprKind::ListComprehension {
+                element,
+                variable,
+                iterable,
+                condition,
+            } => {
                 self.transpile_list_comprehension(element, variable, iterable, condition.as_deref())
             }
             ExprKind::DataFrame { columns, rows } => self.transpile_dataframe(columns, rows),
@@ -106,14 +130,35 @@ impl Transpiler {
                 inclusive,
             } => self.transpile_range(start, end, *inclusive),
             ExprKind::Import { path, items } => Ok(Self::transpile_import(path, items)),
-            ExprKind::Struct { name, fields } => self.transpile_struct(name, fields),
+            ExprKind::Struct {
+                name,
+                type_params,
+                fields,
+            } => self.transpile_struct(name, type_params, fields),
             ExprKind::StructLiteral { name, fields } => self.transpile_struct_literal(name, fields),
             ExprKind::FieldAccess { object, field } => self.transpile_field_access(object, field),
-            ExprKind::Trait { name, methods } => self.transpile_trait(name, methods),
-            ExprKind::Impl { trait_name, for_type, methods } => self.transpile_impl(trait_name.as_deref(), for_type, methods),
-            ExprKind::Actor { name, state, handlers } => self.transpile_actor(name, state, handlers),
+            ExprKind::Trait {
+                name,
+                type_params,
+                methods,
+            } => self.transpile_trait(name, type_params, methods),
+            ExprKind::Impl {
+                type_params,
+                trait_name,
+                for_type,
+                methods,
+            } => self.transpile_impl(type_params, trait_name.as_deref(), for_type, methods),
+            ExprKind::Actor {
+                name,
+                state,
+                handlers,
+            } => self.transpile_actor(name, state, handlers),
             ExprKind::Send { actor, message } => self.transpile_send(actor, message),
-            ExprKind::Ask { actor, message, timeout } => self.transpile_ask(actor, message, timeout.as_deref()),
+            ExprKind::Ask {
+                actor,
+                message,
+                timeout,
+            } => self.transpile_ask(actor, message, timeout.as_deref()),
             ExprKind::Break { label } => {
                 if let Some(_label) = label {
                     // For now, just emit simple break (labels need more complex handling)
@@ -144,9 +189,9 @@ impl Transpiler {
     }
 
     /// Transpile string interpolation to format! macro
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
     /// use ruchy::frontend::ast::{StringPart, Expr, ExprKind, Literal};
@@ -156,7 +201,7 @@ impl Transpiler {
     pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<TokenStream> {
         let mut format_string = String::new();
         let mut args = Vec::new();
-        
+
         for part in parts {
             match part {
                 StringPart::Text(text) => {
@@ -171,7 +216,7 @@ impl Transpiler {
                 }
             }
         }
-        
+
         if args.is_empty() {
             // No interpolation, just return the string
             Ok(quote! { #format_string })
@@ -228,13 +273,18 @@ impl Transpiler {
         Ok(quote! { #expr_tokens? })
     }
 
-    fn transpile_try_catch(&self, try_block: &Expr, catch_var: &str, catch_block: &Expr) -> Result<TokenStream> {
+    fn transpile_try_catch(
+        &self,
+        try_block: &Expr,
+        catch_var: &str,
+        catch_block: &Expr,
+    ) -> Result<TokenStream> {
         // Transpile try/catch to a Rust match expression on a Result
         // We wrap the try block in a closure that returns Result
         let try_tokens = self.transpile_expr(try_block)?;
         let catch_var_ident = syn::Ident::new(catch_var, proc_macro2::Span::call_site());
         let catch_tokens = self.transpile_expr(catch_block)?;
-        
+
         // Generate: match (|| -> Result<_, _> { try_block })() { Ok(v) => v, Err(catch_var) => catch_block }
         Ok(quote! {
             match (|| -> Result<_, Box<dyn std::error::Error>> {
@@ -245,7 +295,7 @@ impl Transpiler {
             }
         })
     }
-    
+
     fn transpile_await(&self, expr: &Expr) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
         // In Rust, await is a postfix operator
@@ -304,19 +354,37 @@ impl Transpiler {
     fn transpile_function(
         &self,
         name: &str,
+        type_params: &[String],
         params: &[Param],
         return_type: Option<&Type>,
         body: &Expr,
         is_async: bool,
     ) -> Result<TokenStream> {
         let name_ident = syn::Ident::new(name, proc_macro2::Span::call_site());
+
+        // Build generic parameters if any
+        let generics = if type_params.is_empty() {
+            quote! {}
+        } else {
+            let type_param_idents: Vec<TokenStream> = type_params
+                .iter()
+                .map(|tp| {
+                    let ident = syn::Ident::new(tp, proc_macro2::Span::call_site());
+                    quote! { #ident }
+                })
+                .collect();
+            quote! { <#(#type_param_idents),*> }
+        };
+
         let body_tokens = self.transpile_expr(body)?;
 
         let param_tokens: Vec<TokenStream> = params
             .iter()
             .map(|p| {
                 let param_name = syn::Ident::new(&p.name, proc_macro2::Span::call_site());
-                let param_type = self.transpile_type(&p.ty).unwrap_or_else(|_| quote! { impl std::fmt::Display });
+                let param_type = self
+                    .transpile_type(&p.ty)
+                    .unwrap_or_else(|_| quote! { impl std::fmt::Display });
                 quote! { #param_name: #param_type }
             })
             .collect();
@@ -328,7 +396,7 @@ impl Transpiler {
             // No explicit return type - default to unit type ()
             quote! { -> () }
         };
-        
+
         // If no explicit return type, make sure body doesn't return a value
         let body_tokens = if return_type.is_none() {
             quote! { #body_tokens; }
@@ -338,13 +406,13 @@ impl Transpiler {
 
         if is_async {
             Ok(quote! {
-                async fn #name_ident(#(#param_tokens),*) #return_type_tokens {
+                async fn #name_ident #generics (#(#param_tokens),*) #return_type_tokens {
                     #body_tokens
                 }
             })
         } else {
             Ok(quote! {
-                fn #name_ident(#(#param_tokens),*) #return_type_tokens {
+                fn #name_ident #generics (#(#param_tokens),*) #return_type_tokens {
                     #body_tokens
                 }
             })
@@ -353,7 +421,7 @@ impl Transpiler {
 
     fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
         let body_tokens = self.transpile_expr(body)?;
-        
+
         // Create parameter list for the closure
         let param_tokens: Vec<_> = params
             .iter()
@@ -363,7 +431,7 @@ impl Transpiler {
                 quote! { #param_name }
             })
             .collect();
-        
+
         // Generate closure syntax
         Ok(quote! {
             |#(#param_tokens),*| #body_tokens
@@ -371,8 +439,20 @@ impl Transpiler {
     }
 
     fn transpile_call(&self, func: &Expr, args: &[Expr]) -> Result<TokenStream> {
-        // Special handling for println with string interpolation
+        // Special handling for DataFrame col() function
         if let ExprKind::Identifier(name) = &func.kind {
+            if name == "col" {
+                // col("column_name") -> polars::prelude::col("column_name")
+                if args.len() != 1 {
+                    bail!("col() expects exactly one argument");
+                }
+                let col_name = self.transpile_expr(&args[0])?;
+                return Ok(quote! {
+                    polars::prelude::col(#col_name)
+                });
+            }
+
+            // Special handling for println with string interpolation
             if name == "println" && args.len() == 1 {
                 if let ExprKind::Literal(Literal::String(s)) = &args[0].kind {
                     // Parse string interpolation: "Hello, {name}!" -> "Hello, {}!", name
@@ -385,7 +465,7 @@ impl Transpiler {
                 }
             }
         }
-        
+
         let func_tokens = self.transpile_expr(func)?;
         let arg_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
         let arg_tokens = arg_tokens?;
@@ -394,18 +474,30 @@ impl Transpiler {
             #func_tokens(#(#arg_tokens),*)
         })
     }
-    
-    fn transpile_method_call(&self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<TokenStream> {
+
+    fn transpile_method_call(
+        &self,
+        receiver: &Expr,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let receiver_tokens = self.transpile_expr(receiver)?;
-        
+
         // Special handling for DataFrame methods - only if receiver is actually a DataFrame
-        if matches!(receiver.kind, ExprKind::DataFrame { .. }) &&
-           (method == "filter" || method == "select" || method == "groupby" || 
-            method == "agg" || method == "mean" || method == "std" || 
-            method == "sum" || method == "count" || method == "col") {
+        if matches!(receiver.kind, ExprKind::DataFrame { .. })
+            && (method == "filter"
+                || method == "select"
+                || method == "groupby"
+                || method == "agg"
+                || method == "mean"
+                || method == "std"
+                || method == "sum"
+                || method == "count"
+                || method == "col")
+        {
             return self.transpile_dataframe_method(receiver, method, args);
         }
-        
+
         // Special handling for Vec extension methods
         match method {
             "sorted" => {
@@ -458,22 +550,23 @@ impl Transpiler {
             _ => {
                 // Default method call
                 let method_ident = syn::Ident::new(method, proc_macro2::Span::call_site());
-                let arg_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
+                let arg_tokens: Result<Vec<_>> =
+                    args.iter().map(|arg| self.transpile_expr(arg)).collect();
                 let arg_tokens = arg_tokens?;
-                
+
                 Ok(quote! {
                     #receiver_tokens.#method_ident(#(#arg_tokens),*)
                 })
             }
         }
     }
-    
+
     fn parse_interpolation(s: &str) -> Option<(String, Vec<TokenStream>)> {
         // Simple interpolation parser for {variable} patterns
         let mut format_str = String::new();
         let mut args = Vec::new();
         let mut chars = s.chars().peekable();
-        
+
         while let Some(ch) = chars.next() {
             if ch == '{' && chars.peek() != Some(&'{') {
                 // Found interpolation start
@@ -505,7 +598,7 @@ impl Transpiler {
                 format_str.push(ch);
             }
         }
-        
+
         if args.is_empty() {
             None
         } else {
@@ -694,9 +787,14 @@ impl Transpiler {
         }
     }
 
-    fn transpile_dataframe_method(&self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<TokenStream> {
+    fn transpile_dataframe_method(
+        &self,
+        receiver: &Expr,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let receiver_tokens = self.transpile_expr(receiver)?;
-        
+
         match method {
             "filter" => {
                 // df.filter(condition)
@@ -710,7 +808,8 @@ impl Transpiler {
             }
             "select" => {
                 // df.select([col1, col2, ...])
-                let col_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
+                let col_tokens: Result<Vec<_>> =
+                    args.iter().map(|arg| self.transpile_expr(arg)).collect();
                 let col_tokens = col_tokens?;
                 Ok(quote! {
                     #receiver_tokens.select([#(#col_tokens),*])?
@@ -721,7 +820,8 @@ impl Transpiler {
                 if args.is_empty() {
                     bail!("groupby expects at least one column");
                 }
-                let col_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
+                let col_tokens: Result<Vec<_>> =
+                    args.iter().map(|arg| self.transpile_expr(arg)).collect();
                 let col_tokens = col_tokens?;
                 Ok(quote! {
                     #receiver_tokens.groupby([#(#col_tokens),*])?
@@ -729,7 +829,8 @@ impl Transpiler {
             }
             "agg" => {
                 // df.agg(aggregations)
-                let agg_tokens: Result<Vec<_>> = args.iter().map(|arg| self.transpile_expr(arg)).collect();
+                let agg_tokens: Result<Vec<_>> =
+                    args.iter().map(|arg| self.transpile_expr(arg)).collect();
                 let agg_tokens = agg_tokens?;
                 Ok(quote! {
                     #receiver_tokens.agg([#(#agg_tokens),*])?
@@ -784,7 +885,7 @@ impl Transpiler {
             _ => bail!("Unknown DataFrame method: {}", method),
         }
     }
-    
+
     fn transpile_dataframe(&self, columns: &[String], rows: &[Vec<Expr>]) -> Result<TokenStream> {
         // Generate Polars DataFrame creation code
         // df! macro equivalent in Polars:
@@ -792,21 +893,21 @@ impl Transpiler {
         //     Series::new("col1", vec![val1, val2, ...]),
         //     Series::new("col2", vec![val1, val2, ...]),
         // ])
-        
+
         if columns.is_empty() {
             return Ok(quote! { polars::frame::DataFrame::empty() });
         }
-        
+
         // Transpose rows to columns for Polars Series creation
         let mut series_data: Vec<Vec<TokenStream>> = vec![Vec::new(); columns.len()];
-        
+
         for row in rows {
             for (i, value) in row.iter().enumerate() {
                 let value_tokens = self.transpile_expr(value)?;
                 series_data[i].push(value_tokens);
             }
         }
-        
+
         // Create Series for each column
         let series_tokens: Vec<TokenStream> = columns
             .iter()
@@ -817,7 +918,7 @@ impl Transpiler {
                 }
             })
             .collect();
-        
+
         Ok(quote! {
             polars::frame::DataFrame::new(vec![
                 #(#series_tokens),*
@@ -848,38 +949,28 @@ impl Transpiler {
         let _ = self; // Suppress unused self warning
         Ok(match &ty.kind {
             TypeKind::Named(name) => {
-                // Check if this is a generic type (contains '<')
-                if name.contains('<') {
-                    // Parse generic type: Vec<i32> -> Vec, [i32]
-                    if let Some(bracket_pos) = name.find('<') {
-                        let base_type = &name[..bracket_pos];
-                        // For now, handle common generic types
-                        match base_type {
-                            "Vec" => quote! { Vec<i32> }, // Default to i32 for now
-                            "Option" => quote! { Option<i32> },
-                            "Result" => quote! { Result<i32, String> },
-                            _ => quote! { #base_type },
-                        }
-                    } else {
-                        quote! { #name }
+                // Map common Ruchy types to Rust types
+                let rust_type = match name.as_str() {
+                    "i32" => quote! { i32 },
+                    "i64" => quote! { i64 },
+                    "f32" => quote! { f32 },
+                    "f64" => quote! { f64 },
+                    "bool" => quote! { bool },
+                    "String" => quote! { String },
+                    "Any" => quote! { impl std::fmt::Display }, // Gradual typing - use trait bounds
+                    _ => {
+                        let ident = syn::Ident::new(name, proc_macro2::Span::call_site());
+                        quote! { #ident }
                     }
-                } else {
-                    // Map common Ruchy types to Rust types
-                    let rust_type = match name.as_str() {
-                        "i32" => quote! { i32 },
-                        "i64" => quote! { i64 },
-                        "f32" => quote! { f32 },
-                        "f64" => quote! { f64 },
-                        "bool" => quote! { bool },
-                        "String" => quote! { String },
-                        "Any" => quote! { impl std::fmt::Display }, // Gradual typing - use trait bounds
-                        _ => {
-                            let ident = syn::Ident::new(name, proc_macro2::Span::call_site());
-                            quote! { #ident }
-                        }
-                    };
-                    rust_type
-                }
+                };
+                rust_type
+            }
+            TypeKind::Generic { base, params } => {
+                let base_ident = syn::Ident::new(base, proc_macro2::Span::call_site());
+                let param_tokens: Result<Vec<_>> =
+                    params.iter().map(|p| self.transpile_type(p)).collect();
+                let param_tokens = param_tokens?;
+                quote! { #base_ident<#(#param_tokens),*> }
             }
             TypeKind::Optional(inner) => {
                 let inner_tokens = self.transpile_type(inner)?;
@@ -899,38 +990,67 @@ impl Transpiler {
         })
     }
 
-    fn transpile_struct(&self, name: &str, fields: &[crate::frontend::ast::StructField]) -> Result<TokenStream> {
+    fn transpile_struct(
+        &self,
+        name: &str,
+        type_params: &[String],
+        fields: &[crate::frontend::ast::StructField],
+    ) -> Result<TokenStream> {
         let struct_name = syn::Ident::new(name, proc_macro2::Span::call_site());
-        
-        let field_tokens: Result<Vec<_>> = fields.iter().map(|field| {
-            let field_name = syn::Ident::new(&field.name, proc_macro2::Span::call_site());
-            let field_type = self.transpile_type(&field.ty)?;
-            
-            if field.is_pub {
-                Ok(quote! { pub #field_name: #field_type })
-            } else {
-                Ok(quote! { #field_name: #field_type })
-            }
-        }).collect();
+
+        // Build generic parameters if any
+        let generics = if type_params.is_empty() {
+            quote! {}
+        } else {
+            let type_param_idents: Vec<TokenStream> = type_params
+                .iter()
+                .map(|tp| {
+                    let ident = syn::Ident::new(tp, proc_macro2::Span::call_site());
+                    quote! { #ident }
+                })
+                .collect();
+            quote! { <#(#type_param_idents),*> }
+        };
+
+        let field_tokens: Result<Vec<_>> = fields
+            .iter()
+            .map(|field| {
+                let field_name = syn::Ident::new(&field.name, proc_macro2::Span::call_site());
+                let field_type = self.transpile_type(&field.ty)?;
+
+                if field.is_pub {
+                    Ok(quote! { pub #field_name: #field_type })
+                } else {
+                    Ok(quote! { #field_name: #field_type })
+                }
+            })
+            .collect();
         let field_tokens = field_tokens?;
-        
+
         Ok(quote! {
-            struct #struct_name {
+            struct #struct_name #generics {
                 #(#field_tokens),*
             }
         })
     }
 
-    fn transpile_struct_literal(&self, name: &str, fields: &[(String, Expr)]) -> Result<TokenStream> {
+    fn transpile_struct_literal(
+        &self,
+        name: &str,
+        fields: &[(String, Expr)],
+    ) -> Result<TokenStream> {
         let struct_name = syn::Ident::new(name, proc_macro2::Span::call_site());
-        
-        let field_tokens: Result<Vec<_>> = fields.iter().map(|(field_name, value)| {
-            let field_ident = syn::Ident::new(field_name, proc_macro2::Span::call_site());
-            let value_tokens = self.transpile_expr(value)?;
-            Ok(quote! { #field_ident: #value_tokens })
-        }).collect();
+
+        let field_tokens: Result<Vec<_>> = fields
+            .iter()
+            .map(|(field_name, value)| {
+                let field_ident = syn::Ident::new(field_name, proc_macro2::Span::call_site());
+                let value_tokens = self.transpile_expr(value)?;
+                Ok(quote! { #field_ident: #value_tokens })
+            })
+            .collect();
         let field_tokens = field_tokens?;
-        
+
         Ok(quote! {
             #struct_name {
                 #(#field_tokens),*
@@ -941,158 +1061,308 @@ impl Transpiler {
     fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<TokenStream> {
         let object_tokens = self.transpile_expr(object)?;
         let field_ident = syn::Ident::new(field, proc_macro2::Span::call_site());
-        
+
         Ok(quote! {
             #object_tokens.#field_ident
         })
     }
 
-    fn transpile_trait(&self, name: &str, methods: &[crate::frontend::ast::TraitMethod]) -> Result<TokenStream> {
+    fn transpile_trait(
+        &self,
+        name: &str,
+        type_params: &[String],
+        methods: &[crate::frontend::ast::TraitMethod],
+    ) -> Result<TokenStream> {
         let trait_name = syn::Ident::new(name, proc_macro2::Span::call_site());
-        
-        let method_tokens: Result<Vec<_>> = methods.iter().map(|method| {
-            let method_name = syn::Ident::new(&method.name, proc_macro2::Span::call_site());
-            
-            // Parse parameters (skip self for now, assume first param is self)
-            let param_tokens: Result<Vec<_>> = method.params.iter().skip(1).map(|p| {
-                let param_name = syn::Ident::new(&p.name, proc_macro2::Span::call_site());
-                let param_type = self.transpile_type(&p.ty)?;
-                Ok(quote! { #param_name: #param_type })
-            }).collect();
-            let param_tokens = param_tokens?;
-            
-            // Return type
-            let return_type_tokens = if let Some(ret_ty) = &method.return_type {
-                let ty = self.transpile_type(ret_ty)?;
-                quote! { -> #ty }
-            } else {
-                quote! {}
-            };
-            
-            // Method body (for default implementations)
-            if let Some(body) = &method.body {
-                let body_tokens = self.transpile_expr(body)?;
-                Ok(quote! {
-                    fn #method_name(&self, #(#param_tokens),*) #return_type_tokens {
-                        #body_tokens
+
+        // Build generic parameters if any
+        let generics = if type_params.is_empty() {
+            quote! {}
+        } else {
+            let type_param_idents: Vec<TokenStream> = type_params
+                .iter()
+                .map(|tp| {
+                    let ident = syn::Ident::new(tp, proc_macro2::Span::call_site());
+                    quote! { #ident }
+                })
+                .collect();
+            quote! { <#(#type_param_idents),*> }
+        };
+
+        let method_tokens: Result<Vec<_>> = methods
+            .iter()
+            .map(|method| {
+                let method_name = syn::Ident::new(&method.name, proc_macro2::Span::call_site());
+
+                // Determine self type and other parameters (similar to impl block handling)
+                let (self_tokens, other_params) = if method.params.is_empty() {
+                    // No parameters at all
+                    (quote! {}, &method.params[..])
+                } else {
+                    let first_param = &method.params[0];
+                    if first_param.name == "self" || first_param.name == "mut self" {
+                        // Method with self parameter
+                        let self_tok = if first_param.name == "mut self" {
+                            quote! { &mut self }
+                        } else {
+                            // Check if type annotation suggests mutability or ownership
+                            match &first_param.ty.kind {
+                                TypeKind::Named(name) if name == "&mut self" => {
+                                    quote! { &mut self }
+                                }
+                                TypeKind::Named(name) if name == "self" => quote! { self },
+                                _ => quote! { &self }, // Default to immutable reference
+                            }
+                        };
+                        (self_tok, &method.params[1..])
+                    } else {
+                        // Associated function (no self parameter)
+                        (quote! {}, &method.params[..])
                     }
-                })
-            } else {
-                // Just the signature
-                Ok(quote! {
-                    fn #method_name(&self, #(#param_tokens),*) #return_type_tokens;
-                })
-            }
-        }).collect();
+                };
+
+                // Parse remaining parameters
+                let param_tokens: Result<Vec<_>> = other_params
+                    .iter()
+                    .map(|p| {
+                        let param_name = syn::Ident::new(&p.name, proc_macro2::Span::call_site());
+                        let param_type = self.transpile_type(&p.ty)?;
+                        Ok(quote! { #param_name: #param_type })
+                    })
+                    .collect();
+                let param_tokens = param_tokens?;
+
+                // Return type
+                let return_type_tokens = if let Some(ret_ty) = &method.return_type {
+                    let ty = self.transpile_type(ret_ty)?;
+                    quote! { -> #ty }
+                } else {
+                    quote! {}
+                };
+
+                // Method body (for default implementations)
+                if let Some(body) = &method.body {
+                    let body_tokens = self.transpile_expr(body)?;
+                    // Generate method with appropriate self type
+                    if self_tokens.is_empty() {
+                        // Associated function
+                        Ok(quote! {
+                            fn #method_name(#(#param_tokens),*) #return_type_tokens {
+                                #body_tokens
+                            }
+                        })
+                    } else {
+                        // Instance method
+                        Ok(quote! {
+                            fn #method_name(#self_tokens, #(#param_tokens),*) #return_type_tokens {
+                                #body_tokens
+                            }
+                        })
+                    }
+                } else {
+                    // Just the signature
+                    if self_tokens.is_empty() {
+                        // Associated function
+                        Ok(quote! {
+                            fn #method_name(#(#param_tokens),*) #return_type_tokens;
+                        })
+                    } else {
+                        // Instance method
+                        Ok(quote! {
+                            fn #method_name(#self_tokens, #(#param_tokens),*) #return_type_tokens;
+                        })
+                    }
+                }
+            })
+            .collect();
         let method_tokens = method_tokens?;
-        
+
         Ok(quote! {
-            trait #trait_name {
+            trait #trait_name #generics {
                 #(#method_tokens)*
             }
         })
     }
 
-    fn transpile_impl(&self, trait_name: Option<&str>, for_type: &str, methods: &[crate::frontend::ast::ImplMethod]) -> Result<TokenStream> {
+    fn transpile_impl(
+        &self,
+        type_params: &[String],
+        trait_name: Option<&str>,
+        for_type: &str,
+        methods: &[crate::frontend::ast::ImplMethod],
+    ) -> Result<TokenStream> {
         let type_name = syn::Ident::new(for_type, proc_macro2::Span::call_site());
-        
-        let method_tokens: Result<Vec<_>> = methods.iter().map(|method| {
-            let method_name = syn::Ident::new(&method.name, proc_macro2::Span::call_site());
-            
-            // Parse parameters (skip self for now, assume first param is self)
-            let param_tokens: Result<Vec<_>> = method.params.iter().skip(1).map(|p| {
-                let param_name = syn::Ident::new(&p.name, proc_macro2::Span::call_site());
-                let param_type = self.transpile_type(&p.ty)?;
-                Ok(quote! { #param_name: #param_type })
-            }).collect();
-            let param_tokens = param_tokens?;
-            
-            // Return type
-            let return_type_tokens = if let Some(ret_ty) = &method.return_type {
-                let ty = self.transpile_type(ret_ty)?;
-                quote! { -> #ty }
-            } else {
-                quote! {}
-            };
-            
-            // Method body
-            let body_tokens = self.transpile_expr(&method.body)?;
-            
-            Ok(quote! {
-                fn #method_name(&self, #(#param_tokens),*) #return_type_tokens {
-                    #body_tokens
+
+        // Build generic parameters if any
+        let generics = if type_params.is_empty() {
+            quote! {}
+        } else {
+            let type_param_idents: Vec<TokenStream> = type_params
+                .iter()
+                .map(|tp| {
+                    let ident = syn::Ident::new(tp, proc_macro2::Span::call_site());
+                    quote! { #ident }
+                })
+                .collect();
+            quote! { <#(#type_param_idents),*> }
+        };
+
+        let method_tokens: Result<Vec<_>> = methods
+            .iter()
+            .map(|method| {
+                let method_name = syn::Ident::new(&method.name, proc_macro2::Span::call_site());
+
+                // Determine self type and other parameters
+                let (self_tokens, other_params) = if method.params.is_empty() {
+                    // No parameters at all
+                    (quote! {}, &method.params[..])
+                } else {
+                    let first_param = &method.params[0];
+                    if first_param.name == "self" || first_param.name == "mut self" {
+                        // Method with self parameter
+                        let self_tok = if first_param.name == "mut self" {
+                            quote! { &mut self }
+                        } else {
+                            // Check if type annotation suggests mutability or ownership
+                            match &first_param.ty.kind {
+                                TypeKind::Named(name) if name == "&mut self" => {
+                                    quote! { &mut self }
+                                }
+                                TypeKind::Named(name) if name == "self" => quote! { self },
+                                _ => quote! { &self }, // Default to immutable reference
+                            }
+                        };
+                        (self_tok, &method.params[1..])
+                    } else {
+                        // Static method (no self parameter)
+                        (quote! {}, &method.params[..])
+                    }
+                };
+
+                // Parse remaining parameters
+                let param_tokens: Result<Vec<_>> = other_params
+                    .iter()
+                    .map(|p| {
+                        let param_name = syn::Ident::new(&p.name, proc_macro2::Span::call_site());
+                        let param_type = self.transpile_type(&p.ty)?;
+                        Ok(quote! { #param_name: #param_type })
+                    })
+                    .collect();
+                let param_tokens = param_tokens?;
+
+                // Return type
+                let return_type_tokens = if let Some(ret_ty) = &method.return_type {
+                    let ty = self.transpile_type(ret_ty)?;
+                    quote! { -> #ty }
+                } else {
+                    quote! {}
+                };
+
+                // Method body
+                let body_tokens = self.transpile_expr(&method.body)?;
+
+                // Generate method with appropriate self type
+                if self_tokens.is_empty() {
+                    // Static method
+                    Ok(quote! {
+                        fn #method_name(#(#param_tokens),*) #return_type_tokens {
+                            #body_tokens
+                        }
+                    })
+                } else {
+                    // Instance method
+                    Ok(quote! {
+                        fn #method_name(#self_tokens, #(#param_tokens),*) #return_type_tokens {
+                            #body_tokens
+                        }
+                    })
                 }
             })
-        }).collect();
+            .collect();
         let method_tokens = method_tokens?;
-        
+
         if let Some(trait_name) = trait_name {
             let trait_ident = syn::Ident::new(trait_name, proc_macro2::Span::call_site());
             Ok(quote! {
-                impl #trait_ident for #type_name {
+                impl #generics #trait_ident for #type_name {
                     #(#method_tokens)*
                 }
             })
         } else {
             // Inherent impl
             Ok(quote! {
-                impl #type_name {
+                impl #generics #type_name {
                     #(#method_tokens)*
                 }
             })
         }
     }
-    
-    fn transpile_actor(&self, name: &str, state: &[crate::frontend::ast::StructField], handlers: &[crate::frontend::ast::ActorHandler]) -> Result<TokenStream> {
+
+    fn transpile_actor(
+        &self,
+        name: &str,
+        state: &[crate::frontend::ast::StructField],
+        handlers: &[crate::frontend::ast::ActorHandler],
+    ) -> Result<TokenStream> {
         let actor_name = syn::Ident::new(name, proc_macro2::Span::call_site());
-        
+
         // Generate state struct
-        let field_tokens: Result<Vec<_>> = state.iter().map(|f| {
-            let field_name = syn::Ident::new(&f.name, proc_macro2::Span::call_site());
-            let field_type = self.transpile_type(&f.ty)?;
-            Ok(quote! { #field_name: #field_type })
-        }).collect();
-        let field_tokens = field_tokens?;
-        
-        // Generate message enum
-        let message_variants: Vec<_> = handlers.iter().map(|h| {
-            let variant_name = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
-            // For simplicity, assuming messages have no parameters for now
-            quote! { #variant_name }
-        }).collect();
-        
-        let message_enum_name = syn::Ident::new(&format!("{name}Message"), proc_macro2::Span::call_site());
-        
-        // Generate handler match arms
-        let handler_arms: Result<Vec<_>> = handlers.iter().map(|h| {
-            let variant_name = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
-            let body = self.transpile_expr(&h.body)?;
-            Ok(quote! {
-                #message_enum_name::#variant_name => {
-                    #body
-                }
+        let field_tokens: Result<Vec<_>> = state
+            .iter()
+            .map(|f| {
+                let field_name = syn::Ident::new(&f.name, proc_macro2::Span::call_site());
+                let field_type = self.transpile_type(&f.ty)?;
+                Ok(quote! { #field_name: #field_type })
             })
-        }).collect();
+            .collect();
+        let field_tokens = field_tokens?;
+
+        // Generate message enum
+        let message_variants: Vec<_> = handlers
+            .iter()
+            .map(|h| {
+                let variant_name = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
+                // For simplicity, assuming messages have no parameters for now
+                quote! { #variant_name }
+            })
+            .collect();
+
+        let message_enum_name =
+            syn::Ident::new(&format!("{name}Message"), proc_macro2::Span::call_site());
+
+        // Generate handler match arms
+        let handler_arms: Result<Vec<_>> = handlers
+            .iter()
+            .map(|h| {
+                let variant_name = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
+                let body = self.transpile_expr(&h.body)?;
+                Ok(quote! {
+                    #message_enum_name::#variant_name => {
+                        #body
+                    }
+                })
+            })
+            .collect();
         let handler_arms = handler_arms?;
-        
+
         // Generate actor implementation using tokio
         Ok(quote! {
             struct #actor_name {
                 #(#field_tokens,)*
             }
-            
+
             #[derive(Debug, Clone)]
             enum #message_enum_name {
                 #(#message_variants,)*
             }
-            
+
             impl #actor_name {
                 async fn handle_message(&mut self, msg: #message_enum_name) {
                     match msg {
                         #(#handler_arms)*
                     }
                 }
-                
+
                 fn spawn(self) -> tokio::sync::mpsc::Sender<#message_enum_name> {
                     let (tx, mut rx) = tokio::sync::mpsc::channel(100);
                     let mut actor = self;
@@ -1106,21 +1376,26 @@ impl Transpiler {
             }
         })
     }
-    
+
     fn transpile_send(&self, actor: &Expr, message: &Expr) -> Result<TokenStream> {
         let actor_tokens = self.transpile_expr(actor)?;
         let message_tokens = self.transpile_expr(message)?;
-        
+
         // Generate send operation
         Ok(quote! {
             #actor_tokens.send(#message_tokens).await
         })
     }
-    
-    fn transpile_ask(&self, actor: &Expr, message: &Expr, timeout: Option<&Expr>) -> Result<TokenStream> {
+
+    fn transpile_ask(
+        &self,
+        actor: &Expr,
+        message: &Expr,
+        timeout: Option<&Expr>,
+    ) -> Result<TokenStream> {
         let actor_tokens = self.transpile_expr(actor)?;
         let message_tokens = self.transpile_expr(message)?;
-        
+
         if let Some(timeout_expr) = timeout {
             let timeout_tokens = self.transpile_expr(timeout_expr)?;
             // Generate ask with timeout
@@ -1140,18 +1415,28 @@ impl Transpiler {
 
     fn transpile_property_test(&self, expr: &Expr, _attr: &Attribute) -> Result<TokenStream> {
         // Property tests must be functions
-        if let ExprKind::Function { name, params, body, .. } = &expr.kind {
+        if let ExprKind::Function {
+            name,
+            type_params,
+            params,
+            body,
+            ..
+        } = &expr.kind
+        {
             let fn_name = syn::Ident::new(name, proc_macro2::Span::call_site());
-            let test_fn_name = syn::Ident::new(&format!("test_property_{name}"), proc_macro2::Span::call_site());
-            
+            let test_fn_name = syn::Ident::new(
+                &format!("test_property_{name}"),
+                proc_macro2::Span::call_site(),
+            );
+
             // Generate parameter types for proptest
             let mut param_strategies = Vec::new();
             let mut param_names = Vec::new();
-            
+
             for param in params {
                 let param_name = syn::Ident::new(&param.name, proc_macro2::Span::call_site());
                 param_names.push(param_name.clone());
-                
+
                 let strategy = match &param.ty.kind {
                     TypeKind::Named(name) => match name.as_str() {
                         "i32" | "i64" => quote! { any::<i32>() },
@@ -1160,8 +1445,16 @@ impl Transpiler {
                         "String" => quote! { any::<String>() },
                         _ => quote! { any::<i32>() }, // Default fallback
                     },
+                    TypeKind::Generic { base, .. } => {
+                        // For generic types, use the base type strategy
+                        match base.as_str() {
+                            "Vec" => quote! { prop::collection::vec(any::<i32>(), 0..100) },
+                            "Option" => quote! { prop::option::of(any::<i32>()) },
+                            _ => quote! { any::<i32>() },
+                        }
+                    }
                     TypeKind::List(elem_ty) => {
-                        let elem_strategy = if let TypeKind::Named(name) = &elem_ty.kind { 
+                        let elem_strategy = if let TypeKind::Named(name) = &elem_ty.kind {
                             match name.as_str() {
                                 "i32" | "i64" => quote! { any::<i32>() },
                                 "f32" | "f64" => quote! { any::<f64>() },
@@ -1169,32 +1462,33 @@ impl Transpiler {
                                 "String" => quote! { any::<String>() },
                                 _ => quote! { any::<i32>() },
                             }
-                        } else { 
-                            quote! { any::<i32>() } 
+                        } else {
+                            quote! { any::<i32>() }
                         };
                         quote! { prop::collection::vec(#elem_strategy, 0..100) }
-                    },
+                    }
                     _ => quote! { any::<i32>() }, // Default fallback
                 };
-                
+
                 param_strategies.push(quote! { #param_name in #strategy });
             }
-            
+
             // Transpile the function body
             let _body_tokens = self.transpile_expr(body)?;
-            
+
             // Generate the original function
-            let original_fn = self.transpile_function(name, params, None, body, false)?;
-            
+            let original_fn =
+                self.transpile_function(name, type_params, params, None, body, false)?;
+
             // Generate the property test
             let test_tokens = quote! {
                 #original_fn
-                
+
                 #[cfg(test)]
                 mod property_tests {
                     use super::*;
                     use proptest::prelude::*;
-                    
+
                     proptest! {
                         #[test]
                         fn #test_fn_name(#(#param_strategies),*) {
@@ -1206,7 +1500,7 @@ impl Transpiler {
                     }
                 }
             };
-            
+
             Ok(test_tokens)
         } else {
             bail!("#[property] attribute can only be applied to functions");
@@ -1382,7 +1676,7 @@ mod tests {
         assert!(result.contains("Series::new"));
         assert!(result.contains("\"values\""));
     }
-    
+
     #[test]
     fn test_transpile_dataframe_operations() {
         // Create a DataFrame and test operations
@@ -1466,7 +1760,7 @@ mod tests {
 
     #[test]
     fn test_transpile_trait() {
-        // Simple trait
+        // Simple trait with instance method
         let result = transpile_str("trait Display { fun show(self) -> String }").unwrap();
         assert!(result.contains("trait Display"));
         assert!(result.contains("fn show(&self) -> String"));
@@ -1476,6 +1770,12 @@ mod tests {
         assert!(result.contains("trait Greet"));
         assert!(result.contains("fn hello(&self)"));
         assert!(result.contains("println"));
+
+        // Trait with associated function (no self)
+        let result = transpile_str("trait Factory { fun create(name: String) -> Self }").unwrap();
+        assert!(result.contains("trait Factory"));
+        assert!(result.contains("fn create(name: String) -> Self"));
+        assert!(!result.contains("&self"));
     }
 
     #[test]
@@ -1500,7 +1800,7 @@ mod tests {
         // min/max methods
         let result = transpile_str("[1, 2, 3].min()").unwrap();
         assert!(result.contains("iter().min()"));
-        
+
         let result = transpile_str("[1, 2, 3].max()").unwrap();
         assert!(result.contains("iter().max()"));
     }
@@ -1525,14 +1825,11 @@ mod tests {
     fn test_transpile_actor() {
         let code = r"
             actor Counter {
-                count: i32
+                count: i32,
                 
-                on Increment {
-                    42
-                }
-                
-                on Get {
-                    100
+                receive {
+                    Increment => { 42 }
+                    Get => { 100 }
                 }
             }
         ";
@@ -1542,7 +1839,7 @@ mod tests {
         assert!(result.contains("async fn handle_message"));
         assert!(result.contains("tokio::spawn"));
     }
-    
+
     #[test]
     fn test_transpile_send() {
         let code = "counter ! Increment";
@@ -1550,7 +1847,7 @@ mod tests {
         assert!(result.contains(".send("));
         assert!(result.contains(".await"));
     }
-    
+
     #[test]
     fn test_transpile_ask() {
         let code = "counter ? Get";
@@ -1558,20 +1855,20 @@ mod tests {
         assert!(result.contains(".ask("));
         assert!(result.contains(".await"));
     }
-    
+
     #[test]
     fn test_transpile_break_continue() {
         // Test break
         let code = "while true { break }";
         let result = transpile_str(code).unwrap();
         assert!(result.contains("break"));
-        
+
         // Test continue
         let code = "while true { continue }";
         let result = transpile_str(code).unwrap();
         assert!(result.contains("continue"));
     }
-    
+
     #[test]
     fn test_transpile_async() {
         // Async function
@@ -1586,18 +1883,40 @@ mod tests {
     }
 
     #[test]
+    fn test_transpile_col_function() {
+        // Test standalone col() function
+        let result = transpile_str("col(\"name\")").unwrap();
+        assert!(result.contains("polars::prelude::col"));
+        assert!(result.contains("\"name\""));
+
+        // Test col() in expression context (like col("score") > 90)
+        let result = transpile_str("col(\"score\") > 90").unwrap();
+        assert!(result.contains("polars::prelude::col"));
+        assert!(result.contains("\"score\""));
+        assert!(result.contains("> 90"));
+    }
+
+    #[test]
     fn test_transpile_impl() {
-        // Inherent impl
+        // Inherent impl with &self
         let result = transpile_str("impl Point { fun distance(self) -> f64 { 0.0 } }").unwrap();
         assert!(result.contains("impl Point"));
         assert!(result.contains("fn distance(&self) -> f64"));
         assert!(result.contains("0f64")); // Rust formats 0.0 as 0f64
 
         // Trait impl
-        let result = transpile_str("impl Display for Point { fun show(self) -> String { \"Point\" } }").unwrap();
+        let result =
+            transpile_str("impl Display for Point { fun show(self) -> String { \"Point\" } }")
+                .unwrap();
         assert!(result.contains("impl Display for Point"));
         assert!(result.contains("fn show(&self) -> String"));
         assert!(result.contains("\"Point\""));
+
+        // Static method (no self parameter)
+        let result =
+            transpile_str("impl Point { fun new(x: f64, y: f64) -> Point { Point } }").unwrap();
+        assert!(result.contains("fn new(x: f64, y: f64) -> Point"));
+        assert!(!result.contains("self"));
     }
 
     #[test]
@@ -1658,7 +1977,9 @@ mod tests {
         assert!(result.contains(".collect::<Vec<_>>()"));
 
         // Complex comprehension: [name.len() for name in ["Alice", "Bob"] if name.len() > 3]
-        let result = transpile_str("[name.len() for name in [\"Alice\", \"Bob\"] if name.len() > 3]").unwrap();
+        let result =
+            transpile_str("[name.len() for name in [\"Alice\", \"Bob\"] if name.len() > 3]")
+                .unwrap();
         assert!(result.contains("vec![\"Alice\", \"Bob\"]"));
         assert!(result.contains(".filter(|name|"));
         assert!(result.contains("name.len() > 3"));

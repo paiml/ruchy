@@ -1,5 +1,5 @@
 //! Deterministic Error Recovery for Ruchy Parser
-//! 
+//!
 //! Based on docs/ruchy-transpiler-docs.md Section 4: Deterministic Error Recovery
 //! Ensures predictable parser behavior on malformed input
 
@@ -126,7 +126,7 @@ impl ErrorRecovery {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// Create a synthetic error node for missing function name
     pub fn missing_function_name(&mut self, location: SourceLocation) -> ErrorNode {
         self.error_count += 1;
@@ -141,7 +141,7 @@ impl ErrorRecovery {
             recovery: RecoveryStrategy::InsertToken("error_fn".to_string()),
         }
     }
-    
+
     /// Create a synthetic error node for missing function parameters
     pub fn missing_function_params(&mut self, name: String, location: SourceLocation) -> ErrorNode {
         self.error_count += 1;
@@ -156,9 +156,14 @@ impl ErrorRecovery {
             recovery: RecoveryStrategy::DefaultValue,
         }
     }
-    
+
     /// Create a synthetic error node for missing function body
-    pub fn missing_function_body(&mut self, name: String, params: Vec<Param>, location: SourceLocation) -> ErrorNode {
+    pub fn missing_function_body(
+        &mut self,
+        name: String,
+        params: Vec<Param>,
+        location: SourceLocation,
+    ) -> ErrorNode {
         self.error_count += 1;
         ErrorNode {
             message: "expected function body".to_string(),
@@ -171,9 +176,14 @@ impl ErrorRecovery {
             recovery: RecoveryStrategy::InsertToken("{ /* missing body */ }".to_string()),
         }
     }
-    
+
     /// Create error node for malformed let binding
-    pub fn malformed_let_binding(&mut self, partial_name: Option<String>, partial_value: Option<Box<Expr>>, location: SourceLocation) -> ErrorNode {
+    pub fn malformed_let_binding(
+        &mut self,
+        partial_name: Option<String>,
+        partial_value: Option<Box<Expr>>,
+        location: SourceLocation,
+    ) -> ErrorNode {
         self.error_count += 1;
         ErrorNode {
             message: "malformed let binding".to_string(),
@@ -185,9 +195,14 @@ impl ErrorRecovery {
             recovery: RecoveryStrategy::PartialParse,
         }
     }
-    
+
     /// Create error node for incomplete if expression
-    pub fn incomplete_if_expr(&mut self, condition: Option<Box<Expr>>, then_branch: Option<Box<Expr>>, location: SourceLocation) -> ErrorNode {
+    pub fn incomplete_if_expr(
+        &mut self,
+        condition: Option<Box<Expr>>,
+        then_branch: Option<Box<Expr>>,
+        location: SourceLocation,
+    ) -> ErrorNode {
         self.error_count += 1;
         ErrorNode {
             message: "incomplete if expression".to_string(),
@@ -200,24 +215,24 @@ impl ErrorRecovery {
             recovery: RecoveryStrategy::DefaultValue,
         }
     }
-    
+
     /// Check if we should continue parsing or give up
     #[must_use]
     pub fn should_continue(&self) -> bool {
         self.error_count < self.max_errors
     }
-    
+
     /// Reset error count for new parsing session
     pub fn reset(&mut self) {
         self.error_count = 0;
     }
-    
+
     /// Check if token is a synchronization point
     #[must_use]
     pub fn is_sync_token(&self, token: &str) -> bool {
         self.sync_tokens.contains(&token.to_string())
     }
-    
+
     /// Skip tokens until we find a synchronization point
     pub fn skip_until_sync<'a, I>(&self, tokens: &mut I) -> Option<String>
     where
@@ -258,7 +273,7 @@ impl RecoveryRules {
             ErrorContext::StructLiteral { .. } => RecoveryStrategy::PartialParse,
         }
     }
-    
+
     /// Generate synthetic AST for error recovery
     #[must_use]
     pub fn synthesize_ast(error: &ErrorNode) -> Expr {
@@ -279,19 +294,35 @@ impl RecoveryRules {
                 Expr::new(
                     ExprKind::Let {
                         name: name.clone().unwrap_or_else(|| "_error".to_string()),
-                        value: value.clone().unwrap_or_else(|| Box::new(Expr::new(ExprKind::Literal(Literal::Unit), default_span))),
+                        value: value.clone().unwrap_or_else(|| {
+                            Box::new(Expr::new(ExprKind::Literal(Literal::Unit), default_span))
+                        }),
                         body: Box::new(Expr::new(ExprKind::Literal(Literal::Unit), default_span)),
                     },
                     default_span,
                 )
             }
-            ErrorContext::IfExpression { condition, then_branch, .. } => {
+            ErrorContext::IfExpression {
+                condition,
+                then_branch,
+                ..
+            } => {
                 // Create an if with defaults for missing parts
                 Expr::new(
                     ExprKind::If {
-                        condition: condition.clone().unwrap_or_else(|| Box::new(Expr::new(ExprKind::Literal(Literal::Bool(false)), default_span))),
-                        then_branch: then_branch.clone().unwrap_or_else(|| Box::new(Expr::new(ExprKind::Literal(Literal::Unit), default_span))),
-                        else_branch: Some(Box::new(Expr::new(ExprKind::Literal(Literal::Unit), default_span))),
+                        condition: condition.clone().unwrap_or_else(|| {
+                            Box::new(Expr::new(
+                                ExprKind::Literal(Literal::Bool(false)),
+                                default_span,
+                            ))
+                        }),
+                        then_branch: then_branch.clone().unwrap_or_else(|| {
+                            Box::new(Expr::new(ExprKind::Literal(Literal::Unit), default_span))
+                        }),
+                        else_branch: Some(Box::new(Expr::new(
+                            ExprKind::Literal(Literal::Unit),
+                            default_span,
+                        ))),
                     },
                     default_span,
                 )
@@ -330,10 +361,10 @@ impl RecoveryRules {
 pub trait ErrorRecoverable {
     /// Try to recover from parse error
     fn recover_from_error(&mut self, error: ErrorNode) -> Option<Expr>;
-    
+
     /// Check if we're in a recoverable state
     fn can_recover(&self) -> bool;
-    
+
     /// Get current error nodes
     fn get_errors(&self) -> Vec<ErrorNode>;
 }
@@ -341,22 +372,22 @@ pub trait ErrorRecoverable {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_error_recovery_creation() {
         let mut recovery = ErrorRecovery::new();
-        
+
         let error = recovery.missing_function_name(SourceLocation {
             line: 1,
             column: 5,
             file: None,
         });
-        
+
         assert_eq!(error.message, "expected function name");
         assert_eq!(recovery.error_count, 1);
         assert!(recovery.should_continue());
     }
-    
+
     #[test]
     fn test_recovery_strategy_selection() {
         let context = ErrorContext::FunctionDecl {
@@ -364,9 +395,9 @@ mod tests {
             params: None,
             body: None,
         };
-        
+
         let strategy = RecoveryRules::select_strategy(&context);
-        
+
         match strategy {
             RecoveryStrategy::InsertToken(token) => {
                 assert_eq!(token, "error_fn");
@@ -374,7 +405,7 @@ mod tests {
             _ => panic!("Expected InsertToken strategy"),
         }
     }
-    
+
     #[test]
     fn test_synthetic_ast_generation() {
         let error = ErrorNode {
@@ -390,37 +421,37 @@ mod tests {
             },
             recovery: RecoveryStrategy::DefaultValue,
         };
-        
+
         let ast = RecoveryRules::synthesize_ast(&error);
-        
+
         match ast.kind {
             ExprKind::Let { name, value, .. } => {
                 assert_eq!(name, "x");
                 match value.kind {
-                    ExprKind::Literal(Literal::Unit) => {},
+                    ExprKind::Literal(Literal::Unit) => {}
                     _ => panic!("Expected Unit value"),
                 }
             }
             _ => panic!("Expected Let expression"),
         }
     }
-    
+
     #[test]
     fn test_sync_token_detection() {
         let recovery = ErrorRecovery::new();
-        
+
         assert!(recovery.is_sync_token(";"));
         assert!(recovery.is_sync_token("fun"));
         assert!(recovery.is_sync_token("let"));
         assert!(!recovery.is_sync_token("="));
         assert!(!recovery.is_sync_token("+"));
     }
-    
+
     #[test]
     fn test_max_errors_limit() {
         let mut recovery = ErrorRecovery::new();
         recovery.max_errors = 3;
-        
+
         for i in 0..5 {
             if recovery.should_continue() {
                 recovery.missing_function_name(SourceLocation {
@@ -430,7 +461,7 @@ mod tests {
                 });
             }
         }
-        
+
         assert_eq!(recovery.error_count, 3);
         assert!(!recovery.should_continue());
     }

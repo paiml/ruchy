@@ -1,5 +1,5 @@
 //! REPL Performance Benchmarks
-//! 
+//!
 //! Benchmarks startup time, evaluation latency, type lookup, and cache hit rates
 //! as specified in ruchy-repl-testing-todo.yaml
 
@@ -15,14 +15,14 @@ fn bench_repl_startup(c: &mut Criterion) {
     let mut group = c.benchmark_group("repl_startup");
     group.measurement_time(Duration::from_secs(10));
     group.sample_size(100);
-    
+
     group.bench_function("new", |b| {
         b.iter(|| {
             let repl = Repl::new().expect("Failed to create REPL");
             black_box(repl);
         });
     });
-    
+
     group.finish();
 }
 
@@ -30,7 +30,7 @@ fn bench_repl_startup(c: &mut Criterion) {
 fn bench_repl_eval(c: &mut Criterion) {
     let mut group = c.benchmark_group("repl_eval");
     group.measurement_time(Duration::from_secs(20));
-    
+
     let test_cases = vec![
         ("literal_int", "42"),
         ("literal_float", "3.14"),
@@ -44,9 +44,12 @@ fn bench_repl_eval(c: &mut Criterion) {
         ("list_literal", "[1, 2, 3, 4, 5]"),
         ("list_comprehension", "[x * 2 for x in [1, 2, 3]]"),
         ("if_expression", "if true { 1 } else { 2 }"),
-        ("match_expression", "match 42 { 42 => \"found\", _ => \"not found\" }"),
+        (
+            "match_expression",
+            "match 42 { 42 => \"found\", _ => \"not found\" }",
+        ),
     ];
-    
+
     for (name, expr) in test_cases {
         group.bench_with_input(BenchmarkId::new("parse_only", name), expr, |b, expr| {
             b.iter(|| {
@@ -55,18 +58,22 @@ fn bench_repl_eval(c: &mut Criterion) {
                 black_box(ast);
             });
         });
-        
-        group.bench_with_input(BenchmarkId::new("parse_and_transpile", name), expr, |b, expr| {
-            b.iter(|| {
-                let mut parser = ruchy::frontend::parser::Parser::new(black_box(expr));
-                let ast = parser.parse().expect("Failed to parse");
-                let transpiler = ruchy::backend::transpiler::Transpiler::new();
-                let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
-                black_box(rust_code);
-            });
-        });
+
+        group.bench_with_input(
+            BenchmarkId::new("parse_and_transpile", name),
+            expr,
+            |b, expr| {
+                b.iter(|| {
+                    let mut parser = ruchy::frontend::parser::Parser::new(black_box(expr));
+                    let ast = parser.parse().expect("Failed to parse");
+                    let transpiler = ruchy::backend::transpiler::Transpiler::new();
+                    let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
+                    black_box(rust_code);
+                });
+            },
+        );
     }
-    
+
     group.finish();
 }
 
@@ -74,43 +81,47 @@ fn bench_repl_eval(c: &mut Criterion) {
 fn bench_repl_show_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("repl_show");
     group.measurement_time(Duration::from_secs(10));
-    
+
     let mut repl = Repl::new().expect("Failed to create REPL");
-    
+
     // Set up some state
     let _ = repl.eval("let x = 42");
     let _ = repl.eval("let y = \"hello\"");
     let _ = repl.eval("fun double(n: i32) -> i32 { n * 2 }");
-    
+
     group.bench_function("show_history", |b| {
         b.iter(|| {
             let history = repl.show_history();
             black_box(history);
         });
     });
-    
+
     group.bench_function("show_type", |b| {
         b.iter(|| {
             let type_info = repl.show_type(black_box("x")).expect("Failed to get type");
             black_box(type_info);
         });
     });
-    
+
     group.bench_function("show_ast", |b| {
         b.iter(|| {
-            let ast = repl.show_ast(black_box("1 + 2")).expect("Failed to get AST");
+            let ast = repl
+                .show_ast(black_box("1 + 2"))
+                .expect("Failed to get AST");
             black_box(ast);
         });
     });
-    
+
     group.bench_function("show_rust", |b| {
         b.iter(|| {
             let mut repl_mut = Repl::new().expect("Failed to create REPL");
-            let rust_code = repl_mut.show_rust(black_box("true")).expect("Failed to get Rust code");
+            let rust_code = repl_mut
+                .show_rust(black_box("true"))
+                .expect("Failed to get Rust code");
             black_box(rust_code);
         });
     });
-    
+
     group.finish();
 }
 
@@ -118,7 +129,7 @@ fn bench_repl_show_operations(c: &mut Criterion) {
 fn bench_type_inference(c: &mut Criterion) {
     let mut group = c.benchmark_group("type_inference");
     group.measurement_time(Duration::from_secs(15));
-    
+
     let expressions = vec![
         ("simple", "42"),
         ("arithmetic", "1 + 2 * 3"),
@@ -129,7 +140,7 @@ fn bench_type_inference(c: &mut Criterion) {
         ("if_else", "if true { 1 } else { 2 }"),
         ("let_chain", "let x = 1; let y = x + 2; y * 3"),
     ];
-    
+
     for (name, expr) in expressions {
         group.bench_with_input(BenchmarkId::new("infer", name), expr, |b, expr| {
             b.iter(|| {
@@ -141,7 +152,7 @@ fn bench_type_inference(c: &mut Criterion) {
             });
         });
     }
-    
+
     group.finish();
 }
 
@@ -149,12 +160,12 @@ fn bench_type_inference(c: &mut Criterion) {
 fn bench_memory_usage(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_usage");
     group.measurement_time(Duration::from_secs(10));
-    
+
     // Simulate a session with many operations
     let session_operations = (0..100)
         .map(|i| format!("let var_{} = {}", i, i))
         .collect::<Vec<_>>();
-    
+
     group.throughput(Throughput::Elements(session_operations.len() as u64));
     group.bench_function("large_session", |b| {
         b.iter(|| {
@@ -165,7 +176,7 @@ fn bench_memory_usage(c: &mut Criterion) {
             black_box(repl);
         });
     });
-    
+
     group.bench_function("session_with_clear", |b| {
         b.iter(|| {
             let mut repl = Repl::new().expect("Failed to create REPL");
@@ -178,7 +189,7 @@ fn bench_memory_usage(c: &mut Criterion) {
             black_box(repl);
         });
     });
-    
+
     group.finish();
 }
 
@@ -186,14 +197,14 @@ fn bench_memory_usage(c: &mut Criterion) {
 fn bench_throughput(c: &mut Criterion) {
     let mut group = c.benchmark_group("throughput");
     group.measurement_time(Duration::from_secs(20));
-    
+
     let batch_sizes = vec![10, 50, 100, 500];
-    
+
     for batch_size in batch_sizes {
         let operations: Vec<String> = (0..batch_size)
             .map(|i| format!("{} + {}", i, i + 1))
             .collect();
-        
+
         group.throughput(Throughput::Elements(batch_size));
         group.bench_with_input(
             BenchmarkId::new("eval_batch", batch_size),
@@ -208,7 +219,7 @@ fn bench_throughput(c: &mut Criterion) {
                 });
             },
         );
-        
+
         group.bench_with_input(
             BenchmarkId::new("parse_batch", batch_size),
             &operations,
@@ -223,7 +234,7 @@ fn bench_throughput(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -231,21 +242,21 @@ fn bench_throughput(c: &mut Criterion) {
 fn bench_incremental_compilation(c: &mut Criterion) {
     let mut group = c.benchmark_group("incremental");
     group.measurement_time(Duration::from_secs(15));
-    
+
     // Simulate incremental development where we modify previous definitions
     let base_definitions = vec![
         "let x = 42",
-        "let y = x + 1", 
+        "let y = x + 1",
         "fun add(a: i32, b: i32) -> i32 { a + b }",
         "let z = add(x, y)",
     ];
-    
+
     let modifications = vec![
-        "let x = 43",  // Modify x
-        "let w = x * 2",  // Add new definition
-        "fun add(a: i32, b: i32) -> i32 { a + b + 1 }",  // Modify function
+        "let x = 43",                                   // Modify x
+        "let w = x * 2",                                // Add new definition
+        "fun add(a: i32, b: i32) -> i32 { a + b + 1 }", // Modify function
     ];
-    
+
     group.bench_function("cold_start", |b| {
         b.iter(|| {
             let mut repl = Repl::new().expect("Failed to create REPL");
@@ -258,7 +269,7 @@ fn bench_incremental_compilation(c: &mut Criterion) {
             black_box(repl);
         });
     });
-    
+
     group.bench_function("warm_session", |b| {
         b.iter_with_setup(
             || {
@@ -276,7 +287,7 @@ fn bench_incremental_compilation(c: &mut Criterion) {
             },
         );
     });
-    
+
     group.finish();
 }
 

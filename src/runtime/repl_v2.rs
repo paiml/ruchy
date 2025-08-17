@@ -1,13 +1,13 @@
 //! REPL v2 - Deterministic, normalized AST-based REPL
-//! 
+//!
 //! This implementation fixes all the bugs identified in docs/bugs/repl-qa-report.md
 //! by using the normalized AST and reference interpreter for consistency
 
 #![allow(clippy::print_stdout)] // REPL needs to print to stdout by design
 #![allow(clippy::print_stderr)] // REPL needs to print errors to stderr
 
-use crate::{Parser, Transpiler};
 use crate::transpiler::{AstNormalizer, CoreExpr, ReferenceInterpreter, Value};
+use crate::{Parser, Transpiler};
 use anyhow::{Context, Result};
 use colored::Colorize;
 use rustyline::error::ReadlineError;
@@ -39,7 +39,7 @@ impl ReplV2 {
     pub fn new() -> Result<Self> {
         let temp_dir = std::env::temp_dir().join("ruchy_repl_v2");
         fs::create_dir_all(&temp_dir)?;
-        
+
         Ok(Self {
             interpreter: ReferenceInterpreter::new(),
             rust_definitions: Vec::new(),
@@ -50,36 +50,42 @@ impl ReplV2 {
             use_interpreter: false, // Default to compilation for compatibility
         })
     }
-    
+
     /// Run the REPL
     pub fn run(&mut self) -> Result<()> {
         println!("{}", "Welcome to Ruchy REPL v2.0".bright_cyan().bold());
-        println!("{}", "Type :help for commands, :quit to exit".bright_black());
-        println!("{}", "Using normalized AST for deterministic execution".bright_black());
+        println!(
+            "{}",
+            "Type :help for commands, :quit to exit".bright_black()
+        );
+        println!(
+            "{}",
+            "Using normalized AST for deterministic execution".bright_black()
+        );
         println!();
-        
+
         let mut rl = DefaultEditor::new()?;
         let history_path = self.temp_dir.join("history.txt");
         let _ = rl.load_history(&history_path);
-        
+
         loop {
             let prompt = format!("{} ", "ruchy>".bright_green());
-            
+
             match rl.readline(&prompt) {
                 Ok(line) => {
                     rl.add_history_entry(line.as_str())?;
-                    
+
                     if line.starts_with(':') {
                         if !self.handle_command(&line)? {
                             break;
                         }
                         continue;
                     }
-                    
+
                     if line.trim().is_empty() {
                         continue;
                     }
-                    
+
                     match self.eval(&line) {
                         Ok(result) => {
                             if !result.is_empty() {
@@ -104,20 +110,20 @@ impl ReplV2 {
                 }
             }
         }
-        
+
         rl.save_history(&history_path)?;
         Ok(())
     }
-    
+
     /// Evaluate an expression using normalized AST
     pub fn eval(&mut self, input: &str) -> Result<String> {
         // Parse the input
         let mut parser = Parser::new(input);
         let ast = parser.parse().context("Failed to parse input")?;
-        
+
         // Normalize to core form
         let mut normalizer = AstNormalizer::new();
-        
+
         // Handle the case where we have free variables (from previous definitions)
         // For now, we'll handle this by maintaining context differently
         let core = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -130,7 +136,7 @@ impl ReplV2 {
                 return self.eval_with_compilation(input, &ast);
             }
         };
-        
+
         if self.use_interpreter {
             // Use reference interpreter for evaluation
             self.eval_with_interpreter(&core)
@@ -139,7 +145,7 @@ impl ReplV2 {
             self.eval_with_compilation(input, &ast)
         }
     }
-    
+
     /// Evaluate using the reference interpreter
     fn eval_with_interpreter(&mut self, core: &CoreExpr) -> Result<String> {
         match self.interpreter.eval(core) {
@@ -147,52 +153,51 @@ impl ReplV2 {
                 let output = self.format_value(&value);
                 Ok(output)
             }
-            Err(e) => Err(anyhow::anyhow!("Interpreter error: {}", e))
+            Err(e) => Err(anyhow::anyhow!("Interpreter error: {}", e)),
         }
     }
-    
+
     /// Evaluate by compiling to Rust (for compatibility)
     fn eval_with_compilation(&mut self, _input: &str, ast: &crate::Expr) -> Result<String> {
         // Transpile to Rust with proper semicolon handling
         let rust_tokens = self.transpiler.transpile(ast)?;
         let mut rust_code = rust_tokens.to_string();
-        
+
         // CRITICAL FIX: Ensure statements have semicolons
         // This is the fix for BUG-001 from the QA report
         let needs_semicolon = matches!(
             &ast.kind,
-            crate::ExprKind::Let { .. } |
-            crate::ExprKind::Import { .. }
+            crate::ExprKind::Let { .. } | crate::ExprKind::Import { .. }
         );
-        
+
         if needs_semicolon && !rust_code.ends_with(';') {
             rust_code.push(';');
         }
-        
+
         // Determine if this is an expression or statement
         let is_expression = !matches!(
             &ast.kind,
-            crate::ExprKind::Let { .. } |
-            crate::ExprKind::Function { .. } |
-            crate::ExprKind::Struct { .. } |
-            crate::ExprKind::Trait { .. } |
-            crate::ExprKind::Impl { .. } |
-            crate::ExprKind::Import { .. }
+            crate::ExprKind::Let { .. }
+                | crate::ExprKind::Function { .. }
+                | crate::ExprKind::Struct { .. }
+                | crate::ExprKind::Trait { .. }
+                | crate::ExprKind::Impl { .. }
+                | crate::ExprKind::Import { .. }
         );
-        
+
         // Store definitions for persistence (BUG-001 fix)
         if !is_expression {
             self.rust_definitions.push(rust_code.clone());
-            
+
             // Track variable bindings
             if let crate::ExprKind::Let { name, .. } = &ast.kind {
                 self.bindings.insert(name.clone(), "inferred".to_string());
             }
         }
-        
+
         self.session_counter += 1;
         let session_name = format!("ruchy_repl_v2_{}", self.session_counter);
-        
+
         // Create program with all accumulated definitions
         let full_program = if is_expression {
             // Use Debug trait for all types (BUG-005 fix)
@@ -221,11 +226,11 @@ fn main() {{
                 rust_code
             )
         };
-        
+
         // Write to file
         let rust_file = self.temp_dir.join(format!("{session_name}.rs"));
         fs::write(&rust_file, full_program)?;
-        
+
         // Compile
         let output = Command::new("rustc")
             .arg(&rust_file)
@@ -234,23 +239,23 @@ fn main() {{
             .arg("-C")
             .arg("opt-level=0") // Disable optimizations for consistency
             .output()?;
-        
+
         if !output.status.success() {
             let error = String::from_utf8_lossy(&output.stderr);
             return Err(anyhow::anyhow!("Compilation failed:\n{}", error));
         }
-        
+
         // Run
         let output = Command::new(self.temp_dir.join(&session_name)).output()?;
-        
+
         if !output.status.success() {
             let error = String::from_utf8_lossy(&output.stderr);
             return Err(anyhow::anyhow!("Runtime error:\n{}", error));
         }
-        
+
         Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
     }
-    
+
     /// Format a value for display
     fn format_value(&self, value: &Value) -> String {
         match value {
@@ -266,11 +271,11 @@ fn main() {{
             }
         }
     }
-    
+
     /// Handle REPL commands
     fn handle_command(&mut self, cmd: &str) -> Result<bool> {
         let parts: Vec<&str> = cmd.split_whitespace().collect();
-        
+
         match parts.first().copied() {
             Some(":help") => {
                 self.print_help();
@@ -291,7 +296,11 @@ fn main() {{
                         _ => println!("Unknown mode. Use 'interpreter' or 'compile'"),
                     }
                 } else {
-                    let mode = if self.use_interpreter { "interpreter" } else { "compile" };
+                    let mode = if self.use_interpreter {
+                        "interpreter"
+                    } else {
+                        "compile"
+                    };
                     println!("Current mode: {mode}");
                 }
                 Ok(true)
@@ -320,12 +329,15 @@ fn main() {{
             }
         }
     }
-    
+
     fn print_help(&self) {
         println!("{}", "Available commands:".bright_cyan());
         println!("  {} - Show this help message", ":help".bright_green());
         println!("  {} - Exit the REPL", ":quit, :exit".bright_green());
-        println!("  {} - Switch evaluation mode", ":mode [interpreter|compile]".bright_green());
+        println!(
+            "  {} - Switch evaluation mode",
+            ":mode [interpreter|compile]".bright_green()
+        );
         println!("  {} - Clear session", ":clear".bright_green());
         println!("  {} - Show variable bindings", ":bindings".bright_green());
     }
@@ -334,15 +346,15 @@ fn main() {{
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_repl_v2_variable_persistence() {
         let mut repl = ReplV2::new().unwrap();
-        
+
         // Test that variables persist
         let result1 = repl.eval("let x = 10").unwrap();
         assert!(result1.is_empty() || result1 == "()");
-        
+
         // This should work now with accumulated definitions
         // Note: This will fail with interpreter mode due to scope,
         // but should work with compilation mode
@@ -351,16 +363,16 @@ mod tests {
         // The test might still fail due to how we handle free variables
         // but the infrastructure is in place
     }
-    
+
     #[test]
     fn test_repl_v2_interpreter_mode() {
         let mut repl = ReplV2::new().unwrap();
         repl.use_interpreter = true;
-        
+
         // Test simple arithmetic
         let result = repl.eval("1 + 2").unwrap();
         assert_eq!(result, "3");
-        
+
         let result = repl.eval("3 * 4").unwrap();
         assert_eq!(result, "12");
     }

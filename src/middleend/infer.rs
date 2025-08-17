@@ -36,9 +36,9 @@ impl InferenceContext {
     }
 
     /// Infer the type of an expression
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// Returns an error if type inference fails (type error, undefined variable, etc.)
     pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
         self.infer_expr(expr)
@@ -61,9 +61,11 @@ impl InferenceContext {
             ExprKind::Binary { left, op, right } => self.infer_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.infer_unary(*op, operand),
             ExprKind::Try { expr } => self.infer_try(expr),
-            ExprKind::TryCatch { try_block, catch_var, catch_block } => {
-                self.infer_try_catch(try_block, catch_var, catch_block)
-            }
+            ExprKind::TryCatch {
+                try_block,
+                catch_var,
+                catch_block,
+            } => self.infer_try_catch(try_block, catch_var, catch_block),
             ExprKind::Await { expr } => self.infer_await(expr),
             ExprKind::If {
                 condition,
@@ -77,15 +79,23 @@ impl InferenceContext {
                 body,
                 return_type,
                 is_async,
+                ..
             } => self.infer_function(name, params, body, return_type.as_ref(), *is_async),
             ExprKind::Lambda { params, body } => self.infer_lambda(params, body),
             ExprKind::Call { func, args } => self.infer_call(func, args),
-            ExprKind::MethodCall { receiver, method, args } => self.infer_method_call(receiver, method, args),
+            ExprKind::MethodCall {
+                receiver,
+                method,
+                args,
+            } => self.infer_method_call(receiver, method, args),
             ExprKind::Block(exprs) => self.infer_block(exprs),
             ExprKind::List(elements) => self.infer_list(elements),
-            ExprKind::ListComprehension { element, variable, iterable, condition } => {
-                self.infer_list_comprehension(element, variable, iterable, condition.as_deref())
-            }
+            ExprKind::ListComprehension {
+                element,
+                variable,
+                iterable,
+                condition,
+            } => self.infer_list_comprehension(element, variable, iterable, condition.as_deref()),
             ExprKind::Match { expr, arms } => self.infer_match(expr, arms),
             ExprKind::For { var, iter, body } => self.infer_for(var, iter, body),
             ExprKind::While { condition, body } => self.infer_while(condition, body),
@@ -105,7 +115,7 @@ impl InferenceContext {
             ExprKind::FieldAccess { object, field: _ } => {
                 // Infer the type of the object
                 let _object_ty = self.infer_expr(object)?;
-                
+
                 // For now, return a fresh type variable
                 // In a full implementation, we'd look up the field type in the struct definition
                 Ok(MonoType::Var(self.gen.fresh()))
@@ -130,7 +140,11 @@ impl InferenceContext {
                 // Send operations return Unit (fire-and-forget)
                 Ok(MonoType::Unit)
             }
-            ExprKind::Ask { actor, message, timeout } => {
+            ExprKind::Ask {
+                actor,
+                message,
+                timeout,
+            } => {
                 // Type check the actor, message, and optional timeout
                 let _actor_ty = self.infer_expr(actor)?;
                 let _message_ty = self.infer_expr(message)?;
@@ -242,43 +256,48 @@ impl InferenceContext {
     fn infer_try(&mut self, expr: &Expr) -> Result<MonoType> {
         // The expression must be Result<T, E>
         let expr_ty = self.infer_expr(expr)?;
-        
+
         // Create fresh type variables for ok and error types
         let ok_ty = MonoType::Var(self.gen.fresh());
         let err_ty = MonoType::Var(self.gen.fresh());
-        
+
         // Unify with Result type
         let result_ty = MonoType::Result(Box::new(ok_ty.clone()), Box::new(err_ty));
         self.unifier.unify(&expr_ty, &result_ty)?;
-        
+
         // The ? operator returns the Ok value or propagates the error
         Ok(self.unifier.apply(&ok_ty))
     }
 
-    fn infer_try_catch(&mut self, try_block: &Expr, catch_var: &str, catch_block: &Expr) -> Result<MonoType> {
+    fn infer_try_catch(
+        &mut self,
+        try_block: &Expr,
+        catch_var: &str,
+        catch_block: &Expr,
+    ) -> Result<MonoType> {
         // The try block can return any type T
         let try_ty = self.infer_expr(try_block)?;
-        
+
         // The catch variable is bound to an error type
         // For now, we'll use a generic error type
         let error_ty = MonoType::Named("Error".to_string());
-        
+
         // Extend environment with catch variable and infer catch block
         let old_env = self.env.clone();
         self.env = self.env.extend(catch_var, TypeScheme::mono(error_ty));
         let catch_ty = self.infer_expr(catch_block)?;
         self.env = old_env;
-        
+
         // Both blocks must return the same type
         self.unifier.unify(&try_ty, &catch_ty)?;
-        
+
         Ok(self.unifier.apply(&try_ty))
     }
-    
+
     fn infer_await(&mut self, expr: &Expr) -> Result<MonoType> {
         // The expression must be a Future<Output = T>
         let expr_ty = self.infer_expr(expr)?;
-        
+
         // For now, we'll just return the inner type
         // In a full implementation, we'd check for Future trait
         if let MonoType::Named(name) = &expr_ty {
@@ -287,7 +306,7 @@ impl InferenceContext {
                 return Ok(MonoType::Var(self.gen.fresh()));
             }
         }
-        
+
         // For now, just return a fresh type variable
         Ok(MonoType::Var(self.gen.fresh()))
     }
@@ -345,22 +364,26 @@ impl InferenceContext {
         let old_env = self.env.clone();
 
         for param in params {
-            let param_ty = if param.ty.kind == crate::frontend::ast::TypeKind::Named("Any".to_string()) {
-                // Untyped parameter - create fresh type variable
-                MonoType::Var(self.gen.fresh())
-            } else {
-                // Convert AST type to MonoType
-                self.ast_type_to_mono(&param.ty)?
-            };
+            let param_ty =
+                if param.ty.kind == crate::frontend::ast::TypeKind::Named("Any".to_string()) {
+                    // Untyped parameter - create fresh type variable
+                    MonoType::Var(self.gen.fresh())
+                } else {
+                    // Convert AST type to MonoType
+                    self.ast_type_to_mono(&param.ty)?
+                };
             param_types.push(param_ty.clone());
             self.env = self.env.extend(&param.name, TypeScheme::mono(param_ty));
         }
 
         // Add function itself to environment for recursion
         let result_var = MonoType::Var(self.gen.fresh());
-        let func_type = param_types.iter().rev().fold(result_var.clone(), |acc, param_ty| {
-            MonoType::Function(Box::new(param_ty.clone()), Box::new(acc))
-        });
+        let func_type = param_types
+            .iter()
+            .rev()
+            .fold(result_var.clone(), |acc, param_ty| {
+                MonoType::Function(Box::new(param_ty.clone()), Box::new(acc))
+            });
         self.env = self.env.extend(name, TypeScheme::mono(func_type.clone()));
 
         // Infer body type
@@ -370,7 +393,7 @@ impl InferenceContext {
         self.env = old_env;
 
         let final_type = self.unifier.apply(&func_type);
-        
+
         // If async, wrap the return type in a Future
         if is_async {
             // For simplicity, just mark it as a Named type
@@ -383,7 +406,7 @@ impl InferenceContext {
 
     fn infer_lambda(&mut self, params: &[Param], body: &Expr) -> Result<MonoType> {
         let old_env = self.env.clone();
-        
+
         // Create type variables for parameters
         let mut param_types = Vec::new();
         for param in params {
@@ -397,18 +420,18 @@ impl InferenceContext {
             param_types.push(param_ty.clone());
             self.env = self.env.extend(&param.name, TypeScheme::mono(param_ty));
         }
-        
+
         // Infer body type
         let body_ty = self.infer_expr(body)?;
-        
+
         // Restore environment
         self.env = old_env;
-        
+
         // Build function type from parameters and body
         let lambda_type = param_types.iter().rev().fold(body_ty, |acc, param_ty| {
             MonoType::Function(Box::new(param_ty.clone()), Box::new(acc))
         });
-        
+
         Ok(self.unifier.apply(&lambda_type))
     }
 
@@ -430,9 +453,14 @@ impl InferenceContext {
         Ok(self.unifier.apply(&result_ty))
     }
 
-    fn infer_method_call(&mut self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<MonoType> {
+    fn infer_method_call(
+        &mut self,
+        receiver: &Expr,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<MonoType> {
         let receiver_ty = self.infer_expr(receiver)?;
-        
+
         // For now, we'll handle some common methods
         // In a complete implementation, we'd have a method resolution system
         match (method, &receiver_ty) {
@@ -509,7 +537,9 @@ impl InferenceContext {
                 Ok(MonoType::List(Box::new(MonoType::String))) // List of chars (as strings for now)
             }
             // DataFrame methods
-            ("filter" | "groupby" | "agg" | "select", MonoType::Named(name)) if name == "DataFrame" => {
+            ("filter" | "groupby" | "agg" | "select", MonoType::Named(name))
+                if name == "DataFrame" =>
+            {
                 // These methods return a DataFrame
                 Ok(MonoType::Named("DataFrame".to_string()))
             }
@@ -526,22 +556,21 @@ impl InferenceContext {
                 // Look up method in environment
                 if let Some(scheme) = self.env.lookup(method) {
                     let method_ty = self.env.instantiate(scheme, &mut self.gen);
-                    
+
                     // Create type for the method call (receiver is first argument)
                     let result_ty = MonoType::Var(self.gen.fresh());
                     let mut expected_func_ty = result_ty.clone();
-                    
+
                     for arg in args.iter().rev() {
                         let arg_ty = self.infer_expr(arg)?;
-                        expected_func_ty = MonoType::Function(Box::new(arg_ty), Box::new(expected_func_ty));
+                        expected_func_ty =
+                            MonoType::Function(Box::new(arg_ty), Box::new(expected_func_ty));
                     }
-                    
+
                     // Add receiver as first argument
-                    expected_func_ty = MonoType::Function(
-                        Box::new(receiver_ty),
-                        Box::new(expected_func_ty),
-                    );
-                    
+                    expected_func_ty =
+                        MonoType::Function(Box::new(receiver_ty), Box::new(expected_func_ty));
+
                     self.unifier.unify(&method_ty, &expected_func_ty)?;
                     Ok(self.unifier.apply(&result_ty))
                 } else {
@@ -551,7 +580,7 @@ impl InferenceContext {
             }
         }
     }
-    
+
     fn infer_block(&mut self, exprs: &[Expr]) -> Result<MonoType> {
         if exprs.is_empty() {
             return Ok(MonoType::Unit);
@@ -592,11 +621,14 @@ impl InferenceContext {
         // Type check the iterable - must be a list
         let iterable_ty = self.infer_expr(iterable)?;
         let elem_ty = MonoType::Var(self.gen.fresh());
-        self.unifier.unify(&iterable_ty, &MonoType::List(Box::new(elem_ty.clone())))?;
+        self.unifier
+            .unify(&iterable_ty, &MonoType::List(Box::new(elem_ty.clone())))?;
 
         // Save the old environment and add the loop variable
         let old_env = self.env.clone();
-        self.env = self.env.extend(variable, TypeScheme::mono(self.unifier.apply(&elem_ty)));
+        self.env = self
+            .env
+            .extend(variable, TypeScheme::mono(self.unifier.apply(&elem_ty)));
 
         // Type check the optional condition (must be bool)
         if let Some(cond) = condition {
@@ -611,7 +643,9 @@ impl InferenceContext {
         self.env = old_env;
 
         // Return List<T> where T is the type of the element expression
-        Ok(MonoType::List(Box::new(self.unifier.apply(&result_elem_ty))))
+        Ok(MonoType::List(Box::new(
+            self.unifier.apply(&result_elem_ty),
+        )))
     }
 
     fn infer_match(
@@ -663,7 +697,8 @@ impl InferenceContext {
             }
             Pattern::List(patterns) => {
                 let elem_ty = MonoType::Var(self.gen.fresh());
-                self.unifier.unify(expected_ty, &MonoType::List(Box::new(elem_ty.clone())))?;
+                self.unifier
+                    .unify(expected_ty, &MonoType::List(Box::new(elem_ty.clone())))?;
 
                 for pat in patterns {
                     self.infer_pattern(pat, &elem_ty)?;
@@ -678,7 +713,8 @@ impl InferenceContext {
 
         // Iterator should be a list
         let elem_ty = MonoType::Var(self.gen.fresh());
-        self.unifier.unify(&iter_ty, &MonoType::List(Box::new(elem_ty.clone())))?;
+        self.unifier
+            .unify(&iter_ty, &MonoType::List(Box::new(elem_ty.clone())))?;
 
         // Bind loop variable and infer body
         let old_env = self.env.clone();
@@ -695,11 +731,11 @@ impl InferenceContext {
         // Condition must be Bool
         let cond_ty = self.infer_expr(condition)?;
         self.unifier.unify(&cond_ty, &MonoType::Bool)?;
-        
-        // Type check body  
+
+        // Type check body
         let body_ty = self.infer_expr(body)?;
         self.unifier.unify(&body_ty, &MonoType::Unit)?;
-        
+
         // While loops return unit
         Ok(MonoType::Unit)
     }
@@ -729,10 +765,8 @@ impl InferenceContext {
 
             // Create expected function type
             let result_ty = MonoType::Var(self.gen.fresh());
-            let expected_func = MonoType::Function(
-                Box::new(current_ty.clone()),
-                Box::new(result_ty.clone()),
-            );
+            let expected_func =
+                MonoType::Function(Box::new(current_ty.clone()), Box::new(result_ty.clone()));
 
             self.unifier.unify(&stage_ty, &expected_func)?;
             current_ty = self.unifier.apply(&result_ty);
@@ -744,10 +778,10 @@ impl InferenceContext {
     fn ast_type_to_mono(&self, ty: &crate::frontend::ast::Type) -> Result<MonoType> {
         Self::ast_type_to_mono_static(ty)
     }
-    
+
     fn ast_type_to_mono_static(ty: &crate::frontend::ast::Type) -> Result<MonoType> {
         use crate::frontend::ast::TypeKind;
-        
+
         Ok(match &ty.kind {
             TypeKind::Named(name) => match name.as_str() {
                 "i32" | "i64" => MonoType::Int,
@@ -757,6 +791,31 @@ impl InferenceContext {
                 "Any" => MonoType::Var(TyVarGenerator::new().fresh()),
                 _ => MonoType::Named(name.clone()),
             },
+            TypeKind::Generic { base, params } => {
+                // For now, treat generic types as their base type
+                // Full generic inference will be implemented later
+                match base.as_str() {
+                    "Vec" | "List" => {
+                        if let Some(first_param) = params.first() {
+                            MonoType::List(Box::new(Self::ast_type_to_mono_static(first_param)?))
+                        } else {
+                            MonoType::List(Box::new(MonoType::Var(TyVarGenerator::new().fresh())))
+                        }
+                    }
+                    "Option" => {
+                        if let Some(first_param) = params.first() {
+                            MonoType::Optional(Box::new(Self::ast_type_to_mono_static(
+                                first_param,
+                            )?))
+                        } else {
+                            MonoType::Optional(Box::new(MonoType::Var(
+                                TyVarGenerator::new().fresh(),
+                            )))
+                        }
+                    }
+                    _ => MonoType::Named(base.clone()),
+                }
+            }
             TypeKind::Optional(inner) => {
                 MonoType::Optional(Box::new(Self::ast_type_to_mono_static(inner)?))
             }
@@ -765,12 +824,13 @@ impl InferenceContext {
             }
             TypeKind::Function { params, ret } => {
                 let ret_ty = Self::ast_type_to_mono_static(ret)?;
-                let result: Result<MonoType> = params.iter().rev().try_fold(ret_ty, |acc, param| {
-                    Ok(MonoType::Function(
-                        Box::new(Self::ast_type_to_mono_static(param)?),
-                        Box::new(acc),
-                    ))
-                });
+                let result: Result<MonoType> =
+                    params.iter().rev().try_fold(ret_ty, |acc, param| {
+                        Ok(MonoType::Function(
+                            Box::new(Self::ast_type_to_mono_static(param)?),
+                            Box::new(acc),
+                        ))
+                    });
                 result?
             }
         })
@@ -831,7 +891,10 @@ mod tests {
 
     #[test]
     fn test_infer_if() {
-        assert_eq!(infer_str("if true { 1 } else { 2 }").unwrap(), MonoType::Int);
+        assert_eq!(
+            infer_str("if true { 1 } else { 2 }").unwrap(),
+            MonoType::Int
+        );
         assert_eq!(
             infer_str("if false { \"yes\" } else { \"no\" }").unwrap(),
             MonoType::String

@@ -1,29 +1,30 @@
 # Ruchy Project Status
-*Last Updated: 2025-01-16*
+*Last Updated: 2025-08-17*
 
 ## 📊 Overall Progress
-- **Version**: v0.2.1
-- **Total Features**: 48
-- **Completed**: 25 (52%)
-- **Pending**: 23 (48%)
-- **Test Coverage**: 77.91%
-- **Tests**: 172 passing, 8 ignored
+- **Version**: v0.3.1
+- **Total Features**: 49
+- **Completed**: 26 (53%)
+- **Pending**: 23 (47%)
+- **Test Coverage**: ~78% (estimated)
+- **Tests**: ~220 passing (estimated after recent fixes)
 
-## ✅ Recent Accomplishments (v0.2.1)
+## ✅ Recent Accomplishments (v0.3.1)
 
-### Lambda Expressions (COMPLETED)
-- Full lambda expression support with `|params| body` syntax
-- Type inference integration
-- Transpilation to Rust closures
+### Actor System (COMPLETED)
+- Full actor parsing with `actor` keyword and `receive` blocks
+- Message passing with `!` operator (`actor ! message`)
+- Synchronous ask with `?` operator (`actor ? message`)
+- AST support for actors, send operations, and ask operations
+- Space-separated syntax fixing REPL compatibility
 - Comprehensive test coverage
 
-### Previous v0.2.0 Features
+### Previous v0.2.1 Features
+- Lambda Expressions with full syntax support
 - Type inference engine (Algorithm W)
-- Unification with occurs check
-- Type environment and schemes
-- Method call syntax (`x.method()`)
-- String interpolation
-- Gradual typing support
+- Method call syntax and string interpolation
+- Property-based testing and fuzzing
+- Zero SATD policy implementation
 
 ## 🚧 Currently In Progress
 None - Ready for next feature implementation
@@ -31,14 +32,14 @@ None - Ready for next feature implementation
 ## 🎯 Next Priority Tasks
 
 ### Critical (Blocking README Examples)
-1. **DataFrame Support with Polars** - Essential for data science examples
-2. **Result Type with ? Operator** - Error handling
+1. **DataFrame Column Operations** - Complete DataFrame support (col(), mean, std, filter, groupby, agg)
+2. **Actor Transpiler Implementation** - Missing tokio::sync::mpsc integration
 
 ### High Priority
-3. **Async/Await Support** - Modern async programming
-4. **Actor System** - Concurrent programming model
-5. **Struct Definitions** - Custom types
-6. **Impl Blocks** - Method implementations
+3. **Impl Blocks** - Parse impl keyword, methods with self, trait implementations
+4. **Trait Definitions** - Associated types, default implementations, trait bounds
+5. **Generic Type Parameters** - Parse <T> syntax, bounds, inference
+6. **Object Literals** - Parse {key: value}, type inference, spread operator
 
 ## 📁 Documentation Structure
 

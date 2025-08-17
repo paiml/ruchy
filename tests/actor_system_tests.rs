@@ -1,12 +1,12 @@
 //! Comprehensive tests for the Actor System implementation
 
-#![allow(clippy::unwrap_used)]  // Tests are allowed to unwrap
-#![allow(clippy::expect_used)]  // Tests are allowed to expect
-#![allow(clippy::panic)]        // Tests use panic for assertions
+#![allow(clippy::unwrap_used)] // Tests are allowed to unwrap
+#![allow(clippy::expect_used)] // Tests are allowed to expect
+#![allow(clippy::panic)] // Tests use panic for assertions
 
-use ruchy::frontend::parser::Parser;
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::frontend::ast::ExprKind;
+use ruchy::frontend::parser::Parser;
 
 #[test]
 fn test_parse_simple_actor() {
@@ -21,14 +21,19 @@ fn test_parse_simple_actor() {
             }
         }
     ";
-    
+
     let mut parser = Parser::new(input);
     let result = parser.parse();
-    
+
     assert!(result.is_ok(), "Failed to parse actor: {result:?}");
     let expr = result.unwrap();
-    
-    if let ExprKind::Actor { name, state, handlers } = &expr.kind {
+
+    if let ExprKind::Actor {
+        name,
+        state,
+        handlers,
+    } = &expr.kind
+    {
         assert_eq!(name, "Counter");
         assert_eq!(state.len(), 1);
         assert_eq!(state[0].name, "count");
@@ -60,13 +65,16 @@ fn test_parse_actor_with_message_params() {
             }
         }
     ";
-    
+
     let mut parser = Parser::new(input);
     let result = parser.parse();
-    
-    assert!(result.is_ok(), "Failed to parse actor with params: {result:?}");
+
+    assert!(
+        result.is_ok(),
+        "Failed to parse actor with params: {result:?}"
+    );
     let expr = result.unwrap();
-    
+
     if let ExprKind::Actor { name, handlers, .. } = &expr.kind {
         assert_eq!(name, "Calculator");
         assert_eq!(handlers[0].params.len(), 1);
@@ -82,13 +90,13 @@ fn test_parse_actor_with_message_params() {
 #[test]
 fn test_parse_send_operation() {
     let input = "counter ! Increment";
-    
+
     let mut parser = Parser::new(input);
     let result = parser.parse();
-    
+
     assert!(result.is_ok(), "Failed to parse send: {result:?}");
     let expr = result.unwrap();
-    
+
     if let ExprKind::Send { actor, message } = &expr.kind {
         if let ExprKind::Identifier(name) = &actor.kind {
             assert_eq!(name, "counter");
@@ -108,14 +116,19 @@ fn test_parse_send_operation() {
 #[test]
 fn test_parse_ask_operation() {
     let input = "calculator ? GetResult";
-    
+
     let mut parser = Parser::new(input);
     let result = parser.parse();
-    
+
     assert!(result.is_ok(), "Failed to parse ask: {result:?}");
     let expr = result.unwrap();
-    
-    if let ExprKind::Ask { actor, message, timeout } = &expr.kind {
+
+    if let ExprKind::Ask {
+        actor,
+        message,
+        timeout,
+    } = &expr.kind
+    {
         if let ExprKind::Identifier(name) = &actor.kind {
             assert_eq!(name, "calculator");
         } else {
@@ -144,38 +157,38 @@ fn test_transpile_actor() {
             }
         }
     ";
-    
+
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
-    
+
     let transpiler = Transpiler::new();
     let result = transpiler.transpile(&expr);
-    
+
     assert!(result.is_ok(), "Failed to transpile actor: {result:?}");
     let rust_code = result.unwrap().to_string();
-    
+
     // Check that the generated code contains expected elements
     assert!(rust_code.contains("struct Counter"));
     assert!(rust_code.contains("enum CounterMessage"));
     assert!(rust_code.contains("Increment"));
     assert!(rust_code.contains("GetCount"));
     assert!(rust_code.contains("async fn handle_message"));
-    assert!(rust_code.contains("tokio::sync::mpsc"));
+    assert!(rust_code.contains("tokio :: sync :: mpsc"));
 }
 
 #[test]
 fn test_transpile_send() {
     let input = "counter ! Increment";
-    
+
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
-    
+
     let transpiler = Transpiler::new();
     let result = transpiler.transpile(&expr);
-    
+
     assert!(result.is_ok(), "Failed to transpile send: {result:?}");
     let rust_code = result.unwrap().to_string();
-    
+
     assert!(rust_code.contains("counter"));
     assert!(rust_code.contains("send"));
     assert!(rust_code.contains("Increment"));
@@ -185,16 +198,16 @@ fn test_transpile_send() {
 #[test]
 fn test_transpile_ask() {
     let input = "calculator ? GetResult";
-    
+
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
-    
+
     let transpiler = Transpiler::new();
     let result = transpiler.transpile(&expr);
-    
+
     assert!(result.is_ok(), "Failed to transpile ask: {result:?}");
     let rust_code = result.unwrap().to_string();
-    
+
     assert!(rust_code.contains("calculator"));
     assert!(rust_code.contains("ask"));
     assert!(rust_code.contains("GetResult"));
@@ -225,23 +238,28 @@ fn test_actor_with_multiple_state_fields() {
             }
         }
     ";
-    
+
     let mut parser = Parser::new(input);
     let result = parser.parse();
-    
+
     assert!(result.is_ok(), "Failed to parse complex actor: {result:?}");
     let expr = result.unwrap();
-    
-    if let ExprKind::Actor { name, state, handlers } = &expr.kind {
+
+    if let ExprKind::Actor {
+        name,
+        state,
+        handlers,
+    } = &expr.kind
+    {
         assert_eq!(name, "BankAccount");
         assert_eq!(state.len(), 3);
         assert_eq!(handlers.len(), 4);
-        
+
         // Verify state fields
         assert_eq!(state[0].name, "balance");
         assert_eq!(state[1].name, "owner");
         assert_eq!(state[2].name, "is_frozen");
-        
+
         // Verify handlers
         assert_eq!(handlers[0].message_type, "Deposit");
         assert_eq!(handlers[0].params.len(), 1);
