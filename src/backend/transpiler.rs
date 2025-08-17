@@ -1166,18 +1166,21 @@ impl Transpiler {
                     (quote! {}, &method.params[..])
                 } else {
                     let first_param = &method.params[0];
-                    if first_param.name == "self" || first_param.name == "mut self" {
+                    if matches!(first_param.name.as_str(), "self" | "mut self" | "&self" | "&mut self") {
                         // Method with self parameter
-                        let self_tok = if first_param.name == "mut self" {
-                            quote! { &mut self }
-                        } else {
-                            // Check if type annotation suggests mutability or ownership
-                            match &first_param.ty.kind {
-                                TypeKind::Named(name) if name == "&mut self" => {
-                                    quote! { &mut self }
+                        let self_tok = match first_param.name.as_str() {
+                            "mut self" | "&mut self" => quote! { &mut self },
+                            "self" => quote! { self },
+                            "&self" => quote! { &self },
+                            _ => {
+                                // Fallback to type annotation
+                                match &first_param.ty.kind {
+                                    TypeKind::Named(name) if name == "&mut self" => {
+                                        quote! { &mut self }
+                                    }
+                                    TypeKind::Named(name) if name == "self" => quote! { self },
+                                    _ => quote! { &self }, // Default to immutable reference
                                 }
-                                TypeKind::Named(name) if name == "self" => quote! { self },
-                                _ => quote! { &self }, // Default to immutable reference
                             }
                         };
                         (self_tok, &method.params[1..])
@@ -1284,18 +1287,21 @@ impl Transpiler {
                     (quote! {}, &method.params[..])
                 } else {
                     let first_param = &method.params[0];
-                    if first_param.name == "self" || first_param.name == "mut self" {
+                    if matches!(first_param.name.as_str(), "self" | "mut self" | "&self" | "&mut self") {
                         // Method with self parameter
-                        let self_tok = if first_param.name == "mut self" {
-                            quote! { &mut self }
-                        } else {
-                            // Check if type annotation suggests mutability or ownership
-                            match &first_param.ty.kind {
-                                TypeKind::Named(name) if name == "&mut self" => {
-                                    quote! { &mut self }
+                        let self_tok = match first_param.name.as_str() {
+                            "mut self" | "&mut self" => quote! { &mut self },
+                            "self" => quote! { self },
+                            "&self" => quote! { &self },
+                            _ => {
+                                // Fallback to type annotation
+                                match &first_param.ty.kind {
+                                    TypeKind::Named(name) if name == "&mut self" => {
+                                        quote! { &mut self }
+                                    }
+                                    TypeKind::Named(name) if name == "self" => quote! { self },
+                                    _ => quote! { &self }, // Default to immutable reference
                                 }
-                                TypeKind::Named(name) if name == "self" => quote! { self },
-                                _ => quote! { &self }, // Default to immutable reference
                             }
                         };
                         (self_tok, &method.params[1..])
