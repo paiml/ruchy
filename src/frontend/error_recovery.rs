@@ -121,14 +121,14 @@ impl<'a> RecoveryParser<'a> {
             }
 
             let token_clone = token.clone();
-            let prec = self.precedence(&token_clone);
+            let prec = Self::precedence(&token_clone);
             if prec < min_prec {
                 break;
             }
 
             match self.tokens.advance() {
                 Some((op_token, _op_span)) => {
-                    let op = match self.token_to_binary_op(&op_token) {
+                    let op = match Self::token_to_binary_op(&op_token) {
                         Ok(op) => op,
                         Err(e) => {
                             self.record_error(format!("Invalid operator: {e}"), None);
@@ -211,10 +211,10 @@ impl<'a> RecoveryParser<'a> {
                 self.tokens.advance();
                 Ok(Expr::new(ExprKind::Identifier(name), span))
             }
-            Some((Token::If, _)) => self.parse_if_recovery(),
-            Some((Token::Let, _)) => self.parse_let_recovery(),
-            Some((Token::Fun, _)) => self.parse_function_recovery(),
-            Some((Token::LeftBracket, _)) => self.parse_list_recovery(),
+            Some((Token::If, _)) => Ok(self.parse_if_recovery()),
+            Some((Token::Let, _)) => Ok(self.parse_let_recovery()),
+            Some((Token::Fun, _)) => Ok(self.parse_function_recovery()),
+            Some((Token::LeftBracket, _)) => Ok(self.parse_list_recovery()),
             Some((Token::LeftParen, _)) => self.parse_paren_recovery(),
             Some((token, _span)) => {
                 let token_clone = token.clone();
@@ -252,7 +252,7 @@ impl<'a> RecoveryParser<'a> {
         result
     }
 
-    fn parse_if_recovery(&mut self) -> Result<Expr> {
+    fn parse_if_recovery(&mut self) -> Expr {
         let start_span = self.expect_or_recover(&Token::If);
 
         let condition = if let Ok(expr) = self.parse_expr_recovery() {
@@ -282,17 +282,17 @@ impl<'a> RecoveryParser<'a> {
             start_span.merge(then_branch.span)
         };
 
-        Ok(Expr::new(
+        Expr::new(
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
             },
             span,
-        ))
+        )
     }
 
-    fn parse_let_recovery(&mut self) -> Result<Expr> {
+    fn parse_let_recovery(&mut self) -> Expr {
         let start_span = self.expect_or_recover(&Token::Let);
 
         let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() {
@@ -328,10 +328,10 @@ impl<'a> RecoveryParser<'a> {
         };
 
         let span = start_span.merge(body.span);
-        Ok(Expr::new(ExprKind::Let { name, value, body }, span))
+        Expr::new(ExprKind::Let { name, value, body }, span)
     }
 
-    fn parse_function_recovery(&mut self) -> Result<Expr> {
+    fn parse_function_recovery(&mut self) -> Expr {
         let start_span = self.expect_or_recover(&Token::Fun);
 
         let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() {
@@ -345,7 +345,7 @@ impl<'a> RecoveryParser<'a> {
         };
 
         let _ = self.expect_or_recover(&Token::LeftParen);
-        let params = self.parse_params_recovery().unwrap_or_default();
+        let params = self.parse_params_recovery();
         let _ = self.expect_or_recover(&Token::RightParen);
 
         let return_type = if matches!(self.tokens.peek(), Some((Token::Arrow, _))) {
@@ -359,7 +359,7 @@ impl<'a> RecoveryParser<'a> {
         let body = Box::new(self.parse_block_recovery());
 
         let span = start_span.merge(body.span);
-        Ok(Expr::new(
+        Expr::new(
             ExprKind::Function {
                 name,
                 type_params: vec![],
@@ -369,7 +369,7 @@ impl<'a> RecoveryParser<'a> {
                 is_async: false,
             },
             span,
-        ))
+        )
     }
 
     fn parse_block_recovery(&mut self) -> Expr {
@@ -407,7 +407,7 @@ impl<'a> RecoveryParser<'a> {
         Expr::new(ExprKind::Block(exprs), span)
     }
 
-    fn parse_list_recovery(&mut self) -> Result<Expr> {
+    fn parse_list_recovery(&mut self) -> Expr {
         let start_span = self.expect_or_recover(&Token::LeftBracket);
         let mut elements = Vec::new();
 
@@ -429,7 +429,7 @@ impl<'a> RecoveryParser<'a> {
         let end_span = self.expect_or_recover(&Token::RightBracket);
         let span = start_span.merge(end_span);
 
-        Ok(Expr::new(ExprKind::List(elements), span))
+        Expr::new(ExprKind::List(elements), span)
     }
 
     fn parse_paren_recovery(&mut self) -> Result<Expr> {
@@ -439,11 +439,11 @@ impl<'a> RecoveryParser<'a> {
         Ok(expr)
     }
 
-    fn parse_params_recovery(&mut self) -> Result<Vec<Param>> {
+    fn parse_params_recovery(&mut self) -> Vec<Param> {
         let mut params = Vec::new();
 
         if matches!(self.tokens.peek(), Some((Token::RightParen, _))) {
-            return Ok(params);
+            return params;
         }
 
         loop {
@@ -485,7 +485,7 @@ impl<'a> RecoveryParser<'a> {
             }
         }
 
-        Ok(params)
+        params
     }
 
     fn parse_type_recovery(&mut self) -> Type {
@@ -614,7 +614,7 @@ impl<'a> RecoveryParser<'a> {
         }
     }
 
-    fn precedence(&self, token: &Token) -> i32 {
+    fn precedence(token: &Token) -> i32 {
         match token {
             Token::OrOr => 1,
             Token::AndAnd => 2,
@@ -631,7 +631,7 @@ impl<'a> RecoveryParser<'a> {
         }
     }
 
-    fn token_to_binary_op(&self, token: &Token) -> Result<BinaryOp> {
+    fn token_to_binary_op(token: &Token) -> Result<BinaryOp> {
         Ok(match token {
             Token::Plus => BinaryOp::Add,
             Token::Minus => BinaryOp::Subtract,
@@ -658,6 +658,7 @@ impl<'a> RecoveryParser<'a> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

@@ -308,7 +308,11 @@ impl AstNormalizer {
                 } else {
                     // For now, just return the last expression
                     // A complete implementation would handle side effects
-                    self.desugar_and_convert(exprs.last().expect("Non-empty"))
+                    if let Some(last) = exprs.last() {
+                        self.desugar_and_convert(last)
+                    } else {
+                        CoreExpr::Literal(CoreLiteral::Unit)
+                    }
                 }
             }
 

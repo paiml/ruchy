@@ -161,6 +161,8 @@ pub enum Token {
     DotDot,
     #[token("..=")]
     DotDotEqual,
+    #[token("...")]
+    DotDotDot,
     #[token("?")]
     Question,
     #[token("?.")]
@@ -237,6 +239,13 @@ pub struct TokenStream<'a> {
     peeked: Option<(Token, Span)>,
 }
 
+/// Saved position in the token stream for backtracking
+#[derive(Clone)]
+pub struct TokenStreamPosition<'a> {
+    lexer: Lexer<'a, Token>,
+    peeked: Option<(Token, Span)>,
+}
+
 impl<'a> TokenStream<'a> {
     #[must_use]
     pub fn new(input: &'a str) -> Self {
@@ -246,13 +255,19 @@ impl<'a> TokenStream<'a> {
         }
     }
 
-    /// Get the current position (line, column) in the source
+    /// Save the current position for later restoration
     #[must_use]
-    pub fn position(&self) -> (usize, usize) {
-        // For now, return a simple position based on current span
-        // In a real implementation, we'd track line/column properly
-        let span = self.lexer.span();
-        (1, span.start) // Simplified: all on line 1, column is byte offset
+    pub fn position(&self) -> TokenStreamPosition<'a> {
+        TokenStreamPosition {
+            lexer: self.lexer.clone(),
+            peeked: self.peeked.clone(),
+        }
+    }
+
+    /// Restore a previously saved position
+    pub fn set_position(&mut self, pos: TokenStreamPosition<'a>) {
+        self.lexer = pos.lexer;
+        self.peeked = pos.peeked;
     }
 
     #[allow(clippy::should_implement_trait)]
@@ -298,6 +313,11 @@ impl<'a> TokenStream<'a> {
         }
     }
 
+    /// Expect a specific token and return its span
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the next token doesn't match the expected token or if we reached EOF
     pub fn expect(&mut self, expected: Token) -> anyhow::Result<Span> {
         match self.next() {
             Some((token, span)) if token == expected => Ok(span),
@@ -313,6 +333,8 @@ impl<'a> TokenStream<'a> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
+#[allow(clippy::panic)]
 mod tests {
     use super::*;
     use proptest::prelude::*;

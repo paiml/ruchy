@@ -136,6 +136,7 @@ impl Transpiler {
                 fields,
             } => self.transpile_struct(name, type_params, fields),
             ExprKind::StructLiteral { name, fields } => self.transpile_struct_literal(name, fields),
+            ExprKind::ObjectLiteral { fields } => self.transpile_object_literal(fields),
             ExprKind::FieldAccess { object, field } => self.transpile_field_access(object, field),
             ExprKind::Trait {
                 name,
@@ -198,6 +199,11 @@ impl Transpiler {
     /// let transpiler = Transpiler::new();
     /// // "Hello, {name}!" becomes format!("Hello, {}!", name)
     /// ```
+    /// Transpile string interpolation to Rust format strings
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any expression inside the interpolation fails to transpile
     pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<TokenStream> {
         let mut format_string = String::new();
         let mut args = Vec::new();
@@ -608,7 +614,8 @@ impl Transpiler {
 
     fn transpile_block(&self, exprs: &[Expr]) -> Result<TokenStream> {
         if exprs.is_empty() {
-            return Ok(quote! { {} });
+            // Empty block evaluates to unit
+            return Ok(quote! { () });
         }
 
         // Optimization: if block contains only one expression, don't add extra braces
@@ -654,7 +661,7 @@ impl Transpiler {
                     let arg_tokens = arg_tokens?;
                     result = quote! { #func_tokens(#result, #(#arg_tokens),*) };
                 }
-                _ => bail!("Invalid pipeline stage"),
+                _ => bail!("Invalid pipeline stage: {:?}", stage.op.kind),
             }
         }
 
@@ -927,20 +934,25 @@ impl Transpiler {
     }
 
     fn transpile_import(path: &str, items: &[String]) -> TokenStream {
-        // Convert path string to token stream
-        // For now, we'll just generate a comment since use statements need special handling
+        // Convert Ruchy import paths to Rust use statements
+        // Replace dots with double colons for Rust-style paths
+        let rust_path = path.replace('.', "::");
+        
         if items.is_empty() {
-            // Simple import: import std::io
-            let _comment = format!("// use {path};");
+            // Simple import: import std.collections.HashMap -> use std::collections::HashMap;
+            let path_tokens: TokenStream = rust_path.parse().unwrap_or_else(|_| quote! { std });
             quote! {
-                // Import would be: use #path;
+                use #path_tokens;
             }
         } else {
-            // Import with items: import std::io::{Read, Write}
-            let items_str = items.join(", ");
-            let _comment = format!("// use {path}::{{{items_str}}};");
+            // Import with items: import std.io::{Read, Write} -> use std::io::{Read, Write};
+            let path_tokens: TokenStream = rust_path.parse().unwrap_or_else(|_| quote! { std });
+            let items_tokens: Vec<TokenStream> = items
+                .iter()
+                .map(|item| item.parse().unwrap_or_else(|_| quote! { Item }))
+                .collect();
             quote! {
-                // Import would be: use #path::{#items_str};
+                use #path_tokens::{#(#items_tokens),*};
             }
         }
     }
@@ -1054,6 +1066,45 @@ impl Transpiler {
         Ok(quote! {
             #struct_name {
                 #(#field_tokens),*
+            }
+        })
+    }
+
+    fn transpile_object_literal(
+        &self,
+        fields: &[crate::frontend::ast::ObjectField],
+    ) -> Result<TokenStream> {
+        use crate::frontend::ast::ObjectField;
+        
+        // Object literals in Ruchy translate to anonymous structs or HashMap in Rust
+        // For now, we'll use HashMap for dynamic object literals
+        let mut field_insertions = Vec::new();
+        
+        for field in fields {
+            match field {
+                ObjectField::KeyValue { key, value } => {
+                    let value_tokens = self.transpile_expr(value)?;
+                    field_insertions.push(quote! {
+                        __object.insert(#key.to_string(), Box::new(#value_tokens) as Box<dyn std::any::Any>);
+                    });
+                }
+                ObjectField::Spread { expr } => {
+                    let expr_tokens = self.transpile_expr(expr)?;
+                    // Spread operator merges another object into this one
+                    field_insertions.push(quote! {
+                        for (k, v) in #expr_tokens {
+                            __object.insert(k, v);
+                        }
+                    });
+                }
+            }
+        }
+        
+        Ok(quote! {
+            {
+                let mut __object = std::collections::HashMap::<String, Box<dyn std::any::Any>>::new();
+                #(#field_insertions)*
+                __object
             }
         })
     }
@@ -1305,70 +1356,94 @@ impl Transpiler {
         handlers: &[crate::frontend::ast::ActorHandler],
     ) -> Result<TokenStream> {
         let actor_name = syn::Ident::new(name, proc_macro2::Span::call_site());
+        let message_enum_name = syn::Ident::new(&format!("{}Message", name), proc_macro2::Span::call_site());
 
-        // Generate state struct
+        // Generate state struct fields
         let field_tokens: Result<Vec<_>> = state
             .iter()
             .map(|f| {
                 let field_name = syn::Ident::new(&f.name, proc_macro2::Span::call_site());
                 let field_type = self.transpile_type(&f.ty)?;
-                Ok(quote! { #field_name: #field_type })
+                Ok(quote! { pub #field_name: #field_type })
             })
             .collect();
         let field_tokens = field_tokens?;
-
-        // Generate message enum
+        
+        // Generate message enum variants
         let message_variants: Vec<_> = handlers
             .iter()
             .map(|h| {
-                let variant_name = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
-                // For simplicity, assuming messages have no parameters for now
-                quote! { #variant_name }
+                let variant = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
+                quote! { #variant }
             })
             .collect();
 
-        let message_enum_name =
-            syn::Ident::new(&format!("{name}Message"), proc_macro2::Span::call_site());
-
-        // Generate handler match arms
+        // Generate handler match arms for message routing
         let handler_arms: Result<Vec<_>> = handlers
             .iter()
             .map(|h| {
-                let variant_name = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
-                let body = self.transpile_expr(&h.body)?;
+                let variant = syn::Ident::new(&h.message_type, proc_macro2::Span::call_site());
+                let body_tokens = self.transpile_expr(&h.body)?;
+                let enum_prefix = format!("{}Message", name);
+                let variant_path: TokenStream = format!("{}::{}", enum_prefix, h.message_type)
+                    .parse()
+                    .unwrap_or_else(|_| quote! { Message });
+
                 Ok(quote! {
-                    #message_enum_name::#variant_name => {
-                        #body
-                    }
+                    #variant_path => { #body_tokens; }
                 })
             })
             .collect();
         let handler_arms = handler_arms?;
 
-        // Generate actor implementation using tokio
+
+        // Generate field initializers
+        let field_inits: Vec<_> = state
+            .iter()
+            .map(|f| {
+                let field_name = syn::Ident::new(&f.name, proc_macro2::Span::call_site());
+                quote! { #field_name: Default::default() }
+            })
+            .collect();
+
+        // Generate the complete actor implementation
         Ok(quote! {
-            struct #actor_name {
-                #(#field_tokens,)*
+            use tokio::sync::mpsc;
+            use anyhow::Result;
+
+            // Message enum for this actor
+            #[derive(Debug, Clone)]
+            pub enum #message_enum_name {
+                #(#message_variants),*
             }
 
-            #[derive(Debug, Clone)]
-            enum #message_enum_name {
-                #(#message_variants,)*
+            // Actor state struct
+            #[derive(Debug, Clone, Default)]
+            pub struct #actor_name {
+                #(#field_tokens),*
             }
 
             impl #actor_name {
-                async fn handle_message(&mut self, msg: #message_enum_name) {
-                    match msg {
-                        #(#handler_arms)*
+                pub fn new() -> Self {
+                    Self {
+                        #(#field_inits),*
                     }
                 }
 
-                fn spawn(self) -> tokio::sync::mpsc::Sender<#message_enum_name> {
-                    let (tx, mut rx) = tokio::sync::mpsc::channel(100);
-                    let mut actor = self;
+                pub async fn handle_message(&mut self, msg: #message_enum_name) -> Result<()> {
+                    match msg {
+                        #(#handler_arms)*
+                    }
+                    Ok(())
+                }
+
+                pub fn spawn(mut self) -> mpsc::Sender<#message_enum_name> {
+                    let (tx, mut rx) = mpsc::channel(100);
                     tokio::spawn(async move {
                         while let Some(msg) = rx.recv().await {
-                            actor.handle_message(msg).await;
+                            if let Err(e) = self.handle_message(msg).await {
+                                eprintln!("Actor error: {}", e);
+                            }
                         }
                     });
                     tx
@@ -1381,9 +1456,12 @@ impl Transpiler {
         let actor_tokens = self.transpile_expr(actor)?;
         let message_tokens = self.transpile_expr(message)?;
 
-        // Generate send operation
+        // Generate send operation using our actor runtime
         Ok(quote! {
-            #actor_tokens.send(#message_tokens).await
+            #actor_tokens.send(ruchy::runtime::Message::User(
+                "message".to_string(),
+                vec![ruchy::runtime::MessageValue::String(#message_tokens.to_string())]
+            )).unwrap()
         })
     }
 
@@ -1398,17 +1476,26 @@ impl Transpiler {
 
         if let Some(timeout_expr) = timeout {
             let timeout_tokens = self.transpile_expr(timeout_expr)?;
-            // Generate ask with timeout
+            // Generate ask with timeout using our actor runtime
             Ok(quote! {
-                tokio::time::timeout(
-                    std::time::Duration::from_millis(#timeout_tokens),
-                    #actor_tokens.ask(#message_tokens)
-                ).await
+                #actor_tokens.ask(
+                    ruchy::runtime::Message::User(
+                        "message".to_string(),
+                        vec![ruchy::runtime::MessageValue::String(#message_tokens.to_string())]
+                    ),
+                    std::time::Duration::from_millis(#timeout_tokens as u64)
+                ).unwrap()
             })
         } else {
-            // Generate ask without timeout
+            // Generate ask without timeout (default 5 seconds)
             Ok(quote! {
-                #actor_tokens.ask(#message_tokens).await
+                #actor_tokens.ask(
+                    ruchy::runtime::Message::User(
+                        "message".to_string(),
+                        vec![ruchy::runtime::MessageValue::String(#message_tokens.to_string())]
+                    ),
+                    std::time::Duration::from_secs(5)
+                ).unwrap()
             })
         }
     }
@@ -1439,11 +1526,10 @@ impl Transpiler {
 
                 let strategy = match &param.ty.kind {
                     TypeKind::Named(name) => match name.as_str() {
-                        "i32" | "i64" => quote! { any::<i32>() },
                         "f32" | "f64" => quote! { any::<f64>() },
                         "bool" => quote! { any::<bool>() },
                         "String" => quote! { any::<String>() },
-                        _ => quote! { any::<i32>() }, // Default fallback
+                        _ => quote! { any::<i32>() }, // Default fallback for i32, i64, and unknown types
                     },
                     TypeKind::Generic { base, .. } => {
                         // For generic types, use the base type strategy
@@ -1456,11 +1542,10 @@ impl Transpiler {
                     TypeKind::List(elem_ty) => {
                         let elem_strategy = if let TypeKind::Named(name) = &elem_ty.kind {
                             match name.as_str() {
-                                "i32" | "i64" => quote! { any::<i32>() },
                                 "f32" | "f64" => quote! { any::<f64>() },
                                 "bool" => quote! { any::<bool>() },
                                 "String" => quote! { any::<String>() },
-                                _ => quote! { any::<i32>() },
+                                _ => quote! { any::<i32>() }, // Default for i32, i64, and unknown types
                             }
                         } else {
                             quote! { any::<i32>() }
@@ -1509,6 +1594,7 @@ impl Transpiler {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
     use crate::frontend::Parser;

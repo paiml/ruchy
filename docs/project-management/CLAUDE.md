@@ -136,12 +136,43 @@ fn type_preservation(expr: TypedExpr) -> bool {
 - Type inference with ill-typed programs  
 - Actor mailbox with message floods
 
+## Code Quality Requirements (CRITICAL - Zero Technical Debt Policy)
+
+### Linting Standards
+**ALL code MUST pass `make lint` with ZERO errors.** The project enforces strict clippy lints:
+
+```bash
+make lint  # Must pass with 0 errors before ANY commit
+```
+
+Key requirements:
+- **No `unwrap()` in production code** - Use proper error handling with `?` or `.expect()` with messages
+- **No `panic!()` in production code** - Return `Result` or use fallback values
+- **All public functions returning `Result` need `# Errors` documentation**
+- **No unused parameters** - Remove or prefix with `_`
+- **No duplicate match arms** - Consolidate identical branches
+- **Use `Self::` for static method calls** instead of `self.` when `&self` is unused
+- **Pass small types by value** (≤8 bytes) instead of reference
+
+Test code exceptions (use `#[allow(...)]` attributes):
+- `clippy::unwrap_used` - OK in tests where panic on failure is expected
+- `clippy::panic` - OK for test assertions
+- `clippy::single_char_pattern` - OK for readability in test assertions
+
+### PMAT MCP Quality Gates
+The project integrates with PMAT (Project Management Automation Tool) via MCP. All code must comply with:
+- Type safety verification through Ruchy's type system
+- Property-based testing coverage for all core algorithms
+- Benchmark regression tests for performance-critical paths
+- Memory usage validation for actor systems
+
 ## Common Pitfalls to Avoid
 
 1. **Don't reinvent Rust's type system** - Delegate to rustc for actual type checking
 2. **Avoid intermediate representations** - Go directly from Ruchy AST to syn AST
 3. **Don't implement custom memory management** - Use Rust's ownership with escape analysis hints
 4. **Pipeline operators are syntax sugar** - Transform immediately to method chains
+5. **Never submit code with lint errors** - The CI will reject it automatically
 
 ## Integration Points
 

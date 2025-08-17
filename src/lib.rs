@@ -10,9 +10,11 @@
 
 pub mod backend;
 pub mod frontend;
+pub mod mcp;
 pub mod middleend;
 pub mod parser;
 pub mod runtime;
+#[cfg(test)]
 pub mod testing;
 pub mod transpiler;
 
@@ -24,10 +26,25 @@ pub use backend::transpiler::Transpiler;
 use anyhow::Result;
 
 /// Compile Ruchy source code to Rust
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::compile;
+///
+/// let rust_code = compile("42").unwrap();
+/// assert!(rust_code.contains("42"));
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The source code cannot be parsed
+/// - The transpilation to Rust fails
 pub fn compile(source: &str) -> Result<String> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)?;
     Ok(rust_code.to_string())
 }
@@ -47,12 +64,28 @@ pub fn get_parse_error(source: &str) -> Option<String> {
 }
 
 /// Run the REPL
+///
+/// # Examples
+///
+/// ```no_run
+/// use ruchy::run_repl;
+///
+/// run_repl().unwrap();
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The REPL cannot be initialized
+/// - User interaction fails
 pub fn run_repl() -> Result<()> {
     let mut repl = runtime::repl::Repl::new()?;
     repl.run()
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
+#[allow(clippy::single_char_pattern)]
 mod tests {
     use super::*;
 
@@ -437,7 +470,7 @@ mod tests {
 
     #[test]
     fn test_compile_actor() {
-        let result = compile(r#"
+        let result = compile(r"
             actor Counter {
                 state { count: i32 }
                 receive {
@@ -445,7 +478,7 @@ mod tests {
                     Get => count
                 }
             }
-        "#).unwrap();
+        ").unwrap();
         assert!(result.contains("actor"));
     }
 }

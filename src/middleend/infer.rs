@@ -46,7 +46,7 @@ impl InferenceContext {
 
     fn infer_expr(&mut self, expr: &Expr) -> Result<MonoType> {
         match &expr.kind {
-            ExprKind::Literal(lit) => Ok(self.infer_literal(lit)),
+            ExprKind::Literal(lit) => Ok(Self::infer_literal(lit)),
             ExprKind::Identifier(name) => self.infer_identifier(name),
             ExprKind::StringInterpolation { parts } => {
                 // Check that all expression parts are well-typed
@@ -112,6 +112,22 @@ impl InferenceContext {
                 // In a full implementation, we'd validate fields against the struct definition
                 Ok(MonoType::Named(name.clone()))
             }
+            ExprKind::ObjectLiteral { fields } => {
+                // Object literals are anonymous objects with dynamic fields
+                // Type check each field value
+                for field in fields {
+                    match field {
+                        crate::frontend::ast::ObjectField::KeyValue { value, .. } => {
+                            let _ = self.infer_expr(value)?;
+                        }
+                        crate::frontend::ast::ObjectField::Spread { expr } => {
+                            let _ = self.infer_expr(expr)?;
+                        }
+                    }
+                }
+                // Return a generic object type
+                Ok(MonoType::Named("Object".to_string()))
+            }
             ExprKind::FieldAccess { object, field: _ } => {
                 // Infer the type of the object
                 let _object_ty = self.infer_expr(object)?;
@@ -164,7 +180,7 @@ impl InferenceContext {
         }
     }
 
-    fn infer_literal(&self, lit: &Literal) -> MonoType {
+    fn infer_literal(lit: &Literal) -> MonoType {
         match lit {
             Literal::Integer(_) => MonoType::Int,
             Literal::Float(_) => MonoType::Float,
@@ -370,7 +386,7 @@ impl InferenceContext {
                     MonoType::Var(self.gen.fresh())
                 } else {
                     // Convert AST type to MonoType
-                    self.ast_type_to_mono(&param.ty)?
+                    Self::ast_type_to_mono_static(&param.ty)?
                 };
             param_types.push(param_ty.clone());
             self.env = self.env.extend(&param.name, TypeScheme::mono(param_ty));
@@ -415,7 +431,7 @@ impl InferenceContext {
                 MonoType::Var(self.gen.fresh())
             } else {
                 // Convert AST type to MonoType
-                self.ast_type_to_mono(&param.ty)?
+                Self::ast_type_to_mono_static(&param.ty)?
             };
             param_types.push(param_ty.clone());
             self.env = self.env.extend(&param.name, TypeScheme::mono(param_ty));
@@ -687,7 +703,7 @@ impl InferenceContext {
         match pattern {
             Pattern::Wildcard => Ok(()),
             Pattern::Literal(lit) => {
-                let lit_ty = self.infer_literal(lit);
+                let lit_ty = Self::infer_literal(lit);
                 self.unifier.unify(expected_ty, &lit_ty)
             }
             Pattern::Identifier(name) => {
@@ -775,9 +791,6 @@ impl InferenceContext {
         Ok(current_ty)
     }
 
-    fn ast_type_to_mono(&self, ty: &crate::frontend::ast::Type) -> Result<MonoType> {
-        Self::ast_type_to_mono_static(ty)
-    }
 
     fn ast_type_to_mono_static(ty: &crate::frontend::ast::Type) -> Result<MonoType> {
         use crate::frontend::ast::TypeKind;
@@ -856,6 +869,8 @@ impl Default for InferenceContext {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
+#[allow(clippy::panic)]
 mod tests {
     use super::*;
     use crate::frontend::parser::Parser;

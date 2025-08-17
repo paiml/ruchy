@@ -36,6 +36,11 @@ pub struct ReplV2 {
 }
 
 impl ReplV2 {
+    /// Create a new REPL v2 instance
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the temporary directory cannot be created
     pub fn new() -> Result<Self> {
         let temp_dir = std::env::temp_dir().join("ruchy_repl_v2");
         fs::create_dir_all(&temp_dir)?;
@@ -52,6 +57,13 @@ impl ReplV2 {
     }
 
     /// Run the REPL
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Readline initialization fails
+    /// - User input cannot be read
+    /// - Commands fail to execute
     pub fn run(&mut self) -> Result<()> {
         println!("{}", "Welcome to Ruchy REPL v2.0".bright_cyan().bold());
         println!(
@@ -116,6 +128,10 @@ impl ReplV2 {
     }
 
     /// Evaluate an expression using normalized AST
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if parsing, canonicalization, or evaluation fails
     pub fn eval(&mut self, input: &str) -> Result<String> {
         // Parse the input
         let mut parser = Parser::new(input);
