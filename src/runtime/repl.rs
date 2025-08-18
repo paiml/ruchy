@@ -1027,10 +1027,18 @@ impl Repl {
             match Parser::new(expr).parse() {
                 Ok(ast) => {
                     let transpiled = self.transpiler.transpile(&ast)?;
-                    let _ = writeln!(
-                        &mut rust_code,
-                        "    println!(\"{{:?}}\", {{{transpiled}}});"
-                    );
+                    let transpiled_str = transpiled.to_string();
+                    // Check if this is already a print statement that should be executed directly
+                    let trimmed = transpiled_str.trim();
+                    if trimmed.starts_with("println !") || trimmed.starts_with("print !") || 
+                       trimmed.starts_with("println!") || trimmed.starts_with("print!") {
+                        let _ = writeln!(&mut rust_code, "    {transpiled};");
+                    } else {
+                        let _ = writeln!(
+                            &mut rust_code,
+                            "    println!(\"{{:?}}\", {{{transpiled}}});"
+                        );
+                    }
                 }
                 Err(e) => {
                     eprintln!("Failed to parse '{expr}': {e}");
