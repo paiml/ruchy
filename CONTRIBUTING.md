@@ -12,7 +12,7 @@ Please be respectful and constructive in all interactions. We aim to maintain a 
 2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/ruchy`
 3. Create a feature branch: `git checkout -b feature/your-feature`
 4. Make your changes
-5. Run tests: `cargo test`
+5. Run tests: `make test` (fast tests, ~5 seconds)
 6. Run linting: `make lint`
 7. Commit with descriptive message
 8. Push to your fork
@@ -35,14 +35,20 @@ cargo build --all-features --workspace
 ### Testing
 
 ```bash
-# Run all tests
-cargo nextest run --all-features --workspace
+# Run fast tests only (~5 seconds after initial build)
+make test
+
+# Run all tests including slow/integration tests
+make test-all
+
+# Run tests with nextest (better output)
+make test-nextest
 
 # Run specific test
-cargo nextest run test_name
+cargo test test_name
 
 # Run with coverage
-cargo llvm-cov --all-features --workspace
+make coverage
 ```
 
 ### Linting
