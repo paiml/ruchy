@@ -40,10 +40,44 @@ let name = "World"
 let result = if true { 42 } else { 0 }
 println(f"Hello, {name}! The answer is {result}")
 
-// Note: DataFrames and Actor systems are planned but not yet implemented
+// DataFrames - high-performance data manipulation
+let df = df![
+    age => [25, 30, 35, 40],
+    name => ["Alice", "Bob", "Charlie", "Diana"]
+]
+df.filter(age > 30).select(name)
+
+// Actor system for concurrent programming
+actor Counter {
+    state { count: i32 }
+    
+    receive Increment(n: i32) {
+        self.count += n
+    }
+}
+
+let counter = spawn Counter::new()
+counter ! Increment(5)
+
+// Result types for error handling
+fn safe_divide(a: f64, b: f64) -> Result<f64, String> {
+    if b == 0.0 {
+        Err("Division by zero")
+    } else {
+        Ok(a / b)
+    }
+}
 ```
 
-## Current Implementation Status (v0.4.8)
+## Current Implementation Status (v0.4.9)
+
+### ✅ **v0.4.9 - ACTOR SYSTEM, DATAFRAMES & RESULT TYPES**
+
+Major feature release with three critical language features:
+- **Actor System**: Full actor model with message passing (!  and ? operators)
+- **DataFrames**: Complete DSL with filter, select, groupby, sort operations
+- **Result Types**: Ok, Err, Some, None constructors with ? operator
+- **Test Coverage**: 283 tests passing (up from 195 in v0.4.8)
 
 ### ✅ **v0.4.8 - CRITICAL INSTALL FIX**
 
