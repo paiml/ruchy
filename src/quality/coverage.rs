@@ -139,24 +139,52 @@ impl CoverageCollector {
         }
     }
 
+    /// Set the source directory for coverage collection
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::quality::{CoverageCollector, CoverageTool};
+    ///
+    /// let collector = CoverageCollector::new(CoverageTool::Tarpaulin)
+    ///     .with_source_dir("src");
+    /// ```
+    #[must_use]
     pub fn with_source_dir<P: AsRef<Path>>(mut self, path: P) -> Self {
         self.source_dir = path.as_ref().to_string_lossy().to_string();
         self
     }
 
     /// Collect test coverage by running the appropriate tool
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ruchy::quality::{CoverageCollector, CoverageTool};
+    ///
+    /// let collector = CoverageCollector::new(CoverageTool::Tarpaulin);
+    /// let report = collector.collect().expect("Failed to collect coverage");
+    /// println!("Line coverage: {:.1}%", report.line_coverage_percentage());
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The coverage tool is not installed
+    /// - The coverage tool fails to run
+    /// - The output cannot be parsed
     pub fn collect(&self) -> Result<CoverageReport> {
         match self.tool {
-            CoverageTool::Tarpaulin => self.collect_tarpaulin(),
-            CoverageTool::Llvm => self.collect_llvm(),
-            CoverageTool::Grcov => self.collect_grcov(),
+            CoverageTool::Tarpaulin => Self::collect_tarpaulin(),
+            CoverageTool::Llvm => Self::collect_llvm(),
+            CoverageTool::Grcov => Self::collect_grcov(),
         }
     }
 
-    fn collect_tarpaulin(&self) -> Result<CoverageReport> {
+    fn collect_tarpaulin() -> Result<CoverageReport> {
         // Run cargo tarpaulin with JSON output
         let output = Command::new("cargo")
-            .args(&[
+            .args([
                 "tarpaulin",
                 "--out",
                 "Json",
@@ -172,10 +200,11 @@ impl CoverageCollector {
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        self.parse_tarpaulin_json(&stdout)
+        Self::parse_tarpaulin_json(&stdout)
     }
 
-    fn collect_llvm(&self) -> Result<CoverageReport> {
+    #[allow(clippy::unnecessary_wraps)]
+    fn collect_llvm() -> Result<CoverageReport> {
         // LLVM-cov workflow would go here
         // For now, return a placeholder
         let mut report = CoverageReport::new();
@@ -195,7 +224,8 @@ impl CoverageCollector {
         Ok(report)
     }
 
-    fn collect_grcov(&self) -> Result<CoverageReport> {
+    #[allow(clippy::unnecessary_wraps)]
+    fn collect_grcov() -> Result<CoverageReport> {
         // Grcov workflow would go here
         // For now, return a placeholder
         let mut report = CoverageReport::new();
@@ -215,7 +245,8 @@ impl CoverageCollector {
         Ok(report)
     }
 
-    fn parse_tarpaulin_json(&self, _json_output: &str) -> Result<CoverageReport> {
+    #[allow(clippy::unnecessary_wraps)]
+    fn parse_tarpaulin_json(_json_output: &str) -> Result<CoverageReport> {
         // Parse tarpaulin JSON output format
         // This is a simplified parser - real implementation would be more robust
         let mut report = CoverageReport::new();
@@ -240,7 +271,7 @@ impl CoverageCollector {
     pub fn is_available(&self) -> bool {
         match self.tool {
             CoverageTool::Tarpaulin => Command::new("cargo")
-                .args(&["tarpaulin", "--help"])
+                .args(["tarpaulin", "--help"])
                 .output()
                 .map(|output| output.status.success())
                 .unwrap_or(false),
@@ -270,10 +301,15 @@ impl HtmlReportGenerator {
         }
     }
 
+    /// Generate HTML coverage report
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if directory creation or file writing fails
     pub fn generate(&self, report: &CoverageReport) -> Result<()> {
         std::fs::create_dir_all(&self.output_dir).context("Failed to create output directory")?;
 
-        let html_content = self.generate_html(report)?;
+        let html_content = Self::generate_html(report)?;
         let output_path = format!("{}/coverage.html", self.output_dir);
 
         std::fs::write(&output_path, html_content).context("Failed to write HTML report")?;
@@ -282,7 +318,7 @@ impl HtmlReportGenerator {
         Ok(())
     }
 
-    fn generate_html(&self, report: &CoverageReport) -> Result<String> {
+    fn generate_html(report: &CoverageReport) -> Result<String> {
         let mut html = String::new();
 
         html.push_str("<!DOCTYPE html>\n<html>\n<head>\n");
@@ -307,7 +343,7 @@ impl HtmlReportGenerator {
         writeln!(
             html,
             "<tr><td>Lines</td><td class=\"{}\">{:.1}% ({}/{})</td></tr>",
-            self.coverage_class(report.line_coverage_percentage()),
+            Self::coverage_class(report.line_coverage_percentage()),
             report.line_coverage_percentage(),
             report.covered_lines,
             report.total_lines
@@ -315,7 +351,7 @@ impl HtmlReportGenerator {
         write!(
             html,
             "<tr><td>Functions</td><td class=\"{}\">{:.1}% ({}/{})</td></tr>",
-            self.coverage_class(report.function_coverage_percentage()),
+            Self::coverage_class(report.function_coverage_percentage()),
             report.function_coverage_percentage(),
             report.covered_functions,
             report.total_functions
@@ -332,9 +368,9 @@ impl HtmlReportGenerator {
                 html,
                 "<tr><td>{}</td><td class=\"{}\">{:.1}%</td><td class=\"{}\">{:.1}%</td></tr>",
                 path,
-                self.coverage_class(file_coverage.line_coverage_percentage()),
+                Self::coverage_class(file_coverage.line_coverage_percentage()),
                 file_coverage.line_coverage_percentage(),
-                self.coverage_class(file_coverage.function_coverage_percentage()),
+                Self::coverage_class(file_coverage.function_coverage_percentage()),
                 file_coverage.function_coverage_percentage()
             )?;
         }
@@ -345,7 +381,7 @@ impl HtmlReportGenerator {
         Ok(html)
     }
 
-    fn coverage_class(&self, percentage: f64) -> &'static str {
+    fn coverage_class(percentage: f64) -> &'static str {
         if percentage >= 80.0 {
             "high"
         } else if percentage >= 60.0 {
@@ -432,8 +468,8 @@ mod tests {
         };
         report.add_file(file_coverage);
 
-        let generator = HtmlReportGenerator::new("target/coverage");
-        let html = generator.generate_html(&report)?;
+        let _generator = HtmlReportGenerator::new("target/coverage");
+        let html = HtmlReportGenerator::generate_html(&report)?;
 
         assert!(html.contains("Ruchy Test Coverage Report"));
         assert!(html.contains("85.0%"));

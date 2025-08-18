@@ -314,7 +314,8 @@ fn temporary_hack() {
 ```
 
 ## The Make Lint Contract (Zero Warnings Allowed)
-
+## Quality Enforcement
+See: docs/quality/lint-reduction-process-and-quality.md
 ```bash
 # make lint command from Makefile:
 cargo clippy --all-targets --all-features -- -D warnings

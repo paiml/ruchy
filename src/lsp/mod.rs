@@ -15,7 +15,7 @@ pub use server::RuchyLanguageServer;
 use anyhow;
 use std::collections::HashMap;
 use tokio::net::TcpListener;
-use tower_lsp::lsp_types::*;
+use tower_lsp::lsp_types::Url;
 use tower_lsp::{LspService, Server};
 
 /// Workspace management for LSP
@@ -69,7 +69,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     let stdin = tokio::io::stdin();
     let stdout = tokio::io::stdout();
 
-    let (service, socket) = LspService::new(|client| RuchyLanguageServer::new(client));
+    let (service, socket) = LspService::new(RuchyLanguageServer::new);
     Server::new(stdin, stdout, socket).serve(service).await;
 
     Ok(())
@@ -86,7 +86,7 @@ pub async fn start_tcp_server(port: u16) -> anyhow::Result<()> {
     while let Ok((stream, _)) = listener.accept().await {
         let (read, write) = tokio::io::split(stream);
 
-        let (service, socket) = LspService::new(|client| RuchyLanguageServer::new(client));
+        let (service, socket) = LspService::new(RuchyLanguageServer::new);
 
         tokio::spawn(async move {
             Server::new(read, write, socket).serve(service).await;
