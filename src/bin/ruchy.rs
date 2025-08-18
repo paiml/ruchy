@@ -159,18 +159,16 @@ fn main() -> Result<()> {
 
 fn run_file(file: &PathBuf) -> Result<()> {
     let source = fs::read_to_string(file)?;
-    let mut repl = Repl::new()?;
     
-    // Execute the file line by line in REPL
-    for line in source.lines() {
-        if !line.trim().is_empty() && !line.trim().starts_with("//") {
-            if let Err(e) = repl.eval(line) {
-                eprintln!("Error on line: {line}");
-                eprintln!("  {e}");
-                std::process::exit(1);
-            }
-        }
-    }
+    // Parse and execute the entire file as one program
+    let mut parser = RuchyParser::new(&source);
+    let ast = parser.parse()?;
+    
+    // For now, just transpile and show the result
+    // In future, we could compile and run the Rust code
+    let transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile(&ast)?;
+    println!("{rust_code}");
     
     Ok(())
 }

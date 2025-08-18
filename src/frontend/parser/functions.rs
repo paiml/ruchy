@@ -1,6 +1,7 @@
 //! Function-related parsing (function definitions, lambdas, calls)
 
 use super::{ParserState, *};
+use crate::frontend::ast::{DataFrameOp, Literal};
 
 /// # Errors
 ///
@@ -211,6 +212,7 @@ pub fn parse_call(state: &mut ParserState, func: Expr) -> Result<Expr> {
 /// # Errors
 ///
 /// Returns an error if the operation fails
+#[allow(clippy::too_many_lines)]
 pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr> {
     // Check for special postfix operators like .await
     if let Some((Token::Await, _)) = state.tokens.peek() {
@@ -233,6 +235,14 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
         bail!("Expected method name or 'await' after '.'");
     };
 
+    // Check if this is a DataFrame operation method
+    // Common DataFrame methods: filter, select, groupby, sort, head, tail, etc.
+    let is_dataframe_method = matches!(method.as_str(), 
+        "filter" | "select" | "groupby" | "group_by" | "sort" | "sort_by" |
+        "head" | "tail" | "limit" | "join" | "mean" | "sum" | "count" | 
+        "min" | "max" | "std" | "var" | "median"
+    );
+
     // Check if it's a method call (with parentheses) or field access
     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
         // Method call
@@ -251,15 +261,118 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
 
         state.tokens.expect(&Token::RightParen)?;
 
-        Ok(Expr {
-            kind: ExprKind::MethodCall {
-                receiver: Box::new(receiver),
-                method,
-                args,
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-        })
+        // Check if this is a DataFrame operation
+        if is_dataframe_method {
+            // Convert to DataFrame operation based on method name
+            let operation = match method.as_str() {
+                "filter" => {
+                    if args.len() != 1 {
+                        bail!("filter() expects exactly 1 argument");
+                    }
+                    DataFrameOp::Filter(Box::new(args.into_iter().next().expect("checked length")))
+                }
+                "select" => {
+                    // Extract column names from arguments
+                    let columns = args.into_iter().filter_map(|arg| {
+                        if let ExprKind::Identifier(name) = arg.kind {
+                            Some(name)
+                        } else {
+                            None
+                        }
+                    }).collect();
+                    DataFrameOp::Select(columns)
+                }
+                "groupby" | "group_by" => {
+                    let columns = args.into_iter().filter_map(|arg| {
+                        if let ExprKind::Identifier(name) = arg.kind {
+                            Some(name)
+                        } else {
+                            None
+                        }
+                    }).collect();
+                    DataFrameOp::GroupBy(columns)
+                }
+                "sort" | "sort_by" => {
+                    let columns = args.into_iter().filter_map(|arg| {
+                        if let ExprKind::Identifier(name) = arg.kind {
+                            Some(name)
+                        } else {
+                            None
+                        }
+                    }).collect();
+                    DataFrameOp::Sort(columns)
+                }
+                "head" => {
+                    let n = if args.is_empty() {
+                        5 // default
+                    } else if args.len() == 1 {
+                        if let ExprKind::Literal(Literal::Integer(n)) = args[0].kind {
+                            usize::try_from(n.max(0)).unwrap_or(5)
+                        } else {
+                            bail!("head() expects an integer argument");
+                        }
+                    } else {
+                        bail!("head() expects 0 or 1 arguments");
+                    };
+                    DataFrameOp::Head(n)
+                }
+                "tail" => {
+                    let n = if args.is_empty() {
+                        5 // default
+                    } else if args.len() == 1 {
+                        if let ExprKind::Literal(Literal::Integer(n)) = args[0].kind {
+                            usize::try_from(n.max(0)).unwrap_or(5)
+                        } else {
+                            bail!("tail() expects an integer argument");
+                        }
+                    } else {
+                        bail!("tail() expects 0 or 1 arguments");
+                    };
+                    DataFrameOp::Tail(n)
+                }
+                "limit" => {
+                    if args.len() != 1 {
+                        bail!("limit() expects exactly 1 argument");
+                    }
+                    if let ExprKind::Literal(Literal::Integer(n)) = args[0].kind {
+                        DataFrameOp::Limit(usize::try_from(n.max(0)).unwrap_or(10))
+                    } else {
+                        bail!("limit() expects an integer argument");
+                    }
+                }
+                _ => {
+                    // For other methods, fall back to regular method call
+                    return Ok(Expr {
+                        kind: ExprKind::MethodCall {
+                            receiver: Box::new(receiver),
+                            method,
+                            args,
+                        },
+                        span: Span { start: 0, end: 0 },
+                        attributes: Vec::new(),
+                    });
+                }
+            };
+
+            Ok(Expr {
+                kind: ExprKind::DataFrameOperation {
+                    source: Box::new(receiver),
+                    operation,
+                },
+                span: Span { start: 0, end: 0 },
+                attributes: Vec::new(),
+            })
+        } else {
+            Ok(Expr {
+                kind: ExprKind::MethodCall {
+                    receiver: Box::new(receiver),
+                    method,
+                    args,
+                },
+                span: Span { start: 0, end: 0 },
+                attributes: Vec::new(),
+            })
+        }
     } else {
         // Field access
         Ok(Expr {
