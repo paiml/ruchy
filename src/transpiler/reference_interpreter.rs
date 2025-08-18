@@ -23,6 +23,7 @@ pub enum Value {
     Float(f64),
     String(String),
     Bool(bool),
+    Char(char),
     Unit,
     /// Closure captures the body and environment at creation time
     Closure {
@@ -168,6 +169,7 @@ impl ReferenceInterpreter {
                 CoreLiteral::Float(f) => Value::Float(*f),
                 CoreLiteral::String(s) => Value::String(s.clone()),
                 CoreLiteral::Bool(b) => Value::Bool(*b),
+                CoreLiteral::Char(c) => Value::Char(*c),
                 CoreLiteral::Unit => Value::Unit,
             }),
 

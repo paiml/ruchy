@@ -268,6 +268,7 @@ impl LoweringContext {
             Literal::Float(f) => Constant::Float(*f, Type::F64),
             Literal::String(s) => Constant::String(s.clone()),
             Literal::Bool(b) => Constant::Bool(*b),
+            Literal::Char(c) => Constant::Char(*c),
             Literal::Unit => Constant::Unit,
         }
     }

@@ -42,6 +42,20 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 Ok(Expr::new(ExprKind::Literal(Literal::String(s)), span_clone))
             }
         }
+        Token::FString(s) => {
+            state.tokens.advance();
+            // F-strings always have string interpolation
+            let parts = utils::parse_string_interpolation(state, &s);
+            Ok(Expr::new(
+                ExprKind::StringInterpolation { parts },
+                span_clone,
+            ))
+        }
+        Token::Char(c) => {
+            let value = c;
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Literal(Literal::Char(value)), span_clone))
+        }
         Token::Bool(b) => {
             let value = b;
             state.tokens.advance();

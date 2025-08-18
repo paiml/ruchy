@@ -1,6 +1,7 @@
 //! Tests for Actor system functionality
 
 #![allow(clippy::unwrap_used)]
+#![allow(clippy::needless_raw_string_hashes)]
 
 use ruchy::{compile, is_valid_syntax};
 

@@ -74,16 +74,7 @@ impl InferenceContext {
                 // In a full implementation, we'd resolve the module and check its exports
                 self.infer_identifier(name)
             }
-            ExprKind::StringInterpolation { parts } => {
-                // Check that all expression parts are well-typed
-                for part in parts {
-                    if let crate::frontend::ast::StringPart::Expr(expr) = part {
-                        let _ = self.infer_expr(expr)?;
-                    }
-                }
-                // String interpolation always produces a String
-                Ok(MonoType::Named("String".to_string()))
-            }
+            ExprKind::StringInterpolation { parts } => self.infer_string_interpolation(parts),
             ExprKind::Binary { left, op, right } => self.infer_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.infer_unary(*op, operand),
             ExprKind::Try { expr } => self.infer_try(expr),
@@ -93,18 +84,8 @@ impl InferenceContext {
                 finally_block,
             } => self.infer_try_catch(try_block, catch_clauses, finally_block.as_deref()),
             ExprKind::Throw { expr } => self.infer_throw(expr),
-            ExprKind::Ok { value } => {
-                let value_type = self.infer_expr(value)?;
-                // Ok wraps the value in Result<T, E> where E is inferred
-                let error_type = MonoType::Var(self.gen.fresh());
-                Ok(MonoType::Result(Box::new(value_type), Box::new(error_type)))
-            }
-            ExprKind::Err { error } => {
-                let error_type = self.infer_expr(error)?;
-                // Err wraps the error in Result<T, E> where T is inferred
-                let value_type = MonoType::Var(self.gen.fresh());
-                Ok(MonoType::Result(Box::new(value_type), Box::new(error_type)))
-            }
+            ExprKind::Ok { value } => self.infer_result_ok(value),
+            ExprKind::Err { error } => self.infer_result_err(error),
             ExprKind::Await { expr } => self.infer_await(expr),
             ExprKind::If {
                 condition,
@@ -160,30 +141,8 @@ impl InferenceContext {
                 // In a full implementation, we'd validate fields against the struct definition
                 Ok(MonoType::Named(name.clone()))
             }
-            ExprKind::ObjectLiteral { fields } => {
-                // Object literals are anonymous objects with dynamic fields
-                // Type check each field value
-                for field in fields {
-                    match field {
-                        crate::frontend::ast::ObjectField::KeyValue { value, .. } => {
-                            let _ = self.infer_expr(value)?;
-                        }
-                        crate::frontend::ast::ObjectField::Spread { expr } => {
-                            let _ = self.infer_expr(expr)?;
-                        }
-                    }
-                }
-                // Return a generic object type
-                Ok(MonoType::Named("Object".to_string()))
-            }
-            ExprKind::FieldAccess { object, field: _ } => {
-                // Infer the type of the object
-                let _object_ty = self.infer_expr(object)?;
-
-                // For now, return a fresh type variable
-                // In a full implementation, we'd look up the field type in the struct definition
-                Ok(MonoType::Var(self.gen.fresh()))
-            }
+            ExprKind::ObjectLiteral { fields } => self.infer_object_literal(fields),
+            ExprKind::FieldAccess { object, field: _ } => self.infer_field_access(object),
             ExprKind::Trait { .. } => {
                 // Trait definitions return Unit, they just register the trait
                 Ok(MonoType::Unit)
@@ -197,29 +156,8 @@ impl InferenceContext {
                 // In a full implementation, we'd register the actor in the type environment
                 Ok(MonoType::Unit)
             }
-            ExprKind::Send { actor, message } => {
-                // Type check the actor and message
-                let _actor_ty = self.infer_expr(actor)?;
-                let _message_ty = self.infer_expr(message)?;
-                // Send operations return Unit (fire-and-forget)
-                Ok(MonoType::Unit)
-            }
-            ExprKind::Ask {
-                actor,
-                message,
-                timeout,
-            } => {
-                // Type check the actor, message, and optional timeout
-                let _actor_ty = self.infer_expr(actor)?;
-                let _message_ty = self.infer_expr(message)?;
-                if let Some(t) = timeout {
-                    let timeout_ty = self.infer_expr(t)?;
-                    // Timeout should be a duration/number type
-                    self.unifier.unify(&timeout_ty, &MonoType::Int)?;
-                }
-                // Ask operations return the response type (for now, a type variable)
-                Ok(MonoType::Var(self.gen.fresh()))
-            }
+            ExprKind::Send { actor, message } => self.infer_send(actor, message),
+            ExprKind::Ask { actor, message, timeout } => self.infer_ask(actor, message, timeout.as_deref()),
             ExprKind::Break { .. } | ExprKind::Continue { .. } => {
                 // Break and continue don't return a value (they diverge)
                 // In Rust, they have type ! (never), but we'll use Unit for simplicity
@@ -233,11 +171,7 @@ impl InferenceContext {
             | ExprKind::PostIncrement { target }
             | ExprKind::PreDecrement { target }
             | ExprKind::PostDecrement { target } => self.infer_increment_decrement(target),
-            ExprKind::DataFrameOperation { source, .. } => {
-                // DataFrameOperation returns a DataFrame
-                let _source_ty = self.infer_expr(source)?;
-                Ok(MonoType::Named("DataFrame".to_string()))
-            }
+            ExprKind::DataFrameOperation { source, .. } => self.infer_dataframe_operation(source),
         }
     }
 
@@ -247,6 +181,7 @@ impl InferenceContext {
             Literal::Float(_) => MonoType::Float,
             Literal::String(_) => MonoType::String,
             Literal::Bool(_) => MonoType::Bool,
+            Literal::Char(_) => MonoType::Char,
             Literal::Unit => MonoType::Unit,
         }
     }
@@ -1144,6 +1079,68 @@ impl InferenceContext {
     #[must_use]
     pub fn apply(&self, ty: &MonoType) -> MonoType {
         self.unifier.apply(ty)
+    }
+
+    /// Helper methods for complex expression groups
+    fn infer_string_interpolation(&mut self, parts: &[crate::frontend::ast::StringPart]) -> Result<MonoType> {
+        for part in parts {
+            if let crate::frontend::ast::StringPart::Expr(expr) = part {
+                let _ = self.infer_expr(expr)?;
+            }
+        }
+        Ok(MonoType::Named("String".to_string()))
+    }
+
+    fn infer_result_ok(&mut self, value: &Expr) -> Result<MonoType> {
+        let value_type = self.infer_expr(value)?;
+        let error_type = MonoType::Var(self.gen.fresh());
+        Ok(MonoType::Result(Box::new(value_type), Box::new(error_type)))
+    }
+
+    fn infer_result_err(&mut self, error: &Expr) -> Result<MonoType> {
+        let error_type = self.infer_expr(error)?;
+        let value_type = MonoType::Var(self.gen.fresh());
+        Ok(MonoType::Result(Box::new(value_type), Box::new(error_type)))
+    }
+
+    fn infer_object_literal(&mut self, fields: &[crate::frontend::ast::ObjectField]) -> Result<MonoType> {
+        for field in fields {
+            match field {
+                crate::frontend::ast::ObjectField::KeyValue { value, .. } => {
+                    let _ = self.infer_expr(value)?;
+                }
+                crate::frontend::ast::ObjectField::Spread { expr } => {
+                    let _ = self.infer_expr(expr)?;
+                }
+            }
+        }
+        Ok(MonoType::Named("Object".to_string()))
+    }
+
+    fn infer_field_access(&mut self, object: &Expr) -> Result<MonoType> {
+        let _object_ty = self.infer_expr(object)?;
+        Ok(MonoType::Var(self.gen.fresh()))
+    }
+
+    fn infer_send(&mut self, actor: &Expr, message: &Expr) -> Result<MonoType> {
+        let _actor_ty = self.infer_expr(actor)?;
+        let _message_ty = self.infer_expr(message)?;
+        Ok(MonoType::Unit)
+    }
+
+    fn infer_ask(&mut self, actor: &Expr, message: &Expr, timeout: Option<&Expr>) -> Result<MonoType> {
+        let _actor_ty = self.infer_expr(actor)?;
+        let _message_ty = self.infer_expr(message)?;
+        if let Some(t) = timeout {
+            let timeout_ty = self.infer_expr(t)?;
+            self.unifier.unify(&timeout_ty, &MonoType::Int)?;
+        }
+        Ok(MonoType::Var(self.gen.fresh()))
+    }
+
+    fn infer_dataframe_operation(&mut self, source: &Expr) -> Result<MonoType> {
+        let _source_ty = self.infer_expr(source)?;
+        Ok(MonoType::Named("DataFrame".to_string()))
     }
 }
 
