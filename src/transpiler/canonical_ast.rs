@@ -182,7 +182,7 @@ impl AstNormalizer {
                 CoreExpr::Prim(prim, vec![l, r])
             }
 
-            ExprKind::Let { name, value, body } => {
+            ExprKind::Let { name, value, body, .. } => {
                 let val = self.desugar_and_convert(value);
 
                 // Push binding for body evaluation

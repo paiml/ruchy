@@ -15,19 +15,158 @@ pub struct ParseError {
     pub recovery_hint: Option<String>,
     pub expected: Vec<Token>,
     pub found: Option<Token>,
+    pub severity: ErrorSeverity,
+    pub error_code: ErrorCode,
+    pub context: Vec<String>, // Stack of parsing contexts for better error messages
+}
+
+/// Error severity levels
+#[derive(Debug, Clone, PartialEq)]
+pub enum ErrorSeverity {
+    Error,
+    Warning,
+    Info,
+    Hint,
+}
+
+/// Error codes for categorizing different types of errors
+#[derive(Debug, Clone, PartialEq)]
+pub enum ErrorCode {
+    // Syntax errors
+    UnexpectedToken,
+    MissingToken,
+    InvalidSyntax,
+    
+    // Type errors
+    TypeMismatch,
+    UndefinedVariable,
+    DuplicateDefinition,
+    
+    // Pattern matching errors
+    UnreachablePattern,
+    NonExhaustivePattern,
+    
+    // Import/module errors
+    ModuleNotFound,
+    SymbolNotFound,
+    CircularImport,
+    
+    // General errors
+    InvalidOperation,
+    InternalError,
 }
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} at {:?}", self.message, self.span)?;
-        if let Some(ref hint) = self.recovery_hint {
-            write!(f, " (hint: {hint})")?;
+        // Write severity and error code
+        write!(f, "[{:?}:{:?}] ", self.severity, self.error_code)?;
+        
+        // Write context if available
+        if !self.context.is_empty() {
+            write!(f, "In {}: ", self.context.join(" -> "))?;
         }
+        
+        // Write main message
+        write!(f, "{}", self.message)?;
+        
+        // Write location info
+        write!(f, " at line {}, column {}", 
+               self.span.start + 1, // Convert to 1-based indexing for user display
+               self.span.end - self.span.start + 1)?;
+        
+        // Write expected vs found tokens if available
+        if !self.expected.is_empty() {
+            write!(f, " (expected: {:?}", self.expected)?;
+            if let Some(ref found) = self.found {
+                write!(f, ", found: {found:?}")?;
+            }
+            write!(f, ")")?;
+        }
+        
+        // Write recovery hint
+        if let Some(ref hint) = self.recovery_hint {
+            write!(f, "\n  💡 Hint: {hint}")?;
+        }
+        
         Ok(())
     }
 }
 
 impl std::error::Error for ParseError {}
+
+impl ParseError {
+    /// Create a new parse error with basic information
+    pub fn new(message: String, span: Span) -> Self {
+        Self {
+            message,
+            span,
+            recovery_hint: None,
+            expected: Vec::new(),
+            found: None,
+            severity: ErrorSeverity::Error,
+            error_code: ErrorCode::InvalidSyntax,
+            context: Vec::new(),
+        }
+    }
+    
+    /// Create an error for unexpected token
+    pub fn unexpected_token(expected: Vec<Token>, found: Token, span: Span) -> Self {
+        let message = format!("Unexpected token '{found:?}'");
+        Self {
+            message,
+            span,
+            recovery_hint: Some("Check for missing operators, parentheses, or semicolons".to_string()),
+            expected,
+            found: Some(found),
+            severity: ErrorSeverity::Error,
+            error_code: ErrorCode::UnexpectedToken,
+            context: Vec::new(),
+        }
+    }
+    
+    /// Create an error for missing token
+    pub fn missing_token(expected: Token, span: Span) -> Self {
+        let message = format!("Missing '{expected:?}'");
+        Self {
+            message,
+            span,
+            recovery_hint: Some(format!("Insert '{expected:?}' here")),
+            expected: vec![expected],
+            found: None,
+            severity: ErrorSeverity::Error,
+            error_code: ErrorCode::MissingToken,
+            context: Vec::new(),
+        }
+    }
+    
+    /// Add parsing context to the error
+    #[must_use]
+    pub fn with_context(mut self, context: String) -> Self {
+        self.context.push(context);
+        self
+    }
+    
+    /// Add recovery hint
+    #[must_use]
+    pub fn with_hint(mut self, hint: String) -> Self {
+        self.recovery_hint = Some(hint);
+        self
+    }
+    
+    /// Set severity level
+    #[must_use]
+    pub fn with_severity(mut self, severity: ErrorSeverity) -> Self {
+        self.severity = severity;
+        self
+    }
+    
+    /// Set error code
+    #[must_use]
+    pub fn with_code(mut self, code: ErrorCode) -> Self {
+        self.error_code = code;
+        self
+    }
+}
 
 /// Result of parsing with error recovery
 #[derive(Debug)]
@@ -77,13 +216,10 @@ impl<'a> RecoveryParser<'a> {
             }
             Err(e) => {
                 // Fatal error, no recovery possible
-                self.errors.push(ParseError {
-                    message: e.to_string(),
-                    span: Span::new(0, 0),
-                    recovery_hint: None,
-                    expected: vec![],
-                    found: None,
-                });
+                self.errors.push(ParseError::new(
+                    e.to_string(),
+                    Span::new(0, 0),
+                ).with_code(ErrorCode::InternalError));
                 ParseResult {
                     ast: None,
                     errors: self.errors.clone(),
@@ -328,7 +464,7 @@ impl<'a> RecoveryParser<'a> {
         };
 
         let span = start_span.merge(body.span);
-        Expr::new(ExprKind::Let { name, value, body }, span)
+        Expr::new(ExprKind::Let { name, value, body, is_mutable: false }, span)
     }
 
     fn parse_function_recovery(&mut self) -> Expr {
@@ -471,6 +607,7 @@ impl<'a> RecoveryParser<'a> {
                 name,
                 ty,
                 span: name_span,
+                is_mutable: false,
             });
 
             match self.tokens.peek() {
@@ -530,13 +667,14 @@ impl<'a> RecoveryParser<'a> {
     fn record_error(&mut self, message: String, hint: Option<String>) {
         let span = self.tokens.peek().map_or(Span::new(0, 0), |(_, s)| *s);
 
-        self.errors.push(ParseError {
-            message,
-            span,
-            recovery_hint: hint,
-            expected: vec![],
-            found: self.tokens.peek().map(|(t, _)| t.clone()),
-        });
+        let mut error = ParseError::new(message, span);
+        if let Some(hint) = hint {
+            error = error.with_hint(hint);
+        }
+        if let Some((found_token, _)) = self.tokens.peek() {
+            error.found = Some(found_token.clone());
+        }
+        self.errors.push(error);
     }
 
     /// Expect a token or record error and try to recover

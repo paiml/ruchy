@@ -163,7 +163,7 @@ impl LoweringContext {
                 self.builder.unary_op(block, temp, mir_op, operand_mir);
                 Ok(Operand::Move(Place::Local(temp)))
             }
-            ExprKind::Let { name, value, body } => {
+            ExprKind::Let { name, value, body, .. } => {
                 // Lower the value
                 let value_op = self.lower_expr_to_operand(value)?;
 

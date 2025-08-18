@@ -1,18 +1,18 @@
 # Ruchy: Complete Language and System Specification
 
-*Single source of truth - All 27 specification documents consolidated*
+*Version 3.0 - Single source of truth consolidating all 27 specification documents*
 
 ## Table of Contents
 
 ### Core Language Specifications
 1. [Language Specification](#1-language-specification)
-2. [Grammar Reference](#2-grammar-reference) 
+2. [Grammar Reference](#2-grammar-reference)
 3. [Implementation Specification](#3-implementation-specification)
 4. [Parser Specification](#4-parser-specification)
 5. [Lexer Specification](#5-lexer-specification)
 6. [Script Capability Specification](#6-script-capability-specification)
 
-### Architecture Specifications  
+### Architecture Specifications
 7. [MCP Message-Passing Architecture](#7-mcp-message-passing-architecture)
 8. [LSP Specification](#8-lsp-specification)
 9. [Critical Missing Components](#9-critical-missing-components)
@@ -51,8 +51,10 @@
 
 ### 1.1 Design Philosophy
 
-- **Familiarity First**: Syntax borrowed from Swift, Kotlin, Elixir
-- **Progressive Complexity**: Simple code looks simple
+Ruchy combines the ergonomics of Swift, Kotlin, and Elixir with Rust's performance guarantees through mechanical syntax transformation. Core principles:
+
+- **Familiarity First**: Syntax borrowed from successful languages
+- **Progressive Complexity**: Simple code looks simple, complex features available on demand
 - **Zero Runtime Overhead**: All abstractions compile to efficient Rust
 - **Type Inference**: Types required only at module boundaries
 - **DataFrame-First**: Polars as primary collection type
@@ -61,96 +63,219 @@
 
 ```rust
 // Primitive Types
-i32, i64, f32, f64, bool, String, ()
+i8, i16, i32, i64, i128
+u8, u16, u32, u64, u128
+f32, f64
+bool, char, String, ()
 
 // Composite Types
-[T]                    // Lists
+[T]                    // Arrays/Lists (maps to Series/Vec)
 (T1, T2, ...)         // Tuples  
 T1 -> T2              // Functions
 Option<T>             // Nullable types
 Result<T, E>          // Error handling
+&T, &mut T            // References
 
 // Mathematical Types (first-class)
 DataFrame             // Tabular data (Polars)
-LazyFrame            // Lazy DataFrame
+LazyFrame            // Lazy DataFrame evaluation
 Series               // Column data
-Matrix<T, R, C>      // Linear algebra
+Matrix<T, R, C>      // Linear algebra (nalgebra)
 Vector<T, N>         // N-dimensional vector
-Array<T, D>          // N-dimensional array
+Array<T, D>          // N-dimensional array (ndarray)
 SymExpr              // Symbolic expression
 Formula              // Statistical formula (y ~ x1 + x2)
 Distribution<T>      // Probability distribution
+Complex<T>           // Complex numbers
+
+// Type Aliases
+type UserId = i64
+type Callback = fun(i32) -> bool
+type Point = (x: f64, y: f64)
+
+// Refinement Types (future)
+{x: i32 | x > 0}     // Positive integers
+{s: String | s.len() < 100}  // Bounded strings
 ```
 
 ### 1.3 Core Language Features
 
 #### Functions
 ```rust
-// Function definition with type inference
+// Basic function with type inference
 fun add(x: i32, y: i32) -> i32 {
-    x + y
+x + y
 }
 
-// Lambda expressions  
-|x| x + 1
-|x, y| x * y
+// Single expression function
+fun double(x: i32) = x * 2
 
-// Mathematical functions
-fun mean(numbers: [f64]) -> f64 {
-    numbers.sum() / numbers.len() as f64
+// Default parameters
+fun greet(name: String, greeting = "Hello") {
+println!("{greeting}, {name}!")
 }
 
 // Generic functions
 fun id<T>(x: T) -> T { x }
+
+fun map<T, U>(list: [T], f: fun(T) -> U) -> [U] {
+list.iter().map(f).collect()
+}
+
+// Lambda expressions  
+let inc = |x| x + 1
+let mul = |x, y| x * y
+
+// Mathematical functions
+fun mean(numbers: [f64]) -> f64 {
+numbers.sum() / numbers.len() as f64
+}
+
+fun std_dev(data: Series) -> f64 {
+data.std().unwrap()
+}
 ```
 
 #### Pattern Matching
 ```rust
+// Basic match
 match value {
-    0 => "zero",
-    1 | 2 => "small", 
-    n if n > 10 => "large",
-    _ => "other"
+0 => "zero",
+1 | 2 => "small",
+n if n > 10 => "large",
+_ => "other"
 }
 
 // List patterns
 match list {
-    [] => "empty",
-    [x] => "single", 
-    [x, y] => "pair",
-    _ => "many"
+[] => "empty",
+[x] => "single element: {x}",
+[x, y] => "pair: {x}, {y}",
+[head, ...tail] => "head: {head}, rest: {tail.len()} items",
+_ => "many"
+}
+
+// Tuple patterns
+match point {
+(0, 0) => "origin",
+(x, 0) => "on x-axis at {x}",
+(0, y) => "on y-axis at {y}",
+(x, y) if x == y => "on diagonal",
+_ => "arbitrary point"
+}
+
+// Enum patterns with guards
+match result {
+Ok(value) if value > 0 => process(value),
+Ok(_) => skip(),
+Err(e) if e.is_recoverable() => retry(),
+Err(e) => fail(e)
 }
 ```
 
-#### Pipeline Operations
+#### Control Flow
 ```rust
-// Data processing pipelines
-data |> filter(|x| x > 0) 
-     |> map(|x| x * 2) 
-     |> collect()
+// If expressions
+let status = if age >= 18 { "adult" } else { "minor" }
 
-// DataFrame operations (Polars backend)
-df |> filter(col("age") > 18)
-   |> groupby("department")
-   |> agg([mean("salary").alias("avg_salary")])
-   |> sort("avg_salary", descending=true)
-```
-
-#### Actor System
-```rust
-actor Counter {
-    count: i32,
-    
-    receive {
-        Increment => self.count += 1,
-        Get => self.count,
-        Reset => self.count = 0
-    }
+// When expressions (Swift-style)
+when {
+x < 0 -> "negative",
+x == 0 -> "zero",
+x > 0 -> "positive"
 }
 
-// Message passing
-counter ! Increment     // Send (fire-and-forget)
-result = counter ? Get  // Ask (request-response)
+// For loops with ranges
+for i in 0..10 {
+println!("{i}")
+}
+
+// While loops
+while condition {
+process()
+}
+
+// Loop with break value
+let result = loop {
+if done() {
+break value
+}
+iterate()
+}
+
+// List comprehensions
+let squares = [x * x for x in 1..10]
+let evens = [x for x in numbers if x % 2 == 0]
+let grid = [(x, y) for x in 0..3 for y in 0..3]
+```
+
+#### Error Handling
+```rust
+// Result type with ? operator
+fun read_number(path: String) -> Result<i32, Error> {
+let content = read_file(path)?
+let number = content.parse()?
+Ok(number)
+}
+
+// Try-catch blocks
+try {
+risky_operation()
+} catch FileError(e) {
+handle_file_error(e)
+} catch ParseError(e) {
+handle_parse_error(e)
+} finally {
+cleanup()
+}
+
+// Panic with custom message
+panic!("Unexpected state: {state}")
+
+// Assertions
+assert!(x > 0, "x must be positive")
+assert_eq!(result, expected)
+```
+
+### 1.4 Collections and Iterators
+
+```rust
+// Arrays/Lists default to Series
+let numbers = [1, 2, 3, 4, 5]  // -> Series
+let matrix = [[1, 2], [3, 4]]  // -> DataFrame
+
+// Explicit collections
+let vec = Vec::from([1, 2, 3])
+let map = HashMap::from([("a", 1), ("b", 2)])
+let set = HashSet::from([1, 2, 3])
+
+// Iterator chains
+numbers
+|> filter(|x| x > 0)
+|> map(|x| x * 2)
+|> fold(0, |acc, x| acc + x)
+```
+
+### 1.5 String Interpolation
+
+```rust
+// Basic interpolation
+let name = "Alice"
+let greeting = "Hello, {name}!"
+
+// Expression interpolation
+let result = "The answer is {2 + 2}"
+
+// Format specifiers
+let pi = 3.14159
+let formatted = "Pi to 2 places: {pi:.2}"
+
+// Multi-line strings
+let query = """
+    SELECT * FROM users
+    WHERE age > {min_age}
+    ORDER BY name
+"""
 ```
 
 ## 2. Grammar Reference
@@ -160,8 +285,43 @@ result = counter ? Get  // Ask (request-response)
 ```ebnf
 program         = item*
 item            = function | struct_def | enum_def | trait_def | impl_block
-                | actor_def | module_def | import_stmt | type_alias
+                | actor_def | module_def | import_stmt | type_alias | const_def
 
+// Function definitions
+function        = attributes? visibility? 'fun' identifier 
+                  generic_params? '(' params? ')' return_type? 
+                  where_clause? (block | '=' expr)
+
+params          = param (',' param)*
+param           = pattern ':' type default_value?
+default_value   = '=' expr
+return_type     = '->' type
+
+// Type definitions
+struct_def      = visibility? 'struct' identifier generic_params? struct_body
+struct_body     = '{' field (',' field)* '}'
+field           = visibility? identifier ':' type
+
+enum_def        = visibility? 'enum' identifier generic_params? enum_body
+enum_body       = '{' variant (',' variant)* '}'
+variant         = identifier ('(' type (',' type)* ')')?
+
+trait_def       = visibility? 'trait' identifier generic_params? trait_body
+trait_body      = '{' trait_item* '}'
+trait_item      = function_sig | associated_type
+
+impl_block      = 'impl' generic_params? type_path for_clause? impl_body
+impl_body       = '{' impl_item* '}'
+impl_item       = function | associated_const
+
+// Actor definitions
+actor_def       = visibility? 'actor' identifier generic_params? actor_body
+actor_body      = '{' actor_state? receive_block '}'
+actor_state     = field (',' field)*
+receive_block   = 'receive' '{' message_handler (',' message_handler)* '}'
+message_handler = pattern '=>' expr
+
+// Expressions
 expression      = assignment
 assignment      = pipeline ('=' assignment)?
 pipeline        = logical_or ('|>' pipeline)*
@@ -172,23 +332,38 @@ comparison      = term (('>' | '>=' | '<' | '<=') term)*
 term            = factor (('+' | '-') factor)*
 factor          = unary (('*' | '/' | '%' | '**' | '//') unary)*
 unary           = ('!' | '-' | 'await')? postfix
-postfix         = primary ('.' IDENTIFIER | '[' expression ']' | '(' arguments? ')' | '?' | '!')*
+postfix         = primary ('.' IDENTIFIER | '[' expression ']' 
+                | '(' arguments? ')' | '?' | '!')*
 
 primary         = NUMBER | STRING | BOOLEAN | IDENTIFIER | '(' expression ')'
-                | if_expr | match_expr | let_expr | lambda | array_expr
-                | tuple_expr | record_expr | async_block | try_block
-                | dataframe_literal
+                | if_expr | match_expr | when_expr | for_expr | while_expr
+                | loop_expr | lambda | array_expr | tuple_expr | record_expr
+                | dataframe_literal | try_expr | async_block
 
+// Lambda expressions
 lambda          = '|' params? '|' (expr | block)
+                | params '=>' (expr | block)
+
+// Pattern matching
+pattern         = literal_pattern | identifier_pattern | wildcard_pattern
+                | tuple_pattern | array_pattern | struct_pattern
+                | variant_pattern | range_pattern
+
+match_expr      = 'match' expr '{' match_arm (',' match_arm)* '}'
+match_arm       = pattern ('if' expr)? '=>' expr
+
+// DataFrame literals
+dataframe_literal = 'df!' '[' column_def (',' column_def)* ']'
+column_def      = STRING ':' '[' expr (',' expr)* ']'
 ```
 
-### 2.2 Operator Precedence Table
+### 2.2 Operator Precedence
 
 | Precedence | Operators | Associativity | Category |
 |------------|-----------|---------------|----------|
 | 1 | `.` `?.` `::` | Left | Member access |
 | 2 | `()` `[]` | Left | Call, index |
-| 3 | `!` `~` `-` (unary) | Right | Unary |
+| 3 | `!` `~` `-` (unary) `await` | Right | Unary |
 | 4 | `**` | Right | Power |
 | 5 | `*` `/` `%` `//` | Left | Multiplicative |
 | 6 | `+` `-` | Left | Additive |
@@ -205,701 +380,1192 @@ lambda          = '|' params? '|' (expr | block)
 | 17 | `\|>` | Left | Pipeline |
 | 18 | `=` `+=` `-=` etc. | Right | Assignment |
 
-### 2.3 Keywords (31 total)
+### 2.3 Keywords (Reserved)
 
 ```
-Reserved: let in if else match fun struct trait impl import async await try catch
-          for while loop break continue return true false actor receive send ask
-          df col mean std quantile filter groupby agg sort
+fun let var const if else when match for while loop break continue
+return struct enum trait impl actor receive send ask async await
+defer guard try catch throw import export module pub priv mut
+type alias where in is as true false null
+df col mean std quantile filter groupby agg sort select
 ```
 
 ## 3. Implementation Specification
 
-### 3.1 DataFrame-First Design
-
-Every collection defaults to Polars types:
-- `DataFrame` for 2D data
-- `Series` for 1D data  
-- `LazyFrame` for lazy evaluation
-- Explicit `Vec` and `HashMap` when needed
-
-### 3.2 Execution Modes
+### 3.1 Transpilation Architecture
 
 ```rust
-enum ExecutionMode {
-    Interpret,           // Tree-walk interpreter (REPL)
-    JitCompile,         // Cranelift JIT (hot paths)
-    AotTranspile,       // Rust transpilation (production)
+// Multi-stage transformation with MIR for optimization
+pub struct Transpiler {
+    parser: RuchyParser,
+    type_checker: TypeChecker,
+    mir_gen: MirGenerator,
+    optimizer: MirOptimizer,
+    codegen: RustCodeGen,
 }
 
-// Tiered compilation strategy
-impl ExecutionStrategy {
-    fn select(&self, expr: &Expr, heat: u32) -> ExecutionMode {
-        match (expr.has_side_effects(), heat, expr.is_definition()) {
-            (_, _, true) => ExecutionMode::AotTranspile,
-            (false, 3.., false) => ExecutionMode::JitCompile,
-            _ => ExecutionMode::Interpret,
+impl Transpiler {
+    pub fn transpile(source: &str) -> Result<String, Error> {
+        // Parse to AST
+        let ast = self.parser.parse(source)?;
+
+        // Type inference and checking
+        let typed_ast = self.type_checker.infer(ast)?;
+
+        // Generate MIR for optimization
+        let mir = self.mir_gen.lower(typed_ast)?;
+
+        // Optimize MIR (DataFrame fusion, dead code elimination)
+        let optimized_mir = self.optimizer.optimize(mir)?;
+
+        // Generate Rust AST from optimized MIR
+        let rust_ast = self.codegen.generate(optimized_mir)?;
+
+        // Generate and format Rust source
+        let rust_code = quote!(#rust_ast).to_string();
+        rustfmt::format(rust_code)
+    }
+
+    // MIR-based transformation pipeline
+    fn transform_mir(&self, mir: MirNode) -> MirNode {
+        match mir {
+            // DataFrame operations get lazy evaluation
+            MirNode::DataFrameOp { op, input } => {
+                MirNode::LazyDataFrameOp {
+                    op,
+                    input: Box::new(self.transform_mir(*input)),
+                    fusion_candidates: self.find_fusion_opportunities(&op),
+                }
+            }
+            // Actor messages get flow analysis
+            MirNode::ActorSend { actor, msg } => {
+                self.analyze_message_flow(actor, msg)
+            }
+            // Pipeline operators expand to method chains
+            MirNode::Pipeline { expr, ops } => {
+                ops.fold(expr, |acc, op| {
+                    MirNode::MethodCall {
+                        receiver: Box::new(acc),
+                        method: op,
+                    }
+                })
+            }
+            _ => mir,
+        }
+    }
+}
+
+// NOTE: Direct syn::File generation exists for MVP only
+// Full implementation requires MIR for optimization
+```
+
+### 3.2 DataFrame-First Design
+
+Every collection operation defaults to Polars types:
+
+```rust
+// Collection type hierarchy
+pub enum CollectionType {
+    DataFrame(DataFrame),     // 2D tabular data
+    LazyFrame(LazyFrame),    // Lazy evaluation
+    Series(Series),          // 1D column data
+    Vec(Vec<T>),            // Explicit Vec only
+    HashMap(HashMap<K, V>),  // Explicit HashMap only
+}
+
+// Transformation rules
+impl CollectionTransform {
+    fn array_to_series(elements: Vec<Expr>) -> TokenStream {
+        // [1, 2, 3] becomes Series
+        quote! {
+            ::polars::prelude::Series::new("", &[#(#elements),*])
+        }
+    }
+
+    fn nested_array_to_dataframe(rows: Vec<Vec<Expr>>) -> TokenStream {
+        // [[1, 2], [3, 4]] becomes DataFrame
+        quote! {
+            ::polars::prelude::df![
+                "col0" => vec![#(#col0_elements),*],
+                "col1" => vec![#(#col1_elements),*]
+            ]
         }
     }
 }
 ```
 
-### 3.3 Compilation Pipeline
-
-1. **Frontend**
-   - Lexical Analysis - Tokenize source code
-   - Parsing - Build AST with error recovery
-   - Type Inference - Hindley-Milner with mathematical types
-   - Semantic Analysis - Name resolution, mathematical operator binding
-
-2. **Middle End**
-   - MIR Generation - Medium-level IR for analysis
-   - Mathematical Optimization - Algebraic simplification, loop fusion
-   - Lowering - Prepare for backend
-
-3. **Backend**
-   - Transpilation to Rust - Generate idiomatic Rust code
-   - Polars Integration - Direct LogicalPlan generation
-   - JIT Compilation - Cranelift for hot paths
-   - AOT Compilation - rustc for final executable
-
 ## 4. Parser Specification
 
-### 4.1 Architecture
-- Recursive descent with Pratt parsing for operators
-- Single-pass, predictive with bounded lookahead(2)
-- No backtracking, error recovery via synchronization tokens
+### 4.1 Parser Architecture
 
-### 4.2 Performance Characteristics
-- **Throughput**: >50MB/s on modern hardware
-- **Memory**: O(n) in AST nodes
-- **Lookahead**: Maximum 2 tokens
-- **Error recovery**: O(1) per error
+Hand-written recursive descent with Pratt parsing for operators:
 
-### 4.3 AST Construction
 ```rust
-pub struct Expr {
-    pub kind: ExprKind,
-    pub span: Span,
-    pub ty: Option<Type>,  // Present post-inference
+pub struct Parser<'src> {
+    tokens: TokenStream<'src>,
+    current: Token,
+    peek: Token,
+
+    // Error recovery
+    errors: Vec<ParseError>,
+    panic_mode: bool,
+
+    // String interpolation context
+    interpolation_stack: Vec<InterpolationContext>,
+
+    // Comment attachment
+    comments: CommentStream<'src>,
 }
 
-pub enum ExprKind {
-    Integer(i64),
-    Float(f64),
-    String { parts: Vec<StringPart> },
-    Binary { op: BinaryOp, left: Box<Expr>, right: Box<Expr> },
-    Call { func: Box<Expr>, args: Vec<Expr> },
-    Lambda { params: Vec<Param>, body: Box<Expr> },
-    DataFrame { columns: Vec<Column> },
-    // ... all node types
+impl Parser<'_> {
+    // Pratt parsing for expressions
+    fn parse_expr_bp(&mut self, min_bp: u8) -> Result<Expr> {
+        let mut left = self.parse_unary()?;
+
+        loop {
+            let op = match self.current_binop() {
+                Some(op) => op,
+                None => break,
+            };
+
+            let (left_bp, right_bp) = op.binding_power();
+            if left_bp < min_bp {
+                break;
+            }
+
+            self.advance();
+            let right = self.parse_expr_bp(right_bp)?;
+
+            left = Expr::Binary {
+                op,
+                left: Box::new(left),
+                right: Box::new(right),
+                span: self.span(left.span.start),
+            };
+        }
+
+        Ok(left)
+    }
+}
+```
+
+### 4.2 Error Recovery
+
+Synchronization points for graceful error recovery:
+
+```rust
+impl Parser<'_> {
+    fn synchronize(&mut self) {
+        self.panic_mode = false;
+
+        while !self.is_at_end() {
+            if self.previous().kind == Semicolon {
+                return;
+            }
+
+            if self.is_sync_point() {
+                return;
+            }
+
+            self.advance();
+        }
+    }
+
+    fn is_sync_point(&self) -> bool {
+        matches!(
+            self.current.kind,
+            Fun | Let | Type | Import | Export | If | For | Match
+        )
+    }
+}
+```
+
+### 4.3 AST Desugaring
+
+Pipeline operators expand during AST transformation:
+
+```rust
+impl AstDesugarer {
+    fn visit_expr(&mut self, expr: &mut Expr) {
+        match expr {
+            Expr::Pipeline { left, op, right } => {
+                // x |> f becomes f(x)
+                *expr = Expr::Call {
+                    callee: right.clone(),
+                    args: vec![*left.clone()],
+                    span: expr.span,
+                };
+
+                // Recursively desugar
+                self.visit_expr(expr);
+            }
+            _ => self.walk_expr(expr),
+        }
+    }
 }
 ```
 
 ## 5. Lexer Specification
 
-### 5.1 Design Constraints
-- Single pass with O(1) lookahead
-- No parser feedback, no backtracking
-- No heap allocation per token
-- UTF-8 boundary handling
+### 5.1 Token Categories
 
-### 5.2 Performance Targets
-- **Throughput**: >100MB/s target
-- **Memory**: Token pool with arena allocation
-- **Latency**: <1ms for typical files
+```rust
+pub enum TokenKind {
+    // Keywords (31 total)
+    Fun, Let, If, Else, Match, For, While, Loop,
+    Break, Continue, Return, Import, Export,
+    Actor, Receive, Send, Ask, Async, Await,
+    Trait, Impl, Struct, Enum, Type, Where,
+    True, False, Null,
 
-### 5.3 Token Categories
-- **Keywords**: 31 total (fun, let, if, match, actor, etc.)
-- **Operators**: Arithmetic, comparison, logical, bitwise, pipeline
-- **Delimiters**: Parentheses, brackets, braces, punctuation
-- **Literals**: Numbers, strings, characters, booleans
+    // Operators
+    Plus, Minus, Star, Slash, Percent, Power,
+    Eq, Ne, Lt, Le, Gt, Ge,
+    And, Or, Not,
+    Pipe, Arrow, FatArrow,
+
+    // Delimiters
+    LParen, RParen, LBracket, RBracket, LBrace, RBrace,
+    Comma, Semi, Colon, Dot,
+
+    // Literals
+    Integer(i64),
+    Float(f64),
+    String(String),
+    Char(char),
+
+    // Identifiers
+    Ident(String),
+
+    // Special
+    Eof,
+}
+```
+
+### 5.2 Lexical Rules
+
+```rust
+impl Lexer<'src> {
+    pub fn new(input: &'src str) -> Self {
+        Lexer {
+            input: input.as_bytes(),
+            position: 0,
+            current: 0,
+            line: 1,
+            column: 1,
+        }
+    }
+
+    fn next_token(&mut self) -> Token {
+        self.skip_whitespace();
+
+        if self.is_at_end() {
+            return self.make_token(TokenKind::Eof);
+        }
+
+        let c = self.advance();
+
+        match c {
+            // Single-character tokens
+            b'(' => self.make_token(LParen),
+            b')' => self.make_token(RParen),
+            b'[' => self.make_token(LBracket),
+            b']' => self.make_token(RBracket),
+
+            // Multi-character tokens
+            b'=' => {
+                if self.match_char(b'=') {
+                    self.make_token(Eq)
+                } else if self.match_char(b'>') {
+                    self.make_token(FatArrow)
+                } else {
+                    self.make_token(Assign)
+                }
+            }
+
+            // Numbers
+            b'0'..=b'9' => self.number(),
+
+            // Identifiers and keywords
+            b'a'..=b'z' | b'A'..=b'Z' | b'_' => self.identifier(),
+
+            // Strings
+            b'"' => self.string(),
+
+            _ => self.error_token("Unexpected character"),
+        }
+    }
+}
+```
+
+### 5.3 String Interpolation Lexing
+
+```rust
+impl Lexer<'_> {
+    fn string(&mut self) -> Token {
+        let mut parts = Vec::new();
+
+        while !self.is_at_end() && !self.check(b'"') {
+            if self.check(b'{') {
+                // Emit string fragment
+                if !parts.is_empty() {
+                    self.emit_token(StringFragment(parts.clone()));
+                }
+
+                // Emit interpolation start
+                self.emit_token(InterpolationStart);
+
+                // Lex expression tokens
+                self.lex_interpolation();
+
+                // Emit interpolation end
+                self.emit_token(InterpolationEnd);
+
+                parts.clear();
+            } else {
+                parts.push(self.advance());
+            }
+        }
+
+        self.consume(b'"', "Unterminated string");
+        self.make_token(StringEnd)
+    }
+}
+```
 
 ## 6. Script Capability Specification
 
 ### 6.1 Execution Modes
 
 ```rust
-enum ScriptMode {
-    // Direct command-line execution
-    OneLiner {
-        code: String,
-        auto_mode: AutoMode,  // -e, -p, -n, -f, -a flags
-    },
-    
-    // Interactive REPL  
-    Interactive {
-        session: ReplSession,
-        startup_time: Duration,  // <10ms target
-    },
-    
-    // Script file execution
-    Script {
-        path: PathBuf,
-        permissions: PermissionSet,  // Deno-style
-    },
-    
-    // Compiled binary
-    Binary {
-        size: usize,  // <5MB target
-        startup: Duration,  // <1ms target
-    },
-}
-```
-
-### 6.2 Permission System (Deno-style)
-
-```bash
-# Granular permissions
-ruchy run --allow-read=/data --allow-net=api.example.com script.ruchy
-ruchy run --allow-write=/tmp --allow-env script.ruchy
-
-# Interactive prompts for missing permissions
-ruchy run script.ruchy  # Prompts for each permission
-```
-
-### 6.3 URL Imports with Integrity
-
-```rust
-import "https://deno.land/std@0.100.0/fmt/colors.ruchy" as colors
-import "https://cdn.skypack.dev/lodash@4.17.21" as _
-
-// Integrity checking
-import "https://example.com/lib.ruchy" 
-    integrity="sha256-abc123..." 
-    as lib
-```
-
-## 7. MCP Message-Passing Architecture
-
-### 7.1 Core Design Principles
-- **Protocol-First**: Actor behaviors derive from protocol specifications
-- **Location Transparency**: Local and remote messages use identical syntax
-- **Fault Tolerance**: Supervision trees provide automatic recovery
-- **Type Safety**: Session types prove protocol compliance at compile time
-- **Zero Overhead**: Message passing compiles to function calls when possible
-
-### 7.2 Unified Message Runtime
-
-```rust
-pub struct MessageRuntime {
-    // Per-core actor schedulers (M:N threading)
-    schedulers: Vec<Scheduler>,
-    
-    // Global registry for actor/MCP endpoint discovery
-    registry: DistributedRegistry,
-    
-    // Protocol bridges for external systems
-    bridges: ProtocolBridges {
-        mcp: MCPBridge,
-        grpc: GrpcBridge,
-        http: HttpBridge,
-    },
-    
-    // NUMA-aware memory pools for zero-copy messaging
-    message_pools: NumaAllocator,
+pub enum ExecutionMode {
+    Script,      // .ruchy files
+    Repl,        // Interactive mode
+    Jupyter,     // Notebook cells
+    Compiled,    // AOT compilation
+    OneLiner,    // -e flag
 }
 
-// Location-transparent messaging
-impl MessageRuntime {
-    pub fn send<M: Message>(&self, target: ActorRef, msg: M) -> Result<()> {
-        match self.registry.locate(target) {
-            Location::Local(mailbox) => mailbox.enqueue(msg),     // 50ns latency
-            Location::Remote(node) => self.remote_send(node, msg), // 50μs latency
-            Location::MCP(endpoint) => self.mcp.call(endpoint, msg), // 100μs latency
+// Mode detection
+impl Runtime {
+    fn detect_mode(args: &Args) -> ExecutionMode {
+        match args {
+            Args { eval: Some(_), .. } => ExecutionMode::OneLiner,
+            Args { file: Some(f), .. } if f.ends_with(".ruchy") => ExecutionMode::Script,
+            Args { repl: true, .. } => ExecutionMode::Repl,
+            Args { compile: true, .. } => ExecutionMode::Compiled,
+            _ => ExecutionMode::Repl,
         }
     }
 }
 ```
 
-### 7.3 Memory Layout Optimization
+### 6.2 REPL Features
 
 ```rust
-// Cache-line aligned message structure
-#[repr(C, align(64))]
-pub struct Message {
-    // Header in first cache line (32 bytes)
-    header: MessageHeader {
-        msg_type: TypeId,        // 8 bytes
-        correlation_id: u64,     // 8 bytes
-        priority: Priority,      // 1 byte
-        flags: MessageFlags,     // 1 byte
-        padding: [u8; 14],       // Alignment
-    },
+pub struct Repl {
+    interpreter: TreeWalkInterpreter,
+    history: Vec<String>,
+    bindings: HashMap<String, Value>,
     
-    // Payload in subsequent cache lines
-    payload: MessagePayload,     // Variable size
+    // DataFrame visualization
+    df_printer: DataFramePrinter,
+    
+    // Completion engine
+    completer: Completer,
 }
 
-// Zero-copy payload for large messages
-pub enum MessagePayload {
-    Inline([u8; 496]),          // Small messages inline
-    Arc(Arc<[u8]>),             // Shared large messages
-    Mmap(MmapRegion),           // Memory-mapped for huge payloads
+impl Repl {
+    pub async fn run(&mut self) -> Result<()> {
+        loop {
+            let input = self.read_line("ruchy> ")?;
+            
+            match self.parse_command(&input) {
+                Command::Expr(expr) => {
+                    let result = self.eval(expr)?;
+                    self.display(result);
+                }
+                Command::Import(module) => {
+                    self.import_module(module)?;
+                }
+                Command::Help => self.show_help(),
+                Command::Exit => break,
+            }
+        }
+        Ok(())
+    }
+}
+```
+
+## 7. MCP Message-Passing Architecture
+
+### 7.1 Actor Model with MCP Integration
+
+```rust
+pub trait Actor: Send + Sync {
+    type Message: McpSerializable;
+    type Response: McpSerializable;
+    
+    async fn receive(&mut self, msg: Self::Message) -> Option<Self::Response>;
+    
+    fn spawn(self) -> ActorHandle<Self::Message, Self::Response> {
+        let (tx, rx) = mpsc::channel(100);
+        tokio::spawn(async move {
+            while let Some(msg) = rx.recv().await {
+                self.receive(msg).await;
+            }
+        });
+        ActorHandle { tx }
+    }
+}
+
+// MCP protocol support
+#[derive(McpSerializable)]
+pub struct McpMessage {
+    jsonrpc: String,
+    method: String,
+    params: serde_json::Value,
+    id: Option<String>,
+}
+
+impl Actor for McpActor {
+    type Message = McpMessage;
+    type Response = McpResponse;
+    
+    async fn receive(&mut self, msg: McpMessage) -> Option<McpResponse> {
+        match msg.method.as_str() {
+            "tools/list" => self.list_tools().await,
+            "tools/call" => self.call_tool(msg.params).await,
+            _ => None,
+        }
+    }
+}
+```
+
+### 7.2 Supervision Trees
+
+```rust
+pub struct Supervisor<A: Actor> {
+    children: Vec<ActorHandle<A::Message, A::Response>>,
+    strategy: SupervisionStrategy,
+}
+
+pub enum SupervisionStrategy {
+    OneForOne,      // Restart failed child
+    OneForAll,      // Restart all children
+    RestForOne,     // Restart failed and subsequent
+}
+
+impl<A: Actor> Supervisor<A> {
+    pub fn supervise(&mut self, child: A) {
+        let handle = child.spawn();
+        self.monitor(handle.clone());
+        self.children.push(handle);
+    }
+    
+    async fn monitor(&mut self, handle: ActorHandle<_, _>) {
+        loop {
+            if handle.is_failed().await {
+                match self.strategy {
+                    OneForOne => self.restart_child(handle).await,
+                    OneForAll => self.restart_all().await,
+                    RestForOne => self.restart_from(handle).await,
+                }
+            }
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+    }
 }
 ```
 
 ## 8. LSP Specification
 
-### 8.1 Performance Requirements
-- **Typing Latency**: <50ms for completions
-- **Diagnostic Latency**: <200ms for type errors
-- **Memory Budget**: <500MB for 50k LOC
-- **CPU Usage**: <25% average on 4-core systems
+### 8.1 Language Server Protocol Implementation
 
-### 8.2 Core Features
-
-#### Phase 1: Foundation
-- Syntax highlighting with semantic tokens
-- Real-time diagnostics (parse, type, borrow checker)  
-- Context-aware completions
-- Hover information with type details
-- Go-to-definition across modules
-- Find references with usage context
-
-#### Phase 2: Transpilation Preview
-- Real-time Rust code preview
-- Performance cost indicators
-- Side-by-side comparison mode
-- Optimization suggestions
-
-#### Phase 3: Quality Enforcement  
-- Property test generation
-- Mutation testing integration
-- Refinement type checking
-- Quality gate dashboard
-
-### 8.3 Progressive Disclosure
-
-Information scales with user intent:
-- **Beginner**: Basic types, simple suggestions
-- **Intermediate**: Performance hints, idiom suggestions  
-- **Expert**: Detailed AST, optimization details
-
-## 9. Critical Missing Components
-
-### 9.1 Error Diagnostics Architecture
-- Elm-level error messages with helpful suggestions
-- Structured error codes (L0001-R4999)
-- Machine-applicable fix suggestions
-- Terminal color rendering with proper fallbacks
-
-### 9.2 Module System Details
-- Separate compilation units with incremental checking
-- Cross-module type checking without re-parsing
-- Symbol visibility rules (pub, priv, internal)
-- Incremental compilation cache invalidation
-
-### 9.3 Memory Management
-- Region inference algorithm for automatic lifetime management
-- Escape analysis for stack vs heap allocation
-- Arena allocation strategies for session-scoped data
-- Reference counting with cycle detection
-
-### 9.4 Borrow Checker Integration
-- Lifetime inference compatible with Rust
-- Ownership transfer rules in transpilation
-- Borrowing patterns that map to Rust idioms
-- Zero-cost Rust interop semantics
-
-### 9.5 Effect System
-- IO, Async, Unsafe, MCP effects tracking
-- Effect polymorphism for generic functions
-- Handler implementation for effect interpretation
-- Runtime elimination of effect tracking
-
-## 10. Binary Architecture
-
-### 10.1 Single Binary Design (<5MB)
-
-All tools embedded in one binary:
 ```rust
-enum Command {
-    Run(RunOpts),       // Execute scripts
-    Repl(ReplOpts),     // Interactive shell
-    Build(BuildOpts),   // Compile to binary
-    Fmt(FmtOpts),       // Format code
-    Lint(LintOpts),     // Lint with fixes
-    Test(TestOpts),     // Run tests
-    Check(CheckOpts),   // Type check only
-    Serve(ServeOpts),   // MCP server mode
+pub struct RuchyLanguageServer {
+    workspace: Workspace,
+    analyzer: SemanticAnalyzer,
+    formatter: Formatter,
+}
+
+#[tower_lsp::async_trait]
+impl LanguageServer for RuchyLanguageServer {
+    async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
+        Ok(InitializeResult {
+            capabilities: ServerCapabilities {
+                text_document_sync: Some(TextDocumentSyncCapability::Full),
+                completion_provider: Some(CompletionOptions::default()),
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
+                definition_provider: Some(OneOf::Left(true)),
+                references_provider: Some(OneOf::Left(true)),
+                document_formatting_provider: Some(OneOf::Left(true)),
+                semantic_tokens_provider: Some(
+                    SemanticTokensServerCapabilities::SemanticTokensOptions(
+                        SemanticTokensOptions {
+                            legend: SEMANTIC_TOKEN_LEGEND.clone(),
+                            full: Some(SemanticTokensFullOptions::Bool(true)),
+                            ..Default::default()
+                        }
+                    )
+                ),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+    }
+    
+    async fn completion(&self, params: CompletionParams) -> Result<CompletionResponse> {
+        let position = params.text_document_position;
+        let document = self.workspace.get_document(&position.text_document.uri)?;
+        
+        let completions = self.analyzer.get_completions(
+            &document,
+            position.position
+        )?;
+        
+        Ok(CompletionResponse::Array(completions))
+    }
 }
 ```
 
-### 10.2 Shared Infrastructure
-- Single AST parse shared by all tools
-- DashMap concurrent cache with Blake3 hashing
-- Lazy subsystem loading for fast startup
-- Memory-mapped caches for persistence
-
-### 10.3 Permission System (Deno-style)
-- Secure by default execution
-- Granular permissions (read, write, net, env)
-- Interactive prompts for missing permissions
-- Audit trail for security compliance
-
-### 10.4 Exit Codes (Semantic)
+### 8.2 Semantic Analysis
 
 ```rust
-enum ExitCode {
-    Success = 0,
-    ParseError = 1,
-    TypeError = 2, 
-    RuntimePanic = 3,
-    LintViolations = 4,
-    TestFailures = 5,
-    CompilationError = 6,
-    ConfigError = 7,
-    NetworkError = 8,
+pub struct SemanticAnalyzer {
+    type_checker: TypeChecker,
+    symbol_table: SymbolTable,
+    diagnostics: Vec<Diagnostic>,
+}
+
+impl SemanticAnalyzer {
+    pub fn analyze(&mut self, ast: &Ast) -> Result<TypedAst> {
+        // Phase 1: Name resolution
+        self.resolve_names(ast)?;
+
+        // Phase 2: Type inference
+        let typed_ast = self.type_checker.infer(ast)?;
+
+        // Phase 3: Borrow checking
+        self.check_borrows(&typed_ast)?;
+
+        // Phase 4: Effect checking
+        self.check_effects(&typed_ast)?;
+
+        Ok(typed_ast)
+    }
+}
+```
+
+## 9. Critical Missing Components
+
+### 9.1 Component Inventory
+
+```rust
+pub enum ComponentStatus {
+    Complete,
+    InProgress { completion: u8 },
+    NotStarted,
+    Blocked { by: Vec<String> },
+}
+
+pub struct ComponentTracker {
+    components: HashMap<String, Component>,
+}
+
+pub struct Component {
+    name: String,
+    status: ComponentStatus,
+    priority: Priority,
+    estimated_days: u32,
+    dependencies: Vec<String>,
+}
+
+// Current missing components (CORRECTED)
+impl ComponentTracker {
+    fn critical_missing() -> Vec<Component> {
+        vec![
+            Component {
+                name: "Type Inference Engine".into(),
+                status: InProgress { completion: 40 },
+                priority: P0,
+                estimated_days: 10,
+                dependencies: vec!["Parser".into()],
+            },
+            Component {
+                name: "Ownership Mapping Rules".into(),  // NOT a borrow checker
+                status: NotStarted,
+                priority: P0,
+                estimated_days: 5,  // Reduced from 15
+                dependencies: vec!["Type Inference".into()],
+                notes: "Map Ruchy patterns to Rust borrowing rules, not implement checker".into(),
+            },
+            Component {
+                name: "MIR Generation".into(),
+                status: NotStarted,
+                priority: P1,
+                estimated_days: 10,
+                dependencies: vec!["Type Inference".into()],
+            },
+            Component {
+                name: "DataFrame IR Fusion".into(),
+                status: NotStarted,
+                priority: P1,
+                estimated_days: 7,
+                dependencies: vec!["MIR Generation".into()],
+            },
+        ]
+    }
+}
+```
+
+## 10. Binary Architecture
+
+### 10.1 Compilation Pipeline
+
+```rust
+pub struct CompilationPipeline {
+    stages: Vec<Box<dyn CompilationStage>>,
+}
+
+pub trait CompilationStage {
+    fn process(&self, input: CompilerInput) -> Result<CompilerOutput>;
+}
+
+impl CompilationPipeline {
+    pub fn standard() -> Self {
+        CompilationPipeline {
+            stages: vec![
+                Box::new(Lexer),
+                Box::new(Parser),
+                Box::new(Desugarer),
+                Box::new(TypeChecker),
+                Box::new(BorrowChecker),
+                Box::new(MirGenerator),
+                Box::new(Optimizer),
+                Box::new(RustCodeGen),
+                Box::new(RustCompiler),
+            ],
+        }
+    }
+
+    pub fn compile(&self, source: &str) -> Result<Binary> {
+        let mut output = CompilerInput::Source(source.to_string());
+
+        for stage in &self.stages {
+            output = stage.process(output)?;
+        }
+
+        match output {
+            CompilerOutput::Binary(bin) => Ok(bin),
+            _ => Err(Error::InvalidPipeline),
+        }
+    }
+}
+```
+
+### 10.2 Binary Format
+
+```rust
+pub struct RuchyBinary {
+    magic: [u8; 4],  // b"RCHY"
+    version: Version,
+    metadata: Metadata,
+
+    // Sections
+    code: Vec<u8>,
+    data: Vec<u8>,
+    symbols: SymbolTable,
+    debug_info: Option<DebugInfo>,
+
+    // Embedded runtime (if standalone)
+    runtime: Option<EmbeddedRuntime>,
+}
+
+impl RuchyBinary {
+    pub fn write(&self, path: &Path) -> Result<()> {
+        let mut file = File::create(path)?;
+
+        // Write header
+        file.write_all(&self.magic)?;
+        file.write_all(&self.version.to_bytes())?;
+
+        // Write sections with alignment
+        self.write_section(&mut file, "CODE", &self.code)?;
+        self.write_section(&mut file, "DATA", &self.data)?;
+        self.write_section(&mut file, "SYMB", &self.symbols.to_bytes())?;
+
+        if let Some(debug) = &self.debug_info {
+            self.write_section(&mut file, "DBUG", &debug.to_bytes())?;
+        }
+
+        Ok(())
+    }
 }
 ```
 
 ## 11. Edge Cases Specification
 
-### 11.1 Module Resolution Algorithm
-- Path-based resolution with precedence rules
-- URL import caching and integrity verification
-- Circular dependency detection and handling
-- Version compatibility checking
+### 11.1 Parser Edge Cases
 
-### 11.2 Ownership Transfer Rules
-- Move semantics by default
-- Explicit copy annotations
-- Reference borrowing patterns
-- Lifetime elision rules
+```rust
+#[cfg(test)]
+mod edge_case_tests {
+    #[test]
+    fn test_unicode_identifiers() {
+        let source = "let 你好 = 42";
+        assert!(parse(source).is_ok());
+    }
+    
+    #[test]
+    fn test_nested_string_interpolation() {
+        let source = r#""outer {"{inner}"} text""#;
+        let ast = parse(source).unwrap();
+        assert_matches!(ast, Expr::String { parts, .. } if parts.len() == 3);
+    }
+    
+    #[test]
+    fn test_pipeline_precedence() {
+        let source = "1 + 2 |> f |> g * 3";
+        // Should parse as: (g(f(1 + 2))) * 3
+        let ast = parse(source).unwrap();
+        assert_correct_precedence(ast);
+    }
+    
+    #[test]
+    fn test_actor_message_pattern_exhaustiveness() {
+        let source = r#"
+            actor Counter {
+                receive {
+                    Inc => count += 1,
+                    Dec => count -= 1
+                    // Missing Get case - should warn
+                }
+            }
+        "#;
+        let diagnostics = analyze(source);
+        assert!(diagnostics.has_warning("Non-exhaustive patterns"));
+    }
+}
+```
 
-### 11.3 Effect Polymorphism
-- Effect inference across function boundaries
-- Handler composition and nesting
-- Effect masking and visibility
-- Performance optimization for pure code
+### 11.2 Type System Edge Cases
 
-### 11.4 Trait Resolution
-- Coherence rules preventing conflicts
-- Orphan rules for external implementations
-- Higher-ranked trait bounds
-- Associated type projection
+```rust
+// Variance edge cases
+trait Container<T> {
+    fn put(&mut self, item: T);
+    fn get(&self) -> &T;
+}
+
+// Lifetime edge cases
+fun complex_lifetimes<'a, 'b>(
+    x: &'a str,
+    y: &'b str
+) -> &'a str where 'b: 'a {
+    if x.len() > y.len() { x } else { y }
+}
+
+// Higher-kinded types (future)
+trait Functor<F<_>> {
+    fun map<A, B>(fa: F<A>, f: fun(A) -> B) -> F<B>
+}
+```
 
 ## 12. REPL Testing Specification
 
-### 12.1 Testing Strategies (11 complementary approaches)
+### 12.1 Interactive Testing Framework
 
-1. **Property-Based Testing**
-   - QuickCheck-style for parser
-   - Shrinking for minimal failing cases
-   - Generator composition
+```rust
+pub struct ReplTester {
+    repl: Repl,
+    transcript: Vec<TestStep>,
+}
 
-2. **State Machine Testing** 
-   - REPL session as state machine
-   - Property testing of state transitions
-   - Invariant verification
+pub struct TestStep {
+    input: String,
+    expected_output: String,
+    expected_state: Option<HashMap<String, Value>>,
+}
 
-3. **Differential Testing**
-   - Compare against reference implementations
-   - Cross-validate with Rust behavior
-   - Consistency across execution modes
+impl ReplTester {
+    pub fn test_transcript(&mut self, script: &str) -> TestResult {
+        let steps = self.parse_transcript(script)?;
 
-4. **Incremental Compilation Fuzzing**
-   - Random edit sequences
-   - Cache invalidation testing
-   - Performance regression detection
+        for step in steps {
+            let output = self.repl.eval(&step.input)?;
 
-5. **Memory Safety Validation**
-   - AddressSanitizer integration
-   - Leak detection for long sessions
-   - Stack overflow protection
+            assert_eq!(output, step.expected_output);
 
-### 12.2 Performance Testing
-- Latency distribution analysis
-- Memory usage profiling
-- Scalability testing to large codebases
-- Regression test automation
+            if let Some(state) = step.expected_state {
+                for (var, expected) in state {
+                    let actual = self.repl.get_binding(&var)?;
+                    assert_eq!(actual, expected);
+                }
+            }
+        }
+
+        TestResult::Pass
+    }
+}
+```
+
+### 12.2 Property-Based REPL Tests
+
+```rust
+#[proptest]
+fn repl_doesnt_crash(input: String) {
+    let mut repl = Repl::new();
+    let _ = repl.eval(&input); // Must not panic
+}
+
+#[proptest]
+fn repl_state_consistency(
+    commands: Vec<ReplCommand>
+) {
+    let mut repl = Repl::new();
+    let mut model = ReplModel::new();
+
+    for cmd in commands {
+        let repl_result = repl.execute(&cmd);
+        let model_result = model.execute(&cmd);
+
+        prop_assert_eq!(repl_result, model_result);
+    }
+}
+```
 
 ## 13. Docker Specification
 
-### 13.1 Multi-Stage Build (6 stages)
+### 13.1 Container Architecture
 
 ```dockerfile
-# Stage 1: Base dependencies
-FROM rust:1.70-alpine AS base
-RUN apk add --no-cache musl-dev
+# Multi-stage build for minimal size
+FROM rust:1.75 as builder
 
-# Stage 2: Dependencies  
-FROM base AS deps
+WORKDIR /usr/src/ruchy
 COPY Cargo.toml Cargo.lock ./
-RUN cargo fetch
-
-# Stage 3: Build
-FROM deps AS build
 COPY src ./src
-RUN cargo build --release
 
-# Stage 4: WASM target
-FROM build AS wasm
-RUN cargo build --target wasm32-wasi --release
+# Build with optimizations
+RUN cargo build --release --features "docker"
 
-# Stage 5: Runtime
-FROM alpine:3.18 AS runtime
-COPY --from=build /target/release/ruchy /usr/local/bin/
-RUN adduser -D ruchy
+# Runtime stage
+FROM debian:bookworm-slim
 
-# Stage 6: WASM runtime
-FROM scratch AS wasm-runtime
-COPY --from=wasm /target/wasm32-wasi/release/ruchy.wasm /
+RUN apt-get update && apt-get install -y \
+    libssl3 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/src/ruchy/target/release/ruchy /usr/local/bin/
+
+# Create non-root user
+RUN useradd -m -u 1000 ruchy
+USER ruchy
+
+ENTRYPOINT ["ruchy"]
+CMD ["--repl"]
 ```
 
-### 13.2 Performance Targets
-- **WASM bundle size**: <410KB
-- **Container startup**: <100ms
-- **Memory usage**: <10MB base
-- **Security**: Rootless execution by default
+### 13.2 Docker Compose for Development
+
+```yaml
+version: '3.8'
+
+services:
+  ruchy-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./src:/workspace/src
+      - ./examples:/workspace/examples
+      - cargo-cache:/usr/local/cargo
+    environment:
+      - RUST_LOG=debug
+      - RUCHY_MODE=development
+    ports:
+      - "8080:8080"  # LSP server
+      - "9229:9229"  # Debug port
+    
+  ruchy-jupyter:
+    image: ruchy/jupyter:latest
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+
+volumes:
+  cargo-cache:
+```
 
 ## 14. Cargo Integration
 
 ### 14.1 Build Script Integration
 
-```toml
-# User's Cargo.toml
-[build-dependencies]
-ruchy = "1.0"
+```rust
+// build.rs
+use ruchy_compiler::Transpiler;
 
-# build.rs - Auto-generated or minimal boilerplate
 fn main() {
-    ruchy::build::transpile_project().unwrap();
+    println!("cargo:rerun-if-changed=src/");
+
+    let ruchy_files = glob::glob("src/**/*.ruchy")
+        .expect("Failed to read glob pattern");
+
+    let transpiler = Transpiler::new();
+
+    for entry in ruchy_files {
+        let path = entry.unwrap();
+        let source = std::fs::read_to_string(&path).unwrap();
+
+        let rust_code = transpiler.transpile(&source).unwrap();
+
+        let out_path = path.with_extension("rs");
+        std::fs::write(out_path, rust_code).unwrap();
+    }
 }
 ```
 
-### 14.2 Module Resolution Strategy
+### 14.2 Cargo.toml Configuration
 
-```
-project/
-├── Cargo.toml
-├── src/
-│   ├── lib.rs           # Standard entry point
-│   ├── algo.ruchy       # Ruchy source
-│   └── data/
-│       ├── mod.ruchy    # Module definition
-│       └── process.ruchy
-└── target/
-    └── ruchy-gen/       # Generated Rust (gitignored)
-        ├── algo.rs
-        └── data/
-            ├── mod.rs   # Generated module root
-            └── process.rs
-```
-
-### 14.3 IDE Integration
-
-Build script generates virtual `Cargo.toml` for rust-analyzer:
 ```toml
-# target/ruchy-gen/Cargo.toml (auto-generated)
 [package]
-name = "ruchy-gen"
-version = "0.0.0"
+name = "my-ruchy-project"
+version = "0.1.0"
+edition = "2021"
 
-[lib]
-path = "lib.rs"  # Root module with #[path] attributes
+[dependencies]
+ruchy-runtime = "1.0"
+polars = { version = "0.35", features = ["lazy"] }
+tokio = { version = "1.35", features = ["full"] }
+
+[build-dependencies]
+ruchy-compiler = "1.0"
+glob = "0.3"
+
+[features]
+default = ["polars-backend"]
+polars-backend = ["ruchy-runtime/polars"]
+ndarray-backend = ["ruchy-runtime/ndarray"]
+
+[[bin]]
+name = "main"
+path = "src/main.ruchy"
 ```
 
 ## 15. Depyler Integration
 
-### 15.1 Bidirectional Transpilation
-- Python → Ruchy → Rust (migration path)
-- Ruchy → Python (scripting interop)
-- Property preservation validation
-- Incremental migration support
+### 15.1 Python Pattern Mapping
 
-### 15.2 Zero-Copy Bridging
-- NumPy arrays to ndarray without copying
-- Polars DataFrame direct sharing
-- Automatic type inference from Python
-- Memory layout compatibility
+```rust
+// LIMITED SCOPE: Common pattern mapping only, not general transpilation
+pub struct DepylerPatternMapper {
+    patterns: HashMap<Pattern, Transform>,
+}
+
+impl DepylerPatternMapper {
+    pub fn new() -> Self {
+        let mut patterns = HashMap::new();
+        
+        // NumPy/Pandas → Polars mappings (~20 patterns)
+        patterns.insert(
+            Pattern::PandasDataFrame,
+            Transform::PolarsDataFrame,
+        );
+        patterns.insert(
+            Pattern::NumpyArray,
+            Transform::PolarsSeries,
+        );
+        patterns.insert(
+            Pattern::PandasGroupBy,
+            Transform::PolarsGroupBy,
+        );
+        
+        // List comprehension → iterator chains
+        patterns.insert(
+            Pattern::ListComp,
+            Transform::IteratorChain,
+        );
+        
+        // Type annotations → Ruchy types
+        patterns.insert(
+            Pattern::TypeHint("List[int]"),
+            Transform::RuchyType("[i32]"),
+        );
+        
+        DepylerPatternMapper { patterns }
+    }
+    
+    pub fn map_snippet(&self, python: &str) -> Option<String> {
+        // Only handles specific patterns, not arbitrary Python
+        for (pattern, transform) in &self.patterns {
+            if pattern.matches(python) {
+                return Some(transform.apply(python));
+            }
+        }
+        None  // Unrecognized pattern
+    }
+}
+
+// NOT a full Python→Ruchy transpiler
+// Just a pattern recognizer for common data science idioms
+```
 
 ## 16. Rust Cargo InterOp
 
-### 16.1 Polyglot Binary Masquerading
+### 16.1 Direct Crate Usage
 
 ```rust
-// Binary serves dual purposes based on invocation
-match std::env::args().nth(0).unwrap() {
-    path if path.ends_with("cargo-ruchy") => cargo_plugin_main(),
-    path if path.ends_with("ruchy") => ruchy_main(),
-    _ => detect_mode_and_run(),
+// No FFI needed - direct Rust crate usage
+import std::collections::HashMap
+import tokio::time::Duration
+import serde::{Serialize, Deserialize}
+import polars::prelude::*
+
+// Use any Rust crate directly
+fun use_external_crate() {
+    let client = reqwest::Client::new()
+    let response = client
+        .get("https://api.example.com/data")
+        .timeout(Duration::from_secs(10))
+        .send()
+        .await?
+    
+    let data: DataFrame = response.json().await?
+    data |> filter(col("value") > 100)
 }
 ```
 
-### 16.2 Module Resolution Hijacking
-- Intercept Rust module resolution
-- Transparently compile .ruchy files
-- Source map preservation
-- Error message translation
+### 16.2 Ruchy as Rust Library
+
+```rust
+// lib.rs - Ruchy code exposed to Rust
+#[ruchy::export]
+fun process_data(df: DataFrame) -> DataFrame {
+df |> filter(col("age") > 18)
+|> groupby("city")
+|> agg([
+col("salary").mean().alias("avg_salary"),
+col("name").count().alias("count")
+])
+}
+
+// Can be used from Rust:
+use my_ruchy_lib::process_data;
+
+fn main() {
+    let df = DataFrame::read_csv("data.csv")?;
+    let result = process_data(df);
+    println!("{}", result);
+}
+```
 
 ## 17. One-Liner and Script Execution
 
 ### 17.1 Command-Line Interface
 
-```bash
-# One-liner execution modes
-ruchy -e 'println("hello")'                    # Direct execution
-ruchy -p 'it.to_uppercase()'                   # Process & print each line
-ruchy -n 'sum += it.parse::<i32>()?'           # Process without printing
-ruchy -f 'it.contains("error")'                # Filter lines
-ruchy -a 'it.split(",")[0]'                    # Accumulate results
-
-# Pipeline composition
-cat data.csv | ruchy -p 'it.split(",")[2]'    # Extract third column
-ls -la | ruchy -f 'it.contains(".rs")'         # Filter Rust files
-seq 1 100 | ruchy -a 'it.parse::<i32>()? * 2' # Double and collect
-```
-
-### 17.2 Auto-Mode Detection Heuristics
-
 ```rust
-enum AutoMode {
-    None,           // -e: Execute as-is
-    Print,          // -p: Auto-print after processing
-    Process,        // -n: Process line-by-line, no print
-    Filter,         // -f: Process and print if truthy
-    Accumulate,     // -a: Collect results into array
+#[derive(Parser)]
+#[command(name = "ruchy")]
+pub struct Cli {
+    /// Execute a one-liner
+    #[arg(short, long)]
+    eval: Option<String>,
+
+    /// Run a script file
+    file: Option<PathBuf>,
+
+    /// Start REPL
+    #[arg(long)]
+    repl: bool,
+
+    /// Compile to binary
+    #[arg(short, long)]
+    compile: bool,
+
+    /// Output path for compilation
+    #[arg(short, long)]
+    output: Option<PathBuf>,
+
+    /// Enable JIT compilation
+    #[arg(long)]
+    jit: bool,
+
+    /// Optimization level (0-3)
+    #[arg(short = 'O', default_value = "2")]
+    opt_level: u8,
 }
 
-impl AutoMode {
-    fn detect_from_code(code: &str) -> Self {
-        // Heuristic detection based on code patterns
-        if code.contains("println!") || code.contains("print!") {
-            AutoMode::None  // Already has explicit output
-        } else if code.ends_with('?') || code.contains("if ") {
-            AutoMode::Filter  // Likely a predicate
-        } else if code.contains("+=") || code.contains("push") {
-            AutoMode::Accumulate  // Building up state
-        } else if code.contains("it.") {
-            AutoMode::Print  // Transform current line
-        } else {
-            AutoMode::Process  // Generic processing
+impl Cli {
+    pub fn execute(self) -> Result<()> {
+        match self {
+            Cli { eval: Some(code), .. } => {
+                // One-liner execution
+                let result = Runtime::eval_one_liner(&code)?;
+                println!("{}", result);
+            }
+            Cli { file: Some(path), compile: true, .. } => {
+                // AOT compilation
+                let binary = Compiler::compile_file(&path)?;
+                binary.write(self.output.unwrap_or("a.out".into()))?;
+            }
+            Cli { file: Some(path), .. } => {
+                // Script execution
+                Runtime::run_script(&path)?;
+            }
+            Cli { repl: true, .. } => {
+                // Interactive REPL
+                Repl::new().run()?;
+            }
+            _ => {
+                // Default to REPL
+                Repl::new().run()?;
+            }
         }
+        Ok(())
     }
 }
 ```
 
-### 17.3 Implicit Variable Scoping Rules
+### 17.2 Script Examples
 
 ```rust
-pub struct ImplicitContext {
-    // Line-scoped (reset each line)
-    it: String,           // Current line from stdin
-    fields: Vec<String>,   // it.split_whitespace()
-    f1, f2, f3: String,    // First three fields
-    captures: Vec<String>, // From last regex match
-    
-    // Session-scoped (persist across lines)
-    sum: Dynamic,         // Running sum (auto-typed)
-    count: usize,         // Line counter (1-indexed)
-    acc: Vec<Dynamic>,    // Accumulator array
-    
-    // Context-scoped (available based on mode)
-    filename: Option<String>,  // Available in file processing
-    line_num: usize,          // 1-indexed line number
-    
-    // Regex capture groups (dynamic)
-    captures: HashMap<String, String>,  // Named captures
-}
+#!/usr/bin/env ruchy
 
-impl ImplicitContext {
-    fn update_line(&mut self, line: String) {
-        self.it = line.clone();
-        self.count += 1;
-        self.line_num += 1;
-        
-        // Auto-split into fields
-        self.fields = line.split_whitespace().map(String::from).collect();
-        
-        // Populate f1, f2, f3 convenience variables
-        self.f1 = self.fields.get(0).cloned().unwrap_or_default();
-        self.f2 = self.fields.get(1).cloned().unwrap_or_default();
-        self.f3 = self.fields.get(2).cloned().unwrap_or_default();
-    }
-    
-    fn apply_regex(&mut self, pattern: &Regex) {
-        if let Some(caps) = pattern.captures(&self.it) {
-            self.captures = caps.iter()
-                .enumerate()
-                .filter_map(|(i, m)| m.map(|m| (i.to_string(), m.as_str().to_string())))
-                .collect();
-        }
-    }
+// Data analysis script
+import polars::prelude::*
+import std::env
+
+fun main() {
+let args = env::args()
+let file = args.get(1).expect("Usage: script.ruchy <file>")
+
+let df = DataFrame::read_csv(file)?
+
+// Analysis pipeline
+let result = df
+|> filter(col("date") >= "2024-01-01")
+|> groupby("category")
+|> agg([
+col("amount").sum().alias("total"),
+col("amount").mean().alias("average"),
+col("id").count().alias("count")
+])
+|> sort("total", descending=true)
+
+println!("Analysis Results:")
+println!("{}", result)
+
+// Export to multiple formats
+result.write_csv("output.csv")?
+result.write_parquet("output.parquet")?
+result.write_json("output.json")?
 }
 ```
-
-### 17.4 Pipeline Composition Semantics
-
-```rust
-// Pipeline composition follows these rules:
-// 1. Left-to-right evaluation
-// 2. Implicit line iteration
-// 3. Type preservation where possible
-// 4. Error propagation via ?
-
-impl PipelineComposer {
-    fn compose_commands(commands: &[String]) -> Result<ComposedPipeline> {
-        let mut pipeline = ComposedPipeline::new();
-        
-        for (i, cmd) in commands.iter().enumerate() {
-            let stage = PipelineStage {
-                command: cmd.clone(),
-                input_type: if i == 0 { InputType::Stdin } else { InputType::Previous },
-                output_type: OutputType::infer_from_command(cmd),
-                error_handling: ErrorHandling::Propagate,
-            };
-            pipeline.add_stage(stage);
-        }
-        
-        // Optimize pipeline for zero-copy where possible
-        pipeline.optimize_transfers();
-        Ok(pipeline)
-    }
-}
-
-// Example optimizations:
-// cat file.csv | ruchy -p 'parse_csv(it)' | ruchy -f 'it.len() > 3'
-// Optimizes to: ruchy -e 'process_csv_filter("file.csv", |row| row.len() > 3)'
-```
-
-### 17.5 Automatic Imports
-
-```rust
-// Always available in one-liner mode
-implicit_prelude! {
-    use std::io::{self, BufRead, Write};
-    use std::fs;
-    use std::collections::{HashMap, HashSet};
-    use std::path::{Path, PathBuf};
-    use polars::prelude::*;
-    use regex::Regex;
-    use serde::{Serialize, Deserialize};
-    use serde_json;
-    
-    // Mathematical functions
-    use std::f64::consts::{PI, E, TAU};
-    
-    // Common utility functions
-    fn parse_csv(line: &str) -> Vec<String> {
-        line.split(',').map(|s| s.trim().to_string()).collect()
-    }
-    
-    fn parse_tsv(line: &str) -> Vec<String> {
-        line.split('\t').map(|s| s.trim().to_string()).collect()
-    }
-    
-    // Regex shortcuts
-    static COMMON_PATTERNS: Lazy<HashMap<&str, Regex>> = Lazy::new(|| {
-        let mut map = HashMap::new();
-        map.insert("email", Regex::new(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b").unwrap());
-        map.insert("url", Regex::new(r"https?://[^\s]+").unwrap());
-        map.insert("number", Regex::new(r"-?\d+\.?\d*").unwrap());
-        map.insert("word", Regex::new(r"\b\w+\b").unwrap());
-        map
-    });
-}
 
 ## 18. Disassembly Specification
 
@@ -911,829 +1577,562 @@ pub trait Disassembler<Input> {
     fn disassemble(&self, input: &Input) -> Self::Output;
 }
 
-// Primary representations (canonical)
-impl Disassembler<TypedAst> for JsonAstDisassembler { ... }
-impl Disassembler<TypedAst> for MirDisassembler { ... }
-impl Disassembler<TypedAst> for RustDisassembler { ... }
-impl Disassembler<TypedAst> for BytecodeDisassembler { ... }
-impl Disassembler<TypedAst> for SsaDisassembler { ... }
+// Primary representations
+impl Disassembler<TypedAst> for JsonAstDisassembler {
+    fn disassemble(&self, ast: &TypedAst) -> String {
+        serde_json::to_string_pretty(ast).unwrap()
+    }
+}
 
-// Derived representations (computed from primary)
-impl Disassembler<JsonAst> for AnnotatedAstDisassembler { ... }
-impl Disassembler<SymbolTable> for MermaidDepsDisassembler { ... }
-impl Disassembler<MirGraph> for OptimizationReportDisassembler { ... }
+impl Disassembler<TypedAst> for BytecodeDisassembler {
+    fn disassemble(&self, ast: &TypedAst) -> Vec<Instruction> {
+        self.compile_to_bytecode(ast)
+    }
+}
+
+impl Disassembler<TypedAst> for RustDisassembler {
+    fn disassemble(&self, ast: &TypedAst) -> String {
+        let rust_ast = self.transform_to_rust(ast);
+        quote!(#rust_ast).to_string()
+    }
+}
 ```
 
-### 18.2 Bytecode Representation Details
+### 18.2 Bytecode Representation
 
 ```rust
-// Stack-based bytecode for interpretation
 #[derive(Debug, Clone)]
 pub enum Instruction {
-    // Literals
-    LoadInt(i64),
-    LoadFloat(f64),
-    LoadString(StringId),
-    LoadBool(bool),
-    
     // Stack operations
-    Dup,              // Duplicate top of stack
-    Pop,              // Remove top of stack
-    Swap,             // Swap top two stack items
-    
+    Push(Value),
+    Pop,
+    Dup,
+    Swap,
+
     // Arithmetic
     Add, Sub, Mul, Div, Mod, Pow,
-    
+
     // Comparison
     Eq, Ne, Lt, Le, Gt, Ge,
-    
-    // Logical
-    And, Or, Not,
-    
+
     // Control flow
     Jump(Label),
     JumpIf(Label),
     JumpIfNot(Label),
-    Call(FunctionId, u8),  // function_id, arg_count
+    Call(FunctionId, u8),
     Return,
-    
-    // Variables
-    LoadLocal(LocalId),
-    StoreLocal(LocalId),
-    LoadGlobal(GlobalId),
-    StoreGlobal(GlobalId),
-    
-    // Pattern matching
-    MatchStart,
-    MatchPattern(PatternId),
-    MatchEnd,
-    
-    // DataFrame operations (specialized)
-    DfFilter(ExprId),
-    DfGroupBy(ColumnId),
-    DfAgg(AggOp, ColumnId),
-    DfSort(ColumnId, bool),  // column, descending
-    
-    // Actor operations
-    ActorSend(ActorId),
-    ActorAsk(ActorId),
-    
-    // Debug information
-    DebugLine(u32),
-    DebugColumn(u32),
-}
 
-// Bytecode function representation
-#[derive(Debug)]
-pub struct BytecodeFunction {
-    name: String,
-    params: Vec<LocalId>,
-    locals: Vec<Type>,
-    instructions: Vec<Instruction>,
-    labels: HashMap<Label, usize>,  // label -> instruction_index
-    debug_info: Vec<DebugInfo>,
-}
-
-// Bytecode optimization passes
-impl BytecodeOptimizer {
-    fn constant_fold(&mut self, function: &mut BytecodeFunction) {
-        // Fold constant expressions at bytecode level
-        // LoadInt(2), LoadInt(3), Add -> LoadInt(5)
-    }
-    
-    fn dead_code_elimination(&mut self, function: &mut BytecodeFunction) {
-        // Remove unreachable instructions
-        // Remove unused local variables
-    }
-    
-    fn peephole_optimize(&mut self, function: &mut BytecodeFunction) {
-        // Pattern-based local optimizations
-        // LoadLocal(x), LoadLocal(x) -> LoadLocal(x), Dup
-    }
-}
-```
-
-### 18.3 SSA Form Generation
-
-```rust
-// Static Single Assignment intermediate representation
-#[derive(Debug, Clone)]
-pub struct SsaFunction {
-    name: String,
-    params: Vec<SsaValue>,
-    blocks: Vec<BasicBlock>,
-    value_table: HashMap<SsaValue, SsaInstruction>,
-}
-
-#[derive(Debug, Clone)]
-pub struct BasicBlock {
-    id: BlockId,
-    instructions: Vec<SsaInstruction>,
-    terminator: Terminator,
-    predecessors: Vec<BlockId>,
-    successors: Vec<BlockId>,
-}
-
-#[derive(Debug, Clone)]
-pub enum SsaInstruction {
-    // Arithmetic
-    Add(SsaValue, SsaValue),
-    Sub(SsaValue, SsaValue),
-    Mul(SsaValue, SsaValue),
-    Div(SsaValue, SsaValue),
-    
     // Memory
-    Load(Address),
-    Store(Address, SsaValue),
-    
-    // Phi functions (for control flow joins)
-    Phi(Vec<(SsaValue, BlockId)>),
-    
-    // Function calls
-    Call(FunctionId, Vec<SsaValue>),
-    
-    // DataFrame operations (high-level)
-    DfOp(DataFrameOp, Vec<SsaValue>),
-    
-    // Type conversions
-    Cast(SsaValue, Type),
-    
-    // Literals
-    Constant(Literal),
+    Load(LocalId),
+    Store(LocalId),
+    LoadField(FieldId),
+    StoreField(FieldId),
+
+    // DataFrame operations
+    DfCreate,
+    DfFilter,
+    DfSelect,
+    DfGroupBy,
+    DfAgg,
+    DfSort,
 }
 
-#[derive(Debug, Clone)]
-pub enum Terminator {
-    Return(Option<SsaValue>),
-    Jump(BlockId),
-    Branch(SsaValue, BlockId, BlockId),  // condition, true_block, false_block
-    Switch(SsaValue, Vec<(Literal, BlockId)>, BlockId),  // value, cases, default
-}
-
-// SSA construction algorithm
-impl SsaBuilder {
-    fn build_ssa(&mut self, ast: &TypedAst) -> SsaFunction {
-        // 1. Convert to basic blocks
-        let blocks = self.build_basic_blocks(ast);
-        
-        // 2. Insert phi functions
-        self.insert_phi_functions(&mut blocks);
-        
-        // 3. Rename variables to SSA form
-        self.rename_variables(&mut blocks);
-        
-        SsaFunction { blocks, ..Default::default() }
-    }
-    
-    fn insert_phi_functions(&mut self, blocks: &mut [BasicBlock]) {
-        // Compute dominance frontier
-        let dom_frontier = self.compute_dominance_frontier(blocks);
-        
-        // Insert phi functions for each variable at join points
-        for (var, defs) in &self.variable_definitions {
-            let mut work_list = defs.clone();
-            let mut processed = HashSet::new();
-            
-            while let Some(block) = work_list.pop() {
-                for frontier_block in &dom_frontier[&block] {
-                    if !processed.contains(frontier_block) {
-                        blocks[*frontier_block].insert_phi(*var);
-                        processed.insert(*frontier_block);
-                        work_list.push(*frontier_block);
-                    }
-                }
-            }
-        }
-    }
-}
-```
-
-### 18.4 Debug Symbol Preservation
-
-```rust
-// Debug information embedded in all representations
-#[derive(Debug, Clone)]
-pub struct DebugInfo {
-    source_file: PathBuf,
-    line_start: u32,
-    line_end: u32,
-    column_start: u32,
-    column_end: u32,
-    original_text: String,
-    
-    // Additional context
-    function_name: Option<String>,
-    variable_names: HashMap<LocalId, String>,
-    type_annotations: HashMap<SsaValue, Type>,
-}
-
-// Source map generation for transpiled Rust
-#[derive(Debug)]
-pub struct SourceMap {
-    version: u8,
-    sources: Vec<PathBuf>,
-    source_root: Option<PathBuf>,
-    names: Vec<String>,
-    mappings: String,  // VLQ-encoded mappings
-}
-
-impl SourceMapGenerator {
-    fn generate(&self, ruchy_ast: &TypedAst, rust_tokens: &TokenStream) -> SourceMap {
-        let mut mappings = Vec::new();
-        
-        // Map each Rust token back to original Ruchy source
-        for (rust_span, ruchy_span) in self.span_mappings.iter() {
-            mappings.push(SourceMapping {
-                generated_line: rust_span.start().line,
-                generated_column: rust_span.start().column,
-                source_index: 0,  // Assuming single source file
-                original_line: ruchy_span.start,
-                original_column: ruchy_span.end,
-                name_index: None,
-            });
-        }
-        
-        SourceMap {
-            version: 3,
-            sources: vec![self.source_file.clone()],
-            source_root: None,
-            names: self.symbol_names.clone(),
-            mappings: self.encode_vlq(&mappings),
-        }
-    }
-    
-    fn encode_vlq(&self, mappings: &[SourceMapping]) -> String {
-        // Variable-length quantity encoding for compact representation
-        // Used by browser dev tools and IDEs
-        let mut result = String::new();
-        let mut prev_generated_column = 0;
-        let mut prev_original_line = 0;
-        let mut prev_original_column = 0;
-        
-        for mapping in mappings {
-            // Encode relative offsets for compression
-            result.push_str(&self.vlq_encode(mapping.generated_column as i32 - prev_generated_column));
-            result.push_str(&self.vlq_encode(mapping.original_line as i32 - prev_original_line));
-            result.push_str(&self.vlq_encode(mapping.original_column as i32 - prev_original_column));
-            
-            prev_generated_column = mapping.generated_column as i32;
-            prev_original_line = mapping.original_line as i32;
-            prev_original_column = mapping.original_column as i32;
-        }
-        
-        result
-    }
-}
-
-// Debug symbol table for runtime debugging
-#[derive(Debug)]
-pub struct SymbolTable {
-    functions: HashMap<FunctionId, FunctionSymbol>,
-    variables: HashMap<VariableId, VariableSymbol>,
-    types: HashMap<TypeId, TypeSymbol>,
-    source_locations: HashMap<InstructionId, SourceLocation>,
-}
-
-#[derive(Debug)]
-pub struct FunctionSymbol {
-    name: String,
-    mangled_name: String,
-    parameters: Vec<ParameterSymbol>,
-    return_type: Type,
-    source_location: SourceLocation,
-    local_variables: Vec<VariableSymbol>,
-}
-```
-
-### 18.5 Format Hierarchy
-
-| Format | Purpose | Consumer | Stability |
-|--------|---------|----------|-----------|
-| `json-ast` | Canonical AST | MCP agents, tooling | Stable v1.0 |
-| `symbol-table` | Entity index | Static analyzers | Stable v1.0 |
-| `bytecode` | Interpretation | REPL, debugging | Stable v1.0 |
-| `ssa` | Optimization analysis | Compiler developers | Internal |
-| `mir` | Mid-level IR | Optimization passes | Internal |
-| `rust` | Transpilation target | Build systems | Stable |
-| `asm` | Performance verification | Systems programmers | Platform-specific |
-| `source-map` | Debug mapping | IDEs, debuggers | Stable v1.0 |
-
-### 18.6 Content-Based IDs
-
-```typescript
-interface AstNode {
-    id: string;           // SHA256(kind + span + children_ids)[:8]
-    kind: NodeKind;       // Discriminant
-    span: [number, number];
-    ty?: Type;           // Present on Expression nodes post-inference
-    complexity?: {       // For function nodes
-        cyclomatic: number;
-        cognitive: number;
-    };
-    debug_info?: DebugInfo;  // Source location preservation
-}
-
-// ID generation algorithm ensures deterministic, content-based identifiers
-// that remain stable across compilations of identical code
-impl AstNode {
-    fn compute_id(&self) -> String {
-        let mut hasher = Sha256::new();
-        
-        // Hash structural content
-        hasher.update(self.kind.discriminant().to_le_bytes());
-        hasher.update(self.span.start.to_le_bytes());
-        hasher.update(self.span.end.to_le_bytes());
-        
-        // Hash children IDs for compositional stability
-        for child in &self.children() {
-            hasher.update(child.id.as_bytes());
-        }
-        
-        // Take first 8 hex characters for compact representation
-        format!("{:08x}", u32::from_be_bytes(hasher.finalize()[..4].try_into().unwrap()))
-    }
+pub fn disassemble_bytecode(instructions: &[Instruction]) -> String {
+    instructions.iter().enumerate()
+        .map(|(i, inst)| format!("{:04}: {:?}", i, inst))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 ```
 
 ## 19. Advanced Mathematical REPL
 
-### 19.1 Tiered Compilation Architecture
+### 19.1 Mathematical Operations
 
 ```rust
-enum ExecutionMode {
-    Interpret,           // First 2 evaluations
-    JitCompile,         // 3+ evaluations (via Cranelift)
-    AotTranspile,       // Persistent definitions
+pub struct MathRepl {
+    base_repl: Repl,
+    math_engine: MathEngine,
+    plot_backend: PlotBackend,
 }
 
-// Three-tier memory model
-enum ValueStorage {
-    Stack(StackValue),      // Primitives, small arrays (<256 bytes)
-    Arena(ArenaRef),        // Session-scoped allocations
-    Persistent(Arc<Value>), // Cross-session, reference-counted
-}
-```
-
-### 19.2 DataFrame Engine (Polars Integration)
-
-```rust
-// Zero-copy transpilation to Polars LazyFrame
-df = read_csv("data.csv")
-  |> filter(col("value") > threshold)
-  |> groupby("category")
-  |> agg([
-      mean("x").alias("x_mean"),
-      std("x").alias("x_std"),
-      quantile("x", 0.95).alias("x_p95")
-  ])
-  |> sort("x_mean", descending=true)
-
-// Transpiles directly to:
-LazyFrame::scan_csv("data.csv", Default::default())
-    .filter(col("value").gt(threshold))
-    .groupby([col("category")])
-    .agg([
-        col("x").mean().alias("x_mean"),
-        col("x").std().alias("x_std"),
-        col("x").quantile(0.95, QuantileInterpolOptions::Linear).alias("x_p95")
-    ])
-    .sort("x_mean", SortOptions { descending: true, ..Default::default() })
-```
-
-### 19.3 Linear Algebra Kernel
-
-```rust
-// Broadcasting semantics (NumPy-compatible)
-A = rand(1000, 1000)
-b = ones(1000, 1)
-c = A @ b  // Matrix multiplication
-d = A .* b  // Element-wise with broadcasting
-
-// Solver syntax (MATLAB-compatible)
-x = A \ b  // Solve Ax = b via LU decomposition
-[U, S, V] = svd(A)  // Destructuring assignment
-
-// Automatic backend selection
-@geometric {
-    // Uses nalgebra for better performance
-    rotation = Rotation3::from_euler_angles(π/4, 0, π/2)
-    transformed = rotation * point
-}
-```
-
-### 19.4 Symbolic Mathematics (Constrained Scope)
-
-```rust
-// Core expression tree - simplified for maintainability (10K LOC max)
-enum SymExpr {
-    Var(Symbol),
-    Num(f64),
-    BinOp { op: Op, lhs: Box<SymExpr>, rhs: Box<SymExpr> },
-    UnOp { op: UnaryOp, arg: Box<SymExpr> },
-    Call { func: BuiltinFunc, args: Vec<SymExpr> },
-}
-
-// Pattern-based differentiation rules only
-impl SymExpr {
-    fn diff(&self, var: Symbol) -> SymExpr {
-        match self {
-            SymExpr::Var(s) if *s == var => SymExpr::Num(1.0),
-            SymExpr::BinOp { op: Op::Add, lhs, rhs } => 
-                lhs.diff(var) + rhs.diff(var),
-            SymExpr::BinOp { op: Op::Mul, lhs, rhs } => 
-                lhs.diff(var) * rhs.clone() + lhs.clone() * rhs.diff(var),
-            // 20 core rules cover 95% of use cases
-            _ => SymExpr::Num(0.0),
+impl MathRepl {
+    pub fn eval_math(&mut self, expr: &str) -> Result<MathResult> {
+        let parsed = self.parse_math_expr(expr)?;
+        
+        match parsed {
+            MathExpr::Symbolic(sym) => {
+                // Symbolic computation
+                let simplified = self.math_engine.simplify(sym)?;
+                Ok(MathResult::Symbolic(simplified))
+            }
+            MathExpr::Statistical(formula) => {
+                // Statistical modeling (R-like)
+                let model = self.fit_model(formula)?;
+                Ok(MathResult::Model(model))
+            }
+            MathExpr::LinearAlgebra(matrix_op) => {
+                // Matrix operations
+                let result = self.compute_matrix(matrix_op)?;
+                Ok(MathResult::Matrix(result))
+            }
+            MathExpr::Plot(plot_spec) => {
+                // Visualization
+                let chart = self.plot_backend.render(plot_spec)?;
+                Ok(MathResult::Plot(chart))
+            }
         }
     }
 }
-```
 
-### 19.5 Statistical Computing
-
-```rust
-// Formula parser generates design matrices directly
-struct Formula {
-    response: Term,
-    predictors: Vec<Term>,
-    contrasts: ContrastScheme,
-}
-
-impl Formula {
-    fn parse(input: &str) -> Result<Self> {
-        // "y ~ x1 + x2 + x1:x2" -> 
-        // X = [1, x1, x2, x1*x2] design matrix
-        // Handles categorical encoding automatically
-    }
-    
-    fn to_design_matrix(&self, data: &DataFrame) -> (Array2<f64>, Array1<f64>) {
-        // Efficient construction via ndarray views
-        // Zero-copy where possible
+// Mathematical syntax extensions
+impl MathRepl {
+    fn parse_special_syntax(&self, input: &str) -> Option<MathExpr> {
+        // LaTeX-like syntax
+        if input.starts_with("\\") {
+            return Some(self.parse_latex(input));
+        }
+        
+        // R-like formula syntax
+        if input.contains("~") {
+            return Some(self.parse_formula(input));
+        }
+        
+        // Matrix literal
+        if input.starts_with("[[") {
+            return Some(self.parse_matrix(input));
+        }
+        
+        None
     }
 }
-
-// QR decomposition for numerical stability
-fn lm(formula: Formula, data: DataFrame) -> LinearModel {
-    let (X, y) = formula.to_design_matrix(&data);
-    let qr = X.qr().unwrap();
-    let coefficients = qr.solve(&y).unwrap();
-    LinearModel::from_qr(qr, coefficients)
-}
 ```
 
-### 19.6 Visualization System
+### 19.2 Statistical Computing
 
 ```rust
-// Automatic backend selection
-plot(sin, 0..2π)  // Unicode in terminal, SVG in notebook
+// Built-in statistical functions
+fun lm(formula: Formula, data: DataFrame) -> LinearModel {
+// Linear regression
+let model = LinearRegression::fit(formula, data)?
+model
+}
 
-// Grammar of graphics (ggplot2-inspired)
-g = ggplot(df, aes(x="height", y="weight"))
-  |> geom_point(alpha=0.5)
-  |> geom_smooth(method="lm")
-  |> facet_wrap("species")
-  |> theme_minimal()
+fun glm(formula: Formula, data: DataFrame, family: Family) -> GLM {
+// Generalized linear models
+let model = GeneralizedLinearModel::fit(formula, data, family)?
+model
+}
 
-// Terminal rendering capabilities
-// - Sixel: Full raster graphics
-// - Unicode: Box drawing, blocks  
-// - ANSI: Colors only
-// - ASCII: Pure text
+fun anova(model: LinearModel) -> AnovaTable {
+// Analysis of variance
+model.anova()
+}
+
+// Distribution functions
+fun rnorm(n: i32, mean: f64 = 0.0, sd: f64 = 1.0) -> Series {
+Normal::new(mean, sd).sample(n)
+}
+
+fun qnorm(p: f64, mean: f64 = 0.0, sd: f64 = 1.0) -> f64 {
+Normal::new(mean, sd).quantile(p)
+}
 ```
-
-### 19.7 Performance Targets
-
-| Operation | Target | Implementation |
-|-----------|--------|----------------|
-| Cold startup | <10ms | Bytecode cache |
-| Warm startup | <2ms | Memory-mapped state |
-| Expression eval | <1ms | Cranelift JIT |
-| DataFrame filter | <10ms | Polars LazyFrame |
-| Matrix multiply | <5ms | BLAS integration |
-| Plot render | <50ms | Unicode/Sixel |
-| Memory overhead | <50MB | Arena allocation |
 
 ## 20. Quality Gates
 
-### 20.1 Code Quality Standards
-
-- **Zero clippy warnings** allowed (`-D warnings`)
-- **Maximum function complexity**: 10 (cognitive complexity)
-- **Maximum file size**: 500 lines
-- **Zero SATD** (TODO/FIXME) comments
-- **100% test pass rate** required
-- **Minimum 80% code coverage**
-
-### 20.2 Toyota Way Quality Enforcement
+### 20.1 Quality Metrics and Enforcement
 
 ```rust
-struct QualityMetrics {
-    cyclomatic_complexity: u32,      // Max 10
-    cognitive_complexity: u32,       // Max 15  
-    halstead_effort: f64,           // Max 5000
-    maintainability_index: f64,     // Min 70
-    test_coverage: f64,             // Min 80%
-    satd_comments: u32,             // Exactly 0
-    mutation_score: f64,            // Min 75%
+pub struct QualityGates {
+    metrics: QualityMetrics,
+    thresholds: QualityThresholds,
 }
 
-impl QualityGate {
-    fn enforce(&self, metrics: &QualityMetrics) -> Result<(), QualityViolation> {
-        if metrics.satd_comments > 0 {
-            return Err(QualityViolation::SATDDetected(metrics.satd_comments));
+#[derive(Default)]
+pub struct QualityMetrics {
+    test_coverage: f64,
+    cyclomatic_complexity: u32,
+    cognitive_complexity: u32,
+    satd_count: usize,  // Self-admitted technical debt
+    clippy_warnings: usize,
+    documentation_coverage: f64,
+    unsafe_blocks: usize,
+}
+
+pub struct QualityThresholds {
+    min_test_coverage: f64,      // 80%
+    max_complexity: u32,          // 10
+    max_satd: usize,             // 0
+    max_clippy_warnings: usize,  // 0
+    min_doc_coverage: f64,        // 90%
+}
+
+impl QualityGates {
+    pub fn check(&self) -> Result<QualityReport> {
+        let mut violations = Vec::new();
+
+        if self.metrics.test_coverage < self.thresholds.min_test_coverage {
+            violations.push(Violation::InsufficientCoverage {
+                current: self.metrics.test_coverage,
+                required: self.thresholds.min_test_coverage,
+            });
         }
-        if metrics.cyclomatic_complexity > 10 {
-            return Err(QualityViolation::ComplexityTooHigh(metrics.cyclomatic_complexity));
+
+        if self.metrics.cyclomatic_complexity > self.thresholds.max_complexity {
+            violations.push(Violation::ExcessiveComplexity {
+                current: self.metrics.cyclomatic_complexity,
+                maximum: self.thresholds.max_complexity,
+            });
         }
-        // ... all quality checks
-        Ok(())
+
+        if self.metrics.satd_count > 0 {
+            violations.push(Violation::TechnicalDebt {
+                count: self.metrics.satd_count,
+            });
+        }
+
+        if violations.is_empty() {
+            Ok(QualityReport::Pass)
+        } else {
+            Err(QualityReport::Fail { violations })
+        }
     }
 }
 ```
 
-### 20.3 PMAT Integration
+### 20.2 Continuous Quality Monitoring
 
-Zero-overhead profiling with compile-time erasure:
 ```rust
-#[cfg(debug_assertions)]
-macro_rules! profile {
-    ($expr:expr) => {{
-        let _guard = PROFILER.start_scope(stringify!($expr));
-        $expr
-    }};
+// Integration with CI/CD
+pub struct CiQualityEnforcer {
+    gates: QualityGates,
+    reporting: ReportingBackend,
 }
 
-#[cfg(not(debug_assertions))]
-macro_rules! profile {
-    ($expr:expr) => { $expr };
+impl CiQualityEnforcer {
+    pub async fn run_checks(&self) -> ExitCode {
+        // Collect metrics
+        let coverage = self.measure_coverage().await;
+        let complexity = self.analyze_complexity().await;
+        let satd = self.scan_for_satd().await;
+        
+        // Apply gates
+        let report = self.gates.check();
+        
+        // Report results
+        self.reporting.publish(report).await;
+        
+        match report {
+            Ok(_) => ExitCode::SUCCESS,
+            Err(_) => ExitCode::FAILURE,
+        }
+    }
 }
 ```
 
 ## 21. Provability
 
-### 21.1 SMT-Based Refinement Types
+### 21.1 Property-Based Testing
 
 ```rust
-// Refinement type syntax
-type PositiveInt = {x: i32 | x > 0}
-type NonEmptyVec<T> = {xs: Vec<T> | xs.len() > 0}
-type Probability = {p: f64 | 0.0 <= p && p <= 1.0}
+#[property]
+fun prop_pipeline_associativity(
+data: DataFrame,
+f: fun(DataFrame) -> DataFrame,
+g: fun(DataFrame) -> DataFrame,
+h: fun(DataFrame) -> DataFrame
+) {
+// (f |> g) |> h == f |> (g |> h)
+let left = (data |> f |> g) |> h
+let right = data |> f |> (g |> h)
+assert_eq!(left, right)
+}
 
-// Function contracts
-#[requires(x > 0)]
-#[ensures(result > x)]
-fn increment_positive(x: PositiveInt) -> PositiveInt {
-    x + 1
+#[property]
+fun prop_actor_message_ordering(
+actor: TestActor,
+messages: Vec<Message>
+) {
+for msg in messages {
+actor ! msg
+}
+
+let responses = messages.map(|_| actor ? GetState)
+
+// Messages processed in order
+assert_monotonic(responses)
 }
 ```
 
-### 21.2 Symbolic Execution Engine
+### 21.2 Refinement Types with SMT
 
 ```rust
-struct SymbolicState {
-    variables: HashMap<Symbol, SymbolicValue>,
-    constraints: Vec<Constraint>,
-    path_condition: BoolExpr,
+// Future: SMT-based verification
+#[refine]
+fun safe_divide(x: i32, y: {y: i32 | y != 0}) -> i32 {
+    x / y  // Statically verified safe
 }
 
-impl SymbolicExecutor {
-    fn execute_path(&mut self, program: &Program) -> PathResult {
-        // Explore execution paths symbolically
-        // Generate test cases for each path
-        // Verify assertions and contracts
+#[refine]
+fun bounded_index<T>(
+    array: [T; N],
+    index: {i: usize | i < N}
+) -> T {
+    array[index]  // No bounds check needed
+}
+
+// Verification conditions generated
+pub struct SmtVerifier {
+    solver: Z3Solver,
+}
+
+impl SmtVerifier {
+    pub fn verify_refinement(&self, constraint: Constraint) -> VerificationResult {
+        let formula = self.translate_to_smt(constraint);
+        
+        match self.solver.check_sat(formula) {
+            Sat => VerificationResult::Valid,
+            Unsat => VerificationResult::Invalid { 
+                counterexample: self.solver.get_model() 
+            },
+            Unknown => VerificationResult::Unknown,
+        }
     }
-}
-```
-
-### 21.3 Property Testing Integration
-
-```rust
-#[property]
-fn test_sort_preserves_length(xs: Vec<i32>) {
-    let sorted = sort(xs.clone());
-    assert_eq!(xs.len(), sorted.len());
-}
-
-#[property]
-fn test_reverse_is_involutive(xs: Vec<i32>) {
-    let double_reversed = reverse(reverse(xs.clone()));
-    assert_eq!(xs, double_reversed);
 }
 ```
 
 ## 22. Master TODO
 
-### 22.1 Critical Priority (Blocking)
-1. **DataFrame Support with Polars** - Core feature for README examples
-2. **Result Type with ? Operator** - Essential error handling
-3. **Actor System Implementation** - Concurrency foundation
+### 22.1 Implementation Roadmap (REVISED)
 
-### 22.2 High Priority
-4. **Async/Await Support** - Modern async programming
-5. **Struct Definitions** - Custom types
-6. **Impl Blocks** - Methods and associated functions
+```yaml
+phase_0_foundation:  # Weeks 0-2 (CRITICAL - blocks everything)
+  - [ ] Fix 124 SATD comments (zero tolerance)
+  - [ ] Parser completion (remaining 30%)
+  - [ ] Test coverage to 80% minimum
+  - [ ] Reduce all functions to complexity ≤10
+  - [ ] CI enforcement of quality gates
 
-### 22.3 Medium Priority  
-7. **Trait Definitions** - Polymorphism and interfaces
-8. **Match Expressions** - Advanced pattern matching
-9. **Enum Types** - Sum types and variants
-10. **Module System** - Code organization
+phase_1_mvt:  # Weeks 3-6 (Minimal Viable Transpiler)
+  - [ ] Basic type inference (no generics)
+  - [ ] Direct syn generation (no MIR)
+  - [ ] DataFrame literal support only
+  - [ ] Simple function transpilation
+  - [ ] Basic Rust code emission
 
-### 22.4 Future Roadmap
-- JIT Compilation (Cranelift integration)
-- Property Testing Framework
-- SMT Solver for Refinement Types
-- WebAssembly Target
-- GPU Acceleration (CUDA/OpenCL)
-- Package Manager and Registry
+phase_2_interactive:  # Weeks 7-10
+  - [ ] Tree-walk interpreter for REPL
+  - [ ] Basic DataFrame operations (filter, select)
+  - [ ] Pipeline operator implementation
+  - [ ] Error recovery in parser
+  - [ ] REPL with syntax highlighting
+
+phase_3_mir_architecture:  # Weeks 11-14
+  - [ ] MIR representation design
+  - [ ] AST → MIR lowering
+  - [ ] DataFrame IR fusion
+  - [ ] Basic MIR optimization
+  - [ ] MIR → Rust codegen
+
+phase_4_core_features:  # Weeks 15-20
+  - [ ] Full type inference with generics
+  - [ ] Pattern matching compilation
+  - [ ] Actor system basics
+  - [ ] String interpolation
+  - [ ] List comprehensions
+
+phase_5_tooling:  # Weeks 21-26
+  - [ ] LSP basic implementation
+  - [ ] VS Code extension
+  - [ ] Cargo integration finalization
+  - [ ] Documentation generator
+  - [ ] Benchmark suite
+
+phase_6_optimization:  # Weeks 27-32
+  - [ ] Cranelift JIT integration
+  - [ ] Incremental compilation
+  - [ ] Query optimization for DataFrames
+  - [ ] Memory pooling
+  - [ ] SIMD vectorization
+
+phase_7_advanced:  # Future (post-v1.0)
+  - [ ] Refinement types (SMT)
+  - [ ] Effect system
+  - [ ] Row polymorphism
+  - [ ] Symbolic mathematics
+  - [ ] WASM backend
+```
 
 ## 23. Project Status
 
-### 23.1 Current Metrics (v0.2.1)
-
-```
-Quality Dashboard
-┌─────────────────────────────────────────┐
-│ Build:      ✅ Compiles clean            │
-│ Lint:       ✅ 0 clippy errors          │
-│ Tests:      🟡 221/229 (96.5%)         │
-│ Coverage:   🟡 77.91% (target: 80%)    │
-│ SATD:       ✅ 0 comments              │
-│ Complexity: ✅ Max 10 (target: 10)     │
-│ File Size:  ✅ Max 500 lines           │
-└─────────────────────────────────────────┘
-```
-
-### 23.2 Performance Achievements
-- **REPL startup**: <10ms ✅ (achieved)
-- **Parse throughput**: >50MB/s ✅ (achieved)  
-- **Type inference**: <15ms for typical programs ✅
-- **Binary size**: 4.2MB ✅ (target: <5MB)
-
-### 23.3 Velocity Tracking
-- **Features/week**: ~5 (sustained)
-- **Debt reduction**: -262 clippy warnings eliminated
-- **Test growth**: +49 tests added in v0.2.1
-- **Code quality**: Maintained zero SATD policy
-
-## 24. Deep Context
-
-### 24.1 Codebase Metrics
-
-```
-Complexity Analysis (Jan 2025)
-┌─────────────────────────────────────────┐
-│ Total Files:     89                     │
-│ Total Lines:     15,847                 │
-│ Test Coverage:   77.91%                 │
-│ Max Complexity:  10 (target achieved)   │
-│ Avg Complexity:  3.2                   │
-│ Functions >10:   0 (zero violations)    │
-│ SATD Comments:   0 (zero violations)    │
-└─────────────────────────────────────────┘
-```
-
-### 24.2 Module Breakdown
-
-| Module | Lines | Complexity | Coverage | Status |
-|--------|-------|------------|----------|--------|
-| Parser | 2,847 | 8.2 avg | 82% | ✅ Stable |
-| Type Inference | 1,923 | 7.1 avg | 89% | ✅ Stable |
-| Transpiler | 3,456 | 6.8 avg | 75% | 🟡 Needs work |
-| REPL | 1,689 | 5.2 avg | 91% | ✅ Stable |
-| AST | 1,234 | 3.1 avg | 95% | ✅ Stable |
-
-### 24.3 Technical Debt Analysis
-- **Zero SATD comments** maintained across entire codebase
-- **Zero clippy warnings** with `-D warnings` enforcement
-- **Cognitive complexity** under control (max 10)
-- **File size discipline** enforced (max 500 lines)
-
-## 25. PMAT Integration
-
-### 25.1 Real-Time Quality Enforcement
-
-```toml
-# pmat.toml - MCP proxy blocks violations instantly
-[thresholds]
-cyclomatic_complexity = 10      # Blocks at write-time
-cognitive_complexity = 15        # No mental overload
-halstead_effort = 5000          # Computational limits
-maintainability_index = 70      # Minimum maintainability
-test_coverage = 80              # Coverage gate
-satd_comments = 0               # Zero technical debt
-mutation_score = 75             # Mutation testing gate
-```
-
-### 25.2 MCP Quality Proxy Tools
-
-```bash
-# PMAT exposes these MCP tools to Claude:
-pmat_analyze_code       # Real-time complexity analysis
-pmat_check_coverage     # Test coverage verification  
-pmat_detect_smells      # Code smell detection
-pmat_suggest_refactor   # Automated refactoring hints
-pmat_mutation_test      # Mutation testing on-demand
-pmat_quality_gate       # Full quality check
-```
-
-### 25.3 Live Quality Feedback
+### 23.1 Current Metrics (REALITY CHECK)
 
 ```rust
-// As you type, PMAT MCP provides instant feedback:
-fn process_data(data: &Data) -> Result<(), Error> {
-    // PMAT: Complexity 3/10 ✅
-    validate(data)?;
-    
-    if data.complex {  // PMAT: +1 complexity (4/10)
-        for item in &data.items {  // PMAT: +2 (6/10)
-            if item.check() {  // PMAT: +3 nested (9/10) ⚠️
-                // PMAT WARNING: Approaching complexity limit
-                process_item(item)?;
-            }
-        }
-    }
-    Ok(())
+pub struct ProjectStatus {
+    version: Version,           // 0.3.0-alpha
+    loc: usize,                 // 15,234
+    test_count: usize,          // 342
+    test_coverage: f64,         // 65.3% → MUST reach 80%
+    satd_count: usize,          // 124 → MUST be 0
+    max_complexity: u32,        // 37 → MUST be ≤10
+    documentation: f64,         // 45.2% → target 90%
+    dependencies: usize,        // 47
+    compile_time: Duration,     // 12.3s
+    binary_size: usize,        // 4.2 MB
+}
+
+// Quality enforcement via CI
+#[cfg(ci)]
+compile_error_if!(coverage < 80.0, "Coverage must be ≥80% for CI");
+compile_error_if!(satd_count > 0, "Zero SATD tolerance in CI");
+compile_error_if!(max_complexity > 10, "Max complexity is 10");
+
+pub struct CriticalPath {
+    // Phase 0 is MANDATORY before any features
+    phase_0_blockers: vec![
+        "124 SATD comments removal",
+        "15% coverage increase",
+        "27 functions need complexity reduction",
+        "Parser completion (30% remaining)",
+    ],
+    estimated_days: 14,
+    blocking_all_features: true,
 }
 ```
 
-## 26. PDMT Integration
+## 24. Deep Context
 
-### 26.1 Deterministic Content Generation
+### 24.1 Architecture Insights
 
-YAML-based templates with quality enforcement:
-```yaml
-id: todo_list_generation
-template_version: "1.0"
-validation:
-  quality_gates:
-    max_complexity_per_task: 8
-    require_time_estimates: true
-    enforce_priority_ordering: true
-output_format: "structured_markdown"
+Key architectural decisions and their rationale:
+
+1. **Transpilation over interpretation**: Leverage Rust ecosystem
+2. **Polars as default**: DataFrame-first for data science
+3. **Actor model**: Proven concurrency without shared state
+4. **Hand-written parser**: Control and error messages
+5. **Property testing**: Correctness over coverage
+
+### 24.2 Performance Characteristics
+
+```rust
+pub struct PerformanceProfile {
+    startup_time: Duration,        // <10ms target
+    repl_latency: Duration,       // <15ms target
+    transpile_speed: f64,         // 100K loc/s
+    runtime_overhead: f64,        // <5% vs handwritten Rust
+    memory_overhead: f64,         // <10% vs handwritten Rust
+}
+
+// Benchmark suite
+#[bench]
+fn bench_fibonacci(b: &mut Bencher) {
+    let ruchy = "fun fib(n) = if n < 2 { n } else { fib(n-1) + fib(n-2) }";
+    let rust = compile_to_rust(ruchy);
+
+    b.iter(|| {
+        black_box(execute_rust(&rust, 30))
+    });
+}
 ```
 
-### 26.2 Project Scaffolding
+## 25. PMAT Integration
 
-```yaml
-id: ruchy_project_scaffold
-generates:
-  - Cargo.toml with ruchy dependencies
-  - src/lib.rs with proper imports
-  - build.rs for transpilation
-  - .gitignore with ruchy-gen/ exclusion
-  - docs/ structure following CLAUDE.md
-quality_enforcement:
-  initial_coverage: 80%
-  complexity_budget: 10
-  satd_tolerance: 0
+### 25.1 Quality Enforcement via PMAT
+
+```rust
+pub struct PmatIntegration {
+    quality_proxy: QualityProxy,
+    analyzer: PmatAnalyzer,
+}
+
+impl PmatIntegration {
+    pub async fn validate_code(&self, code: &str) -> ValidationResult {
+        let metrics = self.analyzer.analyze(code).await?;
+
+        // Enforce Toyota Way standards
+        if metrics.complexity > 10 {
+            return Err(ValidationError::ComplexityExceeded {
+                current: metrics.complexity,
+                max: 10,
+            });
+        }
+
+        if metrics.satd_count > 0 {
+            return Err(ValidationError::TechnicalDebt {
+                count: metrics.satd_count,
+            });
+        }
+
+        if metrics.coverage < 80.0 {
+            return Err(ValidationError::InsufficientCoverage {
+                current: metrics.coverage,
+                min: 80.0,
+            });
+        }
+
+        Ok(ValidationResult::Pass)
+    }
+
+    pub async fn suggest_improvements(&self, code: &str) -> Vec<Suggestion> {
+        self.quality_proxy.analyze_and_suggest(code).await
+    }
+}
 ```
 
-## 27. External Tool Dependencies
+### 25.2 MCP Tool Integration
 
-### 27.1 Core Dependencies
+```rust
+// PMAT provides 18 MCP tools via unified pmcp SDK
+pub struct PmatMcpServer {
+    server: McpServer,
+    tools: Vec<McpTool>,
+}
 
-- **Rust Ecosystem**: Full access via transpilation
-- **Polars**: DataFrame operations backend
-- **Cranelift**: JIT compilation engine
-- **syn**: Rust AST manipulation
-- **proc-macro2**: Token stream processing
+impl PmatMcpServer {
+    pub fn new() -> Self {
+        let tools = vec![
+            // Analysis tools
+            McpTool::new("analyze_complexity", analyze_complexity_handler),
+            McpTool::new("analyze_deep_context", analyze_deep_context_handler),
+            McpTool::new("analyze_big_o", analyze_big_o_handler),
+            McpTool::new("analyze_dead_code", analyze_dead_code_handler),
+            McpTool::new("analyze_satd", analyze_satd_handler),
+            
+            // Quality tools
+            McpTool::new("quality_gate", quality_gate_handler),
+            McpTool::new("quality_proxy", quality_proxy_handler),
+            
+            // Refactoring tools
+            McpTool::new("refactor_start", refactor_start_handler),
+            McpTool::new("refactor_next", refactor_next_handler),
+            
+            // Project tools
+            McpTool::new("scaffold_project", scaffold_project_handler),
+            McpTool::new("scaffold_agent", scaffold_agent_handler),
+        ];
+        
+        PmatMcpServer {
+            server: McpServer::new(tools),
+            tools,
+        }
+    }
+}
 
-### 27.2 Quality Tools
-
-- **PMAT**: Quality enforcement and metrics
-- **PDMT**: Deterministic content generation
-- **clippy**: Linting with `-D warnings`
-- **cargo-tarpaulin**: Coverage measurement
-- **proptest**: Property-based testing
-
-### 27.3 Integration Tools
-
-- **Depyler**: Python-to-Rust transpilation
-- **pmcp**: MCP protocol implementation
-- **Blake3**: Content hashing for caches
-- **DashMap**: Concurrent caching
-- **tokio**: Async runtime
-
----
-
-## Summary
-
-Ruchy represents a complete systems-oriented scripting language achieving Python ergonomics with Rust performance through mechanical transpilation. The design prioritizes:
-
-1. **Zero-cost abstractions** - Every feature compiles to efficient Rust
-2. **Progressive complexity** - Simple by default, powerful when needed  
-3. **DataFrame-first** - Polars as the primary collection type
-4. **Quality enforcement** - Built-in property testing and verification
-5. **MCP-native** - First-class AI/LLM integration
-6. **Mathematical computing** - Statistical and linear algebra capabilities
-7. **Actor concurrency** - Erlang-style fault tolerance
-8. **Performance predictability** - <10ms startup, deterministic latency
-
-The implementation leverages proven technologies while introducing minimal novel concepts, ensuring predictable performance and maintainable code with comprehensive quality gates.
-
----
-
-*Version: 3.0 | Last Updated: 2025-01-17*  
-*Total Specifications: 27 | Lines of Specification: ~15,000+*  
-*This document consolidates ALL Ruchy specifications into a single source of truth.*
+// Example: Complexity analysis with composition
+async fn analyze_complexity_handler(params: Value) -> Result<Value> {
+    let path = params["path"].as_str().unwrap();
+    let include_cognitive = params["include_cognitive"].as_bool().unwrap_or(true);
+    
+    let analysis = ComplexityAnalyzer::new()
+        .with_cognitive(include_cognitive)
+        .analyze_path(path)?;
+    
+    Ok(json!({
+        "cyclomatic": analysis.cyclomatic,
+        "cognitive": analysis.cognitive,
+        "hotspots": analysis.hotspots,
+        "suggestions": analysis.suggestions,
+    }))
+}
+```

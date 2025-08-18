@@ -69,6 +69,11 @@ impl InferenceContext {
         match &expr.kind {
             ExprKind::Literal(lit) => Ok(Self::infer_literal(lit)),
             ExprKind::Identifier(name) => self.infer_identifier(name),
+            ExprKind::QualifiedName { module: _, name } => {
+                // For now, just treat qualified names like regular identifiers
+                // In a full implementation, we'd resolve the module and check its exports
+                self.infer_identifier(name)
+            }
             ExprKind::StringInterpolation { parts } => {
                 // Check that all expression parts are well-typed
                 for part in parts {
@@ -84,9 +89,10 @@ impl InferenceContext {
             ExprKind::Try { expr } => self.infer_try(expr),
             ExprKind::TryCatch {
                 try_block,
-                catch_var,
-                catch_block,
-            } => self.infer_try_catch(try_block, catch_var, catch_block),
+                catch_clauses,
+                finally_block,
+            } => self.infer_try_catch(try_block, catch_clauses, finally_block.as_deref()),
+            ExprKind::Throw { expr } => self.infer_throw(expr),
             ExprKind::Ok { value } => {
                 let value_type = self.infer_expr(value)?;
                 // Ok wraps the value in Result<T, E> where E is inferred
@@ -105,7 +111,7 @@ impl InferenceContext {
                 then_branch,
                 else_branch,
             } => self.infer_if(condition, then_branch, else_branch.as_deref()),
-            ExprKind::Let { name, value, body } => self.infer_let(name, value, body),
+            ExprKind::Let { name, value, body, is_mutable } => self.infer_let(name, value, body, *is_mutable),
             ExprKind::Function {
                 name,
                 params,
@@ -134,7 +140,11 @@ impl InferenceContext {
             ExprKind::While { condition, body } => self.infer_while(condition, body),
             ExprKind::Range { start, end, .. } => self.infer_range(start, end),
             ExprKind::Pipeline { expr, stages } => self.infer_pipeline(expr, stages),
-            ExprKind::Import { .. } => Ok(MonoType::Unit), // Imports don't have runtime values
+            ExprKind::Import { .. } | ExprKind::Export { .. } => Ok(MonoType::Unit), // Imports/exports don't have runtime values
+            ExprKind::Module { body, .. } => {
+                // Modules evaluate to their body type
+                self.infer_expr(body)
+            }
             ExprKind::DataFrame { .. } => Ok(MonoType::Named("DataFrame".to_string())), // DataFrame type
             ExprKind::Struct { .. } => {
                 // Struct definitions return Unit, they just register the type
@@ -209,6 +219,14 @@ impl InferenceContext {
                 // Break and continue don't return a value (they diverge)
                 // In Rust, they have type ! (never), but we'll use Unit for simplicity
                 Ok(MonoType::Unit)
+            }
+            ExprKind::Assign { target, value } => self.infer_assign(target, value),
+            ExprKind::CompoundAssign { target, op, value } => {
+                self.infer_compound_assign(target, *op, value)
+            }
+            ExprKind::PreIncrement { target } | ExprKind::PostIncrement { target } |
+            ExprKind::PreDecrement { target } | ExprKind::PostDecrement { target } => {
+                self.infer_increment_decrement(target)
             }
             ExprKind::DataFrameOperation { source, .. } => {
                 // DataFrameOperation returns a DataFrame
@@ -326,26 +344,66 @@ impl InferenceContext {
     fn infer_try_catch(
         &mut self,
         try_block: &Expr,
-        catch_var: &str,
-        catch_block: &Expr,
+        catch_clauses: &[crate::frontend::ast::CatchClause],
+        finally_block: Option<&Expr>,
     ) -> Result<MonoType> {
         // The try block can return any type T
         let try_ty = self.infer_expr(try_block)?;
 
-        // The catch variable is bound to an error type
-        // For now, we'll use a generic error type
-        let error_ty = MonoType::Named("Error".to_string());
+        // Infer types for all catch clauses
+        let mut catch_types = Vec::new();
+        for clause in catch_clauses {
+            let old_env = self.env.clone();
+            
+            // Bind catch variable with appropriate error type
+            let error_ty = if let Some(ref exc_type) = clause.exception_type {
+                MonoType::Named(exc_type.clone())
+            } else {
+                MonoType::Named("Error".to_string()) // Generic error
+            };
+            
+            self.env = self.env.extend(&clause.variable, TypeScheme::mono(error_ty));
+            
+            // Check guard condition if present
+            if let Some(ref condition) = clause.condition {
+                let cond_ty = self.infer_expr(condition)?;
+                self.unifier.unify(&cond_ty, &MonoType::Bool)?;
+            }
+            
+            // Infer catch body type
+            let catch_ty = self.infer_expr(&clause.body)?;
+            catch_types.push(catch_ty);
+            
+            self.env = old_env;
+        }
 
-        // Extend environment with catch variable and infer catch block
-        let old_env = self.env.clone();
-        self.env = self.env.extend(catch_var, TypeScheme::mono(error_ty));
-        let catch_ty = self.infer_expr(catch_block)?;
-        self.env = old_env;
+        // All catch clauses and try block must return the same type
+        for catch_ty in &catch_types {
+            self.unifier.unify(&try_ty, catch_ty)?;
+        }
 
-        // Both blocks must return the same type
-        self.unifier.unify(&try_ty, &catch_ty)?;
+        // Infer finally block type (should be Unit)
+        if let Some(finally) = finally_block {
+            let finally_ty = self.infer_expr(finally)?;
+            // Finally block's type is ignored, but we still check it
+            // In a full implementation, we might want to ensure it's Unit
+            drop(finally_ty);
+        }
 
         Ok(self.unifier.apply(&try_ty))
+    }
+
+    fn infer_throw(&mut self, expr: &Expr) -> Result<MonoType> {
+        // Infer the type of the expression being thrown
+        let _expr_ty = self.infer_expr(expr)?;
+        
+        // The expression must implement Error trait
+        // For now, we'll just ensure it's a valid type
+        // In a more complete implementation, we'd check Error trait bounds
+        
+        // The throw expression itself has the Never type (!)
+        // But we'll represent it as a generic type for now
+        Ok(MonoType::Var(self.gen.fresh()))
     }
 
     fn infer_await(&mut self, expr: &Expr) -> Result<MonoType> {
@@ -389,7 +447,7 @@ impl InferenceContext {
         }
     }
 
-    fn infer_let(&mut self, name: &str, value: &Expr, body: &Expr) -> Result<MonoType> {
+    fn infer_let(&mut self, name: &str, value: &Expr, body: &Expr, _is_mutable: bool) -> Result<MonoType> {
         // Infer type of value
         let value_ty = self.infer_expr(value)?;
 
@@ -411,7 +469,7 @@ impl InferenceContext {
         params: &[Param],
         body: &Expr,
         _return_type: Option<&crate::frontend::ast::Type>,
-        is_async: bool,
+        _is_async: bool,
     ) -> Result<MonoType> {
         // Create fresh type variables for parameters
         let mut param_types = Vec::new();
@@ -777,6 +835,54 @@ impl InferenceContext {
                     self.infer_pattern(inner, &inner_ty)
                 }
             }
+            Pattern::Tuple(patterns) => {
+                // Create tuple type with each pattern's inferred type
+                let mut elem_types = Vec::new();
+                for pat in patterns {
+                    let elem_ty = MonoType::Var(self.gen.fresh());
+                    self.infer_pattern(pat, &elem_ty)?;
+                    elem_types.push(elem_ty);
+                }
+                let tuple_ty = MonoType::Tuple(elem_types);
+                self.unifier.unify(expected_ty, &tuple_ty)
+            }
+            Pattern::Struct { name, fields } => {
+                // For now, treat struct patterns as a named type
+                // In a more complete implementation, we'd look up the struct definition
+                let struct_ty = MonoType::Named(name.clone());
+                self.unifier.unify(expected_ty, &struct_ty)?;
+                
+                // Infer field patterns (simplified approach)
+                for field in fields {
+                    if let Some(pattern) = &field.pattern {
+                        let field_ty = MonoType::Var(self.gen.fresh());
+                        self.infer_pattern(pattern, &field_ty)?;
+                    }
+                }
+                Ok(())
+            }
+            Pattern::Range { start, end, .. } => {
+                // Range patterns should match numeric types
+                let start_ty = MonoType::Var(self.gen.fresh());
+                let end_ty = MonoType::Var(self.gen.fresh());
+                self.infer_pattern(start, &start_ty)?;
+                self.infer_pattern(end, &end_ty)?;
+                
+                // Unify start and end types, and with expected type
+                self.unifier.unify(&start_ty, &end_ty)?;
+                self.unifier.unify(expected_ty, &start_ty)
+            }
+            Pattern::Or(patterns) => {
+                // All patterns in an OR must have the same type
+                for pat in patterns {
+                    self.infer_pattern(pat, expected_ty)?;
+                }
+                Ok(())
+            }
+            Pattern::Rest => {
+                // Rest patterns don't bind to specific types
+                Ok(())
+            }
         }
     }
 
@@ -844,6 +950,97 @@ impl InferenceContext {
         }
 
         Ok(current_ty)
+    }
+
+    fn infer_assign(&mut self, target: &Expr, value: &Expr) -> Result<MonoType> {
+        // Infer the type of the value being assigned
+        let value_ty = self.infer_expr(value)?;
+        
+        // Infer the type of the target (lvalue)
+        let target_ty = self.infer_expr(target)?;
+        
+        // Target and value must have compatible types
+        self.unifier.unify(&target_ty, &value_ty)?;
+        
+        // Assignment expressions return Unit
+        Ok(MonoType::Unit)
+    }
+
+    fn infer_compound_assign(&mut self, target: &Expr, op: BinaryOp, value: &Expr) -> Result<MonoType> {
+        // Infer the types of target and value
+        let target_ty = self.infer_expr(target)?;
+        let value_ty = self.infer_expr(value)?;
+        
+        // For compound assignment, we need to ensure the operation is valid
+        // This is equivalent to: target = target op value
+        let result_ty = self.infer_binary_op_type(op, &target_ty, &value_ty)?;
+        
+        // The result type must be compatible with the target type
+        self.unifier.unify(&target_ty, &result_ty)?;
+        
+        // Compound assignment expressions return Unit
+        Ok(MonoType::Unit)
+    }
+
+    fn infer_binary_op_type(&mut self, op: BinaryOp, left_ty: &MonoType, right_ty: &MonoType) -> Result<MonoType> {
+        match op {
+            BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => {
+                // Arithmetic operations: both operands should be numbers, result is same type
+                // Try Int first, then Float
+                if let Ok(()) = self.unifier.unify(left_ty, &MonoType::Int) {
+                    if let Ok(()) = self.unifier.unify(right_ty, &MonoType::Int) {
+                        return Ok(MonoType::Int);
+                    }
+                }
+                // Fall back to Float
+                self.unifier.unify(left_ty, &MonoType::Float)?;
+                self.unifier.unify(right_ty, &MonoType::Float)?;
+                Ok(MonoType::Float)
+            }
+            BinaryOp::Power => {
+                // Power operation: base and exponent are numbers, result is same as base
+                self.unifier.unify(left_ty, right_ty)?;
+                if let Ok(()) = self.unifier.unify(left_ty, &MonoType::Int) {
+                    Ok(MonoType::Int)
+                } else {
+                    self.unifier.unify(left_ty, &MonoType::Float)?;
+                    Ok(MonoType::Float)
+                }
+            }
+            BinaryOp::Equal | BinaryOp::NotEqual | BinaryOp::Less | BinaryOp::LessEqual | 
+            BinaryOp::Greater | BinaryOp::GreaterEqual => {
+                // Comparison operations: operands must be same type, result is Bool
+                self.unifier.unify(left_ty, right_ty)?;
+                Ok(MonoType::Bool)
+            }
+            BinaryOp::And | BinaryOp::Or => {
+                // Logical operations: both operands must be Bool, result is Bool
+                self.unifier.unify(left_ty, &MonoType::Bool)?;
+                self.unifier.unify(right_ty, &MonoType::Bool)?;
+                Ok(MonoType::Bool)
+            }
+            BinaryOp::BitwiseAnd | BinaryOp::BitwiseOr | BinaryOp::BitwiseXor | 
+            BinaryOp::LeftShift | BinaryOp::RightShift => {
+                // Bitwise operations: both operands must be Int, result is Int
+                self.unifier.unify(left_ty, &MonoType::Int)?;
+                self.unifier.unify(right_ty, &MonoType::Int)?;
+                Ok(MonoType::Int)
+            }
+        }
+    }
+
+    fn infer_increment_decrement(&mut self, target: &Expr) -> Result<MonoType> {
+        // Infer the type of the target
+        let target_ty = self.infer_expr(target)?;
+        
+        // Target must be a numeric type (Int or Float)
+        // Try Int first, then Float
+        if let Ok(()) = self.unifier.unify(&target_ty, &MonoType::Int) {
+            Ok(MonoType::Int)
+        } else {
+            self.unifier.unify(&target_ty, &MonoType::Float)?;
+            Ok(MonoType::Float)
+        }
     }
 
     fn ast_type_to_mono_static(ty: &crate::frontend::ast::Type) -> Result<MonoType> {

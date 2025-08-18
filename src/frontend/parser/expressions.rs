@@ -53,6 +53,23 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Identifier(name) => {
             state.tokens.advance();
 
+            // Check for qualified name (module::name)
+            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                state.tokens.advance(); // consume ::
+                if let Some((Token::Identifier(qualified_name), _)) = state.tokens.peek() {
+                    let qualified_name = qualified_name.clone();
+                    state.tokens.advance();
+                    return Ok(Expr::new(
+                        ExprKind::QualifiedName {
+                            module: name,
+                            name: qualified_name,
+                        },
+                        span_clone,
+                    ));
+                }
+                bail!("Expected identifier after '::'");
+            }
+
             // Check for Result constructors Ok and Err
             if name == "Ok" || name == "Err" {
                 // Expect parentheses with value
@@ -118,6 +135,16 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Break => Ok(control_flow::parse_break(state)),
         Token::Continue => Ok(control_flow::parse_continue(state)),
         Token::Try => control_flow::parse_try_catch(state),
+        Token::Throw => {
+            state.tokens.advance(); // consume throw
+            let expr = super::parse_expr_recursive(state)?;
+            Ok(Expr::new(
+                ExprKind::Throw {
+                    expr: Box::new(expr),
+                },
+                span_clone,
+            ))
+        }
         Token::Await => {
             // Parse as prefix but it will transpile to postfix
             state.tokens.advance(); // consume await
@@ -137,6 +164,8 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Impl => types::parse_impl(state),
         Token::Actor => actors::parse_actor(state),
         Token::Import | Token::Use => utils::parse_import(state),
+        Token::Module => utils::parse_module(state),
+        Token::Export => utils::parse_export(state),
         Token::Pipe => functions::parse_lambda(state),
         Token::OrOr => functions::parse_empty_lambda(state),
         Token::DataFrame => collections::parse_dataframe(state),
@@ -153,6 +182,26 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 ExprKind::Unary {
                     op,
                     operand: Box::new(operand),
+                },
+                span_clone,
+            ))
+        }
+        Token::Increment => {
+            state.tokens.advance(); // consume ++
+            let target = parse_prefix(state)?;
+            Ok(Expr::new(
+                ExprKind::PreIncrement {
+                    target: Box::new(target),
+                },
+                span_clone,
+            ))
+        }
+        Token::Decrement => {
+            state.tokens.advance(); // consume --
+            let target = parse_prefix(state)?;
+            Ok(Expr::new(
+                ExprKind::PreDecrement {
+                    target: Box::new(target),
                 },
                 span_clone,
             ))

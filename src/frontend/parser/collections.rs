@@ -100,6 +100,7 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
                                 name,
                                 value: Box::new(value),
                                 body: Box::new(body),
+                                is_mutable: false,
                             },
                             start_span,
                         ));

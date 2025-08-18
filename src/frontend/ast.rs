@@ -57,6 +57,10 @@ impl Expr {
 pub enum ExprKind {
     Literal(Literal),
     Identifier(String),
+    QualifiedName {
+        module: String,
+        name: String,
+    },
     StringInterpolation {
         parts: Vec<StringPart>,
     },
@@ -74,8 +78,11 @@ pub enum ExprKind {
     },
     TryCatch {
         try_block: Box<Expr>,
-        catch_var: String,
-        catch_block: Box<Expr>,
+        catch_clauses: Vec<CatchClause>,
+        finally_block: Option<Box<Expr>>,
+    },
+    Throw {
+        expr: Box<Expr>,
     },
     Ok {
         value: Box<Expr>,
@@ -95,6 +102,7 @@ pub enum ExprKind {
         name: String,
         value: Box<Expr>,
         body: Box<Expr>,
+        is_mutable: bool,
     },
     Function {
         name: String,
@@ -197,6 +205,13 @@ pub enum ExprKind {
     },
     Import {
         path: String,
+        items: Vec<ImportItem>,
+    },
+    Module {
+        name: String,
+        body: Box<Expr>,
+    },
+    Export {
         items: Vec<String>,
     },
     Break {
@@ -204,6 +219,27 @@ pub enum ExprKind {
     },
     Continue {
         label: Option<String>,
+    },
+    Assign {
+        target: Box<Expr>,
+        value: Box<Expr>,
+    },
+    CompoundAssign {
+        target: Box<Expr>,
+        op: BinaryOp,
+        value: Box<Expr>,
+    },
+    PreIncrement {
+        target: Box<Expr>,
+    },
+    PostIncrement {
+        target: Box<Expr>,
+    },
+    PreDecrement {
+        target: Box<Expr>,
+    },
+    PostDecrement {
+        target: Box<Expr>,
     },
 }
 
@@ -267,6 +303,7 @@ pub struct Param {
     pub name: String,
     pub ty: Type,
     pub span: Span,
+    pub is_mutable: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -339,9 +376,45 @@ pub enum Pattern {
     Wildcard,
     Literal(Literal),
     Identifier(String),
+    Tuple(Vec<Pattern>),
     List(Vec<Pattern>),
+    Struct {
+        name: String,
+        fields: Vec<StructPatternField>,
+    },
+    Range {
+        start: Box<Pattern>,
+        end: Box<Pattern>,
+        inclusive: bool,
+    },
+    Or(Vec<Pattern>),
+    Rest, // For ... patterns
     Ok(Box<Pattern>),
     Err(Box<Pattern>),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StructPatternField {
+    pub name: String,
+    pub pattern: Option<Pattern>, // None for shorthand like { x } instead of { x: x }
+}
+
+/// Catch clause for try/catch expressions
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CatchClause {
+    pub exception_type: Option<String>, // None for catch-all
+    pub variable: String,
+    pub condition: Option<Box<Expr>>, // Guard condition
+    pub body: Box<Expr>,
+    pub span: Span,
+}
+
+/// Custom error type definition
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ErrorTypeDef {
+    pub name: String,
+    pub fields: Vec<StructField>,
+    pub extends: Option<String>, // Parent error type
 }
 
 /// Attribute for annotating expressions (e.g., #[property])
@@ -381,6 +454,16 @@ pub enum JoinType {
     Left,
     Right,
     Outer,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ImportItem {
+    /// Import a specific name: `use std::collections::HashMap`
+    Named(String),
+    /// Import with alias: `use std::collections::HashMap as Map`
+    Aliased { name: String, alias: String },
+    /// Import all: `use std::collections::*`
+    Wildcard,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -682,6 +765,7 @@ mod tests {
                 name: "x".to_string(),
                 value,
                 body,
+                is_mutable: false,
             },
             Span::new(0, 15),
         );
@@ -691,6 +775,7 @@ mod tests {
                 name,
                 value: v,
                 body: b,
+                ..
             } => {
                 assert_eq!(name, "x");
                 match v.kind {
@@ -715,6 +800,7 @@ mod tests {
                 span: Span::new(10, 13),
             },
             span: Span::new(8, 13),
+            is_mutable: false,
         }];
         let body = Box::new(Expr::new(
             ExprKind::Identifier("x".to_string()),
@@ -912,7 +998,7 @@ mod tests {
         let expr = Expr::new(
             ExprKind::Import {
                 path: "std::collections".to_string(),
-                items: vec!["HashMap".to_string(), "HashSet".to_string()],
+                items: vec![ImportItem::Named("HashMap".to_string()), ImportItem::Named("HashSet".to_string())],
             },
             Span::new(0, 30),
         );
@@ -921,8 +1007,8 @@ mod tests {
             ExprKind::Import { path, items } => {
                 assert_eq!(path, "std::collections");
                 assert_eq!(items.len(), 2);
-                assert_eq!(items[0], "HashMap");
-                assert_eq!(items[1], "HashSet");
+                assert_eq!(items[0], ImportItem::Named("HashMap".to_string()));
+                assert_eq!(items[1], ImportItem::Named("HashSet".to_string()));
             }
             _ => panic!("Expected import expression"),
         }
@@ -1018,20 +1104,46 @@ mod tests {
             Pattern::Wildcard,
             Pattern::Literal(Literal::Integer(42)),
             Pattern::Identifier("x".to_string()),
+            Pattern::Tuple(vec![
+                Pattern::Literal(Literal::Integer(1)),
+                Pattern::Identifier("x".to_string()),
+            ]),
             Pattern::List(vec![
                 Pattern::Literal(Literal::Integer(1)),
                 Pattern::Literal(Literal::Integer(2)),
             ]),
+            Pattern::Struct {
+                name: "Point".to_string(),
+                fields: vec![
+                    StructPatternField {
+                        name: "x".to_string(),
+                        pattern: Some(Pattern::Identifier("x".to_string())),
+                    },
+                ],
+            },
+            Pattern::Range {
+                start: Box::new(Pattern::Literal(Literal::Integer(1))),
+                end: Box::new(Pattern::Literal(Literal::Integer(10))),
+                inclusive: true,
+            },
+            Pattern::Or(vec![
+                Pattern::Literal(Literal::Integer(1)),
+                Pattern::Literal(Literal::Integer(2)),
+            ]),
+            Pattern::Rest,
         ];
 
         for pattern in patterns {
             match pattern {
-                Pattern::List(list) => assert!(!list.is_empty()),
-                Pattern::Wildcard
+                Pattern::Tuple(list) | Pattern::List(list) => assert!(!list.is_empty()),
+                Pattern::Struct { fields, .. } => assert!(!fields.is_empty()),
+                Pattern::Or(patterns) => assert!(!patterns.is_empty()),
+                Pattern::Range { .. } | Pattern::Wildcard
                 | Pattern::Literal(_)
                 | Pattern::Identifier(_)
+                | Pattern::Rest
                 | Pattern::Ok(_)
-                | Pattern::Err(_) => {} // Result patterns
+                | Pattern::Err(_) => {} // Simple patterns
             }
         }
     }
@@ -1094,6 +1206,7 @@ mod tests {
                 span: Span::new(6, 11),
             },
             span: Span::new(0, 11),
+            is_mutable: false,
         };
 
         assert_eq!(param.name, "count");

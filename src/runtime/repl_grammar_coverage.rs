@@ -66,6 +66,7 @@ impl Default for GrammarTestSuite {
 
 impl GrammarTestSuite {
     #[must_use]
+    #[allow(clippy::too_many_lines)] // Complex test suite with many test cases
     pub fn new() -> Self {
         let test_cases = vec![
             // Literals
@@ -179,13 +180,46 @@ impl GrammarTestSuite {
             ("exclusive range", "1..5"),
             // Import statements
             ("import statement", "import std.collections.HashMap"),
+            ("import with alias", "import std.collections.HashMap as Map"),
+            ("import multiple", "import std.collections.{HashMap, HashSet}"),
+            ("import wildcard", "import std.collections.*"),
+            // Module system
+            ("module declaration", "module math { fun add(a: i32, b: i32) -> i32 { a + b } }"),
+            ("export statement", "export { add, subtract }"),
+            ("qualified name", "math::add"),
+            // Assignment operators
+            ("basic assignment", "x = 42"),
+            ("plus assignment", "x += 5"),
+            ("minus assignment", "x -= 3"),
+            ("multiply assignment", "x *= 2"),
+            ("divide assignment", "x /= 4"),
+            ("modulo assignment", "x %= 3"),
+            ("power assignment", "x **= 2"),
+            ("bitwise and assignment", "x &= 7"),
+            ("bitwise or assignment", "x |= 8"),
+            ("bitwise xor assignment", "x ^= 9"),
+            ("left shift assignment", "x <<= 2"),
+            ("right shift assignment", "x >>= 1"),
+            // Increment/Decrement operators
+            ("pre increment", "++x"),
+            ("post increment", "x++"),
+            ("pre decrement", "--x"),
+            ("post decrement", "x--"),
+            // Mutable variables
+            ("mutable let", "let mut x = 42 in x"),
             // Control flow
             ("break statement", "break"),
             ("continue statement", "continue"),
             ("labeled break", "break 'outer"),
             ("labeled continue", "continue 'loop"),
-            // Try/catch
+            // Try/catch/finally
             ("try catch", "try { risky() } catch e { handle(e) }"),
+            ("try catch typed", "try { risky() } catch IOException e { handle(e) }"),
+            ("try catch multiple", "try { risky() } catch IOException e { handle_io(e) } catch Exception e { handle_general(e) }"),
+            ("try finally", "try { risky() } finally { cleanup() }"),
+            ("try catch finally", "try { risky() } catch e { handle(e) } finally { cleanup() }"),
+            // Throw expressions
+            ("throw expression", "throw Exception(\"error message\")"),
         ];
 
         Self { test_cases }
@@ -230,6 +264,7 @@ impl ExprKind {
         match self {
             ExprKind::Literal(_) => "Literal",
             ExprKind::Identifier(_) => "Identifier",
+            ExprKind::QualifiedName { .. } => "QualifiedName",
             ExprKind::StringInterpolation { .. } => "StringInterpolation",
             ExprKind::Binary { .. } => "Binary",
             ExprKind::Unary { .. } => "Unary",
@@ -263,16 +298,25 @@ impl ExprKind {
             ExprKind::While { .. } => "While",
             ExprKind::Range { .. } => "Range",
             ExprKind::Import { .. } => "Import",
+            ExprKind::Module { .. } => "Module",
+            ExprKind::Export { .. } => "Export",
             ExprKind::Break { .. } => "Break",
             ExprKind::Continue { .. } => "Continue",
             ExprKind::DataFrameOperation { .. } => "DataFrameOperation",
+            ExprKind::Assign { .. } => "Assign",
+            ExprKind::CompoundAssign { .. } => "CompoundAssign",
+            ExprKind::PreIncrement { .. } => "PreIncrement",
+            ExprKind::PostIncrement { .. } => "PostIncrement",
+            ExprKind::PreDecrement { .. } => "PreDecrement",
+            ExprKind::PostDecrement { .. } => "PostDecrement",
+            ExprKind::Throw { .. } => "Throw",
         }
     }
 
     /// Get the total number of variants
     #[must_use]
     pub fn variant_count() -> usize {
-        33 // Update this if new variants are added
+        48 // Updated to include Throw expression
     }
 
     /// Get all variant names for coverage tracking
@@ -281,11 +325,14 @@ impl ExprKind {
         vec![
             "Literal",
             "Identifier",
+            "QualifiedName",
             "StringInterpolation",
             "Binary",
             "Unary",
             "Try",
             "TryCatch",
+            "Ok",
+            "Err",
             "Await",
             "If",
             "Let",
@@ -293,6 +340,7 @@ impl ExprKind {
             "Lambda",
             "Struct",
             "StructLiteral",
+            "ObjectLiteral",
             "FieldAccess",
             "Trait",
             "Impl",
@@ -311,8 +359,18 @@ impl ExprKind {
             "While",
             "Range",
             "Import",
+            "Module",
+            "Export",
             "Break",
             "Continue",
+            "DataFrameOperation",
+            "Assign",
+            "CompoundAssign",
+            "PreIncrement",
+            "PostIncrement",
+            "PreDecrement",
+            "PostDecrement",
+            "Throw",
         ]
     }
 }

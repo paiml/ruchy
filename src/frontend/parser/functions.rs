@@ -92,6 +92,7 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
             name,
             ty,
             span: Span { start: 0, end: 0 },
+            is_mutable: false,
         });
 
         // Check for comma

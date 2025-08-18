@@ -145,6 +145,28 @@ pub(crate) fn parse_expr_with_precedence_recursive(
                         }
                     }
                 }
+                Some((Token::Increment, _)) => {
+                    state.tokens.advance(); // consume ++
+                    left = Expr {
+                        kind: ExprKind::PostIncrement {
+                            target: Box::new(left),
+                        },
+                        span: Span { start: 0, end: 0 },
+                        attributes: Vec::new(),
+                    };
+                    handled_postfix = true;
+                }
+                Some((Token::Decrement, _)) => {
+                    state.tokens.advance(); // consume --
+                    left = Expr {
+                        kind: ExprKind::PostDecrement {
+                            target: Box::new(left),
+                        },
+                        span: Span { start: 0, end: 0 },
+                        attributes: Vec::new(),
+                    };
+                    handled_postfix = true;
+                }
                 _ => {}
             }
         }
@@ -221,6 +243,54 @@ pub(crate) fn parse_expr_with_precedence_recursive(
                 },
                 span: Span { start: 0, end: 0 },
                 attributes: Vec::new(),
+            };
+            continue;
+        }
+
+        // Check for assignment operators
+        if token_clone.is_assignment_op() {
+            let prec = 1; // Very low precedence, right-associative
+            if prec < min_prec {
+                break;
+            }
+
+            state.tokens.advance(); // consume assignment operator
+            let value = parse_expr_with_precedence_recursive(state, prec)?; // Right-associative
+
+            left = if token_clone == Token::Equal {
+                Expr {
+                    kind: ExprKind::Assign {
+                        target: Box::new(left),
+                        value: Box::new(value),
+                    },
+                    span: Span { start: 0, end: 0 },
+                    attributes: Vec::new(),
+                }
+            } else {
+                // Compound assignment operators
+                let bin_op = match token_clone {
+                    Token::PlusEqual => BinaryOp::Add,
+                    Token::MinusEqual => BinaryOp::Subtract,
+                    Token::StarEqual => BinaryOp::Multiply,
+                    Token::SlashEqual => BinaryOp::Divide,
+                    Token::PercentEqual => BinaryOp::Modulo,
+                    Token::PowerEqual => BinaryOp::Power,
+                    Token::AmpersandEqual => BinaryOp::BitwiseAnd,
+                    Token::PipeEqual => BinaryOp::BitwiseOr,
+                    Token::CaretEqual => BinaryOp::BitwiseXor,
+                    Token::LeftShiftEqual => BinaryOp::LeftShift,
+                    Token::RightShiftEqual => BinaryOp::RightShift,
+                    _ => unreachable!("Already checked is_assignment_op"),
+                };
+                Expr {
+                    kind: ExprKind::CompoundAssign {
+                        target: Box::new(left),
+                        op: bin_op,
+                        value: Box::new(value),
+                    },
+                    span: Span { start: 0, end: 0 },
+                    attributes: Vec::new(),
+                }
             };
             continue;
         }

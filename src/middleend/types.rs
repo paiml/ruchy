@@ -36,6 +36,8 @@ pub enum MonoType {
     Optional(Box<MonoType>),
     /// Result type: Result<T, E>
     Result(Box<MonoType>, Box<MonoType>),
+    /// Tuple type: (T1, T2, ...)
+    Tuple(Vec<MonoType>),
     /// Named type (user-defined or gradual typing 'Any')
     Named(String),
 }
@@ -53,6 +55,14 @@ impl fmt::Display for MonoType {
             MonoType::List(elem) => write!(f, "[{elem}]"),
             MonoType::Optional(inner) => write!(f, "{inner}?"),
             MonoType::Result(ok, err) => write!(f, "Result<{ok}, {err}>"),
+            MonoType::Tuple(types) => {
+                write!(f, "(")?;
+                for (i, ty) in types.iter().enumerate() {
+                    if i > 0 { write!(f, ", ")?; }
+                    write!(f, "{ty}")?;
+                }
+                write!(f, ")")
+            }
             MonoType::Named(name) => write!(f, "{name}"),
         }
     }
