@@ -96,6 +96,8 @@ pub enum Token {
     Trait,
     #[token("actor")]
     Actor,
+    #[token("state")]
+    State,
     #[token("receive")]
     Receive,
     #[token("send")]
