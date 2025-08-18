@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![Test Coverage](https://img.shields.io/badge/coverage-pending%20assessment-yellow.svg)](./target/coverage/html/index.html)
-[![v0.4.7 Emergency Recovery](https://img.shields.io/badge/v0.4.7-Emergency%20Recovery-green.svg)](./ROADMAP.md)
+[![v0.4.8 Install Fix](https://img.shields.io/badge/v0.4.8-Install%20Fix-green.svg)](./ROADMAP.md)
 
-**v0.4.7 EMERGENCY RECOVERY** ✅ A functional programming language that transpiles to idiomatic Rust. Core language features restored after critical quality issues. DataFrames, Actor systems pending implementation.
+**v0.4.8 CRITICAL FIX** ✅ A functional programming language that transpiles to idiomatic Rust. Core language features restored after critical quality issues. DataFrames, Actor systems pending implementation.
 
 ## 📋 Development Process
 
@@ -43,7 +43,11 @@ println(f"Hello, {name}! The answer is {result}")
 // Note: DataFrames and Actor systems are planned but not yet implemented
 ```
 
-## Current Implementation Status (v0.4.7)
+## Current Implementation Status (v0.4.8)
+
+### ✅ **v0.4.8 - CRITICAL INSTALL FIX**
+
+Fixed the critical installation issue where `cargo install ruchy` did not provide a working binary.
 
 ### ✅ **v0.4.7 - EMERGENCY QUALITY RECOVERY**
 
@@ -129,16 +133,16 @@ The best way to learn Ruchy is through the REPL (Read-Eval-Print Loop), just lik
 ### Installation
 
 ```bash
-# Clone and build
+# Install via cargo (FIXED in v0.4.8!)
+cargo install ruchy
+
+# Or clone and build from source
 git clone https://github.com/paiml/ruchy
 cd ruchy
 cargo build --release
 
-# Start the interactive REPL (recommended for learning!)
-cargo run -p ruchy-cli -- repl
-
-# Or install via cargo (coming soon!)
-# cargo install ruchy-cli
+# Start the interactive REPL
+ruchy repl
 ```
 
 ### 🎯 One-Liner Mode (NEW in v0.4.4!)

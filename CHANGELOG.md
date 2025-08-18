@@ -5,6 +5,14 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.8] - 2025-08-18 (CRITICAL INSTALL FIX)
+
+### CRITICAL FIX
+- **Cargo Install**: Fixed missing `ruchy` binary - users can now install with `cargo install ruchy`
+  - Previously required separate installation of `ruchy-cli` package
+  - Main CLI binary now included in primary `ruchy` package
+  - Single command installation: `cargo install ruchy`
+
 ## [0.4.7] - 2025-08-18 (EMERGENCY QUALITY RECOVERY)
 
 ### CRITICAL FIXES (CEO-Mandated Emergency Response)
