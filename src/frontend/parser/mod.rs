@@ -25,7 +25,7 @@ mod utils;
 pub use core::Parser;
 
 use crate::frontend::ast::{
-    ActorHandler, Attribute, BinaryOp, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param,
+    Attribute, BinaryOp, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param,
     Pattern, PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp,
 };
 use crate::frontend::lexer::{Token, TokenStream};
