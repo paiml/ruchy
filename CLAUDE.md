@@ -4,6 +4,13 @@
 
 **Generate correct code that compiles on first attempt. Quality is built-in, not bolted-on.**
 
+## Scripting Policy
+
+**CRITICAL**: Use ONLY Ruchy scripts for adhoc scripting and testing. No Python, Bash scripts, or other languages for testing Ruchy functionality. This ensures we dogfood our own language and discover usability issues early.
+
+✅ **Allowed**: `*.ruchy` files loaded via `:load` command in REPL
+❌ **Forbidden**: Python scripts, shell scripts, or any non-Ruchy testing code
+
 ## Implementation Hierarchy
 
 ```yaml
