@@ -2,24 +2,29 @@
 
 #![allow(clippy::expect_used)] // Tests can use expect
 
-use std::process::{Command, Stdio};
 use std::io::Write;
+use std::process::{Command, Stdio};
 
 fn run_repl_commands(commands: &str) -> String {
     let mut child = Command::new("cargo")
         .args(["run", "-p", "ruchy-cli", "--", "repl"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped()) // Capture stderr too
         .spawn()
         .expect("Failed to spawn REPL");
-    
+
     let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-    stdin.write_all(commands.as_bytes()).expect("Failed to write commands");
+    stdin
+        .write_all(commands.as_bytes())
+        .expect("Failed to write commands");
     stdin.write_all(b"\n:quit\n").expect("Failed to write quit");
-    
+
     let output = child.wait_with_output().expect("Failed to read output");
-    String::from_utf8_lossy(&output.stdout).to_string()
+    // Combine stdout and stderr
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    format!("{stdout}{stderr}")
 }
 
 #[test]
@@ -145,7 +150,8 @@ fn test_unknown_command() {
 #[test]
 fn test_empty_lines_ignored() {
     let output = run_repl_commands("\n\n1 + 1\n\n");
-    // Should only evaluate the expression once
-    let twos: Vec<&str> = output.matches('2').collect();
-    assert_eq!(twos.len(), 1);
+    // Check that the result "2" appears (as a standalone line, not in version strings)
+    let lines: Vec<&str> = output.lines().collect();
+    let result_count = lines.iter().filter(|line| line.trim() == "2").count();
+    assert_eq!(result_count, 1, "Should evaluate expression exactly once");
 }

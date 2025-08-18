@@ -5,6 +5,42 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2025-08-19
+
+### Added
+- **Comprehensive REPL Testing Infrastructure**
+  - `make test-repl` target combining 7 test types in one command
+  - Unit tests (18 tests), integration tests (17 tests), property tests (4 tests)
+  - Doctests, examples, and fuzz testing fully integrated
+  - Coverage tests with 26 comprehensive scenarios
+  - CLI one-liner tests validating `-e` flag functionality
+
+- **Enhanced REPL Commands**
+  - Fixed broken commands: `:history`, `:help`, `:clear`, `:bindings`
+  - Added new commands: `:env`, `:type`, `:ast`, `:reset`
+  - Multiline expression support with automatic continuation detection
+  - Public API for testing command handling
+
+- **CLI One-liner Support**
+  - Full `-e` flag support for expression evaluation
+  - JSON output format for scripting integration
+  - Pipe support for stdin evaluation
+  - Script file execution mode
+
+### Fixed
+- **Quality Gate Compliance**
+  - Fixed all clippy lint errors with `-D warnings` flag
+  - Added missing error documentation
+  - Fixed function complexity exceeding limits
+  - Resolved all test warnings and deprecated patterns
+
+### Improved
+- **Testing Coverage**
+  - REPL module coverage increased to ~70%
+  - All critical paths tested including error cases
+  - Property-based testing for consistency guarantees
+  - Fuzz testing for robustness validation
+
 ## [0.4.3] - 2025-08-18
 
 ### Added

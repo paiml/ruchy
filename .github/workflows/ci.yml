@@ -23,6 +23,37 @@ jobs:
       - name: Run comprehensive tests
         run: make test-all
 
+  repl-tests:
+    name: REPL Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: Install test dependencies
+        run: |
+          cargo install cargo-nextest
+          rustup component add llvm-tools-preview
+      - name: Run REPL unit tests
+        run: cargo test repl --lib
+      - name: Run REPL integration tests
+        run: |
+          cargo test --test repl_commands_test
+          cargo test --test cli_oneliner_tests
+      - name: Run REPL property tests
+        run: cargo test repl_function_tests::property_tests
+      - name: Run REPL doctests
+        run: cargo test --doc runtime::repl
+      - name: Run REPL examples
+        run: cargo run --example repl_demo
+      - name: Run REPL coverage tests
+        run: cargo test --test repl_coverage_tests
+      - name: Check REPL coverage
+        run: |
+          cargo llvm-cov --lib --no-report
+          cargo llvm-cov report --lib | grep -E "^\s+runtime::repl" || true
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

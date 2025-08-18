@@ -71,16 +71,13 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
     // Check if 'in' keyword is present (optional for REPL-style let statements)
     let body = if matches!(state.tokens.peek(), Some((Token::In, _))) {
         state.tokens.advance(); // consume 'in'
-        // Parse the body expression after 'in'
+                                // Parse the body expression after 'in'
         super::parse_expr_recursive(state)?
     } else {
         // REPL-style let statement without 'in' - create a unit body
         // This allows statements like "let x = 5" to work in REPL
         use crate::frontend::ast::{ExprKind, Literal, Span};
-        Expr::new(
-            ExprKind::Literal(Literal::Unit),
-            Span { start: 0, end: 0 }
-        )
+        Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })
     };
 
     Ok(Expr::new(
