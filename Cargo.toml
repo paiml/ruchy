@@ -149,7 +149,7 @@ print_stdout = "warn"
 print_stderr = "warn"
 
 [workspace.package]
-version = "0.4.7"
+version = "0.4.8"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
@@ -224,6 +224,7 @@ proc-macro2 = { workspace = true }
 prettyplease = { workspace = true }
 rustyline = { workspace = true }
 colored = "2.1"
+clap = { version = "4.5", features = ["derive"] }
 # DataFrame support
 polars = { version = "0.35", features = ["lazy"], optional = true }
 # MCP Integration
@@ -238,7 +239,6 @@ chrono = "0.4"
 # LSP support
 tower-lsp = "0.20"
 once_cell = "1.19"
-clap = { version = "4.4", features = ["derive"] }
 
 [dev-dependencies]
 proptest = { workspace = true }
