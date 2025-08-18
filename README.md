@@ -2,10 +2,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
-[![Test Coverage](https://img.shields.io/badge/coverage-98.7%25-brightgreen.svg)](./target/coverage/html/index.html)
-[![v0.3 Feature Complete](https://img.shields.io/badge/v0.3-Feature%20Complete-success.svg)](./ROADMAP.md)
+[![Test Coverage](https://img.shields.io/badge/coverage-pending%20assessment-yellow.svg)](./target/coverage/html/index.html)
+[![v0.4.6 Emergency Recovery](https://img.shields.io/badge/v0.4.6-Emergency%20Recovery-orange.svg)](./ROADMAP.md)
 
-**v0.3 FEATURE COMPLETE** ✅ A functional programming language that transpiles to idiomatic Rust, with comprehensive features including DataFrames, Actor systems, Result types, pattern matching, property testing, and more.
+**v0.4.6 EMERGENCY RECOVERY** 🚨 A functional programming language that transpiles to idiomatic Rust. Core language features restored after critical quality issues. DataFrames, Actor systems pending implementation.
 
 ## 📋 Development Process
 
@@ -16,8 +16,7 @@
 - **Velocity**: [docs/execution/velocity.json](./docs/execution/velocity.json) - Performance tracking
 
 ```ruchy
-// Ruchy - expressive, safe, performant
-#[property]
+// Ruchy - Core language features working
 fun fibonacci(n: i32) -> i32 {
     match n {
         0 | 1 => n,
@@ -25,38 +24,39 @@ fun fibonacci(n: i32) -> i32 {
     }
 }
 
-// Actor-based concurrency
-actor Calculator {
-    state: f64 = 0.0,
-    
-    receive {
-        Add(value) => self.state += value,
-        Multiply(value) => self.state *= value,
-        GetResult(reply) => reply.send(self.state)
+// String interpolation and control flow
+fun analyze_numbers(nums: [i32]) {
+    for n in nums {
+        if n % 2 == 0 {
+            println(f"Even: {n}")
+        } else {
+            println(f"Odd: {n}")
+        }
     }
 }
 
-// DataFrame operations with method chaining
-fun analyze_data(df: DataFrame) -> DataFrame {
-    df.filter(col("score") > 90)
-      .groupby("category") 
-      .agg([
-          col("value").mean().alias("avg"),
-          col("value").std().alias("stddev")
-      ])
-}
+// Variable bindings and expressions
+let name = "World"
+let result = if true { 42 } else { 0 }
+println(f"Hello, {name}! The answer is {result}")
+
+// Note: DataFrames and Actor systems are planned but not yet implemented
 ```
 
-## Current Implementation Status (v0.4.4)
+## Current Implementation Status (v0.4.6)
 
-### 🎉 **New in v0.4.4 - One-Liner Support & CLI Excellence**
+### 🚨 **v0.4.6 - EMERGENCY QUALITY RECOVERY**
 
-#### **Major Features**
-- **One-Liner Execution**: Use `-e` flag for quick expressions and shell scripting
-- **Stdin Pipe Support**: Pipe expressions directly from shell
-- **Script File Execution**: Run `.ruchy` files directly without subcommands
-- **JSON Output Mode**: Machine-readable output for scripting integration
-- **Proper Exit Codes**: Success (0) and error (1) codes for shell scripting
+This release addresses critical quality failures identified by the CEO after v0.4.6 was found to have "shameful" basic functionality bugs.
+
+#### **Critical Fixes Applied**
+- **Variable Binding Corruption**: Fixed critical bug where let bindings were overwritten with Unit values
+- **Transpiler println! Generation**: Fixed transpiler generating invalid println() instead of println!() macros  
+- **One-Liner -e Flag**: Implemented missing -e flag functionality that was advertised but non-functional
+- **Function Call Evaluation**: Fixed functions being stored as strings instead of callable values
+- **Match Expression Evaluation**: Implemented missing match expression evaluation with wildcard patterns
+- **Block Expression Returns**: Fixed blocks returning first value instead of last value
+- **Quality Gates**: Mandatory pre-commit hooks enforcing complexity <10, zero SATD, lint compliance
 
 ### 🎉 **Previous in v0.3.0 - REPL Fixed with Extreme Quality Engineering**
 
@@ -66,12 +66,15 @@ fun analyze_data(df: DataFrame) -> DataFrame {
 - **Deterministic Compilation**: Guaranteed reproducible builds with canonical AST
 - **Error Recovery System**: Predictable parser behavior on malformed input
 
-#### **Technical Achievements**
-- **Canonical AST Normalization**: De Bruijn indices eliminate variable capture bugs
-- **Reference Interpreter**: Ground truth for semantic verification
-- **Compilation Provenance**: Complete audit trail with SHA256 hashing
-- **Chaos Engineering**: Environmental variance testing
-- **96.4% Test Pass Rate**: 194/201 tests passing
+#### **Current Status (Post-Recovery)**
+- **Core Language**: Basic expressions, variables, functions, control flow ✅
+- **REPL Functionality**: Interactive evaluation with persistent state ✅  
+- **String Interpolation**: f-string support with expression evaluation ✅
+- **Pattern Matching**: Match expressions with wildcard support ✅
+- **Test Coverage**: 195/197 tests passing (99.0% pass rate) ✅
+- **Quality Standards**: All lint violations fixed, complexity <10 enforced ✅
+- **DataFrames**: Parsing not implemented ❌
+- **Actor System**: Syntax not implemented ❌
 
 ### 🎉 **Previous Release (v0.2.1)**
 - **REPL State Persistence**: Functions and definitions persist across REPL commands
