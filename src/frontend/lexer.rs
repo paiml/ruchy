@@ -84,6 +84,16 @@ pub enum Token {
     Throw,
     #[token("return")]
     Return,
+    #[token("Ok")]
+    Ok,
+    #[token("Err")]
+    Err,
+    #[token("Some")]
+    Some,
+    #[token("None")]
+    None,
+    #[token("Result")]
+    Result,
     #[token("break")]
     Break,
     #[token("continue")]

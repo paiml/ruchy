@@ -149,6 +149,33 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Break => Ok(control_flow::parse_break(state)),
         Token::Continue => Ok(control_flow::parse_continue(state)),
         Token::Try => control_flow::parse_try_catch(state),
+        Token::Ok => {
+            state.tokens.advance(); // consume Ok
+            state.tokens.expect(&Token::LeftParen)?;
+            let value = Box::new(super::parse_expr_recursive(state)?);
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(Expr::new(ExprKind::Ok { value }, span_clone))
+        }
+        Token::Err => {
+            state.tokens.advance(); // consume Err
+            state.tokens.expect(&Token::LeftParen)?;
+            let error = Box::new(super::parse_expr_recursive(state)?);
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(Expr::new(ExprKind::Err { error }, span_clone))
+        }
+        Token::Some => {
+            state.tokens.advance(); // consume Some
+            state.tokens.expect(&Token::LeftParen)?;
+            let value = super::parse_expr_recursive(state)?;
+            state.tokens.expect(&Token::RightParen)?;
+            // Some is just an alias for Ok in our implementation
+            Ok(Expr::new(ExprKind::Ok { value: Box::new(value) }, span_clone))
+        }
+        Token::None => {
+            state.tokens.advance(); // consume None
+            // None is just unit/null
+            Ok(Expr::new(ExprKind::Literal(Literal::Unit), span_clone))
+        }
         Token::Throw => {
             state.tokens.advance(); // consume throw
             let expr = super::parse_expr_recursive(state)?;
