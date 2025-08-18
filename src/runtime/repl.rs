@@ -459,6 +459,30 @@ impl Repl {
                     bail!("Complex function calls not yet supported");
                 }
             }
+            ExprKind::DataFrame { columns } => {
+                // For REPL demo, return a formatted representation
+                let mut repr = String::from("DataFrame {\n");
+                for col in columns {
+                    repr.push_str(&format!("  {}: [", col.name));
+                    for (i, val_expr) in col.values.iter().enumerate() {
+                        if i > 0 {
+                            repr.push_str(", ");
+                        }
+                        let val = self.evaluate_expr(val_expr, deadline, depth + 1)?;
+                        match val {
+                            Value::String(s) => repr.push_str(&format!("\"{s}\"")),
+                            other => repr.push_str(&other.to_string()),
+                        }
+                    }
+                    repr.push_str("]\n");
+                }
+                repr.push('}');
+                Ok(Value::String(repr))
+            }
+            ExprKind::DataFrameOperation { .. } => {
+                // DataFrame operations not yet implemented in REPL
+                bail!("DataFrame operations not yet implemented in REPL")
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
