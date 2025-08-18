@@ -1,5 +1,7 @@
 //! Integration tests for REPL commands and features
 
+#![allow(clippy::expect_used)] // Tests can use expect
+
 use std::process::{Command, Stdio};
 use std::io::Write;
 
@@ -85,9 +87,9 @@ fn test_type_command() {
 #[test]
 fn test_arithmetic_evaluation() {
     let output = run_repl_commands("2 + 3\n5 * 4\n10 / 2");
-    assert!(output.contains("5"));
+    assert!(output.contains('5'));
     assert!(output.contains("20"));
-    assert!(output.contains("5"));
+    assert!(output.contains('5'));
 }
 
 #[test]
@@ -115,13 +117,13 @@ fn test_boolean_operations() {
 fn test_if_expressions() {
     let output = run_repl_commands("if true { 100 } else { 200 }\nif false { 1 } else { 2 }");
     assert!(output.contains("100"));
-    assert!(output.contains("2"));
+    assert!(output.contains('2'));
 }
 
 #[test]
 fn test_block_expressions() {
     let output = run_repl_commands("{ 1 + 1 }");
-    assert!(output.contains("2"));
+    assert!(output.contains('2'));
     // TODO: Fix block evaluation to return last expression instead of let binding value
     // Currently { let a = 5; a * 2 } returns 5, not 10
 }
@@ -144,6 +146,6 @@ fn test_unknown_command() {
 fn test_empty_lines_ignored() {
     let output = run_repl_commands("\n\n1 + 1\n\n");
     // Should only evaluate the expression once
-    let twos: Vec<&str> = output.matches("2").collect();
+    let twos: Vec<&str> = output.matches('2').collect();
     assert_eq!(twos.len(), 1);
 }

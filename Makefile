@@ -8,6 +8,7 @@ help:
 	@echo "  make build       - Build the project in release mode"
 	@echo "  make test        - Run fast tests only (~5 seconds)"
 	@echo "  make test-all    - Run ALL tests including slow ones"
+	@echo "  make test-property - Run property-based tests"
 	@echo "  make test-nextest - Run tests with nextest (better output)"
 	@echo "  make lint        - Run clippy linter"
 	@echo "  make format      - Format code with rustfmt"
@@ -57,6 +58,14 @@ test-all:
 	@cargo test --all-features --workspace -- --include-ignored
 	@cargo test --doc
 	@echo "✓ All tests passed"
+
+# Run property-based tests specifically
+test-property:
+	@echo "Running property-based tests..."
+	@cargo test property_ --lib --release -- --nocapture
+	@cargo test proptest --lib --release -- --nocapture
+	@cargo test quickcheck --lib --release -- --nocapture
+	@echo "✓ Property tests passed"
 
 
 # Run linter
