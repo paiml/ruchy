@@ -1,6 +1,7 @@
 //! Parsing utilities and helper functions
 
 use super::{ParserState, *};
+use crate::frontend::ast::ImportItem;
 
 /// # Errors
 ///
@@ -13,6 +14,14 @@ pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
 
     let mut params = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        // Check for mut keyword  
+        let is_mutable = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+            state.tokens.advance(); // consume mut
+            true
+        } else {
+            false
+        };
+
         let name = match state.tokens.peek() {
             Some((Token::Identifier(n), _)) => {
                 let name = n.clone();
@@ -65,6 +74,7 @@ pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
             name,
             ty,
             span: Span { start: 0, end: 0 },
+            is_mutable,
         });
 
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
@@ -197,12 +207,59 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
     }
 }
 
+/// Parse import statements in various forms
+/// 
+/// Supports:
+/// - Simple imports: `import std::collections::HashMap`
+/// - Multiple imports: `import std::io::{Read, Write}`
+/// - Aliased imports: `import std::collections::{HashMap as Map}`
+/// - Wildcard imports: `import std::collections::*`
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::frontend::parser::Parser;
+/// use ruchy::frontend::ast::{ExprKind, ImportItem};
+/// 
+/// let mut parser = Parser::new("import std::collections::HashMap");
+/// let expr = parser.parse().unwrap();
+/// 
+/// match &expr.kind {
+///     ExprKind::Import { path, items } => {
+///         assert_eq!(path, "std::collections::HashMap");
+///         assert_eq!(items.len(), 1);
+///         assert!(matches!(items[0], ImportItem::Named(ref name) if name == "HashMap"));
+///     }
+///     _ => panic!("Expected Import expression"),
+/// }
+/// ```
+///
+/// ```
+/// use ruchy::frontend::parser::Parser;
+/// use ruchy::frontend::ast::{ExprKind, ImportItem};
+/// 
+/// // Multiple imports with alias
+/// let mut parser = Parser::new("import std::collections::{HashMap as Map, Vec}");
+/// let expr = parser.parse().unwrap();
+/// 
+/// match &expr.kind {
+///     ExprKind::Import { path, items } => {
+///         assert_eq!(path, "std::collections");
+///         assert_eq!(items.len(), 2);
+///         assert!(matches!(&items[0], ImportItem::Aliased { name, alias } 
+///                          if name == "HashMap" && alias == "Map"));
+///         assert!(matches!(&items[1], ImportItem::Named(name) if name == "Vec"));
+///     }
+///     _ => panic!("Expected Import expression"),
+/// }
+/// ```
+///
 /// # Errors
 ///
-/// Returns an error if the operation fails
-/// # Errors
-///
-/// Returns an error if the operation fails
+/// Returns an error if:
+/// - No identifier follows the import keyword
+/// - Invalid syntax in import specification
+/// - Unexpected tokens in import list
 pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume import/use
 
@@ -216,41 +273,99 @@ pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
         while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
             // Check for ::
             state.tokens.advance(); // consume ::
+            
+            // Check for wildcard or brace after ::
+            if matches!(state.tokens.peek(), Some((Token::Star | Token::LeftBrace, _))) {
+                // This is the start of import items, break out of path parsing
+                break;
+            }
+            
             if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
                 path_parts.push(name.clone());
                 state.tokens.advance();
+            } else {
+                bail!("Expected identifier, '*', or '{{' after '::'");
             }
         }
     }
 
-    // Check for specific imports like ::{Read, Write}
-    let items = if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-        state.tokens.advance(); // consume ::
+    // Check for specific imports like ::{Read, Write} or ::*
+    // Note: We may have already consumed the :: in the loop above
+    let items = if matches!(state.tokens.peek(), Some((Token::Star, _))) {
+        // Wildcard import: import path::*
+        state.tokens.advance(); // consume *
+        vec![ImportItem::Wildcard]
+    } else if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+        // Specific imports: import path::{item1, item2, ...}
         state.tokens.expect(&Token::LeftBrace)?; // consume {
 
         let mut items = Vec::new();
         while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
             if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                items.push(name.clone());
+                let name = name.clone();
                 state.tokens.advance();
+                
+                // Check for alias: item as alias
+                if matches!(state.tokens.peek(), Some((Token::As, _))) {
+                    state.tokens.advance(); // consume as
+                    if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+                        let alias = alias.clone();
+                        state.tokens.advance();
+                        items.push(ImportItem::Aliased { name, alias });
+                    } else {
+                        bail!("Expected alias name after 'as'");
+                    }
+                } else {
+                    items.push(ImportItem::Named(name));
+                }
 
                 if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     state.tokens.advance();
-                } else {
-                    break;
+                    // After comma, continue to parse next item
+                    // Don't break here - continue the loop
+                } else if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                    // If not comma and not right brace, error
+                    bail!("Expected ',' or '}}' in import list");
                 }
-            } else {
-                break;
+            } else if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                bail!("Expected identifier or '}}' in import list");
             }
         }
 
         state.tokens.expect(&Token::RightBrace)?;
         items
     } else {
-        Vec::new()
+        // Simple import: import path or import path as alias
+        if matches!(state.tokens.peek(), Some((Token::As, _))) {
+            // import path as alias
+            state.tokens.advance(); // consume as
+            if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+                let alias = alias.clone();
+                state.tokens.advance();
+                vec![ImportItem::Aliased { 
+                    name: path_parts.last().unwrap_or(&String::new()).clone(),
+                    alias 
+                }]
+            } else {
+                bail!("Expected alias name after 'as'");
+            }
+        } else {
+            // Simple import without alias - import the last part of the path
+            if path_parts.is_empty() {
+                Vec::new()
+            } else {
+                vec![ImportItem::Named(path_parts.last().expect("checked: !path_parts.is_empty()").clone())]
+            }
+        }
     };
 
     let path = path_parts.join("::");
+    
+    // Validate that we have either a path or items (or both)
+    if path.is_empty() && items.is_empty() {
+        bail!("Expected import path or items after 'import'");
+    }
+    
     let span = start_span; // simplified for now
 
     Ok(Expr::new(ExprKind::Import { path, items }, span))
@@ -381,4 +496,198 @@ pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Vec<Stri
     }
 
     parts
+}
+
+/// Parse module declarations
+///
+/// Supports:
+/// - Empty modules: `module MyModule {}`
+/// - Single expression modules: `module Math { sqrt(x) }`
+/// - Multi-expression modules: `module Utils { fn helper() {...}; const PI = 3.14 }`
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::frontend::parser::Parser;
+/// use ruchy::frontend::ast::ExprKind;
+/// 
+/// // Empty module
+/// let mut parser = Parser::new("module Empty {}");
+/// let expr = parser.parse().unwrap();
+/// 
+/// match &expr.kind {
+///     ExprKind::Module { name, .. } => {
+///         assert_eq!(name, "Empty");
+///     }
+///     _ => panic!("Expected Module expression"),
+/// }
+/// ```
+///
+/// ```
+/// use ruchy::frontend::parser::Parser;
+/// use ruchy::frontend::ast::{ExprKind, Literal};
+/// 
+/// // Module with content
+/// let mut parser = Parser::new("module Math { 42 }");
+/// let expr = parser.parse().unwrap();
+/// 
+/// match &expr.kind {
+///     ExprKind::Module { name, body } => {
+///         assert_eq!(name, "Math");
+///         // Verify body contains literal 42
+///         match &body.kind {
+///             ExprKind::Literal(Literal::Integer(n)) => assert_eq!(*n, 42),
+///             _ => panic!("Expected integer literal in module body"),
+///         }
+///     }
+///     _ => panic!("Expected Module expression"),
+/// }
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - No identifier follows the module keyword
+/// - Missing opening or closing braces
+/// - Invalid syntax in module body
+pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume module
+    
+    // Parse module name
+    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected module name after 'module'");
+    };
+    
+    // Expect opening brace
+    state.tokens.expect(&Token::LeftBrace)?;
+    
+    // Parse module body (can be a block or single expression)
+    let body = if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        // Empty module
+        Box::new(Expr::new(
+            ExprKind::Literal(Literal::Unit),
+            Span { start: 0, end: 0 },
+        ))
+    } else {
+        // Parse expressions until we hit the closing brace
+        let mut exprs = Vec::new();
+        while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+            exprs.push(super::parse_expr_recursive(state)?);
+            // Optional semicolon or comma separator
+            if matches!(state.tokens.peek(), Some((Token::Semicolon | Token::Comma, _))) {
+                state.tokens.advance();
+            }
+        }
+        
+        if exprs.len() == 1 {
+            Box::new(exprs.into_iter().next().expect("checked: exprs.len() == 1"))
+        } else {
+            Box::new(Expr::new(
+                ExprKind::Block(exprs),
+                Span { start: 0, end: 0 },
+            ))
+        }
+    };
+    
+    // Expect closing brace
+    state.tokens.expect(&Token::RightBrace)?;
+    
+    Ok(Expr::new(
+        ExprKind::Module { name, body },
+        start_span,
+    ))
+}
+
+/// Parse export statements
+///
+/// Supports:
+/// - Single exports: `export myFunction`
+/// - Multiple exports: `export { func1, func2, func3 }`
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::frontend::parser::Parser;
+/// use ruchy::frontend::ast::ExprKind;
+/// 
+/// // Single export
+/// let mut parser = Parser::new("export myFunction");
+/// let expr = parser.parse().unwrap();
+/// 
+/// match &expr.kind {
+///     ExprKind::Export { items } => {
+///         assert_eq!(items.len(), 1);
+///         assert_eq!(items[0], "myFunction");
+///     }
+///     _ => panic!("Expected Export expression"),
+/// }
+/// ```
+///
+/// ```
+/// use ruchy::frontend::parser::Parser;
+/// use ruchy::frontend::ast::ExprKind;
+/// 
+/// // Multiple exports
+/// let mut parser = Parser::new("export { add, subtract, multiply }");
+/// let expr = parser.parse().unwrap();
+/// 
+/// match &expr.kind {
+///     ExprKind::Export { items } => {
+///         assert_eq!(items.len(), 3);
+///         assert!(items.contains(&"add".to_string()));
+///         assert!(items.contains(&"subtract".to_string()));
+///         assert!(items.contains(&"multiply".to_string()));
+///     }
+///     _ => panic!("Expected Export expression"),
+/// }
+/// ```
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - No identifier or brace follows the export keyword
+/// - Invalid syntax in export list
+/// - Missing closing brace in export block
+pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume export
+    
+    let mut items = Vec::new();
+    
+    // Parse export list
+    if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+        // Export block: export { item1, item2, ... }
+        state.tokens.advance(); // consume {
+        
+        while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                items.push(name.clone());
+                state.tokens.advance();
+                
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance(); // consume comma
+                } else {
+                    break;
+                }
+            } else {
+                bail!("Expected identifier in export list");
+            }
+        }
+        
+        state.tokens.expect(&Token::RightBrace)?;
+    } else if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        // Single export: export item
+        items.push(name.clone());
+        state.tokens.advance();
+    } else {
+        bail!("Expected export list or identifier after 'export'");
+    }
+    
+    Ok(Expr::new(
+        ExprKind::Export { items },
+        start_span,
+    ))
 }

@@ -1,4 +1,5 @@
 //! Tests for Result type support
+#![allow(clippy::unwrap_used)] // Tests need unwrap for assertions
 
 use ruchy::{compile, is_valid_syntax};
 
@@ -23,21 +24,21 @@ fn test_try_operator() {
     assert!(is_valid_syntax("result?"));
     let result = compile("result?").unwrap();
     assert!(result.contains("result"));
-    assert!(result.contains("?"));
+    assert!(result.contains('?'));
 }
 
 #[test]
 fn test_result_chain() {
-    let code = r#"
+    let code = r"
         let x = Ok(10) in
         let y = x? in
         y + 5
-    "#;
+    ";
     assert!(is_valid_syntax(code));
     let result = compile(code).unwrap();
     assert!(result.contains("Ok"));
     assert!(result.contains("10"));
-    assert!(result.contains("?"));
+    assert!(result.contains('?'));
 }
 
 #[test]
@@ -59,12 +60,12 @@ fn test_function_returning_result() {
 
 #[test]
 fn test_result_pattern_matching() {
-    let code = r#"
+    let code = r"
         match result {
             Ok(value) => value * 2,
             Err(msg) => 0
         }
-    "#;
+    ";
     assert!(is_valid_syntax(code));
     let result = compile(code).unwrap();
     assert!(result.contains("match"));
@@ -86,9 +87,9 @@ fn test_result_in_list() {
     let result = compile(code).unwrap();
     assert!(result.contains("Ok"));
     assert!(result.contains("Err"));
-    assert!(result.contains("1"));
-    assert!(result.contains("2"));
-    assert!(result.contains("3"));
+    assert!(result.contains('1'));
+    assert!(result.contains('2'));
+    assert!(result.contains('3'));
 }
 
 #[test]
@@ -97,15 +98,15 @@ fn test_try_in_expression() {
     assert!(is_valid_syntax(code));
     let result = compile(code).unwrap();
     assert!(result.contains("Ok"));
-    assert!(result.contains("?"));
+    assert!(result.contains('?'));
 }
 
 #[test]
 fn test_result_with_complex_types() {
-    let code = r#"Ok([1, 2, 3])"#;
+    let code = r"Ok([1, 2, 3])";
     assert!(is_valid_syntax(code));
     let result = compile(code).unwrap();
     assert!(result.contains("Ok"));
     assert!(result.contains("vec"));
-    assert!(result.contains("!"));
+    assert!(result.contains('!'));
 }

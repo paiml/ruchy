@@ -299,6 +299,7 @@ impl RecoveryRules {
                             Box::new(Expr::new(ExprKind::Literal(Literal::Unit), default_span))
                         }),
                         body: Box::new(Expr::new(ExprKind::Literal(Literal::Unit), default_span)),
+                        is_mutable: false,
                     },
                     default_span,
                 )

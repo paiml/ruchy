@@ -278,7 +278,7 @@ impl crate::Transpiler {
         let result = self.transpile(expr);
 
         if let Ok(ref tokens) = result {
-            tracker.end_pass(&tokens.to_string());
+            tracker.end_pass(&format!("{tokens}"));
         } else {
             tracker.end_pass("error");
         }

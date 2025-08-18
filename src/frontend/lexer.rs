@@ -50,6 +50,10 @@ pub enum Token {
     Try,
     #[token("catch")]
     Catch,
+    #[token("finally")]
+    Finally,
+    #[token("throw")]
+    Throw,
     #[token("return")]
     Return,
     #[token("break")]
@@ -86,6 +90,10 @@ pub enum Token {
     Use,
     #[token("as")]
     As,
+    #[token("module")]
+    Module,
+    #[token("export")]
+    Export,
     #[token("df")]
     DataFrame,
 
@@ -150,6 +158,25 @@ pub enum Token {
     StarEqual,
     #[token("/=")]
     SlashEqual,
+    #[token("%=")]
+    PercentEqual,
+    #[token("**=")]
+    PowerEqual,
+    #[token("&=")]
+    AmpersandEqual,
+    #[token("|=")]
+    PipeEqual,
+    #[token("^=")]
+    CaretEqual,
+    #[token("<<=")]
+    LeftShiftEqual,
+    #[token(">>=")]
+    RightShiftEqual,
+    
+    #[token("++")]
+    Increment,
+    #[token("--")]
+    Decrement,
 
     #[token("|>")]
     Pipeline,
@@ -231,6 +258,25 @@ impl Token {
     #[must_use]
     pub fn is_unary_op(&self) -> bool {
         matches!(self, Token::Bang | Token::Minus | Token::Tilde)
+    }
+
+    #[must_use]
+    pub fn is_assignment_op(&self) -> bool {
+        matches!(
+            self,
+            Token::Equal
+                | Token::PlusEqual
+                | Token::MinusEqual
+                | Token::StarEqual
+                | Token::SlashEqual
+                | Token::PercentEqual
+                | Token::PowerEqual
+                | Token::AmpersandEqual
+                | Token::PipeEqual
+                | Token::CaretEqual
+                | Token::LeftShiftEqual
+                | Token::RightShiftEqual
+        )
     }
 }
 

@@ -1,6 +1,7 @@
 //! Control flow parsing (if/else, match, loops, try/catch)
 
 use super::{ParserState, *};
+use crate::frontend::ast::{StructPatternField, CatchClause};
 
 /// # Errors
 ///
@@ -44,13 +45,21 @@ pub fn parse_if(state: &mut ParserState) -> Result<Expr> {
 pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume let
 
+    // Check for mut keyword
+    let is_mutable = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance(); // consume mut
+        true
+    } else {
+        false
+    };
+
     // Parse variable name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
         state.tokens.advance();
         name
     } else {
-        bail!("Expected identifier after 'let'");
+        bail!("Expected identifier after 'let' or 'let mut'");
     };
 
     // Expect =
@@ -71,6 +80,7 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
             name,
             value: Box::new(value),
             body: Box::new(body),
+            is_mutable,
         },
         start_span,
     ))
@@ -135,7 +145,32 @@ pub fn parse_match(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+/// Parse a pattern with OR support (lowest precedence)
 pub fn parse_pattern(state: &mut ParserState) -> Pattern {
+    let mut left = parse_pattern_base(state);
+    
+    // Handle OR patterns (x | y | z)
+    while matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
+        state.tokens.advance(); // consume |
+        let right = parse_pattern_base(state);
+        
+        // Combine into OR pattern
+        left = match left {
+            Pattern::Or(mut patterns) => {
+                patterns.push(right);
+                Pattern::Or(patterns)
+            }
+            _ => Pattern::Or(vec![left, right]),
+        };
+    }
+    
+    left
+}
+
+/// Parse base patterns without OR handling
+#[allow(clippy::cognitive_complexity)] // Pattern matching has inherent complexity from many variants
+#[allow(clippy::too_many_lines)] // All pattern types must be handled in one place for consistency
+pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
     match state.tokens.peek() {
         Some((Token::Underscore, _)) => {
             state.tokens.advance();
@@ -150,7 +185,7 @@ pub fn parse_pattern(state: &mut ParserState) -> Pattern {
                 && matches!(state.tokens.peek(), Some((Token::LeftParen, _)))
             {
                 state.tokens.advance(); // consume (
-                let inner = parse_pattern(state);
+                let inner = parse_pattern_base(state);
                 if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                     state.tokens.advance(); // consume )
                 }
@@ -160,12 +195,153 @@ pub fn parse_pattern(state: &mut ParserState) -> Pattern {
                 return Pattern::Err(Box::new(inner));
             }
 
+            // Check for struct patterns Point { x, y }
+            if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+                state.tokens.advance(); // consume {
+                let mut fields = Vec::new();
+
+                while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                    if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
+                        let field_name = field_name.clone();
+                        state.tokens.advance();
+
+                        let pattern = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+                            state.tokens.advance(); // consume :
+                            Some(parse_pattern_base(state))
+                        } else {
+                            None // Shorthand like { x } instead of { x: x }
+                        };
+
+                        fields.push(StructPatternField {
+                            name: field_name,
+                            pattern,
+                        });
+
+                        // Consume comma if present
+                        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                            state.tokens.advance();
+                        }
+                    } else {
+                        break;
+                    }
+                }
+
+                if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                    state.tokens.advance(); // consume }
+                }
+
+                return Pattern::Struct {
+                    name,
+                    fields,
+                };
+            }
+
             Pattern::Identifier(name)
+        }
+        Some((Token::LeftParen, _)) => {
+            state.tokens.advance(); // consume (
+            
+            // Check for unit pattern ()
+            if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                state.tokens.advance(); // consume )
+                return Pattern::Literal(Literal::Unit);
+            }
+
+            // Parse tuple pattern (x, y, z)
+            let mut patterns = Vec::new();
+            
+            patterns.push(parse_pattern_base(state));
+            
+            // Check if it's a single-element parenthesized pattern or a tuple
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance(); // consume comma
+                
+                // Parse remaining patterns
+                while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                    patterns.push(parse_pattern_base(state));
+                    
+                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                        state.tokens.advance();
+                    } else {
+                        break;
+                    }
+                }
+            }
+            
+            if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                state.tokens.advance(); // consume )
+            }
+            
+            // If only one pattern and no comma, it's not a tuple
+            if patterns.len() == 1 {
+                patterns.into_iter().next().expect("checked: patterns.len() == 1")
+            } else {
+                Pattern::Tuple(patterns)
+            }
+        }
+        Some((Token::LeftBracket, _)) => {
+            state.tokens.advance(); // consume [
+            let mut patterns = Vec::new();
+
+            while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+                // Check for rest pattern ...
+                if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
+                    state.tokens.advance();
+                    patterns.push(Pattern::Rest);
+                } else {
+                    patterns.push(parse_pattern_base(state));
+                }
+
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance();
+                } else {
+                    break;
+                }
+            }
+
+            if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+                state.tokens.advance(); // consume ]
+            }
+
+            Pattern::List(patterns)
         }
         Some((Token::Integer(i), _)) => {
             let i = *i;
             state.tokens.advance();
+            
+            // Check for range pattern 1..=10 or 1..10
+            if matches!(state.tokens.peek(), Some((Token::DotDot | Token::DotDotEqual, _))) {
+                let inclusive = matches!(state.tokens.peek(), Some((Token::DotDotEqual, _)));
+                state.tokens.advance(); // consume .. or ..=
+                
+                let end_pattern = parse_pattern_base(state);
+                return Pattern::Range {
+                    start: Box::new(Pattern::Literal(Literal::Integer(i))),
+                    end: Box::new(end_pattern),
+                    inclusive,
+                };
+            }
+            
             Pattern::Literal(Literal::Integer(i))
+        }
+        Some((Token::Float(f), _)) => {
+            let f = *f;
+            state.tokens.advance();
+            Pattern::Literal(Literal::Float(f))
+        }
+        Some((Token::String(s), _)) => {
+            let s = s.clone();
+            state.tokens.advance();
+            Pattern::Literal(Literal::String(s))
+        }
+        Some((Token::Bool(b), _)) => {
+            let b = *b;
+            state.tokens.advance();
+            Pattern::Literal(Literal::Bool(b))
+        }
+        Some((Token::DotDotDot, _)) => {
+            state.tokens.advance();
+            Pattern::Rest
         }
         _ => Pattern::Wildcard, // Default fallback
     }
@@ -274,38 +450,85 @@ pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
     // Parse the try block
     let try_block = super::parse_expr_recursive(state)?;
 
-    // Expect catch keyword
-    state.tokens.expect(&Token::Catch)?;
+    // Parse catch clauses
+    let mut catch_clauses = Vec::new();
+    
+    while matches!(state.tokens.peek(), Some((Token::Catch, _))) {
+        catch_clauses.push(parse_catch_clause(state)?);
+    }
 
-    // Parse catch variable (error binding), with optional parentheses
+    // Parse optional finally block
+    let finally_block = if matches!(state.tokens.peek(), Some((Token::Finally, _))) {
+        state.tokens.advance(); // consume finally
+        Some(Box::new(super::parse_expr_recursive(state)?))
+    } else {
+        None
+    };
+
+    // Must have at least one catch clause or a finally block
+    if catch_clauses.is_empty() && finally_block.is_none() {
+        bail!("Expected 'catch' or 'finally' after 'try'");
+    }
+
+    Ok(Expr::new(
+        ExprKind::TryCatch {
+            try_block: Box::new(try_block),
+            catch_clauses,
+            finally_block,
+        },
+        start_span,
+    ))
+}
+
+/// Parse a single catch clause
+fn parse_catch_clause(state: &mut ParserState) -> Result<CatchClause> {
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume catch
+    
+    // Parse catch signature: catch (ExceptionType variable) or catch variable
     let has_parens = matches!(state.tokens.peek(), Some((Token::LeftParen, _)));
     if has_parens {
         state.tokens.advance(); // consume (
     }
 
-    let catch_var = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        let name = name.clone();
+    // Parse exception type and variable name
+    let (exception_type, variable) = if let Some((Token::Identifier(first_name), _)) = state.tokens.peek() {
+        let first_name = first_name.clone();
         state.tokens.advance();
-        name
+        
+        // Check if there's a second identifier (TypeName variable pattern)
+        if let Some((Token::Identifier(second_name), _)) = state.tokens.peek() {
+            let second_name = second_name.clone();
+            state.tokens.advance();
+            (Some(first_name), second_name) // first is type, second is variable
+        } else {
+            (None, first_name) // first is variable, no type
+        }
     } else {
-        bail!("Expected identifier after 'catch'");
+        bail!("Expected variable name in catch clause");
     };
 
     if has_parens {
         state.tokens.expect(&Token::RightParen)?; // consume )
     }
 
-    // Parse the catch block
-    let catch_block = super::parse_expr_recursive(state)?;
+    // Parse optional guard condition: if condition
+    let condition = if matches!(state.tokens.peek(), Some((Token::If, _))) {
+        state.tokens.advance(); // consume if
+        Some(Box::new(super::parse_expr_recursive(state)?))
+    } else {
+        None
+    };
 
-    Ok(Expr::new(
-        ExprKind::TryCatch {
-            try_block: Box::new(try_block),
-            catch_var,
-            catch_block: Box::new(catch_block),
-        },
-        start_span,
-    ))
+    // Parse catch body
+    let body = Box::new(super::parse_expr_recursive(state)?);
+
+    Ok(CatchClause {
+        exception_type,
+        variable,
+        condition,
+        body,
+        span: start_span,
+    })
 }
 
 /// # Errors

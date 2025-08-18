@@ -169,6 +169,7 @@ pub fn arb_param() -> BoxedStrategy<Param> {
             name,
             ty,
             span: Span::new(0, 0),
+            is_mutable: false,
         })
         .boxed()
 }
@@ -237,6 +238,7 @@ pub fn arb_expr_with_depth(depth: u32) -> BoxedStrategy<Expr> {
                             name,
                             value: Box::new(value),
                             body: Box::new(body),
+                            is_mutable: false,
                         },
                         Span::new(0, 0),
                     )
@@ -302,6 +304,7 @@ pub fn arb_well_typed_expr() -> BoxedStrategy<Expr> {
                         Span::new(0, 0),
                     )),
                     body: Box::new(Expr::new(ExprKind::Identifier(name), Span::new(0, 0))),
+                    is_mutable: false,
                 },
                 Span::new(0, 0),
             )
