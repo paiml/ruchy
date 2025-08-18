@@ -13,9 +13,9 @@ use std::time::Duration;
 
 /// REPL v3 with full production features
 pub struct ReplV3 {
-    evaluator: evaluator::BoundedEvaluator,
-    state: state::ReplState,
-    config: ReplConfig,
+    pub evaluator: evaluator::BoundedEvaluator,
+    pub state: state::ReplState,
+    pub config: ReplConfig,
 }
 
 /// Configuration for REPL behavior
