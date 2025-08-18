@@ -6,7 +6,9 @@ help:
 	@echo ""
 	@echo "Core Commands:"
 	@echo "  make build       - Build the project in release mode"
-	@echo "  make test        - Run all tests"
+	@echo "  make test        - Run fast tests only (~5 seconds)"
+	@echo "  make test-all    - Run ALL tests including slow ones"
+	@echo "  make test-nextest - Run tests with nextest (better output)"
 	@echo "  make lint        - Run clippy linter"
 	@echo "  make format      - Format code with rustfmt"
 	@echo "  make clean       - Clean build artifacts"
@@ -31,31 +33,25 @@ build:
 	@cargo build --release
 	@echo "✓ Build complete"
 
-# Run all tests with nextest for speed
+# Run tests (default - FAST tests only, ignores slow integration tests)
 test:
+	@echo "Running fast tests only..."
+	@cargo test --lib --quiet
+	@echo "✓ Fast tests completed (~5 seconds after initial build)"
+
+# Run tests with nextest (will recompile, but has better output)
+test-nextest:
 	@echo "Running tests with nextest..."
-	@cargo nextest run --all-features --workspace --no-fail-fast
-	@cargo test --doc
-	@echo "✓ Tests completed"
+	@cargo nextest run --lib --profile quick
+	@echo "✓ Nextest tests passed"
 
-# Run only library tests (fast, reliable)
-test-lib:
-	@echo "Running library tests with nextest..."
-	@cargo nextest run --lib --all-features
-	@echo "✓ Library tests passed"
-
-# Run tests with standard cargo test (fallback)
-test-cargo:
-	@echo "Running tests with cargo test..."
-	@cargo test --all-features --workspace
+# Run all tests comprehensively (including ignored/slow tests, doc tests)
+test-all:
+	@echo "Running all tests comprehensively (including slow/ignored tests)..."
+	@cargo test --all-features --workspace -- --include-ignored
 	@cargo test --doc
 	@echo "✓ All tests passed"
 
-# Quick test for development
-test-quick:
-	@echo "Running quick tests..."
-	@cargo nextest run --lib --profile quick
-	@echo "✓ Quick tests passed"
 
 # Run linter
 lint:
@@ -141,7 +137,7 @@ quality-gate:
 	@echo "✓ Quality check complete"
 
 # CI pipeline
-ci: format-check lint test coverage quality-gate
+ci: format-check lint test-all coverage quality-gate
 	@echo "✓ CI pipeline complete"
 
 # Prepare for crates.io publication
@@ -170,5 +166,5 @@ dev: format lint test
 	@echo "✓ Development checks complete"
 
 # Full validation
-all: clean build test lint format coverage examples bench doc quality-gate
+all: clean build test-all lint format coverage examples bench doc quality-gate
 	@echo "✓ Full validation complete"

@@ -29,11 +29,12 @@ retries = 0
 fail-fast = true
 
 [profile.quick]
-# Quick profile for rapid feedback during development
+# Quick profile for rapid feedback during development - FAST ONLY
 test-threads = "num-cpus"
 retries = 0
 fail-fast = true
 status-level = "fail"
+slow-timeout = { period = "5s", terminate-after = 1 }  # Kill any test taking >5s
 
 [test-groups]
 # Group tests by category
@@ -62,3 +63,4 @@ threads-required = "num-test-threads"
 filter = "test(fuzz)"
 threads-required = 4
 slow-timeout = { period = "120s" }
+

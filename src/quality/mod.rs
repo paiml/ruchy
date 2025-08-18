@@ -452,6 +452,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "slow integration test - run with --ignored flag"]
     fn test_coverage_integration() {
         // Test that coverage collection doesn't panic
         let result = QualityGates::collect_coverage();
