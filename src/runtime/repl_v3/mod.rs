@@ -7,8 +7,8 @@
 #![allow(clippy::print_stderr)] // REPL needs to print errors
 
 pub mod evaluator;
-pub mod state;
 pub mod recovery;
+pub mod state;
 pub mod testing;
 
 use anyhow::Result;
@@ -86,21 +86,18 @@ impl ReplV3 {
     /// assert!(repl.is_ok());
     /// ```
     pub fn with_config(config: ReplConfig) -> Result<Self> {
-        let evaluator = evaluator::BoundedEvaluator::new(
-            config.max_memory,
-            config.timeout,
-            config.max_depth,
-        )?;
-        
+        let evaluator =
+            evaluator::BoundedEvaluator::new(config.max_memory, config.timeout, config.max_depth)?;
+
         let state = state::ReplState::new();
-        
+
         Ok(Self {
             evaluator,
             state,
             config,
         })
     }
-    
+
     /// Run the REPL main loop
     ///
     /// # Errors
@@ -119,7 +116,7 @@ impl ReplV3 {
     pub fn run(&mut self) -> Result<()> {
         println!("Ruchy REPL v3.0 - Production Ready");
         println!("Type :help for commands");
-        
+
         // Main loop implementation will follow
         Ok(())
     }

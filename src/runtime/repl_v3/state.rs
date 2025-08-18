@@ -49,11 +49,11 @@ impl TypeEnv {
             types: HashMap::new(),
         }
     }
-    
+
     pub fn insert(&mut self, name: String, ty: String) {
         self.types.insert(name, ty);
     }
-    
+
     pub fn get(&self, name: &str) -> Option<&String> {
         self.types.get(name)
     }
@@ -97,7 +97,7 @@ impl Environment {
             types: TypeEnv::new(),
         }
     }
-    
+
     /// Create a checkpoint of current state
     pub fn checkpoint(&self) -> Checkpoint {
         Checkpoint {
@@ -106,7 +106,7 @@ impl Environment {
             pc: 0,
         }
     }
-    
+
     /// Extend environment with new binding
     #[must_use]
     pub fn extend(&self, name: String, value: Value) -> Self {
@@ -114,7 +114,7 @@ impl Environment {
         env.bindings.insert(name, value);
         env
     }
-    
+
     /// Look up a binding
     pub fn get(&self, name: &str) -> Option<&Value> {
         self.bindings.get(name)
@@ -138,10 +138,13 @@ impl State {
         match self {
             State::Ready(env) => {
                 let checkpoint = env.checkpoint();
-                
+
                 // Simulate evaluation (will be replaced with actual eval)
                 if input.contains("error") {
-                    (State::Failed(checkpoint), Err(anyhow::anyhow!("Evaluation failed")))
+                    (
+                        State::Failed(checkpoint),
+                        Err(anyhow::anyhow!("Evaluation failed")),
+                    )
                 } else {
                     let value = Value::Int(42); // Placeholder
                     let new_env = env.extend("_".to_string(), value.clone());
@@ -151,18 +154,27 @@ impl State {
             State::Failed(checkpoint) => {
                 // Restore from checkpoint
                 let env = checkpoint.restore();
-                (State::Ready(env), Err(anyhow::anyhow!("Recovered from failure")))
+                (
+                    State::Ready(env),
+                    Err(anyhow::anyhow!("Recovered from failure")),
+                )
             }
             State::Evaluating(_, checkpoint) => {
                 // Should not happen in normal flow
-                (State::Failed(checkpoint), Err(anyhow::anyhow!("Invalid state")))
+                (
+                    State::Failed(checkpoint),
+                    Err(anyhow::anyhow!("Invalid state")),
+                )
             }
         }
     }
-    
+
     /// Check if state is valid
     pub fn is_valid(&self) -> bool {
-        matches!(self, State::Ready(_) | State::Failed(_) | State::Evaluating(_, _))
+        matches!(
+            self,
+            State::Ready(_) | State::Failed(_) | State::Evaluating(_, _)
+        )
     }
 }
 
@@ -195,12 +207,12 @@ impl ReplState {
             mode: ReplMode::Standard,
         }
     }
-    
+
     /// Switch REPL mode
     pub fn set_mode(&mut self, mode: ReplMode) {
         self.mode = mode;
     }
-    
+
     /// Add command to history
     pub fn add_history(&mut self, cmd: String) {
         self.history.push(cmd);

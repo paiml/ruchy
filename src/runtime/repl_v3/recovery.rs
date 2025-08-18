@@ -60,13 +60,11 @@ impl RecoverableError {
     pub fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
-            restarts: vec![
-                Restart {
-                    name: "abort".to_string(),
-                    description: "Cancel operation and return to prompt".to_string(),
-                    handler: RestartHandler::Abort,
-                },
-            ],
+            restarts: vec![Restart {
+                name: "abort".to_string(),
+                description: "Cancel operation and return to prompt".to_string(),
+                handler: RestartHandler::Abort,
+            }],
             context: ErrorContext {
                 line: 0,
                 column: 0,
@@ -75,40 +73,43 @@ impl RecoverableError {
             },
         }
     }
-    
+
     /// Add a restart option
     #[must_use]
     pub fn add_restart(mut self, restart: Restart) -> Self {
         self.restarts.insert(0, restart); // Insert at beginning for priority
         self
     }
-    
+
     /// Set error context
     #[must_use]
     pub fn with_context(mut self, context: ErrorContext) -> Self {
         self.context = context;
         self
     }
-    
+
     /// Display error with recovery options
     pub fn display(&self) {
         // Error header
         eprintln!("{}: {}", "Error".red().bold(), self.message);
-        
+
         // Source context if available
         if !self.context.source.is_empty() {
             eprintln!();
             eprintln!("  {} | {}", self.context.line, self.context.source);
-            eprintln!("  {} | {}", " ".repeat(self.context.line.to_string().len()), 
-                     "^".repeat(self.context.column).red());
+            eprintln!(
+                "  {} | {}",
+                " ".repeat(self.context.line.to_string().len()),
+                "^".repeat(self.context.column).red()
+            );
         }
-        
+
         // Suggestion if available
         if let Some(ref suggestion) = self.context.suggestion {
             eprintln!();
             eprintln!("{}: {}", "Hint".green(), suggestion);
         }
-        
+
         // Restart options
         if !self.restarts.is_empty() {
             eprintln!();
@@ -118,7 +119,7 @@ impl RecoverableError {
             }
         }
     }
-    
+
     /// Handle user's restart choice
     ///
     /// # Errors
@@ -138,25 +139,15 @@ impl RecoverableError {
         if choice == 0 || choice > self.restarts.len() {
             return Ok(RestartAction::Abort);
         }
-        
+
         let restart = &self.restarts[choice - 1];
-        
+
         match &restart.handler {
-            RestartHandler::UseDefault(value) => {
-                Ok(RestartAction::UseValue(value.clone()))
-            }
-            RestartHandler::RetryWith(input) => {
-                Ok(RestartAction::Retry(input.clone()))
-            }
-            RestartHandler::Skip => {
-                Ok(RestartAction::Skip)
-            }
-            RestartHandler::Abort => {
-                Ok(RestartAction::Abort)
-            }
-            RestartHandler::Custom(action) => {
-                Ok(RestartAction::Custom(action.clone()))
-            }
+            RestartHandler::UseDefault(value) => Ok(RestartAction::UseValue(value.clone())),
+            RestartHandler::RetryWith(input) => Ok(RestartAction::Retry(input.clone())),
+            RestartHandler::Skip => Ok(RestartAction::Skip),
+            RestartHandler::Abort => Ok(RestartAction::Abort),
+            RestartHandler::Custom(action) => Ok(RestartAction::Custom(action.clone())),
         }
     }
 }
@@ -204,7 +195,7 @@ impl RecoveryManager {
             patterns: Self::default_patterns(),
         }
     }
-    
+
     fn default_patterns() -> Vec<RecoveryPattern> {
         vec![
             RecoveryPattern {
@@ -227,22 +218,26 @@ impl RecoveryManager {
             },
         ]
     }
-    
+
     /// Enhance error with recovery suggestions
     pub fn enhance_error(&mut self, mut error: RecoverableError) -> RecoverableError {
         // Record error
         self.error_history.push(error.message.clone());
-        
+
         // Find matching patterns
         for pattern in &self.patterns {
-            if error.message.to_lowercase().contains(&pattern.error_pattern) {
+            if error
+                .message
+                .to_lowercase()
+                .contains(&pattern.error_pattern)
+            {
                 error = error.add_restart(pattern.restart.clone());
                 if error.context.suggestion.is_none() {
                     error.context.suggestion = Some(pattern.suggestion.clone());
                 }
             }
         }
-        
+
         error
     }
 }

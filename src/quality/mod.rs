@@ -138,7 +138,7 @@ impl QualityGates {
     pub fn collect_metrics(&mut self) -> Result<QualityMetrics, Box<dyn std::error::Error>> {
         // Collect SATD count first
         let satd_count = Self::count_satd_comments()?;
-        
+
         let mut metrics = QualityMetrics {
             satd_count,
             ..Default::default()

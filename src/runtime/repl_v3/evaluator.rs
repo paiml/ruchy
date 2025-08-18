@@ -217,22 +217,22 @@ impl BoundedEvaluator {
             ExprKind::Binary { left, op, right } => {
                 let lhs = self.evaluate_expr(left, deadline, depth + 1)?;
                 let rhs = self.evaluate_expr(right, deadline, depth + 1)?;
-                self.evaluate_binary(lhs, *op, rhs)
+                Self::evaluate_binary(&lhs, *op, &rhs)
             },
             ExprKind::Unary { op, operand } => {
                 let val = self.evaluate_expr(operand, deadline, depth + 1)?;
-                self.evaluate_unary(*op, val)
+                Self::evaluate_unary(*op, &val)
             },
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
     
     /// Evaluate binary operations
-    fn evaluate_binary(&mut self, lhs: EvalValue, op: crate::frontend::ast::BinaryOp, rhs: EvalValue) -> Result<EvalValue> {
+    fn evaluate_binary(lhs: &EvalValue, op: crate::frontend::ast::BinaryOp, rhs: &EvalValue) -> Result<EvalValue> {
         use crate::frontend::ast::BinaryOp;
-        use EvalValue::*;
+        use EvalValue::{Int, Float, Bool};
         
-        match (&lhs, op, &rhs) {
+        match (lhs, op, rhs) {
             // Integer arithmetic
             (Int(a), BinaryOp::Add, Int(b)) => Ok(Int(a + b)),
             (Int(a), BinaryOp::Subtract, Int(b)) => Ok(Int(a - b)),
@@ -278,11 +278,11 @@ impl BoundedEvaluator {
     }
     
     /// Evaluate unary operations
-    fn evaluate_unary(&mut self, op: crate::frontend::ast::UnaryOp, val: EvalValue) -> Result<EvalValue> {
+    fn evaluate_unary(op: crate::frontend::ast::UnaryOp, val: &EvalValue) -> Result<EvalValue> {
         use crate::frontend::ast::UnaryOp;
-        use EvalValue::*;
+        use EvalValue::{Int, Float, Bool};
         
-        match (op, &val) {
+        match (op, val) {
             (UnaryOp::Negate, Int(n)) => Ok(Int(-n)),
             (UnaryOp::Negate, Float(f)) => Ok(Float(-f)),
             (UnaryOp::Not, Bool(b)) => Ok(Bool(!b)),
