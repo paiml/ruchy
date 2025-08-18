@@ -551,6 +551,45 @@ The codebase has **extensive, detailed specifications** (33 consolidated specs t
 3. **Quality gates are not enforced** - PMAT requirements are defined but not checked
 4. **Test specifications exist without tests** - test-grammer-repl.md defines 67 tests that aren't run
 
+## UPDATE: Additional Shameful Discoveries (2025-08-19)
+
+### The Ultimate Irony: Can't Even Test in Ruchy
+
+Attempted to write a test script in Ruchy (per CLAUDE.md dogfooding requirement) to verify claims. Result:
+
+1. **Transpiler Fundamentally Broken**:
+   - `println` generates as `println` instead of `println!` 
+   - 51 compilation errors in a simple test script
+   - Can't handle basic string formatting with curly braces
+
+2. **Cannot Write Test Scripts**:
+   - No system() function to run commands
+   - Functions can't be called after definition
+   - No working control flow for test logic
+   - Can't even compile a basic print script
+
+3. **Dogfooding Policy Violated**:
+   - CLAUDE.md requires "Use ONLY Ruchy scripts"
+   - But Ruchy is so broken we can't write scripts in it
+   - Forced to document failures manually
+
+### False Claims in Latest Update (v0.4.6)
+
+Despite QA report showing massive failures, changelog was updated with:
+- "Actor System Complete" - **FALSE**: Actors don't parse in REPL
+- "All Core Language Features Now Complete!" - **FALSE**: >50% broken
+- Claims Phase 4 complete while Week 1 critical features missing
+
+### The Damning Evidence
+
+```ruchy
+// This simple Ruchy script won't even compile:
+println("Hello World");  // Generates wrong Rust code
+
+// Week 1 CRITICAL PATH feature still missing:
+ruchy -e "2 + 2"  // error: unexpected argument '-e' found
+```
+
 ## Version Information
 - Ruchy version: 0.4.4 (REPL shows v0.4.0 - version mismatch)
 - Platform: Linux
