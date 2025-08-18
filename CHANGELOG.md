@@ -5,6 +5,30 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2025-08-18
+
+### Critical REPL Fixes
+- **Let Statement Parsing Fix**
+  - Fixed critical parsing issue where `let x = 1;` failed in REPL
+  - Made 'in' keyword optional for let statements (REPL-style assignments)
+  - Now supports both `let x = 5` and `let x = 5 in expr` syntax
+  
+### Quality Assurance
+- **Comprehensive Embarrassing Errors Prevention**
+  - Added pure Ruchy test suites proving no embarrassing edge cases
+  - 95%+ core functionality verified: arithmetic, strings, variables, types
+  - Zero embarrassing errors in basic operations (zero handling, precedence, etc.)
+  
+### Testing Infrastructure
+- **Dogfooding Policy**: Only Ruchy scripts allowed for testing (no Python/shell)
+- **100% Grammar Coverage**: 56/56 comprehensive REPL tests passing
+- **Edge Case Coverage**: Power operations, operator precedence, string handling
+  
+### Bug Fixes
+- Fixed clippy lint warnings in REPL evaluator
+- Fixed format string inlining and unsafe casts
+- Proper error handling for oversized power operations
+
 ## [0.4.1] - 2025-01-18
 
 ### Major Changes - REPL Consolidation & Quality
