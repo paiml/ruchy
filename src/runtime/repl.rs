@@ -151,6 +151,41 @@ impl Repl {
         })
     }
 
+    /// Evaluate an expression string and return the Value
+    ///
+    /// This is used for one-liner evaluation from CLI
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if parsing or evaluation fails
+    pub fn evaluate_expr_str(&mut self, input: &str, deadline: Option<Instant>) -> Result<Value> {
+        // Reset memory tracker for fresh evaluation
+        self.memory.reset();
+        
+        // Track input memory
+        self.memory.try_alloc(input.len())?;
+        
+        // Use provided deadline or default timeout
+        let deadline = deadline.unwrap_or_else(|| Instant::now() + self.config.timeout);
+        
+        // Parse the input
+        let mut parser = Parser::new(input);
+        let ast = parser.parse().context("Failed to parse input")?;
+        
+        // Check memory for AST
+        self.memory.try_alloc(std::mem::size_of_val(&ast))?;
+        
+        // Evaluate the expression
+        let value = self.evaluate_expr(&ast, deadline, 0)?;
+        
+        // Handle let bindings specially
+        if let ExprKind::Let { name, .. } = &ast.kind {
+            self.bindings.insert(name.clone(), value.clone());
+        }
+        
+        Ok(value)
+    }
+
     /// Evaluate an expression with resource bounds
     ///
     /// # Errors

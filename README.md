@@ -47,9 +47,18 @@ fun analyze_data(df: DataFrame) -> DataFrame {
 }
 ```
 
-## Current Implementation Status (v0.3.0)
+## Current Implementation Status (v0.4.4)
 
-### 🎉 **New in v0.3.0 - REPL Fixed with Extreme Quality Engineering**
+### 🎉 **New in v0.4.4 - One-Liner Support & CLI Excellence**
+
+#### **Major Features**
+- **One-Liner Execution**: Use `-e` flag for quick expressions and shell scripting
+- **Stdin Pipe Support**: Pipe expressions directly from shell
+- **Script File Execution**: Run `.ruchy` files directly without subcommands
+- **JSON Output Mode**: Machine-readable output for scripting integration
+- **Proper Exit Codes**: Success (0) and error (1) codes for shell scripting
+
+### 🎉 **Previous in v0.3.0 - REPL Fixed with Extreme Quality Engineering**
 
 #### **Major Improvements**
 - **All REPL Bugs Fixed**: Complete rewrite with ReplV2 addressing all critical issues
@@ -124,6 +133,47 @@ cargo build --release
 
 # Start the interactive REPL (recommended for learning!)
 cargo run -p ruchy-cli -- repl
+
+# Or install via cargo (coming soon!)
+# cargo install ruchy-cli
+```
+
+### 🎯 One-Liner Mode (NEW in v0.4.4!)
+
+Ruchy now supports one-liner execution for shell scripting and quick calculations:
+
+```bash
+# Evaluate expressions with -e flag
+ruchy -e "2 + 2"
+# Output: 4
+
+ruchy -e 'println("Hello, World!")'
+# Output: Hello, World!
+
+# Use in shell scripts
+result=$(ruchy -e "100 * 1.08")
+echo "Total with tax: $result"
+
+# Pipe input from stdin
+echo "42 * 2" | ruchy
+# Output: 84
+
+# JSON output for scripting
+ruchy -e "5 + 3" --format json
+# Output: 8
+
+# Complex expressions work too!
+ruchy -e 'if 10 > 5 { "yes" } else { "no" }'
+# Output: "yes"
+
+# Run script files directly
+cat > calc.ruchy << 'EOF'
+let x = 10
+let y = 20
+println(x + y)
+EOF
+ruchy calc.ruchy
+# Output: 30
 ```
 
 ### 📚 Your First Ruchy Session

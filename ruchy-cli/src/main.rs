@@ -9,6 +9,17 @@ use std::path::PathBuf;
 #[command(name = "ruchy")]
 #[command(author, version, about = "The Ruchy programming language", long_about = None)]
 struct Cli {
+    /// Evaluate a one-liner expression
+    #[arg(short = 'e', long = "eval", value_name = "EXPR")]
+    eval: Option<String>,
+    
+    /// Output format for evaluation results (text, json)
+    #[arg(long, default_value = "text")]
+    format: String,
+    
+    /// Script file to execute (alternative to subcommands)
+    file: Option<PathBuf>,
+    
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -62,6 +73,26 @@ fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     let cli = Cli::parse();
+
+    // Handle one-liner evaluation with -e flag (highest priority)
+    if let Some(expr) = cli.eval {
+        return evaluate_oneliner(&expr, &cli.format);
+    }
+    
+    // Handle script file execution (without subcommand)
+    if let Some(file) = cli.file {
+        return run_script(&file);
+    }
+    
+    // Check if stdin has input (for pipe support)
+    if !atty::is(atty::Stream::Stdin) {
+        use std::io::{self, Read};
+        let mut buffer = String::new();
+        io::stdin().read_to_string(&mut buffer)?;
+        if !buffer.trim().is_empty() {
+            return evaluate_oneliner(&buffer, &cli.format);
+        }
+    }
 
     match cli.command {
         None | Some(Commands::Repl) => {
@@ -203,4 +234,83 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Evaluate a one-liner expression
+fn evaluate_oneliner(expr: &str, format: &str) -> Result<()> {
+    use ruchy::runtime::Value;
+    use std::time::{Duration, Instant};
+    
+    // Create a REPL instance for evaluation
+    let mut repl = Repl::new()?;
+    
+    // Set timeout for one-liners (100ms default)
+    let deadline = Instant::now() + Duration::from_millis(100);
+    
+    match repl.evaluate_expr_str(expr, Some(deadline)) {
+        Ok(value) => {
+            match format {
+                "json" => {
+                    // Output as JSON for scripting
+                    println!("{}", value_to_json(&value));
+                }
+                _ => {
+                    // Default text output
+                    if !matches!(value, Value::Unit) {
+                        println!("{}", value);
+                    }
+                }
+            }
+            std::process::exit(0);
+        }
+        Err(e) => {
+            if format == "json" {
+                println!(r#"{{"error": "{}"}}"#, e);
+            } else {
+                eprintln!("Error: {}", e);
+            }
+            std::process::exit(1);
+        }
+    }
+}
+
+/// Run a script file
+fn run_script(file: &PathBuf) -> Result<()> {
+    use std::time::{Duration, Instant};
+    
+    let source = fs::read_to_string(file)?;
+    let mut repl = Repl::new()?;
+    
+    // Scripts get longer timeout (10 seconds)
+    let deadline = Instant::now() + Duration::from_secs(10);
+    
+    // Execute each line/statement in the script
+    for line in source.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with("//") {
+            continue;
+        }
+        
+        if let Err(e) = repl.evaluate_expr_str(line, Some(deadline)) {
+            eprintln!("Error at line: {}", line);
+            eprintln!("  {}", e);
+            std::process::exit(1);
+        }
+    }
+    
+    Ok(())
+}
+
+/// Convert a Value to JSON representation
+fn value_to_json(value: &ruchy::runtime::Value) -> String {
+    use ruchy::runtime::Value;
+    
+    match value {
+        Value::Unit => "null".to_string(),
+        Value::Int(n) => n.to_string(),
+        Value::Float(f) => f.to_string(),
+        Value::Bool(b) => b.to_string(),
+        Value::String(s) => format!(r#""{}""#, s.replace('"', r#"\""#)),
+        Value::Char(c) => format!(r#""{}""#, c),
+    }
 }
