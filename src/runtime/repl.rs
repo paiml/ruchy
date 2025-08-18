@@ -231,6 +231,85 @@ impl Repl {
                 self.bindings.insert(name.clone(), val.clone());
                 Ok(val)
             }
+            ExprKind::If { condition, then_branch, else_branch } => {
+                let cond_val = self.evaluate_expr(condition, deadline, depth + 1)?;
+                match cond_val {
+                    Value::Bool(true) => self.evaluate_expr(then_branch, deadline, depth + 1),
+                    Value::Bool(false) => {
+                        if let Some(else_expr) = else_branch {
+                            self.evaluate_expr(else_expr, deadline, depth + 1)
+                        } else {
+                            Ok(Value::Unit)
+                        }
+                    }
+                    _ => bail!("If condition must be boolean, got: {:?}", cond_val),
+                }
+            }
+            ExprKind::Block(exprs) => {
+                if exprs.is_empty() {
+                    return Ok(Value::Unit);
+                }
+                
+                let mut result = Value::Unit;
+                for expr in exprs {
+                    result = self.evaluate_expr(expr, deadline, depth + 1)?;
+                }
+                Ok(result)
+            }
+            ExprKind::List(elements) => {
+                // For now, just evaluate each element and return the last one
+                // In a full implementation, this would return a proper list value
+                if elements.is_empty() {
+                    Ok(Value::Unit)
+                } else {
+                    let mut results = Vec::new();
+                    for elem in elements {
+                        let val = self.evaluate_expr(elem, deadline, depth + 1)?;
+                        results.push(val);
+                    }
+                    // For REPL demonstration, just show the first element
+                    // In a real implementation, we'd have a List(Vec<Value>) variant
+                    Ok(results.into_iter().next().unwrap_or(Value::Unit))
+                }
+            }
+            ExprKind::Assign { target, value } => {
+                let val = self.evaluate_expr(value, deadline, depth + 1)?;
+                
+                // For now, only support simple variable assignment
+                if let ExprKind::Identifier(name) = &target.kind {
+                    self.bindings.insert(name.clone(), val.clone());
+                    Ok(val)
+                } else {
+                    bail!("Only simple variable assignment is supported, got: {:?}", target.kind);
+                }
+            }
+            ExprKind::Range { start, end, inclusive: _ } => {
+                let start_val = self.evaluate_expr(start, deadline, depth + 1)?;
+                let end_val = self.evaluate_expr(end, deadline, depth + 1)?;
+                
+                // For REPL demo, just return a string representation
+                match (start_val, end_val) {
+                    (Value::Int(s), Value::Int(e)) => {
+                        Ok(Value::String(format!("{}..{}", s, e)))
+                    }
+                    _ => bail!("Range endpoints must be integers")
+                }
+            }
+            ExprKind::Function { name, params, .. } => {
+                // Store function definition (simplified for REPL demo)
+                let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
+                let func_signature = format!("fn {}({})", name, param_names.join(", "));
+                
+                // Store as a special function value
+                self.bindings.insert(name.clone(), Value::String(func_signature.clone()));
+                Ok(Value::String(func_signature))
+            }
+            ExprKind::Lambda { params, .. } => {
+                // Lambda expressions (simplified for REPL demo)  
+                let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
+                let lambda_signature = format!("|{}| <body>", param_names.join(", "));
+                Ok(Value::String(lambda_signature))
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
@@ -256,6 +335,13 @@ impl Repl {
                 }
                 Ok(Int(a % b))
             }
+            (Int(a), BinaryOp::Power, Int(b)) => {
+                if *b < 0 {
+                    bail!("Negative integer powers not supported in integer context");
+                }
+                let result = (*a as i64).pow(*b as u32);
+                Ok(Int(result))
+            }
 
             // Float arithmetic
             (Float(a), BinaryOp::Add, Float(b)) => Ok(Float(a + b)),
@@ -267,14 +353,28 @@ impl Repl {
                 }
                 Ok(Float(a / b))
             }
+            (Float(a), BinaryOp::Power, Float(b)) => Ok(Float(a.powf(*b))),
+            
+            // String operations
+            (Value::String(a), BinaryOp::Add, Value::String(b)) => {
+                Ok(Value::String(format!("{a}{b}")))
+            }
 
-            // Comparisons
+            // Comparisons - Integers
             (Int(a), BinaryOp::Less, Int(b)) => Ok(Bool(a < b)),
             (Int(a), BinaryOp::LessEqual, Int(b)) => Ok(Bool(a <= b)),
             (Int(a), BinaryOp::Greater, Int(b)) => Ok(Bool(a > b)),
             (Int(a), BinaryOp::GreaterEqual, Int(b)) => Ok(Bool(a >= b)),
             (Int(a), BinaryOp::Equal, Int(b)) => Ok(Bool(a == b)),
             (Int(a), BinaryOp::NotEqual, Int(b)) => Ok(Bool(a != b)),
+            
+            // Comparisons - Strings
+            (Value::String(a), BinaryOp::Equal, Value::String(b)) => Ok(Bool(a == b)),
+            (Value::String(a), BinaryOp::NotEqual, Value::String(b)) => Ok(Bool(a != b)),
+            
+            // Comparisons - Booleans
+            (Bool(a), BinaryOp::Equal, Bool(b)) => Ok(Bool(a == b)),
+            (Bool(a), BinaryOp::NotEqual, Bool(b)) => Ok(Bool(a != b)),
 
             // Boolean logic
             (Bool(a), BinaryOp::And, Bool(b)) => Ok(Bool(*a && *b)),

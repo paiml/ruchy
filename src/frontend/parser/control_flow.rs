@@ -68,12 +68,20 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
     // Parse value
     let value = super::parse_expr_recursive(state)?;
 
-    // Expect 'in'
-    state.tokens.expect(&Token::In)?;
-
-    // For now, let's parse the body as the rest of the expression
-    // In a real implementation, we'd handle this more carefully
-    let body = super::parse_expr_recursive(state)?;
+    // Check if 'in' keyword is present (optional for REPL-style let statements)
+    let body = if matches!(state.tokens.peek(), Some((Token::In, _))) {
+        state.tokens.advance(); // consume 'in'
+        // Parse the body expression after 'in'
+        super::parse_expr_recursive(state)?
+    } else {
+        // REPL-style let statement without 'in' - create a unit body
+        // This allows statements like "let x = 5" to work in REPL
+        use crate::frontend::ast::{ExprKind, Literal, Span};
+        Expr::new(
+            ExprKind::Literal(Literal::Unit),
+            Span { start: 0, end: 0 }
+        )
+    };
 
     Ok(Expr::new(
         ExprKind::Let {
