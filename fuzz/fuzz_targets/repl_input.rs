@@ -28,21 +28,18 @@ fuzz_target!(|data: &[u8]| {
     // 1. Test evaluation (most important)
     let _ = repl.eval(input_str);
     
-    // 2. Test show operations (should never crash)
-    let _ = repl.show_ast(input_str);
-    let _ = repl.show_rust(input_str);
-    let _ = repl.show_type(input_str);
-    
-    // 3. Test history and clear (for state management)
-    let _ = repl.show_history();
-    repl.clear_session();
-    
-    // 4. Test save/load with arbitrary filenames (but ignore file system errors)
-    if let Ok(temp_file) = std::env::temp_dir().join(format!("fuzz_{}", data.len())).into_os_string().into_string() {
-        let _ = repl.save_session(&temp_file);
-        let _ = repl.load_session(&temp_file);
-        let _ = std::fs::remove_file(&temp_file); // Clean up
+    // 2. Test command handling
+    if input_str.starts_with(':') {
+        let _ = repl.handle_command(input_str);
     }
+    
+    // 3. Test multiline detection
+    let _ = Repl::needs_continuation(input_str);
+    
+    // 4. Test expression string evaluation with timeout
+    use std::time::{Duration, Instant};
+    let deadline = Some(Instant::now() + Duration::from_millis(10));
+    let _ = repl.evaluate_expr_str(input_str, deadline);
 });
 
 #[cfg(test)]
