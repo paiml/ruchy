@@ -4,22 +4,22 @@
 #![allow(clippy::print_stdout)] // Examples should print output
 #![allow(clippy::unwrap_used)] // Examples can use unwrap for simplicity
 
-use ruchy::frontend::parser::Parser;
-use ruchy::frontend::ast::ExprKind;
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::ast::ExprKind;
+use ruchy::frontend::parser::Parser;
 
 fn main() {
     println!("=== Ruchy Error Handling Examples ===\n");
-    
+
     // Example 1: Result constructors
     example_result_constructors();
-    
+
     // Example 2: Try operator (?)
     example_try_operator();
-    
+
     // Example 3: Match on Result
     example_match_result();
-    
+
     // Example 4: Error propagation
     example_error_propagation();
 }
@@ -27,20 +27,20 @@ fn main() {
 fn example_result_constructors() {
     println!("1. Result Constructors");
     println!("----------------------");
-    
+
     let examples = vec![
         ("Ok value", "Ok(42)"),
         ("Error value", r#"Err("something went wrong")"#),
         ("Ok with complex type", "Ok([1, 2, 3])"),
     ];
-    
+
     for (description, input) in examples {
         println!("{description}: {input}");
-        
+
         let ast = Parser::new(input).parse().unwrap();
         let transpiler = Transpiler::new();
         let output = transpiler.transpile(&ast).unwrap();
-        
+
         println!("  Transpiled: {output}");
     }
     println!();
@@ -49,16 +49,16 @@ fn example_result_constructors() {
 fn example_try_operator() {
     println!("2. Try Operator (?)");
     println!("-------------------");
-    
+
     let examples = vec![
         ("Simple try", "value?"),
         ("Try with call", "get_data()?"),
         ("Chained try", "fetch()?.process()?"),
     ];
-    
+
     for (description, input) in examples {
         println!("{description}: {input}");
-        
+
         match Parser::new(input).parse() {
             Ok(ast) => {
                 let transpiler = Transpiler::new();
@@ -76,7 +76,7 @@ fn example_try_operator() {
 fn example_match_result() {
     println!("3. Match on Result");
     println!("------------------");
-    
+
     let input = r#"
         match get_result() {
             Ok(value) => value * 2,
@@ -86,17 +86,17 @@ fn example_match_result() {
             }
         }
     "#;
-    
+
     println!("Pattern matching on Result:");
     println!("{}", &input[..80]);
     println!("...");
-    
+
     match Parser::new(input).parse() {
         Ok(ast) => {
             if let ExprKind::Match { .. } = &ast.kind {
                 println!("✓ Parsed as match expression");
             }
-            
+
             let transpiler = Transpiler::new();
             match transpiler.transpile(&ast) {
                 Ok(output) => {
@@ -116,7 +116,7 @@ fn example_match_result() {
 fn example_error_propagation() {
     println!("4. Error Propagation");
     println!("--------------------");
-    
+
     let input = r"
         fun process_data() -> Result<Data, Error> {
             let raw = fetch_raw_data()?
@@ -125,18 +125,22 @@ fn example_error_propagation() {
             Ok(processed)
         }
     ";
-    
+
     println!("Function with error propagation:");
     println!("  - Multiple ? operators");
     println!("  - Returns Result type");
     println!("  - Explicit Ok() for success");
-    
+
     match Parser::new(input).parse() {
         Ok(ast) => {
-            if let ExprKind::Function { return_type: Some(ret_type), .. } = &ast.kind {
+            if let ExprKind::Function {
+                return_type: Some(ret_type),
+                ..
+            } = &ast.kind
+            {
                 println!("  Return type: {ret_type:?}");
             }
-            
+
             let transpiler = Transpiler::new();
             match transpiler.transpile(&ast) {
                 Ok(output) => {
@@ -152,6 +156,6 @@ fn example_error_propagation() {
         }
         Err(e) => println!("  ✗ Parse error: {e}"),
     }
-    
+
     println!("\n=== Error Handling Examples Complete ===");
 }

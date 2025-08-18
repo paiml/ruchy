@@ -20,7 +20,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let cond_tokens = self.transpile_expr(condition)?;
         let then_tokens = self.transpile_expr(then_branch)?;
-        
+
         if let Some(else_expr) = else_branch {
             let else_tokens = self.transpile_expr(else_expr)?;
             Ok(quote! {
@@ -40,11 +40,17 @@ impl Transpiler {
     }
 
     /// Transpiles let bindings
-    pub fn transpile_let(&self, name: &str, value: &Expr, body: &Expr, is_mutable: bool) -> Result<TokenStream> {
+    pub fn transpile_let(
+        &self,
+        name: &str,
+        value: &Expr,
+        body: &Expr,
+        is_mutable: bool,
+    ) -> Result<TokenStream> {
         let name_ident = format_ident!("{}", name);
         let value_tokens = self.transpile_expr(value)?;
         let body_tokens = self.transpile_expr(body)?;
-        
+
         if is_mutable {
             Ok(quote! {
                 {
@@ -73,7 +79,7 @@ impl Transpiler {
         return_type: Option<&Type>,
     ) -> Result<TokenStream> {
         let fn_name = format_ident!("{}", name);
-        
+
         let param_tokens: Vec<TokenStream> = params
             .iter()
             .map(|p| {
@@ -82,7 +88,7 @@ impl Transpiler {
                 quote! { #param_name: #type_tokens }
             })
             .collect();
-        
+
         let body_tokens = if is_async {
             let mut async_transpiler = Transpiler::new();
             async_transpiler.in_async_context = true;
@@ -90,19 +96,17 @@ impl Transpiler {
         } else {
             self.transpile_expr(body)?
         };
-        
+
         let return_type_tokens = if let Some(ty) = return_type {
             let ty_tokens = self.transpile_type(ty)?;
             quote! { -> #ty_tokens }
         } else {
             quote! {}
         };
-        
-        let type_param_tokens: Vec<_> = type_params
-            .iter()
-            .map(|p| format_ident!("{}", p))
-            .collect();
-        
+
+        let type_param_tokens: Vec<_> =
+            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+
         if type_params.is_empty() {
             if is_async {
                 Ok(quote! {
@@ -136,13 +140,10 @@ impl Transpiler {
 
     /// Transpiles lambda expressions
     pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
-        let param_names: Vec<_> = params
-            .iter()
-            .map(|p| format_ident!("{}", p.name))
-            .collect();
-        
+        let param_names: Vec<_> = params.iter().map(|p| format_ident!("{}", p.name)).collect();
+
         let body_tokens = self.transpile_expr(body)?;
-        
+
         Ok(quote! {
             |#(#param_names),*| #body_tokens
         })
@@ -151,10 +152,10 @@ impl Transpiler {
     /// Transpiles function calls
     pub fn transpile_call(&self, func: &Expr, args: &[Expr]) -> Result<TokenStream> {
         let func_tokens = self.transpile_expr(func)?;
-        
+
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
-        
+
         // Check if this is a DataFrame constructor or column function
         if let ExprKind::Identifier(name) = &func.kind {
             if name == "col" && args.len() == 1 {
@@ -164,7 +165,7 @@ impl Transpiler {
                 }
             }
         }
-        
+
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
     }
 
@@ -177,15 +178,15 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let obj_tokens = self.transpile_expr(object)?;
         let method_ident = format_ident!("{}", method);
-        
+
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
-        
+
         // Special handling for DataFrame methods
         match method {
-            "select" | "filter" | "groupby" | "agg" | "sort" | "join" | "mean" | "std"
-            | "min" | "max" | "sum" | "count" | "unique" | "drop_nulls" | "fill_null"
-            | "pivot" | "melt" | "head" | "tail" | "sample" | "describe" => {
+            "select" | "filter" | "groupby" | "agg" | "sort" | "join" | "mean" | "std" | "min"
+            | "max" | "sum" | "count" | "unique" | "drop_nulls" | "fill_null" | "pivot"
+            | "melt" | "head" | "tail" | "sample" | "describe" => {
                 // These are DataFrame operations that should be chained
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
@@ -201,12 +202,12 @@ impl Transpiler {
         if exprs.is_empty() {
             return Ok(quote! { {} });
         }
-        
+
         let mut statements = Vec::new();
-        
+
         for (i, expr) in exprs.iter().enumerate() {
             let expr_tokens = self.transpile_expr(expr)?;
-            
+
             // Add semicolon to all but the last expression (unless it's a control flow construct)
             if i < exprs.len() - 1 || Self::needs_semicolon(&expr.kind) {
                 statements.push(quote! { #expr_tokens; });
@@ -214,7 +215,7 @@ impl Transpiler {
                 statements.push(expr_tokens);
             }
         }
-        
+
         Ok(quote! {
             {
                 #(#statements)*
@@ -237,26 +238,28 @@ impl Transpiler {
     /// Transpiles pipeline expressions
     pub fn transpile_pipeline(&self, expr: &Expr, stages: &[PipelineStage]) -> Result<TokenStream> {
         let mut result = self.transpile_expr(expr)?;
-        
+
         for stage in stages {
             // Each stage contains an expression to apply
             let stage_expr = &stage.op;
-            
+
             // Apply the stage - check what kind of expression it is
             match &stage_expr.kind {
                 ExprKind::Call { func, args } => {
                     let func_tokens = self.transpile_expr(func)?;
-                    let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
+                    let arg_tokens: Result<Vec<_>> =
+                        args.iter().map(|a| self.transpile_expr(a)).collect();
                     let arg_tokens = arg_tokens?;
-                    
+
                     // Pipeline passes the previous result as the first argument
                     result = quote! { #func_tokens(#result #(, #arg_tokens)*) };
                 }
                 ExprKind::MethodCall { method, args, .. } => {
                     let method_ident = format_ident!("{}", method);
-                    let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
+                    let arg_tokens: Result<Vec<_>> =
+                        args.iter().map(|a| self.transpile_expr(a)).collect();
                     let arg_tokens = arg_tokens?;
-                    
+
                     result = quote! { #result.#method_ident(#(#arg_tokens),*) };
                 }
                 _ => {
@@ -266,7 +269,7 @@ impl Transpiler {
                 }
             }
         }
-        
+
         Ok(result)
     }
 
@@ -275,7 +278,7 @@ impl Transpiler {
         let var_ident = format_ident!("{}", var);
         let iter_tokens = self.transpile_expr(iter)?;
         let body_tokens = self.transpile_expr(body)?;
-        
+
         Ok(quote! {
             for #var_ident in #iter_tokens {
                 #body_tokens
@@ -287,7 +290,7 @@ impl Transpiler {
     pub fn transpile_while(&self, condition: &Expr, body: &Expr) -> Result<TokenStream> {
         let cond_tokens = self.transpile_expr(condition)?;
         let body_tokens = self.transpile_expr(body)?;
-        
+
         Ok(quote! {
             while #cond_tokens {
                 #body_tokens
@@ -306,7 +309,7 @@ impl Transpiler {
         let var_ident = format_ident!("{}", var);
         let iter_tokens = self.transpile_expr(iter)?;
         let expr_tokens = self.transpile_expr(expr)?;
-        
+
         if let Some(filter_expr) = filter {
             let filter_tokens = self.transpile_expr(filter_expr)?;
             Ok(quote! {
@@ -335,21 +338,21 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         // Rust doesn't have traditional try-catch, so we need to be creative
         // We'll use a combination of Result types and match expressions
-        
+
         let try_tokens = self.transpile_expr(try_block)?;
-        
+
         if catch_clauses.is_empty() && finally_block.is_none() {
             // Just a try block with no handlers
             return Ok(try_tokens);
         }
-        
+
         // Build the catch handling logic
         let mut catch_arms = Vec::new();
-        
+
         for clause in catch_clauses {
             let var_ident = format_ident!("{}", clause.variable);
             let body_tokens = self.transpile_expr(&clause.body)?;
-            
+
             if let Some(ref ty) = clause.exception_type {
                 // Typed catch clause - convert string to type
                 let type_ident = format_ident!("{}", ty);
@@ -367,7 +370,7 @@ impl Transpiler {
                 });
             }
         }
-        
+
         // Add Ok arm
         catch_arms.insert(
             0,
@@ -375,7 +378,7 @@ impl Transpiler {
                 Ok(value) => value
             },
         );
-        
+
         let match_expr = quote! {
             match (|| -> Result<_, Box<dyn std::error::Error>> {
                 Ok(#try_tokens)
@@ -383,7 +386,7 @@ impl Transpiler {
                 #(#catch_arms,)*
             }
         };
-        
+
         if let Some(finally) = finally_block {
             let finally_tokens = self.transpile_expr(finally)?;
             Ok(quote! {
@@ -402,7 +405,7 @@ impl Transpiler {
     pub fn transpile_module(&self, name: &str, body: &Expr) -> Result<TokenStream> {
         let module_name = format_ident!("{}", name);
         let body_tokens = self.transpile_expr(body)?;
-        
+
         Ok(quote! {
             mod #module_name {
                 #body_tokens
@@ -413,8 +416,8 @@ impl Transpiler {
     /// Transpiles import statements
     pub fn transpile_import(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
         use crate::frontend::ast::ImportItem;
-        
-        // Build the path as a TokenStream 
+
+        // Build the path as a TokenStream
         let mut path_tokens = TokenStream::new();
         let segments: Vec<_> = path.split("::").collect();
         for (i, segment) in segments.iter().enumerate() {
@@ -424,7 +427,7 @@ impl Transpiler {
             let seg_ident = format_ident!("{}", segment);
             path_tokens.extend(quote! { #seg_ident });
         }
-        
+
         if items.is_empty() {
             // Simple import without specific items
             quote! { use #path_tokens::*; }
@@ -460,7 +463,7 @@ impl Transpiler {
                     ImportItem::Wildcard => quote! { * },
                 })
                 .collect();
-            
+
             quote! { use #path_tokens::{#(#item_tokens),*}; }
         }
     }
@@ -468,7 +471,7 @@ impl Transpiler {
     /// Transpiles export statements
     pub fn transpile_export(items: &[String]) -> TokenStream {
         let item_idents: Vec<_> = items.iter().map(|s| format_ident!("{}", s)).collect();
-        
+
         if items.len() == 1 {
             let item = &item_idents[0];
             quote! { pub use #item; }

@@ -4,22 +4,22 @@
 #![allow(clippy::print_stdout)] // Examples should print output
 #![allow(clippy::unwrap_used)] // Examples can use unwrap for simplicity
 
-use ruchy::frontend::parser::Parser;
-use ruchy::frontend::ast::{ExprKind, Pattern};
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::ast::{ExprKind, Pattern};
+use ruchy::frontend::parser::Parser;
 
 fn main() {
     println!("=== Ruchy Pattern Matching Examples ===\n");
-    
+
     // Example 1: Basic patterns
     example_basic_patterns();
-    
+
     // Example 2: List patterns
     example_list_patterns();
-    
+
     // Example 3: Tuple patterns
     example_tuple_patterns();
-    
+
     // Example 4: Complex patterns
     example_complex_patterns();
 }
@@ -27,7 +27,7 @@ fn main() {
 fn example_basic_patterns() {
     println!("1. Basic Patterns");
     println!("-----------------");
-    
+
     let input = r#"
         match value {
             0 => "zero",
@@ -36,9 +36,9 @@ fn example_basic_patterns() {
             _ => "other"
         }
     "#;
-    
+
     println!("Basic match with literals and guards:");
-    
+
     match Parser::new(input).parse() {
         Ok(ast) => {
             if let ExprKind::Match { arms, .. } = &ast.kind {
@@ -58,7 +58,7 @@ fn example_basic_patterns() {
                     }
                 }
             }
-            
+
             let transpiler = Transpiler::new();
             match transpiler.transpile(&ast) {
                 Ok(output) => {
@@ -78,17 +78,20 @@ fn example_basic_patterns() {
 fn example_list_patterns() {
     println!("2. List Patterns");
     println!("----------------");
-    
+
     let examples = vec![
         ("Empty list", "match list { [] => \"empty\" }"),
         ("Single element", "match list { [x] => x }"),
         ("Head and tail", "match list { [head, ...tail] => head }"),
         ("Multiple elements", "match list { [a, b, c] => a + b + c }"),
     ];
-    
+
     for (description, input) in examples {
-        println!("{description}: {}", &input[12..].chars().take(30).collect::<String>());
-        
+        println!(
+            "{description}: {}",
+            &input[12..].chars().take(30).collect::<String>()
+        );
+
         match Parser::new(input).parse() {
             Ok(ast) => {
                 let transpiler = Transpiler::new();
@@ -106,7 +109,7 @@ fn example_list_patterns() {
 fn example_tuple_patterns() {
     println!("3. Tuple Patterns");
     println!("-----------------");
-    
+
     let input = r#"
         match point {
             (0, 0) => "origin",
@@ -115,9 +118,9 @@ fn example_tuple_patterns() {
             (x, y) => "point at ({x}, {y})"
         }
     "#;
-    
+
     println!("Tuple pattern matching:");
-    
+
     match Parser::new(input).parse() {
         Ok(ast) => {
             if let ExprKind::Match { arms, .. } = &ast.kind {
@@ -129,7 +132,7 @@ fn example_tuple_patterns() {
                     }
                 }
             }
-            
+
             let transpiler = Transpiler::new();
             match transpiler.transpile(&ast) {
                 Ok(output) => {
@@ -149,26 +152,23 @@ fn example_tuple_patterns() {
 fn example_complex_patterns() {
     println!("4. Complex Patterns");
     println!("-------------------");
-    
+
     let examples = vec![
         (
             "Struct pattern",
-            r#"match user { User { name, age } => "{name} is {age}" }"#
+            r#"match user { User { name, age } => "{name} is {age}" }"#,
         ),
-        (
-            "Nested patterns",
-            r"match data { Some([x, y]) => x + y }"
-        ),
+        ("Nested patterns", r"match data { Some([x, y]) => x + y }"),
         (
             "Range pattern",
-            r#"match score { 0..60 => "fail", 60..100 => "pass" }"#
+            r#"match score { 0..60 => "fail", 60..100 => "pass" }"#,
         ),
     ];
-    
+
     for (description, input) in examples {
         println!("{description}:");
         println!("  Input: {}", &input[..input.len().min(50)]);
-        
+
         match Parser::new(input).parse() {
             Ok(ast) => {
                 let transpiler = Transpiler::new();
@@ -183,6 +183,6 @@ fn example_complex_patterns() {
             Err(e) => println!("  ✗ Parse error: {e}"),
         }
     }
-    
+
     println!("\n=== Pattern Matching Examples Complete ===");
 }

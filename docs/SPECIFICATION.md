@@ -1,6 +1,6 @@
 # Ruchy: Complete Language and System Specification
 
-*Version 3.0 - Single source of truth consolidating all 27 specification documents*
+*Version 5.0 - Single source of truth consolidating all 29 specification documents*
 
 ## Table of Contents
 
@@ -19,31 +19,33 @@
 10. [Binary Architecture](#10-binary-architecture)
 11. [Edge Cases Specification](#11-edge-cases-specification)
 12. [REPL Testing Specification](#12-repl-testing-specification)
-13. [Docker Specification](#13-docker-specification)
+13. [REPL UX Specification](#13-repl-ux-specification)
+14. [Docker Specification](#14-docker-specification)
 
 ### Integration Specifications
-14. [Cargo Integration](#14-cargo-integration)
-15. [Depyler Integration](#15-depyler-integration)
-16. [Rust Cargo InterOp](#16-rust-cargo-interop)
+15. [Cargo Integration](#15-cargo-integration)
+16. [Depyler Integration](#16-depyler-integration)
+17. [Rust Cargo InterOp](#17-rust-cargo-interop)
 
 ### Execution Mode Specifications
-17. [One-Liner and Script Execution](#17-one-liner-and-script-execution)
-18. [Disassembly Specification](#18-disassembly-specification)
-19. [Advanced Mathematical REPL](#19-advanced-mathematical-repl)
+18. [One-Liner and Script Execution](#18-one-liner-and-script-execution)
+19. [Disassembly Specification](#19-disassembly-specification)
+20. [Advanced Mathematical REPL](#20-advanced-mathematical-repl)
 
 ### Quality & Testing Specifications
-20. [Quality Gates](#20-quality-gates)
-21. [Provability](#21-provability)
+21. [Quality Gates](#21-quality-gates)
+22. [Provability](#22-provability)
+23. [Lint Specification](#23-lint-specification)
 
 ### Project Management
-22. [Master TODO](#22-master-todo)
-23. [Project Status](#23-project-status)
-24. [Deep Context](#24-deep-context)
+24. [Master TODO](#24-master-todo)
+25. [Project Status](#25-project-status)
+26. [Deep Context](#26-deep-context)
 
 ### External Dependencies
-25. [PMAT Integration](#25-pmat-integration)
-26. [PDMT Integration](#26-pdmt-integration)
-27. [External Tool Dependencies](#27-external-tool-dependencies)
+27. [PMAT Integration](#27-pmat-integration)
+28. [PDMT Integration](#28-pdmt-integration)
+29. [External Tool Dependencies](#29-external-tool-dependencies)
 
 ---
 
@@ -104,7 +106,7 @@ type Point = (x: f64, y: f64)
 ```rust
 // Basic function with type inference
 fun add(x: i32, y: i32) -> i32 {
-x + y
+    x + y
 }
 
 // Single expression function
@@ -112,14 +114,14 @@ fun double(x: i32) = x * 2
 
 // Default parameters
 fun greet(name: String, greeting = "Hello") {
-println!("{greeting}, {name}!")
+    println!("{greeting}, {name}!")
 }
 
 // Generic functions
 fun id<T>(x: T) -> T { x }
 
 fun map<T, U>(list: [T], f: fun(T) -> U) -> [U] {
-list.iter().map(f).collect()
+    list.iter().map(f).collect()
 }
 
 // Lambda expressions  
@@ -128,11 +130,11 @@ let mul = |x, y| x * y
 
 // Mathematical functions
 fun mean(numbers: [f64]) -> f64 {
-numbers.sum() / numbers.len() as f64
+    numbers.sum() / numbers.len() as f64
 }
 
 fun std_dev(data: Series) -> f64 {
-data.std().unwrap()
+    data.std().unwrap()
 }
 ```
 
@@ -140,36 +142,36 @@ data.std().unwrap()
 ```rust
 // Basic match
 match value {
-0 => "zero",
-1 | 2 => "small",
-n if n > 10 => "large",
-_ => "other"
+    0 => "zero",
+    1 | 2 => "small", 
+    n if n > 10 => "large",
+    _ => "other"
 }
 
 // List patterns
 match list {
-[] => "empty",
-[x] => "single element: {x}",
-[x, y] => "pair: {x}, {y}",
-[head, ...tail] => "head: {head}, rest: {tail.len()} items",
-_ => "many"
+    [] => "empty",
+    [x] => "single element: {x}", 
+    [x, y] => "pair: {x}, {y}",
+    [head, ...tail] => "head: {head}, rest: {tail.len()} items",
+    _ => "many"
 }
 
 // Tuple patterns
 match point {
-(0, 0) => "origin",
-(x, 0) => "on x-axis at {x}",
-(0, y) => "on y-axis at {y}",
-(x, y) if x == y => "on diagonal",
-_ => "arbitrary point"
+    (0, 0) => "origin",
+    (x, 0) => "on x-axis at {x}",
+    (0, y) => "on y-axis at {y}",
+    (x, y) if x == y => "on diagonal",
+    _ => "arbitrary point"
 }
 
 // Enum patterns with guards
 match result {
-Ok(value) if value > 0 => process(value),
-Ok(_) => skip(),
-Err(e) if e.is_recoverable() => retry(),
-Err(e) => fail(e)
+    Ok(value) if value > 0 => process(value),
+    Ok(_) => skip(),
+    Err(e) if e.is_recoverable() => retry(),
+    Err(e) => fail(e)
 }
 ```
 
@@ -180,27 +182,27 @@ let status = if age >= 18 { "adult" } else { "minor" }
 
 // When expressions (Swift-style)
 when {
-x < 0 -> "negative",
-x == 0 -> "zero",
-x > 0 -> "positive"
+    x < 0 -> "negative",
+    x == 0 -> "zero",
+    x > 0 -> "positive"
 }
 
 // For loops with ranges
 for i in 0..10 {
-println!("{i}")
+    println!("{i}")
 }
 
 // While loops
 while condition {
-process()
+    process()
 }
 
 // Loop with break value
 let result = loop {
-if done() {
-break value
-}
-iterate()
+    if done() {
+        break value
+    }
+    iterate()
 }
 
 // List comprehensions
@@ -213,20 +215,20 @@ let grid = [(x, y) for x in 0..3 for y in 0..3]
 ```rust
 // Result type with ? operator
 fun read_number(path: String) -> Result<i32, Error> {
-let content = read_file(path)?
-let number = content.parse()?
-Ok(number)
+    let content = read_file(path)?
+    let number = content.parse()?
+    Ok(number)
 }
 
 // Try-catch blocks
 try {
-risky_operation()
+    risky_operation()
 } catch FileError(e) {
-handle_file_error(e)
+    handle_file_error(e)
 } catch ParseError(e) {
-handle_parse_error(e)
+    handle_parse_error(e)
 } finally {
-cleanup()
+    cleanup()
 }
 
 // Panic with custom message
@@ -251,9 +253,9 @@ let set = HashSet::from([1, 2, 3])
 
 // Iterator chains
 numbers
-|> filter(|x| x > 0)
-|> map(|x| x * 2)
-|> fold(0, |acc, x| acc + x)
+    |> filter(|x| x > 0)
+    |> map(|x| x * 2)
+    |> fold(0, |acc, x| acc + x)
 ```
 
 ### 1.5 String Interpolation
@@ -408,24 +410,24 @@ impl Transpiler {
     pub fn transpile(source: &str) -> Result<String, Error> {
         // Parse to AST
         let ast = self.parser.parse(source)?;
-
+        
         // Type inference and checking
         let typed_ast = self.type_checker.infer(ast)?;
-
+        
         // Generate MIR for optimization
         let mir = self.mir_gen.lower(typed_ast)?;
-
+        
         // Optimize MIR (DataFrame fusion, dead code elimination)
         let optimized_mir = self.optimizer.optimize(mir)?;
-
+        
         // Generate Rust AST from optimized MIR
         let rust_ast = self.codegen.generate(optimized_mir)?;
-
+        
         // Generate and format Rust source
         let rust_code = quote!(#rust_ast).to_string();
         rustfmt::format(rust_code)
     }
-
+    
     // MIR-based transformation pipeline
     fn transform_mir(&self, mir: MirNode) -> MirNode {
         match mir {
@@ -481,7 +483,7 @@ impl CollectionTransform {
             ::polars::prelude::Series::new("", &[#(#elements),*])
         }
     }
-
+    
     fn nested_array_to_dataframe(rows: Vec<Vec<Expr>>) -> TokenStream {
         // [[1, 2], [3, 4]] becomes DataFrame
         quote! {
@@ -505,14 +507,14 @@ pub struct Parser<'src> {
     tokens: TokenStream<'src>,
     current: Token,
     peek: Token,
-
+    
     // Error recovery
     errors: Vec<ParseError>,
     panic_mode: bool,
-
+    
     // String interpolation context
     interpolation_stack: Vec<InterpolationContext>,
-
+    
     // Comment attachment
     comments: CommentStream<'src>,
 }
@@ -521,21 +523,21 @@ impl Parser<'_> {
     // Pratt parsing for expressions
     fn parse_expr_bp(&mut self, min_bp: u8) -> Result<Expr> {
         let mut left = self.parse_unary()?;
-
+        
         loop {
             let op = match self.current_binop() {
                 Some(op) => op,
                 None => break,
             };
-
+            
             let (left_bp, right_bp) = op.binding_power();
             if left_bp < min_bp {
                 break;
             }
-
+            
             self.advance();
             let right = self.parse_expr_bp(right_bp)?;
-
+            
             left = Expr::Binary {
                 op,
                 left: Box::new(left),
@@ -543,7 +545,7 @@ impl Parser<'_> {
                 span: self.span(left.span.start),
             };
         }
-
+        
         Ok(left)
     }
 }
@@ -557,20 +559,20 @@ Synchronization points for graceful error recovery:
 impl Parser<'_> {
     fn synchronize(&mut self) {
         self.panic_mode = false;
-
+        
         while !self.is_at_end() {
             if self.previous().kind == Semicolon {
                 return;
             }
-
+            
             if self.is_sync_point() {
                 return;
             }
-
+            
             self.advance();
         }
     }
-
+    
     fn is_sync_point(&self) -> bool {
         matches!(
             self.current.kind,
@@ -595,7 +597,7 @@ impl AstDesugarer {
                     args: vec![*left.clone()],
                     span: expr.span,
                 };
-
+                
                 // Recursively desugar
                 self.visit_expr(expr);
             }
@@ -617,26 +619,26 @@ pub enum TokenKind {
     Actor, Receive, Send, Ask, Async, Await,
     Trait, Impl, Struct, Enum, Type, Where,
     True, False, Null,
-
+    
     // Operators
     Plus, Minus, Star, Slash, Percent, Power,
     Eq, Ne, Lt, Le, Gt, Ge,
     And, Or, Not,
     Pipe, Arrow, FatArrow,
-
+    
     // Delimiters
     LParen, RParen, LBracket, RBracket, LBrace, RBrace,
     Comma, Semi, Colon, Dot,
-
+    
     // Literals
     Integer(i64),
     Float(f64),
     String(String),
     Char(char),
-
+    
     // Identifiers
     Ident(String),
-
+    
     // Special
     Eof,
 }
@@ -655,23 +657,23 @@ impl Lexer<'src> {
             column: 1,
         }
     }
-
+    
     fn next_token(&mut self) -> Token {
         self.skip_whitespace();
-
+        
         if self.is_at_end() {
             return self.make_token(TokenKind::Eof);
         }
-
+        
         let c = self.advance();
-
+        
         match c {
             // Single-character tokens
             b'(' => self.make_token(LParen),
             b')' => self.make_token(RParen),
             b'[' => self.make_token(LBracket),
             b']' => self.make_token(RBracket),
-
+            
             // Multi-character tokens
             b'=' => {
                 if self.match_char(b'=') {
@@ -682,16 +684,16 @@ impl Lexer<'src> {
                     self.make_token(Assign)
                 }
             }
-
+            
             // Numbers
             b'0'..=b'9' => self.number(),
-
+            
             // Identifiers and keywords
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => self.identifier(),
-
+            
             // Strings
             b'"' => self.string(),
-
+            
             _ => self.error_token("Unexpected character"),
         }
     }
@@ -704,29 +706,29 @@ impl Lexer<'src> {
 impl Lexer<'_> {
     fn string(&mut self) -> Token {
         let mut parts = Vec::new();
-
+        
         while !self.is_at_end() && !self.check(b'"') {
             if self.check(b'{') {
                 // Emit string fragment
                 if !parts.is_empty() {
                     self.emit_token(StringFragment(parts.clone()));
                 }
-
+                
                 // Emit interpolation start
                 self.emit_token(InterpolationStart);
-
+                
                 // Lex expression tokens
                 self.lex_interpolation();
-
+                
                 // Emit interpolation end
                 self.emit_token(InterpolationEnd);
-
+                
                 parts.clear();
             } else {
                 parts.push(self.advance());
             }
         }
-
+        
         self.consume(b'"', "Unterminated string");
         self.make_token(StringEnd)
     }
@@ -942,16 +944,16 @@ impl SemanticAnalyzer {
     pub fn analyze(&mut self, ast: &Ast) -> Result<TypedAst> {
         // Phase 1: Name resolution
         self.resolve_names(ast)?;
-
+        
         // Phase 2: Type inference
         let typed_ast = self.type_checker.infer(ast)?;
-
+        
         // Phase 3: Borrow checking
         self.check_borrows(&typed_ast)?;
-
+        
         // Phase 4: Effect checking
         self.check_effects(&typed_ast)?;
-
+        
         Ok(typed_ast)
     }
 }
@@ -1048,14 +1050,14 @@ impl CompilationPipeline {
             ],
         }
     }
-
+    
     pub fn compile(&self, source: &str) -> Result<Binary> {
         let mut output = CompilerInput::Source(source.to_string());
-
+        
         for stage in &self.stages {
             output = stage.process(output)?;
         }
-
+        
         match output {
             CompilerOutput::Binary(bin) => Ok(bin),
             _ => Err(Error::InvalidPipeline),
@@ -1071,13 +1073,13 @@ pub struct RuchyBinary {
     magic: [u8; 4],  // b"RCHY"
     version: Version,
     metadata: Metadata,
-
+    
     // Sections
     code: Vec<u8>,
     data: Vec<u8>,
     symbols: SymbolTable,
     debug_info: Option<DebugInfo>,
-
+    
     // Embedded runtime (if standalone)
     runtime: Option<EmbeddedRuntime>,
 }
@@ -1085,20 +1087,20 @@ pub struct RuchyBinary {
 impl RuchyBinary {
     pub fn write(&self, path: &Path) -> Result<()> {
         let mut file = File::create(path)?;
-
+        
         // Write header
         file.write_all(&self.magic)?;
         file.write_all(&self.version.to_bytes())?;
-
+        
         // Write sections with alignment
         self.write_section(&mut file, "CODE", &self.code)?;
         self.write_section(&mut file, "DATA", &self.data)?;
         self.write_section(&mut file, "SYMB", &self.symbols.to_bytes())?;
-
+        
         if let Some(debug) = &self.debug_info {
             self.write_section(&mut file, "DBUG", &debug.to_bytes())?;
         }
-
+        
         Ok(())
     }
 }
@@ -1191,12 +1193,12 @@ pub struct TestStep {
 impl ReplTester {
     pub fn test_transcript(&mut self, script: &str) -> TestResult {
         let steps = self.parse_transcript(script)?;
-
+        
         for step in steps {
             let output = self.repl.eval(&step.input)?;
-
+            
             assert_eq!(output, step.expected_output);
-
+            
             if let Some(state) = step.expected_state {
                 for (var, expected) in state {
                     let actual = self.repl.get_binding(&var)?;
@@ -1204,7 +1206,7 @@ impl ReplTester {
                 }
             }
         }
-
+        
         TestResult::Pass
     }
 }
@@ -1225,17 +1227,421 @@ fn repl_state_consistency(
 ) {
     let mut repl = Repl::new();
     let mut model = ReplModel::new();
-
+    
     for cmd in commands {
         let repl_result = repl.execute(&cmd);
         let model_result = model.execute(&cmd);
-
+        
         prop_assert_eq!(repl_result, model_result);
     }
 }
 ```
 
-## 13. Docker Specification
+## 13. REPL UX Specification
+
+### 13.1 Interaction Model
+
+```rust
+pub struct ReplUx {
+    input_handler: InputHandler,
+    display_engine: DisplayEngine,
+    history_manager: HistoryManager,
+    completion_engine: CompletionEngine,
+    help_system: HelpSystem,
+}
+
+pub enum ReplMode {
+    Expression,     // Default: evaluate expressions
+    Command,        // Meta-commands (:help, :type, etc.)
+    Multiline,      // Block input mode
+    Debug,          // Step-through evaluation
+    Notebook,       // Jupyter-style cells
+}
+```
+
+### 13.2 Display Engine
+
+```rust
+pub struct DisplayEngine {
+    formatters: HashMap<TypeId, Box<dyn Formatter>>,
+    truncation: TruncationPolicy,
+    color_scheme: ColorScheme,
+}
+
+impl DisplayEngine {
+    // Automatic rich display for DataFrames
+    fn display_dataframe(&self, df: &DataFrame) -> String {
+        let shape = df.shape();
+        let preview_rows = 10.min(shape.0);
+        
+        let mut table = Table::new();
+        table.set_header(df.columns());
+        
+        // Intelligent truncation for wide tables
+        let display_cols = if shape.1 > 20 {
+            let start_cols = &df.columns()[..10];
+            let end_cols = &df.columns()[shape.1-10..];
+            format!("{} ... {} (showing 20 of {} columns)", 
+                start_cols.join(", "), 
+                end_cols.join(", "),
+                shape.1)
+        } else {
+            df.columns().join(", ")
+        };
+        
+        // Type-aware cell formatting
+        for row in df.head(preview_rows).iter() {
+            table.add_row(row.iter().map(|cell| {
+                match cell.dtype() {
+                    DataType::Float64 => format!("{:.4}", cell),
+                    DataType::Date => cell.format("%Y-%m-%d"),
+                    _ => cell.to_string(),
+                }
+            }));
+        }
+        
+        format!("{}\nShape: {} rows × {} columns", table, shape.0, shape.1)
+    }
+    
+    // Syntax-highlighted code display
+    fn display_code(&self, code: &str, lang: Language) -> String {
+        let theme = &self.color_scheme;
+        let ps = SyntaxSet::load_defaults_newlines();
+        let ts = ThemeSet::load_defaults();
+        
+        let syntax = ps.find_syntax_by_extension(lang.extension())
+            .unwrap_or_else(|| ps.find_syntax_plain_text());
+        
+        let mut h = HighlightLines::new(syntax, &ts.themes[theme.name()]);
+        let ranges: Vec<_> = h.highlight(code, &ps);
+        styled_ranges_to_string(&ranges)
+    }
+}
+```
+
+### 13.3 Smart Completion
+
+```rust
+pub struct CompletionEngine {
+    symbol_table: SymbolTable,
+    type_inference: TypeInference,
+    ml_model: Option<CompletionModel>,
+}
+
+impl CompletionEngine {
+    fn complete(&self, partial: &str, cursor: usize) -> Vec<Completion> {
+        let context = self.extract_context(partial, cursor);
+        
+        match context {
+            Context::MemberAccess { receiver, partial_member } => {
+                // Type-aware member completion
+                let receiver_type = self.type_inference.infer_type(&receiver);
+                self.get_members(receiver_type)
+                    .filter(|m| m.starts_with(partial_member))
+                    .map(|m| Completion {
+                        text: m.name,
+                        kind: m.kind,
+                        documentation: m.docs,
+                        score: self.score_relevance(&m, &context),
+                    })
+                    .sorted_by_key(|c| -c.score)
+                    .take(10)
+                    .collect()
+            }
+            Context::DataFrameOp { df, partial_op } => {
+                // DataFrame-specific completions
+                vec![
+                    Completion::new("filter", "Filter rows based on condition"),
+                    Completion::new("groupby", "Group by column(s)"),
+                    Completion::new("agg", "Aggregate grouped data"),
+                    Completion::new("select", "Select specific columns"),
+                    Completion::new("sort", "Sort by column(s)"),
+                ]
+                .into_iter()
+                .filter(|c| c.text.starts_with(partial_op))
+                .collect()
+            }
+            Context::Import { partial_path } => {
+                // Crate and module completion
+                self.complete_import_path(partial_path)
+            }
+            _ => self.fallback_completions(partial),
+        }
+    }
+}
+```
+
+### 13.4 Interactive Help System
+
+```rust
+pub struct HelpSystem {
+    documentation: DocIndex,
+    examples: ExampleDatabase,
+    tutorials: TutorialEngine,
+}
+
+impl HelpSystem {
+    // Context-aware help
+    fn help(&self, query: Option<&str>) -> HelpResponse {
+        match query {
+            None => self.general_help(),
+            Some(topic) => {
+                if let Some(symbol) = self.resolve_symbol(topic) {
+                    self.symbol_help(symbol)
+                } else if let Some(error) = self.error_help(topic) {
+                    error
+                } else {
+                    self.search_help(topic)
+                }
+            }
+        }
+    }
+    
+    // Live examples in REPL
+    fn example(&self, topic: &str) -> Option<Example> {
+        self.examples.get(topic).map(|ex| Example {
+            description: ex.description.clone(),
+            code: ex.code.clone(),
+            expected_output: ex.output.clone(),
+            runnable: true,  // Can execute directly in REPL
+        })
+    }
+    
+    // Interactive tutorials
+    fn tutorial(&self, name: Option<&str>) -> Tutorial {
+        match name {
+            None => self.list_tutorials(),
+            Some("dataframes") => Tutorial::dataframes(),
+            Some("actors") => Tutorial::actors(),
+            Some("pipelines") => Tutorial::pipelines(),
+            _ => Tutorial::not_found(name),
+        }
+    }
+}
+```
+
+### 13.5 History Management
+
+```rust
+pub struct HistoryManager {
+    entries: Vec<HistoryEntry>,
+    search_index: SearchIndex,
+    persistent_store: Option<PathBuf>,
+}
+
+impl HistoryManager {
+    // Fuzzy history search
+    fn search(&self, pattern: &str) -> Vec<&HistoryEntry> {
+        if pattern.starts_with("!") {
+            // Bash-style history expansion
+            self.expand_history(pattern)
+        } else {
+            // Fuzzy search with frecency scoring
+            self.search_index
+                .fuzzy_search(pattern)
+                .sorted_by_key(|e| -e.frecency_score())
+                .take(10)
+                .collect()
+        }
+    }
+    
+    // Semantic deduplication
+    fn add_entry(&mut self, input: String, output: Value) {
+        // Don't add duplicate semantic entries
+        if !self.is_semantic_duplicate(&input) {
+            let entry = HistoryEntry {
+                id: self.next_id(),
+                timestamp: Instant::now(),
+                input: input.clone(),
+                output: Some(output),
+                execution_time: self.last_execution_time(),
+            };
+            
+            self.entries.push(entry.clone());
+            self.search_index.index(&entry);
+            
+            if let Some(store) = &self.persistent_store {
+                self.persist_entry(store, &entry);
+            }
+        }
+    }
+}
+```
+
+### 13.6 Error Recovery UX
+
+```rust
+pub struct ErrorRecovery {
+    error_db: ErrorDatabase,
+    suggestion_engine: SuggestionEngine,
+}
+
+impl ErrorRecovery {
+    fn handle_error(&self, error: ReplError) -> ErrorResponse {
+        let suggestions = self.suggestion_engine.suggest(&error);
+        let similar_errors = self.error_db.find_similar(&error);
+        
+        ErrorResponse {
+            message: self.format_error_message(&error),
+            suggestions,
+            similar_errors,
+            quick_fixes: self.generate_quick_fixes(&error),
+            documentation_links: self.relevant_docs(&error),
+        }
+    }
+    
+    // Intelligent error messages
+    fn format_error_message(&self, error: &ReplError) -> String {
+        match error {
+            ReplError::TypeError { expected, found, span } => {
+                let context = self.extract_context(span);
+                format!(
+                    "Type mismatch at line {}:\n\
+                     {}\n\
+                     Expected: {}\n\
+                     Found: {}\n\
+                     Hint: {}",
+                    span.line,
+                    self.highlight_error(context, span),
+                    self.format_type(expected),
+                    self.format_type(found),
+                    self.suggest_type_conversion(found, expected)
+                )
+            }
+            ReplError::UnresolvedImport { module } => {
+                format!(
+                    "Cannot find module '{}'.\n\
+                     Did you mean one of these?\n\
+                     {}",
+                    module,
+                    self.suggest_similar_modules(module)
+                        .iter()
+                        .map(|m| format!("  - {}", m))
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                )
+            }
+            _ => error.to_string(),
+        }
+    }
+}
+```
+
+### 13.7 Multi-line Input
+
+```rust
+pub struct MultilineInput {
+    buffer: String,
+    mode: InputMode,
+    bracket_matcher: BracketMatcher,
+}
+
+impl MultilineInput {
+    fn should_continue(&self, input: &str) -> bool {
+        // Smart continuation detection
+        self.bracket_matcher.has_unclosed(input) ||
+        input.ends_with("\\") ||
+        self.is_incomplete_statement(input)
+    }
+    
+    fn is_incomplete_statement(&self, input: &str) -> bool {
+        match self.parse_partial(input) {
+            Ok(_) => false,
+            Err(ParseError::UnexpectedEof) => true,
+            Err(_) => false,
+        }
+    }
+    
+    // Visual feedback for multi-line mode
+    fn prompt(&self, line_number: usize) -> String {
+        match self.mode {
+            InputMode::Normal => "ruchy> ".to_string(),
+            InputMode::Continuation => format!("  ...{} ", line_number),
+            InputMode::String => "  str> ".to_string(),
+            InputMode::Comment => "  com> ".to_string(),
+        }
+    }
+}
+```
+
+### 13.8 Performance Monitoring
+
+```rust
+pub struct ReplPerformance {
+    metrics: Metrics,
+    profiler: MicroProfiler,
+}
+
+impl ReplPerformance {
+    // Automatic performance warnings
+    fn monitor_execution(&mut self, input: &str) -> TimingReport {
+        let start = Instant::now();
+        
+        let parse_time = self.measure(|| parse(input));
+        let compile_time = self.measure(|| compile(input));
+        let execute_time = self.measure(|| execute(input));
+        
+        let total = start.elapsed();
+        
+        // Warn if REPL response exceeds target
+        if total > Duration::from_millis(15) {
+            self.analyze_bottleneck(parse_time, compile_time, execute_time)
+        }
+        
+        TimingReport {
+            total,
+            breakdown: vec![
+                ("parse", parse_time),
+                ("compile", compile_time),
+                ("execute", execute_time),
+            ],
+        }
+    }
+    
+    fn analyze_bottleneck(&self, parse: Duration, compile: Duration, execute: Duration) {
+        let total = parse + compile + execute;
+        
+        if parse > total * 0.5 {
+            println!("⚠️ Slow parsing detected. Consider breaking up complex expressions.");
+        } else if compile > total * 0.5 {
+            println!("⚠️ Slow compilation. Type inference may be struggling.");
+        } else if execute > total * 0.5 {
+            println!("⚠️ Slow execution. Consider using lazy evaluation for DataFrames.");
+        }
+    }
+}
+```
+
+### 13.9 Configuration
+
+```toml
+# ~/.ruchy/repl.toml
+[display]
+max_rows = 20
+max_columns = 30
+float_precision = 4
+color_scheme = "monokai"
+unicode_tables = true
+
+[completion]
+enable_ml = true
+min_chars = 2
+max_suggestions = 10
+include_docs = true
+
+[history]
+max_entries = 10000
+persistent = true
+deduplicate = true
+search_algorithm = "fuzzy"
+
+[performance]
+warn_threshold_ms = 15
+profile_slow_commands = true
+cache_compiled_expressions = true
+```
+
+## 14. Docker Specification
 
 ### 13.1 Container Architecture
 
@@ -1312,18 +1718,18 @@ use ruchy_compiler::Transpiler;
 
 fn main() {
     println!("cargo:rerun-if-changed=src/");
-
+    
     let ruchy_files = glob::glob("src/**/*.ruchy")
         .expect("Failed to read glob pattern");
-
+    
     let transpiler = Transpiler::new();
-
+    
     for entry in ruchy_files {
         let path = entry.unwrap();
         let source = std::fs::read_to_string(&path).unwrap();
-
+        
         let rust_code = transpiler.transpile(&source).unwrap();
-
+        
         let out_path = path.with_extension("rs");
         std::fs::write(out_path, rust_code).unwrap();
     }
@@ -1446,12 +1852,12 @@ fun use_external_crate() {
 // lib.rs - Ruchy code exposed to Rust
 #[ruchy::export]
 fun process_data(df: DataFrame) -> DataFrame {
-df |> filter(col("age") > 18)
-|> groupby("city")
-|> agg([
-col("salary").mean().alias("avg_salary"),
-col("name").count().alias("count")
-])
+    df |> filter(col("age") > 18)
+       |> groupby("city")
+       |> agg([
+           col("salary").mean().alias("avg_salary"),
+           col("name").count().alias("count")
+       ])
 }
 
 // Can be used from Rust:
@@ -1475,26 +1881,26 @@ pub struct Cli {
     /// Execute a one-liner
     #[arg(short, long)]
     eval: Option<String>,
-
+    
     /// Run a script file
     file: Option<PathBuf>,
-
+    
     /// Start REPL
     #[arg(long)]
     repl: bool,
-
+    
     /// Compile to binary
     #[arg(short, long)]
     compile: bool,
-
+    
     /// Output path for compilation
     #[arg(short, long)]
     output: Option<PathBuf>,
-
+    
     /// Enable JIT compilation
     #[arg(long)]
     jit: bool,
-
+    
     /// Optimization level (0-3)
     #[arg(short = 'O', default_value = "2")]
     opt_level: u8,
@@ -1541,29 +1947,29 @@ import polars::prelude::*
 import std::env
 
 fun main() {
-let args = env::args()
-let file = args.get(1).expect("Usage: script.ruchy <file>")
-
-let df = DataFrame::read_csv(file)?
-
-// Analysis pipeline
-let result = df
-|> filter(col("date") >= "2024-01-01")
-|> groupby("category")
-|> agg([
-col("amount").sum().alias("total"),
-col("amount").mean().alias("average"),
-col("id").count().alias("count")
-])
-|> sort("total", descending=true)
-
-println!("Analysis Results:")
-println!("{}", result)
-
-// Export to multiple formats
-result.write_csv("output.csv")?
-result.write_parquet("output.parquet")?
-result.write_json("output.json")?
+    let args = env::args()
+    let file = args.get(1).expect("Usage: script.ruchy <file>")
+    
+    let df = DataFrame::read_csv(file)?
+    
+    // Analysis pipeline
+    let result = df
+        |> filter(col("date") >= "2024-01-01")
+        |> groupby("category")
+        |> agg([
+            col("amount").sum().alias("total"),
+            col("amount").mean().alias("average"),
+            col("id").count().alias("count")
+        ])
+        |> sort("total", descending=true)
+    
+    println!("Analysis Results:")
+    println!("{}", result)
+    
+    // Export to multiple formats
+    result.write_csv("output.csv")?
+    result.write_parquet("output.parquet")?
+    result.write_json("output.json")?
 }
 ```
 
@@ -1608,26 +2014,26 @@ pub enum Instruction {
     Pop,
     Dup,
     Swap,
-
+    
     // Arithmetic
     Add, Sub, Mul, Div, Mod, Pow,
-
+    
     // Comparison
     Eq, Ne, Lt, Le, Gt, Ge,
-
+    
     // Control flow
     Jump(Label),
     JumpIf(Label),
     JumpIfNot(Label),
     Call(FunctionId, u8),
     Return,
-
+    
     // Memory
     Load(LocalId),
     Store(LocalId),
     LoadField(FieldId),
     StoreField(FieldId),
-
+    
     // DataFrame operations
     DfCreate,
     DfFilter,
@@ -1713,29 +2119,29 @@ impl MathRepl {
 ```rust
 // Built-in statistical functions
 fun lm(formula: Formula, data: DataFrame) -> LinearModel {
-// Linear regression
-let model = LinearRegression::fit(formula, data)?
-model
+    // Linear regression
+    let model = LinearRegression::fit(formula, data)?
+    model
 }
 
 fun glm(formula: Formula, data: DataFrame, family: Family) -> GLM {
-// Generalized linear models
-let model = GeneralizedLinearModel::fit(formula, data, family)?
-model
+    // Generalized linear models
+    let model = GeneralizedLinearModel::fit(formula, data, family)?
+    model
 }
 
 fun anova(model: LinearModel) -> AnovaTable {
-// Analysis of variance
-model.anova()
+    // Analysis of variance
+    model.anova()
 }
 
 // Distribution functions
 fun rnorm(n: i32, mean: f64 = 0.0, sd: f64 = 1.0) -> Series {
-Normal::new(mean, sd).sample(n)
+    Normal::new(mean, sd).sample(n)
 }
 
 fun qnorm(p: f64, mean: f64 = 0.0, sd: f64 = 1.0) -> f64 {
-Normal::new(mean, sd).quantile(p)
+    Normal::new(mean, sd).quantile(p)
 }
 ```
 
@@ -1771,27 +2177,27 @@ pub struct QualityThresholds {
 impl QualityGates {
     pub fn check(&self) -> Result<QualityReport> {
         let mut violations = Vec::new();
-
+        
         if self.metrics.test_coverage < self.thresholds.min_test_coverage {
             violations.push(Violation::InsufficientCoverage {
                 current: self.metrics.test_coverage,
                 required: self.thresholds.min_test_coverage,
             });
         }
-
+        
         if self.metrics.cyclomatic_complexity > self.thresholds.max_complexity {
             violations.push(Violation::ExcessiveComplexity {
                 current: self.metrics.cyclomatic_complexity,
                 maximum: self.thresholds.max_complexity,
             });
         }
-
+        
         if self.metrics.satd_count > 0 {
             violations.push(Violation::TechnicalDebt {
                 count: self.metrics.satd_count,
             });
         }
-
+        
         if violations.is_empty() {
             Ok(QualityReport::Pass)
         } else {
@@ -1838,30 +2244,30 @@ impl CiQualityEnforcer {
 ```rust
 #[property]
 fun prop_pipeline_associativity(
-data: DataFrame,
-f: fun(DataFrame) -> DataFrame,
-g: fun(DataFrame) -> DataFrame,
-h: fun(DataFrame) -> DataFrame
+    data: DataFrame,
+    f: fun(DataFrame) -> DataFrame,
+    g: fun(DataFrame) -> DataFrame,
+    h: fun(DataFrame) -> DataFrame
 ) {
-// (f |> g) |> h == f |> (g |> h)
-let left = (data |> f |> g) |> h
-let right = data |> f |> (g |> h)
-assert_eq!(left, right)
+    // (f |> g) |> h == f |> (g |> h)
+    let left = (data |> f |> g) |> h
+    let right = data |> f |> (g |> h)
+    assert_eq!(left, right)
 }
 
 #[property]
 fun prop_actor_message_ordering(
-actor: TestActor,
-messages: Vec<Message>
+    actor: TestActor,
+    messages: Vec<Message>
 ) {
-for msg in messages {
-actor ! msg
-}
-
-let responses = messages.map(|_| actor ? GetState)
-
-// Messages processed in order
-assert_monotonic(responses)
+    for msg in messages {
+        actor ! msg
+    }
+    
+    let responses = messages.map(|_| actor ? GetState)
+    
+    // Messages processed in order
+    assert_monotonic(responses)
 }
 ```
 
@@ -1902,7 +2308,334 @@ impl SmtVerifier {
 }
 ```
 
-## 22. Master TODO
+## 22. Lint Specification
+
+### 22.1 Multi-Level Lint Architecture
+
+```rust
+pub enum LintLevel {
+    Allow,      // Suppress warning
+    Warn,       // Display warning, continue
+    Deny,       // Error, halt compilation
+    Forbid,     // Error, cannot be overridden
+}
+
+pub struct LintEngine {
+    rules: HashMap<LintId, LintRule>,
+    overrides: LintOverrides,
+    severity_map: HashMap<LintId, LintLevel>,
+}
+
+pub struct LintRule {
+    id: LintId,
+    category: LintCategory,
+    default_level: LintLevel,
+    machine_applicable: bool,  // Can auto-fix
+    mir_required: bool,        // Needs MIR analysis
+}
+```
+
+### 22.2 Lint Categories
+
+```rust
+pub enum LintCategory {
+    // Correctness - Always Deny/Forbid
+    Correctness {
+        undefined_behavior: bool,
+        memory_safety: bool,
+        type_safety: bool,
+    },
+    
+    // Performance - Context-dependent
+    Performance {
+        complexity: ComplexityMetric,
+        allocation_overhead: bool,
+        unnecessary_clone: bool,
+        suboptimal_collection: bool,
+    },
+    
+    // Style - Project-configurable
+    Style {
+        naming_convention: NamingStyle,
+        formatting: FormatSpec,
+        import_organization: ImportStyle,
+    },
+    
+    // Ruchy-specific
+    RuchyIdioms {
+        prefer_pipeline: bool,       // x.f().g() → x |> f |> g
+        prefer_dataframe: bool,      // Vec<Vec<T>> → DataFrame
+        actor_message_exhaustive: bool,
+        unnecessary_transpilation: bool,
+    },
+}
+```
+
+### 22.3 MIR-Based Lints
+
+```rust
+impl MirLintPass {
+    // DataFrame operation fusion opportunities
+    fn lint_unfused_operations(&self, mir: &Mir) -> Vec<LintDiagnostic> {
+        let mut diagnostics = vec![];
+        
+        for block in mir.blocks() {
+            if let Some(chain) = self.find_dataframe_chain(block) {
+                if !chain.is_fused() {
+                    diagnostics.push(LintDiagnostic {
+                        id: UNFUSED_DATAFRAME_OPS,
+                        span: chain.span(),
+                        message: "DataFrame operations can be fused",
+                        suggestion: Some(chain.fused_version()),
+                        machine_applicable: true,
+                    });
+                }
+            }
+        }
+        diagnostics
+    }
+    
+    // Actor message flow analysis
+    fn lint_message_patterns(&self, mir: &Mir) -> Vec<LintDiagnostic> {
+        self.analyze_actor_messages(mir)
+            .filter(|flow| flow.has_race_condition())
+            .map(|flow| LintDiagnostic {
+                id: ACTOR_RACE_CONDITION,
+                span: flow.span(),
+                message: "Potential race condition in actor message ordering",
+                severity: LintLevel::Deny,
+            })
+            .collect()
+    }
+}
+```
+
+### 22.4 AST-Based Lints
+
+```rust
+impl AstLintPass {
+    // Naming conventions
+    fn lint_naming(&self, item: &Item) -> Option<LintDiagnostic> {
+        match item {
+            Item::Function(f) if !f.name.is_snake_case() => {
+                Some(LintDiagnostic {
+                    id: NON_SNAKE_CASE_FUNCTION,
+                    message: format!("function `{}` should be snake_case", f.name),
+                    suggestion: Some(f.name.to_snake_case()),
+                    machine_applicable: true,
+                })
+            }
+            Item::Struct(s) if !s.name.is_pascal_case() => {
+                Some(LintDiagnostic {
+                    id: NON_PASCAL_CASE_TYPE,
+                    message: format!("type `{}` should be PascalCase", s.name),
+                    suggestion: Some(s.name.to_pascal_case()),
+                    machine_applicable: true,
+                })
+            }
+            _ => None,
+        }
+    }
+    
+    // Pipeline opportunities
+    fn lint_pipeline_opportunity(&self, expr: &Expr) -> Option<LintDiagnostic> {
+        if let Expr::MethodChain(chain) = expr {
+            if chain.length() >= 3 && !chain.uses_pipeline() {
+                return Some(LintDiagnostic {
+                    id: PREFER_PIPELINE,
+                    message: "Long method chain could use pipeline operator",
+                    suggestion: Some(chain.to_pipeline()),
+                    machine_applicable: true,
+                });
+            }
+        }
+        None
+    }
+}
+```
+
+### 22.5 Incremental Linting
+
+```rust
+pub struct IncrementalLinter {
+    previous_state: LintState,
+    dependency_graph: DependencyGraph,
+    cache: DashMap<FileId, LintResults>,
+}
+
+impl IncrementalLinter {
+    pub fn lint_changed(&mut self, changes: &[FileChange]) -> LintResults {
+        // Only re-lint affected modules
+        let affected = self.dependency_graph.affected_modules(changes);
+        
+        let mut results = LintResults::new();
+        for module in affected {
+            // Check cache validity
+            if let Some(cached) = self.cache.get(&module.id) {
+                if cached.is_valid_for(module.hash) {
+                    results.merge(cached.clone());
+                    continue;
+                }
+            }
+            
+            // Perform linting
+            let module_results = self.lint_module(module);
+            self.cache.insert(module.id, module_results.clone());
+            results.merge(module_results);
+        }
+        
+        results
+    }
+}
+```
+
+### 22.6 Configuration
+
+```toml
+# .ruchy-lint.toml
+[lints]
+# Correctness lints cannot be disabled
+correctness = "forbid"
+
+# Performance lints
+performance.unnecessary_clone = "warn"
+performance.suboptimal_collection = "deny"
+performance.complexity_threshold = 10
+
+# Style preferences
+style.naming_convention = "rust_standard"
+style.max_line_length = 100
+style.import_grouping = "std_external_local"
+
+# Ruchy-specific
+ruchy.prefer_pipeline = "warn"
+ruchy.prefer_dataframe = "warn"
+ruchy.actor_exhaustive = "deny"
+
+# Project-specific overrides
+[[overrides]]
+path = "src/experimental/**"
+lints.performance = "allow"
+
+[[overrides]]
+path = "src/generated/**"
+lints.style = "allow"
+```
+
+### 22.7 Auto-Fix Implementation
+
+```rust
+pub struct AutoFixer {
+    fixes: Vec<Fix>,
+    source: SourceMap,
+}
+
+impl AutoFixer {
+    pub fn apply_fixes(&mut self, diagnostics: &[LintDiagnostic]) -> Result<()> {
+        // Collect machine-applicable fixes
+        let applicable: Vec<_> = diagnostics
+            .iter()
+            .filter(|d| d.machine_applicable && d.suggestion.is_some())
+            .collect();
+        
+        // Sort by span to avoid conflicts
+        let mut fixes = self.organize_fixes(applicable)?;
+        
+        // Apply in reverse order to preserve spans
+        fixes.sort_by_key(|f| std::cmp::Reverse(f.span.start));
+        
+        for fix in fixes {
+            self.source.replace_range(fix.span, &fix.replacement);
+        }
+        
+        Ok(())
+    }
+    
+    fn organize_fixes(&self, diagnostics: &[&LintDiagnostic]) -> Result<Vec<Fix>> {
+        // Detect and resolve conflicts
+        let mut fixes = Vec::new();
+        let mut occupied_spans = IntervalTree::new();
+        
+        for diag in diagnostics {
+            if !occupied_spans.overlaps(diag.span) {
+                fixes.push(Fix {
+                    span: diag.span,
+                    replacement: diag.suggestion.clone().unwrap(),
+                });
+                occupied_spans.insert(diag.span);
+            }
+        }
+        
+        Ok(fixes)
+    }
+}
+```
+
+### 22.8 Integration with Quality Gates
+
+```rust
+impl QualityGate for LintEngine {
+    fn check(&self, results: &LintResults) -> GateStatus {
+        // Any deny-level lint fails the gate
+        if results.has_errors() {
+            return GateStatus::Failed {
+                reason: format!("{} lint errors", results.error_count()),
+            };
+        }
+        
+        // Warning threshold check
+        if results.warning_count() > self.config.max_warnings {
+            return GateStatus::Failed {
+                reason: format!("Too many warnings: {} > {}", 
+                    results.warning_count(), 
+                    self.config.max_warnings),
+            };
+        }
+        
+        // Complexity metrics
+        for func in results.functions() {
+            if func.complexity > 10 {
+                return GateStatus::Failed {
+                    reason: format!("Function {} exceeds complexity limit", func.name),
+                };
+            }
+        }
+        
+        GateStatus::Passed
+    }
+}
+```
+
+### 22.9 Custom Lint Rules
+
+```rust
+// User-defined lints via procedural macros
+#[ruchy_lint]
+pub fn no_magic_numbers(expr: &Expr) -> Option<LintDiagnostic> {
+    if let Expr::Literal(Literal::Integer(n)) = expr {
+        if *n != 0 && *n != 1 && !expr.in_const_context() {
+            return Some(LintDiagnostic {
+                id: MAGIC_NUMBER,
+                message: format!("Magic number {} should be a named constant", n),
+                suggestion: None,
+                machine_applicable: false,
+            });
+        }
+    }
+    None
+}
+
+// Register custom lints
+impl LintRegistry {
+    pub fn register_plugin(&mut self, plugin: LintPlugin) {
+        for rule in plugin.rules() {
+            self.rules.insert(rule.id.clone(), rule);
+        }
+    }
+}
+```
+
+## 23. Master TODO
 
 ### 22.1 Implementation Roadmap (REVISED)
 
@@ -1913,6 +2646,7 @@ phase_0_foundation:  # Weeks 0-2 (CRITICAL - blocks everything)
   - [ ] Test coverage to 80% minimum
   - [ ] Reduce all functions to complexity ≤10
   - [ ] CI enforcement of quality gates
+  - [ ] Implement core lint infrastructure
 
 phase_1_mvt:  # Weeks 3-6 (Minimal Viable Transpiler)
   - [ ] Basic type inference (no generics)
@@ -2029,7 +2763,7 @@ pub struct PerformanceProfile {
 fn bench_fibonacci(b: &mut Bencher) {
     let ruchy = "fun fib(n) = if n < 2 { n } else { fib(n-1) + fib(n-2) }";
     let rust = compile_to_rust(ruchy);
-
+    
     b.iter(|| {
         black_box(execute_rust(&rust, 30))
     });
@@ -2049,7 +2783,7 @@ pub struct PmatIntegration {
 impl PmatIntegration {
     pub async fn validate_code(&self, code: &str) -> ValidationResult {
         let metrics = self.analyzer.analyze(code).await?;
-
+        
         // Enforce Toyota Way standards
         if metrics.complexity > 10 {
             return Err(ValidationError::ComplexityExceeded {
@@ -2057,23 +2791,23 @@ impl PmatIntegration {
                 max: 10,
             });
         }
-
+        
         if metrics.satd_count > 0 {
             return Err(ValidationError::TechnicalDebt {
                 count: metrics.satd_count,
             });
         }
-
+        
         if metrics.coverage < 80.0 {
             return Err(ValidationError::InsufficientCoverage {
                 current: metrics.coverage,
                 min: 80.0,
             });
         }
-
+        
         Ok(ValidationResult::Pass)
     }
-
+    
     pub async fn suggest_improvements(&self, code: &str) -> Vec<Suggestion> {
         self.quality_proxy.analyze_and_suggest(code).await
     }

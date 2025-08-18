@@ -5,12 +5,12 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::too_many_lines)]
 
-mod expressions;
-mod statements;
-mod patterns;
-mod types;
-mod dataframe;
 mod actors;
+mod dataframe;
+mod expressions;
+mod patterns;
+mod statements;
+mod types;
 
 use crate::frontend::ast::{Attribute, Expr, ExprKind, Literal, Type};
 use anyhow::Result;
@@ -41,11 +41,11 @@ impl Transpiler {
     /// Transpiles an expression to a String
     pub fn transpile_to_string(&self, expr: &Expr) -> Result<String> {
         let tokens = self.transpile(expr)?;
-        
+
         // Format the tokens with rustfmt-like style
         let mut result = String::new();
         let token_str = tokens.to_string();
-        
+
         // Basic formatting: add newlines after semicolons and braces
         for ch in token_str.chars() {
             result.push(ch);
@@ -53,11 +53,15 @@ impl Transpiler {
                 result.push('\n');
             }
         }
-        
+
         Ok(result)
     }
 
     /// Main expression transpilation dispatcher
+    ///
+    /// # Panics
+    ///
+    /// Panics if label names cannot be parsed as valid Rust tokens
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Literal(lit) => Ok(Self::transpile_literal(lit)),
@@ -107,7 +111,14 @@ impl Transpiler {
                 body,
                 is_async,
                 return_type,
-            } => self.transpile_function(name, type_params, params, body, *is_async, return_type.as_ref()),
+            } => self.transpile_function(
+                name,
+                type_params,
+                params,
+                body,
+                *is_async,
+                return_type.as_ref(),
+            ),
             ExprKind::Lambda { params, body } => self.transpile_lambda(params, body),
             ExprKind::Call { func, args } => self.transpile_call(func, args),
             ExprKind::MethodCall {
@@ -124,7 +135,9 @@ impl Transpiler {
                 variable,
                 iterable,
                 condition,
-            } => self.transpile_list_comprehension(element, variable, iterable, condition.as_deref()),
+            } => {
+                self.transpile_list_comprehension(element, variable, iterable, condition.as_deref())
+            }
             ExprKind::For { var, iter, body } => self.transpile_for(var, iter, body),
             ExprKind::While { condition, body } => self.transpile_while(condition, body),
             ExprKind::Range {
@@ -133,9 +146,15 @@ impl Transpiler {
                 inclusive,
             } => self.transpile_range(start, end, *inclusive),
             ExprKind::DataFrame { columns } => self.transpile_dataframe(columns),
-            ExprKind::DataFrameOperation { source, operation } => self.transpile_dataframe_operation(source, operation),
+            ExprKind::DataFrameOperation { source, operation } => {
+                self.transpile_dataframe_operation(source, operation)
+            }
             ExprKind::Import { path, items } => Ok(Self::transpile_import(path, items)),
-            ExprKind::Struct { name, type_params, fields } => self.transpile_struct(name, type_params, fields),
+            ExprKind::Struct {
+                name,
+                type_params,
+                fields,
+            } => self.transpile_struct(name, type_params, fields),
             ExprKind::StructLiteral { name, fields } => self.transpile_struct_literal(name, fields),
             ExprKind::ObjectLiteral { fields } => self.transpile_object_literal(fields),
             ExprKind::FieldAccess { object, field } => self.transpile_field_access(object, field),
@@ -172,19 +191,23 @@ impl Transpiler {
             ExprKind::Module { name, body } => self.transpile_module(name, body),
             ExprKind::Export { items } => Ok(Self::transpile_export(items)),
             ExprKind::Break { label } => {
-                if let Some(_lbl) = label {
-                    // TODO: Handle labeled breaks properly
-                    // For now, just use unlabeled break
-                    Ok(quote! { break })
+                if let Some(lbl) = label {
+                    let label_name = format!("'{lbl}");
+                    let tokens: proc_macro2::TokenStream = label_name
+                        .parse()
+                        .map_err(|e| anyhow::anyhow!("Failed to parse label token: {}", e))?;
+                    Ok(quote! { break #tokens })
                 } else {
                     Ok(quote! { break })
                 }
             }
             ExprKind::Continue { label } => {
-                if let Some(_lbl) = label {
-                    // TODO: Handle labeled continues properly
-                    // For now, just use unlabeled continue
-                    Ok(quote! { continue })
+                if let Some(lbl) = label {
+                    let label_name = format!("'{lbl}");
+                    let tokens: proc_macro2::TokenStream = label_name
+                        .parse()
+                        .map_err(|e| anyhow::anyhow!("Failed to parse label token: {}", e))?;
+                    Ok(quote! { continue #tokens })
                 } else {
                     Ok(quote! { continue })
                 }

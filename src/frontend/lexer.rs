@@ -172,7 +172,7 @@ pub enum Token {
     LeftShiftEqual,
     #[token(">>=")]
     RightShiftEqual,
-    
+
     #[token("++")]
     Increment,
     #[token("--")]

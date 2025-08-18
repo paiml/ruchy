@@ -11,8 +11,10 @@ use super::{ParserState, *};
 pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume fun
 
-    // Check for async modifier
-    let is_async = false; // TODO: handle async properly
+    // Check for async modifier - currently not implemented in lexer
+    // When async keyword is added to lexer, this will be:
+    // let is_async = state.tokens.check(&Token::Async);
+    let is_async = false;
 
     // Parse function name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {

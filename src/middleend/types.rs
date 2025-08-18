@@ -58,7 +58,9 @@ impl fmt::Display for MonoType {
             MonoType::Tuple(types) => {
                 write!(f, "(")?;
                 for (i, ty) in types.iter().enumerate() {
-                    if i > 0 { write!(f, ", ")?; }
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
                     write!(f, "{ty}")?;
                 }
                 write!(f, ")")
