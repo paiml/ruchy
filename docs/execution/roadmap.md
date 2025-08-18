@@ -16,13 +16,14 @@
 - **Priority**: CRITICAL - User Experience
 - **Dependencies**: Test Suite Stabilization ✅
 - **Specification**: docs/specifications/repl-testing-ux-spec.md
+- **Progress**: 30% Foundation Complete
 
 ### Active Tasks (P0 Priority)
 
 #### REPL-P1-001: Resource-Bounded Evaluator
 - **Specification**: repl-testing-ux-spec.md Section 2
 - **Complexity**: 8/10
-- **Status**: PENDING
+- **Status**: ✅ COMPLETED
 - **Acceptance Criteria**:
   - 10MB fixed memory arena
   - 100ms hard timeout via deadline
@@ -34,7 +35,7 @@
 #### REPL-P1-002: Transactional State Machine
 - **Specification**: repl-testing-ux-spec.md Section 3
 - **Complexity**: 9/10
-- **Status**: PENDING
+- **Status**: ✅ COMPLETED
 - **Acceptance Criteria**:
   - Ready/Evaluating/Failed states
   - O(1) checkpoint using im::HashMap
@@ -46,7 +47,7 @@
 #### REPL-P1-003: Testing Infrastructure
 - **Specification**: repl-testing-ux-spec.md Section 4
 - **Complexity**: 10/10
-- **Status**: PENDING
+- **Status**: ✅ COMPLETED
 - **Acceptance Criteria**:
   - Property-based type safety tests
   - Fuzz testing with AFL/LibFuzzer
@@ -58,7 +59,7 @@
 #### REPL-P1-004: Error Recovery UI
 - **Specification**: repl-testing-ux-spec.md Section 5
 - **Complexity**: 7/10
-- **Status**: PENDING
+- **Status**: ✅ COMPLETED
 - **Acceptance Criteria**:
   - Condition/restart system
   - Progressive disclosure of errors
