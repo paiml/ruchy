@@ -82,6 +82,11 @@ impl QualityGates {
         self.metrics = metrics;
     }
 
+    /// Check quality gates against current metrics
+    ///
+    /// # Errors
+    ///
+    /// Returns an error containing `QualityReport::Fail` if any quality gates are violated
     pub fn check(&self) -> Result<QualityReport, QualityReport> {
         let mut violations = Vec::new();
 
@@ -126,18 +131,25 @@ impl QualityGates {
     }
 
     /// Collect metrics from the codebase with integrated coverage
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if metric collection fails
     pub fn collect_metrics(&mut self) -> Result<QualityMetrics, Box<dyn std::error::Error>> {
-        let mut metrics = QualityMetrics::default();
-
-        // Collect SATD count
-        metrics.satd_count = Self::count_satd_comments()?;
+        // Collect SATD count first
+        let satd_count = Self::count_satd_comments()?;
+        
+        let mut metrics = QualityMetrics {
+            satd_count,
+            ..Default::default()
+        };
 
         // Collect test coverage using tarpaulin if available
-        if let Ok(coverage_report) = self.collect_coverage() {
+        if let Ok(coverage_report) = Self::collect_coverage() {
             metrics.test_coverage = coverage_report.line_coverage_percentage();
         } else {
             // Fallback to basic coverage estimation
-            metrics.test_coverage = self.estimate_coverage()?;
+            metrics.test_coverage = Self::estimate_coverage()?;
         }
 
         // Collect clippy warnings - would need actual clippy run
@@ -148,7 +160,12 @@ impl QualityGates {
         Ok(metrics)
     }
 
-    fn collect_coverage(&self) -> Result<CoverageReport, Box<dyn std::error::Error>> {
+    /// Collect test coverage metrics
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if no coverage tool is available or collection fails
+    fn collect_coverage() -> Result<CoverageReport, Box<dyn std::error::Error>> {
         // Try tarpaulin first
         let collector = CoverageCollector::new(CoverageTool::Tarpaulin);
         if collector.is_available() {
@@ -170,12 +187,19 @@ impl QualityGates {
         Err("No coverage tool available".into())
     }
 
-    fn estimate_coverage(&self) -> Result<f64, Box<dyn std::error::Error>> {
+    #[allow(clippy::unnecessary_wraps)]
+    /// Estimate test coverage based on file counts
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if file enumeration fails
+    #[allow(clippy::unnecessary_wraps)]
+    fn estimate_coverage() -> Result<f64, Box<dyn std::error::Error>> {
         use std::process::Command;
 
         // Count test files vs source files as a rough estimate
         let test_files = Command::new("find")
-            .args(&["tests", "-name", "*.rs", "-o", "-name", "*test*.rs"])
+            .args(["tests", "-name", "*.rs", "-o", "-name", "*test*.rs"])
             .output()
             .map(|output| String::from_utf8_lossy(&output.stdout).lines().count())
             .unwrap_or(0);
@@ -232,7 +256,7 @@ impl QualityGates {
     ///
     /// Returns an error if coverage collection or HTML generation fails
     pub fn generate_coverage_report(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let coverage_report = self.collect_coverage()?;
+        let coverage_report = Self::collect_coverage()?;
 
         // Generate HTML report
         let html_generator = HtmlReportGenerator::new("target/coverage");
@@ -280,7 +304,23 @@ impl CiQualityEnforcer {
     /// # Errors
     ///
     /// Returns an error if quality gates fail or reporting fails
-    pub async fn run_checks(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    /// Run quality checks
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use ruchy::quality::{CiQualityEnforcer, CiBackend, ReportingBackend, QualityGates};
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut enforcer = CiQualityEnforcer::new(
+    ///     QualityGates::new(),
+    ///     ReportingBackend::Console,
+    /// );
+    /// enforcer.run_checks()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[allow(clippy::cognitive_complexity)]
+    pub fn run_checks(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // Collect metrics including coverage
         let _metrics = self.gates.collect_metrics()?;
 
@@ -329,7 +369,7 @@ impl CiQualityEnforcer {
             }
             ReportingBackend::Html { output_dir } => {
                 // Generate HTML quality report with coverage
-                if let Ok(coverage_report) = self.gates.collect_coverage() {
+                if let Ok(coverage_report) = QualityGates::collect_coverage() {
                     let html_generator = HtmlReportGenerator::new(output_dir);
                     html_generator.generate(&coverage_report)?;
                 }
@@ -413,10 +453,8 @@ mod tests {
 
     #[test]
     fn test_coverage_integration() {
-        let gates = QualityGates::new();
-
         // Test that coverage collection doesn't panic
-        let result = gates.collect_coverage();
+        let result = QualityGates::collect_coverage();
         // Either succeeds or fails gracefully
         if let Ok(report) = result {
             assert!(report.line_coverage_percentage() >= 0.0);

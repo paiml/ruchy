@@ -37,11 +37,15 @@ async fn main() {
         )
         .get_matches();
 
-    let tool_name = matches.get_one::<String>("tool").unwrap();
-    let output_dir = matches.get_one::<String>("output").unwrap();
+    let tool_name = matches
+        .get_one::<String>("tool")
+        .map_or("tarpaulin", String::as_str);
+    let output_dir = matches
+        .get_one::<String>("output")
+        .map_or("target/coverage", String::as_str);
     let run_quality_gates = matches.get_flag("quality-gates");
 
-    let coverage_tool = match tool_name.as_str() {
+    let coverage_tool = match tool_name {
         "tarpaulin" => CoverageTool::Tarpaulin,
         "grcov" => CoverageTool::Grcov,
         "llvm" => CoverageTool::Llvm,
@@ -58,11 +62,11 @@ async fn main() {
 
     if !collector.is_available() {
         error!("Coverage tool '{}' is not available", tool_name);
-        println!("Please install the tool first:");
-        match tool_name.as_str() {
-            "tarpaulin" => println!("  cargo install cargo-tarpaulin"),
-            "grcov" => println!("  cargo install grcov"),
-            "llvm" => println!("  Install LLVM tools for your platform"),
+        error!("Please install the tool first:");
+        match tool_name {
+            "tarpaulin" => error!("  cargo install cargo-tarpaulin"),
+            "grcov" => error!("  cargo install grcov"),
+            "llvm" => error!("  Install LLVM tools for your platform"),
             _ => {}
         }
         process::exit(1);
@@ -84,32 +88,32 @@ async fn main() {
     }
 
     // Print summary
-    println!("Coverage Analysis Complete!");
-    println!("==========================");
-    println!(
+    info!("Coverage Analysis Complete!");
+    info!("==========================");
+    info!(
         "  Lines: {:.1}% ({}/{})",
         coverage_report.line_coverage_percentage(),
         coverage_report.covered_lines,
         coverage_report.total_lines
     );
-    println!(
+    info!(
         "  Functions: {:.1}% ({}/{})",
         coverage_report.function_coverage_percentage(),
         coverage_report.covered_functions,
         coverage_report.total_functions
     );
-    println!("  HTML Report: {}/coverage.html", output_dir);
+    info!("  HTML Report: {output_dir}/coverage.html");
 
     // Run quality gates if requested
     if run_quality_gates {
-        println!("\nRunning Quality Gates...");
+        info!("\nRunning Quality Gates...");
         let mut quality_gates = QualityGates::new();
 
         match quality_gates.collect_metrics() {
             Ok(_) => match quality_gates.check() {
-                Ok(_) => println!("✅ All quality gates passed!"),
+                Ok(_) => info!("✅ All quality gates passed!"),
                 Err(report) => {
-                    println!("❌ Quality gate failures: {:?}", report);
+                    error!("❌ Quality gate failures: {report:?}");
                     process::exit(1);
                 }
             },

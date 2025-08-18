@@ -171,7 +171,7 @@ impl LanguageServer for RuchyLanguageServer {
                         character: 0,
                     },
                     end: Position {
-                        line: document.lines().count() as u32,
+                        line: document.lines().count().try_into().unwrap_or(u32::MAX),
                         character: 0,
                     },
                 },
