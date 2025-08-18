@@ -21,7 +21,7 @@ fn test_actor_definition() {
             }
         }
     "#;
-    
+
     assert!(is_valid_syntax(code));
     let result = compile(code).unwrap();
     assert!(result.contains("Counter"));
@@ -69,7 +69,7 @@ fn test_actor_with_multiple_handlers() {
             }
         }
     "#;
-    
+
     assert!(is_valid_syntax(code));
     let result = compile(code).unwrap();
     assert!(result.contains("Logger"));
@@ -94,7 +94,7 @@ fn test_actor_pipeline() {
         counter ! Increment(10)
         let count = counter ? GetCount()
     "#;
-    
+
     assert!(is_valid_syntax(code));
     let result = compile(code).unwrap();
     assert!(result.contains("Counter"));
@@ -120,7 +120,7 @@ fn test_actor_with_complex_state() {
             }
         }
     "#;
-    
+
     assert!(is_valid_syntax(code));
     let result = compile(code).unwrap();
     assert!(result.contains("Database"));
@@ -137,7 +137,7 @@ fn test_actor_supervision() {
             children: [Counter, Logger]
         }
     "#;
-    
+
     // Note: Supervision syntax might not be fully implemented yet
     // This test documents the expected syntax
     if is_valid_syntax(code) {
