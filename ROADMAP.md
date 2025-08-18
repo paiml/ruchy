@@ -1,24 +1,53 @@
 # ROADMAP.md - Ruchy Master Execution Plan
 
-## 🎯 v0.3 STATUS: FEATURE COMPLETE ✅
+## 🎯 FOUNDATION PRIORITIES
 
-**Test Results**: 297/301 tests passing (98.7% pass rate)  
-**Core Features**: ✅ All P1/P2 features implemented  
-**Ready for Release**: Only 4 IDE error recovery tests failing  
+**PRIMARY FOCUS**: CLI/REPL/"one liners" and functional programming are our base.
+
+1. **REPL Excellence** - Flawless interactive experience (Elixir/Julia quality)
+2. **Functional Core** - Pure functions, immutability, composition
+3. **One-Liner Power** - Complex data processing in single expressions
+4. **CLI First** - Every feature works from command line before GUI/IDE
 
 *See docs/execution/ for detailed task execution framework*
 
-## Task Execution Protocol (NEW)
+## 🌟 IMMEDIATE ACTION ITEMS - REPL/CLI Foundation Sprint
 
-**All development now follows CLAUDE.md protocol:**
+### Week 1: One-Liner Support (CRITICAL PATH)
+```bash
+# These MUST work by end of week:
+ruchy -e "println('hello world')"                    # Basic eval
+ruchy -e "[1,2,3] |> map(|x| x*2) |> sum()"          # Pipeline
+ruchy -e "df.read_csv('data.csv').groupby('x').mean()" # DataFrame
+ruchy script.ruchy                                     # Script mode
+echo "2 + 2" | ruchy                                  # Stdin mode
+```
+
+### Week 2: REPL Polish
+- Tab completion for all keywords/functions
+- :help with executable examples
+- Pretty-printed DataFrames
+- Multiline input with proper indentation
+- History with fuzzy search (Ctrl+R)
+
+### Week 3: Functional Programming Core
+- Higher-order functions in REPL
+- Pattern matching expressions
+- Monadic error handling (Result/Option)
+- Function composition operators (>>, <<)
+- Partial application syntax
+
+## Task Execution Protocol
+
+**All development follows CLAUDE.md protocol:**
 
 1. **LOCATE** specification section in SPECIFICATION.md
 2. **FIND** task ID in docs/execution/roadmap.md  
 3. **VERIFY** dependencies completed via DAG
 4. **IMPLEMENT** with <10 complexity
-5. **COMMIT** with task reference: `git commit -m "QA-P1-001: Fix let parsing"`
+5. **COMMIT** with task reference: `git commit -m "REPL-P0-001: Add one-liner support"`
 
-**Active Sprint**: REPL Excellence (specs/repl-testing-ux-spec.md)
+**Active Sprint**: CLI/REPL Foundation (our base)
 
 ## 🟢 Current State (2025-08-18 - REPL v3 Foundation Complete)
 
@@ -123,28 +152,47 @@ src/frontend/parser/actors.rs  33 complexity
 src/frontend/parser/collections.rs  32 complexity
 ```
 
-## 🚨 CRITICAL GAPS - Based on SPECIFICATION.md v3.0 
+## 🚨 REALIGNED PRIORITIES - CLI/REPL/Functional Foundation
 
-### Missing Core Architecture (HIGH PRIORITY)
+### Priority 1: REPL/CLI Excellence (IMMEDIATE)
 ```
-From SPECIFICATION.md sections 7-27, we are missing:
+🔴 MUST HAVE (Our Base):
+- REPL polish to Elixir/Julia standards
+- One-liner script execution (ruchy -e)
+- Functional programming primitives
+- Interactive help/examples in REPL
+- Command completion & history
 
-🔴 CRITICAL (blocks everything):
-- MCP Message-Passing Architecture (section 7)
-- LSP Language Server (section 8) 
-- Quality Gates CI enforcement (section 20)
-- Advanced Mathematical REPL (section 19)
+🟡 NEXT SPRINT:
+- Pipeline operators (|>)
+- Pattern matching in REPL
+- Lazy evaluation support
+- Property-based testing from REPL
+```
 
-🟡 HIGH PRIORITY:
-- Binary/CLI architecture improvements (section 10)
-- Docker containerization (section 13)
-- Cargo build integration (section 14)
-- One-liner script execution (section 17)
+### Priority 2: Functional Programming (CORE)
+```
+🔴 ESSENTIAL:
+- Higher-order functions
+- Immutable data structures
+- Monadic error handling (Result/Option)
+- Function composition operators
+- Tail call optimization
 
-🟢 FUTURE:
-- Depyler Python integration (section 15)
-- SMT-based verification (section 21)
-- WASM compilation target
+🟡 ENHANCED:
+- Algebraic data types
+- Type classes/traits
+- Lazy sequences
+- Partial application
+```
+
+### Priority 3: Future (DEFER)
+```
+🟢 LATER:
+- MCP/LSP integration
+- Docker containerization  
+- WASM compilation
+- Depyler Python integration
 ```
 
 ### Quality Gate Violations
@@ -177,26 +225,25 @@ MAJOR QUALITY IMPROVEMENTS:
 - ✅ All transpiler modules now comply with complexity limits
 ```
 
-### Priority 1: REPL Excellence Sprint (CRITICAL - User Experience)
+### IMMEDIATE FOCUS: REPL as Primary Interface
 ```
-Based on repl-testing-ux-spec.md, next sprint MUST focus on:
+The REPL is not a feature - it's THE PRODUCT.
+Every user's first experience is the REPL.
 
-REPL is the primary interface for language adoption. A flawless REPL 
-experience directly impacts user retention and language demand.
+Golden Path Requirements:
+1. Zero-friction startup (just type 'ruchy')
+2. Helpful errors with examples
+3. Tab completion that actually works
+4. :help command with runnable examples
+5. Pretty-printed DataFrames by default
+6. One-liner mode for shell scripting
 
-Core Requirements from Specification:
-- Resource-bounded evaluation (10MB arena, 100ms timeout)
-- Transactional state machine with checkpoints
-- Property-based and fuzz testing infrastructure
-- 99.9% recovery rate from failures
-- <5ms response time with 1000 bindings
-- Zero memory leaks over 24h operation
-
-Implementation follows microcommit strategy from CLAUDE.md:
-- Each commit < 10 cognitive complexity
-- Strict quality gates per ruchy-lint-spec.md
-- No SATD allowed in new code
-- Full test coverage for each component
+Success Metrics:
+- New user can be productive in <5 minutes
+- Support all examples from README
+- Function calls work (println, etc.)
+- Pattern matching in expressions
+- Pipeline operators for data flow
 ```
 
 ### Priority 2: Advanced Features Alignment
@@ -216,35 +263,67 @@ Priority targets:
 3. parser/collections.rs (32 complexity) - Extract list/map logic
 ```
 
-## 📋 Feature Implementation Status
+## 📋 Feature Implementation Status (Reprioritized)
 
-### Language Core [70% Complete]
-| Feature | Parse | Type | Transpile | Test | Spec |
-|---------|-------|------|-----------|------|------|
-| Literals | ✅ | ✅ | ✅ | ✅ | [spec](docs/architecture/grammar.md) |
-| Functions | ✅ | ✅ | ✅ | ✅ | [spec](docs/architecture/grammar.md) |
-| Lambdas | ✅ | 🟡 | ✅ | 🔴 | [spec](docs/done/lambda-feature-completed.yaml) |
-| Pattern Match | ✅ | 🟡 | ✅ | 🔴 | [spec](docs/architecture/grammar.md) |
-| Pipeline | ✅ | ✅ | ✅ | ✅ | [spec](docs/architecture/grammar.md) |
-| Async/Await | ✅ | ❌ | 🟡 | 🔴 | [spec](docs/architecture/script-capabilities.md) |
-| Try/Catch | ✅ | ❌ | 🔴 | 🔴 | - |
-| Actors | ✅ | ❌ | 🔴 | 🔴 | [spec](docs/architecture/message-passing-mcp.md) |
+### REPL/CLI Foundation [85% Complete]
+| Feature | Status | Priority | Notes |
+|---------|--------|----------|-------|
+| Basic REPL | ✅ | P0 | Working, needs polish |
+| Function calls | ✅ | P0 | println/print working |
+| One-liners (-e) | 🔴 | P0 | CRITICAL - Next sprint |
+| Tab completion | 🔴 | P0 | CRITICAL - User experience |
+| :help system | 🔴 | P0 | CRITICAL - Discoverability |
+| Pretty printing | 🟡 | P1 | Partial - needs DataFrames |
+| History search | 🔴 | P1 | Important for productivity |
 
-### Pending Implementation [19 features]
+### Functional Core [60% Complete]
+| Feature | Parse | Eval | Test | Priority |
+|---------|-------|------|------|----------|
+| Lambdas | ✅ | 🟡 | 🔴 | P0 |
+| HOF | ✅ | 🟡 | 🔴 | P0 |
+| Pipeline | ✅ | ✅ | ✅ | P0 |
+| Pattern Match | ✅ | 🟡 | 🔴 | P0 |
+| Immutability | 🟡 | 🟡 | 🔴 | P1 |
+| Result/Option | 🟡 | 🔴 | 🔴 | P1 |
+| Composition | 🔴 | 🔴 | 🔴 | P1 |
 
-#### P0: Blocking README Examples
-- [ ] **Actor System** (5d effort)
-    - Parse actor keyword ✅
-    - Message passing (!)
-    - Synchronous ask (?)
-    - Supervision trees
-    - [Architecture spec](docs/architecture/message-passing-mcp.md)
+### Pending Implementation (Reprioritized)
 
-- [ ] **DataFrame Operations** (3d effort)
-    - col() function
-    - mean/std/alias
-    - filter/groupby/agg
-    - [No spec - needs creation]
+#### P0: REPL/CLI Foundation (IMMEDIATE)
+- [ ] **One-liner execution** (2d effort) 🔴 CRITICAL
+    - -e/--eval flag for expressions
+    - Stdin pipe support
+    - Exit codes for scripting
+    - JSON output mode
+
+- [ ] **Tab Completion** (3d effort) 🔴 CRITICAL
+    - Keywords and built-ins
+    - Variable names in scope
+    - File paths
+    - DataFrame columns
+
+- [ ] **Help System** (2d effort) 🔴 CRITICAL  
+    - :help command
+    - Inline examples
+    - :doc for functions
+    - :type for expressions
+
+#### P1: Functional Core (NEXT SPRINT)
+- [ ] **Higher-Order Functions** (3d effort)
+    - map/filter/reduce in stdlib
+    - Function composition
+    - Currying/partial application
+    - Point-free style
+
+- [ ] **Pattern Matching** (3d effort)
+    - In expressions (not just match)
+    - Guards and bindings
+    - List patterns
+    - As-patterns
+
+#### P2: Later (DEFER)
+- [ ] **Actor System** (5d effort) - Move to P3
+- [ ] **Advanced DataFrames** (5d effort) - After basics work
 
 #### P1: Core Language
 - [x] **Impl Blocks** (3d) - Methods for structs ✅
