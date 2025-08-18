@@ -1,50 +1,38 @@
 # Ruchy: Complete Language and System Specification
 
-*Version 8.0 - Realigned with CLI/REPL/Functional Programming as Foundation*
-
-## \ud83c\udf1f FOUNDATION PRIORITY
-
-**The highest priority is CLI/REPL/"one liners" and functional programming. This is our base.**
-
-Every feature must:
-1. Work flawlessly in the REPL first
-2. Support one-liner execution (-e flag)
-3. Embrace functional programming (immutability, composition, pure functions)
-4. Provide excellent interactive help and examples
+*Version 8.0 - Single source of truth consolidating all 32 specification documents*
 
 ## Table of Contents
 
-### Priority 1: CLI/REPL Foundation (Our Base)
-1. [REPL UX Specification](#1-repl-ux-specification)
-2. [One-Liner and Script Execution](#2-one-liner-and-script-execution)
-3. [REPL Testing Specification](#3-repl-testing-specification)
-4. [Functional Programming Specification](#4-functional-programming-specification)
+### Core Language Specifications
+1. [Language Specification](#1-language-specification)
+2. [Grammar Reference](#2-grammar-reference)
+3. [Implementation Specification](#3-implementation-specification)
+4. [Parser Specification](#4-parser-specification)
+5. [Lexer Specification](#5-lexer-specification)
+6. [Script Capability Specification](#6-script-capability-specification)
+7. [Classes Specification](#7-classes-specification)
+8. [Functional Programming Specification](#8-functional-programming-specification)
 
-### Priority 2: Core Language
-5. [Language Specification](#5-language-specification)
-6. [Grammar Reference](#6-grammar-reference)
-7. [Parser Specification](#7-parser-specification)
-8. [Lexer Specification](#8-lexer-specification)
+### Architecture Specifications
+9. [MCP Message-Passing Architecture](#9-mcp-message-passing-architecture)
+10. [LSP Specification](#10-lsp-specification)
+11. [Critical Missing Components](#11-critical-missing-components)
+12. [Binary Architecture](#12-binary-architecture)
+13. [Edge Cases Specification](#13-edge-cases-specification)
+14. [REPL Testing Specification](#14-repl-testing-specification)
+15. [REPL UX Specification](#15-repl-ux-specification)
+16. [Docker Specification](#16-docker-specification)
 
-### Priority 3: Extended Features
-9. [Implementation Specification](#9-implementation-specification)
-10. [Script Capability Specification](#10-script-capability-specification)
-11. [Classes Specification](#11-classes-specification)
-12. [Advanced Mathematical REPL](#12-advanced-mathematical-repl)
-
-### Priority 4: Architecture & Integration
-13. [MCP Message-Passing Architecture](#13-mcp-message-passing-architecture)
-14. [LSP Specification](#14-lsp-specification)
-15. [Binary Architecture](#15-binary-architecture)
-16. [Edge Cases Specification](#16-edge-cases-specification)
-
-### Priority 5: Integration & Tools
-17. [Docker Specification](#17-docker-specification)
-18. [Cargo Integration](#18-cargo-integration)
+### Integration Specifications
+17. [Cargo Integration](#17-cargo-integration)
+18. [Depyler Integration](#18-depyler-integration)
 19. [Rust Cargo InterOp](#19-rust-cargo-interop)
-20. [Depyler Integration](#20-depyler-integration)
+
+### Execution Mode Specifications
+20. [One-Liner and Script Execution](#20-one-liner-and-script-execution)
 21. [Disassembly Specification](#21-disassembly-specification)
-22. [Critical Missing Components](#22-critical-missing-components)
+22. [Advanced Mathematical REPL](#22-advanced-mathematical-repl)
 
 ### Quality & Testing Specifications
 23. [Quality Gates](#23-quality-gates)
@@ -60,6 +48,9 @@ Every feature must:
 29. [PMAT Integration](#29-pmat-integration)
 30. [PDMT Integration](#30-pdmt-integration)
 31. [External Tool Dependencies](#31-external-tool-dependencies)
+
+### Appendices
+32. [Complete Grammar Definition](#32-complete-grammar-definition)
 
 ---
 
