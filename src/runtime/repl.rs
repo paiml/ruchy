@@ -290,7 +290,7 @@ impl Repl {
                 // For REPL demo, just return a string representation
                 match (start_val, end_val) {
                     (Value::Int(s), Value::Int(e)) => {
-                        Ok(Value::String(format!("{}..{}", s, e)))
+                        Ok(Value::String(format!("{s}..{e}")))
                     }
                     _ => bail!("Range endpoints must be integers")
                 }
@@ -339,7 +339,8 @@ impl Repl {
                 if *b < 0 {
                     bail!("Negative integer powers not supported in integer context");
                 }
-                let result = (*a as i64).pow(*b as u32);
+                let exp = u32::try_from(*b).map_err(|_| anyhow::anyhow!("Power exponent too large"))?;
+                let result = a.pow(exp);
                 Ok(Int(result))
             }
 
