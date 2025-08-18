@@ -3499,38 +3499,47 @@ phase_7_advanced:  # Future (post-v1.0)
 
 ## 23. Project Status
 
-### 23.1 Current Metrics (REALITY CHECK)
+### 23.1 Current Metrics (POST-EMERGENCY RECOVERY v0.4.8)
 
 ```rust
 pub struct ProjectStatus {
-    version: Version,           // 0.3.0-alpha
-    loc: usize,                 // 15,234
-    test_count: usize,          // 342
-    test_coverage: f64,         // 65.3% → MUST reach 80%
-    satd_count: usize,          // 124 → MUST be 0
-    max_complexity: u32,        // 37 → MUST be ≤10
-    documentation: f64,         // 45.2% → target 90%
+    version: Version,           // 0.4.8 (emergency recovery complete)
+    loc: usize,                 // ~16,000
+    test_count: usize,          // 197
+    test_pass_rate: f64,        // 99.0% (195/197 passing)
+    test_coverage: f64,         // Pending (gate disabled for emergency)
+    satd_count: usize,          // 0 ✅ (enforced by pre-commit)
+    max_complexity: u32,        // <10 ✅ (enforced by pre-commit)
+    documentation: f64,         // ~50% → target 90%
     dependencies: usize,        // 47
     compile_time: Duration,     // 12.3s
     binary_size: usize,        // 4.2 MB
+    cargo_install_works: bool,  // true ✅ (fixed in v0.4.8)
 }
 
-// Quality enforcement via CI
+// Quality enforcement via pre-commit hooks
 #[cfg(ci)]
-compile_error_if!(coverage < 80.0, "Coverage must be ≥80% for CI");
-compile_error_if!(satd_count > 0, "Zero SATD tolerance in CI");
+compile_error_if!(satd_count > 0, "Zero SATD tolerance");
 compile_error_if!(max_complexity > 10, "Max complexity is 10");
 
-pub struct CriticalPath {
-    // Phase 0 is MANDATORY before any features
-    phase_0_blockers: vec![
-        "124 SATD comments removal",
-        "15% coverage increase",
-        "27 functions need complexity reduction",
-        "Parser completion (30% remaining)",
+pub struct EmergencyRecoveryStatus {
+    critical_fixes_applied: vec![
+        "Variable binding corruption fixed",
+        "Transpiler println! generation fixed",
+        "-e flag implementation restored",
+        "Function call evaluation fixed",
+        "Match expression evaluation implemented",
+        "Block expression return values fixed",
+        "cargo install main binary added (v0.4.8)",
+        "Comprehensive regression tests added",
     ],
-    estimated_days: 14,
-    blocking_all_features: true,
+    remaining_issues: vec![
+        "DataFrame parsing not implemented",
+        "Actor system syntax not implemented",
+        "Coverage gate needs re-enabling at 80%",
+    ],
+    quality_gates_active: true,
+    mandatory_lint_compliance: true,
 }
 ```
 
