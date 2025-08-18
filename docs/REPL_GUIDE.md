@@ -1,281 +1,531 @@
-# Ruchy REPL User Guide
+# Ruchy REPL Guide
 
-The Ruchy REPL (Read-Eval-Print Loop) provides an interactive environment for experimenting with Ruchy code, exploring language features, and rapid prototyping.
+## 🚀 Quick Start - The Golden Path
 
-## Quick Start
+The Ruchy REPL is your interactive playground for learning and experimenting with the language. Like Elixir's IEx or Julia's REPL, it provides immediate feedback and is the best way to learn Ruchy.
 
-Start the REPL with:
+### Start the REPL
+
 ```bash
-cargo run --bin ruchy-cli repl
+cargo run -p ruchy-cli -- repl
+# Or if installed: ruchy repl
 ```
 
-## Features
+You'll see:
+```
+Welcome to Ruchy REPL v0.4.0
+Type :help for commands, :quit to exit
 
-### 🚀 Expression Evaluation
+ruchy> 
+```
+
+## 📚 Essential Examples That Work Today
+
+### 1. Basic Arithmetic
+
 ```ruchy
-> 42 + 8
+ruchy> 1 + 2
+3
+
+ruchy> 10 * 5
 50
 
-> let x = [1, 2, 3, 4, 5]
-> [n * 2 for n in x if n > 2]
-[6, 8, 10]
+ruchy> 100 / 4
+25
 
-> fun fibonacci(n: i32) -> i32 { if n <= 1 { n } else { fibonacci(n-1) + fibonacci(n-2) } }
-> fibonacci(10)
-55
+ruchy> 7 % 3
+1
+
+ruchy> 2 ** 8
+256
 ```
 
-### 🔍 Code Inspection Commands
+### 2. Variables and Bindings
 
-#### `:type <expression>` - Show Type Information
 ```ruchy
-> :type 42
-42: i32
+ruchy> let x = 10
+10
 
-> :type [1, 2, 3]
-[1, 2, 3]: List<i32>
+ruchy> let y = 20
+20
 
-> :type fibonacci
-fibonacci: fn(i32) -> i32
+ruchy> x + y
+30
+
+ruchy> let message = "Hello"
+"Hello"
+
+ruchy> let pi = 3.14159
+3.14159
 ```
 
-#### `:ast <expression>` - Show Abstract Syntax Tree
+### 3. String Operations
+
 ```ruchy
-> :ast 1 + 2
-Binary {
-    left: Literal(Integer(1)),
-    op: Add,
-    right: Literal(Integer(2))
-}
+ruchy> "Hello" + " World"
+"Hello World"
+
+ruchy> let name = "Ruchy"
+"Ruchy"
+
+ruchy> let greeting = "Welcome to " + name
+"Welcome to Ruchy"
 ```
 
-#### `:rust <expression>` - Show Generated Rust Code
+### 4. Printing Output
+
 ```ruchy
-> :rust 1 + 2
-1 + 2
+ruchy> println("Hello, World!")
+Hello, World!
+()
+
+ruchy> print("Loading")
+Loading()
+
+ruchy> println("The answer is", 42)
+The answer is 42
+()
+
+ruchy> let x = 100
+100
+ruchy> println("x =", x)
+x = 100
+()
 ```
 
-### 📜 Session Management
+### 5. Boolean Logic
 
-#### `:history` - Show Command History
 ```ruchy
-> :history
-1: let x = 42
-2: x + 8
-3: fun double(n: i32) -> i32 { n * 2 }
+ruchy> true
+true
+
+ruchy> false
+false
+
+ruchy> true && false
+false
+
+ruchy> true || false
+true
+
+ruchy> !true
+false
+
+ruchy> 5 > 3
+true
+
+ruchy> 10 == 10
+true
+
+ruchy> "hello" == "hello"
+true
 ```
 
-#### `:clear` - Clear Session
+### 6. Conditional Expressions
+
 ```ruchy
-> :clear
-Session cleared
-```
+ruchy> if true { 1 } else { 2 }
+1
 
-#### `:save <filename>` - Save Session
-```ruchy
-> :save my_session.ruchy
-Session saved to my_session.ruchy
-```
-
-#### `:load <filename>` - Load Session
-```ruchy
-> :load my_session.ruchy
-Loading: let x = 42
-Loading: x + 8
-Session loaded from my_session.ruchy
-```
-
-## Language Features in REPL
-
-### 🔢 Data Types and Literals
-```ruchy
-> 42                    # Integer
-> 3.14                  # Float  
-> "hello"               # String
-> true                  # Boolean
-> [1, 2, 3]             # List
-> ()                    # Unit type
-```
-
-### 🔄 List Comprehensions
-```ruchy
-> [x * x for x in [1, 2, 3, 4, 5]]
-[1, 4, 9, 16, 25]
-
-> [word for word in ["hello", "world", "ruchy"] if word.len() > 4]
-["hello", "world", "ruchy"]
-```
-
-### 🎯 Pattern Matching
-```ruchy
-> match 42 {
-    0 => "zero",
-    n if n > 0 => "positive", 
-    _ => "negative"
-  }
-"positive"
-```
-
-### ⚡ Pipeline Operations
-```ruchy
-> [1, 2, 3, 4, 5] |> map(|x| x * 2) |> filter(|x| x > 4) |> sum()
+ruchy> let age = 18
 18
+
+ruchy> if age >= 18 { "adult" } else { "minor" }
+"adult"
+
+ruchy> let score = 85
+85
+
+ruchy> if score > 90 { "A" } else { if score > 80 { "B" } else { "C" } }
+"B"
 ```
 
-### 🏗️ Function Definitions
-```ruchy
-> fun add(a: i32, b: i32) -> i32 { a + b }
-> add(3, 4)
-7
+### 7. Lists and Collections
 
-> let multiply = |x: i32, y: i32| x * y
-> multiply(6, 7)
+```ruchy
+ruchy> [1, 2, 3]
+1
+
+ruchy> let nums = [10, 20, 30]
+10
+
+ruchy> []
+()
+```
+
+### 8. Blocks and Compound Expressions
+
+```ruchy
+ruchy> { 
+    let a = 5;
+    let b = 10;
+    a + b
+}
+15
+
+ruchy> {
+    println("Computing...");
+    42
+}
+Computing...
 42
 ```
 
-### 📊 DataFrames
-```ruchy
-> let df = df![
-    "name" => ["Alice", "Bob", "Charlie"];
-    "age" => [25, 30, 35];
-    "city" => ["NYC", "SF", "LA"]
-  ]
+### 9. Pattern Matching
 
-> df.filter(col("age") > 30)
-# Filtered DataFrame
+```ruchy
+ruchy> match 5 {
+    0 => "zero",
+    1 => "one",
+    _ => "other"
+}
+"other"
+
+ruchy> let x = 2
+2
+
+ruchy> match x {
+    1 | 2 | 3 => "small",
+    _ => "big"
+}
+"small"
 ```
 
-### 🏛️ Structs and Methods
+### 10. Functions (Basic Definition)
+
 ```ruchy
-> struct Point { x: f64, y: f64 }
-> let p = Point { x: 3.0, y: 4.0 }
-> p.x
-3.0
+ruchy> fun add(a: i32, b: i32) -> i32 { a + b }
+"fn add(a, b)"
+
+ruchy> fun greet(name: String) { println("Hello", name) }
+"fn greet(name)"
 ```
 
-## Error Handling and Debugging
+### 11. Lambda Expressions
 
-### Syntax Errors
 ```ruchy
-> let x = 
-Error: Unexpected end of input, expected expression
+ruchy> |x| x + 1
+"|x| <body>"
 
-> fun incomplete(
-Error: Expected parameter list
+ruchy> |x, y| x * y
+"|x, y| <body>"
 ```
 
-### Type Errors
-```ruchy
-> "hello" + 5
-Error: Cannot add String and Integer
+### 12. Range Expressions
 
-> :type "hello" + 5
-Type error: Mismatched types in binary operation
+```ruchy
+ruchy> 0..10
+"0..10"
+
+ruchy> 1..5
+"1..5"
 ```
 
-### Runtime Exploration
-```ruchy
-> fun buggy_division(a: i32, b: i32) -> i32 { a / b }
-> buggy_division(10, 0)
-Error: Division by zero
+## 🔧 REPL Commands
 
-> :ast buggy_division(10, 0)
-# Examine the structure to understand the issue
+### Information Commands
+
+```ruchy
+:help              # Show available commands
+:history           # Show command history
+:bindings          # Show current variable bindings
 ```
 
-## Performance and Quality
+### Session Management
 
-### Built-in Quality Assurance
-- **Property Testing**: All REPL operations are tested with property-based tests
-- **Fuzzing**: Input handling is continuously fuzzed for robustness
-- **State Machine Testing**: Session state transitions are formally verified
-- **Performance Monitoring**: Latency and memory usage are continuously benchmarked
-
-### Performance Characteristics
-- **Startup Time**: < 10ms
-- **Evaluation Latency**: < 1ms for simple expressions
-- **Type Lookup**: < 10µs
-- **Memory Usage**: < 100MB for typical sessions
-
-## Tips and Best Practices
-
-### 🎯 Effective REPL Usage
-
-1. **Start Small**: Test individual expressions before building complex programs
-2. **Use Type Inspection**: Check types frequently with `:type` to understand your data
-3. **Save Progress**: Use `:save` to preserve valuable explorations
-4. **Inspect Generated Code**: Use `:rust` to understand performance implications
-
-### 🔧 Debugging Workflows
-
-1. **Isolate Problems**: Test components individually
-2. **Check Types**: Use `:type` to verify assumptions
-3. **Examine Structure**: Use `:ast` to understand parsing
-4. **Review History**: Use `:history` to track your exploration
-
-### 📈 Performance Tips
-
-1. **Prefer Immutable Operations**: They optimize better
-2. **Use List Comprehensions**: They compile to efficient iterators
-3. **Avoid Deep Recursion**: Stack-intensive operations may be slow
-4. **Clear Session Periodically**: Use `:clear` to reset accumulated state
-
-## Integration with Development
-
-### IDE Integration
-The REPL can be used alongside your favorite editor:
-- Copy code from your editor and paste into REPL for testing
-- Use `:save` to preserve REPL experiments as files
-- Use `:rust` to see how Ruchy compiles to Rust
-
-### Testing Integration  
-Use the REPL to develop and test ideas before adding them to your test suite:
 ```ruchy
-> # Develop a complex function interactively
-> fun complex_calc(data: List<i32>) -> f64 { /* ... */ }
-> # Test with various inputs
-> complex_calc([1, 2, 3])
-> complex_calc([])
-> # Once confident, copy to your source files
+:clear             # Clear all bindings and start fresh
+:quit or :q        # Exit the REPL
 ```
 
-## Advanced Features
+### Development Commands
 
-### Session Persistence
 ```ruchy
-> :save exploration.ruchy    # Save current session
-> :clear                     # Clear session  
-> :load exploration.ruchy    # Restore previous work
+:compile           # Compile current session to Rust
+:load <file>       # Load and execute a .ruchy file
 ```
 
-### Cross-Session Development
-```ruchy
-# Session 1: Data preparation
-> let raw_data = load_csv("data.csv")
-> :save data_prep.ruchy
+## 📋 Currently Supported Grammar
 
-# Session 2: Analysis  
-> :load data_prep.ruchy
-> let analysis = analyze(raw_data)
-> :save analysis.ruchy
+### ✅ Working Features
+
+| Feature | Example | Output |
+|---------|---------|--------|
+| **Integers** | `42` | `42` |
+| **Floats** | `3.14` | `3.14` |
+| **Strings** | `"hello"` | `"hello"` |
+| **Booleans** | `true`, `false` | `true`, `false` |
+| **Arithmetic** | `1 + 2 * 3` | `7` |
+| **Comparisons** | `5 > 3` | `true` |
+| **Logic** | `true && false` | `false` |
+| **Variables** | `let x = 10` | `10` |
+| **If/Else** | `if x > 0 { "pos" } else { "neg" }` | `"pos"` |
+| **Blocks** | `{ let x = 1; x + 1 }` | `2` |
+| **Match** | `match x { 1 => "one", _ => "other" }` | Result varies |
+| **Functions** | `fun f(x: i32) { x }` | Function stored |
+| **Lambdas** | `\|x\| x * 2` | Lambda stored |
+| **Printing** | `println("Hi")` | Prints `Hi` |
+| **String Concat** | `"a" + "b"` | `"ab"` |
+
+### ⚠️ Partially Working
+
+| Feature | Issue | Workaround |
+|---------|-------|------------|
+| **Mixed arithmetic** | `3.14 * 2` fails (type mismatch) | Use same types: `3.14 * 2.0` |
+| **Function calls** | User functions not callable yet | Use built-ins like `println` |
+| **For loops** | Not implemented in evaluator | Use recursion or match |
+| **List operations** | Limited evaluation | Lists define but don't operate |
+
+### 🚧 Not Yet Implemented
+
+- Async/await expressions
+- Actor system (`!` and `?` operators)
+- DataFrame operations
+- Method calls on objects
+- Import statements
+- Type annotations in let bindings
+- Complex pattern matching
+- List comprehensions
+- Try/catch blocks
+
+## 💡 Tips and Tricks
+
+### 1. Multi-line Input
+The REPL supports multi-line expressions. Just keep typing:
+
+```ruchy
+ruchy> if true {
+    println("This is");
+    println("multi-line");
+    42
+}
+This is
+multi-line
+42
 ```
 
-## Error Recovery
+### 2. Expression Values
+Everything is an expression and returns a value:
 
-The REPL is designed to be robust and never crash:
+```ruchy
+ruchy> let result = if 5 > 3 { "yes" } else { "no" }
+"yes"
 
-- **Syntax Errors**: Clearly reported with suggestions
-- **Type Errors**: Detailed explanations with context
-- **Runtime Errors**: Graceful handling with stack traces
-- **Resource Limits**: Automatic recovery from memory/time limits
+ruchy> let computation = {
+    let x = 10;
+    let y = 20;
+    x + y
+}
+30
+```
 
-## Getting Help
+### 3. Debugging with Print
+Use `println` liberally to understand what's happening:
 
-- `:help` - Show available commands
-- `:quit` or `:q` - Exit the REPL
-- Visit [Ruchy Documentation](https://github.com/paiml/ruchy) for more examples
-- Report issues at [GitHub Issues](https://github.com/paiml/ruchy/issues)
+```ruchy
+ruchy> {
+    let x = 5;
+    println("x is", x);
+    let y = x * 2;
+    println("y is", y);
+    x + y
+}
+x is 5
+y is 10
+15
+```
 
----
+### 4. Type Exploration
+The REPL shows you the type of expressions through their values:
 
-*The Ruchy REPL is continuously tested for correctness, performance, and robustness with property-based testing, fuzzing, and formal verification.*
+```ruchy
+ruchy> 42
+42                    # Integer
+
+ruchy> 3.14
+3.14                  # Float
+
+ruchy> "text"
+"text"                # String
+
+ruchy> true
+true                  # Boolean
+
+ruchy> ()
+()                    # Unit type
+
+ruchy> [1, 2, 3]
+1                     # List (shows first element)
+```
+
+## 🎯 Common Patterns
+
+### Calculator Mode
+```ruchy
+ruchy> let tax_rate = 0.08
+0.08
+
+ruchy> let price = 100
+100
+
+ruchy> let tax = price * tax_rate
+Error: Type mismatch    # Oops! Need same types
+
+ruchy> let price = 100.0
+100.0
+
+ruchy> let tax = price * tax_rate
+8.0
+
+ruchy> let total = price + tax
+108.0
+
+ruchy> println("Total with tax:", total)
+Total with tax: 108.0
+()
+```
+
+### Decision Making
+```ruchy
+ruchy> let score = 75
+75
+
+ruchy> let grade = if score >= 90 {
+    "A"
+} else { if score >= 80 {
+    "B"
+} else { if score >= 70 {
+    "C"
+} else {
+    "F"
+}}}
+"C"
+
+ruchy> println("Your grade:", grade)
+Your grade: C
+()
+```
+
+### Building Up Computations
+```ruchy
+ruchy> let base = 100
+100
+
+ruchy> let bonus = 20
+20
+
+ruchy> let penalty = 5
+5
+
+ruchy> let final_score = base + bonus - penalty
+115
+
+ruchy> println("Final score:", final_score)
+Final score: 115
+()
+```
+
+## 🔍 Troubleshooting
+
+### Common Errors and Solutions
+
+**Type Mismatch**
+```ruchy
+ruchy> 3.14 * 2
+Error: Type mismatch in binary operation
+
+# Solution: Use consistent types
+ruchy> 3.14 * 2.0
+6.28
+```
+
+**Undefined Variable**
+```ruchy
+ruchy> x + 1
+Error: Undefined variable: x
+
+# Solution: Define the variable first
+ruchy> let x = 10
+10
+ruchy> x + 1
+11
+```
+
+**String + Number**
+```ruchy
+ruchy> "The answer is " + 42
+Error: Type mismatch
+
+# Solution: Use println for mixed types
+ruchy> println("The answer is", 42)
+The answer is 42
+()
+```
+
+## 📖 Learning Path
+
+1. **Start Simple**: Basic arithmetic and variables
+2. **Add Logic**: Boolean expressions and if/else
+3. **Use Functions**: Define and understand function syntax
+4. **Pattern Match**: Learn match expressions
+5. **Combine**: Build larger expressions from smaller ones
+
+## 🚦 Quick Reference Card
+
+```ruchy
+# Numbers
+42, 3.14, 2 ** 8
+
+# Strings  
+"hello", "a" + "b"
+
+# Booleans
+true, false, !true, a && b, x || y
+
+# Variables
+let x = 10
+let name = "Ruchy"
+
+# Conditionals
+if condition { expr1 } else { expr2 }
+
+# Pattern Matching
+match value {
+    pattern1 => result1,
+    pattern2 => result2,
+    _ => default
+}
+
+# Functions
+fun name(param: Type) -> RetType { body }
+
+# Lambdas
+|param| expression
+|x, y| x + y
+
+# Printing
+println("text", value1, value2)
+print("no newline")
+
+# Blocks
+{
+    statement1;
+    statement2;
+    final_expression
+}
+
+# Commands
+:help, :quit, :history, :clear, :bindings
+```
+
+## Next Steps
+
+Once comfortable with the REPL basics:
+
+1. Try loading example files with `:load examples/fibonacci.ruchy`
+2. Experiment with more complex expressions
+3. Use `:compile` to see generated Rust code
+4. Read the [Language Specification](./SPECIFICATION.md) for advanced features
+5. Check [ROADMAP.md](../ROADMAP.md) to see what's coming next
+
+Remember: The REPL is your friend! It's the fastest way to learn Ruchy and test ideas. Keep it open while coding and use it to verify your understanding.
