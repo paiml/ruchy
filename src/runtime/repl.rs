@@ -310,6 +310,50 @@ impl Repl {
                 let lambda_signature = format!("|{}| <body>", param_names.join(", "));
                 Ok(Value::String(lambda_signature))
             }
+            ExprKind::Call { func, args } => {
+                // Handle built-in functions
+                if let ExprKind::Identifier(func_name) = &func.kind {
+                    match func_name.as_str() {
+                        "println" => {
+                            // Evaluate arguments
+                            let mut output = String::new();
+                            for (i, arg) in args.iter().enumerate() {
+                                if i > 0 {
+                                    output.push(' ');
+                                }
+                                let val = self.evaluate_expr(arg, deadline, depth + 1)?;
+                                // Format the value for printing (without quotes for strings)
+                                match val {
+                                    Value::String(s) => output.push_str(&s),
+                                    other => output.push_str(&other.to_string()),
+                                }
+                            }
+                            // Print to stdout (REPL allows this)
+                            println!("{output}");
+                            Ok(Value::Unit)
+                        }
+                        "print" => {
+                            // Same as println but without newline
+                            let mut output = String::new();
+                            for (i, arg) in args.iter().enumerate() {
+                                if i > 0 {
+                                    output.push(' ');
+                                }
+                                let val = self.evaluate_expr(arg, deadline, depth + 1)?;
+                                match val {
+                                    Value::String(s) => output.push_str(&s),
+                                    other => output.push_str(&other.to_string()),
+                                }
+                            }
+                            print!("{output}");
+                            Ok(Value::Unit)
+                        }
+                        _ => bail!("Unknown function: {}", func_name),
+                    }
+                } else {
+                    bail!("Complex function calls not yet supported");
+                }
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
