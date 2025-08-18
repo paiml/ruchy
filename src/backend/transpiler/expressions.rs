@@ -17,10 +17,10 @@ impl Transpiler {
         if parts.is_empty() {
             return Ok(quote! { "" });
         }
-        
+
         let mut format_string = String::new();
         let mut args = Vec::new();
-        
+
         for part in parts {
             match part {
                 StringPart::Text(s) => {
@@ -34,7 +34,7 @@ impl Transpiler {
                 }
             }
         }
-        
+
         Ok(quote! {
             format!(#format_string #(, #args)*)
         })
@@ -44,7 +44,7 @@ impl Transpiler {
     pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Result<TokenStream> {
         let left_tokens = self.transpile_expr(left)?;
         let right_tokens = self.transpile_expr(right)?;
-        
+
         let result = match op {
             BinaryOp::Add => quote! { #left_tokens + #right_tokens },
             BinaryOp::Subtract => quote! { #left_tokens - #right_tokens },
@@ -66,14 +66,14 @@ impl Transpiler {
             BinaryOp::LeftShift => quote! { #left_tokens << #right_tokens },
             BinaryOp::RightShift => quote! { #left_tokens >> #right_tokens },
         };
-        
+
         Ok(result)
     }
 
     /// Transpiles unary operations  
     pub fn transpile_unary(&self, op: UnaryOp, operand: &Expr) -> Result<TokenStream> {
         let operand_tokens = self.transpile_expr(operand)?;
-        
+
         Ok(match op {
             UnaryOp::Not | UnaryOp::BitwiseNot => quote! { !#operand_tokens },
             UnaryOp::Negate => quote! { -#operand_tokens },
@@ -115,10 +115,15 @@ impl Transpiler {
     }
 
     /// Transpiles compound assignment
-    pub fn transpile_compound_assign(&self, target: &Expr, op: BinaryOp, value: &Expr) -> Result<TokenStream> {
+    pub fn transpile_compound_assign(
+        &self,
+        target: &Expr,
+        op: BinaryOp,
+        value: &Expr,
+    ) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
         let value_tokens = self.transpile_expr(value)?;
-        
+
         let op_tokens = match op {
             BinaryOp::Add => quote! { += },
             BinaryOp::Subtract => quote! { -= },
@@ -130,7 +135,7 @@ impl Transpiler {
                 bail!("Invalid operator for compound assignment: {:?}", op)
             }
         };
-        
+
         Ok(quote! { #target_tokens #op_tokens #value_tokens })
     }
 
@@ -172,16 +177,22 @@ impl Transpiler {
 
     /// Transpiles list literals
     pub fn transpile_list(&self, elements: &[Expr]) -> Result<TokenStream> {
-        let element_tokens: Result<Vec<_>> = elements.iter().map(|e| self.transpile_expr(e)).collect();
+        let element_tokens: Result<Vec<_>> =
+            elements.iter().map(|e| self.transpile_expr(e)).collect();
         let element_tokens = element_tokens?;
         Ok(quote! { vec![#(#element_tokens),*] })
     }
 
     /// Transpiles range expressions
-    pub fn transpile_range(&self, start: &Expr, end: &Expr, inclusive: bool) -> Result<TokenStream> {
+    pub fn transpile_range(
+        &self,
+        start: &Expr,
+        end: &Expr,
+        inclusive: bool,
+    ) -> Result<TokenStream> {
         let start_tokens = self.transpile_expr(start)?;
         let end_tokens = self.transpile_expr(end)?;
-        
+
         if inclusive {
             Ok(quote! { #start_tokens..=#end_tokens })
         } else {
@@ -190,11 +201,14 @@ impl Transpiler {
     }
 
     /// Transpiles object literals
-    pub fn transpile_object_literal(&self, fields: &[crate::frontend::ast::ObjectField]) -> Result<TokenStream> {
+    pub fn transpile_object_literal(
+        &self,
+        fields: &[crate::frontend::ast::ObjectField],
+    ) -> Result<TokenStream> {
         use crate::frontend::ast::ObjectField;
-        
+
         let mut field_tokens = Vec::new();
-        
+
         for field in fields {
             match field {
                 ObjectField::KeyValue { key, value } => {
@@ -208,7 +222,7 @@ impl Transpiler {
                 }
             }
         }
-        
+
         // Generate a struct literal
         // For now, we'll use an anonymous struct pattern
         // In a real implementation, we might want to infer or specify the type
@@ -220,16 +234,20 @@ impl Transpiler {
     }
 
     /// Transpiles struct literals
-    pub fn transpile_struct_literal(&self, name: &str, fields: &[(String, Expr)]) -> Result<TokenStream> {
+    pub fn transpile_struct_literal(
+        &self,
+        name: &str,
+        fields: &[(String, Expr)],
+    ) -> Result<TokenStream> {
         let struct_name = format_ident!("{}", name);
         let mut field_tokens = Vec::new();
-        
+
         for (field_name, value) in fields {
             let field_ident = format_ident!("{}", field_name);
             let value_tokens = self.transpile_expr(value)?;
             field_tokens.push(quote! { #field_ident: #value_tokens });
         }
-        
+
         Ok(quote! {
             #struct_name {
                 #(#field_tokens,)*

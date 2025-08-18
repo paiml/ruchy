@@ -19,12 +19,12 @@ impl Transpiler {
                 polars::prelude::DataFrame::empty()
             });
         }
-        
+
         let mut series_tokens = Vec::new();
-        
+
         for column in columns {
             let col_name = &column.name;
-            
+
             // Transpile the column values
             let values_tokens = if column.values.is_empty() {
                 quote! { vec![] }
@@ -38,13 +38,13 @@ impl Transpiler {
                 let value_tokens = value_tokens?;
                 quote! { vec![#(#value_tokens),*] }
             };
-            
+
             // Create a Series from the values
             series_tokens.push(quote! {
                 polars::prelude::Series::new(#col_name, #values_tokens)
             });
         }
-        
+
         // Create DataFrame from series
         Ok(quote! {
             polars::prelude::DataFrame::new(vec![
@@ -54,15 +54,17 @@ impl Transpiler {
     }
 
     /// Transpiles DataFrame operations
-    pub fn transpile_dataframe_operation(&self, df: &Expr, op: &DataFrameOp) -> Result<TokenStream> {
+    pub fn transpile_dataframe_operation(
+        &self,
+        df: &Expr,
+        op: &DataFrameOp,
+    ) -> Result<TokenStream> {
         let df_tokens = self.transpile_expr(df)?;
-        
+
         match op {
             DataFrameOp::Select(columns) => {
-                let col_tokens: Vec<TokenStream> = columns
-                    .iter()
-                    .map(|col| quote! { #col })
-                    .collect();
+                let col_tokens: Vec<TokenStream> =
+                    columns.iter().map(|col| quote! { #col }).collect();
                 Ok(quote! {
                     #df_tokens.select(&[#(#col_tokens),*]).unwrap()
                 })
@@ -74,38 +76,31 @@ impl Transpiler {
                 })
             }
             DataFrameOp::GroupBy(columns) => {
-                let col_tokens: Vec<TokenStream> = columns
-                    .iter()
-                    .map(|col| quote! { #col })
-                    .collect();
+                let col_tokens: Vec<TokenStream> =
+                    columns.iter().map(|col| quote! { #col }).collect();
                 Ok(quote! {
                     #df_tokens.groupby(&[#(#col_tokens),*]).unwrap()
                 })
             }
             DataFrameOp::Sort(columns) => {
                 // Sort by multiple columns
-                let col_tokens: Vec<TokenStream> = columns
-                    .iter()
-                    .map(|col| quote! { #col })
-                    .collect();
+                let col_tokens: Vec<TokenStream> =
+                    columns.iter().map(|col| quote! { #col }).collect();
                 Ok(quote! {
                     #df_tokens.sort(&[#(#col_tokens),*], false).unwrap()
                 })
             }
             DataFrameOp::Join { other, on, how } => {
                 let other_tokens = self.transpile_expr(other)?;
-                let on_tokens: Vec<TokenStream> = on
-                    .iter()
-                    .map(|col| quote! { #col })
-                    .collect();
-                    
+                let on_tokens: Vec<TokenStream> = on.iter().map(|col| quote! { #col }).collect();
+
                 let join_type = match how {
                     JoinType::Left => quote! { polars::prelude::JoinType::Left },
                     JoinType::Right => quote! { polars::prelude::JoinType::Right },
                     JoinType::Inner => quote! { polars::prelude::JoinType::Inner },
                     JoinType::Outer => quote! { polars::prelude::JoinType::Outer },
                 };
-                
+
                 Ok(quote! {
                     #df_tokens.join(
                         &#other_tokens,
@@ -129,26 +124,20 @@ impl Transpiler {
                         AggregateOp::Var(col) => quote! { col(#col).var() },
                     })
                     .collect();
-                    
+
                 Ok(quote! {
                     #df_tokens.agg(&[#(#agg_exprs),*]).unwrap()
                 })
             }
-            DataFrameOp::Limit(n) => {
-                Ok(quote! {
-                    #df_tokens.limit(#n)
-                })
-            }
-            DataFrameOp::Head(n) => {
-                Ok(quote! {
-                    #df_tokens.head(Some(#n))
-                })
-            }
-            DataFrameOp::Tail(n) => {
-                Ok(quote! {
-                    #df_tokens.tail(Some(#n))
-                })
-            }
+            DataFrameOp::Limit(n) => Ok(quote! {
+                #df_tokens.limit(#n)
+            }),
+            DataFrameOp::Head(n) => Ok(quote! {
+                #df_tokens.head(Some(#n))
+            }),
+            DataFrameOp::Tail(n) => Ok(quote! {
+                #df_tokens.tail(Some(#n))
+            }),
         }
     }
 
@@ -161,17 +150,15 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let df_tokens = self.transpile_expr(df_expr)?;
         let method_ident = format_ident!("{}", method);
-        
+
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
-        
+
         // Map Ruchy DataFrame methods to Polars methods
         match method {
-            "select" | "filter" | "groupby" | "agg" | "sort" | "join" => {
-                Ok(quote! {
-                    #df_tokens.#method_ident(#(#arg_tokens),*).unwrap()
-                })
-            }
+            "select" | "filter" | "groupby" | "agg" | "sort" | "join" => Ok(quote! {
+                #df_tokens.#method_ident(#(#arg_tokens),*).unwrap()
+            }),
             "mean" | "std" | "min" | "max" | "sum" | "count" => {
                 // These are aggregate functions
                 Ok(quote! {

@@ -4,22 +4,22 @@
 #![allow(clippy::print_stdout)] // Examples should print output
 #![allow(clippy::unwrap_used)] // Examples can use unwrap for simplicity
 
-use ruchy::frontend::parser::Parser;
-use ruchy::frontend::ast::ExprKind;
 use ruchy::backend::transpiler::Transpiler;
+use ruchy::frontend::ast::ExprKind;
+use ruchy::frontend::parser::Parser;
 
 fn main() {
     println!("=== Ruchy Actor System Examples ===\n");
-    
+
     // Example 1: Simple actor
     example_simple_actor();
-    
+
     // Example 2: Actor with state
     example_stateful_actor();
-    
+
     // Example 3: Message passing
     example_message_passing();
-    
+
     // Example 4: Complex actor patterns
     example_complex_actor();
 }
@@ -27,7 +27,7 @@ fn main() {
 fn example_simple_actor() {
     println!("1. Simple Actor");
     println!("---------------");
-    
+
     let input = r#"
         actor Greeter {
             receive {
@@ -38,11 +38,11 @@ fn example_simple_actor() {
     "#;
     println!("Input: {}", &input[..60]);
     println!("...");
-    
+
     let ast = Parser::new(input).parse().unwrap();
     let transpiler = Transpiler::new();
     let output = transpiler.transpile(&ast).unwrap();
-    
+
     let output_str = output.to_string();
     if output_str.contains("struct Greeter") && output_str.contains("enum GreeterMessage") {
         println!("✓ Actor transpiled to struct and message enum");
@@ -56,7 +56,7 @@ fn example_simple_actor() {
 fn example_stateful_actor() {
     println!("2. Stateful Actor");
     println!("-----------------");
-    
+
     let input = r"
         actor Counter {
             count: i32,
@@ -75,14 +75,19 @@ fn example_stateful_actor() {
         }
     ";
     println!("Actor with mutable state: Counter");
-    
+
     match Parser::new(input).parse() {
         Ok(ast) => {
-            if let ExprKind::Actor { name, state, handlers } = &ast.kind {
+            if let ExprKind::Actor {
+                name,
+                state,
+                handlers,
+            } = &ast.kind
+            {
                 println!("  Name: {name}");
                 println!("  State fields: {}", state.len());
                 println!("  Message handlers: {}", handlers.len());
-                
+
                 let transpiler = Transpiler::new();
                 match transpiler.transpile(&ast) {
                     Ok(_) => println!("  ✓ Successfully transpiled"),
@@ -98,16 +103,16 @@ fn example_stateful_actor() {
 fn example_message_passing() {
     println!("3. Message Passing");
     println!("------------------");
-    
+
     let examples = vec![
         ("Send message", "counter ! Increment"),
         ("Ask pattern", "counter ? Get"),
         ("Send with data", r#"logger ! Log("Hello")"#),
     ];
-    
+
     for (description, input) in examples {
         println!("{description}: {input}");
-        
+
         match Parser::new(input).parse() {
             Ok(ast) => {
                 let transpiler = Transpiler::new();
@@ -134,7 +139,7 @@ fn example_message_passing() {
 fn example_complex_actor() {
     println!("4. Complex Actor Patterns");
     println!("-------------------------");
-    
+
     let input = r"
         actor TaskManager {
             tasks: Vec<Task>,
@@ -159,22 +164,24 @@ fn example_complex_actor() {
             }
         }
     ";
-    
+
     println!("Complex TaskManager actor with:");
     println!("  - Multiple state fields");
     println!("  - Parameterized messages");
     println!("  - Complex message handling logic");
-    
+
     match Parser::new(input).parse() {
         Ok(ast) => {
             if let ExprKind::Actor { handlers, .. } = &ast.kind {
                 println!("\nMessage handlers:");
                 for handler in handlers {
-                    println!("  - {} with {} params", 
-                        handler.message_type, 
-                        handler.params.len());
+                    println!(
+                        "  - {} with {} params",
+                        handler.message_type,
+                        handler.params.len()
+                    );
                 }
-                
+
                 let transpiler = Transpiler::new();
                 match transpiler.transpile(&ast) {
                     Ok(tokens) => {
@@ -192,6 +199,6 @@ fn example_complex_actor() {
         }
         Err(e) => println!("\n✗ Parse error: {e}"),
     }
-    
+
     println!("\n=== Actor System Examples Complete ===");
 }

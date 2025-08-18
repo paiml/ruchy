@@ -13,12 +13,12 @@ impl Transpiler {
     /// Transpiles match expressions
     pub fn transpile_match(&self, expr: &Expr, arms: &[MatchArm]) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
-        
+
         let mut arm_tokens = Vec::new();
         for arm in arms {
             let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
             let body_tokens = self.transpile_expr(&arm.body)?;
-            
+
             if let Some(ref guard) = arm.guard {
                 let guard_tokens = self.transpile_expr(guard)?;
                 arm_tokens.push(quote! {
@@ -30,7 +30,7 @@ impl Transpiler {
                 });
             }
         }
-        
+
         Ok(quote! {
             match #expr_tokens {
                 #(#arm_tokens,)*
@@ -48,10 +48,8 @@ impl Transpiler {
                 Ok(quote! { #ident })
             }
             Pattern::Tuple(patterns) => {
-                let pattern_tokens: Result<Vec<_>> = patterns
-                    .iter()
-                    .map(|p| self.transpile_pattern(p))
-                    .collect();
+                let pattern_tokens: Result<Vec<_>> =
+                    patterns.iter().map(|p| self.transpile_pattern(p)).collect();
                 let pattern_tokens = pattern_tokens?;
                 Ok(quote! { (#(#pattern_tokens),*) })
             }
@@ -61,7 +59,7 @@ impl Transpiler {
                 } else {
                     // Check for rest pattern
                     let has_rest = patterns.iter().any(|p| matches!(p, Pattern::Rest));
-                    
+
                     if has_rest {
                         // Handle patterns with rest
                         let mut pattern_tokens = Vec::new();
@@ -75,10 +73,8 @@ impl Transpiler {
                         Ok(quote! { [#(#pattern_tokens),*] })
                     } else {
                         // Simple list pattern
-                        let pattern_tokens: Result<Vec<_>> = patterns
-                            .iter()
-                            .map(|p| self.transpile_pattern(p))
-                            .collect();
+                        let pattern_tokens: Result<Vec<_>> =
+                            patterns.iter().map(|p| self.transpile_pattern(p)).collect();
                         let pattern_tokens = pattern_tokens?;
                         Ok(quote! { [#(#pattern_tokens),*] })
                     }
@@ -86,7 +82,7 @@ impl Transpiler {
             }
             Pattern::Struct { name, fields } => {
                 let struct_name = format_ident!("{}", name);
-                
+
                 if fields.is_empty() {
                     Ok(quote! { #struct_name {} })
                 } else {
@@ -108,12 +104,10 @@ impl Transpiler {
                 }
             }
             Pattern::Or(patterns) => {
-                let pattern_tokens: Result<Vec<_>> = patterns
-                    .iter()
-                    .map(|p| self.transpile_pattern(p))
-                    .collect();
+                let pattern_tokens: Result<Vec<_>> =
+                    patterns.iter().map(|p| self.transpile_pattern(p)).collect();
                 let pattern_tokens = pattern_tokens?;
-                
+
                 // Join patterns with |
                 let mut result = TokenStream::new();
                 for (i, tokens) in pattern_tokens.iter().enumerate() {
@@ -124,19 +118,21 @@ impl Transpiler {
                 }
                 Ok(result)
             }
-            Pattern::Range { start, end, inclusive } => {
+            Pattern::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 let start_tokens = self.transpile_pattern(start)?;
                 let end_tokens = self.transpile_pattern(end)?;
-                
+
                 if *inclusive {
                     Ok(quote! { #start_tokens..=#end_tokens })
                 } else {
                     Ok(quote! { #start_tokens..#end_tokens })
                 }
             }
-            Pattern::Rest => {
-                Ok(quote! { .. })
-            }
+            Pattern::Rest => Ok(quote! { .. }),
             Pattern::Ok(pattern) => {
                 let inner = self.transpile_pattern(pattern)?;
                 Ok(quote! { Ok(#inner) })

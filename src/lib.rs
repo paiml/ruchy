@@ -8,20 +8,31 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]
 
+pub mod actors;
 pub mod backend;
 pub mod frontend;
+pub mod lsp;
 pub mod mcp;
 pub mod middleend;
 pub mod parser;
+pub mod quality;
 pub mod runtime;
 #[cfg(test)]
 pub mod testing;
 pub mod transpiler;
 
+pub use actors::{
+    Actor, ActorHandle, McpActor, McpMessage, McpResponse, SupervisionStrategy, Supervisor,
+};
 pub use backend::transpiler::Transpiler;
 pub use frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, UnaryOp};
 pub use frontend::lexer::{Token, TokenStream};
 pub use frontend::parser::Parser;
+pub use lsp::{start_server, start_tcp_server, Formatter, RuchyLanguageServer, SemanticAnalyzer};
+pub use quality::{
+    CiQualityEnforcer, CoverageCollector, CoverageReport, CoverageTool, FileCoverage,
+    HtmlReportGenerator, QualityGates, QualityMetrics, QualityReport, QualityThresholds,
+};
 
 use anyhow::Result;
 
@@ -41,9 +52,6 @@ use anyhow::Result;
 /// Returns an error if:
 /// - The source code cannot be parsed
 /// - The transpilation to Rust fails
-/// # Errors
-///
-/// Returns an error if the operation fails
 pub fn compile(source: &str) -> Result<String> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
@@ -81,9 +89,6 @@ pub fn get_parse_error(source: &str) -> Option<String> {
 /// Returns an error if:
 /// - The REPL cannot be initialized
 /// - User interaction fails
-/// # Errors
-///
-/// Returns an error if the operation fails
 pub fn run_repl() -> Result<()> {
     let mut repl = runtime::repl::Repl::new()?;
     repl.run()

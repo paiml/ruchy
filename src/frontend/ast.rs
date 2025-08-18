@@ -998,7 +998,10 @@ mod tests {
         let expr = Expr::new(
             ExprKind::Import {
                 path: "std::collections".to_string(),
-                items: vec![ImportItem::Named("HashMap".to_string()), ImportItem::Named("HashSet".to_string())],
+                items: vec![
+                    ImportItem::Named("HashMap".to_string()),
+                    ImportItem::Named("HashSet".to_string()),
+                ],
             },
             Span::new(0, 30),
         );
@@ -1114,12 +1117,10 @@ mod tests {
             ]),
             Pattern::Struct {
                 name: "Point".to_string(),
-                fields: vec![
-                    StructPatternField {
-                        name: "x".to_string(),
-                        pattern: Some(Pattern::Identifier("x".to_string())),
-                    },
-                ],
+                fields: vec![StructPatternField {
+                    name: "x".to_string(),
+                    pattern: Some(Pattern::Identifier("x".to_string())),
+                }],
             },
             Pattern::Range {
                 start: Box::new(Pattern::Literal(Literal::Integer(1))),
@@ -1138,7 +1139,8 @@ mod tests {
                 Pattern::Tuple(list) | Pattern::List(list) => assert!(!list.is_empty()),
                 Pattern::Struct { fields, .. } => assert!(!fields.is_empty()),
                 Pattern::Or(patterns) => assert!(!patterns.is_empty()),
-                Pattern::Range { .. } | Pattern::Wildcard
+                Pattern::Range { .. }
+                | Pattern::Wildcard
                 | Pattern::Literal(_)
                 | Pattern::Identifier(_)
                 | Pattern::Rest

@@ -1,8 +1,8 @@
 #![allow(clippy::print_stdout)] // Tests can print debug info
 #![allow(clippy::unwrap_used)] // Tests need unwrap
 
-use ruchy::frontend::parser::Parser;
 use ruchy::frontend::ast::{ExprKind, ImportItem};
+use ruchy::frontend::parser::Parser;
 
 #[test]
 fn test_empty_import_path() {
@@ -103,7 +103,10 @@ fn test_multiple_wildcards() {
     if let Ok(expr) = result {
         if let ExprKind::Import { items, .. } = &expr.kind {
             // Check if multiple wildcards are collapsed or kept
-            let wildcard_count = items.iter().filter(|i| matches!(i, ImportItem::Wildcard)).count();
+            let wildcard_count = items
+                .iter()
+                .filter(|i| matches!(i, ImportItem::Wildcard))
+                .count();
             println!("Multiple wildcards resulted in {wildcard_count} wildcard items");
         }
     } else {

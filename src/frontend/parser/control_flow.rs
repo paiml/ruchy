@@ -1,7 +1,7 @@
 //! Control flow parsing (if/else, match, loops, try/catch)
 
 use super::{ParserState, *};
-use crate::frontend::ast::{StructPatternField, CatchClause};
+use crate::frontend::ast::{CatchClause, StructPatternField};
 
 /// # Errors
 ///
@@ -148,12 +148,12 @@ pub fn parse_match(state: &mut ParserState) -> Result<Expr> {
 /// Parse a pattern with OR support (lowest precedence)
 pub fn parse_pattern(state: &mut ParserState) -> Pattern {
     let mut left = parse_pattern_base(state);
-    
+
     // Handle OR patterns (x | y | z)
     while matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         state.tokens.advance(); // consume |
         let right = parse_pattern_base(state);
-        
+
         // Combine into OR pattern
         left = match left {
             Pattern::Or(mut patterns) => {
@@ -163,7 +163,7 @@ pub fn parse_pattern(state: &mut ParserState) -> Pattern {
             _ => Pattern::Or(vec![left, right]),
         };
     }
-    
+
     left
 }
 
@@ -230,17 +230,14 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
                     state.tokens.advance(); // consume }
                 }
 
-                return Pattern::Struct {
-                    name,
-                    fields,
-                };
+                return Pattern::Struct { name, fields };
             }
 
             Pattern::Identifier(name)
         }
         Some((Token::LeftParen, _)) => {
             state.tokens.advance(); // consume (
-            
+
             // Check for unit pattern ()
             if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                 state.tokens.advance(); // consume )
@@ -249,17 +246,17 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
 
             // Parse tuple pattern (x, y, z)
             let mut patterns = Vec::new();
-            
+
             patterns.push(parse_pattern_base(state));
-            
+
             // Check if it's a single-element parenthesized pattern or a tuple
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance(); // consume comma
-                
+
                 // Parse remaining patterns
                 while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                     patterns.push(parse_pattern_base(state));
-                    
+
                     if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                         state.tokens.advance();
                     } else {
@@ -267,14 +264,17 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
                     }
                 }
             }
-            
+
             if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                 state.tokens.advance(); // consume )
             }
-            
+
             // If only one pattern and no comma, it's not a tuple
             if patterns.len() == 1 {
-                patterns.into_iter().next().expect("checked: patterns.len() == 1")
+                patterns
+                    .into_iter()
+                    .next()
+                    .expect("checked: patterns.len() == 1")
             } else {
                 Pattern::Tuple(patterns)
             }
@@ -308,12 +308,15 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
         Some((Token::Integer(i), _)) => {
             let i = *i;
             state.tokens.advance();
-            
+
             // Check for range pattern 1..=10 or 1..10
-            if matches!(state.tokens.peek(), Some((Token::DotDot | Token::DotDotEqual, _))) {
+            if matches!(
+                state.tokens.peek(),
+                Some((Token::DotDot | Token::DotDotEqual, _))
+            ) {
                 let inclusive = matches!(state.tokens.peek(), Some((Token::DotDotEqual, _)));
                 state.tokens.advance(); // consume .. or ..=
-                
+
                 let end_pattern = parse_pattern_base(state);
                 return Pattern::Range {
                     start: Box::new(Pattern::Literal(Literal::Integer(i))),
@@ -321,7 +324,7 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
                     inclusive,
                 };
             }
-            
+
             Pattern::Literal(Literal::Integer(i))
         }
         Some((Token::Float(f), _)) => {
@@ -452,7 +455,7 @@ pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
 
     // Parse catch clauses
     let mut catch_clauses = Vec::new();
-    
+
     while matches!(state.tokens.peek(), Some((Token::Catch, _))) {
         catch_clauses.push(parse_catch_clause(state)?);
     }
@@ -483,7 +486,7 @@ pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
 /// Parse a single catch clause
 fn parse_catch_clause(state: &mut ParserState) -> Result<CatchClause> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume catch
-    
+
     // Parse catch signature: catch (ExceptionType variable) or catch variable
     let has_parens = matches!(state.tokens.peek(), Some((Token::LeftParen, _)));
     if has_parens {
@@ -491,21 +494,22 @@ fn parse_catch_clause(state: &mut ParserState) -> Result<CatchClause> {
     }
 
     // Parse exception type and variable name
-    let (exception_type, variable) = if let Some((Token::Identifier(first_name), _)) = state.tokens.peek() {
-        let first_name = first_name.clone();
-        state.tokens.advance();
-        
-        // Check if there's a second identifier (TypeName variable pattern)
-        if let Some((Token::Identifier(second_name), _)) = state.tokens.peek() {
-            let second_name = second_name.clone();
+    let (exception_type, variable) =
+        if let Some((Token::Identifier(first_name), _)) = state.tokens.peek() {
+            let first_name = first_name.clone();
             state.tokens.advance();
-            (Some(first_name), second_name) // first is type, second is variable
+
+            // Check if there's a second identifier (TypeName variable pattern)
+            if let Some((Token::Identifier(second_name), _)) = state.tokens.peek() {
+                let second_name = second_name.clone();
+                state.tokens.advance();
+                (Some(first_name), second_name) // first is type, second is variable
+            } else {
+                (None, first_name) // first is variable, no type
+            }
         } else {
-            (None, first_name) // first is variable, no type
-        }
-    } else {
-        bail!("Expected variable name in catch clause");
-    };
+            bail!("Expected variable name in catch clause");
+        };
 
     if has_parens {
         state.tokens.expect(&Token::RightParen)?; // consume )
