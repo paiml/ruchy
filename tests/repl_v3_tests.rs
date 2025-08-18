@@ -86,7 +86,7 @@ fn test_stack_depth() {
 
 #[test]
 fn test_state_transitions() {
-    use ruchy::runtime::repl_v3::state::{State, Environment, Value};
+    use ruchy::runtime::repl_v3::state::{State, Environment};
     
     let env = Environment::new();
     let state = State::Ready(env);
@@ -157,4 +157,49 @@ fn test_memory_tracker() {
     
     tracker.reset();
     assert_eq!(tracker.used(), 0);
+}
+
+#[test]
+fn test_parser_integration() {
+    use ruchy::runtime::repl_v3::ReplConfig;
+    use std::time::Duration;
+    
+    let config = ReplConfig {
+        max_memory: 10 * 1024 * 1024,
+        timeout: Duration::from_secs(1),
+        max_depth: 100,
+        debug: false,
+    };
+    
+    let mut repl = ReplV3::with_config(config).expect("REPL creation should succeed");
+    
+    // Test basic arithmetic
+    let result = repl.evaluator.eval("42").expect("Should evaluate literal");
+    assert_eq!(result, "42");
+    
+    let result = repl.evaluator.eval("1 + 2").expect("Should evaluate addition");
+    assert_eq!(result, "3");
+    
+    let result = repl.evaluator.eval("10 - 3").expect("Should evaluate subtraction");
+    assert_eq!(result, "7");
+    
+    let result = repl.evaluator.eval("4 * 5").expect("Should evaluate multiplication");
+    assert_eq!(result, "20");
+    
+    let result = repl.evaluator.eval("15 / 3").expect("Should evaluate division");
+    assert_eq!(result, "5");
+    
+    // Test comparisons
+    let result = repl.evaluator.eval("5 > 3").expect("Should evaluate comparison");
+    assert_eq!(result, "true");
+    
+    let result = repl.evaluator.eval("2 < 1").expect("Should evaluate comparison");
+    assert_eq!(result, "false");
+    
+    // Test boolean operations
+    let result = repl.evaluator.eval("true && false").expect("Should evaluate boolean");
+    assert_eq!(result, "false");
+    
+    let result = repl.evaluator.eval("true || false").expect("Should evaluate boolean");
+    assert_eq!(result, "true");
 }

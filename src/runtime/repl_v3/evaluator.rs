@@ -3,8 +3,35 @@
 //! Implements hard limits on memory, time, and stack depth to prevent
 //! resource exhaustion and ensure predictable behavior.
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use std::time::{Duration, Instant};
+use std::fmt;
+use crate::frontend::parser::Parser;
+use crate::frontend::ast::Expr;
+
+/// Runtime value for evaluation
+#[derive(Debug, Clone, PartialEq)]
+pub enum EvalValue {
+    Int(i64),
+    Float(f64),
+    String(String),
+    Bool(bool),
+    Char(char),
+    Unit,
+}
+
+impl fmt::Display for EvalValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EvalValue::Int(n) => write!(f, "{n}"),
+            EvalValue::Float(x) => write!(f, "{x}"),
+            EvalValue::String(s) => write!(f, "\"{s}\""),
+            EvalValue::Bool(b) => write!(f, "{b}"),
+            EvalValue::Char(c) => write!(f, "'{c}'"),
+            EvalValue::Unit => write!(f, "()"),
+        }
+    }
+}
 
 /// Simple memory tracker for bounded allocation
 pub struct MemoryTracker {
@@ -136,7 +163,7 @@ impl BoundedEvaluator {
         self.eval_bounded(input, deadline, 0)
     }
     
-    fn eval_bounded(&mut self, expr: &str, deadline: Instant, depth: usize) -> Result<String> {
+    fn eval_bounded(&mut self, input: &str, deadline: Instant, depth: usize) -> Result<String> {
         // Check timeout
         if Instant::now() > deadline {
             bail!("Evaluation timeout exceeded");
@@ -147,13 +174,121 @@ impl BoundedEvaluator {
             bail!("Maximum recursion depth {} exceeded", self.max_depth);
         }
         
-        // Actual evaluation logic will be added
-        // For now, return a placeholder
-        let result = format!("Evaluated: {expr}");
+        // Parse the input with memory tracking
+        let mut parser = Parser::new(input);
+        let ast = parser.parse()
+            .context("Failed to parse input")?;
+        
+        // Check memory for AST
+        self.memory.try_alloc(std::mem::size_of_val(&ast))?;
+        
+        // Evaluate the expression
+        let value = self.evaluate_expr(&ast, deadline, depth + 1)?;
+        
+        // Track result memory
+        let result = value.to_string();
         self.memory.try_alloc(result.len())?;
         Ok(result)
     }
     
+    /// Evaluate an expression to a value
+    fn evaluate_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<EvalValue> {
+        use crate::frontend::ast::{ExprKind, Literal};
+        
+        // Check resource bounds
+        if Instant::now() > deadline {
+            bail!("Evaluation timeout exceeded");
+        }
+        if depth > self.max_depth {
+            bail!("Maximum recursion depth {} exceeded", self.max_depth);
+        }
+        
+        match &expr.kind {
+            ExprKind::Literal(lit) => match lit {
+                Literal::Integer(n) => Ok(EvalValue::Int(*n)),
+                Literal::Float(f) => Ok(EvalValue::Float(*f)),
+                Literal::String(s) => {
+                    self.memory.try_alloc(s.len())?;
+                    Ok(EvalValue::String(s.clone()))
+                }
+                Literal::Bool(b) => Ok(EvalValue::Bool(*b)),
+                Literal::Unit => Ok(EvalValue::Unit),
+            },
+            ExprKind::Binary { left, op, right } => {
+                let lhs = self.evaluate_expr(left, deadline, depth + 1)?;
+                let rhs = self.evaluate_expr(right, deadline, depth + 1)?;
+                self.evaluate_binary(lhs, *op, rhs)
+            },
+            ExprKind::Unary { op, operand } => {
+                let val = self.evaluate_expr(operand, deadline, depth + 1)?;
+                self.evaluate_unary(*op, val)
+            },
+            _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
+        }
+    }
+    
+    /// Evaluate binary operations
+    fn evaluate_binary(&mut self, lhs: EvalValue, op: crate::frontend::ast::BinaryOp, rhs: EvalValue) -> Result<EvalValue> {
+        use crate::frontend::ast::BinaryOp;
+        use EvalValue::*;
+        
+        match (&lhs, op, &rhs) {
+            // Integer arithmetic
+            (Int(a), BinaryOp::Add, Int(b)) => Ok(Int(a + b)),
+            (Int(a), BinaryOp::Subtract, Int(b)) => Ok(Int(a - b)),
+            (Int(a), BinaryOp::Multiply, Int(b)) => Ok(Int(a * b)),
+            (Int(a), BinaryOp::Divide, Int(b)) => {
+                if *b == 0 {
+                    bail!("Division by zero");
+                }
+                Ok(Int(a / b))
+            },
+            (Int(a), BinaryOp::Modulo, Int(b)) => {
+                if *b == 0 {
+                    bail!("Modulo by zero");
+                }
+                Ok(Int(a % b))
+            },
+            
+            // Float arithmetic
+            (Float(a), BinaryOp::Add, Float(b)) => Ok(Float(a + b)),
+            (Float(a), BinaryOp::Subtract, Float(b)) => Ok(Float(a - b)),
+            (Float(a), BinaryOp::Multiply, Float(b)) => Ok(Float(a * b)),
+            (Float(a), BinaryOp::Divide, Float(b)) => {
+                if *b == 0.0 {
+                    bail!("Division by zero");
+                }
+                Ok(Float(a / b))
+            },
+            
+            // Comparisons
+            (Int(a), BinaryOp::Less, Int(b)) => Ok(Bool(a < b)),
+            (Int(a), BinaryOp::LessEqual, Int(b)) => Ok(Bool(a <= b)),
+            (Int(a), BinaryOp::Greater, Int(b)) => Ok(Bool(a > b)),
+            (Int(a), BinaryOp::GreaterEqual, Int(b)) => Ok(Bool(a >= b)),
+            (Int(a), BinaryOp::Equal, Int(b)) => Ok(Bool(a == b)),
+            (Int(a), BinaryOp::NotEqual, Int(b)) => Ok(Bool(a != b)),
+            
+            // Boolean logic
+            (Bool(a), BinaryOp::And, Bool(b)) => Ok(Bool(*a && *b)),
+            (Bool(a), BinaryOp::Or, Bool(b)) => Ok(Bool(*a || *b)),
+            
+            _ => bail!("Type mismatch in binary operation: {:?} {:?} {:?}", lhs, op, rhs),
+        }
+    }
+    
+    /// Evaluate unary operations
+    fn evaluate_unary(&mut self, op: crate::frontend::ast::UnaryOp, val: EvalValue) -> Result<EvalValue> {
+        use crate::frontend::ast::UnaryOp;
+        use EvalValue::*;
+        
+        match (op, &val) {
+            (UnaryOp::Negate, Int(n)) => Ok(Int(-n)),
+            (UnaryOp::Negate, Float(f)) => Ok(Float(-f)),
+            (UnaryOp::Not, Bool(b)) => Ok(Bool(!b)),
+            _ => bail!("Type mismatch in unary operation: {:?} {:?}", op, val),
+        }
+    }
     /// Get current memory usage
     pub fn memory_used(&self) -> usize {
         self.memory.used()
