@@ -312,6 +312,26 @@ impl Repl {
             }
             ExprKind::Call { func, args } => {
                 // Handle built-in functions
+                //
+                // # Examples
+                //
+                // ```rust
+                // use ruchy::Repl;
+                // let mut repl = Repl::new().unwrap();
+                // 
+                // // Basic println
+                // let result = repl.eval(r#"println("Hello, World!")"#).unwrap();
+                // assert_eq!(result, "()");
+                //
+                // // Multiple arguments
+                // let result = repl.eval(r#"println("Hello", "World", "!")"#).unwrap();
+                // assert_eq!(result, "()");
+                //
+                // // With variables
+                // repl.eval("let x = 42").unwrap();
+                // let result = repl.eval("println(x)").unwrap();
+                // assert_eq!(result, "()");
+                // ```
                 if let ExprKind::Identifier(func_name) = &func.kind {
                     match func_name.as_str() {
                         "println" => {

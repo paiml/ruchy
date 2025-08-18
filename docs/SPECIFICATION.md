@@ -1,6 +1,6 @@
 # Ruchy: Complete Language and System Specification
 
-*Version 5.0 - Single source of truth consolidating all 29 specification documents*
+*Version 6.0 - Single source of truth consolidating all 30 specification documents*
 
 ## Table of Contents
 
@@ -11,41 +11,42 @@
 4. [Parser Specification](#4-parser-specification)
 5. [Lexer Specification](#5-lexer-specification)
 6. [Script Capability Specification](#6-script-capability-specification)
+7. [Classes Specification](#7-classes-specification)
 
 ### Architecture Specifications
-7. [MCP Message-Passing Architecture](#7-mcp-message-passing-architecture)
-8. [LSP Specification](#8-lsp-specification)
-9. [Critical Missing Components](#9-critical-missing-components)
-10. [Binary Architecture](#10-binary-architecture)
-11. [Edge Cases Specification](#11-edge-cases-specification)
-12. [REPL Testing Specification](#12-repl-testing-specification)
-13. [REPL UX Specification](#13-repl-ux-specification)
-14. [Docker Specification](#14-docker-specification)
+8. [MCP Message-Passing Architecture](#8-mcp-message-passing-architecture)
+9. [LSP Specification](#9-lsp-specification)
+10. [Critical Missing Components](#10-critical-missing-components)
+11. [Binary Architecture](#11-binary-architecture)
+12. [Edge Cases Specification](#12-edge-cases-specification)
+13. [REPL Testing Specification](#13-repl-testing-specification)
+14. [REPL UX Specification](#14-repl-ux-specification)
+15. [Docker Specification](#15-docker-specification)
 
 ### Integration Specifications
-15. [Cargo Integration](#15-cargo-integration)
-16. [Depyler Integration](#16-depyler-integration)
-17. [Rust Cargo InterOp](#17-rust-cargo-interop)
+16. [Cargo Integration](#16-cargo-integration)
+17. [Depyler Integration](#17-depyler-integration)
+18. [Rust Cargo InterOp](#18-rust-cargo-interop)
 
 ### Execution Mode Specifications
-18. [One-Liner and Script Execution](#18-one-liner-and-script-execution)
-19. [Disassembly Specification](#19-disassembly-specification)
-20. [Advanced Mathematical REPL](#20-advanced-mathematical-repl)
+19. [One-Liner and Script Execution](#19-one-liner-and-script-execution)
+20. [Disassembly Specification](#20-disassembly-specification)
+21. [Advanced Mathematical REPL](#21-advanced-mathematical-repl)
 
 ### Quality & Testing Specifications
-21. [Quality Gates](#21-quality-gates)
-22. [Provability](#22-provability)
-23. [Lint Specification](#23-lint-specification)
+22. [Quality Gates](#22-quality-gates)
+23. [Provability](#23-provability)
+24. [Lint Specification](#24-lint-specification)
 
 ### Project Management
-24. [Master TODO](#24-master-todo)
-25. [Project Status](#25-project-status)
-26. [Deep Context](#26-deep-context)
+25. [Master TODO](#25-master-todo)
+26. [Project Status](#26-project-status)
+27. [Deep Context](#27-deep-context)
 
 ### External Dependencies
-27. [PMAT Integration](#27-pmat-integration)
-28. [PDMT Integration](#28-pdmt-integration)
-29. [External Tool Dependencies](#29-external-tool-dependencies)
+28. [PMAT Integration](#28-pmat-integration)
+29. [PDMT Integration](#29-pdmt-integration)
+30. [External Tool Dependencies](#30-external-tool-dependencies)
 
 ---
 
@@ -237,6 +238,28 @@ panic!("Unexpected state: {state}")
 // Assertions
 assert!(x > 0, "x must be positive")
 assert_eq!(result, expected)
+```
+
+#### Built-in Functions
+
+```rust
+// I/O Functions
+println(args...)          // Print to stdout with newline
+print(args...)           // Print to stdout without newline
+
+// Examples
+println("Hello, World!")
+println("x =", x, "y =", y)
+print("Loading...")
+print(".")  // Progress indicator
+
+// All I/O functions return unit type ()
+let result = println("test")  // result is ()
+
+// Future built-ins (not yet implemented)
+input(prompt: String) -> String      // Read from stdin
+format(fmt: String, args...) -> String  // String formatting
+debug(value: T) -> T                // Debug print and passthrough
 ```
 
 ### 1.4 Collections and Iterators
@@ -799,7 +822,392 @@ impl Repl {
 }
 ```
 
-## 7. MCP Message-Passing Architecture
+## 7. Classes Specification
+
+### 7.1 Class Model
+
+Ruchy classes transpile directly to Rust structs with impl blocks. No inheritance hierarchy—composition via traits.
+
+```rust
+// Ruchy class syntax
+class DataProcessor {
+    buffer: Vec<u8>,
+    capacity: usize = 1024,  // Default value
+    
+    // Constructor
+    new(capacity: usize = 1024) {
+        Self { 
+            buffer: Vec::with_capacity(capacity),
+            capacity 
+        }
+    }
+    
+    // Methods
+    fun process(&mut self, data: &[u8]) -> Result<()> {
+        self.buffer.extend_from_slice(data);
+        Ok(())
+    }
+    
+    // Associated function (static method)
+    fun from_file(path: &str) -> Result<Self> {
+        let data = std::fs::read(path)?;
+        let mut proc = Self::new(data.len());
+        proc.process(&data)?;
+        Ok(proc)
+    }
+}
+
+// Transpiles to:
+pub struct DataProcessor {
+    buffer: Vec<u8>,
+    capacity: usize,
+}
+
+impl DataProcessor {
+    pub fn new(capacity: usize) -> Self {
+        Self {
+            buffer: Vec::with_capacity(capacity),
+            capacity,
+        }
+    }
+    
+    pub fn process(&mut self, data: &[u8]) -> Result<()> {
+        self.buffer.extend_from_slice(data);
+        Ok(())
+    }
+    
+    pub fn from_file(path: &str) -> Result<Self> {
+        let data = std::fs::read(path)?;
+        let mut proc = Self::new(data.len());
+        proc.process(&data)?;
+        Ok(proc)
+    }
+}
+
+impl Default for DataProcessor {
+    fn default() -> Self {
+        Self::new(1024)
+    }
+}
+```
+
+### 7.2 Trait Implementation
+
+```rust
+// Ruchy trait syntax - explicit implementation
+class Point {
+    x: f64,
+    y: f64,
+    
+    impl Display {
+        fun fmt(&self, f: &mut Formatter) -> fmt::Result {
+            write!(f, "({}, {})", self.x, self.y)
+        }
+    }
+    
+    impl PartialEq {
+        fun eq(&self, other: &Self) -> bool {
+            self.x == other.x && self.y == other.y
+        }
+    }
+}
+
+// Auto-derive via attributes
+@[derive(Debug, Clone, PartialEq)]
+class Vector3 {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+```
+
+### 7.3 Properties (Getters/Setters)
+
+```rust
+class Temperature {
+    celsius: f64,
+    
+    // Property with getter/setter
+    property fahrenheit: f64 {
+        get => self.celsius * 9.0/5.0 + 32.0,
+        set(value) => self.celsius = (value - 32.0) * 5.0/9.0
+    }
+    
+    // Read-only property
+    property kelvin: f64 {
+        get => self.celsius + 273.15
+    }
+}
+
+// Transpiles to:
+impl Temperature {
+    pub fn fahrenheit(&self) -> f64 {
+        self.celsius * 9.0/5.0 + 32.0
+    }
+    
+    pub fn set_fahrenheit(&mut self, value: f64) {
+        self.celsius = (value - 32.0) * 5.0/9.0
+    }
+    
+    pub fn kelvin(&self) -> f64 {
+        self.celsius + 273.15
+    }
+}
+```
+
+### 7.4 Generic Classes
+
+```rust
+class Cache<K: Hash + Eq, V> {
+    map: HashMap<K, V>,
+    capacity: usize,
+    
+    new(capacity: usize) {
+        Self {
+            map: HashMap::with_capacity(capacity),
+            capacity,
+        }
+    }
+    
+    fun get(&self, key: &K) -> Option<&V> {
+        self.map.get(key)
+    }
+    
+    fun insert(&mut self, key: K, value: V) where V: Clone {
+        if self.map.len() >= self.capacity {
+            self.evict_oldest();
+        }
+        self.map.insert(key, value);
+    }
+}
+```
+
+### 7.5 Extension Methods
+
+```rust
+// Extend existing types with new methods
+extension String {
+    fun is_palindrome(&self) -> bool {
+        let clean = self.chars()
+            .filter(|c| c.is_alphanumeric())
+            .map(|c| c.to_lowercase())
+            .collect::<String>();
+        clean == clean.chars().rev().collect::<String>()
+    }
+}
+
+// Transpiles to trait with blanket impl
+trait StringExt {
+    fn is_palindrome(&self) -> bool;
+}
+
+impl StringExt for String {
+    fn is_palindrome(&self) -> bool {
+        let clean = self.chars()
+            .filter(|c| c.is_alphanumeric())
+            .map(|c| c.to_lowercase().to_string())
+            .collect::<String>();
+        clean == clean.chars().rev().collect::<String>()
+    }
+}
+```
+
+### 7.6 Protocols (Trait Aliases)
+
+```rust
+// Define protocol as trait combination
+protocol Numeric = Add + Sub + Mul + Div + Clone + PartialOrd;
+
+protocol Serializable = Serialize + Deserialize;
+
+class Matrix<T: Numeric> {
+    data: Vec<Vec<T>>,
+    
+    fun multiply(&self, other: &Self) -> Self 
+    where T: Default + Sum {
+        // Matrix multiplication
+    }
+}
+```
+
+### 7.7 Companion Objects
+
+```rust
+class User {
+    id: u64,
+    name: String,
+    
+    // Companion object for associated items
+    companion {
+        const TABLE_NAME: &str = "users";
+        let mut id_counter: AtomicU64 = AtomicU64::new(1);
+        
+        fun next_id() -> u64 {
+            Self::id_counter.fetch_add(1, Ordering::SeqCst)
+        }
+        
+        fun from_row(row: DatabaseRow) -> Result<User> {
+            Ok(User {
+                id: row.get("id")?,
+                name: row.get("name")?,
+            })
+        }
+    }
+}
+
+// Usage:
+let id = User::next_id();
+let table = User::TABLE_NAME;
+```
+
+### 7.8 Sealed Classes (Sum Types)
+
+```rust
+// Algebraic data types with methods
+sealed class Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+    Triangle { base: f64, height: f64 },
+    
+    fun area(&self) -> f64 {
+        match self {
+            Circle { radius } => PI * radius * radius,
+            Rectangle { width, height } => width * height,
+            Triangle { base, height } => 0.5 * base * height,
+        }
+    }
+}
+
+// Transpiles to enum with methods
+enum Shape {
+    Circle { radius: f64 },
+    Rectangle { width: f64, height: f64 },
+    Triangle { base: f64, height: f64 },
+}
+
+impl Shape {
+    fn area(&self) -> f64 {
+        match self {
+            Shape::Circle { radius } => std::f64::consts::PI * radius * radius,
+            Shape::Rectangle { width, height } => width * height,
+            Shape::Triangle { base, height } => 0.5 * base * height,
+        }
+    }
+}
+```
+
+### 7.9 Data Classes
+
+```rust
+// Automatic implementation of common traits
+@[data]
+class Point3D {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+
+// Generates:
+// - Constructor
+// - Debug, Clone, PartialEq, Eq, Hash
+// - Builder pattern
+// - Destructuring support
+
+let p = Point3D { x: 1.0, y: 2.0, z: 3.0 };
+let Point3D { x, y, z } = p;  // Destructuring
+```
+
+### 7.10 Visibility Modifiers
+
+```rust
+class BankAccount {
+    pub number: String,        // Public
+    balance: f64,              // Private (default)
+    pub(crate) branch: String, // Crate-visible
+    
+    // Public method
+    pub fun deposit(&mut self, amount: f64) {
+        self.balance += amount;
+    }
+    
+    // Private method
+    fun validate_amount(&self, amount: f64) -> bool {
+        amount > 0.0 && amount <= 1_000_000.0
+    }
+}
+```
+
+### 7.11 Memory Management
+
+```rust
+// Classes use Rust's ownership model
+class Resource {
+    handle: FileHandle,
+    
+    // Move semantics by default
+    fun transfer(self) -> FileHandle {
+        self.handle  // Ownership transferred
+    }
+    
+    // Borrowing
+    fun read(&self) -> &[u8] {
+        &self.handle.buffer
+    }
+    
+    // Mutable borrowing
+    fun write(&mut self, data: &[u8]) {
+        self.handle.write(data)
+    }
+    
+    // Automatic cleanup via Drop
+    impl Drop {
+        fun drop(&mut self) {
+            self.handle.close();
+        }
+    }
+}
+```
+
+### 7.12 Class Transpilation Rules
+
+```rust
+impl ClassTranspiler {
+    fn transpile_class(&self, class: &ClassDef) -> TokenStream {
+        let struct_def = self.generate_struct(class);
+        let impl_blocks = self.generate_impls(class);
+        let trait_impls = self.generate_trait_impls(class);
+        
+        quote! {
+            #struct_def
+            #(#impl_blocks)*
+            #(#trait_impls)*
+        }
+    }
+    
+    fn handle_constructor(&self, class: &ClassDef) -> TokenStream {
+        // 'new' method becomes associated function
+        if let Some(ctor) = class.find_method("new") {
+            self.transform_constructor(ctor)
+        } else {
+            // Generate default constructor
+            self.generate_default_new(class)
+        }
+    }
+    
+    fn handle_properties(&self, prop: &Property) -> TokenStream {
+        let getter = self.generate_getter(prop);
+        let setter = prop.setter.as_ref()
+            .map(|s| self.generate_setter(prop, s));
+        
+        quote! {
+            #getter
+            #setter
+        }
+    }
+}
+```
+
+## 8. MCP Message-Passing Architecture
 
 ### 7.1 Actor Model with MCP Integration
 

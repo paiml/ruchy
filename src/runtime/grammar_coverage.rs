@@ -233,6 +233,12 @@ pub const GRAMMAR_PRODUCTIONS: &[(&str, &str)] = &[
     ("for_loop", "for x in 0..10 { print(x) }"),
     ("while_loop", "while x > 0 { x = x - 1 }"),
     ("loop_expr", "loop { break 42 }"),
+    // Function calls (5) - CRITICAL: These were missing!
+    ("call_simple", "println(42)"),
+    ("call_args", "println(\"Hello\", \"World\")"),  
+    ("call_expr", "add(2 + 3, 4 * 5)"),
+    ("call_nested", "println(add(1, 2))"),
+    ("call_builtin", "print(\"test\")"),
     // Functions (4)
     ("fun_decl", "fun add(a: Int, b: Int) -> Int { a + b }"),
     ("fun_generic", "fun id<T>(x: T) -> T { x }"),
