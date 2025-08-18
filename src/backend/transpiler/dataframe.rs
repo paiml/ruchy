@@ -1,4 +1,8 @@
-//! DataFrame transpilation for Polars integration
+//! `DataFrame` transpilation for Polars integration
+
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::wildcard_imports)]
+#![allow(clippy::doc_markdown)]
 
 use super::*;
 use crate::frontend::ast::{AggregateOp, DataFrameColumn, DataFrameOp, JoinType};

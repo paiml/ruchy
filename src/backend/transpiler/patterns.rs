@@ -1,7 +1,10 @@
 //! Pattern matching transpilation
 
-use super::*;
-use crate::frontend::ast::{MatchArm, Pattern, StructPatternField};
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::only_used_in_recursion)]
+
+use super::Transpiler;
+use crate::frontend::ast::{Expr, MatchArm, Pattern};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};

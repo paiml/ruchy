@@ -1,13 +1,18 @@
 //! Expression transpilation methods
 
-use super::*;
-use crate::frontend::ast::{BinaryOp, StringPart, UnaryOp};
+#![allow(clippy::missing_errors_doc)]
+
+use super::Transpiler;
+use crate::frontend::ast::{BinaryOp, Expr, StringPart, UnaryOp};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 
 impl Transpiler {
     /// Transpiles string interpolation
+    ///
+    /// # Errors
+    /// Returns an error if expression transpilation fails
     pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<TokenStream> {
         if parts.is_empty() {
             return Ok(quote! { "" });
@@ -70,9 +75,8 @@ impl Transpiler {
         let operand_tokens = self.transpile_expr(operand)?;
         
         Ok(match op {
-            UnaryOp::Not => quote! { !#operand_tokens },
+            UnaryOp::Not | UnaryOp::BitwiseNot => quote! { !#operand_tokens },
             UnaryOp::Negate => quote! { -#operand_tokens },
-            UnaryOp::BitwiseNot => quote! { !#operand_tokens },
         })
     }
 

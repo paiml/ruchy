@@ -1,5 +1,9 @@
 //! Statement and control flow transpilation
 
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::wildcard_imports)]
+#![allow(clippy::collapsible_else_if)]
+
 use super::*;
 use crate::frontend::ast::{CatchClause, Param, PipelineStage};
 use anyhow::Result;
