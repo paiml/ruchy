@@ -1,6 +1,9 @@
 //! Modular transpiler for Ruchy language
 //!
-//! This module is responsible for converting Ruchy AST into Rust code using proc_macro2 TokenStream.
+//! This module is responsible for converting Ruchy AST into Rust code using `proc_macro2` `TokenStream`.
+
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::too_many_lines)]
 
 mod expressions;
 mod statements;
@@ -30,7 +33,7 @@ impl Transpiler {
         }
     }
 
-    /// Transpiles an expression to a TokenStream
+    /// Transpiles an expression to a `TokenStream`
     pub fn transpile(&self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_expr(expr)
     }
@@ -58,7 +61,10 @@ impl Transpiler {
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Literal(lit) => Ok(Self::transpile_literal(lit)),
-            ExprKind::Identifier(name) => Ok(quote! { #name }),
+            ExprKind::Identifier(name) => {
+                let ident = format_ident!("{}", name);
+                Ok(quote! { #ident })
+            }
             ExprKind::QualifiedName { module, name } => {
                 let module_ident = format_ident!("{}", module);
                 let name_ident = format_ident!("{}", name);
@@ -190,14 +196,15 @@ impl Transpiler {
     fn transpile_literal(lit: &Literal) -> TokenStream {
         match lit {
             Literal::Integer(n) => {
-                // Add i64 suffix for clarity
-                quote! { #n i64 }
+                // Create a literal token with i64 suffix
+                let lit_token = proc_macro2::Literal::i64_suffixed(*n);
+                quote! { #lit_token }
             }
             Literal::Float(f) => {
                 let f_str = f.to_string();
                 if !f_str.contains('.') && !f_str.contains('e') && !f_str.contains('E') {
                     // Add .0 if it's a whole number without scientific notation
-                    let f_with_decimal = format!("{}.0", f_str);
+                    let f_with_decimal = format!("{f_str}.0");
                     quote! { #f_with_decimal }
                 } else {
                     quote! { #f }
@@ -230,7 +237,7 @@ mod tests {
 
     #[test]
     fn test_basic_transpilation() {
-        let result = transpile_str("42").unwrap();
+        let result = transpile_str("42").unwrap_or_else(|_| String::from("error"));
         assert!(result.contains("42"));
     }
 }

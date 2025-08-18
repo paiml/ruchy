@@ -196,7 +196,7 @@ fn test_transpile_list_literal() -> Result<()> {
 
 #[test]
 fn test_transpile_lambda() -> Result<()> {
-    let input = "fun (x) { x * 2 }";
+    let input = "|x| x * 2";
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;
     let transpiler = Transpiler::new();

@@ -1,5 +1,8 @@
 //! Actor system transpilation
 
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::wildcard_imports)]
+
 use super::*;
 use crate::frontend::ast::{ActorHandler, StructField};
 use anyhow::Result;

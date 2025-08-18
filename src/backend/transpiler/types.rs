@@ -1,5 +1,10 @@
 //! Type transpilation and struct/trait definitions
 
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::wildcard_imports)]
+#![allow(clippy::collapsible_else_if)]
+#![allow(clippy::only_used_in_recursion)]
+
 use super::*;
 use crate::frontend::ast::{ImplMethod, StructField, TraitMethod, Type};
 use anyhow::{bail, Result};
@@ -112,10 +117,13 @@ impl Transpiler {
                     .iter()
                     .enumerate()
                     .map(|(i, param)| {
-                        if i == 0 && param.name == "self" {
+                        if i == 0 && (param.name == "self" || param.name == "&self") {
                             // Handle self parameter - check if it's &self or self
-                            // For now, default to &self for trait methods
-                            quote! { &self }
+                            if param.name.starts_with('&') {
+                                quote! { &self }
+                            } else {
+                                quote! { self }
+                            }
                         } else {
                             let param_name = format_ident!("{}", param.name);
                             let type_tokens = self
@@ -180,7 +188,6 @@ impl Transpiler {
         trait_name: Option<&str>,
         methods: &[ImplMethod],
     ) -> Result<TokenStream> {
-        use crate::frontend::ast::ImplMethod;
         let type_ident = format_ident!("{}", for_type);
         
         let method_tokens: Result<Vec<_>> = methods
@@ -194,9 +201,13 @@ impl Transpiler {
                     .iter()
                     .enumerate()
                     .map(|(i, param)| {
-                        if i == 0 && param.name == "self" {
-                            // Handle self parameter - default to &self
-                            quote! { &self }
+                        if i == 0 && (param.name == "self" || param.name == "&self") {
+                            // Handle self parameter
+                            if param.name.starts_with('&') {
+                                quote! { &self }
+                            } else {
+                                quote! { self }
+                            }
                         } else {
                             let param_name = format_ident!("{}", param.name);
                             let type_tokens = self

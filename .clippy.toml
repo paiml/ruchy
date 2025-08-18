@@ -1,0 +1,8 @@
+# Clippy configuration for Ruchy
+
+# Allow some reasonable limits
+too-many-lines-threshold = 150
+cognitive-complexity-threshold = 30
+
+# We use wildcard imports in module definitions
+warn-on-all-wildcard-imports = false
