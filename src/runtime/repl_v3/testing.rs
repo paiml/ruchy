@@ -78,6 +78,19 @@ impl ReferenceRepl {
 
 impl ReplTester {
     /// Create a new test harness
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the test harness cannot be initialized
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ruchy::runtime::repl_v3::testing::ReplTester;
+    ///
+    /// let tester = ReplTester::new();
+    /// assert!(tester.is_ok());
+    /// ```
     pub fn new() -> Result<Self> {
         Ok(Self {
             reference: ReferenceRepl::new(),
@@ -105,7 +118,8 @@ impl ReplTester {
     }
     
     /// Property-based testing
-    fn run_property_tests(&mut self) -> TestResults {
+    #[allow(clippy::unused_self)]
+    fn run_property_tests(&self) -> TestResults {
         let mut results = TestResults::new();
         
         // Test: Type safety preservation
@@ -140,20 +154,17 @@ impl ReplTester {
             // Production eval would go here
             let prod_result: Result<i64> = Ok(42i64); // Placeholder
             
-            let matches = match (&ref_result, &prod_result) {
-                (Ok(_), Ok(_)) => true,
-                (Err(_), Err(_)) => true,
-                _ => false,
-            };
+            let matches = matches!((&ref_result, &prod_result), (Ok(_), Ok(_)) | (Err(_), Err(_)));
             
-            results.add_test(&format!("differential_{}", case), matches);
+            results.add_test(&format!("differential_{case}"), matches);
         }
         
         results
     }
     
     /// 24-hour stability test
-    fn run_stability_tests(&mut self) -> TestResults {
+    #[allow(clippy::unused_self)]
+    fn run_stability_tests(&self) -> TestResults {
         let mut results = TestResults::new();
         let start = Instant::now();
         let mut iterations = 0;
@@ -222,11 +233,13 @@ impl TestResults {
 
 /// Test expression for property testing
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 struct TestExpr {
     kind: ExprKind,
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 enum ExprKind {
     Literal(i64),
     Variable(String),
@@ -235,7 +248,7 @@ enum ExprKind {
 
 impl Arbitrary for TestExpr {
     fn arbitrary(g: &mut Gen) -> Self {
-        let kind = match g.choose(&[0, 1, 2]).unwrap() {
+        let kind = match g.choose(&[0, 1, 2]).unwrap_or(&0) {
             0 => ExprKind::Literal(i64::arbitrary(g)),
             1 => ExprKind::Variable(format!("x{}", u8::arbitrary(g))),
             _ => ExprKind::Let(
@@ -249,6 +262,7 @@ impl Arbitrary for TestExpr {
 
 /// Test operation for state testing
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 enum TestOp {
     Eval(String),
     Reset,
@@ -257,7 +271,7 @@ enum TestOp {
 
 impl Arbitrary for TestOp {
     fn arbitrary(g: &mut Gen) -> Self {
-        match g.choose(&[0, 1, 2]).unwrap() {
+        match g.choose(&[0, 1, 2]).unwrap_or(&0) {
             0 => TestOp::Eval(format!("{}", i64::arbitrary(g))),
             1 => TestOp::Reset,
             _ => TestOp::Checkpoint,
@@ -286,8 +300,26 @@ fn generate_random_input() -> String {
     "42".to_string() // Placeholder
 }
 
-/// Fuzzing support for testing  
+/// Fuzzing support for testing
 /// Use with cargo-fuzz or other fuzzing frameworks
+///
+/// # Errors
+///
+/// Returns an error if REPL creation fails
+///
+/// # Panics
+///
+/// Panics if memory invariants are violated
+///
+/// # Example
+///
+/// ```
+/// use ruchy::runtime::repl_v3::testing::fuzz_input;
+///
+/// let data = b"42";
+/// let result = fuzz_input(data);
+/// assert!(result.is_ok());
+/// ```
 pub fn fuzz_input(data: &[u8]) -> Result<()> {
     if let Ok(s) = std::str::from_utf8(data) {
         // Create sandboxed REPL

@@ -22,6 +22,20 @@ impl MemoryTracker {
     }
     
     /// Try to allocate memory
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if allocation would exceed memory limit
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ruchy::runtime::repl_v3::evaluator::MemoryTracker;
+    ///
+    /// let mut tracker = MemoryTracker::new(100);
+    /// assert!(tracker.try_alloc(50).is_ok());
+    /// assert!(tracker.try_alloc(60).is_err()); // Would exceed limit
+    /// ```
     pub fn try_alloc(&mut self, size: usize) -> Result<()> {
         if self.current + size > self.max_size {
             bail!("Memory limit exceeded: {} + {} > {}", 
@@ -56,6 +70,24 @@ pub struct BoundedEvaluator {
 
 impl BoundedEvaluator {
     /// Create a new bounded evaluator
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the memory tracker cannot be created
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ruchy::runtime::repl_v3::evaluator::BoundedEvaluator;
+    /// use std::time::Duration;
+    ///
+    /// let evaluator = BoundedEvaluator::new(
+    ///     1024 * 1024,  // 1MB memory
+    ///     Duration::from_millis(100),
+    ///     1000  // max stack depth
+    /// );
+    /// assert!(evaluator.is_ok());
+    /// ```
     pub fn new(max_memory: usize, timeout: Duration, max_depth: usize) -> Result<Self> {
         let memory = MemoryTracker::new(max_memory);
         
@@ -67,6 +99,29 @@ impl BoundedEvaluator {
     }
     
     /// Evaluate an expression with resource bounds
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Memory limit is exceeded
+    /// - Timeout is reached
+    /// - Stack depth limit is exceeded
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ruchy::runtime::repl_v3::evaluator::BoundedEvaluator;
+    /// use std::time::Duration;
+    ///
+    /// let mut evaluator = BoundedEvaluator::new(
+    ///     1024,  // Small memory limit
+    ///     Duration::from_secs(1),
+    ///     10
+    /// ).unwrap();
+    ///
+    /// let result = evaluator.eval("42");
+    /// assert!(result.is_ok());
+    /// ```
     pub fn eval(&mut self, input: &str) -> Result<String> {
         // Reset memory tracker for fresh evaluation
         self.memory.reset();
@@ -94,7 +149,7 @@ impl BoundedEvaluator {
         
         // Actual evaluation logic will be added
         // For now, return a placeholder
-        let result = format!("Evaluated: {}", expr);
+        let result = format!("Evaluated: {expr}");
         self.memory.try_alloc(result.len())?;
         Ok(result)
     }

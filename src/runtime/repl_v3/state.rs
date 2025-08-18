@@ -21,11 +21,11 @@ pub enum Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Value::Int(n) => write!(f, "{}", n),
-            Value::Float(x) => write!(f, "{}", x),
-            Value::String(s) => write!(f, "\"{}\"", s),
-            Value::Bool(b) => write!(f, "{}", b),
-            Value::Function(sig) => write!(f, "<function: {}>", sig),
+            Value::Int(n) => write!(f, "{n}"),
+            Value::Float(x) => write!(f, "{x}"),
+            Value::String(s) => write!(f, "\"{s}\""),
+            Value::Bool(b) => write!(f, "{b}"),
+            Value::Function(sig) => write!(f, "<function: {sig}>"),
             Value::Unit => write!(f, "()"),
         }
     }
@@ -35,6 +35,12 @@ impl fmt::Display for Value {
 #[derive(Clone, Debug)]
 pub struct TypeEnv {
     types: HashMap<String, String>,
+}
+
+impl Default for TypeEnv {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TypeEnv {
@@ -78,6 +84,12 @@ pub struct Environment {
     pub types: TypeEnv,
 }
 
+impl Default for Environment {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Environment {
     pub fn new() -> Self {
         Self {
@@ -96,6 +108,7 @@ impl Environment {
     }
     
     /// Extend environment with new binding
+    #[must_use]
     pub fn extend(&self, name: String, value: Value) -> Self {
         let mut env = self.clone();
         env.bindings.insert(name, value);
@@ -149,11 +162,7 @@ impl State {
     
     /// Check if state is valid
     pub fn is_valid(&self) -> bool {
-        match self {
-            State::Ready(_) => true,
-            State::Failed(_) => true,
-            State::Evaluating(_, _) => true,
-        }
+        matches!(self, State::Ready(_) | State::Failed(_) | State::Evaluating(_, _))
     }
 }
 
@@ -170,6 +179,12 @@ pub enum ReplMode {
     Standard,
     Test,
     Debug,
+}
+
+impl Default for ReplState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ReplState {
