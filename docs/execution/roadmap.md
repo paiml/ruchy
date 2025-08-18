@@ -8,74 +8,103 @@
 - **Test Pass Rate**: 99% (237/239)
 - **Failures Reduced**: 71% (7 → 2)
 
-## Current Sprint: DataFrame Support Implementation 🚀 ACTIVE
+## Current Sprint: REPL Excellence Implementation 🚀 ACTIVE
 
 ### Sprint Overview
-- **Duration**: 3 days
-- **Total Complexity**: 36 story points
-- **Priority**: Critical (blocking all examples)
+- **Duration**: 8 days (Jan 18-25)
+- **Total Complexity**: 45 story points
+- **Priority**: CRITICAL - User Experience
 - **Dependencies**: Test Suite Stabilization ✅
+- **Specification**: docs/specifications/repl-testing-ux-spec.md
 
 ### Active Tasks (P0 Priority)
 
-#### DF-P2-001: DataFrame literal parsing (df![columns])
-- **Specification**: SPECIFICATION.md Section 3.5
+#### REPL-P1-001: Resource-Bounded Evaluator
+- **Specification**: repl-testing-ux-spec.md Section 2
 - **Complexity**: 8/10
 - **Status**: PENDING
 - **Acceptance Criteria**:
-  - Parse `df![col => values]` syntax
-  - Support multiple column definitions
-  - Type inference for column types
+  - 10MB fixed memory arena
+  - 100ms hard timeout via deadline
+  - 1000 frame stack limit
+  - No heap allocation during eval
 - **Dependencies**: None
-- **Performance Target**: Maintain 50MB/s parsing throughput
+- **Performance Target**: <1ms simple eval
 
-#### DF-P2-002: DataFrame type system integration
-- **Specification**: SPECIFICATION.md Section 4.2
+#### REPL-P1-002: Transactional State Machine
+- **Specification**: repl-testing-ux-spec.md Section 3
+- **Complexity**: 9/10
+- **Status**: PENDING
+- **Acceptance Criteria**:
+  - Ready/Evaluating/Failed states
+  - O(1) checkpoint using im::HashMap
+  - Automatic rollback on failure
+  - State validation invariants
+- **Dependencies**: REPL-P1-001
+- **Performance Target**: <100μs checkpoint
+
+#### REPL-P1-003: Testing Infrastructure
+- **Specification**: repl-testing-ux-spec.md Section 4
 - **Complexity**: 10/10
 - **Status**: PENDING
 - **Acceptance Criteria**:
-  - DataFrame and Series types in type system
-  - Column type tracking
-  - Operation type checking
-- **Dependencies**: DF-P2-001
-- **Performance Target**: <15ms type inference latency
+  - Property-based type safety tests
+  - Fuzz testing with AFL/LibFuzzer
+  - Differential testing vs reference
+  - 24-hour stability test
+- **Dependencies**: REPL-P1-002
+- **Performance Target**: 95% code coverage
 
-#### DF-P2-003: Polars transpilation backend
-- **Specification**: SPECIFICATION.md Section 5.3
-- **Complexity**: 12/10
+#### REPL-P1-004: Error Recovery UI
+- **Specification**: repl-testing-ux-spec.md Section 5
+- **Complexity**: 7/10
 - **Status**: PENDING
 - **Acceptance Criteria**:
-  - Generate Polars DataFrame code
-  - Lazy evaluation support
-  - Method chaining translation
-- **Dependencies**: DF-P2-001, DF-P2-002
-- **Performance Target**: 100K LOC/s transpilation speed
+  - Condition/restart system
+  - Progressive disclosure of errors
+  - Recovery suggestions
+  - Multiple restart options
+- **Dependencies**: REPL-P1-002
+- **Performance Target**: <5ms recovery
 
-#### DF-P2-004: DataFrame operation pipeline
-- **Specification**: SPECIFICATION.md Section 3.5
+#### REPL-P1-005: Progressive Modes
+- **Specification**: repl-testing-ux-spec.md Section 6
 - **Complexity**: 6/10
 - **Status**: PENDING
 - **Acceptance Criteria**:
-  - Filter, map, groupby operations
-  - Aggregation functions
-  - Join operations
-- **Dependencies**: DF-P2-003
-- **Performance Target**: O(n) operation complexity
+  - Standard/Test/Debug modes
+  - Mode-specific UI elements
+  - Performance feedback
+  - Introspection commands
+- **Dependencies**: REPL-P1-004
+- **Performance Target**: Mode switch <10ms
+
+#### REPL-P1-006: Memory Safety Validation
+- **Specification**: repl-testing-ux-spec.md Section 7
+- **Complexity**: 5/10
+- **Status**: PENDING
+- **Acceptance Criteria**:
+  - Zero memory leaks over 24h
+  - Bounded memory growth
+  - Arena cleanup verification
+  - Valgrind clean
+- **Dependencies**: All above
+- **Performance Target**: 0 bytes leaked
 
 ## Execution DAG
 
 ```mermaid
 graph TD
-    DF-P2-001[DataFrame parsing] --> DF-P2-002[Type system]
-    DF-P2-001 --> DF-P2-003[Polars backend]
-    DF-P2-002 --> DF-P2-003
-    DF-P2-003 --> DF-P2-004[Operations]
+    REPL-P1-001[Bounded Evaluator] --> REPL-P1-002[State Machine]
+    REPL-P1-002 --> REPL-P1-003[Testing Infra]
+    REPL-P1-002 --> REPL-P1-004[Error Recovery]
+    REPL-P1-004 --> REPL-P1-005[Progressive Modes]
+    REPL-P1-003 --> REPL-P1-006[Memory Validation]
+    REPL-P1-005 --> REPL-P1-006
     
-    DF-P2-004 --> RT-P3-001[Result type support]
-    DF-P2-004 --> AC-P4-001[Actor system]
-    
-    RT-P3-001 --> AC-P4-002[Message types]
-    AC-P4-001 --> AC-P4-002
+    REPL-P1-006 --> DF-P2-001[DataFrame Support]
+    DF-P2-001 --> RT-P3-001[Result Type]
+    RT-P3-001 --> AC-P4-001[Actor System]
 ```
 
 ## Next Phases (Post-Sprint)

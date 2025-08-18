@@ -18,7 +18,7 @@
 4. **IMPLEMENT** with <10 complexity
 5. **COMMIT** with task reference: `git commit -m "QA-P1-001: Fix let parsing"`
 
-**Active Sprint**: Test Suite Stabilization (docs/execution/roadmap.md)
+**Active Sprint**: REPL Excellence (specs/repl-testing-ux-spec.md)
 
 ## 🟢 Current State (2025-08-18 - Late Evening Final Update)
 
@@ -145,26 +145,26 @@ MAJOR QUALITY IMPROVEMENTS:
 - ✅ All transpiler modules now comply with complexity limits
 ```
 
-### Priority 1: Align with SPECIFICATION.md v3.0 (CRITICAL)
+### Priority 1: REPL Excellence Sprint (CRITICAL - User Experience)
 ```
-Based on specification analysis, next sprint MUST focus on:
+Based on repl-testing-ux-spec.md, next sprint MUST focus on:
 
-Hour 1-2: Quality Gates Implementation (Section 20)
-- Implement QualityGates struct with metrics collection
-- Add test coverage measurement integration
-- Add CI quality enforcement hooks
-- Eliminate remaining 6 SATD comments
+REPL is the primary interface for language adoption. A flawless REPL 
+experience directly impacts user retention and language demand.
 
-Hour 3-4: MCP Architecture Foundation (Section 7) 
-- Implement basic Actor trait and message passing
-- Add McpSerializable support
-- Create supervision tree structure
-- Basic MCP protocol handlers
+Core Requirements from Specification:
+- Resource-bounded evaluation (10MB arena, 100ms timeout)
+- Transactional state machine with checkpoints
+- Property-based and fuzz testing infrastructure
+- 99.9% recovery rate from failures
+- <5ms response time with 1000 bindings
+- Zero memory leaks over 24h operation
 
-Hour 5-6: LSP Language Server Basics (Section 8)
-- RuchyLanguageServer struct with tower_lsp
-- Basic hover, completion, and diagnostic support
-- Integration with existing parser/analyzer
+Implementation follows microcommit strategy from CLAUDE.md:
+- Each commit < 10 cognitive complexity
+- Strict quality gates per ruchy-lint-spec.md
+- No SATD allowed in new code
+- Full test coverage for each component
 ```
 
 ### Priority 2: Advanced Features Alignment
@@ -296,12 +296,33 @@ If modifying:
 └── Other files → Proceed with caution
 ```
 
-## 📅 Sprint Plan (Jan 17-24)
+## 📅 Sprint Plan (Jan 18-25) - REPL Excellence Focus
 
-1. **Today**: Split transpiler, remove SATD, fix tests
-2. **Mon-Tue**: Actor system implementation
-3. **Wed-Thu**: DataFrame operations
-4. **Fri**: Coverage to 80%
+**CRITICAL PRIORITY**: Flawless REPL experience per specs/repl-testing-ux-spec.md
+
+### Phase 1: Resource-Bounded Evaluation (Day 1-2)
+1. **Implement bounded evaluator** with memory arena (10MB limit)
+2. **Add timeout mechanisms** (100ms hard limit)
+3. **Stack depth control** (1000 frame maximum)
+4. **Create checkpoint system** using persistent data structures
+
+### Phase 2: State Machine & Recovery (Day 3-4)
+5. **Transactional state machine** with Ready/Evaluating/Failed states
+6. **Checkpoint/restore mechanism** using im::HashMap
+7. **Error recovery UI** with restart options
+8. **Progressive modes** (Standard/Test/Debug)
+
+### Phase 3: Testing Infrastructure (Day 5-6)
+9. **Property-based testing** for type safety preservation
+10. **Fuzz testing harness** with invariant checking
+11. **Differential testing** against reference implementation
+12. **24-hour stability test** suite
+
+### Phase 4: UX Polish & Release (Day 7-8)
+13. **Rich error messages** with recovery suggestions
+14. **Performance feedback** with timing warnings
+15. **Introspection commands** (:env, :type, :ast, :ir)
+16. **Create v0.4.0 release** with REPL improvements
 
 ---
 *Updated: 2025-01-17 | Next sync: After transpiler split*  
