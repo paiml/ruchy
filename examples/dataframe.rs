@@ -1,4 +1,4 @@
-//! Examples demonstrating DataFrame functionality in Ruchy
+//! Examples demonstrating `DataFrame` functionality in Ruchy
 //!
 //! Run with: cargo run --example dataframe
 #![allow(clippy::print_stdout)] // Examples should print output
@@ -108,7 +108,7 @@ fn example_dataframe_operations() {
     let operations = vec![
         ("Filter", r#"df![scores => [92.5, 87.3, 95.1]].filter(col("scores") > 90)"#),
         ("Select", r#"df![a => [1], b => [2]].select(["a"])"#),
-        ("Mean", r#"df![values => [1, 2, 3, 4, 5]].mean()"#),
+        ("Mean", r"df![values => [1, 2, 3, 4, 5]].mean()"),
     ];
     
     for (op_name, input) in operations {

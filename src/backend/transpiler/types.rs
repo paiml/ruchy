@@ -1,0 +1,315 @@
+//! Type transpilation and struct/trait definitions
+
+use super::*;
+use crate::frontend::ast::{ImplMethod, StructField, TraitMethod, Type};
+use anyhow::{bail, Result};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+
+impl Transpiler {
+    /// Transpiles type annotations
+    pub fn transpile_type(&self, ty: &Type) -> Result<TokenStream> {
+        use crate::frontend::ast::TypeKind;
+        
+        match &ty.kind {
+            TypeKind::Named(name) => {
+                // Map common Ruchy types to Rust types
+                let rust_type = match name.as_str() {
+                    "int" => quote! { i64 },
+                    "float" => quote! { f64 },
+                    "bool" => quote! { bool },
+                    "string" | "String" => quote! { String },
+                    "char" => quote! { char },
+                    _ => {
+                        let type_ident = format_ident!("{}", name);
+                        quote! { #type_ident }
+                    }
+                };
+                Ok(rust_type)
+            }
+            TypeKind::Generic { base, params } => {
+                let base_ident = format_ident!("{}", base);
+                let param_tokens: Result<Vec<_>> = params.iter().map(|p| self.transpile_type(p)).collect();
+                let param_tokens = param_tokens?;
+                Ok(quote! { #base_ident<#(#param_tokens),*> })
+            }
+            TypeKind::Optional(inner) => {
+                let inner_tokens = self.transpile_type(inner)?;
+                Ok(quote! { Option<#inner_tokens> })
+            }
+            TypeKind::List(elem_type) => {
+                let elem_tokens = self.transpile_type(elem_type)?;
+                Ok(quote! { Vec<#elem_tokens> })
+            }
+            TypeKind::Function { params, ret } => {
+                let param_tokens: Result<Vec<_>> = params.iter().map(|p| self.transpile_type(p)).collect();
+                let param_tokens = param_tokens?;
+                let ret_tokens = self.transpile_type(ret)?;
+                
+                // Rust function type syntax
+                Ok(quote! { fn(#(#param_tokens),*) -> #ret_tokens })
+            }
+        }
+    }
+
+    /// Transpiles struct definitions
+    pub fn transpile_struct(&self, name: &str, type_params: &[String], fields: &[StructField]) -> Result<TokenStream> {
+        let struct_name = format_ident!("{}", name);
+        
+        let type_param_tokens: Vec<_> = type_params
+            .iter()
+            .map(|p| format_ident!("{}", p))
+            .collect();
+        
+        let field_tokens: Vec<TokenStream> = fields
+            .iter()
+            .map(|field| {
+                let field_name = format_ident!("{}", field.name);
+                let field_type = self
+                    .transpile_type(&field.ty)
+                    .unwrap_or_else(|_| quote! { _ });
+                
+                if field.is_pub {
+                    quote! { pub #field_name: #field_type }
+                } else {
+                    quote! { #field_name: #field_type }
+                }
+            })
+            .collect();
+        
+        if type_params.is_empty() {
+            Ok(quote! {
+                struct #struct_name {
+                    #(#field_tokens,)*
+                }
+            })
+        } else {
+            Ok(quote! {
+                struct #struct_name<#(#type_param_tokens),*> {
+                    #(#field_tokens,)*
+                }
+            })
+        }
+    }
+
+    /// Transpiles trait definitions
+    pub fn transpile_trait(
+        &self,
+        name: &str,
+        type_params: &[String],
+        methods: &[TraitMethod],
+    ) -> Result<TokenStream> {
+        let trait_name = format_ident!("{}", name);
+        
+        let method_tokens: Result<Vec<_>> = methods
+            .iter()
+            .map(|method| {
+                let method_name = format_ident!("{}", method.name);
+                
+                // Process parameters
+                let param_tokens: Vec<TokenStream> = method
+                    .params
+                    .iter()
+                    .enumerate()
+                    .map(|(i, param)| {
+                        if i == 0 && param.name == "self" {
+                            // Handle self parameter - check if it's &self or self
+                            // For now, default to &self for trait methods
+                            quote! { &self }
+                        } else {
+                            let param_name = format_ident!("{}", param.name);
+                            let type_tokens = self
+                                .transpile_type(&param.ty)
+                                .unwrap_or_else(|_| quote! { _ });
+                            quote! { #param_name: #type_tokens }
+                        }
+                    })
+                    .collect();
+                
+                // Process return type
+                let return_type_tokens = if let Some(ref ty) = method.return_type {
+                    let ty_tokens = self.transpile_type(ty)?;
+                    quote! { -> #ty_tokens }
+                } else {
+                    quote! {}
+                };
+                
+                // Process method body (if default implementation)
+                if let Some(ref body) = method.body {
+                    let body_tokens = self.transpile_expr(body)?;
+                    Ok(quote! {
+                        fn #method_name(#(#param_tokens),*) #return_type_tokens {
+                            #body_tokens
+                        }
+                    })
+                } else {
+                    Ok(quote! {
+                        fn #method_name(#(#param_tokens),*) #return_type_tokens;
+                    })
+                }
+            })
+            .collect();
+        
+        let method_tokens = method_tokens?;
+        
+        let type_param_tokens: Vec<_> = type_params
+            .iter()
+            .map(|p| format_ident!("{}", p))
+            .collect();
+        
+        if type_params.is_empty() {
+            Ok(quote! {
+                trait #trait_name {
+                    #(#method_tokens)*
+                }
+            })
+        } else {
+            Ok(quote! {
+                trait #trait_name<#(#type_param_tokens),*> {
+                    #(#method_tokens)*
+                }
+            })
+        }
+    }
+
+    /// Transpiles impl blocks
+    pub fn transpile_impl(
+        &self,
+        for_type: &str,
+        type_params: &[String],
+        trait_name: Option<&str>,
+        methods: &[ImplMethod],
+    ) -> Result<TokenStream> {
+        use crate::frontend::ast::ImplMethod;
+        let type_ident = format_ident!("{}", for_type);
+        
+        let method_tokens: Result<Vec<_>> = methods
+            .iter()
+            .map(|method| {
+                let method_name = format_ident!("{}", method.name);
+                
+                // Process parameters
+                let param_tokens: Vec<TokenStream> = method
+                    .params
+                    .iter()
+                    .enumerate()
+                    .map(|(i, param)| {
+                        if i == 0 && param.name == "self" {
+                            // Handle self parameter - default to &self
+                            quote! { &self }
+                        } else {
+                            let param_name = format_ident!("{}", param.name);
+                            let type_tokens = self
+                                .transpile_type(&param.ty)
+                                .unwrap_or_else(|_| quote! { _ });
+                            quote! { #param_name: #type_tokens }
+                        }
+                    })
+                    .collect();
+                
+                // Process return type
+                let return_type_tokens = if let Some(ref ty) = method.return_type {
+                    let ty_tokens = self.transpile_type(ty)?;
+                    quote! { -> #ty_tokens }
+                } else {
+                    quote! {}
+                };
+                
+                // Process method body (always present in ImplMethod)
+                let body_tokens = self.transpile_expr(&method.body)?;
+                
+                Ok(quote! {
+                    fn #method_name(#(#param_tokens),*) #return_type_tokens {
+                        #body_tokens
+                    }
+                })
+            })
+            .collect();
+        
+        let method_tokens = method_tokens?;
+        
+        let type_param_tokens: Vec<_> = type_params
+            .iter()
+            .map(|p| format_ident!("{}", p))
+            .collect();
+        
+        if let Some(trait_name) = trait_name {
+            let trait_ident = format_ident!("{}", trait_name);
+            if type_params.is_empty() {
+                Ok(quote! {
+                    impl #trait_ident for #type_ident {
+                        #(#method_tokens)*
+                    }
+                })
+            } else {
+                Ok(quote! {
+                    impl<#(#type_param_tokens),*> #trait_ident for #type_ident<#(#type_param_tokens),*> {
+                        #(#method_tokens)*
+                    }
+                })
+            }
+        } else {
+            if type_params.is_empty() {
+                Ok(quote! {
+                    impl #type_ident {
+                        #(#method_tokens)*
+                    }
+                })
+            } else {
+                Ok(quote! {
+                    impl<#(#type_param_tokens),*> #type_ident<#(#type_param_tokens),*> {
+                        #(#method_tokens)*
+                    }
+                })
+            }
+        }
+    }
+
+    /// Transpiles property test attributes
+    pub fn transpile_property_test(&self, expr: &Expr, _attr: &Attribute) -> Result<TokenStream> {
+        // Property tests in Rust typically use proptest or quickcheck
+        // We'll generate proptest-compatible code
+        
+        if let ExprKind::Function {
+            name,
+            params,
+            body,
+            ..
+        } = &expr.kind
+        {
+            let fn_name = format_ident!("{}", name);
+            
+            // Generate property test parameters
+            let param_tokens: Vec<TokenStream> = params
+                .iter()
+                .map(|p| {
+                    let param_name = format_ident!("{}", p.name);
+                    let type_tokens = self
+                        .transpile_type(&p.ty)
+                        .unwrap_or_else(|_| quote! { i32 });
+                    quote! { #param_name: #type_tokens }
+                })
+                .collect();
+            
+            let body_tokens = self.transpile_expr(body)?;
+            
+            // Generate the proptest macro invocation
+            Ok(quote! {
+                #[cfg(test)]
+                mod #fn_name {
+                    use super::*;
+                    use proptest::prelude::*;
+                    
+                    proptest! {
+                        #[test]
+                        fn #fn_name(#(#param_tokens),*) {
+                            #body_tokens
+                        }
+                    }
+                }
+            })
+        } else {
+            bail!("Property test attribute can only be applied to functions");
+        }
+    }
+}

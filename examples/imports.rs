@@ -71,9 +71,8 @@ fn example_multiple_imports() {
         println!("Path: {path}");
         println!("Imported items:");
         for item in items {
-            match item {
-                ImportItem::Named(name) => println!("  - {name}"),
-                _ => {}
+            if let ImportItem::Named(name) = item {
+                println!("  - {name}");
             }
         }
     }
@@ -125,7 +124,7 @@ fn example_wildcard_import() {
     
     if let ExprKind::Import { path, items } = &ast.kind {
         println!("Path: {path}");
-        if matches!(items.get(0), Some(ImportItem::Wildcard)) {
+        if matches!(items.first(), Some(ImportItem::Wildcard)) {
             println!("Type: Wildcard import (imports all public items)");
         }
     }

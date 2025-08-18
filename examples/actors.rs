@@ -57,7 +57,7 @@ fn example_stateful_actor() {
     println!("2. Stateful Actor");
     println!("-----------------");
     
-    let input = r#"
+    let input = r"
         actor Counter {
             count: i32,
             
@@ -73,7 +73,7 @@ fn example_stateful_actor() {
                 Get => { self.count }
             }
         }
-    "#;
+    ";
     println!("Actor with mutable state: Counter");
     
     match Parser::new(input).parse() {
@@ -135,7 +135,7 @@ fn example_complex_actor() {
     println!("4. Complex Actor Patterns");
     println!("-------------------------");
     
-    let input = r#"
+    let input = r"
         actor TaskManager {
             tasks: Vec<Task>,
             next_id: i32,
@@ -158,7 +158,7 @@ fn example_complex_actor() {
                 }
             }
         }
-    "#;
+    ";
     
     println!("Complex TaskManager actor with:");
     println!("  - Multiple state fields");
