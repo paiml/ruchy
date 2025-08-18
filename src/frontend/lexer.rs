@@ -122,7 +122,7 @@ pub enum Token {
     Module,
     #[token("export")]
     Export,
-    #[token("df")]
+    #[token("df", priority = 2)]
     DataFrame,
 
     // Identifiers (lower priority than keywords)
