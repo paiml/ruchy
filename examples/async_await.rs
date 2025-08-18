@@ -1,6 +1,6 @@
 //! Examples demonstrating async/await functionality in Ruchy
 //!
-//! Run with: cargo run --example async_await
+//! Run with: `cargo run --example async_await`
 #![allow(clippy::print_stdout)] // Examples should print output
 #![allow(clippy::unwrap_used)] // Examples can use unwrap for simplicity
 
@@ -72,12 +72,12 @@ fn example_async_error_handling() {
     println!("3. Async with Error Handling");
     println!("-----------------------------");
     
-    let input = r#"
+    let input = r"
         async fun fetch_with_retry() -> Result<String, Error> {
             let result = await fetch_data()?
             Ok(result)
         }
-    "#;
+    ";
     println!("Input: {input}");
     
     match Parser::new(input).parse() {

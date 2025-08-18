@@ -1976,18 +1976,18 @@ mod tests {
             let normalized_token = normalize_ws(token);
             assert!(
                 normalized.contains(&normalized_token),
-                "Transpiled output '{}' does not contain expected token '{}'",
-                result, token
+                "Transpiled output '{result}' does not contain expected token '{token}'"
             );
         }
     }
     
     // Helper to verify AST round-trip
+    #[allow(dead_code)]
     fn assert_ast_roundtrip(input: &str) {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect("Parse failed");
+        let ast = parser.parse().unwrap();
         let transpiler = Transpiler::new();
-        let _tokens = transpiler.transpile(&ast).expect("Transpilation failed");
+        let _tokens = transpiler.transpile(&ast).unwrap();
         // If we get here without panicking, the round-trip succeeded
     }
 

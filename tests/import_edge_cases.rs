@@ -20,15 +20,12 @@ fn test_import_with_trailing_coloncolon() {
 fn test_import_with_empty_braces() {
     let result = Parser::new("import std::collections::{}").parse();
     // This might be valid (importing nothing) or invalid - let's see
-    match result {
-        Ok(expr) => {
-            if let ExprKind::Import { items, .. } = &expr.kind {
-                assert_eq!(items.len(), 0, "Empty braces should import nothing");
-            }
+    if let Ok(expr) = result {
+        if let ExprKind::Import { items, .. } = &expr.kind {
+            assert_eq!(items.len(), 0, "Empty braces should import nothing");
         }
-        Err(_) => {
-            // Also acceptable - empty imports might be rejected
-        }
+    } else {
+        // Also acceptable - empty imports might be rejected
     }
 }
 
@@ -103,17 +100,14 @@ fn test_import_keyword_as_alias() {
 fn test_multiple_wildcards() {
     let result = Parser::new("import std::collections::{*, *}").parse();
     // Should this be allowed?
-    match result {
-        Ok(expr) => {
-            if let ExprKind::Import { items, .. } = &expr.kind {
-                // Check if multiple wildcards are collapsed or kept
-                let wildcard_count = items.iter().filter(|i| matches!(i, ImportItem::Wildcard)).count();
-                println!("Multiple wildcards resulted in {wildcard_count} wildcard items");
-            }
+    if let Ok(expr) = result {
+        if let ExprKind::Import { items, .. } = &expr.kind {
+            // Check if multiple wildcards are collapsed or kept
+            let wildcard_count = items.iter().filter(|i| matches!(i, ImportItem::Wildcard)).count();
+            println!("Multiple wildcards resulted in {wildcard_count} wildcard items");
         }
-        Err(_) => {
-            // Also reasonable to reject
-        }
+    } else {
+        // Also reasonable to reject
     }
 }
 

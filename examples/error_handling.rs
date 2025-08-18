@@ -1,6 +1,6 @@
 //! Examples demonstrating error handling with Result types in Ruchy
 //!
-//! Run with: cargo run --example error_handling
+//! Run with: `cargo run --example error_handling`
 #![allow(clippy::print_stdout)] // Examples should print output
 #![allow(clippy::unwrap_used)] // Examples can use unwrap for simplicity
 
@@ -117,14 +117,14 @@ fn example_error_propagation() {
     println!("4. Error Propagation");
     println!("--------------------");
     
-    let input = r#"
+    let input = r"
         fun process_data() -> Result<Data, Error> {
             let raw = fetch_raw_data()?
             let validated = validate(raw)?
             let processed = transform(validated)?
             Ok(processed)
         }
-    "#;
+    ";
     
     println!("Function with error propagation:");
     println!("  - Multiple ? operators");
@@ -133,10 +133,8 @@ fn example_error_propagation() {
     
     match Parser::new(input).parse() {
         Ok(ast) => {
-            if let ExprKind::Function { return_type, .. } = &ast.kind {
-                if let Some(ret_type) = return_type {
-                    println!("  Return type: {ret_type:?}");
-                }
+            if let ExprKind::Function { return_type: Some(ret_type), .. } = &ast.kind {
+                println!("  Return type: {ret_type:?}");
             }
             
             let transpiler = Transpiler::new();
@@ -144,7 +142,7 @@ fn example_error_propagation() {
                 Ok(output) => {
                     let output_str = output.to_string();
                     let question_marks = output_str.matches('?').count();
-                    println!("  ✓ Contains {} ? operators", question_marks);
+                    println!("  ✓ Contains {question_marks} ? operators");
                     if output_str.contains("Ok") {
                         println!("  ✓ Returns Ok for success");
                     }
