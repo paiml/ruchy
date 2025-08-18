@@ -49,7 +49,7 @@ impl ReferenceRepl {
             bindings: std::collections::HashMap::new(),
         }
     }
-    
+
     fn eval(&mut self, input: &str) -> Result<i64> {
         // Simplified reference implementation
         if let Ok(n) = input.parse::<i64>() {
@@ -97,50 +97,50 @@ impl ReplTester {
             config: TestConfig::default(),
         })
     }
-    
+
     /// Run all configured tests
     pub fn run_tests(&mut self) -> TestResults {
         let mut results = TestResults::new();
-        
+
         if self.config.property_tests {
             results.merge(self.run_property_tests());
         }
-        
+
         if self.config.differential {
             results.merge(self.run_differential_tests());
         }
-        
+
         if self.config.stability {
             results.merge(self.run_stability_tests());
         }
-        
+
         results
     }
-    
+
     /// Property-based testing
     #[allow(clippy::unused_self)]
     fn run_property_tests(&self) -> TestResults {
         let mut results = TestResults::new();
-        
+
         // Test: Type safety preservation
         quickcheck::quickcheck(prop_type_safety as fn(TestExpr) -> bool);
         results.add_test("type_safety", true);
-        
+
         // Test: State transition validity
         quickcheck::quickcheck(prop_state_transitions as fn(Vec<TestOp>) -> bool);
         results.add_test("state_transitions", true);
-        
+
         // Test: Memory bounds
         quickcheck::quickcheck(prop_memory_bounds as fn(TestExpr) -> bool);
         results.add_test("memory_bounds", true);
-        
+
         results
     }
-    
+
     /// Differential testing against reference
     fn run_differential_tests(&mut self) -> TestResults {
         let mut results = TestResults::new();
-        
+
         let test_cases = vec![
             "42",
             "let x = 10",
@@ -148,43 +148,46 @@ impl ReplTester {
             "let y = 20",
             "error", // Should fail in both
         ];
-        
+
         for case in test_cases {
             let ref_result = self.reference.eval(case);
             // Production eval would go here
             let prod_result: Result<i64> = Ok(42i64); // Placeholder
-            
-            let matches = matches!((&ref_result, &prod_result), (Ok(_), Ok(_)) | (Err(_), Err(_)));
-            
+
+            let matches = matches!(
+                (&ref_result, &prod_result),
+                (Ok(_), Ok(_)) | (Err(_), Err(_))
+            );
+
             results.add_test(&format!("differential_{case}"), matches);
         }
-        
+
         results
     }
-    
+
     /// 24-hour stability test
     #[allow(clippy::unused_self)]
     fn run_stability_tests(&self) -> TestResults {
         let mut results = TestResults::new();
         let start = Instant::now();
         let mut iterations = 0;
-        
+
         while start.elapsed() < self.config.timeout {
             // Generate random input
             let _input = generate_random_input();
-            
+
             // Eval and check invariants
             // Actual eval would go here
-            
+
             iterations += 1;
-            
+
             // Check memory stability
             // Check for leaks
         }
-        
+
         results.add_test("stability", true);
         results.iterations = iterations;
-        
+
         results
     }
 }
@@ -206,7 +209,7 @@ impl TestResults {
             iterations: 0,
         }
     }
-    
+
     fn add_test(&mut self, name: &str, passed: bool) {
         if passed {
             self.passed += 1;
@@ -215,18 +218,20 @@ impl TestResults {
         }
         self.tests.push((name.to_string(), passed));
     }
-    
+
     fn merge(&mut self, other: TestResults) {
         self.passed += other.passed;
         self.failed += other.failed;
         self.tests.extend(other.tests);
         self.iterations += other.iterations;
     }
-    
+
     pub fn summary(&self) -> String {
         format!(
             "Tests: {} passed, {} failed, {} total",
-            self.passed, self.failed, self.passed + self.failed
+            self.passed,
+            self.failed,
+            self.passed + self.failed
         )
     }
 }
@@ -324,13 +329,13 @@ pub fn fuzz_input(data: &[u8]) -> Result<()> {
     if let Ok(s) = std::str::from_utf8(data) {
         // Create sandboxed REPL
         let mut repl = super::ReplV3::new()?;
-        
+
         // Evaluate with bounds
         let _ = repl.evaluator.eval(s);
-        
+
         // Check invariants
         assert!(repl.evaluator.memory_used() <= 10 * 1024 * 1024);
     }
-    
+
     Ok(())
 }
