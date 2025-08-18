@@ -3,6 +3,9 @@
 //! Implements a Common Lisp-style condition/restart system for
 //! graceful error recovery with user choice.
 
+#![allow(clippy::print_stdout)] // REPL needs to print to stdout
+#![allow(clippy::print_stderr)] // REPL needs to print errors
+
 use anyhow::Result;
 use colored::Colorize;
 use std::fmt;
@@ -74,12 +77,14 @@ impl RecoverableError {
     }
     
     /// Add a restart option
+    #[must_use]
     pub fn add_restart(mut self, restart: Restart) -> Self {
         self.restarts.insert(0, restart); // Insert at beginning for priority
         self
     }
     
     /// Set error context
+    #[must_use]
     pub fn with_context(mut self, context: ErrorContext) -> Self {
         self.context = context;
         self
@@ -115,6 +120,20 @@ impl RecoverableError {
     }
     
     /// Handle user's restart choice
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the choice is invalid
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ruchy::runtime::repl_v3::recovery::{RecoverableError, Restart, RestartHandler};
+    ///
+    /// let error = RecoverableError::new("Test error");
+    /// let action = error.handle_restart(1);  // Select first restart
+    /// assert!(action.is_ok());
+    /// ```
     pub fn handle_restart(&self, choice: usize) -> Result<RestartAction> {
         if choice == 0 || choice > self.restarts.len() {
             return Ok(RestartAction::Abort);
@@ -170,6 +189,12 @@ struct RecoveryPattern {
     error_pattern: String,
     suggestion: String,
     restart: Restart,
+}
+
+impl Default for RecoveryManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RecoveryManager {

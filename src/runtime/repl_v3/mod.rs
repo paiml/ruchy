@@ -3,6 +3,9 @@
 //! Implements the specification from docs/specifications/repl-testing-ux-spec.md
 //! with focus on reliability, bounded resources, and excellent UX.
 
+#![allow(clippy::print_stdout)] // REPL needs to print to stdout
+#![allow(clippy::print_stderr)] // REPL needs to print errors
+
 pub mod evaluator;
 pub mod state;
 pub mod recovery;
@@ -43,11 +46,45 @@ impl Default for ReplConfig {
 
 impl ReplV3 {
     /// Create a new REPL v3 instance
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the evaluator cannot be created with default config
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ruchy::runtime::repl_v3::ReplV3;
+    ///
+    /// let repl = ReplV3::new();
+    /// assert!(repl.is_ok());
+    /// ```
     pub fn new() -> Result<Self> {
         Self::with_config(ReplConfig::default())
     }
 
     /// Create REPL with custom configuration
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the evaluator cannot be created with the given config
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use ruchy::runtime::repl_v3::{ReplV3, ReplConfig};
+    /// use std::time::Duration;
+    ///
+    /// let config = ReplConfig {
+    ///     max_memory: 5 * 1024 * 1024,  // 5MB
+    ///     timeout: Duration::from_millis(200),
+    ///     max_depth: 500,
+    ///     debug: true,
+    /// };
+    ///
+    /// let repl = ReplV3::with_config(config);
+    /// assert!(repl.is_ok());
+    /// ```
     pub fn with_config(config: ReplConfig) -> Result<Self> {
         let evaluator = evaluator::BoundedEvaluator::new(
             config.max_memory,
@@ -65,6 +102,20 @@ impl ReplV3 {
     }
     
     /// Run the REPL main loop
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the REPL encounters an unrecoverable error
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use ruchy::runtime::repl_v3::ReplV3;
+    ///
+    /// let mut repl = ReplV3::new().unwrap();
+    /// // This would start an interactive session
+    /// // repl.run().unwrap();
+    /// ```
     pub fn run(&mut self) -> Result<()> {
         println!("Ruchy REPL v3.0 - Production Ready");
         println!("Type :help for commands");
