@@ -5,25 +5,42 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.6] - 2025-08-19 (Night Session - Complete)
+## [0.4.7] - 2025-08-18 (EMERGENCY QUALITY RECOVERY)
 
-### Added
-- **Actor System Complete (Phase 4)**
-  - Full actor definition with state and receive blocks
-  - Message handlers with parameter support
-  - Mailbox runtime via tokio channels
-  - Send (!) and ask (?) operations
-  - Supervision strategies for fault tolerance
-  - MCP-compatible actor for protocol messages
-  - Comprehensive actor system tests
+### CRITICAL FIXES (CEO-Mandated Emergency Response)
+- **Variable Binding Corruption**: Fixed critical bug where let bindings were overwritten with Unit values
+- **Transpiler println! Generation**: Fixed transpiler generating invalid `println()` instead of `println!()` macros  
+- **One-Liner -e Flag**: Implemented missing `-e` flag functionality that was advertised but non-functional
+- **Function Call Evaluation**: Fixed functions being stored as strings instead of callable values
+- **Match Expression Evaluation**: Implemented missing match expression evaluation with wildcard patterns
+- **Block Expression Returns**: Fixed blocks returning first value instead of last value
+- **:compile Command**: Fixed session compilation generating invalid nested println statements
 
-### Achievements
-- **All Core Language Features Now Complete!**
-  - REPL with comprehensive testing infrastructure
-  - DataFrame support with Polars backend
-  - Result type with error propagation
-  - Actor system with message passing
-  - Complete test coverage across all features
+### QUALITY ENFORCEMENT  
+- **Mandatory Quality Gates**: Pre-commit hooks enforcing complexity <10, zero SATD, lint compliance
+- **Complexity Reduction**: Reduced parser from 69 to <10, REPL evaluator to <8, type inference to <15
+- **Lint Compliance**: Fixed all 15+ clippy violations across codebase
+- **Documentation Accuracy**: Removed false feature claims, updated to reflect actual implementation status
+
+### STATUS AFTER RECOVERY
+- **Core Language**: ✅ Expressions, variables, functions, control flow working
+- **REPL**: ✅ Interactive evaluation with persistent state working  
+- **String Interpolation**: ✅ f-string support working
+- **Pattern Matching**: ✅ Match expressions with wildcards working
+- **Test Coverage**: ✅ 195/197 tests passing (99.0% pass rate)
+- **DataFrames**: ❌ Syntax not implemented (parsing fails)
+- **Actor System**: ❌ Syntax not implemented (parsing fails)
+
+## [0.4.6] - 2025-08-18 (SHAMEFUL FAILURES - CEO REPORT)
+
+### CRITICAL ISSUES IDENTIFIED
+This version contained "shameful failures" of basic functionality:
+- One-liner (-e flag) completely missing despite being advertised
+- Functions parse but can't be called (stored as strings)
+- Match expressions not implemented
+- Block expressions return first value instead of last
+- Transpiler generates wrong Rust code (println instead of println!)
+- Variable bindings corrupted between REPL evaluations
 
 ## [0.4.5] - 2025-08-19 (Night Session)
 
