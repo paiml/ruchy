@@ -26,6 +26,12 @@ help:
 	@echo ""
 	@echo "Publishing:"
 	@echo "  make prepare-publish - Prepare for crates.io publication"
+	@echo "  make pre-release-checks - Run all pre-release quality checks"
+	@echo "  make release-patch - Create patch release (bug fixes)"
+	@echo "  make release-minor - Create minor release (new features)"
+	@echo "  make release-major - Create major release (breaking changes)"
+	@echo "  make release-auto - Auto-detect version bump type"
+	@echo "  make crate-release - Publish to crates.io"
 
 # Build project
 build:
@@ -168,3 +174,126 @@ dev: format lint test
 # Full validation
 all: clean build test-all lint format coverage examples bench doc quality-gate
 	@echo "✓ Full validation complete"
+
+# ============================================================================
+# RELEASE MANAGEMENT - Based on paiml-mcp-agent-toolkit patterns
+# ============================================================================
+
+.PHONY: install-release-tools pre-release-checks release-patch release-minor release-major release-auto release-dry crate-release release-verify
+
+# Install required release tools
+install-release-tools:
+	@echo "📦 Installing release tools..."
+	@cargo install cargo-release --locked 2>/dev/null || echo "cargo-release already installed"
+	@cargo install cargo-semver-checks --locked 2>/dev/null || echo "cargo-semver-checks already installed"
+	@cargo install cargo-audit --locked 2>/dev/null || echo "cargo-audit already installed"
+	@cargo install cargo-outdated --locked 2>/dev/null || echo "cargo-outdated already installed"
+	@echo "✅ Release tools installed"
+
+# Pre-release quality gates
+pre-release-checks:
+	@echo "🔍 Running pre-release checks..."
+	@echo ""
+	@echo "1️⃣ Version consistency check..."
+	@MAIN_VERSION=$$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2); \
+	CLI_VERSION=$$(grep -m1 '^version = ' ruchy-cli/Cargo.toml | cut -d'"' -f2 || echo $$MAIN_VERSION); \
+	if [ "$$MAIN_VERSION" != "$$CLI_VERSION" ] && [ -n "$$CLI_VERSION" ]; then \
+		echo "❌ Version mismatch: ruchy=$$MAIN_VERSION, ruchy-cli=$$CLI_VERSION"; \
+		exit 1; \
+	fi; \
+	echo "✅ Versions consistent: $$MAIN_VERSION"
+	@echo ""
+	@echo "2️⃣ Running tests..."
+	@$(MAKE) test-all
+	@echo ""
+	@echo "3️⃣ Checking formatting and lints..."
+	@$(MAKE) format-check
+	@$(MAKE) lint
+	@echo ""
+	@echo "4️⃣ Security audit..."
+	@cargo audit || echo "⚠️  Some vulnerabilities found (review before release)"
+	@echo ""
+	@echo "5️⃣ Checking outdated dependencies..."
+	@cargo outdated || echo "⚠️  Some dependencies outdated (review before release)"
+	@echo ""
+	@echo "6️⃣ Documentation check..."
+	@cargo doc --no-deps --workspace --all-features --quiet
+	@echo "✅ Documentation builds successfully"
+	@echo ""
+	@echo "7️⃣ Dry-run publish check..."
+	@cargo publish --dry-run --package ruchy --quiet
+	@echo "✅ Package ruchy ready for publication"
+	@cargo publish --dry-run --package ruchy-cli --quiet 2>/dev/null || echo "⚠️  ruchy-cli may need separate publication"
+	@echo ""
+	@echo "✅ All pre-release checks completed!"
+
+# Patch release (x.y.Z) - bug fixes only
+release-patch: install-release-tools pre-release-checks
+	@echo "🔖 Creating PATCH release (bug fixes only)..."
+	@cargo release patch --execute --no-confirm
+
+# Minor release (x.Y.z) - new features, backward compatible
+release-minor: install-release-tools pre-release-checks
+	@echo "🔖 Creating MINOR release (new features, backward compatible)..."
+	@cargo release minor --execute --no-confirm
+
+# Major release (X.y.z) - breaking changes
+release-major: install-release-tools pre-release-checks
+	@echo "🔖 Creating MAJOR release (breaking changes)..."
+	@cargo release major --execute --no-confirm
+
+# Auto-determine version bump based on conventional commits
+release-auto: install-release-tools pre-release-checks
+	@echo "🤖 Auto-determining version bump type..."
+	@if git log --oneline $$(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~10)..HEAD | grep -qE '^[a-f0-9]+ (feat!|fix!|refactor!|BREAKING)'; then \
+		echo "💥 Breaking changes detected - MAJOR release"; \
+		$(MAKE) release-major; \
+	elif git log --oneline $$(git describe --tags --abbrev=0 2>/dev/null || echo HEAD~10)..HEAD | grep -qE '^[a-f0-9]+ feat:'; then \
+		echo "✨ New features detected - MINOR release"; \
+		$(MAKE) release-minor; \
+	else \
+		echo "🐛 Bug fixes/patches only - PATCH release"; \
+		$(MAKE) release-patch; \
+	fi
+
+# Dry run for release (no actual changes)
+release-dry:
+	@echo "🧪 Dry run for release..."
+	@cargo release patch --dry-run
+
+# Publish to crates.io (interactive)
+crate-release:
+	@echo "📦 Publishing to crates.io..."
+	@echo "Current version: $$(grep '^version' Cargo.toml | head -1 | cut -d'"' -f2)"
+	@echo ""
+	@echo "Pre-publish checklist:"
+	@echo "  ✓ Version bumped in Cargo.toml"
+	@echo "  ✓ CHANGELOG.md updated"
+	@echo "  ✓ All tests passing"
+	@echo "  ✓ Documentation builds"
+	@echo ""
+	@printf "Continue with publish? [y/N] "; \
+	read REPLY; \
+	case "$$REPLY" in \
+		[yY]*) \
+			echo "Publishing ruchy..."; \
+			cargo publish --package ruchy; \
+			echo "Waiting 30 seconds for crates.io to index..."; \
+			sleep 30; \
+			echo "Publishing ruchy-cli..."; \
+			cargo publish --package ruchy-cli || echo "ruchy-cli may already be published or needs manual intervention"; \
+			;; \
+		*) echo "❌ Publish cancelled" ;; \
+	esac
+
+# Verify release was successful
+release-verify:
+	@echo "🔍 Verifying release..."
+	@LATEST_TAG=$$(git describe --tags --abbrev=0); \
+	echo "Latest tag: $$LATEST_TAG"; \
+	CRATE_VERSION=$$(cargo search ruchy | head -1 | cut -d'"' -f2); \
+	echo "Crates.io version: $$CRATE_VERSION"; \
+	echo ""; \
+	echo "📦 Testing installation from crates.io..."; \
+	cargo install ruchy --force && ruchy --version; \
+	echo "✅ Release verification complete!"

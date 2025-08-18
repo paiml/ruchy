@@ -49,7 +49,22 @@ SPECIFICATION.md v3.0 + REPL Sprint Status:
 🔴 Quality gates CI enforcement - missing
 ```
 
-### Recent Accomplishments (2025-08-18 - REPL v3 Sprint)
+### Recent Accomplishments (2025-08-18 - Function Call Support)
+- ✅ **CRITICAL: Fixed missing function call support in REPL**
+  - Implemented println/print built-in functions
+  - Added comprehensive function call evaluation
+  - Fixed critical testing gap that missed function calls
+  - Added 5 function call productions to grammar coverage
+- ✅ **Testing Coverage: Function calls now have complete coverage**
+  - 18 unit tests for function call evaluation
+  - Property-based tests for consistency
+  - Doctests with usage examples
+  - Comprehensive examples file
+  - E2E grammar coverage tests
+- ✅ Fixed all clippy lint warnings (maintained zero warnings)
+- ✅ All tests passing with function call support
+
+### Previous Accomplishments (2025-08-18 - REPL v3 Sprint)
 - ✅ **MAJOR: Implemented REPL v3 foundation per specs**
   - Created resource-bounded evaluator with memory tracking
   - Implemented transactional state machine with checkpoints

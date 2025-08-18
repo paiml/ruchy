@@ -6,6 +6,8 @@
 pub mod actor;
 pub mod grammar_coverage;
 pub mod repl;
+#[cfg(test)]
+mod repl_function_tests;
 
 // Export the unified REPL
 pub use repl::{Repl, ReplConfig, Value};

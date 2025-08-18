@@ -5,9 +5,31 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2025-08-18
+
+### Added
+- **Comprehensive Release Process**
+  - Added Makefile targets for release management (patch/minor/major)
+  - Pre-release quality checks and validation
+  - Automated version bump detection
+  - Interactive crates.io publishing workflow
+  - Release verification and testing
+
+### Improved
+- **Development Workflow**
+  - Enhanced Makefile with release tools installation
+  - Added dry-run capabilities for testing releases
+  - Integrated security audit and dependency checks
+
 ## [0.4.2] - 2025-08-18
 
 ### Critical REPL Fixes
+- **Function Call Support**
+  - Fixed critical gap where function calls were not implemented in REPL
+  - Added built-in functions: `println()` and `print()`
+  - Function calls now properly evaluate arguments and return unit type
+  - Fixed testing gap that completely missed function call coverage
+  
 - **Let Statement Parsing Fix**
   - Fixed critical parsing issue where `let x = 1;` failed in REPL
   - Made 'in' keyword optional for let statements (REPL-style assignments)
@@ -20,14 +42,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Zero embarrassing errors in basic operations (zero handling, precedence, etc.)
   
 ### Testing Infrastructure
+- **Function Call Testing Coverage**
+  - Added 18 unit tests for function call evaluation
+  - Property-based tests for consistency across built-ins
+  - Doctests with usage examples in REPL code
+  - Comprehensive examples file demonstrating all patterns
+  - Added 5 function call productions to grammar coverage
+  
 - **Dogfooding Policy**: Only Ruchy scripts allowed for testing (no Python/shell)
-- **100% Grammar Coverage**: 56/56 comprehensive REPL tests passing
+- **100% Grammar Coverage**: 61/61 comprehensive REPL tests passing (added 5 function call tests)
 - **Edge Case Coverage**: Power operations, operator precedence, string handling
   
 ### Bug Fixes
 - Fixed clippy lint warnings in REPL evaluator
 - Fixed format string inlining and unsafe casts
 - Proper error handling for oversized power operations
+- Fixed all lint issues in function call tests and examples
 
 ## [0.4.1] - 2025-01-18
 
