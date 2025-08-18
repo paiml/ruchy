@@ -4,72 +4,52 @@
 //! resource exhaustion and ensure predictable behavior.
 
 use anyhow::{bail, Result};
-use std::alloc::{alloc, dealloc, Layout};
-use std::ptr::NonNull;
 use std::time::{Duration, Instant};
 
-/// Arena allocator for bounded memory allocation
-pub struct ArenaAllocator {
-    start: NonNull<u8>,
-    size: usize,
-    offset: usize,
+/// Simple memory tracker for bounded allocation
+pub struct MemoryTracker {
+    max_size: usize,
+    current: usize,
 }
 
-impl ArenaAllocator {
-    /// Create a new arena with fixed size
-    pub fn new(size: usize) -> Result<Self> {
-        let layout = Layout::from_size_align(size, 8)?;
-        let ptr = unsafe { alloc(layout) };
-        
-        if ptr.is_null() {
-            bail!("Failed to allocate arena of size {}", size);
+impl MemoryTracker {
+    /// Create a new memory tracker
+    pub fn new(max_size: usize) -> Self {
+        Self {
+            max_size,
+            current: 0,
         }
-        
-        Ok(Self {
-            start: NonNull::new(ptr).unwrap(),
-            size,
-            offset: 0,
-        })
     }
     
-    /// Allocate memory from the arena
-    pub fn alloc(&mut self, size: usize) -> Result<NonNull<u8>> {
-        let aligned_size = (size + 7) & !7; // 8-byte alignment
-        
-        if self.offset + aligned_size > self.size {
-            bail!("Arena exhausted: requested {} bytes, {} available", 
-                  aligned_size, self.size - self.offset);
+    /// Try to allocate memory
+    pub fn try_alloc(&mut self, size: usize) -> Result<()> {
+        if self.current + size > self.max_size {
+            bail!("Memory limit exceeded: {} + {} > {}", 
+                  self.current, size, self.max_size);
         }
-        
-        let ptr = unsafe { self.start.as_ptr().add(self.offset) };
-        self.offset += aligned_size;
-        
-        Ok(NonNull::new(ptr).unwrap())
+        self.current += size;
+        Ok(())
     }
     
-    /// Reset the arena for reuse
+    /// Free memory
+    pub fn free(&mut self, size: usize) {
+        self.current = self.current.saturating_sub(size);
+    }
+    
+    /// Reset the tracker
     pub fn reset(&mut self) {
-        self.offset = 0;
+        self.current = 0;
     }
     
     /// Get current memory usage
     pub fn used(&self) -> usize {
-        self.offset
-    }
-}
-
-impl Drop for ArenaAllocator {
-    fn drop(&mut self) {
-        let layout = Layout::from_size_align(self.size, 8).unwrap();
-        unsafe {
-            dealloc(self.start.as_ptr(), layout);
-        }
+        self.current
     }
 }
 
 /// Bounded evaluator with resource limits
 pub struct BoundedEvaluator {
-    arena: ArenaAllocator,
+    memory: MemoryTracker,
     timeout: Duration,
     max_depth: usize,
 }
@@ -77,10 +57,10 @@ pub struct BoundedEvaluator {
 impl BoundedEvaluator {
     /// Create a new bounded evaluator
     pub fn new(max_memory: usize, timeout: Duration, max_depth: usize) -> Result<Self> {
-        let arena = ArenaAllocator::new(max_memory)?;
+        let memory = MemoryTracker::new(max_memory);
         
         Ok(Self {
-            arena,
+            memory,
             timeout,
             max_depth,
         })
@@ -88,8 +68,11 @@ impl BoundedEvaluator {
     
     /// Evaluate an expression with resource bounds
     pub fn eval(&mut self, input: &str) -> Result<String> {
-        // Reset arena for fresh evaluation
-        self.arena.reset();
+        // Reset memory tracker for fresh evaluation
+        self.memory.reset();
+        
+        // Track input memory
+        self.memory.try_alloc(input.len())?;
         
         // Set evaluation deadline
         let deadline = Instant::now() + self.timeout;
@@ -111,11 +94,13 @@ impl BoundedEvaluator {
         
         // Actual evaluation logic will be added
         // For now, return a placeholder
-        Ok(format!("Evaluated: {}", expr))
+        let result = format!("Evaluated: {}", expr);
+        self.memory.try_alloc(result.len())?;
+        Ok(result)
     }
     
     /// Get current memory usage
     pub fn memory_used(&self) -> usize {
-        self.arena.used()
+        self.memory.used()
     }
 }

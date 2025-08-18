@@ -11,8 +11,6 @@ use std::time::{Duration, Instant};
 pub struct ReplTester {
     /// Reference implementation for differential testing
     reference: ReferenceRepl,
-    /// Production REPL under test
-    production: super::ReplV3,
     /// Test configuration
     config: TestConfig,
 }
@@ -83,7 +81,6 @@ impl ReplTester {
     pub fn new() -> Result<Self> {
         Ok(Self {
             reference: ReferenceRepl::new(),
-            production: super::ReplV3::new()?,
             config: TestConfig::default(),
         })
     }
@@ -141,7 +138,7 @@ impl ReplTester {
         for case in test_cases {
             let ref_result = self.reference.eval(case);
             // Production eval would go here
-            let prod_result = Ok(42i64); // Placeholder
+            let prod_result: Result<i64> = Ok(42i64); // Placeholder
             
             let matches = match (&ref_result, &prod_result) {
                 (Ok(_), Ok(_)) => true,
@@ -163,7 +160,7 @@ impl ReplTester {
         
         while start.elapsed() < self.config.timeout {
             // Generate random input
-            let input = generate_random_input();
+            let _input = generate_random_input();
             
             // Eval and check invariants
             // Actual eval would go here
@@ -289,21 +286,19 @@ fn generate_random_input() -> String {
     "42".to_string() // Placeholder
 }
 
-/// Fuzzing entry point for cargo-fuzz
-#[no_mangle]
-pub extern "C" fn LLVMFuzzerTestOneInput(data: *const u8, size: usize) -> i32 {
-    let input = unsafe { std::slice::from_raw_parts(data, size) };
-    
-    if let Ok(s) = std::str::from_utf8(input) {
+/// Fuzzing support for testing  
+/// Use with cargo-fuzz or other fuzzing frameworks
+pub fn fuzz_input(data: &[u8]) -> Result<()> {
+    if let Ok(s) = std::str::from_utf8(data) {
         // Create sandboxed REPL
-        if let Ok(mut repl) = super::ReplV3::new() {
-            // Evaluate with bounds
-            let _ = repl.evaluator.eval(s);
-            
-            // Check invariants
-            assert!(repl.evaluator.memory_used() <= 10 * 1024 * 1024);
-        }
+        let mut repl = super::ReplV3::new()?;
+        
+        // Evaluate with bounds
+        let _ = repl.evaluator.eval(s);
+        
+        // Check invariants
+        assert!(repl.evaluator.memory_used() <= 10 * 1024 * 1024);
     }
     
-    0
+    Ok(())
 }
