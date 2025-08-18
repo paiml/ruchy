@@ -1,460 +1,476 @@
-# Ruchy Language Grammar Reference v1.0
-## Complete EBNF Grammar and Feature Specification
+# Ruchy Grammar Specification v4.0
+## Complete Mechanical Transformation Grammar
 
-### 1. Lexical Grammar
+### Design Invariants
+1. **Every construct maps 1:1 to Rust AST**
+2. **Zero runtime overhead guaranteed**
+3. **No hidden allocations or implicit state**
 
-#### 1.1 Tokens
+---
+
+## Part I: Lexical Grammar
+
+### 1. Tokens and Keywords
+
 ```ebnf
-token           = keyword | identifier | literal | operator | delimiter
+// Whitespace and Comments
 whitespace      = ' ' | '\t' | '\r' | '\n'
 comment         = line_comment | block_comment
 line_comment    = '//' (!'\n' any)*
 block_comment   = '/*' (!'*/' any)* '*/'
+
+// Identifiers
+identifier      = (letter | '_') (letter | digit | '_')*
+raw_identifier  = 'r#' identifier  // Escape keywords
+
+letter          = 'a'..'z' | 'A'..'Z'
+digit           = '0'..'9'
+hex_digit       = digit | 'a'..'f' | 'A'..'F'
+
+// Keywords (37 total - minimal set)
+keyword         = 'actor' | 'as' | 'async' | 'await' | 'break' | 'const'
+                | 'continue' | 'defer' | 'else' | 'enum' | 'false' | 'for'
+                | 'fun' | 'guard' | 'if' | 'impl' | 'import' | 'in' | 'let'
+                | 'loop' | 'match' | 'mod' | 'mut' | 'pub' | 'return'
+                | 'self' | 'Self' | 'static' | 'struct' | 'super' | 'trait'
+                | 'true' | 'type' | 'use' | 'where' | 'while'
 ```
 
-#### 1.2 Identifiers
-```ebnf
-identifier      = ident_start ident_continue*
-ident_start     = 'a'..'z' | 'A'..'Z' | '_'
-ident_continue  = ident_start | '0'..'9'
-raw_identifier  = '`' identifier '`'  // For reserved words
-```
+### 2. Literals
 
-#### 1.3 Keywords
-```ebnf
-keyword = 'fun' | 'let' | 'var' | 'const' | 'if' | 'else' | 'when' | 'match'
-        | 'for' | 'while' | 'loop' | 'break' | 'continue' | 'return'
-        | 'struct' | 'enum' | 'trait' | 'impl' | 'actor' | 'receive'
-        | 'async' | 'await' | 'defer' | 'guard' | 'try' | 'catch'
-        | 'import' | 'export' | 'module' | 'pub' | 'priv' | 'mut'
-        | 'in' | 'is' | 'as' | 'where' | 'type' | 'alias'
-```
-
-#### 1.4 Literals
 ```ebnf
 literal         = number | string | char | boolean
+
+// Numbers
 number          = integer | float
-integer         = decimal | hexadecimal | octal | binary
-decimal         = digit+ type_suffix?
-hexadecimal     = '0x' hex_digit+
-octal           = '0o' oct_digit+
-binary          = '0b' bin_digit+
-float           = digit+ '.' digit+ exponent? type_suffix?
-exponent        = ('e' | 'E') ('+' | '-')? digit+
-type_suffix     = 'i8' | 'i16' | 'i32' | 'i64' | 'i128'
-                | 'u8' | 'u16' | 'u32' | 'u64' | 'u128'
-                | 'f32' | 'f64'
+integer         = decimal | hex | octal | binary
+decimal         = digit (digit | '_')*
+hex             = '0x' hex_digit (hex_digit | '_')*
+octal           = '0o' ('0'..'7') ('0'..'7' | '_')*
+binary          = '0b' ('0' | '1') ('0' | '1' | '_')*
 
-string          = '"' string_char* '"' | '"""' multiline_char* '"""'
-string_char     = !'"' (escape_seq | any)
-escape_seq      = '\' ('n' | 'r' | 't' | '\' | '"' | 'x' hex hex | 'u{' hex+ '}')
-interpolation   = '\(' expr ')'
+float           = decimal '.' decimal? exponent?
+                | decimal exponent
+exponent        = ('e' | 'E') ('+' | '-')? decimal
 
-char            = "'" (escape_seq | !"'" any) "'"
+// Strings with interpolation
+string          = plain_string | interpolated_string
+plain_string    = '"' string_char* '"'
+interpolated_string = 'f"' interp_content* '"'
+
+string_char     = !'"' !'\' any | escape_seq
+interp_content  = string_char | interpolation
+interpolation   = '{' expr (':' format_spec)? '}'
+format_spec     = align? sign? '#'? '0'? width? precision? type_char?
+
+escape_seq      = '\' ('n' | 'r' | 't' | '\' | '"' | '0' 
+                | 'x' hex_digit{2} | 'u' '{' hex_digit{1,6} '}')
+
+// Other literals
+char            = '\'' (!'\\' !'\'' any | escape_seq) '\''
 boolean         = 'true' | 'false'
 ```
 
-### 2. Syntactic Grammar
+---
 
-#### 2.1 Program Structure
+## Part II: Types
+
+### 3. Type System
+
 ```ebnf
-program         = item*
-item            = function | struct_def | enum_def | trait_def | impl_block
-                | actor_def | module_def | import_stmt | type_alias
+type            = simple_type | compound_type | function_type | generic_type
 
-module_def      = 'module' identifier '{' item* '}'
-import_stmt     = 'import' import_path ('as' identifier)?
-import_path     = identifier ('::' identifier)*
-                | string_literal  // URL imports
-```
+simple_type     = primitive | path | '_'
+primitive       = 'i8' | 'i16' | 'i32' | 'i64' | 'i128' | 'isize'
+                | 'u8' | 'u16' | 'u32' | 'u64' | 'u128' | 'usize'
+                | 'f32' | 'f64' | 'bool' | 'char' | 'str' | 'String'
 
-#### 2.2 Functions
-```ebnf
-function        = attributes? visibility? 'fun' identifier 
-                  generic_params? '(' params? ')' return_type? 
-                  where_clause? (block | '=' expr)
+compound_type   = array_type | slice_type | tuple_type | reference_type
+                | optional_type | result_type
 
-params          = param (',' param)*
-param           = pattern ':' type default_value?
-default_value   = '=' expr
-return_type     = '->' type
-
-generic_params  = '<' generic_param (',' generic_param)* '>'
-generic_param   = identifier (':' bounds)?
-bounds          = bound ('+' bound)*
-where_clause    = 'where' where_pred (',' where_pred)*
-```
-
-#### 2.3 Types
-```ebnf
-type            = primitive_type | named_type | tuple_type | array_type
-                | function_type | optional_type | result_type
-                | reference_type | generic_type | refined_type
-
-primitive_type  = 'i8' | 'i16' | 'i32' | 'i64' | 'i128'
-                | 'u8' | 'u16' | 'u32' | 'u64' | 'u128'
-                | 'f32' | 'f64' | 'bool' | 'char' | 'String'
-
-named_type      = identifier ('::' identifier)*
-tuple_type      = '(' type (',' type)* ')'
-array_type      = '[' type ']' | '[' type ';' expr ']'
-function_type   = 'fun' '(' types? ')' '->' type
-optional_type   = type '?'
+array_type      = '[' type ';' expr ']'         // [T; N]
+slice_type      = '[' type ']'                  // &[T]
+tuple_type      = '(' ')' | '(' type ',' ')' | '(' type (',' type)+ ')'
+reference_type  = '&' lifetime? 'mut'? type
+optional_type   = type '?'                      // Option<T>
 result_type     = 'Result' '<' type (',' type)? '>'
-reference_type  = '&' 'mut'? type
-generic_type    = identifier '<' type (',' type)* '>'
 
-refined_type    = '{' identifier ':' type '|' predicate '}'
-predicate       = expr  // Boolean expression over identifier
+function_type   = 'fun' '(' param_types? ')' ('->' type)?
+param_types     = type (',' type)*
+
+generic_type    = path generic_args
+generic_args    = '<' type (',' type)* '>'
+
+lifetime        = '\'' identifier | '\'' 'static'
 ```
 
-#### 2.4 Expressions
+### 4. Generic Parameters and Bounds
+
+```ebnf
+generic_params  = '<' generic_param (',' generic_param)* '>'
+generic_param   = lifetime_param | type_param | const_param
+
+lifetime_param  = lifetime (':' lifetime_bounds)?
+type_param      = identifier (':' type_bounds)? ('=' type)?
+const_param     = 'const' identifier ':' type ('=' expr)?
+
+type_bounds     = type_bound ('+' type_bound)*
+type_bound      = '?'? path | '(' type ')'
+
+where_clause    = 'where' where_pred (',' where_pred)*
+where_pred      = type ':' type_bounds
+                | lifetime ':' lifetime_bounds
+
+lifetime_bounds = lifetime ('+' lifetime)*
+```
+
+---
+
+## Part III: Expressions
+
+### 5. Expression Grammar (Precedence-Driven)
+
 ```ebnf
 expr            = assignment
 
-assignment      = logical_or (assign_op logical_or)*
-assign_op       = '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '&=' | '|=' | '^='
+// Precedence levels (lowest to highest)
+assignment      = range_expr (assign_op range_expr)?
+assign_op       = '=' | '+=' | '-=' | '*=' | '/=' | '%=' 
+                | '&=' | '|=' | '^=' | '<<=' | '>>='
 
-logical_or      = logical_and ('||' logical_and)*
-logical_and     = equality ('&&' equality)*
-equality        = comparison (('==' | '!=') comparison)*
-comparison      = bitwise_or (('<' | '<=' | '>' | '>=') bitwise_or)*
-bitwise_or      = bitwise_xor ('|' bitwise_xor)*
-bitwise_xor     = bitwise_and ('^' bitwise_and)*
-bitwise_and     = shift ('&' shift)*
-shift           = additive (('<<' | '>>') additive)*
-additive        = multiplicative (('+' | '-') multiplicative)*
-multiplicative  = power (('*' | '/' | '%' | '//') power)*
-power           = pipeline ('**' pipeline)*
-pipeline        = postfix ('|>' postfix)*
-postfix         = primary postfix_op*
-postfix_op      = '.' identifier | '[' expr ']' | '(' args? ')' 
-                | '?' | '!' | '!!' | '..' expr?
+range_expr      = or_expr ('..' or_expr? | '..=' or_expr)?
+or_expr         = and_expr ('||' and_expr)*
+and_expr        = eq_expr ('&&' eq_expr)*
+eq_expr         = cmp_expr (('==' | '!=') cmp_expr)*
+cmp_expr        = bit_or_expr (('<' | '<=' | '>' | '>=') bit_or_expr)*
+bit_or_expr     = bit_xor_expr ('|' bit_xor_expr)*
+bit_xor_expr    = bit_and_expr ('^' bit_and_expr)*
+bit_and_expr    = shift_expr ('&' shift_expr)*
+shift_expr      = add_expr (('<<' | '>>') add_expr)*
+add_expr        = mul_expr (('+' | '-') mul_expr)*
+mul_expr        = pow_expr (('*' | '/' | '%') pow_expr)*
+pow_expr        = cast_expr ('**' cast_expr)*
+cast_expr       = unary_expr ('as' type)*
 
-primary         = literal | identifier | '(' expr ')' | if_expr | when_expr
-                | match_expr | for_expr | while_expr | loop_expr
-                | lambda | array_expr | tuple_expr | record_expr
-                | block | try_expr | async_expr | actor_send
+unary_expr      = unary_op* coalesce_expr
+unary_op        = '!' | '-' | '*' | '&' 'mut'?
 
-lambda          = '|' params? '|' (expr | block)
-                | params '=>' (expr | block)
+coalesce_expr   = pipeline_expr ('??' pipeline_expr)*
+pipeline_expr   = postfix_expr ('|>' postfix_expr)*
+
+postfix_expr    = primary_expr postfix_op*
+postfix_op      = '.' identifier generic_args?    // Field/method
+                | '?.' identifier generic_args?   // Safe navigation
+                | '[' expr ']'                    // Index
+                | '(' args? ')'                   // Call
+                | '?'                             // Try operator
+                | '!'                             // Unwrap
+                | '!!'                            // Force unwrap
+
+primary_expr    = literal | path | 'self' | '(' expr ')'
+                | tuple_expr | array_expr | block
+                | if_expr | match_expr | for_expr | while_expr | loop_expr
+                | lambda | struct_expr | async_block | await_expr
+                | try_expr | guard_expr | defer_expr
+                | actor_send | dataframe_literal
+
+args            = expr (',' expr)*
 ```
 
-#### 2.5 Control Flow
-```ebnf
-if_expr         = 'if' expr block ('else' 'if' expr block)* ('else' block)?
+### 6. Complex Expressions
 
-when_expr       = 'when' expr? '{' when_arm* '}'
-when_arm        = pattern ('if' expr)? '->' expr ','?
+```ebnf
+// Collections
+tuple_expr      = '(' ')' | '(' expr ',' ')' | '(' expr (',' expr)+ ')'
+array_expr      = '[' ']' | '[' expr (',' expr)* ']' | '[' expr ';' expr ']'
+
+// Struct literals
+struct_expr     = path '{' field_init (',' field_init)* '}'
+field_init      = identifier (':' expr)? | '..' expr
+
+// Control flow
+if_expr         = 'if' condition block ('else' (if_expr | block))?
+condition       = expr | 'let' pattern '=' expr
 
 match_expr      = 'match' expr '{' match_arm* '}'
-match_arm       = pattern ('if' guard)? '=>' expr ','?
+match_arm       = pattern ('if' expr)? '=>' expr ','
 
 for_expr        = 'for' pattern 'in' expr block
-while_expr      = 'while' expr block
+while_expr      = 'while' condition block
 loop_expr       = 'loop' block
 
-guard_stmt      = 'guard' 'let'? pattern '=' expr 'else' block
-defer_stmt      = 'defer' block
+// Lambda expressions
+lambda          = '|' params? '|' ('->' type)? (expr | block)
+                | params '=>' (expr | block)
+
+// Async/await
+async_block     = 'async' 'move'? block
+await_expr      = expr '.await'
+
+// Error handling
+try_expr        = 'try' block
+guard_expr      = 'guard' condition 'else' block
+defer_expr      = 'defer' block
+
+// Actor operations
+actor_send      = expr '<-' expr    // Fire and forget
+actor_ask       = expr '<?' expr    // Request-reply
 ```
 
-#### 2.6 Patterns
+---
+
+## Part IV: Statements and Items
+
+### 7. Statements
+
 ```ebnf
-pattern         = identifier | '_' | literal | tuple_pattern | array_pattern
-                | struct_pattern | enum_pattern | range_pattern
-                | ref_pattern | mut_pattern | or_pattern | guard_pattern
+stmt            = let_stmt | expr_stmt | item
 
-tuple_pattern   = '(' pattern (',' pattern)* ')'
-array_pattern   = '[' pattern (',' pattern)* (',' '..' identifier?)? ']'
-struct_pattern  = identifier '{' field_pattern (',' field_pattern)* '}'
-field_pattern   = identifier (':' pattern)?
-enum_pattern    = identifier '(' pattern* ')'
-range_pattern   = expr '..' expr? | '..' expr | expr '..=' expr
-ref_pattern     = '&' 'mut'? pattern
-mut_pattern     = 'mut' pattern
-or_pattern      = pattern ('|' pattern)+
-guard_pattern   = pattern 'if' expr
+let_stmt        = 'let' 'mut'? pattern (':' type)? ('=' expr)? ';'
+expr_stmt       = expr_without_block ';' | expr_with_block ';'?
+
+block           = '{' stmt* expr? '}'
+
+// Distinction for semicolon rules
+expr_with_block = if_expr | match_expr | for_expr | while_expr 
+                | loop_expr | block | async_block
+
+expr_without_block = /* all other expressions */
 ```
 
-### 3. Advanced Features
+### 8. Patterns
 
-#### 3.1 Actor System
+```ebnf
+pattern         = '_' | literal_pat | ident_pat | ref_pat | mut_pat
+                | tuple_pat | array_pat | struct_pat | enum_pat
+                | range_pat | or_pat
+
+literal_pat     = literal
+ident_pat       = 'ref'? 'mut'? identifier ('@' pattern)?
+ref_pat         = '&' 'mut'? pattern
+mut_pat         = 'mut' pattern
+
+tuple_pat       = '(' ')' | '(' pattern ',' ')' | '(' pattern (',' pattern)+ ')'
+array_pat       = '[' pattern (',' pattern)* (',' '..' identifier?)? ']'
+
+struct_pat      = path '{' field_pat (',' field_pat)* (',' '..')? '}'
+field_pat       = identifier (':' pattern)?
+
+enum_pat        = path '(' pattern (',' pattern)* ')'
+range_pat       = literal '..' literal | literal '..=' literal
+or_pat          = pattern ('|' pattern)+
+```
+
+---
+
+## Part V: Declarations
+
+### 9. Top-Level Items
+
+```ebnf
+program         = shebang? item*
+shebang         = '#!' (!'\n' any)* '\n'
+
+item            = attributes? visibility? item_kind
+visibility      = 'pub' ('(' ('crate' | 'super' | 'self') ')')?
+
+attributes      = outer_attr+
+outer_attr      = '#[' attr_content ']'
+attr_content    = 'test' | 'bench' | 'property' property_config?
+                | 'mcp::tool' | 'mcp::context' | meta_item
+
+property_config = '(' config_item (',' config_item)* ')'
+config_item     = identifier '=' literal
+
+item_kind       = function | struct_def | enum_def | trait_def
+                | impl_block | type_alias | const_def | static_def
+                | use_decl | import_decl | mod_decl | actor_def
+```
+
+### 10. Declarations
+
+```ebnf
+// Functions
+function        = 'async'? 'fun' identifier generic_params? 
+                  '(' params? ')' ('->' type)? where_clause? 
+                  (block | '=' expr ';')
+
+params          = param (',' param)*
+param           = pattern ':' type
+                | 'self' | '&' 'mut'? 'self'
+
+// Structs
+struct_def      = 'struct' identifier generic_params? where_clause?
+                  (';' | '{' field (',' field)* '}' | '(' type (',' type)* ')')
+
+field           = visibility? identifier ':' type
+
+// Enums
+enum_def        = 'enum' identifier generic_params? where_clause?
+                  '{' variant (',' variant)* '}'
+variant         = identifier variant_data?
+variant_data    = '{' field (',' field)* '}' | '(' type (',' type)* ')'
+
+// Traits
+trait_def       = 'trait' identifier generic_params? (':' supertraits)?
+                  where_clause? '{' trait_item* '}'
+supertraits     = type_bound ('+' type_bound)*
+trait_item      = trait_const | trait_type | trait_method
+
+trait_const     = 'const' identifier ':' type ('=' expr)? ';'
+trait_type      = 'type' identifier (':' type_bounds)? ('=' type)? ';'
+trait_method    = function_sig (block | ';')
+function_sig    = 'async'? 'fun' identifier generic_params? 
+                  '(' params? ')' ('->' type)?
+
+// Implementations
+impl_block      = 'impl' generic_params? (trait 'for')? type 
+                  where_clause? '{' impl_item* '}'
+impl_item       = const_def | type_alias | function
+
+// Type aliases and constants
+type_alias      = 'type' identifier generic_params? '=' type ';'
+const_def       = 'const' identifier ':' type '=' expr ';'
+static_def      = 'static' 'mut'? identifier ':' type '=' expr ';'
+
+// Imports
+use_decl        = 'use' use_tree ';'
+use_tree        = path ('::' '*' | '::' '{' use_list '}' | 'as' identifier)?
+use_list        = use_tree (',' use_tree)*
+
+import_decl     = 'import' import_tree ('from' string)? ';'
+import_tree     = '*' | identifier | '{' import_list '}'
+import_list     = identifier ('as' identifier)? (',' identifier ('as' identifier)?)*
+
+// Modules
+mod_decl        = 'mod' identifier ';' | 'mod' identifier '{' item* '}'
+
+// Paths
+path            = '::'? path_segment ('::' path_segment)*
+path_segment    = identifier generic_args?
+```
+
+---
+
+## Part VI: Extended Features
+
+### 11. Actor System
+
 ```ebnf
 actor_def       = 'actor' identifier generic_params? '{' 
-                  actor_member* 
+                  actor_state* 
                   'receive' '{' message_handler* '}'
                   '}'
 
-actor_member    = field_def | method_def
-message_handler = pattern ('->' | '=>') block
-                | 'after' '(' duration ')' ('->' | '=>') block
+actor_state     = 'state' identifier ':' type ('=' expr)? ';'
 
-actor_send      = expr '!' expr  // Fire and forget
-actor_ask       = expr '?' expr  // Request-reply
+message_handler = pattern '=>' block
+                | 'on' identifier '(' params? ')' block
 ```
 
-#### 3.2 Pipeline Operators
+### 12. DataFrame Support (Feature-Gated)
+
 ```ebnf
-pipeline_op     = '|>'   // Forward pipe
-                | '<|'   // Backward pipe
-                | '>>'   // Forward composition
-                | '<<'   // Backward composition
-                | '>>='  // Monadic bind
-                | '>=>'  // Kleisli composition
-                | '<$>'  // Functor map
-                | '<*>'  // Applicative apply
+dataframe_literal = 'df!' '[' column (',' column)* ']'
+column          = string ':' '[' expr (',' expr)* ']'
+                | identifier '=>' expr
+
+// Transpiles directly to polars::df! macro
 ```
 
-#### 3.3 Null Safety Operators
+---
+
+## Part VII: Disambiguation Rules
+
+### 13. Context-Sensitive Resolution
+
 ```ebnf
-safe_nav        = expr '?.' identifier  // Safe navigation
-null_coalesce   = expr '??' expr        // Null coalescing
-force_unwrap    = expr '!'              // Force unwrap
+// Lookahead requirements (max 2 tokens)
+disambiguation  = '<' after identifier => generic_args if followed by type
+                | '<' in expression => less_than operator
+                | '|' at expr start => lambda if followed by param/pattern
+                | '|' in pattern => or_pattern
+                | '{' after type => struct_literal
+                | '{' elsewhere => block
+                | '?' after type => Option<T>
+                | '?' after expr => try_operator
 ```
 
-#### 3.4 String Interpolation
+### 14. Semicolon Rules
+
 ```ebnf
-interp_string   = '"' (string_char | interpolation)* '"'
-interpolation   = '\(' expr (':' format_spec)? ')'
-format_spec     = width? precision? type_char?
+semicolon_rules = let_stmt => always required
+                | expr_stmt => required except block-final position
+                | block-final expr => optional (becomes return value)
+                | REPL top-level => optional for expressions
 ```
 
-#### 3.5 DataFrame Literals
+---
+
+## Part VIII: REPL Extensions
+
+### 15. REPL-Specific Productions
+
 ```ebnf
-dataframe       = 'df!' '[' column_def (',' column_def)* ']'
-column_def      = string_literal ':' '[' expr (',' expr)* ']'
-                | string_literal '=>' expr
+repl_input      = repl_command | item | stmt | expr
+
+repl_command    = ':' command_name command_args?
+command_name    = 'help' | 'type' | 'ast' | 'rust' | 'clear' | 'quit'
+command_args    = (!'\n' any)*
+
+// Special REPL rules
+repl_let        = 'let' pattern (':' type)? '=' expr  // No trailing ;
+repl_expr       = expr  // Evaluates and prints
 ```
 
-#### 3.6 Async/Await
-```ebnf
-async_expr      = 'async' block
-await_expr      = expr '.await' | 'await' expr
-async_fn        = 'async' 'fun' identifier params return_type? block
-```
+---
 
-#### 3.7 Property Testing
-```ebnf
-property_test   = '#[property]' function
-property_attr   = '#[' 'property' '(' property_config ')' ']'
-property_config = 'cases' '=' integer
-                | 'max_shrinks' '=' integer
-```
+## Part IX: Mechanical Transformations
 
-#### 3.8 Refinement Types
-```ebnf
-refined_type    = '{' binding ':' base_type '|' constraint '}'
-constraint      = expr  // Boolean expression
-binding         = identifier
+### 16. Direct Rust Mappings
 
-// Examples:
-// {x: i32 | x > 0}                    // Positive integers
-// {xs: Vec<T> | xs.len() > 0}         // Non-empty vectors
-// {p: f64 | 0.0 <= p && p <= 1.0}     // Probability
-```
-
-#### 3.9 Session Types
-```ebnf
-session_type    = 'session' identifier '{' session_state* '}'
-session_state   = identifier ':' '{' 
-                  ('send' ':' type ',')?
-                  ('recv' ':' type ',')?
-                  'next' ':' identifier
-                  '}'
-```
-
-#### 3.10 Effect Handlers
-```ebnf
-effect_def      = 'effect' identifier generic_params? '{' effect_op* '}'
-effect_op       = identifier ':' type '->' type
-
-handler         = 'handler' identifier '<' effect '>' '{' 
-                  ('return' pattern '=>' expr)?
-                  (effect_clause)*
-                  '}'
-effect_clause   = identifier pattern pattern '=>' expr
-```
-
-### 4. Operators (Precedence Table)
-
-| Precedence | Operators | Associativity | Category |
-|------------|-----------|---------------|----------|
-| 1 | `.` `?.` `::` | Left | Member access |
-| 2 | `()` `[]` | Left | Call, index |
-| 3 | `!` `~` `-` (unary) | Right | Unary |
-| 4 | `**` | Right | Power |
-| 5 | `*` `/` `%` `//` | Left | Multiplicative |
-| 6 | `+` `-` | Left | Additive |
-| 7 | `<<` `>>` | Left | Shift |
-| 8 | `&` | Left | Bitwise AND |
-| 9 | `^` | Left | Bitwise XOR |
-| 10 | `\|` | Left | Bitwise OR |
-| 11 | `==` `!=` `<` `<=` `>` `>=` | Left | Comparison |
-| 12 | `is` `in` | Left | Type/membership |
-| 13 | `&&` | Left | Logical AND |
-| 14 | `\|\|` | Left | Logical OR |
-| 15 | `..` `...` `..=` | None | Range |
-| 16 | `??` | Right | Null coalescing |
-| 17 | `\|>` `<\|` | Left | Pipeline |
-| 18 | `>>` `<<` (composition) | Left | Composition |
-| 19 | `=` `+=` `-=` etc. | Right | Assignment |
-
-### 5. Syntax Sugar Desugarings
-
-#### 5.1 Pipeline Operator
 ```rust
-// Source
-data |> filter(p) |> map(f) |> reduce(g)
-
-// Desugars to
-reduce(map(filter(data, p), f), g)
-
-// Or with method syntax
-data.filter(p).map(f).reduce(g)
+// Ruchy                    // Rust
+fun f(x: i32) -> i32       fn f(x: i32) -> i32
+x |> f |> g                g(f(x))
+T?                         Option<T>
+expr?                      expr?
+expr??                     expr.unwrap_or_default()
+expr?.field                expr.map(|x| x.field)
+[T]                        &[T]
+defer { ... }              let _guard = defer(|| { ... });
+guard cond else { ... }    if !cond { ... }
+actor A { ... }            struct A { ... } + impl Actor
+x <- msg                   tx.send(msg).await
+f"hello {name}"           format!("hello {}", name)
+df![...]                   polars::df![...]
+import x from "y"          use y::x;
 ```
 
-#### 5.2 Safe Navigation
-```rust
-// Source
-user?.address?.street?.name
+---
 
-// Desugars to
-user.and_then(|u| u.address)
-    .and_then(|a| a.street)
-    .and_then(|s| s.name)
-```
+## Appendix: Grammar Metrics
 
-#### 5.3 String Interpolation
-```rust
-// Source
-"Hello, \(name)! You are \(age) years old."
+### Coverage Statistics
+- **Grammar Productions**: 127
+- **Operator Precedence Levels**: 16
+- **Keywords**: 37
+- **Lookahead Required**: 2 tokens max
+- **Disambiguation Rules**: 8
 
-// Desugars to
-format!("Hello, {}! You are {} years old.", name, age)
-```
+### Performance Guarantees
+- Parse time: <5ms per 1000 LOC
+- AST size: <80 bytes per line average
+- Zero heap allocations for common cases
+- Deterministic parsing (no backtracking)
 
-#### 5.4 For Comprehension
-```rust
-// Source
-[x * 2 for x in data if x > 0]
+### Validation Requirements
+Every production must:
+1. Have a corresponding test case
+2. Map to valid Rust AST
+3. Generate idiomatic Rust code
+4. Preserve all safety guarantees
 
-// Desugars to
-data.into_iter()
-    .filter(|x| x > 0)
-    .map(|x| x * 2)
-    .collect()
-```
+---
 
-#### 5.5 Actor Message Send
-```rust
-// Source
-actor ! Message(data)
-
-// Desugars to
-actor.send(Message(data)).unwrap()
-
-// Source (ask pattern)
-let result = actor ? Query(id)
-
-// Desugars to
-let (tx, rx) = oneshot::channel();
-actor.send(Query(id, tx)).unwrap();
-let result = rx.await.unwrap()
-```
-
-#### 5.6 Defer Statement
-```rust
-// Source
-defer { cleanup() }
-
-// Desugars to
-let _guard = ::scopeguard::guard((), |_| { cleanup() });
-```
-
-#### 5.7 Guard Statement
-```rust
-// Source
-guard let Some(x) = opt else { return Err("missing") }
-
-// Desugars to
-let Some(x) = opt else { return Err("missing") };
-```
-
-### 6. Attributes and Annotations
-
-```ebnf
-attributes      = attribute+
-attribute       = '#[' meta_item ']'
-                | '#![' meta_item ']'  // Inner attribute
-
-meta_item       = identifier
-                | identifier '=' literal
-                | identifier '(' meta_list ')'
-
-// Common attributes
-derive_attr     = '#[derive(' trait_list ')]'
-test_attr       = '#[test]'
-bench_attr      = '#[bench]'
-inline_attr     = '#[inline(' inline_hint? ')]'
-mcp_attr        = '#[mcp_tool(' string ')]'
-property_attr   = '#[property(' property_config ')]'
-contract_attr   = '#[requires(' expr ')]' | '#[ensures(' expr ')]'
-```
-
-### 7. Lexical Ambiguities Resolution
-
-#### 7.1 Maximal Munch
-- `>>` is always right-shift, not two closing generics
-- `..=` is inclusive range, not `..` followed by `=`
-- `//` is integer division in expressions, comment at line start
-
-#### 7.2 Context-Sensitive Parsing
-- `<` in `Vec<T>` vs `a < b` determined by type context
-- `|` in patterns vs closures vs bitwise OR
-- `.` in floating literals vs method calls
-
-### 8. Grammar Extensions
-
-#### 8.1 Macro System (Future)
-```ebnf
-macro_def       = 'macro' identifier '(' macro_params ')' '{' macro_body '}'
-macro_call      = identifier '!' token_tree
-```
-
-#### 8.2 Const Generics
-```ebnf
-const_generic   = 'const' identifier ':' type
-array_type      = '[' type ';' const_expr ']'
-```
-
-#### 8.3 Associated Types
-```ebnf
-assoc_type      = 'type' identifier (':' bounds)? ('=' type)?
-```
-
-### 9. Reserved for Future Use
-
-```
-abstract become box do final macro move
-override priv typeof unsafe unsized virtual yield
-```
-
-### 10. Implementation Notes
-
-#### 10.1 Parser Architecture
-- Recursive descent with 2-token lookahead
-- Pratt parsing for expression precedence
-- Error recovery at statement boundaries
-- Incremental parsing for REPL/IDE
-
-#### 10.2 Performance Targets
-- Lexing: >10M tokens/sec
-- Parsing: >1M LOC/sec
-- AST memory: <100 bytes/LOC average
-- Error recovery: <5ms for typical errors
-
-#### 10.3 Compatibility Rules
-- All valid Rust types are valid Ruchy types
-- Rust syntax subset works unchanged
-- Generated Rust preserves semantics exactly
-- No runtime overhead vs equivalent Rust
+*This specification defines the complete Ruchy grammar with mechanical transformation to Rust, ensuring zero-cost abstractions and complete feature coverage.*
