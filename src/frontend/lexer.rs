@@ -21,6 +21,34 @@ pub enum Token {
     })]
     String(String),
 
+    #[regex(r#"f"([^"\\]|\\.)*""#, |lex| {
+        let s = lex.slice();
+        // Remove f" prefix and " suffix
+        Some(s[2..s.len()-1].to_string())
+    })]
+    FString(String),
+
+    #[regex(r"'([^'\\]|\\.)'", |lex| {
+        let s = lex.slice();
+        let inner = &s[1..s.len()-1];
+        if inner.len() == 1 {
+            inner.chars().next()
+        } else if inner.starts_with('\\') && inner.len() == 2 {
+            match inner.chars().nth(1) {
+                Some('n') => Some('\n'),
+                Some('t') => Some('\t'),
+                Some('r') => Some('\r'),
+                Some('\\') => Some('\\'),
+                Some('\'') => Some('\''),
+                Some('0') => Some('\0'),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    })]
+    Char(char),
+
     #[token("true", |_| true)]
     #[token("false", |_| false)]
     Bool(bool),

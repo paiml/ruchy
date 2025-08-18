@@ -235,6 +235,7 @@ impl Transpiler {
             }
             Literal::String(s) => quote! { #s },
             Literal::Bool(b) => quote! { #b },
+            Literal::Char(c) => quote! { #c },
             Literal::Unit => quote! { () },
         }
     }

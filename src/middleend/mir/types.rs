@@ -181,6 +181,8 @@ pub enum Constant {
     Float(f64, Type),
     /// String literal
     String(String),
+    /// Character literal
+    Char(char),
 }
 
 /// Binary operations

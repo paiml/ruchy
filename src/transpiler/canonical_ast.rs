@@ -43,6 +43,7 @@ pub enum CoreLiteral {
     Float(f64),
     String(String),
     Bool(bool),
+    Char(char),
     Unit,
 }
 
@@ -333,6 +334,7 @@ impl AstNormalizer {
             Literal::Float(f) => CoreLiteral::Float(*f),
             Literal::String(s) => CoreLiteral::String(s.clone()),
             Literal::Bool(b) => CoreLiteral::Bool(*b),
+            Literal::Char(c) => CoreLiteral::Char(*c),
             Literal::Unit => CoreLiteral::Unit,
         })
     }

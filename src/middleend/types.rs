@@ -26,6 +26,8 @@ pub enum MonoType {
     Bool,
     /// String type
     String,
+    /// Character type
+    Char,
     /// Unit type ()
     Unit,
     /// Function type: T1 -> T2
@@ -50,6 +52,7 @@ impl fmt::Display for MonoType {
             MonoType::Float => write!(f, "f64"),
             MonoType::Bool => write!(f, "bool"),
             MonoType::String => write!(f, "String"),
+            MonoType::Char => write!(f, "char"),
             MonoType::Unit => write!(f, "()"),
             MonoType::Function(arg, ret) => write!(f, "({arg} -> {ret})"),
             MonoType::List(elem) => write!(f, "[{elem}]"),

@@ -1,4 +1,7 @@
-//! DataFrame pipeline example demonstrating data science workflows
+//! `DataFrame` pipeline example demonstrating data science workflows
+
+#![allow(clippy::print_stdout)]
+#![allow(clippy::uninlined_format_args)]
 
 use anyhow::Result;
 use ruchy::runtime::Repl;

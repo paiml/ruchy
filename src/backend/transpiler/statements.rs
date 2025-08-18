@@ -156,13 +156,16 @@ impl Transpiler {
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
 
-        // Check if this is a DataFrame constructor or column function
+        // Check if this is a DataFrame constructor, column function, or macro
         if let ExprKind::Identifier(name) = &func.kind {
             if name == "col" && args.len() == 1 {
                 // Special handling for col() function in DataFrame context
                 if let ExprKind::Literal(Literal::String(col_name)) = &args[0].kind {
                     return Ok(quote! { polars::prelude::col(#col_name) });
                 }
+            } else if name == "println" || name == "print" || name == "dbg" || name == "panic" {
+                // These are macros in Rust, not functions
+                return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
             }
         }
 

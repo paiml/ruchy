@@ -249,6 +249,7 @@ pub enum Literal {
     Float(f64),
     String(String),
     Bool(bool),
+    Char(char),
     Unit,
 }
 
