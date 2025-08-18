@@ -1,6 +1,6 @@
 # Ruchy: Complete Language and System Specification
 
-*Version 6.0 - Single source of truth consolidating all 30 specification documents*
+*Version 7.0 - Single source of truth consolidating all 31 specification documents*
 
 ## Table of Contents
 
@@ -12,41 +12,42 @@
 5. [Lexer Specification](#5-lexer-specification)
 6. [Script Capability Specification](#6-script-capability-specification)
 7. [Classes Specification](#7-classes-specification)
+8. [Functional Programming Specification](#8-functional-programming-specification)
 
 ### Architecture Specifications
-8. [MCP Message-Passing Architecture](#8-mcp-message-passing-architecture)
-9. [LSP Specification](#9-lsp-specification)
-10. [Critical Missing Components](#10-critical-missing-components)
-11. [Binary Architecture](#11-binary-architecture)
-12. [Edge Cases Specification](#12-edge-cases-specification)
-13. [REPL Testing Specification](#13-repl-testing-specification)
-14. [REPL UX Specification](#14-repl-ux-specification)
-15. [Docker Specification](#15-docker-specification)
+9. [MCP Message-Passing Architecture](#9-mcp-message-passing-architecture)
+10. [LSP Specification](#10-lsp-specification)
+11. [Critical Missing Components](#11-critical-missing-components)
+12. [Binary Architecture](#12-binary-architecture)
+13. [Edge Cases Specification](#13-edge-cases-specification)
+14. [REPL Testing Specification](#14-repl-testing-specification)
+15. [REPL UX Specification](#15-repl-ux-specification)
+16. [Docker Specification](#16-docker-specification)
 
 ### Integration Specifications
-16. [Cargo Integration](#16-cargo-integration)
-17. [Depyler Integration](#17-depyler-integration)
-18. [Rust Cargo InterOp](#18-rust-cargo-interop)
+17. [Cargo Integration](#17-cargo-integration)
+18. [Depyler Integration](#18-depyler-integration)
+19. [Rust Cargo InterOp](#19-rust-cargo-interop)
 
 ### Execution Mode Specifications
-19. [One-Liner and Script Execution](#19-one-liner-and-script-execution)
-20. [Disassembly Specification](#20-disassembly-specification)
-21. [Advanced Mathematical REPL](#21-advanced-mathematical-repl)
+20. [One-Liner and Script Execution](#20-one-liner-and-script-execution)
+21. [Disassembly Specification](#21-disassembly-specification)
+22. [Advanced Mathematical REPL](#22-advanced-mathematical-repl)
 
 ### Quality & Testing Specifications
-22. [Quality Gates](#22-quality-gates)
-23. [Provability](#23-provability)
-24. [Lint Specification](#24-lint-specification)
+23. [Quality Gates](#23-quality-gates)
+24. [Provability](#24-provability)
+25. [Lint Specification](#25-lint-specification)
 
 ### Project Management
-25. [Master TODO](#25-master-todo)
-26. [Project Status](#26-project-status)
-27. [Deep Context](#27-deep-context)
+26. [Master TODO](#26-master-todo)
+27. [Project Status](#27-project-status)
+28. [Deep Context](#28-deep-context)
 
 ### External Dependencies
-28. [PMAT Integration](#28-pmat-integration)
-29. [PDMT Integration](#29-pdmt-integration)
-30. [External Tool Dependencies](#30-external-tool-dependencies)
+29. [PMAT Integration](#29-pmat-integration)
+30. [PDMT Integration](#30-pdmt-integration)
+31. [External Tool Dependencies](#31-external-tool-dependencies)
 
 ---
 
@@ -238,28 +239,6 @@ panic!("Unexpected state: {state}")
 // Assertions
 assert!(x > 0, "x must be positive")
 assert_eq!(result, expected)
-```
-
-#### Built-in Functions
-
-```rust
-// I/O Functions
-println(args...)          // Print to stdout with newline
-print(args...)           // Print to stdout without newline
-
-// Examples
-println("Hello, World!")
-println("x =", x, "y =", y)
-print("Loading...")
-print(".")  // Progress indicator
-
-// All I/O functions return unit type ()
-let result = println("test")  // result is ()
-
-// Future built-ins (not yet implemented)
-input(prompt: String) -> String      // Read from stdin
-format(fmt: String, args...) -> String  // String formatting
-debug(value: T) -> T                // Debug print and passthrough
 ```
 
 ### 1.4 Collections and Iterators
@@ -1207,7 +1186,415 @@ impl ClassTranspiler {
 }
 ```
 
-## 8. MCP Message-Passing Architecture
+## 8. Functional Programming Specification
+
+### 8.1 Core Functional Primitives
+
+Ruchy provides first-class functions with zero allocation overhead through aggressive inlining and monomorphization.
+
+```rust
+// Function types are structural, not nominal
+type Predicate<T> = fun(T) -> bool
+type Transform<A, B> = fun(A) -> B
+type Reducer<T, Acc> = fun(Acc, T) -> Acc
+
+// Higher-order functions with type inference
+fun map<T, U>(list: [T], f: fun(T) -> U) -> [U] {
+    list.iter().map(f).collect()
+}
+
+// Currying via closures - zero cost when inlined
+fun add(x: i32) -> fun(i32) -> i32 {
+    |y| x + y
+}
+
+let add5 = add(5)
+let result = add5(10)  // 15
+```
+
+### 8.2 Algebraic Data Types
+
+```rust
+// Sum types with pattern matching
+enum Option<T> {
+    Some(T),
+    None,
+}
+
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+
+// Product types via tuples and records
+type Point2D = (f64, f64)
+type Person = { name: String, age: u32 }
+
+// Recursive types
+enum List<T> {
+    Cons(T, Box<List<T>>),
+    Nil,
+}
+
+// Pattern matching with guards and bindings
+fun length<T>(list: List<T>) -> usize {
+    match list {
+        Nil => 0,
+        Cons(_, tail) => 1 + length(*tail),
+    }
+}
+```
+
+### 8.3 Immutability by Default
+
+```rust
+// Immutable bindings
+let x = 42       // Immutable
+var y = 42       // Mutable (explicit)
+
+// Persistent data structures via Rc/Arc
+class PersistentVector<T> {
+    root: Arc<Node<T>>,
+    
+    fun push(&self, value: T) -> Self {
+        // Structural sharing - O(log n)
+        Self {
+            root: self.root.add(value),
+        }
+    }
+}
+
+// Copy-on-write semantics for efficiency
+fun update_field(record: Person) -> Person {
+    { ...record, age: record.age + 1 }  // Only age cloned
+}
+```
+
+### 8.4 Lazy Evaluation
+
+```rust
+// Lazy sequences via iterators
+lazy val fibonacci: Iterator<u64> = {
+    Iterator::unfold((0, 1), |(a, b)| {
+        Some((*a, (*b, *a + *b)))
+    })
+}
+
+// Thunks for deferred computation
+class Lazy<T> {
+    cell: OnceCell<T>,
+    init: Box<dyn FnOnce() -> T>,
+    
+    fun force(&self) -> &T {
+        self.cell.get_or_init(|| (self.init)())
+    }
+}
+
+// Stream processing with lazy transformations
+let result = (0..)
+    |> filter(|x| x % 2 == 0)
+    |> map(|x| x * x)
+    |> take(10)
+    |> collect()
+```
+
+### 8.5 Monadic Composition
+
+```rust
+// Option monad
+impl<T> Option<T> {
+    fun bind<U>(self, f: fun(T) -> Option<U>) -> Option<U> {
+        match self {
+            Some(x) => f(x),
+            None => None,
+        }
+    }
+    
+    fun map<U>(self, f: fun(T) -> U) -> Option<U> {
+        self.bind(|x| Some(f(x)))
+    }
+}
+
+// Result monad for error handling
+impl<T, E> Result<T, E> {
+    fun and_then<U>(self, f: fun(T) -> Result<U, E>) -> Result<U, E> {
+        match self {
+            Ok(x) => f(x),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+// Do-notation via ? operator
+fun divide_and_add(x: f64, y: f64, z: f64) -> Result<f64, String> {
+    let quotient = divide(x, y)?
+    let sum = add(quotient, z)?
+    Ok(sum)
+}
+```
+
+### 8.6 Function Composition
+
+```rust
+// Composition operators
+infix fun <A, B, C> (>>)(f: fun(A) -> B, g: fun(B) -> C) -> fun(A) -> C {
+    |x| g(f(x))
+}
+
+infix fun <A, B, C> (<<)(g: fun(B) -> C, f: fun(A) -> B) -> fun(A) -> C {
+    |x| g(f(x))
+}
+
+// Point-free style
+let process = parse >> validate >> transform >> serialize
+
+// Kleisli composition for monadic functions
+infix fun <A, B, C> (>=>)(
+    f: fun(A) -> Result<B, E>,
+    g: fun(B) -> Result<C, E>
+) -> fun(A) -> Result<C, E> {
+    |x| f(x).and_then(g)
+}
+```
+
+### 8.7 Partial Application
+
+```rust
+// Automatic currying for multi-parameter functions
+fun fold<T, Acc>(list: [T], init: Acc, f: fun(Acc, T) -> Acc) -> Acc {
+    list.iter().fold(init, f)
+}
+
+// Partial application via underscore
+let sum = fold(_, 0, |acc, x| acc + x)
+let total = sum([1, 2, 3, 4, 5])  // 15
+
+// Operator sections
+let increment = (_ + 1)
+let doubled = map(numbers, _ * 2)
+```
+
+### 8.8 Tail Call Optimization
+
+```rust
+// TCO via loop transformation
+#[tailrec]
+fun factorial(n: u64, acc: u64 = 1) -> u64 {
+    if n == 0 {
+        acc
+    } else {
+        factorial(n - 1, n * acc)  // Becomes loop
+    }
+}
+
+// Trampoline for mutual recursion
+enum Trampoline<T> {
+    Done(T),
+    More(Box<dyn FnOnce() -> Trampoline<T>>),
+}
+
+fun run_trampoline<T>(mut t: Trampoline<T>) -> T {
+    loop {
+        match t {
+            Done(x) => return x,
+            More(f) => t = f(),
+        }
+    }
+}
+```
+
+### 8.9 Effect System (Future)
+
+```rust
+// Algebraic effects for pure functional I/O
+effect IO {
+    fun print(s: String)
+    fun read() -> String
+}
+
+effect State<S> {
+    fun get() -> S
+    fun put(s: S)
+}
+
+// Effect handlers
+fun handle_io<T>(comp: T with IO) -> T {
+    handle comp {
+        print(s) => { 
+            println!("{}", s);
+            resume(())
+        },
+        read() => {
+            let input = std::io::stdin().read_line();
+            resume(input)
+        }
+    }
+}
+
+// Effect composition
+fun program() with IO + State<i32> {
+    let name = perform read()
+    perform print("Hello, {name}")
+    let count = perform get()
+    perform put(count + 1)
+}
+```
+
+### 8.10 Optics (Lenses & Prisms)
+
+```rust
+// Lenses for nested record updates
+class Lens<S, A> {
+    get: fun(&S) -> &A,
+    set: fun(S, A) -> S,
+    
+    fun modify(&self, s: S, f: fun(A) -> A) -> S {
+        let value = (self.get)(&s);
+        (self.set)(s, f(value.clone()))
+    }
+    
+    // Lens composition
+    fun compose<B>(self, other: Lens<A, B>) -> Lens<S, B> {
+        Lens {
+            get: |s| other.get(self.get(s)),
+            set: |s, b| self.set(s, other.set(self.get(s).clone(), b)),
+        }
+    }
+}
+
+// Usage
+let address_lens = Lens::new(|p: &Person| &p.address);
+let city_lens = Lens::new(|a: &Address| &a.city);
+let person_city = address_lens.compose(city_lens);
+
+let updated = person_city.set(person, "New York");
+```
+
+### 8.11 Type Classes (via Traits)
+
+```rust
+// Functor type class
+trait Functor<F<_>> {
+    fun map<A, B>(fa: F<A>, f: fun(A) -> B) -> F<B>
+}
+
+impl Functor for Option {
+    fun map<A, B>(fa: Option<A>, f: fun(A) -> B) -> Option<B> {
+        match fa {
+            Some(a) => Some(f(a)),
+            None => None,
+        }
+    }
+}
+
+// Monad type class
+trait Monad<M<_>>: Functor<M> {
+    fun pure<A>(a: A) -> M<A>
+    fun bind<A, B>(ma: M<A>, f: fun(A) -> M<B>) -> M<B>
+}
+
+// Traverse and sequence
+trait Traversable<T<_>>: Functor<T> {
+    fun traverse<F<_>: Applicative, A, B>(
+        ta: T<A>,
+        f: fun(A) -> F<B>
+    ) -> F<T<B>>
+}
+```
+
+### 8.12 Memoization
+
+```rust
+// Automatic memoization for pure functions
+#[memoize]
+fun fibonacci(n: u64) -> u64 {
+    match n {
+        0 | 1 => n,
+        _ => fibonacci(n - 1) + fibonacci(n - 2),
+    }
+}
+
+// Manual memoization with cache control
+class Memoized<K: Hash + Eq, V: Clone> {
+    cache: DashMap<K, V>,
+    compute: Box<dyn Fn(K) -> V>,
+    
+    fun call(&self, key: K) -> V {
+        self.cache.entry(key.clone())
+            .or_insert_with(|| (self.compute)(key))
+            .clone()
+    }
+}
+```
+
+### 8.13 Functional Data Transformations
+
+```rust
+// Transducers for composable transformations
+type Transducer<A, B, R> = fun(fun(R, B) -> R) -> fun(R, A) -> R
+
+fun mapping<A, B, R>(f: fun(A) -> B) -> Transducer<A, B, R> {
+    |reducer| |acc, item| reducer(acc, f(item))
+}
+
+fun filtering<A, R>(pred: fun(&A) -> bool) -> Transducer<A, A, R> {
+    |reducer| |acc, item| {
+        if pred(&item) {
+            reducer(acc, item)
+        } else {
+            acc
+        }
+    }
+}
+
+// Composition of transducers
+let xform = mapping(|x| x * 2) >> filtering(|x| x > 10)
+let result = transduce(xform, vec::push, vec![], input)
+```
+
+### 8.14 Transpilation Strategy
+
+```rust
+impl FunctionalTranspiler {
+    fn transpile_closure(&self, closure: &Closure) -> TokenStream {
+        match closure.captures.len() {
+            0 => {
+                // Zero captures: fn pointer
+                quote! { #body }
+            }
+            n if n <= 3 => {
+                // Small captures: stack closure
+                quote! { move |#params| #body }
+            }
+            _ => {
+                // Large captures: Box<dyn Fn>
+                quote! { Box::new(move |#params| #body) }
+            }
+        }
+    }
+    
+    fn optimize_tail_call(&self, func: &Function) -> TokenStream {
+        if func.is_tail_recursive() {
+            // Transform to loop
+            self.generate_loop_form(func)
+        } else {
+            self.standard_codegen(func)
+        }
+    }
+    
+    fn inline_hof(&self, call: &HigherOrderCall) -> TokenStream {
+        if call.is_monomorphic() && call.closure.is_small() {
+            // Inline closure at call site
+            self.inline_expansion(call)
+        } else {
+            // Dynamic dispatch
+            self.trait_object_call(call)
+        }
+    }
+}
+```
+
+## 9. MCP Message-Passing Architecture
 
 ### 7.1 Actor Model with MCP Integration
 

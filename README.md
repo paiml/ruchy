@@ -110,7 +110,9 @@ fun analyze_data(df: DataFrame) -> DataFrame {
 - **Error Recovery**: Parser continues on malformed input
 - **Defect Elimination**: Systematic removal of entire bug classes
 
-## Getting Started
+## 🚀 Getting Started - The Golden Path
+
+The best way to learn Ruchy is through the REPL (Read-Eval-Print Loop), just like Elixir, Julia, or Python. Start with simple expressions and build up to complex programs.
 
 ### Installation
 
@@ -120,54 +122,113 @@ git clone https://github.com/paiml/ruchy
 cd ruchy
 cargo build --release
 
-# Run the REPL
+# Start the interactive REPL (recommended for learning!)
 cargo run -p ruchy-cli -- repl
-
-# Transpile a file
-cargo run -p ruchy-cli -- transpile examples/hello.ruchy
 ```
 
-### Quick Examples
+### 📚 Your First Ruchy Session
 
-#### Basic Function with Type Inference
+Start the REPL and try these examples that **work today**:
+
 ```ruchy
-fun greet(name) {
-    "Hello, {name}!"
-}
+Welcome to Ruchy REPL v0.4.0
+Type :help for commands, :quit to exit
+
+ruchy> 1 + 2
+3
+
+ruchy> let x = 10
+10
+
+ruchy> let y = 20  
+20
+
+ruchy> x + y
+30
+
+ruchy> println("Hello, World!")
+Hello, World!
+()
+
+ruchy> let name = "Ruchy"
+"Ruchy"
+
+ruchy> println("Welcome to", name, "!")
+Welcome to Ruchy !
+()
+
+ruchy> if x > 5 { "big" } else { "small" }
+"big"
+
+ruchy> let numbers = [1, 2, 3, 4, 5]
+1
+
+ruchy> fun double(n: i32) -> i32 { n * 2 }
+"fn double(n)"
 ```
 
-#### Async Programming
+**📖 Full REPL Guide**: See [docs/REPL_GUIDE.md](docs/REPL_GUIDE.md) for comprehensive examples and patterns.
+
+### Working Examples
+
+#### Variables and Arithmetic
 ```ruchy
-async fun fetch_data(url: String) -> Result<String> {
-    let response = http_get(url).await?;
-    response.text().await
-}
+ruchy> let price = 100
+100
+
+ruchy> let tax_rate = 0.08  
+0.08
+
+ruchy> let total = price + (price * tax_rate)
+Error: Type mismatch  # Oops! Need same types
+
+ruchy> let price = 100.0
+100.0
+
+ruchy> let total = price + (price * tax_rate)
+108.0
 ```
 
-#### Actor Concurrency
+#### String Operations  
 ```ruchy
-actor Counter {
-    count: i32 = 0,
-    
-    receive {
-        Increment => self.count += 1,
-        GetCount(reply) => reply.send(self.count)
-    }
-}
+ruchy> "Hello" + " World"
+"Hello World"
 
-fun main() {
-    let counter = spawn!(Counter);
-    counter ! Increment;
-    let result = counter ? GetCount;
-}
+ruchy> let greeting = "Welcome"
+"Welcome"
+
+ruchy> greeting + " to Ruchy!"
+"Welcome to Ruchy!"
 ```
 
-#### Property-Based Testing
+#### Control Flow
 ```ruchy
-#[property]
-fun test_addition_commutative(a: i32, b: i32) {
-    assert_eq!(a + b, b + a);
+ruchy> let age = 18
+18
+
+ruchy> if age >= 18 { "adult" } else { "minor" }
+"adult"
+
+ruchy> match age {
+    0..13 => "child",
+    13..18 => "teen",
+    _ => "adult"
 }
+"adult"
+```
+
+#### Functions (Definition)
+```ruchy
+ruchy> fun add(a: i32, b: i32) -> i32 { a + b }
+"fn add(a, b)"
+
+ruchy> fun greet(name: String) { 
+    println("Hello", name)
+}
+"fn greet(name)"
+
+ruchy> |x| x * 2  # Lambda expression
+"|x| <body>"
 ```
 
 ## Usage
