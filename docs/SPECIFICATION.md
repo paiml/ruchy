@@ -1,6 +1,6 @@
 # Ruchy: Complete Language and System Specification
 
-*Version 8.0 - Single source of truth consolidating all 32 specification documents*
+*Version 9.0 - Single source of truth consolidating all 33 specification documents*
 
 ## Table of Contents
 
@@ -51,6 +51,7 @@
 
 ### Appendices
 32. [Complete Grammar Definition](#32-complete-grammar-definition)
+33. [Meta-Specification](#33-meta-specification)
 
 ---
 

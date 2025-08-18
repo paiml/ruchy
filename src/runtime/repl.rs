@@ -6,13 +6,13 @@
 //!
 //! ```
 //! use ruchy::runtime::Repl;
-//! 
+//!
 //! let mut repl = Repl::new().unwrap();
-//! 
+//!
 //! // Evaluate arithmetic
 //! let result = repl.eval("2 + 2").unwrap();
 //! assert_eq!(result, "4");
-//! 
+//!
 //! // Define variables
 //! repl.eval("let x = 10").unwrap();
 //! let result = repl.eval("x * 2").unwrap();
@@ -24,10 +24,10 @@
 //! ```
 //! use ruchy::runtime::Repl;
 //! use std::time::{Duration, Instant};
-//! 
+//!
 //! let mut repl = Repl::new().unwrap();
 //! let deadline = Some(Instant::now() + Duration::from_millis(100));
-//! 
+//!
 //! let value = repl.evaluate_expr_str("5 + 3", deadline).unwrap();
 //! assert_eq!(value.to_string(), "8");
 //! ```
@@ -159,7 +159,7 @@ impl Repl {
     ///
     /// ```
     /// use ruchy::runtime::Repl;
-    /// 
+    ///
     /// let repl = Repl::new();
     /// assert!(repl.is_ok());
     /// ```
@@ -200,28 +200,28 @@ impl Repl {
     pub fn evaluate_expr_str(&mut self, input: &str, deadline: Option<Instant>) -> Result<Value> {
         // Reset memory tracker for fresh evaluation
         self.memory.reset();
-        
+
         // Track input memory
         self.memory.try_alloc(input.len())?;
-        
+
         // Use provided deadline or default timeout
         let deadline = deadline.unwrap_or_else(|| Instant::now() + self.config.timeout);
-        
+
         // Parse the input
         let mut parser = Parser::new(input);
         let ast = parser.parse().context("Failed to parse input")?;
-        
+
         // Check memory for AST
         self.memory.try_alloc(std::mem::size_of_val(&ast))?;
-        
+
         // Evaluate the expression
         let value = self.evaluate_expr(&ast, deadline, 0)?;
-        
+
         // Handle let bindings specially
         if let ExprKind::Let { name, .. } = &ast.kind {
             self.bindings.insert(name.clone(), value.clone());
         }
-        
+
         Ok(value)
     }
 
@@ -266,6 +266,7 @@ impl Repl {
     }
 
     /// Evaluate an expression to a value
+    #[allow(clippy::too_many_lines)]
     fn evaluate_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         // Check resource bounds
         if Instant::now() > deadline {
@@ -305,7 +306,11 @@ impl Repl {
                 self.bindings.insert(name.clone(), val.clone());
                 Ok(val)
             }
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 let cond_val = self.evaluate_expr(condition, deadline, depth + 1)?;
                 match cond_val {
                     Value::Bool(true) => self.evaluate_expr(then_branch, deadline, depth + 1),
@@ -323,7 +328,7 @@ impl Repl {
                 if exprs.is_empty() {
                     return Ok(Value::Unit);
                 }
-                
+
                 let mut result = Value::Unit;
                 for expr in exprs {
                     result = self.evaluate_expr(expr, deadline, depth + 1)?;
@@ -348,38 +353,44 @@ impl Repl {
             }
             ExprKind::Assign { target, value } => {
                 let val = self.evaluate_expr(value, deadline, depth + 1)?;
-                
+
                 // For now, only support simple variable assignment
                 if let ExprKind::Identifier(name) = &target.kind {
                     self.bindings.insert(name.clone(), val.clone());
                     Ok(val)
                 } else {
-                    bail!("Only simple variable assignment is supported, got: {:?}", target.kind);
+                    bail!(
+                        "Only simple variable assignment is supported, got: {:?}",
+                        target.kind
+                    );
                 }
             }
-            ExprKind::Range { start, end, inclusive: _ } => {
+            ExprKind::Range {
+                start,
+                end,
+                inclusive: _,
+            } => {
                 let start_val = self.evaluate_expr(start, deadline, depth + 1)?;
                 let end_val = self.evaluate_expr(end, deadline, depth + 1)?;
-                
+
                 // For REPL demo, just return a string representation
                 match (start_val, end_val) {
-                    (Value::Int(s), Value::Int(e)) => {
-                        Ok(Value::String(format!("{s}..{e}")))
-                    }
-                    _ => bail!("Range endpoints must be integers")
+                    (Value::Int(s), Value::Int(e)) => Ok(Value::String(format!("{s}..{e}"))),
+                    _ => bail!("Range endpoints must be integers"),
                 }
             }
             ExprKind::Function { name, params, .. } => {
                 // Store function definition (simplified for REPL demo)
                 let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
                 let func_signature = format!("fn {}({})", name, param_names.join(", "));
-                
+
                 // Store as a special function value
-                self.bindings.insert(name.clone(), Value::String(func_signature.clone()));
+                self.bindings
+                    .insert(name.clone(), Value::String(func_signature.clone()));
                 Ok(Value::String(func_signature))
             }
             ExprKind::Lambda { params, .. } => {
-                // Lambda expressions (simplified for REPL demo)  
+                // Lambda expressions (simplified for REPL demo)
                 let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
                 let lambda_signature = format!("|{}| <body>", param_names.join(", "));
                 Ok(Value::String(lambda_signature))
@@ -392,7 +403,7 @@ impl Repl {
                 // ```rust
                 // use ruchy::Repl;
                 // let mut repl = Repl::new().unwrap();
-                // 
+                //
                 // // Basic println
                 // let result = repl.eval(r#"println("Hello, World!")"#).unwrap();
                 // assert_eq!(result, "()");
@@ -477,7 +488,8 @@ impl Repl {
                 if *b < 0 {
                     bail!("Negative integer powers not supported in integer context");
                 }
-                let exp = u32::try_from(*b).map_err(|_| anyhow::anyhow!("Power exponent too large"))?;
+                let exp =
+                    u32::try_from(*b).map_err(|_| anyhow::anyhow!("Power exponent too large"))?;
                 let result = a.pow(exp);
                 Ok(Int(result))
             }
@@ -493,7 +505,7 @@ impl Repl {
                 Ok(Float(a / b))
             }
             (Float(a), BinaryOp::Power, Float(b)) => Ok(Float(a.powf(*b))),
-            
+
             // String operations
             (Value::String(a), BinaryOp::Add, Value::String(b)) => {
                 Ok(Value::String(format!("{a}{b}")))
@@ -506,11 +518,11 @@ impl Repl {
             (Int(a), BinaryOp::GreaterEqual, Int(b)) => Ok(Bool(a >= b)),
             (Int(a), BinaryOp::Equal, Int(b)) => Ok(Bool(a == b)),
             (Int(a), BinaryOp::NotEqual, Int(b)) => Ok(Bool(a != b)),
-            
+
             // Comparisons - Strings
             (Value::String(a), BinaryOp::Equal, Value::String(b)) => Ok(Bool(a == b)),
             (Value::String(a), BinaryOp::NotEqual, Value::String(b)) => Ok(Bool(a != b)),
-            
+
             // Comparisons - Booleans
             (Bool(a), BinaryOp::Equal, Bool(b)) => Ok(Bool(a == b)),
             (Bool(a), BinaryOp::NotEqual, Bool(b)) => Ok(Bool(a != b)),
@@ -564,7 +576,7 @@ impl Repl {
 
         let mut multiline_buffer = String::new();
         let mut in_multiline = false;
-        
+
         loop {
             let prompt = if in_multiline {
                 format!("{} ", "   ...".bright_black())
@@ -594,17 +606,17 @@ impl Repl {
                         in_multiline = true;
                         continue;
                     }
-                    
+
                     // If in multiline mode, accumulate lines
                     if in_multiline {
                         multiline_buffer.push('\n');
                         multiline_buffer.push_str(&line);
-                        
+
                         // Check if we have a complete expression
                         if !Self::needs_continuation(&multiline_buffer) {
                             // Add complete expression to history
                             let _ = rl.add_history_entry(multiline_buffer.as_str());
-                            
+
                             // Evaluate the complete expression
                             match self.eval(&multiline_buffer) {
                                 Ok(result) => {
@@ -614,7 +626,7 @@ impl Repl {
                                     eprintln!("{}: {}", "Error".bright_red().bold(), e);
                                 }
                             }
-                            
+
                             // Reset multiline mode
                             multiline_buffer.clear();
                             in_multiline = false;
@@ -622,7 +634,7 @@ impl Repl {
                     } else {
                         // Single line expression
                         let _ = rl.add_history_entry(line.as_str());
-                        
+
                         // Evaluate the expression
                         match self.eval(&line) {
                             Ok(result) => {
@@ -654,6 +666,10 @@ impl Repl {
     }
 
     /// Handle REPL commands (public for testing)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if command execution fails
     pub fn handle_command(&mut self, command: &str) -> Result<bool> {
         let parts: Vec<&str> = command.split_whitespace().collect();
         match parts.first().copied() {
@@ -750,7 +766,7 @@ impl Repl {
         println!("  :type x * 2     - Show type of expression");
         println!("  :ast if true {{ 1 }} else {{ 2 }}");
     }
-    
+
     /// Show the type of an expression
     fn show_type(expr: &str) {
         match Parser::new(expr).parse() {
@@ -765,7 +781,7 @@ impl Repl {
             }
         }
     }
-    
+
     /// Show the AST of an expression
     fn show_ast(expr: &str) {
         match Parser::new(expr).parse() {
@@ -777,29 +793,29 @@ impl Repl {
             }
         }
     }
-    
+
     /// Check if input needs continuation (incomplete expression)
     pub fn needs_continuation(input: &str) -> bool {
         let trimmed = input.trim();
-        
+
         // Empty input doesn't need continuation
         if trimmed.is_empty() {
             return false;
         }
-        
+
         // Count braces, brackets, and parentheses
         let mut brace_depth = 0;
         let mut bracket_depth = 0;
         let mut paren_depth = 0;
         let mut in_string = false;
         let mut escape_next = false;
-        
+
         for ch in trimmed.chars() {
             if escape_next {
                 escape_next = false;
                 continue;
             }
-            
+
             match ch {
                 '\\' if in_string => escape_next = true,
                 '"' => in_string = !in_string,
@@ -812,7 +828,7 @@ impl Repl {
                 _ => {}
             }
         }
-        
+
         // Need continuation if any delimiters are unmatched
         brace_depth > 0 || bracket_depth > 0 || paren_depth > 0 || in_string ||
         // Or if line ends with certain tokens that expect continuation

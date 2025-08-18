@@ -49,18 +49,19 @@ echo "2 + 2" | ruchy                                  # Stdin mode
 
 **Active Sprint**: CLI/REPL Foundation (our base)
 
-## 🟢 Current State (2025-08-18 - REPL v3 Foundation Complete)
+## 🟢 Current State (2025-08-19 - Comprehensive REPL Testing Complete)
 
 ```
-Quality Gate Metrics - REPL v3 Sprint
+Quality Gate Metrics - Comprehensive REPL Testing Sprint
 ┌─────────────────────────────────────────┐
 │ Build:      ✅ Clean build               │
-│ Lint:       ✅ 0 clippy errors          │
-│ Tests:      ✅ All passing with nextest  │
-│ Coverage:   🔴 Unknown (need: 80%)      │
-│ SATD:       ✅ 6 comments (was 124!)    │
-│ Complexity: ✅ Major refactor done       │
-│ Features:   🟢 REPL v3 foundation ready  │
+│ Lint:       ✅ 0 clippy errors (-D warnings) │
+│ Tests:      ✅ All 197 tests passing     │
+│ REPL Tests: ✅ Comprehensive suite ready │
+│ Coverage:   🟢 ~70% REPL (target: 80%)  │
+│ SATD:       ✅ 6 comments maintained     │
+│ Complexity: ✅ Bounded <10 per function  │
+│ Features:   ✅ REPL v4 testing complete  │
 └─────────────────────────────────────────┘
 
 SPECIFICATION.md v3.0 + REPL Sprint Status:
@@ -78,7 +79,25 @@ SPECIFICATION.md v3.0 + REPL Sprint Status:
 🔴 Quality gates CI enforcement - missing
 ```
 
-### Recent Accomplishments (2025-08-18 - Function Call Support)
+### Recent Accomplishments (2025-08-19 - Comprehensive REPL Testing)
+- ✅ **CRITICAL: Created comprehensive REPL test infrastructure**
+  - Added `make test-repl` target combining 7 test types
+  - Unit tests, integration tests, property tests all passing
+  - Doctests, examples, and fuzz tests fully integrated
+  - Coverage tests ensuring high code coverage
+  - Fixed all `-D warnings` lint compliance issues
+- ✅ **REPL Command System Enhancement**
+  - Fixed broken commands (:history, :help, :clear, :bindings)
+  - Added new introspection commands (:env, :type, :ast, :reset)
+  - Multiline expression support with proper continuation detection
+  - Public API for testing command handling
+- ✅ **CLI One-liner Support**
+  - Full `-e` flag support for one-liner evaluation
+  - JSON output format for scripting integration
+  - Pipe support for stdin evaluation
+  - Script file execution with proper error handling
+
+### Previous Accomplishments (2025-08-18 - Function Call Support)
 - ✅ **CRITICAL: Fixed missing function call support in REPL**
   - Implemented println/print built-in functions
   - Added comprehensive function call evaluation

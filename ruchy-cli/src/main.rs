@@ -12,14 +12,14 @@ struct Cli {
     /// Evaluate a one-liner expression
     #[arg(short = 'e', long = "eval", value_name = "EXPR")]
     eval: Option<String>,
-    
+
     /// Output format for evaluation results (text, json)
     #[arg(long, default_value = "text")]
     format: String,
-    
+
     /// Script file to execute (alternative to subcommands)
     file: Option<PathBuf>,
-    
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -78,12 +78,12 @@ fn main() -> Result<()> {
     if let Some(expr) = cli.eval {
         return evaluate_oneliner(&expr, &cli.format);
     }
-    
+
     // Handle script file execution (without subcommand)
     if let Some(file) = cli.file {
         return run_script(&file);
     }
-    
+
     // Check if stdin has input (for pipe support)
     // Only do this if we're not explicitly running a command
     if cli.command.is_none() && !atty::is(atty::Stream::Stdin) {
@@ -241,13 +241,13 @@ fn main() -> Result<()> {
 fn evaluate_oneliner(expr: &str, format: &str) -> Result<()> {
     use ruchy::runtime::Value;
     use std::time::{Duration, Instant};
-    
+
     // Create a REPL instance for evaluation
     let mut repl = Repl::new()?;
-    
+
     // Set timeout for one-liners (100ms default)
     let deadline = Instant::now() + Duration::from_millis(100);
-    
+
     match repl.evaluate_expr_str(expr, Some(deadline)) {
         Ok(value) => {
             match format {
@@ -278,34 +278,34 @@ fn evaluate_oneliner(expr: &str, format: &str) -> Result<()> {
 /// Run a script file
 fn run_script(file: &PathBuf) -> Result<()> {
     use std::time::{Duration, Instant};
-    
+
     let source = fs::read_to_string(file)?;
     let mut repl = Repl::new()?;
-    
+
     // Scripts get longer timeout (10 seconds)
     let deadline = Instant::now() + Duration::from_secs(10);
-    
+
     // Execute each line/statement in the script
     for line in source.lines() {
         let line = line.trim();
         if line.is_empty() || line.starts_with("//") {
             continue;
         }
-        
+
         if let Err(e) = repl.evaluate_expr_str(line, Some(deadline)) {
             eprintln!("Error at line: {}", line);
             eprintln!("  {}", e);
             std::process::exit(1);
         }
     }
-    
+
     Ok(())
 }
 
 /// Convert a Value to JSON representation
 fn value_to_json(value: &ruchy::runtime::Value) -> String {
     use ruchy::runtime::Value;
-    
+
     match value {
         Value::Unit => "null".to_string(),
         Value::Int(n) => n.to_string(),
