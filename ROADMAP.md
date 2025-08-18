@@ -49,19 +49,20 @@ echo "2 + 2" | ruchy                                  # Stdin mode
 
 **Active Sprint**: CLI/REPL Foundation (our base)
 
-## 🟢 Current State (2025-08-19 - All Core Features Complete!)
+## 🟢 Current State (2025-08-18 - v0.4.8 Emergency Recovery Complete)
 
 ```
-Quality Gate Metrics - DataFrame & Result Type Sprint
+Quality Gate Metrics - Post-Emergency Recovery Status
 ┌─────────────────────────────────────────┐
 │ Build:      ✅ Clean build               │
 │ Lint:       ✅ 0 clippy errors          │
-│ Tests:      ✅ All tests passing        │
-│ DataFrame:  ✅ Full support with Polars │
-│ Result:     ✅ Type & ? operator ready  │
-│ REPL:       ✅ DataFrame evaluation     │
-│ Examples:   ✅ Data pipeline demos      │
-│ Release:    ✅ v0.4.4 on crates.io     │
+│ Tests:      ✅ 195/197 passing (99%)    │
+│ REPL:       ✅ Core functions restored  │
+│ Install:    ✅ cargo install ruchy FIXED│
+│ Coverage:   ⚠️  Gate disabled (pending) │
+│ DataFrame:  ❌ Parsing not implemented  │
+│ Actors:     ❌ Syntax not implemented   │
+│ Release:    ✅ v0.4.8 published         │
 └─────────────────────────────────────────┘
 
 SPECIFICATION.md v3.0 + REPL Sprint Status:
@@ -79,7 +80,24 @@ SPECIFICATION.md v3.0 + REPL Sprint Status:
 🔴 Quality gates CI enforcement - missing
 ```
 
-### Recent Accomplishments (2025-08-19 - Complete Core Language Features)
+### Recent Accomplishments (2025-08-18 - Emergency Recovery v0.4.7-v0.4.8)
+- ✅ **v0.4.8 Critical Install Fix**
+  - Fixed missing main CLI binary in cargo install
+  - Users can now install with single command: `cargo install ruchy`
+  - No longer requires separate ruchy-cli package knowledge
+
+- ✅ **v0.4.7 Emergency Quality Recovery**
+  - Fixed variable binding corruption (Unit overwriting values)
+  - Fixed transpiler println! macro generation
+  - Implemented missing -e flag for one-liner execution
+  - Fixed function call evaluation (stored as strings issue)
+  - Implemented match expression evaluation
+  - Fixed block expressions returning first instead of last value
+  - Added comprehensive regression test suite
+  - Achieved 99% test pass rate (195/197)
+  - Enforced mandatory quality gates (complexity <10, zero SATD)
+
+### Previous Accomplishments (2025-08-19 - Complete Core Language Features)
 - ✅ **Actor System Complete (Phase 4)**
   - Full actor definition syntax with state and receive blocks
   - Message type system with parameters
