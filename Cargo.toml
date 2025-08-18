@@ -225,7 +225,7 @@ colored = "2.1"
 # DataFrame support
 polars = { version = "0.35", features = ["lazy"], optional = true }
 # MCP Integration
-pmcp = { path = "../pmcp", features = ["full"] }
+pmcp = { version = "1.2.2", features = ["full"] }
 tokio = { version = "1.46", features = ["full"] }
 tokio-util = { version = "0.7", features = ["rt"] }
 # Snapshot testing
