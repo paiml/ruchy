@@ -5,6 +5,34 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-01-18
+
+### Added - REPL Excellence Sprint
+- **REPL v3 Production Implementation**
+  - Resource-bounded evaluator with 10MB memory limit
+  - Hard timeout enforcement (100ms default)
+  - Stack depth control (1000 frame maximum)
+  - Transactional state machine with checkpoints
+  - Error recovery with condition/restart system
+  - Progressive modes (Standard/Test/Debug)
+  - Comprehensive testing infrastructure
+
+### Improved
+- **Test Performance**
+  - Default `make test` now runs in ~5 seconds
+  - Marked slow integration tests as `#[ignore]`
+  - Added `make test-all` for comprehensive testing
+  - CI uses two-stage testing for fast feedback
+
+### Infrastructure
+- **Dependencies**
+  - Added `im` crate for persistent data structures
+  - Added `quickcheck` for property-based testing
+- **Documentation**
+  - Prioritized REPL in ROADMAP for user experience
+  - Updated execution roadmap with REPL tasks
+  - Added comprehensive REPL testing guide
+
 ## [0.3.2] - 2025-08-18
 
 ### Major Quality Improvements
