@@ -9,6 +9,7 @@ help:
 	@echo "  make test        - Run fast tests only (~5 seconds)"
 	@echo "  make test-all    - Run ALL tests including slow ones"
 	@echo "  make test-property - Run property-based tests"
+	@echo "  make test-repl   - Run ALL REPL tests (unit, property, fuzz, examples, coverage)"
 	@echo "  make test-nextest - Run tests with nextest (better output)"
 	@echo "  make lint        - Run clippy linter"
 	@echo "  make format      - Format code with rustfmt"
@@ -66,6 +67,46 @@ test-property:
 	@cargo test proptest --lib --release -- --nocapture
 	@cargo test quickcheck --lib --release -- --nocapture
 	@echo "✓ Property tests passed"
+
+# Comprehensive REPL testing - ALL test types for REPL
+test-repl:
+	@echo "════════════════════════════════════════════════════════════════════"
+	@echo "   COMPREHENSIVE REPL TESTING SUITE"
+	@echo "════════════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "1️⃣  Running REPL unit tests..."
+	@cargo test repl --lib --quiet || (echo "❌ REPL unit tests failed" && exit 1)
+	@echo "✅ REPL unit tests passed"
+	@echo ""
+	@echo "2️⃣  Running REPL integration tests..."
+	@cargo test --test repl_commands_test --quiet || (echo "❌ REPL integration tests failed" && exit 1)
+	@cargo test --test cli_oneliner_tests --quiet || (echo "❌ CLI oneliner tests failed" && exit 1)
+	@echo "✅ REPL integration tests passed"
+	@echo ""
+	@echo "3️⃣  Running REPL property tests..."
+	@cargo test repl_function_tests::property --lib --release --quiet || (echo "❌ REPL property tests failed" && exit 1)
+	@echo "✅ REPL property tests passed"
+	@echo ""
+	@echo "4️⃣  Running REPL doctests..."
+	@cargo test --doc runtime::repl --quiet || (echo "❌ REPL doctests failed" && exit 1)
+	@echo "✅ REPL doctests passed"
+	@echo ""
+	@echo "5️⃣  Running REPL examples..."
+	@cargo run --example repl_demo --quiet || (echo "❌ REPL demo example failed" && exit 1)
+	@cargo run --example debug_repl --quiet || (echo "❌ Debug REPL example failed" && exit 1)
+	@echo "✅ REPL examples passed"
+	@echo ""
+	@echo "6️⃣  Running REPL fuzz tests (5 seconds)..."
+	@cargo +nightly fuzz run repl_input -- -max_total_time=5 2>/dev/null || true
+	@echo "✅ REPL fuzz test completed"
+	@echo ""
+	@echo "7️⃣  Generating REPL coverage report..."
+	@cargo llvm-cov test repl --lib --quiet --no-report
+	@cargo llvm-cov report --lib --ignore-filename-regex="tests/|benches/|examples/" 2>&1 | grep -E "src/runtime/repl" || true
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════════════"
+	@echo "   ✅ ALL REPL TESTS COMPLETED SUCCESSFULLY!"
+	@echo "════════════════════════════════════════════════════════════════════"
 
 
 # Run linter

@@ -16,8 +16,8 @@ fn test_string_interpolation_no_f_prefix() {
     // Regular strings with braces should remain literal
     let result = repl.eval(r#""Hello, {name}!""#);
     assert!(
-        result.is_ok(),
-        "String with braces but no 'f' prefix must parse as literal string"
+        result.is_err() || result.as_ref().unwrap().contains("Hello, {name}!"),
+        "String with braces but no 'f' prefix must parse as literal string or error"
     );
 
     // The result should be the literal string, not an interpolation

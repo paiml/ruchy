@@ -1,6 +1,36 @@
 //! REPL implementation for interactive Ruchy development
 //!
 //! Production-grade REPL with resource bounds, error recovery, and grammar coverage
+//!
+//! # Examples
+//!
+//! ```
+//! use ruchy::runtime::Repl;
+//! 
+//! let mut repl = Repl::new().unwrap();
+//! 
+//! // Evaluate arithmetic
+//! let result = repl.eval("2 + 2").unwrap();
+//! assert_eq!(result, "4");
+//! 
+//! // Define variables
+//! repl.eval("let x = 10").unwrap();
+//! let result = repl.eval("x * 2").unwrap();
+//! assert_eq!(result, "20");
+//! ```
+//!
+//! # One-liner evaluation
+//!
+//! ```
+//! use ruchy::runtime::Repl;
+//! use std::time::{Duration, Instant};
+//! 
+//! let mut repl = Repl::new().unwrap();
+//! let deadline = Some(Instant::now() + Duration::from_millis(100));
+//! 
+//! let value = repl.evaluate_expr_str("5 + 3", deadline).unwrap();
+//! assert_eq!(value.to_string(), "8");
+//! ```
 
 #![allow(clippy::print_stdout)] // REPL needs to print to stdout
 #![allow(clippy::print_stderr)] // REPL needs to print errors
@@ -124,6 +154,15 @@ impl Repl {
     /// # Errors
     ///
     /// Returns an error if the temporary directory cannot be created
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::Repl;
+    /// 
+    /// let repl = Repl::new();
+    /// assert!(repl.is_ok());
+    /// ```
     pub fn new() -> Result<Self> {
         Self::with_config(ReplConfig::default())
     }
@@ -614,8 +653,8 @@ impl Repl {
         Ok(())
     }
 
-    /// Handle REPL commands
-    fn handle_command(&mut self, command: &str) -> Result<bool> {
+    /// Handle REPL commands (public for testing)
+    pub fn handle_command(&mut self, command: &str) -> Result<bool> {
         let parts: Vec<&str> = command.split_whitespace().collect();
         match parts.first().copied() {
             Some(":quit" | ":q") => Ok(true),
@@ -740,7 +779,7 @@ impl Repl {
     }
     
     /// Check if input needs continuation (incomplete expression)
-    fn needs_continuation(input: &str) -> bool {
+    pub fn needs_continuation(input: &str) -> bool {
         let trimmed = input.trim();
         
         // Empty input doesn't need continuation
