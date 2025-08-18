@@ -320,9 +320,95 @@ fn temporary_hack() {
 }
 ```
 
+## MANDATORY Quality Gates (BLOCKING - Not Advisory)
+
+**CRITICAL**: After the shameful failures of v0.4.6 (false claims, broken transpiler), quality gates are now BLOCKING and ENFORCED.
+
+### Pre-commit Hooks (MANDATORY)
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit - BLOCKS commits that violate quality
+set -e
+
+echo "🔒 MANDATORY Quality Gates..."
+
+# GATE 1: Basic functionality (FATAL if fails)
+echo 'println("Hello")' | timeout 5s ruchy repl | grep -q "Hello" || {
+    echo "❌ FATAL: Can't even print 'Hello' in REPL"
+    echo "Fix basic transpiler before ANY commits"
+    exit 1
+}
+
+# GATE 2: Complexity enforcement
+pmat check --max-complexity 10 --fail-fast || {
+    echo "❌ BLOCKED: Complexity exceeds 10"
+    echo "Refactor before committing"
+    exit 1
+}
+
+# GATE 3: Zero SATD policy
+! grep -r "TODO\|FIXME\|HACK" src/ --include="*.rs" || {
+    echo "❌ BLOCKED: SATD comments found"
+    echo "Fix or file GitHub issues, don't commit debt"
+    exit 1
+}
+
+# GATE 4: Lint zero tolerance
+cargo clippy --all-targets --all-features -- -D warnings || {
+    echo "❌ BLOCKED: Lint warnings found" 
+    exit 1
+}
+
+# GATE 5: Coverage threshold
+cargo tarpaulin --min 80 --fail-under || {
+    echo "❌ BLOCKED: Coverage below 80%"
+    exit 1
+}
+
+echo "✅ All quality gates passed"
+```
+
+### CI/CD Pipeline Enforcement
+```yaml
+# .github/workflows/quality-gates.yml
+name: MANDATORY Quality Gates
+on: [push, pull_request]
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Quality Gates
+        run: |
+          curl -L https://install.pmat.dev | sh
+          
+      - name: GATE 1 - Basic REPL Function
+        run: |
+          echo 'println("CI Test")' | timeout 10s ruchy repl | grep -q "CI Test"
+          
+      - name: GATE 2 - Complexity Check  
+        run: |
+          pmat check --max-complexity 10 --fail-fast
+          
+      - name: GATE 3 - Zero SATD
+        run: |
+          ! grep -r "TODO\|FIXME\|HACK" src/ --include="*.rs"
+          
+      - name: GATE 4 - Lint Zero Tolerance
+        run: |
+          cargo clippy --all-targets --all-features -- -D warnings
+          
+      - name: GATE 5 - Coverage Gate
+        run: |
+          cargo tarpaulin --min 80 --fail-under
+          
+      - name: GATE 6 - Dogfooding Test
+        run: |
+          # Must be able to run scripts written in Ruchy
+          find scripts -name "*.ruchy" -exec ruchy run {} \;
+```
+
 ## The Make Lint Contract (Zero Warnings Allowed)
-## Quality Enforcement
-See: docs/quality/lint-reduction-process-and-quality.md
 ```bash
 # make lint command from Makefile:
 cargo clippy --all-targets --all-features -- -D warnings
@@ -357,26 +443,55 @@ if x { }               // Omit redundant comparisons
 fn special_case() { }
 ```
 
-## Canonical Implementation Order
+## REVISED Implementation Order (Post-Failure Analysis)
 
-Based on dependency analysis and critical path:
+**STOP**: The original order was wrong and led to v0.4.6 failures. New order based on user experience:
 
-1. **DataFrame Support** (Blocking all examples)
-    - Parser extensions for df literals
-    - Type system DataFrame/Series types
-    - Transpiler Polars generation
+### Phase 0: FOUNDATION (MUST WORK FIRST)
+1. **Fix Transpiler Basics**
+    - println generates println! correctly
+    - Basic string handling without compilation errors
+    - Simple arithmetic transpiles correctly
 
-2. **Result Type** (Error handling foundation)
-    - Parser ? operator precedence
-    - Type inference for Result<T, E>
-    - Error propagation in transpiler
+2. **One-liner Support** (Week 1 CRITICAL PATH)
+    - CLI `-e` flag implementation
+    - Stdin pipe support
+    - Exit codes for scripting
+    - JSON output mode
 
-3. **Actor System** (Concurrency model)
-    - Parser actor/receive syntax
-    - Type system message types
-    - Runtime mailbox implementation
+3. **REPL Core Functions**
+    - Function calling after definition
+    - Variable persistence across lines
+    - Block expressions return correct value
 
-Each phase validates against SPECIFICATION.md sections and maintains performance invariants.
+### Phase 1: CONTROL FLOW
+4. **Pattern Matching** (Users expect this)
+    - Match expression evaluation
+    - Pattern guards working
+    - Exhaustiveness checking
+
+5. **Loops** (Basic language feature)
+    - For loops in REPL
+    - While loops in REPL
+    - Break/continue support
+
+### Phase 2: FUNCTIONAL FEATURES
+6. **Pipeline Operators** (Core selling point)
+    - |> operator evaluation
+    - Function composition
+    - Method chaining
+
+7. **String Interpolation** (User convenience)
+    - f"Hello {name}" syntax
+    - Expression interpolation
+    - Format specifiers
+
+### Phase 3: ADVANCED (Only after basics work)
+8. **DataFrame Support** (Only if foundation solid)
+9. **Result Type** (Error handling)
+10. **Actor System** (Concurrency model)
+
+**NEW RULE**: No Phase N+1 until Phase N is 100% working in REPL and dogfooded with .ruchy scripts.
 
 ## Architectural Decisions
 
