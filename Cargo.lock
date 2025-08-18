@@ -2132,6 +2132,8 @@ dependencies = [
 [[package]]
 name = "pmcp"
 version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f9f0bf37c7858c03568bc85ec3739c43608ca7257a6df926bbc1cad9e26f0c8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2861,7 +2863,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2895,7 +2897,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy-cli"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "anyhow",
  "clap",
