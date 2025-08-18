@@ -5,6 +5,33 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2025-01-18
+
+### Major Changes - REPL Consolidation & Quality
+- **Unified REPL Implementation**
+  - Consolidated ReplV2 and ReplV3 into single production Repl
+  - Resource-bounded evaluation with configurable limits
+  - Memory tracking, timeout enforcement, stack depth control
+  - Simplified API with `eval()` method returning strings
+  
+### Quality Achievements
+- **Zero Lint Warnings**: Full `make lint` compliance with `-D warnings`
+- **Zero SATD**: No self-admitted technical debt comments
+- **Zero Security Issues**: Clean PMAT security analysis
+- **Grammar Testing**: Comprehensive test suite for all language constructs
+
+### Implementation
+- **Test Grammar Coverage**
+  - Implemented test-grammar-repl.md specification
+  - Critical regression tests for known bugs
+  - Exhaustive production testing infrastructure
+  - Grammar coverage matrix tracking
+  
+### Removed
+- Eliminated duplicate REPL versions (repl_v2.rs, repl_v3/)
+- Removed obsolete test files and examples
+- Cleaned up redundant module exports
+
 ## [0.4.0] - 2025-01-18
 
 ### Added - REPL Excellence Sprint
