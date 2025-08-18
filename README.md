@@ -336,8 +336,14 @@ See [`docs/project-management/CLAUDE.md`](docs/project-management/CLAUDE.md) for
 ## Testing
 
 ```bash
-# Run all tests
+# Run fast tests only (~5 seconds after initial build)
 make test
+
+# Run all tests including slow/integration tests
+make test-all
+
+# Run tests with nextest (better output, but recompiles)
+make test-nextest
 
 # Check code coverage (must be >75%)
 make coverage
