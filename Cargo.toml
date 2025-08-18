@@ -218,6 +218,8 @@ pest = { workspace = true }
 pest_derive = { workspace = true }
 syn = { workspace = true }
 quote = { workspace = true }
+im = "15.1"
+quickcheck = "1.0"
 proc-macro2 = { workspace = true }
 prettyplease = { workspace = true }
 rustyline = { workspace = true }
