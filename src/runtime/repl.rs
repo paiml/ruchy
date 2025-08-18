@@ -277,10 +277,7 @@ impl Repl {
         // Store successful evaluation
         self.history.push(input.to_string());
 
-        // Handle let bindings specially
-        if let ExprKind::Let { name, .. } = &ast.kind {
-            self.bindings.insert(name.clone(), value.clone());
-        }
+        // Let bindings are handled in evaluate_expr, no need to duplicate here
 
         Ok(value.to_string())
     }
