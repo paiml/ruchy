@@ -85,7 +85,8 @@ fn main() -> Result<()> {
     }
     
     // Check if stdin has input (for pipe support)
-    if !atty::is(atty::Stream::Stdin) {
+    // Only do this if we're not explicitly running a command
+    if cli.command.is_none() && !atty::is(atty::Stream::Stdin) {
         use std::io::{self, Read};
         let mut buffer = String::new();
         io::stdin().read_to_string(&mut buffer)?;

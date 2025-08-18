@@ -523,35 +523,75 @@ impl Repl {
         let history_path = self.temp_dir.join("history.txt");
         let _ = rl.load_history(&history_path);
 
+        let mut multiline_buffer = String::new();
+        let mut in_multiline = false;
+        
         loop {
-            let prompt = format!("{} ", "ruchy>".bright_green());
+            let prompt = if in_multiline {
+                format!("{} ", "   ...".bright_black())
+            } else {
+                format!("{} ", "ruchy>".bright_green())
+            };
             let readline = rl.readline(&prompt);
 
             match readline {
                 Ok(line) => {
-                    // Skip empty lines
-                    if line.trim().is_empty() {
+                    // Skip empty lines unless we're in multiline mode
+                    if line.trim().is_empty() && !in_multiline {
                         continue;
                     }
 
-                    // Add to history
-                    let _ = rl.add_history_entry(line.as_str());
-
-                    // Handle commands
-                    if line.starts_with(':') {
+                    // Handle commands (only when not in multiline mode)
+                    if !in_multiline && line.starts_with(':') {
                         if self.handle_command(&line)? {
                             break; // :quit command
                         }
                         continue;
                     }
 
-                    // Evaluate the expression
-                    match self.eval(&line) {
-                        Ok(result) => {
-                            println!("{}", result.bright_white());
+                    // Check if this starts a multiline expression
+                    if !in_multiline && self.needs_continuation(&line) {
+                        multiline_buffer = line.clone();
+                        in_multiline = true;
+                        continue;
+                    }
+                    
+                    // If in multiline mode, accumulate lines
+                    if in_multiline {
+                        multiline_buffer.push('\n');
+                        multiline_buffer.push_str(&line);
+                        
+                        // Check if we have a complete expression
+                        if !self.needs_continuation(&multiline_buffer) {
+                            // Add complete expression to history
+                            let _ = rl.add_history_entry(multiline_buffer.as_str());
+                            
+                            // Evaluate the complete expression
+                            match self.eval(&multiline_buffer) {
+                                Ok(result) => {
+                                    println!("{}", result.bright_white());
+                                }
+                                Err(e) => {
+                                    eprintln!("{}: {}", "Error".bright_red().bold(), e);
+                                }
+                            }
+                            
+                            // Reset multiline mode
+                            multiline_buffer.clear();
+                            in_multiline = false;
                         }
-                        Err(e) => {
-                            eprintln!("{}: {}", "Error".bright_red().bold(), e);
+                    } else {
+                        // Single line expression
+                        let _ = rl.add_history_entry(line.as_str());
+                        
+                        // Evaluate the expression
+                        match self.eval(&line) {
+                            Ok(result) => {
+                                println!("{}", result.bright_white());
+                            }
+                            Err(e) => {
+                                eprintln!("{}: {}", "Error".bright_red().bold(), e);
+                            }
                         }
                     }
                 }
@@ -596,7 +636,7 @@ impl Repl {
                 println!("Session cleared");
                 Ok(false)
             }
-            Some(":bindings") => {
+            Some(":bindings" | ":env") => {
                 if self.bindings.is_empty() {
                     println!("No bindings");
                 } else {
@@ -614,8 +654,38 @@ impl Repl {
                 self.load_file(parts[1])?;
                 Ok(false)
             }
+            Some(":type") => {
+                // Get the rest of the line after :type
+                let expr = command.strip_prefix(":type").unwrap_or("").trim();
+                if expr.is_empty() {
+                    println!("Usage: :type <expression>");
+                } else {
+                    self.show_type(expr);
+                }
+                Ok(false)
+            }
+            Some(":ast") => {
+                // Get the rest of the line after :ast
+                let expr = command.strip_prefix(":ast").unwrap_or("").trim();
+                if expr.is_empty() {
+                    println!("Usage: :ast <expression>");
+                } else {
+                    self.show_ast(expr);
+                }
+                Ok(false)
+            }
+            Some(":reset") => {
+                // Full reset - clear everything and restart
+                self.history.clear();
+                self.definitions.clear();
+                self.bindings.clear();
+                self.memory.reset();
+                println!("REPL reset to initial state");
+                Ok(false)
+            }
             _ => {
                 eprintln!("Unknown command: {command}");
+                Self::print_help();
                 Ok(false)
             }
         }
@@ -627,10 +697,97 @@ impl Repl {
         println!("  :help, :h       - Show this help message");
         println!("  :quit, :q       - Exit the REPL");
         println!("  :history        - Show evaluation history");
-        println!("  :clear          - Clear session state");
-        println!("  :bindings       - Show current bindings");
+        println!("  :clear          - Clear definitions and history");
+        println!("  :reset          - Full reset to initial state");
+        println!("  :bindings, :env - Show current variable bindings");
+        println!("  :type <expr>    - Show type of expression");
+        println!("  :ast <expr>     - Show AST of expression");
         println!("  :compile        - Compile and run the session");
         println!("  :load <file>    - Load and evaluate a file");
+        println!();
+        println!("{}", "Examples:".bright_cyan());
+        println!("  2 + 2           - Evaluate expression");
+        println!("  let x = 10      - Define variable");
+        println!("  :type x * 2     - Show type of expression");
+        println!("  :ast if true {{ 1 }} else {{ 2 }}");
+    }
+    
+    /// Show the type of an expression
+    fn show_type(&mut self, expr: &str) {
+        match Parser::new(expr).parse() {
+            Ok(_ast) => {
+                // For now, we don't have full type inference in REPL
+                // Just show what we can determine from the expression
+                println!("Type inference not yet implemented in REPL");
+                println!("(This will show the inferred type once type checking is integrated)");
+            }
+            Err(e) => {
+                eprintln!("Parse error: {}", e);
+            }
+        }
+    }
+    
+    /// Show the AST of an expression
+    fn show_ast(&mut self, expr: &str) {
+        match Parser::new(expr).parse() {
+            Ok(ast) => {
+                println!("{:#?}", ast);
+            }
+            Err(e) => {
+                eprintln!("Parse error: {}", e);
+            }
+        }
+    }
+    
+    /// Check if input needs continuation (incomplete expression)
+    fn needs_continuation(&self, input: &str) -> bool {
+        let trimmed = input.trim();
+        
+        // Empty input doesn't need continuation
+        if trimmed.is_empty() {
+            return false;
+        }
+        
+        // Count braces, brackets, and parentheses
+        let mut brace_depth = 0;
+        let mut bracket_depth = 0;
+        let mut paren_depth = 0;
+        let mut in_string = false;
+        let mut escape_next = false;
+        
+        for ch in trimmed.chars() {
+            if escape_next {
+                escape_next = false;
+                continue;
+            }
+            
+            match ch {
+                '\\' if in_string => escape_next = true,
+                '"' => in_string = !in_string,
+                '{' if !in_string => brace_depth += 1,
+                '}' if !in_string => brace_depth -= 1,
+                '[' if !in_string => bracket_depth += 1,
+                ']' if !in_string => bracket_depth -= 1,
+                '(' if !in_string => paren_depth += 1,
+                ')' if !in_string => paren_depth -= 1,
+                _ => {}
+            }
+        }
+        
+        // Need continuation if any delimiters are unmatched
+        brace_depth > 0 || bracket_depth > 0 || paren_depth > 0 || in_string ||
+        // Or if line ends with certain tokens that expect continuation
+        trimmed.ends_with("=") || 
+        trimmed.ends_with("->") || 
+        trimmed.ends_with("=>") ||
+        trimmed.ends_with(",") ||
+        trimmed.ends_with("+") ||
+        trimmed.ends_with("-") ||
+        trimmed.ends_with("*") ||
+        trimmed.ends_with("/") ||
+        trimmed.ends_with("&&") ||
+        trimmed.ends_with("||") ||
+        trimmed.ends_with("|>")
     }
 
     /// Compile and run the current session
