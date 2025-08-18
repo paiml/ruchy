@@ -5,6 +5,26 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.6] - 2025-08-19 (Night Session - Complete)
+
+### Added
+- **Actor System Complete (Phase 4)**
+  - Full actor definition with state and receive blocks
+  - Message handlers with parameter support
+  - Mailbox runtime via tokio channels
+  - Send (!) and ask (?) operations
+  - Supervision strategies for fault tolerance
+  - MCP-compatible actor for protocol messages
+  - Comprehensive actor system tests
+
+### Achievements
+- **All Core Language Features Now Complete!**
+  - REPL with comprehensive testing infrastructure
+  - DataFrame support with Polars backend
+  - Result type with error propagation
+  - Actor system with message passing
+  - Complete test coverage across all features
+
 ## [0.4.5] - 2025-08-19 (Night Session)
 
 ### Added
