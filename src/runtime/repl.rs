@@ -550,8 +550,8 @@ impl Repl {
                     }
 
                     // Check if this starts a multiline expression
-                    if !in_multiline && self.needs_continuation(&line) {
-                        multiline_buffer = line.clone();
+                    if !in_multiline && Self::needs_continuation(&line) {
+                        multiline_buffer.clone_from(&line);
                         in_multiline = true;
                         continue;
                     }
@@ -562,7 +562,7 @@ impl Repl {
                         multiline_buffer.push_str(&line);
                         
                         // Check if we have a complete expression
-                        if !self.needs_continuation(&multiline_buffer) {
+                        if !Self::needs_continuation(&multiline_buffer) {
                             // Add complete expression to history
                             let _ = rl.add_history_entry(multiline_buffer.as_str());
                             
@@ -660,7 +660,7 @@ impl Repl {
                 if expr.is_empty() {
                     println!("Usage: :type <expression>");
                 } else {
-                    self.show_type(expr);
+                    Self::show_type(expr);
                 }
                 Ok(false)
             }
@@ -670,7 +670,7 @@ impl Repl {
                 if expr.is_empty() {
                     println!("Usage: :ast <expression>");
                 } else {
-                    self.show_ast(expr);
+                    Self::show_ast(expr);
                 }
                 Ok(false)
             }
@@ -713,7 +713,7 @@ impl Repl {
     }
     
     /// Show the type of an expression
-    fn show_type(&mut self, expr: &str) {
+    fn show_type(expr: &str) {
         match Parser::new(expr).parse() {
             Ok(_ast) => {
                 // For now, we don't have full type inference in REPL
@@ -722,25 +722,25 @@ impl Repl {
                 println!("(This will show the inferred type once type checking is integrated)");
             }
             Err(e) => {
-                eprintln!("Parse error: {}", e);
+                eprintln!("Parse error: {e}");
             }
         }
     }
     
     /// Show the AST of an expression
-    fn show_ast(&mut self, expr: &str) {
+    fn show_ast(expr: &str) {
         match Parser::new(expr).parse() {
             Ok(ast) => {
-                println!("{:#?}", ast);
+                println!("{ast:#?}");
             }
             Err(e) => {
-                eprintln!("Parse error: {}", e);
+                eprintln!("Parse error: {e}");
             }
         }
     }
     
     /// Check if input needs continuation (incomplete expression)
-    fn needs_continuation(&self, input: &str) -> bool {
+    fn needs_continuation(input: &str) -> bool {
         let trimmed = input.trim();
         
         // Empty input doesn't need continuation
@@ -777,14 +777,14 @@ impl Repl {
         // Need continuation if any delimiters are unmatched
         brace_depth > 0 || bracket_depth > 0 || paren_depth > 0 || in_string ||
         // Or if line ends with certain tokens that expect continuation
-        trimmed.ends_with("=") || 
+        trimmed.ends_with('=') || 
         trimmed.ends_with("->") || 
         trimmed.ends_with("=>") ||
-        trimmed.ends_with(",") ||
-        trimmed.ends_with("+") ||
-        trimmed.ends_with("-") ||
-        trimmed.ends_with("*") ||
-        trimmed.ends_with("/") ||
+        trimmed.ends_with(',') ||
+        trimmed.ends_with('+') ||
+        trimmed.ends_with('-') ||
+        trimmed.ends_with('*') ||
+        trimmed.ends_with('/') ||
         trimmed.ends_with("&&") ||
         trimmed.ends_with("||") ||
         trimmed.ends_with("|>")

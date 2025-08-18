@@ -1,5 +1,7 @@
 //! Integration tests for CLI one-liner mode
 
+#![allow(clippy::expect_used)] // Tests can use expect
+
 use std::process::Command;
 use std::io::Write;
 
