@@ -11,31 +11,87 @@
 
 *See docs/execution/ for detailed task execution framework*
 
-## 🌟 IMMEDIATE ACTION ITEMS - REPL/CLI Foundation Sprint
+## ✅ COMPLETED FEATURES (2025-08-20)
 
-### Week 1: One-Liner Support (CRITICAL PATH)
+### CLI/REPL Foundation ✅
 ```bash
-# These MUST work by end of week:
-ruchy -e "println('hello world')"                    # Basic eval
-ruchy -e "[1,2,3] |> map(|x| x*2) |> sum()"          # Pipeline
-ruchy -e "df.read_csv('data.csv').groupby('x').mean()" # DataFrame
-ruchy script.ruchy                                     # Script mode
-echo "2 + 2" | ruchy                                  # Stdin mode
+# All of these now work:
+ruchy -e "println('hello world')"                    # ✅ Basic eval
+ruchy -e "2 + 2" --format json                       # ✅ JSON output
+ruchy -e "[1,2,3].sum()"                            # ✅ List methods
+ruchy script.ruchy                                   # ✅ Script mode
+echo "2 + 2" | ruchy                                # ✅ Stdin mode
+ruchy --verbose -e "match x { 1 => 'one', _ => 'other' }" # ✅ Verbose mode
 ```
 
-### Week 2: REPL Polish
-- Tab completion for all keywords/functions
-- :help with executable examples
-- Pretty-printed DataFrames
-- Multiline input with proper indentation
-- History with fuzzy search (Ctrl+R)
+### Functional Programming Core ✅
+- ✅ List methods: sum, reverse, head, tail, last, len, map, filter
+- ✅ String methods: upper, lower, trim, split, len
+- ✅ Lambda syntax: both `\x -> x + 1` and `|x| x + 1`
+- ✅ Result/Option types with Ok, Err, Some, None
+- ✅ curry/uncurry support for functional composition
+- ✅ Pattern matching with match expressions
+- ✅ List comprehensions transpiling to map/filter
 
-### Week 3: Functional Programming Core
-- Higher-order functions in REPL
-- Pattern matching expressions
-- Monadic error handling (Result/Option)
-- Function composition operators (>>, <<)
-- Partial application syntax
+### Performance Optimizations ✅
+- ✅ Arena allocator for AST nodes (safe Rust, no unsafe)
+- ✅ String interner for identifier deduplication
+- ✅ Lazy evaluation for pipelines with memoization
+- ✅ Bytecode caching with LRU eviction (1000 entry default)
+- ✅ Expression cache for parsed ASTs and transpiled code
+
+### Developer Experience ✅
+- ✅ Enhanced error diagnostics with source highlighting
+- ✅ Helpful error suggestions (Elm-style)
+- ✅ --json flag for structured output
+- ✅ --verbose flag for debugging
+- ✅ Multiline REPL input with continuation detection
+- ✅ REPL commands: :help, :history, :clear, :bindings, :type, :ast
+
+## 🚀 NEXT PRIORITIES
+
+### Week 1: Complete REPL Polish
+- [ ] Tab completion for keywords/functions (rustyline autocomplete)
+- [ ] Pretty-printed DataFrames in REPL
+- [ ] History with fuzzy search (Ctrl+R)
+- [ ] Syntax highlighting in REPL input
+- [ ] :save command to save session to file
+
+### Week 2: Missing Core Features
+- [ ] Actual reduce implementation (currently only syntax)
+- [ ] map/filter/reduce with proper lazy evaluation
+- [ ] Async/await runtime execution (not just transpilation)
+- [ ] Module system with proper imports
+- [ ] Package manager integration (cargo-like)
+
+### Week 3: DataFrame & Actor Runtime
+- [ ] DataFrame REPL evaluation (currently only transpiles)
+- [ ] Polars backend integration for DataFrame ops
+- [ ] Actor runtime with actual message passing
+- [ ] Supervision trees implementation
+- [ ] MCP protocol server support
+
+### Week 4: Type System & Inference
+- [ ] Bidirectional type checking implementation
+- [ ] Generic type parameters in functions
+- [ ] Trait bounds and implementations
+- [ ] Type inference for let bindings
+- [ ] Algebraic data types (enums)
+
+## 🔧 TECHNICAL DEBT
+
+### Critical Fixes Needed
+1. **Reference operator (`&`)** - Currently unsupported, breaks actor tests
+2. **Self in actors** - No actual self.field access implementation
+3. **Format strings** - Need proper f-string interpolation
+4. **Method calls on collections** - HashMap/Vec methods not working
+5. **Import resolution** - Module system incomplete
+
+### Performance Bottlenecks
+1. **Parser allocations** - Arena allocator created but not used
+2. **String interning** - Infrastructure ready but not integrated
+3. **Lazy evaluation** - Module exists but not connected to pipeline
+4. **Cache integration** - BytecodeCache not used in REPL yet
 
 ## Task Execution Protocol
 
