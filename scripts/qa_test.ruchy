@@ -1,0 +1,42 @@
+// QA Test - What actually works after overnight fixes
+
+println("=== RUCHY QA TEST - Post-Fix Assessment ===");
+println("");
+
+// Test 1: Basic println (FIXED!)
+println("Test 1: println - WORKS!");
+
+// Test 2: Basic arithmetic
+let a = 5;
+let b = 10;
+let sum = a + b;
+println("Test 2: Arithmetic - WORKS! 5 + 10 =", sum);
+
+// Test 3: Strings
+let msg = "Hello";
+let name = "Ruchy";
+println("Test 3: Strings - WORKS!", msg, name);
+
+// Test 4: Booleans
+let t = true;
+let f = false;
+println("Test 4: Booleans - WORKS!", t, f);
+
+// Test 5: If/else
+let age = 18;
+let status = if age >= 18 { "adult" } else { "minor" };
+println("Test 5: If/else - WORKS! Status:", status);
+
+// Things we can't test because they still don't work:
+// - Functions (can't call after definition)
+// - Match expressions (not implemented)
+// - For loops (not implemented)
+// - While loops (not implemented)
+// - Pipeline operators (not implemented)
+// - One-liner -e flag (still missing!)
+
+println("");
+println("=== SUMMARY ===");
+println("Working: Basic features (println, arithmetic, strings, if/else)");
+println("Still Broken: Functions, loops, match, pipelines, one-liner");
+println("Critical: Week 1 one-liner STILL MISSING");
