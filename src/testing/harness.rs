@@ -1,7 +1,6 @@
 /// Testing harness for validating Ruchy code
 /// This module provides a public API for external projects (like ruchy-book)
 /// to validate that Ruchy code compiles and executes correctly via LLVM
-
 use crate::Parser;
 use crate::Transpiler;
 use std::fs;
@@ -83,13 +82,14 @@ impl RuchyTestHarness {
     pub fn validate_source(&self, source: &str, name: &str) -> TestResult<ValidationResult> {
         // Parse
         let mut parser = Parser::new(source);
-        let ast = parser.parse_module()
+        let ast = parser.parse()
             .map_err(|e| TestError::Parse(format!("{}: {:?}", name, e)))?;
         
         // Transpile to Rust
         let transpiler = Transpiler::new();
-        let rust_code = transpiler.transpile_module(&ast)
+        let rust_code = transpiler.transpile(&ast)
             .map_err(|e| TestError::Transpile(format!("{}: {:?}", name, e)))?;
+        let rust_code = rust_code.to_string();
         
         // Compile and execute
         let execution_result = self.compile_and_run(&rust_code, name)?;
@@ -223,5 +223,6 @@ pub struct ValidationResult {
 struct ExecutionResult {
     compiled: bool,
     output: Option<String>,
+    #[allow(dead_code)]
     stderr: Option<String>,
 }
