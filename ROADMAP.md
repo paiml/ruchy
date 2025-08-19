@@ -50,12 +50,12 @@ ruchy --verbose -e "match x { 1 => 'one', _ => 'other' }" # ✅ Verbose mode
 
 ## 🚀 NEXT PRIORITIES
 
-### Week 1: Complete REPL Polish
-- [ ] Tab completion for keywords/functions (rustyline autocomplete)
-- [ ] Pretty-printed DataFrames in REPL
-- [ ] History with fuzzy search (Ctrl+R)
-- [ ] Syntax highlighting in REPL input
-- [ ] :save command to save session to file
+### Week 1: Complete REPL Polish ✅ COMPLETED (2025-08-20)
+- [x] Tab completion for keywords/functions (rustyline autocomplete) ✅
+- [x] Pretty-printed DataFrames in REPL ✅
+- [x] History with fuzzy search (Ctrl+R) ✅
+- [x] Syntax highlighting in REPL input ✅
+- [x] :save command to save session to file ✅
 
 ### Week 2: Missing Core Features
 - [ ] Actual reduce implementation (currently only syntax)
