@@ -203,13 +203,14 @@ graph TD
 | ID | Description | Status | Complexity | Sprint |
 |----|-------------|--------|------------|--------|
 | RUCHY-0111 | Test suite optimization | ✅ | High | v0.4.12 |
+| RUCHY-0400 | DataFrame literal parsing and transpilation | ✅ | High | v0.4.13 |
 
 ### In Progress 🚧
 | ID | Description | Status | Complexity | Sprint |
 |----|-------------|--------|------------|--------|
-| RUCHY-0200 | Reference operator (&) | 🚧 | High | Next |
-| RUCHY-0201 | Self field access | 🚧 | Medium | Next |
-| RUCHY-0202 | Method calls on collections | 🚧 | High | Next |
+| RUCHY-0200 | Reference operator (&) | 📋 | High | Next |
+| RUCHY-0201 | Self field access | 📋 | Medium | Next |
+| RUCHY-0202 | Method calls on collections | 📋 | High | Next |
 
 ### Backlog 📋
 | ID | Description | Status | Complexity | Priority |
@@ -226,10 +227,10 @@ graph TD
 ### Phase 2: DataFrame Support (DF-P2-*)
 *Depends on: Test Suite Stabilization*
 
-- **DF-P2-001**: DataFrame literal parsing (`df![columns]`)
-- **DF-P2-002**: DataFrame type system integration  
-- **DF-P2-003**: Polars transpilation backend
-- **DF-P2-004**: DataFrame operation pipeline
+- [x] **DF-P2-001**: DataFrame literal parsing (`df![columns]`) ✅ COMPLETED
+- [ ] **DF-P2-002**: DataFrame type system integration  
+- [x] **DF-P2-003**: Polars transpilation backend ✅ COMPLETED
+- [ ] **DF-P2-004**: DataFrame operation pipeline
 
 ### Phase 3: Result Type (RT-P3-*)
 *Depends on: Test Suite Stabilization*
