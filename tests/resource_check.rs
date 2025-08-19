@@ -1,7 +1,6 @@
 //! Resource usage verification tests
 
 use ruchy::frontend::parser::Parser;
-use ruchy::testing::generators::{arb_expr_with_depth, AstGenConfig};
 use std::time::{Duration, Instant};
 
 const MAX_MEMORY_MB: usize = 100;
@@ -53,13 +52,16 @@ fn verify_generation_time() {
 #[test]
 fn verify_parser_memory_bounded() {
     // Test that parser doesn't consume excessive memory on pathological input
+    let long_identifier = "x".repeat(1000);
+    let many_expressions = (0..100).map(|i| format!("let x{i} = {i}; ")).collect::<String>();
+    
     let pathological_inputs = vec![
         // Deeply nested parentheses
         "((((((((((((((((((((1))))))))))))))))))))",
         // Long identifier
-        &"x".repeat(1000),
+        &long_identifier,
         // Many small expressions
-        &(0..100).map(|i| format!("let x{i} = {i}; ")).collect::<String>(),
+        &many_expressions,
     ];
     
     for input in pathological_inputs {
@@ -80,18 +82,11 @@ fn verify_parser_memory_bounded() {
 #[ignore] // Run with: cargo test -- --ignored
 fn stress_test_with_memory_limit() {
     // Heavy stress test - only run when explicitly requested
-    let config = AstGenConfig {
-        max_depth: 6,
-        max_list_size: 20,
-        max_identifier_len: 50,
-        favor_well_typed: false,
-    };
-    
     let start = Instant::now();
     let initial_memory = get_memory_usage();
     
     for _ in 0..1000 {
-        let _ = generate_test_expr_with_config(&config);
+        let _ = generate_test_expr(6); // Deep expression
         
         // Check memory periodically
         if start.elapsed() > Duration::from_millis(100) {
@@ -143,8 +138,3 @@ fn generate_test_expr(depth: u32) -> String {
     }
 }
 
-fn generate_test_expr_with_config(_config: &AstGenConfig) -> String {
-    // Placeholder for config-based generation
-    // In real implementation, use the generators module
-    generate_test_expr(3)
-}
