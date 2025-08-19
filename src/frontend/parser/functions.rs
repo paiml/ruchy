@@ -137,7 +137,63 @@ pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
 ///
 /// Returns an error if the operation fails
 pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume |
+    let start_span = state.tokens.peek().map_or(Span { start: 0, end: 0 }, |(_, s)| *s);
+    
+    // Check if it's backslash syntax (\x -> ...) or pipe syntax (|x| ...)
+    if matches!(state.tokens.peek(), Some((Token::Backslash, _))) {
+        state.tokens.advance(); // consume \
+        
+        // Parse parameters (simple identifiers separated by commas)
+        let mut params = Vec::new();
+        
+        // Parse first parameter
+        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            params.push(Param {
+                name: name.clone(),
+                ty: Type {
+                    kind: TypeKind::Named("Any".to_string()),
+                    span: Span { start: 0, end: 0 },
+                },
+                span: Span { start: 0, end: 0 },
+                is_mutable: false,
+            });
+            state.tokens.advance();
+            
+            // Parse additional parameters
+            while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance(); // consume comma
+                if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                    params.push(Param {
+                        name: name.clone(),
+                        ty: Type {
+                            kind: TypeKind::Named("Any".to_string()),
+                            span: Span { start: 0, end: 0 },
+                        },
+                        span: Span { start: 0, end: 0 },
+                        is_mutable: false,
+                    });
+                    state.tokens.advance();
+                }
+            }
+        }
+        
+        // Expect arrow
+        state.tokens.expect(&Token::Arrow)?;
+        
+        // Parse body
+        let body = super::parse_expr_recursive(state)?;
+        
+        return Ok(Expr::new(
+            ExprKind::Lambda {
+                params,
+                body: Box::new(body),
+            },
+            start_span,
+        ));
+    }
+    
+    // Otherwise, handle pipe syntax |x| ...
+    state.tokens.advance(); // consume |
 
     // Handle || as a special case for empty parameter lambdas
     if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {

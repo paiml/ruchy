@@ -519,6 +519,18 @@ impl Repl {
                 // Error propagation requires Result type system integration
                 self.evaluate_expr(expr, deadline, depth + 1)
             }
+            ExprKind::Ok { value } => {
+                // Evaluate the value and wrap in Result::Ok
+                let val = self.evaluate_expr(value, deadline, depth + 1)?;
+                // For now, represent as a tuple ("Ok", value)
+                Ok(Value::List(vec![Value::String("Ok".to_string()), val]))
+            }
+            ExprKind::Err { error } => {
+                // Evaluate the error and wrap in Result::Err
+                let err = self.evaluate_expr(error, deadline, depth + 1)?;
+                // For now, represent as a tuple ("Err", error)
+                Ok(Value::List(vec![Value::String("Err".to_string()), err]))
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
