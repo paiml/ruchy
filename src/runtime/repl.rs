@@ -796,6 +796,13 @@ impl Repl {
             (Bool(a), BinaryOp::And, Bool(b)) => Ok(Bool(*a && *b)),
             (Bool(a), BinaryOp::Or, Bool(b)) => Ok(Bool(*a || *b)),
 
+            // Bitwise operations on integers
+            (Int(a), BinaryOp::BitwiseAnd, Int(b)) => Ok(Int(a & b)),
+            (Int(a), BinaryOp::BitwiseOr, Int(b)) => Ok(Int(a | b)),
+            (Int(a), BinaryOp::BitwiseXor, Int(b)) => Ok(Int(a ^ b)),
+            (Int(a), BinaryOp::LeftShift, Int(b)) => Ok(Int(a << b)),
+            (Int(a), BinaryOp::RightShift, Int(b)) => Ok(Int(a >> b)),
+
             _ => bail!(
                 "Type mismatch in binary operation: {:?} {:?} {:?}",
                 lhs,
@@ -813,6 +820,14 @@ impl Repl {
             (UnaryOp::Negate, Int(n)) => Ok(Int(-n)),
             (UnaryOp::Negate, Float(f)) => Ok(Float(-f)),
             (UnaryOp::Not, Bool(b)) => Ok(Bool(!b)),
+            (UnaryOp::BitwiseNot, Int(n)) => Ok(Int(!n)),
+            (UnaryOp::Reference, v) => {
+                // References in the REPL context just return the value
+                // In a real implementation, this would create a reference/pointer
+                // For now, we'll just return the value as references are primarily
+                // useful for the transpiled code, not the interpreted REPL
+                Ok(v.clone())
+            }
             _ => bail!("Type mismatch in unary operation: {:?} {:?}", op, val),
         }
     }

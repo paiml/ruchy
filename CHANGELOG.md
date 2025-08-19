@@ -5,9 +5,21 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Test Suite Optimization
+## [Unreleased] - Language Features & Quality
 
 ### Added
+- **Reference Operator (&)** (RUCHY-0200)
+  - Full unary reference operator support with context-sensitive parsing
+  - Disambiguation between unary reference (&expr) and binary bitwise AND (expr & expr)
+  - Complete REPL evaluation support for references
+  - Type system integration with MonoType::Reference and MIR Type::Ref
+  - Comprehensive test coverage for all reference scenarios
+
+- **Bitwise Operations in REPL**
+  - Added BitwiseAnd (&), BitwiseOr (|), BitwiseXor (^) evaluation
+  - Added LeftShift (<<) and RightShift (>>) operations
+  - Full integer bitwise operation support in REPL context
+
 - **Test Suite Optimization** (RUCHY-0111)
   - Bounded recursive generators to prevent memory exhaustion (MAX_DEPTH=4, MAX_WIDTH=10)
   - Test execution limits via `.cargo/config.toml` (4 threads, 32 proptest cases)
