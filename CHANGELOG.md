@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.12] - 2025-08-19 (REFERENCE OPERATOR & TRANSPILER QUALITY)
 
+### Fixed
+- **REPL UX Improvements**
+  - Eliminated duplicate welcome message (was printed twice)
+  - Let statements now return their value instead of () when no body present
+  - Consistent version numbering across all REPL messages
+  - Improved welcome message formatting
+
 ### Added
 - **Reference Operator (&)** (RUCHY-0200)
   - Full unary reference operator support with context-sensitive parsing

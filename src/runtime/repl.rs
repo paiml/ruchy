@@ -311,9 +311,12 @@ impl Repl {
                 .ok_or_else(|| anyhow::anyhow!("Undefined variable: {}", name)),
             ExprKind::Let { name, value, body, .. } => {
                 let val = self.evaluate_expr(value, deadline, depth + 1)?;
-                self.bindings.insert(name.clone(), val);
-                // Evaluate the body with the new binding in scope
-                self.evaluate_expr(body, deadline, depth + 1)
+                self.bindings.insert(name.clone(), val.clone());
+                // If there's a body, evaluate it; otherwise return the value
+                match &body.kind {
+                    ExprKind::Literal(Literal::Unit) => Ok(val),
+                    _ => self.evaluate_expr(body, deadline, depth + 1)
+                }
             }
             ExprKind::If { condition, then_branch, else_branch } => {
                 self.evaluate_if(condition, then_branch, else_branch.as_deref(), deadline, depth)
@@ -841,11 +844,7 @@ impl Repl {
     /// - User input cannot be read
     /// - Commands fail to execute
     pub fn run(&mut self) -> Result<()> {
-        println!("{}", "Welcome to Ruchy REPL v0.4.0".bright_cyan().bold());
-        println!(
-            "{}",
-            "Type :help for commands, :quit to exit".bright_black()
-        );
+        // Welcome message is printed in bin/ruchy.rs, not here
         println!();
 
         let mut rl = DefaultEditor::new()?;
