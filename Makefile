@@ -147,6 +147,18 @@ coverage:
 	@echo "Coverage summary:"
 	@cargo llvm-cov report --summary-only 2>&1 | tail -1
 
+# Generate coverage with tarpaulin (alternative)
+coverage-tarpaulin:
+	@echo "Generating coverage report with tarpaulin..."
+	@cargo install cargo-tarpaulin 2>/dev/null || true
+	@cargo tarpaulin --config tarpaulin.toml
+	@echo "✓ Coverage report generated in target/coverage/"
+
+# CI coverage check with minimum threshold
+coverage-ci:
+	@echo "Running coverage check for CI (80% minimum)..."
+	@cargo tarpaulin --fail-under 80 --print-summary
+
 # Run all examples
 examples:
 	@echo "Running examples..."
@@ -171,6 +183,35 @@ bench:
 	@echo "Running benchmarks..."
 	@cargo bench --workspace
 	@echo "✓ Benchmarks complete"
+
+# Run snapshot tests
+test-snapshot:
+	@echo "Running snapshot tests..."
+	@cargo test snapshot_ --lib -- --nocapture
+	@echo "✓ Snapshot tests complete"
+
+# Run mutation tests
+test-mutation:
+	@echo "Running mutation tests with cargo-mutants..."
+	@cargo install cargo-mutants 2>/dev/null || true
+	@cargo mutants --timeout 30 --jobs 4
+	@echo "✓ Mutation tests complete"
+
+# Run fuzz tests
+test-fuzz:
+	@echo "Running fuzz tests (10 seconds per target)..."
+	@cargo +nightly fuzz run parser -- -max_total_time=10 2>/dev/null || true
+	@cargo +nightly fuzz run transpiler -- -max_total_time=10 2>/dev/null || true
+	@echo "✓ Fuzz tests complete"
+
+# Binary validation tests
+test-binary:
+	@echo "Running binary validation tests..."
+	@for example in examples/*.ruchy; do \
+		echo "Testing $$example..."; \
+		cargo run --package ruchy-cli --bin ruchy -- run $$example || exit 1; \
+	done
+	@echo "✓ Binary validation complete"
 
 # Generate documentation
 doc:

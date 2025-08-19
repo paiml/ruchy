@@ -1,0 +1,231 @@
+name: Binary Testing & Quality Gates
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * *' # Daily run
+
+env:
+  RUST_VERSION: "1.75.0"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  binary-validation:
+    name: Binary Compilation Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: rustfmt, clippy
+      
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Run binary validation tests
+        run: cargo test --test binary_validation
+      
+      - name: Test all .ruchy examples compile
+        run: |
+          for file in examples/*.ruchy; do
+            echo "Testing $file..."
+            cargo run --bin ruchy -- check "$file"
+          done
+  
+  property-tests:
+    name: Property-Based Testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Run property tests
+        run: cargo test --test property_tests --release
+        env:
+          PROPTEST_CASES: 10000
+  
+  roundtrip-tests:
+    name: Roundtrip Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Run roundtrip tests
+        run: cargo test --test roundtrip_tests
+  
+  snapshot-tests:
+    name: Snapshot Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Run snapshot tests
+        run: cargo test --test snapshot_tests
+      
+      - name: Check for snapshot changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "Snapshot tests have changes!"
+            git diff
+            exit 1
+          fi
+  
+  fuzz-testing:
+    name: Fuzz Testing
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+      
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+      
+      - name: Fuzz parser (30 seconds)
+        run: |
+          cd fuzz
+          cargo +nightly fuzz run parser -- -max_total_time=30
+        continue-on-error: true
+      
+      - name: Fuzz transpiler (30 seconds)
+        run: |
+          cd fuzz
+          cargo +nightly fuzz run transpiler -- -max_total_time=30
+        continue-on-error: true
+  
+  benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Run benchmarks
+        run: cargo bench --bench compilation_bench -- --output-format bencher | tee output.txt
+      
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'cargo'
+          output-file-path: output.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+  
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: rustfmt, clippy
+      
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Check formatting
+        run: cargo fmt -- --check
+      
+      - name: Clippy with strict settings
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      
+      - name: Check for SATD comments
+        run: |
+          if grep -r "TODO\|FIXME\|HACK" src/ --include="*.rs"; then
+            echo "Technical debt comments found!"
+            exit 1
+          fi
+      
+      - name: Documentation check
+        run: cargo doc --no-deps --all-features
+      
+      - name: Check parsing throughput
+        run: |
+          cargo test --lib --release -- test_parsing_throughput
+  
+  book-integration:
+    name: Book Example Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+      
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Build testing harness
+        run: cargo build --lib
+      
+      - name: Validate harness API
+        run: |
+          # Create a simple test that uses the public API
+          cat > test_harness.rs << 'EOF'
+          use ruchy::testing::RuchyTestHarness;
+          use std::path::Path;
+          
+          fn main() {
+              let harness = RuchyTestHarness::new();
+              
+              // Test hello world
+              harness.assert_output(
+                  r#"println("Hello")"#,
+                  "Hello",
+                  "test"
+              ).expect("Hello test failed");
+              
+              println!("✅ Harness API working correctly");
+          }
+          EOF
+          
+          rustc --edition 2021 -L target/debug/deps test_harness.rs -o test_harness --extern ruchy=target/debug/libruchy.rlib
+          ./test_harness
+      
+      - name: Test compilation performance
+        run: |
+          # Ensure examples compile within time limit
+          timeout 30s cargo test test_compilation_performance

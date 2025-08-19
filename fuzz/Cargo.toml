@@ -16,8 +16,15 @@ libfuzzer-sys = "0.4"
 path = ".."
 
 [[bin]]
-name = "fuzz_target_1"
-path = "fuzz_targets/fuzz_target_1.rs"
+name = "parser"
+path = "fuzz_targets/parser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "transpiler"
+path = "fuzz_targets/transpiler.rs"
 test = false
 doc = false
 bench = false
@@ -25,6 +32,13 @@ bench = false
 [[bin]]
 name = "repl_input"
 path = "fuzz_targets/repl_input.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "full_pipeline"
+path = "fuzz_targets/full_pipeline.rs"
 test = false
 doc = false
 bench = false
