@@ -4,6 +4,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
+use std::io::{self, Read, IsTerminal};
 use ruchy::{runtime::repl::Repl, Parser as RuchyParser, Transpiler};
 use std::fs;
 use std::path::PathBuf;
@@ -91,6 +92,26 @@ fn main() -> Result<()> {
         return run_file(&file);
     }
 
+    // Check if stdin has input (piped mode)
+    if !io::stdin().is_terminal() {
+        let mut input = String::new();
+        io::stdin().read_to_string(&mut input)?;
+        
+        if !input.trim().is_empty() {
+            let mut repl = Repl::new()?;
+            match repl.eval(&input) {
+                Ok(result) => {
+                    println!("{result}");
+                    return Ok(());
+                }
+                Err(e) => {
+                    eprintln!("Error: {e}");
+                    std::process::exit(1);
+                }
+            }
+        }
+    }
+    
     // Handle subcommands
     match cli.command {
         Some(Commands::Repl) | None => {
@@ -160,15 +181,19 @@ fn main() -> Result<()> {
 fn run_file(file: &PathBuf) -> Result<()> {
     let source = fs::read_to_string(file)?;
     
-    // Parse and execute the entire file as one program
-    let mut parser = RuchyParser::new(&source);
-    let ast = parser.parse()?;
-    
-    // For now, just transpile and show the result
-    // In future, we could compile and run the Rust code
-    let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile(&ast)?;
-    println!("{rust_code}");
-    
-    Ok(())
+    // Use REPL to evaluate the file
+    let mut repl = Repl::new()?;
+    match repl.eval(&source) {
+        Ok(result) => {
+            // Only print non-unit results
+            if result != "Unit" && result != "()" {
+                println!("{result}");
+            }
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Error: {e}");
+            std::process::exit(1);
+        }
+    }
 }

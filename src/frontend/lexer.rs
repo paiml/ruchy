@@ -183,6 +183,8 @@ pub enum Token {
     Caret,
     #[token("~")]
     Tilde,
+    #[token("\\")]
+    Backslash,
     #[token("<<")]
     LeftShift,
     #[token(">>")]

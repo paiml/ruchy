@@ -143,6 +143,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::If => control_flow::parse_if(state),
         Token::Let => control_flow::parse_let(state),
         Token::Fun => functions::parse_function(state),
+        Token::Backslash | Token::Pipe => functions::parse_lambda(state),
         Token::Match => control_flow::parse_match(state),
         Token::For => control_flow::parse_for(state),
         Token::While => control_flow::parse_while(state),
@@ -207,7 +208,6 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Import | Token::Use => utils::parse_import(state),
         Token::Module => utils::parse_module(state),
         Token::Export => utils::parse_export(state),
-        Token::Pipe => functions::parse_lambda(state),
         Token::OrOr => functions::parse_empty_lambda(state),
         Token::DataFrame => collections::parse_dataframe(state),
         Token::Minus | Token::Bang | Token::Tilde => {
