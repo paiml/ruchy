@@ -146,7 +146,8 @@ fn main() -> Result<()> {
     // Handle subcommands
     match cli.command {
         Some(Commands::Repl) | None => {
-            println!("{}", "Welcome to Ruchy REPL v0.4.12".bright_cyan().bold());
+            let version_msg = format!("Welcome to Ruchy REPL v{}", env!("CARGO_PKG_VERSION"));
+            println!("{}", version_msg.bright_cyan().bold());
             println!("Type {} for commands, {} to exit\n", ":help".green(), ":quit".yellow());
             
             let mut repl = Repl::new()?;
