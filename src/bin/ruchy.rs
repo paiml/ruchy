@@ -20,6 +20,10 @@ struct Cli {
     /// Output format for evaluation results (text, json)
     #[arg(long, default_value = "text")]
     format: String,
+    
+    /// Enable verbose output
+    #[arg(short = 'v', long)]
+    verbose: bool,
 
     /// Script file to execute (alternative to subcommands)
     file: Option<PathBuf>,
@@ -73,15 +77,42 @@ fn main() -> Result<()> {
 
     // Handle one-liner evaluation with -e flag
     if let Some(expr) = cli.eval {
+        if cli.verbose {
+            eprintln!("Parsing expression: {expr}");
+        }
+        
         let mut repl = Repl::new()?;
         match repl.eval(&expr) {
             Ok(result) => {
-                // JSON format outputs the same as text for now
-                println!("{result}");
+                if cli.verbose {
+                    eprintln!("Evaluation successful");
+                }
+                
+                if cli.format == "json" {
+                    // Output as JSON
+                    println!("{}", serde_json::json!({
+                        "success": true,
+                        "result": format!("{result}")
+                    }));
+                } else {
+                    // Default text output
+                    println!("{result}");
+                }
                 return Ok(());
             }
             Err(e) => {
-                eprintln!("Error: {e}");
+                if cli.verbose {
+                    eprintln!("Evaluation failed: {e}");
+                }
+                
+                if cli.format == "json" {
+                    println!("{}", serde_json::json!({
+                        "success": false,
+                        "error": e.to_string()
+                    }));
+                } else {
+                    eprintln!("Error: {e}");
+                }
                 std::process::exit(1);
             }
         }
