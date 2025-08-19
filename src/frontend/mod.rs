@@ -2,6 +2,7 @@
 //!
 //! This module handles tokenization, parsing, and AST construction.
 
+pub mod arena;
 pub mod ast;
 pub mod error_recovery;
 pub mod lexer;
