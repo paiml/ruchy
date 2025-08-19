@@ -5,6 +5,73 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.14] - 2025-08-19 (BINARY TESTING & BOOK INFRASTRUCTURE)
+
+### Added
+- **Binary Testing Infrastructure** (RUCHY-0500)
+  - Comprehensive testing harness API for external projects (ruchy-book)
+  - Binary validation tests that compile .ruchy files via LLVM
+  - Public `RuchyTestHarness` API for validating code examples
+  - Support for optimization levels and execution timeouts
+
+- **Property-Based Testing**
+  - Proptest suite for parser and transpiler invariants
+  - 10,000+ test cases for expression parsing
+  - Precedence and escaping validation
+
+- **Fuzz Testing Infrastructure**
+  - Parser fuzzing target
+  - Transpiler fuzzing target
+  - Full pipeline fuzzing (parse → transpile → compile)
+  - Integration with cargo-fuzz and libfuzzer
+
+- **Roundtrip Testing**
+  - End-to-end tests from source to execution
+  - Validates parse → transpile → compile → run pipeline
+  - Tests for all major language features
+
+- **Performance Benchmarks**
+  - Criterion benchmark suite for compilation performance
+  - Throughput measurements (target: >50MB/s)
+  - Expression, parsing, and transpilation benchmarks
+
+- **Custom Lint Rules**
+  - No unwrap() in production code
+  - Cyclomatic complexity limits (<10)
+  - Naming convention enforcement
+  - Function length limits
+  - No debug print statements
+
+- **Quality Gates**
+  - Pre-commit hooks for automated quality checks
+  - CI/CD workflow for binary testing
+  - Snapshot testing with insta
+  - Mutation testing preparation
+
+### Documentation
+- **Testing Infrastructure Guide** (`docs/testing-infrastructure.md`)
+  - Complete guide for ruchy-book repository integration
+  - Future CLI commands roadmap (ruchy test, check, lint, fmt)
+  - Performance targets and quality metrics
+
+- **Binary Testing Specification** (`docs/specifications/binary-testing-lint-coverage-spec.md`)
+  - Comprehensive testing strategy
+  - Book integration requirements
+  - LLVM compilation pipeline documentation
+
+### Infrastructure
+- **GitHub Actions Workflow** (`.github/workflows/binary-testing.yml`)
+  - Automated binary validation
+  - Property and fuzz testing in CI
+  - Performance regression detection
+  - Book example validation
+
+### Public API
+- `ruchy::testing::RuchyTestHarness` - Main testing interface
+- `ruchy::testing::OptLevel` - Optimization level configuration
+- `ruchy::testing::ValidationResult` - Test result structure
+- `ruchy::lints::RuchyLinter` - Custom linting engine
+
 ## [0.4.13] - 2025-08-19 (CRITICAL UX IMPROVEMENTS)
 
 ### Fixed
