@@ -204,10 +204,12 @@ graph TD
 |----|-------------|--------|------------|--------|
 | RUCHY-0111 | Test suite optimization | ✅ | High | v0.4.12 |
 | RUCHY-0400 | DataFrame literal parsing and transpilation | ✅ | High | v0.4.13 |
+| RUCHY-0401 | Refactor transpiler complexity Phase 1 (71→9, 87% reduction) | ✅ | High | v0.4.13 |
 
 ### In Progress 🚧
 | ID | Description | Status | Complexity | Sprint |
 |----|-------------|--------|------------|--------|
+| RUCHY-0402 | Refactor dispatcher functions complexity Phase 2 | 📋 | Medium | Next |
 | RUCHY-0200 | Reference operator (&) | 📋 | High | Next |
 | RUCHY-0201 | Self field access | 📋 | Medium | Next |
 | RUCHY-0202 | Method calls on collections | 📋 | High | Next |

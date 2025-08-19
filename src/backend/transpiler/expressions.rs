@@ -3,12 +3,30 @@
 #![allow(clippy::missing_errors_doc)]
 
 use super::Transpiler;
-use crate::frontend::ast::{BinaryOp, Expr, StringPart, UnaryOp};
+use crate::frontend::ast::{BinaryOp, Expr, Literal, StringPart, UnaryOp};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl Transpiler {
+    /// Transpiles literal values
+    pub fn transpile_literal(lit: &Literal) -> TokenStream {
+        match lit {
+            Literal::Integer(i) => {
+                if *i >= i32::MIN as i64 && *i <= i32::MAX as i64 {
+                    quote! { #i i32 }
+                } else {
+                    quote! { #i i64 }
+                }
+            }
+            Literal::Float(f) => quote! { #f },
+            Literal::String(s) => quote! { #s },
+            Literal::Bool(b) => quote! { #b },
+            Literal::Char(c) => quote! { #c },
+            Literal::Unit => quote! { () },
+        }
+    }
+
     /// Transpiles string interpolation
     ///
     /// # Errors
