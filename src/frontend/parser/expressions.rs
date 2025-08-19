@@ -210,12 +210,13 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Export => utils::parse_export(state),
         Token::OrOr => functions::parse_empty_lambda(state),
         Token::DataFrame => collections::parse_dataframe(state),
-        Token::Minus | Token::Bang | Token::Tilde => {
+        Token::Minus | Token::Bang | Token::Tilde | Token::Ampersand => {
             let op_token = state.tokens.advance().expect("checked").0;
             let op = match op_token {
                 Token::Minus => UnaryOp::Negate,
                 Token::Bang => UnaryOp::Not,
                 Token::Tilde => UnaryOp::BitwiseNot,
+                Token::Ampersand => UnaryOp::Reference,
                 _ => unreachable!(),
             };
             let operand = parse_prefix(state)?;

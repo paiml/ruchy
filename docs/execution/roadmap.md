@@ -206,12 +206,12 @@ graph TD
 | RUCHY-0400 | DataFrame literal parsing and transpilation | ✅ | High | v0.4.13 |
 | RUCHY-0401 | Refactor transpiler complexity Phase 1 (71→9, 87% reduction) | ✅ | High | v0.4.13 |
 | RUCHY-0402 | Refactor dispatcher functions complexity Phase 2 (13→6, 12→5, all <10) | ✅ | Medium | v0.4.13 |
+| RUCHY-0200 | Reference operator (&) parsing and transpilation | ✅ | High | v0.4.13 |
 
 ### In Progress 🚧
 | ID | Description | Status | Complexity | Sprint |
 |----|-------------|--------|------------|--------|
-| RUCHY-0200 | Reference operator (&) | 🚧 | High | Current |
-| RUCHY-0201 | Self field access | 📋 | Medium | Next |
+| RUCHY-0201 | Self field access | 🚧 | Medium | Current |
 | RUCHY-0202 | Method calls on collections | 📋 | High | Next |
 
 ### Backlog 📋

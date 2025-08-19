@@ -188,6 +188,7 @@ impl Transpiler {
         Ok(match op {
             UnaryOp::Not | UnaryOp::BitwiseNot => quote! { !#operand_tokens },
             UnaryOp::Negate => quote! { -#operand_tokens },
+            UnaryOp::Reference => quote! { &#operand_tokens },
         })
     }
 

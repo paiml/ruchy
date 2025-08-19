@@ -1,7 +1,7 @@
 //! AST to MIR lowering
 
 use super::builder::MirBuilder;
-use super::types::{BinOp, BlockId, Constant, Operand, Place, Program, Rvalue, Type, UnOp};
+use super::types::{BinOp, BlockId, Constant, Mutability, Operand, Place, Program, Rvalue, Type, UnOp};
 use crate::frontend::ast::{
     BinaryOp as AstBinOp, Expr, ExprKind, Literal, Param, Type as AstType, UnaryOp as AstUnOp,
 };
@@ -304,6 +304,7 @@ impl LoweringContext {
             AstUnOp::Negate => UnOp::Neg,
             AstUnOp::Not => UnOp::Not,
             AstUnOp::BitwiseNot => UnOp::BitNot,
+            AstUnOp::Reference => UnOp::Ref,
         }
     }
 
@@ -384,6 +385,7 @@ impl LoweringContext {
         match op {
             AstUnOp::Negate | AstUnOp::BitwiseNot => Type::I32,
             AstUnOp::Not => Type::Bool,
+            AstUnOp::Reference => Type::Ref(Box::new(Type::I32), Mutability::Immutable), // Reference creates an immutable reference
         }
     }
 }

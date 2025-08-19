@@ -262,6 +262,10 @@ impl InferenceContext {
                 self.unifier.unify(&operand_ty, &MonoType::Int)?;
                 Ok(MonoType::Int)
             }
+            UnaryOp::Reference => {
+                // Reference operator &x: T -> &T
+                Ok(MonoType::Reference(Box::new(operand_ty)))
+            }
         }
     }
 
