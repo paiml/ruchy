@@ -131,7 +131,7 @@ impl InferenceContext {
                 // Modules evaluate to their body type
                 self.infer_expr(body)
             }
-            ExprKind::DataFrame { .. } => Ok(MonoType::Named("DataFrame".to_string())), // DataFrame type
+            ExprKind::DataFrame { columns } => self.infer_dataframe(columns),
             ExprKind::Struct { .. } => {
                 // Struct definitions return Unit, they just register the type
                 Ok(MonoType::Unit)
@@ -175,7 +175,7 @@ impl InferenceContext {
             | ExprKind::PostIncrement { target }
             | ExprKind::PreDecrement { target }
             | ExprKind::PostDecrement { target } => self.infer_increment_decrement(target),
-            ExprKind::DataFrameOperation { source, .. } => self.infer_dataframe_operation(source),
+            ExprKind::DataFrameOperation { source, operation } => self.infer_dataframe_operation(source, operation),
         }
     }
 
@@ -596,19 +596,40 @@ impl InferenceContext {
                 Ok(MonoType::List(Box::new(MonoType::String))) // List of chars (as strings for now)
             }
             // DataFrame methods
+            ("filter" | "groupby" | "agg" | "select", MonoType::DataFrame(columns)) => {
+                // These methods return a DataFrame (preserve structure for now)
+                Ok(MonoType::DataFrame(columns.clone()))
+            }
             ("filter" | "groupby" | "agg" | "select", MonoType::Named(name))
                 if name == "DataFrame" =>
             {
-                // These methods return a DataFrame
+                // Fallback for untyped DataFrames
                 Ok(MonoType::Named("DataFrame".to_string()))
             }
-            ("mean" | "std" | "sum" | "count", MonoType::Named(name)) if name == "DataFrame" => {
+            ("mean" | "std" | "sum" | "count", MonoType::DataFrame(_) | MonoType::Series(_)) => {
                 // These aggregation methods return numeric types
                 Ok(MonoType::Float)
             }
+            ("mean" | "std" | "sum" | "count", MonoType::Named(name)) 
+                if name == "DataFrame" || name == "Series" => {
+                // Fallback for untyped DataFrames/Series
+                Ok(MonoType::Float)
+            }
+            ("col", MonoType::DataFrame(columns)) => {
+                // Column selection returns a Series with the column's type
+                if let Some(arg) = args.first() {
+                    if let ExprKind::Literal(Literal::String(col_name)) = &arg.kind {
+                        if let Some((_, col_type)) = columns.iter().find(|(name, _)| name == col_name) {
+                            return Ok(MonoType::Series(Box::new(col_type.clone())));
+                        }
+                    }
+                }
+                // Default to generic Series if column not found or not literal
+                Ok(MonoType::Series(Box::new(MonoType::Var(self.gen.fresh()))))
+            }
             ("col", MonoType::Named(name)) if name == "DataFrame" => {
-                // Column selection returns a Series
-                Ok(MonoType::Named("Series".to_string()))
+                // Fallback for untyped DataFrames
+                Ok(MonoType::Series(Box::new(MonoType::Var(self.gen.fresh()))))
             }
             // Generic case - treat as a function call with receiver as first argument
             _ => {
@@ -1074,6 +1095,16 @@ impl InferenceContext {
                     });
                 result?
             }
+            TypeKind::DataFrame { columns } => {
+                let mut col_types = Vec::new();
+                for (name, ty) in columns {
+                    col_types.push((name.clone(), Self::ast_type_to_mono_static(ty)?));
+                }
+                MonoType::DataFrame(col_types)
+            }
+            TypeKind::Series { dtype } => {
+                MonoType::Series(Box::new(Self::ast_type_to_mono_static(dtype)?))
+            }
         })
     }
 
@@ -1157,9 +1188,79 @@ impl InferenceContext {
         Ok(MonoType::Var(self.gen.fresh()))
     }
 
-    fn infer_dataframe_operation(&mut self, source: &Expr) -> Result<MonoType> {
-        let _source_ty = self.infer_expr(source)?;
-        Ok(MonoType::Named("DataFrame".to_string()))
+    fn infer_dataframe(&mut self, columns: &[crate::frontend::ast::DataFrameColumn]) -> Result<MonoType> {
+        let mut column_types = Vec::new();
+        
+        for col in columns {
+            // Infer the type of the first value to determine column type
+            let col_type = if col.values.is_empty() {
+                MonoType::Var(self.gen.fresh())
+            } else {
+                let first_ty = self.infer_expr(&col.values[0])?;
+                // Verify all values in the column have the same type
+                for value in &col.values[1..] {
+                    let value_ty = self.infer_expr(value)?;
+                    self.unifier.unify(&first_ty, &value_ty)?;
+                }
+                first_ty
+            };
+            column_types.push((col.name.clone(), col_type));
+        }
+        
+        Ok(MonoType::DataFrame(column_types))
+    }
+
+    fn infer_dataframe_operation(&mut self, source: &Expr, operation: &crate::frontend::ast::DataFrameOp) -> Result<MonoType> {
+        use crate::frontend::ast::DataFrameOp;
+        
+        let source_ty = self.infer_expr(source)?;
+        
+        // Ensure source is a DataFrame
+        match &source_ty {
+            MonoType::DataFrame(columns) => {
+                match operation {
+                    DataFrameOp::Filter(_) => {
+                        // Filter preserves the DataFrame structure
+                        Ok(source_ty.clone())
+                    }
+                    DataFrameOp::Select(selected_cols) => {
+                        // Select creates a new DataFrame with only the selected columns
+                        let mut new_columns = Vec::new();
+                        for col_name in selected_cols {
+                            if let Some((_, ty)) = columns.iter().find(|(name, _)| name == col_name) {
+                                new_columns.push((col_name.clone(), ty.clone()));
+                            }
+                        }
+                        Ok(MonoType::DataFrame(new_columns))
+                    }
+                    DataFrameOp::GroupBy(_) => {
+                        // GroupBy returns a grouped DataFrame (for now, same type)
+                        Ok(source_ty.clone())
+                    }
+                    DataFrameOp::Aggregate(_) => {
+                        // Aggregation returns a DataFrame with aggregated values
+                        Ok(source_ty.clone())
+                    }
+                    DataFrameOp::Join { .. } => {
+                        // Join returns a DataFrame (simplified for now)
+                        Ok(source_ty.clone())
+                    }
+                    DataFrameOp::Sort { .. } => {
+                        // Sort preserves the DataFrame structure
+                        Ok(source_ty.clone())
+                    }
+                    DataFrameOp::Limit(_) | DataFrameOp::Head(_) | DataFrameOp::Tail(_) => {
+                        // These operations preserve the DataFrame structure
+                        Ok(source_ty.clone())
+                    }
+                }
+            }
+            MonoType::Named(name) if name == "DataFrame" => {
+                // Fallback for untyped DataFrames
+                Ok(MonoType::Named("DataFrame".to_string()))
+            }
+            _ => bail!("DataFrame operation on non-DataFrame type: {}", source_ty),
+        }
     }
 }
 
@@ -1236,6 +1337,58 @@ mod tests {
             infer_str("[true, false]").unwrap(),
             MonoType::List(Box::new(MonoType::Bool))
         );
+    }
+
+    #[test]
+    fn test_infer_dataframe() {
+        let df_str = r#"df![
+            age => [25, 30, 35],
+            name => ["Alice", "Bob", "Charlie"]
+        ]"#;
+        
+        let result = infer_str(df_str).unwrap();
+        match result {
+            MonoType::DataFrame(columns) => {
+                assert_eq!(columns.len(), 2);
+                assert_eq!(columns[0].0, "age");
+                assert!(matches!(columns[0].1, MonoType::Int));
+                assert_eq!(columns[1].0, "name");
+                assert!(matches!(columns[1].1, MonoType::String));
+            }
+            _ => panic!("Expected DataFrame type, got {:?}", result),
+        }
+    }
+
+    #[test]
+    fn test_infer_dataframe_operations() {
+        // Test filter operation
+        let filter_str = r#"df![age => [25, 30]].filter(age > 25)"#;
+        let result = infer_str(filter_str).unwrap();
+        assert!(matches!(result, MonoType::DataFrame(_)));
+
+        // Test select operation
+        let select_str = r#"df![age => [25], name => ["Alice"]].select(["age"])"#;
+        let result = infer_str(select_str).unwrap();
+        match result {
+            MonoType::DataFrame(columns) => {
+                assert_eq!(columns.len(), 1);
+                assert_eq!(columns[0].0, "age");
+            }
+            _ => panic!("Expected DataFrame type"),
+        }
+    }
+
+    #[test]
+    fn test_infer_series() {
+        // Test column selection returns Series
+        let col_str = r#"df![age => [25, 30]].col("age")"#;
+        let result = infer_str(col_str).unwrap();
+        assert!(matches!(result, MonoType::Series(_)));
+
+        // Test aggregation on Series
+        let mean_str = r#"df![age => [25, 30]].col("age").mean()"#;
+        let result = infer_str(mean_str).unwrap();
+        assert_eq!(result, MonoType::Float);
     }
 
     #[test]

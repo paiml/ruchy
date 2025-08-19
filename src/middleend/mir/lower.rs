@@ -354,6 +354,14 @@ impl LoweringContext {
                 Type::FnPtr(param_types, Box::new(self.ast_to_mir_type(ret)))
             }
             TypeKind::List(inner) => Type::Vec(Box::new(self.ast_to_mir_type(inner))),
+            TypeKind::DataFrame { .. } => {
+                // Map DataFrames to a user type for now
+                Type::UserType("DataFrame".to_string())
+            }
+            TypeKind::Series { .. } => {
+                // Map Series to a user type for now
+                Type::UserType("Series".to_string())
+            }
         }
     }
 
