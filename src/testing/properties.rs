@@ -5,7 +5,6 @@
 use crate::backend::Transpiler;
 use crate::frontend::ast::*;
 use crate::frontend::{Parser, RecoveryParser};
-use crate::testing::generators::*;
 use proptest::prelude::*;
 use proptest::test_runner::TestCaseError;
 

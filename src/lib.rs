@@ -18,6 +18,7 @@ pub mod middleend;
 pub mod parser;
 pub mod quality;
 pub mod runtime;
+#[cfg(any(test, feature = "testing"))]
 pub mod testing;
 pub mod transpiler;
 
