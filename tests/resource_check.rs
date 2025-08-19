@@ -23,9 +23,7 @@ fn verify_memory_usage() {
     
     assert!(
         delta_mb < MAX_MEMORY_MB,
-        "Test uses {}MB (limit: {}MB)",
-        delta_mb,
-        MAX_MEMORY_MB
+        "Test uses {delta_mb}MB (limit: {MAX_MEMORY_MB}MB)"
     );
 }
 
@@ -43,9 +41,7 @@ fn verify_generation_time() {
     let elapsed = start.elapsed().as_millis();
     assert!(
         elapsed < MAX_TIME_MS,
-        "Generation took {}ms (limit: {}ms)",
-        elapsed,
-        MAX_TIME_MS
+        "Generation took {elapsed}ms (limit: {MAX_TIME_MS}ms)"
     );
 }
 
@@ -53,7 +49,11 @@ fn verify_generation_time() {
 fn verify_parser_memory_bounded() {
     // Test that parser doesn't consume excessive memory on pathological input
     let long_identifier = "x".repeat(1000);
-    let many_expressions = (0..100).map(|i| format!("let x{i} = {i}; ")).collect::<String>();
+    let many_expressions = (0..100).fold(String::new(), |mut acc, i| {
+        use std::fmt::Write;
+        let _ = write!(acc, "let x{i} = {i}; ");
+        acc
+    });
     
     let pathological_inputs = vec![
         // Deeply nested parentheses
@@ -72,14 +72,13 @@ fn verify_parser_memory_bounded() {
         let delta_mb = (after.saturating_sub(before)) / 1_048_576;
         assert!(
             delta_mb < 10,
-            "Parser used {}MB on pathological input",
-            delta_mb
+            "Parser used {delta_mb}MB on pathological input"
         );
     }
 }
 
 #[test]
-#[ignore] // Run with: cargo test -- --ignored
+#[ignore = "Run with: cargo test -- --ignored"]
 fn stress_test_with_memory_limit() {
     // Heavy stress test - only run when explicitly requested
     let start = Instant::now();
@@ -93,9 +92,7 @@ fn stress_test_with_memory_limit() {
             let current_memory = get_memory_usage();
             let delta_mb = (current_memory.saturating_sub(initial_memory)) / 1_048_576;
             
-            if delta_mb > 500 {
-                panic!("Memory usage exceeded 500MB during stress test");
-            }
+            assert!(delta_mb <= 500, "Memory usage exceeded 500MB during stress test");
         }
     }
 }

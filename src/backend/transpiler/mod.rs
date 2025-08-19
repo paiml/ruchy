@@ -16,7 +16,7 @@ mod types;
 use crate::frontend::ast::{Attribute, Expr, ExprKind, Literal, Type};
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 // Module exports are handled by the impl blocks in each module
 
@@ -24,6 +24,12 @@ use quote::{format_ident, quote};
 pub struct Transpiler {
     /// Track whether we're in an async context
     in_async_context: bool,
+}
+
+impl Default for Transpiler {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Transpiler {
@@ -93,7 +99,7 @@ impl Transpiler {
     ///
     /// Panics if label names cannot be parsed as valid Rust tokens
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
-        use ExprKind::*;
+        use ExprKind::{Literal, Identifier, QualifiedName, StringInterpolation, Binary, Unary, Try, Await, If, Match, For, While, Function, Lambda, Call, MethodCall, Struct, StructLiteral, ObjectLiteral, FieldAccess, DataFrame, DataFrameOperation, List, ListComprehension, Range, TryCatch, Throw, Ok, Err, Actor, Send, Ask};
         
         // Dispatch to specialized handlers to keep complexity below 10
         match &expr.kind {
