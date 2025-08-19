@@ -5,7 +5,7 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Language Features & Quality
+## [0.4.12] - 2025-08-19 (REFERENCE OPERATOR & TRANSPILER QUALITY)
 
 ### Added
 - **Reference Operator (&)** (RUCHY-0200)
@@ -20,18 +20,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added LeftShift (<<) and RightShift (>>) operations
   - Full integer bitwise operation support in REPL context
 
-- **Test Suite Optimization** (RUCHY-0111)
-  - Bounded recursive generators to prevent memory exhaustion (MAX_DEPTH=4, MAX_WIDTH=10)
-  - Test execution limits via `.cargo/config.toml` (4 threads, 32 proptest cases)
-  - Resource verification tests to ensure memory usage stays under 100MB
-  - Cached test fixtures to reduce redundant parsing
-  - Find-heavy-tests script to identify memory-intensive tests
-  - New make targets: `test-quick`, `test-memory`, `test-heavy`, `find-heavy-tests`
+### Improved
+- **Transpiler Complexity Refactoring** (RUCHY-0402)
+  - Reduced transpile_binary complexity from 42 to 5 (88% reduction)
+  - Reduced transpile_compound_assign from 17 to 4 (76% reduction)
+  - Reduced transpile_literal from 14 to 4 (71% reduction)
+  - All transpiler functions now <10 cyclomatic complexity
+  - Applied dispatcher pattern for better maintainability
 
 ### Fixed
 - Property test generators no longer cause unbounded recursion
 - Test parallelism limited to prevent resource exhaustion
 - Memory usage per test now bounded to reasonable limits
+
+## [Unreleased]
 
 ## [0.4.11] - 2025-08-20 (PERFORMANCE & QUALITY ENFORCEMENT)
 
