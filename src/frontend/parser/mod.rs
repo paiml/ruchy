@@ -24,6 +24,7 @@ mod utils;
 // Re-export the main parser
 pub use core::Parser;
 
+use crate::frontend::arena::{Arena, StringInterner};
 use crate::frontend::ast::{
     Attribute, BinaryOp, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param,
     Pattern, PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp,
@@ -38,6 +39,12 @@ pub(crate) struct ParserState<'a> {
     #[allow(dead_code)]
     pub error_recovery: ErrorRecovery,
     pub errors: Vec<ErrorNode>,
+    /// Arena allocator for AST nodes
+    #[allow(dead_code)]
+    pub arena: Arena,
+    /// String interner for deduplicating identifiers
+    #[allow(dead_code)]
+    pub interner: StringInterner,
 }
 
 impl<'a> ParserState<'a> {
@@ -47,12 +54,26 @@ impl<'a> ParserState<'a> {
             tokens: TokenStream::new(input),
             error_recovery: ErrorRecovery::new(),
             errors: Vec::new(),
+            arena: Arena::new(),
+            interner: StringInterner::new(),
         }
     }
 
     /// Get all errors encountered during parsing
     pub fn get_errors(&self) -> &[ErrorNode] {
         &self.errors
+    }
+    
+    /// Get arena statistics for performance monitoring
+    #[allow(dead_code)]
+    pub fn arena_stats(&self) -> (usize, usize) {
+        (self.arena.total_allocated(), self.arena.num_items())
+    }
+    
+    /// Get interner statistics
+    #[allow(dead_code)]
+    pub fn interner_stats(&self) -> (usize, usize) {
+        self.interner.stats()
     }
 }
 
