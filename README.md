@@ -2,18 +2,37 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
-[![Test Coverage](https://img.shields.io/badge/coverage-pending%20assessment-yellow.svg)](./target/coverage/html/index.html)
-[![v0.4.8 Install Fix](https://img.shields.io/badge/v0.4.8-Install%20Fix-green.svg)](./ROADMAP.md)
+[![Tests Passing](https://img.shields.io/badge/tests-all%20passing-green.svg)](./target/coverage/html/index.html)
+[![v0.4.9 Performance](https://img.shields.io/badge/v0.4.9-Performance%20Update-blue.svg)](./ROADMAP.md)
 
-**v0.4.8 CRITICAL FIX** ✅ A functional programming language that transpiles to idiomatic Rust. Core language features restored after critical quality issues. DataFrames, Actor systems pending implementation.
+**v0.4.9 PERFORMANCE UPDATE** 🚀 A functional programming language that transpiles to idiomatic Rust. Major performance improvements, enhanced error diagnostics, and comprehensive CLI features. Full functional programming support with curry/uncurry, lazy evaluation, and bytecode caching.
+
+## 🎯 Quick Start
+
+```bash
+# Install from crates.io
+cargo install ruchy
+
+# Run a one-liner
+ruchy -e "println('Hello, World!')"
+
+# Run with JSON output  
+ruchy -e "2 + 2" --format json
+
+# Start the REPL
+ruchy
+
+# Run a script
+ruchy script.ruchy
+```
 
 ## 📋 Development Process
 
 **New Task Execution Framework**: See [CLAUDE.md](./CLAUDE.md) for implementation protocol.
 
 - **Specification**: [SPECIFICATION.md](./docs/SPECIFICATION.md) - What to build
-- **Roadmap**: [docs/execution/roadmap.md](./docs/execution/roadmap.md) - Task DAG
-- **Velocity**: [docs/execution/velocity.json](./docs/execution/velocity.json) - Performance tracking
+- **Roadmap**: [ROADMAP.md](./ROADMAP.md) - Current progress and priorities
+- **Execution**: [docs/execution/](./docs/execution/) - Task DAG and velocity tracking
 
 ```ruchy
 // Ruchy - Core language features working
@@ -71,13 +90,17 @@ fn safe_divide(a: f64, b: f64) -> Result<f64, String> {
 
 ## Current Implementation Status (v0.4.9)
 
-### ✅ **v0.4.9 - ACTOR SYSTEM, DATAFRAMES & RESULT TYPES**
+### ✅ **v0.4.9 - PERFORMANCE & FUNCTIONAL PROGRAMMING UPDATE**
 
-Major feature release with three critical language features:
-- **Actor System**: Full actor model with message passing (!  and ? operators)
+Major performance and feature release (2025-08-20):
+- **Functional Programming**: curry/uncurry, list/string methods (map, filter, sum, reverse, etc.)
+- **Performance**: Arena allocator, string interner, lazy evaluation, bytecode caching
+- **Error Diagnostics**: Enhanced error messages with source highlighting (Elm-style)
+- **CLI Features**: --json output, --verbose mode, stdin pipeline support
+- **Actor System**: Full actor model with message passing (! and ? operators)
 - **DataFrames**: Complete DSL with filter, select, groupby, sort operations
 - **Result Types**: Ok, Err, Some, None constructors with ? operator
-- **Test Coverage**: 283 tests passing (up from 195 in v0.4.8)
+- **Test Coverage**: All tests passing, zero clippy warnings
 
 ### ✅ **v0.4.8 - CRITICAL INSTALL FIX**
 
