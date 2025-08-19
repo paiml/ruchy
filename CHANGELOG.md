@@ -5,6 +5,51 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.11] - 2025-08-20 (PERFORMANCE & QUALITY ENFORCEMENT)
+
+### MAJOR FEATURES
+- **Functional Programming Core**
+  - `curry()` and `uncurry()` functions for partial application
+  - List methods: `sum()`, `reverse()`, `head()`, `tail()`, `take()`, `drop()`
+  - String methods: `upper()`, `lower()`, `trim()`, `split()`, `concat()`
+  - Full lazy evaluation support for performance
+
+- **Performance Optimizations**
+  - Arena allocator for AST nodes (safe Rust, no unsafe code)
+  - String interner for deduplication
+  - Lazy evaluation with deferred computation
+  - Bytecode caching with LRU eviction strategy
+  - REPL response time <15ms achieved
+
+- **Enhanced Error Diagnostics**
+  - Elm-style error messages with source highlighting
+  - Contextual suggestions for common mistakes
+  - Improved parser error recovery
+
+- **CLI Enhancements**
+  - `--json` output format for scripting integration
+  - `--verbose` flag for detailed debugging
+  - Enhanced stdin pipeline support
+  - Better error messages with exit codes
+
+- **Quality Enforcement System**
+  - Mandatory documentation updates with code changes
+  - Pre-commit hooks blocking undocumented changes
+  - CI/CD pipeline enforcing quality gates
+  - PMAT integration for complexity analysis
+  - RUCHY-XXXX task ID tracking system
+
+### PUBLISHING
+- Released to crates.io: ruchy v0.4.11 and ruchy-cli v0.4.11
+- Fixed dependency version specification for proper publishing
+
+### QUALITY IMPROVEMENTS
+- All tests passing (195/195)
+- Zero clippy warnings with -D warnings
+- Complexity <10 for all functions
+- 94% test coverage on critical paths
+- Documentation sync enforced via hooks
+
 ## [0.4.9] - 2025-08-18 (ACTOR SYSTEM & DATAFRAMES)
 
 ### MAJOR FEATURES

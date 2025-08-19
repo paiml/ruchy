@@ -1,0 +1,54 @@
+name: Ruchy Quality Enforcement
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  documentation-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history for diff
+      
+      - name: Check Documentation Updates
+        run: |
+          # Get changed files
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          
+          # Check if source files changed
+          if echo "$CHANGED_FILES" | grep -qE '\.(rs|ruchy)$'; then
+            # Verify documentation was updated
+            if ! echo "$CHANGED_FILES" | grep -qE 'docs/|CHANGELOG.md|README.md'; then
+              echo "::error::Code changes require documentation updates"
+              exit 1
+            fi
+          fi
+      
+      - name: Validate Roadmap Format
+        run: |
+          # Check roadmap has proper task tracking
+          if ! grep -qE 'RUCHY-[0-9]{4}' docs/execution/roadmap.md; then
+            echo "::warning::Roadmap should use RUCHY-XXXX task IDs"
+          fi
+          
+          # Verify completion tracking
+          TOTAL_TASKS=$(grep -cE '^\s*-\s*\[' docs/execution/roadmap.md || echo 0)
+          COMPLETED=$(grep -cE '^\s*-\s*\[x\]' docs/execution/roadmap.md || echo 0)
+          
+          echo "Progress: $COMPLETED/$TOTAL_TASKS tasks completed"
+          
+          # Fail if no tasks tracked
+          if [ "$TOTAL_TASKS" -eq 0 ]; then
+            echo "::error::No tasks found in roadmap.md"
+            exit 1
+          fi
+      
+      - name: Install PMAT
+        run: cargo install pmat
+      
+      - name: Run Quality Gates
+        run: |
+          pmat quality-gate --fail-on-violation
+          pmat analyze satd --strict --fail-on-violation
