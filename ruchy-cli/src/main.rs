@@ -325,7 +325,11 @@ fn value_to_json(value: &ruchy::runtime::Value) -> String {
             let mut cols = Vec::new();
             for col in columns {
                 let values: Vec<String> = col.values.iter().map(value_to_json).collect();
-                cols.push(format!(r#"{{"name":"{}","values":[{}]}}"#, col.name, values.join(",")));
+                cols.push(format!(
+                    r#"{{"name":"{}","values":[{}]}}"#,
+                    col.name,
+                    values.join(",")
+                ));
             }
             format!(r#"{{"type":"DataFrame","columns":[{}]}}"#, cols.join(","))
         }

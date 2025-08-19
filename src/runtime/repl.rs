@@ -42,13 +42,13 @@ use crate::frontend::ast::{
 use crate::{Parser, Transpiler};
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
-use rustyline::error::ReadlineError;
-use rustyline::{Helper, Config, EditMode, CompletionType};
 use rustyline::completion::Completer;
+use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
-use rustyline::validate::Validator;
 use rustyline::history::DefaultHistory;
+use rustyline::validate::Validator;
+use rustyline::{CompletionType, Config, EditMode, Helper};
 use std::collections::HashMap;
 use std::fmt;
 #[allow(unused_imports)]
@@ -78,7 +78,7 @@ pub enum Value {
     Unit,
 }
 
-/// DataFrame column representation for pretty printing
+/// `DataFrame` column representation for pretty printing
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataFrameColumn {
     pub name: String,
@@ -90,18 +90,20 @@ impl Value {
         if columns.is_empty() {
             return write!(f, "Empty DataFrame");
         }
-        
+
         // Calculate column widths for pretty printing
         let mut col_widths = Vec::new();
         for col in columns {
             let header_width = col.name.len();
-            let max_value_width = col.values.iter()
+            let max_value_width = col
+                .values
+                .iter()
                 .map(|v| format!("{v}").len())
                 .max()
                 .unwrap_or(0);
             col_widths.push(header_width.max(max_value_width).max(4)); // minimum width of 4
         }
-        
+
         // Print header separator
         write!(f, "┌")?;
         for (i, width) in col_widths.iter().enumerate() {
@@ -111,17 +113,22 @@ impl Value {
             write!(f, "{}", "─".repeat(width + 2))?; // +2 for padding
         }
         writeln!(f, "┐")?;
-        
+
         // Print column headers
         write!(f, "│")?;
         for (i, (col, width)) in columns.iter().zip(&col_widths).enumerate() {
             if i > 0 {
                 write!(f, "│")?;
             }
-            write!(f, " {:width$} ", col.name.bright_cyan().bold(), width = width)?;
+            write!(
+                f,
+                " {:width$} ",
+                col.name.bright_cyan().bold(),
+                width = width
+            )?;
         }
         writeln!(f, "│")?;
-        
+
         // Print header-data separator
         write!(f, "├")?;
         for (i, width) in col_widths.iter().enumerate() {
@@ -131,10 +138,10 @@ impl Value {
             write!(f, "{}", "─".repeat(width + 2))?;
         }
         writeln!(f, "┤")?;
-        
+
         // Determine number of rows
         let num_rows = columns.iter().map(|c| c.values.len()).max().unwrap_or(0);
-        
+
         // Print data rows
         for row_idx in 0..num_rows {
             write!(f, "│")?;
@@ -142,25 +149,25 @@ impl Value {
                 if col_idx > 0 {
                     write!(f, "│")?;
                 }
-                
+
                 if row_idx < col.values.len() {
                     let value = &col.values[row_idx];
                     let formatted = match value {
-                        Value::String(s) => format!("\"{}\"", s).bright_green().to_string(),
+                        Value::String(s) => format!("\"{s}\"").bright_green().to_string(),
                         Value::Int(n) => n.to_string().bright_blue().to_string(),
                         Value::Float(n) => n.to_string().bright_blue().to_string(),
                         Value::Bool(b) => b.to_string().bright_yellow().to_string(),
                         other => format!("{other}").to_string(),
                     };
-                    write!(f, " {:width$} ", formatted, width = width)?;
+                    write!(f, " {formatted:width$} ")?;
                 } else {
                     // Empty cell if this column has fewer values
-                    write!(f, " {:width$} ", "", width = width)?;
+                    write!(f, " {:<width$} ", "")?;
                 }
             }
             writeln!(f, "│")?;
         }
-        
+
         // Print bottom border
         write!(f, "└")?;
         for (i, width) in col_widths.iter().enumerate() {
@@ -170,10 +177,10 @@ impl Value {
             write!(f, "{}", "─".repeat(width + 2))?;
         }
         write!(f, "┘")?;
-        
+
         // Add summary info
         write!(f, "\n{} rows × {} columns", num_rows, columns.len())?;
-        
+
         Ok(())
     }
 }
@@ -199,9 +206,7 @@ impl fmt::Display for Value {
             Value::Function { name, params, .. } => {
                 write!(f, "fn {}({})", name, params.join(", "))
             }
-            Value::DataFrame { columns } => {
-                Self::format_dataframe(f, columns)
-            }
+            Value::DataFrame { columns } => Self::format_dataframe(f, columns),
             Value::Unit => write!(f, "()"),
         }
     }
@@ -326,16 +331,21 @@ impl RuchyCompleter {
         }
     }
 
-    fn get_completions(&self, line: &str, pos: usize, bindings: &HashMap<String, Value>) -> Vec<String> {
+    fn get_completions(
+        &self,
+        line: &str,
+        pos: usize,
+        bindings: &HashMap<String, Value>,
+    ) -> Vec<String> {
         let mut completions = Vec::new();
         let text_before_cursor = &line[..pos];
-        
+
         // Extract the word being completed
-        let word_start = text_before_cursor.rfind(|c: char| c.is_whitespace() || "()[]{},.;".contains(c))
-            .map(|i| i + 1)
-            .unwrap_or(0);
+        let word_start = text_before_cursor
+            .rfind(|c: char| c.is_whitespace() || "()[]{},.;".contains(c))
+            .map_or(0, |i| i + 1);
         let partial_word = &text_before_cursor[word_start..];
-        
+
         // Complete commands (starting with :)
         if partial_word.starts_with(':') {
             for cmd in &self.commands {
@@ -345,7 +355,7 @@ impl RuchyCompleter {
             }
             return completions;
         }
-        
+
         // Complete method calls (after a dot)
         if let Some(dot_pos) = text_before_cursor.rfind('.') {
             let method_partial = &text_before_cursor[dot_pos + 1..];
@@ -363,40 +373,37 @@ impl RuchyCompleter {
             }
             return completions;
         }
-        
+
         // Complete keywords and functions
         for keyword in &self.keywords {
             if keyword.starts_with(partial_word) {
                 completions.push(keyword.clone());
             }
         }
-        
+
         for func in &self.builtin_functions {
             if func.starts_with(partial_word) {
                 completions.push(func.clone());
             }
         }
-        
+
         // Complete variable names from current bindings
         for var_name in bindings.keys() {
             if var_name.starts_with(partial_word) {
                 completions.push(var_name.clone());
             }
         }
-        
+
         completions
     }
-    
+
     /// Highlight Ruchy syntax with colors
     fn highlight_ruchy_syntax(&self, line: &str) -> String {
         let mut result = String::new();
         let mut chars = line.chars().peekable();
-        
+
         while let Some(ch) = chars.next() {
             match ch {
-                // Skip whitespace
-                ' ' | '\t' => result.push(ch),
-                
                 // Handle strings
                 '"' => {
                     result.push_str(&"\"".bright_green().to_string());
@@ -414,7 +421,7 @@ impl RuchyCompleter {
                         }
                     }
                 }
-                
+
                 // Handle single-quoted chars
                 '\'' => {
                     result.push_str(&"'".bright_yellow().to_string());
@@ -429,35 +436,36 @@ impl RuchyCompleter {
                         }
                     }
                 }
-                
+
                 // Handle numbers
                 '0'..='9' => {
                     let mut number = String::new();
                     number.push(ch);
-                    
+
                     while let Some(&next_ch) = chars.peek() {
                         if next_ch.is_ascii_digit() || next_ch == '.' || next_ch == '_' {
-                            number.push(chars.next().unwrap());
+                            number.push(chars.next().expect("Digit continuation expected"));
                         } else {
                             break;
                         }
                     }
                     result.push_str(&number.bright_blue().to_string());
                 }
-                
+
                 // Handle identifiers and keywords
                 'a'..='z' | 'A'..='Z' | '_' => {
                     let mut identifier = String::new();
                     identifier.push(ch);
-                    
+
                     while let Some(&next_ch) = chars.peek() {
                         if next_ch.is_alphanumeric() || next_ch == '_' {
-                            identifier.push(chars.next().unwrap());
+                            identifier
+                                .push(chars.next().expect("Identifier continuation expected"));
                         } else {
                             break;
                         }
                     }
-                    
+
                     // Check if it's a keyword
                     let highlighted = if self.keywords.contains(&identifier) {
                         identifier.bright_magenta().bold().to_string()
@@ -466,60 +474,65 @@ impl RuchyCompleter {
                     } else {
                         identifier
                     };
-                    
+
                     result.push_str(&highlighted);
                 }
-                
+
                 // Handle comments first (before operators)
                 '/' if chars.peek() == Some(&'/') => {
                     result.push_str(&"//".bright_black().to_string());
                     chars.next(); // consume second '/'
-                    
+
                     // Rest of line is comment
                     for comment_ch in chars.by_ref() {
                         result.push_str(&comment_ch.to_string().bright_black().to_string());
                     }
                     break;
                 }
-                
+
                 // Handle operators and punctuation
                 '+' | '-' | '*' | '/' | '%' | '=' | '!' | '<' | '>' | '&' | '|' | '^' | '~' => {
                     result.push_str(&ch.to_string().bright_red().to_string());
                 }
-                
+
                 // Handle delimiters
                 '(' | ')' | '[' | ']' | '{' | '}' => {
                     result.push_str(&ch.to_string().bright_white().bold().to_string());
                 }
-                
+
                 // Handle punctuation
                 ',' | ';' | ':' | '.' => {
                     result.push_str(&ch.to_string().bright_black().to_string());
                 }
-                
+
                 // Default: no highlighting
                 _ => result.push(ch),
             }
         }
-        
+
         result
     }
 }
 
 impl Completer for RuchyCompleter {
     type Candidate = String;
-    
-    fn complete(&self, line: &str, pos: usize, _ctx: &rustyline::Context) -> Result<(usize, Vec<Self::Candidate>), ReadlineError> {
+
+    fn complete(
+        &self,
+        line: &str,
+        pos: usize,
+        _ctx: &rustyline::Context,
+    ) -> Result<(usize, Vec<Self::Candidate>), ReadlineError> {
         // For now, complete without variable bindings (basic completion only)
         let empty_bindings = HashMap::new();
         let completions = self.get_completions(line, pos, &empty_bindings);
-        
+
         // Find the start position of the word being completed
         let text_before_cursor = &line[..pos];
-        let word_start = text_before_cursor.rfind(|c: char| c.is_whitespace() || "()[]{},.;".contains(c))
-            .map(|i| i + 1)
-            .unwrap_or(0);
-            
+        let word_start = text_before_cursor
+            .rfind(|c: char| c.is_whitespace() || "()[]{},.;".contains(c))
+            .map_or(0, |i| i + 1);
+
         Ok((word_start, completions))
     }
 }
@@ -532,12 +545,12 @@ impl Hinter for RuchyCompleter {
 impl Highlighter for RuchyCompleter {
     fn highlight<'l>(&self, line: &'l str, _pos: usize) -> std::borrow::Cow<'l, str> {
         use std::borrow::Cow;
-        
+
         // Simple syntax highlighting for Ruchy
         let highlighted = self.highlight_ruchy_syntax(line);
         Cow::Owned(highlighted)
     }
-    
+
     fn highlight_char(&self, _line: &str, _pos: usize, _forced: bool) -> bool {
         // Enable character-by-character highlighting
         true
@@ -844,7 +857,9 @@ impl Repl {
                         values,
                     });
                 }
-                Ok(Value::DataFrame { columns: df_columns })
+                Ok(Value::DataFrame {
+                    columns: df_columns,
+                })
             }
             ExprKind::DataFrameOperation { .. } => {
                 // DataFrame operations not yet implemented in REPL
@@ -1001,25 +1016,25 @@ impl Repl {
 
                             // Apply the lambda/function to each item
                             let mut results = Vec::new();
-                            
+
                             // Check if the argument is a lambda or function reference
                             if let ExprKind::Lambda { params, body } = &args[0].kind {
                                 if params.len() != 1 {
                                     bail!("map lambda must take exactly 1 parameter");
                                 }
-                                
+
                                 // Save current bindings
                                 let saved_bindings = self.bindings.clone();
-                                
+
                                 for item in items {
                                     // Bind the parameter to the current item
                                     self.bindings.insert(params[0].name.clone(), item);
-                                    
+
                                     // Evaluate the lambda body
                                     let result = self.evaluate_expr(body, deadline, depth + 1)?;
                                     results.push(result);
                                 }
-                                
+
                                 // Restore bindings
                                 self.bindings = saved_bindings;
                             } else {
@@ -1036,28 +1051,29 @@ impl Repl {
 
                             // Filter items based on predicate
                             let mut results = Vec::new();
-                            
+
                             if let ExprKind::Lambda { params, body } = &args[0].kind {
                                 if params.len() != 1 {
                                     bail!("filter lambda must take exactly 1 parameter");
                                 }
-                                
+
                                 // Save current bindings
                                 let saved_bindings = self.bindings.clone();
-                                
+
                                 for item in items {
                                     // Bind the parameter to the current item
                                     self.bindings.insert(params[0].name.clone(), item.clone());
-                                    
+
                                     // Evaluate the predicate
-                                    let predicate_result = self.evaluate_expr(body, deadline, depth + 1)?;
-                                    
+                                    let predicate_result =
+                                        self.evaluate_expr(body, deadline, depth + 1)?;
+
                                     // Check if predicate is true
                                     if let Value::Bool(true) = predicate_result {
                                         results.push(item);
                                     }
                                 }
-                                
+
                                 // Restore bindings
                                 self.bindings = saved_bindings;
                             } else {
@@ -1070,33 +1086,34 @@ impl Repl {
                             if args.len() != 2 {
                                 bail!("reduce expects 2 arguments: initial value and lambda");
                             }
-                            
+
                             // Evaluate the initial value
-                            let mut accumulator = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                            
+                            let mut accumulator =
+                                self.evaluate_expr(&args[0], deadline, depth + 1)?;
+
                             if let ExprKind::Lambda { params, body } = &args[1].kind {
                                 if params.len() != 2 {
                                     bail!("reduce lambda must take exactly 2 parameters (accumulator, item)");
                                 }
-                                
+
                                 // Save current bindings
                                 let saved_bindings = self.bindings.clone();
-                                
+
                                 for item in items {
                                     // Bind the parameters
                                     self.bindings.insert(params[0].name.clone(), accumulator);
                                     self.bindings.insert(params[1].name.clone(), item);
-                                    
+
                                     // Evaluate the reducer function
                                     accumulator = self.evaluate_expr(body, deadline, depth + 1)?;
                                 }
-                                
+
                                 // Restore bindings
                                 self.bindings = saved_bindings;
                             } else {
                                 bail!("reduce currently only supports lambda expressions");
                             }
-                            
+
                             Ok(accumulator)
                         }
                         "len" | "length" => {
@@ -1403,9 +1420,9 @@ impl Repl {
             .completion_type(CompletionType::List)
             .edit_mode(EditMode::Emacs)
             .build();
-            
+
         let mut rl = rustyline::Editor::<RuchyCompleter, DefaultHistory>::with_config(config)?;
-        
+
         // Set up tab completion
         let completer = RuchyCompleter::new();
         rl.set_helper(Some(completer));
@@ -1596,7 +1613,7 @@ impl Repl {
                 } else {
                     match self.save_session(filename) {
                         Ok(()) => println!("Session saved to {}", filename.bright_green()),
-                        Err(e) => eprintln!("Failed to save session: {}", e),
+                        Err(e) => eprintln!("Failed to save session: {e}"),
                     }
                 }
                 Ok(false)
@@ -1802,16 +1819,16 @@ impl Repl {
     fn search_history(&self, query: &str) {
         let query_lower = query.to_lowercase();
         let mut matches = Vec::new();
-        
+
         // Simple fuzzy matching: contains all characters in order
         for (i, item) in self.history.iter().enumerate() {
             let item_lower = item.to_lowercase();
-            
+
             // Check if query characters appear in order in the history item
             let mut query_chars = query_lower.chars();
             let mut current_char = query_chars.next();
             let mut score = 0;
-            
+
             for item_char in item_lower.chars() {
                 if let Some(q_char) = current_char {
                     if item_char == q_char {
@@ -1820,7 +1837,7 @@ impl Repl {
                     }
                 }
             }
-            
+
             // If all query characters were found, it's a match
             if current_char.is_none() {
                 matches.push((i, item, score));
@@ -1829,44 +1846,53 @@ impl Repl {
                 matches.push((i, item, query.len()));
             }
         }
-        
+
         if matches.is_empty() {
-            println!("No matches found for '{}'", query);
+            println!("No matches found for '{query}'");
             return;
         }
-        
+
         // Sort by score (descending) then by recency (descending)
-        matches.sort_by(|a, b| {
-            b.2.cmp(&a.2).then(b.0.cmp(&a.0))
-        });
-        
-        println!("{} History search results for '{}':", "Found".bright_green(), query);
+        matches.sort_by(|a, b| b.2.cmp(&a.2).then(b.0.cmp(&a.0)));
+
+        println!(
+            "{} History search results for '{}':",
+            "Found".bright_green(),
+            query
+        );
         for (i, (hist_idx, item, _score)) in matches.iter().enumerate().take(10) {
             // Highlight the query in the result
             let highlighted = Self::highlight_match(item, &query_lower);
-            println!("  {}: {}", format!("{}", hist_idx + 1).bright_black(), highlighted);
-            
+            println!(
+                "  {}: {}",
+                format!("{}", hist_idx + 1).bright_black(),
+                highlighted
+            );
+
             if i >= 9 {
                 break;
             }
         }
-        
+
         if matches.len() > 10 {
             println!("  ... and {} more matches", matches.len() - 10);
         }
-        
-        println!("\n{}: Use :history to see all commands or Ctrl+R for interactive search", "Tip".bright_cyan());
+
+        println!(
+            "\n{}: Use :history to see all commands or Ctrl+R for interactive search",
+            "Tip".bright_cyan()
+        );
     }
-    
+
     /// Highlight query matches in text
     fn highlight_match(text: &str, query: &str) -> String {
         let mut result = String::new();
         let mut query_chars = query.chars().peekable();
         let mut current_char = query_chars.next();
-        
+
         for ch in text.chars() {
             let ch_lower = ch.to_lowercase().next().unwrap_or(ch);
-            
+
             if let Some(q_char) = current_char {
                 if ch_lower == q_char {
                     // Highlight matching character
@@ -1879,7 +1905,7 @@ impl Repl {
                 result.push(ch);
             }
         }
-        
+
         result
     }
 
@@ -1891,53 +1917,74 @@ impl Repl {
     fn save_session(&self, filename: &str) -> Result<()> {
         use chrono::Utc;
         use std::io::Write;
-        
+
         let mut content = String::new();
-        
+
         // Add header with timestamp
         writeln!(&mut content, "// Ruchy REPL Session")?;
-        writeln!(&mut content, "// Generated: {}", Utc::now().format("%Y-%m-%d %H:%M:%S UTC"))?;
+        writeln!(
+            &mut content,
+            "// Generated: {}",
+            Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+        )?;
         writeln!(&mut content, "// Commands: {}", self.history.len())?;
         writeln!(&mut content, "// Variables: {}", self.bindings.len())?;
-        writeln!(&mut content, "")?;
-        
+        writeln!(&mut content)?;
+
         // Add variable bindings as comments
         if !self.bindings.is_empty() {
             writeln!(&mut content, "// Current variable bindings:")?;
             for (name, value) in &self.bindings {
-                writeln!(&mut content, "// {}: {}", name, value)?;
+                writeln!(&mut content, "// {name}: {value}")?;
             }
-            writeln!(&mut content, "")?;
+            writeln!(&mut content)?;
         }
-        
+
         // Add all commands from history
-        writeln!(&mut content, "// Session history (paste into REPL or run as script):")?;
-        writeln!(&mut content, "")?;
-        
+        writeln!(
+            &mut content,
+            "// Session history (paste into REPL or run as script):"
+        )?;
+        writeln!(&mut content)?;
+
         for (i, command) in self.history.iter().enumerate() {
             // Skip commands that start with : (REPL commands)
             if command.starts_with(':') {
-                writeln!(&mut content, "// Command {}: {} (REPL command, skipped)", i + 1, command)?;
+                writeln!(
+                    &mut content,
+                    "// Command {}: {} (REPL command, skipped)",
+                    i + 1,
+                    command
+                )?;
                 continue;
             }
-            
+
             writeln!(&mut content, "// Command {}:", i + 1)?;
-            writeln!(&mut content, "{}", command)?;
-            writeln!(&mut content, "")?;
+            writeln!(&mut content, "{command}")?;
+            writeln!(&mut content)?;
         }
-        
+
         // Add a section for recreating the session
         writeln!(&mut content, "// To recreate this session, you can:")?;
-        writeln!(&mut content, "// 1. Copy and paste commands individually into the REPL")?;
-        writeln!(&mut content, "// 2. Use :load {} to execute all commands", filename)?;
-        writeln!(&mut content, "// 3. Remove comments and run as a script: ruchy {}", filename)?;
-        
+        writeln!(
+            &mut content,
+            "// 1. Copy and paste commands individually into the REPL"
+        )?;
+        writeln!(
+            &mut content,
+            "// 2. Use :load {filename} to execute all commands"
+        )?;
+        writeln!(
+            &mut content,
+            "// 3. Remove comments and run as a script: ruchy {filename}"
+        )?;
+
         // Write to file
         let mut file = std::fs::File::create(filename)
             .with_context(|| format!("Failed to create file: {filename}"))?;
         file.write_all(content.as_bytes())
             .with_context(|| format!("Failed to write to file: {filename}"))?;
-            
+
         Ok(())
     }
 
