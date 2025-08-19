@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![Tests Passing](https://img.shields.io/badge/tests-all%20passing-green.svg)](./target/coverage/html/index.html)
-[![v0.4.9 Performance](https://img.shields.io/badge/v0.4.9-Performance%20Update-blue.svg)](./ROADMAP.md)
+[![v0.4.10 Performance](https://img.shields.io/badge/v0.4.10-Performance%20Update-blue.svg)](./ROADMAP.md)
 
-**v0.4.9 PERFORMANCE UPDATE** 🚀 A functional programming language that transpiles to idiomatic Rust. Major performance improvements, enhanced error diagnostics, and comprehensive CLI features. Full functional programming support with curry/uncurry, lazy evaluation, and bytecode caching.
+**v0.4.10 PERFORMANCE UPDATE** 🚀 A functional programming language that transpiles to idiomatic Rust. Major performance improvements, enhanced error diagnostics, and comprehensive CLI features. Full functional programming support with curry/uncurry, lazy evaluation, and bytecode caching.
 
 ## 🎯 Quick Start
 
@@ -88,9 +88,9 @@ fn safe_divide(a: f64, b: f64) -> Result<f64, String> {
 }
 ```
 
-## Current Implementation Status (v0.4.9)
+## Current Implementation Status (v0.4.10)
 
-### ✅ **v0.4.9 - PERFORMANCE & FUNCTIONAL PROGRAMMING UPDATE**
+### ✅ **v0.4.10 - PERFORMANCE & FUNCTIONAL PROGRAMMING UPDATE**
 
 Major performance and feature release (2025-08-20):
 - **Functional Programming**: curry/uncurry, list/string methods (map, filter, sum, reverse, etc.)
