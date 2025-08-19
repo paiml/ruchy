@@ -5,6 +5,7 @@
 
 pub mod actor;
 pub mod grammar_coverage;
+pub mod lazy;
 pub mod repl;
 #[cfg(test)]
 mod repl_function_tests;
