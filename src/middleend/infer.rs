@@ -1355,14 +1355,14 @@ mod tests {
                 assert_eq!(columns[1].0, "name");
                 assert!(matches!(columns[1].1, MonoType::String));
             }
-            _ => panic!("Expected DataFrame type, got {:?}", result),
+            _ => panic!("Expected DataFrame type, got {result:?}"),
         }
     }
 
     #[test]
     fn test_infer_dataframe_operations() {
         // Test filter operation
-        let filter_str = r#"df![age => [25, 30]].filter(age > 25)"#;
+        let filter_str = r"df![age => [25, 30]].filter(age > 25)";
         let result = infer_str(filter_str).unwrap();
         assert!(matches!(result, MonoType::DataFrame(_)));
 

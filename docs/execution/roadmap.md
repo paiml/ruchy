@@ -285,9 +285,9 @@ graph TD
 ## Future CLI Commands Roadmap
 
 ### Phase 1: Core Commands (v0.5.x)
-- [ ] **RUCHY-0600**: Implement `ruchy test` command for native testing
-- [ ] **RUCHY-0601**: Implement `ruchy check` for type checking
-- [ ] **RUCHY-0602**: Implement `ruchy fmt` for code formatting
+- [x] **RUCHY-0600**: Implement `ruchy test` command for native testing
+- [x] **RUCHY-0601**: Implement `ruchy check` for type checking
+- [x] **RUCHY-0602**: Implement `ruchy fmt` for code formatting
 - [ ] **RUCHY-0603**: Implement `ruchy lint` with basic rules
 
 ### Phase 2: Advanced Commands (v0.6.x)
