@@ -43,21 +43,21 @@ impl RuchyLinter {
             Box::new(ComplexityRule::default()),
             Box::new(NoDebugPrintRule),
         ];
-        
+
         Self { rules }
     }
-    
+
     pub fn add_rule(&mut self, rule: Box<dyn LintRule>) {
         self.rules.push(rule);
     }
-    
+
     pub fn lint(&self, expr: &Expr) -> Vec<LintViolation> {
         let mut violations = Vec::new();
-        
+
         for rule in &self.rules {
             violations.extend(rule.check_expression(expr));
         }
-        
+
         violations
     }
 }
@@ -69,16 +69,26 @@ struct ComplexityRule {
 }
 
 impl ComplexityRule {
+    #[allow(clippy::only_used_in_recursion)]
     fn calculate_complexity(&self, expr: &Expr) -> usize {
         match &expr.kind {
-            ExprKind::If { condition, then_branch, else_branch } => {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 1 + self.calculate_complexity(condition)
                     + self.calculate_complexity(then_branch)
-                    + else_branch.as_ref().map_or(0, |e| self.calculate_complexity(e))
+                    + else_branch
+                        .as_ref()
+                        .map_or(0, |e| self.calculate_complexity(e))
             }
             ExprKind::Match { expr, arms } => {
                 1 + self.calculate_complexity(expr)
-                    + arms.iter().map(|arm| self.calculate_complexity(&arm.body)).sum::<usize>()
+                    + arms
+                        .iter()
+                        .map(|arm| self.calculate_complexity(&arm.body))
+                        .sum::<usize>()
             }
             ExprKind::While { condition, body } => {
                 1 + self.calculate_complexity(condition) + self.calculate_complexity(body)
@@ -89,30 +99,34 @@ impl ComplexityRule {
             ExprKind::Binary { left, right, .. } => {
                 self.calculate_complexity(left) + self.calculate_complexity(right)
             }
-            _ => 0
+            _ => 0,
         }
     }
 }
 
 impl LintRule for ComplexityRule {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "complexity"
     }
-    
+
     fn check_expression(&self, expr: &Expr) -> Vec<LintViolation> {
         let mut violations = Vec::new();
-        let max = if self.max_complexity == 0 { 10 } else { self.max_complexity };
-        
+        let max = if self.max_complexity == 0 {
+            10
+        } else {
+            self.max_complexity
+        };
+
         let complexity = self.calculate_complexity(expr);
         if complexity > max {
             violations.push(LintViolation::Violation {
                 location: format!("position {}", expr.span.start),
-                message: format!("Cyclomatic complexity is {} (max: {})", complexity, max),
+                message: format!("Cyclomatic complexity is {complexity} (max: {max})"),
                 severity: Severity::Warning,
                 suggestion: Some("Consider breaking this into smaller functions".to_string()),
             });
         }
-        
+
         violations
     }
 }
@@ -121,10 +135,10 @@ impl LintRule for ComplexityRule {
 struct NoDebugPrintRule;
 
 impl LintRule for NoDebugPrintRule {
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "no_debug_print"
     }
-    
+
     fn check_expression(&self, expr: &Expr) -> Vec<LintViolation> {
         match &expr.kind {
             ExprKind::Call { func, .. } => {
@@ -134,7 +148,9 @@ impl LintRule for NoDebugPrintRule {
                             location: format!("position {}", expr.span.start),
                             message: "Debug print statement found".to_string(),
                             severity: Severity::Warning,
-                            suggestion: Some("Remove debug statements before committing".to_string()),
+                            suggestion: Some(
+                                "Remove debug statements before committing".to_string(),
+                            ),
                         }]
                     } else {
                         vec![]
@@ -143,7 +159,7 @@ impl LintRule for NoDebugPrintRule {
                     vec![]
                 }
             }
-            _ => vec![]
+            _ => vec![],
         }
     }
 }

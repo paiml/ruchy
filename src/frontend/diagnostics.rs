@@ -3,9 +3,9 @@
 //! This module provides user-friendly error messages with context,
 //! suggestions, and code snippets similar to Rust and Elm compilers.
 
-use std::fmt;
-use colored::Colorize;
 use crate::frontend::ast::Span;
+use colored::Colorize;
+use std::fmt;
 
 /// Error severity levels
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -141,38 +141,43 @@ impl Diagnostic {
     fn render_source_context(&self) -> String {
         use std::fmt::Write;
         let mut output = String::new();
-        
+
         // Find the line containing the error
         let lines: Vec<&str> = self.source.lines().collect();
         let mut current_pos = 0;
         let mut error_line = 0;
         let mut error_col = 0;
-        
+
         for (i, line) in lines.iter().enumerate() {
             let line_start = current_pos;
             let line_end = current_pos + line.len();
-            
+
             if self.span.start >= line_start && self.span.start <= line_end {
                 error_line = i;
                 error_col = self.span.start - line_start;
                 break;
             }
-            
+
             current_pos = line_end + 1; // +1 for newline
         }
-        
+
         // Show context (line before, error line, line after)
         let start_line = error_line.saturating_sub(1);
         let end_line = (error_line + 2).min(lines.len());
-        
+
         let _ = writeln!(output, "\n{}:", " --> source".blue());
-        
-        for (i, line) in lines.iter().enumerate().skip(start_line).take(end_line - start_line) {
+
+        for (i, line) in lines
+            .iter()
+            .enumerate()
+            .skip(start_line)
+            .take(end_line - start_line)
+        {
             let line_num = i + 1;
-            
+
             // Line number and content
             let _ = writeln!(output, "{line_num:4} | {line}");
-            
+
             // Error underline
             if i == error_line {
                 let underline_start = error_col;
@@ -182,7 +187,7 @@ impl Diagnostic {
                 let _ = writeln!(output, "{padding}{underline}");
             }
         }
-        
+
         output
     }
 }
@@ -212,17 +217,21 @@ impl DiagnosticBuilder {
             .with_source(source)
             .with_span(span)
             .with_code("E0002")
-            .with_suggestion(format!("did you mean to define it with `let {name} = ...`?"))
+            .with_suggestion(format!(
+                "did you mean to define it with `let {name} = ...`?"
+            ))
             .add_note("variables must be defined before use")
     }
 
     /// Type mismatch error
     pub fn type_mismatch(expected: &str, found: &str, source: &str, span: Span) -> Diagnostic {
-        Diagnostic::error(format!("type mismatch: expected `{expected}`, found `{found}`"))
-            .with_source(source)
-            .with_span(span)
-            .with_code("E0003")
-            .add_note("types must match exactly")
+        Diagnostic::error(format!(
+            "type mismatch: expected `{expected}`, found `{found}`"
+        ))
+        .with_source(source)
+        .with_span(span)
+        .with_code("E0003")
+        .add_note("types must match exactly")
     }
 
     /// Function not found error
@@ -231,7 +240,9 @@ impl DiagnosticBuilder {
             .with_source(source)
             .with_span(span)
             .with_code("E0004")
-            .with_suggestion(format!("define the function with `fn {name}(...) {{ ... }}`"))
+            .with_suggestion(format!(
+                "define the function with `fn {name}(...) {{ ... }}`"
+            ))
     }
 
     /// Syntax error
@@ -252,7 +263,7 @@ mod tests {
         let diag = Diagnostic::error("test error")
             .with_code("E0001")
             .with_suggestion("try this instead");
-        
+
         let rendered = diag.render();
         assert!(rendered.contains("error"));
         assert!(rendered.contains("E0001"));
@@ -266,7 +277,7 @@ mod tests {
             .with_source(source)
             .with_span(Span { start: 19, end: 26 }) // "unknown"
             .with_suggestion("define the variable first");
-        
+
         let rendered = diag.render();
         assert!(rendered.contains("let y = unknown"));
         assert!(rendered.contains("^^^^^^^")); // Error underline
@@ -281,7 +292,7 @@ mod tests {
             source,
             Span { start: 13, end: 20 },
         );
-        
+
         let rendered = diag.render();
         assert!(rendered.contains("type mismatch"));
         assert!(rendered.contains("Integer"));

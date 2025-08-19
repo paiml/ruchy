@@ -12,12 +12,18 @@ fn test_reference_operator_basic_parsing() {
     // Test just parsing without evaluation
     let input = "&42";
     let mut parser = Parser::new(input);
-    let expr = parser.parse().expect("Failed to parse reference expression");
-    
+    let expr = parser
+        .parse()
+        .expect("Failed to parse reference expression");
+
     // Verify it parsed as a unary reference expression
     match &expr.kind {
         ruchy::ExprKind::Unary { op, operand: _ } => {
-            assert_eq!(*op, ruchy::UnaryOp::Reference, "Should parse as reference operator");
+            assert_eq!(
+                *op,
+                ruchy::UnaryOp::Reference,
+                "Should parse as reference operator"
+            );
         }
         _ => panic!("Expected unary reference expression, got: {:?}", expr.kind),
     }
@@ -27,32 +33,44 @@ fn test_reference_operator_basic_parsing() {
 fn test_reference_operator_transpilation() {
     let input = "&42";
     let mut parser = Parser::new(input);
-    let expr = parser.parse().expect("Failed to parse reference expression");
-    
+    let expr = parser
+        .parse()
+        .expect("Failed to parse reference expression");
+
     let transpiler = Transpiler::new();
     let result = transpiler.transpile(&expr);
     assert!(result.is_ok(), "Reference expression should transpile");
-    
+
     let rust_code = result.unwrap().to_string();
-    assert!(rust_code.contains("&"), "Transpiled code should contain reference operator");
-    assert!(rust_code.contains("42"), "Transpiled code should contain the operand");
+    assert!(
+        rust_code.contains("&"),
+        "Transpiled code should contain reference operator"
+    );
+    assert!(
+        rust_code.contains("42"),
+        "Transpiled code should contain the operand"
+    );
 }
 
 #[test]
 fn test_reference_vs_bitwise_basic() {
     // Test that & can be parsed in different contexts
-    
+
     // Bitwise AND
     let input = "5 & 3";
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse bitwise AND");
     match &expr.kind {
         ruchy::ExprKind::Binary { op, .. } => {
-            assert_eq!(*op, ruchy::BinaryOp::BitwiseAnd, "Should parse as bitwise AND");
+            assert_eq!(
+                *op,
+                ruchy::BinaryOp::BitwiseAnd,
+                "Should parse as bitwise AND"
+            );
         }
         _ => panic!("Expected binary expression, got: {:?}", expr.kind),
     }
-    
+
     // Reference (unary)
     let input = "&5";
     let mut parser = Parser::new(input);

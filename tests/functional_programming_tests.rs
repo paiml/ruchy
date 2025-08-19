@@ -78,11 +78,11 @@ fn test_lambda_syntax() {
     // Backslash syntax
     assert!(is_valid_syntax(r"\x -> x + 1"));
     assert!(is_valid_syntax(r"\x, y -> x + y"));
-    
+
     // Pipe syntax
     assert!(is_valid_syntax("|x| x + 1"));
     assert!(is_valid_syntax("|x, y| x + y"));
-    
+
     // Empty lambda
     assert!(is_valid_syntax("|| 42"));
 }
@@ -188,7 +188,7 @@ fn test_curry_function() {
     // Curry transforms a multi-argument function into nested single-argument functions
     let code = "curry(add)";
     assert!(is_valid_syntax(code));
-    
+
     let code2 = r"
         fn add(x, y) { x + y }
         let curriedAdd = curry(add)
@@ -202,7 +202,7 @@ fn test_uncurry_function() {
     // Uncurry transforms a curried function back to multi-argument form
     let code = "uncurry(curriedFunc)";
     assert!(is_valid_syntax(code));
-    
+
     let code2 = r"
         let curriedAdd = |x| |y| x + y
         let normalAdd = uncurry(curriedAdd)

@@ -1,10 +1,15 @@
+#![allow(
+    clippy::expect_used,
+    clippy::unwrap_used,
+    clippy::uninlined_format_args
+)]
+
 use proptest::prelude::*;
-use ruchy::parser::Parser;
-use ruchy::transpiler::Transpiler;
+use ruchy::{Parser, Transpiler};
 
 /// Generate valid Ruchy identifiers
 fn valid_identifier() -> impl Strategy<Value = String> {
-    "[a-z][a-z0-9_]{0,20}".prop_map(|s| s.to_string())
+    "[a-z][a-z0-9_]{0,20}".prop_map(String::from)
 }
 
 /// Generate valid integers
@@ -35,12 +40,12 @@ proptest! {
     ) {
         let input = format!("let {} = {}", var, value);
         let mut parser = Parser::new(&input);
-        
+
         // Should parse without panicking
-        let result = parser.parse_module();
+        let result = parser.parse();
         prop_assert!(result.is_ok(), "Failed to parse: {}", input);
     }
-    
+
     /// Test that parsed code can be transpiled
     #[test]
     fn prop_parse_transpile_pipeline(
@@ -49,14 +54,14 @@ proptest! {
     ) {
         let input = format!("let {} = {}", var, value);
         let mut parser = Parser::new(&input);
-        
-        if let Ok(ast) = parser.parse_module() {
+
+        if let Ok(ast) = parser.parse() {
             let transpiler = Transpiler::new();
-            let result = transpiler.transpile_module(&ast);
+            let result = transpiler.transpile(&ast);
             prop_assert!(result.is_ok(), "Failed to transpile: {}", input);
         }
     }
-    
+
     /// Test function definitions
     #[test]
     fn prop_function_definition(
@@ -65,15 +70,15 @@ proptest! {
         body in valid_integer()
     ) {
         let input = format!(
-            "fn {}({}: i32) -> i32 {{ {} }}", 
+            "fn {}({}: i32) -> i32 {{ {} }}",
             name, param, body
         );
         let mut parser = Parser::new(&input);
-        
-        let result = parser.parse_module();
+
+        let result = parser.parse();
         prop_assert!(result.is_ok(), "Failed to parse function: {}", input);
     }
-    
+
     /// Test binary operations maintain precedence
     #[test]
     fn prop_binary_op_precedence(
@@ -83,32 +88,33 @@ proptest! {
     ) {
         let input = format!("{} + {} * {}", a, b, c);
         let mut parser = Parser::new(&input);
-        
-        if let Ok(ast) = parser.parse_expression() {
+
+        if let Ok(ast) = parser.parse_expr() {
             let transpiler = Transpiler::new();
-            if let Ok(rust_code) = transpiler.transpile_expr(&ast) {
+            if let Ok(rust_code) = transpiler.transpile(&ast) {
+                let rust_str = rust_code.to_string();
                 // The multiplication should have higher precedence
                 prop_assert!(
-                    rust_code.contains(&format!("({} * {})", b, c)) ||
-                    rust_code.contains(&format!("{} + {} * {}", a, b, c)),
+                    rust_str.contains(&format!("({} * {})", b, c)) ||
+                    rust_str.contains(&format!("{} + {} * {}", a, b, c)),
                     "Precedence not preserved in: {}", rust_code
                 );
             }
         }
     }
-    
+
     /// Test string literals are properly escaped
     #[test]
     fn prop_string_escaping(s in ".*") {
         let input = format!(r#"let x = "{}""#, s.escape_default());
         let mut parser = Parser::new(&input);
-        
+
         // Should handle any string content
-        let result = parser.parse_module();
+        let result = parser.parse();
         if result.is_ok() {
             let transpiler = Transpiler::new();
             let ast = result.unwrap();
-            let transpiled = transpiler.transpile_module(&ast);
+            let transpiled = transpiler.transpile(&ast);
             prop_assert!(transpiled.is_ok(), "Failed to transpile string: {:?}", s);
         }
     }

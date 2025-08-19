@@ -309,7 +309,7 @@ impl CiQualityEnforcer {
     /// # Examples
     ///
     /// ```no_run
-    /// # use ruchy::quality::{CiQualityEnforcer, CiBackend, ReportingBackend, QualityGates};
+    /// # use ruchy::quality::{CiQualityEnforcer, ReportingBackend, QualityGates};
     /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut enforcer = CiQualityEnforcer::new(
     ///     QualityGates::new(),

@@ -299,7 +299,10 @@ impl Token {
 
     #[must_use]
     pub fn is_unary_op(&self) -> bool {
-        matches!(self, Token::Bang | Token::Minus | Token::Tilde | Token::Ampersand)
+        matches!(
+            self,
+            Token::Bang | Token::Minus | Token::Tilde | Token::Ampersand
+        )
     }
 
     #[must_use]

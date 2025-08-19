@@ -137,15 +137,18 @@ pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
 ///
 /// Returns an error if the operation fails
 pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.peek().map_or(Span { start: 0, end: 0 }, |(_, s)| *s);
-    
+    let start_span = state
+        .tokens
+        .peek()
+        .map_or(Span { start: 0, end: 0 }, |(_, s)| *s);
+
     // Check if it's backslash syntax (\x -> ...) or pipe syntax (|x| ...)
     if matches!(state.tokens.peek(), Some((Token::Backslash, _))) {
         state.tokens.advance(); // consume \
-        
+
         // Parse parameters (simple identifiers separated by commas)
         let mut params = Vec::new();
-        
+
         // Parse first parameter
         if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             params.push(Param {
@@ -158,7 +161,7 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
                 is_mutable: false,
             });
             state.tokens.advance();
-            
+
             // Parse additional parameters
             while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance(); // consume comma
@@ -176,13 +179,13 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
                 }
             }
         }
-        
+
         // Expect arrow
         state.tokens.expect(&Token::Arrow)?;
-        
+
         // Parse body
         let body = super::parse_expr_recursive(state)?;
-        
+
         return Ok(Expr::new(
             ExprKind::Lambda {
                 params,
@@ -191,7 +194,7 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
             start_span,
         ));
     }
-    
+
     // Otherwise, handle pipe syntax |x| ...
     state.tokens.advance(); // consume |
 
@@ -293,10 +296,26 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
 
     // Check if this is a DataFrame operation method
     // Common DataFrame methods: filter, select, groupby, sort, head, tail, etc.
-    let is_dataframe_method = matches!(method.as_str(), 
-        "filter" | "select" | "groupby" | "group_by" | "sort" | "sort_by" |
-        "head" | "tail" | "limit" | "join" | "mean" | "sum" | "count" | 
-        "min" | "max" | "std" | "var" | "median"
+    let is_dataframe_method = matches!(
+        method.as_str(),
+        "filter"
+            | "select"
+            | "groupby"
+            | "group_by"
+            | "sort"
+            | "sort_by"
+            | "head"
+            | "tail"
+            | "limit"
+            | "join"
+            | "mean"
+            | "sum"
+            | "count"
+            | "min"
+            | "max"
+            | "std"
+            | "var"
+            | "median"
     );
 
     // Check if it's a method call (with parentheses) or field access
@@ -329,33 +348,42 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
                 }
                 "select" => {
                     // Extract column names from arguments
-                    let columns = args.into_iter().filter_map(|arg| {
-                        if let ExprKind::Identifier(name) = arg.kind {
-                            Some(name)
-                        } else {
-                            None
-                        }
-                    }).collect();
+                    let columns = args
+                        .into_iter()
+                        .filter_map(|arg| {
+                            if let ExprKind::Identifier(name) = arg.kind {
+                                Some(name)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
                     DataFrameOp::Select(columns)
                 }
                 "groupby" | "group_by" => {
-                    let columns = args.into_iter().filter_map(|arg| {
-                        if let ExprKind::Identifier(name) = arg.kind {
-                            Some(name)
-                        } else {
-                            None
-                        }
-                    }).collect();
+                    let columns = args
+                        .into_iter()
+                        .filter_map(|arg| {
+                            if let ExprKind::Identifier(name) = arg.kind {
+                                Some(name)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
                     DataFrameOp::GroupBy(columns)
                 }
                 "sort" | "sort_by" => {
-                    let columns = args.into_iter().filter_map(|arg| {
-                        if let ExprKind::Identifier(name) = arg.kind {
-                            Some(name)
-                        } else {
-                            None
-                        }
-                    }).collect();
+                    let columns = args
+                        .into_iter()
+                        .filter_map(|arg| {
+                            if let ExprKind::Identifier(name) = arg.kind {
+                                Some(name)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
                     DataFrameOp::Sort(columns)
                 }
                 "head" => {

@@ -36,7 +36,9 @@
 #![allow(clippy::print_stderr)] // REPL needs to print errors
 #![allow(clippy::expect_used)] // REPL can panic on initialization failure
 
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, MatchArm, Pattern, PipelineStage, Span, UnaryOp};
+use crate::frontend::ast::{
+    BinaryOp, Expr, ExprKind, Literal, MatchArm, Pattern, PipelineStage, Span, UnaryOp,
+};
 use crate::{Parser, Transpiler};
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
@@ -309,18 +311,28 @@ impl Repl {
                 .get(name)
                 .cloned()
                 .ok_or_else(|| anyhow::anyhow!("Undefined variable: {}", name)),
-            ExprKind::Let { name, value, body, .. } => {
+            ExprKind::Let {
+                name, value, body, ..
+            } => {
                 let val = self.evaluate_expr(value, deadline, depth + 1)?;
                 self.bindings.insert(name.clone(), val.clone());
                 // If there's a body, evaluate it; otherwise return the value
                 match &body.kind {
                     ExprKind::Literal(Literal::Unit) => Ok(val),
-                    _ => self.evaluate_expr(body, deadline, depth + 1)
+                    _ => self.evaluate_expr(body, deadline, depth + 1),
                 }
             }
-            ExprKind::If { condition, then_branch, else_branch } => {
-                self.evaluate_if(condition, then_branch, else_branch.as_deref(), deadline, depth)
-            }
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => self.evaluate_if(
+                condition,
+                then_branch,
+                else_branch.as_deref(),
+                deadline,
+                depth,
+            ),
             ExprKind::Block(exprs) => {
                 if exprs.is_empty() {
                     return Ok(Value::Unit);
@@ -368,7 +380,9 @@ impl Repl {
                     _ => bail!("Range endpoints must be integers"),
                 }
             }
-            ExprKind::Function { name, params, body, .. } => {
+            ExprKind::Function {
+                name, params, body, ..
+            } => {
                 // Store function definition
                 let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
                 let func_value = Value::Function {
@@ -399,7 +413,9 @@ impl Repl {
                         }
                         let val = self.evaluate_expr(val_expr, deadline, depth + 1)?;
                         match val {
-                            Value::String(s) => write!(repr, "\"{s}\"").expect("String write cannot fail"),
+                            Value::String(s) => {
+                                write!(repr, "\"{s}\"").expect("String write cannot fail");
+                            }
                             other => write!(repr, "{other}").expect("String write cannot fail"),
                         }
                     }
@@ -412,16 +428,17 @@ impl Repl {
                 // DataFrame operations not yet implemented in REPL
                 bail!("DataFrame operations not yet implemented in REPL")
             }
-            ExprKind::Match { expr: match_expr, arms } => {
-                self.evaluate_match(match_expr, arms, deadline, depth)
-            }
+            ExprKind::Match {
+                expr: match_expr,
+                arms,
+            } => self.evaluate_match(match_expr, arms, deadline, depth),
             ExprKind::For { var, iter, body } => {
                 // Evaluate the iterable
                 let iterable = self.evaluate_expr(iter, deadline, depth + 1)?;
-                
+
                 // Save current bindings
                 let saved_bindings = self.bindings.clone();
-                
+
                 // For now, only handle lists and ranges
                 match iterable {
                     Value::List(items) => {
@@ -436,19 +453,25 @@ impl Repl {
                         self.bindings = saved_bindings;
                         Ok(result)
                     }
-                    _ => bail!("For loops currently only support lists, got: {:?}", iterable),
+                    _ => bail!(
+                        "For loops currently only support lists, got: {:?}",
+                        iterable
+                    ),
                 }
             }
             ExprKind::While { condition, body } => {
                 let mut result = Value::Unit;
                 let max_iterations = 1000; // Prevent infinite loops in REPL
                 let mut iterations = 0;
-                
+
                 loop {
                     if iterations >= max_iterations {
-                        bail!("While loop exceeded maximum iterations ({})", max_iterations);
+                        bail!(
+                            "While loop exceeded maximum iterations ({})",
+                            max_iterations
+                        );
                     }
-                    
+
                     // Evaluate condition
                     let cond_val = self.evaluate_expr(condition, deadline, depth + 1)?;
                     match cond_val {
@@ -460,7 +483,7 @@ impl Repl {
                         _ => bail!("While condition must be boolean, got: {:?}", cond_val),
                     }
                 }
-                
+
                 Ok(result)
             }
             ExprKind::Pipeline { expr, stages } => {
@@ -468,7 +491,7 @@ impl Repl {
             }
             ExprKind::StringInterpolation { parts } => {
                 use crate::frontend::ast::StringPart;
-                
+
                 let mut result = String::new();
                 for part in parts {
                     match part {
@@ -486,10 +509,14 @@ impl Repl {
                 }
                 Ok(Value::String(result))
             }
-            ExprKind::TryCatch { try_block, catch_clauses, finally_block } => {
+            ExprKind::TryCatch {
+                try_block,
+                catch_clauses,
+                finally_block,
+            } => {
                 // Execute try block
                 let try_result = self.evaluate_expr(try_block, deadline, depth + 1);
-                
+
                 match try_result {
                     Ok(value) => {
                         // Try succeeded, execute finally block if present
@@ -508,7 +535,7 @@ impl Repl {
                             }
                             return Ok(Value::Unit);
                         }
-                        
+
                         // No catch clause matched, execute finally and re-throw
                         if let Some(finally) = finally_block {
                             let _ = self.evaluate_expr(finally, deadline, depth + 1);
@@ -534,10 +561,14 @@ impl Repl {
                 // For now, represent as a tuple ("Err", error)
                 Ok(Value::List(vec![Value::String("Err".to_string()), err]))
             }
-            ExprKind::MethodCall { receiver, method, args } => {
+            ExprKind::MethodCall {
+                receiver,
+                method,
+                args,
+            } => {
                 // Evaluate the receiver
                 let receiver_val = self.evaluate_expr(receiver, deadline, depth + 1)?;
-                
+
                 // Handle list methods
                 if let Value::List(items) = receiver_val {
                     match method.as_str() {
@@ -545,11 +576,11 @@ impl Repl {
                             if args.len() != 1 {
                                 bail!("map expects 1 argument");
                             }
-                            
+
                             // Lambda evaluation requires environment capture
                             // Currently returns input unchanged
                             let _ = &args[0];
-                            
+
                             // Apply the lambda to each item
                             let mut results = Vec::new();
                             for item in items {
@@ -557,23 +588,24 @@ impl Repl {
                                 // This is simplified - proper implementation needs lambda evaluation
                                 results.push(item); // Placeholder
                             }
-                            
+
                             Ok(Value::List(results))
                         }
                         "filter" => {
                             if args.len() != 1 {
                                 bail!("filter expects 1 argument");
                             }
-                            
+
                             // For now, just return the original list
                             Ok(Value::List(items))
                         }
                         "len" | "length" => {
                             Ok(Value::Int(i64::try_from(items.len()).unwrap_or(i64::MAX)))
                         }
-                        "head" | "first" => {
-                            items.first().cloned().ok_or_else(|| anyhow::anyhow!("Empty list"))
-                        }
+                        "head" | "first" => items
+                            .first()
+                            .cloned()
+                            .ok_or_else(|| anyhow::anyhow!("Empty list")),
                         "tail" | "rest" => {
                             if items.is_empty() {
                                 Ok(Value::List(Vec::new()))
@@ -581,9 +613,10 @@ impl Repl {
                                 Ok(Value::List(items[1..].to_vec()))
                             }
                         }
-                        "last" => {
-                            items.last().cloned().ok_or_else(|| anyhow::anyhow!("Empty list"))
-                        }
+                        "last" => items
+                            .last()
+                            .cloned()
+                            .ok_or_else(|| anyhow::anyhow!("Empty list")),
                         "reverse" => {
                             let mut reversed = items;
                             reversed.reverse();
@@ -600,12 +633,14 @@ impl Repl {
                             }
                             Ok(Value::Int(sum))
                         }
-                        _ => bail!("Unknown list method: {}", method)
+                        _ => bail!("Unknown list method: {}", method),
                     }
                 } else if let Value::String(s) = receiver_val {
                     // Handle string methods
                     match method.as_str() {
-                        "len" | "length" => Ok(Value::Int(i64::try_from(s.len()).unwrap_or(i64::MAX))),
+                        "len" | "length" => {
+                            Ok(Value::Int(i64::try_from(s.len()).unwrap_or(i64::MAX)))
+                        }
                         "upper" | "to_upper" => Ok(Value::String(s.to_uppercase())),
                         "lower" | "to_lower" => Ok(Value::String(s.to_lowercase())),
                         "trim" => Ok(Value::String(s.trim().to_string())),
@@ -614,12 +649,13 @@ impl Repl {
                                 bail!("split expects 1 argument");
                             }
                             // For now, split on spaces
-                            let parts: Vec<Value> = s.split_whitespace()
+                            let parts: Vec<Value> = s
+                                .split_whitespace()
                                 .map(|p| Value::String(p.to_string()))
                                 .collect();
                             Ok(Value::List(parts))
                         }
-                        _ => bail!("Unknown string method: {}", method)
+                        _ => bail!("Unknown string method: {}", method),
                     }
                 } else {
                     bail!("Method calls not supported on this type")
@@ -630,46 +666,48 @@ impl Repl {
     }
 
     /// Check if a pattern matches a value and return bindings
-    /// 
+    ///
     /// Returns Some(bindings) if pattern matches, None if it doesn't
     fn pattern_matches(value: &Value, pattern: &Pattern) -> Result<Option<HashMap<String, Value>>> {
         let mut bindings = HashMap::new();
-        
+
         if Self::pattern_matches_recursive(value, pattern, &mut bindings)? {
             Ok(Some(bindings))
         } else {
             Ok(None)
         }
     }
-    
+
     /// Recursive pattern matching helper
     fn pattern_matches_recursive(
         value: &Value,
         pattern: &Pattern,
-        bindings: &mut HashMap<String, Value>
+        bindings: &mut HashMap<String, Value>,
     ) -> Result<bool> {
         match (value, pattern) {
             // Wildcard matches everything and literal Unit
             (_, Pattern::Wildcard) | (Value::Unit, Pattern::Literal(Literal::Unit)) => Ok(true),
-            
+
             // Literal patterns
             (Value::Int(v), Pattern::Literal(Literal::Integer(p))) => Ok(v == p),
-            (Value::Float(v), Pattern::Literal(Literal::Float(p))) => Ok((v - p).abs() < f64::EPSILON),
+            (Value::Float(v), Pattern::Literal(Literal::Float(p))) => {
+                Ok((v - p).abs() < f64::EPSILON)
+            }
             (Value::String(v), Pattern::Literal(Literal::String(p))) => Ok(v == p),
             (Value::Bool(v), Pattern::Literal(Literal::Bool(p))) => Ok(v == p),
-            
+
             // Identifier patterns (bind to variable)
             (value, Pattern::Identifier(name)) => {
                 bindings.insert(name.clone(), value.clone());
                 Ok(true)
             }
-            
+
             // List patterns
             (Value::List(values), Pattern::List(patterns)) => {
                 if values.len() != patterns.len() {
                     return Ok(false);
                 }
-                
+
                 for (value, pattern) in values.iter().zip(patterns.iter()) {
                     if !Self::pattern_matches_recursive(value, pattern, bindings)? {
                         return Ok(false);
@@ -677,13 +715,13 @@ impl Repl {
                 }
                 Ok(true)
             }
-            
+
             // Tuple patterns (treat as list for now)
             (Value::List(values), Pattern::Tuple(patterns)) => {
                 if values.len() != patterns.len() {
                     return Ok(false);
                 }
-                
+
                 for (value, pattern) in values.iter().zip(patterns.iter()) {
                     if !Self::pattern_matches_recursive(value, pattern, bindings)? {
                         return Ok(false);
@@ -691,7 +729,7 @@ impl Repl {
                 }
                 Ok(true)
             }
-            
+
             // OR patterns - try each alternative
             (value, Pattern::Or(patterns)) => {
                 for pattern in patterns {
@@ -706,11 +744,22 @@ impl Repl {
                 }
                 Ok(false)
             }
-            
+
             // Range patterns (simplified implementation)
-            (Value::Int(v), Pattern::Range { start, end, inclusive }) => {
+            (
+                Value::Int(v),
+                Pattern::Range {
+                    start,
+                    end,
+                    inclusive,
+                },
+            ) => {
                 // For simplicity, only handle integer literal patterns in ranges
-                if let (Pattern::Literal(Literal::Integer(start_val)), Pattern::Literal(Literal::Integer(end_val))) = (start.as_ref(), end.as_ref()) {
+                if let (
+                    Pattern::Literal(Literal::Integer(start_val)),
+                    Pattern::Literal(Literal::Integer(end_val)),
+                ) = (start.as_ref(), end.as_ref())
+                {
                     if *inclusive {
                         Ok(*start_val <= *v && *v <= *end_val)
                     } else {
@@ -720,12 +769,12 @@ impl Repl {
                     bail!("Complex range patterns not yet supported");
                 }
             }
-            
+
             // Struct patterns not yet implemented
             (_, Pattern::Struct { .. }) => {
                 bail!("Struct patterns not yet implemented in REPL");
             }
-            
+
             // Type mismatches
             _ => Ok(false),
         }
@@ -1111,8 +1160,8 @@ impl Repl {
         // Need continuation if any delimiters are unmatched
         brace_depth > 0 || bracket_depth > 0 || paren_depth > 0 || in_string ||
         // Or if line ends with certain tokens that expect continuation
-        trimmed.ends_with('=') || 
-        trimmed.ends_with("->") || 
+        trimmed.ends_with('=') ||
+        trimmed.ends_with("->") ||
         trimmed.ends_with("=>") ||
         trimmed.ends_with(',') ||
         trimmed.ends_with('+') ||
@@ -1147,8 +1196,11 @@ impl Repl {
                     let transpiled_str = transpiled.to_string();
                     // Check if this is already a print statement that should be executed directly
                     let trimmed = transpiled_str.trim();
-                    if trimmed.starts_with("println !") || trimmed.starts_with("print !") || 
-                       trimmed.starts_with("println!") || trimmed.starts_with("print!") {
+                    if trimmed.starts_with("println !")
+                        || trimmed.starts_with("print !")
+                        || trimmed.starts_with("println!")
+                        || trimmed.starts_with("print!")
+                    {
                         let _ = writeln!(&mut rust_code, "    {transpiled};");
                     } else {
                         let _ = writeln!(
@@ -1298,10 +1350,10 @@ impl Repl {
         if args.len() != 1 {
             bail!("curry expects exactly 1 argument (a function)");
         }
-        
+
         // Evaluate the function argument
         let func_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        
+
         // For now, return a string representation of currying
         match func_val {
             Value::Function { name, params, .. } => {
@@ -1309,47 +1361,56 @@ impl Repl {
                     bail!("Cannot curry a function with no parameters");
                 }
                 // Return a descriptive representation for REPL demo
-                let curry_repr = format!("curry({}) -> {}",
+                let curry_repr = format!(
+                    "curry({}) -> {}",
                     name,
-                    params.iter()
+                    params
+                        .iter()
                         .map(|p| format!("({p} -> ...)"))
                         .collect::<Vec<_>>()
                         .join(" -> ")
                 );
                 Ok(Value::String(curry_repr))
             }
-            _ => bail!("curry expects a function as argument")
+            _ => bail!("curry expects a function as argument"),
         }
     }
-    
+
     /// Evaluate uncurry function - converts a curried function back into a function that takes multiple arguments
-    fn evaluate_uncurry(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+    fn evaluate_uncurry(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
         if args.len() != 1 {
             bail!("uncurry expects exactly 1 argument (a curried function)");
         }
-        
+
         // Evaluate the function argument
         let func_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        
+
         // For now, return a string representation of uncurrying
         match func_val {
             Value::Function { name, params, .. } => {
-                let uncurry_repr = format!("uncurry({}) -> ({}) -> ...",
-                    name,
-                    params.join(", ")
-                );
+                let uncurry_repr = format!("uncurry({}) -> ({}) -> ...", name, params.join(", "));
                 Ok(Value::String(uncurry_repr))
             }
             Value::String(s) if s.contains("curry") => {
                 // Handle curried functions
                 Ok(Value::String(format!("uncurry({s}) -> original function")))
             }
-            _ => bail!("uncurry expects a curried function as argument")
+            _ => bail!("uncurry expects a curried function as argument"),
         }
     }
 
     /// Evaluate println function
-    fn evaluate_println(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+    fn evaluate_println(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
         let mut output = String::new();
         for (i, arg) in args.iter().enumerate() {
             if i > 0 {

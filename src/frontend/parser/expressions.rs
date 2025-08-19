@@ -54,7 +54,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Char(c) => {
             let value = c;
             state.tokens.advance();
-            Ok(Expr::new(ExprKind::Literal(Literal::Char(value)), span_clone))
+            Ok(Expr::new(
+                ExprKind::Literal(Literal::Char(value)),
+                span_clone,
+            ))
         }
         Token::Bool(b) => {
             let value = b;
@@ -170,11 +173,16 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             let value = super::parse_expr_recursive(state)?;
             state.tokens.expect(&Token::RightParen)?;
             // Some is just an alias for Ok in our implementation
-            Ok(Expr::new(ExprKind::Ok { value: Box::new(value) }, span_clone))
+            Ok(Expr::new(
+                ExprKind::Ok {
+                    value: Box::new(value),
+                },
+                span_clone,
+            ))
         }
         Token::None => {
             state.tokens.advance(); // consume None
-            // None is just unit/null
+                                    // None is just unit/null
             Ok(Expr::new(ExprKind::Literal(Literal::Unit), span_clone))
         }
         Token::Throw => {

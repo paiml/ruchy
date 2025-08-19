@@ -12,11 +12,12 @@ use crate::frontend::ast::{DataFrameColumn, Literal, ObjectField};
 /// # Examples
 ///
 /// ```
-/// // Block with multiple statements
-/// { let x = 5; x + 1 }
+/// use ruchy::Parser;
 ///
-/// // Object literal
-/// { name: "John", age: 30 }
+/// let input = "{ let x = 5; x + 1 }";
+/// let mut parser = Parser::new(input);
+/// let result = parser.parse();
+/// assert!(result.is_ok());
 /// ```
 ///
 /// # Errors
@@ -200,14 +201,12 @@ fn is_object_literal(state: &mut ParserState) -> bool {
 /// # Examples
 ///
 /// ```
-/// // Key-value pairs
-/// { name: "John", age: 30 }
+/// use ruchy::Parser;
 ///
-/// // With spread
-/// { ...defaults, name: "Jane" }
-///
-/// // String keys
-/// { "complex key": value }
+/// let input = r#"{ name: "John", age: 30 }"#;
+/// let mut parser = Parser::new(input);
+/// let result = parser.parse();
+/// assert!(result.is_ok());
 /// ```
 ///
 /// # Errors
@@ -270,14 +269,12 @@ fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Resul
 /// # Examples
 ///
 /// ```
-/// // Simple list
-/// [1, 2, 3]
+/// use ruchy::Parser;
 ///
-/// // Empty list
-/// []
-///
-/// // List comprehension
-/// [x * 2 for x in numbers]
+/// let input = "[1, 2, 3]";
+/// let mut parser = Parser::new(input);
+/// let result = parser.parse();
+/// assert!(result.is_ok());
 /// ```
 ///
 /// # Errors
@@ -333,11 +330,12 @@ pub fn parse_list(state: &mut ParserState) -> Result<Expr> {
 /// # Examples
 ///
 /// ```
-/// // Basic comprehension
-/// [x * 2 for x in range(10)]
+/// use ruchy::Parser;
 ///
-/// // With condition
-/// [x for x in numbers if x > 0]
+/// let input = "[x * 2 for x in range(10)]";
+/// let mut parser = Parser::new(input);
+/// let result = parser.parse();
+/// assert!(result.is_ok());
 /// ```
 ///
 /// # Errors
@@ -505,11 +503,12 @@ pub fn parse_list_comprehension(
 /// # Examples
 ///
 /// ```
-/// DataFrame {
-///     name, age, city;
-///     "Alice", 30, "NYC";
-///     "Bob", 25, "LA"
-/// }
+/// use ruchy::Parser;
+///
+/// let input = r#"df![name => ["Alice", "Bob"], age => [30, 25]]"#;
+/// let mut parser = Parser::new(input);
+/// let result = parser.parse();
+/// assert!(result.is_ok());
 /// ```
 ///
 /// # Errors
