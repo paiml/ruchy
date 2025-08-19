@@ -17,9 +17,9 @@ fn run_demo(repl: &mut Repl, desc: &str, code: &str) {
 fn main() {
     println!("Reference Operator Demo");
     println!("=======================\n");
-    
+
     let mut repl = Repl::new().expect("Failed to create REPL");
-    
+
     run_demo(&mut repl, "Basic reference", "&42");
     run_demo(&mut repl, "Reference to sum", "&(10 + 20)");
     run_demo(&mut repl, "Reference to bool", "&true");

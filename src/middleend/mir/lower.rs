@@ -1,7 +1,9 @@
 //! AST to MIR lowering
 
 use super::builder::MirBuilder;
-use super::types::{BinOp, BlockId, Constant, Mutability, Operand, Place, Program, Rvalue, Type, UnOp};
+use super::types::{
+    BinOp, BlockId, Constant, Mutability, Operand, Place, Program, Rvalue, Type, UnOp,
+};
 use crate::frontend::ast::{
     BinaryOp as AstBinOp, Expr, ExprKind, Literal, Param, Type as AstType, UnaryOp as AstUnOp,
 };

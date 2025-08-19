@@ -10,17 +10,17 @@ const MAX_DEPTH: u32 = 4;
 #[test]
 fn verify_memory_usage() {
     let before = get_memory_usage();
-    
+
     // Run a typical heavy test scenario
     for _ in 0..100 {
         let expr = generate_test_expr(MAX_DEPTH);
         let source = format!("{expr:?}");
         let _ = Parser::new(&source).parse();
     }
-    
+
     let after = get_memory_usage();
     let delta_mb = (after.saturating_sub(before)) / 1_048_576;
-    
+
     assert!(
         delta_mb < MAX_MEMORY_MB,
         "Test uses {delta_mb}MB (limit: {MAX_MEMORY_MB}MB)"
@@ -30,14 +30,14 @@ fn verify_memory_usage() {
 #[test]
 fn verify_generation_time() {
     let start = Instant::now();
-    
+
     // Generate expressions with bounded depth
     for depth in 0..=MAX_DEPTH {
         for _ in 0..10 {
             let _ = generate_test_expr(depth);
         }
     }
-    
+
     let elapsed = start.elapsed().as_millis();
     assert!(
         elapsed < MAX_TIME_MS,
@@ -54,7 +54,7 @@ fn verify_parser_memory_bounded() {
         let _ = write!(acc, "let x{i} = {i}; ");
         acc
     });
-    
+
     let pathological_inputs = vec![
         // Deeply nested parentheses
         "((((((((((((((((((((1))))))))))))))))))))",
@@ -63,12 +63,12 @@ fn verify_parser_memory_bounded() {
         // Many small expressions
         &many_expressions,
     ];
-    
+
     for input in pathological_inputs {
         let before = get_memory_usage();
         let _ = Parser::new(input).parse();
         let after = get_memory_usage();
-        
+
         let delta_mb = (after.saturating_sub(before)) / 1_048_576;
         assert!(
             delta_mb < 10,
@@ -83,16 +83,19 @@ fn stress_test_with_memory_limit() {
     // Heavy stress test - only run when explicitly requested
     let start = Instant::now();
     let initial_memory = get_memory_usage();
-    
+
     for _ in 0..1000 {
         let _ = generate_test_expr(6); // Deep expression
-        
+
         // Check memory periodically
         if start.elapsed() > Duration::from_millis(100) {
             let current_memory = get_memory_usage();
             let delta_mb = (current_memory.saturating_sub(initial_memory)) / 1_048_576;
-            
-            assert!(delta_mb <= 500, "Memory usage exceeded 500MB during stress test");
+
+            assert!(
+                delta_mb <= 500,
+                "Memory usage exceeded 500MB during stress test"
+            );
         }
     }
 }
@@ -114,7 +117,7 @@ fn get_memory_usage() -> usize {
             }
         }
     }
-    
+
     // Fallback: use a rough estimate based on allocation
     #[cfg(not(target_os = "linux"))]
     {
@@ -122,7 +125,7 @@ fn get_memory_usage() -> usize {
         // In production, use proper memory profiling tools
         1_000_000 // Return 1MB as default
     }
-    
+
     0
 }
 
@@ -131,7 +134,10 @@ fn generate_test_expr(depth: u32) -> String {
     if depth == 0 {
         "42".to_string()
     } else {
-        format!("({} + {})", generate_test_expr(depth - 1), generate_test_expr(depth - 1))
+        format!(
+            "({} + {})",
+            generate_test_expr(depth - 1),
+            generate_test_expr(depth - 1)
+        )
     }
 }
-

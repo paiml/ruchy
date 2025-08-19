@@ -98,9 +98,9 @@ pub fn run_repl() -> Result<()> {
 #[cfg(test)]
 mod test_config {
     use std::sync::Once;
-    
+
     static INIT: Once = Once::new();
-    
+
     /// Initialize test configuration once per test run
     pub fn init() {
         INIT.call_once(|| {

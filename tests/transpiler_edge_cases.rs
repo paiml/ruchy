@@ -72,7 +72,7 @@ fn test_transpile_binary_operations() {
         ("x << y", "<<"),
         ("x >> y", ">>"),
     ];
-    
+
     for (code, expected) in cases {
         let result = compile(code).unwrap();
         assert!(result.contains(expected), "Failed for: {code}");
@@ -81,12 +81,8 @@ fn test_transpile_binary_operations() {
 
 #[test]
 fn test_transpile_unary_operations() {
-    let cases = vec![
-        ("-x", "-"),
-        ("!x", "!"),
-        ("~x", "!"),
-    ];
-    
+    let cases = vec![("-x", "-"), ("!x", "!"), ("~x", "!")];
+
     for (code, expected) in cases {
         let result = compile(code).unwrap();
         assert!(result.contains(expected), "Failed for: {code}");
@@ -154,11 +150,8 @@ fn test_transpile_string_literals() {
 
 #[test]
 fn test_transpile_numeric_literals() {
-    let cases = vec![
-        ("42", "42"),
-        ("3.14", "3.14"),
-    ];
-    
+    let cases = vec![("42", "42"), ("3.14", "3.14")];
+
     for (code, expected) in cases {
         let result = compile(code).unwrap();
         assert!(result.contains(expected), "Failed for: {code}");
@@ -200,7 +193,7 @@ fn test_transpile_range() {
     let code = "1..10";
     let result = compile(code).unwrap();
     assert!(result.contains(".."));
-    
+
     let code = "1..=10";
     let result = compile(code).unwrap();
     assert!(result.contains("..="));
@@ -211,7 +204,7 @@ fn test_transpile_assignments() {
     let code = "x = 5";
     let result = compile(code).unwrap();
     assert!(result.contains('='));
-    
+
     let code = "x += 5";
     let result = compile(code).unwrap();
     assert!(result.contains("+="));
@@ -294,7 +287,7 @@ fn test_transpile_dataframe_operations() {
     let code = "df![x => [1, 2, 3]]";
     let result = compile(code).unwrap();
     assert!(result.contains("DataFrame") || result.contains("df"));
-    
+
     let code = "df![x => [1, 2, 3]].head(5)";
     let result = compile(code).unwrap();
     assert!(result.contains("head"));

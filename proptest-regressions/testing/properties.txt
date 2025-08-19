@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc e1adfb17f639251c213fadc3e120607821e6f7c69d11755faaa679e6947f9d69 # shrinks to expr = Expr { kind: Literal(Integer(-1)), span: Span { start: 0, end: 0 }, attributes: [] }

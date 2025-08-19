@@ -1,7 +1,15 @@
+#![allow(
+    clippy::expect_used,
+    clippy::unwrap_used,
+    clippy::uninlined_format_args,
+    clippy::print_stdout,
+    clippy::expect_fun_call
+)]
+
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::io::Write;
 use tempfile::NamedTempFile;
 
 /// Test that all .ruchy example files can be compiled and executed
@@ -21,7 +29,10 @@ fn test_binary_execution_all_examples() {
         })
         .collect();
 
-    assert!(!ruchy_files.is_empty(), "No .ruchy files found in examples/");
+    assert!(
+        !ruchy_files.is_empty(),
+        "No .ruchy files found in examples/"
+    );
 
     for ruchy_file in ruchy_files {
         println!("Testing: {}", ruchy_file.display());
@@ -31,23 +42,25 @@ fn test_binary_execution_all_examples() {
 
 /// Validate a single .ruchy file through the full compilation pipeline
 fn validate_ruchy_file(path: &Path) {
-    let content = fs::read_to_string(path)
-        .expect(&format!("Failed to read {}", path.display()));
+    let content = fs::read_to_string(path).expect(&format!("Failed to read {}", path.display()));
 
     // Parse the file
-    let mut parser = ruchy::parser::Parser::new(&content);
-    let ast = parser.parse_module()
+    let mut parser = ruchy::Parser::new(&content);
+    let ast = parser
+        .parse()
         .expect(&format!("Failed to parse {}", path.display()));
 
     // Transpile to Rust
-    let transpiler = ruchy::transpiler::Transpiler::new();
-    let rust_code = transpiler.transpile_module(&ast)
+    let transpiler = ruchy::Transpiler::new();
+    let rust_code = transpiler
+        .transpile(&ast)
         .expect(&format!("Failed to transpile {}", path.display()));
+    let rust_code_str = rust_code.to_string();
 
     // Write Rust code to temp file
-    let mut temp_file = NamedTempFile::new()
-        .expect("Failed to create temp file");
-    temp_file.write_all(rust_code.as_bytes())
+    let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
+    temp_file
+        .write_all(rust_code_str.as_bytes())
         .expect("Failed to write Rust code");
     temp_file.flush().expect("Failed to flush temp file");
 
@@ -55,7 +68,7 @@ fn validate_ruchy_file(path: &Path) {
     let output_binary = temp_file.path().with_extension("exe");
     let compile_result = Command::new("rustc")
         .arg("--edition=2021")
-        .arg("-O")  // Enable optimizations (LLVM)
+        .arg("-O") // Enable optimizations (LLVM)
         .arg("-o")
         .arg(&output_binary)
         .arg(temp_file.path())
@@ -77,8 +90,10 @@ fn validate_ruchy_file(path: &Path) {
             .output()
             .expect(&format!("Failed to run binary for {}", path.display()));
 
-        let expected_output = fs::read_to_string(&output_file)
-            .expect(&format!("Failed to read expected output {}", output_file.display()));
+        let expected_output = fs::read_to_string(&output_file).expect(&format!(
+            "Failed to read expected output {}",
+            output_file.display()
+        ));
 
         assert_eq!(
             String::from_utf8_lossy(&run_result.stdout).trim(),
@@ -116,7 +131,7 @@ fn test_hello_binary() {
 #[test]
 fn test_compilation_performance() {
     use std::time::Instant;
-    
+
     let examples_dir = Path::new("examples");
     let ruchy_files: Vec<PathBuf> = fs::read_dir(examples_dir)
         .expect("Failed to read examples directory")
@@ -136,19 +151,21 @@ fn test_compilation_performance() {
             .expect(&format!("Failed to read {}", ruchy_file.display()));
 
         let start = Instant::now();
-        
+
         // Parse
-        let mut parser = ruchy::parser::Parser::new(&content);
-        let ast = parser.parse_module()
+        let mut parser = ruchy::Parser::new(&content);
+        let ast = parser
+            .parse()
             .expect(&format!("Failed to parse {}", ruchy_file.display()));
 
         // Transpile
-        let transpiler = ruchy::transpiler::Transpiler::new();
-        let _rust_code = transpiler.transpile_module(&ast)
+        let transpiler = ruchy::Transpiler::new();
+        let _rust_code = transpiler
+            .transpile(&ast)
             .expect(&format!("Failed to transpile {}", ruchy_file.display()));
 
         let elapsed = start.elapsed();
-        
+
         // Assert compilation takes less than 5 seconds per example
         assert!(
             elapsed.as_secs() < 5,
@@ -156,7 +173,7 @@ fn test_compilation_performance() {
             ruchy_file.display(),
             elapsed
         );
-        
+
         println!("Compiled {} in {:?}", ruchy_file.display(), elapsed);
     }
 }

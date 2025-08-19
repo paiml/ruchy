@@ -87,17 +87,17 @@ impl BytecodeCache {
     /// Get a cached result if available
     pub fn get(&self, source: &str) -> Option<CachedResult> {
         let key = CacheKey::new(source.to_string());
-        
+
         if let Some(result) = self.cache.borrow().get(&key) {
             *self.hits.borrow_mut() += 1;
-            
+
             // Update access order for LRU
             let mut access = self.access_order.borrow_mut();
             if let Some(pos) = access.iter().position(|k| k == &key) {
                 access.remove(pos);
             }
             access.push(key.clone());
-            
+
             Some(result.clone())
         } else {
             *self.misses.borrow_mut() += 1;
@@ -108,18 +108,18 @@ impl BytecodeCache {
     /// Store a compilation result in the cache
     pub fn insert(&self, source: String, ast: Rc<Expr>, rust_code: Option<String>) {
         let key = CacheKey::new(source);
-        
+
         // Check if we need to evict
         if self.cache.borrow().len() >= self.max_size {
             self.evict_lru();
         }
-        
+
         let result = CachedResult {
             ast,
             rust_code,
             timestamp: std::time::Instant::now(),
         };
-        
+
         self.cache.borrow_mut().insert(key.clone(), result);
         self.access_order.borrow_mut().push(key);
     }
@@ -169,14 +169,14 @@ impl BytecodeCache {
         let now = std::time::Instant::now();
         let mut cache = self.cache.borrow_mut();
         let mut access = self.access_order.borrow_mut();
-        
+
         // Find keys to remove
         let keys_to_remove: Vec<CacheKey> = cache
             .iter()
             .filter(|(_, result)| now.duration_since(result.timestamp) > age)
             .map(|(key, _)| key.clone())
             .collect();
-        
+
         // Remove from cache and access order
         for key in keys_to_remove {
             cache.remove(&key);
@@ -287,7 +287,7 @@ mod tests {
         let key1 = CacheKey::new("let x = 42".to_string());
         let key2 = CacheKey::new("let x = 42".to_string());
         let key3 = CacheKey::new("let y = 42".to_string());
-        
+
         assert_eq!(key1, key2);
         assert_ne!(key1, key3);
     }
@@ -295,11 +295,11 @@ mod tests {
     #[test]
     fn test_bytecode_cache_basic() {
         let cache = BytecodeCache::with_capacity(3);
-        
+
         // Cache miss
         assert!(cache.get("let x = 1").is_none());
         assert_eq!(cache.stats().misses, 1);
-        
+
         // Insert and hit
         cache.insert("let x = 1".to_string(), make_test_expr(1), None);
         assert!(cache.get("let x = 1").is_some());
@@ -309,16 +309,16 @@ mod tests {
     #[test]
     fn test_cache_lru_eviction() {
         let cache = BytecodeCache::with_capacity(2);
-        
+
         cache.insert("expr1".to_string(), make_test_expr(1), None);
         cache.insert("expr2".to_string(), make_test_expr(2), None);
-        
+
         // Access expr1 to make it more recent
         let _ = cache.get("expr1");
-        
+
         // This should evict expr2 (least recently used)
         cache.insert("expr3".to_string(), make_test_expr(3), None);
-        
+
         assert!(cache.get("expr1").is_some());
         assert!(cache.get("expr2").is_none()); // Evicted
         assert!(cache.get("expr3").is_some());
@@ -327,20 +327,20 @@ mod tests {
     #[test]
     fn test_expression_cache() {
         let cache = ExpressionCache::new();
-        
+
         let expr = make_test_expr(42);
         cache.cache_parsed("let x = 42".to_string(), Rc::clone(&expr));
-        
+
         let cached = cache.get_parsed("let x = 42").unwrap();
         assert!(Rc::ptr_eq(&expr, &cached));
-        
+
         // Test transpiled code caching
         cache.cache_transpiled(
             "let y = 10".to_string(),
             make_test_expr(10),
             "let y = 10;".to_string(),
         );
-        
+
         assert_eq!(
             cache.get_transpiled("let y = 10"),
             Some("let y = 10;".to_string())
@@ -350,16 +350,16 @@ mod tests {
     #[test]
     fn test_cache_stats() {
         let cache = BytecodeCache::with_capacity(10);
-        
+
         for i in 0..5 {
             cache.insert(format!("expr{i}"), make_test_expr(i), None);
         }
-        
+
         // Generate some hits and misses
         let _ = cache.get("expr1");
         let _ = cache.get("expr2");
         let _ = cache.get("expr_missing");
-        
+
         let stats = cache.stats();
         assert_eq!(stats.size, 5);
         assert_eq!(stats.capacity, 10);

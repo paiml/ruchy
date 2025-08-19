@@ -4,9 +4,9 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
-use std::io::{self, Read, IsTerminal};
 use ruchy::{runtime::repl::Repl, Parser as RuchyParser, Transpiler};
 use std::fs;
+use std::io::{self, IsTerminal, Read};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -20,7 +20,7 @@ struct Cli {
     /// Output format for evaluation results (text, json)
     #[arg(long, default_value = "text")]
     format: String,
-    
+
     /// Enable verbose output
     #[arg(short = 'v', long)]
     verbose: bool,
@@ -80,20 +80,23 @@ fn main() -> Result<()> {
         if cli.verbose {
             eprintln!("Parsing expression: {expr}");
         }
-        
+
         let mut repl = Repl::new()?;
         match repl.eval(&expr) {
             Ok(result) => {
                 if cli.verbose {
                     eprintln!("Evaluation successful");
                 }
-                
+
                 if cli.format == "json" {
                     // Output as JSON
-                    println!("{}", serde_json::json!({
-                        "success": true,
-                        "result": format!("{result}")
-                    }));
+                    println!(
+                        "{}",
+                        serde_json::json!({
+                            "success": true,
+                            "result": format!("{result}")
+                        })
+                    );
                 } else {
                     // Default text output
                     println!("{result}");
@@ -104,12 +107,15 @@ fn main() -> Result<()> {
                 if cli.verbose {
                     eprintln!("Evaluation failed: {e}");
                 }
-                
+
                 if cli.format == "json" {
-                    println!("{}", serde_json::json!({
-                        "success": false,
-                        "error": e.to_string()
-                    }));
+                    println!(
+                        "{}",
+                        serde_json::json!({
+                            "success": false,
+                            "error": e.to_string()
+                        })
+                    );
                 } else {
                     eprintln!("Error: {e}");
                 }
@@ -127,7 +133,7 @@ fn main() -> Result<()> {
     if !io::stdin().is_terminal() {
         let mut input = String::new();
         io::stdin().read_to_string(&mut input)?;
-        
+
         if !input.trim().is_empty() {
             let mut repl = Repl::new()?;
             match repl.eval(&input) {
@@ -142,14 +148,18 @@ fn main() -> Result<()> {
             }
         }
     }
-    
+
     // Handle subcommands
     match cli.command {
         Some(Commands::Repl) | None => {
             let version_msg = format!("Welcome to Ruchy REPL v{}", env!("CARGO_PKG_VERSION"));
             println!("{}", version_msg.bright_cyan().bold());
-            println!("Type {} for commands, {} to exit\n", ":help".green(), ":quit".yellow());
-            
+            println!(
+                "Type {} for commands, {} to exit\n",
+                ":help".green(),
+                ":quit".yellow()
+            );
+
             let mut repl = Repl::new()?;
             repl.run()?;
         }
@@ -171,7 +181,7 @@ fn main() -> Result<()> {
             let transpiler = Transpiler::new();
             let rust_code = transpiler.transpile(&ast)?;
             let rust_code_str = rust_code.to_string();
-            
+
             if let Some(output_path) = output {
                 fs::write(output_path, rust_code_str)?;
             } else {
@@ -212,7 +222,7 @@ fn main() -> Result<()> {
 
 fn run_file(file: &PathBuf) -> Result<()> {
     let source = fs::read_to_string(file)?;
-    
+
     // Use REPL to evaluate the file
     let mut repl = Repl::new()?;
     match repl.eval(&source) {

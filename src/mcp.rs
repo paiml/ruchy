@@ -56,10 +56,11 @@ impl RuchyMCP {
     ///
     /// ```no_run
     /// use ruchy::mcp::RuchyMCP;
+    /// use ruchy::middleend::MonoType;
     /// use serde_json::json;
     ///
     /// let mut mcp = RuchyMCP::new();
-    /// mcp.register_type("count", ruchy::middleend::infer::MonoType::Int);
+    /// mcp.register_type("count".to_string(), MonoType::Int);
     ///
     /// let value = json!(42);
     /// assert!(mcp.validate_against_type(&value, "count").is_ok());

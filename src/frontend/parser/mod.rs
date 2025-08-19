@@ -26,8 +26,8 @@ pub use core::Parser;
 
 use crate::frontend::arena::{Arena, StringInterner};
 use crate::frontend::ast::{
-    Attribute, BinaryOp, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param,
-    Pattern, PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp,
+    Attribute, BinaryOp, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param, Pattern,
+    PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp,
 };
 use crate::frontend::lexer::{Token, TokenStream};
 use crate::parser::error_recovery::{ErrorNode, ErrorRecovery};
@@ -63,13 +63,13 @@ impl<'a> ParserState<'a> {
     pub fn get_errors(&self) -> &[ErrorNode] {
         &self.errors
     }
-    
+
     /// Get arena statistics for performance monitoring
     #[allow(dead_code)]
     pub fn arena_stats(&self) -> (usize, usize) {
         (self.arena.total_allocated(), self.arena.num_items())
     }
-    
+
     /// Get interner statistics
     #[allow(dead_code)]
     pub fn interner_stats(&self) -> (usize, usize) {
@@ -111,12 +111,15 @@ pub(crate) fn parse_expr_with_precedence_recursive(
             continue;
         }
 
-        if let Some(new_left) = try_assignment_operators(state, left.clone(), &token_clone, min_prec)? {
+        if let Some(new_left) =
+            try_assignment_operators(state, left.clone(), &token_clone, min_prec)?
+        {
             left = new_left;
             continue;
         }
 
-        if let Some(new_left) = try_pipeline_operators(state, left.clone(), &token_clone, min_prec)? {
+        if let Some(new_left) = try_pipeline_operators(state, left.clone(), &token_clone, min_prec)?
+        {
             left = new_left;
             continue;
         }
@@ -206,8 +209,13 @@ fn try_parse_try_operator(state: &mut ParserState, left: Expr) -> Option<Expr> {
         Some((Token::Identifier(_), _)) => false,
         Some((token, _)) => matches!(
             token,
-            Token::Semicolon | Token::Comma | Token::RightParen | Token::RightBracket
-                | Token::RightBrace | Token::Else | Token::In
+            Token::Semicolon
+                | Token::Comma
+                | Token::RightParen
+                | Token::RightBracket
+                | Token::RightBrace
+                | Token::Else
+                | Token::In
         ),
     };
     if is_try {

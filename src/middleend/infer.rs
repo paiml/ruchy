@@ -157,7 +157,11 @@ impl InferenceContext {
                 Ok(MonoType::Unit)
             }
             ExprKind::Send { actor, message } => self.infer_send(actor, message),
-            ExprKind::Ask { actor, message, timeout } => self.infer_ask(actor, message, timeout.as_deref()),
+            ExprKind::Ask {
+                actor,
+                message,
+                timeout,
+            } => self.infer_ask(actor, message, timeout.as_deref()),
             ExprKind::Break { .. } | ExprKind::Continue { .. } => {
                 // Break and continue don't return a value (they diverge)
                 // In Rust, they have type ! (never), but we'll use Unit for simplicity
@@ -1086,7 +1090,10 @@ impl InferenceContext {
     }
 
     /// Helper methods for complex expression groups
-    fn infer_string_interpolation(&mut self, parts: &[crate::frontend::ast::StringPart]) -> Result<MonoType> {
+    fn infer_string_interpolation(
+        &mut self,
+        parts: &[crate::frontend::ast::StringPart],
+    ) -> Result<MonoType> {
         for part in parts {
             if let crate::frontend::ast::StringPart::Expr(expr) = part {
                 let _ = self.infer_expr(expr)?;
@@ -1107,7 +1114,10 @@ impl InferenceContext {
         Ok(MonoType::Result(Box::new(value_type), Box::new(error_type)))
     }
 
-    fn infer_object_literal(&mut self, fields: &[crate::frontend::ast::ObjectField]) -> Result<MonoType> {
+    fn infer_object_literal(
+        &mut self,
+        fields: &[crate::frontend::ast::ObjectField],
+    ) -> Result<MonoType> {
         for field in fields {
             match field {
                 crate::frontend::ast::ObjectField::KeyValue { value, .. } => {
@@ -1132,7 +1142,12 @@ impl InferenceContext {
         Ok(MonoType::Unit)
     }
 
-    fn infer_ask(&mut self, actor: &Expr, message: &Expr, timeout: Option<&Expr>) -> Result<MonoType> {
+    fn infer_ask(
+        &mut self,
+        actor: &Expr,
+        message: &Expr,
+        timeout: Option<&Expr>,
+    ) -> Result<MonoType> {
         let _actor_ty = self.infer_expr(actor)?;
         let _message_ty = self.infer_expr(message)?;
         if let Some(t) = timeout {

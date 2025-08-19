@@ -3,18 +3,18 @@
 #![allow(clippy::unnecessary_wraps)] // Property tests often need Result for the test framework
 
 use crate::backend::Transpiler;
-use crate::frontend::ast::*;
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, StringPart, UnaryOp};
 use crate::frontend::{Parser, RecoveryParser};
+#[allow(unused_imports)]
+use crate::testing::generators::{arb_expr, arb_well_typed_expr};
 use proptest::prelude::*;
 use proptest::test_runner::TestCaseError;
 
 /// Property: Parser should never panic on any input
+///
 /// # Errors
 ///
-/// Returns an error if the operation fails
-/// # Errors
-///
-/// Returns an error if the operation fails
+/// Returns an error if the property test fails
 pub fn prop_parser_never_panics(input: &str) -> Result<(), TestCaseError> {
     let mut parser = Parser::new(input);
     // Parser should either succeed or return an error, never panic
@@ -23,12 +23,10 @@ pub fn prop_parser_never_panics(input: &str) -> Result<(), TestCaseError> {
 }
 
 /// Property: Recovery parser should always produce some AST
+///
 /// # Errors
 ///
-/// Returns an error if the operation fails
-/// # Errors
-///
-/// Returns an error if the operation fails
+/// Returns an error if the property test fails
 pub fn prop_recovery_parser_always_produces_ast(input: &str) -> Result<(), TestCaseError> {
     let mut parser = RecoveryParser::new(input);
     let result = parser.parse_with_recovery();
@@ -44,12 +42,10 @@ pub fn prop_recovery_parser_always_produces_ast(input: &str) -> Result<(), TestC
 }
 
 /// Property: Transpilation preserves expression structure
+///
 /// # Errors
 ///
-/// Returns an error if the operation fails
-/// # Errors
-///
-/// Returns an error if the operation fails
+/// Returns an error if the property test fails
 pub fn prop_transpilation_preserves_structure(expr: &Expr) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
 
@@ -65,12 +61,10 @@ pub fn prop_transpilation_preserves_structure(expr: &Expr) -> Result<(), TestCas
 }
 
 /// Property: String interpolation transpiles correctly
+///
 /// # Errors
 ///
-/// Returns an error if the operation fails
-/// # Errors
-///
-/// Returns an error if the operation fails
+/// Returns an error if the property test fails
 pub fn prop_string_interpolation_transpiles(parts: &[StringPart]) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
     let result = transpiler.transpile_string_interpolation(parts);
@@ -89,12 +83,10 @@ pub fn prop_string_interpolation_transpiles(parts: &[StringPart]) -> Result<(), 
 }
 
 /// Property: Parse-print roundtrip
+///
 /// # Errors
 ///
-/// Returns an error if the operation fails
-/// # Errors
-///
-/// Returns an error if the operation fails
+/// Returns an error if the property test fails
 pub fn prop_parse_print_roundtrip(expr: &Expr) -> Result<(), TestCaseError> {
     // This would require a pretty-printer, which we'll implement later
     // For now, just check that we can transpile and the result is valid
@@ -105,17 +97,16 @@ pub fn prop_parse_print_roundtrip(expr: &Expr) -> Result<(), TestCaseError> {
 
         match &expr.kind {
             ExprKind::Literal(Literal::Integer(n)) => {
+                // Integer literals are transpiled with type suffixes (e.g., "42 i32")
                 prop_assert!(
                     code_str.contains(&n.to_string()),
-                    "Integer literal {} not found in transpiled code",
-                    n
+                    "Integer literal {n} not found in transpiled code"
                 );
             }
             ExprKind::Literal(Literal::Bool(b)) => {
                 prop_assert!(
                     code_str.contains(&b.to_string()),
-                    "Bool literal {} not found in transpiled code",
-                    b
+                    "Bool literal {b} not found in transpiled code"
                 );
             }
             ExprKind::Binary {
@@ -135,12 +126,10 @@ pub fn prop_parse_print_roundtrip(expr: &Expr) -> Result<(), TestCaseError> {
 }
 
 /// Property: Well-typed expressions should always transpile successfully
+///
 /// # Errors
 ///
-/// Returns an error if the operation fails
-/// # Errors
-///
-/// Returns an error if the operation fails
+/// Returns an error if the property test fails
 pub fn prop_well_typed_always_transpiles(expr: &Expr) -> Result<(), TestCaseError> {
     let transpiler = Transpiler::new();
 
@@ -165,12 +154,10 @@ pub fn prop_well_typed_always_transpiles(expr: &Expr) -> Result<(), TestCaseErro
 }
 
 /// Property: Error recovery should handle truncated input gracefully
+///
 /// # Errors
 ///
-/// Returns an error if the operation fails
-/// # Errors
-///
-/// Returns an error if the operation fails
+/// Returns an error if the property test fails
 pub fn prop_recovery_handles_truncation(input: &str) -> Result<(), TestCaseError> {
     if input.is_empty() {
         return Ok(());
@@ -186,8 +173,7 @@ pub fn prop_recovery_handles_truncation(input: &str) -> Result<(), TestCaseError
         if !truncated.trim().is_empty() {
             prop_assert!(
                 result.ast.is_some() || !result.errors.is_empty(),
-                "Recovery parser should handle truncated input at position {}",
-                i
+                "Recovery parser should handle truncated input at position {i}"
             );
         }
     }

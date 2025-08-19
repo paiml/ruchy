@@ -77,34 +77,45 @@ impl Transpiler {
     }
 
     fn transpile_binary_op(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {
-        use BinaryOp::{Add, Subtract, Multiply, Divide, Modulo, Power, Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual, And, Or, BitwiseAnd, BitwiseOr, BitwiseXor, LeftShift, RightShift};
+        use BinaryOp::{
+            Add, And, BitwiseAnd, BitwiseOr, BitwiseXor, Divide, Equal, Greater, GreaterEqual,
+            LeftShift, Less, LessEqual, Modulo, Multiply, NotEqual, Or, Power, RightShift,
+            Subtract,
+        };
         match op {
             // Arithmetic operations
-            Add | Subtract | Multiply | Divide | Modulo | Power =>
-                Self::transpile_arithmetic_op(left, op, right),
+            Add | Subtract | Multiply | Divide | Modulo | Power => {
+                Self::transpile_arithmetic_op(left, op, right)
+            }
             // Comparison operations
-            Equal | NotEqual | Less | LessEqual | Greater | GreaterEqual =>
-                Self::transpile_comparison_op(left, op, right),
-            // Logical operations  
-            And | Or =>
-                Self::transpile_logical_op(left, op, right),
+            Equal | NotEqual | Less | LessEqual | Greater | GreaterEqual => {
+                Self::transpile_comparison_op(left, op, right)
+            }
+            // Logical operations
+            And | Or => Self::transpile_logical_op(left, op, right),
             // Bitwise operations
-            BitwiseAnd | BitwiseOr | BitwiseXor | LeftShift | RightShift =>
-                Self::transpile_bitwise_op(left, op, right),
+            BitwiseAnd | BitwiseOr | BitwiseXor | LeftShift | RightShift => {
+                Self::transpile_bitwise_op(left, op, right)
+            }
         }
     }
 
     fn transpile_arithmetic_op(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {
-        use BinaryOp::{Add, Subtract, Multiply, Divide, Modulo, Power};
+        use BinaryOp::{Add, Divide, Modulo, Multiply, Power, Subtract};
         match op {
-            Add | Subtract | Multiply | Divide | Modulo => 
-                Self::transpile_basic_arithmetic(left, op, right),
+            Add | Subtract | Multiply | Divide | Modulo => {
+                Self::transpile_basic_arithmetic(left, op, right)
+            }
             Power => quote! { #left.pow(#right) },
             _ => unreachable!(),
         }
     }
 
-    fn transpile_basic_arithmetic(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {
+    fn transpile_basic_arithmetic(
+        left: TokenStream,
+        op: BinaryOp,
+        right: TokenStream,
+    ) -> TokenStream {
         // Reduce complexity by splitting into smaller functions
         match op {
             BinaryOp::Add => quote! { #left + #right },
@@ -123,7 +134,7 @@ impl Transpiler {
     }
 
     fn transpile_comparison_op(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {
-        use BinaryOp::{Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual};
+        use BinaryOp::{Equal, Greater, GreaterEqual, Less, LessEqual, NotEqual};
         match op {
             Equal | NotEqual => Self::transpile_equality(left, op, right),
             Less | LessEqual | Greater | GreaterEqual => Self::transpile_ordering(left, op, right),
@@ -241,7 +252,7 @@ impl Transpiler {
     }
 
     fn get_compound_op_token(op: BinaryOp) -> Result<TokenStream> {
-        use BinaryOp::{Add, Subtract, Multiply, Divide, Modulo};
+        use BinaryOp::{Add, Divide, Modulo, Multiply, Subtract};
         match op {
             Add | Subtract | Multiply => Ok(Self::get_basic_compound_token(op)),
             Divide | Modulo => Ok(Self::get_division_compound_token(op)),
@@ -343,7 +354,10 @@ impl Transpiler {
         })
     }
 
-    fn collect_object_field_tokens(&self, fields: &[crate::frontend::ast::ObjectField]) -> Result<Vec<TokenStream>> {
+    fn collect_object_field_tokens(
+        &self,
+        fields: &[crate::frontend::ast::ObjectField],
+    ) -> Result<Vec<TokenStream>> {
         use crate::frontend::ast::ObjectField;
         let mut field_tokens = Vec::new();
 

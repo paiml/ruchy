@@ -49,7 +49,7 @@ pub static SEMANTIC_TOKEN_LEGEND: LazyLock<SemanticTokensLegend> =
 /// # Examples
 ///
 /// ```
-/// use ruchy::lsp::capabilities::{RuchyTokenType, ruchy_token_to_lsp};
+/// use ruchy::lsp::{RuchyTokenType, ruchy_token_to_lsp};
 /// use tower_lsp::lsp_types::SemanticTokenType;
 ///
 /// let token = RuchyTokenType::Actor;
@@ -72,7 +72,7 @@ pub enum RuchyTokenType {
 /// # Examples
 ///
 /// ```
-/// use ruchy::lsp::capabilities::{RuchyTokenType, ruchy_token_to_lsp};
+/// use ruchy::lsp::{RuchyTokenType, ruchy_token_to_lsp};
 /// use tower_lsp::lsp_types::SemanticTokenType;
 ///
 /// assert_eq!(ruchy_token_to_lsp(RuchyTokenType::Actor), SemanticTokenType::CLASS);

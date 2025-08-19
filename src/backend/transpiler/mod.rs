@@ -44,21 +44,24 @@ impl Transpiler {
     pub fn transpile(&self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_expr(expr)
     }
-    
+
     /// Checks if an expression contains `DataFrame` operations (simplified for complexity)
     fn contains_dataframe(expr: &Expr) -> bool {
-        matches!(expr.kind, ExprKind::DataFrame { .. } | ExprKind::DataFrameOperation { .. })
+        matches!(
+            expr.kind,
+            ExprKind::DataFrame { .. } | ExprKind::DataFrameOperation { .. }
+        )
     }
-    
+
     /// Wraps transpiled code in a complete Rust program with necessary imports
     pub fn transpile_to_program(&self, expr: &Expr) -> Result<TokenStream> {
         let body = self.transpile_expr(expr)?;
         let needs_polars = Self::contains_dataframe(expr);
-        
+
         if needs_polars {
             Ok(quote! {
                 use polars::prelude::*;
-                
+
                 fn main() {
                     let result = #body;
                     println!("{:?}", result);
@@ -99,38 +102,56 @@ impl Transpiler {
     ///
     /// Panics if label names cannot be parsed as valid Rust tokens
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
-        use ExprKind::{Literal, Identifier, QualifiedName, StringInterpolation, Binary, Unary, Try, Await, If, Match, For, While, Function, Lambda, Call, MethodCall, Struct, StructLiteral, ObjectLiteral, FieldAccess, DataFrame, DataFrameOperation, List, ListComprehension, Range, TryCatch, Throw, Ok, Err, Actor, Send, Ask};
-        
+        use ExprKind::{
+            Actor, Ask, Await, Binary, Call, DataFrame, DataFrameOperation, Err, FieldAccess, For,
+            Function, Identifier, If, Lambda, List, ListComprehension, Literal, Match, MethodCall,
+            ObjectLiteral, Ok, QualifiedName, Range, Send, StringInterpolation, Struct,
+            StructLiteral, Throw, Try, TryCatch, Unary, While,
+        };
+
         // Dispatch to specialized handlers to keep complexity below 10
         match &expr.kind {
             // Basic expressions
-            Literal(_) | Identifier(_) | QualifiedName { .. } | StringInterpolation { .. } =>
-                self.transpile_basic_expr(expr),
-            
+            Literal(_) | Identifier(_) | QualifiedName { .. } | StringInterpolation { .. } => {
+                self.transpile_basic_expr(expr)
+            }
+
             // Operators and control flow
-            Binary { .. } | Unary { .. } | Try { .. } | Await { .. } | If { .. } | Match { .. } | For { .. } | While { .. } =>
-                self.transpile_operator_control_expr(expr),
-            
+            Binary { .. }
+            | Unary { .. }
+            | Try { .. }
+            | Await { .. }
+            | If { .. }
+            | Match { .. }
+            | For { .. }
+            | While { .. } => self.transpile_operator_control_expr(expr),
+
             // Functions
-            Function { .. } | Lambda { .. } | Call { .. } | MethodCall { .. } =>
-                self.transpile_function_expr(expr),
-            
+            Function { .. } | Lambda { .. } | Call { .. } | MethodCall { .. } => {
+                self.transpile_function_expr(expr)
+            }
+
             // Structures
-            Struct { .. } | StructLiteral { .. } | ObjectLiteral { .. } | FieldAccess { .. } =>
-                self.transpile_struct_expr(expr),
-            
+            Struct { .. } | StructLiteral { .. } | ObjectLiteral { .. } | FieldAccess { .. } => {
+                self.transpile_struct_expr(expr)
+            }
+
             // Data and error handling
-            DataFrame { .. } | DataFrameOperation { .. } | List(_) | 
-            ListComprehension { .. } | Range { .. } | TryCatch { .. } | Throw { .. } | Ok { .. } | Err { .. } =>
-                self.transpile_data_error_expr(expr),
-            
+            DataFrame { .. }
+            | DataFrameOperation { .. }
+            | List(_)
+            | ListComprehension { .. }
+            | Range { .. }
+            | TryCatch { .. }
+            | Throw { .. }
+            | Ok { .. }
+            | Err { .. } => self.transpile_data_error_expr(expr),
+
             // Actor system
-            Actor { .. } | Send { .. } | Ask { .. } =>
-                self.transpile_actor_expr(expr),
-            
+            Actor { .. } | Send { .. } | Ask { .. } => self.transpile_actor_expr(expr),
+
             // Everything else
             _ => self.transpile_misc_expr(expr),
         }
     }
-
 }

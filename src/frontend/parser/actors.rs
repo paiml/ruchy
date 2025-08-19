@@ -32,7 +32,7 @@ pub fn parse_actor(state: &mut ParserState) -> Result<Expr> {
             // Parse state block
             state.tokens.advance(); // consume 'state'
             state.tokens.expect(&Token::LeftBrace)?;
-            
+
             // Parse state fields
             while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
                 let field_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
@@ -42,51 +42,55 @@ pub fn parse_actor(state: &mut ParserState) -> Result<Expr> {
                 } else {
                     bail!("Expected field name in state block");
                 };
-                
+
                 state.tokens.expect(&Token::Colon)?;
                 let ty = utils::parse_type(state)?;
-                
+
                 state_fields.push(StructField {
                     name: field_name,
                     ty,
                     is_pub: false,
                 });
-                
+
                 // Optional comma or semicolon
-                if matches!(state.tokens.peek(), Some((Token::Comma | Token::Semicolon, _))) {
+                if matches!(
+                    state.tokens.peek(),
+                    Some((Token::Comma | Token::Semicolon, _))
+                ) {
                     state.tokens.advance();
                 }
             }
-            
+
             state.tokens.expect(&Token::RightBrace)?; // Close state block
         } else if matches!(state.tokens.peek(), Some((Token::Receive, _))) {
             state.tokens.advance(); // consume 'receive'
-            
+
             // Check if it's a receive block or individual handler
             if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
                 // Parse receive block with multiple handlers
                 state.tokens.advance(); // consume {
-                
+
                 while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
                     // Parse message pattern
-                    let message_type = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                        let name = name.clone();
-                        state.tokens.advance();
-                        name
-                    } else {
-                        bail!("Expected message type in receive block");
-                    };
-                    
+                    let message_type =
+                        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                            let name = name.clone();
+                            state.tokens.advance();
+                            name
+                        } else {
+                            bail!("Expected message type in receive block");
+                        };
+
                     // Parse optional parameters
                     let params = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
                         utils::parse_params(state)?
                     } else {
                         Vec::new()
                     };
-                    
+
                     // Expect => for handler body
                     state.tokens.expect(&Token::FatArrow)?;
-                    
+
                     // Parse handler body
                     let body = if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
                         Box::new(collections::parse_block(state)?)
@@ -94,19 +98,19 @@ pub fn parse_actor(state: &mut ParserState) -> Result<Expr> {
                         // Single expression, not a block
                         Box::new(super::parse_expr_recursive(state)?)
                     };
-                    
+
                     handlers.push(ActorHandler {
                         message_type,
                         params,
                         body,
                     });
-                    
+
                     // Optional separator (comma or newline already consumed)
                     if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                         state.tokens.advance();
                     }
                 }
-                
+
                 state.tokens.expect(&Token::RightBrace)?; // Close receive block
             } else {
                 // Parse individual receive handler
