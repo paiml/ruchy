@@ -3,7 +3,7 @@
 //! This module contains delegated transpilation functions to keep
 //! cyclomatic complexity below 10 for each function.
 
-use super::*;
+use super::Transpiler;
 use crate::frontend::ast::{ExprKind, Expr};
 use anyhow::{Result, bail};
 use proc_macro2::TokenStream;
@@ -14,35 +14,55 @@ impl Transpiler {
     pub(super) fn transpile_basic_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Literal(lit) => Ok(Self::transpile_literal(lit)),
-            ExprKind::Identifier(name) => {
-                let ident = format_ident!("{}", name);
-                Ok(quote! { #ident })
-            }
-            ExprKind::QualifiedName { module, name } => {
-                let module_ident = format_ident!("{}", module);
-                let name_ident = format_ident!("{}", name);
-                Ok(quote! { #module_ident::#name_ident })
-            }
+            ExprKind::Identifier(name) => Ok(Self::transpile_identifier(name)),
+            ExprKind::QualifiedName { module, name } => Ok(Self::transpile_qualified_name(module, name)),
             ExprKind::StringInterpolation { parts } => self.transpile_string_interpolation(parts),
             _ => unreachable!("Non-basic expression in transpile_basic_expr"),
         }
     }
 
-    /// Transpile operator and control flow expressions (combined to reduce complexity)
+    fn transpile_identifier(name: &str) -> TokenStream {
+        let ident = format_ident!("{}", name);
+        quote! { #ident }
+    }
+
+    fn transpile_qualified_name(module: &str, name: &str) -> TokenStream {
+        let module_ident = format_ident!("{}", module);
+        let name_ident = format_ident!("{}", name);
+        quote! { #module_ident::#name_ident }
+    }
+
+    /// Transpile operator and control flow expressions (split for complexity)
     pub(super) fn transpile_operator_control_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             // Operators
+            ExprKind::Binary { .. } | ExprKind::Unary { .. } | ExprKind::Try { .. } | ExprKind::Await { .. } =>
+                self.transpile_operator_only_expr(expr),
+            // Control flow
+            ExprKind::If { .. } | ExprKind::Match { .. } | ExprKind::For { .. } | ExprKind::While { .. } =>
+                self.transpile_control_flow_only_expr(expr),
+            _ => unreachable!("Non-operator/control expression in transpile_operator_control_expr"),
+        }
+    }
+
+    fn transpile_operator_only_expr(&self, expr: &Expr) -> Result<TokenStream> {
+        match &expr.kind {
             ExprKind::Binary { left, op, right } => self.transpile_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.transpile_unary(*op, operand),
             ExprKind::Try { expr } => self.transpile_try(expr),
             ExprKind::Await { expr } => self.transpile_await(expr),
-            // Control flow
+            _ => unreachable!(),
+        }
+    }
+
+    fn transpile_control_flow_only_expr(&self, expr: &Expr) -> Result<TokenStream> {
+        match &expr.kind {
             ExprKind::If { condition, then_branch, else_branch } => 
                 self.transpile_if(condition, then_branch, else_branch.as_deref()),
             ExprKind::Match { expr, arms } => self.transpile_match(expr, arms),
             ExprKind::For { var, iter, body } => self.transpile_for(var, iter, body),
             ExprKind::While { condition, body } => self.transpile_while(condition, body),
-            _ => unreachable!("Non-operator/control expression in transpile_operator_control_expr"),
+            _ => unreachable!(),
         }
     }
 
@@ -105,16 +125,20 @@ impl Transpiler {
             ExprKind::TryCatch { try_block, catch_clauses, finally_block } => 
                 self.transpile_try_catch(try_block, catch_clauses, finally_block.as_deref()),
             ExprKind::Throw { expr } => self.transpile_throw(expr),
-            ExprKind::Ok { value } => {
-                let value_tokens = self.transpile_expr(value)?;
-                Ok(quote! { Ok(#value_tokens) })
-            }
-            ExprKind::Err { error } => {
-                let error_tokens = self.transpile_expr(error)?;
-                Ok(quote! { Err(#error_tokens) })
-            }
+            ExprKind::Ok { value } => self.transpile_result_ok(value),
+            ExprKind::Err { error } => self.transpile_result_err(error),
             _ => unreachable!(),
         }
+    }
+
+    fn transpile_result_ok(&self, value: &Expr) -> Result<TokenStream> {
+        let value_tokens = self.transpile_expr(value)?;
+        Ok(quote! { Ok(#value_tokens) })
+    }
+
+    fn transpile_result_err(&self, error: &Expr) -> Result<TokenStream> {
+        let error_tokens = self.transpile_expr(error)?;
+        Ok(quote! { Err(#error_tokens) })
     }
 
     /// Transpile actor system expressions
@@ -140,7 +164,7 @@ impl Transpiler {
             ExprKind::Import { path, items } => Ok(Self::transpile_import(path, items)),
             ExprKind::Trait { .. } | ExprKind::Impl { .. } => self.transpile_type_decl_expr(expr),
             ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Export { .. } => 
-                self.transpile_control_misc_expr(expr),
+                Self::transpile_control_misc_expr(expr),
             _ => bail!("Unsupported expression kind: {:?}", expr.kind),
         }
     }
@@ -155,10 +179,10 @@ impl Transpiler {
         }
     }
 
-    fn transpile_control_misc_expr(&self, expr: &Expr) -> Result<TokenStream> {
+    fn transpile_control_misc_expr(expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
-            ExprKind::Break { label } => Ok(Self::make_break_continue(true, label)),
-            ExprKind::Continue { label } => Ok(Self::make_break_continue(false, label)),
+            ExprKind::Break { label } => Ok(Self::make_break_continue(true, label.as_ref())),
+            ExprKind::Continue { label } => Ok(Self::make_break_continue(false, label.as_ref())),
             ExprKind::Export { items } => {
                 let item_idents: Vec<_> = items.iter().map(|item| format_ident!("{}", item)).collect();
                 Ok(quote! { pub use { #(#item_idents),* }; })
@@ -167,7 +191,7 @@ impl Transpiler {
         }
     }
 
-    fn make_break_continue(is_break: bool, label: &Option<String>) -> TokenStream {
+    fn make_break_continue(is_break: bool, label: Option<&String>) -> TokenStream {
         let keyword = if is_break { quote! { break } } else { quote! { continue } };
         match label {
             Some(l) => {
