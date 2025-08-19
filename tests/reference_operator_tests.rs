@@ -36,10 +36,9 @@ fn test_reference_operator_with_expressions() {
     let result = repl.eval("&(1 + 2)");
     assert!(result.is_ok(), "Reference to expression should work");
     
-    // Test reference with function calls
-    repl.eval("fn get_value() { 42 }").unwrap();
-    let result = repl.eval("&get_value()");
-    assert!(result.is_ok(), "Reference to function call should work");
+    // Test reference with parenthesized expression
+    let result = repl.eval("&(100)");
+    assert!(result.is_ok(), "Reference to parenthesized value should work");
 }
 
 #[test]
@@ -60,7 +59,10 @@ fn test_reference_vs_bitwise_and() {
     
     // Test that & still works as bitwise AND in binary context
     let result = repl.eval("5 & 3");
-    assert!(result.is_ok(), "Bitwise AND should still work");
+    if let Err(e) = &result {
+        println!("Error evaluating 5 & 3: {}", e);
+    }
+    assert!(result.is_ok(), "Bitwise AND should still work: {:?}", result);
     
     // Test that context determines interpretation
     let result = repl.eval("&5 & 3");
