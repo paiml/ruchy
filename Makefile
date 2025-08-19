@@ -217,9 +217,43 @@ prepare-publish:
 	@echo "  cargo publish --package ruchy"
 	@echo "  cargo publish --package ruchy-cli"
 
-# Development workflow
-dev: format lint test
-	@echo "✓ Development checks complete"
+# Documentation enforcement targets
+.PHONY: check-docs commit sprint-close
+
+# Ensure documentation is current
+check-docs:
+	@echo "📋 Checking documentation currency..."
+	@if [ $$(git diff --name-only | grep -cE '\.(rs|ruchy)$$') -gt 0 ] && \
+	    [ $$(git diff --name-only | grep -cE 'docs/|CHANGELOG.md') -eq 0 ]; then \
+	    echo "❌ Documentation update required!"; \
+	    echo "Update one of:"; \
+	    echo "  - docs/execution/roadmap.md"; \
+	    echo "  - docs/execution/quality-gates.md"; \
+	    echo "  - CHANGELOG.md"; \
+	    exit 1; \
+	fi
+
+# Development workflow with quality checks
+dev: check-docs format lint test
+	@echo "✅ Ready for development"
+
+# Quality-enforced commit
+commit: check-docs lint
+	@echo "📝 Creating quality-enforced commit..."
+	@read -p "Task ID (RUCHY-XXXX): " task_id; \
+	read -p "Commit message: " msg; \
+	git add -A && \
+	git commit -m "$$task_id: $$msg"
+
+# Sprint close verification
+sprint-close: check-docs
+	@echo "🏁 Sprint Close Quality Gate"
+	@if command -v pmat >/dev/null 2>&1; then \
+	    pmat quality-gate --fail-on-violation; \
+	    echo "📊 Generating quality report..."; \
+	    pmat analyze complexity . --format markdown > docs/quality/sprint-report.md; \
+	fi
+	@echo "✅ Sprint ready for close"
 
 # Full validation
 all: clean build test-all lint format coverage examples bench doc quality-gate

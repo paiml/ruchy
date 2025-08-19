@@ -1,8 +1,35 @@
-# PMAT Configuration for Ruchy Language
-# Quality gates as per CLAUDE.md requirements
+[quality_gate]
+# Zero tolerance settings
+max_cyclomatic_complexity = 10
+max_cognitive_complexity = 10
+max_satd_comments = 0
+min_test_coverage = 80.0
+max_dead_code_percentage = 5.0
+
+[documentation]
+# Required documentation patterns
+required_updates = [
+    "docs/execution/roadmap.md",
+    "docs/execution/quality-gates.md",
+    "CHANGELOG.md"
+]
+
+# Task ID format enforcement
+task_id_pattern = "RUCHY-[0-9]{4}"
+
+[commit]
+# Micro-commit enforcement
+max_lines_changed = 50
+max_time_between_commits_minutes = 30
+
+[mcp_server]
+# MCP quality proxy configuration
+enforce_documentation = true
+block_on_missing_docs = true
+auto_update_roadmap = true
 
 [quality_gates]
-# Complexity thresholds
+# Complexity thresholds from CLAUDE.md
 cyclomatic_complexity = 10
 cognitive_complexity = 15
 halstead_effort = 5000
