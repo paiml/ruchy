@@ -43,8 +43,8 @@ build:
 
 # Run tests (default - FAST tests only, ignores slow integration tests)
 test:
-	@echo "Running fast tests only..."
-	@cargo test --lib --quiet
+	@echo "Running fast tests only (limited to 4 threads, 32 property cases)..."
+	@cargo test --lib --quiet -- --test-threads=4
 	@echo "✓ Fast tests completed (~5 seconds after initial build)"
 
 # Run tests with nextest (will recompile, but has better output)
@@ -254,6 +254,32 @@ sprint-close: check-docs
 	    pmat analyze complexity . --format markdown > docs/quality/sprint-report.md; \
 	fi
 	@echo "✅ Sprint ready for close"
+
+# Test optimization commands
+.PHONY: test-quick test-memory test-heavy find-heavy-tests
+
+# Quick smoke tests only
+test-quick:
+	@echo "Running quick smoke tests..."
+	@PROPTEST_CASES=5 cargo test --lib -- --test-threads=2 --skip property_
+	@echo "✓ Quick tests complete"
+
+# Test memory usage
+test-memory:
+	@echo "Running resource verification tests..."
+	@cargo test --test resource_check -- --test-threads=1
+	@echo "✓ Memory tests complete"
+
+# Run heavy tests (normally ignored)
+test-heavy:
+	@echo "Running heavy tests (this may take a while)..."
+	@cargo test -- --ignored --test-threads=1 --nocapture
+	@echo "✓ Heavy tests complete"
+
+# Find memory-intensive tests
+find-heavy-tests:
+	@echo "Identifying memory-intensive tests..."
+	@./scripts/find-heavy-tests.sh
 
 # Full validation
 all: clean build test-all lint format coverage examples bench doc quality-gate

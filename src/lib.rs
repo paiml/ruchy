@@ -95,13 +95,37 @@ pub fn run_repl() -> Result<()> {
 }
 
 #[cfg(test)]
+mod test_config {
+    use std::sync::Once;
+    
+    static INIT: Once = Once::new();
+    
+    /// Initialize test configuration once per test run
+    pub fn init() {
+        INIT.call_once(|| {
+            // Limit proptest for development (CI uses different settings)
+            if std::env::var("CI").is_err() {
+                std::env::set_var("PROPTEST_CASES", "10");
+                std::env::set_var("PROPTEST_MAX_SHRINK_ITERS", "50");
+            }
+            // Limit test threads if not already set
+            if std::env::var("RUST_TEST_THREADS").is_err() {
+                std::env::set_var("RUST_TEST_THREADS", "4");
+            }
+        });
+    }
+}
+
+#[cfg(test)]
 #[allow(clippy::unwrap_used)]
 #[allow(clippy::single_char_pattern)]
 mod tests {
+    use super::test_config;
     use super::*;
 
     #[test]
     fn test_compile_simple() {
+        test_config::init();
         let result = compile("42").unwrap();
         assert!(result.contains("42"));
     }

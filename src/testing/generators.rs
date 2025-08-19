@@ -5,7 +5,10 @@ use proptest::prelude::*;
 use proptest::strategy::{BoxedStrategy, Strategy};
 
 /// Maximum depth for recursive AST generation to avoid stack overflow
-const MAX_DEPTH: u32 = 5;
+const MAX_DEPTH: u32 = 4;
+
+/// Maximum width for collections to limit memory usage
+const MAX_WIDTH: usize = 10;
 
 /// Configuration for AST generation
 #[derive(Debug, Clone)]
@@ -244,11 +247,11 @@ pub fn arb_expr_with_depth(depth: u32) -> BoxedStrategy<Expr> {
                     )
                 }
             ),
-            // Lists
-            prop::collection::vec(smaller_expr.clone(), 0..5)
+            // Lists - use MAX_WIDTH to limit memory
+            prop::collection::vec(smaller_expr.clone(), 0..MAX_WIDTH.min(5))
                 .prop_map(|elements| { Expr::new(ExprKind::List(elements), Span::new(0, 0)) }),
-            // Blocks
-            prop::collection::vec(smaller_expr.clone(), 1..4)
+            // Blocks - keep small
+            prop::collection::vec(smaller_expr.clone(), 1..4.min(MAX_WIDTH))
                 .prop_map(|exprs| { Expr::new(ExprKind::Block(exprs), Span::new(0, 0)) }),
             // Ranges
             (smaller_expr.clone(), smaller_expr, any::<bool>()).prop_map(

@@ -7,6 +7,12 @@
 
 **v0.4.11 PERFORMANCE UPDATE** 🚀 A functional programming language that transpiles to idiomatic Rust. Major performance improvements, enhanced error diagnostics, and comprehensive CLI features. Full functional programming support with curry/uncurry, lazy evaluation, and bytecode caching.
 
+## 🌟 World's First MCP-First Programming Language
+
+Ruchy is pioneering a new paradigm where **Model Context Protocol (MCP)** isn't just supported through libraries, but fundamentally integrated into the language runtime. Every Ruchy actor is automatically an MCP tool, and MCP messages are first-class citizens with zero-overhead protocol bridging.
+
+[**Learn more about Ruchy's MCP architecture →**](./MCP_SUBMISSION.md)
+
 ## 🎯 Quick Start
 
 ```bash
@@ -24,6 +30,9 @@ ruchy
 
 # Run a script
 ruchy script.ruchy
+
+# Start MCP server mode (NEW!)
+ruchy mcp serve
 ```
 
 ## 📋 Development Process
