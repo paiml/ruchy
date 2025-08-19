@@ -37,6 +37,54 @@ impl Transpiler {
     pub fn transpile(&self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_expr(expr)
     }
+    
+    /// Checks if an expression contains `DataFrame` operations
+    fn contains_dataframe(expr: &Expr) -> bool {
+        use ExprKind::*;
+        match &expr.kind {
+            DataFrame { .. } | DataFrameOperation { .. } => true,
+            Binary { left, right, .. } => Self::check_df(left) || Self::check_df(right),
+            Unary { operand, .. } => Self::check_df(operand),
+            Call { func, args } => Self::check_df(func) || Self::check_df_vec(args),
+            Block(stmts) => Self::check_df_vec(stmts),
+            Let { value, body, .. } => Self::check_df(value) || Self::check_df(body),
+            MethodCall { receiver, args, .. } => Self::check_df(receiver) || Self::check_df_vec(args),
+            List(items) => Self::check_df_vec(items),
+            _ => false,
+        }
+    }
+    
+    fn check_df(expr: &Expr) -> bool {
+        Self::contains_dataframe(expr)
+    }
+    
+    fn check_df_vec(exprs: &[Expr]) -> bool {
+        exprs.iter().any(Self::contains_dataframe)
+    }
+    
+    /// Wraps transpiled code in a complete Rust program with necessary imports
+    pub fn transpile_to_program(&self, expr: &Expr) -> Result<TokenStream> {
+        let body = self.transpile_expr(expr)?;
+        let needs_polars = Self::contains_dataframe(expr);
+        
+        if needs_polars {
+            Ok(quote! {
+                use polars::prelude::*;
+                
+                fn main() {
+                    let result = #body;
+                    println!("{:?}", result);
+                }
+            })
+        } else {
+            Ok(quote! {
+                fn main() {
+                    let result = #body;
+                    println!("{:?}", result);
+                }
+            })
+        }
+    }
 
     /// Transpiles an expression to a String
     pub fn transpile_to_string(&self, expr: &Expr) -> Result<String> {

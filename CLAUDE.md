@@ -558,3 +558,4 @@ Always maintain in .gitignore:
 ---
 
 **Remember**: Compiler engineering is about systematic transformation, not clever hacks. Every abstraction must have zero runtime cost. Every error must be actionable. Every line of code must justify its complexity budget.
+- no "cruft" at root of repo.  always clean up temp files/documents before committing.  Zero tolerance for waste.  we follow toyota way.
