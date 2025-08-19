@@ -285,6 +285,7 @@ impl RuchyCompleter {
             list_methods: vec![
                 "map".to_string(),
                 "filter".to_string(),
+                "reduce".to_string(),
                 "len".to_string(),
                 "length".to_string(),
                 "head".to_string(),
@@ -998,16 +999,32 @@ impl Repl {
                                 bail!("map expects 1 argument");
                             }
 
-                            // Lambda evaluation requires environment capture
-                            // Currently returns input unchanged
-                            let _ = &args[0];
-
-                            // Apply the lambda to each item
+                            // Apply the lambda/function to each item
                             let mut results = Vec::new();
-                            for item in items {
-                                // Create a temporary binding for the lambda parameter
-                                // This is simplified - proper implementation needs lambda evaluation
-                                results.push(item); // Placeholder
+                            
+                            // Check if the argument is a lambda or function reference
+                            if let ExprKind::Lambda { params, body } = &args[0].kind {
+                                if params.len() != 1 {
+                                    bail!("map lambda must take exactly 1 parameter");
+                                }
+                                
+                                // Save current bindings
+                                let saved_bindings = self.bindings.clone();
+                                
+                                for item in items {
+                                    // Bind the parameter to the current item
+                                    self.bindings.insert(params[0].name.clone(), item);
+                                    
+                                    // Evaluate the lambda body
+                                    let result = self.evaluate_expr(body, deadline, depth + 1)?;
+                                    results.push(result);
+                                }
+                                
+                                // Restore bindings
+                                self.bindings = saved_bindings;
+                            } else {
+                                // Try to evaluate as a function reference
+                                bail!("map currently only supports lambda expressions");
                             }
 
                             Ok(Value::List(results))
@@ -1017,8 +1034,70 @@ impl Repl {
                                 bail!("filter expects 1 argument");
                             }
 
-                            // For now, just return the original list
-                            Ok(Value::List(items))
+                            // Filter items based on predicate
+                            let mut results = Vec::new();
+                            
+                            if let ExprKind::Lambda { params, body } = &args[0].kind {
+                                if params.len() != 1 {
+                                    bail!("filter lambda must take exactly 1 parameter");
+                                }
+                                
+                                // Save current bindings
+                                let saved_bindings = self.bindings.clone();
+                                
+                                for item in items {
+                                    // Bind the parameter to the current item
+                                    self.bindings.insert(params[0].name.clone(), item.clone());
+                                    
+                                    // Evaluate the predicate
+                                    let predicate_result = self.evaluate_expr(body, deadline, depth + 1)?;
+                                    
+                                    // Check if predicate is true
+                                    if let Value::Bool(true) = predicate_result {
+                                        results.push(item);
+                                    }
+                                }
+                                
+                                // Restore bindings
+                                self.bindings = saved_bindings;
+                            } else {
+                                bail!("filter currently only supports lambda expressions");
+                            }
+
+                            Ok(Value::List(results))
+                        }
+                        "reduce" => {
+                            if args.len() != 2 {
+                                bail!("reduce expects 2 arguments: initial value and lambda");
+                            }
+                            
+                            // Evaluate the initial value
+                            let mut accumulator = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                            
+                            if let ExprKind::Lambda { params, body } = &args[1].kind {
+                                if params.len() != 2 {
+                                    bail!("reduce lambda must take exactly 2 parameters (accumulator, item)");
+                                }
+                                
+                                // Save current bindings
+                                let saved_bindings = self.bindings.clone();
+                                
+                                for item in items {
+                                    // Bind the parameters
+                                    self.bindings.insert(params[0].name.clone(), accumulator);
+                                    self.bindings.insert(params[1].name.clone(), item);
+                                    
+                                    // Evaluate the reducer function
+                                    accumulator = self.evaluate_expr(body, deadline, depth + 1)?;
+                                }
+                                
+                                // Restore bindings
+                                self.bindings = saved_bindings;
+                            } else {
+                                bail!("reduce currently only supports lambda expressions");
+                            }
+                            
+                            Ok(accumulator)
                         }
                         "len" | "length" => {
                             Ok(Value::Int(i64::try_from(items.len()).unwrap_or(i64::MAX)))
