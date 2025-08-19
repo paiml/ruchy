@@ -182,3 +182,51 @@ fn test_partial_application_syntax() {
     let code = "|x| add(5, x)";
     assert!(is_valid_syntax(code));
 }
+
+#[test]
+fn test_curry_function() {
+    // Curry transforms a multi-argument function into nested single-argument functions
+    let code = "curry(add)";
+    assert!(is_valid_syntax(code));
+    
+    let code2 = r"
+        fn add(x, y) { x + y }
+        let curriedAdd = curry(add)
+        curriedAdd(5)(3)
+    ";
+    assert!(is_valid_syntax(code2));
+}
+
+#[test]
+fn test_uncurry_function() {
+    // Uncurry transforms a curried function back to multi-argument form
+    let code = "uncurry(curriedFunc)";
+    assert!(is_valid_syntax(code));
+    
+    let code2 = r"
+        let curriedAdd = |x| |y| x + y
+        let normalAdd = uncurry(curriedAdd)
+        normalAdd(5, 3)
+    ";
+    assert!(is_valid_syntax(code2));
+}
+
+#[test]
+fn test_curry_with_three_params() {
+    let code = r"
+        fn add3(x, y, z) { x + y + z }
+        let curried = curry(add3)
+        curried(1)(2)(3)
+    ";
+    assert!(is_valid_syntax(code));
+}
+
+#[test]
+fn test_partial_application_with_curry() {
+    let code = r"
+        fn multiply(x, y) { x * y }
+        let double = curry(multiply)(2)
+        double(5)
+    ";
+    assert!(is_valid_syntax(code));
+}

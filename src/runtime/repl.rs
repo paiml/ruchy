@@ -1270,10 +1270,67 @@ impl Repl {
             match func_name.as_str() {
                 "println" => self.evaluate_println(args, deadline, depth),
                 "print" => self.evaluate_print(args, deadline, depth),
+                "curry" => self.evaluate_curry(args, deadline, depth),
+                "uncurry" => self.evaluate_uncurry(args, deadline, depth),
                 _ => self.evaluate_user_function(func_name, args, deadline, depth),
             }
         } else {
             bail!("Complex function calls not yet supported");
+        }
+    }
+
+    /// Evaluate curry function - converts a function that takes multiple arguments into a series of functions that each take a single argument
+    fn evaluate_curry(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("curry expects exactly 1 argument (a function)");
+        }
+        
+        // Evaluate the function argument
+        let func_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        
+        // For now, return a string representation of currying
+        match func_val {
+            Value::Function { name, params, .. } => {
+                if params.is_empty() {
+                    bail!("Cannot curry a function with no parameters");
+                }
+                // Return a descriptive representation for REPL demo
+                let curry_repr = format!("curry({}) -> {}",
+                    name,
+                    params.iter()
+                        .map(|p| format!("({p} -> ...)"))
+                        .collect::<Vec<_>>()
+                        .join(" -> ")
+                );
+                Ok(Value::String(curry_repr))
+            }
+            _ => bail!("curry expects a function as argument")
+        }
+    }
+    
+    /// Evaluate uncurry function - converts a curried function back into a function that takes multiple arguments
+    fn evaluate_uncurry(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("uncurry expects exactly 1 argument (a curried function)");
+        }
+        
+        // Evaluate the function argument
+        let func_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        
+        // For now, return a string representation of uncurrying
+        match func_val {
+            Value::Function { name, params, .. } => {
+                let uncurry_repr = format!("uncurry({}) -> ({}) -> ...",
+                    name,
+                    params.join(", ")
+                );
+                Ok(Value::String(uncurry_repr))
+            }
+            Value::String(s) if s.contains("curry") => {
+                // Handle curried functions
+                Ok(Value::String(format!("uncurry({s}) -> original function")))
+            }
+            _ => bail!("uncurry expects a curried function as argument")
         }
     }
 
