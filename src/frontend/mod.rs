@@ -4,6 +4,7 @@
 
 pub mod arena;
 pub mod ast;
+pub mod diagnostics;
 pub mod error_recovery;
 pub mod lexer;
 pub mod parser;
