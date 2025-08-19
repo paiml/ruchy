@@ -222,6 +222,8 @@ pub enum UnOp {
     Not,
     /// Bitwise not
     BitNot,
+    /// Reference (borrow)
+    Ref,
 }
 
 /// Aggregate kinds

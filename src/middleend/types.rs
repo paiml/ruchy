@@ -42,6 +42,8 @@ pub enum MonoType {
     Tuple(Vec<MonoType>),
     /// Named type (user-defined or gradual typing 'Any')
     Named(String),
+    /// Reference type: &T
+    Reference(Box<MonoType>),
 }
 
 impl fmt::Display for MonoType {
@@ -69,6 +71,7 @@ impl fmt::Display for MonoType {
                 write!(f, ")")
             }
             MonoType::Named(name) => write!(f, "{name}"),
+            MonoType::Reference(inner) => write!(f, "&{inner}"),
         }
     }
 }

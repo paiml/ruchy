@@ -297,6 +297,7 @@ pub enum UnaryOp {
     Not,
     Negate,
     BitwiseNot,
+    Reference,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -510,6 +511,7 @@ impl fmt::Display for UnaryOp {
             Self::Not => write!(f, "!"),
             Self::Negate => write!(f, "-"),
             Self::BitwiseNot => write!(f, "~"),
+            Self::Reference => write!(f, "&"),
         }
     }
 }
@@ -633,6 +635,7 @@ mod tests {
         assert_eq!(UnaryOp::Not.to_string(), "!");
         assert_eq!(UnaryOp::Negate.to_string(), "-");
         assert_eq!(UnaryOp::BitwiseNot.to_string(), "~");
+        assert_eq!(UnaryOp::Reference.to_string(), "&");
     }
 
     #[test]
