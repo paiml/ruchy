@@ -531,6 +531,97 @@ impl Repl {
                 // For now, represent as a tuple ("Err", error)
                 Ok(Value::List(vec![Value::String("Err".to_string()), err]))
             }
+            ExprKind::MethodCall { receiver, method, args } => {
+                // Evaluate the receiver
+                let receiver_val = self.evaluate_expr(receiver, deadline, depth + 1)?;
+                
+                // Handle list methods
+                if let Value::List(items) = receiver_val {
+                    match method.as_str() {
+                        "map" => {
+                            if args.len() != 1 {
+                                bail!("map expects 1 argument");
+                            }
+                            
+                            // Lambda evaluation requires environment capture
+                            // Currently returns input unchanged
+                            let _ = &args[0];
+                            
+                            // Apply the lambda to each item
+                            let mut results = Vec::new();
+                            for item in items {
+                                // Create a temporary binding for the lambda parameter
+                                // This is simplified - proper implementation needs lambda evaluation
+                                results.push(item); // Placeholder
+                            }
+                            
+                            Ok(Value::List(results))
+                        }
+                        "filter" => {
+                            if args.len() != 1 {
+                                bail!("filter expects 1 argument");
+                            }
+                            
+                            // For now, just return the original list
+                            Ok(Value::List(items))
+                        }
+                        "len" | "length" => {
+                            Ok(Value::Int(i64::try_from(items.len()).unwrap_or(i64::MAX)))
+                        }
+                        "head" | "first" => {
+                            items.first().cloned().ok_or_else(|| anyhow::anyhow!("Empty list"))
+                        }
+                        "tail" | "rest" => {
+                            if items.is_empty() {
+                                Ok(Value::List(Vec::new()))
+                            } else {
+                                Ok(Value::List(items[1..].to_vec()))
+                            }
+                        }
+                        "last" => {
+                            items.last().cloned().ok_or_else(|| anyhow::anyhow!("Empty list"))
+                        }
+                        "reverse" => {
+                            let mut reversed = items;
+                            reversed.reverse();
+                            Ok(Value::List(reversed))
+                        }
+                        "sum" => {
+                            let mut sum = 0i64;
+                            for item in &items {
+                                if let Value::Int(n) = item {
+                                    sum += n;
+                                } else {
+                                    bail!("sum requires all integers");
+                                }
+                            }
+                            Ok(Value::Int(sum))
+                        }
+                        _ => bail!("Unknown list method: {}", method)
+                    }
+                } else if let Value::String(s) = receiver_val {
+                    // Handle string methods
+                    match method.as_str() {
+                        "len" | "length" => Ok(Value::Int(i64::try_from(s.len()).unwrap_or(i64::MAX))),
+                        "upper" | "to_upper" => Ok(Value::String(s.to_uppercase())),
+                        "lower" | "to_lower" => Ok(Value::String(s.to_lowercase())),
+                        "trim" => Ok(Value::String(s.trim().to_string())),
+                        "split" => {
+                            if args.len() != 1 {
+                                bail!("split expects 1 argument");
+                            }
+                            // For now, split on spaces
+                            let parts: Vec<Value> = s.split_whitespace()
+                                .map(|p| Value::String(p.to_string()))
+                                .collect();
+                            Ok(Value::List(parts))
+                        }
+                        _ => bail!("Unknown string method: {}", method)
+                    }
+                } else {
+                    bail!("Method calls not supported on this type")
+                }
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
