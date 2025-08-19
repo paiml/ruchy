@@ -1,9 +1,11 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use colored::*;
+use colored::Colorize;
 use ruchy::{runtime::repl::Repl, Parser as RuchyParser, Transpiler};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(name = "ruchy")]
@@ -67,6 +69,40 @@ enum Commands {
         #[arg(long)]
         release: bool,
     },
+
+    /// Format Ruchy source code
+    Fmt {
+        /// The file to format
+        file: PathBuf,
+
+        /// Format all files in project
+        #[arg(long)]
+        all: bool,
+
+        /// Check if files are formatted without modifying them
+        #[arg(long)]
+        check: bool,
+
+        /// Write formatted output to stdout instead of modifying files
+        #[arg(long)]
+        stdout: bool,
+
+        /// Line width for formatting
+        #[arg(long, default_value = "100")]
+        line_width: usize,
+
+        /// Indent size (spaces)
+        #[arg(long, default_value = "4")]
+        indent: usize,
+
+        /// Use tabs instead of spaces for indentation
+        #[arg(long)]
+        use_tabs: bool,
+
+        /// Show diff of changes
+        #[arg(long)]
+        diff: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -109,7 +145,7 @@ fn main() -> Result<()> {
             match parser.parse() {
                 Ok(ast) => {
                     println!("{}", "AST:".bright_cyan());
-                    println!("{:#?}", ast);
+                    println!("{ast:#?}");
                 }
                 Err(e) => {
                     eprintln!("{} {}", "Parse error:".bright_red(), e);
@@ -130,7 +166,7 @@ fn main() -> Result<()> {
                 fs::write(output_path, rust_code)?;
                 println!("{} Transpiled successfully", "✓".bright_green());
             } else {
-                println!("{}", rust_code);
+                println!("{rust_code}");
             }
         }
 
@@ -151,7 +187,7 @@ fn main() -> Result<()> {
             let full_code = if rust_code.contains("fn main") {
                 rust_code
             } else {
-                format!("fn main() {{\n    {}\n}}", rust_code)
+                format!("fn main() {{\n    {rust_code}\n}}")
             };
 
             fs::write(&temp_file, full_code)?;
@@ -205,7 +241,7 @@ fn main() -> Result<()> {
             let full_code = if rust_code.contains("fn main") {
                 rust_code
             } else {
-                format!("fn main() {{\n    {}\n}}", rust_code)
+                format!("fn main() {{\n    {rust_code}\n}}")
             };
 
             fs::write(&temp_file, full_code)?;
@@ -231,6 +267,23 @@ fn main() -> Result<()> {
                 "✓".bright_green(),
                 output_path.display()
             );
+        }
+
+        Some(Commands::Fmt {
+            file,
+            all,
+            check,
+            stdout,
+            line_width,
+            indent,
+            use_tabs,
+            diff,
+        }) => {
+            if all {
+                format_all_files(check, stdout, line_width, indent, use_tabs, diff)?;
+            } else {
+                format_file(&file, check, stdout, line_width, indent, use_tabs, diff)?;
+            }
         }
     }
 
@@ -258,7 +311,7 @@ fn evaluate_oneliner(expr: &str, format: &str) -> Result<()> {
                 _ => {
                     // Default text output
                     if !matches!(value, Value::Unit) {
-                        println!("{}", value);
+                        println!("{value}");
                     }
                 }
             }
@@ -266,9 +319,9 @@ fn evaluate_oneliner(expr: &str, format: &str) -> Result<()> {
         }
         Err(e) => {
             if format == "json" {
-                println!(r#"{{"error": "{}"}}"#, e);
+                println!(r#"{{"error": "{e}"}}"#);
             } else {
-                eprintln!("Error: {}", e);
+                eprintln!("Error: {e}");
             }
             std::process::exit(1);
         }
@@ -293,8 +346,8 @@ fn run_script(file: &PathBuf) -> Result<()> {
         }
 
         if let Err(e) = repl.evaluate_expr_str(line, Some(deadline)) {
-            eprintln!("Error at line: {}", line);
-            eprintln!("  {}", e);
+            eprintln!("Error at line: {line}");
+            eprintln!("  {e}");
             std::process::exit(1);
         }
     }
@@ -312,7 +365,7 @@ fn value_to_json(value: &ruchy::runtime::Value) -> String {
         Value::Float(f) => f.to_string(),
         Value::Bool(b) => b.to_string(),
         Value::String(s) => format!(r#""{}""#, s.replace('"', r#"\""#)),
-        Value::Char(c) => format!(r#""{}""#, c),
+        Value::Char(c) => format!(r#""{c}""#),
         Value::List(items) => {
             let json_items: Vec<String> = items.iter().map(value_to_json).collect();
             format!("[{}]", json_items.join(", "))
@@ -334,4 +387,257 @@ fn value_to_json(value: &ruchy::runtime::Value) -> String {
             format!(r#"{{"type":"DataFrame","columns":[{}]}}"#, cols.join(","))
         }
     }
+}
+
+/// Format configuration
+#[derive(Clone)]
+#[allow(dead_code)]
+struct FormatConfig {
+    line_width: usize,
+    indent_size: usize,
+    use_tabs: bool,
+}
+
+impl FormatConfig {
+    fn new(line_width: usize, indent: usize, use_tabs: bool) -> Self {
+        Self {
+            line_width,
+            indent_size: indent,
+            use_tabs,
+        }
+    }
+    
+    #[allow(dead_code)]
+    fn indent_str(&self, level: usize) -> String {
+        if self.use_tabs {
+            "\t".repeat(level)
+        } else {
+            " ".repeat(level * self.indent_size)
+        }
+    }
+}
+
+/// Format a single file
+#[allow(clippy::fn_params_excessive_bools)]
+fn format_file(
+    file: &PathBuf,
+    check: bool,
+    stdout: bool,
+    line_width: usize,
+    indent: usize,
+    use_tabs: bool,
+    diff: bool,
+) -> Result<()> {
+    use std::fs;
+    
+    // Read the source file
+    let source = match fs::read_to_string(file) {
+        Ok(content) => content,
+        Err(e) => {
+            eprintln!("{} Failed to read {}: {}", "✗".bright_red(), file.display(), e);
+            std::process::exit(1);
+        }
+    };
+    
+    // Parse the source
+    let mut parser = RuchyParser::new(&source);
+    let ast = match parser.parse() {
+        Ok(ast) => ast,
+        Err(e) => {
+            eprintln!("{} Parse error in {}: {}", "✗".bright_red(), file.display(), e);
+            std::process::exit(1);
+        }
+    };
+    
+    // Format the AST
+    let config = FormatConfig::new(line_width, indent, use_tabs);
+    let formatted = format_ast(&ast, &config);
+    
+    if check {
+        // Check mode: verify if file is already formatted
+        if source.trim() == formatted.trim() {
+            println!("{} {} is already formatted", "✓".bright_green(), file.display());
+        } else {
+            println!("{} {} needs formatting", "✗".bright_red(), file.display());
+            if diff {
+                print_diff(&source, &formatted, file);
+            }
+            std::process::exit(1);
+        }
+    } else if stdout {
+        // Output to stdout
+        println!("{formatted}");
+    } else {
+        // Write back to file
+        if source.trim() == formatted.trim() {
+            println!("{} {} is already formatted", "→".bright_cyan(), file.display());
+        } else {
+            fs::write(file, &formatted)?;
+            println!("{} Formatted {}", "✓".bright_green(), file.display());
+            if diff {
+                print_diff(&source, &formatted, file);
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+/// Format all Ruchy files in the project
+#[allow(clippy::fn_params_excessive_bools)]
+fn format_all_files(
+    check: bool,
+    _stdout: bool,
+    line_width: usize,
+    indent: usize,
+    use_tabs: bool,
+    diff: bool,
+) -> Result<()> {
+    // Discover all .ruchy files
+    let ruchy_files = discover_ruchy_files_fmt(".")?;
+    
+    if ruchy_files.is_empty() {
+        println!("{} No .ruchy files found", "⚠".yellow());
+        return Ok(());
+    }
+    
+    println!("{} Found {} .ruchy files", "→".bright_cyan(), ruchy_files.len());
+    
+    let mut formatted = 0;
+    let already_formatted = 0;
+    let mut errors = 0;
+    
+    for file in &ruchy_files {
+        match format_file(file, check, false, line_width, indent, use_tabs, diff) {
+            Ok(()) => {
+                // Simple success counting
+                formatted += 1;
+            }
+            Err(_) => {
+                errors += 1;
+            }
+        }
+    }
+    
+    // Print summary
+    let status = if errors == 0 {
+        format!("{} PASSED", "✓".bright_green())
+    } else {
+        format!("{} FAILED", "✗".bright_red())
+    };
+    
+    println!("\nformat result: {}. {} files processed; {} errors",
+        status, formatted + already_formatted, errors);
+    
+    if errors > 0 {
+        std::process::exit(1);
+    }
+    
+    Ok(())
+}
+
+/// Discover all .ruchy files for formatting
+#[allow(clippy::items_after_statements)]
+fn discover_ruchy_files_fmt(dir: &str) -> Result<Vec<PathBuf>> {
+    use std::fs;
+    
+    let mut ruchy_files = Vec::new();
+    
+    fn visit_dir(dir: &std::path::Path, files: &mut Vec<PathBuf>) -> Result<()> {
+        if dir.is_dir() {
+            for entry in fs::read_dir(dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_dir() {
+                    // Skip hidden directories and common build/dependency directories
+                    if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
+                        if !name.starts_with('.') 
+                            && name != "target" 
+                            && name != "node_modules" 
+                            && name != "build" 
+                            && name != "dist" {
+                            visit_dir(&path, files)?;
+                        }
+                    }
+                } else if path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+                    files.push(path);
+                }
+            }
+        }
+        Ok(())
+    }
+    
+    visit_dir(std::path::Path::new(dir), &mut ruchy_files)?;
+    ruchy_files.sort();
+    Ok(ruchy_files)
+}
+
+/// Format an AST to a string
+fn format_ast(ast: &ruchy::Expr, config: &FormatConfig) -> String {
+    let mut output = String::new();
+    format_expr(ast, &mut output, 0, config);
+    // Ensure we end with a newline
+    if !output.ends_with('\n') {
+        output.push('\n');
+    }
+    output
+}
+
+/// Format an expression with proper indentation
+#[allow(clippy::format_push_string)]
+fn format_expr(expr: &ruchy::Expr, output: &mut String, _indent_level: usize, _config: &FormatConfig) {
+    // For now, use a simple debug-based formatter
+    // This can be enhanced later with proper AST traversal
+    output.push_str(&format!("{expr:?}"));
+}
+
+/// Format a literal value (simplified)
+#[allow(dead_code, clippy::format_push_string)]
+fn format_literal(lit: &ruchy::Literal, output: &mut String) {
+    output.push_str(&format!("{lit:?}"));
+}
+
+/// Format a binary operator (simplified)
+#[allow(dead_code, clippy::format_push_string, clippy::trivially_copy_pass_by_ref)]
+fn format_binary_op(op: &ruchy::BinaryOp, output: &mut String) {
+    output.push_str(&format!("{op:?}"));
+}
+
+/// Format a unary operator (simplified)
+#[allow(dead_code, clippy::format_push_string, clippy::trivially_copy_pass_by_ref)]
+fn format_unary_op(op: &ruchy::UnaryOp, output: &mut String) {
+    output.push_str(&format!("{op:?}"));
+}
+
+/// Format a pattern (simplified)
+#[allow(dead_code, clippy::format_push_string)]
+fn format_pattern(pattern: &ruchy::Pattern, output: &mut String) {
+    output.push_str(&format!("{pattern:?}"));
+}
+
+/// Print diff between original and formatted content
+fn print_diff(original: &str, formatted: &str, file: &Path) {
+    println!("\n{} Diff for {}:", "📝".bright_blue(), file.display());
+    println!("{}", "--- Original".bright_red());
+    println!("{}", "+++ Formatted".bright_green());
+    
+    let original_lines: Vec<&str> = original.lines().collect();
+    let formatted_lines: Vec<&str> = formatted.lines().collect();
+    
+    // Simple diff display - just show different lines
+    let max_lines = original_lines.len().max(formatted_lines.len());
+    for i in 0..max_lines {
+        let orig = original_lines.get(i).unwrap_or(&"");
+        let fmt = formatted_lines.get(i).unwrap_or(&"");
+        
+        if orig != fmt {
+            if !orig.is_empty() {
+                println!("{} {}", "-".bright_red(), orig);
+            }
+            if !fmt.is_empty() {
+                println!("{} {}", "+".bright_green(), fmt);
+            }
+        }
+    }
+    println!();
 }

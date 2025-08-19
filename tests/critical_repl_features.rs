@@ -1,6 +1,8 @@
 //! Critical REPL Feature Tests
 //! These tests MUST pass or the product is broken
 
+#![allow(clippy::unwrap_used)]
+
 use ruchy::runtime::repl::Repl;
 use ruchy::runtime::Value;
 use std::time::{Duration, Instant};
