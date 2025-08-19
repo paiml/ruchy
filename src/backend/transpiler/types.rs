@@ -56,6 +56,14 @@ impl Transpiler {
                 // Rust function type syntax
                 Ok(quote! { fn(#(#param_tokens),*) -> #ret_tokens })
             }
+            TypeKind::DataFrame { .. } => {
+                // DataFrames map to Polars DataFrame type
+                Ok(quote! { polars::prelude::DataFrame })
+            }
+            TypeKind::Series { .. } => {
+                // Series maps to Polars Series type
+                Ok(quote! { polars::prelude::Series })
+            }
         }
     }
 

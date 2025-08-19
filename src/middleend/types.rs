@@ -44,6 +44,10 @@ pub enum MonoType {
     Named(String),
     /// Reference type: &T
     Reference(Box<MonoType>),
+    /// `DataFrame` type with column names and their types
+    DataFrame(Vec<(String, MonoType)>),
+    /// Series type with element type
+    Series(Box<MonoType>),
 }
 
 impl fmt::Display for MonoType {
@@ -72,6 +76,17 @@ impl fmt::Display for MonoType {
             }
             MonoType::Named(name) => write!(f, "{name}"),
             MonoType::Reference(inner) => write!(f, "&{inner}"),
+            MonoType::DataFrame(columns) => {
+                write!(f, "DataFrame[")?;
+                for (i, (name, ty)) in columns.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{name}: {ty}")?;
+                }
+                write!(f, "]")
+            }
+            MonoType::Series(dtype) => write!(f, "Series<{dtype}>"),
         }
     }
 }
@@ -170,6 +185,16 @@ impl MonoType {
                 Box::new(ok.substitute(subst)),
                 Box::new(err.substitute(subst)),
             ),
+            MonoType::DataFrame(columns) => MonoType::DataFrame(
+                columns.iter()
+                    .map(|(name, ty)| (name.clone(), ty.substitute(subst)))
+                    .collect()
+            ),
+            MonoType::Series(dtype) => MonoType::Series(Box::new(dtype.substitute(subst))),
+            MonoType::Reference(inner) => MonoType::Reference(Box::new(inner.substitute(subst))),
+            MonoType::Tuple(types) => MonoType::Tuple(
+                types.iter().map(|ty| ty.substitute(subst)).collect()
+            ),
             _ => self.clone(),
         }
     }
@@ -189,10 +214,22 @@ impl MonoType {
                     collect_vars(ret, vars);
                 }
                 MonoType::List(elem) => collect_vars(elem, vars),
-                MonoType::Optional(inner) => collect_vars(inner, vars),
+                MonoType::Optional(inner) | MonoType::Series(inner) | MonoType::Reference(inner) => {
+                    collect_vars(inner, vars);
+                }
                 MonoType::Result(ok, err) => {
                     collect_vars(ok, vars);
                     collect_vars(err, vars);
+                }
+                MonoType::DataFrame(columns) => {
+                    for (_, ty) in columns {
+                        collect_vars(ty, vars);
+                    }
+                }
+                MonoType::Tuple(types) => {
+                    for ty in types {
+                        collect_vars(ty, vars);
+                    }
                 }
                 _ => {}
             }

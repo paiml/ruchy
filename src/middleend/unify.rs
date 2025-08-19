@@ -60,6 +60,20 @@ impl Unifier {
                 self.unify(&ok1, &ok2)?;
                 self.unify(&err1, &err2)
             }
+            (MonoType::DataFrame(cols1), MonoType::DataFrame(cols2)) => {
+                // DataFrames unify if they have the same columns with the same types
+                if cols1.len() != cols2.len() {
+                    bail!("Cannot unify DataFrames with different column counts");
+                }
+                for ((name1, ty1), (name2, ty2)) in cols1.iter().zip(cols2.iter()) {
+                    if name1 != name2 {
+                        bail!("Cannot unify DataFrames with different column names: {} vs {}", name1, name2);
+                    }
+                    self.unify(ty1, ty2)?;
+                }
+                Ok(())
+            }
+            (MonoType::Series(ty1), MonoType::Series(ty2)) => self.unify(&ty1, &ty2),
             (t1, t2) => bail!("Cannot unify {} with {}", t1, t2),
         }
     }
@@ -97,8 +111,12 @@ impl Unifier {
             MonoType::Var(v) => v == var,
             MonoType::Function(arg, ret) => Self::occurs(var, arg) || Self::occurs(var, ret),
             MonoType::List(elem) => Self::occurs(var, elem),
-            MonoType::Optional(inner) => Self::occurs(var, inner),
+            MonoType::Optional(inner) | MonoType::Series(inner) | MonoType::Reference(inner) => {
+                Self::occurs(var, inner)
+            }
             MonoType::Result(ok, err) => Self::occurs(var, ok) || Self::occurs(var, err),
+            MonoType::DataFrame(columns) => columns.iter().any(|(_, col_ty)| Self::occurs(var, col_ty)),
+            MonoType::Tuple(types) => types.iter().any(|ty| Self::occurs(var, ty)),
             _ => false,
         }
     }

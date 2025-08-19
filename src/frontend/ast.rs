@@ -357,6 +357,8 @@ pub enum TypeKind {
     Optional(Box<Type>),
     List(Box<Type>),
     Function { params: Vec<Type>, ret: Box<Type> },
+    DataFrame { columns: Vec<(String, Type)> },
+    Series { dtype: Box<Type> },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1197,8 +1199,9 @@ mod tests {
                     assert!(!base.is_empty());
                     assert!(!params.is_empty());
                 }
-                TypeKind::Optional(_) | TypeKind::List(_) => {}
+                TypeKind::Optional(_) | TypeKind::List(_) | TypeKind::Series { .. } => {}
                 TypeKind::Function { params, .. } => assert!(!params.is_empty()),
+                TypeKind::DataFrame { columns } => assert!(!columns.is_empty()),
             }
         }
     }
