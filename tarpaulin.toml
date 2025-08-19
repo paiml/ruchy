@@ -1,0 +1,11 @@
+# Tarpaulin configuration for code coverage
+[default]
+workspace = true
+all-features = true
+engine = "llvm"
+exclude-files = ["*/tests/*", "*/benches/*", "*/examples/*", "target/*"]
+ignore-panics = true
+timeout = "600s"
+skip-clean = false
+out = ["Html", "Xml"]
+output-dir = "target/coverage"

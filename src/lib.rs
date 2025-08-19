@@ -11,13 +11,13 @@
 pub mod actors;
 pub mod backend;
 pub mod frontend;
+pub mod lints;
 pub mod lsp;
 pub mod mcp;
 pub mod middleend;
 pub mod parser;
 pub mod quality;
 pub mod runtime;
-#[cfg(test)]
 pub mod testing;
 pub mod transpiler;
 

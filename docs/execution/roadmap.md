@@ -208,11 +208,16 @@ graph TD
 | RUCHY-0402 | Refactor dispatcher functions complexity Phase 2 (13→6, 12→5, all <10) | ✅ | Medium | v0.4.13 |
 | RUCHY-0200 | Reference operator (&) parsing and transpilation | ✅ | High | v0.4.13 |
 
+### Completed Tasks ✅ (continued)
+| ID | Description | Status | Complexity | Sprint |
+|----|-------------|--------|------------|--------|
+| RUCHY-0500 | Binary Testing & Book Example Infrastructure | ✅ | High | v0.4.14 |
+
 ### In Progress 🚧
 | ID | Description | Status | Complexity | Sprint |
 |----|-------------|--------|------------|--------|
-| RUCHY-0201 | Self field access | 🚧 | Medium | Current |
-| RUCHY-0202 | Method calls on collections | 📋 | High | Next |
+| RUCHY-0201 | Self field access | 📋 | Medium | Next |
+| RUCHY-0202 | Method calls on collections | 📋 | High | Future |
 
 ### Backlog 📋
 | ID | Description | Status | Complexity | Priority |
@@ -223,6 +228,79 @@ graph TD
 | RUCHY-0303 | Module system | 📋 | High | P0 |
 | RUCHY-0304 | Async/await runtime | 📋 | High | P1 |
 | RUCHY-0305 | Generic type parameters | 📋 | High | P1 |
+
+## Next Sprint: Binary Testing & Book Example Infrastructure
+
+### Sprint Overview
+- **Task ID**: RUCHY-0500
+- **Duration**: 3 days (estimated)
+- **Priority**: P0 - CRITICAL
+- **Specification**: docs/specifications/binary-testing-lint-coverage-spec.md
+- **Complexity**: 8/10
+- **Purpose**: Enable ruchy-book repo with tested examples via LLVM compilation
+
+### Implementation Checklist ✅ COMPLETED
+
+#### Phase 1: Binary Validation Framework (Day 1)
+- [x] Create snapshot testing with insta for transpiler output
+- [x] RUCHY-0500-A: Implement binary execution tests for all .ruchy examples
+- [x] RUCHY-0500-B: Create test harness for validating .ruchy script outputs
+- [x] RUCHY-0500-C: Add integration tests that compile and run .ruchy files via LLVM
+
+#### Phase 2: Property & Fuzz Testing (Day 2)
+- [x] RUCHY-0500-D: Create property-based test suite for parser invariants
+- [x] RUCHY-0500-E: Set up fuzz testing infrastructure for parser/transpiler
+- [x] RUCHY-0500-F: Add roundtrip tests (parse -> transpile -> compile -> run)
+
+#### Phase 3: Performance & Quality Gates (Day 3)
+- [x] RUCHY-0500-G: Create benchmark suite with criterion
+- [x] RUCHY-0500-H: Implement custom lint rules for book examples
+- [x] RUCHY-0500-I: Add pre-commit hooks for quality enforcement
+- [x] RUCHY-0500-J: Configure CI/CD for book example validation
+- [x] RUCHY-0500-K: Document testing patterns for ruchy-book repo
+
+### Technical Details
+
+#### Binary Testing Flow
+```
+.ruchy file -> Parser -> AST -> Transpiler -> Rust code -> LLVM -> Binary -> Execution validation
+```
+
+#### Book Integration Points
+1. Every book example must pass through full compilation pipeline
+2. Output snapshots stored for regression testing
+3. Binary execution validated against expected output files
+4. Performance benchmarks ensure <5s compilation for book examples
+
+### Acceptance Criteria
+- All .ruchy examples compile to valid binaries via LLVM
+- Binary execution matches expected outputs (100% pass rate)
+- Snapshot tests prevent transpiler regressions
+- Property tests validate 10,000+ random inputs
+- Parsing throughput >50MB/s
+- Book example compilation <5s per example
+- Zero clippy warnings with -D warnings
+- CI pipeline ready for ruchy-book repo
+
+## Future CLI Commands Roadmap
+
+### Phase 1: Core Commands (v0.5.x)
+- [ ] **RUCHY-0600**: Implement `ruchy test` command for native testing
+- [ ] **RUCHY-0601**: Implement `ruchy check` for type checking
+- [ ] **RUCHY-0602**: Implement `ruchy fmt` for code formatting
+- [ ] **RUCHY-0603**: Implement `ruchy lint` with basic rules
+
+### Phase 2: Advanced Commands (v0.6.x)
+- [ ] **RUCHY-0604**: Implement `ruchy bench` for benchmarking
+- [ ] **RUCHY-0605**: Implement `ruchy doc` for documentation generation
+- [ ] **RUCHY-0606**: Add `--watch` mode to test/check commands
+- [ ] **RUCHY-0607**: Add custom lint rule support
+
+### Phase 3: Self-Hosting (v1.0)
+- [ ] **RUCHY-0608**: Rewrite Ruchy compiler in Ruchy
+- [ ] **RUCHY-0609**: Native test runner without cargo dependency
+- [ ] **RUCHY-0610**: Full IDE protocol support
+- [ ] **RUCHY-0611**: Package manager (`ruchy add`, `ruchy publish`)
 
 ## Next Phases (Post-Sprint)
 
