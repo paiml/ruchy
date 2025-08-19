@@ -4,6 +4,7 @@
 //! and actor system with supervision trees.
 
 pub mod actor;
+pub mod cache;
 pub mod grammar_coverage;
 pub mod lazy;
 pub mod repl;
