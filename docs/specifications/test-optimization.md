@@ -1,5 +1,9 @@
 # Test Suite Optimization Guide
 
+## ✅ IMPLEMENTED - v0.4.12
+
+This optimization has been successfully implemented to fix resource exhaustion issues.
+
 ## Problem Statement
 
 Test suite exhausts system resources due to unbounded property generation and excessive parallelism.
@@ -188,12 +192,29 @@ fn get_memory_usage() -> usize {
 
 ## Migration Checklist
 
-- [ ] Run `find-heavy-tests.sh` to identify top 10 memory users
-- [ ] Replace unbounded generators with depth-limited versions
-- [ ] Add `.cargo/config.toml` with thread limits
-- [ ] Mark expensive tests with `#[ignore]`
-- [ ] Verify memory usage stays under 500MB
-- [ ] Document test categories in README
+- [x] Run `find-heavy-tests.sh` to identify top 10 memory users
+- [x] Replace unbounded generators with depth-limited versions (MAX_DEPTH=4)
+- [x] Add `.cargo/config.toml` with thread limits (4 threads, 32 proptest cases)
+- [x] Mark expensive tests with `#[ignore]` 
+- [x] Verify memory usage stays under 500MB (resource_check.rs)
+- [x] Document test categories in Makefile
+
+## Implementation Status
+
+### Files Created/Modified:
+- `/scripts/find-heavy-tests.sh` - Script to identify memory-intensive tests
+- `/.cargo/config.toml` - Test execution limits and aliases
+- `/src/testing/generators.rs` - Bounded recursive generators (MAX_DEPTH=4, MAX_WIDTH=10)
+- `/src/lib.rs` - Test configuration module
+- `/tests/common/fixtures.rs` - Cached shared test fixtures
+- `/tests/resource_check.rs` - Memory verification tests
+- `/Makefile` - Test optimization targets
+
+### New Make Targets:
+- `make test-quick` - Quick smoke tests (5 proptest cases, 2 threads)
+- `make test-memory` - Resource verification tests
+- `make test-heavy` - Run ignored heavy tests
+- `make find-heavy-tests` - Identify memory hogs
 
 ## Principles
 

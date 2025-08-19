@@ -199,6 +199,11 @@ graph TD
 | RUCHY-0109 | Fix actor tests | ✅ | Medium | v0.4.11 |
 | RUCHY-0110 | Quality enforcement | ✅ | Medium | v0.4.11 |
 
+### Completed Tasks ✅ (continued)
+| ID | Description | Status | Complexity | Sprint |
+|----|-------------|--------|------------|--------|
+| RUCHY-0111 | Test suite optimization | ✅ | High | v0.4.12 |
+
 ### In Progress 🚧
 | ID | Description | Status | Complexity | Sprint |
 |----|-------------|--------|------------|--------|
