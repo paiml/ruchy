@@ -66,34 +66,36 @@
 - **Complexity**: 10/10
 - **Status**: ✅ COMPLETED
 
-## EMERGENCY SPRINT: CRITICAL REPL REGRESSION FIX 🚨 PRIORITY 0
+## CRITICAL SPRINT: Book Compatibility Crisis 🚨 PRIORITY 0
 
 ### Crisis Summary
-- **Status**: CRITICAL - REPL 100% BROKEN 
-- **Issue**: Cannot parse ANY expressions - even basic arithmetic fails
-- **Impact**: Product completely unusable for interactive development
-- **Reported**: QA Team - 2025-08-19
-- **Severity**: P0 - Blocks all productive use
+- **Status**: CRITICAL - Only 22% of book examples work (57/259)
+- **Issue**: Book is primary learning resource but most examples fail
+- **Impact**: Terrible first impression, blocks user adoption
+- **Reported**: Book Integration Test - 2025-08-20
+- **Severity**: P0 - Users can't learn the language
 
 ### Emergency Action Plan
 
-#### IMMEDIATE (Block ALL OTHER work)
-1. **HALT all feature development** - No new features until REPL works
-2. **Fix REPL parser** - Cannot parse "2 + 3" or "println("Hello")"
-3. **Add comprehensive regression tests** - Property tests, fuzz tests
-4. **Emergency release v0.7.2** - Restore basic functionality
+#### IMMEDIATE (Block feature development)
+1. **Fat Arrow Syntax** (23 failures) - Add `=>` token for closures
+2. **Variadic println** (18+ failures) - Support multiple arguments
+3. **Pattern Matching Params** (10+ failures) - Destructuring in functions
 
-#### Root Cause Analysis
-- REPL parser completely broken
-- One-liner mode works fine (same expressions)  
-- Two different parsers - REPL and CLI use different code paths
-- No REPL regression tests caught this
+### Tasks (CRITICAL PATH)
+- **BOOK-CRITICAL-001**: Add FatArrow token and closure syntax ⚠️ URGENT
+- **BOOK-CRITICAL-002**: Fix println to accept multiple arguments ⚠️ URGENT  
+- **BOOK-CRITICAL-003**: Add pattern matching in function parameters
+- **BOOK-CRITICAL-004**: Method chaining on literals
+- **BOOK-CRITICAL-005**: Async/await block support
 
-### Tasks (BLOCKING)
-- **REPL-CRITICAL-001**: Debug why REPL cannot parse basic arithmetic ✋ IN PROGRESS
-- **REPL-CRITICAL-002**: Add comprehensive REPL regression test suite with fuzz tests
-- **REPL-CRITICAL-003**: Property-based testing for REPL input validation
-- **REPL-CRITICAL-004**: Emergency hotfix release v0.7.2
+## PREVIOUS EMERGENCY: REPL REGRESSION FIX ✅ RESOLVED v0.7.2
+
+### Resolution Summary
+- **Status**: FIXED in v0.7.2
+- **Issue**: Piped input bypassed REPL command handler
+- **Fix**: Modified CLI to route REPL subcommand correctly
+- **Tests**: Added comprehensive regression test suite
 
 ## PREVIOUS Sprint: Comprehensive REPL Testing & Quality Gates ✅ COMPLETED (BROKEN IN PRACTICE)
 
