@@ -293,7 +293,7 @@ graph TD
 ### Phase 2: Advanced Commands (v0.6.x)
 - [x] **RUCHY-0604**: Implement `ruchy bench` for benchmarking
 - [x] **RUCHY-0605**: Implement `ruchy doc` for documentation generation
-- [ ] **RUCHY-0606**: Add `--watch` mode to test/check commands
+- [x] **RUCHY-0606**: Add `--watch` mode to test/check commands
 - [ ] **RUCHY-0607**: Add custom lint rule support
 
 ### Phase 3: Self-Hosting (v1.0)
