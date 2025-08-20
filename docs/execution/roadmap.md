@@ -66,7 +66,36 @@
 - **Complexity**: 10/10
 - **Status**: ✅ COMPLETED
 
-## Current Sprint: Comprehensive REPL Testing & Quality Gates ✅ COMPLETED
+## EMERGENCY SPRINT: CRITICAL REPL REGRESSION FIX 🚨 PRIORITY 0
+
+### Crisis Summary
+- **Status**: CRITICAL - REPL 100% BROKEN 
+- **Issue**: Cannot parse ANY expressions - even basic arithmetic fails
+- **Impact**: Product completely unusable for interactive development
+- **Reported**: QA Team - 2025-08-19
+- **Severity**: P0 - Blocks all productive use
+
+### Emergency Action Plan
+
+#### IMMEDIATE (Block ALL OTHER work)
+1. **HALT all feature development** - No new features until REPL works
+2. **Fix REPL parser** - Cannot parse "2 + 3" or "println("Hello")"
+3. **Add comprehensive regression tests** - Property tests, fuzz tests
+4. **Emergency release v0.7.2** - Restore basic functionality
+
+#### Root Cause Analysis
+- REPL parser completely broken
+- One-liner mode works fine (same expressions)  
+- Two different parsers - REPL and CLI use different code paths
+- No REPL regression tests caught this
+
+### Tasks (BLOCKING)
+- **REPL-CRITICAL-001**: Debug why REPL cannot parse basic arithmetic ✋ IN PROGRESS
+- **REPL-CRITICAL-002**: Add comprehensive REPL regression test suite with fuzz tests
+- **REPL-CRITICAL-003**: Property-based testing for REPL input validation
+- **REPL-CRITICAL-004**: Emergency hotfix release v0.7.2
+
+## PREVIOUS Sprint: Comprehensive REPL Testing & Quality Gates ✅ COMPLETED (BROKEN IN PRACTICE)
 
 ### Sprint Overview
 - **Duration**: 1 day (Aug 19)

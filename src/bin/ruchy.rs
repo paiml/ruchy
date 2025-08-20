@@ -273,8 +273,8 @@ fn main() -> Result<()> {
         return run_file(&file);
     }
 
-    // Check if stdin has input (piped mode)
-    if !io::stdin().is_terminal() {
+    // Check if stdin has input (piped mode) - but only for non-REPL commands
+    if !io::stdin().is_terminal() && !matches!(cli.command, Some(Commands::Repl)) {
         let mut input = String::new();
         io::stdin().read_to_string(&mut input)?;
 

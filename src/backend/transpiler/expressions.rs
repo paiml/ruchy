@@ -30,10 +30,14 @@ impl Transpiler {
     }
 
     fn transpile_integer(i: i64) -> TokenStream {
+        // Integer literals in Rust don't need explicit type suffixes for inference
+        // Only add suffix for large integers that don't fit in i32
         if i32::try_from(i).is_ok() {
-            quote! { #i i32 }
+            quote! { #i }
         } else {
-            quote! { #i i64 }
+            // For large integers, we need i64 suffix
+            let literal = proc_macro2::Literal::i64_suffixed(i);
+            quote! { #literal }
         }
     }
 
