@@ -1238,6 +1238,11 @@ impl Repl {
                 // In a full async implementation, this would handle Future resolution
                 self.evaluate_expr(expr, deadline, depth + 1)
             }
+            ExprKind::AsyncBlock { body } => {
+                // For REPL purposes, evaluate the async block body synchronously
+                // In a full async implementation, this would return a Future
+                self.evaluate_expr(body, deadline, depth + 1)
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }

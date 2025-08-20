@@ -176,6 +176,7 @@ impl InferenceContext {
             | ExprKind::PreDecrement { target }
             | ExprKind::PostDecrement { target } => self.infer_increment_decrement(target),
             ExprKind::DataFrameOperation { source, operation } => self.infer_dataframe_operation(source, operation),
+            ExprKind::AsyncBlock { body } => self.infer_async_block(body),
         }
     }
 
@@ -1261,6 +1262,14 @@ impl InferenceContext {
             }
             _ => bail!("DataFrame operation on non-DataFrame type: {}", source_ty),
         }
+    }
+
+    fn infer_async_block(&mut self, body: &Expr) -> Result<MonoType> {
+        // Infer the body type
+        let body_ty = self.infer_expr(body)?;
+        
+        // Async blocks return Future<Output = body_type>
+        Ok(MonoType::Named(format!("Future<{body_ty}>")))
     }
 }
 
