@@ -87,9 +87,9 @@
 - [x] **BOOK-CRITICAL-002**: Fix println to accept multiple arguments ✅ COMPLETED (already worked)
 - [x] **BOOK-CRITICAL-003**: Add comment parsing (`// comment` syntax) ✅ ALREADY IMPLEMENTED
 - [ ] **BOOK-CRITICAL-004**: Add pattern matching in function parameters (DEFERRED - complex)
-- [x] **BOOK-CRITICAL-005**: Method chaining on literals
-- [ ] **BOOK-CRITICAL-006**: Add fat arrow syntax support (`|a, b| => expr`)
-- [ ] **BOOK-CRITICAL-007**: Async/await block support
+- [x] **BOOK-CRITICAL-005**: Method chaining on literals ✅ COMPLETED v0.7.3
+- [x] **BOOK-CRITICAL-006**: Add fat arrow syntax support (`|a, b| => expr`)
+- [x] **BOOK-CRITICAL-007**: Async/await block support
 
 ### Progress Update v0.7.3
 - **Closure Support**: Fixed transpilation and REPL callable support
