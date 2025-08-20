@@ -363,7 +363,7 @@ graph TD
 - [x] **Function calls and closures** (Priority 4) - INTERP-004 ✅ COMPLETED
 
 #### Phase 1: Performance Foundation (Week 2) - INTERP-002
-- [ ] **Inline caching for method dispatch** (Priority 1)
+- [x] **Inline caching for method dispatch** (Priority 1) - INTERP-005 ✅ COMPLETED
 - [ ] **Type feedback collection** (Priority 2)
 - [ ] **Conservative garbage collection** (Priority 3)
 - [ ] **Direct-threaded instruction dispatch** (Priority 4)

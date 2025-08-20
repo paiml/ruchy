@@ -2980,6 +2980,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "smallvec",
  "syn 2.0.106",
  "tempfile",
  "thiserror 1.0.69",

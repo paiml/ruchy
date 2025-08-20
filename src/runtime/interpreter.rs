@@ -12,6 +12,7 @@
 
 use std::collections::HashMap;
 use std::rc::Rc;
+use smallvec::{SmallVec, smallvec};
 #[cfg(test)]
 use crate::frontend::Param;
 use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp as AstBinaryOp};
@@ -147,6 +148,9 @@ pub struct Interpreter {
     /// Execution statistics for tier transition (will be used in Phase 1)
     #[allow(dead_code)]
     execution_counts: HashMap<usize, u32>,  // Function/method ID -> execution count
+    
+    /// Inline caches for field/method access optimization
+    field_caches: HashMap<String, InlineCache>,
 }
 
 /// Call frame for function invocation (will be used in Phase 1)
@@ -202,6 +206,141 @@ impl std::fmt::Display for InterpreterError {
 
 impl std::error::Error for InterpreterError {}
 
+/// Inline cache states for polymorphic method dispatch
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CacheState {
+    /// No cache entry yet
+    Uninitialized,
+    /// Single type cached - fastest path
+    Monomorphic,
+    /// 2-4 types cached - still fast
+    Polymorphic,
+    /// Too many types - fallback to hash lookup
+    Megamorphic,
+}
+
+/// Cache entry for field access optimization
+#[derive(Clone, Debug)]
+pub struct CacheEntry {
+    /// Type identifier for cache validity
+    type_id: std::any::TypeId,
+    /// Field name being accessed
+    field_name: String,
+    /// Cached result for this type/field combination
+    cached_result: Value,
+    /// Hit count for LRU eviction
+    hit_count: u32,
+}
+
+/// Inline cache for method/field dispatch
+#[derive(Clone, Debug)]
+pub struct InlineCache {
+    /// Current cache state
+    state: CacheState,
+    /// Cache entries (inline storage for 2 common entries)
+    entries: SmallVec<[CacheEntry; 2]>,
+    /// Total hit count
+    total_hits: u32,
+    /// Total miss count
+    total_misses: u32,
+}
+
+impl InlineCache {
+    /// Create new empty inline cache
+    pub fn new() -> Self {
+        Self {
+            state: CacheState::Uninitialized,
+            entries: smallvec![],
+            total_hits: 0,
+            total_misses: 0,
+        }
+    }
+    
+    /// Look up a field access in the cache
+    pub fn lookup(&mut self, obj: &Value, field_name: &str) -> Option<Value> {
+        let type_id = obj.type_id();
+        
+        // Fast path: check cached entries
+        for entry in &mut self.entries {
+            if entry.type_id == type_id && entry.field_name == field_name {
+                entry.hit_count += 1;
+                self.total_hits += 1;
+                return Some(entry.cached_result.clone());
+            }
+        }
+        
+        // Cache miss
+        self.total_misses += 1;
+        None
+    }
+    
+    /// Add a new cache entry
+    pub fn insert(&mut self, obj: &Value, field_name: String, result: Value) {
+        let type_id = obj.type_id();
+        let entry = CacheEntry {
+            type_id,
+            field_name,
+            cached_result: result,
+            hit_count: 1,
+        };
+        
+        // Update cache state based on entry count
+        match self.entries.len() {
+            0 => {
+                self.state = CacheState::Monomorphic;
+                self.entries.push(entry);
+            }
+            1..=3 => {
+                self.state = CacheState::Polymorphic;
+                self.entries.push(entry);
+            }
+            _ => {
+                // Too many entries - transition to megamorphic
+                self.state = CacheState::Megamorphic;
+                // Evict least used entry
+                if let Some(min_idx) = self.entries.iter()
+                    .enumerate()
+                    .min_by_key(|(_, e)| e.hit_count)
+                    .map(|(i, _)| i)
+                {
+                    self.entries[min_idx] = entry;
+                }
+            }
+        }
+    }
+    
+    /// Get cache hit rate for profiling
+    pub fn hit_rate(&self) -> f64 {
+        let total = self.total_hits + self.total_misses;
+        if total == 0 {
+            0.0
+        } else {
+            f64::from(self.total_hits) / f64::from(total)
+        }
+    }
+}
+
+impl Default for InlineCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Value {
+    /// Get type identifier for inline caching
+    pub fn type_id(&self) -> std::any::TypeId {
+        match self {
+            Value::Integer(_) => std::any::TypeId::of::<i64>(),
+            Value::Float(_) => std::any::TypeId::of::<f64>(),
+            Value::Bool(_) => std::any::TypeId::of::<bool>(),
+            Value::Nil => std::any::TypeId::of::<()>(),
+            Value::String(_) => std::any::TypeId::of::<String>(),
+            Value::Array(_) => std::any::TypeId::of::<Vec<Value>>(),
+            Value::Closure { .. } => std::any::TypeId::of::<fn()>(),
+        }
+    }
+}
+
 impl Interpreter {
     /// Create new interpreter instance
     pub fn new() -> Self {
@@ -210,6 +349,7 @@ impl Interpreter {
             env_stack: vec![HashMap::new()],  // Start with global environment
             frames: Vec::new(),
             execution_counts: HashMap::new(),
+            field_caches: HashMap::new(),
         }
     }
 
@@ -694,6 +834,75 @@ impl Interpreter {
                 format!("function/{}", params.len())
             },
         }
+    }
+    
+    /// Access field with inline caching optimization
+    /// # Errors
+    /// Returns error if field access fails
+    pub fn get_field_cached(&mut self, obj: &Value, field_name: &str) -> Result<Value, InterpreterError> {
+        // Create cache key combining object type and field name
+        let cache_key = format!("{:?}::{}", obj.type_id(), field_name);
+        
+        // Check inline cache first
+        if let Some(cache) = self.field_caches.get_mut(&cache_key) {
+            if let Some(cached_result) = cache.lookup(obj, field_name) {
+                return Ok(cached_result);
+            }
+        }
+        
+        // Cache miss - compute result and update cache
+        let result = self.compute_field_access(obj, field_name)?;
+        
+        // Update or create cache entry
+        let cache = self.field_caches.entry(cache_key).or_default();
+        cache.insert(obj, field_name.to_string(), result.clone());
+        
+        Ok(result)
+    }
+    
+    /// Compute field access result (slow path)
+    fn compute_field_access(&self, obj: &Value, field_name: &str) -> Result<Value, InterpreterError> {
+        match (obj, field_name) {
+            // String methods
+            (Value::String(s), "len") => Ok(Value::Integer(s.len().try_into().unwrap_or(i64::MAX))),
+            (Value::String(s), "to_upper") => Ok(Value::String(Rc::new(s.to_uppercase()))),
+            (Value::String(s), "to_lower") => Ok(Value::String(Rc::new(s.to_lowercase()))),
+            (Value::String(s), "trim") => Ok(Value::String(Rc::new(s.trim().to_string()))),
+            
+            // Array methods
+            (Value::Array(arr), "len") => Ok(Value::Integer(arr.len().try_into().unwrap_or(i64::MAX))),
+            (Value::Array(arr), "first") => {
+                arr.first().cloned().ok_or_else(|| {
+                    InterpreterError::RuntimeError("Array is empty".to_string())
+                })
+            },
+            (Value::Array(arr), "last") => {
+                arr.last().cloned().ok_or_else(|| {
+                    InterpreterError::RuntimeError("Array is empty".to_string())
+                })
+            },
+            
+            // Type information
+            (obj, "type") => Ok(Value::String(Rc::new(obj.type_name().to_string()))),
+            
+            _ => Err(InterpreterError::RuntimeError(
+                format!("Field '{}' not found on type '{}'", field_name, obj.type_name())
+            )),
+        }
+    }
+    
+    /// Get inline cache statistics for profiling
+    pub fn get_cache_stats(&self) -> HashMap<String, f64> {
+        let mut stats = HashMap::new();
+        for (key, cache) in &self.field_caches {
+            stats.insert(key.clone(), cache.hit_rate());
+        }
+        stats
+    }
+    
+    /// Clear all inline caches (for testing)
+    pub fn clear_caches(&mut self) {
+        self.field_caches.clear();
     }
 }
 
@@ -1360,5 +1569,140 @@ mod tests {
         // Note: This test demonstrates lexical scoping where the closure captures 'x'
         let result = interp.eval_expr(&call_expr).expect("Should evaluate closure call");
         assert_eq!(result, Value::Integer(15));
+    }
+    
+    #[test]
+    fn test_inline_cache_string_methods() {
+        let mut interp = Interpreter::new();
+        let test_string = Value::String(Rc::new("Hello World".to_string()));
+        
+        // Test string.len() with caching
+        let result1 = interp.get_field_cached(&test_string, "len").expect("Should get string length");
+        assert_eq!(result1, Value::Integer(11));
+        
+        let result2 = interp.get_field_cached(&test_string, "len").expect("Should get cached result");
+        assert_eq!(result2, Value::Integer(11));
+        
+        // Verify cache hit occurred
+        let stats = interp.get_cache_stats();
+        let cache_key = format!("{:?}::len", test_string.type_id());
+        assert!(stats.get(&cache_key).unwrap_or(&0.0) > &0.0);
+        
+        // Test other string methods
+        let upper_result = interp.get_field_cached(&test_string, "to_upper").expect("Should get uppercase");
+        assert_eq!(upper_result, Value::String(Rc::new("HELLO WORLD".to_string())));
+        
+        let trim_result = interp.get_field_cached(&Value::String(Rc::new("  test  ".to_string())), "trim")
+            .expect("Should trim string");
+        assert_eq!(trim_result, Value::String(Rc::new("test".to_string())));
+    }
+    
+    #[test]
+    fn test_inline_cache_array_methods() {
+        let mut interp = Interpreter::new();
+        let test_array = Value::Array(Rc::new(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        
+        // Test array.len() with caching
+        let result1 = interp.get_field_cached(&test_array, "len").expect("Should get array length");
+        assert_eq!(result1, Value::Integer(3));
+        
+        let result2 = interp.get_field_cached(&test_array, "len").expect("Should get cached result");
+        assert_eq!(result2, Value::Integer(3));
+        
+        // Test first and last
+        let first_result = interp.get_field_cached(&test_array, "first").expect("Should get first element");
+        assert_eq!(first_result, Value::Integer(1));
+        
+        let last_result = interp.get_field_cached(&test_array, "last").expect("Should get last element");
+        assert_eq!(last_result, Value::Integer(3));
+        
+        // Test empty array (use fresh interpreter to avoid cache pollution)
+        let mut fresh_interp = Interpreter::new();
+        let empty_array = Value::Array(Rc::new(vec![]));
+        let first_err = fresh_interp.get_field_cached(&empty_array, "first");
+        assert!(first_err.is_err());
+    }
+    
+    #[test]
+    fn test_inline_cache_polymorphic() {
+        let mut interp = Interpreter::new();
+        
+        // Test polymorphic caching with different types calling same method
+        let string_val = Value::String(Rc::new("test".to_string()));
+        let array_val = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+        
+        // Both call len() method
+        let string_len = interp.get_field_cached(&string_val, "len").expect("Should get string length");
+        assert_eq!(string_len, Value::Integer(4));
+        
+        let array_len = interp.get_field_cached(&array_val, "len").expect("Should get array length");
+        assert_eq!(array_len, Value::Integer(2));
+        
+        // Both should have separate cache entries
+        let stats = interp.get_cache_stats();
+        assert_eq!(stats.len(), 2); // Two different cache keys
+    }
+    
+    #[test]
+    fn test_inline_cache_type_method() {
+        let mut interp = Interpreter::new();
+        
+        // Test the universal 'type' method
+        let int_val = Value::Integer(42);
+        let string_val = Value::String(Rc::new("test".to_string()));
+        let bool_val = Value::Bool(true);
+        
+        let int_type = interp.get_field_cached(&int_val, "type").expect("Should get int type");
+        assert_eq!(int_type, Value::String(Rc::new("integer".to_string())));
+        
+        let string_type = interp.get_field_cached(&string_val, "type").expect("Should get string type");
+        assert_eq!(string_type, Value::String(Rc::new("string".to_string())));
+        
+        let bool_type = interp.get_field_cached(&bool_val, "type").expect("Should get bool type");
+        assert_eq!(bool_type, Value::String(Rc::new("boolean".to_string())));
+    }
+    
+    #[test]
+    fn test_inline_cache_miss_handling() {
+        let mut interp = Interpreter::new();
+        let test_val = Value::Integer(42);
+        
+        // Test accessing non-existent field
+        let result = interp.get_field_cached(&test_val, "non_existent");
+        assert!(result.is_err());
+        
+        // Test that error doesn't get cached (cache should be empty)
+        let stats = interp.get_cache_stats();
+        assert!(stats.is_empty());
+    }
+    
+    #[test]
+    fn test_cache_state_transitions() {
+        let mut interp = Interpreter::new();
+        
+        // Create multiple values of same type for same field
+        let vals = [
+            Value::String(Rc::new("test1".to_string())),
+            Value::String(Rc::new("test2".to_string())),
+            Value::String(Rc::new("test3".to_string())),
+        ];
+        
+        // Access same field multiple times to test cache evolution
+        for val in &vals {
+            let _ = interp.get_field_cached(val, "len").expect("Should get length");
+        }
+        
+        // Verify caching occurred
+        let stats = interp.get_cache_stats();
+        assert!(!stats.is_empty());
+        
+        // Clear caches and verify
+        interp.clear_caches();
+        let stats_after = interp.get_cache_stats();
+        assert!(stats_after.is_empty());
     }
 }

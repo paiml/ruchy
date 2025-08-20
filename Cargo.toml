@@ -225,6 +225,7 @@ syn = { workspace = true }
 quote = { workspace = true }
 im = "15.1"
 quickcheck = "1.0"
+smallvec = "1.13"
 proc-macro2 = { workspace = true }
 prettyplease = { workspace = true }
 rustyline = { workspace = true }
