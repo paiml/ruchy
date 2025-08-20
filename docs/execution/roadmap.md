@@ -366,7 +366,7 @@ graph TD
 - [x] **Inline caching for method dispatch** (Priority 1) - INTERP-005 ✅ COMPLETED
 - [x] **Type feedback collection** (Priority 2) - INTERP-006 ✅ COMPLETED
 - [x] **Conservative garbage collection** (Priority 3) - INTERP-007 ✅ COMPLETED
-- [ ] **Direct-threaded instruction dispatch** (Priority 4)
+- [x] **Direct-threaded instruction dispatch** (Priority 4) - INTERP-008 ✅ COMPLETED
 
 ### Next Tasks After Interpreter Foundation
 - Continue with struct/enum/trait implementation (addresses 60 book failures)

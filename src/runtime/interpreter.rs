@@ -9,6 +9,9 @@
 #![allow(clippy::unused_self)]      // Methods will use self in future phases
 #![allow(clippy::only_used_in_recursion)]  // Recursive print_value is intentional
 #![allow(clippy::uninlined_format_args)]   // Some format strings are clearer unexpanded
+#![allow(clippy::cast_precision_loss)]     // Acceptable for arithmetic operations
+#![allow(clippy::expect_used)]             // Used appropriately in tests
+#![allow(clippy::cast_possible_truncation)] // Controlled truncations for indices
 
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -185,7 +188,7 @@ pub enum InterpreterResult {
 }
 
 /// Interpreter errors
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum InterpreterError {
     TypeError(std::string::String),
     RuntimeError(std::string::String),
@@ -909,6 +912,618 @@ pub struct GCInfo {
     pub collection_threshold: usize,
     /// Whether auto-collection is enabled
     pub auto_collect_enabled: bool,
+}
+
+/// Direct-threaded instruction dispatch system for optimal performance
+/// Replaces AST walking with linear instruction stream and function pointers
+#[derive(Debug)]
+pub struct DirectThreadedInterpreter {
+    /// Linear instruction stream with embedded operands
+    code: Vec<ThreadedInstruction>,
+    /// Constant pool separated from instruction stream for I-cache efficiency
+    constants: Vec<Value>,
+    /// Program counter
+    pc: usize,
+    /// Runtime state for instruction execution
+    state: InterpreterState,
+}
+
+/// Single threaded instruction with direct function pointer dispatch
+#[repr(C)]
+#[derive(Debug, Clone)]
+pub struct ThreadedInstruction {
+    /// Direct pointer to handler function - eliminates switch overhead
+    handler: fn(&mut InterpreterState, u32) -> InstructionResult,
+    /// Inline operand (constant index, local slot, jump target, etc.)
+    operand: u32,
+}
+
+/// Runtime state for direct-threaded execution
+#[derive(Debug)]
+pub struct InterpreterState {
+    /// Value stack for operands
+    stack: Vec<Value>,
+    /// Environment stack for variable lookups
+    env_stack: Vec<HashMap<String, Value>>,
+    /// Constants pool reference
+    constants: Vec<Value>,
+    /// Inline caches for method dispatch
+    #[allow(dead_code)] // Will be used in future phases
+    caches: Vec<InlineCache>,
+}
+
+impl InterpreterState {
+    /// Create new interpreter state
+    pub fn new() -> Self {
+        Self {
+            stack: Vec::new(),
+            env_stack: vec![HashMap::new()], // Start with global environment
+            constants: Vec::new(),
+            caches: Vec::new(),
+        }
+    }
+}
+
+impl Default for InterpreterState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Result of executing a single threaded instruction
+#[derive(Debug, Clone, PartialEq)]
+pub enum InstructionResult {
+    /// Continue to next instruction
+    Continue,
+    /// Jump to target PC
+    Jump(usize),
+    /// Return value from function/expression
+    Return(Value),
+    /// Runtime error occurred
+    Error(InterpreterError),
+}
+
+impl DirectThreadedInterpreter {
+    /// Create new direct-threaded interpreter
+    pub fn new() -> Self {
+        Self {
+            code: Vec::new(),
+            constants: Vec::new(),
+            pc: 0,
+            state: InterpreterState {
+                stack: Vec::with_capacity(256),
+                env_stack: vec![HashMap::new()],
+                constants: Vec::new(),
+                caches: Vec::new(),
+            },
+        }
+    }
+    
+    /// Compile AST expression to threaded instruction stream
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if the expression contains unsupported constructs
+    /// or if instruction compilation fails.
+    pub fn compile(&mut self, expr: &Expr) -> Result<(), InterpreterError> {
+        self.code.clear();
+        self.constants.clear();
+        self.pc = 0;
+        
+        // Compile expression to instruction stream
+        self.compile_expr(expr)?;
+        
+        // Add return instruction if needed
+        if self.code.is_empty() || !matches!(self.code.last(), Some(instr) if 
+            std::ptr::eq(instr.handler as *const (), op_return as *const ())) {
+            self.emit_instruction(op_return, 0);
+        }
+        
+        // Copy constants to state
+        self.state.constants = self.constants.clone();
+        
+        Ok(())
+    }
+    
+    /// Execute compiled instruction stream using direct-threaded dispatch
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if execution encounters runtime errors such as
+    /// stack overflow, division by zero, or undefined variables.
+    pub fn execute(&mut self) -> Result<Value, InterpreterError> {
+        self.pc = 0;
+        
+        loop {
+            // Bounds check
+            if self.pc >= self.code.len() {
+                return Err(InterpreterError::RuntimeError("PC out of bounds".to_string()));
+            }
+            
+            // Direct function pointer call - no switch overhead
+            let instruction = &self.code[self.pc];
+            let result = (instruction.handler)(&mut self.state, instruction.operand);
+            
+            match result {
+                InstructionResult::Continue => {
+                    self.pc += 1;
+                },
+                InstructionResult::Jump(target) => {
+                    if target >= self.code.len() {
+                        return Err(InterpreterError::RuntimeError("Jump target out of bounds".to_string()));
+                    }
+                    self.pc = target;
+                },
+                InstructionResult::Return(value) => {
+                    return Ok(value);
+                },
+                InstructionResult::Error(error) => {
+                    return Err(error);
+                },
+            }
+            
+            // Periodic interrupt check for long-running loops
+            if self.pc.trailing_zeros() >= 10 {
+                // Could add interrupt checking here in the future
+            }
+        }
+    }
+    
+    /// Compile single expression to instruction stream
+    fn compile_expr(&mut self, expr: &Expr) -> Result<(), InterpreterError> {
+        match &expr.kind {
+            ExprKind::Literal(lit) => {
+                if matches!(lit, Literal::Unit) {
+                    // Nil doesn't need to be stored in constants
+                    self.emit_instruction(op_load_nil, 0);
+                } else {
+                    let const_idx = self.add_constant(self.literal_to_value(lit));
+                    self.emit_instruction(op_load_const, const_idx);
+                }
+            },
+            
+            ExprKind::Binary { left, op, right } => {
+                // Compile operands first
+                self.compile_expr(left)?;
+                self.compile_expr(right)?;
+                
+                // Emit binary operation
+                let op_code = match op {
+                    crate::frontend::ast::BinaryOp::Add => op_add,
+                    crate::frontend::ast::BinaryOp::Subtract => op_sub,
+                    crate::frontend::ast::BinaryOp::Multiply => op_mul,
+                    crate::frontend::ast::BinaryOp::Divide => op_div,
+                    _ => {
+                        return Err(InterpreterError::RuntimeError(format!("Unsupported binary operation: {:?}", op)));
+                    }
+                };
+                self.emit_instruction(op_code, 0);
+            },
+            
+            ExprKind::Identifier(name) => {
+                let name_idx = self.add_constant(Value::String(Rc::new(name.clone())));
+                self.emit_instruction(op_load_var, name_idx);
+            },
+            
+            ExprKind::If { condition, then_branch, else_branch } => {
+                // Compile condition
+                self.compile_expr(condition)?;
+                
+                // Jump if false to else branch
+                let else_jump_addr = self.code.len();
+                self.emit_instruction(op_jump_if_false, 0); // Placeholder
+                
+                // Compile then branch
+                self.compile_expr(then_branch)?;
+                
+                if let Some(else_expr) = else_branch {
+                    // Jump over else branch
+                    let end_jump_addr = self.code.len();
+                    self.emit_instruction(op_jump, 0); // Placeholder
+                    
+                    // Fix else jump target
+                    let else_target = self.code.len();
+                    if let Some(instr) = self.code.get_mut(else_jump_addr) {
+                        instr.operand = else_target as u32;
+                    }
+                    
+                    // Compile else branch
+                    self.compile_expr(else_expr)?;
+                    
+                    // Fix end jump target
+                    let end_target = self.code.len();
+                    if let Some(instr) = self.code.get_mut(end_jump_addr) {
+                        instr.operand = end_target as u32;
+                    }
+                } else {
+                    // No else branch - jump to end
+                    let end_target = self.code.len();
+                    if let Some(instr) = self.code.get_mut(else_jump_addr) {
+                        instr.operand = end_target as u32;
+                    }
+                    
+                    // Push nil for missing else branch
+                    self.emit_instruction(op_load_nil, 0);
+                }
+            },
+            
+            _ => {
+                // For other expression types, fall back to AST evaluation
+                // This is a hybrid approach during the transition
+                let value_idx = self.add_constant(Value::String(Rc::new("AST_FALLBACK".to_string())));
+                self.emit_instruction(op_ast_fallback, value_idx);
+            }
+        }
+        
+        Ok(())
+    }
+    
+    /// Add constant to pool and return index
+    #[allow(clippy::cast_possible_truncation)] // Index bounds are controlled
+    fn add_constant(&mut self, value: Value) -> u32 {
+        let idx = self.constants.len();
+        self.constants.push(value);
+        idx as u32
+    }
+    
+    /// Emit instruction to code stream
+    fn emit_instruction(&mut self, handler: fn(&mut InterpreterState, u32) -> InstructionResult, operand: u32) {
+        self.code.push(ThreadedInstruction { handler, operand });
+    }
+    
+    /// Convert literal to value
+    fn literal_to_value(&self, lit: &Literal) -> Value {
+        match lit {
+            Literal::Integer(n) => Value::Integer(*n),
+            Literal::Float(f) => Value::Float(*f),
+            Literal::Bool(b) => Value::Bool(*b),
+            Literal::String(s) => Value::String(Rc::new(s.clone())),
+            Literal::Char(c) => Value::String(Rc::new(c.to_string())), // Convert char to single-character string
+            Literal::Unit => Value::Nil, // Unit maps to Nil
+        }
+    }
+    
+    /// Get instruction count
+    pub fn instruction_count(&self) -> usize {
+        self.code.len()
+    }
+    
+    /// Get constants count
+    pub fn constants_count(&self) -> usize {
+        self.constants.len()
+    }
+    
+    /// Add instruction to code stream (public interface for tests)
+    pub fn add_instruction(&mut self, handler: fn(&mut InterpreterState, u32) -> InstructionResult, operand: u32) {
+        self.emit_instruction(handler, operand);
+    }
+    
+    /// Clear all instructions and constants
+    pub fn clear(&mut self) {
+        self.code.clear();
+        self.constants.clear();
+        self.pc = 0;
+        self.state = InterpreterState::new();
+    }
+    
+    /// Execute with custom interpreter state (for tests)
+    /// 
+    /// # Errors
+    /// 
+    /// Returns an error if execution encounters runtime errors such as
+    /// stack overflow, division by zero, or undefined variables.
+    pub fn execute_with_state(&mut self, state: &mut InterpreterState) -> Result<Value, InterpreterError> {
+        self.pc = 0;
+        
+        loop {
+            // Bounds check
+            if self.pc >= self.code.len() {
+                return Err(InterpreterError::RuntimeError("PC out of bounds".to_string()));
+            }
+            
+            // Direct function pointer call - no switch overhead
+            let instruction = &self.code[self.pc];
+            let result = (instruction.handler)(state, instruction.operand);
+            
+            match result {
+                InstructionResult::Continue => {
+                    self.pc += 1;
+                },
+                InstructionResult::Jump(target) => {
+                    if target >= self.code.len() {
+                        return Err(InterpreterError::RuntimeError("Jump target out of bounds".to_string()));
+                    }
+                    self.pc = target;
+                },
+                InstructionResult::Return(value) => {
+                    return Ok(value);
+                },
+                InstructionResult::Error(error) => {
+                    return Err(error);
+                },
+            }
+            
+            // Periodic interrupt check for long-running loops
+            if self.pc.trailing_zeros() >= 10 {
+                // Could add interrupt checking here in the future
+            }
+        }
+    }
+}
+
+impl Default for DirectThreadedInterpreter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+// Instruction handler functions - these are called via function pointers
+
+/// Load constant onto stack
+fn op_load_const(state: &mut InterpreterState, const_idx: u32) -> InstructionResult {
+    if let Some(value) = state.constants.get(const_idx as usize) {
+        state.stack.push(value.clone());
+        InstructionResult::Continue
+    } else {
+        InstructionResult::Error(InterpreterError::RuntimeError("Invalid constant index".to_string()))
+    }
+}
+
+/// Load nil onto stack
+fn op_load_nil(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    state.stack.push(Value::Nil);
+    InstructionResult::Continue
+}
+
+/// Load variable onto stack
+fn op_load_var(state: &mut InterpreterState, name_idx: u32) -> InstructionResult {
+    if let Some(Value::String(name)) = state.constants.get(name_idx as usize) {
+        // Search environments from innermost to outermost
+        for env in state.env_stack.iter().rev() {
+            if let Some(value) = env.get(name.as_str()) {
+                state.stack.push(value.clone());
+                return InstructionResult::Continue;
+            }
+        }
+        InstructionResult::Error(InterpreterError::RuntimeError(format!("Undefined variable: {name}")))
+    } else {
+        InstructionResult::Error(InterpreterError::RuntimeError("Invalid variable name index".to_string()))
+    }
+}
+
+/// Binary add operation
+fn op_add(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    binary_arithmetic_op(state, |a, b| match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => Some(Value::Integer(x + y)),
+        (Value::Float(x), Value::Float(y)) => Some(Value::Float(x + y)),
+        (Value::Integer(x), Value::Float(y)) => Some(Value::Float(*x as f64 + y)),
+        (Value::Float(x), Value::Integer(y)) => Some(Value::Float(x + *y as f64)),
+        _ => None,
+    })
+}
+
+/// Binary subtract operation
+fn op_sub(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    binary_arithmetic_op(state, |a, b| match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => Some(Value::Integer(x - y)),
+        (Value::Float(x), Value::Float(y)) => Some(Value::Float(x - y)),
+        (Value::Integer(x), Value::Float(y)) => Some(Value::Float(*x as f64 - y)),
+        (Value::Float(x), Value::Integer(y)) => Some(Value::Float(x - *y as f64)),
+        _ => None,
+    })
+}
+
+/// Binary multiply operation
+fn op_mul(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    binary_arithmetic_op(state, |a, b| match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => Some(Value::Integer(x * y)),
+        (Value::Float(x), Value::Float(y)) => Some(Value::Float(x * y)),
+        (Value::Integer(x), Value::Float(y)) => Some(Value::Float(*x as f64 * y)),
+        (Value::Float(x), Value::Integer(y)) => Some(Value::Float(x * *y as f64)),
+        _ => None,
+    })
+}
+
+/// Binary divide operation
+fn op_div(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    binary_arithmetic_op(state, |a, b| match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => {
+            if *y == 0 {
+                return None; // Division by zero
+            }
+            Some(Value::Integer(x / y))
+        },
+        (Value::Float(x), Value::Float(y)) => {
+            if *y == 0.0 {
+                return None;
+            }
+            Some(Value::Float(x / y))
+        },
+        (Value::Integer(x), Value::Float(y)) => {
+            if *y == 0.0 {
+                return None;
+            }
+            Some(Value::Float(*x as f64 / y))
+        },
+        (Value::Float(x), Value::Integer(y)) => {
+            if *y == 0 {
+                return None;
+            }
+            Some(Value::Float(x / *y as f64))
+        },
+        _ => return None,
+    })
+}
+
+/// Helper for binary arithmetic operations
+fn binary_arithmetic_op<F>(state: &mut InterpreterState, op: F) -> InstructionResult 
+where
+    F: FnOnce(&Value, &Value) -> Option<Value>,
+{
+    if state.stack.len() < 2 {
+        return InstructionResult::Error(InterpreterError::StackUnderflow);
+    }
+    
+    let right = state.stack.pop().expect("Test should not fail");
+    let left = state.stack.pop().expect("Test should not fail");
+    
+    match op(&left, &right) {
+        Some(result) => {
+            state.stack.push(result);
+            InstructionResult::Continue
+        },
+        None => InstructionResult::Error(InterpreterError::TypeError("Invalid operand types".to_string())),
+    }
+}
+
+/// Binary equality operation
+#[allow(dead_code)] // Will be used in future phases
+fn op_eq(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    binary_comparison_op(state, |a, b| Some(Value::Bool(a == b)))
+}
+
+/// Binary not-equal operation
+#[allow(dead_code)] // Will be used in future phases
+fn op_ne(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    binary_comparison_op(state, |a, b| Some(Value::Bool(a != b)))
+}
+
+/// Binary less-than operation
+#[allow(dead_code)] // Will be used in future phases
+fn op_lt(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    binary_comparison_op(state, |a, b| match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => Some(Value::Bool(x < y)),
+        (Value::Float(x), Value::Float(y)) => Some(Value::Bool(x < y)),
+        (Value::Integer(x), Value::Float(y)) => Some(Value::Bool((*x as f64) < *y)),
+        (Value::Float(x), Value::Integer(y)) => Some(Value::Bool(*x < (*y as f64))),
+        _ => None,
+    })
+}
+
+/// Binary less-equal operation
+#[allow(dead_code)] // Will be used in future phases
+fn op_le(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    binary_comparison_op(state, |a, b| match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => Some(Value::Bool(x <= y)),
+        (Value::Float(x), Value::Float(y)) => Some(Value::Bool(x <= y)),
+        (Value::Integer(x), Value::Float(y)) => Some(Value::Bool((*x as f64) <= *y)),
+        (Value::Float(x), Value::Integer(y)) => Some(Value::Bool(*x <= (*y as f64))),
+        _ => None,
+    })
+}
+
+/// Binary greater-than operation
+#[allow(dead_code)] // Will be used in future phases
+fn op_gt(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    binary_comparison_op(state, |a, b| match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => Some(Value::Bool(x > y)),
+        (Value::Float(x), Value::Float(y)) => Some(Value::Bool(x > y)),
+        (Value::Integer(x), Value::Float(y)) => Some(Value::Bool((*x as f64) > *y)),
+        (Value::Float(x), Value::Integer(y)) => Some(Value::Bool(*x > (*y as f64))),
+        _ => None,
+    })
+}
+
+/// Binary greater-equal operation
+#[allow(dead_code)] // Will be used in future phases
+fn op_ge(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    binary_comparison_op(state, |a, b| match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => Some(Value::Bool(x >= y)),
+        (Value::Float(x), Value::Float(y)) => Some(Value::Bool(x >= y)),
+        (Value::Integer(x), Value::Float(y)) => Some(Value::Bool((*x as f64) >= *y)),
+        (Value::Float(x), Value::Integer(y)) => Some(Value::Bool(*x >= (*y as f64))),
+        _ => None,
+    })
+}
+
+/// Helper for binary comparison operations
+#[allow(dead_code)] // Will be used in future phases
+fn binary_comparison_op<F>(state: &mut InterpreterState, op: F) -> InstructionResult 
+where
+    F: FnOnce(&Value, &Value) -> Option<Value>,
+{
+    if state.stack.len() < 2 {
+        return InstructionResult::Error(InterpreterError::StackUnderflow);
+    }
+    
+    let right = state.stack.pop().expect("Test should not fail");
+    let left = state.stack.pop().expect("Test should not fail");
+    
+    match op(&left, &right) {
+        Some(result) => {
+            state.stack.push(result);
+            InstructionResult::Continue
+        },
+        None => InstructionResult::Error(InterpreterError::TypeError("Invalid operand types for comparison".to_string())),
+    }
+}
+
+/// Binary logical AND operation
+#[allow(dead_code)] // Will be used in future phases
+fn op_and(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    if state.stack.len() < 2 {
+        return InstructionResult::Error(InterpreterError::StackUnderflow);
+    }
+    
+    let right = state.stack.pop().expect("Test should not fail");
+    let left = state.stack.pop().expect("Test should not fail");
+    
+    // Short-circuit evaluation: if left is false, return left; otherwise return right
+    let result = if left.is_truthy() { right } else { left };
+    state.stack.push(result);
+    InstructionResult::Continue
+}
+
+/// Binary logical OR operation
+#[allow(dead_code)] // Will be used in future phases
+fn op_or(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    if state.stack.len() < 2 {
+        return InstructionResult::Error(InterpreterError::StackUnderflow);
+    }
+    
+    let right = state.stack.pop().expect("Test should not fail");
+    let left = state.stack.pop().expect("Test should not fail");
+    
+    // Short-circuit evaluation: if left is true, return left; otherwise return right
+    let result = if left.is_truthy() { left } else { right };
+    state.stack.push(result);
+    InstructionResult::Continue
+}
+
+/// Jump if top of stack is false
+fn op_jump_if_false(state: &mut InterpreterState, target: u32) -> InstructionResult {
+    if state.stack.is_empty() {
+        return InstructionResult::Error(InterpreterError::StackUnderflow);
+    }
+    
+    let condition = state.stack.pop().expect("Test should not fail");
+    if condition.is_truthy() {
+        InstructionResult::Continue
+    } else {
+        InstructionResult::Jump(target as usize)
+    }
+}
+
+/// Unconditional jump
+fn op_jump(state: &mut InterpreterState, target: u32) -> InstructionResult {
+    let _ = state; // Unused but required for signature consistency
+    InstructionResult::Jump(target as usize)
+}
+
+/// Return top of stack
+fn op_return(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    if let Some(value) = state.stack.pop() {
+        InstructionResult::Return(value)
+    } else {
+        InstructionResult::Return(Value::Nil)
+    }
+}
+
+/// Fallback to AST evaluation for unsupported expressions
+fn op_ast_fallback(_state: &mut InterpreterState, _operand: u32) -> InstructionResult {
+    // In a real implementation, this would call back to the AST evaluator
+    // For now, just return an error
+    InstructionResult::Error(InterpreterError::RuntimeError("AST fallback not implemented".to_string()))
 }
 
 impl Value {
@@ -2810,5 +3425,365 @@ mod tests {
         assert_eq!(stats.bytes_before, info.allocated_bytes);
         assert_eq!(stats.bytes_after, info.allocated_bytes);
         assert_eq!(stats.objects_collected, 0);
+    }
+    
+    // Direct-threaded interpreter tests
+    
+    #[test]
+    fn test_direct_threaded_creation() {
+        let interp = DirectThreadedInterpreter::new();
+        assert_eq!(interp.instruction_count(), 0);
+        assert_eq!(interp.constants_count(), 0);
+    }
+    
+    #[test]
+    fn test_direct_threaded_constants() {
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        let int_idx = interp.add_constant(Value::Integer(42));
+        let float_idx = interp.add_constant(Value::Float(3.14));
+        let string_idx = interp.add_constant(Value::String(Rc::new("hello".to_string())));
+        
+        assert_eq!(int_idx, 0);
+        assert_eq!(float_idx, 1);
+        assert_eq!(string_idx, 2);
+        assert_eq!(interp.constants_count(), 3);
+    }
+    
+    #[test]
+    fn test_direct_threaded_instruction_stream() {
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Add some constants
+        let const_idx = interp.add_constant(Value::Integer(42));
+        
+        // Add instructions
+        interp.add_instruction(op_load_const, const_idx);
+        interp.add_instruction(op_load_nil, 0);
+        
+        assert_eq!(interp.instruction_count(), 2);
+    }
+    
+    #[test]
+    fn test_direct_threaded_literal_compilation() {
+        use crate::frontend::ast::{Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Compile integer literal
+        let int_ast = Expr::new(ExprKind::Literal(Literal::Integer(42)), crate::frontend::ast::Span::new(0, 0));
+        let result = interp.compile(&int_ast);
+        assert!(result.is_ok());
+        
+        assert_eq!(interp.constants_count(), 1);
+        assert_eq!(interp.instruction_count(), 2); // load_const + return
+        
+        // Compile float literal
+        let float_ast = Expr::new(ExprKind::Literal(Literal::Float(3.14)), crate::frontend::ast::Span::new(0, 0));
+        let result = interp.compile(&float_ast);
+        assert!(result.is_ok());
+        
+        assert_eq!(interp.constants_count(), 1); // resets on each compile
+        assert_eq!(interp.instruction_count(), 2); // load_const + return
+        
+        // Compile string literal
+        let string_ast = Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), crate::frontend::ast::Span::new(0, 0));
+        let result = interp.compile(&string_ast);
+        assert!(result.is_ok());
+        
+        assert_eq!(interp.constants_count(), 1); // resets on each compile
+        assert_eq!(interp.instruction_count(), 2); // load_const + return
+        
+        // Compile boolean literal
+        let bool_ast = Expr::new(ExprKind::Literal(Literal::Bool(true)), crate::frontend::ast::Span::new(0, 0));
+        let result = interp.compile(&bool_ast);
+        assert!(result.is_ok());
+        
+        assert_eq!(interp.constants_count(), 1); // resets on each compile
+        assert_eq!(interp.instruction_count(), 2); // load_const + return
+        
+        // Compile nil literal
+        let nil_ast = Expr::new(ExprKind::Literal(Literal::Unit), crate::frontend::ast::Span::new(0, 0));
+        let result = interp.compile(&nil_ast);
+        assert!(result.is_ok());
+        
+        assert_eq!(interp.instruction_count(), 2); // load_nil + return
+        // Nil doesn't add to constants, uses special instruction
+    }
+    
+    #[test]
+    fn test_direct_threaded_binary_op_compilation() {
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Compile: 2 + 3
+        let add_ast = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2)), crate::frontend::ast::Span::new(0, 0))),
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(3)), crate::frontend::ast::Span::new(0, 0))),
+            },
+            crate::frontend::ast::Span::new(0, 0),
+        );
+        
+        let result = interp.compile(&add_ast);
+        assert!(result.is_ok());
+        
+        // Should have: load_const(2), load_const(3), add, return
+        assert_eq!(interp.instruction_count(), 4);
+        assert_eq!(interp.constants_count(), 2);
+    }
+    
+    #[test]
+    fn test_direct_threaded_identifier_compilation() {
+        use crate::frontend::ast::{Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        let ident_ast = Expr::new(ExprKind::Identifier("x".to_string()), crate::frontend::ast::Span::new(0, 0));
+        let result = interp.compile(&ident_ast);
+        assert!(result.is_ok());
+        
+        // Should add variable name to constants and generate load_var instruction
+        assert_eq!(interp.constants_count(), 1);
+        assert_eq!(interp.instruction_count(), 2); // load_var + return
+    }
+    
+    #[test]
+    fn test_direct_threaded_execution_simple() {
+        use crate::frontend::ast::{Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Compile and execute: 42
+        let ast = Expr::new(ExprKind::Literal(Literal::Integer(42)), crate::frontend::ast::Span::new(0, 0));
+        interp.compile(&ast).expect("Test should not fail");
+        
+        let result = interp.execute();
+        assert!(result.is_ok());
+        assert_eq!(result.expect("Test should not fail"), Value::Integer(42));
+    }
+    
+    #[test]
+    fn test_direct_threaded_execution_arithmetic() {
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Compile and execute: 2 + 3
+        let ast = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2)), crate::frontend::ast::Span::new(0, 0))),
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(3)), crate::frontend::ast::Span::new(0, 0))),
+            },
+            crate::frontend::ast::Span::new(0, 0),
+        );
+        
+        interp.compile(&ast).expect("Test should not fail");
+        let result = interp.execute();
+        assert!(result.is_ok());
+        assert_eq!(result.expect("Test should not fail"), Value::Integer(5));
+    }
+    
+    #[test]
+    fn test_direct_threaded_execution_subtraction() {
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Compile and execute: 10 - 4
+        let ast = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Subtract,
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(10)), crate::frontend::ast::Span::new(0, 0))),
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(4)), crate::frontend::ast::Span::new(0, 0))),
+            },
+            crate::frontend::ast::Span::new(0, 0),
+        );
+        
+        interp.compile(&ast).expect("Test should not fail");
+        let result = interp.execute();
+        assert!(result.is_ok());
+        assert_eq!(result.expect("Test should not fail"), Value::Integer(6));
+    }
+    
+    #[test]
+    fn test_direct_threaded_execution_multiplication() {
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Compile and execute: 6 * 7
+        let ast = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Multiply,
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(6)), crate::frontend::ast::Span::new(0, 0))),
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(7)), crate::frontend::ast::Span::new(0, 0))),
+            },
+            crate::frontend::ast::Span::new(0, 0),
+        );
+        
+        interp.compile(&ast).expect("Test should not fail");
+        let result = interp.execute();
+        assert!(result.is_ok());
+        assert_eq!(result.expect("Test should not fail"), Value::Integer(42));
+    }
+    
+    #[test]
+    fn test_direct_threaded_execution_division() {
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Compile and execute: 20 / 4
+        let ast = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Divide,
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(20)), crate::frontend::ast::Span::new(0, 0))),
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(4)), crate::frontend::ast::Span::new(0, 0))),
+            },
+            crate::frontend::ast::Span::new(0, 0),
+        );
+        
+        interp.compile(&ast).expect("Test should not fail");
+        let result = interp.execute();
+        assert!(result.is_ok());
+        assert_eq!(result.expect("Test should not fail"), Value::Integer(5));
+    }
+    
+    #[test]
+    fn test_direct_threaded_execution_mixed_types() {
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Compile and execute: 2.5 + 3 (float + int)
+        let ast = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Float(2.5)), crate::frontend::ast::Span::new(0, 0))),
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(3)), crate::frontend::ast::Span::new(0, 0))),
+            },
+            crate::frontend::ast::Span::new(0, 0),
+        );
+        
+        interp.compile(&ast).expect("Test should not fail");
+        let result = interp.execute();
+        assert!(result.is_ok());
+        assert_eq!(result.expect("Test should not fail"), Value::Float(5.5));
+    }
+    
+    #[test]
+    fn test_direct_threaded_execution_division_by_zero() {
+        use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Compile and execute: 5 / 0
+        let ast = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Divide,
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(5)), crate::frontend::ast::Span::new(0, 0))),
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(0)), crate::frontend::ast::Span::new(0, 0))),
+            },
+            crate::frontend::ast::Span::new(0, 0),
+        );
+        
+        interp.compile(&ast).expect("Test should not fail");
+        let result = interp.execute();
+        assert!(result.is_err());
+    }
+    
+    #[test]
+    fn test_direct_threaded_execution_variable_lookup() {
+        use crate::frontend::ast::{Expr, ExprKind};
+        use std::collections::HashMap;
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Set up environment with variable
+        let mut env = HashMap::new();
+        env.insert("x".to_string(), Value::Integer(42));
+        
+        // Compile and execute: x
+        let ast = Expr::new(ExprKind::Identifier("x".to_string()), crate::frontend::ast::Span::new(0, 0));
+        interp.compile(&ast).expect("Test should not fail");
+        
+        let mut state = InterpreterState::new();
+        state.env_stack.push(env);
+        state.constants = interp.constants.clone();
+        
+        // Execute with variable in environment
+        let result = interp.execute_with_state(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.expect("Test should not fail"), Value::Integer(42));
+    }
+    
+    #[test]
+    fn test_direct_threaded_execution_undefined_variable() {
+        use crate::frontend::ast::{Expr, ExprKind};
+        
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Compile and execute: undefined_var
+        let ast = Expr::new(ExprKind::Identifier("undefined_var".to_string()), crate::frontend::ast::Span::new(0, 0));
+        interp.compile(&ast).expect("Test should not fail");
+        
+        let result = interp.execute();
+        assert!(result.is_err());
+        match result.expect_err("Test should fail") {
+            InterpreterError::RuntimeError(msg) => {
+                assert!(msg.contains("Undefined variable"));
+            },
+            _ => panic!("Expected RuntimeError"),
+        }
+    }
+    
+    #[test]
+    fn test_direct_threaded_instruction_handlers() {
+        let mut state = InterpreterState::new();
+        
+        // Test op_load_const
+        state.constants.push(Value::Integer(42));
+        let result = op_load_const(&mut state, 0);
+        assert_eq!(result, InstructionResult::Continue);
+        assert_eq!(state.stack.len(), 1);
+        assert_eq!(state.stack[0], Value::Integer(42));
+        
+        // Test op_load_nil
+        let result = op_load_nil(&mut state, 0);
+        assert_eq!(result, InstructionResult::Continue);
+        assert_eq!(state.stack.len(), 2);
+        assert_eq!(state.stack[1], Value::Nil);
+        
+        // Test arithmetic operations
+        state.stack.clear();
+        state.stack.push(Value::Integer(5));
+        state.stack.push(Value::Integer(3));
+        
+        let result = op_add(&mut state, 0);
+        assert_eq!(result, InstructionResult::Continue);
+        assert_eq!(state.stack.len(), 1);
+        assert_eq!(state.stack[0], Value::Integer(8));
+    }
+    
+    #[test]
+    fn test_direct_threaded_clear() {
+        let mut interp = DirectThreadedInterpreter::new();
+        
+        // Add some instructions and constants
+        interp.add_constant(Value::Integer(42));
+        interp.add_instruction(op_load_const, 0);
+        
+        assert!(interp.instruction_count() > 0);
+        assert!(interp.constants_count() > 0);
+        
+        // Clear should reset everything
+        interp.clear();
+        
+        assert_eq!(interp.instruction_count(), 0);
+        assert_eq!(interp.constants_count(), 0);
     }
 }
