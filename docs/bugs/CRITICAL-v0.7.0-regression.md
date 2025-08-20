@@ -222,11 +222,83 @@ jobs:
           ! ruchy -e "9223372036854775807 + 1" | grep "-"
 ```
 
+## UPDATE: v0.7.1 HOTFIX QA RESULTS (2025-08-19)
+
+### Tested Version: v0.7.1 
+```bash
+./target/release/ruchy --version → ruchy 0.7.1
+```
+
+### What Was Fixed in v0.7.1 ✅
+1. **Integer overflow security issue** - Now properly errors instead of silent wraparound
+   ```bash
+   ./target/release/ruchy -e "9223372036854775807 + 1"
+   → Error: Integer overflow in addition: 9223372036854775807 + 1
+   ```
+
+### What's STILL BROKEN in v0.7.1 ❌
+
+#### REPL Completely Non-Functional
+The REPL cannot parse **ANY** expressions - not even basic arithmetic:
+
+```bash
+# Test: Basic arithmetic
+echo -e '2 + 3\n:quit' | ./target/release/ruchy repl
+→ Error: Failed to parse input
+
+# Test: Simple println  
+echo -e 'println("Hello")\n:quit' | ./target/release/ruchy repl
+→ Error: Failed to parse input
+
+# Test: Blocks
+echo -e '{ 1; 2; 3 }\n:quit' | ./target/release/ruchy repl
+→ Error: Failed to parse input
+```
+
+#### One-liner Mode Works Fine
+```bash
+./target/release/ruchy -e "2 + 3" → 5
+./target/release/ruchy -e "println(\"Hello\")" → Hello
+```
+
+### Root Cause Analysis
+- **REPL parser is fundamentally broken** - Cannot parse basic expressions
+- **One-liner parser works** - Same expressions work in -e mode
+- **Two different parsers** - REPL and one-liner use different code paths
+
+### Current Status: WORSE THAN REPORTED
+The situation is **more severe** than the original ticket indicated:
+- Not just functions/match/loops broken
+- **Basic arithmetic fails** in REPL
+- **println() calls fail** in REPL
+- REPL is 100% unusable for any programming
+
+### Comparison Table (Updated)
+
+| Feature | v0.4.3 REPL | v0.7.1 REPL | v0.7.1 One-liner | Status |
+|---------|-------------|-------------|-------------------|--------|
+| Basic arithmetic `2 + 3` | ✅ Works | ❌ Parse error | ✅ Works | **CRITICAL REGRESSION** |
+| println calls | ✅ Works | ❌ Parse error | ✅ Works | **CRITICAL REGRESSION** |
+| Blocks `{ 1; 2; 3 }` | ✅ Returns 3 | ❌ Parse error | ❓ Untested | **CRITICAL REGRESSION** |
+| Integer overflow | ❌ Silent wrap | ✅ Error | ✅ Error | **FIXED** |
+
+### Impact Assessment: CATASTROPHIC
+- **REPL completely unusable** - Cannot run any expressions
+- **Interactive development impossible** 
+- **Product fundamentally broken** for intended use case
+- **Worse than any previous version**
+
 ## Conclusion
 
-v0.7.0 represents a **critical regression** in REPL functionality. The product is less functional than it was 4 versions ago. The focus on adding advanced features while ignoring fundamental bugs has resulted in an unusable product.
+v0.7.1 represents the **most broken version** in Ruchy's history. While the security issue was fixed, the REPL is now completely non-functional - it cannot parse even basic arithmetic.
 
-**Recommendation**: Consider yanking v0.7.0 from crates.io until REPL is functional. Users on v0.4.3 should not upgrade.
+**URGENT RECOMMENDATIONS**:
+1. **YANK v0.7.0 and v0.7.1** from crates.io immediately
+2. **Emergency rollback** to last working version
+3. **Complete REPL rewrite** required - current parser is irreparably broken
+4. **Stop ALL development** until basic functionality restored
+
+The language is currently **unusable for its primary purpose** (interactive scripting).
 
 ---
 
