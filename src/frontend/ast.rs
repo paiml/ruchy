@@ -244,6 +244,10 @@ pub enum ExprKind {
     PostDecrement {
         target: Box<Expr>,
     },
+    Extension {
+        target_type: String,
+        methods: Vec<ImplMethod>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

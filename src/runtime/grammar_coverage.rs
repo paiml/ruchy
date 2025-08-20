@@ -92,6 +92,7 @@ impl GrammarCoverageMatrix {
             ExprKind::FieldAccess { .. } => "FieldAccess",
             ExprKind::Trait { .. } => "Trait",
             ExprKind::Impl { .. } => "Impl",
+            ExprKind::Extension { .. } => "Extension",
             ExprKind::Try { .. } => "Try",
             ExprKind::TryCatch { .. } => "TryCatch",
             ExprKind::Await { .. } => "Await",

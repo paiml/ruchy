@@ -1351,7 +1351,7 @@ fn op_div(state: &mut InterpreterState, _operand: u32) -> InstructionResult {
             }
             Some(Value::Float(x / *y as f64))
         },
-        _ => return None,
+        _ => None,
     })
 }
 

@@ -217,6 +217,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Struct => types::parse_struct(state),
         Token::Trait => types::parse_trait(state),
         Token::Impl => types::parse_impl(state),
+        Token::Extend => types::parse_extend(state),
         Token::Actor => actors::parse_actor(state),
         Token::Import | Token::Use => utils::parse_import(state),
         Token::Module => utils::parse_module(state),

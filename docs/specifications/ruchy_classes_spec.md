@@ -443,7 +443,7 @@ let shapes: Vec<Box<dyn Shape>> = vec![
 | Structs | ✅ Complete | - | Low |
 | Impl blocks | ✅ Complete | - | Low |
 | Traits | ✅ Complete | - | Medium |
-| Extension methods | 🚧 In Progress | v0.3 | Medium |
+| Extension methods | [x] In Progress | v0.7.12 | Medium |
 | Actors | 📅 Planned | v0.4 | High |
 | Properties | 📅 Planned | v0.5 | Medium |
 | Delegation | 📅 Planned | v0.6 | Low |

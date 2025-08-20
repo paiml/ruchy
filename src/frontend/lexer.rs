@@ -169,6 +169,8 @@ pub enum Token {
     Impl,
     #[token("trait")]
     Trait,
+    #[token("extend")]
+    Extend,
     #[token("actor")]
     Actor,
     #[token("state")]
