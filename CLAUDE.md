@@ -38,6 +38,14 @@ Priority fixes from book testing:
 4. **Array Operations** - .map(), .filter(), .reduce()
 5. **String Methods** - .len(), .to_upper(), .trim()
 
+## Known Runtime Bugs (from ../ruchy-book/docs/bugs/)
+
+**CRITICAL BUG #001**: File Operations Hang (v0.7.7)
+- `ruchy check`, `transpile`, `run`, `parse`, `ast` all hang on file input
+- Only `-e` evaluation mode works
+- Blocks 94% of book example testing
+- **Impact**: Cannot test multi-line examples or functions
+
 ## Task Execution Protocol
 
 ### Pre-Implementation Verification
@@ -45,6 +53,7 @@ Priority fixes from book testing:
 ```rust
 // HALT. Before implementing ANY feature:
 □ Check ../ruchy-book/INTEGRATION.md for latest compatibility report
+□ Check ../ruchy-book/docs/bugs/ruchy-runtime-bugs.md for known issues
 □ Locate specification section in SPECIFICATION.md
 □ Find task ID in docs/execution/roadmap.md
 □ Verify dependencies completed via DAG
