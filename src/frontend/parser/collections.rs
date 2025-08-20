@@ -179,15 +179,18 @@ fn is_object_literal(state: &mut ParserState) -> bool {
         return true;
     }
 
-    // Check for identifier/string followed by colon
+    // Check for identifier/string followed by colon or fat arrow (book compatibility)
     match state.tokens.peek() {
         Some((Token::Identifier(_) | Token::String(_) | Token::RawString(_), _)) => {
-            // Look ahead for colon
+            // Look ahead for colon or fat arrow
             let saved_pos = state.tokens.position();
             state.tokens.advance(); // skip identifier/string
-            let has_colon = matches!(state.tokens.peek(), Some((Token::Colon, _)));
+            let has_separator = matches!(
+                state.tokens.peek(), 
+                Some((Token::Colon | Token::FatArrow, _))
+            );
             state.tokens.set_position(saved_pos); // restore position
-            has_colon
+            has_separator
         }
         _ => false,
     }
@@ -242,7 +245,12 @@ fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Resul
                 _ => bail!("Expected identifier or string key in object literal"),
             };
 
-            state.tokens.expect(&Token::Colon)?;
+            // Accept either : or => for object key-value pairs (book compatibility)
+            if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+                state.tokens.advance(); // consume =>
+            } else {
+                state.tokens.expect(&Token::Colon)?;
+            }
             let value = super::parse_expr_recursive(state)?;
             fields.push(ObjectField::KeyValue { key, value });
         }
