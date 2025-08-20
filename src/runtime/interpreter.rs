@@ -154,6 +154,9 @@ pub struct Interpreter {
     
     /// Type feedback collection for JIT compilation
     type_feedback: TypeFeedback,
+    
+    /// Conservative garbage collector
+    gc: ConservativeGC,
 }
 
 /// Call frame for function invocation (will be used in Phase 1)
@@ -626,6 +629,288 @@ pub struct TypeFeedbackStats {
     pub total_samples: u64,
 }
 
+/// Conservative garbage collector for heap-allocated objects
+/// Currently operates alongside Rc-based memory management
+#[derive(Debug)]
+pub struct ConservativeGC {
+    /// Objects currently tracked by the GC
+    tracked_objects: Vec<GCObject>,
+    /// Collection statistics
+    collections_performed: u64,
+    /// Total objects collected
+    objects_collected: u64,
+    /// Memory pressure threshold (bytes)
+    collection_threshold: usize,
+    /// Current allocated bytes estimate
+    allocated_bytes: usize,
+    /// Enable/disable automatic collection
+    auto_collect_enabled: bool,
+}
+
+/// A garbage-collected object with metadata
+#[derive(Debug, Clone)]
+pub struct GCObject {
+    /// Object identifier (address-like)
+    id: usize,
+    /// Object size in bytes
+    size: usize,
+    /// Mark bit for mark-and-sweep
+    marked: bool,
+    /// Object generation (for future generational GC)
+    #[allow(dead_code)] // Will be used in future generational GC implementation
+    generation: u8,
+    /// Reference to the actual value
+    value: Value,
+}
+
+impl ConservativeGC {
+    /// Create new conservative garbage collector
+    pub fn new() -> Self {
+        Self {
+            tracked_objects: Vec::new(),
+            collections_performed: 0,
+            objects_collected: 0,
+            collection_threshold: 1024 * 1024, // 1MB default threshold
+            allocated_bytes: 0,
+            auto_collect_enabled: true,
+        }
+    }
+    
+    /// Add an object to GC tracking
+    pub fn track_object(&mut self, value: Value) -> usize {
+        let id = self.tracked_objects.len();
+        let size = self.estimate_object_size(&value);
+        
+        let gc_object = GCObject {
+            id,
+            size,
+            marked: false,
+            generation: 0,
+            value,
+        };
+        
+        self.tracked_objects.push(gc_object);
+        self.allocated_bytes += size;
+        
+        // Trigger collection if we've exceeded threshold
+        if self.auto_collect_enabled && self.allocated_bytes > self.collection_threshold {
+            self.collect_garbage();
+        }
+        
+        id
+    }
+    
+    /// Perform garbage collection using conservative stack scanning
+    pub fn collect_garbage(&mut self) -> GCStats {
+        let initial_count = self.tracked_objects.len();
+        let initial_bytes = self.allocated_bytes;
+        
+        // Mark phase: mark all reachable objects
+        self.mark_phase();
+        
+        // Sweep phase: collect unmarked objects  
+        let collected = self.sweep_phase();
+        
+        self.collections_performed += 1;
+        self.objects_collected += collected as u64;
+        
+        GCStats {
+            objects_before: initial_count,
+            objects_after: self.tracked_objects.len(),
+            objects_collected: collected,
+            bytes_before: initial_bytes,
+            bytes_after: self.allocated_bytes,
+            collection_time_ns: 0, // Simple implementation doesn't time
+        }
+    }
+    
+    /// Mark phase: mark all reachable objects
+    fn mark_phase(&mut self) {
+        // Reset all marks
+        for obj in &mut self.tracked_objects {
+            obj.marked = false;
+        }
+        
+        // Mark objects based on Value references
+        // In a more sophisticated implementation, this would scan the stack
+        // For now, we conservatively mark all objects referenced by other tracked objects
+        for i in 0..self.tracked_objects.len() {
+            if self.is_root_object(i) {
+                self.mark_object(i);
+            }
+        }
+    }
+    
+    /// Check if object is a root (conservatively assume all are roots for safety)
+    fn is_root_object(&self, _index: usize) -> bool {
+        // Conservative implementation: treat all objects as potentially reachable
+        // In a real implementation, this would scan the stack and globals
+        true
+    }
+    
+    /// Mark an object and all objects it references
+    fn mark_object(&mut self, index: usize) {
+        if index >= self.tracked_objects.len() || self.tracked_objects[index].marked {
+            return;
+        }
+        
+        self.tracked_objects[index].marked = true;
+        
+        // Mark objects referenced by this object
+        let value = &self.tracked_objects[index].value.clone();
+        if let Value::Array(arr) = value {
+            // Mark all array elements that are tracked objects
+            for elem in arr.iter() {
+                if let Some(referenced_id) = self.find_object_id(elem) {
+                    self.mark_object(referenced_id);
+                }
+            }
+        }
+        // Note: Closure environments and other value types don't contain tracked object references
+        // In a real implementation, would mark closure environment
+    }
+    
+    /// Find the GC object ID for a given value
+    fn find_object_id(&self, target: &Value) -> Option<usize> {
+        // Simple linear search - in production would use hash table
+        for (id, obj) in self.tracked_objects.iter().enumerate() {
+            if std::ptr::eq(&raw const obj.value, target) {
+                return Some(id);
+            }
+        }
+        None
+    }
+    
+    /// Sweep phase: collect unmarked objects
+    fn sweep_phase(&mut self) -> usize {
+        let initial_len = self.tracked_objects.len();
+        
+        // Keep only marked objects
+        self.tracked_objects.retain(|obj| {
+            if obj.marked {
+                true
+            } else {
+                self.allocated_bytes = self.allocated_bytes.saturating_sub(obj.size);
+                false
+            }
+        });
+        
+        // Reassign IDs after compaction
+        for (new_id, obj) in self.tracked_objects.iter_mut().enumerate() {
+            obj.id = new_id;
+        }
+        
+        initial_len - self.tracked_objects.len()
+    }
+    
+    /// Estimate memory size of a value
+    fn estimate_object_size(&self, value: &Value) -> usize {
+        match value {
+            Value::Integer(_) | Value::Float(_) => 8,
+            Value::Bool(_) => 1,
+            Value::Nil => 0,
+            Value::String(s) => s.len() + 24, // String overhead + content
+            Value::Array(arr) => {
+                let base_size = 24; // Vec overhead
+                let element_size = arr.iter()
+                    .map(|v| self.estimate_object_size(v))
+                    .sum::<usize>();
+                base_size + element_size
+            },
+            Value::Closure { params, .. } => {
+                let base_size = 48; // Closure overhead
+                let params_size = params.iter().map(std::string::String::len).sum::<usize>();
+                base_size + params_size
+            },
+        }
+    }
+    
+    /// Get current GC statistics
+    pub fn get_stats(&self) -> GCStats {
+        GCStats {
+            objects_before: self.tracked_objects.len(),
+            objects_after: self.tracked_objects.len(),
+            objects_collected: 0,
+            bytes_before: self.allocated_bytes,
+            bytes_after: self.allocated_bytes,
+            collection_time_ns: 0,
+        }
+    }
+    
+    /// Get detailed GC information
+    pub fn get_info(&self) -> GCInfo {
+        GCInfo {
+            total_objects: self.tracked_objects.len(),
+            allocated_bytes: self.allocated_bytes,
+            collections_performed: self.collections_performed,
+            objects_collected: self.objects_collected,
+            collection_threshold: self.collection_threshold,
+            auto_collect_enabled: self.auto_collect_enabled,
+        }
+    }
+    
+    /// Set collection threshold
+    pub fn set_collection_threshold(&mut self, threshold: usize) {
+        self.collection_threshold = threshold;
+    }
+    
+    /// Enable or disable automatic collection
+    pub fn set_auto_collect(&mut self, enabled: bool) {
+        self.auto_collect_enabled = enabled;
+    }
+    
+    /// Force garbage collection
+    pub fn force_collect(&mut self) -> GCStats {
+        self.collect_garbage()
+    }
+    
+    /// Clear all tracked objects (for testing)
+    pub fn clear(&mut self) {
+        self.tracked_objects.clear();
+        self.allocated_bytes = 0;
+    }
+}
+
+impl Default for ConservativeGC {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Statistics from a garbage collection cycle
+#[derive(Debug, Clone, PartialEq)]
+pub struct GCStats {
+    /// Objects before collection
+    pub objects_before: usize,
+    /// Objects after collection  
+    pub objects_after: usize,
+    /// Objects collected
+    pub objects_collected: usize,
+    /// Bytes before collection
+    pub bytes_before: usize,
+    /// Bytes after collection
+    pub bytes_after: usize,
+    /// Collection time in nanoseconds
+    pub collection_time_ns: u64,
+}
+
+/// General GC information
+#[derive(Debug, Clone)]
+pub struct GCInfo {
+    /// Total objects currently tracked
+    pub total_objects: usize,
+    /// Currently allocated bytes
+    pub allocated_bytes: usize,
+    /// Total collections performed
+    pub collections_performed: u64,
+    /// Total objects collected ever
+    pub objects_collected: u64,
+    /// Collection threshold in bytes
+    pub collection_threshold: usize,
+    /// Whether auto-collection is enabled
+    pub auto_collect_enabled: bool,
+}
+
 impl Value {
     /// Get type identifier for inline caching
     pub fn type_id(&self) -> std::any::TypeId {
@@ -651,6 +936,7 @@ impl Interpreter {
             execution_counts: HashMap::new(),
             field_caches: HashMap::new(),
             type_feedback: TypeFeedback::new(),
+            gc: ConservativeGC::new(),
         }
     }
 
@@ -1250,6 +1536,62 @@ impl Interpreter {
     /// Clear type feedback data (for testing)
     pub fn clear_type_feedback(&mut self) {
         self.type_feedback = TypeFeedback::new();
+    }
+    
+    /// Track a value in the garbage collector
+    pub fn gc_track(&mut self, value: Value) -> usize {
+        self.gc.track_object(value)
+    }
+    
+    /// Force garbage collection
+    pub fn gc_collect(&mut self) -> GCStats {
+        self.gc.force_collect()
+    }
+    
+    /// Get garbage collection statistics
+    pub fn gc_stats(&self) -> GCStats {
+        self.gc.get_stats()
+    }
+    
+    /// Get detailed garbage collection information
+    pub fn gc_info(&self) -> GCInfo {
+        self.gc.get_info()
+    }
+    
+    /// Set garbage collection threshold
+    pub fn gc_set_threshold(&mut self, threshold: usize) {
+        self.gc.set_collection_threshold(threshold);
+    }
+    
+    /// Enable or disable automatic garbage collection
+    pub fn gc_set_auto_collect(&mut self, enabled: bool) {
+        self.gc.set_auto_collect(enabled);
+    }
+    
+    /// Clear all GC-tracked objects (for testing)
+    pub fn gc_clear(&mut self) {
+        self.gc.clear();
+    }
+    
+    /// Allocate a new array and track it in GC
+    pub fn gc_alloc_array(&mut self, elements: Vec<Value>) -> Value {
+        let array_value = Value::Array(Rc::new(elements));
+        self.gc.track_object(array_value.clone());
+        array_value
+    }
+    
+    /// Allocate a new string and track it in GC
+    pub fn gc_alloc_string(&mut self, content: String) -> Value {
+        let string_value = Value::String(Rc::new(content));
+        self.gc.track_object(string_value.clone());
+        string_value
+    }
+    
+    /// Allocate a new closure and track it in GC
+    pub fn gc_alloc_closure(&mut self, params: Vec<String>, body: Rc<Expr>, env: Rc<HashMap<String, Value>>) -> Value {
+        let closure_value = Value::Closure { params, body, env };
+        self.gc.track_object(closure_value.clone());
+        closure_value
     }
 }
 
@@ -2284,5 +2626,189 @@ mod tests {
         let stats_after = interp.get_type_feedback_stats();
         assert_eq!(stats_after.total_samples, 0);
         assert_eq!(stats_after.total_operation_sites, 0);
+    }
+    
+    #[test]
+    fn test_gc_basic_tracking() {
+        let mut interp = Interpreter::new();
+        
+        // Create some values to track
+        let values = vec![
+            Value::Integer(42),
+            Value::String(Rc::new("hello".to_string())),
+            Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)])),
+        ];
+        
+        // Track them in GC
+        for value in values {
+            interp.gc_track(value);
+        }
+        
+        // Check GC info
+        let info = interp.gc_info();
+        assert_eq!(info.total_objects, 3);
+        assert!(info.allocated_bytes > 0);
+        assert_eq!(info.collections_performed, 0);
+    }
+    
+    #[test]
+    fn test_gc_collection() {
+        let mut interp = Interpreter::new();
+        
+        // Disable auto-collection for manual testing
+        interp.gc_set_auto_collect(false);
+        
+        // Track several objects
+        for i in 0..10 {
+            let value = Value::Integer(i);
+            interp.gc_track(value);
+        }
+        
+        let info_before = interp.gc_info();
+        assert_eq!(info_before.total_objects, 10);
+        
+        // Force garbage collection
+        let stats = interp.gc_collect();
+        
+        // Since we treat all objects as roots conservatively, none should be collected
+        assert_eq!(stats.objects_collected, 0);
+        assert_eq!(stats.objects_after, 10);
+        
+        let info_after = interp.gc_info();
+        assert_eq!(info_after.collections_performed, 1);
+    }
+    
+    #[test]
+    fn test_gc_auto_collection() {
+        let mut interp = Interpreter::new();
+        
+        // Set a very low threshold to trigger auto-collection
+        interp.gc_set_threshold(100);
+        interp.gc_set_auto_collect(true);
+        
+        // Track a large object to trigger collection
+        let large_string = "x".repeat(200);
+        let value = Value::String(Rc::new(large_string));
+        interp.gc_track(value);
+        
+        // Auto-collection should have been triggered
+        let info = interp.gc_info();
+        assert!(info.collections_performed > 0);
+    }
+    
+    #[test]
+    fn test_gc_allocation_helpers() {
+        let mut interp = Interpreter::new();
+        
+        // Test GC allocation helpers
+        let array = interp.gc_alloc_array(vec![Value::Integer(1), Value::Integer(2)]);
+        let string = interp.gc_alloc_string("test".to_string());
+        
+        // Both should be tracked
+        let info = interp.gc_info();
+        assert_eq!(info.total_objects, 2);
+        
+        // Verify the values are correct
+        match array {
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), 2);
+                assert_eq!(arr[0], Value::Integer(1));
+                assert_eq!(arr[1], Value::Integer(2));
+            },
+            _ => panic!("Expected array"),
+        }
+        
+        match string {
+            Value::String(s) => {
+                assert_eq!(s.as_ref(), "test");
+            },
+            _ => panic!("Expected string"),
+        }
+    }
+    
+    #[test]
+    fn test_gc_size_estimation() {
+        let gc = ConservativeGC::new();
+        
+        // Test size estimation for different value types
+        let int_size = gc.estimate_object_size(&Value::Integer(42));
+        let float_size = gc.estimate_object_size(&Value::Float(3.14));
+        let bool_size = gc.estimate_object_size(&Value::Bool(true));
+        let nil_size = gc.estimate_object_size(&Value::Nil);
+        
+        assert_eq!(int_size, 8);
+        assert_eq!(float_size, 8);
+        assert_eq!(bool_size, 1);
+        assert_eq!(nil_size, 0);
+        
+        // Test string size estimation
+        let string_val = Value::String(Rc::new("hello".to_string()));
+        let string_size = gc.estimate_object_size(&string_val);
+        assert_eq!(string_size, 5 + 24); // content + overhead
+        
+        // Test array size estimation
+        let array_val = Value::Array(Rc::new(vec![Value::Integer(1), Value::Integer(2)]));
+        let array_size = gc.estimate_object_size(&array_val);
+        assert_eq!(array_size, 24 + 8 + 8); // overhead + 2 integers
+    }
+    
+    #[test]
+    fn test_gc_threshold_management() {
+        let mut interp = Interpreter::new();
+        
+        // Test threshold setting
+        interp.gc_set_threshold(2048);
+        let info = interp.gc_info();
+        assert_eq!(info.collection_threshold, 2048);
+        
+        // Test auto-collect setting
+        interp.gc_set_auto_collect(false);
+        let info = interp.gc_info();
+        assert!(!info.auto_collect_enabled);
+        
+        interp.gc_set_auto_collect(true);
+        let info = interp.gc_info();
+        assert!(info.auto_collect_enabled);
+    }
+    
+    #[test]
+    fn test_gc_clear() {
+        let mut interp = Interpreter::new();
+        
+        // Track some objects
+        for i in 0..5 {
+            interp.gc_track(Value::Integer(i));
+        }
+        
+        let info_before = interp.gc_info();
+        assert_eq!(info_before.total_objects, 5);
+        assert!(info_before.allocated_bytes > 0);
+        
+        // Clear GC
+        interp.gc_clear();
+        
+        let info_after = interp.gc_info();
+        assert_eq!(info_after.total_objects, 0);
+        assert_eq!(info_after.allocated_bytes, 0);
+    }
+    
+    #[test]
+    fn test_gc_stats_consistency() {
+        let mut interp = Interpreter::new();
+        
+        // Track objects and get initial stats
+        for i in 0..3 {
+            interp.gc_track(Value::Integer(i));
+        }
+        
+        let stats = interp.gc_stats();
+        let info = interp.gc_info();
+        
+        // Stats and info should be consistent
+        assert_eq!(stats.objects_before, info.total_objects);
+        assert_eq!(stats.objects_after, info.total_objects);
+        assert_eq!(stats.bytes_before, info.allocated_bytes);
+        assert_eq!(stats.bytes_after, info.allocated_bytes);
+        assert_eq!(stats.objects_collected, 0);
     }
 }
