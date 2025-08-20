@@ -288,7 +288,7 @@ graph TD
 - [x] **RUCHY-0600**: Implement `ruchy test` command for native testing
 - [x] **RUCHY-0601**: Implement `ruchy check` for type checking
 - [x] **RUCHY-0602**: Implement `ruchy fmt` for code formatting
-- [ ] **RUCHY-0603**: Implement `ruchy lint` with basic rules
+- [x] **RUCHY-0603**: Implement `ruchy lint` with basic rules
 
 ### Phase 2: Advanced Commands (v0.6.x)
 - [ ] **RUCHY-0604**: Implement `ruchy bench` for benchmarking
