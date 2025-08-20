@@ -1730,11 +1730,19 @@ impl Repl {
     /// Show the type of an expression
     fn show_type(expr: &str) {
         match Parser::new(expr).parse() {
-            Ok(_ast) => {
-                // For now, we don't have full type inference in REPL
-                // Just show what we can determine from the expression
-                println!("Type inference not yet implemented in REPL");
-                println!("(This will show the inferred type once type checking is integrated)");
+            Ok(ast) => {
+                // Create an inference context for type checking
+                let mut ctx = crate::middleend::InferenceContext::new();
+                
+                // Infer the type
+                match ctx.infer(&ast) {
+                    Ok(ty) => {
+                        println!("Type: {ty}");
+                    }
+                    Err(e) => {
+                        eprintln!("Type inference error: {e}");
+                    }
+                }
             }
             Err(e) => {
                 eprintln!("Parse error: {e}");
