@@ -337,7 +337,7 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
             state.tokens.advance();
             Pattern::Literal(Literal::Float(f))
         }
-        Some((Token::String(s), _)) => {
+        Some((Token::String(s) | Token::RawString(s), _)) => {
             let s = s.clone();
             state.tokens.advance();
             Pattern::Literal(Literal::String(s))

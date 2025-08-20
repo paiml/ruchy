@@ -3,6 +3,62 @@
 use crate::frontend::ast::Span;
 use logos::{Lexer, Logos};
 
+/// Process escape sequences in a string literal
+fn process_escapes(s: &str) -> String {
+    let mut result = String::new();
+    let mut chars = s.chars();
+    
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            match chars.next() {
+                Some('n') => result.push('\n'),
+                Some('t') => result.push('\t'),
+                Some('r') => result.push('\r'),
+                Some('\\') | None => result.push('\\'), // Backslash or end of string
+                Some('"') => result.push('"'),
+                Some('\'') => result.push('\''),
+                Some('0') => result.push('\0'),
+                Some('u') if chars.as_str().starts_with('{') => {
+                    // Unicode escape: \u{XXXX}
+                    chars.next(); // consume '{'
+                    let mut hex = String::new();
+                    for hex_char in chars.by_ref() {
+                        if hex_char == '}' {
+                            break;
+                        }
+                        hex.push(hex_char);
+                    }
+                    
+                    if let Ok(code_point) = u32::from_str_radix(&hex, 16) {
+                        if let Some(unicode_char) = char::from_u32(code_point) {
+                            result.push(unicode_char);
+                        } else {
+                            // Invalid Unicode code point, keep as literal
+                            result.push_str("\\u{");
+                            result.push_str(&hex);
+                            result.push('}');
+                        }
+                    } else {
+                        // Invalid hex, keep as literal
+                        result.push_str("\\u{");
+                        result.push_str(&hex);
+                        result.push('}');
+                    }
+                }
+                Some(other) => {
+                    // Unknown escape sequence, keep as literal
+                    result.push('\\');
+                    result.push(other);
+                }
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+    
+    result
+}
+
 #[derive(Logos, Debug, PartialEq, Clone)]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"//[^\n]*")]
@@ -17,16 +73,25 @@ pub enum Token {
 
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {
         let s = lex.slice();
-        Some(s[1..s.len()-1].to_string())
+        let inner = &s[1..s.len()-1];
+        Some(process_escapes(inner))
     })]
     String(String),
 
     #[regex(r#"f"([^"\\]|\\.)*""#, |lex| {
         let s = lex.slice();
         // Remove f" prefix and " suffix
-        Some(s[2..s.len()-1].to_string())
+        let inner = &s[2..s.len()-1];
+        Some(process_escapes(inner))
     })]
     FString(String),
+
+    #[regex(r#"r"([^"])*""#, |lex| {
+        let s = lex.slice();
+        // Remove r" prefix and " suffix - no escape processing for raw strings
+        Some(s[2..s.len()-1].to_string())
+    })]
+    RawString(String),
 
     #[regex(r"'([^'\\]|\\.)'", |lex| {
         let s = lex.slice();

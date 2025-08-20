@@ -115,7 +115,7 @@ pub fn parse_pattern(state: &mut ParserState) -> Result<Pattern> {
             state.tokens.advance();
             Ok(Pattern::Literal(Literal::Float(f)))
         }
-        Some((Token::String(s), _)) => {
+        Some((Token::String(s) | Token::RawString(s), _)) => {
             // Literal pattern
             let s = s.clone();
             state.tokens.advance();
@@ -580,24 +580,47 @@ pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Vec<Stri
                     current_text.clear();
                 }
 
-                // Collect expression until closing '}'
+                // Collect expression until closing '}' with proper string literal handling
                 let mut expr_text = String::new();
                 let mut brace_count = 1;
+                let mut in_string = false;
+                let mut in_char = false;
+                let mut escaped = false;
 
                 for expr_ch in chars.by_ref() {
                     match expr_ch {
-                        '{' => {
+                        '"' if !in_char && !escaped => {
+                            in_string = !in_string;
+                            expr_text.push(expr_ch);
+                        }
+                        '\'' if !in_string && !escaped => {
+                            in_char = !in_char;
+                            expr_text.push(expr_ch);
+                        }
+                        '{' if !in_string && !in_char => {
                             brace_count += 1;
                             expr_text.push(expr_ch);
                         }
-                        '}' => {
+                        '}' if !in_string && !in_char => {
                             brace_count -= 1;
                             if brace_count == 0 {
                                 break;
                             }
                             expr_text.push(expr_ch);
                         }
-                        _ => expr_text.push(expr_ch),
+                        '\\' if (in_string || in_char) && !escaped => {
+                            escaped = true;
+                            expr_text.push(expr_ch);
+                        }
+                        _ => {
+                            escaped = false;
+                            expr_text.push(expr_ch);
+                        }
+                    }
+                    
+                    // Reset escape flag for non-backslash characters
+                    if expr_ch != '\\' {
+                        escaped = false;
                     }
                 }
 

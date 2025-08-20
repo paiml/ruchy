@@ -42,6 +42,11 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 Ok(Expr::new(ExprKind::Literal(Literal::String(s)), span_clone))
             }
         }
+        Token::RawString(s) => {
+            state.tokens.advance();
+            // Raw strings don't support interpolation
+            Ok(Expr::new(ExprKind::Literal(Literal::String(s)), span_clone))
+        }
         Token::FString(s) => {
             state.tokens.advance();
             // F-strings always have string interpolation
