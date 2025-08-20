@@ -7,6 +7,7 @@
 #![allow(clippy::format_push_string)]
 #![allow(clippy::match_same_arms)]
 #![allow(clippy::fn_params_excessive_bools)]
+#![allow(clippy::too_many_lines)]
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -204,6 +205,14 @@ enum Commands {
         /// Maximum allowed complexity for functions
         #[arg(long, default_value = "10")]
         max_complexity: usize,
+        
+        /// Path to custom lint rules configuration file
+        #[arg(long)]
+        config: Option<PathBuf>,
+        
+        /// Generate default lint configuration file
+        #[arg(long)]
+        init_config: bool,
     },
 }
 
@@ -362,14 +371,25 @@ fn main() -> Result<()> {
         Some(Commands::Bench { file, iterations, warmup, format, output, verbose }) => {
             benchmark_ruchy_code(&file, iterations, warmup, &format, output.as_deref(), verbose)?;
         }
-        Some(Commands::Lint { file, all, verbose, format, deny_warnings, max_complexity }) => {
-            if all {
-                lint_ruchy_code(&PathBuf::from("."), all, verbose, &format, deny_warnings, max_complexity)?;
-            } else if let Some(file) = file {
-                lint_ruchy_code(&file, false, verbose, &format, deny_warnings, max_complexity)?;
+        Some(Commands::Lint { file, all, verbose, format, deny_warnings, max_complexity, config, init_config }) => {
+            if init_config {
+                generate_default_lint_config()?;
             } else {
-                eprintln!("Error: Either provide a file or use --all flag");
-                std::process::exit(1);
+                // Load custom rules if config provided
+                let custom_rules = if let Some(config_path) = config {
+                    load_custom_lint_rules(&config_path)?
+                } else {
+                    CustomLintRules::default()
+                };
+                
+                if all {
+                    lint_ruchy_code(&PathBuf::from("."), all, verbose, &format, deny_warnings, max_complexity, &custom_rules)?;
+                } else if let Some(file) = file {
+                    lint_ruchy_code(&file, false, verbose, &format, deny_warnings, max_complexity, &custom_rules)?;
+                } else {
+                    eprintln!("Error: Either provide a file or use --all flag");
+                    std::process::exit(1);
+                }
             }
         }
     }
@@ -1120,8 +1140,179 @@ struct LintViolation {
     suggestion: Option<String>,
 }
 
+/// Custom lint rules configuration
+#[derive(Debug, Clone, Default)]
+struct CustomLintRules {
+    rules: Vec<CustomRule>,
+    disabled_rules: Vec<String>,
+    custom_patterns: Vec<PatternRule>,
+}
+
+/// A custom lint rule
+#[derive(Debug, Clone)]
+struct CustomRule {
+    name: String,
+    severity: LintSeverity,
+    enabled: bool,
+    config: serde_json::Value,
+}
+
+/// A pattern-based lint rule
+#[derive(Debug, Clone)]
+struct PatternRule {
+    name: String,
+    pattern: String,
+    message: String,
+    severity: LintSeverity,
+    suggestion: Option<String>,
+}
+
+/// Load custom lint rules from configuration file
+fn load_custom_lint_rules(config_path: &Path) -> Result<CustomLintRules> {
+    let content = fs::read_to_string(config_path)?;
+    let config: serde_json::Value = serde_json::from_str(&content)?;
+    
+    let mut rules = CustomLintRules::default();
+    
+    // Parse disabled rules
+    if let Some(disabled) = config.get("disabled_rules").and_then(|v| v.as_array()) {
+        for rule in disabled {
+            if let Some(name) = rule.as_str() {
+                rules.disabled_rules.push(name.to_string());
+            }
+        }
+    }
+    
+    // Parse pattern rules
+    if let Some(patterns) = config.get("pattern_rules").and_then(|v| v.as_array()) {
+        for pattern_config in patterns {
+            if let (Some(name), Some(pattern), Some(message)) = (
+                pattern_config.get("name").and_then(|v| v.as_str()),
+                pattern_config.get("pattern").and_then(|v| v.as_str()),
+                pattern_config.get("message").and_then(|v| v.as_str()),
+            ) {
+                let severity = pattern_config.get("severity")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| match s {
+                        "error" => Some(LintSeverity::Error),
+                        "warning" => Some(LintSeverity::Warning),
+                        "info" => Some(LintSeverity::Info),
+                        _ => None,
+                    })
+                    .unwrap_or(LintSeverity::Warning);
+                
+                let suggestion = pattern_config.get("suggestion")
+                    .and_then(|v| v.as_str())
+                    .map(std::string::ToString::to_string);
+                
+                rules.custom_patterns.push(PatternRule {
+                    name: name.to_string(),
+                    pattern: pattern.to_string(),
+                    message: message.to_string(),
+                    severity,
+                    suggestion,
+                });
+            }
+        }
+    }
+    
+    // Parse custom rules
+    if let Some(custom) = config.get("custom_rules").and_then(|v| v.as_array()) {
+        for rule_config in custom {
+            if let Some(name) = rule_config.get("name").and_then(|v| v.as_str()) {
+                let enabled = rule_config.get("enabled")
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(true);
+                
+                let severity = rule_config.get("severity")
+                    .and_then(|v| v.as_str())
+                    .and_then(|s| match s {
+                        "error" => Some(LintSeverity::Error),
+                        "warning" => Some(LintSeverity::Warning),
+                        "info" => Some(LintSeverity::Info),
+                        _ => None,
+                    })
+                    .unwrap_or(LintSeverity::Warning);
+                
+                rules.rules.push(CustomRule {
+                    name: name.to_string(),
+                    severity,
+                    enabled,
+                    config: rule_config.clone(),
+                });
+            }
+        }
+    }
+    
+    Ok(rules)
+}
+
+/// Generate a default lint configuration file
+fn generate_default_lint_config() -> Result<()> {
+    let default_config = r#"{
+  "disabled_rules": [
+    "unused_variables"
+  ],
+  "pattern_rules": [
+    {
+      "name": "no_debug_print",
+      "pattern": "debug_print|dbg!",
+      "message": "Debug print statements should not be committed",
+      "severity": "warning",
+      "suggestion": "Remove debug print statement or use proper logging"
+    },
+    {
+      "name": "no_panic",
+      "pattern": "panic!",
+      "message": "Avoid using panic! in production code",
+      "severity": "error",
+      "suggestion": "Use Result type for error handling instead"
+    }
+  ],
+  "custom_rules": [
+    {
+      "name": "max_line_length",
+      "enabled": true,
+      "severity": "warning",
+      "max_length": 120
+    },
+    {
+      "name": "max_function_length",
+      "enabled": true,
+      "severity": "warning",
+      "max_lines": 50
+    },
+    {
+      "name": "require_doc_comments",
+      "enabled": false,
+      "severity": "info",
+      "public_only": true
+    }
+  ],
+  "complexity": {
+    "max_cyclomatic": 10,
+    "max_cognitive": 15
+  }
+}
+"#;
+    
+    let config_path = PathBuf::from(".ruchy-lint.json");
+    
+    if config_path.exists() {
+        eprintln!("{} Lint configuration already exists at {}", "⚠".yellow(), config_path.display());
+        eprintln!("Use --config flag to specify a different configuration file");
+        return Ok(());
+    }
+    
+    fs::write(&config_path, default_config)?;
+    println!("{} Created default lint configuration at {}", "✓".bright_green(), config_path.display());
+    println!("Edit this file to customize your lint rules");
+    
+    Ok(())
+}
+
 /// Lint Ruchy code
-fn lint_ruchy_code(file: &Path, all: bool, verbose: bool, format: &str, deny_warnings: bool, max_complexity: usize) -> Result<()> {
+fn lint_ruchy_code(file: &Path, all: bool, verbose: bool, format: &str, deny_warnings: bool, max_complexity: usize, custom_rules: &CustomLintRules) -> Result<()> {
     if all {
         // Discover and lint all .ruchy files
         let ruchy_files = discover_ruchy_files(".")?;
@@ -1142,7 +1333,7 @@ fn lint_ruchy_code(file: &Path, all: bool, verbose: bool, format: &str, deny_war
             
             match parser.parse() {
                 Ok(ast) => {
-                    let violations = run_lint_checks(&ast, max_complexity);
+                    let violations = run_lint_checks(&ast, max_complexity, custom_rules, &source);
                     if !violations.is_empty() {
                         total_violations.extend(violations.clone());
                         files_with_errors += 1;
@@ -1176,7 +1367,7 @@ fn lint_ruchy_code(file: &Path, all: bool, verbose: bool, format: &str, deny_war
         
         match parser.parse() {
             Ok(ast) => {
-                let violations = run_lint_checks(&ast, max_complexity);
+                let violations = run_lint_checks(&ast, max_complexity, custom_rules, &source);
                 display_lint_results(&violations, file, verbose, format);
                 
                 if !violations.is_empty() && deny_warnings {
@@ -1194,25 +1385,148 @@ fn lint_ruchy_code(file: &Path, all: bool, verbose: bool, format: &str, deny_war
 }
 
 /// Run all lint checks on an AST
-fn run_lint_checks(ast: &ruchy::Expr, max_complexity: usize) -> Vec<LintViolation> {
+fn run_lint_checks(ast: &ruchy::Expr, max_complexity: usize, custom_rules: &CustomLintRules, source: &str) -> Vec<LintViolation> {
     let mut violations = Vec::new();
     
-    // Check 1: Function complexity
-    check_function_complexity(ast, max_complexity, &mut violations);
+    // Built-in checks (skip if disabled)
+    if !custom_rules.disabled_rules.contains(&"complexity".to_string()) {
+        check_function_complexity(ast, max_complexity, &mut violations);
+    }
     
-    // Check 2: Unused variables (basic check - placeholder for now)
-    check_unused_variables(ast, &mut violations);
+    if !custom_rules.disabled_rules.contains(&"unused_variables".to_string()) {
+        check_unused_variables(ast, &mut violations);
+    }
     
-    // Check 3: Missing documentation
-    check_missing_docs(ast, &mut violations);
+    if !custom_rules.disabled_rules.contains(&"missing_docs".to_string()) {
+        check_missing_docs(ast, &mut violations);
+    }
     
-    // Check 4: Naming conventions
-    check_naming_conventions(ast, &mut violations);
+    if !custom_rules.disabled_rules.contains(&"naming_conventions".to_string()) {
+        check_naming_conventions(ast, &mut violations);
+    }
     
-    // Check 5: Line length
-    check_line_length(ast, &mut violations);
+    if !custom_rules.disabled_rules.contains(&"line_length".to_string()) {
+        check_line_length(ast, &mut violations);
+    }
+    
+    // Apply custom pattern rules
+    for pattern_rule in &custom_rules.custom_patterns {
+        check_pattern_rule(source, pattern_rule, &mut violations);
+    }
+    
+    // Apply custom configurable rules
+    for custom_rule in &custom_rules.rules {
+        if custom_rule.enabled {
+            apply_custom_rule(ast, source, custom_rule, &mut violations);
+        }
+    }
     
     violations
+}
+
+/// Check for pattern-based violations in source
+fn check_pattern_rule(source: &str, rule: &PatternRule, violations: &mut Vec<LintViolation>) {
+    // Simple pattern matching - could be enhanced with regex
+    for (line_num, line) in source.lines().enumerate() {
+        if line.contains(&rule.pattern) {
+            violations.push(LintViolation {
+                severity: rule.severity,
+                rule: rule.name.clone(),
+                message: rule.message.clone(),
+                line: line_num + 1,
+                column: line.find(&rule.pattern).unwrap_or(0),
+                suggestion: rule.suggestion.clone(),
+            });
+        }
+    }
+}
+
+/// Apply a custom configurable rule
+fn apply_custom_rule(ast: &ruchy::Expr, source: &str, rule: &CustomRule, violations: &mut Vec<LintViolation>) {
+    match rule.name.as_str() {
+        "max_line_length" => {
+            if let Some(max_length) = rule.config.get("max_length").and_then(serde_json::Value::as_u64) {
+                for (line_num, line) in source.lines().enumerate() {
+                    if line.len() > max_length as usize {
+                        violations.push(LintViolation {
+                            severity: rule.severity,
+                            rule: rule.name.clone(),
+                            message: format!("Line exceeds maximum length of {} characters", max_length),
+                            line: line_num + 1,
+                            column: max_length as usize,
+                            suggestion: Some("Break line into multiple lines".to_string()),
+                        });
+                    }
+                }
+            }
+        }
+        "max_function_length" => {
+            if let Some(max_lines) = rule.config.get("max_lines").and_then(serde_json::Value::as_u64) {
+                check_function_length(ast, max_lines as usize, rule, violations);
+            }
+        }
+        "require_doc_comments" => {
+            let public_only = rule.config.get("public_only")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(true);
+            check_doc_comments(ast, public_only, rule, violations);
+        }
+        _ => {
+            // Unknown custom rule - skip
+        }
+    }
+}
+
+/// Check function length
+fn check_function_length(ast: &ruchy::Expr, max_lines: usize, rule: &CustomRule, violations: &mut Vec<LintViolation>) {
+    match &ast.kind {
+        ExprKind::Function { name, body, .. } => {
+            // Approximate function length by span
+            let function_lines = (body.span.end - ast.span.start) / 80; // Rough estimate
+            if function_lines > max_lines {
+                violations.push(LintViolation {
+                    severity: rule.severity,
+                    rule: rule.name.clone(),
+                    message: format!("Function '{}' exceeds maximum length of {} lines", name, max_lines),
+                    line: ast.span.start,
+                    column: 0,
+                    suggestion: Some("Consider breaking this function into smaller functions".to_string()),
+                });
+            }
+            check_function_length(body, max_lines, rule, violations);
+        }
+        ExprKind::Block(exprs) => {
+            for expr in exprs {
+                check_function_length(expr, max_lines, rule, violations);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Check for documentation comments
+fn check_doc_comments(ast: &ruchy::Expr, public_only: bool, rule: &CustomRule, violations: &mut Vec<LintViolation>) {
+    match &ast.kind {
+        ExprKind::Function { name, .. } => {
+            let is_public = !name.starts_with('_');
+            if (!public_only || is_public) && ast.attributes.is_empty() {
+                violations.push(LintViolation {
+                    severity: rule.severity,
+                    rule: rule.name.clone(),
+                    message: format!("Function '{}' is missing documentation", name),
+                    line: ast.span.start,
+                    column: 0,
+                    suggestion: Some(format!("Add documentation comment: /// {} does...", name)),
+                });
+            }
+        }
+        ExprKind::Block(exprs) => {
+            for expr in exprs {
+                check_doc_comments(expr, public_only, rule, violations);
+            }
+        }
+        _ => {}
+    }
 }
 
 /// Check function complexity
