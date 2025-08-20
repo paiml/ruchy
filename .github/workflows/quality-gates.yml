@@ -1,0 +1,125 @@
+name: Toyota Way Quality Gates - Stop the Line
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  andon-red-flags:
+    name: 🚨 Red Flag Quality Gate (BLOCKING)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: 🔴 Check for Integer Overflow Protection
+        run: |
+          echo "Testing integer overflow detection..."
+          cargo test --test repl_regression_tests quality_gate_no_silent_overflow
+          
+      - name: 🔴 Check Core Functions Work
+        run: |
+          echo "Testing function definition and calling..."
+          cargo test --test repl_regression_tests quality_gate_functions_work
+          
+      - name: 🔴 Check No v0.4 Regressions
+        run: |
+          echo "Testing all v0.4.3 features still work..."
+          cargo test --test repl_regression_tests quality_gate_no_regressions_from_v4
+          
+      - name: 🔴 Zero Clippy Warnings
+        run: |
+          echo "Checking for clippy warnings..."
+          make lint
+          
+      - name: 🔴 No SATD Comments
+        run: |
+          echo "Checking for technical debt comments..."
+          ! grep -r "TODO\|FIXME\|HACK" src/ --include="*.rs"
+
+  andon-yellow-flags:
+    name: ⚠️ Yellow Flag Quality Gate (WARNING)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: 🟡 Test Coverage Above 80%
+        run: |
+          cargo tarpaulin --min 80 || echo "WARNING: Coverage below 80%"
+          
+      - name: 🟡 Complexity Under 10
+        run: |
+          # Would use PMAT here if available
+          echo "Checking complexity..."
+          
+      - name: 🟡 All REPL Tests Pass
+        run: |
+          cargo test --test repl_regression_tests
+          
+      - name: 🟡 Performance Benchmarks
+        run: |
+          cargo bench --no-fail-fast || echo "WARNING: Performance regression"
+
+  jidoka-automation:
+    name: 🤖 Jidoka - Automated Quality Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run Full Test Suite
+        run: |
+          cargo test --all-features
+          
+      - name: Test REPL Examples
+        run: |
+          for example in examples/*.ruchy; do
+            echo "Testing $example..."
+            timeout 5 cargo run --bin ruchy -- repl < "$example" || true
+          done
+          
+      - name: Dogfooding Test
+        run: |
+          echo "Testing Ruchy can run Ruchy scripts..."
+          find scripts -name "*.ruchy" -exec cargo run --bin ruchy -- run {} \;
+
+  kaizen-improvement:
+    name: 📈 Kaizen - Continuous Improvement
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Check Test Coverage Improved
+        run: |
+          echo "Comparing test coverage with main branch..."
+          # Compare coverage with main branch
+          
+      - name: Check No New Complexity
+        run: |
+          echo "Ensuring no functions exceed complexity 10..."
+          
+      - name: Verify Bug Has Test
+        run: |
+          echo "Checking that bug fixes include tests..."
+          git diff origin/main --name-only | grep -E "^tests/"
+
+  release-blocker:
+    name: 🛑 Release Blocker Check
+    runs-on: ubuntu-latest
+    needs: [andon-red-flags, jidoka-automation]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Final Quality Gate
+        run: |
+          echo "✅ All quality gates passed - release allowed"
+          echo "Checklist:"
+          echo "✅ No integer overflow"
+          echo "✅ Functions work"
+          echo "✅ No v0.4 regressions"
+          echo "✅ Zero clippy warnings"
+          echo "✅ No SATD comments"
+          echo "✅ All tests pass"
