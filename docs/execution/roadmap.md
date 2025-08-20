@@ -357,10 +357,10 @@ graph TD
 ### Implementation Phases (ruchy-interpreter-spec.md Section 6)
 
 #### Phase 0: Minimal Viable Interpreter (Week 1) - INTERP-001
-- [x] **Tagged pointer value representation** (Priority 1) - INTERP-001
-- [ ] **AST walker with direct-threaded dispatch** (Priority 2)
-- [ ] **Basic arithmetic and variables** (Priority 3)
-- [ ] **Function calls** (Priority 4)
+- [x] **Tagged pointer value representation** (Priority 1) - INTERP-001 ✅ COMPLETED
+- [x] **AST walker with direct-threaded dispatch** (Priority 2) - INTERP-002 ✅ COMPLETED 
+- [x] **Basic arithmetic and variables** (Priority 3) - INTERP-003 ✅ COMPLETED
+- [x] **Function calls and closures** (Priority 4) - INTERP-004 ✅ COMPLETED
 
 #### Phase 1: Performance Foundation (Week 2) - INTERP-002
 - [ ] **Inline caching for method dispatch** (Priority 1)

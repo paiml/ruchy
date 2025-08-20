@@ -12,6 +12,9 @@
 
 use std::collections::HashMap;
 use std::rc::Rc;
+#[cfg(test)]
+use crate::frontend::Param;
+use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp as AstBinaryOp};
 
 /// Runtime value representation using safe enum approach
 /// Alternative to tagged pointers that respects project's `unsafe_code = "forbid"`
@@ -31,8 +34,9 @@ pub enum Value {
     Array(Rc<Vec<Value>>),
     /// Function closure
     Closure {
-        arity: u8,
-        code: Rc<Vec<u8>>, // Placeholder for bytecode/AST
+        params: Vec<String>,
+        body: Rc<Expr>,
+        env: Rc<HashMap<String, Value>>, // Captured environment
     },
 }
 
@@ -133,11 +137,10 @@ pub struct Interpreter {
     /// Tagged pointer values for fast operation
     stack: Vec<Value>,
     
-    /// Global variable bindings (will be used in Phase 1)
-    #[allow(dead_code)]
-    globals: HashMap<std::string::String, Value>,
+    /// Environment stack for lexical scoping
+    env_stack: Vec<HashMap<std::string::String, Value>>,
     
-    /// Call frame for function calls (will be used in Phase 1)
+    /// Call frame for function calls
     #[allow(dead_code)]
     frames: Vec<CallFrame>,
     
@@ -183,15 +186,295 @@ pub enum InterpreterError {
     IndexOutOfBounds,
 }
 
+impl std::fmt::Display for InterpreterError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InterpreterError::TypeError(msg) => write!(f, "Type error: {msg}"),
+            InterpreterError::RuntimeError(msg) => write!(f, "Runtime error: {msg}"),
+            InterpreterError::StackOverflow => write!(f, "Stack overflow"),
+            InterpreterError::StackUnderflow => write!(f, "Stack underflow"),
+            InterpreterError::InvalidInstruction => write!(f, "Invalid instruction"),
+            InterpreterError::DivisionByZero => write!(f, "Division by zero"),
+            InterpreterError::IndexOutOfBounds => write!(f, "Index out of bounds"),
+        }
+    }
+}
+
+impl std::error::Error for InterpreterError {}
+
 impl Interpreter {
     /// Create new interpreter instance
     pub fn new() -> Self {
         Self {
             stack: Vec::with_capacity(1024),  // Pre-allocate stack
-            globals: HashMap::new(),
+            env_stack: vec![HashMap::new()],  // Start with global environment
             frames: Vec::new(),
             execution_counts: HashMap::new(),
         }
+    }
+
+    /// Evaluate an AST expression directly
+    /// # Errors
+    /// Returns error if evaluation fails (type errors, runtime errors, etc.)
+    pub fn eval_expr(&mut self, expr: &Expr) -> Result<Value, InterpreterError> {
+        self.eval_expr_kind(&expr.kind)
+    }
+
+    /// Evaluate an expression kind directly (main AST walker)
+    /// # Errors
+    /// Returns error if evaluation fails
+    fn eval_expr_kind(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        match expr_kind {
+            ExprKind::Literal(lit) => Ok(self.eval_literal(lit)),
+            
+            ExprKind::Identifier(name) => self.lookup_variable(name),
+            
+            ExprKind::Binary { left, op, right } => {
+                let left_val = self.eval_expr(left)?;
+                let right_val = self.eval_expr(right)?;
+                self.eval_binary_op(*op, &left_val, &right_val)
+            },
+            
+            ExprKind::Unary { op, operand } => {
+                let operand_val = self.eval_expr(operand)?;
+                self.eval_unary_op(*op, &operand_val)
+            },
+            
+            ExprKind::If { condition, then_branch, else_branch } => {
+                let cond_val = self.eval_expr(condition)?;
+                if cond_val.is_truthy() {
+                    self.eval_expr(then_branch)
+                } else if let Some(else_branch) = else_branch {
+                    self.eval_expr(else_branch)
+                } else {
+                    Ok(Value::nil())
+                }
+            },
+            
+            ExprKind::Let { name, value, body, .. } => {
+                let val = self.eval_expr(value)?;
+                // Store in current environment
+                self.env_set(name.clone(), val);
+                let result = self.eval_expr(body)?;
+                // Remove binding 
+                self.env_remove(name);
+                Ok(result)
+            },
+            
+            ExprKind::Function { name, params, body, .. } => {
+                let param_names: Vec<String> = params.iter()
+                    .map(crate::frontend::ast::Param::name)
+                    .collect();
+                    
+                let closure = Value::Closure {
+                    params: param_names,
+                    body: Rc::new(body.as_ref().clone()),
+                    env: Rc::new(self.current_env().clone()),
+                };
+                
+                // Bind function name in environment for recursion
+                self.env_set(name.clone(), closure.clone());
+                Ok(closure)
+            },
+            
+            ExprKind::Lambda { params, body } => {
+                let param_names: Vec<String> = params.iter()
+                    .map(crate::frontend::ast::Param::name)
+                    .collect();
+                    
+                let closure = Value::Closure {
+                    params: param_names,
+                    body: Rc::new(body.as_ref().clone()),
+                    env: Rc::new(self.current_env().clone()),
+                };
+                
+                Ok(closure)
+            },
+            
+            ExprKind::Call { func, args } => {
+                let func_val = self.eval_expr(func)?;
+                let arg_vals: Result<Vec<Value>, InterpreterError> = args.iter()
+                    .map(|arg| self.eval_expr(arg))
+                    .collect();
+                let arg_vals = arg_vals?;
+                
+                self.call_function(func_val, &arg_vals)
+            },
+            
+            // Placeholder implementations for other expression types
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Expression type not yet implemented: {expr_kind:?}"
+            ))),
+        }
+    }
+
+    /// Evaluate a literal value
+    fn eval_literal(&self, lit: &Literal) -> Value {
+        match lit {
+            Literal::Integer(i) => Value::from_i64(*i),
+            Literal::Float(f) => Value::from_f64(*f),
+            Literal::String(s) => Value::from_string(s.clone()),
+            Literal::Bool(b) => Value::from_bool(*b),
+            Literal::Char(c) => Value::from_string(c.to_string()),
+            Literal::Unit => Value::nil(),
+        }
+    }
+
+    /// Look up a variable in the environment (searches from innermost to outermost)
+    fn lookup_variable(&self, name: &str) -> Result<Value, InterpreterError> {
+        for env in self.env_stack.iter().rev() {
+            if let Some(value) = env.get(name) {
+                return Ok(value.clone());
+            }
+        }
+        Err(InterpreterError::RuntimeError(format!("Undefined variable: {name}")))
+    }
+    
+    /// Get the current (innermost) environment
+    #[allow(clippy::expect_used)]  // Environment stack invariant ensures this never panics
+    fn current_env(&self) -> &HashMap<String, Value> {
+        self.env_stack.last().expect("Environment stack should never be empty")
+    }
+    
+    /// Set a variable in the current environment
+    #[allow(clippy::expect_used)]  // Environment stack invariant ensures this never panics
+    fn env_set(&mut self, name: String, value: Value) {
+        let env = self.env_stack.last_mut().expect("Environment stack should never be empty");
+        env.insert(name, value);
+    }
+    
+    /// Remove a variable from the current environment
+    #[allow(clippy::expect_used)]  // Environment stack invariant ensures this never panics
+    fn env_remove(&mut self, name: &str) {
+        let env = self.env_stack.last_mut().expect("Environment stack should never be empty");
+        env.remove(name);
+    }
+    
+    /// Push a new environment onto the stack
+    fn env_push(&mut self, env: HashMap<String, Value>) {
+        self.env_stack.push(env);
+    }
+    
+    /// Pop the current environment from the stack
+    fn env_pop(&mut self) -> Option<HashMap<String, Value>> {
+        if self.env_stack.len() > 1 {  // Keep at least the global environment
+            self.env_stack.pop()
+        } else {
+            None
+        }
+    }
+    
+    /// Call a function with given arguments
+    fn call_function(&mut self, func: Value, args: &[Value]) -> Result<Value, InterpreterError> {
+        match func {
+            Value::Closure { params, body, env } => {
+                // Check argument count
+                if args.len() != params.len() {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "Function expects {} arguments, got {}",
+                        params.len(),
+                        args.len()
+                    )));
+                }
+                
+                // Create new environment with captured environment as base
+                let mut new_env = env.as_ref().clone();
+                
+                // Bind parameters to arguments
+                for (param, arg) in params.iter().zip(args) {
+                    new_env.insert(param.clone(), arg.clone());
+                }
+                
+                // Push new environment
+                self.env_push(new_env);
+                
+                // Evaluate function body
+                let result = self.eval_expr(&body);
+                
+                // Pop environment
+                self.env_pop();
+                
+                result
+            },
+            _ => Err(InterpreterError::TypeError(format!(
+                "Cannot call non-function value: {}",
+                func.type_name()
+            ))),
+        }
+    }
+
+    /// Evaluate a binary operation from AST
+    fn eval_binary_op(&self, op: AstBinaryOp, left: &Value, right: &Value) -> Result<Value, InterpreterError> {
+        match op {
+            AstBinaryOp::Add => self.add_values(left, right),
+            AstBinaryOp::Subtract => self.sub_values(left, right),
+            AstBinaryOp::Multiply => self.mul_values(left, right),
+            AstBinaryOp::Divide => self.div_values(left, right),
+            AstBinaryOp::Equal => Ok(Value::from_bool(self.equal_values(left, right))),
+            AstBinaryOp::Less => Ok(Value::from_bool(self.less_than_values(left, right)?)),
+            AstBinaryOp::Greater => Ok(Value::from_bool(self.greater_than_values(left, right)?)),
+            AstBinaryOp::LessEqual => {
+                let less = self.less_than_values(left, right)?;
+                let equal = self.equal_values(left, right);
+                Ok(Value::from_bool(less || equal))
+            },
+            AstBinaryOp::GreaterEqual => {
+                let greater = self.greater_than_values(left, right)?;
+                let equal = self.equal_values(left, right);
+                Ok(Value::from_bool(greater || equal))
+            },
+            AstBinaryOp::NotEqual => Ok(Value::from_bool(!self.equal_values(left, right))),
+            AstBinaryOp::And => {
+                // Short-circuit evaluation for logical AND
+                if left.is_truthy() {
+                    Ok(right.clone())
+                } else {
+                    Ok(left.clone())
+                }
+            },
+            AstBinaryOp::Or => {
+                // Short-circuit evaluation for logical OR
+                if left.is_truthy() {
+                    Ok(left.clone())
+                } else {
+                    Ok(right.clone())
+                }
+            },
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Binary operator not yet implemented: {op:?}"
+            ))),
+        }
+    }
+
+    /// Evaluate a unary operation
+    fn eval_unary_op(&self, op: crate::frontend::ast::UnaryOp, operand: &Value) -> Result<Value, InterpreterError> {
+        use crate::frontend::ast::UnaryOp;
+        match op {
+            UnaryOp::Negate => match operand {
+                Value::Integer(i) => Ok(Value::from_i64(-i)),
+                Value::Float(f) => Ok(Value::from_f64(-f)),
+                _ => Err(InterpreterError::TypeError(format!(
+                    "Cannot negate {}", operand.type_name()
+                ))),
+            },
+            UnaryOp::Not => Ok(Value::from_bool(!operand.is_truthy())),
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Unary operator not yet implemented: {op:?}"
+            ))),
+        }
+    }
+
+    /// Helper function for testing - evaluate a string expression via parser
+    /// # Errors
+    /// Returns error if parsing or evaluation fails
+    #[cfg(test)]
+    pub fn eval_string(&mut self, input: &str) -> Result<Value, Box<dyn std::error::Error>> {
+        use crate::frontend::parser::Parser;
+        
+        let mut parser = Parser::new(input);
+        let expr = parser.parse_expr()?;
+        
+        Ok(self.eval_expr(&expr)?)
     }
 
     /// Push value onto stack
@@ -407,8 +690,8 @@ impl Interpreter {
                     .collect();
                 format!("[{}]", elements.join(", "))
             },
-            Value::Closure { arity, .. } => {
-                format!("function/{arity}")
+            Value::Closure { params, .. } => {
+                format!("function/{}", params.len())
             },
         }
     }
@@ -439,6 +722,7 @@ pub enum BinaryOp {
 #[allow(clippy::panic)]              // Tests can panic on assertion failures
 mod tests {
     use super::*;
+    use crate::frontend::ast::Span;
 
     #[test]
     fn test_value_creation() {
@@ -542,5 +826,539 @@ mod tests {
         assert!(Value::from_f64(std::f64::consts::PI).is_truthy());
         assert!(Value::from_f64(0.0).is_truthy()); // 0.0 is truthy in Ruchy
         assert!(Value::from_string("hello".to_string()).is_truthy());
+    }
+
+    // AST Walker tests
+    
+    #[test]
+    fn test_eval_literal() {
+        let mut interp = Interpreter::new();
+        
+        // Test integer literal
+        let int_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span::new(0, 2)
+        );
+        let result = interp.eval_expr(&int_expr).expect("Should evaluate integer");
+        assert_eq!(result, Value::Integer(42));
+        
+        // Test string literal
+        let str_expr = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::new(0, 7)
+        );
+        let result = interp.eval_expr(&str_expr).expect("Should evaluate string");
+        assert_eq!(result.type_name(), "string");
+        
+        // Test boolean literal
+        let bool_expr = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::new(0, 4)
+        );
+        let result = interp.eval_expr(&bool_expr).expect("Should evaluate boolean");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_binary_arithmetic() {
+        let mut interp = Interpreter::new();
+        
+        // Test 5 + 3 = 8
+        let left = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(5)),
+            Span::new(0, 1)
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(3)),
+            Span::new(4, 5)
+        ));
+        let add_expr = Expr::new(
+            ExprKind::Binary { left, op: AstBinaryOp::Add, right },
+            Span::new(0, 5)
+        );
+        
+        let result = interp.eval_expr(&add_expr).expect("Should evaluate addition");
+        assert_eq!(result, Value::Integer(8));
+    }
+
+    #[test]
+    fn test_eval_binary_comparison() {
+        let mut interp = Interpreter::new();
+        
+        // Test 5 < 10 = true
+        let left = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(5)),
+            Span::new(0, 1)
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(10)),
+            Span::new(4, 6)
+        ));
+        let cmp_expr = Expr::new(
+            ExprKind::Binary { left, op: AstBinaryOp::Less, right },
+            Span::new(0, 6)
+        );
+        
+        let result = interp.eval_expr(&cmp_expr).expect("Should evaluate comparison");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_unary_operations() {
+        let mut interp = Interpreter::new();
+        
+        // Test -42 = -42
+        let operand = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span::new(1, 3)
+        ));
+        let neg_expr = Expr::new(
+            ExprKind::Unary { 
+                op: crate::frontend::ast::UnaryOp::Negate, 
+                operand 
+            },
+            Span::new(0, 3)
+        );
+        
+        let result = interp.eval_expr(&neg_expr).expect("Should evaluate negation");
+        assert_eq!(result, Value::Integer(-42));
+        
+        // Test !true = false
+        let operand = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::new(1, 5)
+        ));
+        let not_expr = Expr::new(
+            ExprKind::Unary { 
+                op: crate::frontend::ast::UnaryOp::Not, 
+                operand 
+            },
+            Span::new(0, 5)
+        );
+        
+        let result = interp.eval_expr(&not_expr).expect("Should evaluate logical not");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_eval_if_expression() {
+        let mut interp = Interpreter::new();
+        
+        // Test if true then 1 else 2 = 1
+        let condition = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::new(3, 7)
+        ));
+        let then_branch = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1)),
+            Span::new(13, 14)
+        ));
+        let else_branch = Some(Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(2)),
+            Span::new(20, 21)
+        )));
+        
+        let if_expr = Expr::new(
+            ExprKind::If { condition, then_branch, else_branch },
+            Span::new(0, 21)
+        );
+        
+        let result = interp.eval_expr(&if_expr).expect("Should evaluate if expression");
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    #[test]
+    fn test_eval_let_expression() {
+        let mut interp = Interpreter::new();
+        
+        // Test let x = 5 in x + 2 = 7
+        let value = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(5)),
+            Span::new(8, 9)
+        ));
+        
+        let left = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(13, 14)
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(2)),
+            Span::new(17, 18)
+        ));
+        let body = Box::new(Expr::new(
+            ExprKind::Binary { left, op: AstBinaryOp::Add, right },
+            Span::new(13, 18)
+        ));
+        
+        let let_expr = Expr::new(
+            ExprKind::Let { 
+                name: "x".to_string(), 
+                value, 
+                body, 
+                is_mutable: false 
+            },
+            Span::new(0, 18)
+        );
+        
+        let result = interp.eval_expr(&let_expr).expect("Should evaluate let expression");
+        assert_eq!(result, Value::Integer(7));
+    }
+
+    #[test]
+    fn test_eval_logical_operators() {
+        let mut interp = Interpreter::new();
+        
+        // Test true && false = false (short-circuit)
+        let left = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::new(0, 4)
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            Span::new(8, 13)
+        ));
+        let and_expr = Expr::new(
+            ExprKind::Binary { left, op: AstBinaryOp::And, right },
+            Span::new(0, 13)
+        );
+        
+        let result = interp.eval_expr(&and_expr).expect("Should evaluate logical AND");
+        assert_eq!(result, Value::Bool(false));
+        
+        // Test false || true = true (short-circuit)
+        let left = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            Span::new(0, 5)
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Span::new(9, 13)
+        ));
+        let or_expr = Expr::new(
+            ExprKind::Binary { left, op: AstBinaryOp::Or, right },
+            Span::new(0, 13)
+        );
+        
+        let result = interp.eval_expr(&or_expr).expect("Should evaluate logical OR");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_parser_integration() {
+        let mut interp = Interpreter::new();
+        
+        // Test simple arithmetic: 2 + 3 * 4 = 14
+        let result = interp.eval_string("2 + 3 * 4").expect("Should parse and evaluate");
+        assert_eq!(result, Value::Integer(14));
+        
+        // Test comparison: 5 > 3 = true  
+        let result = interp.eval_string("5 > 3").expect("Should parse and evaluate");
+        assert_eq!(result, Value::Bool(true));
+        
+        // Test boolean literals: true && false = false
+        let result = interp.eval_string("true && false").expect("Should parse and evaluate");
+        assert_eq!(result, Value::Bool(false));
+        
+        // Test unary operations: -42 = -42
+        let result = interp.eval_string("-42").expect("Should parse and evaluate");
+        assert_eq!(result, Value::Integer(-42));
+        
+        // Test string literals
+        let result = interp.eval_string(r#""hello""#).expect("Should parse and evaluate");
+        assert_eq!(result.type_name(), "string");
+    }
+
+    #[test]
+    fn test_eval_lambda() {
+        use crate::frontend::ast::{Pattern, Type, TypeKind};
+        let mut interp = Interpreter::new();
+        
+        // Test lambda: |x| x + 1
+        let param = Param {
+            pattern: Pattern::Identifier("x".to_string()),
+            ty: Type { kind: TypeKind::Named("i32".to_string()), span: Span::new(0, 3) },
+            span: Span::new(0, 1),
+            is_mutable: false,
+        };
+        
+        let left = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(0, 1)
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1)),
+            Span::new(4, 5)
+        ));
+        let body = Box::new(Expr::new(
+            ExprKind::Binary { left, op: AstBinaryOp::Add, right },
+            Span::new(0, 5)
+        ));
+        
+        let lambda_expr = Expr::new(
+            ExprKind::Lambda { params: vec![param], body },
+            Span::new(0, 10)
+        );
+        
+        let result = interp.eval_expr(&lambda_expr).expect("Should evaluate lambda");
+        assert_eq!(result.type_name(), "function");
+    }
+
+    #[test]
+    fn test_eval_function_call() {
+        use crate::frontend::ast::{Pattern, Type, TypeKind};
+        let mut interp = Interpreter::new();
+        
+        // Create lambda: |x| x + 1
+        let param = Param {
+            pattern: Pattern::Identifier("x".to_string()),
+            ty: Type { kind: TypeKind::Named("i32".to_string()), span: Span::new(0, 3) },
+            span: Span::new(0, 1),
+            is_mutable: false,
+        };
+        
+        let left = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(0, 1)
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1)),
+            Span::new(4, 5)
+        ));
+        let body = Box::new(Expr::new(
+            ExprKind::Binary { left, op: AstBinaryOp::Add, right },
+            Span::new(0, 5)
+        ));
+        
+        let lambda_expr = Expr::new(
+            ExprKind::Lambda { params: vec![param], body },
+            Span::new(0, 10)
+        );
+        
+        // Call lambda with argument 5: (|x| x + 1)(5) = 6
+        let call_expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(lambda_expr),
+                args: vec![Expr::new(
+                    ExprKind::Literal(Literal::Integer(5)),
+                    Span::new(0, 1)
+                )],
+            },
+            Span::new(0, 15)
+        );
+        
+        let result = interp.eval_expr(&call_expr).expect("Should evaluate function call");
+        assert_eq!(result, Value::Integer(6));
+    }
+
+    #[test]
+    fn test_eval_function_definition() {
+        use crate::frontend::ast::{Pattern, Type, TypeKind};
+        let mut interp = Interpreter::new();
+        
+        // Create function: fn add_one(x) = x + 1
+        let param = Param {
+            pattern: Pattern::Identifier("x".to_string()),
+            ty: Type { kind: TypeKind::Named("i32".to_string()), span: Span::new(0, 3) },
+            span: Span::new(0, 1),
+            is_mutable: false,
+        };
+        
+        let left = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(0, 1)
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(1)),
+            Span::new(4, 5)
+        ));
+        let body = Box::new(Expr::new(
+            ExprKind::Binary { left, op: AstBinaryOp::Add, right },
+            Span::new(0, 5)
+        ));
+        
+        let func_expr = Expr::new(
+            ExprKind::Function {
+                name: "add_one".to_string(),
+                type_params: vec![],
+                params: vec![param],
+                return_type: None,
+                body,
+                is_async: false,
+            },
+            Span::new(0, 20)
+        );
+        
+        let result = interp.eval_expr(&func_expr).expect("Should evaluate function");
+        assert_eq!(result.type_name(), "function");
+        
+        // Verify function is bound in environment
+        let bound_func = interp.lookup_variable("add_one").expect("Function should be bound");
+        assert_eq!(bound_func.type_name(), "function");
+    }
+
+    #[test]
+    fn test_eval_recursive_function() {
+        use crate::frontend::ast::{Pattern, Type, TypeKind};
+        let mut interp = Interpreter::new();
+        
+        // Create recursive factorial function
+        let param = Param {
+            pattern: Pattern::Identifier("n".to_string()),
+            ty: Type { kind: TypeKind::Named("i32".to_string()), span: Span::new(0, 3) },
+            span: Span::new(0, 1),
+            is_mutable: false,
+        };
+        
+        // if n <= 1 then 1 else n * factorial(n - 1)
+        let n_id = Expr::new(ExprKind::Identifier("n".to_string()), Span::new(0, 1));
+        let one = Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 1));
+        
+        let condition = Box::new(Expr::new(
+            ExprKind::Binary {
+                left: Box::new(n_id.clone()),
+                op: AstBinaryOp::LessEqual,
+                right: Box::new(one.clone()),
+            },
+            Span::new(0, 6)
+        ));
+        
+        let then_branch = Box::new(one.clone());
+        
+        // n * factorial(n - 1)
+        let n_minus_1 = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(n_id.clone()),
+                op: AstBinaryOp::Subtract,
+                right: Box::new(one),
+            },
+            Span::new(0, 5)
+        );
+        
+        let recursive_call = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::Identifier("factorial".to_string()),
+                    Span::new(0, 9)
+                )),
+                args: vec![n_minus_1],
+            },
+            Span::new(0, 15)
+        );
+        
+        let else_branch = Some(Box::new(Expr::new(
+            ExprKind::Binary {
+                left: Box::new(n_id),
+                op: AstBinaryOp::Multiply,
+                right: Box::new(recursive_call),
+            },
+            Span::new(0, 20)
+        )));
+        
+        let body = Box::new(Expr::new(
+            ExprKind::If { condition, then_branch, else_branch },
+            Span::new(0, 25)
+        ));
+        
+        let factorial_expr = Expr::new(
+            ExprKind::Function {
+                name: "factorial".to_string(),
+                type_params: vec![],
+                params: vec![param],
+                return_type: None,
+                body,
+                is_async: false,
+            },
+            Span::new(0, 30)
+        );
+        
+        // Define factorial function
+        let result = interp.eval_expr(&factorial_expr).expect("Should evaluate factorial function");
+        assert_eq!(result.type_name(), "function");
+        
+        // Test factorial(5) = 120
+        let call_expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::Identifier("factorial".to_string()),
+                    Span::new(0, 9)
+                )),
+                args: vec![Expr::new(
+                    ExprKind::Literal(Literal::Integer(5)),
+                    Span::new(0, 1)
+                )],
+            },
+            Span::new(0, 15)
+        );
+        
+        let result = interp.eval_expr(&call_expr).expect("Should evaluate factorial(5)");
+        assert_eq!(result, Value::Integer(120));
+    }
+
+    #[test]
+    fn test_function_closure() {
+        use crate::frontend::ast::{Pattern, Type, TypeKind};
+        let mut interp = Interpreter::new();
+        
+        // Test closure: let x = 10 in |y| x + y
+        let x_val = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(10)),
+            Span::new(8, 10)
+        ));
+        
+        let param = Param {
+            pattern: Pattern::Identifier("y".to_string()),
+            ty: Type { kind: TypeKind::Named("i32".to_string()), span: Span::new(0, 3) },
+            span: Span::new(0, 1),
+            is_mutable: false,
+        };
+        
+        let left = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(0, 1)
+        ));
+        let right = Box::new(Expr::new(
+            ExprKind::Identifier("y".to_string()),
+            Span::new(4, 5)
+        ));
+        let lambda_body = Box::new(Expr::new(
+            ExprKind::Binary { left, op: AstBinaryOp::Add, right },
+            Span::new(0, 5)
+        ));
+        
+        let lambda = Expr::new(
+            ExprKind::Lambda { params: vec![param], body: lambda_body },
+            Span::new(14, 24)
+        );
+        
+        let let_body = Box::new(lambda);
+        
+        let let_expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                value: x_val,
+                body: let_body,
+                is_mutable: false,
+            },
+            Span::new(0, 24)
+        );
+        
+        let closure = interp.eval_expr(&let_expr).expect("Should evaluate closure");
+        assert_eq!(closure.type_name(), "function");
+        
+        // Call closure with argument 5: (|y| x + y)(5) = 15 (x = 10)
+        let call_expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(let_expr), // Re-create the closure
+                args: vec![Expr::new(
+                    ExprKind::Literal(Literal::Integer(5)),
+                    Span::new(0, 1)
+                )],
+            },
+            Span::new(0, 30)
+        );
+        
+        // Note: This test demonstrates lexical scoping where the closure captures 'x'
+        let result = interp.eval_expr(&call_expr).expect("Should evaluate closure call");
+        assert_eq!(result, Value::Integer(15));
     }
 }
