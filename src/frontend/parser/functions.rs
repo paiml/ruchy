@@ -118,6 +118,12 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
 pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume ||
 
+    // Check for fat arrow syntax: || => expr
+    if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+        state.tokens.advance(); // consume =>
+    }
+    // Note: Regular lambda syntax (|| expr) is also supported without =>
+
     // Parse the body
     let body = super::parse_expr_recursive(state)?;
 
@@ -201,7 +207,14 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
     // Handle || as a special case for empty parameter lambdas
     if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         state.tokens.advance(); // consume second |
-                                // Parse the body
+        
+        // Check for fat arrow syntax: || => expr
+        if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+            state.tokens.advance(); // consume =>
+        }
+        // Note: Regular lambda syntax (|| expr) is also supported without =>
+        
+        // Parse the body
         let body = super::parse_expr_recursive(state)?;
         return Ok(Expr::new(
             ExprKind::Lambda {
@@ -220,6 +233,12 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
         bail!("Expected '|' after lambda parameters");
     }
     state.tokens.advance(); // consume |
+
+    // Check for fat arrow syntax: |x| => expr
+    if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+        state.tokens.advance(); // consume =>
+    }
+    // Note: Regular lambda syntax (|x| expr) is also supported without => 
 
     // Parse the body
     let body = super::parse_expr_recursive(state)?;
