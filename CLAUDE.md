@@ -322,6 +322,23 @@ fn temporary_hack() {
 
 ## MANDATORY Quality Gates (BLOCKING - Not Advisory)
 
+### SACRED RULE: NEVER BYPASS QUALITY GATES
+
+**ABSOLUTELY FORBIDDEN**:
+- `git commit --no-verify` - NEVER use this
+- Skipping tests "temporarily" - NO exceptions
+- Ignoring failing quality checks - Must fix EVERY defect
+- Dismissing warnings as "unrelated" - All defects matter
+
+**Toyota Way Principle**: Stop the line for ANY defect. No defect is too small. No shortcut is acceptable.
+
+If quality gates hang or fail:
+1. Debug and fix the quality gate itself
+2. Fix the underlying issue causing the failure
+3. NEVER proceed without passing gates
+
+## MANDATORY Quality Gates (BLOCKING - Not Advisory)
+
 **CRITICAL**: After the shameful failures of v0.4.6 (false claims, broken transpiler), quality gates are now BLOCKING and ENFORCED.
 
 ### Pre-commit Hooks (MANDATORY)
