@@ -1183,6 +1183,52 @@ impl Repl {
                         }
                         _ => bail!("Unknown string method: {}", method),
                     }
+                } else if let Value::Int(n) = receiver_val {
+                    // Handle integer methods
+                    match method.as_str() {
+                        "abs" => Ok(Value::Int(n.abs())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "sqrt" => Ok(Value::Float((n as f64).sqrt())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "sin" => Ok(Value::Float((n as f64).sin())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "cos" => Ok(Value::Float((n as f64).cos())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "tan" => Ok(Value::Float((n as f64).tan())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "log" => Ok(Value::Float((n as f64).ln())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "log10" => Ok(Value::Float((n as f64).log10())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "exp" => Ok(Value::Float((n as f64).exp())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "floor" => Ok(Value::Float((n as f64).floor())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "ceil" => Ok(Value::Float((n as f64).ceil())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "round" => Ok(Value::Float((n as f64).round())),
+                        #[allow(clippy::cast_precision_loss)]
+                        "to_f64" | "to_float" => Ok(Value::Float(n as f64)),
+                        _ => bail!("Unknown integer method: {}", method),
+                    }
+                } else if let Value::Float(f) = receiver_val {
+                    // Handle float methods
+                    match method.as_str() {
+                        "abs" => Ok(Value::Float(f.abs())),
+                        "sqrt" => Ok(Value::Float(f.sqrt())),
+                        "sin" => Ok(Value::Float(f.sin())),
+                        "cos" => Ok(Value::Float(f.cos())),
+                        "tan" => Ok(Value::Float(f.tan())),
+                        "log" => Ok(Value::Float(f.ln())),
+                        "log10" => Ok(Value::Float(f.log10())),
+                        "exp" => Ok(Value::Float(f.exp())),
+                        "floor" => Ok(Value::Float(f.floor())),
+                        "ceil" => Ok(Value::Float(f.ceil())),
+                        "round" => Ok(Value::Float(f.round())),
+                        #[allow(clippy::cast_possible_truncation)]
+                        "to_i64" | "to_int" => Ok(Value::Int(f as i64)),
+                        _ => bail!("Unknown float method: {}", method),
+                    }
                 } else {
                     bail!("Method calls not supported on this type")
                 }
