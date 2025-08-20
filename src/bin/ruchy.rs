@@ -3,6 +3,10 @@
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::unwrap_used)]
+#![allow(clippy::uninlined_format_args)]
+#![allow(clippy::format_push_string)]
+#![allow(clippy::match_same_arms)]
+#![allow(clippy::fn_params_excessive_bools)]
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -95,6 +99,36 @@ enum Commands {
         /// Show diff of changes
         #[arg(long)]
         diff: bool,
+    },
+
+    /// Generate documentation from Ruchy source code
+    Doc {
+        /// The file or directory to document
+        path: PathBuf,
+
+        /// Output directory for generated documentation
+        #[arg(long, default_value = "./docs")]
+        output: PathBuf,
+
+        /// Documentation format (html, markdown, json)
+        #[arg(long, default_value = "html")]
+        format: String,
+
+        /// Include private items in documentation
+        #[arg(long)]
+        private: bool,
+
+        /// Open documentation in browser after generation
+        #[arg(long)]
+        open: bool,
+
+        /// Generate documentation for all files in project
+        #[arg(long)]
+        all: bool,
+
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
     },
 
     /// Benchmark Ruchy code performance
@@ -296,8 +330,11 @@ fn main() -> Result<()> {
         Some(Commands::Fmt { file, all, check, stdout, diff }) => {
             format_ruchy_code(&file, all, check, stdout, diff)?;
         }
+        Some(Commands::Doc { path, output, format, private, open, all, verbose }) => {
+            generate_documentation(&path, &output, &format, private, open, all, verbose)?;
+        }
         Some(Commands::Bench { file, iterations, warmup, format, output, verbose }) => {
-            benchmark_ruchy_code(&file, iterations, warmup, &format, output.as_ref(), verbose)?;
+            benchmark_ruchy_code(&file, iterations, warmup, &format, output.as_deref(), verbose)?;
         }
         Some(Commands::Lint { file, all, verbose, format, deny_warnings, max_complexity }) => {
             if all {
@@ -314,7 +351,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn run_file(file: &PathBuf) -> Result<()> {
+fn run_file(file: &Path) -> Result<()> {
     let source = fs::read_to_string(file)?;
 
     // Use REPL to evaluate the file
@@ -336,7 +373,7 @@ fn run_file(file: &PathBuf) -> Result<()> {
 
 /// Format Ruchy code
 #[allow(clippy::fn_params_excessive_bools)]
-fn format_ruchy_code(file: &PathBuf, all: bool, check: bool, stdout: bool, diff: bool) -> Result<()> {
+fn format_ruchy_code(file: &Path, all: bool, check: bool, stdout: bool, diff: bool) -> Result<()> {
     if all {
         // Format all .ruchy files
         let ruchy_files = discover_ruchy_files(".")?;
@@ -386,7 +423,7 @@ fn format_ruchy_code(file: &PathBuf, all: bool, check: bool, stdout: bool, diff:
 }
 
 /// Format a single file
-fn format_single_file(file: &PathBuf, check: bool, stdout: bool, diff: bool) -> Result<bool> {
+fn format_single_file(file: &Path, check: bool, stdout: bool, diff: bool) -> Result<bool> {
     let source = fs::read_to_string(file)?;
     let mut parser = RuchyParser::new(&source);
     
@@ -441,7 +478,7 @@ fn format_ast(ast: &ruchy::Expr) -> String {
 }
 
 /// Print diff between original and formatted content
-fn print_diff(original: &str, formatted: &str, file: &PathBuf) {
+fn print_diff(original: &str, formatted: &str, file: &Path) {
     println!("\n{} Diff for {}:", "📝".bright_blue(), file.display());
     println!("{}", "--- Original".bright_red());
     println!("{}", "+++ Formatted".bright_green());
@@ -469,11 +506,11 @@ fn print_diff(original: &str, formatted: &str, file: &PathBuf) {
 
 /// Benchmark Ruchy code performance
 fn benchmark_ruchy_code(
-    file: &PathBuf,
+    file: &Path,
     iterations: usize,
     warmup: usize,
     format: &str,
-    output: Option<&PathBuf>,
+    output: Option<&Path>,
     verbose: bool,
 ) -> Result<()> {
     let source = fs::read_to_string(file)?;
@@ -627,7 +664,7 @@ fn calculate_stats(times: &[Duration]) -> BenchStats {
 fn display_bench_text(
     parse_stats: &BenchStats,
     transpile_stats: &BenchStats,
-    file: &PathBuf,
+    file: &Path,
     iterations: usize,
     source: &str,
 ) {
@@ -636,7 +673,7 @@ fn display_bench_text(
     
     println!("\n{} Benchmark Results", "📊".bright_blue());
     println!("  File: {}", file.display());
-    println!("  Size: {} bytes, {} lines", source_bytes, source_lines);
+    println!("  Size: {source_bytes} bytes, {source_lines} lines");
     println!("  Iterations: {iterations}");
     
     println!("\n{} Parse Performance:", "→".bright_cyan());
@@ -648,7 +685,7 @@ fn display_bench_text(
     
     if source_bytes > 0 {
         let throughput = source_bytes as f64 / parse_stats.mean.as_secs_f64() / 1_000_000.0;
-        println!("  Throughput: {:.2} MB/s", throughput);
+        println!("  Throughput: {throughput:.2} MB/s");
     }
     
     println!("\n{} Transpile Performance:", "→".bright_cyan());
@@ -660,7 +697,7 @@ fn display_bench_text(
     
     if source_bytes > 0 {
         let throughput = source_bytes as f64 / transpile_stats.mean.as_secs_f64() / 1_000_000.0;
-        println!("  Throughput: {:.2} MB/s", throughput);
+        println!("  Throughput: {throughput:.2} MB/s");
     }
     
     println!("\n{} Total Time:", "→".bright_cyan());
@@ -677,7 +714,7 @@ fn display_bench_text(
 fn display_bench_json(
     parse_stats: &BenchStats,
     transpile_stats: &BenchStats,
-    file: &PathBuf,
+    file: &Path,
     iterations: usize,
 ) {
     let result = serde_json::json!({
@@ -709,7 +746,7 @@ fn display_bench_json(
 fn display_bench_csv(
     parse_stats: &BenchStats,
     transpile_stats: &BenchStats,
-    file: &PathBuf,
+    file: &Path,
     iterations: usize,
 ) {
     println!("file,iterations,parse_mean_ms,parse_median_ms,parse_min_ms,parse_max_ms,transpile_mean_ms,transpile_median_ms,transpile_min_ms,transpile_max_ms");
@@ -729,10 +766,10 @@ fn display_bench_csv(
 
 /// Save benchmark results to file
 fn save_bench_results(
-    output_path: &PathBuf,
+    output_path: &Path,
     parse_stats: &BenchStats,
     transpile_stats: &BenchStats,
-    file: &PathBuf,
+    file: &Path,
     iterations: usize,
     format: &str,
 ) -> Result<()> {
@@ -803,7 +840,7 @@ struct LintViolation {
 }
 
 /// Lint Ruchy code
-fn lint_ruchy_code(file: &PathBuf, all: bool, verbose: bool, format: &str, deny_warnings: bool, max_complexity: usize) -> Result<()> {
+fn lint_ruchy_code(file: &Path, all: bool, verbose: bool, format: &str, deny_warnings: bool, max_complexity: usize) -> Result<()> {
     if all {
         // Discover and lint all .ruchy files
         let ruchy_files = discover_ruchy_files(".")?;
@@ -965,6 +1002,7 @@ fn calculate_complexity(expr: &ruchy::Expr) -> usize {
 }
 
 /// Check for unused variables (placeholder for future implementation)
+#[allow(clippy::ptr_arg)]
 fn check_unused_variables(_ast: &ruchy::Expr, _violations: &mut Vec<LintViolation>) {
     // TODO: Implement proper unused variable detection
     // This requires building a symbol table and tracking usage
@@ -1032,12 +1070,13 @@ fn check_naming_conventions(ast: &ruchy::Expr, violations: &mut Vec<LintViolatio
 }
 
 /// Check line length (placeholder - would need source text)
+#[allow(clippy::ptr_arg)]
 fn check_line_length(_ast: &ruchy::Expr, _violations: &mut Vec<LintViolation>) {
     // This would require access to the original source text
     // For now, this is a placeholder
 }
 
-/// Check if a name follows snake_case convention
+/// Check if a name follows `snake_case` convention
 fn is_snake_case(name: &str) -> bool {
     name.chars().all(|c| c.is_lowercase() || c.is_numeric() || c == '_') 
         && !name.starts_with('_') 
@@ -1045,7 +1084,7 @@ fn is_snake_case(name: &str) -> bool {
         && !name.contains("__")
 }
 
-/// Convert a name to snake_case
+/// Convert a name to `snake_case`
 fn to_snake_case(name: &str) -> String {
     let mut result = String::new();
     let mut prev_was_lower = false;
@@ -1067,7 +1106,7 @@ fn to_snake_case(name: &str) -> String {
 }
 
 /// Display lint results
-fn display_lint_results(violations: &[LintViolation], file: &PathBuf, verbose: bool, format: &str) {
+fn display_lint_results(violations: &[LintViolation], file: &Path, verbose: bool, format: &str) {
     if format == "json" {
         display_json_results(violations, file);
     } else {
@@ -1076,7 +1115,7 @@ fn display_lint_results(violations: &[LintViolation], file: &PathBuf, verbose: b
 }
 
 /// Display results in text format
-fn display_text_results(violations: &[LintViolation], file: &PathBuf, verbose: bool) {
+fn display_text_results(violations: &[LintViolation], file: &Path, verbose: bool) {
     if violations.is_empty() {
         println!("{} {} is clean", "✓".bright_green(), file.display());
         return;
@@ -1103,7 +1142,7 @@ fn display_text_results(violations: &[LintViolation], file: &PathBuf, verbose: b
 }
 
 /// Display results in JSON format
-fn display_json_results(violations: &[LintViolation], file: &PathBuf) {
+fn display_json_results(violations: &[LintViolation], file: &Path) {
     let json_violations: Vec<serde_json::Value> = violations.iter().map(|v| {
         serde_json::json!({
             "severity": format!("{:?}", v.severity).to_lowercase(),
@@ -1121,6 +1160,391 @@ fn display_json_results(violations: &[LintViolation], file: &PathBuf) {
     });
     
     println!("{}", serde_json::to_string_pretty(&result).unwrap_or_else(|_| "Invalid JSON".to_string()));
+}
+
+/// Documentation item extracted from AST
+#[derive(Debug, Clone)]
+struct DocItem {
+    name: String,
+    kind: DocItemKind,
+    description: Option<String>,
+    signature: String,
+    line: usize,
+    is_public: bool,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+enum DocItemKind {
+    Function,
+    Variable,
+    Type,
+    Module,
+}
+
+/// Generate documentation from Ruchy source code
+fn generate_documentation(
+    path: &Path,
+    output_dir: &Path,
+    format: &str,
+    include_private: bool,
+    open_browser: bool,
+    all_files: bool,
+    verbose: bool,
+) -> Result<()> {
+    if verbose {
+        println!("{} Generating documentation...", "→".bright_cyan());
+    }
+    
+    // Collect all files to document
+    let files_to_document = if all_files || path.is_dir() {
+        let base_dir = if path.is_dir() { path.to_str().unwrap() } else { "." };
+        let files = discover_ruchy_files(base_dir)?;
+        if files.is_empty() {
+            println!("{} No .ruchy files found", "⚠".yellow());
+            return Ok(());
+        }
+        files
+    } else {
+        vec![path.to_path_buf()]
+    };
+    
+    if verbose {
+        println!("{} Processing {} files", "→".bright_cyan(), files_to_document.len());
+    }
+    
+    // Extract documentation from all files
+    let mut all_docs = Vec::new();
+    for file in &files_to_document {
+        if verbose {
+            println!("  Processing {}", file.display());
+        }
+        
+        let source = fs::read_to_string(file)?;
+        let mut parser = RuchyParser::new(&source);
+        
+        match parser.parse() {
+            Ok(ast) => {
+                let docs = extract_documentation(&ast, include_private);
+                all_docs.extend(docs);
+            }
+            Err(e) => {
+                eprintln!("{} Parse error in {}: {e}", "✗".bright_red(), file.display());
+            }
+        }
+    }
+    
+    // Create output directory
+    fs::create_dir_all(output_dir)?;
+    
+    // Generate documentation in the requested format
+    match format {
+        "html" => {
+            generate_html_docs(&all_docs, output_dir, verbose)?;
+            let index_path = output_dir.join("index.html");
+            println!("{} Generated HTML documentation in {}", "✓".bright_green(), output_dir.display());
+            
+            if open_browser {
+                open_in_browser(&index_path)?;
+            }
+        }
+        "markdown" | "md" => {
+            generate_markdown_docs(&all_docs, output_dir, verbose)?;
+            println!("{} Generated Markdown documentation in {}", "✓".bright_green(), output_dir.display());
+        }
+        "json" => {
+            generate_json_docs(&all_docs, output_dir, verbose)?;
+            println!("{} Generated JSON documentation in {}", "✓".bright_green(), output_dir.display());
+        }
+        _ => {
+            eprintln!("Unsupported format: {}. Use 'html', 'markdown', or 'json'", format);
+            std::process::exit(1);
+        }
+    }
+    
+    if verbose {
+        println!("{} Documentation generated: {} items", "✓".bright_green(), all_docs.len());
+    }
+    
+    Ok(())
+}
+
+/// Extract documentation from AST
+fn extract_documentation(ast: &ruchy::Expr, include_private: bool) -> Vec<DocItem> {
+    let mut docs = Vec::new();
+    extract_docs_recursive(ast, &mut docs, include_private);
+    docs
+}
+
+/// Recursively extract documentation items from AST
+fn extract_docs_recursive(ast: &ruchy::Expr, docs: &mut Vec<DocItem>, include_private: bool) {
+    match &ast.kind {
+        ExprKind::Function { name, params, .. } => {
+            let is_public = !name.starts_with('_');
+            if is_public || include_private {
+                // Format parameters for signature
+                let param_list: Vec<String> = params.iter()
+                    .map(|p| format!("{}: {}", p.name, format_type(&p.ty)))
+                    .collect();
+                let signature = format!("fn {}({})", name, param_list.join(", "));
+                let description = extract_doc_comment(&ast.attributes);
+                
+                docs.push(DocItem {
+                    name: name.clone(),
+                    kind: DocItemKind::Function,
+                    description,
+                    signature,
+                    line: ast.span.start,
+                    is_public,
+                });
+            }
+        }
+        ExprKind::Let { name, .. } => {
+            let is_public = !name.starts_with('_');
+            if is_public || include_private {
+                let signature = format!("let {}", name);
+                let description = extract_doc_comment(&ast.attributes);
+                
+                docs.push(DocItem {
+                    name: name.clone(),
+                    kind: DocItemKind::Variable,
+                    description,
+                    signature,
+                    line: ast.span.start,
+                    is_public,
+                });
+            }
+        }
+        ExprKind::Block(exprs) => {
+            for expr in exprs {
+                extract_docs_recursive(expr, docs, include_private);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Format a type for display
+fn format_type(ty: &ruchy::frontend::ast::Type) -> String {
+    // Simple type formatting - can be enhanced later
+    format!("{:?}", ty)
+}
+
+/// Extract documentation comment from attributes
+fn extract_doc_comment(attributes: &[ruchy::frontend::ast::Attribute]) -> Option<String> {
+    // Look for documentation attributes (e.g., /// comments)
+    for attr in attributes {
+        if attr.name == "doc" && !attr.args.is_empty() {
+            return Some(attr.args.join(" "));
+        }
+    }
+    None
+}
+
+/// Generate HTML documentation
+fn generate_html_docs(docs: &[DocItem], output_dir: &Path, verbose: bool) -> Result<()> {
+    let mut html = String::from(r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruchy Documentation</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 40px; }
+        h1 { color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+        h2 { color: #555; margin-top: 30px; }
+        .item { margin: 20px 0; padding: 15px; background: #f5f5f5; border-left: 3px solid #4CAF50; }
+        .signature { font-family: monospace; background: #eee; padding: 5px; }
+        .description { margin-top: 10px; color: #666; }
+        .private { opacity: 0.7; border-left-color: #FFA500; }
+        .kind { display: inline-block; padding: 2px 8px; background: #4CAF50; color: white; border-radius: 3px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Ruchy Documentation</h1>
+"#);
+    
+    // Group items by kind
+    let mut functions = Vec::new();
+    let mut variables = Vec::new();
+    
+    for doc in docs {
+        match doc.kind {
+            DocItemKind::Function => functions.push(doc),
+            DocItemKind::Variable => variables.push(doc),
+            _ => {}
+        }
+    }
+    
+    // Generate functions section
+    if !functions.is_empty() {
+        html.push_str("<h2>Functions</h2>\n");
+        for func in &functions {
+            let class = if func.is_public { "item" } else { "item private" };
+            html.push_str(&format!(r#"<div class="{}">
+    <span class="kind">function</span>
+    <h3>{}</h3>
+    <div class="signature">{}</div>"#, class, func.name, func.signature));
+            
+            if let Some(desc) = &func.description {
+                html.push_str(&format!(r#"
+    <div class="description">{}</div>"#, desc));
+            }
+            
+            html.push_str("\n</div>\n");
+        }
+    }
+    
+    // Generate variables section
+    if !variables.is_empty() {
+        html.push_str("<h2>Variables</h2>\n");
+        for var in &variables {
+            let class = if var.is_public { "item" } else { "item private" };
+            html.push_str(&format!(r#"<div class="{}">
+    <span class="kind">variable</span>
+    <h3>{}</h3>
+    <div class="signature">{}</div>"#, class, var.name, var.signature));
+            
+            if let Some(desc) = &var.description {
+                html.push_str(&format!(r#"
+    <div class="description">{}</div>"#, desc));
+            }
+            
+            html.push_str("\n</div>\n");
+        }
+    }
+    
+    html.push_str("</body>\n</html>");
+    
+    // Write HTML file
+    let index_path = output_dir.join("index.html");
+    fs::write(&index_path, html)?;
+    
+    if verbose {
+        println!("  Generated {}", index_path.display());
+    }
+    
+    Ok(())
+}
+
+/// Generate Markdown documentation
+fn generate_markdown_docs(docs: &[DocItem], output_dir: &Path, verbose: bool) -> Result<()> {
+    let mut markdown = String::from("# Ruchy Documentation\n\n");
+    
+    // Group items by kind
+    let mut functions = Vec::new();
+    let mut variables = Vec::new();
+    
+    for doc in docs {
+        match doc.kind {
+            DocItemKind::Function => functions.push(doc),
+            DocItemKind::Variable => variables.push(doc),
+            _ => {}
+        }
+    }
+    
+    // Generate functions section
+    if !functions.is_empty() {
+        markdown.push_str("## Functions\n\n");
+        for func in &functions {
+            markdown.push_str(&format!("### {}\n\n", func.name));
+            markdown.push_str(&format!("```ruchy\n{}\n```\n\n", func.signature));
+            
+            if let Some(desc) = &func.description {
+                markdown.push_str(&format!("{}\n\n", desc));
+            }
+            
+            if !func.is_public {
+                markdown.push_str("*Private function*\n\n");
+            }
+        }
+    }
+    
+    // Generate variables section
+    if !variables.is_empty() {
+        markdown.push_str("## Variables\n\n");
+        for var in &variables {
+            markdown.push_str(&format!("### {}\n\n", var.name));
+            markdown.push_str(&format!("```ruchy\n{}\n```\n\n", var.signature));
+            
+            if let Some(desc) = &var.description {
+                markdown.push_str(&format!("{}\n\n", desc));
+            }
+            
+            if !var.is_public {
+                markdown.push_str("*Private variable*\n\n");
+            }
+        }
+    }
+    
+    // Write Markdown file
+    let docs_path = output_dir.join("README.md");
+    fs::write(&docs_path, markdown)?;
+    
+    if verbose {
+        println!("  Generated {}", docs_path.display());
+    }
+    
+    Ok(())
+}
+
+/// Generate JSON documentation
+fn generate_json_docs(docs: &[DocItem], output_dir: &Path, verbose: bool) -> Result<()> {
+    let json_docs: Vec<serde_json::Value> = docs.iter().map(|doc| {
+        serde_json::json!({
+            "name": doc.name,
+            "kind": format!("{:?}", doc.kind).to_lowercase(),
+            "signature": doc.signature,
+            "description": doc.description,
+            "line": doc.line,
+            "is_public": doc.is_public,
+        })
+    }).collect();
+    
+    let result = serde_json::json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "items": json_docs,
+    });
+    
+    // Write JSON file
+    let json_path = output_dir.join("docs.json");
+    let json_str = serde_json::to_string_pretty(&result)?;
+    fs::write(&json_path, json_str)?;
+    
+    if verbose {
+        println!("  Generated {}", json_path.display());
+    }
+    
+    Ok(())
+}
+
+/// Open HTML documentation in browser
+fn open_in_browser(path: &Path) -> Result<()> {
+    let url = format!("file://{}", path.canonicalize()?.display());
+    
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()?;
+    }
+    
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&url)
+            .spawn()?;
+    }
+    
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(&["/C", "start", &url])
+            .spawn()?;
+    }
+    
+    println!("{} Opened documentation in browser", "✓".bright_green());
+    Ok(())
 }
 
 /// Discover all .ruchy files in a directory
