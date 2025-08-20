@@ -18,6 +18,7 @@ mod control_flow;
 mod core;
 mod expressions;
 mod functions;
+mod operator_precedence;
 mod types;
 mod utils;
 

@@ -316,7 +316,7 @@ graph TD
 *Depends on: Test Suite Stabilization*
 
 - [x] **RT-P3-001**: Result<T,E> type support
-- **RT-P3-002**: ? operator precedence
+- [x] **RT-P3-002**: ? operator precedence
 - **RT-P3-003**: Error propagation in transpiler
 
 ### Phase 4: Actor System (AC-P4-*)
