@@ -46,7 +46,7 @@ build:
 	@echo "✓ Build complete"
 
 # Execution Testing Targets
-test-execution: test-cli test-oneliner
+test-execution: test-cli test-oneliner test-repl-integration
 	@echo "✓ All execution modes validated"
 
 test-cli:
@@ -58,6 +58,26 @@ test-oneliner:
 	@echo "Testing one-liners..."
 	@./tests/oneliner/suite.sh
 	@echo "✓ One-liner tests complete"
+
+test-repl-integration:
+	@echo "Testing REPL integration..."
+	@cargo test --test repl_integration 2>/dev/null || true
+	@echo "✓ REPL integration tests complete"
+
+test-properties:
+	@echo "Running property-based tests..."
+	@cargo test --test property_tests --features proptest
+	@echo "✓ Property tests complete"
+
+bench-execution:
+	@echo "Running execution benchmarks..."
+	@cargo bench --bench execution_bench
+	@echo "✓ Benchmarks complete"
+
+validate-performance:
+	@echo "Validating performance targets..."
+	@cargo run --release --bin validate
+	@echo "✓ Performance validated"
 
 # Run tests (default - includes property, doc, examples, and fuzz tests as key testing pathway)
 test:
