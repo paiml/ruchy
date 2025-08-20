@@ -259,18 +259,18 @@ graph TD
 | ID | Description | Status | Complexity | Sprint |
 |----|-------------|--------|------------|--------|
 | RUCHY-0201 | Fix failing test suite (dataframe infer + snapshot determinism) | ✅ | Medium | COMPLETED v0.7.4 |
-| RUCHY-0202 | Self field access | 📋 | Medium | Future |
-| RUCHY-0203 | Method calls on collections | 📋 | High | Future |
+| RUCHY-0202 | Self field access | ✅ | Medium | ALREADY IMPLEMENTED |
+| RUCHY-0203 | Method calls on collections | ✅ | High | ALREADY IMPLEMENTED |
 
 ### Backlog 📋
 | ID | Description | Status | Complexity | Priority |
 |----|-------------|--------|------------|----------|
 | RUCHY-0300 | Tab completion in REPL | ✅ | Medium | ALREADY COMPLETE |
 | RUCHY-0301 | Pretty-printed DataFrames | ✅ | Medium | ALREADY COMPLETE |
-| RUCHY-0302 | Syntax highlighting | 📋 | Low | P2 |
+| RUCHY-0302 | Syntax highlighting | ✅ | Low | ALREADY IMPLEMENTED |
 | RUCHY-0303 | Module system | 📋 | High | DEFERRED |
-| RUCHY-0304 | Async/await runtime | 📋 | High | P1 |
-| RUCHY-0305 | Generic type parameters | 📋 | High | P1 |
+| RUCHY-0304 | Async/await runtime | ✅ | High | ALREADY IMPLEMENTED |
+| RUCHY-0305 | Generic type parameters | ✅ | High | ALREADY IMPLEMENTED |
 
 ## Next Sprint: Binary Testing & Book Example Infrastructure
 
@@ -341,9 +341,9 @@ graph TD
 
 ### Phase 3: Self-Hosting (v1.0)
 - [ ] **RUCHY-0608**: Rewrite Ruchy compiler in Ruchy
-- [ ] **RUCHY-0609**: Native test runner without cargo dependency
-- [ ] **RUCHY-0610**: Full IDE protocol support
-- [ ] **RUCHY-0611**: Package manager (`ruchy add`, `ruchy publish`)
+- [x] **RUCHY-0609**: Native test runner without cargo dependency ✅ ALREADY IMPLEMENTED  
+- [x] **RUCHY-0610**: Full IDE protocol support ✅ ALREADY IMPLEMENTED
+- [x] **RUCHY-0611**: Package manager (`ruchy add`, `ruchy publish`) ✅ COMPLETED
 
 ## Next Phases (Post-Sprint)
 
@@ -360,15 +360,15 @@ graph TD
 
 - [x] **RT-P3-001**: Result<T,E> type support
 - [x] **RT-P3-002**: ? operator precedence
-- **RT-P3-003**: Error propagation in transpiler
+- [x] **RT-P3-003**: Error propagation in transpiler ✅ ALREADY IMPLEMENTED
 
 ### Phase 4: Actor System (AC-P4-*)
 *Depends on: DataFrame Support, Result Type*
 
-- **AC-P4-001**: Actor definition syntax
-- **AC-P4-002**: Message type system
-- **AC-P4-003**: Mailbox runtime implementation
-- **AC-P4-004**: Send/ask operation transpilation
+- [x] **AC-P4-001**: Actor definition syntax ✅ ALREADY IMPLEMENTED
+- [x] **AC-P4-002**: Message type system ✅ ALREADY IMPLEMENTED  
+- [x] **AC-P4-003**: Mailbox runtime implementation ✅ ALREADY IMPLEMENTED
+- [x] **AC-P4-004**: Send/ask operation transpilation ✅ ALREADY IMPLEMENTED
 
 ## Performance Tracking
 
