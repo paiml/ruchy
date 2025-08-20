@@ -302,10 +302,20 @@ pub enum UnaryOp {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Param {
-    pub name: String,
+    pub pattern: Pattern,
     pub ty: Type,
     pub span: Span,
     pub is_mutable: bool,
+}
+
+impl Param {
+    /// Get the primary name from this parameter pattern.
+    /// For complex patterns, this returns the first/primary identifier.
+    /// For simple patterns, this returns the identifier itself.
+    #[must_use]
+    pub fn name(&self) -> String {
+        self.pattern.primary_name()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -395,6 +405,43 @@ pub enum Pattern {
     Rest, // For ... patterns
     Ok(Box<Pattern>),
     Err(Box<Pattern>),
+}
+
+impl Pattern {
+    /// Get the primary identifier name from this pattern.
+    /// For complex patterns, returns the first/most significant identifier.
+    #[must_use]
+    pub fn primary_name(&self) -> String {
+        match self {
+            Pattern::Identifier(name) => name.clone(),
+            Pattern::Tuple(patterns) => {
+                // Return the name of the first pattern
+                patterns.first()
+                    .map_or_else(|| "_tuple".to_string(), Pattern::primary_name)
+            }
+            Pattern::List(patterns) => {
+                // Return the name of the first pattern
+                patterns.first()
+                    .map_or_else(|| "_list".to_string(), Pattern::primary_name)
+            }
+            Pattern::Struct { name, .. } => {
+                // Return the struct type name
+                name.clone()
+            }
+            Pattern::Ok(inner) | Pattern::Err(inner) => {
+                inner.primary_name()
+            }
+            Pattern::Or(patterns) => {
+                // Return the name of the first pattern
+                patterns.first()
+                    .map_or_else(|| "_or".to_string(), Pattern::primary_name)
+            }
+            Pattern::Wildcard => "_".to_string(),
+            Pattern::Rest => "_rest".to_string(),
+            Pattern::Literal(lit) => format!("_literal_{lit:?}"),
+            Pattern::Range { .. } => "_range".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -800,7 +847,7 @@ mod tests {
     #[test]
     fn test_function_expression() {
         let params = vec![Param {
-            name: "x".to_string(),
+            pattern: Pattern::Identifier("x".to_string()),
             ty: Type {
                 kind: TypeKind::Named("i32".to_string()),
                 span: Span::new(10, 13),
@@ -838,7 +885,7 @@ mod tests {
             } => {
                 assert_eq!(name, "identity");
                 assert_eq!(p.len(), 1);
-                assert_eq!(p[0].name, "x");
+                assert_eq!(p[0].name(), "x");
                 assert!(return_type.is_some());
                 match b.kind {
                     ExprKind::Identifier(id) => assert_eq!(id, "x"),
@@ -1209,7 +1256,7 @@ mod tests {
     #[test]
     fn test_param_creation() {
         let param = Param {
-            name: "count".to_string(),
+            pattern: Pattern::Identifier("count".to_string()),
             ty: Type {
                 kind: TypeKind::Named("usize".to_string()),
                 span: Span::new(6, 11),
@@ -1218,7 +1265,7 @@ mod tests {
             is_mutable: false,
         };
 
-        assert_eq!(param.name, "count");
+        assert_eq!(param.name(), "count");
         match param.ty.kind {
             TypeKind::Named(name) => assert_eq!(name, "usize"),
             _ => panic!("Wrong type kind"),

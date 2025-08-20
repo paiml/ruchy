@@ -1924,7 +1924,7 @@ fn extract_docs_recursive(ast: &ruchy::Expr, docs: &mut Vec<DocItem>, include_pr
             if is_public || include_private {
                 // Format parameters for signature
                 let param_list: Vec<String> = params.iter()
-                    .map(|p| format!("{}: {}", p.name, format_type(&p.ty)))
+                    .map(|p| format!("{}: {}", p.name(), format_type(&p.ty)))
                     .collect();
                 let signature = format!("fn {}({})", name, param_list.join(", "));
                 let description = extract_doc_comment(&ast.attributes);

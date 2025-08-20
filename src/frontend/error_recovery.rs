@@ -2,7 +2,7 @@
 
 #![allow(clippy::items_after_statements)] // Recovery parser needs constants in local scopes
 
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Param, Span, Type, TypeKind};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Param, Pattern, Span, Type, TypeKind};
 use crate::frontend::lexer::{Token, TokenStream};
 use anyhow::Result;
 use std::fmt;
@@ -617,7 +617,7 @@ impl<'a> RecoveryParser<'a> {
             };
 
             params.push(Param {
-                name,
+                pattern: Pattern::Identifier(name),
                 ty,
                 span: name_span,
                 is_mutable: false,

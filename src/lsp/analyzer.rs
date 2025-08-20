@@ -191,13 +191,13 @@ impl SemanticAnalyzer {
                 // Add parameters
                 for param in params {
                     let param_symbol = Symbol {
-                        name: param.name.clone(),
+                        name: param.name(),
                         kind: "parameter".to_string(),
                         documentation: None,
                     };
                     self.symbol_table
                         .symbols
-                        .insert(param.name.clone(), param_symbol);
+                        .insert(param.name(), param_symbol);
                 }
             }
             ExprKind::Let { name, .. } => {

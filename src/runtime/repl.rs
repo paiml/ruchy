@@ -832,7 +832,7 @@ impl Repl {
                 name, params, body, ..
             } => {
                 // Store function definition
-                let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
+                let param_names: Vec<String> = params.iter().map(crate::frontend::ast::Param::name).collect();
                 let func_value = Value::Function {
                     name: name.clone(),
                     params: param_names,
@@ -845,7 +845,7 @@ impl Repl {
             }
             ExprKind::Lambda { params, body } => {
                 // Store lambda as a callable value
-                let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
+                let param_names: Vec<String> = params.iter().map(crate::frontend::ast::Param::name).collect();
                 Ok(Value::Lambda {
                     params: param_names,
                     body: body.clone(),
@@ -1037,7 +1037,7 @@ impl Repl {
 
                                 for item in items {
                                     // Bind the parameter to the current item
-                                    self.bindings.insert(params[0].name.clone(), item);
+                                    self.bindings.insert(params[0].name(), item);
 
                                     // Evaluate the lambda body
                                     let result = self.evaluate_expr(body, deadline, depth + 1)?;
@@ -1071,7 +1071,7 @@ impl Repl {
 
                                 for item in items {
                                     // Bind the parameter to the current item
-                                    self.bindings.insert(params[0].name.clone(), item.clone());
+                                    self.bindings.insert(params[0].name(), item.clone());
 
                                     // Evaluate the predicate
                                     let predicate_result =
@@ -1110,8 +1110,8 @@ impl Repl {
 
                                 for item in items {
                                     // Bind the parameters
-                                    self.bindings.insert(params[0].name.clone(), accumulator);
-                                    self.bindings.insert(params[1].name.clone(), item);
+                                    self.bindings.insert(params[0].name(), accumulator);
+                                    self.bindings.insert(params[1].name(), item);
 
                                     // Evaluate the reducer function
                                     accumulator = self.evaluate_expr(body, deadline, depth + 1)?;

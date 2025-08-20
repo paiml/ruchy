@@ -83,7 +83,7 @@ impl Transpiler {
         let param_tokens: Vec<TokenStream> = params
             .iter()
             .map(|p| {
-                let param_name = format_ident!("{}", p.name);
+                let param_name = format_ident!("{}", p.name());
                 let type_tokens = self.transpile_type(&p.ty).unwrap_or_else(|_| quote! { _ });
                 quote! { #param_name: #type_tokens }
             })
@@ -140,7 +140,7 @@ impl Transpiler {
 
     /// Transpiles lambda expressions
     pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
-        let param_names: Vec<_> = params.iter().map(|p| format_ident!("{}", p.name)).collect();
+        let param_names: Vec<_> = params.iter().map(|p| format_ident!("{}", p.name())).collect();
         let body_tokens = self.transpile_expr(body)?;
 
         // Generate closure with proper formatting (no spaces around commas)
