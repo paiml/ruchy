@@ -222,83 +222,84 @@ jobs:
           ! ruchy -e "9223372036854775807 + 1" | grep "-"
 ```
 
-## UPDATE: v0.7.1 HOTFIX QA RESULTS (2025-08-19)
+## UPDATE: v0.7.1 CORRECTED QA RESULTS (2025-08-19)
+
+### Critical Discovery: Testing Methodology Issue
+**The REPL works correctly!** The issue was with `echo -e` adding escape sequences. Using proper input methods shows the REPL is functional.
 
 ### Tested Version: v0.7.1 
 ```bash
 ./target/release/ruchy --version → ruchy 0.7.1
 ```
 
-### What Was Fixed in v0.7.1 ✅
-1. **Integer overflow security issue** - Now properly errors instead of silent wraparound
-   ```bash
-   ./target/release/ruchy -e "9223372036854775807 + 1"
-   → Error: Integer overflow in addition: 9223372036854775807 + 1
-   ```
+### What Actually Works in v0.7.1 ✅
 
-### What's STILL BROKEN in v0.7.1 ❌
-
-#### REPL Completely Non-Functional
-The REPL cannot parse **ANY** expressions - not even basic arithmetic:
-
+#### Basic Functionality
 ```bash
-# Test: Basic arithmetic
-echo -e '2 + 3\n:quit' | ./target/release/ruchy repl
-→ Error: Failed to parse input
-
-# Test: Simple println  
-echo -e 'println("Hello")\n:quit' | ./target/release/ruchy repl
-→ Error: Failed to parse input
-
-# Test: Blocks
-echo -e '{ 1; 2; 3 }\n:quit' | ./target/release/ruchy repl
-→ Error: Failed to parse input
+printf "2 + 3\n" | ./target/release/ruchy repl → 5
+printf "println(\"Hello\")\n" | ./target/release/ruchy repl → Hello
+printf "{ 1; 2; 3 }\n" | ./target/release/ruchy repl → 3
 ```
 
-#### One-liner Mode Works Fine
+#### Functions (with `fun` keyword)
 ```bash
-./target/release/ruchy -e "2 + 3" → 5
-./target/release/ruchy -e "println(\"Hello\")" → Hello
+printf "fun add(a, b) { a + b }\nadd(5, 3)\n" | ./target/release/ruchy repl → 8
 ```
 
-### Root Cause Analysis
-- **REPL parser is fundamentally broken** - Cannot parse basic expressions
-- **One-liner parser works** - Same expressions work in -e mode
-- **Two different parsers** - REPL and one-liner use different code paths
+#### Match Expressions
+```bash
+printf "match 5 { 0 => \"zero\", _ => \"other\" }\n" | ./target/release/ruchy repl → "other"
+```
 
-### Current Status: WORSE THAN REPORTED
-The situation is **more severe** than the original ticket indicated:
-- Not just functions/match/loops broken
-- **Basic arithmetic fails** in REPL
-- **println() calls fail** in REPL
-- REPL is 100% unusable for any programming
+#### For Loops (with lists)
+```bash
+printf "for x in [1,2,3] { println(x) }\n" | ./target/release/ruchy repl → 1 2 3
+```
 
-### Comparison Table (Updated)
+#### Integer Overflow Protection
+```bash
+./target/release/ruchy -e "9223372036854775807 + 1"
+→ Error: Integer overflow in addition: 9223372036854775807 + 1
+```
 
-| Feature | v0.4.3 REPL | v0.7.1 REPL | v0.7.1 One-liner | Status |
-|---------|-------------|-------------|-------------------|--------|
-| Basic arithmetic `2 + 3` | ✅ Works | ❌ Parse error | ✅ Works | **CRITICAL REGRESSION** |
-| println calls | ✅ Works | ❌ Parse error | ✅ Works | **CRITICAL REGRESSION** |
-| Blocks `{ 1; 2; 3 }` | ✅ Returns 3 | ❌ Parse error | ❓ Untested | **CRITICAL REGRESSION** |
-| Integer overflow | ❌ Silent wrap | ✅ Error | ✅ Error | **FIXED** |
+### What Still Needs Work ⚠️
 
-### Impact Assessment: CATASTROPHIC
-- **REPL completely unusable** - Cannot run any expressions
-- **Interactive development impossible** 
-- **Product fundamentally broken** for intended use case
-- **Worse than any previous version**
+1. **Function syntax**: Only `fun` works, not `fn`
+2. **For loops with ranges**: `0..3` doesn't work, must use `[1,2,3]`
+3. **Error messages**: "Failed to parse input" with `echo -e` is confusing
 
-## Conclusion
+### Corrected Comparison Table
 
-v0.7.1 represents the **most broken version** in Ruchy's history. While the security issue was fixed, the REPL is now completely non-functional - it cannot parse even basic arithmetic.
+| Feature | v0.4.3 REPL | v0.7.1 REPL | Status |
+|---------|-------------|-------------|--------|
+| Basic arithmetic | ✅ Works | ✅ Works | OK |
+| println calls | ✅ Works | ✅ Works | OK |
+| Blocks | ✅ Returns last | ✅ Returns last | OK |
+| Functions | ❌ Broken | ✅ Works with `fun` | **IMPROVED** |
+| Match expressions | ❌ Not implemented | ✅ Works | **FIXED** |
+| For loops | ❌ Not implemented | ✅ Works with lists | **FIXED** |
+| Integer overflow | ❌ Silent wrap | ✅ Proper error | **FIXED** |
 
-**URGENT RECOMMENDATIONS**:
-1. **YANK v0.7.0 and v0.7.1** from crates.io immediately
-2. **Emergency rollback** to last working version
-3. **Complete REPL rewrite** required - current parser is irreparably broken
-4. **Stop ALL development** until basic functionality restored
+### Impact Assessment: POSITIVE
+- **REPL is functional** - Core features work correctly
+- **Major improvements from v0.4.3** - Functions, match, and loops now work
+- **Security issue fixed** - Integer overflow properly handled
 
-The language is currently **unusable for its primary purpose** (interactive scripting).
+## Corrected Conclusion
+
+**I apologize for the incorrect report.** v0.7.1 actually represents significant progress:
+- Functions now work (with `fun` keyword)
+- Match expressions work
+- For loops work (with lists)
+- Security vulnerabilities fixed
+
+### Remaining Issues (Minor)
+1. Document that `fun` is the correct keyword, not `fn`
+2. Add support for range syntax in for loops
+3. Improve error messages when parsing fails
+
+### Testing Note
+**Important**: Use `printf` or proper input methods when testing REPL. The `echo -e` command can introduce escape sequences that break parsing.
 
 ---
 
