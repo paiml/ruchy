@@ -365,7 +365,7 @@ graph TD
 #### Phase 1: Performance Foundation (Week 2) - INTERP-002
 - [x] **Inline caching for method dispatch** (Priority 1) - INTERP-005 ✅ COMPLETED
 - [x] **Type feedback collection** (Priority 2) - INTERP-006 ✅ COMPLETED
-- [ ] **Conservative garbage collection** (Priority 3)
+- [x] **Conservative garbage collection** (Priority 3) - INTERP-007 ✅ COMPLETED
 - [ ] **Direct-threaded instruction dispatch** (Priority 4)
 
 ### Next Tasks After Interpreter Foundation
