@@ -7,6 +7,7 @@
 
 mod actors;
 mod dataframe;
+mod dataframe_helpers;
 mod dispatcher;
 mod expressions;
 mod patterns;

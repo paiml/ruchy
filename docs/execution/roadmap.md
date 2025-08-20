@@ -310,7 +310,7 @@ graph TD
 - [x] **DF-P2-001**: DataFrame literal parsing (`df![columns]`) ✅ COMPLETED
 - [x] **DF-P2-002**: DataFrame type system integration  
 - [x] **DF-P2-003**: Polars transpilation backend ✅ COMPLETED
-- [ ] **DF-P2-004**: DataFrame operation pipeline
+- [x] **DF-P2-004**: DataFrame operation pipeline
 
 ### Phase 3: Result Type (RT-P3-*)
 *Depends on: Test Suite Stabilization*

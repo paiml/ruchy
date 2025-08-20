@@ -1,0 +1,60 @@
+// DataFrame Pipeline Operations Example
+// This demonstrates fluent DataFrame operations in Ruchy
+
+// Create a sample dataset
+let sales_data = df![
+    product => ["Laptop", "Phone", "Tablet", "Monitor", "Keyboard"],
+    quantity => [10, 25, 15, 8, 30],
+    price => [1200.0, 800.0, 600.0, 400.0, 150.0],
+    category => ["Electronics", "Electronics", "Electronics", "Electronics", "Accessories"]
+]
+
+// Pipeline 1: Filter and aggregate
+let high_value_products = sales_data
+    |> filter(price > 500.0)
+    |> select(["product", "price", "quantity"])
+    |> sort(["price"])
+
+// Pipeline 2: Group by category and aggregate
+let category_summary = sales_data
+    |> groupby(["category"])
+    |> agg([
+        sum("quantity"),
+        mean("price"),
+        count("product")
+    ])
+
+// Pipeline 3: Complex transformation
+let analysis = sales_data
+    |> filter(quantity > 10)
+    |> map(row => {
+        revenue: row.price * row.quantity,
+        product: row.product,
+        margin: row.price * 0.3
+    })
+    |> sort(["revenue"])
+    |> head(3)
+
+// Pipeline 4: Join operation
+let inventory = df![
+    product => ["Laptop", "Phone", "Tablet"],
+    stock => [5, 12, 8]
+]
+
+let combined = sales_data
+    |> join(inventory, on: ["product"], how: "inner")
+    |> select(["product", "quantity", "stock"])
+    |> filter(quantity > stock)
+
+// Print results
+println("High Value Products:")
+println(high_value_products)
+
+println("\nCategory Summary:")
+println(category_summary)
+
+println("\nTop Revenue Products:")
+println(analysis)
+
+println("\nLow Stock Alert:")
+println(combined)
