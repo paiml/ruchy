@@ -79,6 +79,7 @@ pub enum Value {
     DataFrame {
         columns: Vec<DataFrameColumn>,
     },
+    Object(HashMap<String, Value>),
     Unit,
 }
 
@@ -214,6 +215,16 @@ impl fmt::Display for Value {
                 write!(f, "|{}| <closure>", params.join(", "))
             }
             Value::DataFrame { columns } => Self::format_dataframe(f, columns),
+            Value::Object(map) => {
+                write!(f, "{{")?;
+                for (i, (key, value)) in map.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "\"{key}\": {value}")?;
+                }
+                write!(f, "}}")
+            }
             Value::Unit => write!(f, "()"),
         }
     }
@@ -1242,6 +1253,31 @@ impl Repl {
                 // For REPL purposes, evaluate the async block body synchronously
                 // In a full async implementation, this would return a Future
                 self.evaluate_expr(body, deadline, depth + 1)
+            }
+            ExprKind::ObjectLiteral { fields } => {
+                use crate::frontend::ast::ObjectField;
+                let mut map = HashMap::new();
+                
+                for field in fields {
+                    match field {
+                        ObjectField::KeyValue { key, value } => {
+                            let val = self.evaluate_expr(value, deadline, depth + 1)?;
+                            map.insert(key.clone(), val);
+                        }
+                        ObjectField::Spread { expr } => {
+                            // Evaluate the spread expression
+                            let spread_val = self.evaluate_expr(expr, deadline, depth + 1)?;
+                            // If it's an object, merge its fields
+                            if let Value::Object(spread_map) = spread_val {
+                                map.extend(spread_map);
+                            } else {
+                                bail!("Spread operator can only be used with objects");
+                            }
+                        }
+                    }
+                }
+                
+                Ok(Value::Object(map))
             }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
