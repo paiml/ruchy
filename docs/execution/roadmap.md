@@ -294,7 +294,7 @@ graph TD
 - [x] **RUCHY-0604**: Implement `ruchy bench` for benchmarking
 - [x] **RUCHY-0605**: Implement `ruchy doc` for documentation generation
 - [x] **RUCHY-0606**: Add `--watch` mode to test/check commands
-- [ ] **RUCHY-0607**: Add custom lint rule support
+- [x] **RUCHY-0607**: Add custom lint rule support
 
 ### Phase 3: Self-Hosting (v1.0)
 - [ ] **RUCHY-0608**: Rewrite Ruchy compiler in Ruchy
