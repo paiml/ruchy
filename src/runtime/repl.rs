@@ -1187,6 +1187,11 @@ impl Repl {
                     bail!("Method calls not supported on this type")
                 }
             }
+            ExprKind::Await { expr } => {
+                // For now, await just evaluates the expression
+                // In a full async implementation, this would handle Future resolution
+                self.evaluate_expr(expr, deadline, depth + 1)
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
