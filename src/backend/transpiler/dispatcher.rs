@@ -215,7 +215,7 @@ impl Transpiler {
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
             ExprKind::Import { path, items } => Ok(Self::transpile_import(path, items)),
-            ExprKind::Trait { .. } | ExprKind::Impl { .. } => self.transpile_type_decl_expr(expr),
+            ExprKind::Trait { .. } | ExprKind::Impl { .. } | ExprKind::Extension { .. } => self.transpile_type_decl_expr(expr),
             ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Export { .. } => {
                 Self::transpile_control_misc_expr(expr)
             }
@@ -236,6 +236,10 @@ impl Transpiler {
                 for_type,
                 methods,
             } => self.transpile_impl(for_type, type_params, trait_name.as_deref(), methods),
+            ExprKind::Extension {
+                target_type,
+                methods,
+            } => self.transpile_extend(target_type, methods),
             _ => unreachable!(),
         }
     }

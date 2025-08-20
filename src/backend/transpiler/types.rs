@@ -329,4 +329,127 @@ impl Transpiler {
             bail!("Property test attribute can only be applied to functions");
         }
     }
+
+    /// Transpiles extension methods into trait + impl
+    /// 
+    /// Generates both a trait definition and an implementation according to the specification:
+    /// ```rust
+    /// // Ruchy: extend String { fun is_palindrome(&self) -> bool { ... } }
+    /// // Rust:  trait StringExt { fn is_palindrome(&self) -> bool; }
+    /// //        impl StringExt for String { fn is_palindrome(&self) -> bool { ... } }
+    /// ```
+    pub fn transpile_extend(
+        &self,
+        target_type: &str,
+        methods: &[ImplMethod],
+    ) -> Result<TokenStream> {
+        let target_ident = format_ident!("{}", target_type);
+        let trait_name = format_ident!("{}Ext", target_type); // e.g., StringExt
+        
+        // Generate trait definition
+        let trait_method_tokens: Result<Vec<_>> = methods
+            .iter()
+            .map(|method| {
+                let method_name = format_ident!("{}", method.name);
+                
+                // Process parameters
+                let param_tokens: Vec<TokenStream> = method
+                    .params
+                    .iter()
+                    .enumerate()
+                    .map(|(i, param)| {
+                        if i == 0 && (param.name() == "self" || param.name() == "&self") {
+                            // Handle self parameter
+                            if param.name().starts_with('&') {
+                                quote! { &self }
+                            } else {
+                                quote! { self }
+                            }
+                        } else {
+                            let param_name = format_ident!("{}", param.name());
+                            let type_tokens = self
+                                .transpile_type(&param.ty)
+                                .unwrap_or_else(|_| quote! { _ });
+                            quote! { #param_name: #type_tokens }
+                        }
+                    })
+                    .collect();
+                
+                // Process return type
+                let return_type_tokens = if let Some(ref ty) = method.return_type {
+                    let ty_tokens = self.transpile_type(ty)?;
+                    quote! { -> #ty_tokens }
+                } else {
+                    quote! {}
+                };
+                
+                // Trait methods are just signatures (no body)
+                Ok(quote! {
+                    fn #method_name(#(#param_tokens),*) #return_type_tokens;
+                })
+            })
+            .collect();
+            
+        let trait_method_tokens = trait_method_tokens?;
+        
+        // Generate impl definition
+        let impl_method_tokens: Result<Vec<_>> = methods
+            .iter()
+            .map(|method| {
+                let method_name = format_ident!("{}", method.name);
+                
+                // Process parameters (same as trait)
+                let param_tokens: Vec<TokenStream> = method
+                    .params
+                    .iter()
+                    .enumerate()
+                    .map(|(i, param)| {
+                        if i == 0 && (param.name() == "self" || param.name() == "&self") {
+                            if param.name().starts_with('&') {
+                                quote! { &self }
+                            } else {
+                                quote! { self }
+                            }
+                        } else {
+                            let param_name = format_ident!("{}", param.name());
+                            let type_tokens = self
+                                .transpile_type(&param.ty)
+                                .unwrap_or_else(|_| quote! { _ });
+                            quote! { #param_name: #type_tokens }
+                        }
+                    })
+                    .collect();
+                
+                // Process return type
+                let return_type_tokens = if let Some(ref ty) = method.return_type {
+                    let ty_tokens = self.transpile_type(ty)?;
+                    quote! { -> #ty_tokens }
+                } else {
+                    quote! {}
+                };
+                
+                // Impl methods have bodies
+                let body_tokens = self.transpile_expr(&method.body)?;
+                
+                Ok(quote! {
+                    fn #method_name(#(#param_tokens),*) #return_type_tokens {
+                        #body_tokens
+                    }
+                })
+            })
+            .collect();
+            
+        let impl_method_tokens = impl_method_tokens?;
+        
+        // Generate both trait and impl
+        Ok(quote! {
+            trait #trait_name {
+                #(#trait_method_tokens)*
+            }
+            
+            impl #trait_name for #target_ident {
+                #(#impl_method_tokens)*
+            }
+        })
+    }
 }

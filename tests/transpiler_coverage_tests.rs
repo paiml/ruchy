@@ -350,3 +350,38 @@ fn test_transpile_struct_literal() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn test_transpile_extension_methods() -> Result<()> {
+    let input = r"
+        extend String {
+            fun is_palindrome(&self) -> bool {
+                let clean = self.chars()
+                    .filter(|c| c.is_alphanumeric())
+                    .collect::<String>()
+                    .to_lowercase();
+                clean == clean.chars().rev().collect::<String>()
+            }
+        }
+    ";
+    
+    let mut parser = Parser::new(input);
+    let ast = parser.parse()?;
+    let transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile(&ast)?;
+    let code_str = rust_code.to_string();
+
+    // Should generate trait StringExt
+    assert!(code_str.contains("trait StringExt"));
+    assert!(code_str.contains("fn is_palindrome"));
+
+    // Should generate impl StringExt for String
+    assert!(code_str.contains("impl StringExt for String"));
+    
+    // Should contain the method body
+    assert!(code_str.contains("chars()"));
+    assert!(code_str.contains("filter"));
+    assert!(code_str.contains("collect"));
+
+    Ok(())
+}

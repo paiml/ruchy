@@ -151,6 +151,10 @@ impl InferenceContext {
                 // Impl blocks return Unit, they just provide implementations
                 Ok(MonoType::Unit)
             }
+            ExprKind::Extension { .. } => {
+                // Extension blocks return Unit, they just provide implementations
+                Ok(MonoType::Unit)
+            }
             ExprKind::Actor { name: _, .. } => {
                 // Actor definitions return Unit, they register the actor type
                 // In a full implementation, we'd register the actor in the type environment
