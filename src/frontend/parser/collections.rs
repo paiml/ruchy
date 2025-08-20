@@ -181,7 +181,7 @@ fn is_object_literal(state: &mut ParserState) -> bool {
 
     // Check for identifier/string followed by colon
     match state.tokens.peek() {
-        Some((Token::Identifier(_) | Token::String(_), _)) => {
+        Some((Token::Identifier(_) | Token::String(_) | Token::RawString(_), _)) => {
             // Look ahead for colon
             let saved_pos = state.tokens.position();
             state.tokens.advance(); // skip identifier/string
@@ -234,7 +234,7 @@ fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Resul
                     state.tokens.advance();
                     key
                 }
-                Some((Token::String(s), _)) => {
+                Some((Token::String(s) | Token::RawString(s), _)) => {
                     let key = s.clone();
                     state.tokens.advance();
                     key

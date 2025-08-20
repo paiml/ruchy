@@ -173,11 +173,49 @@ impl Transpiler {
                 }
             } else if name == "println" || name == "print" || name == "dbg" || name == "panic" {
                 // These are macros in Rust, not functions
+                // Special handling for string interpolation in println/print
+                if (name == "println" || name == "print") && args.len() == 1 {
+                    if let ExprKind::StringInterpolation { parts } = &args[0].kind {
+                        // Generate println!/print! with format string directly
+                        return self.transpile_print_with_interpolation(name, parts);
+                    }
+                }
                 return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
             }
         }
 
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
+    }
+
+    /// Transpiles println/print with string interpolation directly
+    fn transpile_print_with_interpolation(&self, func_name: &str, parts: &[crate::frontend::ast::StringPart]) -> Result<TokenStream> {
+        if parts.is_empty() {
+            let func_tokens = proc_macro2::Ident::new(func_name, proc_macro2::Span::call_site());
+            return Ok(quote! { #func_tokens!("") });
+        }
+
+        let mut format_string = String::new();
+        let mut args = Vec::new();
+
+        for part in parts {
+            match part {
+                crate::frontend::ast::StringPart::Text(s) => {
+                    // Escape any format specifiers in literal parts
+                    format_string.push_str(&s.replace('{', "{{").replace('}', "}}"));
+                }
+                crate::frontend::ast::StringPart::Expr(expr) => {
+                    format_string.push_str("{}");
+                    let expr_tokens = self.transpile_expr(expr)?;
+                    args.push(expr_tokens);
+                }
+            }
+        }
+
+        let func_tokens = proc_macro2::Ident::new(func_name, proc_macro2::Span::call_site());
+        
+        Ok(quote! {
+            #func_tokens!(#format_string #(, #args)*)
+        })
     }
 
     /// Transpiles method calls

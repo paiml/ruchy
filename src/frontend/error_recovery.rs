@@ -334,7 +334,7 @@ impl<'a> RecoveryParser<'a> {
                 self.tokens.advance();
                 Ok(Expr::new(ExprKind::Literal(Literal::Float(f)), span))
             }
-            Some((Token::String(s), span)) => {
+            Some((Token::String(s) | Token::RawString(s), span)) => {
                 let s = s.clone();
                 let span = *span;
                 self.tokens.advance();
