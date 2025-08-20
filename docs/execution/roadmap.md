@@ -255,8 +255,9 @@ graph TD
 ### In Progress 🚧
 | ID | Description | Status | Complexity | Sprint |
 |----|-------------|--------|------------|--------|
-| RUCHY-0201 | Self field access | 📋 | Medium | Next |
-| RUCHY-0202 | Method calls on collections | 📋 | High | Future |
+| RUCHY-0201 | Fix failing test suite (dataframe infer + snapshot determinism) | [x] | Medium | Next |
+| RUCHY-0202 | Self field access | 📋 | Medium | Future |
+| RUCHY-0203 | Method calls on collections | 📋 | High | Future |
 
 ### Backlog 📋
 | ID | Description | Status | Complexity | Priority |

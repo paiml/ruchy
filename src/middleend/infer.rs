@@ -1374,7 +1374,7 @@ mod tests {
                 assert_eq!(columns.len(), 1);
                 assert_eq!(columns[0].0, "age");
             }
-            _ => panic!("Expected DataFrame type"),
+            _ => panic!("Expected DataFrame type, got {result:?}"),
         }
     }
 
