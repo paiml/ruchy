@@ -68,12 +68,12 @@
 
 ## CRITICAL SPRINT: Book Compatibility Crisis 🚨 PRIORITY 0
 
-### Crisis Summary - **UPDATED 2025-08-20 15:10 UTC**
-- **Status**: CRITICAL - Only 22% of book examples work (57/259)
+### Crisis Summary - **UPDATED 2025-08-20 18:20 UTC**
+- **Status**: CRITICAL - Only 6% of book examples work (15/259)
 - **Issue**: Book is primary learning resource but most examples fail
 - **Impact**: Terrible first impression, blocks user adoption
-- **GitHub Actions Status**: ❌ FAILING - Missing test_all_examples.rs file
-- **Severity**: P0 - Users can't learn the language + CI infrastructure broken
+- **Good News**: 100% one-liners work (20/20) + 40% extended (23/58)
+- **Severity**: P0 - Users can't learn the language from documentation
 
 ### Latest GitHub Actions Analysis (Run #17096730167)
 - **Workflow**: "Test All Book Examples" 
@@ -82,24 +82,21 @@
 - **Error**: `couldn't read tests/test_all_examples.rs: No such file or directory`
 - **Impact**: Unable to get current test results to track progress
 
-### Real Compatibility Issues (From test-results.json)
-Based on the latest integration report analysis:
+### Real Compatibility Issues (From ../ruchy-book/INTEGRATION.md)
+Based on the latest integration report (Aug 20, 2025, 18:10 UTC):
 
-#### Top Failure Categories:
-1. **Syntax Errors** (145/202 failures) - Basic parsing issues
-   - Example: `println(Hello, World!)` → Missing quotes around strings
-   - Error: "Expected RightParen, found Backslash"
-   
-2. **Unsupported Features** (57/202 failures)
-   - **Fat Arrow Syntax** (23 failures) - `"name" => || { }`
-   - **Async Blocks** (12 failures) - `async { http::get(url).await() }`
-   - **String Interpolation** (18 failures) - `f"Hello, {name}!"`
+#### Status Breakdown:
+- ✅ **WORKING**: 15/259 examples (6%) + 20/20 one-liners (100%)
+- ❌ **BROKEN**: 143/259 examples (55%) - Should work but failing
+- ⚠️ **NOT IMPLEMENTED**: 63/259 examples (24%) - Valid syntax, missing features
+- 📋 **PLANNED**: 38/259 examples (15%) - Future roadmap items
 
-#### Priority Fixes from Real Data:
+#### Top Priority Fixes (BROKEN category - highest impact):
 1. **Fat Arrow Syntax** (23 failures) - Add `=>` token for closures
-2. **String Interpolation** (18 failures) - Support f-string syntax  
-3. **Pattern Matching Params** (estimated 10+ failures) - Function destructuring
-4. **Async/Await Blocks** (12 failures) - Modern async syntax
+2. **String Interpolation** ✅ COMPLETED - f"Hello, {name}!" syntax
+3. **Async/Await Blocks** ✅ COMPLETED - async { } syntax
+4. **Array Operations** (4 failures) - .map(), .filter(), .reduce()
+5. **String Methods** (3 failures) - .len(), .to_upper(), .trim()
 
 ### URGENT: Fix CI Infrastructure First
 - [ ] **BOOK-CI-001**: Restore missing `tests/test_all_examples.rs` file in ruchy-book
@@ -114,7 +111,7 @@ Based on the latest integration report analysis:
 - [✅] **BOOK-CRITICAL-005**: Add pattern matching in function parameters
 - [x] **BOOK-CRITICAL-006**: Implement method calls on primitives ✅ ALREADY IMPLEMENTED
 - [x] **BOOK-CRITICAL-007**: Method chaining on literals ✅ COMPLETED v0.7.3
-- [x] **BOOK-CRITICAL-008**: Async/await block support (12 failures)
+- [✅] **BOOK-CRITICAL-008**: Async/await block support (12 failures)
 
 ### Progress Update - **REAL METRICS**
 - **Current**: 57/259 examples pass (22% compatibility)
@@ -293,6 +290,8 @@ graph TD
 | RUCHY-0303 | Module system | 📋 | High | DEFERRED |
 | RUCHY-0304 | Async/await runtime | ✅ | High | ALREADY IMPLEMENTED |
 | RUCHY-0305 | Generic type parameters | ✅ | High | ALREADY IMPLEMENTED |
+| RUCHY-0306 | Array operations (.map, .filter, .reduce) | 📋 | High | P0 - 4 book failures |
+| RUCHY-0307 | String methods (.len, .to_upper, .trim) | 📋 | Medium | P0 - 3 book failures |
 
 ## Next Sprint: Binary Testing & Book Example Infrastructure
 
