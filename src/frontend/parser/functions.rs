@@ -313,28 +313,24 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
         bail!("Expected method name or 'await' after '.'");
     };
 
-    // Check if this is a DataFrame operation method
-    // Common DataFrame methods: filter, select, groupby, sort, head, tail, etc.
+    // Check if this is a DataFrame-specific operation method
+    // Note: filter, map, reduce are array methods, not DataFrame methods
+    // Only include methods that are DataFrame-exclusive
     let is_dataframe_method = matches!(
         method.as_str(),
-        "filter"
-            | "select"
+        "select"
             | "groupby"
             | "group_by"
-            | "sort"
-            | "sort_by"
-            | "head"
-            | "tail"
-            | "limit"
+            | "agg"
+            | "pivot"
+            | "melt"
             | "join"
-            | "mean"
-            | "sum"
-            | "count"
-            | "min"
-            | "max"
-            | "std"
-            | "var"
-            | "median"
+            | "rolling"
+            | "shift"
+            | "diff"
+            | "pct_change"
+            | "corr"
+            | "cov"
     );
 
     // Check if it's a method call (with parentheses) or field access
@@ -359,12 +355,6 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
         if is_dataframe_method {
             // Convert to DataFrame operation based on method name
             let operation = match method.as_str() {
-                "filter" => {
-                    if args.len() != 1 {
-                        bail!("filter() expects exactly 1 argument");
-                    }
-                    DataFrameOp::Filter(Box::new(args.into_iter().next().expect("checked length")))
-                }
                 "select" => {
                     // Extract column names from arguments
                     let mut columns = Vec::new();
@@ -403,57 +393,6 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
                         })
                         .collect();
                     DataFrameOp::GroupBy(columns)
-                }
-                "sort" | "sort_by" => {
-                    let columns = args
-                        .into_iter()
-                        .filter_map(|arg| {
-                            if let ExprKind::Identifier(name) = arg.kind {
-                                Some(name)
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-                    DataFrameOp::Sort(columns)
-                }
-                "head" => {
-                    let n = if args.is_empty() {
-                        5 // default
-                    } else if args.len() == 1 {
-                        if let ExprKind::Literal(Literal::Integer(n)) = args[0].kind {
-                            usize::try_from(n.max(0)).unwrap_or(5)
-                        } else {
-                            bail!("head() expects an integer argument");
-                        }
-                    } else {
-                        bail!("head() expects 0 or 1 arguments");
-                    };
-                    DataFrameOp::Head(n)
-                }
-                "tail" => {
-                    let n = if args.is_empty() {
-                        5 // default
-                    } else if args.len() == 1 {
-                        if let ExprKind::Literal(Literal::Integer(n)) = args[0].kind {
-                            usize::try_from(n.max(0)).unwrap_or(5)
-                        } else {
-                            bail!("tail() expects an integer argument");
-                        }
-                    } else {
-                        bail!("tail() expects 0 or 1 arguments");
-                    };
-                    DataFrameOp::Tail(n)
-                }
-                "limit" => {
-                    if args.len() != 1 {
-                        bail!("limit() expects exactly 1 argument");
-                    }
-                    if let ExprKind::Literal(Literal::Integer(n)) = args[0].kind {
-                        DataFrameOp::Limit(usize::try_from(n.max(0)).unwrap_or(10))
-                    } else {
-                        bail!("limit() expects an integer argument");
-                    }
                 }
                 _ => {
                     // For other methods, fall back to regular method call
