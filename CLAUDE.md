@@ -21,7 +21,22 @@ Navigation:
    ├── roadmap.yaml    # PDMT task generation template
    ├── roadmap.md      # Generated execution DAG
    └── velocity.json   # Empirical performance data
+4. ../ruchy-book/INTEGRATION.md  # Book compatibility tracking
 ```
+
+## Book Compatibility Monitoring
+
+**CRITICAL**: Check `../ruchy-book/INTEGRATION.md` FREQUENTLY for:
+- Current compatibility: 6% (15/259 examples) + 100% one-liners (20/20)
+- Top broken features that book examples expect
+- Regression detection from previous versions
+
+Priority fixes from book testing:
+1. **Fat Arrow Syntax** - 23 failures
+2. **String Interpolation** - 18 failures (f"Hello, {name}!")
+3. **Async/Await** - 12 failures
+4. **Array Operations** - .map(), .filter(), .reduce()
+5. **String Methods** - .len(), .to_upper(), .trim()
 
 ## Task Execution Protocol
 
@@ -29,6 +44,7 @@ Navigation:
 
 ```rust
 // HALT. Before implementing ANY feature:
+□ Check ../ruchy-book/INTEGRATION.md for latest compatibility report
 □ Locate specification section in SPECIFICATION.md
 □ Find task ID in docs/execution/roadmap.md
 □ Verify dependencies completed via DAG
