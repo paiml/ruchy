@@ -141,12 +141,20 @@ impl Transpiler {
     /// Transpiles lambda expressions
     pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
         let param_names: Vec<_> = params.iter().map(|p| format_ident!("{}", p.name)).collect();
-
         let body_tokens = self.transpile_expr(body)?;
 
-        Ok(quote! {
-            |#(#param_names),*| #body_tokens
-        })
+        // Generate closure with proper formatting (no spaces around commas)
+        if param_names.is_empty() {
+            Ok(quote! { || #body_tokens })
+        } else {
+            // Use a more controlled approach to avoid extra spaces
+            let param_list = param_names.iter()
+                .map(std::string::ToString::to_string)
+                .collect::<Vec<_>>()
+                .join(",");
+            let closure_str = format!("|{param_list}| {body_tokens}");
+            closure_str.parse().map_err(|e| anyhow::anyhow!("Failed to parse closure: {}", e))
+        }
     }
 
     /// Transpiles function calls

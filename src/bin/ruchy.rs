@@ -319,7 +319,15 @@ fn main() -> Result<()> {
             }
         }
         Some(Commands::Transpile { file, output }) => {
-            let source = fs::read_to_string(&file)?;
+            let source = if file.as_os_str() == "-" {
+                // Read from stdin
+                let mut input = String::new();
+                io::stdin().read_to_string(&mut input)?;
+                input
+            } else {
+                fs::read_to_string(&file)?
+            };
+            
             let mut parser = RuchyParser::new(&source);
             let ast = parser.parse()?;
             let transpiler = Transpiler::new();
