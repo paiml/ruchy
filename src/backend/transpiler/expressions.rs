@@ -219,6 +219,12 @@ impl Transpiler {
         Ok(quote! { #expr_tokens.await })
     }
 
+    /// Transpiles async blocks
+    pub fn transpile_async_block(&self, body: &Expr) -> Result<TokenStream> {
+        let body_tokens = self.transpile_expr(body)?;
+        Ok(quote! { async { #body_tokens } })
+    }
+
     /// Transpiles throw expressions (panic in Rust)
     pub fn transpile_throw(&self, expr: &Expr) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;

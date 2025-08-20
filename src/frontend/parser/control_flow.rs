@@ -549,14 +549,11 @@ fn parse_catch_clause(state: &mut ParserState) -> Result<CatchClause> {
 pub fn parse_async_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume async
 
-    // Check what follows async
+    // Parse the async block body
     let body = super::parse_expr_recursive(state)?;
 
-    // For now, wrap the async block in a lambda that returns a future
-    // In a full implementation, we'd have a dedicated AsyncBlock AST node
     Ok(Expr::new(
-        ExprKind::Lambda {
-            params: Vec::new(),
+        ExprKind::AsyncBlock {
             body: Box::new(body),
         },
         start_span,

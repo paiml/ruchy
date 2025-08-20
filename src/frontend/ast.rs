@@ -93,6 +93,9 @@ pub enum ExprKind {
     Await {
         expr: Box<Expr>,
     },
+    AsyncBlock {
+        body: Box<Expr>,
+    },
     If {
         condition: Box<Expr>,
         then_branch: Box<Expr>,

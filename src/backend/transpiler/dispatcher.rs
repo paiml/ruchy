@@ -41,7 +41,8 @@ impl Transpiler {
             ExprKind::Binary { .. }
             | ExprKind::Unary { .. }
             | ExprKind::Try { .. }
-            | ExprKind::Await { .. } => self.transpile_operator_only_expr(expr),
+            | ExprKind::Await { .. }
+            | ExprKind::AsyncBlock { .. } => self.transpile_operator_only_expr(expr),
             // Control flow
             ExprKind::If { .. }
             | ExprKind::Match { .. }
@@ -57,6 +58,7 @@ impl Transpiler {
             ExprKind::Unary { op, operand } => self.transpile_unary(*op, operand),
             ExprKind::Try { expr } => self.transpile_try(expr),
             ExprKind::Await { expr } => self.transpile_await(expr),
+            ExprKind::AsyncBlock { body } => self.transpile_async_block(body),
             _ => unreachable!(),
         }
     }
