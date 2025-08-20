@@ -1,5 +1,8 @@
 #![allow(clippy::print_stdout)]
 #![allow(clippy::print_stderr)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::unwrap_used)]
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -8,6 +11,7 @@ use ruchy::{runtime::repl::Repl, Parser as RuchyParser, Transpiler, ExprKind};
 use std::fs;
 use std::io::{self, IsTerminal, Read};
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 #[derive(Parser)]
 #[command(name = "ruchy")]
@@ -91,6 +95,32 @@ enum Commands {
         /// Show diff of changes
         #[arg(long)]
         diff: bool,
+    },
+
+    /// Benchmark Ruchy code performance
+    Bench {
+        /// The file to benchmark
+        file: PathBuf,
+
+        /// Number of iterations to run
+        #[arg(long, default_value = "100")]
+        iterations: usize,
+
+        /// Number of warmup iterations
+        #[arg(long, default_value = "10")]
+        warmup: usize,
+
+        /// Output format (text, json, csv)
+        #[arg(long, default_value = "text")]
+        format: String,
+
+        /// Save results to file
+        #[arg(long)]
+        output: Option<PathBuf>,
+
+        /// Show verbose output including individual runs
+        #[arg(long)]
+        verbose: bool,
     },
 
     /// Lint Ruchy source code for issues and style violations
@@ -266,6 +296,9 @@ fn main() -> Result<()> {
         Some(Commands::Fmt { file, all, check, stdout, diff }) => {
             format_ruchy_code(&file, all, check, stdout, diff)?;
         }
+        Some(Commands::Bench { file, iterations, warmup, format, output, verbose }) => {
+            benchmark_ruchy_code(&file, iterations, warmup, &format, output.as_ref(), verbose)?;
+        }
         Some(Commands::Lint { file, all, verbose, format, deny_warnings, max_complexity }) => {
             if all {
                 lint_ruchy_code(&PathBuf::from("."), all, verbose, &format, deny_warnings, max_complexity)?;
@@ -432,6 +465,321 @@ fn print_diff(original: &str, formatted: &str, file: &PathBuf) {
         }
     }
     println!();
+}
+
+/// Benchmark Ruchy code performance
+fn benchmark_ruchy_code(
+    file: &PathBuf,
+    iterations: usize,
+    warmup: usize,
+    format: &str,
+    output: Option<&PathBuf>,
+    verbose: bool,
+) -> Result<()> {
+    let source = fs::read_to_string(file)?;
+    
+    println!("{} Benchmarking: {}", "→".bright_cyan(), file.display());
+    println!("  Iterations: {iterations}, Warmup: {warmup}");
+    
+    // Warmup phase
+    if verbose {
+        println!("\n{} Warmup phase...", "→".bright_cyan());
+    }
+    for i in 0..warmup {
+        let mut parser = RuchyParser::new(&source);
+        let _ = parser.parse();
+        if verbose {
+            println!("  Warmup {}/{warmup}", i + 1);
+        }
+    }
+    
+    // Benchmark parsing
+    let mut parse_times = Vec::new();
+    if verbose {
+        println!("\n{} Parse benchmark...", "→".bright_cyan());
+    }
+    
+    for i in 0..iterations {
+        let start = Instant::now();
+        let mut parser = RuchyParser::new(&source);
+        match parser.parse() {
+            Ok(_) => {
+                let elapsed = start.elapsed();
+                parse_times.push(elapsed);
+                if verbose {
+                    println!("  Run {}/{iterations}: {:?}", i + 1, elapsed);
+                }
+            }
+            Err(e) => {
+                eprintln!("{} Parse error: {e}", "✗".bright_red());
+                std::process::exit(1);
+            }
+        }
+    }
+    
+    // Benchmark transpilation
+    let mut transpile_times = Vec::new();
+    if verbose {
+        println!("\n{} Transpile benchmark...", "→".bright_cyan());
+    }
+    
+    for i in 0..iterations {
+        let mut parser = RuchyParser::new(&source);
+        let ast = parser.parse()?;
+        
+        let start = Instant::now();
+        let transpiler = Transpiler::new();
+        let _ = transpiler.transpile(&ast);
+        let elapsed = start.elapsed();
+        
+        transpile_times.push(elapsed);
+        if verbose {
+            println!("  Run {}/{iterations}: {:?}", i + 1, elapsed);
+        }
+    }
+    
+    // Calculate statistics
+    let parse_stats = calculate_stats(&parse_times);
+    let transpile_stats = calculate_stats(&transpile_times);
+    
+    // Display results
+    match format {
+        "json" => display_bench_json(&parse_stats, &transpile_stats, file, iterations),
+        "csv" => display_bench_csv(&parse_stats, &transpile_stats, file, iterations),
+        _ => display_bench_text(&parse_stats, &transpile_stats, file, iterations, &source),
+    }
+    
+    // Save to file if requested
+    if let Some(output_path) = output {
+        save_bench_results(output_path, &parse_stats, &transpile_stats, file, iterations, format)?;
+        println!("\n{} Results saved to {}", "✓".bright_green(), output_path.display());
+    }
+    
+    Ok(())
+}
+
+/// Statistics for benchmark results
+#[derive(Debug)]
+#[allow(dead_code)]
+struct BenchStats {
+    mean: Duration,
+    median: Duration,
+    min: Duration,
+    max: Duration,
+    std_dev: Duration,
+    throughput_mb_per_sec: f64,
+}
+
+/// Calculate statistics from timing data
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+fn calculate_stats(times: &[Duration]) -> BenchStats {
+    if times.is_empty() {
+        return BenchStats {
+            mean: Duration::ZERO,
+            median: Duration::ZERO,
+            min: Duration::ZERO,
+            max: Duration::ZERO,
+            std_dev: Duration::ZERO,
+            throughput_mb_per_sec: 0.0,
+        };
+    }
+    
+    let mut sorted_times = times.to_vec();
+    sorted_times.sort();
+    
+    let sum: Duration = times.iter().sum();
+    let mean = sum / times.len() as u32;
+    
+    let median = if times.len() % 2 == 0 {
+        (sorted_times[times.len() / 2 - 1] + sorted_times[times.len() / 2]) / 2
+    } else {
+        sorted_times[times.len() / 2]
+    };
+    
+    let min = sorted_times.first().copied().unwrap_or(Duration::ZERO);
+    let max = sorted_times.last().copied().unwrap_or(Duration::ZERO);
+    
+    // Calculate standard deviation
+    let variance: f64 = times.iter()
+        .map(|t| {
+            let diff = t.as_secs_f64() - mean.as_secs_f64();
+            diff * diff
+        })
+        .sum::<f64>() / times.len() as f64;
+    
+    let std_dev = Duration::from_secs_f64(variance.sqrt());
+    
+    // Placeholder for throughput (would need file size)
+    let throughput_mb_per_sec = 0.0;
+    
+    BenchStats {
+        mean,
+        median,
+        min,
+        max,
+        std_dev,
+        throughput_mb_per_sec,
+    }
+}
+
+/// Display benchmark results in text format
+#[allow(clippy::cast_precision_loss)]
+fn display_bench_text(
+    parse_stats: &BenchStats,
+    transpile_stats: &BenchStats,
+    file: &PathBuf,
+    iterations: usize,
+    source: &str,
+) {
+    let source_lines = source.lines().count();
+    let source_bytes = source.len();
+    
+    println!("\n{} Benchmark Results", "📊".bright_blue());
+    println!("  File: {}", file.display());
+    println!("  Size: {} bytes, {} lines", source_bytes, source_lines);
+    println!("  Iterations: {iterations}");
+    
+    println!("\n{} Parse Performance:", "→".bright_cyan());
+    println!("  Mean:     {:?}", parse_stats.mean);
+    println!("  Median:   {:?}", parse_stats.median);
+    println!("  Min:      {:?}", parse_stats.min);
+    println!("  Max:      {:?}", parse_stats.max);
+    println!("  Std Dev:  {:?}", parse_stats.std_dev);
+    
+    if source_bytes > 0 {
+        let throughput = source_bytes as f64 / parse_stats.mean.as_secs_f64() / 1_000_000.0;
+        println!("  Throughput: {:.2} MB/s", throughput);
+    }
+    
+    println!("\n{} Transpile Performance:", "→".bright_cyan());
+    println!("  Mean:     {:?}", transpile_stats.mean);
+    println!("  Median:   {:?}", transpile_stats.median);
+    println!("  Min:      {:?}", transpile_stats.min);
+    println!("  Max:      {:?}", transpile_stats.max);
+    println!("  Std Dev:  {:?}", transpile_stats.std_dev);
+    
+    if source_bytes > 0 {
+        let throughput = source_bytes as f64 / transpile_stats.mean.as_secs_f64() / 1_000_000.0;
+        println!("  Throughput: {:.2} MB/s", throughput);
+    }
+    
+    println!("\n{} Total Time:", "→".bright_cyan());
+    let total_mean = parse_stats.mean + transpile_stats.mean;
+    println!("  Mean:     {:?}", total_mean);
+    
+    if source_lines > 0 {
+        let lines_per_sec = source_lines as f64 / total_mean.as_secs_f64();
+        println!("  Lines/sec: {:.0}", lines_per_sec);
+    }
+}
+
+/// Display benchmark results in JSON format
+fn display_bench_json(
+    parse_stats: &BenchStats,
+    transpile_stats: &BenchStats,
+    file: &PathBuf,
+    iterations: usize,
+) {
+    let result = serde_json::json!({
+        "file": file.display().to_string(),
+        "iterations": iterations,
+        "parse": {
+            "mean_ms": parse_stats.mean.as_millis(),
+            "median_ms": parse_stats.median.as_millis(),
+            "min_ms": parse_stats.min.as_millis(),
+            "max_ms": parse_stats.max.as_millis(),
+            "std_dev_ms": parse_stats.std_dev.as_millis(),
+        },
+        "transpile": {
+            "mean_ms": transpile_stats.mean.as_millis(),
+            "median_ms": transpile_stats.median.as_millis(),
+            "min_ms": transpile_stats.min.as_millis(),
+            "max_ms": transpile_stats.max.as_millis(),
+            "std_dev_ms": transpile_stats.std_dev.as_millis(),
+        },
+        "total": {
+            "mean_ms": (parse_stats.mean + transpile_stats.mean).as_millis(),
+        }
+    });
+    
+    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_else(|_| "Invalid JSON".to_string()));
+}
+
+/// Display benchmark results in CSV format
+fn display_bench_csv(
+    parse_stats: &BenchStats,
+    transpile_stats: &BenchStats,
+    file: &PathBuf,
+    iterations: usize,
+) {
+    println!("file,iterations,parse_mean_ms,parse_median_ms,parse_min_ms,parse_max_ms,transpile_mean_ms,transpile_median_ms,transpile_min_ms,transpile_max_ms");
+    println!("{},{},{},{},{},{},{},{},{},{}",
+        file.display(),
+        iterations,
+        parse_stats.mean.as_millis(),
+        parse_stats.median.as_millis(),
+        parse_stats.min.as_millis(),
+        parse_stats.max.as_millis(),
+        transpile_stats.mean.as_millis(),
+        transpile_stats.median.as_millis(),
+        transpile_stats.min.as_millis(),
+        transpile_stats.max.as_millis(),
+    );
+}
+
+/// Save benchmark results to file
+fn save_bench_results(
+    output_path: &PathBuf,
+    parse_stats: &BenchStats,
+    transpile_stats: &BenchStats,
+    file: &PathBuf,
+    iterations: usize,
+    format: &str,
+) -> Result<()> {
+    let content = match format {
+        "json" => {
+            let result = serde_json::json!({
+                "file": file.display().to_string(),
+                "iterations": iterations,
+                "parse": {
+                    "mean_ms": parse_stats.mean.as_millis(),
+                    "median_ms": parse_stats.median.as_millis(),
+                    "min_ms": parse_stats.min.as_millis(),
+                    "max_ms": parse_stats.max.as_millis(),
+                },
+                "transpile": {
+                    "mean_ms": transpile_stats.mean.as_millis(),
+                    "median_ms": transpile_stats.median.as_millis(),
+                    "min_ms": transpile_stats.min.as_millis(),
+                    "max_ms": transpile_stats.max.as_millis(),
+                }
+            });
+            serde_json::to_string_pretty(&result).unwrap_or_else(|_| "Invalid JSON".to_string())
+        }
+        "csv" => {
+            format!("file,iterations,parse_mean_ms,parse_median_ms,transpile_mean_ms,transpile_median_ms\n{},{},{},{},{},{}",
+                file.display(),
+                iterations,
+                parse_stats.mean.as_millis(),
+                parse_stats.median.as_millis(),
+                transpile_stats.mean.as_millis(),
+                transpile_stats.median.as_millis(),
+            )
+        }
+        _ => {
+            format!("Benchmark Results\nFile: {}\nIterations: {}\n\nParse:\n  Mean: {:?}\n  Median: {:?}\n\nTranspile:\n  Mean: {:?}\n  Median: {:?}",
+                file.display(),
+                iterations,
+                parse_stats.mean,
+                parse_stats.median,
+                transpile_stats.mean,
+                transpile_stats.median,
+            )
+        }
+    };
+    
+    fs::write(output_path, content)?;
+    Ok(())
 }
 
 /// Represents a lint severity level
