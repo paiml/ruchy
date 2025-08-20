@@ -2999,6 +2999,7 @@ dependencies = [
  "colored",
  "ruchy",
  "rustyline",
+ "serde_json",
  "thiserror 1.0.69",
  "tracing",
  "tracing-subscriber",

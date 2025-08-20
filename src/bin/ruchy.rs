@@ -70,6 +70,54 @@ enum Commands {
         /// The file to parse
         file: PathBuf,
     },
+
+    /// Format Ruchy source code
+    Fmt {
+        /// The file to format
+        file: PathBuf,
+
+        /// Format all files in project
+        #[arg(long)]
+        all: bool,
+
+        /// Check if files are formatted without modifying them
+        #[arg(long)]
+        check: bool,
+
+        /// Write formatted output to stdout instead of modifying files
+        #[arg(long)]
+        stdout: bool,
+
+        /// Show diff of changes
+        #[arg(long)]
+        diff: bool,
+    },
+
+    /// Lint Ruchy source code for issues and style violations
+    Lint {
+        /// The file to lint
+        file: PathBuf,
+
+        /// Lint all files in project
+        #[arg(long)]
+        all: bool,
+
+        /// Show additional context for violations
+        #[arg(long)]
+        verbose: bool,
+
+        /// Output format (text, json)
+        #[arg(long, default_value = "text")]
+        format: String,
+
+        /// Fail on warnings as well as errors
+        #[arg(long)]
+        deny_warnings: bool,
+
+        /// Maximum allowed complexity for functions
+        #[arg(long, default_value = "10")]
+        max_complexity: usize,
+    },
 }
 
 fn main() -> Result<()> {
@@ -215,6 +263,12 @@ fn main() -> Result<()> {
                 }
             }
         }
+        Some(Commands::Fmt { file, all, check, stdout, diff }) => {
+            format_ruchy_code(&file, all, check, stdout, diff)?;
+        }
+        Some(Commands::Lint { file, all, verbose, format, deny_warnings, max_complexity }) => {
+            lint_ruchy_code(&file, all, verbose, &format, deny_warnings, max_complexity)?;
+        }
     }
 
     Ok(())
@@ -238,4 +292,123 @@ fn run_file(file: &PathBuf) -> Result<()> {
             std::process::exit(1);
         }
     }
+}
+
+/// Format Ruchy code
+#[allow(clippy::fn_params_excessive_bools)]
+fn format_ruchy_code(file: &PathBuf, all: bool, check: bool, stdout: bool, diff: bool) -> Result<()> {
+    if all {
+        println!("{} Format all functionality not yet implemented", "⚠".yellow());
+        return Ok(());
+    }
+    
+    let source = fs::read_to_string(file)?;
+    let mut parser = RuchyParser::new(&source);
+    
+    match parser.parse() {
+        Ok(ast) => {
+            let formatted = format!("{ast:#?}");
+            
+            if check {
+                if source.trim() == formatted.trim() {
+                    println!("{} {} is already formatted", "✓".bright_green(), file.display());
+                } else {
+                    println!("{} {} needs formatting", "✗".bright_red(), file.display());
+                    if diff {
+                        println!("Diff would be shown here");
+                    }
+                    std::process::exit(1);
+                }
+            } else if stdout {
+                println!("{formatted}");
+            } else {
+                println!("{} Formatted output for {} (write-back not implemented)", "→".bright_cyan(), file.display());
+                println!("{formatted}");
+            }
+        }
+        Err(e) => {
+            eprintln!("{} Parse error in {}: {e}", "✗".bright_red(), file.display());
+            std::process::exit(1);
+        }
+    }
+    
+    Ok(())
+}
+
+/// Lint Ruchy code
+fn lint_ruchy_code(file: &PathBuf, all: bool, verbose: bool, format: &str, deny_warnings: bool, max_complexity: usize) -> Result<()> {
+    if all {
+        println!("{} Lint all functionality not yet implemented", "⚠".yellow());
+        return Ok(());
+    }
+    
+    let source = fs::read_to_string(file)?;
+    let mut parser = RuchyParser::new(&source);
+    
+    match parser.parse() {
+        Ok(ast) => {
+            // Basic lint checks
+            let mut violations = Vec::new();
+            
+            // Check 1: Basic complexity (simplified)
+            let complexity = estimate_complexity(&source);
+            if complexity > max_complexity {
+                violations.push(format!("High complexity: estimated {complexity}, max {max_complexity}"));
+            }
+            
+            // Check 2: Long lines
+            for (line_num, line) in source.lines().enumerate() {
+                if line.len() > 100 {
+                    violations.push(format!("Line {} too long: {} characters", line_num + 1, line.len()));
+                }
+            }
+            
+            // Display results
+            if violations.is_empty() {
+                println!("{} {} is clean", "✓".bright_green(), file.display());
+            } else {
+                println!("\n{} Issues found in {}:", "⚠".yellow(), file.display());
+                for violation in &violations {
+                    println!("  {}: {violation}", "warning".yellow());
+                }
+                
+                if format == "json" {
+                    let json = serde_json::json!({
+                        "file": file.display().to_string(),
+                        "violations": violations
+                    });
+                    println!("{}", serde_json::to_string_pretty(&json).unwrap_or_else(|_| "Invalid JSON".to_string()));
+                }
+                
+                if deny_warnings {
+                    std::process::exit(1);
+                }
+            }
+            
+            if verbose {
+                println!("AST: {ast:#?}");
+            }
+        }
+        Err(e) => {
+            eprintln!("{} Parse error in {}: {e}", "✗".bright_red(), file.display());
+            std::process::exit(1);
+        }
+    }
+    
+    Ok(())
+}
+
+/// Estimate complexity of source code (simplified)
+fn estimate_complexity(source: &str) -> usize {
+    let mut complexity = 1; // Base complexity
+    
+    for line in source.lines() {
+        if line.contains("if ") { complexity += 1; }
+        if line.contains("for ") { complexity += 1; }
+        if line.contains("while ") { complexity += 1; }
+        if line.contains("match ") { complexity += 1; }
+        if line.contains("=>") { complexity += 1; }
+    }
+    
+    complexity
 }
