@@ -72,6 +72,10 @@ pub enum Value {
         params: Vec<String>,
         body: Box<Expr>,
     },
+    Lambda {
+        params: Vec<String>,
+        body: Box<Expr>,
+    },
     DataFrame {
         columns: Vec<DataFrameColumn>,
     },
@@ -205,6 +209,9 @@ impl fmt::Display for Value {
             }
             Value::Function { name, params, .. } => {
                 write!(f, "fn {}({})", name, params.join(", "))
+            }
+            Value::Lambda { params, .. } => {
+                write!(f, "|{}| <closure>", params.join(", "))
             }
             Value::DataFrame { columns } => Self::format_dataframe(f, columns),
             Value::Unit => write!(f, "()"),
@@ -836,11 +843,13 @@ impl Repl {
                 self.bindings.insert(name.clone(), func_value.clone());
                 Ok(func_value)
             }
-            ExprKind::Lambda { params, .. } => {
-                // Lambda expressions (simplified for REPL demo)
+            ExprKind::Lambda { params, body } => {
+                // Store lambda as a callable value
                 let param_names: Vec<String> = params.iter().map(|p| p.name.clone()).collect();
-                let lambda_signature = format!("|{}| <body>", param_names.join(", "));
-                Ok(Value::String(lambda_signature))
+                Ok(Value::Lambda {
+                    params: param_names,
+                    body: body.clone(),
+                })
             }
             ExprKind::Call { func, args } => self.evaluate_call(func, args, deadline, depth),
             ExprKind::DataFrame { columns } => {
@@ -2192,28 +2201,51 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         if let Some(func_value) = self.bindings.get(func_name).cloned() {
-            if let Value::Function { params, body, .. } = func_value {
-                if args.len() != params.len() {
-                    bail!(
-                        "Function {} expects {} arguments, got {}",
-                        func_name,
-                        params.len(),
-                        args.len()
-                    );
+            match func_value {
+                Value::Function { params, body, .. } => {
+                    if args.len() != params.len() {
+                        bail!(
+                            "Function {} expects {} arguments, got {}",
+                            func_name,
+                            params.len(),
+                            args.len()
+                        );
+                    }
+
+                    let saved_bindings = self.bindings.clone();
+
+                    for (param, arg) in params.iter().zip(args.iter()) {
+                        let arg_value = self.evaluate_expr(arg, deadline, depth + 1)?;
+                        self.bindings.insert(param.clone(), arg_value);
+                    }
+
+                    let result = self.evaluate_expr(&body, deadline, depth + 1)?;
+                    self.bindings = saved_bindings;
+                    Ok(result)
                 }
+                Value::Lambda { params, body } => {
+                    if args.len() != params.len() {
+                        bail!(
+                            "Lambda expects {} arguments, got {}",
+                            params.len(),
+                            args.len()
+                        );
+                    }
 
-                let saved_bindings = self.bindings.clone();
+                    let saved_bindings = self.bindings.clone();
 
-                for (param, arg) in params.iter().zip(args.iter()) {
-                    let arg_value = self.evaluate_expr(arg, deadline, depth + 1)?;
-                    self.bindings.insert(param.clone(), arg_value);
+                    for (param, arg) in params.iter().zip(args.iter()) {
+                        let arg_value = self.evaluate_expr(arg, deadline, depth + 1)?;
+                        self.bindings.insert(param.clone(), arg_value);
+                    }
+
+                    let result = self.evaluate_expr(&body, deadline, depth + 1)?;
+                    self.bindings = saved_bindings;
+                    Ok(result)
                 }
-
-                let result = self.evaluate_expr(&body, deadline, depth + 1)?;
-                self.bindings = saved_bindings;
-                Ok(result)
-            } else {
-                bail!("'{}' is not a function", func_name);
+                _ => {
+                    bail!("'{}' is not a function", func_name);
+                }
             }
         } else {
             bail!("Unknown function: {}", func_name);
