@@ -1167,8 +1167,8 @@ impl Repl {
                         "len" | "length" => {
                             Ok(Value::Int(i64::try_from(s.len()).unwrap_or(i64::MAX)))
                         }
-                        "upper" | "to_upper" => Ok(Value::String(s.to_uppercase())),
-                        "lower" | "to_lower" => Ok(Value::String(s.to_lowercase())),
+                        "upper" | "to_upper" | "to_uppercase" => Ok(Value::String(s.to_uppercase())),
+                        "lower" | "to_lower" | "to_lowercase" => Ok(Value::String(s.to_lowercase())),
                         "trim" => Ok(Value::String(s.trim().to_string())),
                         "split" => {
                             if args.len() != 1 {

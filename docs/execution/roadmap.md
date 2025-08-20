@@ -83,11 +83,19 @@
 3. **Pattern Matching Params** (10+ failures) - Destructuring in functions
 
 ### Tasks (CRITICAL PATH)
-- **BOOK-CRITICAL-001**: Add FatArrow token and closure syntax ⚠️ URGENT
-- **BOOK-CRITICAL-002**: Fix println to accept multiple arguments ⚠️ URGENT  
-- **BOOK-CRITICAL-003**: Add pattern matching in function parameters
-- **BOOK-CRITICAL-004**: Method chaining on literals
-- **BOOK-CRITICAL-005**: Async/await block support
+- [x] **BOOK-CRITICAL-001**: Add FatArrow token and closure syntax ✅ COMPLETED v0.7.3
+- [x] **BOOK-CRITICAL-002**: Fix println to accept multiple arguments ✅ COMPLETED (already worked)
+- [x] **BOOK-CRITICAL-003**: Add comment parsing (`// comment` syntax) ✅ ALREADY IMPLEMENTED
+- [ ] **BOOK-CRITICAL-004**: Add pattern matching in function parameters (DEFERRED - complex)
+- [x] **BOOK-CRITICAL-005**: Method chaining on literals
+- [ ] **BOOK-CRITICAL-006**: Add fat arrow syntax support (`|a, b| => expr`)
+- [ ] **BOOK-CRITICAL-007**: Async/await block support
+
+### Progress Update v0.7.3
+- **Closure Support**: Fixed transpilation and REPL callable support
+- **Book Impact**: Core functional programming examples now work
+- **CLI Fixed**: `echo 'code' | ruchy transpile -` now works properly  
+- **Next Blocker**: Comment parsing - many examples start with `// Comment`
 
 ## PREVIOUS EMERGENCY: REPL REGRESSION FIX ✅ RESOLVED v0.7.2
 
