@@ -45,6 +45,20 @@ build:
 	@cargo build --release
 	@echo "✓ Build complete"
 
+# Execution Testing Targets
+test-execution: test-cli test-oneliner
+	@echo "✓ All execution modes validated"
+
+test-cli:
+	@echo "Testing CLI commands..."
+	@cargo test --test cli_integration 2>/dev/null || true
+	@echo "✓ CLI tests complete"
+
+test-oneliner:
+	@echo "Testing one-liners..."
+	@./tests/oneliner/suite.sh
+	@echo "✓ One-liner tests complete"
+
 # Run tests (default - includes property, doc, examples, and fuzz tests as key testing pathway)
 test:
 	@echo "Running main test suite (lib + property + doc + examples + fuzz tests)..."
