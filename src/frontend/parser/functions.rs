@@ -367,16 +367,28 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
                 }
                 "select" => {
                     // Extract column names from arguments
-                    let columns = args
-                        .into_iter()
-                        .filter_map(|arg| {
-                            if let ExprKind::Identifier(name) = arg.kind {
-                                Some(name)
-                            } else {
-                                None
+                    let mut columns = Vec::new();
+                    for arg in args {
+                        match arg.kind {
+                            // Handle bare identifiers: .select(age, name)
+                            ExprKind::Identifier(name) => {
+                                columns.push(name);
                             }
-                        })
-                        .collect();
+                            // Handle list literals: .select(["age", "name"])  
+                            ExprKind::List(items) => {
+                                for item in items {
+                                    if let ExprKind::Literal(Literal::String(col_name)) = item.kind {
+                                        columns.push(col_name);
+                                    }
+                                }
+                            }
+                            // Handle single string literals: .select("age")
+                            ExprKind::Literal(Literal::String(col_name)) => {
+                                columns.push(col_name);
+                            }
+                            _ => {}
+                        }
+                    }
                     DataFrameOp::Select(columns)
                 }
                 "groupby" | "group_by" => {

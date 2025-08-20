@@ -426,6 +426,9 @@ fn value_to_json(value: &ruchy::runtime::Value) -> String {
         Value::Function { name, params, .. } => {
             format!(r#""fn {}({})""#, name, params.join(", "))
         }
+        Value::Lambda { params, .. } => {
+            format!(r#""lambda({})"#, params.join(", "))
+        }
         Value::DataFrame { columns } => {
             // Create a JSON representation of the DataFrame
             let mut cols = Vec::new();

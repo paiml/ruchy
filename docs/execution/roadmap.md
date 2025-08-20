@@ -87,6 +87,7 @@
 - [x] **BOOK-CRITICAL-002**: Fix println to accept multiple arguments ✅ COMPLETED (already worked)
 - [x] **BOOK-CRITICAL-003**: Add comment parsing (`// comment` syntax) ✅ ALREADY IMPLEMENTED
 - [ ] **BOOK-CRITICAL-004**: Add pattern matching in function parameters (DEFERRED - complex)
+- [x] **BOOK-CRITICAL-008**: Implement method calls on primitives (numbers, strings) - CRITICAL for book compatibility
 - [x] **BOOK-CRITICAL-005**: Method chaining on literals ✅ COMPLETED v0.7.3
 - [x] **BOOK-CRITICAL-006**: Add fat arrow syntax support (`|a, b| => expr`)
 - [x] **BOOK-CRITICAL-007**: Async/await block support
@@ -255,17 +256,17 @@ graph TD
 ### In Progress 🚧
 | ID | Description | Status | Complexity | Sprint |
 |----|-------------|--------|------------|--------|
-| RUCHY-0201 | Fix failing test suite (dataframe infer + snapshot determinism) | [x] | Medium | Next |
+| RUCHY-0201 | Fix failing test suite (dataframe infer + snapshot determinism) | ✅ | Medium | COMPLETED v0.7.4 |
 | RUCHY-0202 | Self field access | 📋 | Medium | Future |
 | RUCHY-0203 | Method calls on collections | 📋 | High | Future |
 
 ### Backlog 📋
 | ID | Description | Status | Complexity | Priority |
 |----|-------------|--------|------------|----------|
-| RUCHY-0300 | Tab completion in REPL | 📋 | Medium | P1 |
-| RUCHY-0301 | Pretty-printed DataFrames | 📋 | Medium | P2 |
+| RUCHY-0300 | Tab completion in REPL | ✅ | Medium | ALREADY COMPLETE |
+| RUCHY-0301 | Pretty-printed DataFrames | ✅ | Medium | ALREADY COMPLETE |
 | RUCHY-0302 | Syntax highlighting | 📋 | Low | P2 |
-| RUCHY-0303 | Module system | 📋 | High | P0 |
+| RUCHY-0303 | Module system | 📋 | High | DEFERRED |
 | RUCHY-0304 | Async/await runtime | 📋 | High | P1 |
 | RUCHY-0305 | Generic type parameters | 📋 | High | P1 |
 
