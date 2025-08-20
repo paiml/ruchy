@@ -5,7 +5,7 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Command-line interface for the Ruchy language"
+description = "DEPRECATED: Install 'ruchy' package instead. This package is kept for backward compatibility only."
 readme = "../README.md"
 keywords = ["cli", "language", "compiler", "transpiler", "rust"]
 categories = ["command-line-utilities", "development-tools"]
@@ -18,7 +18,7 @@ name = "ruchy"
 path = "src/main.rs"
 
 [dependencies]
-ruchy = { path = "..", version = "0.7.1" }
+ruchy = { path = "..", version = "0.7.3" }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

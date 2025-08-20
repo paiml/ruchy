@@ -337,6 +337,22 @@ If quality gates hang or fail:
 2. Fix the underlying issue causing the failure
 3. NEVER proceed without passing gates
 
+### MANDATORY RELEASE PUBLISHING PROTOCOL
+
+**CRITICAL**: After EVERY version update, you MUST publish to crates.io immediately.
+
+```bash
+# MANDATORY after version bump and git push:
+cargo publish                    # Publish main package
+cd ruchy-cli && cargo publish   # Publish CLI package
+```
+
+**NO EXCEPTIONS**: 
+- Every release pushed to GitHub MUST be published to crates.io
+- Users depend on published releases being available
+- Never leave a version unpublished after pushing to git
+- Publishing is NOT optional - it's part of the release process
+
 ## MANDATORY Quality Gates (BLOCKING - Not Advisory)
 
 **CRITICAL**: After the shameful failures of v0.4.6 (false claims, broken transpiler), quality gates are now BLOCKING and ENFORCED.
