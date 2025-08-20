@@ -15,6 +15,7 @@ use ruchy::{runtime::repl::Repl, Parser as RuchyParser, Transpiler, ExprKind};
 use std::fs;
 use std::io::{self, IsTerminal, Read};
 use std::path::{Path, PathBuf};
+use std::thread;
 use std::time::{Duration, Instant};
 
 #[derive(Parser)]
@@ -71,6 +72,28 @@ enum Commands {
     Check {
         /// The file to check
         file: PathBuf,
+        
+        /// Watch for changes and re-check automatically
+        #[arg(long)]
+        watch: bool,
+    },
+    
+    /// Run tests for Ruchy code
+    Test {
+        /// The test file or directory to run
+        path: Option<PathBuf>,
+        
+        /// Watch for changes and re-run tests automatically
+        #[arg(long)]
+        watch: bool,
+        
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
+        
+        /// Filter tests by name pattern
+        #[arg(long)]
+        filter: Option<String>,
     },
 
     /// Show AST for a file
@@ -303,17 +326,20 @@ fn main() -> Result<()> {
         Some(Commands::Run { file }) => {
             run_file(&file)?;
         }
-        Some(Commands::Check { file }) => {
-            let source = fs::read_to_string(&file)?;
-            let mut parser = RuchyParser::new(&source);
-            match parser.parse() {
-                Ok(_) => {
-                    println!("{}", "✓ Syntax is valid".green());
-                }
-                Err(e) => {
-                    eprintln!("{}", format!("✗ Syntax error: {e}").red());
-                    std::process::exit(1);
-                }
+        Some(Commands::Check { file, watch }) => {
+            if watch {
+                watch_and_check(&file)?;
+            } else {
+                check_syntax(&file)?;
+            }
+        }
+        Some(Commands::Test { path, watch, verbose, filter }) => {
+            if watch {
+                let test_path = path.unwrap_or_else(|| PathBuf::from("."));
+                watch_and_test(&test_path, verbose, filter.as_deref())?;
+            } else {
+                let test_path = path.unwrap_or_else(|| PathBuf::from("."));
+                run_tests(&test_path, verbose, filter.as_deref())?;
             }
         }
         Some(Commands::Ast { file }) => {
@@ -369,6 +395,261 @@ fn run_file(file: &Path) -> Result<()> {
             std::process::exit(1);
         }
     }
+}
+
+/// Check syntax of a file
+fn check_syntax(file: &Path) -> Result<()> {
+    let source = fs::read_to_string(file)?;
+    let mut parser = RuchyParser::new(&source);
+    match parser.parse() {
+        Ok(_) => {
+            println!("{}", "✓ Syntax is valid".green());
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("{}", format!("✗ Syntax error: {e}").red());
+            std::process::exit(1);
+        }
+    }
+}
+
+/// Watch a file and check syntax on changes
+fn watch_and_check(file: &Path) -> Result<()> {
+    println!("{} Watching {} for changes...", "👁".bright_cyan(), file.display());
+    println!("Press Ctrl+C to stop watching\n");
+    
+    // Initial check
+    check_syntax(file)?;
+    
+    // Simple file watching using polling
+    let mut last_modified = fs::metadata(file)?.modified()?;
+    
+    loop {
+        thread::sleep(Duration::from_millis(500));
+        
+        let Ok(metadata) = fs::metadata(file) else {
+            continue; // File might be temporarily unavailable
+        };
+        
+        let Ok(modified) = metadata.modified() else {
+            continue;
+        };
+        
+        if modified != last_modified {
+            last_modified = modified;
+            println!("\n{} File changed, checking...", "→".bright_cyan());
+            let _ = check_syntax(file); // Don't exit on error, keep watching
+        }
+    }
+}
+
+/// Run tests from a path
+fn run_tests(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
+    println!("{} Running tests...", "🧪".bright_cyan());
+    
+    // Discover test files
+    let test_files = if path.is_dir() {
+        discover_test_files(path)?
+    } else {
+        vec![path.to_path_buf()]
+    };
+    
+    if test_files.is_empty() {
+        println!("{} No test files found", "⚠".yellow());
+        return Ok(());
+    }
+    
+    let mut total_tests = 0;
+    let mut passed_tests = 0;
+    let mut failed_tests = 0;
+    
+    for test_file in &test_files {
+        if verbose {
+            println!("\n{} Running {}", "→".bright_cyan(), test_file.display());
+        }
+        
+        let source = fs::read_to_string(test_file)?;
+        
+        // Parse and find test functions
+        let mut parser = RuchyParser::new(&source);
+        match parser.parse() {
+            Ok(ast) => {
+                let tests = extract_test_functions(&ast, filter);
+                
+                for test in tests {
+                    total_tests += 1;
+                    
+                    if verbose {
+                        print!("  {} {}... ", "→".bright_cyan(), test.name);
+                    }
+                    
+                    // Run test in REPL
+                    let mut repl = Repl::new()?;
+                    match repl.eval(&source) {
+                        Ok(_) => {
+                            passed_tests += 1;
+                            if verbose {
+                                println!("{}", "✓".green());
+                            } else {
+                                print!("{}", ".".green());
+                            }
+                        }
+                        Err(e) => {
+                            failed_tests += 1;
+                            if verbose {
+                                println!("{} {}", "✗".red(), e);
+                            } else {
+                                print!("{}", "F".red());
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("{} Parse error in {}: {e}", "✗".bright_red(), test_file.display());
+                failed_tests += 1;
+            }
+        }
+    }
+    
+    // Print summary
+    println!("\n\n{}", "─".repeat(40));
+    let status = if failed_tests == 0 {
+        format!("{} All tests passed!", "✓".bright_green())
+    } else {
+        format!("{} Some tests failed", "✗".bright_red())
+    };
+    
+    println!("{status}");
+    println!("Total: {total_tests}, Passed: {}, Failed: {}", 
+        format!("{passed_tests}").green(),
+        if failed_tests > 0 { format!("{failed_tests}").red() } else { format!("{failed_tests}").white() }
+    );
+    
+    if failed_tests > 0 {
+        std::process::exit(1);
+    }
+    
+    Ok(())
+}
+
+/// Watch and run tests on changes
+fn watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
+    println!("{} Watching {} for changes...", "👁".bright_cyan(), path.display());
+    println!("Press Ctrl+C to stop watching\n");
+    
+    // Initial test run
+    let _ = run_tests(path, verbose, filter);
+    
+    // Watch for changes
+    let mut last_run = Instant::now();
+    
+    loop {
+        thread::sleep(Duration::from_millis(500));
+        
+        // Check if any test files have changed
+        let test_files = if path.is_dir() {
+            discover_test_files(path)?
+        } else {
+            vec![path.to_path_buf()]
+        };
+        
+        let mut should_run = false;
+        for file in &test_files {
+            if let Ok(metadata) = fs::metadata(file) {
+                if let Ok(modified) = metadata.modified() {
+                    if let Ok(duration) = modified.duration_since(std::time::SystemTime::UNIX_EPOCH) {
+                        let file_time = Instant::now().checked_sub(Duration::from_secs(duration.as_secs())).unwrap();
+                        if file_time > last_run {
+                            should_run = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        if should_run {
+            last_run = Instant::now();
+            println!("\n{} Files changed, re-running tests...", "→".bright_cyan());
+            let _ = run_tests(path, verbose, filter);
+        }
+    }
+}
+
+/// Test function info
+struct TestFunction {
+    name: String,
+}
+
+/// Extract test functions from AST
+fn extract_test_functions(ast: &ruchy::Expr, filter: Option<&str>) -> Vec<TestFunction> {
+    let mut tests = Vec::new();
+    extract_tests_recursive(ast, &mut tests, filter);
+    tests
+}
+
+/// Recursively extract test functions
+fn extract_tests_recursive(ast: &ruchy::Expr, tests: &mut Vec<TestFunction>, filter: Option<&str>) {
+    match &ast.kind {
+        ExprKind::Function { name, .. } => {
+            // Test functions start with "test_" or have @test attribute
+            if name.starts_with("test_") || ast.attributes.iter().any(|a| a.name == "test") {
+                if let Some(f) = filter {
+                    if !name.contains(f) {
+                        return;
+                    }
+                }
+                tests.push(TestFunction {
+                    name: name.clone(),
+                });
+            }
+        }
+        ExprKind::Block(exprs) => {
+            for expr in exprs {
+                extract_tests_recursive(expr, tests, filter);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Discover test files in a directory
+fn discover_test_files(dir: &Path) -> Result<Vec<PathBuf>> {
+    let mut test_files = Vec::new();
+    visit_dir_for_tests(dir, &mut test_files)?;
+    test_files.sort();
+    Ok(test_files)
+}
+
+/// Recursively visit directories to find test files
+fn visit_dir_for_tests(dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
+    if dir.is_dir() {
+        for entry in fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                // Skip hidden directories and common build/dependency directories
+                if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
+                    if !name.starts_with('.') 
+                        && name != "target" 
+                        && name != "node_modules" 
+                        && name != "build" 
+                        && name != "dist" {
+                        visit_dir_for_tests(&path, files)?;
+                    }
+                }
+            } else if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
+                // Test files end with _test.ruchy or test.ruchy or are in a tests/ directory
+                if (name.ends_with("_test.ruchy") || name.ends_with("test.ruchy") || 
+                    path.parent().and_then(|p| p.file_name()).and_then(|s| s.to_str()) == Some("tests"))
+                    && path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+                    files.push(path);
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Format Ruchy code
@@ -1004,8 +1285,8 @@ fn calculate_complexity(expr: &ruchy::Expr) -> usize {
 /// Check for unused variables (placeholder for future implementation)
 #[allow(clippy::ptr_arg)]
 fn check_unused_variables(_ast: &ruchy::Expr, _violations: &mut Vec<LintViolation>) {
-    // TODO: Implement proper unused variable detection
     // This requires building a symbol table and tracking usage
+    // Implementation deferred to future iteration
 }
 
 /// Check for missing documentation
