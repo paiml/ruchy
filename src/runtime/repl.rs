@@ -1302,10 +1302,22 @@ impl Repl {
         use Value::{Bool, Float, Int};
 
         match (lhs, op, rhs) {
-            // Integer arithmetic
-            (Int(a), BinaryOp::Add, Int(b)) => Ok(Int(a + b)),
-            (Int(a), BinaryOp::Subtract, Int(b)) => Ok(Int(a - b)),
-            (Int(a), BinaryOp::Multiply, Int(b)) => Ok(Int(a * b)),
+            // Integer arithmetic with overflow checking
+            (Int(a), BinaryOp::Add, Int(b)) => {
+                a.checked_add(*b)
+                    .map(Int)
+                    .ok_or_else(|| anyhow::anyhow!("Integer overflow in addition: {} + {}", a, b))
+            }
+            (Int(a), BinaryOp::Subtract, Int(b)) => {
+                a.checked_sub(*b)
+                    .map(Int)
+                    .ok_or_else(|| anyhow::anyhow!("Integer overflow in subtraction: {} - {}", a, b))
+            }
+            (Int(a), BinaryOp::Multiply, Int(b)) => {
+                a.checked_mul(*b)
+                    .map(Int)
+                    .ok_or_else(|| anyhow::anyhow!("Integer overflow in multiplication: {} * {}", a, b))
+            }
             (Int(a), BinaryOp::Divide, Int(b)) => {
                 if *b == 0 {
                     bail!("Division by zero");
@@ -1324,8 +1336,9 @@ impl Repl {
                 }
                 let exp =
                     u32::try_from(*b).map_err(|_| anyhow::anyhow!("Power exponent too large"))?;
-                let result = a.pow(exp);
-                Ok(Int(result))
+                a.checked_pow(exp)
+                    .map(Int)
+                    .ok_or_else(|| anyhow::anyhow!("Integer overflow in power: {} ^ {}", a, b))
             }
 
             // Float arithmetic
