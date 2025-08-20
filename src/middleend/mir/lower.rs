@@ -72,7 +72,7 @@ impl LoweringContext {
         // Add parameters
         for param in params {
             let ty = self.ast_to_mir_type(&param.ty);
-            self.builder.add_param(param.name.clone(), ty);
+            self.builder.add_param(param.name(), ty);
         }
 
         // Create entry block

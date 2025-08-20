@@ -1,7 +1,7 @@
 //! Function-related parsing (function definitions, lambdas, calls)
 
 use super::{ParserState, *};
-use crate::frontend::ast::{DataFrameOp, Literal};
+use crate::frontend::ast::{DataFrameOp, Literal, Pattern};
 
 /// # Errors
 ///
@@ -92,7 +92,7 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
         };
 
         params.push(Param {
-            name,
+            pattern: Pattern::Identifier(name),
             ty,
             span: Span { start: 0, end: 0 },
             is_mutable: false,
@@ -158,7 +158,7 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
         // Parse first parameter
         if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             params.push(Param {
-                name: name.clone(),
+                pattern: Pattern::Identifier(name.clone()),
                 ty: Type {
                     kind: TypeKind::Named("Any".to_string()),
                     span: Span { start: 0, end: 0 },
@@ -173,7 +173,7 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
                 state.tokens.advance(); // consume comma
                 if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
                     params.push(Param {
-                        name: name.clone(),
+                        pattern: Pattern::Identifier(name.clone()),
                         ty: Type {
                             kind: TypeKind::Named("Any".to_string()),
                             span: Span { start: 0, end: 0 },

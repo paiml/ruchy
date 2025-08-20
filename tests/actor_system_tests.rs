@@ -79,9 +79,9 @@ fn test_parse_actor_with_message_params() {
     if let ExprKind::Actor { name, handlers, .. } = &expr.kind {
         assert_eq!(name, "Calculator");
         assert_eq!(handlers[0].params.len(), 1);
-        assert_eq!(handlers[0].params[0].name, "value");
+        assert_eq!(handlers[0].params[0].name(), "value");
         assert_eq!(handlers[1].params.len(), 1);
-        assert_eq!(handlers[1].params[0].name, "factor");
+        assert_eq!(handlers[1].params[0].name(), "factor");
         assert_eq!(handlers[2].params.len(), 0);
     } else {
         panic!("Expected Actor expression");

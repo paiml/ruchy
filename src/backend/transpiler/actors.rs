@@ -70,7 +70,7 @@ impl Transpiler {
                 let param_names: Vec<_> = handler
                     .params
                     .iter()
-                    .map(|p| format_ident!("{}", p.name))
+                    .map(|p| format_ident!("{}", p.name()))
                     .collect();
 
                 let body_tokens = self.transpile_expr(&handler.body)?;

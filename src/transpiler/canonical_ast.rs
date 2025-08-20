@@ -206,9 +206,9 @@ impl AstNormalizer {
                 let mut result = self.desugar_and_convert(body);
 
                 for param in params.iter().rev() {
-                    self.context.push(param.name.clone());
+                    self.context.push(param.name());
                     result = CoreExpr::Lambda {
-                        param_name: Some(param.name.clone()),
+                        param_name: Some(param.name()),
                         body: Box::new(result),
                     };
                     // Note: We don't pop here because we're building inside-out
@@ -230,7 +230,7 @@ impl AstNormalizer {
 
                 // First, add all parameters to the context
                 for param in params {
-                    self.context.push(param.name.clone());
+                    self.context.push(param.name());
                 }
 
                 // Process the body with parameters in scope
@@ -245,7 +245,7 @@ impl AstNormalizer {
                 let mut lambda_body = body_core;
                 for param in params.iter().rev() {
                     lambda_body = CoreExpr::Lambda {
-                        param_name: Some(param.name.clone()),
+                        param_name: Some(param.name()),
                         body: Box::new(lambda_body),
                     };
                 }

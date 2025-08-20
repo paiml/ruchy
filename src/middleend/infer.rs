@@ -441,7 +441,7 @@ impl InferenceContext {
                     Self::ast_type_to_mono_static(&param.ty)?
                 };
             param_types.push(param_ty.clone());
-            self.env = self.env.extend(&param.name, TypeScheme::mono(param_ty));
+            self.env = self.env.extend(param.name(), TypeScheme::mono(param_ty));
         }
 
         // Add function itself to environment for recursion
@@ -484,7 +484,7 @@ impl InferenceContext {
                 }
             };
             param_types.push(param_ty.clone());
-            self.env = self.env.extend(&param.name, TypeScheme::mono(param_ty));
+            self.env = self.env.extend(param.name(), TypeScheme::mono(param_ty));
         }
 
         // Infer body type

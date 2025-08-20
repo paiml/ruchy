@@ -130,15 +130,15 @@ impl Transpiler {
                     .iter()
                     .enumerate()
                     .map(|(i, param)| {
-                        if i == 0 && (param.name == "self" || param.name == "&self") {
+                        if i == 0 && (param.name() == "self" || param.name() == "&self") {
                             // Handle self parameter - check if it's &self or self
-                            if param.name.starts_with('&') {
+                            if param.name().starts_with('&') {
                                 quote! { &self }
                             } else {
                                 quote! { self }
                             }
                         } else {
-                            let param_name = format_ident!("{}", param.name);
+                            let param_name = format_ident!("{}", param.name());
                             let type_tokens = self
                                 .transpile_type(&param.ty)
                                 .unwrap_or_else(|_| quote! { _ });
@@ -212,15 +212,15 @@ impl Transpiler {
                     .iter()
                     .enumerate()
                     .map(|(i, param)| {
-                        if i == 0 && (param.name == "self" || param.name == "&self") {
+                        if i == 0 && (param.name() == "self" || param.name() == "&self") {
                             // Handle self parameter
-                            if param.name.starts_with('&') {
+                            if param.name().starts_with('&') {
                                 quote! { &self }
                             } else {
                                 quote! { self }
                             }
                         } else {
-                            let param_name = format_ident!("{}", param.name);
+                            let param_name = format_ident!("{}", param.name());
                             let type_tokens = self
                                 .transpile_type(&param.ty)
                                 .unwrap_or_else(|_| quote! { _ });
@@ -300,7 +300,7 @@ impl Transpiler {
             let param_tokens: Vec<TokenStream> = params
                 .iter()
                 .map(|p| {
-                    let param_name = format_ident!("{}", p.name);
+                    let param_name = format_ident!("{}", p.name());
                     let type_tokens = self
                         .transpile_type(&p.ty)
                         .unwrap_or_else(|_| quote! { i32 });
