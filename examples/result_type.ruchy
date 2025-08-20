@@ -1,0 +1,100 @@
+// Result Type Examples in Ruchy
+// Demonstrates Result<T,E> type support and error handling
+
+// Simple Result creation
+let success = Ok(42)
+let failure = Err("Something went wrong")
+
+// Using the ? operator for error propagation
+fn divide(x: i32, y: i32) -> Result<i32, String> {
+    if y == 0 {
+        Err("Division by zero")
+    } else {
+        Ok(x / y)
+    }
+}
+
+fn calculate() -> Result<i32, String> {
+    let a = divide(10, 2)?
+    let b = divide(a, 2)?
+    Ok(b * 2)
+}
+
+// Pattern matching on Results
+let result = divide(10, 2)
+match result {
+    Ok(value) => println(f"Success: {value}"),
+    Err(msg) => println(f"Error: {msg}")
+}
+
+// Result combinators
+let numbers = [1, 2, 3, 4, 5]
+let results = numbers
+    |> map(n => divide(100, n))
+    |> filter(r => r.is_ok())
+    |> map(r => r.unwrap())
+
+// Chaining operations with and_then
+let computation = Ok(10)
+    |> and_then(x => divide(x, 2))
+    |> and_then(x => divide(x, 2))
+    |> map(x => x * 10)
+
+// Custom error types
+enum MyError {
+    NotFound,
+    InvalidInput(String),
+    NetworkError(String)
+}
+
+fn fetch_data(id: i32) -> Result<String, MyError> {
+    if id < 0 {
+        Err(MyError::InvalidInput("ID must be positive"))
+    } else if id == 0 {
+        Err(MyError::NotFound)
+    } else {
+        Ok(f"Data for ID {id}")
+    }
+}
+
+// Error recovery with unwrap_or
+let value = divide(10, 0).unwrap_or(0)
+println(f"Value with default: {value}")
+
+// Multiple error handling
+fn complex_operation() -> Result<i32, String> {
+    let x = divide(100, 5)?
+    let y = divide(50, 2)?
+    let z = divide(x, y)?
+    Ok(z)
+}
+
+// Result collection
+let divisions = [
+    divide(10, 2),
+    divide(8, 4),
+    divide(6, 3)
+]
+
+let all_results: Result<Vec<i32>, String> = divisions.collect()
+
+match all_results {
+    Ok(values) => println(f"All succeeded: {values}"),
+    Err(e) => println(f"One failed: {e}")
+}
+
+// Early return pattern
+fn process_input(input: String) -> Result<String, String> {
+    if input.is_empty() {
+        return Err("Input cannot be empty")
+    }
+    
+    if input.len() > 100 {
+        return Err("Input too long")
+    }
+    
+    Ok(input.to_uppercase())
+}
+
+// Print final results
+println("Result type examples completed successfully!")

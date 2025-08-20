@@ -11,6 +11,7 @@ mod dataframe_helpers;
 mod dispatcher;
 mod expressions;
 mod patterns;
+mod result_type;
 mod statements;
 mod types;
 
