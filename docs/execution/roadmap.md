@@ -88,6 +88,8 @@
 - [x] **BOOK-CRITICAL-003**: Add comment parsing (`// comment` syntax) ✅ ALREADY IMPLEMENTED
 - [ ] **BOOK-CRITICAL-004**: Add pattern matching in function parameters (DEFERRED - complex)
 - [x] **BOOK-CRITICAL-008**: Implement method calls on primitives (numbers, strings) - CRITICAL for book compatibility
+- [x] **BOOK-CRITICAL-009**: Implement string methods (len, to_upper, trim) - CRITICAL for book compatibility ✅ ALREADY IMPLEMENTED
+- [x] **BOOK-CRITICAL-010**: Implement basic array operations (map, filter, reduce) - CRITICAL for book compatibility ✅ ALREADY IMPLEMENTED
 - [x] **BOOK-CRITICAL-005**: Method chaining on literals ✅ COMPLETED v0.7.3
 - [x] **BOOK-CRITICAL-006**: Add fat arrow syntax support (`|a, b| => expr`)
 - [x] **BOOK-CRITICAL-007**: Async/await block support
