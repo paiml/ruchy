@@ -151,6 +151,9 @@ pub struct Interpreter {
     
     /// Inline caches for field/method access optimization
     field_caches: HashMap<String, InlineCache>,
+    
+    /// Type feedback collection for JIT compilation
+    type_feedback: TypeFeedback,
 }
 
 /// Call frame for function invocation (will be used in Phase 1)
@@ -326,6 +329,303 @@ impl Default for InlineCache {
     }
 }
 
+/// Type feedback collection for JIT compilation decisions
+#[derive(Clone, Debug)]
+pub struct TypeFeedback {
+    /// Operation site feedback (indexed by AST node or bytecode offset)
+    operation_sites: HashMap<usize, OperationFeedback>,
+    /// Variable type patterns (variable name -> type feedback)
+    variable_types: HashMap<String, VariableTypeFeedback>,
+    /// Function call sites with argument/return type information
+    call_sites: HashMap<usize, CallSiteFeedback>,
+    /// Total feedback collection count
+    total_samples: u64,
+}
+
+/// Feedback for a specific operation site (binary ops, field access, etc.)
+#[derive(Clone, Debug)]
+pub struct OperationFeedback {
+    /// Types observed for left operand
+    left_types: SmallVec<[std::any::TypeId; 4]>,
+    /// Types observed for right operand (for binary ops)
+    right_types: SmallVec<[std::any::TypeId; 4]>,
+    /// Result types observed
+    result_types: SmallVec<[std::any::TypeId; 4]>,
+    /// Hit counts for each type combination
+    type_counts: HashMap<(std::any::TypeId, std::any::TypeId), u32>,
+    /// Total operation count
+    total_count: u32,
+}
+
+/// Type feedback for variables across their lifetime
+#[derive(Clone, Debug)]
+pub struct VariableTypeFeedback {
+    /// Types assigned to this variable
+    assigned_types: SmallVec<[std::any::TypeId; 4]>,
+    /// Type transitions (`from_type` -> `to_type`)
+    transitions: HashMap<std::any::TypeId, HashMap<std::any::TypeId, u32>>,
+    /// Most common type (for specialization)
+    dominant_type: Option<std::any::TypeId>,
+    /// Type stability score (0.0 = highly polymorphic, 1.0 = monomorphic)
+    stability_score: f64,
+}
+
+/// Feedback for function call sites
+#[derive(Clone, Debug)]
+pub struct CallSiteFeedback {
+    /// Argument type patterns observed
+    arg_type_patterns: SmallVec<[Vec<std::any::TypeId>; 4]>,
+    /// Return types observed
+    return_types: SmallVec<[std::any::TypeId; 4]>,
+    /// Call frequency
+    call_count: u32,
+    /// Functions called at this site (for polymorphic calls)
+    called_functions: HashMap<String, u32>,
+}
+
+impl TypeFeedback {
+    /// Create new type feedback collector
+    pub fn new() -> Self {
+        Self {
+            operation_sites: HashMap::new(),
+            variable_types: HashMap::new(),
+            call_sites: HashMap::new(),
+            total_samples: 0,
+        }
+    }
+    
+    /// Record binary operation type feedback
+    pub fn record_binary_op(&mut self, site_id: usize, left: &Value, right: &Value, result: &Value) {
+        let left_type = left.type_id();
+        let right_type = right.type_id();
+        let result_type = result.type_id();
+        
+        let feedback = self.operation_sites.entry(site_id).or_insert_with(|| OperationFeedback {
+            left_types: smallvec![],
+            right_types: smallvec![],
+            result_types: smallvec![],
+            type_counts: HashMap::new(),
+            total_count: 0,
+        });
+        
+        // Record types if not already seen
+        if !feedback.left_types.contains(&left_type) {
+            feedback.left_types.push(left_type);
+        }
+        if !feedback.right_types.contains(&right_type) {
+            feedback.right_types.push(right_type);
+        }
+        if !feedback.result_types.contains(&result_type) {
+            feedback.result_types.push(result_type);
+        }
+        
+        // Update type combination counts
+        let type_pair = (left_type, right_type);
+        *feedback.type_counts.entry(type_pair).or_insert(0) += 1;
+        feedback.total_count += 1;
+        self.total_samples += 1;
+    }
+    
+    /// Record variable assignment type feedback
+    pub fn record_variable_assignment(&mut self, var_name: &str, new_type: std::any::TypeId) {
+        let feedback = self.variable_types.entry(var_name.to_string()).or_insert_with(|| VariableTypeFeedback {
+            assigned_types: smallvec![],
+            transitions: HashMap::new(),
+            dominant_type: None,
+            stability_score: 1.0,
+        });
+        
+        // Record type transition if there was a previous type
+        if let Some(prev_type) = feedback.dominant_type {
+            if prev_type != new_type {
+                feedback.transitions.entry(prev_type)
+                    .or_default()
+                    .entry(new_type)
+                    .and_modify(|count| *count += 1)
+                    .or_insert(1);
+            }
+        }
+        
+        // Add new type if not seen before
+        if !feedback.assigned_types.contains(&new_type) {
+            feedback.assigned_types.push(new_type);
+        }
+        
+        // Update dominant type (most recently assigned for simplicity)
+        feedback.dominant_type = Some(new_type);
+        
+        // Recalculate stability score
+        feedback.stability_score = if feedback.assigned_types.len() == 1 {
+            1.0 // Monomorphic
+        } else {
+            1.0 / f64::from(u32::try_from(feedback.assigned_types.len()).unwrap_or(u32::MAX)) // Decreases with more types
+        };
+    }
+    
+    /// Record function call type feedback
+    pub fn record_function_call(&mut self, site_id: usize, func_name: &str, args: &[Value], result: &Value) {
+        let arg_types: Vec<std::any::TypeId> = args.iter().map(Value::type_id).collect();
+        let return_type = result.type_id();
+        
+        let feedback = self.call_sites.entry(site_id).or_insert_with(|| CallSiteFeedback {
+            arg_type_patterns: smallvec![],
+            return_types: smallvec![],
+            call_count: 0,
+            called_functions: HashMap::new(),
+        });
+        
+        // Record argument pattern if not seen before
+        if !feedback.arg_type_patterns.iter().any(|pattern| pattern == &arg_types) {
+            feedback.arg_type_patterns.push(arg_types);
+        }
+        
+        // Record return type if not seen before
+        if !feedback.return_types.contains(&return_type) {
+            feedback.return_types.push(return_type);
+        }
+        
+        // Update function call counts
+        *feedback.called_functions.entry(func_name.to_string()).or_insert(0) += 1;
+        feedback.call_count += 1;
+    }
+    
+    /// Get type specialization suggestions for optimization
+    /// # Panics
+    /// Panics if a variable's dominant type is None when it should exist
+    pub fn get_specialization_candidates(&self) -> Vec<SpecializationCandidate> {
+        let mut candidates = Vec::new();
+        
+        // Find monomorphic operation sites
+        for (&site_id, feedback) in &self.operation_sites {
+            if feedback.left_types.len() == 1 && feedback.right_types.len() == 1 && feedback.total_count > 10 {
+                candidates.push(SpecializationCandidate {
+                    kind: SpecializationKind::BinaryOperation {
+                        site_id,
+                        left_type: feedback.left_types[0],
+                        right_type: feedback.right_types[0],
+                    },
+                    confidence: 1.0,
+                    benefit_score: f64::from(feedback.total_count),
+                });
+            }
+        }
+        
+        // Find stable variables
+        for (var_name, feedback) in &self.variable_types {
+            if feedback.stability_score > 0.8 && feedback.dominant_type.is_some() {
+                candidates.push(SpecializationCandidate {
+                    kind: SpecializationKind::Variable {
+                        name: var_name.clone(),
+                        #[allow(clippy::expect_used)] // Safe: we just checked is_some() above
+                        specialized_type: feedback.dominant_type.expect("Dominant type should exist for stable variables"),
+                    },
+                    confidence: feedback.stability_score,
+                    benefit_score: feedback.stability_score * 100.0,
+                });
+            }
+        }
+        
+        // Find monomorphic call sites
+        for (&site_id, feedback) in &self.call_sites {
+            if feedback.arg_type_patterns.len() == 1 && feedback.return_types.len() == 1 && feedback.call_count > 5 {
+                candidates.push(SpecializationCandidate {
+                    kind: SpecializationKind::FunctionCall {
+                        site_id,
+                        arg_types: feedback.arg_type_patterns[0].clone(),
+                        return_type: feedback.return_types[0],
+                    },
+                    confidence: 1.0,
+                    benefit_score: f64::from(feedback.call_count * 10),
+                });
+            }
+        }
+        
+        // Sort by benefit score (highest first)
+        candidates.sort_by(|a, b| b.benefit_score.partial_cmp(&a.benefit_score).unwrap_or(std::cmp::Ordering::Equal));
+        candidates
+    }
+    
+    /// Get overall type feedback statistics
+    pub fn get_statistics(&self) -> TypeFeedbackStats {
+        let monomorphic_sites = self.operation_sites.values()
+            .filter(|f| f.left_types.len() == 1 && f.right_types.len() == 1)
+            .count();
+        
+        let stable_variables = self.variable_types.values()
+            .filter(|f| f.stability_score > 0.8)
+            .count();
+            
+        let monomorphic_calls = self.call_sites.values()
+            .filter(|f| f.arg_type_patterns.len() == 1)
+            .count();
+        
+        TypeFeedbackStats {
+            total_operation_sites: self.operation_sites.len(),
+            monomorphic_operation_sites: monomorphic_sites,
+            total_variables: self.variable_types.len(),
+            stable_variables,
+            total_call_sites: self.call_sites.len(),
+            monomorphic_call_sites: monomorphic_calls,
+            total_samples: self.total_samples,
+        }
+    }
+}
+
+impl Default for TypeFeedback {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Specialization candidate for JIT compilation
+#[derive(Clone, Debug)]
+#[allow(dead_code)] // Will be used by future JIT implementation
+pub struct SpecializationCandidate {
+    /// Type of specialization
+    kind: SpecializationKind,
+    /// Confidence level (0.0 - 1.0)
+    confidence: f64,
+    /// Expected benefit score
+    benefit_score: f64,
+}
+
+#[derive(Clone, Debug)]
+pub enum SpecializationKind {
+    BinaryOperation {
+        site_id: usize,
+        left_type: std::any::TypeId,
+        right_type: std::any::TypeId,
+    },
+    Variable {
+        name: String,
+        specialized_type: std::any::TypeId,
+    },
+    FunctionCall {
+        site_id: usize,
+        arg_types: Vec<std::any::TypeId>,
+        return_type: std::any::TypeId,
+    },
+}
+
+/// Type feedback statistics for profiling
+#[derive(Clone, Debug)]
+pub struct TypeFeedbackStats {
+    /// Total operation sites recorded
+    pub total_operation_sites: usize,
+    /// Monomorphic operation sites (candidates for specialization)
+    pub monomorphic_operation_sites: usize,
+    /// Total variables tracked
+    pub total_variables: usize,
+    /// Variables with stable types
+    pub stable_variables: usize,
+    /// Total function call sites
+    pub total_call_sites: usize,
+    /// Monomorphic call sites
+    pub monomorphic_call_sites: usize,
+    /// Total feedback samples collected
+    pub total_samples: u64,
+}
+
 impl Value {
     /// Get type identifier for inline caching
     pub fn type_id(&self) -> std::any::TypeId {
@@ -350,6 +650,7 @@ impl Interpreter {
             frames: Vec::new(),
             execution_counts: HashMap::new(),
             field_caches: HashMap::new(),
+            type_feedback: TypeFeedback::new(),
         }
     }
 
@@ -372,7 +673,11 @@ impl Interpreter {
             ExprKind::Binary { left, op, right } => {
                 let left_val = self.eval_expr(left)?;
                 let right_val = self.eval_expr(right)?;
-                self.eval_binary_op(*op, &left_val, &right_val)
+                let result = self.eval_binary_op(*op, &left_val, &right_val)?;
+                // Collect type feedback for this binary operation
+                let site_id = left.span.start; // Use span start as site ID
+                self.record_binary_op_feedback(site_id, &left_val, &right_val, &result);
+                Ok(result)
             },
             
             ExprKind::Unary { op, operand } => {
@@ -393,6 +698,8 @@ impl Interpreter {
             
             ExprKind::Let { name, value, body, .. } => {
                 let val = self.eval_expr(value)?;
+                // Collect type feedback for variable assignment
+                self.record_variable_assignment_feedback(name, &val);
                 // Store in current environment
                 self.env_set(name.clone(), val);
                 let result = self.eval_expr(body)?;
@@ -438,7 +745,16 @@ impl Interpreter {
                     .collect();
                 let arg_vals = arg_vals?;
                 
-                self.call_function(func_val, &arg_vals)
+                let result = self.call_function(func_val, &arg_vals)?;
+                
+                // Collect type feedback for function call
+                let site_id = func.span.start; // Use func span start as site ID
+                let func_name = match &func.kind {
+                    ExprKind::Identifier(name) => name.clone(),
+                    _ => "anonymous".to_string(),
+                };
+                self.record_function_call_feedback(site_id, &func_name, &arg_vals, &result);
+                Ok(result)
             },
             
             // Placeholder implementations for other expression types
@@ -903,6 +1219,37 @@ impl Interpreter {
     /// Clear all inline caches (for testing)
     pub fn clear_caches(&mut self) {
         self.field_caches.clear();
+    }
+    
+    /// Record type feedback for binary operations
+    fn record_binary_op_feedback(&mut self, site_id: usize, left: &Value, right: &Value, result: &Value) {
+        self.type_feedback.record_binary_op(site_id, left, right, result);
+    }
+    
+    /// Record type feedback for variable assignments
+    fn record_variable_assignment_feedback(&mut self, var_name: &str, value: &Value) {
+        let type_id = value.type_id();
+        self.type_feedback.record_variable_assignment(var_name, type_id);
+    }
+    
+    /// Record type feedback for function calls
+    fn record_function_call_feedback(&mut self, site_id: usize, func_name: &str, args: &[Value], result: &Value) {
+        self.type_feedback.record_function_call(site_id, func_name, args, result);
+    }
+    
+    /// Get type feedback statistics
+    pub fn get_type_feedback_stats(&self) -> TypeFeedbackStats {
+        self.type_feedback.get_statistics()
+    }
+    
+    /// Get specialization candidates for JIT compilation
+    pub fn get_specialization_candidates(&self) -> Vec<SpecializationCandidate> {
+        self.type_feedback.get_specialization_candidates()
+    }
+    
+    /// Clear type feedback data (for testing)
+    pub fn clear_type_feedback(&mut self) {
+        self.type_feedback = TypeFeedback::new();
     }
 }
 
@@ -1704,5 +2051,238 @@ mod tests {
         interp.clear_caches();
         let stats_after = interp.get_cache_stats();
         assert!(stats_after.is_empty());
+    }
+    
+    #[test]
+    fn test_type_feedback_binary_operations() {
+        use crate::frontend::ast::Span;
+        let mut interp = Interpreter::new();
+        
+        // Create binary operation: 42 + 10
+        let left = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span::new(0, 2)
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(10)),
+            Span::new(5, 7)
+        );
+        let binary_expr = Expr::new(
+            ExprKind::Binary { 
+                left: Box::new(left), 
+                op: AstBinaryOp::Add, 
+                right: Box::new(right) 
+            },
+            Span::new(0, 7)
+        );
+        
+        // Evaluate the expression multiple times to collect feedback
+        for _ in 0..15 {
+            let result = interp.eval_expr(&binary_expr).expect("Should evaluate binary operation");
+            assert_eq!(result, Value::Integer(52));
+        }
+        
+        // Check type feedback statistics
+        let stats = interp.get_type_feedback_stats();
+        assert_eq!(stats.total_operation_sites, 1);
+        assert_eq!(stats.monomorphic_operation_sites, 1);
+        assert_eq!(stats.total_samples, 15);
+        
+        // Check specialization candidates
+        let candidates = interp.get_specialization_candidates();
+        assert!(!candidates.is_empty());
+        assert!((candidates[0].confidence - 1.0).abs() < f64::EPSILON); // Monomorphic operation
+    }
+    
+    #[test]
+    fn test_type_feedback_variable_assignments() {
+        use crate::frontend::ast::Span;
+        let mut interp = Interpreter::new();
+        
+        // Create let binding: let x = 42 in x
+        let value_expr = Box::new(Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span::new(8, 10)
+        ));
+        let body_expr = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(14, 15)
+        ));
+        
+        let let_expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                value: value_expr,
+                body: body_expr,
+                is_mutable: false,
+            },
+            Span::new(0, 15)
+        );
+        
+        // Evaluate the expression
+        let result = interp.eval_expr(&let_expr).expect("Should evaluate let expression");
+        assert_eq!(result, Value::Integer(42));
+        
+        // Check type feedback statistics
+        let stats = interp.get_type_feedback_stats();
+        assert_eq!(stats.total_variables, 1);
+        assert_eq!(stats.stable_variables, 1);
+        
+        // Check specialization candidates for stable variable
+        let candidates = interp.get_specialization_candidates();
+        let variable_candidates: Vec<_> = candidates.iter()
+            .filter(|c| matches!(c.kind, SpecializationKind::Variable { .. }))
+            .collect();
+        assert!(!variable_candidates.is_empty());
+    }
+    
+    #[test]
+    fn test_type_feedback_function_calls() {
+        use crate::frontend::ast::{Span, Pattern, Type, TypeKind, Param};
+        let mut interp = Interpreter::new();
+        
+        // Create function: fn double(x) = x + x
+        let param = Param {
+            pattern: Pattern::Identifier("x".to_string()),
+            ty: Type { kind: TypeKind::Named("i32".to_string()), span: Span::new(0, 3) },
+            span: Span::new(0, 1),
+            is_mutable: false,
+        };
+        
+        let left_body = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(0, 1)
+        ));
+        let right_body = Box::new(Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(4, 5)
+        ));
+        let func_body = Box::new(Expr::new(
+            ExprKind::Binary { left: left_body, op: AstBinaryOp::Add, right: right_body },
+            Span::new(0, 5)
+        ));
+        
+        let func_expr = Expr::new(
+            ExprKind::Function {
+                name: "double".to_string(),
+                type_params: vec![],
+                params: vec![param],
+                body: func_body,
+                return_type: None,
+                is_async: false,
+            },
+            Span::new(0, 20)
+        );
+        
+        // Define the function
+        let _func = interp.eval_expr(&func_expr).expect("Should define function");
+        
+        // Create function call: double(21)
+        let func_ref = Box::new(Expr::new(
+            ExprKind::Identifier("double".to_string()),
+            Span::new(0, 6)
+        ));
+        let arg = Expr::new(
+            ExprKind::Literal(Literal::Integer(21)),
+            Span::new(7, 9)
+        );
+        let call_expr = Expr::new(
+            ExprKind::Call {
+                func: func_ref,
+                args: vec![arg],
+            },
+            Span::new(0, 10)
+        );
+        
+        // Call the function multiple times
+        for _ in 0..10 {
+            let result = interp.eval_expr(&call_expr).expect("Should call function");
+            assert_eq!(result, Value::Integer(42));
+        }
+        
+        // Check type feedback statistics
+        let stats = interp.get_type_feedback_stats();
+        assert!(stats.total_call_sites > 0);
+        assert!(stats.monomorphic_call_sites > 0);
+        
+        // Check specialization candidates for function calls
+        let candidates = interp.get_specialization_candidates();
+        let call_candidates: Vec<_> = candidates.iter()
+            .filter(|c| matches!(c.kind, SpecializationKind::FunctionCall { .. }))
+            .collect();
+        assert!(!call_candidates.is_empty());
+    }
+    
+    #[test]
+    fn test_type_feedback_polymorphic_detection() {
+        use crate::frontend::ast::Span;
+        let mut interp = Interpreter::new();
+        
+        // Create integer addition
+        let int_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 1))),
+                op: AstBinaryOp::Add,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(4, 5))),
+            },
+            Span::new(0, 5)
+        );
+        
+        // Create float addition (different site)
+        let float_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Float(1.5)), Span::new(10, 13))),
+                op: AstBinaryOp::Add,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Float(2.5)), Span::new(16, 19))),
+            },
+            Span::new(10, 19)
+        );
+        
+        // Evaluate both expressions multiple times
+        for _ in 0..12 {
+            let _ = interp.eval_expr(&int_expr).expect("Should evaluate int addition");
+            let _ = interp.eval_expr(&float_expr).expect("Should evaluate float addition");
+        }
+        
+        // Check that we have multiple operation sites
+        let stats = interp.get_type_feedback_stats();
+        assert_eq!(stats.total_operation_sites, 2);
+        assert_eq!(stats.monomorphic_operation_sites, 2); // Both should be monomorphic
+        assert_eq!(stats.total_samples, 24); // 12 * 2 operations
+        
+        // Both should be candidates for specialization
+        let candidates = interp.get_specialization_candidates();
+        let op_candidates: Vec<_> = candidates.iter()
+            .filter(|c| matches!(c.kind, SpecializationKind::BinaryOperation { .. }))
+            .collect();
+        assert_eq!(op_candidates.len(), 2);
+    }
+    
+    #[test]
+    fn test_type_feedback_clear() {
+        use crate::frontend::ast::Span;
+        let mut interp = Interpreter::new();
+        
+        // Create and evaluate a simple expression
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(0, 1))),
+                op: AstBinaryOp::Add,
+                right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(4, 5))),
+            },
+            Span::new(0, 5)
+        );
+        
+        let _ = interp.eval_expr(&expr).expect("Should evaluate");
+        
+        // Verify feedback was collected
+        let stats_before = interp.get_type_feedback_stats();
+        assert!(stats_before.total_samples > 0);
+        
+        // Clear feedback and verify
+        interp.clear_type_feedback();
+        let stats_after = interp.get_type_feedback_stats();
+        assert_eq!(stats_after.total_samples, 0);
+        assert_eq!(stats_after.total_operation_sites, 0);
     }
 }
