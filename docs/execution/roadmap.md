@@ -92,11 +92,11 @@ Based on the latest integration report (Aug 20, 2025, 18:10 UTC):
 - 📋 **PLANNED**: 38/259 examples (15%) - Future roadmap items
 
 #### Top Priority Fixes (BROKEN category - highest impact):
-1. **Fat Arrow Syntax** (23 failures) - Add `=>` token for closures
+1. **Fat Arrow Syntax** ✅ ALREADY WORKING - `=>` token for match/closures
 2. **String Interpolation** ✅ COMPLETED - f"Hello, {name}!" syntax
 3. **Async/Await Blocks** ✅ COMPLETED - async { } syntax
-4. **Array Operations** (4 failures) - .map(), .filter(), .reduce()
-5. **String Methods** (3 failures) - .len(), .to_upper(), .trim()
+4. **Array Operations** ✅ COMPLETED v0.7.10 - .map(), .filter(), .reduce()
+5. **String Methods** ✅ ALREADY WORKING - .len(), .to_upper(), .trim()
 
 ### URGENT: Fix CI Infrastructure First
 - [ ] **BOOK-CI-001**: Restore missing `tests/test_all_examples.rs` file in ruchy-book
@@ -290,8 +290,8 @@ graph TD
 | RUCHY-0303 | Module system | 📋 | High | DEFERRED |
 | RUCHY-0304 | Async/await runtime | ✅ | High | ALREADY IMPLEMENTED |
 | RUCHY-0305 | Generic type parameters | ✅ | High | ALREADY IMPLEMENTED |
-| RUCHY-0306 | Array operations (.map, .filter, .reduce) | 📋 | High | P0 - 4 book failures |
-| RUCHY-0307 | String methods (.len, .to_upper, .trim) | 📋 | Medium | P0 - 3 book failures |
+| RUCHY-0306 | Array operations (.map, .filter, .reduce) | ✅ | High | COMPLETED v0.7.10 |
+| RUCHY-0307 | String methods (.len, .to_upper, .trim) | ✅ | Medium | ALREADY IMPLEMENTED |
 
 ## Next Sprint: Binary Testing & Book Example Infrastructure
 
