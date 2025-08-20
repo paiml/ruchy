@@ -442,6 +442,13 @@ fn value_to_json(value: &ruchy::runtime::Value) -> String {
             }
             format!(r#"{{"type":"DataFrame","columns":[{}]}}"#, cols.join(","))
         }
+        Value::Object(map) => {
+            let pairs: Vec<String> = map
+                .iter()
+                .map(|(k, v)| format!(r#""{}": {}"#, k, value_to_json(v)))
+                .collect();
+            format!("{{{}}}", pairs.join(", "))
+        }
     }
 }
 
