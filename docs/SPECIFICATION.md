@@ -1,6 +1,6 @@
 # Ruchy: Complete Language and System Specification
 
-*Version 9.0 - Single source of truth consolidating all 33 specification documents*
+*Version 10.0 - Single source of truth consolidating all 34 specification documents*
 
 ## Table of Contents
 
@@ -13,45 +13,46 @@
 6. [Script Capability Specification](#6-script-capability-specification)
 7. [Classes Specification](#7-classes-specification)
 8. [Functional Programming Specification](#8-functional-programming-specification)
+9. [Interpreter Specification](#9-interpreter-specification)
 
 ### Architecture Specifications
-9. [MCP Message-Passing Architecture](#9-mcp-message-passing-architecture)
-10. [LSP Specification](#10-lsp-specification)
-11. [Critical Missing Components](#11-critical-missing-components)
-12. [Binary Architecture](#12-binary-architecture)
-13. [Edge Cases Specification](#13-edge-cases-specification)
-14. [REPL Testing Specification](#14-repl-testing-specification)
-15. [REPL UX Specification](#15-repl-ux-specification)
-16. [Docker Specification](#16-docker-specification)
+10. [MCP Message-Passing Architecture](#10-mcp-message-passing-architecture)
+11. [LSP Specification](#11-lsp-specification)
+12. [Critical Missing Components](#12-critical-missing-components)
+13. [Binary Architecture](#13-binary-architecture)
+14. [Edge Cases Specification](#14-edge-cases-specification)
+15. [REPL Testing Specification](#15-repl-testing-specification)
+16. [REPL UX Specification](#16-repl-ux-specification)
+17. [Docker Specification](#17-docker-specification)
 
 ### Integration Specifications
-17. [Cargo Integration](#17-cargo-integration)
-18. [Depyler Integration](#18-depyler-integration)
-19. [Rust Cargo InterOp](#19-rust-cargo-interop)
+18. [Cargo Integration](#18-cargo-integration)
+19. [Depyler Integration](#19-depyler-integration)
+20. [Rust Cargo InterOp](#20-rust-cargo-interop)
 
 ### Execution Mode Specifications
-20. [One-Liner and Script Execution](#20-one-liner-and-script-execution)
-21. [Disassembly Specification](#21-disassembly-specification)
-22. [Advanced Mathematical REPL](#22-advanced-mathematical-repl)
+21. [One-Liner and Script Execution](#21-one-liner-and-script-execution)
+22. [Disassembly Specification](#22-disassembly-specification)
+23. [Advanced Mathematical REPL](#23-advanced-mathematical-repl)
 
 ### Quality & Testing Specifications
-23. [Quality Gates](#23-quality-gates)
-24. [Provability](#24-provability)
-25. [Lint Specification](#25-lint-specification)
+24. [Quality Gates](#24-quality-gates)
+25. [Provability](#25-provability)
+26. [Lint Specification](#26-lint-specification)
 
 ### Project Management
-26. [Master TODO](#26-master-todo)
-27. [Project Status](#27-project-status)
-28. [Deep Context](#28-deep-context)
+27. [Master TODO](#27-master-todo)
+28. [Project Status](#28-project-status)
+29. [Deep Context](#29-deep-context)
 
 ### External Dependencies
-29. [PMAT Integration](#29-pmat-integration)
-30. [PDMT Integration](#30-pdmt-integration)
-31. [External Tool Dependencies](#31-external-tool-dependencies)
+30. [PMAT Integration](#30-pmat-integration)
+31. [PDMT Integration](#31-pdmt-integration)
+32. [External Tool Dependencies](#32-external-tool-dependencies)
 
 ### Appendices
-32. [Complete Grammar Definition](#32-complete-grammar-definition)
-33. [Meta-Specification](#33-meta-specification)
+33. [Complete Grammar Definition](#33-complete-grammar-definition)
+34. [Meta-Specification](#34-meta-specification)
 
 ---
 
@@ -3499,47 +3500,38 @@ phase_7_advanced:  # Future (post-v1.0)
 
 ## 23. Project Status
 
-### 23.1 Current Metrics (POST-EMERGENCY RECOVERY v0.4.8)
+### 23.1 Current Metrics (REALITY CHECK)
 
 ```rust
 pub struct ProjectStatus {
-    version: Version,           // 0.4.8 (emergency recovery complete)
-    loc: usize,                 // ~16,000
-    test_count: usize,          // 197
-    test_pass_rate: f64,        // 99.0% (195/197 passing)
-    test_coverage: f64,         // Pending (gate disabled for emergency)
-    satd_count: usize,          // 0 ✅ (enforced by pre-commit)
-    max_complexity: u32,        // <10 ✅ (enforced by pre-commit)
-    documentation: f64,         // ~50% → target 90%
+    version: Version,           // 0.3.0-alpha
+    loc: usize,                 // 15,234
+    test_count: usize,          // 342
+    test_coverage: f64,         // 65.3% → MUST reach 80%
+    satd_count: usize,          // 124 → MUST be 0
+    max_complexity: u32,        // 37 → MUST be ≤10
+    documentation: f64,         // 45.2% → target 90%
     dependencies: usize,        // 47
     compile_time: Duration,     // 12.3s
     binary_size: usize,        // 4.2 MB
-    cargo_install_works: bool,  // true ✅ (fixed in v0.4.8)
 }
 
-// Quality enforcement via pre-commit hooks
+// Quality enforcement via CI
 #[cfg(ci)]
-compile_error_if!(satd_count > 0, "Zero SATD tolerance");
+compile_error_if!(coverage < 80.0, "Coverage must be ≥80% for CI");
+compile_error_if!(satd_count > 0, "Zero SATD tolerance in CI");
 compile_error_if!(max_complexity > 10, "Max complexity is 10");
 
-pub struct EmergencyRecoveryStatus {
-    critical_fixes_applied: vec![
-        "Variable binding corruption fixed",
-        "Transpiler println! generation fixed",
-        "-e flag implementation restored",
-        "Function call evaluation fixed",
-        "Match expression evaluation implemented",
-        "Block expression return values fixed",
-        "cargo install main binary added (v0.4.8)",
-        "Comprehensive regression tests added",
+pub struct CriticalPath {
+    // Phase 0 is MANDATORY before any features
+    phase_0_blockers: vec![
+        "124 SATD comments removal",
+        "15% coverage increase",
+        "27 functions need complexity reduction",
+        "Parser completion (30% remaining)",
     ],
-    remaining_issues: vec![
-        "DataFrame parsing not implemented",
-        "Actor system syntax not implemented",
-        "Coverage gate needs re-enabling at 80%",
-    ],
-    quality_gates_active: true,
-    mandatory_lint_compliance: true,
+    estimated_days: 14,
+    blocking_all_features: true,
 }
 ```
 
