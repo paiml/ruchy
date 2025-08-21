@@ -265,7 +265,7 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
                     span,
                 })
             } else {
-                // Function type: (T1, T2) -> T3
+                // Could be tuple type (T1, T2) or function type (T1, T2) -> T3
                 let mut param_types = Vec::new();
                 param_types.push(parse_type(state)?);
 
@@ -275,16 +275,27 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
                 }
 
                 state.tokens.expect(&Token::RightParen)?;
-                state.tokens.expect(&Token::Arrow)?;
-                let ret_type = parse_type(state)?;
+                
+                // Check if this is a function type or tuple type
+                if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+                    // Function type: (T1, T2) -> T3
+                    state.tokens.advance(); // consume ->
+                    let ret_type = parse_type(state)?;
 
-                Ok(Type {
-                    kind: TypeKind::Function {
-                        params: param_types,
-                        ret: Box::new(ret_type),
-                    },
-                    span,
-                })
+                    Ok(Type {
+                        kind: TypeKind::Function {
+                            params: param_types,
+                            ret: Box::new(ret_type),
+                        },
+                        span,
+                    })
+                } else {
+                    // Tuple type: (T1, T2)
+                    Ok(Type {
+                        kind: TypeKind::Tuple(param_types),
+                        span,
+                    })
+                }
             }
         }
         Some((Token::Identifier(name), _)) => {

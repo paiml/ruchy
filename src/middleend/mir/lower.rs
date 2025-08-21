@@ -362,6 +362,10 @@ impl LoweringContext {
                 // Map Series to a user type for now
                 Type::UserType("Series".to_string())
             }
+            TypeKind::Tuple(types) => {
+                let mir_types: Vec<_> = types.iter().map(|t| self.ast_to_mir_type(t)).collect();
+                Type::Tuple(mir_types)
+            }
         }
     }
 
