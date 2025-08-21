@@ -656,6 +656,8 @@ pub struct Repl {
     definitions: Vec<String>,
     /// Bindings and their types/values
     bindings: HashMap<String, Value>,
+    /// Impl methods: `Type::method` -> (params, body)
+    impl_methods: HashMap<String, (Vec<String>, Box<Expr>)>,
     /// Transpiler instance
     transpiler: Transpiler,
     /// Temporary directory for compilation
@@ -702,6 +704,7 @@ impl Repl {
             history: Vec::new(),
             definitions: Vec::new(),
             bindings: HashMap::new(),
+            impl_methods: HashMap::new(),
             transpiler: Transpiler::new(),
             temp_dir,
             session_counter: 0,
@@ -1390,7 +1393,27 @@ impl Repl {
                 Ok(Value::Unit)
             }
             ExprKind::Impl { for_type, methods, .. } => {
-                // Store impl definition for later use
+                // Store impl methods for later use
+                for method in methods {
+                    // Create a qualified name for the method
+                    let qualified_name = format!("{}::{}", for_type, method.name);
+                    
+                    // Extract parameter names (skip self if present)
+                    let param_names: Vec<String> = method.params.iter()
+                        .filter_map(|p| {
+                            let name = p.name();
+                            if name != "self" && name != "&self" {
+                                Some(name)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    
+                    // Store the method
+                    self.impl_methods.insert(qualified_name, (param_names, method.body.clone()));
+                }
+                
                 println!("Defined impl for {} with {} methods", for_type, methods.len());
                 Ok(Value::Unit)
             }
@@ -2303,6 +2326,40 @@ impl Repl {
                 "curry" => self.evaluate_curry(args, deadline, depth),
                 "uncurry" => self.evaluate_uncurry(args, deadline, depth),
                 _ => self.evaluate_user_function(func_name, args, deadline, depth),
+            }
+        } else if let ExprKind::QualifiedName { module, name } = &func.kind {
+            // Handle static method calls (Type::method)
+            let qualified_name = format!("{module}::{name}");
+            if let Some((param_names, body)) = self.impl_methods.get(&qualified_name).cloned() {
+                // Evaluate arguments
+                let mut arg_values = Vec::new();
+                for arg in args {
+                    arg_values.push(self.evaluate_expr(arg, deadline, depth + 1)?);
+                }
+                
+                // Check argument count
+                if arg_values.len() != param_names.len() {
+                    bail!("Function {} expects {} arguments, got {}", 
+                          qualified_name, param_names.len(), arg_values.len());
+                }
+                
+                // Save current bindings
+                let saved_bindings = self.bindings.clone();
+                
+                // Bind arguments
+                for (param, value) in param_names.iter().zip(arg_values.iter()) {
+                    self.bindings.insert(param.clone(), value.clone());
+                }
+                
+                // Evaluate body
+                let result = self.evaluate_expr(&body, deadline, depth + 1)?;
+                
+                // Restore bindings
+                self.bindings = saved_bindings;
+                
+                Ok(result)
+            } else {
+                bail!("Unknown static method: {}", qualified_name);
             }
         } else {
             bail!("Complex function calls not yet supported");
