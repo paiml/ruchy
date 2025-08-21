@@ -380,8 +380,8 @@ If quality gates hang or fail:
 
 ```bash
 # MANDATORY after version bump and git push:
-cargo publish                    # Publish main package
-cd ruchy-cli && cargo publish   # Publish CLI package
+cargo publish                    # Publish main package only
+# NOTE: ruchy-cli is DEPRECATED - do NOT publish (MUDA/waste)
 ```
 
 **NO EXCEPTIONS**: 
