@@ -8,6 +8,10 @@ use super::{ParserState, *};
 ///
 /// Returns an error if the enum syntax is invalid
 pub fn parse_enum(state: &mut ParserState) -> Result<Expr> {
+    parse_enum_with_visibility(state, false)
+}
+
+pub fn parse_enum_with_visibility(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume enum
 
     // Parse enum name
@@ -81,6 +85,7 @@ pub fn parse_enum(state: &mut ParserState) -> Result<Expr> {
             name,
             type_params,
             variants,
+            is_pub,
         },
         start_span,
     ))
@@ -93,6 +98,10 @@ pub fn parse_enum(state: &mut ParserState) -> Result<Expr> {
 ///
 /// Returns an error if the operation fails
 pub fn parse_struct(state: &mut ParserState) -> Result<Expr> {
+    parse_struct_with_visibility(state, false)
+}
+
+pub fn parse_struct_with_visibility(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume struct
 
     // Parse struct name
@@ -158,6 +167,7 @@ pub fn parse_struct(state: &mut ParserState) -> Result<Expr> {
             name,
             type_params,
             fields,
+            is_pub,
         },
         start_span,
     ))
@@ -210,6 +220,10 @@ pub fn parse_struct_literal(
 ///
 /// Returns an error if the operation fails
 pub fn parse_trait(state: &mut ParserState) -> Result<Expr> {
+    parse_trait_with_visibility(state, false)
+}
+
+pub fn parse_trait_with_visibility(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume trait
 
     // Parse trait name
@@ -253,6 +267,7 @@ pub fn parse_trait(state: &mut ParserState) -> Result<Expr> {
             name,
             type_params,
             methods,
+            is_pub,
         },
         start_span,
     ))
@@ -265,6 +280,14 @@ pub fn parse_trait(state: &mut ParserState) -> Result<Expr> {
 ///
 /// Returns an error if the operation fails
 pub fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
+    // Parse optional pub keyword
+    let is_pub = if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        state.tokens.advance(); // consume pub
+        true
+    } else {
+        false
+    };
+
     // Parse fn or fun keyword
     if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
         bail!("Expected 'fun' or 'fn' keyword");
@@ -303,6 +326,7 @@ pub fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
         params,
         return_type,
         body,
+        is_pub,
     })
 }
 
@@ -313,6 +337,10 @@ pub fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
 ///
 /// Returns an error if the operation fails
 pub fn parse_impl(state: &mut ParserState) -> Result<Expr> {
+    parse_impl_with_visibility(state, false)
+}
+
+pub fn parse_impl_with_visibility(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume impl
 
     // Parse optional type parameters <T, U, ...>
@@ -369,6 +397,7 @@ pub fn parse_impl(state: &mut ParserState) -> Result<Expr> {
             trait_name,
             for_type,
             methods,
+            is_pub,
         },
         start_span,
     ))
@@ -381,6 +410,14 @@ pub fn parse_impl(state: &mut ParserState) -> Result<Expr> {
 ///
 /// Returns an error if the operation fails
 pub fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
+    // Parse optional pub keyword
+    let is_pub = if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+        state.tokens.advance(); // consume pub
+        true
+    } else {
+        false
+    };
+
     // Parse fn or fun keyword
     if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
         bail!("Expected 'fun' or 'fn' keyword");
@@ -415,6 +452,7 @@ pub fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
         params,
         return_type,
         body: Box::new(body),
+        is_pub,
     })
 }
 

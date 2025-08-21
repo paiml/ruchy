@@ -69,6 +69,7 @@ impl Transpiler {
     }
 
     /// Transpiles function definitions
+    #[allow(clippy::too_many_arguments)]
     pub fn transpile_function(
         &self,
         name: &str,
@@ -77,6 +78,7 @@ impl Transpiler {
         body: &Expr,
         is_async: bool,
         return_type: Option<&Type>,
+        is_pub: bool,
     ) -> Result<TokenStream> {
         let fn_name = format_ident!("{}", name);
 
@@ -107,16 +109,18 @@ impl Transpiler {
         let type_param_tokens: Vec<_> =
             type_params.iter().map(|p| format_ident!("{}", p)).collect();
 
+        let visibility = if is_pub { quote! { pub } } else { quote! {} };
+
         if type_params.is_empty() {
             if is_async {
                 Ok(quote! {
-                    async fn #fn_name(#(#param_tokens),*) #return_type_tokens {
+                    #visibility async fn #fn_name(#(#param_tokens),*) #return_type_tokens {
                         #body_tokens
                     }
                 })
             } else {
                 Ok(quote! {
-                    fn #fn_name(#(#param_tokens),*) #return_type_tokens {
+                    #visibility fn #fn_name(#(#param_tokens),*) #return_type_tokens {
                         #body_tokens
                     }
                 })
@@ -124,13 +128,13 @@ impl Transpiler {
         } else {
             if is_async {
                 Ok(quote! {
-                    async fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #return_type_tokens {
+                    #visibility async fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #return_type_tokens {
                         #body_tokens
                     }
                 })
             } else {
                 Ok(quote! {
-                    fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #return_type_tokens {
+                    #visibility fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #return_type_tokens {
                         #body_tokens
                     }
                 })

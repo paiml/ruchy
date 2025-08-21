@@ -125,6 +125,7 @@ pub enum ExprKind {
         return_type: Option<Type>,
         body: Box<Expr>,
         is_async: bool,
+        is_pub: bool,
     },
     Lambda {
         params: Vec<Param>,
@@ -134,11 +135,13 @@ pub enum ExprKind {
         name: String,
         type_params: Vec<String>,
         fields: Vec<StructField>,
+        is_pub: bool,
     },
     Enum {
         name: String,
         type_params: Vec<String>,
         variants: Vec<EnumVariant>,
+        is_pub: bool,
     },
     StructLiteral {
         name: String,
@@ -159,12 +162,14 @@ pub enum ExprKind {
         name: String,
         type_params: Vec<String>,
         methods: Vec<TraitMethod>,
+        is_pub: bool,
     },
     Impl {
         type_params: Vec<String>,
         trait_name: Option<String>,
         for_type: String,
         methods: Vec<ImplMethod>,
+        is_pub: bool,
     },
     Actor {
         name: String,
@@ -382,6 +387,7 @@ pub struct TraitMethod {
     pub params: Vec<Param>,
     pub return_type: Option<Type>,
     pub body: Option<Box<Expr>>, // None for method signatures, Some for default implementations
+    pub is_pub: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -390,6 +396,7 @@ pub struct ImplMethod {
     pub params: Vec<Param>,
     pub return_type: Option<Type>,
     pub body: Box<Expr>,
+    pub is_pub: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -921,6 +928,7 @@ mod tests {
                 }),
                 body,
                 is_async: false,
+                is_pub: false,
             },
             Span::new(0, 22),
         );

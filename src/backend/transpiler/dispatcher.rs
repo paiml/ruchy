@@ -102,6 +102,7 @@ impl Transpiler {
                 body,
                 is_async,
                 return_type,
+                is_pub,
             } => self.transpile_function(
                 name,
                 type_params,
@@ -109,6 +110,7 @@ impl Transpiler {
                 body,
                 *is_async,
                 return_type.as_ref(),
+                *is_pub,
             ),
             ExprKind::Lambda { params, body } => self.transpile_lambda(params, body),
             ExprKind::Call { func, args } => self.transpile_call(func, args),
@@ -128,7 +130,8 @@ impl Transpiler {
                 name,
                 type_params,
                 fields,
-            } => self.transpile_struct(name, type_params, fields),
+                is_pub,
+            } => self.transpile_struct(name, type_params, fields, *is_pub),
             ExprKind::StructLiteral { name, fields } => self.transpile_struct_literal(name, fields),
             ExprKind::ObjectLiteral { fields } => self.transpile_object_literal(fields),
             ExprKind::FieldAccess { object, field } => self.transpile_field_access(object, field),
@@ -251,13 +254,15 @@ impl Transpiler {
                 name,
                 type_params,
                 methods,
-            } => self.transpile_trait(name, type_params, methods),
+                is_pub,
+            } => self.transpile_trait(name, type_params, methods, *is_pub),
             ExprKind::Impl {
                 type_params,
                 trait_name,
                 for_type,
                 methods,
-            } => self.transpile_impl(for_type, type_params, trait_name.as_deref(), methods),
+                is_pub,
+            } => self.transpile_impl(for_type, type_params, trait_name.as_deref(), methods, *is_pub),
             ExprKind::Extension {
                 target_type,
                 methods,
@@ -266,7 +271,8 @@ impl Transpiler {
                 name,
                 type_params,
                 variants,
-            } => self.transpile_enum(name, type_params, variants),
+                is_pub,
+            } => self.transpile_enum(name, type_params, variants, *is_pub),
             _ => unreachable!(),
         }
     }

@@ -129,6 +129,7 @@ fn test_parse_generic_struct() -> Result<()> {
             name,
             type_params,
             fields,
+            ..
         } => {
             assert_eq!(name, "Box");
             assert_eq!(type_params.len(), 1);

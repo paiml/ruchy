@@ -2949,6 +2949,7 @@ mod tests {
                 return_type: None,
                 body,
                 is_async: false,
+                is_pub: false,
             },
             Span::new(0, 20),
         );
@@ -3043,6 +3044,7 @@ mod tests {
                 return_type: None,
                 body,
                 is_async: false,
+                is_pub: false,
             },
             Span::new(0, 30),
         );
@@ -3446,6 +3448,7 @@ mod tests {
                 body: func_body,
                 return_type: None,
                 is_async: false,
+                is_pub: false,
             },
             Span::new(0, 20),
         );
