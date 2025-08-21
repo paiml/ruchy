@@ -1139,8 +1139,9 @@ impl Repl {
                 end,
                 inclusive,
             } => self.iterate_range(var, start, end, inclusive, body, deadline, depth),
+            Value::String(s) => self.iterate_string(var, &s, body, deadline, depth),
             _ => bail!(
-                "For loops only support lists and ranges, got: {:?}",
+                "For loops only support lists, ranges, and strings, got: {:?}",
                 iterable
             ),
         };
@@ -1167,7 +1168,12 @@ impl Repl {
         let mut result = Value::Unit;
         for item in items {
             self.bindings.insert(var.to_string(), item);
-            result = self.evaluate_expr(body, deadline, depth + 1)?;
+            match self.evaluate_expr(body, deadline, depth + 1) {
+                Ok(value) => result = value,
+                Err(e) if e.to_string() == "break" => break,
+                Err(e) if e.to_string() == "continue" => {},
+                Err(e) => return Err(e),
+            }
         }
         Ok(result)
     }
@@ -1188,7 +1194,34 @@ impl Repl {
         let actual_end = if inclusive { end + 1 } else { end };
         for i in start..actual_end {
             self.bindings.insert(var.to_string(), Value::Int(i));
-            result = self.evaluate_expr(body, deadline, depth + 1)?;
+            match self.evaluate_expr(body, deadline, depth + 1) {
+                Ok(value) => result = value,
+                Err(e) if e.to_string() == "break" => break,
+                Err(e) if e.to_string() == "continue" => {},
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(result)
+    }
+
+    /// Helper: Iterate over a string (as characters)
+    fn iterate_string(
+        &mut self,
+        var: &str,
+        s: &str,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut result = Value::Unit;
+        for ch in s.chars() {
+            self.bindings.insert(var.to_string(), Value::String(ch.to_string()));
+            match self.evaluate_expr(body, deadline, depth + 1) {
+                Ok(value) => result = value,
+                Err(e) if e.to_string() == "break" => break,
+                Err(e) if e.to_string() == "continue" => {},
+                Err(e) => return Err(e),
+            }
         }
         Ok(result)
     }
