@@ -875,6 +875,9 @@ impl Repl {
             ExprKind::Command { program, args, env: _, working_dir: _ } => {
                 Self::evaluate_command(program, args, deadline, depth)
             }
+            ExprKind::Macro { name, args } => {
+                self.evaluate_macro(name, args, deadline, depth)
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
@@ -3359,6 +3362,42 @@ impl Repl {
                 output.status.code(), 
                 stderr
             ))
+        }
+    }
+
+    /// Evaluate macro expansion
+    fn evaluate_macro(
+        &mut self,
+        name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        match name {
+            "println" => {
+                // Evaluate all arguments and print them
+                let mut output = String::new();
+                for (i, arg) in args.iter().enumerate() {
+                    if i > 0 {
+                        output.push(' ');
+                    }
+                    let value = self.evaluate_expr(arg, deadline, depth + 1)?;
+                    output.push_str(&value.to_string());
+                }
+                println!("{output}");
+                Ok(Value::Unit)
+            }
+            "vec" => {
+                // Evaluate all arguments and create a vector
+                let mut elements = Vec::new();
+                for arg in args {
+                    elements.push(self.evaluate_expr(arg, deadline, depth + 1)?);
+                }
+                Ok(Value::List(elements))
+            }
+            _ => {
+                anyhow::bail!("Unknown macro: {}", name)
+            }
         }
     }
 }

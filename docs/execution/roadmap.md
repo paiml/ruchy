@@ -483,8 +483,8 @@ graph TD
 - [x] **RUCHY-0712**: Implement generic type parameters for functions
 - [x] **RUCHY-0713**: Add slice and array indexing operations
 - [x] **RUCHY-0714**: Implement iterator trait and for-in loops
-- [x] **RUCHY-0715**: Implement process execution and command API
-- [ ] **RUCHY-0716**: Add macro system for println! and vec!
+- [x] **RUCHY-0715**: Implement process execution and command API ✅ COMPLETED v0.9.7
+- [x] **RUCHY-0716**: Add macro system for println! and vec!
 
 ### Phase 3: Self-Hosting (v1.0)
 - [ ] **RUCHY-0608**: Rewrite Ruchy compiler in Ruchy

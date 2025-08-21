@@ -200,6 +200,10 @@ pub enum ExprKind {
         func: Box<Expr>,
         args: Vec<Expr>,
     },
+    Macro {
+        name: String,
+        args: Vec<Expr>,
+    },
     MethodCall {
         receiver: Box<Expr>,
         method: String,

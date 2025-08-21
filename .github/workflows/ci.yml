@@ -23,6 +23,20 @@ jobs:
       - name: Run comprehensive tests
         run: make test-all
 
+  exhaustive-patterns:
+    name: Exhaustive Pattern Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Check compilation
+        run: cargo check
+      - name: Test exhaustive pattern coverage
+        run: cargo test exhaustive_pattern_coverage
+      - name: Lint compliance
+        run: make lint
+
   repl-tests:
     name: REPL Test Suite
     runs-on: ubuntu-latest

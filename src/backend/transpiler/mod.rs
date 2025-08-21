@@ -107,7 +107,7 @@ impl Transpiler {
         use ExprKind::{
             Actor, Ask, AsyncBlock, Await, Binary, Call, Command, DataFrame, DataFrameOperation, Err,
             FieldAccess, For, Function, Identifier, If, IndexAccess, Lambda, List, ListComprehension, 
-            Literal, Match, MethodCall, ObjectLiteral, Ok, QualifiedName, Range, Send, Slice,
+            Literal, Macro, Match, MethodCall, ObjectLiteral, Ok, QualifiedName, Range, Send, Slice,
             StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, Tuple, Unary, While,
         };
 
@@ -130,7 +130,7 @@ impl Transpiler {
             | While { .. } => self.transpile_operator_control_expr(expr),
 
             // Functions
-            Function { .. } | Lambda { .. } | Call { .. } | MethodCall { .. } => {
+            Function { .. } | Lambda { .. } | Call { .. } | MethodCall { .. } | Macro { .. } => {
                 self.transpile_function_expr(expr)
             }
 
