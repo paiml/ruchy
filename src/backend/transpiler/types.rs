@@ -6,7 +6,7 @@
 #![allow(clippy::only_used_in_recursion)]
 
 use super::*;
-use crate::frontend::ast::{ImplMethod, StructField, TraitMethod, Type};
+use crate::frontend::ast::{EnumVariant, ImplMethod, StructField, TraitMethod, Type};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -111,6 +111,51 @@ impl Transpiler {
     }
 
     /// Transpiles trait definitions
+    pub fn transpile_enum(
+        &self,
+        name: &str,
+        type_params: &[String],
+        variants: &[EnumVariant],
+    ) -> Result<TokenStream> {
+        let enum_name = format_ident!("{}", name);
+        
+        let type_param_tokens: Vec<_> = 
+            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+        
+        let variant_tokens: Vec<TokenStream> = variants
+            .iter()
+            .map(|variant| {
+                let variant_name = format_ident!("{}", variant.name);
+                
+                if let Some(fields) = &variant.fields {
+                    // Tuple variant
+                    let field_types: Vec<TokenStream> = fields
+                        .iter()
+                        .map(|ty| self.transpile_type(ty).unwrap_or_else(|_| quote! { _ }))
+                        .collect();
+                    quote! { #variant_name(#(#field_types),*) }
+                } else {
+                    // Unit variant
+                    quote! { #variant_name }
+                }
+            })
+            .collect();
+        
+        if type_params.is_empty() {
+            Ok(quote! {
+                enum #enum_name {
+                    #(#variant_tokens,)*
+                }
+            })
+        } else {
+            Ok(quote! {
+                enum #enum_name<#(#type_param_tokens),*> {
+                    #(#variant_tokens,)*
+                }
+            })
+        }
+    }
+
     pub fn transpile_trait(
         &self,
         name: &str,

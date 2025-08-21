@@ -1304,6 +1304,28 @@ impl Repl {
                 
                 Ok(Value::Object(map))
             }
+            ExprKind::Enum { name, variants, .. } => {
+                // Store enum definition for later use
+                // For now, just acknowledge the definition
+                println!("Defined enum {} with {} variants", name, variants.len());
+                Ok(Value::Unit)
+            }
+            ExprKind::Struct { name, fields, .. } => {
+                // Store struct definition for later use
+                // For now, just acknowledge the definition
+                println!("Defined struct {} with {} fields", name, fields.len());
+                Ok(Value::Unit)
+            }
+            ExprKind::Trait { name, methods, .. } => {
+                // Store trait definition for later use
+                println!("Defined trait {} with {} methods", name, methods.len());
+                Ok(Value::Unit)
+            }
+            ExprKind::Impl { for_type, methods, .. } => {
+                // Store impl definition for later use
+                println!("Defined impl for {} with {} methods", for_type, methods.len());
+                Ok(Value::Unit)
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }

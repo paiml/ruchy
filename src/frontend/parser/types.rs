@@ -2,6 +2,90 @@
 
 use super::{ParserState, *};
 
+/// Parse an enum definition
+/// 
+/// # Errors
+///
+/// Returns an error if the enum syntax is invalid
+pub fn parse_enum(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume enum
+    
+    // Parse enum name
+    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected enum name");
+    };
+    
+    // Parse optional type parameters <T, U, ...>
+    let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        utils::parse_type_parameters(state)?
+    } else {
+        Vec::new()
+    };
+    
+    // Parse enum variants
+    state.tokens.expect(&Token::LeftBrace)?;
+    
+    let mut variants = Vec::new();
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        // Parse variant name
+        let variant_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            let name = name.clone();
+            state.tokens.advance();
+            name
+        } else {
+            bail!("Expected variant name");
+        };
+        
+        // Check for tuple variant (has parentheses)
+        let fields = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            state.tokens.advance(); // consume (
+            
+            let mut field_types = Vec::new();
+            while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                field_types.push(utils::parse_type(state)?);
+                
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance();
+                } else {
+                    break;
+                }
+            }
+            
+            state.tokens.expect(&Token::RightParen)?;
+            Some(field_types)
+        } else {
+            None // Unit variant
+        };
+        
+        variants.push(EnumVariant {
+            name: variant_name,
+            fields,
+        });
+        
+        // Handle comma or end of enum
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        } else {
+            break;
+        }
+    }
+    
+    state.tokens.expect(&Token::RightBrace)?;
+    
+    Ok(Expr::new(
+        ExprKind::Enum {
+            name,
+            type_params,
+            variants,
+        },
+        start_span,
+    ))
+}
+
 /// # Errors
 ///
 /// Returns an error if the operation fails
