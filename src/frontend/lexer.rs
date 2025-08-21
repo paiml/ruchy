@@ -165,6 +165,8 @@ pub enum Token {
     Continue,
     #[token("struct")]
     Struct,
+    #[token("enum")]
+    Enum,
     #[token("impl")]
     Impl,
     #[token("trait")]

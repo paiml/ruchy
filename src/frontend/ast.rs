@@ -124,6 +124,11 @@ pub enum ExprKind {
         type_params: Vec<String>,
         fields: Vec<StructField>,
     },
+    Enum {
+        name: String,
+        type_params: Vec<String>,
+        variants: Vec<EnumVariant>,
+    },
     StructLiteral {
         name: String,
         fields: Vec<(String, Expr)>,
@@ -330,6 +335,12 @@ pub struct StructField {
     pub name: String,
     pub ty: Type,
     pub is_pub: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EnumVariant {
+    pub name: String,
+    pub fields: Option<Vec<Type>>, // None for unit variant, Some for tuple variant
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

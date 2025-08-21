@@ -215,6 +215,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::LeftBrace => collections::parse_block(state),
         Token::LeftBracket => collections::parse_list(state),
         Token::Struct => types::parse_struct(state),
+        Token::Enum => types::parse_enum(state),
         Token::Trait => types::parse_trait(state),
         Token::Impl => types::parse_impl(state),
         Token::Extend => types::parse_extend(state),

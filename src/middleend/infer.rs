@@ -136,6 +136,10 @@ impl InferenceContext {
                 // Struct definitions return Unit, they just register the type
                 Ok(MonoType::Unit)
             }
+            ExprKind::Enum { .. } => {
+                // Enum definitions return Unit, they just register the type
+                Ok(MonoType::Unit)
+            }
             ExprKind::StructLiteral { name, fields: _ } => {
                 // For now, return a named type for the struct
                 // In a full implementation, we'd validate fields against the struct definition
