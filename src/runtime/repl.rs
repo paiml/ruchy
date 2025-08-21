@@ -81,6 +81,11 @@ pub enum Value {
     },
     Object(HashMap<String, Value>),
     Range { start: i64, end: i64, inclusive: bool },
+    EnumVariant {
+        enum_name: String,
+        variant_name: String,
+        data: Option<Vec<Value>>,
+    },
     Unit,
 }
 
@@ -231,6 +236,21 @@ impl fmt::Display for Value {
                     write!(f, "{start}..={end}")
                 } else {
                     write!(f, "{start}..{end}")
+                }
+            }
+            Value::EnumVariant { enum_name, variant_name, data } => {
+                write!(f, "{enum_name}::{variant_name}")?;
+                if let Some(values) = data {
+                    write!(f, "(")?;
+                    for (i, val) in values.iter().enumerate() {
+                        if i > 0 {
+                            write!(f, ", ")?;
+                        }
+                        write!(f, "{val}")?;
+                    }
+                    write!(f, ")")
+                } else {
+                    Ok(())
                 }
             }
             Value::Unit => write!(f, "()"),
@@ -778,6 +798,15 @@ impl Repl {
                 .get(name)
                 .cloned()
                 .ok_or_else(|| anyhow::anyhow!("Undefined variable: {}", name)),
+            ExprKind::QualifiedName { module, name } => {
+                // For now, treat as enum variant construction
+                // In the future, this should check if module is an enum name
+                Ok(Value::EnumVariant {
+                    enum_name: module.clone(),
+                    variant_name: name.clone(),
+                    data: None,
+                })
+            }
             ExprKind::Let {
                 name, value, body, ..
             } => {
