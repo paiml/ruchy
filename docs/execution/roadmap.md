@@ -481,7 +481,7 @@ graph TD
 - [x] **RUCHY-0710**: Implement if-let and while-let expressions ✅ COMPLETED v0.9.2
 - [x] **RUCHY-0711**: Add module imports and visibility modifiers
 - [x] **RUCHY-0712**: Implement generic type parameters for functions
-- [ ] **RUCHY-0713**: Add slice and array indexing operations
+- [x] **RUCHY-0713**: Add slice and array indexing operations
 - [ ] **RUCHY-0714**: Implement iterator trait and for-in loops
 - [ ] **RUCHY-0715**: Add macro system for println! and vec!
 

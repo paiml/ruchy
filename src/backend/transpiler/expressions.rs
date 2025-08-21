@@ -249,6 +249,34 @@ impl Transpiler {
         Ok(quote! { #obj_tokens[#index_tokens] })
     }
 
+    /// Transpiles slice access (array[start:end])
+    pub fn transpile_slice(&self, object: &Expr, start: Option<&Expr>, end: Option<&Expr>) -> Result<TokenStream> {
+        let obj_tokens = self.transpile_expr(object)?;
+        
+        match (start, end) {
+            (None, None) => {
+                // Full slice [..]
+                Ok(quote! { &#obj_tokens[..] })
+            }
+            (None, Some(end)) => {
+                // Slice from beginning [..end]
+                let end_tokens = self.transpile_expr(end)?;
+                Ok(quote! { &#obj_tokens[..#end_tokens] })
+            }
+            (Some(start), None) => {
+                // Slice to end [start..]
+                let start_tokens = self.transpile_expr(start)?;
+                Ok(quote! { &#obj_tokens[#start_tokens..] })
+            }
+            (Some(start), Some(end)) => {
+                // Full range slice [start..end]
+                let start_tokens = self.transpile_expr(start)?;
+                let end_tokens = self.transpile_expr(end)?;
+                Ok(quote! { &#obj_tokens[#start_tokens..#end_tokens] })
+            }
+        }
+    }
+
     /// Transpiles assignment
     pub fn transpile_assign(&self, target: &Expr, value: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;

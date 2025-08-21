@@ -156,6 +156,7 @@ impl InferenceContext {
             ExprKind::ObjectLiteral { fields } => self.infer_object_literal(fields),
             ExprKind::FieldAccess { object, field: _ } => self.infer_field_access(object),
             ExprKind::IndexAccess { object, index: _ } => self.infer_index_access(object),
+            ExprKind::Slice { object, .. } => self.infer_slice(object),
             ExprKind::Trait { .. } => {
                 // Trait definitions return Unit, they just register the trait
                 Ok(MonoType::Unit)
@@ -1276,6 +1277,13 @@ impl InferenceContext {
             MonoType::List(element_ty) => Ok(*element_ty),
             _ => Ok(MonoType::Var(self.gen.fresh())),
         }
+    }
+
+    fn infer_slice(&mut self, object: &Expr) -> Result<MonoType> {
+        let object_ty = self.infer_expr(object)?;
+        // Slicing returns the same type as the original collection
+        // (a slice of a list is still a list, a slice of a string is still a string)
+        Ok(object_ty)
     }
 
     fn infer_send(&mut self, actor: &Expr, message: &Expr) -> Result<MonoType> {

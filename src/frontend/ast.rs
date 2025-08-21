@@ -158,6 +158,11 @@ pub enum ExprKind {
         object: Box<Expr>,
         index: Box<Expr>,
     },
+    Slice {
+        object: Box<Expr>,
+        start: Option<Box<Expr>>,
+        end: Option<Box<Expr>>,
+    },
     Trait {
         name: String,
         type_params: Vec<String>,

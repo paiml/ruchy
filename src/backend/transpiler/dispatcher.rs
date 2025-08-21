@@ -136,6 +136,7 @@ impl Transpiler {
             ExprKind::ObjectLiteral { fields } => self.transpile_object_literal(fields),
             ExprKind::FieldAccess { object, field } => self.transpile_field_access(object, field),
             ExprKind::IndexAccess { object, index } => self.transpile_index_access(object, index),
+            ExprKind::Slice { object, start, end } => self.transpile_slice(object, start.as_deref(), end.as_deref()),
             _ => unreachable!("Non-struct expression in transpile_struct_expr"),
         }
     }

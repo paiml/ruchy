@@ -106,9 +106,9 @@ impl Transpiler {
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         use ExprKind::{
             Actor, Ask, AsyncBlock, Await, Binary, Call, DataFrame, DataFrameOperation, Err,
-            FieldAccess, For, Function, Identifier, If, Lambda, List, ListComprehension, Literal,
-            Match, MethodCall, ObjectLiteral, Ok, QualifiedName, Range, Send, StringInterpolation,
-            Struct, StructLiteral, Throw, Try, TryCatch, Tuple, Unary, While,
+            FieldAccess, For, Function, Identifier, If, IndexAccess, Lambda, List, ListComprehension, 
+            Literal, Match, MethodCall, ObjectLiteral, Ok, QualifiedName, Range, Send, Slice,
+            StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, Tuple, Unary, While,
         };
 
         // Dispatch to specialized handlers to keep complexity below 10
@@ -135,7 +135,8 @@ impl Transpiler {
             }
 
             // Structures
-            Struct { .. } | StructLiteral { .. } | ObjectLiteral { .. } | FieldAccess { .. } => {
+            Struct { .. } | StructLiteral { .. } | ObjectLiteral { .. } | FieldAccess { .. } 
+            | IndexAccess { .. } | Slice { .. } => {
                 self.transpile_struct_expr(expr)
             }
 
