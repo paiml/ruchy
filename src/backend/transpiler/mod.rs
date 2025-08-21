@@ -105,7 +105,7 @@ impl Transpiler {
     /// Panics if label names cannot be parsed as valid Rust tokens
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         use ExprKind::{
-            Actor, Ask, AsyncBlock, Await, Binary, Call, DataFrame, DataFrameOperation, Err,
+            Actor, Ask, AsyncBlock, Await, Binary, Call, Command, DataFrame, DataFrameOperation, Err,
             FieldAccess, For, Function, Identifier, If, IndexAccess, Lambda, List, ListComprehension, 
             Literal, Match, MethodCall, ObjectLiteral, Ok, QualifiedName, Range, Send, Slice,
             StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, Tuple, Unary, While,
@@ -152,8 +152,8 @@ impl Transpiler {
             | Ok { .. }
             | Err { .. } => self.transpile_data_error_expr(expr),
 
-            // Actor system
-            Actor { .. } | Send { .. } | Ask { .. } => self.transpile_actor_expr(expr),
+            // Actor system and process execution
+            Actor { .. } | Send { .. } | Ask { .. } | Command { .. } => self.transpile_actor_expr(expr),
 
             // Everything else
             _ => self.transpile_misc_expr(expr),

@@ -180,6 +180,10 @@ impl InferenceContext {
                 message,
                 timeout,
             } => self.infer_ask(actor, message, timeout.as_deref()),
+            ExprKind::Command { .. } => {
+                // Commands return strings (stdout)
+                Ok(MonoType::String)
+            }
             ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } => {
                 // Break, continue, and return don't return a value (they diverge)
                 // In Rust, they have type ! (never), but we'll use Unit for simplicity

@@ -290,6 +290,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Continue => Ok(control_flow::parse_continue(state)),
         Token::Try => control_flow::parse_try_catch(state),
         Token::Return => control_flow::parse_return(state),
+        Token::Command => parse_command(state),
         Token::Result => {
             state.tokens.advance(); // consume Result
             
@@ -489,4 +490,54 @@ pub fn get_precedence(op: BinaryOp) -> i32 {
         BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 10,
         BinaryOp::Power => 11,
     }
+}
+
+/// Parse command expression: command `program` with optional args
+fn parse_command(state: &mut ParserState) -> Result<Expr> {
+    state.tokens.advance(); // consume 'command'
+    
+    // Parse program name (string literal)
+    let program = if let Some((Token::String(prog), _)) = state.tokens.peek() {
+        let prog = prog.clone();
+        state.tokens.advance();
+        prog
+    } else {
+        bail!("Expected string literal for command program");
+    };
+    
+    // Parse optional arguments list
+    let args = if matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
+        state.tokens.advance(); // consume '['
+        let mut args = Vec::new();
+        
+        while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+            if let Some((Token::String(arg), _)) = state.tokens.peek() {
+                args.push(arg.clone());
+                state.tokens.advance();
+                
+                // Handle comma
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance();
+                }
+            } else {
+                bail!("Expected string literal in command arguments");
+            }
+        }
+        
+        state.tokens.expect(&Token::RightBracket)?;
+        args
+    } else {
+        Vec::new()
+    };
+    
+    Ok(Expr {
+        kind: ExprKind::Command {
+            program,
+            args,
+            env: Vec::new(),
+            working_dir: None,
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
+    })
 }

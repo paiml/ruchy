@@ -102,6 +102,7 @@ impl GrammarCoverageMatrix {
             ExprKind::QualifiedName { .. } => "QualifiedName",
             ExprKind::Send { .. } => "Send",
             ExprKind::Ask { .. } => "Ask",
+            ExprKind::Command { .. } => "Command",
             ExprKind::Actor { .. } => "Actor",
             ExprKind::DataFrame { .. } => "DataFrame",
             ExprKind::DataFrameOperation { .. } => "DataFrameOperation",

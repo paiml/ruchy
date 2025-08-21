@@ -872,6 +872,9 @@ impl Repl {
                     Err(anyhow::anyhow!("return:()"))
                 }
             }
+            ExprKind::Command { program, args, env: _, working_dir: _ } => {
+                Self::evaluate_command(program, args, deadline, depth)
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
@@ -3329,5 +3332,33 @@ impl Repl {
             _ => bail!("Cannot pipeline complex value types yet"),
         };
         Ok(Expr::new(ExprKind::Literal(literal), span))
+    }
+
+    /// Evaluate command execution
+    fn evaluate_command(
+        program: &str,
+        args: &[String],
+        _deadline: Instant,
+        _depth: usize,
+    ) -> Result<Value> {
+        use std::process::Command;
+        
+        let output = Command::new(program)
+            .args(args)
+            .output()
+            .map_err(|e| anyhow::anyhow!("Failed to execute command '{}': {}", program, e))?;
+        
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+            Ok(Value::String(stdout.trim().to_string()))
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+            Err(anyhow::anyhow!(
+                "Command '{}' failed with exit code {:?}: {}", 
+                program, 
+                output.status.code(), 
+                stderr
+            ))
+        }
     }
 }

@@ -185,6 +185,12 @@ pub enum ExprKind {
         actor: Box<Expr>,
         message: Box<Expr>,
     },
+    Command {
+        program: String,
+        args: Vec<String>,
+        env: Vec<(String, String)>,
+        working_dir: Option<String>,
+    },
     Ask {
         actor: Box<Expr>,
         message: Box<Expr>,
