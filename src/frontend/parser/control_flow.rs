@@ -416,6 +416,20 @@ pub fn parse_while(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+pub fn parse_loop(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume loop
+
+    // Parse the body block
+    let body = super::parse_expr_recursive(state)?;
+
+    Ok(Expr::new(
+        ExprKind::Loop {
+            body: Box::new(body),
+        },
+        start_span,
+    ))
+}
+
 pub fn parse_break(state: &mut ParserState) -> Expr {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume break
 

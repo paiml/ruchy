@@ -132,6 +132,7 @@ impl InferenceContext {
             ExprKind::Match { expr, arms } => self.infer_match(expr, arms),
             ExprKind::For { var, iter, body } => self.infer_for(var, iter, body),
             ExprKind::While { condition, body } => self.infer_while(condition, body),
+            ExprKind::Loop { body } => self.infer_loop(body),
             ExprKind::Range { start, end, .. } => self.infer_range(start, end),
             ExprKind::Pipeline { expr, stages } => self.infer_pipeline(expr, stages),
             ExprKind::Import { .. } | ExprKind::Export { .. } => Ok(MonoType::Unit), // Imports/exports don't have runtime values
@@ -908,6 +909,15 @@ impl InferenceContext {
         self.unifier.unify(&body_ty, &MonoType::Unit)?;
 
         // While loops return unit
+        Ok(MonoType::Unit)
+    }
+    
+    fn infer_loop(&mut self, body: &Expr) -> Result<MonoType> {
+        // Type check body
+        let body_ty = self.infer_expr(body)?;
+        self.unifier.unify(&body_ty, &MonoType::Unit)?;
+
+        // Loop expressions return unit
         Ok(MonoType::Unit)
     }
 

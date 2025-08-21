@@ -356,12 +356,18 @@ fn temporary_hack() {
 ### SACRED RULE: NEVER BYPASS QUALITY GATES
 
 **ABSOLUTELY FORBIDDEN**:
-- `git commit --no-verify` - NEVER use this
+- `git commit --no-verify` - NEVER use this - NO EXCEPTIONS EVER
 - Skipping tests "temporarily" - NO exceptions
 - Ignoring failing quality checks - Must fix EVERY defect
 - Dismissing warnings as "unrelated" - All defects matter
+- Using `--no-verify` flag - This violates Toyota Way principles
 
 **Toyota Way Principle**: Stop the line for ANY defect. No defect is too small. No shortcut is acceptable.
+
+**CRITICAL RULE**: NEVER use `--no-verify` in git commits. This bypasses critical quality gates that protect code integrity. If quality gates are blocking:
+1. Fix the underlying issues (clippy warnings, test failures, etc.)
+2. If gates are genuinely broken, fix the gates themselves
+3. NEVER bypass with --no-verify
 
 If quality gates hang or fail:
 1. Debug and fix the quality gate itself
@@ -623,3 +629,4 @@ Always maintain in .gitignore:
 
 **Remember**: Compiler engineering is about systematic transformation, not clever hacks. Every abstraction must have zero runtime cost. Every error must be actionable. Every line of code must justify its complexity budget.
 - no "cruft" at root of repo.  always clean up temp files/documents before committing.  Zero tolerance for waste.  we follow toyota way.
+- if fixing documentation, always ensure a doctests exists, if not create.

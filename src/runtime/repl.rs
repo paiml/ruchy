@@ -829,7 +829,7 @@ impl Repl {
             ExprKind::Binary { left, op, right } => self.evaluate_binary_expr(left, *op, right, deadline, depth),
             ExprKind::Unary { op, operand } => self.evaluate_unary_expr(*op, operand, deadline, depth),
             ExprKind::Identifier(name) => self.evaluate_identifier(name),
-            ExprKind::QualifiedName { module, name } => self.evaluate_qualified_name(module, name),
+            ExprKind::QualifiedName { module, name } => Ok(Self::evaluate_qualified_name(module, name)),
             ExprKind::Let {
                 name, value, body, ..
             } => self.evaluate_let_binding(name, value, body, deadline, depth),
@@ -855,8 +855,8 @@ impl Repl {
             } => self.evaluate_range_literal(start, end, *inclusive, deadline, depth),
             ExprKind::Function {
                 name, params, body, ..
-            } => self.evaluate_function_definition(name, params, body),
-            ExprKind::Lambda { params, body } => self.evaluate_lambda_expression(params, body),
+            } => Ok(self.evaluate_function_definition(name, params, body)),
+            ExprKind::Lambda { params, body } => Ok(Self::evaluate_lambda_expression(params, body)),
             ExprKind::Call { func, args } => self.evaluate_call(func, args, deadline, depth),
             ExprKind::DataFrame { columns } => self.evaluate_dataframe_literal(columns, deadline, depth),
             ExprKind::DataFrameOperation { .. } => Self::evaluate_dataframe_operation(),
@@ -866,6 +866,7 @@ impl Repl {
             } => self.evaluate_match(match_expr, arms, deadline, depth),
             ExprKind::For { var, iter, body } => self.evaluate_for_loop(var, iter, body, deadline, depth),
             ExprKind::While { condition, body } => self.evaluate_while_loop(condition, body, deadline, depth),
+            ExprKind::Loop { body } => self.evaluate_loop(body, deadline, depth),
             ExprKind::Pipeline { expr, stages } => {
                 self.evaluate_pipeline(expr, stages, deadline, depth)
             }
@@ -890,21 +891,23 @@ impl Repl {
                 // Complexity reduced from 225+ lines to < 10 lines
                 match receiver_val {
                     Value::List(items) => self.evaluate_list_methods(items, method, args, deadline, depth),
-                    Value::String(s) => self.evaluate_string_methods(s, method, args, deadline, depth),
-                    Value::Int(n) => self.evaluate_int_methods(n, method),
-                    Value::Float(f) => self.evaluate_float_methods(f, method),
+                    Value::String(s) => Self::evaluate_string_methods(&s, method, args, deadline, depth),
+                    Value::Int(n) => Self::evaluate_int_methods(n, method),
+                    Value::Float(f) => Self::evaluate_float_methods(f, method),
                     _ => bail!("Method {} not supported on this type", method),
                 }
             }
             ExprKind::Await { expr } => self.evaluate_await_expr(expr, deadline, depth),
             ExprKind::AsyncBlock { body } => self.evaluate_async_block(body, deadline, depth),
             ExprKind::ObjectLiteral { fields } => self.evaluate_object_literal(fields, deadline, depth),
-            ExprKind::Enum { name, variants, .. } => self.evaluate_enum_definition(name, variants),
-            ExprKind::Struct { name, fields, .. } => self.evaluate_struct_definition(name, fields),
+            ExprKind::Enum { name, variants, .. } => Ok(self.evaluate_enum_definition(name, variants)),
+            ExprKind::Struct { name, fields, .. } => Ok(Self::evaluate_struct_definition(name, fields)),
             ExprKind::StructLiteral { name: _, fields } => self.evaluate_struct_literal(fields, deadline, depth),
             ExprKind::FieldAccess { object, field } => self.evaluate_field_access(object, field, deadline, depth),
-            ExprKind::Trait { name, methods, .. } => self.evaluate_trait_definition(name, methods),
-            ExprKind::Impl { for_type, methods, .. } => self.evaluate_impl_block(for_type, methods),
+            ExprKind::Trait { name, methods, .. } => Ok(Self::evaluate_trait_definition(name, methods)),
+            ExprKind::Impl { for_type, methods, .. } => Ok(self.evaluate_impl_block(for_type, methods)),
+            ExprKind::Break { .. } => Err(anyhow::anyhow!("break")),
+            ExprKind::Continue { .. } => Err(anyhow::anyhow!("continue")),
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
@@ -928,7 +931,12 @@ impl Repl {
             "map" => self.evaluate_list_map(items, args, deadline, depth),
             "filter" => self.evaluate_list_filter(items, args, deadline, depth),
             "reduce" => self.evaluate_list_reduce(items, args, deadline, depth),
-            "len" | "length" => Ok(Value::Int(items.len() as i64)),
+            "len" | "length" => {
+                let len = items.len();
+                i64::try_from(len)
+                    .map(Value::Int)
+                    .map_err(|_| anyhow::anyhow!("List length too large to represent as i64"))
+            },
             "head" | "first" => items.first().cloned()
                 .ok_or_else(|| anyhow::anyhow!("Empty list")),
             "last" => items.last().cloned()
@@ -960,7 +968,7 @@ impl Repl {
         }
     }
     
-    /// Evaluate list.map() operation (complexity: 8)
+    /// Evaluate `list.map()` operation (complexity: 8)
     fn evaluate_list_map(
         &mut self,
         items: Vec<Value>,
@@ -993,7 +1001,7 @@ impl Repl {
         }
     }
     
-    /// Evaluate list.filter() operation (complexity: 9)
+    /// Evaluate `list.filter()` operation (complexity: 9)
     fn evaluate_list_filter(
         &mut self,
         items: Vec<Value>,
@@ -1029,7 +1037,7 @@ impl Repl {
         }
     }
     
-    /// Evaluate list.reduce() operation (complexity: 10)
+    /// Evaluate `list.reduce()` operation (complexity: 10)
     fn evaluate_list_reduce(
         &mut self,
         items: Vec<Value>,
@@ -1065,15 +1073,19 @@ impl Repl {
     
     /// Handle method calls on string values (complexity < 10)
     fn evaluate_string_methods(
-        &mut self,
-        s: String,
+        s: &str,
         method: &str,
         args: &[Expr],
         _deadline: Instant,
         _depth: usize,
     ) -> Result<Value> {
         match method {
-            "len" | "length" => Ok(Value::Int(s.len() as i64)),
+            "len" | "length" => {
+                let len = s.len();
+                i64::try_from(len)
+                    .map(Value::Int)
+                    .map_err(|_| anyhow::anyhow!("String length too large to represent as i64"))
+            },
             "upper" | "to_upper" | "to_uppercase" => Ok(Value::String(s.to_uppercase())),
             "lower" | "to_lower" | "to_lowercase" => Ok(Value::String(s.to_lowercase())),
             "trim" => Ok(Value::String(s.trim().to_string())),
@@ -1092,7 +1104,7 @@ impl Repl {
     }
     
     /// Handle method calls on integer values (complexity < 10)
-    fn evaluate_int_methods(&self, n: i64, method: &str) -> Result<Value> {
+    fn evaluate_int_methods(n: i64, method: &str) -> Result<Value> {
         match method {
             "abs" => Ok(Value::Int(n.abs())),
             #[allow(clippy::cast_precision_loss)]
@@ -1114,7 +1126,7 @@ impl Repl {
     }
     
     /// Handle method calls on float values (complexity < 10)
-    fn evaluate_float_methods(&self, f: f64, method: &str) -> Result<Value> {
+    fn evaluate_float_methods(f: f64, method: &str) -> Result<Value> {
         match method {
             "abs" => Ok(Value::Float(f.abs())),
             "sqrt" => Ok(Value::Float(f.sqrt())),
@@ -1187,6 +1199,7 @@ impl Repl {
     }
     
     /// Helper: Iterate over a range (complexity: 5)
+    #[allow(clippy::too_many_arguments)]
     fn iterate_range(
         &mut self,
         var: &str,
@@ -1232,6 +1245,41 @@ impl Repl {
                 }
                 Value::Bool(false) => break,
                 _ => bail!("While condition must be boolean, got: {:?}", cond_val),
+            }
+        }
+        
+        Ok(result)
+    }
+    
+    /// Evaluate loop expression (complexity: 6)
+    fn evaluate_loop(
+        &mut self,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut result = Value::Unit;
+        let max_iterations = 1000; // Prevent infinite loops in REPL
+        let mut iterations = 0;
+        
+        loop {
+            if iterations >= max_iterations {
+                bail!("Loop exceeded maximum iterations ({})", max_iterations);
+            }
+            
+            // Evaluate body, catching break
+            match self.evaluate_expr(body, deadline, depth + 1) {
+                Ok(val) => {
+                    result = val;
+                    iterations += 1;
+                }
+                Err(e) if e.to_string() == "break" => {
+                    break;
+                }
+                Err(e) if e.to_string() == "continue" => {
+                    iterations += 1;
+                }
+                Err(e) => return Err(e),
             }
         }
         
@@ -1379,7 +1427,7 @@ impl Repl {
         name: &str,
         params: &[crate::frontend::ast::Param],
         body: &Expr,
-    ) -> Result<Value> {
+    ) -> Value {
         let param_names: Vec<String> = params.iter().map(crate::frontend::ast::Param::name).collect();
         let func_value = Value::Function {
             name: name.to_string(),
@@ -1389,23 +1437,22 @@ impl Repl {
         
         // Store the function in bindings
         self.bindings.insert(name.to_string(), func_value.clone());
-        Ok(func_value)
+        func_value
     }
     
     /// Evaluate lambda expression (complexity: 3)
     fn evaluate_lambda_expression(
-        &self,
         params: &[crate::frontend::ast::Param],
         body: &Expr,
-    ) -> Result<Value> {
+    ) -> Value {
         let param_names: Vec<String> = params.iter().map(crate::frontend::ast::Param::name).collect();
-        Ok(Value::Lambda {
+        Value::Lambda {
             params: param_names,
             body: Box::new(body.clone()),
-        })
+        }
     }
     
-    /// Evaluate DataFrame literal (complexity: 6)
+    /// Evaluate `DataFrame` literal (complexity: 6)
     fn evaluate_dataframe_literal(
         &mut self,
         columns: &[crate::frontend::ast::DataFrameColumn],
@@ -1463,7 +1510,7 @@ impl Repl {
         result
     }
     
-    /// Evaluate Result::Ok constructor (complexity: 3)
+    /// Evaluate `Result::Ok` constructor (complexity: 3)
     fn evaluate_result_ok(
         &mut self,
         value: &Expr,
@@ -1478,7 +1525,7 @@ impl Repl {
         })
     }
     
-    /// Evaluate Result::Err constructor (complexity: 3)
+    /// Evaluate `Result::Err` constructor (complexity: 3)
     fn evaluate_result_err(
         &mut self,
         error: &Expr,
@@ -1528,23 +1575,22 @@ impl Repl {
         &mut self,
         name: &str,
         variants: &[crate::frontend::ast::EnumVariant],
-    ) -> Result<Value> {
+    ) -> Value {
         let variant_names: Vec<String> = variants.iter()
             .map(|v| v.name.clone())
             .collect();
         self.enum_definitions.insert(name.to_string(), variant_names);
         println!("Defined enum {} with {} variants", name, variants.len());
-        Ok(Value::Unit)
+        Value::Unit
     }
     
     /// Evaluate struct definition (complexity: 3)
     fn evaluate_struct_definition(
-        &self,
         name: &str,
         fields: &[crate::frontend::ast::StructField],
-    ) -> Result<Value> {
+    ) -> Value {
         println!("Defined struct {} with {} fields", name, fields.len());
-        Ok(Value::Unit)
+        Value::Unit
     }
     
     /// Evaluate struct literal (complexity: 5)
@@ -1583,12 +1629,11 @@ impl Repl {
     
     /// Evaluate trait definition (complexity: 3)
     fn evaluate_trait_definition(
-        &self,
         name: &str,
         methods: &[crate::frontend::ast::TraitMethod],
-    ) -> Result<Value> {
+    ) -> Value {
         println!("Defined trait {} with {} methods", name, methods.len());
-        Ok(Value::Unit)
+        Value::Unit
     }
     
     /// Evaluate impl block (complexity: 12)
@@ -1596,7 +1641,7 @@ impl Repl {
         &mut self,
         for_type: &str,
         methods: &[crate::frontend::ast::ImplMethod],
-    ) -> Result<Value> {
+    ) -> Value {
         for method in methods {
             let qualified_name = format!("{}::{}", for_type, method.name);
             
@@ -1615,7 +1660,7 @@ impl Repl {
         }
         
         println!("Defined impl for {} with {} methods", for_type, methods.len());
-        Ok(Value::Unit)
+        Value::Unit
     }
     
     /// Evaluate binary expression (complexity: 3)
@@ -1653,12 +1698,12 @@ impl Repl {
     }
     
     /// Evaluate qualified name (complexity: 2)
-    fn evaluate_qualified_name(&self, module: &str, name: &str) -> Result<Value> {
-        Ok(Value::EnumVariant {
+    fn evaluate_qualified_name(module: &str, name: &str) -> Value {
+        Value::EnumVariant {
             enum_name: module.to_string(),
             variant_name: name.to_string(),
             data: None,
-        })
+        }
     }
     
     /// Evaluate await expression (complexity: 1)
@@ -1697,7 +1742,7 @@ impl Repl {
         self.evaluate_expr(expr, deadline, depth + 1)
     }
     
-    /// Evaluate DataFrame operation (complexity: 1)
+    /// Evaluate `DataFrame` operation (complexity: 1)
     fn evaluate_dataframe_operation() -> Result<Value> {
         // DataFrame operations not yet implemented in REPL
         bail!("DataFrame operations not yet implemented in REPL")

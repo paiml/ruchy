@@ -6,7 +6,7 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::unwrap_used)]
 
-use ruchy::runtime::{Repl, Value};
+use ruchy::runtime::Repl;
 use std::time::{Duration, Instant};
 
 /// Helper macro for testing REPL evaluation
@@ -137,11 +137,11 @@ fn test_simple_function() {
 fn test_recursive_factorial() {
     let mut repl = Repl::new().expect("Failed to create REPL");
     
-    let factorial = r#"
+    let factorial = r"
         fun fact(n) {
             if n <= 1 { 1 } else { n * fact(n - 1) }
         }
-    "#;
+    ";
     
     repl.eval(factorial).expect("Failed to define factorial");
     assert_eval!(repl, "fact(0)", "1");
@@ -154,11 +154,11 @@ fn test_recursive_factorial() {
 fn test_fibonacci() {
     let mut repl = Repl::new().expect("Failed to create REPL");
     
-    let fibonacci = r#"
+    let fibonacci = r"
         fun fib(n) {
             if n <= 1 { n } else { fib(n - 1) + fib(n - 2) }
         }
-    "#;
+    ";
     
     repl.eval(fibonacci).expect("Failed to define fibonacci");
     assert_eval!(repl, "fib(0)", "0");
@@ -237,7 +237,7 @@ fn test_for_loop() {
 fn test_while_loop() {
     let mut repl = Repl::new().expect("Failed to create REPL");
     
-    let while_loop = r#"
+    let while_loop = r"
         let mut i = 0
         let mut sum = 0
         while i < 5 {
@@ -245,7 +245,7 @@ fn test_while_loop() {
             i = i + 1
         }
         sum
-    "#;
+    ";
     
     assert_eval!(repl, while_loop, "10"); // 0 + 1 + 2 + 3 + 4
 }
@@ -363,7 +363,7 @@ fn test_response_time() {
     let duration = start.elapsed();
     
     assert!(duration < Duration::from_millis(100), 
-            "Simple expression took {:?}, expected < 100ms", duration);
+            "Simple expression took {duration:?}, expected < 100ms");
 }
 
 #[test]
@@ -436,7 +436,7 @@ fn test_regression_struct_creation() {
     
     repl.eval("struct Point { x: i32, y: i32 }").expect("Failed to define struct");
     // Note: Object fields may appear in any order due to HashMap
-    let result = repl.eval(r#"Point { x: 10, y: 20 }"#).expect("Failed to create struct");
+    let result = repl.eval(r"Point { x: 10, y: 20 }").expect("Failed to create struct");
     assert!(result.contains(r#""x": 10"#));
     assert!(result.contains(r#""y": 20"#));
 }

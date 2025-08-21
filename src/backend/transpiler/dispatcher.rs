@@ -47,7 +47,8 @@ impl Transpiler {
             ExprKind::If { .. }
             | ExprKind::Match { .. }
             | ExprKind::For { .. }
-            | ExprKind::While { .. } => self.transpile_control_flow_only_expr(expr),
+            | ExprKind::While { .. }
+            | ExprKind::Loop { .. } => self.transpile_control_flow_only_expr(expr),
             _ => unreachable!("Non-operator/control expression in transpile_operator_control_expr"),
         }
     }
@@ -73,6 +74,7 @@ impl Transpiler {
             ExprKind::Match { expr, arms } => self.transpile_match(expr, arms),
             ExprKind::For { var, iter, body } => self.transpile_for(var, iter, body),
             ExprKind::While { condition, body } => self.transpile_while(condition, body),
+            ExprKind::Loop { body } => self.transpile_loop(body),
             _ => unreachable!(),
         }
     }
