@@ -207,6 +207,9 @@ pub enum ExprKind {
         condition: Box<Expr>,
         body: Box<Expr>,
     },
+    Loop {
+        body: Box<Expr>,
+    },
     Range {
         start: Box<Expr>,
         end: Box<Expr>,

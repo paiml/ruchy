@@ -287,6 +287,7 @@ impl Transpiler {
                 | ExprKind::Match { .. }
                 | ExprKind::For { .. }
                 | ExprKind::While { .. }
+                | ExprKind::Loop { .. }
                 | ExprKind::Block(_)
         )
     }
@@ -349,6 +350,16 @@ impl Transpiler {
 
         Ok(quote! {
             while #cond_tokens {
+                #body_tokens
+            }
+        })
+    }
+
+    pub fn transpile_loop(&self, body: &Expr) -> Result<TokenStream> {
+        let body_tokens = self.transpile_expr(body)?;
+
+        Ok(quote! {
+            loop {
                 #body_tokens
             }
         })

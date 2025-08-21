@@ -135,6 +135,8 @@ pub enum Token {
     In,
     #[token("while")]
     While,
+    #[token("loop")]
+    Loop,
     #[token("async")]
     Async,
     #[token("await")]

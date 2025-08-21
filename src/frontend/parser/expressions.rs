@@ -177,6 +177,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Match => control_flow::parse_match(state),
         Token::For => control_flow::parse_for(state),
         Token::While => control_flow::parse_while(state),
+        Token::Loop => control_flow::parse_loop(state),
         Token::Break => Ok(control_flow::parse_break(state)),
         Token::Continue => Ok(control_flow::parse_continue(state)),
         Token::Try => control_flow::parse_try_catch(state),

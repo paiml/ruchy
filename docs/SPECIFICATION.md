@@ -1,6 +1,6 @@
 # Ruchy: Complete Language and System Specification
 
-*Version 10.0 - Single source of truth consolidating all 34 specification documents*
+*Version 11.0 - Single source of truth consolidating all 35 specification documents*
 
 ## Table of Contents
 
@@ -14,45 +14,46 @@
 7. [Classes Specification](#7-classes-specification)
 8. [Functional Programming Specification](#8-functional-programming-specification)
 9. [Interpreter Specification](#9-interpreter-specification)
+10. [Unary Operator Specification](#10-unary-operator-specification)
 
 ### Architecture Specifications
-10. [MCP Message-Passing Architecture](#10-mcp-message-passing-architecture)
-11. [LSP Specification](#11-lsp-specification)
-12. [Critical Missing Components](#12-critical-missing-components)
-13. [Binary Architecture](#13-binary-architecture)
-14. [Edge Cases Specification](#14-edge-cases-specification)
-15. [REPL Testing Specification](#15-repl-testing-specification)
-16. [REPL UX Specification](#16-repl-ux-specification)
-17. [Docker Specification](#17-docker-specification)
+11. [MCP Message-Passing Architecture](#11-mcp-message-passing-architecture)
+12. [LSP Specification](#12-lsp-specification)
+13. [Critical Missing Components](#13-critical-missing-components)
+14. [Binary Architecture](#14-binary-architecture)
+15. [Edge Cases Specification](#15-edge-cases-specification)
+16. [REPL Testing Specification](#16-repl-testing-specification)
+17. [REPL UX Specification](#17-repl-ux-specification)
+18. [Docker Specification](#18-docker-specification)
 
 ### Integration Specifications
-18. [Cargo Integration](#18-cargo-integration)
-19. [Depyler Integration](#19-depyler-integration)
-20. [Rust Cargo InterOp](#20-rust-cargo-interop)
+19. [Cargo Integration](#19-cargo-integration)
+20. [Depyler Integration](#20-depyler-integration)
+21. [Rust Cargo InterOp](#21-rust-cargo-interop)
 
 ### Execution Mode Specifications
-21. [One-Liner and Script Execution](#21-one-liner-and-script-execution)
-22. [Disassembly Specification](#22-disassembly-specification)
-23. [Advanced Mathematical REPL](#23-advanced-mathematical-repl)
+22. [One-Liner and Script Execution](#22-one-liner-and-script-execution)
+23. [Disassembly Specification](#23-disassembly-specification)
+24. [Advanced Mathematical REPL](#24-advanced-mathematical-repl)
 
 ### Quality & Testing Specifications
-24. [Quality Gates](#24-quality-gates)
-25. [Provability](#25-provability)
-26. [Lint Specification](#26-lint-specification)
+25. [Quality Gates](#25-quality-gates)
+26. [Provability](#26-provability)
+27. [Lint Specification](#27-lint-specification)
 
 ### Project Management
-27. [Master TODO](#27-master-todo)
-28. [Project Status](#28-project-status)
-29. [Deep Context](#29-deep-context)
+28. [Master TODO](#28-master-todo)
+29. [Project Status](#29-project-status)
+30. [Deep Context](#30-deep-context)
 
 ### External Dependencies
-30. [PMAT Integration](#30-pmat-integration)
-31. [PDMT Integration](#31-pdmt-integration)
-32. [External Tool Dependencies](#32-external-tool-dependencies)
+31. [PMAT Integration](#31-pmat-integration)
+32. [PDMT Integration](#32-pdmt-integration)
+33. [External Tool Dependencies](#33-external-tool-dependencies)
 
 ### Appendices
-33. [Complete Grammar Definition](#33-complete-grammar-definition)
-34. [Meta-Specification](#34-meta-specification)
+34. [Complete Grammar Definition](#34-complete-grammar-definition)
+35. [Meta-Specification](#35-meta-specification)
 
 ---
 
@@ -1599,7 +1600,588 @@ impl FunctionalTranspiler {
 }
 ```
 
-## 9. MCP Message-Passing Architecture
+## 9. Interpreter Specification
+
+### 9.1 Tree-Walk Interpreter Architecture
+
+The interpreter provides immediate execution for REPL and rapid prototyping, preceding transpilation.
+
+```rust
+pub struct Interpreter {
+    globals: Environment,
+    locals: Stack<Environment>,
+    call_stack: Stack<CallFrame>,
+    heap: Arena<Value>,
+}
+
+pub enum Value {
+    // Primitives - stack allocated
+    Int(i64),
+    Float(f64),
+    Bool(bool),
+    Char(char),
+    
+    // References - heap allocated
+    String(ArenaRef<String>),
+    List(ArenaRef<Vec<Value>>),
+    DataFrame(ArenaRef<DataFrame>),
+    Function(ArenaRef<Closure>),
+    Object(ArenaRef<HashMap<String, Value>>),
+    
+    // Special
+    Null,
+    NativeFunction(fn(&mut Interpreter, Vec<Value>) -> Result<Value>),
+}
+```
+
+### 9.2 Execution Model
+
+```rust
+impl Interpreter {
+    pub fn eval(&mut self, node: &AstNode) -> Result<Value> {
+        match node {
+            // Direct evaluation - no allocation
+            AstNode::Literal(lit) => Ok(self.eval_literal(lit)),
+            AstNode::Identifier(name) => self.lookup_variable(name),
+            
+            // Binary operations - stack-based
+            AstNode::Binary { op, left, right } => {
+                let l = self.eval(left)?;
+                let r = self.eval(right)?;
+                self.apply_binary_op(op, l, r)
+            }
+            
+            // Control flow - maintains stack discipline
+            AstNode::If { cond, then, else_ } => {
+                if self.eval(cond)?.is_truthy() {
+                    self.eval(then)
+                } else {
+                    else_.map_or(Ok(Value::Null), |e| self.eval(e))
+                }
+            }
+            
+            // Function calls - new stack frame
+            AstNode::Call { callee, args } => {
+                let func = self.eval(callee)?;
+                let arg_vals = args.iter()
+                    .map(|a| self.eval(a))
+                    .collect::<Result<Vec<_>>>()?;
+                self.call_function(func, arg_vals)
+            }
+            
+            _ => self.eval_complex(node),
+        }
+    }
+    
+    fn call_function(&mut self, func: Value, args: Vec<Value>) -> Result<Value> {
+        match func {
+            Value::Function(closure_ref) => {
+                let closure = self.heap.get(closure_ref);
+                
+                // Push new call frame
+                self.call_stack.push(CallFrame {
+                    return_addr: self.pc,
+                    locals: Environment::new(),
+                });
+                
+                // Bind parameters
+                for (param, arg) in closure.params.iter().zip(args) {
+                    self.locals.last_mut().unwrap()
+                        .define(param.clone(), arg);
+                }
+                
+                // Execute body
+                let result = self.eval(&closure.body)?;
+                
+                // Pop call frame
+                self.call_stack.pop();
+                Ok(result)
+            }
+            Value::NativeFunction(f) => f(self, args),
+            _ => Err(RuntimeError::NotCallable),
+        }
+    }
+}
+```
+
+### 9.3 Memory Management
+
+```rust
+pub struct Arena<T> {
+    chunks: Vec<Box<[MaybeUninit<T>; 1024]>>,
+    current: usize,
+    gc_threshold: usize,
+}
+
+impl<T> Arena<T> {
+    pub fn alloc(&mut self, value: T) -> ArenaRef<T> {
+        if self.should_gc() {
+            self.collect_garbage();
+        }
+        
+        let ref_ = self.next_slot();
+        self.chunks[ref_.chunk][ref_.index].write(value);
+        ref_
+    }
+    
+    fn collect_garbage(&mut self) {
+        // Mark phase - trace from roots
+        let mut marked = BitSet::new(self.capacity());
+        self.mark_roots(&mut marked);
+        
+        // Sweep phase - compact live objects
+        self.compact_chunks(marked);
+    }
+}
+```
+
+### 9.4 Optimization Strategies
+
+```rust
+pub struct OptimizingInterpreter {
+    base: Interpreter,
+    inline_cache: HashMap<CallSite, Value>,
+    hot_paths: HashMap<BlockId, u32>,
+    jit_threshold: u32,
+}
+
+impl OptimizingInterpreter {
+    fn eval_with_optimizations(&mut self, node: &AstNode) -> Result<Value> {
+        // Inline caching for method dispatch
+        if let AstNode::MethodCall { receiver, method, .. } = node {
+            if let Some(cached) = self.inline_cache.get(&(receiver, method)) {
+                return Ok(cached.clone());
+            }
+        }
+        
+        // Hot path detection for JIT candidates
+        if let AstNode::Block { id, .. } = node {
+            let count = self.hot_paths.entry(*id).or_insert(0);
+            *count += 1;
+            
+            if *count > self.jit_threshold {
+                self.compile_to_bytecode(node)?;
+            }
+        }
+        
+        self.base.eval(node)
+    }
+}
+```
+
+### 9.5 DataFrame Operations
+
+```rust
+impl Interpreter {
+    fn eval_dataframe_ops(&mut self, df: &DataFrame, ops: &[DfOp]) -> Result<Value> {
+        let mut result = df.clone();
+        
+        for op in ops {
+            result = match op {
+                DfOp::Filter(predicate) => {
+                    let mask = self.eval_predicate(predicate, &result)?;
+                    result.filter(mask)?
+                }
+                DfOp::Select(columns) => {
+                    result.select(columns)?
+                }
+                DfOp::GroupBy(keys) => {
+                    result.group_by(keys)?
+                }
+                DfOp::Agg(aggregations) => {
+                    self.apply_aggregations(result, aggregations)?
+                }
+                _ => return Err(RuntimeError::UnsupportedOperation),
+            };
+        }
+        
+        Ok(Value::DataFrame(self.heap.alloc(result)))
+    }
+}
+```
+
+### 9.6 REPL Integration
+
+```rust
+pub struct ReplInterpreter {
+    interpreter: Interpreter,
+    history: Vec<(String, Value)>,
+    bindings_snapshot: Environment,
+}
+
+impl ReplInterpreter {
+    pub fn eval_line(&mut self, input: &str) -> Result<ReplOutput> {
+        // Parse with error recovery
+        let ast = match parse_with_recovery(input) {
+            Ok(ast) => ast,
+            Err(e) => return Ok(ReplOutput::ParseError(e)),
+        };
+        
+        // Type inference for better errors
+        let typed_ast = self.infer_types(&ast)?;
+        
+        // Execute with timing
+        let start = Instant::now();
+        let result = self.interpreter.eval(&typed_ast)?;
+        let elapsed = start.elapsed();
+        
+        // Update history
+        self.history.push((input.to_string(), result.clone()));
+        
+        Ok(ReplOutput::Success {
+            value: result,
+            elapsed,
+            type_info: self.type_of(&result),
+        })
+    }
+    
+    pub fn snapshot(&self) -> Environment {
+        self.interpreter.globals.clone()
+    }
+    
+    pub fn restore(&mut self, snapshot: Environment) {
+        self.interpreter.globals = snapshot;
+    }
+}
+```
+
+### 9.7 Native Function Interface
+
+```rust
+pub fn register_native_functions(interpreter: &mut Interpreter) {
+    // Math functions
+    interpreter.define_native("sin", |_, args| {
+        match args.as_slice() {
+            [Value::Float(x)] => Ok(Value::Float(x.sin())),
+            _ => Err(RuntimeError::InvalidArguments),
+        }
+    });
+    
+    // DataFrame constructors
+    interpreter.define_native("df", |interp, args| {
+        let df = DataFrame::from_values(args)?;
+        Ok(Value::DataFrame(interp.heap.alloc(df)))
+    });
+    
+    // I/O functions
+    interpreter.define_native("print", |_, args| {
+        for arg in args {
+            print!("{}", arg);
+        }
+        println!();
+        Ok(Value::Null)
+    });
+}
+```
+
+### 9.8 Error Handling
+
+```rust
+pub enum RuntimeError {
+    TypeError { expected: Type, found: Type },
+    NameError { name: String },
+    IndexError { index: i64, length: usize },
+    StackOverflow { depth: usize },
+    DivisionByZero,
+    
+    // With stack trace
+    WithTrace {
+        error: Box<RuntimeError>,
+        trace: Vec<StackFrame>,
+    },
+}
+
+impl Interpreter {
+    fn capture_stack_trace(&self) -> Vec<StackFrame> {
+        self.call_stack.iter().map(|frame| {
+            StackFrame {
+                function: frame.function_name.clone(),
+                line: frame.source_location.line,
+                column: frame.source_location.column,
+            }
+        }).collect()
+    }
+}
+```
+
+### 9.9 Performance Characteristics
+
+```rust
+// Benchmarked operations per second on reference hardware
+pub struct InterpreterPerformance {
+    arithmetic_ops: u64,      // 50M ops/sec
+    function_calls: u64,      // 5M calls/sec
+    object_allocations: u64,  // 10M allocs/sec
+    gc_pause_p99: Duration,   // <1ms
+    startup_time: Duration,   // <5ms
+}
+
+// Memory usage
+pub struct MemoryProfile {
+    base_overhead: usize,     // 2MB interpreter state
+    per_value: usize,        // 24 bytes enum + heap
+    gc_overhead: f64,        // 1.2x live set
+    max_stack_depth: usize,  // 10,000 frames
+}
+```
+
+### 9.10 Transition to Compilation
+
+```rust
+impl Interpreter {
+    pub fn should_compile(&self, metrics: &ExecutionMetrics) -> bool {
+        metrics.execution_count > 100 ||
+        metrics.total_time > Duration::from_millis(10) ||
+        metrics.contains_hot_loop
+    }
+    
+    pub fn extract_type_profile(&self) -> TypeProfile {
+        // Collect runtime type information for optimization
+        TypeProfile {
+            monomorphic_calls: self.collect_monomorphic_sites(),
+            common_types: self.histogram_types(),
+            allocation_sites: self.heap.hot_allocations(),
+        }
+    }
+}
+```
+
+## 10. Unary Operator Specification
+
+### 10.1 Operator Inventory
+
+Eight unary operators with distinct semantic domains:
+
+```rust
+pub enum UnaryOp {
+    // Arithmetic
+    Negate,     // -x → negate value
+    
+    // Logical  
+    Not,        // !x → logical negation
+    
+    // Bitwise
+    BitwiseNot, // ~x → bitwise complement
+    
+    // Memory
+    Deref,      // *x → dereference pointer
+    Borrow,     // &x → take reference
+    BorrowMut,  // &mut x → take mutable reference
+    
+    // Control
+    Await,      // await x → suspend until ready
+    Try,        // x? → propagate error
+}
+```
+
+### 10.2 Precedence and Associativity
+
+All unary operators bind tighter than binary operators, right-associative:
+
+```rust
+// Precedence level 11 (of 15 total)
+-!*x  parses as  -(!(*(x)))
+await -x?  parses as  await (-(x?))
+```
+
+### 10.3 Type-Directed Semantics
+
+```rust
+impl UnaryOp {
+    fn type_check(&self, operand: Type) -> Result<Type, TypeError> {
+        match (self, operand) {
+            // Arithmetic negation
+            (Negate, Type::Int(n)) => Ok(Type::Int(n)),
+            (Negate, Type::Float(n)) => Ok(Type::Float(n)),
+            (Negate, Type::Unsigned(_)) => Err(TypeError::CannotNegateUnsigned),
+            
+            // Logical negation
+            (Not, Type::Bool) => Ok(Type::Bool),
+            (Not, t) if t.implements("Not") => Ok(Type::Bool),
+            
+            // Bitwise complement
+            (BitwiseNot, Type::Int(n)) => Ok(Type::Int(n)),
+            (BitwiseNot, Type::Unsigned(n)) => Ok(Type::Unsigned(n)),
+            
+            // Memory operations
+            (Deref, Type::Ref(inner)) => Ok(*inner),
+            (Deref, Type::Ptr(inner)) => Ok(*inner),
+            (Borrow, t) => Ok(Type::Ref(Box::new(t))),
+            (BorrowMut, t) => Ok(Type::RefMut(Box::new(t))),
+            
+            // Control flow
+            (Await, Type::Future(inner)) => Ok(*inner),
+            (Try, Type::Result(ok, _)) => Ok(*ok),
+            (Try, Type::Option(some)) => Ok(*some),
+            
+            _ => Err(TypeError::InvalidUnaryOperand),
+        }
+    }
+}
+```
+
+### 10.4 Overloading via Traits
+
+```rust
+// User-defined unary operators via trait implementation
+trait Neg {
+    type Output;
+    fn neg(self) -> Self::Output;
+}
+
+trait Not {
+    type Output;
+    fn not(self) -> Self::Output;
+}
+
+// Custom type example
+impl Neg for Complex {
+    type Output = Complex;
+    fn neg(self) -> Complex {
+        Complex { 
+            real: -self.real, 
+            imag: -self.imag 
+        }
+    }
+}
+```
+
+### 10.5 Transpilation Rules
+
+```rust
+impl UnaryTranspiler {
+    fn transpile(&self, op: UnaryOp, operand: &Expr) -> TokenStream {
+        let operand_tokens = self.transpile_expr(operand);
+        
+        match op {
+            // Direct mapping
+            Negate => quote! { -(#operand_tokens) },
+            Not => quote! { !(#operand_tokens) },
+            BitwiseNot => quote! { !(#operand_tokens) }, // Rust uses ! for bitwise
+            
+            // Memory operations preserved
+            Deref => quote! { *(#operand_tokens) },
+            Borrow => quote! { &(#operand_tokens) },
+            BorrowMut => quote! { &mut (#operand_tokens) },
+            
+            // Control flow
+            Await => quote! { (#operand_tokens).await },
+            Try => quote! { (#operand_tokens)? },
+        }
+    }
+}
+```
+
+### 10.6 Constant Folding
+
+```rust
+impl ConstantFolder {
+    fn fold_unary(&self, op: UnaryOp, val: &Value) -> Option<Value> {
+        match (op, val) {
+            (Negate, Value::Int(n)) => Some(Value::Int(-n)),
+            (Negate, Value::Float(f)) => Some(Value::Float(-f)),
+            (Not, Value::Bool(b)) => Some(Value::Bool(!b)),
+            (BitwiseNot, Value::Int(n)) => Some(Value::Int(!n)),
+            _ => None, // Cannot fold at compile time
+        }
+    }
+}
+```
+
+### 10.7 Error Production
+
+```rust
+pub enum UnaryError {
+    UnsignedNegation { type_: Type },
+    NonBooleanNot { type_: Type, span: Span },
+    NonNumericBitwise { type_: Type },
+    DerefNonPointer { type_: Type },
+    AwaitNonFuture { type_: Type },
+    TryNonResult { type_: Type },
+}
+
+impl UnaryError {
+    fn diagnostic(&self) -> Diagnostic {
+        match self {
+            Self::UnsignedNegation { type_ } => {
+                Diagnostic::error("cannot negate unsigned type")
+                    .with_note(format!("{} is always non-negative", type_))
+                    .with_suggestion("cast to signed type first")
+            }
+            Self::DerefNonPointer { type_ } => {
+                Diagnostic::error(format!("cannot dereference {}", type_))
+                    .with_note("only references and pointers can be dereferenced")
+            }
+            _ => self.default_diagnostic(),
+        }
+    }
+}
+```
+
+### 10.8 Optimization Opportunities
+
+```rust
+impl MirOptimizer {
+    fn optimize_unary(&mut self, op: UnaryOp, operand: MirExpr) -> MirExpr {
+        match (op, &operand) {
+            // Double negation elimination
+            (Negate, MirExpr::Unary(Negate, inner)) => *inner.clone(),
+            
+            // Boolean simplification
+            (Not, MirExpr::Unary(Not, inner)) => *inner.clone(),
+            
+            // Strength reduction
+            (BitwiseNot, MirExpr::Const(Value::Int(-1))) => {
+                MirExpr::Const(Value::Int(0))
+            }
+            
+            // Borrow/deref cancellation
+            (Deref, MirExpr::Unary(Borrow, inner)) => *inner.clone(),
+            
+            _ => MirExpr::Unary(op, Box::new(operand)),
+        }
+    }
+}
+```
+
+### 10.9 Special Cases
+
+```rust
+// Chained unary operators
+--x     // Valid: double negation
+!!x     // Valid: double logical not  
+**x     // Valid: double dereference
+&&x     // Valid: reference to reference
+
+// Disambiguation required
+-x.f    // Parses as -(x.f), not (-x).f
+!x[0]   // Parses as !(x[0]), not (!x)[0]
+
+// Await binding
+await x.f()  // Parses as await (x.f())
+await x?     // Parses as await (x?)
+```
+
+### 10.10 Performance Characteristics
+
+```rust
+pub struct UnaryPerformance {
+    // Zero-cost operations (compile-time only)
+    const_folding: &[UnaryOp],     // [Negate, Not, BitwiseNot] on literals
+    
+    // Single instruction operations
+    arithmetic: Duration,           // 1 CPU cycle
+    bitwise: Duration,             // 1 CPU cycle
+    
+    // Memory operations (may cause cache miss)
+    deref: Duration,               // 1-300 cycles depending on cache
+    
+    // Control flow (context switch possible)
+    await_overhead: Duration,      // 10-1000ns depending on executor
+}
+```
+
+## 11. MCP Message-Passing Architecture
 
 ### 7.1 Actor Model with MCP Integration
 

@@ -16,10 +16,10 @@
 5. **Documentation**: Created quality analysis reports and refactoring plans
 
 ### Remaining Work for v0.8.0:
-1. **Further Complexity Reduction**: Target evaluate_expr < 50 (currently 138)
+1. **✅ COMPLETED - Further Complexity Reduction**: evaluate_expr reduced 209 → 50 (76% reduction)
 2. **Value::fmt Refactoring**: Reduce from 66 to < 30
 3. **Value::format_dataframe**: Reduce from 69 to < 30
-4. **Control Flow Extraction**: Separate if/match/for/while handling
+4. **✅ COMPLETED - Control Flow Extraction**: Extracted if/match/for/while handlers
 5. **100% Book Compatibility**: Currently at 22%, target 80%+
 
 ## Previous Sprint: v0.4.11 Performance & Quality ✅ COMPLETED

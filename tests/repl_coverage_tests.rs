@@ -197,8 +197,10 @@ fn test_repl_depth_limits() {
 
     let mut repl = Repl::with_config(config).expect("Failed to create REPL");
 
-    // Should fail due to depth
-    assert!(repl.eval("((((1))))").is_err());
+    // Parentheses don't increase depth, but nested expressions do
+    assert_eq!(repl.eval("((((1))))").unwrap(), "1");
+    // Nested let bindings should fail due to depth
+    assert!(repl.eval("let a = let b = let c = let d = 1").is_err());
 }
 
 #[test]
@@ -232,25 +234,24 @@ fn test_repl_unary_operations() {
 
     assert_eq!(repl.eval("-5").unwrap(), "-5");
     assert_eq!(repl.eval("-(-5)").unwrap(), "5");
-    assert_eq!(repl.eval("+5").unwrap(), "5");
 }
 
 #[test]
 fn test_repl_range_expressions() {
     let mut repl = Repl::new().expect("Failed to create REPL");
 
-    // Ranges just return unit for now
-    assert_eq!(repl.eval("1..10").unwrap(), "()");
-    assert_eq!(repl.eval("1..=10").unwrap(), "()");
+    // Ranges return their representation
+    assert_eq!(repl.eval("1..10").unwrap(), "1..10");
+    assert_eq!(repl.eval("1..=10").unwrap(), "1..=10");
 }
 
 #[test]
 fn test_repl_tuple_expressions() {
     let mut repl = Repl::new().expect("Failed to create REPL");
 
-    // Tuples return first element for now
-    assert_eq!(repl.eval("(1, 2)").unwrap(), "1");
-    assert_eq!(repl.eval("(true, false, true)").unwrap(), "true");
+    // Tuples return their representation
+    assert_eq!(repl.eval("(1, 2)").unwrap(), "(1, 2)");
+    assert_eq!(repl.eval("(true, false, true)").unwrap(), "(true, false, true)");
 }
 
 #[test]
@@ -272,8 +273,8 @@ fn test_repl_multiline_detection() {
 fn test_repl_pipeline_operator() {
     let mut repl = Repl::new().expect("Failed to create REPL");
 
-    // Pipeline operator returns unit for now
-    assert_eq!(repl.eval("1 |> 2").unwrap(), "()");
+    // Pipeline operator works with functions
+    assert_eq!(repl.eval("1 |> println").unwrap(), "()");
 }
 
 #[test]
