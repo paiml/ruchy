@@ -664,7 +664,7 @@ impl Repl {
         let value = self.evaluate_expr(&ast, deadline, 0)?;
 
         // Handle let bindings specially
-        if let ExprKind::Let { name, .. } = &ast.kind {
+        if let ExprKind::Let { name, type_annotation: _, .. } = &ast.kind {
             self.bindings.insert(name.clone(), value.clone());
         }
 
@@ -733,7 +733,7 @@ impl Repl {
                 Ok(Self::evaluate_qualified_name(module, name))
             }
             ExprKind::Let {
-                name, value, body, ..
+                name, type_annotation: _, value, body, ..
             } => self.evaluate_let_binding(name, value, body, deadline, depth),
             ExprKind::If {
                 condition,
@@ -836,6 +836,9 @@ impl Repl {
             ExprKind::FieldAccess { object, field } => {
                 self.evaluate_field_access(object, field, deadline, depth)
             }
+            ExprKind::IndexAccess { object, index } => {
+                self.evaluate_index_access(object, index, deadline, depth)
+            }
             ExprKind::Trait { name, methods, .. } => {
                 Ok(Self::evaluate_trait_definition(name, methods))
             }
@@ -844,6 +847,15 @@ impl Repl {
             } => Ok(self.evaluate_impl_block(for_type, methods)),
             ExprKind::Break { .. } => Err(anyhow::anyhow!("break")),
             ExprKind::Continue { .. } => Err(anyhow::anyhow!("continue")),
+            ExprKind::Return { value } => {
+                // Return throws an error with the value to unwind the stack
+                if let Some(val) = value {
+                    let result = self.evaluate_expr(val, deadline, depth + 1)?;
+                    Err(anyhow::anyhow!("return:{}", result))
+                } else {
+                    Err(anyhow::anyhow!("return:()"))
+                }
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
@@ -1567,6 +1579,43 @@ impl Repl {
                 .cloned()
                 .ok_or_else(|| anyhow::anyhow!("Field '{}' not found", field)),
             _ => bail!("Field access on non-object value"),
+        }
+    }
+
+    /// Evaluate index access (complexity: 5)
+    fn evaluate_index_access(
+        &mut self,
+        object: &Expr,
+        index: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
+        let index_val = self.evaluate_expr(index, deadline, depth + 1)?;
+        
+        match (obj_val, index_val) {
+            (Value::List(list), Value::Int(idx)) => {
+                if idx < 0 {
+                    return Err(anyhow::anyhow!("Negative index: {}", idx));
+                }
+                let idx = idx as usize;
+                if idx >= list.len() {
+                    return Err(anyhow::anyhow!("Index {} out of bounds for list of length {}", idx, list.len()));
+                }
+                Ok(list[idx].clone())
+            }
+            (Value::String(s), Value::Int(idx)) => {
+                if idx < 0 {
+                    return Err(anyhow::anyhow!("Negative index: {}", idx));
+                }
+                let idx = idx as usize;
+                let chars: Vec<char> = s.chars().collect();
+                if idx >= chars.len() {
+                    return Err(anyhow::anyhow!("Index {} out of bounds for string of length {}", idx, chars.len()));
+                }
+                Ok(Value::String(chars[idx].to_string()))
+            }
+            (obj_val, _) => Err(anyhow::anyhow!("Cannot index into {:?}", obj_val)),
         }
     }
 

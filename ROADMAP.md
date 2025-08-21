@@ -11,6 +11,87 @@
 
 *See docs/execution/ for detailed task execution framework*
 
+## 🎯 BOOK COMPATIBILITY SPRINT v0.9.0 (TOP PRIORITY)
+
+**CRITICAL**: These 3 issues block 101/202 failing examples (50% of all failures) per ruchy-book/INTEGRATION.md
+
+### RUCHY-0901: Struct/Enum/Trait Keywords Implementation (~60 failures) [IN PROGRESS]
+**ACCEPTANCE CRITERIA**:
+- `struct User { name: String, age: i32 }` parses and transpiles correctly
+- `enum Status { Active, Inactive }` with variant support  
+- `trait Display { fn fmt(&self) -> String; }` with method signatures
+- All struct/enum/trait examples from book chapters pass
+- Proper type checking for struct field access and enum matching
+- Implementation blocks (`impl Display for User`) working
+
+**BOOK EXAMPLES THAT SHOULD PASS**:
+```ruchy
+// From Variables & Types chapter
+struct User {
+    name: String,
+    age: i32,
+}
+
+// From Advanced Patterns chapter  
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+
+// From Functions chapter
+trait Display {
+    fn fmt(&self) -> String;
+}
+```
+
+### RUCHY-0902: Fat Arrow Syntax Fix (23 failures)
+**ACCEPTANCE CRITERIA**:
+- `"test" => || { }` parses without "Unexpected token: FatArrow" error
+- Match arms with fat arrows work: `match x { 1 => "one", 2 => "two" }`
+- HashMap literal syntax: `{key => value}` vs `{key: value}`
+- All fat arrow examples from book pass transpilation and evaluation
+
+**BOOK EXAMPLES THAT SHOULD PASS**:
+```ruchy
+// From Pattern Matching chapter
+match status {
+    Status::Active => println("User is active"),
+    Status::Inactive => println("User is inactive"),
+}
+
+// From Data Structures chapter
+let map = {
+    "key1" => "value1",
+    "key2" => "value2",
+}
+```
+
+### RUCHY-0903: String Interpolation Implementation (18 failures)
+**ACCEPTANCE CRITERIA**:
+- `f"Hello, {name}!"` syntax parses without "Unknown prefix 'f'" error
+- Expression interpolation: `f"Result: {x + y}"`  
+- Format specifiers: `f"Price: ${price:.2}"`
+- All string interpolation examples from book pass evaluation
+
+**BOOK EXAMPLES THAT SHOULD PASS**:
+```ruchy
+// From Hello World chapter
+let name = "Ruchy";
+println(f"Hello, {name}!")
+
+// From Data Processing chapter  
+let price = 99.99;
+let tax = 0.08;
+println(f"Total: ${price * (1.0 + tax):.2}")
+```
+
+**SUCCESS METRICS**:
+- Book compatibility improves from 22% → 61% (target: +39 percentage points)
+- All struct/enum/trait basic examples pass
+- All fat arrow syntax examples pass  
+- All f-string interpolation examples pass
+- Zero regressions in existing 57 passing examples
+
 ## ✅ COMPLETED FEATURES (2025-08-20)
 
 ### CLI/REPL Foundation ✅

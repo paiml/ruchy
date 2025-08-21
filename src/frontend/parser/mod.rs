@@ -189,13 +189,9 @@ fn handle_array_indexing(state: &mut ParserState, left: Expr) -> Result<Expr> {
     let index = parse_expr_recursive(state)?;
     state.tokens.expect(&Token::RightBracket)?;
     Ok(Expr {
-        kind: ExprKind::Call {
-            func: Box::new(Expr {
-                kind: ExprKind::Identifier("get".to_string()),
-                span: Span { start: 0, end: 0 },
-                attributes: Vec::new(),
-            }),
-            args: vec![left, index],
+        kind: ExprKind::IndexAccess {
+            object: Box::new(left),
+            index: Box::new(index),
         },
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),

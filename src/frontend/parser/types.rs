@@ -265,8 +265,11 @@ pub fn parse_trait(state: &mut ParserState) -> Result<Expr> {
 ///
 /// Returns an error if the operation fails
 pub fn parse_trait_method(state: &mut ParserState) -> Result<TraitMethod> {
-    // Parse fn keyword
-    state.tokens.expect(&Token::Fun)?;
+    // Parse fn or fun keyword
+    if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
+        bail!("Expected 'fun' or 'fn' keyword");
+    }
+    state.tokens.advance(); // consume fun/fn
 
     // Parse method name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
@@ -378,8 +381,11 @@ pub fn parse_impl(state: &mut ParserState) -> Result<Expr> {
 ///
 /// Returns an error if the operation fails
 pub fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
-    // Parse fn keyword
-    state.tokens.expect(&Token::Fun)?;
+    // Parse fn or fun keyword
+    if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
+        bail!("Expected 'fun' or 'fn' keyword");
+    }
+    state.tokens.advance(); // consume fun/fn
 
     // Parse method name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {

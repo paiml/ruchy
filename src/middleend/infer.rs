@@ -94,6 +94,7 @@ impl InferenceContext {
             } => self.infer_if(condition, then_branch, else_branch.as_deref()),
             ExprKind::Let {
                 name,
+                type_annotation: _,
                 value,
                 body,
                 is_mutable,
@@ -154,6 +155,7 @@ impl InferenceContext {
             }
             ExprKind::ObjectLiteral { fields } => self.infer_object_literal(fields),
             ExprKind::FieldAccess { object, field: _ } => self.infer_field_access(object),
+            ExprKind::IndexAccess { object, index: _ } => self.infer_index_access(object),
             ExprKind::Trait { .. } => {
                 // Trait definitions return Unit, they just register the trait
                 Ok(MonoType::Unit)
@@ -177,8 +179,8 @@ impl InferenceContext {
                 message,
                 timeout,
             } => self.infer_ask(actor, message, timeout.as_deref()),
-            ExprKind::Break { .. } | ExprKind::Continue { .. } => {
-                // Break and continue don't return a value (they diverge)
+            ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } => {
+                // Break, continue, and return don't return a value (they diverge)
                 // In Rust, they have type ! (never), but we'll use Unit for simplicity
                 Ok(MonoType::Unit)
             }
@@ -1195,6 +1197,16 @@ impl InferenceContext {
     fn infer_field_access(&mut self, object: &Expr) -> Result<MonoType> {
         let _object_ty = self.infer_expr(object)?;
         Ok(MonoType::Var(self.gen.fresh()))
+    }
+
+    fn infer_index_access(&mut self, object: &Expr) -> Result<MonoType> {
+        let object_ty = self.infer_expr(object)?;
+        // For arrays/lists, return the element type
+        // For now, we'll use a fresh type variable until we have proper collection typing
+        match object_ty {
+            MonoType::List(element_ty) => Ok(*element_ty),
+            _ => Ok(MonoType::Var(self.gen.fresh())),
+        }
     }
 
     fn infer_send(&mut self, actor: &Expr, message: &Expr) -> Result<MonoType> {

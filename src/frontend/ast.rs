@@ -103,6 +103,7 @@ pub enum ExprKind {
     },
     Let {
         name: String,
+        type_annotation: Option<Type>,
         value: Box<Expr>,
         body: Box<Expr>,
         is_mutable: bool,
@@ -139,6 +140,10 @@ pub enum ExprKind {
     FieldAccess {
         object: Box<Expr>,
         field: String,
+    },
+    IndexAccess {
+        object: Box<Expr>,
+        index: Box<Expr>,
     },
     Trait {
         name: String,
@@ -231,6 +236,9 @@ pub enum ExprKind {
     },
     Continue {
         label: Option<String>,
+    },
+    Return {
+        value: Option<Box<Expr>>,
     },
     Assign {
         target: Box<Expr>,
@@ -839,6 +847,7 @@ mod tests {
         let expr = Expr::new(
             ExprKind::Let {
                 name: "x".to_string(),
+                type_annotation: None,
                 value,
                 body,
                 is_mutable: false,

@@ -2702,6 +2702,7 @@ mod tests {
         let let_expr = Expr::new(
             ExprKind::Let {
                 name: "x".to_string(),
+                type_annotation: None,
                 value,
                 body,
                 is_mutable: false,
@@ -3124,6 +3125,7 @@ mod tests {
         let let_expr = Expr::new(
             ExprKind::Let {
                 name: "x".to_string(),
+                type_annotation: None,
                 value: x_val,
                 body: let_body,
                 is_mutable: false,
@@ -3375,6 +3377,7 @@ mod tests {
         let let_expr = Expr::new(
             ExprKind::Let {
                 name: "x".to_string(),
+                type_annotation: None,
                 value: value_expr,
                 body: body_expr,
                 is_mutable: false,
