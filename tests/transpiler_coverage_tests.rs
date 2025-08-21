@@ -364,7 +364,7 @@ fn test_transpile_extension_methods() -> Result<()> {
             }
         }
     ";
-    
+
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;
     let transpiler = Transpiler::new();
@@ -377,7 +377,7 @@ fn test_transpile_extension_methods() -> Result<()> {
 
     // Should generate impl StringExt for String
     assert!(code_str.contains("impl StringExt for String"));
-    
+
     // Should contain the method body
     assert!(code_str.contains("chars()"));
     assert!(code_str.contains("filter"));

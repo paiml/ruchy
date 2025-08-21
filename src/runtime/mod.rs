@@ -16,7 +16,9 @@ mod repl_function_tests;
 pub use repl::{Repl, ReplConfig, Value};
 
 // Export interpreter components
-pub use interpreter::{Interpreter, InterpreterError, InterpreterResult, Value as InterpreterValue};
+pub use interpreter::{
+    Interpreter, InterpreterError, InterpreterResult, Value as InterpreterValue,
+};
 
 // Export actor system components
 pub use actor::{

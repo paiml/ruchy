@@ -7,7 +7,7 @@ use logos::{Lexer, Logos};
 fn process_escapes(s: &str) -> String {
     let mut result = String::new();
     let mut chars = s.chars();
-    
+
     while let Some(ch) = chars.next() {
         if ch == '\\' {
             match chars.next() {
@@ -28,7 +28,7 @@ fn process_escapes(s: &str) -> String {
                         }
                         hex.push(hex_char);
                     }
-                    
+
                     if let Ok(code_point) = u32::from_str_radix(&hex, 16) {
                         if let Some(unicode_char) = char::from_u32(code_point) {
                             result.push(unicode_char);
@@ -55,7 +55,7 @@ fn process_escapes(s: &str) -> String {
             result.push(ch);
         }
     }
-    
+
     result
 }
 

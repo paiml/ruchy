@@ -118,15 +118,15 @@ impl Transpiler {
         variants: &[EnumVariant],
     ) -> Result<TokenStream> {
         let enum_name = format_ident!("{}", name);
-        
-        let type_param_tokens: Vec<_> = 
+
+        let type_param_tokens: Vec<_> =
             type_params.iter().map(|p| format_ident!("{}", p)).collect();
-        
+
         let variant_tokens: Vec<TokenStream> = variants
             .iter()
             .map(|variant| {
                 let variant_name = format_ident!("{}", variant.name);
-                
+
                 if let Some(fields) = &variant.fields {
                     // Tuple variant
                     let field_types: Vec<TokenStream> = fields
@@ -140,7 +140,7 @@ impl Transpiler {
                 }
             })
             .collect();
-        
+
         if type_params.is_empty() {
             Ok(quote! {
                 enum #enum_name {
@@ -376,7 +376,7 @@ impl Transpiler {
     }
 
     /// Transpiles extension methods into trait + impl
-    /// 
+    ///
     /// Generates both a trait definition and an implementation according to the specification:
     /// ```rust
     /// // Ruchy: extend String { fun is_palindrome(&self) -> bool { ... } }
@@ -390,13 +390,13 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let target_ident = format_ident!("{}", target_type);
         let trait_name = format_ident!("{}Ext", target_type); // e.g., StringExt
-        
+
         // Generate trait definition
         let trait_method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
                 let method_name = format_ident!("{}", method.name);
-                
+
                 // Process parameters
                 let param_tokens: Vec<TokenStream> = method
                     .params
@@ -419,7 +419,7 @@ impl Transpiler {
                         }
                     })
                     .collect();
-                
+
                 // Process return type
                 let return_type_tokens = if let Some(ref ty) = method.return_type {
                     let ty_tokens = self.transpile_type(ty)?;
@@ -427,22 +427,22 @@ impl Transpiler {
                 } else {
                     quote! {}
                 };
-                
+
                 // Trait methods are just signatures (no body)
                 Ok(quote! {
                     fn #method_name(#(#param_tokens),*) #return_type_tokens;
                 })
             })
             .collect();
-            
+
         let trait_method_tokens = trait_method_tokens?;
-        
+
         // Generate impl definition
         let impl_method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
                 let method_name = format_ident!("{}", method.name);
-                
+
                 // Process parameters (same as trait)
                 let param_tokens: Vec<TokenStream> = method
                     .params
@@ -464,7 +464,7 @@ impl Transpiler {
                         }
                     })
                     .collect();
-                
+
                 // Process return type
                 let return_type_tokens = if let Some(ref ty) = method.return_type {
                     let ty_tokens = self.transpile_type(ty)?;
@@ -472,10 +472,10 @@ impl Transpiler {
                 } else {
                     quote! {}
                 };
-                
+
                 // Impl methods have bodies
                 let body_tokens = self.transpile_expr(&method.body)?;
-                
+
                 Ok(quote! {
                     fn #method_name(#(#param_tokens),*) #return_type_tokens {
                         #body_tokens
@@ -483,15 +483,15 @@ impl Transpiler {
                 })
             })
             .collect();
-            
+
         let impl_method_tokens = impl_method_tokens?;
-        
+
         // Generate both trait and impl
         Ok(quote! {
             trait #trait_name {
                 #(#trait_method_tokens)*
             }
-            
+
             impl #trait_name for #target_ident {
                 #(#impl_method_tokens)*
             }

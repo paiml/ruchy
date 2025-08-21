@@ -335,7 +335,7 @@ impl Transpiler {
         let element_tokens = element_tokens?;
         Ok(quote! { vec![#(#element_tokens),*] })
     }
-    
+
     /// Transpiles tuple literals
     pub fn transpile_tuple(&self, elements: &[Expr]) -> Result<TokenStream> {
         let element_tokens: Result<Vec<_>> =
@@ -414,7 +414,7 @@ impl Transpiler {
                 ExprKind::Literal(Literal::String(s)) => {
                     quote! { #s.to_string() }
                 }
-                _ => self.transpile_expr(value)?
+                _ => self.transpile_expr(value)?,
             };
             field_tokens.push(quote! { #field_ident: #value_tokens });
         }

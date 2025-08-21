@@ -117,10 +117,8 @@ impl InferenceContext {
             ExprKind::List(elements) => self.infer_list(elements),
             ExprKind::Tuple(elements) => {
                 // Infer tuple type
-                let element_types: Result<Vec<_>> = elements
-                    .iter()
-                    .map(|e| self.infer_expr(e))
-                    .collect();
+                let element_types: Result<Vec<_>> =
+                    elements.iter().map(|e| self.infer_expr(e)).collect();
                 Ok(MonoType::Tuple(element_types?))
             }
             ExprKind::ListComprehension {
@@ -192,7 +190,9 @@ impl InferenceContext {
             | ExprKind::PostIncrement { target }
             | ExprKind::PreDecrement { target }
             | ExprKind::PostDecrement { target } => self.infer_increment_decrement(target),
-            ExprKind::DataFrameOperation { source, operation } => self.infer_dataframe_operation(source, operation),
+            ExprKind::DataFrameOperation { source, operation } => {
+                self.infer_dataframe_operation(source, operation)
+            }
             ExprKind::AsyncBlock { body } => self.infer_async_block(body),
         }
     }
@@ -628,8 +628,9 @@ impl InferenceContext {
                 // These aggregation methods return numeric types
                 Ok(MonoType::Float)
             }
-            ("mean" | "std" | "sum" | "count", MonoType::Named(name)) 
-                if name == "DataFrame" || name == "Series" => {
+            ("mean" | "std" | "sum" | "count", MonoType::Named(name))
+                if name == "DataFrame" || name == "Series" =>
+            {
                 // Fallback for untyped DataFrames/Series
                 Ok(MonoType::Float)
             }
@@ -637,7 +638,9 @@ impl InferenceContext {
                 // Column selection returns a Series with the column's type
                 if let Some(arg) = args.first() {
                     if let ExprKind::Literal(Literal::String(col_name)) = &arg.kind {
-                        if let Some((_, col_type)) = columns.iter().find(|(name, _)| name == col_name) {
+                        if let Some((_, col_type)) =
+                            columns.iter().find(|(name, _)| name == col_name)
+                        {
                             return Ok(MonoType::Series(Box::new(col_type.clone())));
                         }
                     }
@@ -911,7 +914,7 @@ impl InferenceContext {
         // While loops return unit
         Ok(MonoType::Unit)
     }
-    
+
     fn infer_loop(&mut self, body: &Expr) -> Result<MonoType> {
         // Type check body
         let body_ty = self.infer_expr(body)?;
@@ -1215,9 +1218,12 @@ impl InferenceContext {
         Ok(MonoType::Var(self.gen.fresh()))
     }
 
-    fn infer_dataframe(&mut self, columns: &[crate::frontend::ast::DataFrameColumn]) -> Result<MonoType> {
+    fn infer_dataframe(
+        &mut self,
+        columns: &[crate::frontend::ast::DataFrameColumn],
+    ) -> Result<MonoType> {
         let mut column_types = Vec::new();
-        
+
         for col in columns {
             // Infer the type of the first value to determine column type
             let col_type = if col.values.is_empty() {
@@ -1233,15 +1239,19 @@ impl InferenceContext {
             };
             column_types.push((col.name.clone(), col_type));
         }
-        
+
         Ok(MonoType::DataFrame(column_types))
     }
 
-    fn infer_dataframe_operation(&mut self, source: &Expr, operation: &crate::frontend::ast::DataFrameOp) -> Result<MonoType> {
+    fn infer_dataframe_operation(
+        &mut self,
+        source: &Expr,
+        operation: &crate::frontend::ast::DataFrameOp,
+    ) -> Result<MonoType> {
         use crate::frontend::ast::DataFrameOp;
-        
+
         let source_ty = self.infer_expr(source)?;
-        
+
         // Ensure source is a DataFrame
         match &source_ty {
             MonoType::DataFrame(columns) => {
@@ -1254,7 +1264,8 @@ impl InferenceContext {
                         // Select creates a new DataFrame with only the selected columns
                         let mut new_columns = Vec::new();
                         for col_name in selected_cols {
-                            if let Some((_, ty)) = columns.iter().find(|(name, _)| name == col_name) {
+                            if let Some((_, ty)) = columns.iter().find(|(name, _)| name == col_name)
+                            {
                                 new_columns.push((col_name.clone(), ty.clone()));
                             }
                         }
@@ -1293,7 +1304,7 @@ impl InferenceContext {
     fn infer_async_block(&mut self, body: &Expr) -> Result<MonoType> {
         // Infer the body type
         let body_ty = self.infer_expr(body)?;
-        
+
         // Async blocks return Future<Output = body_type>
         Ok(MonoType::Named(format!("Future<{body_ty}>")))
     }
@@ -1380,7 +1391,7 @@ mod tests {
             age => [25, 30, 35],
             name => ["Alice", "Bob", "Charlie"]
         ]"#;
-        
+
         let result = infer_str(df_str).unwrap();
         match result {
             MonoType::DataFrame(columns) => {

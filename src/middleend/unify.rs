@@ -67,7 +67,11 @@ impl Unifier {
                 }
                 for ((name1, ty1), (name2, ty2)) in cols1.iter().zip(cols2.iter()) {
                     if name1 != name2 {
-                        bail!("Cannot unify DataFrames with different column names: {} vs {}", name1, name2);
+                        bail!(
+                            "Cannot unify DataFrames with different column names: {} vs {}",
+                            name1,
+                            name2
+                        );
                     }
                     self.unify(ty1, ty2)?;
                 }
@@ -115,7 +119,9 @@ impl Unifier {
                 Self::occurs(var, inner)
             }
             MonoType::Result(ok, err) => Self::occurs(var, ok) || Self::occurs(var, err),
-            MonoType::DataFrame(columns) => columns.iter().any(|(_, col_ty)| Self::occurs(var, col_ty)),
+            MonoType::DataFrame(columns) => {
+                columns.iter().any(|(_, col_ty)| Self::occurs(var, col_ty))
+            }
             MonoType::Tuple(types) => types.iter().any(|ty| Self::occurs(var, ty)),
             _ => false,
         }

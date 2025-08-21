@@ -3,13 +3,13 @@
 use super::{ParserState, *};
 
 /// Parse an enum definition
-/// 
+///
 /// # Errors
 ///
 /// Returns an error if the enum syntax is invalid
 pub fn parse_enum(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume enum
-    
+
     // Parse enum name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -18,17 +18,17 @@ pub fn parse_enum(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected enum name");
     };
-    
+
     // Parse optional type parameters <T, U, ...>
     let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
         utils::parse_type_parameters(state)?
     } else {
         Vec::new()
     };
-    
+
     // Parse enum variants
     state.tokens.expect(&Token::LeftBrace)?;
-    
+
     let mut variants = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Parse variant name
@@ -39,33 +39,33 @@ pub fn parse_enum(state: &mut ParserState) -> Result<Expr> {
         } else {
             bail!("Expected variant name");
         };
-        
+
         // Check for tuple variant (has parentheses)
         let fields = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
             state.tokens.advance(); // consume (
-            
+
             let mut field_types = Vec::new();
             while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                 field_types.push(utils::parse_type(state)?);
-                
+
                 if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     state.tokens.advance();
                 } else {
                     break;
                 }
             }
-            
+
             state.tokens.expect(&Token::RightParen)?;
             Some(field_types)
         } else {
             None // Unit variant
         };
-        
+
         variants.push(EnumVariant {
             name: variant_name,
             fields,
         });
-        
+
         // Handle comma or end of enum
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
@@ -73,9 +73,9 @@ pub fn parse_enum(state: &mut ParserState) -> Result<Expr> {
             break;
         }
     }
-    
+
     state.tokens.expect(&Token::RightBrace)?;
-    
+
     Ok(Expr::new(
         ExprKind::Enum {
             name,
@@ -419,7 +419,7 @@ pub fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
 /// Returns an error if the parsing fails
 pub fn parse_extend(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume extend
-    
+
     // Parse target type
     let target_type = if let Some((Token::Identifier(type_name), _)) = state.tokens.peek() {
         let type_name = type_name.clone();
@@ -428,24 +428,24 @@ pub fn parse_extend(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected type name after 'extend'");
     };
-    
+
     // Parse extension body
     state.tokens.expect(&Token::LeftBrace)?;
-    
+
     let mut methods = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Parse method implementation (reuse impl method parser)
         let method = parse_impl_method(state)?;
         methods.push(method);
-        
+
         // Skip optional semicolons
         if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
             state.tokens.advance();
         }
     }
-    
+
     state.tokens.expect(&Token::RightBrace)?;
-    
+
     Ok(Expr::new(
         ExprKind::Extension {
             target_type,

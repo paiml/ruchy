@@ -333,9 +333,22 @@ fn main() -> Result<()> {
             min_severity,
         }) => {
             if all {
-                lint_all_files(verbose, &format, deny_warnings, max_complexity, min_severity.as_ref())?;
+                lint_all_files(
+                    verbose,
+                    &format,
+                    deny_warnings,
+                    max_complexity,
+                    min_severity.as_ref(),
+                )?;
             } else {
-                lint_file(&file, verbose, &format, deny_warnings, max_complexity, min_severity.as_ref())?;
+                lint_file(
+                    &file,
+                    verbose,
+                    &format,
+                    deny_warnings,
+                    max_complexity,
+                    min_severity.as_ref(),
+                )?;
             }
         }
     }
@@ -453,14 +466,22 @@ fn value_to_json(value: &ruchy::runtime::Value) -> String {
                 .collect();
             format!("{{{}}}", pairs.join(", "))
         }
-        Value::Range { start, end, inclusive } => {
+        Value::Range {
+            start,
+            end,
+            inclusive,
+        } => {
             if *inclusive {
                 format!(r#""{}..={}""#, start, end)
             } else {
                 format!(r#""{}..{}""#, start, end)
             }
         }
-        Value::EnumVariant { enum_name, variant_name, data } => {
+        Value::EnumVariant {
+            enum_name,
+            variant_name,
+            data,
+        } => {
             let base = format!("\"{}::{}\"", enum_name, variant_name);
             if let Some(values) = data {
                 let vals: Vec<String> = values.iter().map(value_to_json).collect();
@@ -489,7 +510,7 @@ impl FormatConfig {
             use_tabs,
         }
     }
-    
+
     #[allow(dead_code)]
     fn indent_str(&self, level: usize) -> String {
         if self.use_tabs {
@@ -512,34 +533,48 @@ fn format_file(
     diff: bool,
 ) -> Result<()> {
     use std::fs;
-    
+
     // Read the source file
     let source = match fs::read_to_string(file) {
         Ok(content) => content,
         Err(e) => {
-            eprintln!("{} Failed to read {}: {}", "✗".bright_red(), file.display(), e);
+            eprintln!(
+                "{} Failed to read {}: {}",
+                "✗".bright_red(),
+                file.display(),
+                e
+            );
             std::process::exit(1);
         }
     };
-    
+
     // Parse the source
     let mut parser = RuchyParser::new(&source);
     let ast = match parser.parse() {
         Ok(ast) => ast,
         Err(e) => {
-            eprintln!("{} Parse error in {}: {}", "✗".bright_red(), file.display(), e);
+            eprintln!(
+                "{} Parse error in {}: {}",
+                "✗".bright_red(),
+                file.display(),
+                e
+            );
             std::process::exit(1);
         }
     };
-    
+
     // Format the AST
     let config = FormatConfig::new(line_width, indent, use_tabs);
     let formatted = format_ast(&ast, &config);
-    
+
     if check {
         // Check mode: verify if file is already formatted
         if source.trim() == formatted.trim() {
-            println!("{} {} is already formatted", "✓".bright_green(), file.display());
+            println!(
+                "{} {} is already formatted",
+                "✓".bright_green(),
+                file.display()
+            );
         } else {
             println!("{} {} needs formatting", "✗".bright_red(), file.display());
             if diff {
@@ -553,7 +588,11 @@ fn format_file(
     } else {
         // Write back to file
         if source.trim() == formatted.trim() {
-            println!("{} {} is already formatted", "→".bright_cyan(), file.display());
+            println!(
+                "{} {} is already formatted",
+                "→".bright_cyan(),
+                file.display()
+            );
         } else {
             fs::write(file, &formatted)?;
             println!("{} Formatted {}", "✓".bright_green(), file.display());
@@ -562,7 +601,7 @@ fn format_file(
             }
         }
     }
-    
+
     Ok(())
 }
 
@@ -578,18 +617,22 @@ fn format_all_files(
 ) -> Result<()> {
     // Discover all .ruchy files
     let ruchy_files = discover_ruchy_files_fmt(".")?;
-    
+
     if ruchy_files.is_empty() {
         println!("{} No .ruchy files found", "⚠".yellow());
         return Ok(());
     }
-    
-    println!("{} Found {} .ruchy files", "→".bright_cyan(), ruchy_files.len());
-    
+
+    println!(
+        "{} Found {} .ruchy files",
+        "→".bright_cyan(),
+        ruchy_files.len()
+    );
+
     let mut formatted = 0;
     let already_formatted = 0;
     let mut errors = 0;
-    
+
     for file in &ruchy_files {
         match format_file(file, check, false, line_width, indent, use_tabs, diff) {
             Ok(()) => {
@@ -601,21 +644,25 @@ fn format_all_files(
             }
         }
     }
-    
+
     // Print summary
     let status = if errors == 0 {
         format!("{} PASSED", "✓".bright_green())
     } else {
         format!("{} FAILED", "✗".bright_red())
     };
-    
-    println!("\nformat result: {}. {} files processed; {} errors",
-        status, formatted + already_formatted, errors);
-    
+
+    println!(
+        "\nformat result: {}. {} files processed; {} errors",
+        status,
+        formatted + already_formatted,
+        errors
+    );
+
     if errors > 0 {
         std::process::exit(1);
     }
-    
+
     Ok(())
 }
 
@@ -623,9 +670,9 @@ fn format_all_files(
 #[allow(clippy::items_after_statements)]
 fn discover_ruchy_files_fmt(dir: &str) -> Result<Vec<PathBuf>> {
     use std::fs;
-    
+
     let mut ruchy_files = Vec::new();
-    
+
     fn visit_dir(dir: &std::path::Path, files: &mut Vec<PathBuf>) -> Result<()> {
         if dir.is_dir() {
             for entry in fs::read_dir(dir)? {
@@ -634,11 +681,12 @@ fn discover_ruchy_files_fmt(dir: &str) -> Result<Vec<PathBuf>> {
                 if path.is_dir() {
                     // Skip hidden directories and common build/dependency directories
                     if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
-                        if !name.starts_with('.') 
-                            && name != "target" 
-                            && name != "node_modules" 
-                            && name != "build" 
-                            && name != "dist" {
+                        if !name.starts_with('.')
+                            && name != "target"
+                            && name != "node_modules"
+                            && name != "build"
+                            && name != "dist"
+                        {
                             visit_dir(&path, files)?;
                         }
                     }
@@ -649,7 +697,7 @@ fn discover_ruchy_files_fmt(dir: &str) -> Result<Vec<PathBuf>> {
         }
         Ok(())
     }
-    
+
     visit_dir(std::path::Path::new(dir), &mut ruchy_files)?;
     ruchy_files.sort();
     Ok(ruchy_files)
@@ -668,7 +716,12 @@ fn format_ast(ast: &ruchy::Expr, config: &FormatConfig) -> String {
 
 /// Format an expression with proper indentation
 #[allow(clippy::format_push_string)]
-fn format_expr(expr: &ruchy::Expr, output: &mut String, _indent_level: usize, _config: &FormatConfig) {
+fn format_expr(
+    expr: &ruchy::Expr,
+    output: &mut String,
+    _indent_level: usize,
+    _config: &FormatConfig,
+) {
     // For now, use a simple debug-based formatter
     // This can be enhanced later with proper AST traversal
     output.push_str(&format!("{expr:?}"));
@@ -681,13 +734,21 @@ fn format_literal(lit: &ruchy::Literal, output: &mut String) {
 }
 
 /// Format a binary operator (simplified)
-#[allow(dead_code, clippy::format_push_string, clippy::trivially_copy_pass_by_ref)]
+#[allow(
+    dead_code,
+    clippy::format_push_string,
+    clippy::trivially_copy_pass_by_ref
+)]
 fn format_binary_op(op: &ruchy::BinaryOp, output: &mut String) {
     output.push_str(&format!("{op:?}"));
 }
 
 /// Format a unary operator (simplified)
-#[allow(dead_code, clippy::format_push_string, clippy::trivially_copy_pass_by_ref)]
+#[allow(
+    dead_code,
+    clippy::format_push_string,
+    clippy::trivially_copy_pass_by_ref
+)]
 fn format_unary_op(op: &ruchy::UnaryOp, output: &mut String) {
     output.push_str(&format!("{op:?}"));
 }
@@ -703,16 +764,16 @@ fn print_diff(original: &str, formatted: &str, file: &Path) {
     println!("\n{} Diff for {}:", "📝".bright_blue(), file.display());
     println!("{}", "--- Original".bright_red());
     println!("{}", "+++ Formatted".bright_green());
-    
+
     let original_lines: Vec<&str> = original.lines().collect();
     let formatted_lines: Vec<&str> = formatted.lines().collect();
-    
+
     // Simple diff display - just show different lines
     let max_lines = original_lines.len().max(formatted_lines.len());
     for i in 0..max_lines {
         let orig = original_lines.get(i).unwrap_or(&"");
         let fmt = formatted_lines.get(i).unwrap_or(&"");
-        
+
         if orig != fmt {
             if !orig.is_empty() {
                 println!("{} {}", "-".bright_red(), orig);
@@ -736,30 +797,38 @@ fn lint_file(
     min_severity: Option<&LintSeverity>,
 ) -> Result<()> {
     use std::fs;
-    
+
     // Read the source file
     let source = match fs::read_to_string(file) {
         Ok(content) => content,
         Err(e) => {
-            eprintln!("{} Failed to read {}: {e}", "✗".bright_red(), file.display());
+            eprintln!(
+                "{} Failed to read {}: {e}",
+                "✗".bright_red(),
+                file.display()
+            );
             std::process::exit(1);
         }
     };
-    
+
     // Parse the source
     let mut parser = RuchyParser::new(&source);
     let ast = match parser.parse() {
         Ok(ast) => ast,
         Err(e) => {
-            eprintln!("{} Parse error in {}: {e}", "✗".bright_red(), file.display());
+            eprintln!(
+                "{} Parse error in {}: {e}",
+                "✗".bright_red(),
+                file.display()
+            );
             std::process::exit(1);
         }
     };
-    
+
     // Run lint checks
     let violations = run_lint_checks(&ast, max_complexity);
     let filtered_violations = filter_violations(violations, min_severity);
-    
+
     // Display results
     display_lint_results(&filtered_violations, file, verbose, format, deny_warnings)
 }
@@ -774,17 +843,21 @@ fn lint_all_files(
 ) -> Result<()> {
     // Discover all .ruchy files
     let ruchy_files = discover_ruchy_files_lint(".")?;
-    
+
     if ruchy_files.is_empty() {
         println!("{} No .ruchy files found", "⚠".yellow());
         return Ok(());
     }
-    
-    println!("{} Found {} .ruchy files", "→".bright_cyan(), ruchy_files.len());
-    
+
+    println!(
+        "{} Found {} .ruchy files",
+        "→".bright_cyan(),
+        ruchy_files.len()
+    );
+
     let mut total_violations = Vec::new();
     let mut files_with_errors = 0;
-    
+
     for file in &ruchy_files {
         match lint_file(file, verbose, format, false, max_complexity, min_severity) {
             Ok(()) => {
@@ -805,21 +878,26 @@ fn lint_all_files(
             }
         }
     }
-    
+
     // Print summary
     let status = if total_violations.is_empty() {
         format!("{} PASSED", "✓".bright_green())
     } else {
         format!("{} FAILED", "✗".bright_red())
     };
-    
-    println!("\nlint result: {}. {} files processed; {} violations in {} files",
-        status, ruchy_files.len(), total_violations.len(), files_with_errors);
-    
+
+    println!(
+        "\nlint result: {}. {} files processed; {} violations in {} files",
+        status,
+        ruchy_files.len(),
+        total_violations.len(),
+        files_with_errors
+    );
+
     if !total_violations.is_empty() && deny_warnings {
         std::process::exit(1);
     }
-    
+
     Ok(())
 }
 
@@ -844,26 +922,30 @@ struct LintViolation {
 /// Run all lint checks on an AST
 fn run_lint_checks(ast: &ruchy::Expr, max_complexity: usize) -> Vec<LintViolation> {
     let mut violations = Vec::new();
-    
+
     // Check 1: Function complexity
     check_function_complexity(ast, max_complexity, &mut violations);
-    
+
     // Check 2: Unused variables (basic check)
     check_unused_variables(ast, &mut violations);
-    
+
     // Check 3: Missing documentation
     check_missing_docs(ast, &mut violations);
-    
+
     // Check 4: Naming conventions
     check_naming_conventions(ast, &mut violations);
-    
+
     violations
 }
 
 /// Check function complexity
-fn check_function_complexity(ast: &ruchy::Expr, max_complexity: usize, violations: &mut Vec<LintViolation>) {
+fn check_function_complexity(
+    ast: &ruchy::Expr,
+    max_complexity: usize,
+    violations: &mut Vec<LintViolation>,
+) {
     use ruchy::ExprKind;
-    
+
     // Simple recursive traversal to find function definitions
     match &ast.kind {
         ExprKind::Function { name, body, .. } => {
@@ -885,7 +967,11 @@ fn check_function_complexity(ast: &ruchy::Expr, max_complexity: usize, violation
                 check_function_complexity(expr, max_complexity, violations);
             }
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             check_function_complexity(condition, max_complexity, violations);
             check_function_complexity(then_branch, max_complexity, violations);
             if let Some(else_expr) = else_branch {
@@ -907,26 +993,28 @@ fn check_function_complexity(ast: &ruchy::Expr, max_complexity: usize, violation
 /// Calculate cyclomatic complexity of an expression
 fn calculate_complexity(expr: &ruchy::Expr) -> usize {
     use ruchy::ExprKind;
-    
+
     match &expr.kind {
-        ExprKind::If { condition, then_branch, else_branch } => {
-            1 + calculate_complexity(condition) 
-              + calculate_complexity(then_branch)
-              + else_branch.as_ref().map_or(0, |e| calculate_complexity(e))
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            1 + calculate_complexity(condition)
+                + calculate_complexity(then_branch)
+                + else_branch.as_ref().map_or(0, |e| calculate_complexity(e))
         }
         ExprKind::Match { expr, arms } => {
-            arms.len() + calculate_complexity(expr) + 
-            arms.iter().map(|arm| calculate_complexity(&arm.body)).sum::<usize>()
+            arms.len()
+                + calculate_complexity(expr)
+                + arms
+                    .iter()
+                    .map(|arm| calculate_complexity(&arm.body))
+                    .sum::<usize>()
         }
-        ExprKind::For { body, .. } | ExprKind::While { body, .. } => {
-            1 + calculate_complexity(body)
-        }
-        ExprKind::Block(exprs) => {
-            exprs.iter().map(calculate_complexity).sum()
-        }
-        ExprKind::Function { body, .. } => {
-            1 + calculate_complexity(body)
-        }
+        ExprKind::For { body, .. } | ExprKind::While { body, .. } => 1 + calculate_complexity(body),
+        ExprKind::Block(exprs) => exprs.iter().map(calculate_complexity).sum(),
+        ExprKind::Function { body, .. } => 1 + calculate_complexity(body),
         _ => 0,
     }
 }
@@ -940,7 +1028,7 @@ fn check_unused_variables(_ast: &ruchy::Expr, _violations: &mut Vec<LintViolatio
 /// Check for missing documentation
 fn check_missing_docs(ast: &ruchy::Expr, violations: &mut Vec<LintViolation>) {
     use ruchy::ExprKind;
-    
+
     match &ast.kind {
         ExprKind::Function { name, .. } => {
             // Check if function has documentation attributes
@@ -967,7 +1055,7 @@ fn check_missing_docs(ast: &ruchy::Expr, violations: &mut Vec<LintViolation>) {
 /// Check naming conventions
 fn check_naming_conventions(ast: &ruchy::Expr, violations: &mut Vec<LintViolation>) {
     use ruchy::ExprKind;
-    
+
     match &ast.kind {
         ExprKind::Function { name, .. } => {
             if !is_snake_case(name) {
@@ -1004,8 +1092,9 @@ fn check_naming_conventions(ast: &ruchy::Expr, violations: &mut Vec<LintViolatio
 
 /// Check if a name follows snake_case convention
 fn is_snake_case(name: &str) -> bool {
-    name.chars().all(|c| c.is_lowercase() || c.is_numeric() || c == '_') 
-        && !name.starts_with('_') 
+    name.chars()
+        .all(|c| c.is_lowercase() || c.is_numeric() || c == '_')
+        && !name.starts_with('_')
         && !name.ends_with('_')
         && !name.contains("__")
 }
@@ -1014,7 +1103,7 @@ fn is_snake_case(name: &str) -> bool {
 fn to_snake_case(name: &str) -> String {
     let mut result = String::new();
     let mut prev_was_lower = false;
-    
+
     for c in name.chars() {
         if c.is_uppercase() {
             if prev_was_lower {
@@ -1027,22 +1116,26 @@ fn to_snake_case(name: &str) -> String {
             prev_was_lower = c.is_lowercase();
         }
     }
-    
+
     result
 }
 
 /// Filter violations based on minimum severity
-fn filter_violations(violations: Vec<LintViolation>, min_severity: Option<&LintSeverity>) -> Vec<LintViolation> {
+fn filter_violations(
+    violations: Vec<LintViolation>,
+    min_severity: Option<&LintSeverity>,
+) -> Vec<LintViolation> {
     if let Some(min_sev) = min_severity {
-        violations.into_iter().filter(|v| {
-            match (&v.severity, min_sev) {
+        violations
+            .into_iter()
+            .filter(|v| match (&v.severity, min_sev) {
                 (LintSeverity::Error, _) => true,
                 (LintSeverity::Warning, LintSeverity::Error) => false,
                 (LintSeverity::Warning, _) => true,
                 (LintSeverity::Info, LintSeverity::Error | LintSeverity::Warning) => false,
                 (LintSeverity::Info, LintSeverity::Info) => true,
-            }
-        }).collect()
+            })
+            .collect()
     } else {
         violations
     }
@@ -1060,11 +1153,11 @@ fn display_lint_results(
         "json" => display_json_results(violations, file),
         _ => display_text_results(violations, file, verbose),
     }
-    
+
     if !violations.is_empty() && deny_warnings {
         std::process::exit(1);
     }
-    
+
     Ok(())
 }
 
@@ -1074,20 +1167,26 @@ fn display_text_results(violations: &[LintViolation], file: &PathBuf, verbose: b
         println!("{} {} is clean", "✓".bright_green(), file.display());
         return;
     }
-    
+
     println!("\n{} Issues found in {}:", "⚠".yellow(), file.display());
-    
+
     for violation in violations {
         let severity_color = match violation.severity {
             LintSeverity::Error => "error".bright_red(),
             LintSeverity::Warning => "warning".yellow(),
             LintSeverity::Info => "info".bright_blue(),
         };
-        
-        println!("  {}: {} [{}]", severity_color, violation.message, violation.rule);
-        
+
+        println!(
+            "  {}: {} [{}]",
+            severity_color, violation.message, violation.rule
+        );
+
         if verbose {
-            println!("    at line {}, column {}", violation.line, violation.column);
+            println!(
+                "    at line {}, column {}",
+                violation.line, violation.column
+            );
             if let Some(suggestion) = &violation.suggestion {
                 println!("    suggestion: {}", suggestion.bright_green());
             }
@@ -1097,21 +1196,24 @@ fn display_text_results(violations: &[LintViolation], file: &PathBuf, verbose: b
 
 /// Display results in JSON format
 fn display_json_results(violations: &[LintViolation], file: &PathBuf) {
-    let json_violations: Vec<serde_json::Value> = violations.iter().map(|v| {
-        serde_json::json!({
-            "severity": format!("{:?}", v.severity).to_lowercase(),
-            "rule": v.rule,
-            "message": v.message,
-            "line": v.line,
-            "column": v.column,
-            "suggestion": v.suggestion
+    let json_violations: Vec<serde_json::Value> = violations
+        .iter()
+        .map(|v| {
+            serde_json::json!({
+                "severity": format!("{:?}", v.severity).to_lowercase(),
+                "rule": v.rule,
+                "message": v.message,
+                "line": v.line,
+                "column": v.column,
+                "suggestion": v.suggestion
+            })
         })
-    }).collect();
-    
+        .collect();
+
     let result = serde_json::json!({
         "file": file.display().to_string(),
         "violations": json_violations
     });
-    
+
     println!("{}", serde_json::to_string_pretty(&result).unwrap());
 }
