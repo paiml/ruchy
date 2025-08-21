@@ -174,7 +174,7 @@ Based on the latest integration report (Aug 20, 2025, 18:10 UTC):
 5. **String Methods** ✅ ALREADY WORKING - .len(), .to_upper(), .trim()
 
 ### URGENT: Fix CI Infrastructure First
-- [ ] **BOOK-CI-001**: Restore missing `tests/test_all_examples.rs` file in ruchy-book
+- [x] **BOOK-CI-001**: Restore missing `tests/test_all_examples.rs` file in ruchy-book
 - [ ] **BOOK-CI-002**: Verify GitHub Actions can run book compatibility tests
 - [ ] **BOOK-CI-003**: Set up automated reporting of real compatibility metrics
 
