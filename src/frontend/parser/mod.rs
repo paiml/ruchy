@@ -183,19 +183,61 @@ fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) -> Result<E
     Ok(left)
 }
 
-/// Handle array indexing syntax [expr]
+/// Handle array indexing and slicing syntax [expr] or [start:end]
 fn handle_array_indexing(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume [
-    let index = parse_expr_recursive(state)?;
-    state.tokens.expect(&Token::RightBracket)?;
-    Ok(Expr {
-        kind: ExprKind::IndexAccess {
-            object: Box::new(left),
-            index: Box::new(index),
-        },
-        span: Span { start: 0, end: 0 },
-        attributes: Vec::new(),
-    })
+    
+    // Check for empty slice [:end] 
+    if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance(); // consume :
+        let end = if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+            None
+        } else {
+            Some(Box::new(parse_expr_recursive(state)?))
+        };
+        state.tokens.expect(&Token::RightBracket)?;
+        return Ok(Expr {
+            kind: ExprKind::Slice {
+                object: Box::new(left),
+                start: None,
+                end,
+            },
+            span: Span { start: 0, end: 0 },
+            attributes: Vec::new(),
+        });
+    }
+    
+    let first_expr = parse_expr_recursive(state)?;
+    
+    // Check if this is a slice [start:end] or just indexing [index]
+    if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance(); // consume :
+        let end = if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+            None
+        } else {
+            Some(Box::new(parse_expr_recursive(state)?))
+        };
+        state.tokens.expect(&Token::RightBracket)?;
+        Ok(Expr {
+            kind: ExprKind::Slice {
+                object: Box::new(left),
+                start: Some(Box::new(first_expr)),
+                end,
+            },
+            span: Span { start: 0, end: 0 },
+            attributes: Vec::new(),
+        })
+    } else {
+        state.tokens.expect(&Token::RightBracket)?;
+        Ok(Expr {
+            kind: ExprKind::IndexAccess {
+                object: Box::new(left),
+                index: Box::new(first_expr),
+            },
+            span: Span { start: 0, end: 0 },
+            attributes: Vec::new(),
+        })
+    }
 }
 
 /// Try to parse try operator (?)

@@ -852,6 +852,9 @@ impl Repl {
             ExprKind::IndexAccess { object, index } => {
                 self.evaluate_index_access(object, index, deadline, depth)
             }
+            ExprKind::Slice { object, start, end } => {
+                self.evaluate_slice(object, start.as_deref(), end.as_deref(), deadline, depth)
+            }
             ExprKind::Trait { name, methods, .. } => {
                 Ok(Self::evaluate_trait_definition(name, methods))
             }
@@ -1649,6 +1652,70 @@ impl Repl {
                 Ok(Value::String(chars[idx].to_string()))
             }
             (obj_val, _) => Err(anyhow::anyhow!("Cannot index into {:?}", obj_val)),
+        }
+    }
+
+    fn evaluate_slice(
+        &mut self,
+        object: &Expr,
+        start: Option<&Expr>,
+        end: Option<&Expr>,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
+        
+        // Evaluate start and end indices if provided
+        let start_idx = if let Some(start_expr) = start {
+            match self.evaluate_expr(start_expr, deadline, depth + 1)? {
+                Value::Int(idx) => Some(usize::try_from(idx)
+                    .map_err(|_| anyhow::anyhow!("Invalid start index: {}", idx))?),
+                _ => return Err(anyhow::anyhow!("Slice indices must be integers")),
+            }
+        } else {
+            None
+        };
+        
+        let end_idx = if let Some(end_expr) = end {
+            match self.evaluate_expr(end_expr, deadline, depth + 1)? {
+                Value::Int(idx) => Some(usize::try_from(idx)
+                    .map_err(|_| anyhow::anyhow!("Invalid end index: {}", idx))?),
+                _ => return Err(anyhow::anyhow!("Slice indices must be integers")),
+            }
+        } else {
+            None
+        };
+        
+        match obj_val {
+            Value::List(list) => {
+                let start = start_idx.unwrap_or(0);
+                let end = end_idx.unwrap_or(list.len());
+                
+                if start > list.len() || end > list.len() {
+                    return Err(anyhow::anyhow!("Slice indices out of bounds"));
+                }
+                if start > end {
+                    return Err(anyhow::anyhow!("Invalid slice range: start > end"));
+                }
+                
+                Ok(Value::List(list[start..end].to_vec()))
+            }
+            Value::String(s) => {
+                let chars: Vec<char> = s.chars().collect();
+                let start = start_idx.unwrap_or(0);
+                let end = end_idx.unwrap_or(chars.len());
+                
+                if start > chars.len() || end > chars.len() {
+                    return Err(anyhow::anyhow!("Slice indices out of bounds"));
+                }
+                if start > end {
+                    return Err(anyhow::anyhow!("Invalid slice range: start > end"));
+                }
+                
+                let sliced: String = chars[start..end].iter().collect();
+                Ok(Value::String(sliced))
+            }
+            _ => Err(anyhow::anyhow!("Cannot slice value of type {:?}", obj_val)),
         }
     }
 
