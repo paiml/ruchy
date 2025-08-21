@@ -45,6 +45,8 @@ impl Transpiler {
             | ExprKind::AsyncBlock { .. } => self.transpile_operator_only_expr(expr),
             // Control flow
             ExprKind::If { .. }
+            | ExprKind::IfLet { .. }
+            | ExprKind::WhileLet { .. }
             | ExprKind::Match { .. }
             | ExprKind::For { .. }
             | ExprKind::While { .. }
@@ -74,6 +76,17 @@ impl Transpiler {
             ExprKind::Match { expr, arms } => self.transpile_match(expr, arms),
             ExprKind::For { var, iter, body } => self.transpile_for(var, iter, body),
             ExprKind::While { condition, body } => self.transpile_while(condition, body),
+            ExprKind::IfLet {
+                pattern,
+                expr,
+                then_branch,
+                else_branch,
+            } => self.transpile_if_let(pattern, expr, then_branch, else_branch.as_deref()),
+            ExprKind::WhileLet {
+                pattern,
+                expr,
+                body,
+            } => self.transpile_while_let(pattern, expr, body),
             ExprKind::Loop { body } => self.transpile_loop(body),
             _ => unreachable!(),
         }

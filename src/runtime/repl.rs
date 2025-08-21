@@ -776,6 +776,17 @@ impl Repl {
             ExprKind::While { condition, body } => {
                 self.evaluate_while_loop(condition, body, deadline, depth)
             }
+            ExprKind::IfLet {
+                pattern,
+                expr,
+                then_branch,
+                else_branch,
+            } => self.evaluate_if_let(pattern, expr, then_branch, else_branch.as_deref(), deadline, depth),
+            ExprKind::WhileLet {
+                pattern,
+                expr,
+                body,
+            } => self.evaluate_while_let(pattern, expr, body, deadline, depth),
             ExprKind::Loop { body } => self.evaluate_loop(body, deadline, depth),
             ExprKind::Pipeline { expr, stages } => {
                 self.evaluate_pipeline(expr, stages, deadline, depth)
@@ -2737,6 +2748,112 @@ impl Repl {
             }
             _ => bail!("If condition must be boolean, got: {:?}", cond_val),
         }
+    }
+
+    /// Evaluate if-let expression (complexity: 6)
+    fn evaluate_if_let(
+        &mut self,
+        pattern: &Pattern,
+        expr: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Expr>,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let value = self.evaluate_expr(expr, deadline, depth + 1)?;
+        
+        // Try pattern matching
+        if let Ok(Some(bindings)) = Self::pattern_matches(&value, pattern) {
+            // Save current bindings
+            let saved_bindings: Vec<(String, Value)> = bindings
+                .iter()
+                .filter_map(|(name, _val)| {
+                    self.bindings.get(name).map(|old_val| (name.clone(), old_val.clone()))
+                })
+                .collect();
+            
+            // Apply pattern bindings
+            for (name, val) in bindings {
+                self.bindings.insert(name, val);
+            }
+            
+            // Evaluate then branch
+            let result = self.evaluate_expr(then_branch, deadline, depth + 1);
+            
+            // Restore bindings
+            for (name, old_val) in saved_bindings {
+                self.bindings.insert(name, old_val);
+            }
+            
+            result
+        } else {
+            // Pattern didn't match, evaluate else branch
+            if let Some(else_expr) = else_branch {
+                self.evaluate_expr(else_expr, deadline, depth + 1)
+            } else {
+                Ok(Value::Unit)
+            }
+        }
+    }
+
+    /// Evaluate while-let expression (complexity: 7)
+    fn evaluate_while_let(
+        &mut self,
+        pattern: &Pattern,
+        expr: &Expr,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut last_value = Value::Unit;
+        
+        loop {
+            if Instant::now() > deadline {
+                bail!("Loop timed out");
+            }
+            
+            let value = self.evaluate_expr(expr, deadline, depth + 1)?;
+            
+            // Try pattern matching
+            if let Ok(Some(bindings)) = Self::pattern_matches(&value, pattern) {
+                // Save current bindings
+                let saved_bindings: Vec<(String, Value)> = bindings
+                    .iter()
+                    .filter_map(|(name, _val)| {
+                        self.bindings.get(name).map(|old_val| (name.clone(), old_val.clone()))
+                    })
+                    .collect();
+                
+                // Apply pattern bindings
+                for (name, val) in bindings {
+                    self.bindings.insert(name, val);
+                }
+                
+                // Evaluate body
+                match self.evaluate_expr(body, deadline, depth + 1) {
+                    Ok(val) => {
+                        last_value = val;
+                        
+                        // Restore bindings
+                        for (name, old_val) in saved_bindings {
+                            self.bindings.insert(name, old_val);
+                        }
+                    }
+                    Err(e) => {
+                        // Restore bindings before propagating error
+                        for (name, old_val) in saved_bindings {
+                            self.bindings.insert(name, old_val);
+                        }
+                        return Err(e);
+                    }
+                }
+            } else {
+                // Pattern didn't match, exit loop
+                break;
+            }
+        }
+        
+        Ok(last_value)
     }
 
     /// Evaluate function calls

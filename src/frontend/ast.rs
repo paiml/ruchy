@@ -105,6 +105,12 @@ pub enum ExprKind {
         then_branch: Box<Expr>,
         else_branch: Option<Box<Expr>>,
     },
+    IfLet {
+        pattern: Pattern,
+        expr: Box<Expr>,
+        then_branch: Box<Expr>,
+        else_branch: Option<Box<Expr>>,
+    },
     Let {
         name: String,
         type_annotation: Option<Type>,
@@ -214,6 +220,11 @@ pub enum ExprKind {
     },
     While {
         condition: Box<Expr>,
+        body: Box<Expr>,
+    },
+    WhileLet {
+        pattern: Pattern,
+        expr: Box<Expr>,
         body: Box<Expr>,
     },
     Loop {

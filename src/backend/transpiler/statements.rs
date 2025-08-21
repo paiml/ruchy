@@ -5,7 +5,7 @@
 #![allow(clippy::collapsible_else_if)]
 
 use super::*;
-use crate::frontend::ast::{CatchClause, Literal, Param, PipelineStage};
+use crate::frontend::ast::{CatchClause, Literal, Param, Pattern, PipelineStage};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -360,6 +360,54 @@ impl Transpiler {
 
         Ok(quote! {
             while #cond_tokens {
+                #body_tokens
+            }
+        })
+    }
+
+    /// Transpile if-let expression (complexity: 5)
+    pub fn transpile_if_let(
+        &self,
+        pattern: &Pattern,
+        expr: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Expr>,
+    ) -> Result<TokenStream> {
+        let expr_tokens = self.transpile_expr(expr)?;
+        let pattern_tokens = self.transpile_pattern(pattern)?;
+        let then_tokens = self.transpile_expr(then_branch)?;
+
+        if let Some(else_expr) = else_branch {
+            let else_tokens = self.transpile_expr(else_expr)?;
+            Ok(quote! {
+                if let #pattern_tokens = #expr_tokens {
+                    #then_tokens
+                } else {
+                    #else_tokens
+                }
+            })
+        } else {
+            Ok(quote! {
+                if let #pattern_tokens = #expr_tokens {
+                    #then_tokens
+                }
+            })
+        }
+    }
+
+    /// Transpile while-let expression (complexity: 4)
+    pub fn transpile_while_let(
+        &self,
+        pattern: &Pattern,
+        expr: &Expr,
+        body: &Expr,
+    ) -> Result<TokenStream> {
+        let expr_tokens = self.transpile_expr(expr)?;
+        let pattern_tokens = self.transpile_pattern(pattern)?;
+        let body_tokens = self.transpile_expr(body)?;
+
+        Ok(quote! {
+            while let #pattern_tokens = #expr_tokens {
                 #body_tokens
             }
         })
