@@ -658,6 +658,8 @@ pub struct Repl {
     bindings: HashMap<String, Value>,
     /// Impl methods: `Type::method` -> (params, body)
     impl_methods: HashMap<String, (Vec<String>, Box<Expr>)>,
+    /// Enum definitions: `EnumName` -> list of variant names
+    enum_definitions: HashMap<String, Vec<String>>,
     /// Transpiler instance
     transpiler: Transpiler,
     /// Temporary directory for compilation
@@ -700,17 +702,42 @@ impl Repl {
 
         let memory = MemoryTracker::new(config.max_memory);
 
-        Ok(Self {
+        let mut repl = Self {
             history: Vec::new(),
             definitions: Vec::new(),
             bindings: HashMap::new(),
             impl_methods: HashMap::new(),
+            enum_definitions: HashMap::new(),
             transpiler: Transpiler::new(),
             temp_dir,
             session_counter: 0,
             config,
             memory,
-        })
+        };
+        
+        // Initialize built-in types
+        repl.init_builtins();
+        
+        Ok(repl)
+    }
+
+    /// Initialize built-in enum types (Option, Result)
+    fn init_builtins(&mut self) {
+        // Register Option enum
+        self.enum_definitions.insert("Option".to_string(), vec![
+            "None".to_string(),
+            "Some".to_string(),
+        ]);
+        
+        // Register Result enum
+        self.enum_definitions.insert("Result".to_string(), vec![
+            "Ok".to_string(),
+            "Err".to_string(),
+        ]);
+        
+        // Add Option and Result to definitions for transpiler
+        self.definitions.push("enum Option<T> { None, Some(T) }".to_string());
+        self.definitions.push("enum Result<T, E> { Ok(T), Err(E) }".to_string());
     }
 
     /// Evaluate an expression string and return the Value
@@ -1085,14 +1112,20 @@ impl Repl {
             ExprKind::Ok { value } => {
                 // Evaluate the value and wrap in Result::Ok
                 let val = self.evaluate_expr(value, deadline, depth + 1)?;
-                // For now, represent as a tuple ("Ok", value)
-                Ok(Value::List(vec![Value::String("Ok".to_string()), val]))
+                Ok(Value::EnumVariant {
+                    enum_name: "Result".to_string(),
+                    variant_name: "Ok".to_string(),
+                    data: Some(vec![val]),
+                })
             }
             ExprKind::Err { error } => {
                 // Evaluate the error and wrap in Result::Err
                 let err = self.evaluate_expr(error, deadline, depth + 1)?;
-                // For now, represent as a tuple ("Err", error)
-                Ok(Value::List(vec![Value::String("Err".to_string()), err]))
+                Ok(Value::EnumVariant {
+                    enum_name: "Result".to_string(),
+                    variant_name: "Err".to_string(),
+                    data: Some(vec![err]),
+                })
             }
             ExprKind::MethodCall {
                 receiver,
@@ -1356,8 +1389,11 @@ impl Repl {
                 Ok(Value::Object(map))
             }
             ExprKind::Enum { name, variants, .. } => {
-                // Store enum definition for later use
-                // For now, just acknowledge the definition
+                // Store enum definition
+                let variant_names: Vec<String> = variants.iter()
+                    .map(|v| v.name.clone())
+                    .collect();
+                self.enum_definitions.insert(name.clone(), variant_names);
                 println!("Defined enum {} with {} variants", name, variants.len());
                 Ok(Value::Unit)
             }
@@ -2472,6 +2508,54 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
+        // Check if this is a built-in enum variant constructor
+        match func_name {
+            "None" => {
+                if !args.is_empty() {
+                    bail!("None takes no arguments");
+                }
+                return Ok(Value::EnumVariant {
+                    enum_name: "Option".to_string(),
+                    variant_name: "None".to_string(),
+                    data: None,
+                });
+            }
+            "Some" => {
+                if args.len() != 1 {
+                    bail!("Some takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                return Ok(Value::EnumVariant {
+                    enum_name: "Option".to_string(),
+                    variant_name: "Some".to_string(),
+                    data: Some(vec![value]),
+                });
+            }
+            "Ok" => {
+                if args.len() != 1 {
+                    bail!("Ok takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                return Ok(Value::EnumVariant {
+                    enum_name: "Result".to_string(),
+                    variant_name: "Ok".to_string(),
+                    data: Some(vec![value]),
+                });
+            }
+            "Err" => {
+                if args.len() != 1 {
+                    bail!("Err takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                return Ok(Value::EnumVariant {
+                    enum_name: "Result".to_string(),
+                    variant_name: "Err".to_string(),
+                    data: Some(vec![value]),
+                });
+            }
+            _ => {}
+        }
+        
         if let Some(func_value) = self.bindings.get(func_name).cloned() {
             match func_value {
                 Value::Function { params, body, .. } => {
