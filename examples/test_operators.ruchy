@@ -1,0 +1,48 @@
+// Test all operators and precedence
+println("Testing operators...")
+
+// Arithmetic operators
+let a = 10
+let b = 3
+println(f"a = {a}, b = {b}")
+println(f"a + b = {a + b}")
+println(f"a - b = {a - b}")
+println(f"a * b = {a * b}")
+println(f"a / b = {a / b}")
+println(f"a % b = {a % b}")
+
+// Operator precedence
+let result = 2 + 3 * 4
+println(f"2 + 3 * 4 = {result}")  // Should be 14, not 20
+
+// Comparison operators
+println(f"a == b: {a == b}")
+println(f"a != b: {a != b}")
+println(f"a < b: {a < b}")
+println(f"a > b: {a > b}")
+println(f"a <= b: {a <= b}")
+println(f"a >= b: {a >= b}")
+
+// Logical operators
+let x = true
+let y = false
+println(f"x = {x}, y = {y}")
+println(f"x && y = {x && y}")
+println(f"x || y = {x || y}")
+println(f"!x = {!x}")
+
+// Bitwise operators
+let m = 5  // 0101
+let n = 3  // 0011
+println(f"m = {m}, n = {n}")
+println(f"m & n = {m & n}")  // 0001 = 1
+println(f"m | n = {m | n}")  // 0111 = 7
+println(f"m ^ n = {m ^ n}")  // 0110 = 6
+
+// Range operators
+let range1 = 1..5
+println(f"1..5 = {range1}")
+let range2 = 1..=5
+println(f"1..=5 = {range2}")
+
+println("Operator tests completed!")

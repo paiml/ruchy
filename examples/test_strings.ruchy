@@ -1,0 +1,27 @@
+// Test string operations and interpolation
+println("Testing string operations...")
+
+let name = "Alice"
+let age = 30
+
+// String interpolation
+let greeting = f"Hello, {name}! You are {age} years old."
+println(greeting)
+
+// String methods
+let text = "  Hello World  "
+println(text.trim())
+println(text.to_upper())
+println(text.to_lower())
+
+// String concatenation
+let first = "Hello"
+let second = "World"
+let combined = first + " " + second
+println(combined)
+
+// String length
+let sample = "Ruchy"
+println(f"Length of '{sample}': {sample.len()}")
+
+println("String tests completed!")

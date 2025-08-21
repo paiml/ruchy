@@ -1,0 +1,41 @@
+// Test pattern matching and control flow
+println("Testing pattern matching...")
+
+// Basic match
+let value = 2
+let result = match value {
+    1 => "one",
+    2 => "two",
+    3 => "three",
+    _ => "other"
+}
+println(f"Match result: {result}")
+
+// Match with guards
+let score = 85
+let grade = match score {
+    s if s >= 90 => "A",
+    s if s >= 80 => "B",
+    s if s >= 70 => "C",
+    s if s >= 60 => "D",
+    _ => "F"
+}
+println(f"Grade for {score}: {grade}")
+
+// Pattern matching with lists
+let list = [1, 2, 3]
+match list {
+    [] => println("Empty list"),
+    [x] => println(f"Single element: {x}"),
+    [x, y] => println(f"Two elements: {x}, {y}"),
+    _ => println("Multiple elements")
+}
+
+// Enum matching (Option type)
+let maybe_value = Some(42)
+match maybe_value {
+    Some(x) => println(f"Got value: {x}"),
+    None => println("No value")
+}
+
+println("Pattern matching tests completed!")

@@ -1,0 +1,36 @@
+// Test collections (lists, tuples, objects)
+println("Testing collections...")
+
+// Lists
+let numbers = [1, 2, 3, 4, 5]
+println(f"Numbers: {numbers}")
+println(f"First: {numbers.head()}")
+println(f"Last: {numbers.last()}")
+println(f"Length: {numbers.len()}")
+
+// List operations
+let doubled = numbers.map(|x| x * 2)
+println(f"Doubled: {doubled}")
+
+let evens = numbers.filter(|x| x % 2 == 0)
+println(f"Evens: {evens}")
+
+let sum = numbers.reduce(0, |acc, x| acc + x)
+println(f"Sum: {sum}")
+
+// Tuples
+let point = (10, 20)
+println(f"Point: {point}")
+
+let triple = (1, "hello", true)
+println(f"Mixed tuple: {triple}")
+
+// Objects/Maps
+let person = {
+    "name": "Bob",
+    "age": 25,
+    "city": "New York"
+}
+println(f"Person: {person}")
+
+println("Collection tests completed!")

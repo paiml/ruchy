@@ -1,0 +1,29 @@
+// Test all loop constructs
+println("Testing loop constructs...")
+
+// Basic for loop
+println("For loop test:")
+for i in [1, 2, 3] {
+    println(i)
+}
+
+// While loop
+println("While loop test:")
+let mut counter = 0
+while counter < 3 {
+    println(counter)
+    counter = counter + 1
+}
+
+// Loop with break
+println("Loop with break:")
+let mut x = 0
+loop {
+    if x >= 3 {
+        break
+    }
+    println(x)
+    x = x + 1
+}
+
+println("All loop tests passed!")
