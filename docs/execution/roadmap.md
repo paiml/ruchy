@@ -155,6 +155,7 @@ Based on the latest integration report (Aug 20, 2025, 18:10 UTC):
 - [x] **BOOK-CRITICAL-006**: Implement method calls on primitives ✅ ALREADY IMPLEMENTED
 - [x] **BOOK-CRITICAL-007**: Method chaining on literals ✅ COMPLETED v0.7.3
 - [✅] **BOOK-CRITICAL-008**: Async/await block support (12 failures)
+- [x] **RUCHY-0702**: Range support in for loops (`for x in 0..5`) - IN PROGRESS
 
 ### Progress Update - **REAL METRICS**
 - **Current**: 57/259 examples pass (22% compatibility)
