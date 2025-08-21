@@ -2954,7 +2954,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "0.7.16"
+version = "0.7.17"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2994,7 +2994,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy-cli"
-version = "0.7.16"
+version = "0.7.17"
 dependencies = [
  "anyhow",
  "atty",
