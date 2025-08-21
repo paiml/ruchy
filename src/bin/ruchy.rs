@@ -12,7 +12,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
-use ruchy::{runtime::repl::Repl, Parser as RuchyParser, Transpiler, ExprKind};
+use ruchy::{runtime::repl::Repl, ExprKind, Parser as RuchyParser, Transpiler};
 use std::fs;
 use std::io::{self, IsTerminal, Read};
 use std::path::{Path, PathBuf};
@@ -73,25 +73,25 @@ enum Commands {
     Check {
         /// The file to check
         file: PathBuf,
-        
+
         /// Watch for changes and re-check automatically
         #[arg(long)]
         watch: bool,
     },
-    
+
     /// Run tests for Ruchy code
     Test {
         /// The test file or directory to run
         path: Option<PathBuf>,
-        
+
         /// Watch for changes and re-run tests automatically
         #[arg(long)]
         watch: bool,
-        
+
         /// Show verbose output
         #[arg(long)]
         verbose: bool,
-        
+
         /// Filter tests by name pattern
         #[arg(long)]
         filter: Option<String>,
@@ -205,11 +205,11 @@ enum Commands {
         /// Maximum allowed complexity for functions
         #[arg(long, default_value = "10")]
         max_complexity: usize,
-        
+
         /// Path to custom lint rules configuration file
         #[arg(long)]
         config: Option<PathBuf>,
-        
+
         /// Generate default lint configuration file
         #[arg(long)]
         init_config: bool,
@@ -358,7 +358,7 @@ fn main() -> Result<()> {
             } else {
                 fs::read_to_string(&file)?
             };
-            
+
             let mut parser = RuchyParser::new(&source);
             let ast = parser.parse()?;
             let transpiler = Transpiler::new();
@@ -381,7 +381,12 @@ fn main() -> Result<()> {
                 check_syntax(&file)?;
             }
         }
-        Some(Commands::Test { path, watch, verbose, filter }) => {
+        Some(Commands::Test {
+            path,
+            watch,
+            verbose,
+            filter,
+        }) => {
             if watch {
                 let test_path = path.unwrap_or_else(|| PathBuf::from("."));
                 watch_and_test(&test_path, verbose, filter.as_deref())?;
@@ -401,16 +406,53 @@ fn main() -> Result<()> {
                 }
             }
         }
-        Some(Commands::Fmt { file, all, check, stdout, diff }) => {
+        Some(Commands::Fmt {
+            file,
+            all,
+            check,
+            stdout,
+            diff,
+        }) => {
             format_ruchy_code(&file, all, check, stdout, diff)?;
         }
-        Some(Commands::Doc { path, output, format, private, open, all, verbose }) => {
+        Some(Commands::Doc {
+            path,
+            output,
+            format,
+            private,
+            open,
+            all,
+            verbose,
+        }) => {
             generate_documentation(&path, &output, &format, private, open, all, verbose)?;
         }
-        Some(Commands::Bench { file, iterations, warmup, format, output, verbose }) => {
-            benchmark_ruchy_code(&file, iterations, warmup, &format, output.as_deref(), verbose)?;
+        Some(Commands::Bench {
+            file,
+            iterations,
+            warmup,
+            format,
+            output,
+            verbose,
+        }) => {
+            benchmark_ruchy_code(
+                &file,
+                iterations,
+                warmup,
+                &format,
+                output.as_deref(),
+                verbose,
+            )?;
         }
-        Some(Commands::Lint { file, all, verbose, format, deny_warnings, max_complexity, config, init_config }) => {
+        Some(Commands::Lint {
+            file,
+            all,
+            verbose,
+            format,
+            deny_warnings,
+            max_complexity,
+            config,
+            init_config,
+        }) => {
             if init_config {
                 generate_default_lint_config()?;
             } else {
@@ -420,21 +462,47 @@ fn main() -> Result<()> {
                 } else {
                     CustomLintRules::default()
                 };
-                
+
                 if all {
-                    lint_ruchy_code(&PathBuf::from("."), all, verbose, &format, deny_warnings, max_complexity, &custom_rules)?;
+                    lint_ruchy_code(
+                        &PathBuf::from("."),
+                        all,
+                        verbose,
+                        &format,
+                        deny_warnings,
+                        max_complexity,
+                        &custom_rules,
+                    )?;
                 } else if let Some(file) = file {
-                    lint_ruchy_code(&file, false, verbose, &format, deny_warnings, max_complexity, &custom_rules)?;
+                    lint_ruchy_code(
+                        &file,
+                        false,
+                        verbose,
+                        &format,
+                        deny_warnings,
+                        max_complexity,
+                        &custom_rules,
+                    )?;
                 } else {
                     eprintln!("Error: Either provide a file or use --all flag");
                     std::process::exit(1);
                 }
             }
         }
-        Some(Commands::Add { package, version, dev, registry }) => {
+        Some(Commands::Add {
+            package,
+            version,
+            dev,
+            registry,
+        }) => {
             add_package(&package, version.as_deref(), dev, &registry)?;
         }
-        Some(Commands::Publish { registry, version, dry_run, allow_dirty }) => {
+        Some(Commands::Publish {
+            registry,
+            version,
+            dry_run,
+            allow_dirty,
+        }) => {
             publish_package(&registry, version.as_deref(), dry_run, allow_dirty)?;
         }
     }
@@ -480,26 +548,30 @@ fn check_syntax(file: &Path) -> Result<()> {
 
 /// Watch a file and check syntax on changes
 fn watch_and_check(file: &Path) -> Result<()> {
-    println!("{} Watching {} for changes...", "👁".bright_cyan(), file.display());
+    println!(
+        "{} Watching {} for changes...",
+        "👁".bright_cyan(),
+        file.display()
+    );
     println!("Press Ctrl+C to stop watching\n");
-    
+
     // Initial check
     check_syntax(file)?;
-    
+
     // Simple file watching using polling
     let mut last_modified = fs::metadata(file)?.modified()?;
-    
+
     loop {
         thread::sleep(Duration::from_millis(500));
-        
+
         let Ok(metadata) = fs::metadata(file) else {
             continue; // File might be temporarily unavailable
         };
-        
+
         let Ok(modified) = metadata.modified() else {
             continue;
         };
-        
+
         if modified != last_modified {
             last_modified = modified;
             println!("\n{} File changed, checking...", "→".bright_cyan());
@@ -511,43 +583,43 @@ fn watch_and_check(file: &Path) -> Result<()> {
 /// Run tests from a path
 fn run_tests(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
     println!("{} Running tests...", "🧪".bright_cyan());
-    
+
     // Discover test files
     let test_files = if path.is_dir() {
         discover_test_files(path)?
     } else {
         vec![path.to_path_buf()]
     };
-    
+
     if test_files.is_empty() {
         println!("{} No test files found", "⚠".yellow());
         return Ok(());
     }
-    
+
     let mut total_tests = 0;
     let mut passed_tests = 0;
     let mut failed_tests = 0;
-    
+
     for test_file in &test_files {
         if verbose {
             println!("\n{} Running {}", "→".bright_cyan(), test_file.display());
         }
-        
+
         let source = fs::read_to_string(test_file)?;
-        
+
         // Parse and find test functions
         let mut parser = RuchyParser::new(&source);
         match parser.parse() {
             Ok(ast) => {
                 let tests = extract_test_functions(&ast, filter);
-                
+
                 for test in tests {
                     total_tests += 1;
-                    
+
                     if verbose {
                         print!("  {} {}... ", "→".bright_cyan(), test.name);
                     }
-                    
+
                     // Run test in REPL
                     let mut repl = Repl::new()?;
                     match repl.eval(&source) {
@@ -571,12 +643,16 @@ fn run_tests(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
                 }
             }
             Err(e) => {
-                eprintln!("{} Parse error in {}: {e}", "✗".bright_red(), test_file.display());
+                eprintln!(
+                    "{} Parse error in {}: {e}",
+                    "✗".bright_red(),
+                    test_file.display()
+                );
                 failed_tests += 1;
             }
         }
     }
-    
+
     // Print summary
     println!("\n\n{}", "─".repeat(40));
     let status = if failed_tests == 0 {
@@ -584,47 +660,59 @@ fn run_tests(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
     } else {
         format!("{} Some tests failed", "✗".bright_red())
     };
-    
+
     println!("{status}");
-    println!("Total: {total_tests}, Passed: {}, Failed: {}", 
+    println!(
+        "Total: {total_tests}, Passed: {}, Failed: {}",
         format!("{passed_tests}").green(),
-        if failed_tests > 0 { format!("{failed_tests}").red() } else { format!("{failed_tests}").white() }
+        if failed_tests > 0 {
+            format!("{failed_tests}").red()
+        } else {
+            format!("{failed_tests}").white()
+        }
     );
-    
+
     if failed_tests > 0 {
         std::process::exit(1);
     }
-    
+
     Ok(())
 }
 
 /// Watch and run tests on changes
 fn watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
-    println!("{} Watching {} for changes...", "👁".bright_cyan(), path.display());
+    println!(
+        "{} Watching {} for changes...",
+        "👁".bright_cyan(),
+        path.display()
+    );
     println!("Press Ctrl+C to stop watching\n");
-    
+
     // Initial test run
     let _ = run_tests(path, verbose, filter);
-    
+
     // Watch for changes
     let mut last_run = Instant::now();
-    
+
     loop {
         thread::sleep(Duration::from_millis(500));
-        
+
         // Check if any test files have changed
         let test_files = if path.is_dir() {
             discover_test_files(path)?
         } else {
             vec![path.to_path_buf()]
         };
-        
+
         let mut should_run = false;
         for file in &test_files {
             if let Ok(metadata) = fs::metadata(file) {
                 if let Ok(modified) = metadata.modified() {
-                    if let Ok(duration) = modified.duration_since(std::time::SystemTime::UNIX_EPOCH) {
-                        let file_time = Instant::now().checked_sub(Duration::from_secs(duration.as_secs())).unwrap();
+                    if let Ok(duration) = modified.duration_since(std::time::SystemTime::UNIX_EPOCH)
+                    {
+                        let file_time = Instant::now()
+                            .checked_sub(Duration::from_secs(duration.as_secs()))
+                            .unwrap();
                         if file_time > last_run {
                             should_run = true;
                             break;
@@ -633,7 +721,7 @@ fn watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()
                 }
             }
         }
-        
+
         if should_run {
             last_run = Instant::now();
             println!("\n{} Files changed, re-running tests...", "→".bright_cyan());
@@ -665,9 +753,7 @@ fn extract_tests_recursive(ast: &ruchy::Expr, tests: &mut Vec<TestFunction>, fil
                         return;
                     }
                 }
-                tests.push(TestFunction {
-                    name: name.clone(),
-                });
+                tests.push(TestFunction { name: name.clone() });
             }
         }
         ExprKind::Block(exprs) => {
@@ -696,19 +782,26 @@ fn visit_dir_for_tests(dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
             if path.is_dir() {
                 // Skip hidden directories and common build/dependency directories
                 if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
-                    if !name.starts_with('.') 
-                        && name != "target" 
-                        && name != "node_modules" 
-                        && name != "build" 
-                        && name != "dist" {
+                    if !name.starts_with('.')
+                        && name != "target"
+                        && name != "node_modules"
+                        && name != "build"
+                        && name != "dist"
+                    {
                         visit_dir_for_tests(&path, files)?;
                     }
                 }
             } else if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
                 // Test files end with _test.ruchy or test.ruchy or are in a tests/ directory
-                if (name.ends_with("_test.ruchy") || name.ends_with("test.ruchy") || 
-                    path.parent().and_then(|p| p.file_name()).and_then(|s| s.to_str()) == Some("tests"))
-                    && path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+                if (name.ends_with("_test.ruchy")
+                    || name.ends_with("test.ruchy")
+                    || path
+                        .parent()
+                        .and_then(|p| p.file_name())
+                        .and_then(|s| s.to_str())
+                        == Some("tests"))
+                    && path.extension().and_then(|s| s.to_str()) == Some("ruchy")
+                {
                     files.push(path);
                 }
             }
@@ -723,17 +816,21 @@ fn format_ruchy_code(file: &Path, all: bool, check: bool, stdout: bool, diff: bo
     if all {
         // Format all .ruchy files
         let ruchy_files = discover_ruchy_files(".")?;
-        
+
         if ruchy_files.is_empty() {
             println!("{} No .ruchy files found", "⚠".yellow());
             return Ok(());
         }
-        
-        println!("{} Found {} .ruchy files", "→".bright_cyan(), ruchy_files.len());
-        
+
+        println!(
+            "{} Found {} .ruchy files",
+            "→".bright_cyan(),
+            ruchy_files.len()
+        );
+
         let mut formatted_count = 0;
         let mut errors = 0;
-        
+
         for file in &ruchy_files {
             match format_single_file(file, check, false, diff) {
                 Ok(was_formatted) => {
@@ -746,17 +843,22 @@ fn format_ruchy_code(file: &Path, all: bool, check: bool, stdout: bool, diff: bo
                 }
             }
         }
-        
+
         // Print summary
         let status = if errors == 0 {
             format!("{} PASSED", "✓".bright_green())
         } else {
             format!("{} FAILED", "✗".bright_red())
         };
-        
-        println!("\nformat result: {}. {} files processed; {} formatted, {} errors",
-            status, ruchy_files.len(), formatted_count, errors);
-        
+
+        println!(
+            "\nformat result: {}. {} files processed; {} formatted, {} errors",
+            status,
+            ruchy_files.len(),
+            formatted_count,
+            errors
+        );
+
         if errors > 0 {
             std::process::exit(1);
         }
@@ -764,7 +866,7 @@ fn format_ruchy_code(file: &Path, all: bool, check: bool, stdout: bool, diff: bo
         // Format single file
         format_single_file(file, check, stdout, diff)?;
     }
-    
+
     Ok(())
 }
 
@@ -772,17 +874,21 @@ fn format_ruchy_code(file: &Path, all: bool, check: bool, stdout: bool, diff: bo
 fn format_single_file(file: &Path, check: bool, stdout: bool, diff: bool) -> Result<bool> {
     let source = fs::read_to_string(file)?;
     let mut parser = RuchyParser::new(&source);
-    
+
     match parser.parse() {
         Ok(ast) => {
             // For now, use debug formatting as a placeholder for proper formatting
             // In a full implementation, this would traverse the AST and produce
             // properly formatted Ruchy code
             let formatted = format_ast(&ast);
-            
+
             if check {
                 if source.trim() == formatted.trim() {
-                    println!("{} {} is already formatted", "✓".bright_green(), file.display());
+                    println!(
+                        "{} {} is already formatted",
+                        "✓".bright_green(),
+                        file.display()
+                    );
                     Ok(false)
                 } else {
                     println!("{} {} needs formatting", "✗".bright_red(), file.display());
@@ -797,7 +903,11 @@ fn format_single_file(file: &Path, check: bool, stdout: bool, diff: bool) -> Res
             } else {
                 // Write back to file
                 if source.trim() == formatted.trim() {
-                    println!("{} {} is already formatted", "→".bright_cyan(), file.display());
+                    println!(
+                        "{} {} is already formatted",
+                        "→".bright_cyan(),
+                        file.display()
+                    );
                     Ok(false)
                 } else {
                     fs::write(file, &formatted)?;
@@ -810,7 +920,11 @@ fn format_single_file(file: &Path, check: bool, stdout: bool, diff: bool) -> Res
             }
         }
         Err(e) => {
-            eprintln!("{} Parse error in {}: {e}", "✗".bright_red(), file.display());
+            eprintln!(
+                "{} Parse error in {}: {e}",
+                "✗".bright_red(),
+                file.display()
+            );
             std::process::exit(1);
         }
     }
@@ -828,16 +942,16 @@ fn print_diff(original: &str, formatted: &str, file: &Path) {
     println!("\n{} Diff for {}:", "📝".bright_blue(), file.display());
     println!("{}", "--- Original".bright_red());
     println!("{}", "+++ Formatted".bright_green());
-    
+
     let original_lines: Vec<&str> = original.lines().collect();
     let formatted_lines: Vec<&str> = formatted.lines().collect();
-    
+
     // Simple diff display - just show different lines
     let max_lines = original_lines.len().max(formatted_lines.len());
     for i in 0..max_lines {
         let orig = original_lines.get(i).unwrap_or(&"");
         let fmt = formatted_lines.get(i).unwrap_or(&"");
-        
+
         if orig != fmt {
             if !orig.is_empty() {
                 println!("{} {}", "-".bright_red(), orig);
@@ -860,10 +974,10 @@ fn benchmark_ruchy_code(
     verbose: bool,
 ) -> Result<()> {
     let source = fs::read_to_string(file)?;
-    
+
     println!("{} Benchmarking: {}", "→".bright_cyan(), file.display());
     println!("  Iterations: {iterations}, Warmup: {warmup}");
-    
+
     // Warmup phase
     if verbose {
         println!("\n{} Warmup phase...", "→".bright_cyan());
@@ -875,13 +989,13 @@ fn benchmark_ruchy_code(
             println!("  Warmup {}/{warmup}", i + 1);
         }
     }
-    
+
     // Benchmark parsing
     let mut parse_times = Vec::new();
     if verbose {
         println!("\n{} Parse benchmark...", "→".bright_cyan());
     }
-    
+
     for i in 0..iterations {
         let start = Instant::now();
         let mut parser = RuchyParser::new(&source);
@@ -899,45 +1013,56 @@ fn benchmark_ruchy_code(
             }
         }
     }
-    
+
     // Benchmark transpilation
     let mut transpile_times = Vec::new();
     if verbose {
         println!("\n{} Transpile benchmark...", "→".bright_cyan());
     }
-    
+
     for i in 0..iterations {
         let mut parser = RuchyParser::new(&source);
         let ast = parser.parse()?;
-        
+
         let start = Instant::now();
         let transpiler = Transpiler::new();
         let _ = transpiler.transpile(&ast);
         let elapsed = start.elapsed();
-        
+
         transpile_times.push(elapsed);
         if verbose {
             println!("  Run {}/{iterations}: {:?}", i + 1, elapsed);
         }
     }
-    
+
     // Calculate statistics
     let parse_stats = calculate_stats(&parse_times);
     let transpile_stats = calculate_stats(&transpile_times);
-    
+
     // Display results
     match format {
         "json" => display_bench_json(&parse_stats, &transpile_stats, file, iterations),
         "csv" => display_bench_csv(&parse_stats, &transpile_stats, file, iterations),
         _ => display_bench_text(&parse_stats, &transpile_stats, file, iterations, &source),
     }
-    
+
     // Save to file if requested
     if let Some(output_path) = output {
-        save_bench_results(output_path, &parse_stats, &transpile_stats, file, iterations, format)?;
-        println!("\n{} Results saved to {}", "✓".bright_green(), output_path.display());
+        save_bench_results(
+            output_path,
+            &parse_stats,
+            &transpile_stats,
+            file,
+            iterations,
+            format,
+        )?;
+        println!(
+            "\n{} Results saved to {}",
+            "✓".bright_green(),
+            output_path.display()
+        );
     }
-    
+
     Ok(())
 }
 
@@ -966,35 +1091,37 @@ fn calculate_stats(times: &[Duration]) -> BenchStats {
             throughput_mb_per_sec: 0.0,
         };
     }
-    
+
     let mut sorted_times = times.to_vec();
     sorted_times.sort();
-    
+
     let sum: Duration = times.iter().sum();
     let mean = sum / times.len() as u32;
-    
+
     let median = if times.len() % 2 == 0 {
         (sorted_times[times.len() / 2 - 1] + sorted_times[times.len() / 2]) / 2
     } else {
         sorted_times[times.len() / 2]
     };
-    
+
     let min = sorted_times.first().copied().unwrap_or(Duration::ZERO);
     let max = sorted_times.last().copied().unwrap_or(Duration::ZERO);
-    
+
     // Calculate standard deviation
-    let variance: f64 = times.iter()
+    let variance: f64 = times
+        .iter()
         .map(|t| {
             let diff = t.as_secs_f64() - mean.as_secs_f64();
             diff * diff
         })
-        .sum::<f64>() / times.len() as f64;
-    
+        .sum::<f64>()
+        / times.len() as f64;
+
     let std_dev = Duration::from_secs_f64(variance.sqrt());
-    
+
     // Placeholder for throughput (would need file size)
     let throughput_mb_per_sec = 0.0;
-    
+
     BenchStats {
         mean,
         median,
@@ -1016,40 +1143,40 @@ fn display_bench_text(
 ) {
     let source_lines = source.lines().count();
     let source_bytes = source.len();
-    
+
     println!("\n{} Benchmark Results", "📊".bright_blue());
     println!("  File: {}", file.display());
     println!("  Size: {source_bytes} bytes, {source_lines} lines");
     println!("  Iterations: {iterations}");
-    
+
     println!("\n{} Parse Performance:", "→".bright_cyan());
     println!("  Mean:     {:?}", parse_stats.mean);
     println!("  Median:   {:?}", parse_stats.median);
     println!("  Min:      {:?}", parse_stats.min);
     println!("  Max:      {:?}", parse_stats.max);
     println!("  Std Dev:  {:?}", parse_stats.std_dev);
-    
+
     if source_bytes > 0 {
         let throughput = source_bytes as f64 / parse_stats.mean.as_secs_f64() / 1_000_000.0;
         println!("  Throughput: {throughput:.2} MB/s");
     }
-    
+
     println!("\n{} Transpile Performance:", "→".bright_cyan());
     println!("  Mean:     {:?}", transpile_stats.mean);
     println!("  Median:   {:?}", transpile_stats.median);
     println!("  Min:      {:?}", transpile_stats.min);
     println!("  Max:      {:?}", transpile_stats.max);
     println!("  Std Dev:  {:?}", transpile_stats.std_dev);
-    
+
     if source_bytes > 0 {
         let throughput = source_bytes as f64 / transpile_stats.mean.as_secs_f64() / 1_000_000.0;
         println!("  Throughput: {throughput:.2} MB/s");
     }
-    
+
     println!("\n{} Total Time:", "→".bright_cyan());
     let total_mean = parse_stats.mean + transpile_stats.mean;
     println!("  Mean:     {:?}", total_mean);
-    
+
     if source_lines > 0 {
         let lines_per_sec = source_lines as f64 / total_mean.as_secs_f64();
         println!("  Lines/sec: {:.0}", lines_per_sec);
@@ -1084,8 +1211,11 @@ fn display_bench_json(
             "mean_ms": (parse_stats.mean + transpile_stats.mean).as_millis(),
         }
     });
-    
-    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_else(|_| "Invalid JSON".to_string()));
+
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&result).unwrap_or_else(|_| "Invalid JSON".to_string())
+    );
 }
 
 /// Display benchmark results in CSV format
@@ -1096,7 +1226,8 @@ fn display_bench_csv(
     iterations: usize,
 ) {
     println!("file,iterations,parse_mean_ms,parse_median_ms,parse_min_ms,parse_max_ms,transpile_mean_ms,transpile_median_ms,transpile_min_ms,transpile_max_ms");
-    println!("{},{},{},{},{},{},{},{},{},{}",
+    println!(
+        "{},{},{},{},{},{},{},{},{},{}",
         file.display(),
         iterations,
         parse_stats.mean.as_millis(),
@@ -1160,7 +1291,7 @@ fn save_bench_results(
             )
         }
     };
-    
+
     fs::write(output_path, content)?;
     Ok(())
 }
@@ -1216,9 +1347,9 @@ struct PatternRule {
 fn load_custom_lint_rules(config_path: &Path) -> Result<CustomLintRules> {
     let content = fs::read_to_string(config_path)?;
     let config: serde_json::Value = serde_json::from_str(&content)?;
-    
+
     let mut rules = CustomLintRules::default();
-    
+
     // Parse disabled rules
     if let Some(disabled) = config.get("disabled_rules").and_then(|v| v.as_array()) {
         for rule in disabled {
@@ -1227,7 +1358,7 @@ fn load_custom_lint_rules(config_path: &Path) -> Result<CustomLintRules> {
             }
         }
     }
-    
+
     // Parse pattern rules
     if let Some(patterns) = config.get("pattern_rules").and_then(|v| v.as_array()) {
         for pattern_config in patterns {
@@ -1236,7 +1367,8 @@ fn load_custom_lint_rules(config_path: &Path) -> Result<CustomLintRules> {
                 pattern_config.get("pattern").and_then(|v| v.as_str()),
                 pattern_config.get("message").and_then(|v| v.as_str()),
             ) {
-                let severity = pattern_config.get("severity")
+                let severity = pattern_config
+                    .get("severity")
                     .and_then(|v| v.as_str())
                     .and_then(|s| match s {
                         "error" => Some(LintSeverity::Error),
@@ -1245,11 +1377,12 @@ fn load_custom_lint_rules(config_path: &Path) -> Result<CustomLintRules> {
                         _ => None,
                     })
                     .unwrap_or(LintSeverity::Warning);
-                
-                let suggestion = pattern_config.get("suggestion")
+
+                let suggestion = pattern_config
+                    .get("suggestion")
                     .and_then(|v| v.as_str())
                     .map(std::string::ToString::to_string);
-                
+
                 rules.custom_patterns.push(PatternRule {
                     name: name.to_string(),
                     pattern: pattern.to_string(),
@@ -1260,16 +1393,18 @@ fn load_custom_lint_rules(config_path: &Path) -> Result<CustomLintRules> {
             }
         }
     }
-    
+
     // Parse custom rules
     if let Some(custom) = config.get("custom_rules").and_then(|v| v.as_array()) {
         for rule_config in custom {
             if let Some(name) = rule_config.get("name").and_then(|v| v.as_str()) {
-                let enabled = rule_config.get("enabled")
+                let enabled = rule_config
+                    .get("enabled")
                     .and_then(serde_json::Value::as_bool)
                     .unwrap_or(true);
-                
-                let severity = rule_config.get("severity")
+
+                let severity = rule_config
+                    .get("severity")
                     .and_then(|v| v.as_str())
                     .and_then(|s| match s {
                         "error" => Some(LintSeverity::Error),
@@ -1278,7 +1413,7 @@ fn load_custom_lint_rules(config_path: &Path) -> Result<CustomLintRules> {
                         _ => None,
                     })
                     .unwrap_or(LintSeverity::Warning);
-                
+
                 rules.rules.push(CustomRule {
                     name: name.to_string(),
                     severity,
@@ -1288,7 +1423,7 @@ fn load_custom_lint_rules(config_path: &Path) -> Result<CustomLintRules> {
             }
         }
     }
-    
+
     Ok(rules)
 }
 
@@ -1340,42 +1475,62 @@ fn generate_default_lint_config() -> Result<()> {
   }
 }
 "#;
-    
+
     let config_path = PathBuf::from(".ruchy-lint.json");
-    
+
     if config_path.exists() {
-        eprintln!("{} Lint configuration already exists at {}", "⚠".yellow(), config_path.display());
+        eprintln!(
+            "{} Lint configuration already exists at {}",
+            "⚠".yellow(),
+            config_path.display()
+        );
         eprintln!("Use --config flag to specify a different configuration file");
         return Ok(());
     }
-    
+
     fs::write(&config_path, default_config)?;
-    println!("{} Created default lint configuration at {}", "✓".bright_green(), config_path.display());
+    println!(
+        "{} Created default lint configuration at {}",
+        "✓".bright_green(),
+        config_path.display()
+    );
     println!("Edit this file to customize your lint rules");
-    
+
     Ok(())
 }
 
 /// Lint Ruchy code
-fn lint_ruchy_code(file: &Path, all: bool, verbose: bool, format: &str, deny_warnings: bool, max_complexity: usize, custom_rules: &CustomLintRules) -> Result<()> {
+fn lint_ruchy_code(
+    file: &Path,
+    all: bool,
+    verbose: bool,
+    format: &str,
+    deny_warnings: bool,
+    max_complexity: usize,
+    custom_rules: &CustomLintRules,
+) -> Result<()> {
     if all {
         // Discover and lint all .ruchy files
         let ruchy_files = discover_ruchy_files(".")?;
-        
+
         if ruchy_files.is_empty() {
             println!("{} No .ruchy files found", "⚠".yellow());
             return Ok(());
         }
-        
-        println!("{} Found {} .ruchy files", "→".bright_cyan(), ruchy_files.len());
-        
+
+        println!(
+            "{} Found {} .ruchy files",
+            "→".bright_cyan(),
+            ruchy_files.len()
+        );
+
         let mut total_violations = Vec::new();
         let mut files_with_errors = 0;
-        
+
         for file in &ruchy_files {
             let source = fs::read_to_string(file)?;
             let mut parser = RuchyParser::new(&source);
-            
+
             match parser.parse() {
                 Ok(ast) => {
                     let violations = run_lint_checks(&ast, max_complexity, custom_rules, &source);
@@ -1386,22 +1541,31 @@ fn lint_ruchy_code(file: &Path, all: bool, verbose: bool, format: &str, deny_war
                     }
                 }
                 Err(e) => {
-                    eprintln!("{} Parse error in {}: {e}", "✗".bright_red(), file.display());
+                    eprintln!(
+                        "{} Parse error in {}: {e}",
+                        "✗".bright_red(),
+                        file.display()
+                    );
                     files_with_errors += 1;
                 }
             }
         }
-        
+
         // Print summary
         let status = if total_violations.is_empty() {
             format!("{} PASSED", "✓".bright_green())
         } else {
             format!("{} FAILED", "✗".bright_red())
         };
-        
-        println!("\nlint result: {}. {} files processed; {} violations in {} files",
-            status, ruchy_files.len(), total_violations.len(), files_with_errors);
-        
+
+        println!(
+            "\nlint result: {}. {} files processed; {} violations in {} files",
+            status,
+            ruchy_files.len(),
+            total_violations.len(),
+            files_with_errors
+        );
+
         if !total_violations.is_empty() && deny_warnings {
             std::process::exit(1);
         }
@@ -1409,63 +1573,87 @@ fn lint_ruchy_code(file: &Path, all: bool, verbose: bool, format: &str, deny_war
         // Lint single file
         let source = fs::read_to_string(file)?;
         let mut parser = RuchyParser::new(&source);
-        
+
         match parser.parse() {
             Ok(ast) => {
                 let violations = run_lint_checks(&ast, max_complexity, custom_rules, &source);
                 display_lint_results(&violations, file, verbose, format);
-                
+
                 if !violations.is_empty() && deny_warnings {
                     std::process::exit(1);
                 }
             }
             Err(e) => {
-                eprintln!("{} Parse error in {}: {e}", "✗".bright_red(), file.display());
+                eprintln!(
+                    "{} Parse error in {}: {e}",
+                    "✗".bright_red(),
+                    file.display()
+                );
                 std::process::exit(1);
             }
         }
     }
-    
+
     Ok(())
 }
 
 /// Run all lint checks on an AST
-fn run_lint_checks(ast: &ruchy::Expr, max_complexity: usize, custom_rules: &CustomLintRules, source: &str) -> Vec<LintViolation> {
+fn run_lint_checks(
+    ast: &ruchy::Expr,
+    max_complexity: usize,
+    custom_rules: &CustomLintRules,
+    source: &str,
+) -> Vec<LintViolation> {
     let mut violations = Vec::new();
-    
+
     // Built-in checks (skip if disabled)
-    if !custom_rules.disabled_rules.contains(&"complexity".to_string()) {
+    if !custom_rules
+        .disabled_rules
+        .contains(&"complexity".to_string())
+    {
         check_function_complexity(ast, max_complexity, &mut violations);
     }
-    
-    if !custom_rules.disabled_rules.contains(&"unused_variables".to_string()) {
+
+    if !custom_rules
+        .disabled_rules
+        .contains(&"unused_variables".to_string())
+    {
         check_unused_variables(ast, &mut violations);
     }
-    
-    if !custom_rules.disabled_rules.contains(&"missing_docs".to_string()) {
+
+    if !custom_rules
+        .disabled_rules
+        .contains(&"missing_docs".to_string())
+    {
         check_missing_docs(ast, &mut violations);
     }
-    
-    if !custom_rules.disabled_rules.contains(&"naming_conventions".to_string()) {
+
+    if !custom_rules
+        .disabled_rules
+        .contains(&"naming_conventions".to_string())
+    {
         check_naming_conventions(ast, &mut violations);
     }
-    
-    if !custom_rules.disabled_rules.contains(&"line_length".to_string()) {
+
+    if !custom_rules
+        .disabled_rules
+        .contains(&"line_length".to_string())
+    {
         check_line_length(ast, &mut violations);
     }
-    
+
     // Apply custom pattern rules
     for pattern_rule in &custom_rules.custom_patterns {
         check_pattern_rule(source, pattern_rule, &mut violations);
     }
-    
+
     // Apply custom configurable rules
     for custom_rule in &custom_rules.rules {
         if custom_rule.enabled {
             apply_custom_rule(ast, source, custom_rule, &mut violations);
         }
     }
-    
+
     violations
 }
 
@@ -1487,16 +1675,28 @@ fn check_pattern_rule(source: &str, rule: &PatternRule, violations: &mut Vec<Lin
 }
 
 /// Apply a custom configurable rule
-fn apply_custom_rule(ast: &ruchy::Expr, source: &str, rule: &CustomRule, violations: &mut Vec<LintViolation>) {
+fn apply_custom_rule(
+    ast: &ruchy::Expr,
+    source: &str,
+    rule: &CustomRule,
+    violations: &mut Vec<LintViolation>,
+) {
     match rule.name.as_str() {
         "max_line_length" => {
-            if let Some(max_length) = rule.config.get("max_length").and_then(serde_json::Value::as_u64) {
+            if let Some(max_length) = rule
+                .config
+                .get("max_length")
+                .and_then(serde_json::Value::as_u64)
+            {
                 for (line_num, line) in source.lines().enumerate() {
                     if line.len() > max_length as usize {
                         violations.push(LintViolation {
                             severity: rule.severity,
                             rule: rule.name.clone(),
-                            message: format!("Line exceeds maximum length of {} characters", max_length),
+                            message: format!(
+                                "Line exceeds maximum length of {} characters",
+                                max_length
+                            ),
                             line: line_num + 1,
                             column: max_length as usize,
                             suggestion: Some("Break line into multiple lines".to_string()),
@@ -1506,12 +1706,18 @@ fn apply_custom_rule(ast: &ruchy::Expr, source: &str, rule: &CustomRule, violati
             }
         }
         "max_function_length" => {
-            if let Some(max_lines) = rule.config.get("max_lines").and_then(serde_json::Value::as_u64) {
+            if let Some(max_lines) = rule
+                .config
+                .get("max_lines")
+                .and_then(serde_json::Value::as_u64)
+            {
                 check_function_length(ast, max_lines as usize, rule, violations);
             }
         }
         "require_doc_comments" => {
-            let public_only = rule.config.get("public_only")
+            let public_only = rule
+                .config
+                .get("public_only")
                 .and_then(serde_json::Value::as_bool)
                 .unwrap_or(true);
             check_doc_comments(ast, public_only, rule, violations);
@@ -1523,7 +1729,12 @@ fn apply_custom_rule(ast: &ruchy::Expr, source: &str, rule: &CustomRule, violati
 }
 
 /// Check function length
-fn check_function_length(ast: &ruchy::Expr, max_lines: usize, rule: &CustomRule, violations: &mut Vec<LintViolation>) {
+fn check_function_length(
+    ast: &ruchy::Expr,
+    max_lines: usize,
+    rule: &CustomRule,
+    violations: &mut Vec<LintViolation>,
+) {
     match &ast.kind {
         ExprKind::Function { name, body, .. } => {
             // Approximate function length by span
@@ -1532,10 +1743,15 @@ fn check_function_length(ast: &ruchy::Expr, max_lines: usize, rule: &CustomRule,
                 violations.push(LintViolation {
                     severity: rule.severity,
                     rule: rule.name.clone(),
-                    message: format!("Function '{}' exceeds maximum length of {} lines", name, max_lines),
+                    message: format!(
+                        "Function '{}' exceeds maximum length of {} lines",
+                        name, max_lines
+                    ),
                     line: ast.span.start,
                     column: 0,
-                    suggestion: Some("Consider breaking this function into smaller functions".to_string()),
+                    suggestion: Some(
+                        "Consider breaking this function into smaller functions".to_string(),
+                    ),
                 });
             }
             check_function_length(body, max_lines, rule, violations);
@@ -1550,7 +1766,12 @@ fn check_function_length(ast: &ruchy::Expr, max_lines: usize, rule: &CustomRule,
 }
 
 /// Check for documentation comments
-fn check_doc_comments(ast: &ruchy::Expr, public_only: bool, rule: &CustomRule, violations: &mut Vec<LintViolation>) {
+fn check_doc_comments(
+    ast: &ruchy::Expr,
+    public_only: bool,
+    rule: &CustomRule,
+    violations: &mut Vec<LintViolation>,
+) {
     match &ast.kind {
         ExprKind::Function { name, .. } => {
             let is_public = !name.starts_with('_');
@@ -1575,7 +1796,11 @@ fn check_doc_comments(ast: &ruchy::Expr, public_only: bool, rule: &CustomRule, v
 }
 
 /// Check function complexity
-fn check_function_complexity(ast: &ruchy::Expr, max_complexity: usize, violations: &mut Vec<LintViolation>) {
+fn check_function_complexity(
+    ast: &ruchy::Expr,
+    max_complexity: usize,
+    violations: &mut Vec<LintViolation>,
+) {
     match &ast.kind {
         ExprKind::Function { name, body, .. } => {
             let complexity = calculate_complexity(body);
@@ -1596,7 +1821,11 @@ fn check_function_complexity(ast: &ruchy::Expr, max_complexity: usize, violation
                 check_function_complexity(expr, max_complexity, violations);
             }
         }
-        ExprKind::If { condition, then_branch, else_branch } => {
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             check_function_complexity(condition, max_complexity, violations);
             check_function_complexity(then_branch, max_complexity, violations);
             if let Some(else_expr) = else_branch {
@@ -1619,24 +1848,26 @@ fn check_function_complexity(ast: &ruchy::Expr, max_complexity: usize, violation
 /// Calculate cyclomatic complexity of an expression
 fn calculate_complexity(expr: &ruchy::Expr) -> usize {
     match &expr.kind {
-        ExprKind::If { condition, then_branch, else_branch } => {
-            1 + calculate_complexity(condition) 
-              + calculate_complexity(then_branch)
-              + else_branch.as_ref().map_or(0, |e| calculate_complexity(e))
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            1 + calculate_complexity(condition)
+                + calculate_complexity(then_branch)
+                + else_branch.as_ref().map_or(0, |e| calculate_complexity(e))
         }
         ExprKind::Match { expr, arms } => {
-            arms.len() + calculate_complexity(expr) + 
-            arms.iter().map(|arm| calculate_complexity(&arm.body)).sum::<usize>()
+            arms.len()
+                + calculate_complexity(expr)
+                + arms
+                    .iter()
+                    .map(|arm| calculate_complexity(&arm.body))
+                    .sum::<usize>()
         }
-        ExprKind::For { body, .. } | ExprKind::While { body, .. } => {
-            1 + calculate_complexity(body)
-        }
-        ExprKind::Block(exprs) => {
-            exprs.iter().map(calculate_complexity).sum()
-        }
-        ExprKind::Function { body, .. } => {
-            1 + calculate_complexity(body)
-        }
+        ExprKind::For { body, .. } | ExprKind::While { body, .. } => 1 + calculate_complexity(body),
+        ExprKind::Block(exprs) => exprs.iter().map(calculate_complexity).sum(),
+        ExprKind::Function { body, .. } => 1 + calculate_complexity(body),
         _ => 0,
     }
 }
@@ -1718,8 +1949,9 @@ fn check_line_length(_ast: &ruchy::Expr, _violations: &mut Vec<LintViolation>) {
 
 /// Check if a name follows `snake_case` convention
 fn is_snake_case(name: &str) -> bool {
-    name.chars().all(|c| c.is_lowercase() || c.is_numeric() || c == '_') 
-        && !name.starts_with('_') 
+    name.chars()
+        .all(|c| c.is_lowercase() || c.is_numeric() || c == '_')
+        && !name.starts_with('_')
         && !name.ends_with('_')
         && !name.contains("__")
 }
@@ -1728,7 +1960,7 @@ fn is_snake_case(name: &str) -> bool {
 fn to_snake_case(name: &str) -> String {
     let mut result = String::new();
     let mut prev_was_lower = false;
-    
+
     for c in name.chars() {
         if c.is_uppercase() {
             if prev_was_lower {
@@ -1741,7 +1973,7 @@ fn to_snake_case(name: &str) -> String {
             prev_was_lower = c.is_lowercase();
         }
     }
-    
+
     result
 }
 
@@ -1760,20 +1992,26 @@ fn display_text_results(violations: &[LintViolation], file: &Path, verbose: bool
         println!("{} {} is clean", "✓".bright_green(), file.display());
         return;
     }
-    
+
     println!("\n{} Issues found in {}:", "⚠".yellow(), file.display());
-    
+
     for violation in violations {
         let severity_color = match violation.severity {
             LintSeverity::Error => "error".bright_red(),
             LintSeverity::Warning => "warning".yellow(),
             LintSeverity::Info => "info".bright_blue(),
         };
-        
-        println!("  {}: {} [{}]", severity_color, violation.message, violation.rule);
-        
+
+        println!(
+            "  {}: {} [{}]",
+            severity_color, violation.message, violation.rule
+        );
+
         if verbose {
-            println!("    at line {}, column {}", violation.line, violation.column);
+            println!(
+                "    at line {}, column {}",
+                violation.line, violation.column
+            );
             if let Some(suggestion) = &violation.suggestion {
                 println!("    suggestion: {}", suggestion.bright_green());
             }
@@ -1783,23 +2021,29 @@ fn display_text_results(violations: &[LintViolation], file: &Path, verbose: bool
 
 /// Display results in JSON format
 fn display_json_results(violations: &[LintViolation], file: &Path) {
-    let json_violations: Vec<serde_json::Value> = violations.iter().map(|v| {
-        serde_json::json!({
-            "severity": format!("{:?}", v.severity).to_lowercase(),
-            "rule": v.rule,
-            "message": v.message,
-            "line": v.line,
-            "column": v.column,
-            "suggestion": v.suggestion
+    let json_violations: Vec<serde_json::Value> = violations
+        .iter()
+        .map(|v| {
+            serde_json::json!({
+                "severity": format!("{:?}", v.severity).to_lowercase(),
+                "rule": v.rule,
+                "message": v.message,
+                "line": v.line,
+                "column": v.column,
+                "suggestion": v.suggestion
+            })
         })
-    }).collect();
-    
+        .collect();
+
     let result = serde_json::json!({
         "file": file.display().to_string(),
         "violations": json_violations
     });
-    
-    println!("{}", serde_json::to_string_pretty(&result).unwrap_or_else(|_| "Invalid JSON".to_string()));
+
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&result).unwrap_or_else(|_| "Invalid JSON".to_string())
+    );
 }
 
 /// Documentation item extracted from AST
@@ -1835,10 +2079,14 @@ fn generate_documentation(
     if verbose {
         println!("{} Generating documentation...", "→".bright_cyan());
     }
-    
+
     // Collect all files to document
     let files_to_document = if all_files || path.is_dir() {
-        let base_dir = if path.is_dir() { path.to_str().unwrap() } else { "." };
+        let base_dir = if path.is_dir() {
+            path.to_str().unwrap()
+        } else {
+            "."
+        };
         let files = discover_ruchy_files(base_dir)?;
         if files.is_empty() {
             println!("{} No .ruchy files found", "⚠".yellow());
@@ -1848,64 +2096,91 @@ fn generate_documentation(
     } else {
         vec![path.to_path_buf()]
     };
-    
+
     if verbose {
-        println!("{} Processing {} files", "→".bright_cyan(), files_to_document.len());
+        println!(
+            "{} Processing {} files",
+            "→".bright_cyan(),
+            files_to_document.len()
+        );
     }
-    
+
     // Extract documentation from all files
     let mut all_docs = Vec::new();
     for file in &files_to_document {
         if verbose {
             println!("  Processing {}", file.display());
         }
-        
+
         let source = fs::read_to_string(file)?;
         let mut parser = RuchyParser::new(&source);
-        
+
         match parser.parse() {
             Ok(ast) => {
                 let docs = extract_documentation(&ast, include_private);
                 all_docs.extend(docs);
             }
             Err(e) => {
-                eprintln!("{} Parse error in {}: {e}", "✗".bright_red(), file.display());
+                eprintln!(
+                    "{} Parse error in {}: {e}",
+                    "✗".bright_red(),
+                    file.display()
+                );
             }
         }
     }
-    
+
     // Create output directory
     fs::create_dir_all(output_dir)?;
-    
+
     // Generate documentation in the requested format
     match format {
         "html" => {
             generate_html_docs(&all_docs, output_dir, verbose)?;
             let index_path = output_dir.join("index.html");
-            println!("{} Generated HTML documentation in {}", "✓".bright_green(), output_dir.display());
-            
+            println!(
+                "{} Generated HTML documentation in {}",
+                "✓".bright_green(),
+                output_dir.display()
+            );
+
             if open_browser {
                 open_in_browser(&index_path)?;
             }
         }
         "markdown" | "md" => {
             generate_markdown_docs(&all_docs, output_dir, verbose)?;
-            println!("{} Generated Markdown documentation in {}", "✓".bright_green(), output_dir.display());
+            println!(
+                "{} Generated Markdown documentation in {}",
+                "✓".bright_green(),
+                output_dir.display()
+            );
         }
         "json" => {
             generate_json_docs(&all_docs, output_dir, verbose)?;
-            println!("{} Generated JSON documentation in {}", "✓".bright_green(), output_dir.display());
+            println!(
+                "{} Generated JSON documentation in {}",
+                "✓".bright_green(),
+                output_dir.display()
+            );
         }
         _ => {
-            eprintln!("Unsupported format: {}. Use 'html', 'markdown', or 'json'", format);
+            eprintln!(
+                "Unsupported format: {}. Use 'html', 'markdown', or 'json'",
+                format
+            );
             std::process::exit(1);
         }
     }
-    
+
     if verbose {
-        println!("{} Documentation generated: {} items", "✓".bright_green(), all_docs.len());
+        println!(
+            "{} Documentation generated: {} items",
+            "✓".bright_green(),
+            all_docs.len()
+        );
     }
-    
+
     Ok(())
 }
 
@@ -1923,12 +2198,13 @@ fn extract_docs_recursive(ast: &ruchy::Expr, docs: &mut Vec<DocItem>, include_pr
             let is_public = !name.starts_with('_');
             if is_public || include_private {
                 // Format parameters for signature
-                let param_list: Vec<String> = params.iter()
+                let param_list: Vec<String> = params
+                    .iter()
                     .map(|p| format!("{}: {}", p.name(), format_type(&p.ty)))
                     .collect();
                 let signature = format!("fn {}({})", name, param_list.join(", "));
                 let description = extract_doc_comment(&ast.attributes);
-                
+
                 docs.push(DocItem {
                     name: name.clone(),
                     kind: DocItemKind::Function,
@@ -1944,7 +2220,7 @@ fn extract_docs_recursive(ast: &ruchy::Expr, docs: &mut Vec<DocItem>, include_pr
             if is_public || include_private {
                 let signature = format!("let {}", name);
                 let description = extract_doc_comment(&ast.attributes);
-                
+
                 docs.push(DocItem {
                     name: name.clone(),
                     kind: DocItemKind::Variable,
@@ -1983,7 +2259,8 @@ fn extract_doc_comment(attributes: &[ruchy::frontend::ast::Attribute]) -> Option
 
 /// Generate HTML documentation
 fn generate_html_docs(docs: &[DocItem], output_dir: &Path, verbose: bool) -> Result<()> {
-    let mut html = String::from(r#"<!DOCTYPE html>
+    let mut html = String::from(
+        r#"<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -2002,12 +2279,13 @@ fn generate_html_docs(docs: &[DocItem], output_dir: &Path, verbose: bool) -> Res
 </head>
 <body>
     <h1>Ruchy Documentation</h1>
-"#);
-    
+"#,
+    );
+
     // Group items by kind
     let mut functions = Vec::new();
     let mut variables = Vec::new();
-    
+
     for doc in docs {
         match doc.kind {
             DocItemKind::Function => functions.push(doc),
@@ -2015,66 +2293,86 @@ fn generate_html_docs(docs: &[DocItem], output_dir: &Path, verbose: bool) -> Res
             _ => {}
         }
     }
-    
+
     // Generate functions section
     if !functions.is_empty() {
         html.push_str("<h2>Functions</h2>\n");
         for func in &functions {
-            let class = if func.is_public { "item" } else { "item private" };
-            html.push_str(&format!(r#"<div class="{}">
+            let class = if func.is_public {
+                "item"
+            } else {
+                "item private"
+            };
+            html.push_str(&format!(
+                r#"<div class="{}">
     <span class="kind">function</span>
     <h3>{}</h3>
-    <div class="signature">{}</div>"#, class, func.name, func.signature));
-            
+    <div class="signature">{}</div>"#,
+                class, func.name, func.signature
+            ));
+
             if let Some(desc) = &func.description {
-                html.push_str(&format!(r#"
-    <div class="description">{}</div>"#, desc));
+                html.push_str(&format!(
+                    r#"
+    <div class="description">{}</div>"#,
+                    desc
+                ));
             }
-            
+
             html.push_str("\n</div>\n");
         }
     }
-    
+
     // Generate variables section
     if !variables.is_empty() {
         html.push_str("<h2>Variables</h2>\n");
         for var in &variables {
-            let class = if var.is_public { "item" } else { "item private" };
-            html.push_str(&format!(r#"<div class="{}">
+            let class = if var.is_public {
+                "item"
+            } else {
+                "item private"
+            };
+            html.push_str(&format!(
+                r#"<div class="{}">
     <span class="kind">variable</span>
     <h3>{}</h3>
-    <div class="signature">{}</div>"#, class, var.name, var.signature));
-            
+    <div class="signature">{}</div>"#,
+                class, var.name, var.signature
+            ));
+
             if let Some(desc) = &var.description {
-                html.push_str(&format!(r#"
-    <div class="description">{}</div>"#, desc));
+                html.push_str(&format!(
+                    r#"
+    <div class="description">{}</div>"#,
+                    desc
+                ));
             }
-            
+
             html.push_str("\n</div>\n");
         }
     }
-    
+
     html.push_str("</body>\n</html>");
-    
+
     // Write HTML file
     let index_path = output_dir.join("index.html");
     fs::write(&index_path, html)?;
-    
+
     if verbose {
         println!("  Generated {}", index_path.display());
     }
-    
+
     Ok(())
 }
 
 /// Generate Markdown documentation
 fn generate_markdown_docs(docs: &[DocItem], output_dir: &Path, verbose: bool) -> Result<()> {
     let mut markdown = String::from("# Ruchy Documentation\n\n");
-    
+
     // Group items by kind
     let mut functions = Vec::new();
     let mut variables = Vec::new();
-    
+
     for doc in docs {
         match doc.kind {
             DocItemKind::Function => functions.push(doc),
@@ -2082,107 +2380,106 @@ fn generate_markdown_docs(docs: &[DocItem], output_dir: &Path, verbose: bool) ->
             _ => {}
         }
     }
-    
+
     // Generate functions section
     if !functions.is_empty() {
         markdown.push_str("## Functions\n\n");
         for func in &functions {
             markdown.push_str(&format!("### {}\n\n", func.name));
             markdown.push_str(&format!("```ruchy\n{}\n```\n\n", func.signature));
-            
+
             if let Some(desc) = &func.description {
                 markdown.push_str(&format!("{}\n\n", desc));
             }
-            
+
             if !func.is_public {
                 markdown.push_str("*Private function*\n\n");
             }
         }
     }
-    
+
     // Generate variables section
     if !variables.is_empty() {
         markdown.push_str("## Variables\n\n");
         for var in &variables {
             markdown.push_str(&format!("### {}\n\n", var.name));
             markdown.push_str(&format!("```ruchy\n{}\n```\n\n", var.signature));
-            
+
             if let Some(desc) = &var.description {
                 markdown.push_str(&format!("{}\n\n", desc));
             }
-            
+
             if !var.is_public {
                 markdown.push_str("*Private variable*\n\n");
             }
         }
     }
-    
+
     // Write Markdown file
     let docs_path = output_dir.join("README.md");
     fs::write(&docs_path, markdown)?;
-    
+
     if verbose {
         println!("  Generated {}", docs_path.display());
     }
-    
+
     Ok(())
 }
 
 /// Generate JSON documentation
 fn generate_json_docs(docs: &[DocItem], output_dir: &Path, verbose: bool) -> Result<()> {
-    let json_docs: Vec<serde_json::Value> = docs.iter().map(|doc| {
-        serde_json::json!({
-            "name": doc.name,
-            "kind": format!("{:?}", doc.kind).to_lowercase(),
-            "signature": doc.signature,
-            "description": doc.description,
-            "line": doc.line,
-            "is_public": doc.is_public,
+    let json_docs: Vec<serde_json::Value> = docs
+        .iter()
+        .map(|doc| {
+            serde_json::json!({
+                "name": doc.name,
+                "kind": format!("{:?}", doc.kind).to_lowercase(),
+                "signature": doc.signature,
+                "description": doc.description,
+                "line": doc.line,
+                "is_public": doc.is_public,
+            })
         })
-    }).collect();
-    
+        .collect();
+
     let result = serde_json::json!({
         "version": env!("CARGO_PKG_VERSION"),
         "items": json_docs,
     });
-    
+
     // Write JSON file
     let json_path = output_dir.join("docs.json");
     let json_str = serde_json::to_string_pretty(&result)?;
     fs::write(&json_path, json_str)?;
-    
+
     if verbose {
         println!("  Generated {}", json_path.display());
     }
-    
+
     Ok(())
 }
 
 /// Open HTML documentation in browser
 fn open_in_browser(path: &Path) -> Result<()> {
     let url = format!("file://{}", path.canonicalize()?.display());
-    
+
     #[cfg(target_os = "macos")]
     {
-        std::process::Command::new("open")
-            .arg(&url)
-            .spawn()?;
+        std::process::Command::new("open").arg(&url).spawn()?;
     }
-    
+
     #[cfg(target_os = "linux")]
     {
-        std::process::Command::new("xdg-open")
-            .arg(&url)
-            .spawn()?;
+        std::process::Command::new("xdg-open").arg(&url).spawn()?;
     }
-    
+
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new("cmd")
             .args(&["/C", "start", &url])
             .spawn()?;
     }
-    
+
     println!("{} Opened documentation in browser", "✓".bright_green());
     Ok(())
 }
@@ -2204,11 +2501,12 @@ fn visit_dir(dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
             if path.is_dir() {
                 // Skip hidden directories and common build/dependency directories
                 if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
-                    if !name.starts_with('.') 
-                        && name != "target" 
-                        && name != "node_modules" 
-                        && name != "build" 
-                        && name != "dist" {
+                    if !name.starts_with('.')
+                        && name != "target"
+                        && name != "node_modules"
+                        && name != "build"
+                        && name != "dist"
+                    {
                         visit_dir(&path, files)?;
                     }
                 }
@@ -2223,14 +2521,15 @@ fn visit_dir(dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
 /// Add a package dependency to the current project
 fn add_package(package: &str, version: Option<&str>, dev: bool, registry: &str) -> Result<()> {
     println!("{} Adding package {}...", "📦".bright_cyan(), package);
-    
+
     // Check if Ruchy.toml exists, create if not
     let config_path = Path::new("Ruchy.toml");
     let config_content = if config_path.exists() {
         fs::read_to_string(config_path)?
     } else {
         // Create basic Ruchy.toml
-        String::from(r#"[package]
+        String::from(
+            r#"[package]
 name = "my-project"
 version = "0.1.0"
 authors = ["Your Name <email@example.com>"]
@@ -2238,29 +2537,38 @@ authors = ["Your Name <email@example.com>"]
 [dependencies]
 
 [dev-dependencies]
-"#)
+"#,
+        )
     };
-    
+
     // Parse version from registry if not specified
     let version_to_use = if let Some(v) = version {
         v.to_string()
     } else {
         // For now, use latest. In a real implementation, this would query the registry
-        println!("{} Fetching latest version from {}...", "→".bright_cyan(), registry);
+        println!(
+            "{} Fetching latest version from {}...",
+            "→".bright_cyan(),
+            registry
+        );
         "latest".to_string()
     };
-    
+
     // Add dependency to appropriate section
-    let section = if dev { "[dev-dependencies]" } else { "[dependencies]" };
+    let section = if dev {
+        "[dev-dependencies]"
+    } else {
+        "[dependencies]"
+    };
     let dependency_line = format!("{} = \"{}\"", package, version_to_use);
-    
+
     // Simple TOML manipulation (in a real implementation, use a proper TOML parser)
     if let Some(section_pos) = config_content.find(section) {
         // Find the end of the section
         let after_section = &config_content[section_pos + section.len()..];
         let next_section = after_section.find("\n[").unwrap_or(after_section.len());
         let insertion_point = section_pos + section.len() + next_section;
-        
+
         // Insert the new dependency
         let new_content = format!(
             "{}\n{}{}",
@@ -2268,56 +2576,84 @@ authors = ["Your Name <email@example.com>"]
             dependency_line,
             &config_content[insertion_point..]
         );
-        
+
         fs::write(config_path, new_content)?;
-        
-        println!("{} Added {} = \"{}\" to {}", 
-                 "✓".green(), package, version_to_use, 
-                 if dev { "dev-dependencies" } else { "dependencies" });
+
+        println!(
+            "{} Added {} = \"{}\" to {}",
+            "✓".green(),
+            package,
+            version_to_use,
+            if dev {
+                "dev-dependencies"
+            } else {
+                "dependencies"
+            }
+        );
     } else {
-        println!("{} Could not find {} section in Ruchy.toml", "✗".red(), section);
+        println!(
+            "{} Could not find {} section in Ruchy.toml",
+            "✗".red(),
+            section
+        );
         std::process::exit(1);
     }
-    
+
     Ok(())
 }
 
 /// Publish a package to the registry  
-fn publish_package(registry: &str, version: Option<&str>, dry_run: bool, allow_dirty: bool) -> Result<()> {
+fn publish_package(
+    registry: &str,
+    version: Option<&str>,
+    dry_run: bool,
+    allow_dirty: bool,
+) -> Result<()> {
     if dry_run {
         println!("{} Performing dry run publish...", "🚀".bright_cyan());
     } else {
-        println!("{} Publishing package to {}...", "🚀".bright_cyan(), registry);
+        println!(
+            "{} Publishing package to {}...",
+            "🚀".bright_cyan(),
+            registry
+        );
     }
-    
+
     // Check if Ruchy.toml exists
     let config_path = Path::new("Ruchy.toml");
     if !config_path.exists() {
-        println!("{} Ruchy.toml not found. Run 'ruchy init' first.", "✗".red());
+        println!(
+            "{} Ruchy.toml not found. Run 'ruchy init' first.",
+            "✗".red()
+        );
         std::process::exit(1);
     }
-    
+
     let config_content = fs::read_to_string(config_path)?;
-    
+
     // Check for dirty working directory
     if !allow_dirty {
         if let Ok(output) = std::process::Command::new("git")
             .args(["status", "--porcelain"])
-            .output() {
+            .output()
+        {
             if !output.stdout.is_empty() {
-                println!("{} Working directory is dirty. Use --allow-dirty to publish anyway.", "✗".red());
+                println!(
+                    "{} Working directory is dirty. Use --allow-dirty to publish anyway.",
+                    "✗".red()
+                );
                 std::process::exit(1);
             }
         }
     }
-    
+
     // Parse package name and version from Ruchy.toml
     let package_name = config_content
         .lines()
         .find(|line| line.starts_with("name"))
         .and_then(|line| line.split('=').nth(1))
         .map_or("unknown", |s| s.trim().trim_matches('"'));
-        
+
     let package_version = version.unwrap_or_else(|| {
         config_content
             .lines()
@@ -2325,18 +2661,23 @@ fn publish_package(registry: &str, version: Option<&str>, dry_run: bool, allow_d
             .and_then(|line| line.split('=').nth(1))
             .map_or("0.1.0", |s| s.trim().trim_matches('"'))
     });
-    
-    println!("{} Package: {} v{}", "→".bright_cyan(), package_name, package_version);
-    
+
+    println!(
+        "{} Package: {} v{}",
+        "→".bright_cyan(),
+        package_name,
+        package_version
+    );
+
     // Validate project structure
     let main_file = Path::new("src/main.ruchy");
     let lib_file = Path::new("src/lib.ruchy");
-    
+
     if !main_file.exists() && !lib_file.exists() {
         println!("{} No main.ruchy or lib.ruchy found in src/", "✗".red());
         std::process::exit(1);
     }
-    
+
     // Run tests if they exist
     let test_dir = Path::new("tests");
     if test_dir.exists() {
@@ -2347,22 +2688,30 @@ fn publish_package(registry: &str, version: Option<&str>, dry_run: bool, allow_d
         }
         println!("{} All tests passed", "✓".green());
     }
-    
+
     if dry_run {
-        println!("{} Dry run successful. Package is ready for publishing.", "✓".green());
+        println!(
+            "{} Dry run successful. Package is ready for publishing.",
+            "✓".green()
+        );
         println!("  Package: {} v{}", package_name, package_version);
         println!("  Registry: {}", registry);
         return Ok(());
     }
-    
+
     // In a real implementation, this would:
     // 1. Create a package tarball
     // 2. Upload to the registry
     // 3. Handle authentication
     // 4. Verify the upload
-    
-    println!("{} Package {} v{} published successfully!", "✓".green(), package_name, package_version);
+
+    println!(
+        "{} Package {} v{} published successfully!",
+        "✓".green(),
+        package_name,
+        package_version
+    );
     println!("  Registry: {}", registry);
-    
+
     Ok(())
 }

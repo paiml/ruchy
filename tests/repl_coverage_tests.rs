@@ -251,7 +251,10 @@ fn test_repl_tuple_expressions() {
 
     // Tuples return their representation
     assert_eq!(repl.eval("(1, 2)").unwrap(), "(1, 2)");
-    assert_eq!(repl.eval("(true, false, true)").unwrap(), "(true, false, true)");
+    assert_eq!(
+        repl.eval("(true, false, true)").unwrap(),
+        "(true, false, true)"
+    );
 }
 
 #[test]

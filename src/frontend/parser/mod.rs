@@ -27,8 +27,8 @@ pub use core::Parser;
 
 use crate::frontend::arena::{Arena, StringInterner};
 use crate::frontend::ast::{
-    Attribute, BinaryOp, EnumVariant, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param, Pattern,
-    PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp,
+    Attribute, BinaryOp, EnumVariant, Expr, ExprKind, ImplMethod, Literal, MatchArm, Param,
+    Pattern, PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp,
 };
 use crate::frontend::lexer::{Token, TokenStream};
 use crate::parser::error_recovery::{ErrorNode, ErrorRecovery};

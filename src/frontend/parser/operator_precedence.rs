@@ -43,44 +43,52 @@ impl Precedence {
 /// Get operator precedence and associativity
 pub fn get_operator_info(token: &Token) -> Option<(Precedence, Associativity)> {
     use Associativity::{Left, Right};
-    
+
     match token {
         // Assignment operators (right-associative)
-        Token::Equal | Token::PlusEqual | Token::MinusEqual | Token::StarEqual | Token::SlashEqual 
-        | Token::PercentEqual | Token::AmpersandEqual | Token::PipeEqual | Token::CaretEqual 
-        | Token::LeftShiftEqual | Token::RightShiftEqual => {
-            Option::Some((Precedence::ASSIGNMENT, Right))
-        }
-        
+        Token::Equal
+        | Token::PlusEqual
+        | Token::MinusEqual
+        | Token::StarEqual
+        | Token::SlashEqual
+        | Token::PercentEqual
+        | Token::AmpersandEqual
+        | Token::PipeEqual
+        | Token::CaretEqual
+        | Token::LeftShiftEqual
+        | Token::RightShiftEqual => Option::Some((Precedence::ASSIGNMENT, Right)),
+
         // Pipeline operator (left-associative)
         Token::Pipeline => Option::Some((Precedence::PIPELINE, Left)),
-        
+
         // Logical operators
         Token::OrOr => Option::Some((Precedence::LOGICAL_OR, Left)),
         Token::AndAnd => Option::Some((Precedence::LOGICAL_AND, Left)),
-        
+
         // Equality operators
         Token::EqualEqual | Token::NotEqual => Option::Some((Precedence::EQUALITY, Left)),
-        
+
         // Comparison operators
         Token::Less | Token::Greater | Token::LessEqual | Token::GreaterEqual => {
             Option::Some((Precedence::COMPARISON, Left))
         }
-        
+
         // Bitwise operators
         Token::Pipe => Option::Some((Precedence::BITWISE_OR, Left)),
         Token::Caret => Option::Some((Precedence::BITWISE_XOR, Left)),
         Token::Ampersand => Option::Some((Precedence::BITWISE_AND, Left)),
         Token::LeftShift | Token::RightShift => Option::Some((Precedence::SHIFT, Left)),
-        
+
         // Range operators
         Token::DotDot | Token::DotDotEqual => Option::Some((Precedence::RANGE, Left)),
-        
+
         // Arithmetic operators
         Token::Plus | Token::Minus => Option::Some((Precedence::ADDITIVE, Left)),
-        Token::Star | Token::Slash | Token::Percent => Option::Some((Precedence::MULTIPLICATIVE, Left)),
+        Token::Star | Token::Slash | Token::Percent => {
+            Option::Some((Precedence::MULTIPLICATIVE, Left))
+        }
         Token::Power => Option::Some((Precedence::POWER, Right)),
-        
+
         _ => Option::None,
     }
 }
@@ -108,7 +116,7 @@ pub fn is_prefix_operator(token: &Token) -> bool {
         | Token::Ampersand   // & (reference)
         | Token::Star        // * (dereference)
         | Token::Increment   // ++ (pre-increment)
-        | Token::Decrement   // -- (pre-decrement)
+        | Token::Decrement // -- (pre-decrement)
     )
 }
 
@@ -123,10 +131,7 @@ pub fn get_postfix_precedence(token: &Token) -> Precedence {
 }
 
 /// Check if we should continue parsing based on precedence
-pub fn should_continue_parsing(
-    current_token: &Token,
-    min_precedence: Precedence,
-) -> bool {
+pub fn should_continue_parsing(current_token: &Token, min_precedence: Precedence) -> bool {
     if let Option::Some((prec, _)) = get_operator_info(current_token) {
         prec.0 >= min_precedence.0
     } else {
@@ -137,7 +142,7 @@ pub fn should_continue_parsing(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_operator_precedence_ordering() {
         // Verify precedence ordering
@@ -149,7 +154,7 @@ mod tests {
         assert!(Precedence::POWER < Precedence::POSTFIX);
         assert!(Precedence::POSTFIX < Precedence::CALL);
     }
-    
+
     #[test]
     fn test_postfix_operators() {
         assert!(is_postfix_operator(&Token::Question));
@@ -157,17 +162,17 @@ mod tests {
         assert!(is_postfix_operator(&Token::LeftParen));
         assert!(!is_postfix_operator(&Token::Plus));
     }
-    
+
     #[test]
     fn test_operator_associativity() {
         // Assignment is right-associative
         let (_, assoc) = get_operator_info(&Token::Equal).expect("Equal should have operator info");
         assert_eq!(assoc, Associativity::Right);
-        
+
         // Addition is left-associative
         let (_, assoc) = get_operator_info(&Token::Plus).expect("Plus should have operator info");
         assert_eq!(assoc, Associativity::Left);
-        
+
         // Power is right-associative
         let (_, assoc) = get_operator_info(&Token::Power).expect("Power should have operator info");
         assert_eq!(assoc, Associativity::Right);

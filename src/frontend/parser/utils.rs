@@ -20,17 +20,17 @@ pub fn parse_pattern(state: &mut ParserState) -> Result<Pattern> {
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
-            
+
             // Check if this is a struct pattern: User { fields }
             if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
                 state.tokens.advance(); // consume {
-                
+
                 let mut fields = Vec::new();
                 while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
                     if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
                         let field_name = field_name.clone();
                         state.tokens.advance();
-                        
+
                         // Check for : pattern
                         let pattern = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
                             state.tokens.advance(); // consume :
@@ -39,12 +39,12 @@ pub fn parse_pattern(state: &mut ParserState) -> Result<Pattern> {
                             // Shorthand: field means field: field
                             Pattern::Identifier(field_name.clone())
                         };
-                        
+
                         fields.push(StructPatternField {
                             name: field_name,
                             pattern: Some(pattern),
                         });
-                        
+
                         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                             state.tokens.advance();
                         } else {
@@ -54,7 +54,7 @@ pub fn parse_pattern(state: &mut ParserState) -> Result<Pattern> {
                         bail!("Expected field name in struct pattern");
                     }
                 }
-                
+
                 state.tokens.expect(&Token::RightBrace)?;
                 Ok(Pattern::Struct { name, fields })
             } else {
@@ -65,36 +65,36 @@ pub fn parse_pattern(state: &mut ParserState) -> Result<Pattern> {
         Some((Token::LeftParen, _)) => {
             // Tuple pattern: (a, b, c)
             state.tokens.advance(); // consume (
-            
+
             let mut patterns = Vec::new();
             while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                 patterns.push(parse_pattern(state)?);
-                
+
                 if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     state.tokens.advance();
                 } else {
                     break;
                 }
             }
-            
+
             state.tokens.expect(&Token::RightParen)?;
             Ok(Pattern::Tuple(patterns))
         }
         Some((Token::LeftBracket, _)) => {
             // List pattern: [a, b, c]
             state.tokens.advance(); // consume [
-            
+
             let mut patterns = Vec::new();
             while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
                 patterns.push(parse_pattern(state)?);
-                
+
                 if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     state.tokens.advance();
                 } else {
                     break;
                 }
             }
-            
+
             state.tokens.expect(&Token::RightBracket)?;
             Ok(Pattern::List(patterns))
         }
@@ -617,7 +617,7 @@ pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Vec<Stri
                             expr_text.push(expr_ch);
                         }
                     }
-                    
+
                     // Reset escape flag for non-backslash characters
                     if expr_ch != '\\' {
                         escaped = false;

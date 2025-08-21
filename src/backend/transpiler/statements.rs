@@ -140,7 +140,10 @@ impl Transpiler {
 
     /// Transpiles lambda expressions
     pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
-        let param_names: Vec<_> = params.iter().map(|p| format_ident!("{}", p.name())).collect();
+        let param_names: Vec<_> = params
+            .iter()
+            .map(|p| format_ident!("{}", p.name()))
+            .collect();
         let body_tokens = self.transpile_expr(body)?;
 
         // Generate closure with proper formatting (no spaces around commas)
@@ -148,12 +151,15 @@ impl Transpiler {
             Ok(quote! { || #body_tokens })
         } else {
             // Use a more controlled approach to avoid extra spaces
-            let param_list = param_names.iter()
+            let param_list = param_names
+                .iter()
                 .map(std::string::ToString::to_string)
                 .collect::<Vec<_>>()
                 .join(",");
             let closure_str = format!("|{param_list}| {body_tokens}");
-            closure_str.parse().map_err(|e| anyhow::anyhow!("Failed to parse closure: {}", e))
+            closure_str
+                .parse()
+                .map_err(|e| anyhow::anyhow!("Failed to parse closure: {}", e))
         }
     }
 
@@ -195,7 +201,11 @@ impl Transpiler {
     }
 
     /// Transpiles println/print with string interpolation directly
-    fn transpile_print_with_interpolation(&self, func_name: &str, parts: &[crate::frontend::ast::StringPart]) -> Result<TokenStream> {
+    fn transpile_print_with_interpolation(
+        &self,
+        func_name: &str,
+        parts: &[crate::frontend::ast::StringPart],
+    ) -> Result<TokenStream> {
         if parts.is_empty() {
             let func_tokens = proc_macro2::Ident::new(func_name, proc_macro2::Span::call_site());
             return Ok(quote! { #func_tokens!("") });
@@ -219,7 +229,7 @@ impl Transpiler {
         }
 
         let func_tokens = proc_macro2::Ident::new(func_name, proc_macro2::Span::call_site());
-        
+
         Ok(quote! {
             #func_tokens!(#format_string #(, #args)*)
         })

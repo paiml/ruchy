@@ -207,13 +207,13 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
     // Handle || as a special case for empty parameter lambdas
     if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         state.tokens.advance(); // consume second |
-        
+
         // Check for fat arrow syntax: || => expr
         if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
             state.tokens.advance(); // consume =>
         }
         // Note: Regular lambda syntax (|| expr) is also supported without =>
-        
+
         // Parse the body
         let body = super::parse_expr_recursive(state)?;
         return Ok(Expr::new(
@@ -238,7 +238,7 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
     if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
         state.tokens.advance(); // consume =>
     }
-    // Note: Regular lambda syntax (|x| expr) is also supported without => 
+    // Note: Regular lambda syntax (|x| expr) is also supported without =>
 
     // Parse the body
     let body = super::parse_expr_recursive(state)?;
@@ -364,10 +364,11 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
                             ExprKind::Identifier(name) => {
                                 columns.push(name);
                             }
-                            // Handle list literals: .select(["age", "name"])  
+                            // Handle list literals: .select(["age", "name"])
                             ExprKind::List(items) => {
                                 for item in items {
-                                    if let ExprKind::Literal(Literal::String(col_name)) = item.kind {
+                                    if let ExprKind::Literal(Literal::String(col_name)) = item.kind
+                                    {
                                         columns.push(col_name);
                                     }
                                 }

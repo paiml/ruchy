@@ -128,23 +128,23 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 Ok(Expr::new(ExprKind::Literal(Literal::Unit), span_clone))
             } else {
                 let first_expr = super::parse_expr_recursive(state)?;
-                
+
                 // Check if this is a tuple or just a grouped expression
                 if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     // It's a tuple!
                     let mut elements = vec![first_expr];
-                    
+
                     while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                         state.tokens.advance(); // consume comma
-                        
+
                         // Allow trailing comma
                         if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                             break;
                         }
-                        
+
                         elements.push(super::parse_expr_recursive(state)?);
                     }
-                    
+
                     state.tokens.expect(&Token::RightParen)?;
                     Ok(Expr::new(ExprKind::Tuple(elements), span_clone))
                 } else {
@@ -197,16 +197,19 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::Some => {
             state.tokens.advance(); // consume Some
-            
+
             // Parse as a function call to "Some"
             if state.tokens.peek().map(|(t, _)| t) == Some(&Token::LeftParen) {
                 state.tokens.advance(); // consume '('
                 let arg = super::parse_expr_recursive(state)?;
                 state.tokens.expect(&Token::RightParen)?;
-                
+
                 Ok(Expr::new(
                     ExprKind::Call {
-                        func: Box::new(Expr::new(ExprKind::Identifier("Some".to_string()), span_clone)),
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("Some".to_string()),
+                            span_clone,
+                        )),
                         args: vec![arg],
                     },
                     span_clone,
@@ -218,10 +221,13 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::None => {
             state.tokens.advance(); // consume None
-            // Parse as a function call to "None" with no arguments
+                                    // Parse as a function call to "None" with no arguments
             Ok(Expr::new(
                 ExprKind::Call {
-                    func: Box::new(Expr::new(ExprKind::Identifier("None".to_string()), span_clone)),
+                    func: Box::new(Expr::new(
+                        ExprKind::Identifier("None".to_string()),
+                        span_clone,
+                    )),
                     args: vec![],
                 },
                 span_clone,

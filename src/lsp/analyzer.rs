@@ -195,9 +195,7 @@ impl SemanticAnalyzer {
                         kind: "parameter".to_string(),
                         documentation: None,
                     };
-                    self.symbol_table
-                        .symbols
-                        .insert(param.name(), param_symbol);
+                    self.symbol_table.symbols.insert(param.name(), param_symbol);
                 }
             }
             ExprKind::Let { name, .. } => {

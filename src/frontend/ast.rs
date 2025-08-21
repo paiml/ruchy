@@ -438,24 +438,25 @@ impl Pattern {
             Pattern::Identifier(name) => name.clone(),
             Pattern::Tuple(patterns) => {
                 // Return the name of the first pattern
-                patterns.first()
+                patterns
+                    .first()
                     .map_or_else(|| "_tuple".to_string(), Pattern::primary_name)
             }
             Pattern::List(patterns) => {
                 // Return the name of the first pattern
-                patterns.first()
+                patterns
+                    .first()
                     .map_or_else(|| "_list".to_string(), Pattern::primary_name)
             }
             Pattern::Struct { name, .. } => {
                 // Return the struct type name
                 name.clone()
             }
-            Pattern::Ok(inner) | Pattern::Err(inner) => {
-                inner.primary_name()
-            }
+            Pattern::Ok(inner) | Pattern::Err(inner) => inner.primary_name(),
             Pattern::Or(patterns) => {
                 // Return the name of the first pattern
-                patterns.first()
+                patterns
+                    .first()
                     .map_or_else(|| "_or".to_string(), Pattern::primary_name)
             }
             Pattern::Wildcard => "_".to_string(),

@@ -186,7 +186,7 @@ fn is_object_literal(state: &mut ParserState) -> bool {
             let saved_pos = state.tokens.position();
             state.tokens.advance(); // skip identifier/string
             let has_separator = matches!(
-                state.tokens.peek(), 
+                state.tokens.peek(),
                 Some((Token::Colon | Token::FatArrow, _))
             );
             state.tokens.set_position(saved_pos); // restore position

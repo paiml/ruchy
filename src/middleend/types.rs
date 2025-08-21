@@ -186,15 +186,16 @@ impl MonoType {
                 Box::new(err.substitute(subst)),
             ),
             MonoType::DataFrame(columns) => MonoType::DataFrame(
-                columns.iter()
+                columns
+                    .iter()
                     .map(|(name, ty)| (name.clone(), ty.substitute(subst)))
-                    .collect()
+                    .collect(),
             ),
             MonoType::Series(dtype) => MonoType::Series(Box::new(dtype.substitute(subst))),
             MonoType::Reference(inner) => MonoType::Reference(Box::new(inner.substitute(subst))),
-            MonoType::Tuple(types) => MonoType::Tuple(
-                types.iter().map(|ty| ty.substitute(subst)).collect()
-            ),
+            MonoType::Tuple(types) => {
+                MonoType::Tuple(types.iter().map(|ty| ty.substitute(subst)).collect())
+            }
             _ => self.clone(),
         }
     }
@@ -214,7 +215,9 @@ impl MonoType {
                     collect_vars(ret, vars);
                 }
                 MonoType::List(elem) => collect_vars(elem, vars),
-                MonoType::Optional(inner) | MonoType::Series(inner) | MonoType::Reference(inner) => {
+                MonoType::Optional(inner)
+                | MonoType::Series(inner)
+                | MonoType::Reference(inner) => {
                     collect_vars(inner, vars);
                 }
                 MonoType::Result(ok, err) => {
