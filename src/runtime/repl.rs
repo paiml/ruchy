@@ -67,6 +67,7 @@ pub enum Value {
     Bool(bool),
     Char(char),
     List(Vec<Value>),
+    Tuple(Vec<Value>),
     Function {
         name: String,
         params: Vec<String>,
@@ -213,6 +214,16 @@ impl fmt::Display for Value {
                     write!(f, "{item}")?;
                 }
                 write!(f, "]")
+            }
+            Value::Tuple(items) => {
+                write!(f, "(")?;
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{item}")?;
+                }
+                write!(f, ")")
             }
             Value::Function { name, params, .. } => {
                 write!(f, "fn {}({})", name, params.join(", "))
@@ -847,6 +858,14 @@ impl Repl {
                     results.push(val);
                 }
                 Ok(Value::List(results))
+            }
+            ExprKind::Tuple(elements) => {
+                let mut results = Vec::new();
+                for elem in elements {
+                    let val = self.evaluate_expr(elem, deadline, depth + 1)?;
+                    results.push(val);
+                }
+                Ok(Value::Tuple(results))
             }
             ExprKind::Assign { target, value } => {
                 let val = self.evaluate_expr(value, deadline, depth + 1)?;

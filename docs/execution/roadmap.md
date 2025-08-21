@@ -440,6 +440,18 @@ graph TD
 - [x] **RUCHY-0606**: Add `--watch` mode to test/check commands
 - [x] **RUCHY-0607**: Add custom lint rule support
 
+### Phase 2.5: Book Compatibility Sprint (v0.8.x)
+- [x] **RUCHY-0706**: Implement tuple types and tuple destructuring - IN PROGRESS
+- [ ] **RUCHY-0707**: Add impl blocks for struct methods
+- [ ] **RUCHY-0708**: Implement Option<T> and Result<T,E> types
+- [ ] **RUCHY-0709**: Add enum pattern matching in match expressions
+- [ ] **RUCHY-0710**: Implement if-let and while-let expressions
+- [ ] **RUCHY-0711**: Add module imports and visibility modifiers
+- [ ] **RUCHY-0712**: Implement generic type parameters for functions
+- [ ] **RUCHY-0713**: Add slice and array indexing operations
+- [ ] **RUCHY-0714**: Implement iterator trait and for-in loops
+- [ ] **RUCHY-0715**: Add macro system for println! and vec!
+
 ### Phase 3: Self-Hosting (v1.0)
 - [ ] **RUCHY-0608**: Rewrite Ruchy compiler in Ruchy
 - [x] **RUCHY-0609**: Native test runner without cargo dependency ✅ ALREADY IMPLEMENTED  

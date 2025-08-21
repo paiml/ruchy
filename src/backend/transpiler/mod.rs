@@ -108,7 +108,7 @@ impl Transpiler {
             Actor, Ask, AsyncBlock, Await, Binary, Call, DataFrame, DataFrameOperation, Err, FieldAccess, For,
             Function, Identifier, If, Lambda, List, ListComprehension, Literal, Match, MethodCall,
             ObjectLiteral, Ok, QualifiedName, Range, Send, StringInterpolation, Struct,
-            StructLiteral, Throw, Try, TryCatch, Unary, While,
+            StructLiteral, Throw, Try, TryCatch, Tuple, Unary, While,
         };
 
         // Dispatch to specialized handlers to keep complexity below 10
@@ -143,6 +143,7 @@ impl Transpiler {
             DataFrame { .. }
             | DataFrameOperation { .. }
             | List(_)
+            | Tuple(_)
             | ListComprehension { .. }
             | Range { .. }
             | TryCatch { .. }

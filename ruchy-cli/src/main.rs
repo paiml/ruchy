@@ -423,6 +423,10 @@ fn value_to_json(value: &ruchy::runtime::Value) -> String {
             let json_items: Vec<String> = items.iter().map(value_to_json).collect();
             format!("[{}]", json_items.join(", "))
         }
+        Value::Tuple(items) => {
+            let json_items: Vec<String> = items.iter().map(value_to_json).collect();
+            format!("[{}]", json_items.join(", "))
+        }
         Value::Function { name, params, .. } => {
             format!(r#""fn {}({})""#, name, params.join(", "))
         }

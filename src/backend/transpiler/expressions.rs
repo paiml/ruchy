@@ -333,6 +333,14 @@ impl Transpiler {
         let element_tokens = element_tokens?;
         Ok(quote! { vec![#(#element_tokens),*] })
     }
+    
+    /// Transpiles tuple literals
+    pub fn transpile_tuple(&self, elements: &[Expr]) -> Result<TokenStream> {
+        let element_tokens: Result<Vec<_>> =
+            elements.iter().map(|e| self.transpile_expr(e)).collect();
+        let element_tokens = element_tokens?;
+        Ok(quote! { (#(#element_tokens),*) })
+    }
 
     /// Transpiles range expressions
     pub fn transpile_range(

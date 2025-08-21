@@ -127,6 +127,7 @@ impl Transpiler {
             ExprKind::DataFrame { .. }
             | ExprKind::DataFrameOperation { .. }
             | ExprKind::List(_)
+            | ExprKind::Tuple(_)
             | ExprKind::ListComprehension { .. }
             | ExprKind::Range { .. } => self.transpile_data_only_expr(expr),
             ExprKind::TryCatch { .. }
@@ -144,6 +145,7 @@ impl Transpiler {
                 self.transpile_dataframe_operation(source, operation)
             }
             ExprKind::List(elements) => self.transpile_list(elements),
+            ExprKind::Tuple(elements) => self.transpile_tuple(elements),
             ExprKind::ListComprehension {
                 element,
                 variable,

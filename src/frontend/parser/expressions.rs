@@ -127,9 +127,31 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 state.tokens.advance(); // consume )
                 Ok(Expr::new(ExprKind::Literal(Literal::Unit), span_clone))
             } else {
-                let expr = super::parse_expr_recursive(state)?;
-                state.tokens.expect(&Token::RightParen)?;
-                Ok(expr)
+                let first_expr = super::parse_expr_recursive(state)?;
+                
+                // Check if this is a tuple or just a grouped expression
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    // It's a tuple!
+                    let mut elements = vec![first_expr];
+                    
+                    while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                        state.tokens.advance(); // consume comma
+                        
+                        // Allow trailing comma
+                        if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                            break;
+                        }
+                        
+                        elements.push(super::parse_expr_recursive(state)?);
+                    }
+                    
+                    state.tokens.expect(&Token::RightParen)?;
+                    Ok(Expr::new(ExprKind::Tuple(elements), span_clone))
+                } else {
+                    // Just a grouped expression
+                    state.tokens.expect(&Token::RightParen)?;
+                    Ok(first_expr)
+                }
             }
         }
         Token::Async => {

@@ -34,12 +34,12 @@ pub enum MonoType {
     Function(Box<MonoType>, Box<MonoType>),
     /// List type: [T]
     List(Box<MonoType>),
+    /// Tuple type: (T1, T2, ...)
+    Tuple(Vec<MonoType>),
     /// Optional type: T?
     Optional(Box<MonoType>),
     /// Result type: Result<T, E>
     Result(Box<MonoType>, Box<MonoType>),
-    /// Tuple type: (T1, T2, ...)
-    Tuple(Vec<MonoType>),
     /// Named type (user-defined or gradual typing 'Any')
     Named(String),
     /// Reference type: &T

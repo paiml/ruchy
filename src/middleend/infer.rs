@@ -115,6 +115,14 @@ impl InferenceContext {
             } => self.infer_method_call(receiver, method, args),
             ExprKind::Block(exprs) => self.infer_block(exprs),
             ExprKind::List(elements) => self.infer_list(elements),
+            ExprKind::Tuple(elements) => {
+                // Infer tuple type
+                let element_types: Result<Vec<_>> = elements
+                    .iter()
+                    .map(|e| self.infer_expr(e))
+                    .collect();
+                Ok(MonoType::Tuple(element_types?))
+            }
             ExprKind::ListComprehension {
                 element,
                 variable,
