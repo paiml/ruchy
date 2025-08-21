@@ -204,6 +204,41 @@ impl InferenceContext {
                 let type_var = MonoType::Var(self.gen.fresh());
                 Ok(MonoType::Optional(Box::new(type_var)))
             }
+            ExprKind::IfLet {
+                pattern: _,
+                expr,
+                then_branch,
+                else_branch,
+            } => {
+                // Type check the expression being matched
+                let _expr_ty = self.infer_expr(expr)?;
+                
+                // Type check the branches
+                let then_ty = self.infer_expr(then_branch)?;
+                let else_ty = if let Some(else_expr) = else_branch {
+                    self.infer_expr(else_expr)?
+                } else {
+                    MonoType::Unit
+                };
+                
+                // Both branches should have the same type
+                self.unifier.unify(&then_ty, &else_ty)?;
+                Ok(then_ty)
+            }
+            ExprKind::WhileLet {
+                pattern: _,
+                expr,
+                body,
+            } => {
+                // Type check the expression being matched
+                let _expr_ty = self.infer_expr(expr)?;
+                
+                // Type check the body
+                let _body_ty = self.infer_expr(body)?;
+                
+                // While-let expressions return Unit
+                Ok(MonoType::Unit)
+            }
             ExprKind::AsyncBlock { body } => self.infer_async_block(body),
         }
     }

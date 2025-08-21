@@ -12,7 +12,42 @@ use crate::frontend::ast::{CatchClause, StructPatternField};
 pub fn parse_if(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume if
 
-    // Parse the condition
+    // Check if this is an if-let expression
+    if matches!(state.tokens.peek(), Some((Token::Let, _))) {
+        state.tokens.advance(); // consume let
+        
+        // Parse pattern
+        let pattern = parse_pattern(state);
+        
+        // Expect '=' 
+        state.tokens.expect(&Token::Equal)?;
+        
+        // Parse expression to match against
+        let expr = Box::new(super::parse_expr_recursive(state)?);
+        
+        // Parse the then branch
+        let then_branch = Box::new(super::parse_expr_recursive(state)?);
+        
+        // Check for else branch
+        let else_branch = if matches!(state.tokens.peek(), Some((Token::Else, _))) {
+            state.tokens.advance(); // consume else
+            Some(Box::new(super::parse_expr_recursive(state)?))
+        } else {
+            None
+        };
+        
+        return Ok(Expr::new(
+            ExprKind::IfLet {
+                pattern,
+                expr,
+                then_branch,
+                else_branch,
+            },
+            start_span,
+        ));
+    }
+
+    // Parse the condition for regular if
     let condition = super::parse_expr_recursive(state)?;
 
     // Parse the then branch
@@ -428,7 +463,33 @@ pub fn parse_for(state: &mut ParserState) -> Result<Expr> {
 pub fn parse_while(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume while
 
-    // Parse the condition
+    // Check if this is a while-let expression
+    if matches!(state.tokens.peek(), Some((Token::Let, _))) {
+        state.tokens.advance(); // consume let
+        
+        // Parse pattern
+        let pattern = parse_pattern(state);
+        
+        // Expect '=' 
+        state.tokens.expect(&Token::Equal)?;
+        
+        // Parse expression to match against
+        let expr = Box::new(super::parse_expr_recursive(state)?);
+        
+        // Parse the body
+        let body = Box::new(super::parse_expr_recursive(state)?);
+        
+        return Ok(Expr::new(
+            ExprKind::WhileLet {
+                pattern,
+                expr,
+                body,
+            },
+            start_span,
+        ));
+    }
+
+    // Parse the condition for regular while
     let condition = super::parse_expr_recursive(state)?;
 
     // Parse the body block

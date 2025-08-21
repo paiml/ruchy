@@ -176,7 +176,7 @@ Based on the latest integration report (Aug 20, 2025, 18:10 UTC):
 ### URGENT: Fix CI Infrastructure First
 - [x] **BOOK-CI-001**: Restore missing `tests/test_all_examples.rs` file in ruchy-book
 - [x] **BOOK-CI-002**: Verify GitHub Actions can run book compatibility tests
-- [ ] **BOOK-CI-003**: Set up automated reporting of real compatibility metrics
+- [x] **BOOK-CI-003**: Set up automated reporting of real compatibility metrics
 
 ### Tasks (CRITICAL PATH) - **REVISED PRIORITIES**
 - [x] **BOOK-CRITICAL-001**: Add FatArrow token and closure syntax ✅ COMPLETED v0.7.3
@@ -478,7 +478,7 @@ graph TD
 - [x] **RUCHY-0708**: Implement Option<T> and Result<T,E> types ✅ COMPLETED v0.7.21
 - [x] **RUCHY-0722**: Fix transpiler type issues for structs ✅ COMPLETED v0.7.22
 - [x] **RUCHY-0709**: Add enum pattern matching in match expressions
-- [ ] **RUCHY-0710**: Implement if-let and while-let expressions
+- [x] **RUCHY-0710**: Implement if-let and while-let expressions
 - [ ] **RUCHY-0711**: Add module imports and visibility modifiers
 - [ ] **RUCHY-0712**: Implement generic type parameters for functions
 - [ ] **RUCHY-0713**: Add slice and array indexing operations
