@@ -286,7 +286,7 @@ impl Default for ReplConfig {
         Self {
             max_memory: 10 * 1024 * 1024, // 10MB
             timeout: Duration::from_millis(100),
-            max_depth: 1000,
+            max_depth: 256, // Balance between safety and usability
             debug: false,
         }
     }
@@ -814,6 +814,7 @@ impl Repl {
 
     /// Evaluate an expression to a value
     #[allow(clippy::too_many_lines)]
+    #[allow(clippy::cognitive_complexity)]
     fn evaluate_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         // Check resource bounds
         if Instant::now() > deadline {
@@ -983,8 +984,8 @@ impl Repl {
                 // Evaluate the iterable
                 let iterable = self.evaluate_expr(iter, deadline, depth + 1)?;
 
-                // Save current bindings
-                let saved_bindings = self.bindings.clone();
+                // Save the previous value of the loop variable (if any)
+                let saved_loop_var = self.bindings.get(var).cloned();
 
                 // Handle lists and ranges
                 match iterable {
@@ -996,8 +997,12 @@ impl Repl {
                             // Execute the body
                             result = self.evaluate_expr(body, deadline, depth + 1)?;
                         }
-                        // Restore bindings
-                        self.bindings = saved_bindings;
+                        // Restore only the loop variable (or remove it if it didn't exist before)
+                        if let Some(prev_value) = saved_loop_var {
+                            self.bindings.insert(var.clone(), prev_value);
+                        } else {
+                            self.bindings.remove(var);
+                        }
                         Ok(result)
                     }
                     Value::Range { start, end, inclusive } => {
@@ -1009,8 +1014,12 @@ impl Repl {
                             // Execute the body
                             result = self.evaluate_expr(body, deadline, depth + 1)?;
                         }
-                        // Restore bindings
-                        self.bindings = saved_bindings;
+                        // Restore only the loop variable (or remove it if it didn't exist before)
+                        if let Some(prev_value) = saved_loop_var {
+                            self.bindings.insert(var.clone(), prev_value);
+                        } else {
+                            self.bindings.remove(var);
+                        }
                         Ok(result)
                     }
                     _ => bail!(
