@@ -15,7 +15,7 @@ mod result_type;
 mod statements;
 mod types;
 
-use crate::frontend::ast::{Attribute, Expr, ExprKind, Literal, Type};
+use crate::frontend::ast::{Attribute, Expr, ExprKind, Type};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::quote;

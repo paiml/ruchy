@@ -4,7 +4,7 @@
 #![allow(clippy::needless_pass_by_value)] // TokenStream by value is intentional for quote! macro
 
 use super::Transpiler;
-use crate::frontend::ast::{BinaryOp, Expr, Literal, StringPart, UnaryOp};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, StringPart, UnaryOp};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -30,10 +30,12 @@ impl Transpiler {
     }
 
     fn transpile_integer(i: i64) -> TokenStream {
-        // Integer literals in Rust don't need explicit type suffixes for inference
-        // Only add suffix for large integers that don't fit in i32
-        if i32::try_from(i).is_ok() {
-            quote! { #i }
+        // Integer literals in Rust need proper type handling
+        // Use i32 for values that fit, i64 otherwise
+        if let Ok(i32_val) = i32::try_from(i) {
+            // Use i32 suffix for clarity and to match struct field types
+            let literal = proc_macro2::Literal::i32_suffixed(i32_val);
+            quote! { #literal }
         } else {
             // For large integers, we need i64 suffix
             let literal = proc_macro2::Literal::i64_suffixed(i);
@@ -407,7 +409,13 @@ impl Transpiler {
 
         for (field_name, value) in fields {
             let field_ident = format_ident!("{}", field_name);
-            let value_tokens = self.transpile_expr(value)?;
+            let value_tokens = match &value.kind {
+                // Convert string literals to String for struct fields
+                ExprKind::Literal(Literal::String(s)) => {
+                    quote! { #s.to_string() }
+                }
+                _ => self.transpile_expr(value)?
+            };
             field_tokens.push(quote! { #field_ident: #value_tokens });
         }
 

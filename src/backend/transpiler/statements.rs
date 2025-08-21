@@ -5,7 +5,7 @@
 #![allow(clippy::collapsible_else_if)]
 
 use super::*;
-use crate::frontend::ast::{CatchClause, Param, PipelineStage};
+use crate::frontend::ast::{CatchClause, Literal, Param, PipelineStage};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -179,7 +179,14 @@ impl Transpiler {
                         // Generate println!/print! with format string directly
                         return self.transpile_print_with_interpolation(name, parts);
                     }
+                    // For single non-string arguments, add "{}" format string
+                    if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
+                        let arg = &arg_tokens[0];
+                        let format_str = "{}";
+                        return Ok(quote! { #func_tokens!(#format_str, #arg) });
+                    }
                 }
+                // For multiple arguments or string literals, use them as-is
                 return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
             }
         }
