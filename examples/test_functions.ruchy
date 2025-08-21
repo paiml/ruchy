@@ -1,0 +1,50 @@
+// Test function definitions and calls
+println("Testing functions...")
+
+// Simple function
+fun add(a: i32, b: i32) -> i32 {
+    a + b
+}
+
+println(f"add(3, 4) = {add(3, 4)}")
+
+// Function with default parameters
+fun greet(name: String, greeting: String = "Hello") -> String {
+    f"{greeting}, {name}!"
+}
+
+println(greet("Alice"))
+println(greet("Bob", "Hi"))
+
+// Higher-order function
+fun apply_twice(f: fn(i32) -> i32, x: i32) -> i32 {
+    f(f(x))
+}
+
+fun double(x: i32) -> i32 {
+    x * 2
+}
+
+println(f"apply_twice(double, 3) = {apply_twice(double, 3)}")
+
+// Lambda functions
+let square = |x| x * x
+println(f"square(5) = {square(5)}")
+
+let add_one = |x| x + 1
+let numbers = [1, 2, 3, 4, 5]
+let incremented = numbers.map(add_one)
+println(f"Incremented: {incremented}")
+
+// Recursive function
+fun factorial(n: i32) -> i32 {
+    if n <= 1 {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
+}
+
+println(f"factorial(5) = {factorial(5)}")
+
+println("Function tests completed!")

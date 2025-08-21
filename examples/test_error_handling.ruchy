@@ -1,0 +1,49 @@
+// Test Result type and error handling
+println("Testing error handling...")
+
+// Function that returns Result
+fun divide(a: i32, b: i32) -> Result<i32, String> {
+    if b == 0 {
+        Err("Division by zero")
+    } else {
+        Ok(a / b)
+    }
+}
+
+// Test successful case
+let result1 = divide(10, 2)
+match result1 {
+    Ok(value) => println(f"10 / 2 = {value}"),
+    Err(msg) => println(f"Error: {msg}")
+}
+
+// Test error case
+let result2 = divide(10, 0)
+match result2 {
+    Ok(value) => println(f"Result: {value}"),
+    Err(msg) => println(f"Error: {msg}")
+}
+
+// Option type handling
+fun find_first_even(numbers: [i32]) -> Option<i32> {
+    for n in numbers {
+        if n % 2 == 0 {
+            return Some(n)
+        }
+    }
+    None
+}
+
+let nums1 = [1, 3, 5, 6, 7]
+match find_first_even(nums1) {
+    Some(n) => println(f"First even: {n}"),
+    None => println("No even numbers found")
+}
+
+let nums2 = [1, 3, 5, 7]
+match find_first_even(nums2) {
+    Some(n) => println(f"First even: {n}"),
+    None => println("No even numbers found")
+}
+
+println("Error handling tests completed!")

@@ -42,6 +42,8 @@ use crate::frontend::ast::{
 use crate::{Parser, Transpiler};
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
+
+mod display;
 use rustyline::completion::Completer;
 use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
@@ -49,7 +51,7 @@ use rustyline::hint::Hinter;
 use rustyline::history::DefaultHistory;
 use rustyline::validate::Validator;
 use rustyline::{CompletionType, Config, EditMode, Helper};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 #[allow(unused_imports)]
 use std::fmt::Write;
@@ -101,105 +103,7 @@ pub struct DataFrameColumn {
     pub values: Vec<Value>,
 }
 
-impl Value {
-    fn format_dataframe(f: &mut fmt::Formatter<'_>, columns: &[DataFrameColumn]) -> fmt::Result {
-        if columns.is_empty() {
-            return write!(f, "Empty DataFrame");
-        }
-
-        // Calculate column widths for pretty printing
-        let mut col_widths = Vec::new();
-        for col in columns {
-            let header_width = col.name.len();
-            let max_value_width = col
-                .values
-                .iter()
-                .map(|v| format!("{v}").len())
-                .max()
-                .unwrap_or(0);
-            col_widths.push(header_width.max(max_value_width).max(4)); // minimum width of 4
-        }
-
-        // Print header separator
-        write!(f, "┌")?;
-        for (i, width) in col_widths.iter().enumerate() {
-            if i > 0 {
-                write!(f, "┬")?;
-            }
-            write!(f, "{}", "─".repeat(width + 2))?; // +2 for padding
-        }
-        writeln!(f, "┐")?;
-
-        // Print column headers
-        write!(f, "│")?;
-        for (i, (col, width)) in columns.iter().zip(&col_widths).enumerate() {
-            if i > 0 {
-                write!(f, "│")?;
-            }
-            write!(
-                f,
-                " {:width$} ",
-                col.name.bright_cyan().bold(),
-                width = width
-            )?;
-        }
-        writeln!(f, "│")?;
-
-        // Print header-data separator
-        write!(f, "├")?;
-        for (i, width) in col_widths.iter().enumerate() {
-            if i > 0 {
-                write!(f, "┼")?;
-            }
-            write!(f, "{}", "─".repeat(width + 2))?;
-        }
-        writeln!(f, "┤")?;
-
-        // Determine number of rows
-        let num_rows = columns.iter().map(|c| c.values.len()).max().unwrap_or(0);
-
-        // Print data rows
-        for row_idx in 0..num_rows {
-            write!(f, "│")?;
-            for (col_idx, (col, width)) in columns.iter().zip(&col_widths).enumerate() {
-                if col_idx > 0 {
-                    write!(f, "│")?;
-                }
-
-                if row_idx < col.values.len() {
-                    let value = &col.values[row_idx];
-                    let formatted = match value {
-                        Value::String(s) => format!("\"{s}\"").bright_green().to_string(),
-                        Value::Int(n) => n.to_string().bright_blue().to_string(),
-                        Value::Float(n) => n.to_string().bright_blue().to_string(),
-                        Value::Bool(b) => b.to_string().bright_yellow().to_string(),
-                        other => format!("{other}").to_string(),
-                    };
-                    write!(f, " {formatted:width$} ")?;
-                } else {
-                    // Empty cell if this column has fewer values
-                    write!(f, " {:<width$} ", "")?;
-                }
-            }
-            writeln!(f, "│")?;
-        }
-
-        // Print bottom border
-        write!(f, "└")?;
-        for (i, width) in col_widths.iter().enumerate() {
-            if i > 0 {
-                write!(f, "┴")?;
-            }
-            write!(f, "{}", "─".repeat(width + 2))?;
-        }
-        write!(f, "┘")?;
-
-        // Add summary info
-        write!(f, "\n{} rows × {} columns", num_rows, columns.len())?;
-
-        Ok(())
-    }
-}
+// Display implementations moved to repl_display.rs
 
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -209,26 +113,8 @@ impl fmt::Display for Value {
             Value::String(s) => write!(f, "\"{s}\""),
             Value::Bool(b) => write!(f, "{b}"),
             Value::Char(c) => write!(f, "'{c}'"),
-            Value::List(items) => {
-                write!(f, "[")?;
-                for (i, item) in items.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ", ")?;
-                    }
-                    write!(f, "{item}")?;
-                }
-                write!(f, "]")
-            }
-            Value::Tuple(items) => {
-                write!(f, "(")?;
-                for (i, item) in items.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ", ")?;
-                    }
-                    write!(f, "{item}")?;
-                }
-                write!(f, ")")
-            }
+            Value::List(items) => Self::fmt_list(f, items),
+            Value::Tuple(items) => Self::fmt_tuple(f, items),
             Value::Function { name, params, .. } => {
                 write!(f, "fn {}({})", name, params.join(", "))
             }
@@ -236,16 +122,7 @@ impl fmt::Display for Value {
                 write!(f, "|{}| <closure>", params.join(", "))
             }
             Value::DataFrame { columns } => Self::format_dataframe(f, columns),
-            Value::Object(map) => {
-                write!(f, "{{")?;
-                for (i, (key, value)) in map.iter().enumerate() {
-                    if i > 0 {
-                        write!(f, ", ")?;
-                    }
-                    write!(f, "\"{key}\": {value}")?;
-                }
-                write!(f, "}}")
-            }
+            Value::Object(map) => Self::fmt_object(f, map),
             Value::Range {
                 start,
                 end,
@@ -261,21 +138,7 @@ impl fmt::Display for Value {
                 enum_name,
                 variant_name,
                 data,
-            } => {
-                write!(f, "{enum_name}::{variant_name}")?;
-                if let Some(values) = data {
-                    write!(f, "(")?;
-                    for (i, val) in values.iter().enumerate() {
-                        if i > 0 {
-                            write!(f, ", ")?;
-                        }
-                        write!(f, "{val}")?;
-                    }
-                    write!(f, ")")
-                } else {
-                    Ok(())
-                }
-            }
+            } => Self::fmt_enum_variant(f, enum_name, variant_name, data.as_deref()),
             Value::Unit => write!(f, "()"),
         }
     }
@@ -312,50 +175,60 @@ struct RuchyCompleter {
     list_methods: Vec<String>,
     string_methods: Vec<String>,
     commands: Vec<String>,
+    // HashSets for O(1) lookups in highlighting
+    keywords_set: HashSet<String>,
+    builtin_functions_set: HashSet<String>,
 }
 
 impl RuchyCompleter {
     fn new() -> Self {
+        let keywords = vec![
+            "let".to_string(),
+            "fn".to_string(),
+            "if".to_string(),
+            "else".to_string(),
+            "match".to_string(),
+            "for".to_string(),
+            "while".to_string(),
+            "loop".to_string(),
+            "break".to_string(),
+            "continue".to_string(),
+            "return".to_string(),
+            "true".to_string(),
+            "false".to_string(),
+            "struct".to_string(),
+            "enum".to_string(),
+            "trait".to_string(),
+            "impl".to_string(),
+            "mod".to_string(),
+            "use".to_string(),
+            "pub".to_string(),
+            "mut".to_string(),
+            "actor".to_string(),
+            "receive".to_string(),
+            "spawn".to_string(),
+            "send".to_string(),
+            "ask".to_string(),
+            "df".to_string(),
+            "Ok".to_string(),
+            "Err".to_string(),
+            "Some".to_string(),
+            "None".to_string(),
+        ];
+        let builtin_functions = vec![
+            "println".to_string(),
+            "print".to_string(),
+            "curry".to_string(),
+            "uncurry".to_string(),
+        ];
+
+        // Create HashSets for O(1) lookups
+        let keywords_set = keywords.iter().cloned().collect();
+        let builtin_functions_set = builtin_functions.iter().cloned().collect();
+
         Self {
-            keywords: vec![
-                "let".to_string(),
-                "fn".to_string(),
-                "if".to_string(),
-                "else".to_string(),
-                "match".to_string(),
-                "for".to_string(),
-                "while".to_string(),
-                "loop".to_string(),
-                "break".to_string(),
-                "continue".to_string(),
-                "return".to_string(),
-                "true".to_string(),
-                "false".to_string(),
-                "struct".to_string(),
-                "enum".to_string(),
-                "trait".to_string(),
-                "impl".to_string(),
-                "mod".to_string(),
-                "use".to_string(),
-                "pub".to_string(),
-                "mut".to_string(),
-                "actor".to_string(),
-                "receive".to_string(),
-                "spawn".to_string(),
-                "send".to_string(),
-                "ask".to_string(),
-                "df".to_string(),
-                "Ok".to_string(),
-                "Err".to_string(),
-                "Some".to_string(),
-                "None".to_string(),
-            ],
-            builtin_functions: vec![
-                "println".to_string(),
-                "print".to_string(),
-                "curry".to_string(),
-                "uncurry".to_string(),
-            ],
+            keywords,
+            builtin_functions,
             list_methods: vec![
                 "map".to_string(),
                 "filter".to_string(),
@@ -397,6 +270,8 @@ impl RuchyCompleter {
                 ":save".to_string(),
                 ":search".to_string(),
             ],
+            keywords_set,
+            builtin_functions_set,
         }
     }
 
@@ -406,7 +281,8 @@ impl RuchyCompleter {
         pos: usize,
         bindings: &HashMap<String, Value>,
     ) -> Vec<String> {
-        let mut completions = Vec::new();
+        use std::collections::HashSet;
+
         let text_before_cursor = &line[..pos];
 
         // Extract the word being completed
@@ -417,51 +293,57 @@ impl RuchyCompleter {
 
         // Complete commands (starting with :)
         if partial_word.starts_with(':') {
-            for cmd in &self.commands {
-                if cmd.starts_with(partial_word) {
-                    completions.push(cmd.clone());
-                }
-            }
-            return completions;
+            return self
+                .commands
+                .iter()
+                .filter(|cmd| cmd.starts_with(partial_word))
+                .cloned()
+                .collect();
         }
 
         // Complete method calls (after a dot)
         if let Some(dot_pos) = text_before_cursor.rfind('.') {
             let method_partial = &text_before_cursor[dot_pos + 1..];
-            // Check context to determine if it's a list or string method
-            // For now, include all methods
+            // Use HashSet to avoid O(n²) duplicates check
+            let mut seen = HashSet::new();
+            let mut completions = Vec::new();
+
             for method in &self.list_methods {
-                if method.starts_with(method_partial) {
+                if method.starts_with(method_partial) && seen.insert(method.clone()) {
                     completions.push(method.clone());
                 }
             }
             for method in &self.string_methods {
-                if method.starts_with(method_partial) && !completions.contains(method) {
+                if method.starts_with(method_partial) && seen.insert(method.clone()) {
                     completions.push(method.clone());
                 }
             }
             return completions;
         }
 
-        // Complete keywords and functions
-        for keyword in &self.keywords {
-            if keyword.starts_with(partial_word) {
-                completions.push(keyword.clone());
-            }
-        }
+        // Complete keywords, functions, and variables
+        let mut completions = Vec::new();
 
-        for func in &self.builtin_functions {
-            if func.starts_with(partial_word) {
-                completions.push(func.clone());
-            }
-        }
+        completions.extend(
+            self.keywords
+                .iter()
+                .filter(|kw| kw.starts_with(partial_word))
+                .cloned(),
+        );
 
-        // Complete variable names from current bindings
-        for var_name in bindings.keys() {
-            if var_name.starts_with(partial_word) {
-                completions.push(var_name.clone());
-            }
-        }
+        completions.extend(
+            self.builtin_functions
+                .iter()
+                .filter(|func| func.starts_with(partial_word))
+                .cloned(),
+        );
+
+        completions.extend(
+            bindings
+                .keys()
+                .filter(|var| var.starts_with(partial_word))
+                .cloned(),
+        );
 
         completions
     }
@@ -535,10 +417,10 @@ impl RuchyCompleter {
                         }
                     }
 
-                    // Check if it's a keyword
-                    let highlighted = if self.keywords.contains(&identifier) {
+                    // Check if it's a keyword - O(1) lookup with HashSet
+                    let highlighted = if self.keywords_set.contains(&identifier) {
                         identifier.bright_magenta().bold().to_string()
-                    } else if self.builtin_functions.contains(&identifier) {
+                    } else if self.builtin_functions_set.contains(&identifier) {
                         identifier.bright_cyan().to_string()
                     } else {
                         identifier

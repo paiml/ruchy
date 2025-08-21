@@ -1,0 +1,23 @@
+// Example test file for Ruchy test command
+
+@test("addition works")
+fun test_addition() {
+    assert_eq(2 + 2, 4)
+}
+
+@test("multiplication works")
+fun test_multiplication() {
+    assert_eq(3 * 4, 12)
+}
+
+fun test_subtraction() {
+    assert_eq(10 - 3, 7)
+}
+
+fun test_division() {
+    assert_eq(15 / 3, 5)
+}
+
+test "string concatenation" {
+    assert_eq("hello" + " world", "hello world")
+}

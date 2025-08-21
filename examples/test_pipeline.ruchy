@@ -1,0 +1,37 @@
+// Test pipeline operator
+println("Testing pipeline operator...")
+
+// Simple pipeline
+let result = [1, 2, 3, 4, 5]
+    |> map(|x| x * 2)
+    |> filter(|x| x > 5)
+    |> reduce(0, |acc, x| acc + x)
+println(f"Pipeline result: {result}")
+
+// Function composition with pipeline
+fun add_one(x: i32) -> i32 { x + 1 }
+fun double(x: i32) -> i32 { x * 2 }
+fun square(x: i32) -> i32 { x * x }
+
+let value = 3
+    |> add_one
+    |> double
+    |> square
+println(f"3 |> add_one |> double |> square = {value}")
+
+// String pipeline
+let text = "  hello world  "
+    |> trim
+    |> to_upper
+    |> split(" ")
+println(f"Text pipeline: {text}")
+
+// Complex data pipeline
+let data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+let processed = data
+    |> filter(|x| x % 2 == 0)  // Keep evens
+    |> map(|x| x * x)           // Square them
+    |> filter(|x| x < 50)       // Keep under 50
+println(f"Processed data: {processed}")
+
+println("Pipeline tests completed!")

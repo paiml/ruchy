@@ -1,0 +1,56 @@
+// Test block expressions and scoping
+println("Testing block expressions...")
+
+// Block returns last expression
+let value = {
+    let a = 5
+    let b = 10
+    a + b
+}
+println(f"Block result: {value}")
+
+// Nested blocks
+let result = {
+    let x = 2
+    let y = {
+        let z = 3
+        z * 4
+    }
+    x + y
+}
+println(f"Nested block result: {result}")
+
+// Block with early return
+let computed = {
+    let temp = 100
+    if temp > 50 {
+        temp * 2
+    } else {
+        temp / 2
+    }
+}
+println(f"Computed value: {computed}")
+
+// Scoping test
+let outer = 1
+let inner_result = {
+    let outer = 2  // Shadows outer variable
+    let inner = 3
+    outer + inner
+}
+println(f"Inner result: {inner_result}")
+println(f"Outer still: {outer}")
+
+// Complex block with multiple statements
+let complex = {
+    println("Inside block")
+    let mut sum = 0
+    for i in [1, 2, 3, 4, 5] {
+        sum = sum + i
+    }
+    println(f"Sum calculated: {sum}")
+    sum * 2
+}
+println(f"Complex block result: {complex}")
+
+println("Block expression tests completed!")
