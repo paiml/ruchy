@@ -103,6 +103,7 @@ impl GrammarCoverageMatrix {
             ExprKind::Send { .. } => "Send",
             ExprKind::Ask { .. } => "Ask",
             ExprKind::Command { .. } => "Command",
+            ExprKind::Macro { .. } => "Macro",
             ExprKind::Actor { .. } => "Actor",
             ExprKind::DataFrame { .. } => "DataFrame",
             ExprKind::DataFrameOperation { .. } => "DataFrameOperation",
@@ -292,4 +293,7 @@ pub const GRAMMAR_PRODUCTIONS: &[(&str, &str)] = &[
         "import std::collections::{HashMap, HashSet}",
     ),
     ("export", "export { Point, distance }"),
+    // Macros (2)
+    ("macro_println", "println!(\"Hello\", \"World\")"),
+    ("macro_vec", "vec![1, 2, 3]"),
 ];

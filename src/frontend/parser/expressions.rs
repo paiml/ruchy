@@ -202,6 +202,47 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 }
             }
 
+            // Check for macro call (identifier!)
+            if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
+                state.tokens.advance(); // consume !
+                
+                // Determine if using parentheses or square brackets
+                let (open_token, close_token) = match state.tokens.peek() {
+                    Some((Token::LeftParen, _)) => (Token::LeftParen, Token::RightParen),
+                    Some((Token::LeftBracket, _)) => (Token::LeftBracket, Token::RightBracket),
+                    _ => bail!("Expected '(' or '[' after macro name"),
+                };
+                
+                state.tokens.expect(&open_token)?;
+                let mut args = Vec::new();
+                
+                // Parse macro arguments
+                if !matches!(state.tokens.peek(), Some((token, _)) if *token == close_token) {
+                    loop {
+                        args.push(super::parse_expr_recursive(state)?);
+                        
+                        match state.tokens.peek() {
+                            Some((Token::Comma, _)) => {
+                                state.tokens.advance(); // consume comma
+                                // Allow trailing comma
+                                if matches!(state.tokens.peek(), Some((token, _)) if *token == close_token) {
+                                    break;
+                                }
+                            }
+                            Some((token, _)) if *token == close_token => break,
+                            _ => bail!("Expected ',' or closing delimiter in macro arguments"),
+                        }
+                    }
+                }
+                
+                state.tokens.expect(&close_token)?;
+                
+                return Ok(Expr::new(
+                    ExprKind::Macro { name, args },
+                    span_clone,
+                ));
+            }
+
             // Only handle postfix operators that can't be confused with binary operators
             Ok(Expr::new(ExprKind::Identifier(name), span_clone))
         }

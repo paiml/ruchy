@@ -184,6 +184,9 @@ impl InferenceContext {
                 // Commands return strings (stdout)
                 Ok(MonoType::String)
             }
+            ExprKind::Macro { name, args } => {
+                self.infer_macro(name, args)
+            }
             ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } => {
                 // Break, continue, and return don't return a value (they diverge)
                 // In Rust, they have type ! (never), but we'll use Unit for simplicity
@@ -586,6 +589,30 @@ impl InferenceContext {
         self.unifier.unify(&func_ty, &expected_func_ty)?;
 
         Ok(self.unifier.apply(&result_ty))
+    }
+
+    fn infer_macro(&mut self, name: &str, args: &[Expr]) -> Result<MonoType> {
+        // Type check the arguments first
+        for arg in args {
+            self.infer_expr(arg)?;
+        }
+
+        // Determine the return type based on the macro name
+        match name {
+            "println" => Ok(MonoType::Unit), // println! returns unit
+            "vec" => {
+                // vec! returns a vector of the element type
+                if args.is_empty() {
+                    // Empty vec! needs type annotation or we use a generic type
+                    Ok(MonoType::List(Box::new(MonoType::Var(self.gen.fresh()))))
+                } else {
+                    // Infer element type from first argument
+                    let elem_ty = self.infer_expr(&args[0])?;
+                    Ok(MonoType::List(Box::new(elem_ty)))
+                }
+            }
+            _ => bail!("Unknown macro: {}", name),
+        }
     }
 
     fn infer_method_call(

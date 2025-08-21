@@ -119,7 +119,41 @@ impl Transpiler {
                 method,
                 args,
             } => self.transpile_method_call(receiver, method, args),
+            ExprKind::Macro { name, args } => self.transpile_macro(name, args),
             _ => unreachable!("Non-function expression in transpile_function_expr"),
+        }
+    }
+
+    /// Transpile macro expressions
+    pub(super) fn transpile_macro(&self, name: &str, args: &[Expr]) -> Result<TokenStream> {
+        use quote::quote;
+
+        match name {
+            "println" => {
+                let arg_tokens: Result<Vec<_>, _> = args
+                    .iter()
+                    .map(|arg| self.transpile_expr(arg))
+                    .collect();
+                let arg_tokens = arg_tokens?;
+
+                if arg_tokens.is_empty() {
+                    Ok(quote! { println!() })
+                } else {
+                    Ok(quote! { println!(#(#arg_tokens),*) })
+                }
+            }
+            "vec" => {
+                let arg_tokens: Result<Vec<_>, _> = args
+                    .iter()
+                    .map(|arg| self.transpile_expr(arg))
+                    .collect();
+                let arg_tokens = arg_tokens?;
+
+                Ok(quote! { vec![#(#arg_tokens),*] })
+            }
+            _ => {
+                anyhow::bail!("Unknown macro: {}", name)
+            }
         }
     }
 
