@@ -195,6 +195,15 @@ impl InferenceContext {
             ExprKind::DataFrameOperation { source, operation } => {
                 self.infer_dataframe_operation(source, operation)
             }
+            ExprKind::Some { value } => {
+                let inner_type = self.infer_expr(value)?;
+                Ok(MonoType::Optional(Box::new(inner_type)))
+            }
+            ExprKind::None => {
+                // None is polymorphic - its type is Option<T> where T is inferred from context
+                let type_var = MonoType::Var(self.gen.fresh());
+                Ok(MonoType::Optional(Box::new(type_var)))
+            }
             ExprKind::AsyncBlock { body } => self.infer_async_block(body),
         }
     }
@@ -834,6 +843,24 @@ impl InferenceContext {
                     self.unifier.unify(expected_ty, &result_ty)?;
                     self.infer_pattern(inner, &inner_ty)
                 }
+            }
+            Pattern::Some(inner) => {
+                // Expected type should be Option<T>, extract T for inner pattern
+                if let MonoType::Optional(inner_ty) = expected_ty {
+                    self.infer_pattern(inner, inner_ty)
+                } else {
+                    // Create a fresh Option type
+                    let inner_ty = MonoType::Var(self.gen.fresh());
+                    let option_ty = MonoType::Optional(Box::new(inner_ty.clone()));
+                    self.unifier.unify(expected_ty, &option_ty)?;
+                    self.infer_pattern(inner, &inner_ty)
+                }
+            }
+            Pattern::None => {
+                // None pattern matches Option<T> where T can be any type
+                let type_var = MonoType::Var(self.gen.fresh());
+                let option_ty = MonoType::Optional(Box::new(type_var));
+                self.unifier.unify(expected_ty, &option_ty)
             }
             Pattern::Tuple(patterns) => {
                 // Create tuple type with each pattern's inferred type

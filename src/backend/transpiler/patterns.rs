@@ -141,6 +141,11 @@ impl Transpiler {
                 let inner = self.transpile_pattern(pattern)?;
                 Ok(quote! { Err(#inner) })
             }
+            Pattern::Some(pattern) => {
+                let inner = self.transpile_pattern(pattern)?;
+                Ok(quote! { Some(#inner) })
+            }
+            Pattern::None => Ok(quote! { None }),
         }
     }
 }
