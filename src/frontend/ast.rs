@@ -418,6 +418,7 @@ pub enum TypeKind {
     Generic { base: String, params: Vec<Type> },
     Optional(Box<Type>),
     List(Box<Type>),
+    Tuple(Vec<Type>),
     Function { params: Vec<Type>, ret: Box<Type> },
     DataFrame { columns: Vec<(String, Type)> },
     Series { dtype: Box<Type> },
@@ -1309,6 +1310,7 @@ mod tests {
                 TypeKind::Optional(_) | TypeKind::List(_) | TypeKind::Series { .. } => {}
                 TypeKind::Function { params, .. } => assert!(!params.is_empty()),
                 TypeKind::DataFrame { columns } => assert!(!columns.is_empty()),
+                TypeKind::Tuple(ref types) => assert!(!types.is_empty()),
             }
         }
     }

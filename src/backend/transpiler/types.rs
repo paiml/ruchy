@@ -47,6 +47,12 @@ impl Transpiler {
                 let elem_tokens = self.transpile_type(elem_type)?;
                 Ok(quote! { Vec<#elem_tokens> })
             }
+            TypeKind::Tuple(types) => {
+                let type_tokens: Result<Vec<_>> =
+                    types.iter().map(|t| self.transpile_type(t)).collect();
+                let type_tokens = type_tokens?;
+                Ok(quote! { (#(#type_tokens),*) })
+            }
             TypeKind::Function { params, ret } => {
                 let param_tokens: Result<Vec<_>> =
                     params.iter().map(|p| self.transpile_type(p)).collect();

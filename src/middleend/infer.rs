@@ -1199,6 +1199,13 @@ impl InferenceContext {
             TypeKind::Series { dtype } => {
                 MonoType::Series(Box::new(Self::ast_type_to_mono_static(dtype)?))
             }
+            TypeKind::Tuple(types) => {
+                let mono_types: Result<Vec<_>> = types
+                    .iter()
+                    .map(Self::ast_type_to_mono_static)
+                    .collect();
+                MonoType::Tuple(mono_types?)
+            }
         })
     }
 
