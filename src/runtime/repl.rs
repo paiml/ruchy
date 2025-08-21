@@ -826,40 +826,13 @@ impl Repl {
 
         match &expr.kind {
             ExprKind::Literal(lit) => self.evaluate_literal(lit),
-            ExprKind::Binary { left, op, right } => {
-                let lhs = self.evaluate_expr(left, deadline, depth + 1)?;
-                let rhs = self.evaluate_expr(right, deadline, depth + 1)?;
-                Self::evaluate_binary(&lhs, *op, &rhs)
-            }
-            ExprKind::Unary { op, operand } => {
-                let val = self.evaluate_expr(operand, deadline, depth + 1)?;
-                Self::evaluate_unary(*op, &val)
-            }
-            ExprKind::Identifier(name) => self
-                .bindings
-                .get(name)
-                .cloned()
-                .ok_or_else(|| anyhow::anyhow!("Undefined variable: {}", name)),
-            ExprKind::QualifiedName { module, name } => {
-                // For now, treat as enum variant construction
-                // In the future, this should check if module is an enum name
-                Ok(Value::EnumVariant {
-                    enum_name: module.clone(),
-                    variant_name: name.clone(),
-                    data: None,
-                })
-            }
+            ExprKind::Binary { left, op, right } => self.evaluate_binary_expr(left, *op, right, deadline, depth),
+            ExprKind::Unary { op, operand } => self.evaluate_unary_expr(*op, operand, deadline, depth),
+            ExprKind::Identifier(name) => self.evaluate_identifier(name),
+            ExprKind::QualifiedName { module, name } => self.evaluate_qualified_name(module, name),
             ExprKind::Let {
                 name, value, body, ..
-            } => {
-                let val = self.evaluate_expr(value, deadline, depth + 1)?;
-                self.bindings.insert(name.clone(), val.clone());
-                // If there's a body, evaluate it; otherwise return the value
-                match &body.kind {
-                    ExprKind::Literal(Literal::Unit) => Ok(val),
-                    _ => self.evaluate_expr(body, deadline, depth + 1),
-                }
-            }
+            } => self.evaluate_let_binding(name, value, body, deadline, depth),
             ExprKind::If {
                 condition,
                 then_branch,
@@ -871,271 +844,40 @@ impl Repl {
                 deadline,
                 depth,
             ),
-            ExprKind::Block(exprs) => {
-                if exprs.is_empty() {
-                    return Ok(Value::Unit);
-                }
-
-                let mut result = Value::Unit;
-                for expr in exprs {
-                    result = self.evaluate_expr(expr, deadline, depth + 1)?;
-                }
-                Ok(result)
-            }
-            ExprKind::List(elements) => {
-                let mut results = Vec::new();
-                for elem in elements {
-                    let val = self.evaluate_expr(elem, deadline, depth + 1)?;
-                    results.push(val);
-                }
-                Ok(Value::List(results))
-            }
-            ExprKind::Tuple(elements) => {
-                let mut results = Vec::new();
-                for elem in elements {
-                    let val = self.evaluate_expr(elem, deadline, depth + 1)?;
-                    results.push(val);
-                }
-                Ok(Value::Tuple(results))
-            }
-            ExprKind::Assign { target, value } => {
-                let val = self.evaluate_expr(value, deadline, depth + 1)?;
-
-                // For now, only support simple variable assignment
-                if let ExprKind::Identifier(name) = &target.kind {
-                    self.bindings.insert(name.clone(), val.clone());
-                    Ok(val)
-                } else {
-                    bail!(
-                        "Only simple variable assignment is supported, got: {:?}",
-                        target.kind
-                    );
-                }
-            }
+            ExprKind::Block(exprs) => self.evaluate_block(exprs, deadline, depth),
+            ExprKind::List(elements) => self.evaluate_list_literal(elements, deadline, depth),
+            ExprKind::Tuple(elements) => self.evaluate_tuple_literal(elements, deadline, depth),
+            ExprKind::Assign { target, value } => self.evaluate_assignment(target, value, deadline, depth),
             ExprKind::Range {
                 start,
                 end,
                 inclusive,
-            } => {
-                let start_val = self.evaluate_expr(start, deadline, depth + 1)?;
-                let end_val = self.evaluate_expr(end, deadline, depth + 1)?;
-
-                // Return a proper Range value
-                match (start_val, end_val) {
-                    (Value::Int(s), Value::Int(e)) => Ok(Value::Range { 
-                        start: s, 
-                        end: e, 
-                        inclusive: *inclusive 
-                    }),
-                    _ => bail!("Range endpoints must be integers"),
-                }
-            }
+            } => self.evaluate_range_literal(start, end, *inclusive, deadline, depth),
             ExprKind::Function {
                 name, params, body, ..
-            } => {
-                // Store function definition
-                let param_names: Vec<String> = params.iter().map(crate::frontend::ast::Param::name).collect();
-                let func_value = Value::Function {
-                    name: name.clone(),
-                    params: param_names,
-                    body: body.clone(),
-                };
-
-                // Store the function in bindings
-                self.bindings.insert(name.clone(), func_value.clone());
-                Ok(func_value)
-            }
-            ExprKind::Lambda { params, body } => {
-                // Store lambda as a callable value
-                let param_names: Vec<String> = params.iter().map(crate::frontend::ast::Param::name).collect();
-                Ok(Value::Lambda {
-                    params: param_names,
-                    body: body.clone(),
-                })
-            }
+            } => self.evaluate_function_definition(name, params, body),
+            ExprKind::Lambda { params, body } => self.evaluate_lambda_expression(params, body),
             ExprKind::Call { func, args } => self.evaluate_call(func, args, deadline, depth),
-            ExprKind::DataFrame { columns } => {
-                // Evaluate DataFrame with pretty printing
-                let mut df_columns = Vec::new();
-                for col in columns {
-                    let mut values = Vec::new();
-                    for val_expr in &col.values {
-                        let val = self.evaluate_expr(val_expr, deadline, depth + 1)?;
-                        values.push(val);
-                    }
-                    df_columns.push(DataFrameColumn {
-                        name: col.name.clone(),
-                        values,
-                    });
-                }
-                Ok(Value::DataFrame {
-                    columns: df_columns,
-                })
-            }
-            ExprKind::DataFrameOperation { .. } => {
-                // DataFrame operations not yet implemented in REPL
-                bail!("DataFrame operations not yet implemented in REPL")
-            }
+            ExprKind::DataFrame { columns } => self.evaluate_dataframe_literal(columns, deadline, depth),
+            ExprKind::DataFrameOperation { .. } => Self::evaluate_dataframe_operation(),
             ExprKind::Match {
                 expr: match_expr,
                 arms,
             } => self.evaluate_match(match_expr, arms, deadline, depth),
-            ExprKind::For { var, iter, body } => {
-                // Evaluate the iterable
-                let iterable = self.evaluate_expr(iter, deadline, depth + 1)?;
-
-                // Save the previous value of the loop variable (if any)
-                let saved_loop_var = self.bindings.get(var).cloned();
-
-                // Handle lists and ranges
-                match iterable {
-                    Value::List(items) => {
-                        let mut result = Value::Unit;
-                        for item in items {
-                            // Bind the loop variable
-                            self.bindings.insert(var.clone(), item);
-                            // Execute the body
-                            result = self.evaluate_expr(body, deadline, depth + 1)?;
-                        }
-                        // Restore only the loop variable (or remove it if it didn't exist before)
-                        if let Some(prev_value) = saved_loop_var {
-                            self.bindings.insert(var.clone(), prev_value);
-                        } else {
-                            self.bindings.remove(var);
-                        }
-                        Ok(result)
-                    }
-                    Value::Range { start, end, inclusive } => {
-                        let mut result = Value::Unit;
-                        let actual_end = if inclusive { end + 1 } else { end };
-                        for i in start..actual_end {
-                            // Bind the loop variable to the current value
-                            self.bindings.insert(var.clone(), Value::Int(i));
-                            // Execute the body
-                            result = self.evaluate_expr(body, deadline, depth + 1)?;
-                        }
-                        // Restore only the loop variable (or remove it if it didn't exist before)
-                        if let Some(prev_value) = saved_loop_var {
-                            self.bindings.insert(var.clone(), prev_value);
-                        } else {
-                            self.bindings.remove(var);
-                        }
-                        Ok(result)
-                    }
-                    _ => bail!(
-                        "For loops only support lists and ranges, got: {:?}",
-                        iterable
-                    ),
-                }
-            }
-            ExprKind::While { condition, body } => {
-                let mut result = Value::Unit;
-                let max_iterations = 1000; // Prevent infinite loops in REPL
-                let mut iterations = 0;
-
-                loop {
-                    if iterations >= max_iterations {
-                        bail!(
-                            "While loop exceeded maximum iterations ({})",
-                            max_iterations
-                        );
-                    }
-
-                    // Evaluate condition
-                    let cond_val = self.evaluate_expr(condition, deadline, depth + 1)?;
-                    match cond_val {
-                        Value::Bool(true) => {
-                            result = self.evaluate_expr(body, deadline, depth + 1)?;
-                            iterations += 1;
-                        }
-                        Value::Bool(false) => break,
-                        _ => bail!("While condition must be boolean, got: {:?}", cond_val),
-                    }
-                }
-
-                Ok(result)
-            }
+            ExprKind::For { var, iter, body } => self.evaluate_for_loop(var, iter, body, deadline, depth),
+            ExprKind::While { condition, body } => self.evaluate_while_loop(condition, body, deadline, depth),
             ExprKind::Pipeline { expr, stages } => {
                 self.evaluate_pipeline(expr, stages, deadline, depth)
             }
-            ExprKind::StringInterpolation { parts } => {
-                use crate::frontend::ast::StringPart;
-
-                let mut result = String::new();
-                for part in parts {
-                    match part {
-                        StringPart::Text(text) => result.push_str(text),
-                        StringPart::Expr(expr) => {
-                            let value = self.evaluate_expr(expr, deadline, depth + 1)?;
-                            // Format the value for interpolation (without quotes for strings)
-                            match value {
-                                Value::String(s) => result.push_str(&s),
-                                Value::Char(c) => result.push(c),
-                                other => result.push_str(&other.to_string()),
-                            }
-                        }
-                    }
-                }
-                Ok(Value::String(result))
-            }
+            ExprKind::StringInterpolation { parts } => self.evaluate_string_interpolation(parts, deadline, depth),
             ExprKind::TryCatch {
                 try_block,
                 catch_clauses,
                 finally_block,
-            } => {
-                // Execute try block
-                let try_result = self.evaluate_expr(try_block, deadline, depth + 1);
-
-                match try_result {
-                    Ok(value) => {
-                        // Try succeeded, execute finally block if present
-                        if let Some(finally) = finally_block {
-                            let _ = self.evaluate_expr(finally, deadline, depth + 1);
-                        }
-                        Ok(value)
-                    }
-                    Err(error) => {
-                        // Try failed, check catch clauses
-                        if let Some(_catch_clause) = catch_clauses.iter().next() {
-                            // For now, just catch any error and return unit
-                            // Pattern matching on error types requires error type system
-                            if let Some(finally) = finally_block {
-                                let _ = self.evaluate_expr(finally, deadline, depth + 1);
-                            }
-                            return Ok(Value::Unit);
-                        }
-
-                        // No catch clause matched, execute finally and re-throw
-                        if let Some(finally) = finally_block {
-                            let _ = self.evaluate_expr(finally, deadline, depth + 1);
-                        }
-                        Err(error)
-                    }
-                }
-            }
-            ExprKind::Try { expr } => {
-                // The ? operator - for now just evaluate the expression
-                // Error propagation requires Result type system integration
-                self.evaluate_expr(expr, deadline, depth + 1)
-            }
-            ExprKind::Ok { value } => {
-                // Evaluate the value and wrap in Result::Ok
-                let val = self.evaluate_expr(value, deadline, depth + 1)?;
-                Ok(Value::EnumVariant {
-                    enum_name: "Result".to_string(),
-                    variant_name: "Ok".to_string(),
-                    data: Some(vec![val]),
-                })
-            }
-            ExprKind::Err { error } => {
-                // Evaluate the error and wrap in Result::Err
-                let err = self.evaluate_expr(error, deadline, depth + 1)?;
-                Ok(Value::EnumVariant {
-                    enum_name: "Result".to_string(),
-                    variant_name: "Err".to_string(),
-                    data: Some(vec![err]),
-                })
-            }
+            } => self.evaluate_try_catch(try_block, catch_clauses, finally_block.as_deref(), deadline, depth),
+            ExprKind::Try { expr } => self.evaluate_try_operator(expr, deadline, depth),
+            ExprKind::Ok { value } => self.evaluate_result_ok(value, deadline, depth),
+            ExprKind::Err { error } => self.evaluate_result_err(error, deadline, depth),
             ExprKind::MethodCall {
                 receiver,
                 method,
@@ -1154,106 +896,15 @@ impl Repl {
                     _ => bail!("Method {} not supported on this type", method),
                 }
             }
-            ExprKind::Await { expr } => {
-                // For now, await just evaluates the expression
-                // In a full async implementation, this would handle Future resolution
-                self.evaluate_expr(expr, deadline, depth + 1)
-            }
-            ExprKind::AsyncBlock { body } => {
-                // For REPL purposes, evaluate the async block body synchronously
-                // In a full async implementation, this would return a Future
-                self.evaluate_expr(body, deadline, depth + 1)
-            }
-            ExprKind::ObjectLiteral { fields } => {
-                use crate::frontend::ast::ObjectField;
-                let mut map = HashMap::new();
-                
-                for field in fields {
-                    match field {
-                        ObjectField::KeyValue { key, value } => {
-                            let val = self.evaluate_expr(value, deadline, depth + 1)?;
-                            map.insert(key.clone(), val);
-                        }
-                        ObjectField::Spread { expr } => {
-                            // Evaluate the spread expression
-                            let spread_val = self.evaluate_expr(expr, deadline, depth + 1)?;
-                            // If it's an object, merge its fields
-                            if let Value::Object(spread_map) = spread_val {
-                                map.extend(spread_map);
-                            } else {
-                                bail!("Spread operator can only be used with objects");
-                            }
-                        }
-                    }
-                }
-                
-                Ok(Value::Object(map))
-            }
-            ExprKind::Enum { name, variants, .. } => {
-                // Store enum definition
-                let variant_names: Vec<String> = variants.iter()
-                    .map(|v| v.name.clone())
-                    .collect();
-                self.enum_definitions.insert(name.clone(), variant_names);
-                println!("Defined enum {} with {} variants", name, variants.len());
-                Ok(Value::Unit)
-            }
-            ExprKind::Struct { name, fields, .. } => {
-                // Store struct definition for later use
-                // For now, just acknowledge the definition
-                println!("Defined struct {} with {} fields", name, fields.len());
-                Ok(Value::Unit)
-            }
-            ExprKind::StructLiteral { name: _, fields } => {
-                // Create a struct instance as an object
-                let mut map = HashMap::new();
-                for (field_name, field_expr) in fields {
-                    let field_value = self.evaluate_expr(field_expr, deadline, depth + 1)?;
-                    map.insert(field_name.clone(), field_value);
-                }
-                Ok(Value::Object(map))
-            }
-            ExprKind::FieldAccess { object, field } => {
-                let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
-                match obj_val {
-                    Value::Object(map) => {
-                        map.get(field)
-                            .cloned()
-                            .ok_or_else(|| anyhow::anyhow!("Field '{}' not found", field))
-                    }
-                    _ => bail!("Field access on non-object value"),
-                }
-            }
-            ExprKind::Trait { name, methods, .. } => {
-                // Store trait definition for later use
-                println!("Defined trait {} with {} methods", name, methods.len());
-                Ok(Value::Unit)
-            }
-            ExprKind::Impl { for_type, methods, .. } => {
-                // Store impl methods for later use
-                for method in methods {
-                    // Create a qualified name for the method
-                    let qualified_name = format!("{}::{}", for_type, method.name);
-                    
-                    // Extract parameter names (skip self if present)
-                    let param_names: Vec<String> = method.params.iter()
-                        .filter_map(|p| {
-                            let name = p.name();
-                            if name != "self" && name != "&self" {
-                                Some(name)
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-                    
-                    // Store the method
-                    self.impl_methods.insert(qualified_name, (param_names, method.body.clone()));
-                }
-                
-                println!("Defined impl for {} with {} methods", for_type, methods.len());
-                Ok(Value::Unit)
-            }
+            ExprKind::Await { expr } => self.evaluate_await_expr(expr, deadline, depth),
+            ExprKind::AsyncBlock { body } => self.evaluate_async_block(body, deadline, depth),
+            ExprKind::ObjectLiteral { fields } => self.evaluate_object_literal(fields, deadline, depth),
+            ExprKind::Enum { name, variants, .. } => self.evaluate_enum_definition(name, variants),
+            ExprKind::Struct { name, fields, .. } => self.evaluate_struct_definition(name, fields),
+            ExprKind::StructLiteral { name: _, fields } => self.evaluate_struct_literal(fields, deadline, depth),
+            ExprKind::FieldAccess { object, field } => self.evaluate_field_access(object, field, deadline, depth),
+            ExprKind::Trait { name, methods, .. } => self.evaluate_trait_definition(name, methods),
+            ExprKind::Impl { for_type, methods, .. } => self.evaluate_impl_block(for_type, methods),
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
@@ -1478,6 +1129,578 @@ impl Repl {
             "round" => Ok(Value::Float(f.round())),
             _ => bail!("Unknown float method: {}", method),
         }
+    }
+    
+    // ========================================================================
+    // Additional helper methods to further reduce evaluate_expr complexity
+    // Phase 2: Control flow extraction (Target: < 50 total complexity)
+    // ========================================================================
+    
+    /// Evaluate for loop (complexity: 10)
+    fn evaluate_for_loop(
+        &mut self,
+        var: &str,
+        iter: &Expr,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        // Evaluate the iterable
+        let iterable = self.evaluate_expr(iter, deadline, depth + 1)?;
+        
+        // Save the previous value of the loop variable (if any)
+        let saved_loop_var = self.bindings.get(var).cloned();
+        
+        // Execute the loop based on iterable type
+        let result = match iterable {
+            Value::List(items) => self.iterate_list(var, items, body, deadline, depth),
+            Value::Range { start, end, inclusive } => 
+                self.iterate_range(var, start, end, inclusive, body, deadline, depth),
+            _ => bail!("For loops only support lists and ranges, got: {:?}", iterable),
+        };
+        
+        // Restore the loop variable
+        if let Some(prev_value) = saved_loop_var {
+            self.bindings.insert(var.to_string(), prev_value);
+        } else {
+            self.bindings.remove(var);
+        }
+        
+        result
+    }
+    
+    /// Helper: Iterate over a list (complexity: 4)
+    fn iterate_list(
+        &mut self,
+        var: &str,
+        items: Vec<Value>,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut result = Value::Unit;
+        for item in items {
+            self.bindings.insert(var.to_string(), item);
+            result = self.evaluate_expr(body, deadline, depth + 1)?;
+        }
+        Ok(result)
+    }
+    
+    /// Helper: Iterate over a range (complexity: 5)
+    fn iterate_range(
+        &mut self,
+        var: &str,
+        start: i64,
+        end: i64,
+        inclusive: bool,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut result = Value::Unit;
+        let actual_end = if inclusive { end + 1 } else { end };
+        for i in start..actual_end {
+            self.bindings.insert(var.to_string(), Value::Int(i));
+            result = self.evaluate_expr(body, deadline, depth + 1)?;
+        }
+        Ok(result)
+    }
+    
+    /// Evaluate while loop (complexity: 8)
+    fn evaluate_while_loop(
+        &mut self,
+        condition: &Expr,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut result = Value::Unit;
+        let max_iterations = 1000; // Prevent infinite loops in REPL
+        let mut iterations = 0;
+        
+        loop {
+            if iterations >= max_iterations {
+                bail!("While loop exceeded maximum iterations ({})", max_iterations);
+            }
+            
+            // Evaluate condition
+            let cond_val = self.evaluate_expr(condition, deadline, depth + 1)?;
+            match cond_val {
+                Value::Bool(true) => {
+                    result = self.evaluate_expr(body, deadline, depth + 1)?;
+                    iterations += 1;
+                }
+                Value::Bool(false) => break,
+                _ => bail!("While condition must be boolean, got: {:?}", cond_val),
+            }
+        }
+        
+        Ok(result)
+    }
+    
+    /// Evaluate block expression (complexity: 4)
+    fn evaluate_block(
+        &mut self,
+        exprs: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if exprs.is_empty() {
+            return Ok(Value::Unit);
+        }
+        
+        let mut result = Value::Unit;
+        for expr in exprs {
+            result = self.evaluate_expr(expr, deadline, depth + 1)?;
+        }
+        Ok(result)
+    }
+    
+    /// Evaluate list literal (complexity: 4)
+    fn evaluate_list_literal(
+        &mut self,
+        elements: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut results = Vec::new();
+        for elem in elements {
+            let val = self.evaluate_expr(elem, deadline, depth + 1)?;
+            results.push(val);
+        }
+        Ok(Value::List(results))
+    }
+    
+    /// Evaluate tuple literal (complexity: 4)
+    fn evaluate_tuple_literal(
+        &mut self,
+        elements: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut results = Vec::new();
+        for elem in elements {
+            let val = self.evaluate_expr(elem, deadline, depth + 1)?;
+            results.push(val);
+        }
+        Ok(Value::Tuple(results))
+    }
+    
+    /// Evaluate range literal (complexity: 5)
+    fn evaluate_range_literal(
+        &mut self,
+        start: &Expr,
+        end: &Expr,
+        inclusive: bool,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let start_val = self.evaluate_expr(start, deadline, depth + 1)?;
+        let end_val = self.evaluate_expr(end, deadline, depth + 1)?;
+        
+        match (start_val, end_val) {
+            (Value::Int(s), Value::Int(e)) => Ok(Value::Range {
+                start: s,
+                end: e,
+                inclusive,
+            }),
+            _ => bail!("Range endpoints must be integers"),
+        }
+    }
+    
+    /// Evaluate assignment expression (complexity: 5)
+    fn evaluate_assignment(
+        &mut self,
+        target: &Expr,
+        value: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let val = self.evaluate_expr(value, deadline, depth + 1)?;
+        
+        // For now, only support simple variable assignment
+        if let ExprKind::Identifier(name) = &target.kind {
+            self.bindings.insert(name.clone(), val.clone());
+            Ok(val)
+        } else {
+            bail!("Only simple variable assignment is supported, got: {:?}", target.kind);
+        }
+    }
+    
+    /// Evaluate let binding (complexity: 5)
+    fn evaluate_let_binding(
+        &mut self,
+        name: &str,
+        value: &Expr,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let val = self.evaluate_expr(value, deadline, depth + 1)?;
+        self.bindings.insert(name.to_string(), val.clone());
+        
+        // If there's a body, evaluate it; otherwise return the value
+        match &body.kind {
+            ExprKind::Literal(Literal::Unit) => Ok(val),
+            _ => self.evaluate_expr(body, deadline, depth + 1),
+        }
+    }
+    
+    /// Evaluate string interpolation (complexity: 7)
+    fn evaluate_string_interpolation(
+        &mut self,
+        parts: &[crate::frontend::ast::StringPart],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        use crate::frontend::ast::StringPart;
+        
+        let mut result = String::new();
+        for part in parts {
+            match part {
+                StringPart::Text(text) => result.push_str(text),
+                StringPart::Expr(expr) => {
+                    let value = self.evaluate_expr(expr, deadline, depth + 1)?;
+                    // Format the value for interpolation (without quotes for strings)
+                    match value {
+                        Value::String(s) => result.push_str(&s),
+                        Value::Char(c) => result.push(c),
+                        other => result.push_str(&other.to_string()),
+                    }
+                }
+            }
+        }
+        Ok(Value::String(result))
+    }
+    
+    /// Evaluate function definition (complexity: 5)
+    fn evaluate_function_definition(
+        &mut self,
+        name: &str,
+        params: &[crate::frontend::ast::Param],
+        body: &Expr,
+    ) -> Result<Value> {
+        let param_names: Vec<String> = params.iter().map(crate::frontend::ast::Param::name).collect();
+        let func_value = Value::Function {
+            name: name.to_string(),
+            params: param_names,
+            body: Box::new(body.clone()),
+        };
+        
+        // Store the function in bindings
+        self.bindings.insert(name.to_string(), func_value.clone());
+        Ok(func_value)
+    }
+    
+    /// Evaluate lambda expression (complexity: 3)
+    fn evaluate_lambda_expression(
+        &self,
+        params: &[crate::frontend::ast::Param],
+        body: &Expr,
+    ) -> Result<Value> {
+        let param_names: Vec<String> = params.iter().map(crate::frontend::ast::Param::name).collect();
+        Ok(Value::Lambda {
+            params: param_names,
+            body: Box::new(body.clone()),
+        })
+    }
+    
+    /// Evaluate DataFrame literal (complexity: 6)
+    fn evaluate_dataframe_literal(
+        &mut self,
+        columns: &[crate::frontend::ast::DataFrameColumn],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut df_columns = Vec::new();
+        for col in columns {
+            let mut values = Vec::new();
+            for val_expr in &col.values {
+                let val = self.evaluate_expr(val_expr, deadline, depth + 1)?;
+                values.push(val);
+            }
+            df_columns.push(DataFrameColumn {
+                name: col.name.clone(),
+                values,
+            });
+        }
+        Ok(Value::DataFrame {
+            columns: df_columns,
+        })
+    }
+    
+    /// Evaluate try/catch block (complexity: 8)
+    fn evaluate_try_catch(
+        &mut self,
+        try_block: &Expr,
+        catch_clauses: &[crate::frontend::ast::CatchClause],
+        finally_block: Option<&Expr>,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        // Execute try block
+        let try_result = self.evaluate_expr(try_block, deadline, depth + 1);
+        
+        let result = match try_result {
+            Ok(value) => Ok(value),
+            Err(error) => {
+                // Try failed, check catch clauses
+                if let Some(_catch_clause) = catch_clauses.iter().next() {
+                    // For now, just catch any error and return unit
+                    // Proper error handling would evaluate catch_clause.body
+                    Ok(Value::Unit)
+                } else {
+                    Err(error)
+                }
+            }
+        };
+        
+        // Execute finally block if present
+        if let Some(finally) = finally_block {
+            let _ = self.evaluate_expr(finally, deadline, depth + 1);
+        }
+        
+        result
+    }
+    
+    /// Evaluate Result::Ok constructor (complexity: 3)
+    fn evaluate_result_ok(
+        &mut self,
+        value: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let val = self.evaluate_expr(value, deadline, depth + 1)?;
+        Ok(Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Ok".to_string(),
+            data: Some(vec![val]),
+        })
+    }
+    
+    /// Evaluate Result::Err constructor (complexity: 3)
+    fn evaluate_result_err(
+        &mut self,
+        error: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let err = self.evaluate_expr(error, deadline, depth + 1)?;
+        Ok(Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Err".to_string(),
+            data: Some(vec![err]),
+        })
+    }
+    
+    /// Evaluate object literal (complexity: 10)
+    fn evaluate_object_literal(
+        &mut self,
+        fields: &[crate::frontend::ast::ObjectField],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        use crate::frontend::ast::ObjectField;
+        let mut map = HashMap::new();
+        
+        for field in fields {
+            match field {
+                ObjectField::KeyValue { key, value } => {
+                    let val = self.evaluate_expr(value, deadline, depth + 1)?;
+                    map.insert(key.clone(), val);
+                }
+                ObjectField::Spread { expr } => {
+                    let spread_val = self.evaluate_expr(expr, deadline, depth + 1)?;
+                    if let Value::Object(spread_map) = spread_val {
+                        map.extend(spread_map);
+                    } else {
+                        bail!("Spread operator can only be used with objects");
+                    }
+                }
+            }
+        }
+        
+        Ok(Value::Object(map))
+    }
+    
+    /// Evaluate enum definition (complexity: 4)
+    fn evaluate_enum_definition(
+        &mut self,
+        name: &str,
+        variants: &[crate::frontend::ast::EnumVariant],
+    ) -> Result<Value> {
+        let variant_names: Vec<String> = variants.iter()
+            .map(|v| v.name.clone())
+            .collect();
+        self.enum_definitions.insert(name.to_string(), variant_names);
+        println!("Defined enum {} with {} variants", name, variants.len());
+        Ok(Value::Unit)
+    }
+    
+    /// Evaluate struct definition (complexity: 3)
+    fn evaluate_struct_definition(
+        &self,
+        name: &str,
+        fields: &[crate::frontend::ast::StructField],
+    ) -> Result<Value> {
+        println!("Defined struct {} with {} fields", name, fields.len());
+        Ok(Value::Unit)
+    }
+    
+    /// Evaluate struct literal (complexity: 5)
+    fn evaluate_struct_literal(
+        &mut self,
+        fields: &[(String, Expr)],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut map = HashMap::new();
+        for (field_name, field_expr) in fields {
+            let field_value = self.evaluate_expr(field_expr, deadline, depth + 1)?;
+            map.insert(field_name.clone(), field_value);
+        }
+        Ok(Value::Object(map))
+    }
+    
+    /// Evaluate field access (complexity: 4)
+    fn evaluate_field_access(
+        &mut self,
+        object: &Expr,
+        field: &str,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
+        match obj_val {
+            Value::Object(map) => {
+                map.get(field)
+                    .cloned()
+                    .ok_or_else(|| anyhow::anyhow!("Field '{}' not found", field))
+            }
+            _ => bail!("Field access on non-object value"),
+        }
+    }
+    
+    /// Evaluate trait definition (complexity: 3)
+    fn evaluate_trait_definition(
+        &self,
+        name: &str,
+        methods: &[crate::frontend::ast::TraitMethod],
+    ) -> Result<Value> {
+        println!("Defined trait {} with {} methods", name, methods.len());
+        Ok(Value::Unit)
+    }
+    
+    /// Evaluate impl block (complexity: 12)
+    fn evaluate_impl_block(
+        &mut self,
+        for_type: &str,
+        methods: &[crate::frontend::ast::ImplMethod],
+    ) -> Result<Value> {
+        for method in methods {
+            let qualified_name = format!("{}::{}", for_type, method.name);
+            
+            let param_names: Vec<String> = method.params.iter()
+                .filter_map(|p| {
+                    let name = p.name();
+                    if name != "self" && name != "&self" {
+                        Some(name)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            
+            self.impl_methods.insert(qualified_name, (param_names, method.body.clone()));
+        }
+        
+        println!("Defined impl for {} with {} methods", for_type, methods.len());
+        Ok(Value::Unit)
+    }
+    
+    /// Evaluate binary expression (complexity: 3)
+    fn evaluate_binary_expr(
+        &mut self,
+        left: &Expr,
+        op: BinaryOp,
+        right: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let lhs = self.evaluate_expr(left, deadline, depth + 1)?;
+        let rhs = self.evaluate_expr(right, deadline, depth + 1)?;
+        Self::evaluate_binary(&lhs, op, &rhs)
+    }
+    
+    /// Evaluate unary expression (complexity: 2)
+    fn evaluate_unary_expr(
+        &mut self,
+        op: UnaryOp,
+        operand: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let val = self.evaluate_expr(operand, deadline, depth + 1)?;
+        Self::evaluate_unary(op, &val)
+    }
+    
+    /// Evaluate identifier (complexity: 2)
+    fn evaluate_identifier(&self, name: &str) -> Result<Value> {
+        self.bindings
+            .get(name)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("Undefined variable: {}", name))
+    }
+    
+    /// Evaluate qualified name (complexity: 2)
+    fn evaluate_qualified_name(&self, module: &str, name: &str) -> Result<Value> {
+        Ok(Value::EnumVariant {
+            enum_name: module.to_string(),
+            variant_name: name.to_string(),
+            data: None,
+        })
+    }
+    
+    /// Evaluate await expression (complexity: 1)
+    fn evaluate_await_expr(
+        &mut self,
+        expr: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        // For now, await just evaluates the expression
+        // In a full async implementation, this would handle Future resolution
+        self.evaluate_expr(expr, deadline, depth + 1)
+    }
+    
+    /// Evaluate async block (complexity: 1)
+    fn evaluate_async_block(
+        &mut self,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        // For REPL purposes, evaluate the async block body synchronously
+        // In a full async implementation, this would return a Future
+        self.evaluate_expr(body, deadline, depth + 1)
+    }
+    
+    /// Evaluate try operator (?) (complexity: 1)
+    fn evaluate_try_operator(
+        &mut self,
+        expr: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        // The ? operator - for now just evaluate the expression
+        // Error propagation requires Result type system integration
+        self.evaluate_expr(expr, deadline, depth + 1)
+    }
+    
+    /// Evaluate DataFrame operation (complexity: 1)
+    fn evaluate_dataframe_operation() -> Result<Value> {
+        // DataFrame operations not yet implemented in REPL
+        bail!("DataFrame operations not yet implemented in REPL")
     }
 
     /// Check if a pattern matches a value and return bindings

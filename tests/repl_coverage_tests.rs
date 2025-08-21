@@ -110,10 +110,10 @@ fn test_repl_blocks() {
 fn test_repl_lists() {
     let mut repl = Repl::new().expect("Failed to create REPL");
 
-    // Lists evaluate to their first element for now
-    assert_eq!(repl.eval("[1, 2, 3]").unwrap(), "1");
-    assert_eq!(repl.eval("[true, false]").unwrap(), "true");
-    assert_eq!(repl.eval("[]").unwrap(), "()");
+    // Lists evaluate to themselves
+    assert_eq!(repl.eval("[1, 2, 3]").unwrap(), "[1, 2, 3]");
+    assert_eq!(repl.eval("[true, false]").unwrap(), "[true, false]");
+    assert_eq!(repl.eval("[]").unwrap(), "[]");
 }
 
 #[test]
@@ -280,16 +280,16 @@ fn test_repl_pipeline_operator() {
 fn test_repl_match_expressions() {
     let mut repl = Repl::new().expect("Failed to create REPL");
 
-    // Match expressions return unit for now
-    assert_eq!(repl.eval("match 1 { _ => 42 }").unwrap(), "()");
+    // Match expressions return the matched arm value
+    assert_eq!(repl.eval("match 1 { _ => 42 }").unwrap(), "42");
 }
 
 #[test]
 fn test_repl_for_loops() {
     let mut repl = Repl::new().expect("Failed to create REPL");
 
-    // For loops return unit
-    assert_eq!(repl.eval("for x in [1, 2, 3] { x }").unwrap(), "()");
+    // For loops return the last expression value
+    assert_eq!(repl.eval("for x in [1, 2, 3] { x }").unwrap(), "3");
 }
 
 #[test]
@@ -312,6 +312,6 @@ fn test_repl_loop_expressions() {
 fn test_repl_try_expressions() {
     let mut repl = Repl::new().expect("Failed to create REPL");
 
-    // Try expressions return unit
-    assert_eq!(repl.eval("try { 1 }").unwrap(), "()");
+    // Try expressions return the try block value
+    assert_eq!(repl.eval("try { 1 } catch e { 0 }").unwrap(), "1");
 }
