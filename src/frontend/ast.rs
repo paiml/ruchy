@@ -90,6 +90,10 @@ pub enum ExprKind {
     Err {
         error: Box<Expr>,
     },
+    Some {
+        value: Box<Expr>,
+    },
+    None,
     Await {
         expr: Box<Expr>,
     },
@@ -435,6 +439,8 @@ pub enum Pattern {
     Rest, // For ... patterns
     Ok(Box<Pattern>),
     Err(Box<Pattern>),
+    Some(Box<Pattern>),
+    None,
 }
 
 impl Pattern {
@@ -460,7 +466,8 @@ impl Pattern {
                 // Return the struct type name
                 name.clone()
             }
-            Pattern::Ok(inner) | Pattern::Err(inner) => inner.primary_name(),
+            Pattern::Ok(inner) | Pattern::Err(inner) | Pattern::Some(inner) => inner.primary_name(),
+            Pattern::None => "_none".to_string(),
             Pattern::Or(patterns) => {
                 // Return the name of the first pattern
                 patterns
@@ -1230,7 +1237,9 @@ mod tests {
                 | Pattern::Identifier(_)
                 | Pattern::Rest
                 | Pattern::Ok(_)
-                | Pattern::Err(_) => {} // Simple patterns
+                | Pattern::Err(_)
+                | Pattern::Some(_)
+                | Pattern::None => {} // Simple patterns
             }
         }
     }

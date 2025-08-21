@@ -360,6 +360,24 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
             state.tokens.advance();
             Pattern::Rest
         }
+        Some((Token::Some, _)) => {
+            state.tokens.advance(); // consume Some
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                state.tokens.advance(); // consume (
+                let inner = parse_pattern_base(state);
+                if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                    state.tokens.advance(); // consume )
+                }
+                Pattern::Some(Box::new(inner))
+            } else {
+                // Some without parentheses is just an identifier
+                Pattern::Identifier("Some".to_string())
+            }
+        }
+        Some((Token::None, _)) => {
+            state.tokens.advance(); // consume None
+            Pattern::None
+        }
         _ => Pattern::Wildcard, // Default fallback
     }
 }

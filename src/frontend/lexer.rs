@@ -163,6 +163,8 @@ pub enum Token {
     None,
     #[token("Result")]
     Result,
+    #[token("Option")]
+    Option,
     #[token("break")]
     Break,
     #[token("continue")]

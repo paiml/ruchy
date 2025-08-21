@@ -311,6 +311,33 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 Ok(Expr::new(ExprKind::Identifier("Result".to_string()), span_clone))
             }
         }
+        Token::Option => {
+            state.tokens.advance(); // consume Option
+            
+            // Check for qualified Option::Some or Option::None
+            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                state.tokens.advance(); // consume ::
+                
+                match state.tokens.peek() {
+                    Some((Token::Some, _)) => {
+                        state.tokens.advance(); // consume Some
+                        state.tokens.expect(&Token::LeftParen)?;
+                        let value = Box::new(super::parse_expr_recursive(state)?);
+                        state.tokens.expect(&Token::RightParen)?;
+                        
+                        Ok(Expr::new(ExprKind::Some { value }, span_clone))
+                    }
+                    Some((Token::None, _)) => {
+                        state.tokens.advance(); // consume None
+                        Ok(Expr::new(ExprKind::None, span_clone))
+                    }
+                    _ => bail!("Expected Some or None after Option::")
+                }
+            } else {
+                // Just Option as an identifier
+                Ok(Expr::new(ExprKind::Identifier("Option".to_string()), span_clone))
+            }
+        }
         Token::Ok => {
             state.tokens.advance(); // consume Ok
             state.tokens.expect(&Token::LeftParen)?;
@@ -327,41 +354,14 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::Some => {
             state.tokens.advance(); // consume Some
-
-            // Parse as a function call to "Some"
-            if state.tokens.peek().map(|(t, _)| t) == Some(&Token::LeftParen) {
-                state.tokens.advance(); // consume '('
-                let arg = super::parse_expr_recursive(state)?;
-                state.tokens.expect(&Token::RightParen)?;
-
-                Ok(Expr::new(
-                    ExprKind::Call {
-                        func: Box::new(Expr::new(
-                            ExprKind::Identifier("Some".to_string()),
-                            span_clone,
-                        )),
-                        args: vec![arg],
-                    },
-                    span_clone,
-                ))
-            } else {
-                // Some without parentheses is an error
-                bail!("Expected '(' after Some")
-            }
+            state.tokens.expect(&Token::LeftParen)?;
+            let value = Box::new(super::parse_expr_recursive(state)?);
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(Expr::new(ExprKind::Some { value }, span_clone))
         }
         Token::None => {
             state.tokens.advance(); // consume None
-            // Parse as a function call to "None" with no arguments
-            Ok(Expr::new(
-                ExprKind::Call {
-                    func: Box::new(Expr::new(
-                        ExprKind::Identifier("None".to_string()),
-                        span_clone,
-                    )),
-                    args: vec![],
-                },
-                span_clone,
-            ))
+            Ok(Expr::new(ExprKind::None, span_clone))
         }
         Token::Throw => {
             state.tokens.advance(); // consume throw

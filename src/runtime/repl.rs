@@ -797,6 +797,8 @@ impl Repl {
             ExprKind::Try { expr } => self.evaluate_try_operator(expr, deadline, depth),
             ExprKind::Ok { value } => self.evaluate_result_ok(value, deadline, depth),
             ExprKind::Err { error } => self.evaluate_result_err(error, deadline, depth),
+            ExprKind::Some { value } => self.evaluate_option_some(value, deadline, depth),
+            ExprKind::None => Ok(Self::evaluate_option_none()),
             ExprKind::MethodCall {
                 receiver,
                 method,
@@ -1497,6 +1499,30 @@ impl Repl {
         })
     }
 
+    /// Evaluate `Option::Some` constructor (complexity: 3)
+    fn evaluate_option_some(
+        &mut self,
+        value: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let val = self.evaluate_expr(value, deadline, depth + 1)?;
+        Ok(Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![val]),
+        })
+    }
+
+    /// Evaluate `Option::None` constructor (complexity: 1)
+    fn evaluate_option_none() -> Value {
+        Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        }
+    }
+
     /// Evaluate object literal (complexity: 10)
     fn evaluate_object_literal(
         &mut self,
@@ -1595,20 +1621,16 @@ impl Repl {
         
         match (obj_val, index_val) {
             (Value::List(list), Value::Int(idx)) => {
-                if idx < 0 {
-                    return Err(anyhow::anyhow!("Negative index: {}", idx));
-                }
-                let idx = idx as usize;
+                let idx = usize::try_from(idx)
+                    .map_err(|_| anyhow::anyhow!("Invalid index: {}", idx))?;
                 if idx >= list.len() {
                     return Err(anyhow::anyhow!("Index {} out of bounds for list of length {}", idx, list.len()));
                 }
                 Ok(list[idx].clone())
             }
             (Value::String(s), Value::Int(idx)) => {
-                if idx < 0 {
-                    return Err(anyhow::anyhow!("Negative index: {}", idx));
-                }
-                let idx = idx as usize;
+                let idx = usize::try_from(idx)
+                    .map_err(|_| anyhow::anyhow!("Invalid index: {}", idx))?;
                 let chars: Vec<char> = s.chars().collect();
                 if idx >= chars.len() {
                     return Err(anyhow::anyhow!("Index {} out of bounds for string of length {}", idx, chars.len()));
@@ -1852,6 +1874,38 @@ impl Repl {
                 }
             }
 
+            // Result patterns (Ok/Err)
+            (value, Pattern::Ok(inner_pattern)) => {
+                // Check if value is a Result::Ok variant
+                if let Some(ok_value) = Self::extract_result_ok(value) {
+                    Self::pattern_matches_recursive(&ok_value, inner_pattern, bindings)
+                } else {
+                    Ok(false)
+                }
+            }
+            (value, Pattern::Err(inner_pattern)) => {
+                // Check if value is a Result::Err variant
+                if let Some(err_value) = Self::extract_result_err(value) {
+                    Self::pattern_matches_recursive(&err_value, inner_pattern, bindings)
+                } else {
+                    Ok(false)
+                }
+            }
+
+            // Option patterns (Some/None)
+            (value, Pattern::Some(inner_pattern)) => {
+                // Check if value is an Option::Some variant
+                if let Some(some_value) = Self::extract_option_some(value) {
+                    Self::pattern_matches_recursive(&some_value, inner_pattern, bindings)
+                } else {
+                    Ok(false)
+                }
+            }
+            (value, Pattern::None) => {
+                // Check if value is an Option::None variant
+                Ok(Self::is_option_none(value))
+            }
+
             // Struct patterns not yet implemented
             (_, Pattern::Struct { .. }) => {
                 bail!("Struct patterns not yet implemented in REPL");
@@ -1859,6 +1913,58 @@ impl Repl {
 
             // Type mismatches
             _ => Ok(false),
+        }
+    }
+
+    /// Extract value from `Result::Ok` variant (complexity: 4)
+    fn extract_result_ok(value: &Value) -> Option<Value> {
+        match value {
+            Value::EnumVariant { enum_name, variant_name, data } => {
+                if enum_name == "Result" && variant_name == "Ok" {
+                    data.as_ref()?.first().cloned()
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Extract value from `Result::Err` variant (complexity: 4)
+    fn extract_result_err(value: &Value) -> Option<Value> {
+        match value {
+            Value::EnumVariant { enum_name, variant_name, data } => {
+                if enum_name == "Result" && variant_name == "Err" {
+                    data.as_ref()?.first().cloned()
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Extract value from `Option::Some` variant (complexity: 4)
+    fn extract_option_some(value: &Value) -> Option<Value> {
+        match value {
+            Value::EnumVariant { enum_name, variant_name, data } => {
+                if enum_name == "Option" && variant_name == "Some" {
+                    data.as_ref()?.first().cloned()
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Check if value is `Option::None` variant (complexity: 3)
+    fn is_option_none(value: &Value) -> bool {
+        match value {
+            Value::EnumVariant { enum_name, variant_name, data: _ } => {
+                enum_name == "Option" && variant_name == "None"
+            }
+            _ => false,
         }
     }
 

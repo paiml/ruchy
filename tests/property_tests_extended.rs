@@ -1,4 +1,4 @@
-#![allow(clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, clippy::uninlined_format_args, clippy::redundant_closure_for_method_calls)]
 //! Extended property-based tests for Ruchy compiler
 
 use proptest::prelude::*;
