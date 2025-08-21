@@ -449,6 +449,13 @@ fn value_to_json(value: &ruchy::runtime::Value) -> String {
                 .collect();
             format!("{{{}}}", pairs.join(", "))
         }
+        Value::Range { start, end, inclusive } => {
+            if *inclusive {
+                format!(r#""{}..={}""#, start, end)
+            } else {
+                format!(r#""{}..{}""#, start, end)
+            }
+        }
     }
 }
 

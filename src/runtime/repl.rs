@@ -80,6 +80,7 @@ pub enum Value {
         columns: Vec<DataFrameColumn>,
     },
     Object(HashMap<String, Value>),
+    Range { start: i64, end: i64, inclusive: bool },
     Unit,
 }
 
@@ -224,6 +225,13 @@ impl fmt::Display for Value {
                     write!(f, "\"{key}\": {value}")?;
                 }
                 write!(f, "}}")
+            }
+            Value::Range { start, end, inclusive } => {
+                if *inclusive {
+                    write!(f, "{start}..={end}")
+                } else {
+                    write!(f, "{start}..{end}")
+                }
             }
             Value::Unit => write!(f, "()"),
         }
@@ -828,14 +836,18 @@ impl Repl {
             ExprKind::Range {
                 start,
                 end,
-                inclusive: _,
+                inclusive,
             } => {
                 let start_val = self.evaluate_expr(start, deadline, depth + 1)?;
                 let end_val = self.evaluate_expr(end, deadline, depth + 1)?;
 
-                // For REPL demo, just return a string representation
+                // Return a proper Range value
                 match (start_val, end_val) {
-                    (Value::Int(s), Value::Int(e)) => Ok(Value::String(format!("{s}..{e}"))),
+                    (Value::Int(s), Value::Int(e)) => Ok(Value::Range { 
+                        start: s, 
+                        end: e, 
+                        inclusive: *inclusive 
+                    }),
                     _ => bail!("Range endpoints must be integers"),
                 }
             }
@@ -896,7 +908,7 @@ impl Repl {
                 // Save current bindings
                 let saved_bindings = self.bindings.clone();
 
-                // For now, only handle lists and ranges
+                // Handle lists and ranges
                 match iterable {
                     Value::List(items) => {
                         let mut result = Value::Unit;
@@ -910,8 +922,21 @@ impl Repl {
                         self.bindings = saved_bindings;
                         Ok(result)
                     }
+                    Value::Range { start, end, inclusive } => {
+                        let mut result = Value::Unit;
+                        let actual_end = if inclusive { end + 1 } else { end };
+                        for i in start..actual_end {
+                            // Bind the loop variable to the current value
+                            self.bindings.insert(var.clone(), Value::Int(i));
+                            // Execute the body
+                            result = self.evaluate_expr(body, deadline, depth + 1)?;
+                        }
+                        // Restore bindings
+                        self.bindings = saved_bindings;
+                        Ok(result)
+                    }
                     _ => bail!(
-                        "For loops currently only support lists, got: {:?}",
+                        "For loops only support lists and ranges, got: {:?}",
                         iterable
                     ),
                 }
