@@ -456,6 +456,15 @@ fn value_to_json(value: &ruchy::runtime::Value) -> String {
                 format!(r#""{}..{}""#, start, end)
             }
         }
+        Value::EnumVariant { enum_name, variant_name, data } => {
+            let base = format!("\"{}::{}\"", enum_name, variant_name);
+            if let Some(values) = data {
+                let vals: Vec<String> = values.iter().map(value_to_json).collect();
+                format!("{{\"variant\": {}, \"data\": [{}]}}", base, vals.join(", "))
+            } else {
+                base
+            }
+        }
     }
 }
 
