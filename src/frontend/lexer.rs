@@ -153,6 +153,8 @@ pub enum Token {
     Throw,
     #[token("return")]
     Return,
+    #[token("command")]
+    Command,
     #[token("Ok")]
     Ok,
     #[token("Err")]

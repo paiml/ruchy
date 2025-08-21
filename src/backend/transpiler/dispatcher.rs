@@ -221,6 +221,9 @@ impl Transpiler {
                 message,
                 timeout,
             } => self.transpile_ask(actor, message, timeout.as_deref()),
+            ExprKind::Command { program, args, env, working_dir } => {
+                self.transpile_command(program, args, env, working_dir)
+            }
             _ => unreachable!("Non-actor expression in transpile_actor_expr"),
         }
     }

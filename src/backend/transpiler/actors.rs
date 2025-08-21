@@ -168,4 +168,23 @@ impl Transpiler {
             })
         }
     }
+
+    /// Transpiles command execution
+    pub fn transpile_command(
+        &self,
+        program: &str,
+        args: &[String],
+        _env: &[(String, String)],
+        _working_dir: &Option<String>,
+    ) -> Result<TokenStream> {
+        let prog_str = program;
+        let args_tokens: Vec<_> = args.iter().map(|arg| quote! { #arg }).collect();
+
+        Ok(quote! {
+            std::process::Command::new(#prog_str)
+                .args(&[#(#args_tokens),*])
+                .output()
+                .expect("Failed to execute command")
+        })
+    }
 }
