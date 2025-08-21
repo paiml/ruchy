@@ -1316,6 +1316,26 @@ impl Repl {
                 println!("Defined struct {} with {} fields", name, fields.len());
                 Ok(Value::Unit)
             }
+            ExprKind::StructLiteral { name: _, fields } => {
+                // Create a struct instance as an object
+                let mut map = HashMap::new();
+                for (field_name, field_expr) in fields {
+                    let field_value = self.evaluate_expr(field_expr, deadline, depth + 1)?;
+                    map.insert(field_name.clone(), field_value);
+                }
+                Ok(Value::Object(map))
+            }
+            ExprKind::FieldAccess { object, field } => {
+                let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
+                match obj_val {
+                    Value::Object(map) => {
+                        map.get(field)
+                            .cloned()
+                            .ok_or_else(|| anyhow::anyhow!("Field '{}' not found", field))
+                    }
+                    _ => bail!("Field access on non-object value"),
+                }
+            }
             ExprKind::Trait { name, methods, .. } => {
                 // Store trait definition for later use
                 println!("Defined trait {} with {} methods", name, methods.len());
