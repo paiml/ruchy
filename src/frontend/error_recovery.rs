@@ -519,6 +519,7 @@ impl<'a> RecoveryParser<'a> {
                 return_type,
                 body,
                 is_async: false,
+                is_pub: false,
             },
             span,
         )

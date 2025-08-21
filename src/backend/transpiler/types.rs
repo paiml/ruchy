@@ -73,6 +73,7 @@ impl Transpiler {
         name: &str,
         type_params: &[String],
         fields: &[StructField],
+        is_pub: bool,
     ) -> Result<TokenStream> {
         let struct_name = format_ident!("{}", name);
 
@@ -95,15 +96,17 @@ impl Transpiler {
             })
             .collect();
 
+        let visibility = if is_pub { quote! { pub } } else { quote! {} };
+
         if type_params.is_empty() {
             Ok(quote! {
-                struct #struct_name {
+                #visibility struct #struct_name {
                     #(#field_tokens,)*
                 }
             })
         } else {
             Ok(quote! {
-                struct #struct_name<#(#type_param_tokens),*> {
+                #visibility struct #struct_name<#(#type_param_tokens),*> {
                     #(#field_tokens,)*
                 }
             })
@@ -116,6 +119,7 @@ impl Transpiler {
         name: &str,
         type_params: &[String],
         variants: &[EnumVariant],
+        is_pub: bool,
     ) -> Result<TokenStream> {
         let enum_name = format_ident!("{}", name);
 
@@ -141,15 +145,17 @@ impl Transpiler {
             })
             .collect();
 
+        let visibility = if is_pub { quote! { pub } } else { quote! {} };
+
         if type_params.is_empty() {
             Ok(quote! {
-                enum #enum_name {
+                #visibility enum #enum_name {
                     #(#variant_tokens,)*
                 }
             })
         } else {
             Ok(quote! {
-                enum #enum_name<#(#type_param_tokens),*> {
+                #visibility enum #enum_name<#(#type_param_tokens),*> {
                     #(#variant_tokens,)*
                 }
             })
@@ -161,6 +167,7 @@ impl Transpiler {
         name: &str,
         type_params: &[String],
         methods: &[TraitMethod],
+        is_pub: bool,
     ) -> Result<TokenStream> {
         let trait_name = format_ident!("{}", name);
 
@@ -200,17 +207,20 @@ impl Transpiler {
                     quote! {}
                 };
 
+                // Process method visibility
+                let visibility = if method.is_pub { quote! { pub } } else { quote! {} };
+
                 // Process method body (if default implementation)
                 if let Some(ref body) = method.body {
                     let body_tokens = self.transpile_expr(body)?;
                     Ok(quote! {
-                        fn #method_name(#(#param_tokens),*) #return_type_tokens {
+                        #visibility fn #method_name(#(#param_tokens),*) #return_type_tokens {
                             #body_tokens
                         }
                     })
                 } else {
                     Ok(quote! {
-                        fn #method_name(#(#param_tokens),*) #return_type_tokens;
+                        #visibility fn #method_name(#(#param_tokens),*) #return_type_tokens;
                     })
                 }
             })
@@ -221,15 +231,17 @@ impl Transpiler {
         let type_param_tokens: Vec<_> =
             type_params.iter().map(|p| format_ident!("{}", p)).collect();
 
+        let visibility = if is_pub { quote! { pub } } else { quote! {} };
+
         if type_params.is_empty() {
             Ok(quote! {
-                trait #trait_name {
+                #visibility trait #trait_name {
                     #(#method_tokens)*
                 }
             })
         } else {
             Ok(quote! {
-                trait #trait_name<#(#type_param_tokens),*> {
+                #visibility trait #trait_name<#(#type_param_tokens),*> {
                     #(#method_tokens)*
                 }
             })
@@ -243,6 +255,7 @@ impl Transpiler {
         type_params: &[String],
         trait_name: Option<&str>,
         methods: &[ImplMethod],
+        _is_pub: bool,
     ) -> Result<TokenStream> {
         let type_ident = format_ident!("{}", for_type);
 
@@ -285,8 +298,11 @@ impl Transpiler {
                 // Process method body (always present in ImplMethod)
                 let body_tokens = self.transpile_expr(&method.body)?;
 
+                // Process method visibility
+                let visibility = if method.is_pub { quote! { pub } } else { quote! {} };
+
                 Ok(quote! {
-                    fn #method_name(#(#param_tokens),*) #return_type_tokens {
+                    #visibility fn #method_name(#(#param_tokens),*) #return_type_tokens {
                         #body_tokens
                     }
                 })

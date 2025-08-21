@@ -477,9 +477,9 @@ graph TD
 - [x] **RUCHY-0707**: Add impl blocks for struct methods ✅ COMPLETED v0.7.20
 - [x] **RUCHY-0708**: Implement Option<T> and Result<T,E> types ✅ COMPLETED v0.7.21
 - [x] **RUCHY-0722**: Fix transpiler type issues for structs ✅ COMPLETED v0.7.22
-- [x] **RUCHY-0709**: Add enum pattern matching in match expressions
-- [x] **RUCHY-0710**: Implement if-let and while-let expressions
-- [ ] **RUCHY-0711**: Add module imports and visibility modifiers
+- [x] **RUCHY-0709**: Add enum pattern matching in match expressions ✅ COMPLETED v0.9.1
+- [x] **RUCHY-0710**: Implement if-let and while-let expressions ✅ COMPLETED v0.9.2
+- [x] **RUCHY-0711**: Add module imports and visibility modifiers
 - [ ] **RUCHY-0712**: Implement generic type parameters for functions
 - [ ] **RUCHY-0713**: Add slice and array indexing operations
 - [ ] **RUCHY-0714**: Implement iterator trait and for-in loops

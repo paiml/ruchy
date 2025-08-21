@@ -10,6 +10,10 @@ use crate::frontend::ast::{DataFrameOp, Literal, Pattern};
 ///
 /// Returns an error if the operation fails
 pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
+    parse_function_with_visibility(state, false)
+}
+
+pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume fun
 
     // Check for async modifier - currently not implemented in lexer
@@ -55,6 +59,7 @@ pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
             return_type,
             body: Box::new(body),
             is_async,
+            is_pub,
         },
         start_span,
     ))

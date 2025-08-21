@@ -260,14 +260,24 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Pub => {
             state.tokens.advance(); // consume pub
             
-            // For now, we only support pub fn/fun
-            if matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
-                let func_expr = functions::parse_function(state)?;
-                // Mark the function as public (would need to add is_pub field to Function)
-                // For now, just return the function as-is since we don't have visibility tracking yet
-                Ok(func_expr)
-            } else {
-                bail!("Expected 'fn' or 'fun' after 'pub'")
+            // Check what follows pub
+            match state.tokens.peek() {
+                Some((Token::Fun | Token::Fn, _)) => {
+                    functions::parse_function_with_visibility(state, true)
+                }
+                Some((Token::Struct, _)) => {
+                    types::parse_struct_with_visibility(state, true)
+                }
+                Some((Token::Enum, _)) => {
+                    types::parse_enum_with_visibility(state, true)
+                }
+                Some((Token::Trait, _)) => {
+                    types::parse_trait_with_visibility(state, true)
+                }
+                Some((Token::Impl, _)) => {
+                    types::parse_impl_with_visibility(state, true)
+                }
+                _ => bail!("Expected 'fn', 'struct', 'enum', 'trait', or 'impl' after 'pub'")
             }
         }
         Token::Fun | Token::Fn => functions::parse_function(state),
