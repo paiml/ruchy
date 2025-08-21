@@ -474,6 +474,7 @@ impl<'a> RecoveryParser<'a> {
         Expr::new(
             ExprKind::Let {
                 name,
+                type_annotation: None,
                 value,
                 body,
                 is_mutable: false,

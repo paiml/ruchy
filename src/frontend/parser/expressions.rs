@@ -78,21 +78,106 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             // Check for qualified name (module::name)
             if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
                 state.tokens.advance(); // consume ::
-                if let Some((Token::Identifier(qualified_name), _)) = state.tokens.peek() {
-                    let qualified_name = qualified_name.clone();
-                    state.tokens.advance();
-                    return Ok(Expr::new(
-                        ExprKind::QualifiedName {
-                            module: name,
-                            name: qualified_name,
-                        },
-                        span_clone,
-                    ));
+                
+                // Handle special tokens after ::
+                match state.tokens.peek() {
+                    Some((Token::Ok, _)) if name == "Result" => {
+                        state.tokens.advance(); // consume Ok
+                        state.tokens.expect(&Token::LeftParen)?;
+                        let value = super::parse_expr_recursive(state)?;
+                        state.tokens.expect(&Token::RightParen)?;
+                        
+                        return Ok(Expr::new(
+                            ExprKind::Ok {
+                                value: Box::new(value),
+                            },
+                            span_clone,
+                        ));
+                    }
+                    Some((Token::Err, _)) if name == "Result" => {
+                        state.tokens.advance(); // consume Err
+                        state.tokens.expect(&Token::LeftParen)?;
+                        let value = super::parse_expr_recursive(state)?;
+                        state.tokens.expect(&Token::RightParen)?;
+                        
+                        return Ok(Expr::new(
+                            ExprKind::Err {
+                                error: Box::new(value),
+                            },
+                            span_clone,
+                        ));
+                    }
+                    Some((Token::Some, _)) if name == "Option" => {
+                        state.tokens.advance(); // consume Some
+                        state.tokens.expect(&Token::LeftParen)?;
+                        let value = super::parse_expr_recursive(state)?;
+                        state.tokens.expect(&Token::RightParen)?;
+                        
+                        return Ok(Expr::new(
+                            ExprKind::Call {
+                                func: Box::new(Expr::new(
+                                    ExprKind::Identifier("Some".to_string()),
+                                    span_clone,
+                                )),
+                                args: vec![value],
+                            },
+                            span_clone,
+                        ));
+                    }
+                    Some((Token::None, _)) if name == "Option" => {
+                        state.tokens.advance(); // consume None
+                        
+                        return Ok(Expr::new(
+                            ExprKind::Call {
+                                func: Box::new(Expr::new(
+                                    ExprKind::Identifier("None".to_string()),
+                                    span_clone,
+                                )),
+                                args: vec![],
+                            },
+                            span_clone,
+                        ));
+                    }
+                    Some((Token::Identifier(qualified_name), _)) => {
+                        let qualified_name = qualified_name.clone();
+                        state.tokens.advance();
+                        
+                        // Check if qualified name is a Result constructor
+                        if name == "Result" && (qualified_name == "Ok" || qualified_name == "Err")
+                            && matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                                state.tokens.advance(); // consume (
+                                let value = super::parse_expr_recursive(state)?;
+                                state.tokens.expect(&Token::RightParen)?;
+                                
+                                if qualified_name == "Ok" {
+                                    return Ok(Expr::new(
+                                        ExprKind::Ok {
+                                            value: Box::new(value),
+                                        },
+                                        span_clone,
+                                    ));
+                                }
+                                return Ok(Expr::new(
+                                    ExprKind::Err {
+                                        error: Box::new(value),
+                                    },
+                                    span_clone,
+                                ));
+                            }
+                        
+                        return Ok(Expr::new(
+                            ExprKind::QualifiedName {
+                                module: name,
+                                name: qualified_name,
+                            },
+                            span_clone,
+                        ));
+                    }
+                    _ => bail!("Expected identifier after '::'")
                 }
-                bail!("Expected identifier after '::'");
             }
 
-            // Check for Result constructors Ok and Err
+            // Check for Result constructors Ok and Err (unqualified)
             if name == "Ok" || name == "Err" {
                 // Expect parentheses with value
                 if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
@@ -156,7 +241,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::Async => {
             // Check if it's async function or async block
-            if matches!(state.tokens.peek_nth(1), Some((Token::Fun, _))) {
+            if matches!(state.tokens.peek_nth(1), Some((Token::Fun | Token::Fn, _))) {
                 // async fun - parse as async function
                 state.tokens.advance(); // consume async
                 let mut func_expr = functions::parse_function(state)?;
@@ -172,7 +257,20 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::If => control_flow::parse_if(state),
         Token::Let => control_flow::parse_let(state),
-        Token::Fun => functions::parse_function(state),
+        Token::Pub => {
+            state.tokens.advance(); // consume pub
+            
+            // For now, we only support pub fn/fun
+            if matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
+                let func_expr = functions::parse_function(state)?;
+                // Mark the function as public (would need to add is_pub field to Function)
+                // For now, just return the function as-is since we don't have visibility tracking yet
+                Ok(func_expr)
+            } else {
+                bail!("Expected 'fn' or 'fun' after 'pub'")
+            }
+        }
+        Token::Fun | Token::Fn => functions::parse_function(state),
         Token::Backslash | Token::Pipe => functions::parse_lambda(state),
         Token::Match => control_flow::parse_match(state),
         Token::For => control_flow::parse_for(state),
@@ -181,6 +279,38 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Break => Ok(control_flow::parse_break(state)),
         Token::Continue => Ok(control_flow::parse_continue(state)),
         Token::Try => control_flow::parse_try_catch(state),
+        Token::Return => control_flow::parse_return(state),
+        Token::Result => {
+            state.tokens.advance(); // consume Result
+            
+            // Check for qualified Result::Ok or Result::Err
+            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                state.tokens.advance(); // consume ::
+                
+                match state.tokens.peek() {
+                    Some((Token::Ok, _)) => {
+                        state.tokens.advance(); // consume Ok
+                        state.tokens.expect(&Token::LeftParen)?;
+                        let value = Box::new(super::parse_expr_recursive(state)?);
+                        state.tokens.expect(&Token::RightParen)?;
+                        
+                        Ok(Expr::new(ExprKind::Ok { value }, span_clone))
+                    }
+                    Some((Token::Err, _)) => {
+                        state.tokens.advance(); // consume Err
+                        state.tokens.expect(&Token::LeftParen)?;
+                        let error = Box::new(super::parse_expr_recursive(state)?);
+                        state.tokens.expect(&Token::RightParen)?;
+                        
+                        Ok(Expr::new(ExprKind::Err { error }, span_clone))
+                    }
+                    _ => bail!("Expected Ok or Err after Result::")
+                }
+            } else {
+                // Just Result as an identifier
+                Ok(Expr::new(ExprKind::Identifier("Result".to_string()), span_clone))
+            }
+        }
         Token::Ok => {
             state.tokens.advance(); // consume Ok
             state.tokens.expect(&Token::LeftParen)?;
@@ -221,7 +351,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::None => {
             state.tokens.advance(); // consume None
-                                    // Parse as a function call to "None" with no arguments
+            // Parse as a function call to "None" with no arguments
             Ok(Expr::new(
                 ExprKind::Call {
                     func: Box::new(Expr::new(

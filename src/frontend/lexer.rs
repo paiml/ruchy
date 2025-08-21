@@ -121,6 +121,8 @@ pub enum Token {
     // Keywords
     #[token("fun")]
     Fun,
+    #[token("fn")]
+    Fn,
     #[token("let")]
     Let,
     #[token("if")]

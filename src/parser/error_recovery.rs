@@ -295,6 +295,7 @@ impl RecoveryRules {
                 Expr::new(
                     ExprKind::Let {
                         name: name.clone().unwrap_or_else(|| "_error".to_string()),
+                        type_annotation: None,
                         value: value.clone().unwrap_or_else(|| {
                             Box::new(Expr::new(ExprKind::Literal(Literal::Unit), default_span))
                         }),
@@ -428,7 +429,7 @@ mod tests {
         let ast = RecoveryRules::synthesize_ast(&error);
 
         match ast.kind {
-            ExprKind::Let { name, value, .. } => {
+            ExprKind::Let { name, type_annotation: _, value, .. } => {
                 assert_eq!(name, "x");
                 match value.kind {
                     ExprKind::Literal(Literal::Unit) => {}

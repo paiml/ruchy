@@ -62,6 +62,14 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
         bail!("Expected identifier after 'let' or 'let mut'");
     };
 
+    // Optional type annotation
+    let type_annotation = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance(); // consume :
+        Some(utils::parse_type(state)?)
+    } else {
+        None
+    };
+
     // Expect =
     state.tokens.expect(&Token::Equal)?;
 
@@ -83,6 +91,7 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
     Ok(Expr::new(
         ExprKind::Let {
             name,
+            type_annotation,
             value: Box::new(value),
             body: Box::new(body),
             is_mutable,
@@ -575,3 +584,26 @@ pub fn parse_async_block(state: &mut ParserState) -> Result<Expr> {
 }
 
 // Note: await is now handled as a postfix operator in parse_method_call
+
+/// Parse return statement
+/// # Errors
+///
+/// Returns an error if the operation fails
+pub fn parse_return(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume return
+    
+    // Check if there's a value to return
+    let value = if matches!(state.tokens.peek(), Some((Token::RightBrace | Token::Semicolon, _))) 
+        || state.tokens.peek().is_none() {
+        // No value, return unit
+        None
+    } else {
+        // Parse the return value
+        Some(Box::new(super::parse_expr_recursive(state)?))
+    };
+    
+    Ok(Expr::new(
+        ExprKind::Return { value },
+        start_span,
+    ))
+}

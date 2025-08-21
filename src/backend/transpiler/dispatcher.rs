@@ -119,6 +119,7 @@ impl Transpiler {
             ExprKind::StructLiteral { name, fields } => self.transpile_struct_literal(name, fields),
             ExprKind::ObjectLiteral { fields } => self.transpile_object_literal(fields),
             ExprKind::FieldAccess { object, field } => self.transpile_field_access(object, field),
+            ExprKind::IndexAccess { object, index } => self.transpile_index_access(object, index),
             _ => unreachable!("Non-struct expression in transpile_struct_expr"),
         }
     }
@@ -212,6 +213,7 @@ impl Transpiler {
         match &expr.kind {
             ExprKind::Let {
                 name,
+                type_annotation: _,
                 value,
                 body,
                 is_mutable,
@@ -223,7 +225,7 @@ impl Transpiler {
             | ExprKind::Impl { .. }
             | ExprKind::Extension { .. }
             | ExprKind::Enum { .. } => self.transpile_type_decl_expr(expr),
-            ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Export { .. } => {
+            ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } | ExprKind::Export { .. } => {
                 Self::transpile_control_misc_expr(expr)
             }
             _ => bail!("Unsupported expression kind: {:?}", expr.kind),
@@ -260,6 +262,15 @@ impl Transpiler {
         match &expr.kind {
             ExprKind::Break { label } => Ok(Self::make_break_continue(true, label.as_ref())),
             ExprKind::Continue { label } => Ok(Self::make_break_continue(false, label.as_ref())),
+            ExprKind::Return { value } => {
+                if let Some(val) = value {
+                    let transpiler = Transpiler::new();
+                    let val_tokens = transpiler.transpile_expr(val)?;
+                    Ok(quote! { return #val_tokens })
+                } else {
+                    Ok(quote! { return })
+                }
+            }
             ExprKind::Export { items } => {
                 let item_idents: Vec<_> =
                     items.iter().map(|item| format_ident!("{}", item)).collect();

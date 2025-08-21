@@ -99,6 +99,7 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
                         exprs.push(Expr::new(
                             ExprKind::Let {
                                 name,
+                                type_annotation: None,
                                 value: Box::new(value),
                                 body: Box::new(body),
                                 is_mutable: false,

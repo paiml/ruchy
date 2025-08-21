@@ -242,6 +242,13 @@ impl Transpiler {
         Ok(quote! { #obj_tokens.#field_ident })
     }
 
+    /// Transpiles index access (array[index])
+    pub fn transpile_index_access(&self, object: &Expr, index: &Expr) -> Result<TokenStream> {
+        let obj_tokens = self.transpile_expr(object)?;
+        let index_tokens = self.transpile_expr(index)?;
+        Ok(quote! { #obj_tokens[#index_tokens] })
+    }
+
     /// Transpiles assignment
     pub fn transpile_assign(&self, target: &Expr, value: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
