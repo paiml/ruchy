@@ -431,23 +431,23 @@ impl DataflowDebugger {
     }
     
     /// Execute a pipeline stage with debugging support
-    pub fn execute_stage(&self, stage: &mut PipelineStage) -> Result<StageExecutionResult> {
+    pub fn execute_stage(&self, pipeline_stage: &mut PipelineStage) -> Result<StageExecutionResult> {
         let start_time = Instant::now();
-        stage.status = StageStatus::Running;
+        pipeline_stage.status = StageStatus::Running;
         
         // Update session state
         {
             let mut state = self.session_state
                 .lock()
                 .map_err(|_| anyhow::anyhow!("Failed to acquire session state lock"))?;
-            state.current_stage = Some(stage.stage_id.clone());
+            state.current_stage = Some(pipeline_stage.stage_id.clone());
         }
         
         // Check for breakpoints
-        if let Some(breakpoint) = self.check_breakpoint(&stage.stage_id)? {
-            if self.should_break(&stage, &breakpoint)? {
-                stage.status = StageStatus::Paused;
-                self.handle_breakpoint_hit(&stage.stage_id, &breakpoint)?;
+        if let Some(breakpoint) = self.check_breakpoint(&pipeline_stage.stage_id)? {
+            if self.should_break(&pipeline_stage, &breakpoint)? {
+                pipeline_stage.status = StageStatus::Paused;
+                self.handle_breakpoint_hit(&pipeline_stage.stage_id, &breakpoint)?;
                 return Ok(StageExecutionResult::Paused);
             }
         }
@@ -457,15 +457,15 @@ impl DataflowDebugger {
         
         // Record execution metrics
         let execution_time = start_time.elapsed();
-        stage.execution_time = Some(execution_time);
-        stage.status = StageStatus::Completed;
+        pipeline_stage.execution_time = Some(execution_time);
+        pipeline_stage.status = StageStatus::Completed;
         
         // Store performance metrics
         let metrics = StageMetrics {
             execution_time,
             peak_memory: 1024 * 1024, // 1MB simulated
-            input_rows: stage.rows_processed.unwrap_or(0),
-            output_rows: stage.rows_processed.unwrap_or(0),
+            input_rows: pipeline_stage.rows_processed.unwrap_or(0),
+            output_rows: pipeline_stage.rows_processed.unwrap_or(0),
             cpu_time: execution_time,
             io_operations: 1,
             cache_hit_ratio: Some(0.85),
@@ -474,16 +474,16 @@ impl DataflowDebugger {
         let mut stage_metrics = self.stage_metrics
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire stage metrics lock"))?;
-        stage_metrics.insert(stage.stage_id.clone(), metrics);
+        stage_metrics.insert(pipeline_stage.stage_id.clone(), metrics);
         
         // Auto-materialize if configured
         if self.config.auto_materialize {
-            self.materialize_stage(&stage.stage_id)?;
+            self.materialize_stage(&pipeline_stage.stage_id)?;
         }
         
         self.record_event(
             EventType::StageCompleted,
-            stage.stage_id.clone(),
+            pipeline_stage.stage_id.clone(),
             HashMap::from([("duration_ms".to_string(), execution_time.as_millis().to_string())])
         )?;
         

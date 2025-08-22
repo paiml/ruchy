@@ -233,7 +233,7 @@ fn print_junit_results(results: &[crate::quality::gates::GateResult]) -> Result<
             println!(r#"  <testcase name="{}" classname="QualityGate" time="0.0">"#, test_name);
             println!(r#"    <failure message="Quality gate violation">Score: {:.1}%, Grade: {}</failure>"#, 
                 result.score * 100.0, result.grade);
-            println!(r#"  </testcase>"#);
+            println!(r"  </testcase>");
         }
     }
     

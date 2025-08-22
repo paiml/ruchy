@@ -146,7 +146,7 @@
   - WIT interface generation
   - Platform-specific deployment
   - Portability scoring
-- [ ] **RUCHY-0820**: Interactive prover (`ruchy prove`)
+- [x] **RUCHY-0820**: Interactive prover (`ruchy prove`)
   - REPL-based refinement type verification
   - Tactic library with ML suggestions
   - Counterexample to test generation

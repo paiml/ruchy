@@ -439,14 +439,14 @@ route = "https://example.com/*"
     
     fn generate_browser_glue(&self, component: &WasmComponent) -> Result<DeploymentArtifact> {
         let js_content = format!(
-            r#"
+            r"
 export async function init() {{
     const response = await fetch('{}.wasm');
     const bytes = await response.arrayBuffer();
     const {{ instance }} = await WebAssembly.instantiate(bytes);
     return instance.exports;
 }}
-"#,
+",
             component.name
         );
         
