@@ -5532,6 +5532,111 @@ fn write_performance_report(
 
 /// Calculate unified quality score for a file (RUCHY-0810)
 #[allow(clippy::too_many_arguments)]
+/// Run quality scoring in watch mode with progressive refinement
+fn run_watch_mode(
+    mut engine: ruchy::quality::scoring::ScoreEngine,
+    file_path: &PathBuf,
+    depth: ruchy::quality::scoring::AnalysisDepth,
+    format: &str,
+    verbose: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use std::time::{Duration, Instant};
+    use notify::{Watcher, RecursiveMode, watcher};
+    use std::sync::mpsc::channel;
+    
+    println!("🔍 Starting watch mode for quality scoring...");
+    println!("📁 Watching: {}", file_path.display());
+    println!("📊 Analysis depth: {:?}", depth);
+    
+    // Initial score
+    if let Ok(content) = fs::read_to_string(file_path) {
+        if let Ok(mut parser) = std::panic::catch_unwind(|| ruchy::frontend::parser::Parser::new(&content)) {
+            if let Ok(ast) = parser.parse() {
+                let score = engine.score_progressive(
+                    &ast,
+                    file_path.clone(),
+                    &content,
+                    Duration::from_millis(500),
+                );
+                print_score(&score, format, verbose, "initial");
+            }
+        }
+    }
+    
+    // Set up file watcher
+    let (tx, rx) = channel();
+    let mut watcher = watcher(tx, Duration::from_millis(250))?;
+    watcher.watch(file_path, RecursiveMode::NonRecursive)?;
+    
+    println!("\n👀 Watching for changes... (Press Ctrl+C to exit)");
+    
+    loop {
+        match rx.recv() {
+            Ok(event) => {
+                use notify::DebouncedEvent;
+                match event {
+                    DebouncedEvent::Write(_) | DebouncedEvent::Create(_) => {
+                        let start = Instant::now();
+                        
+                        if let Ok(content) = fs::read_to_string(file_path) {
+                            if let Ok(mut parser) = std::panic::catch_unwind(|| ruchy::frontend::parser::Parser::new(&content)) {
+                                if let Ok(ast) = parser.parse() {
+                                    let score = engine.score_progressive(
+                                        &ast,
+                                        file_path.clone(),
+                                        &content,
+                                        Duration::from_millis(100),
+                                    );
+                                    
+                                    let elapsed = start.elapsed();
+                                    print_score(&score, format, verbose, &format!("update ({}ms)", elapsed.as_millis()));
+                                } else if verbose {
+                                    println!("❌ Parse error - scores not updated");
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Err(e) => {
+                eprintln!("Watch error: {:?}", e);
+                break;
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+/// Print quality score with formatting
+fn print_score(
+    score: &ruchy::quality::scoring::QualityScore,
+    format: &str,
+    verbose: bool,
+    context: &str,
+) {
+    let timestamp = chrono::Utc::now().format("%H:%M:%S%.3f");
+    
+    if format == "json" {
+        println!("{{\"timestamp\":\"{}\",\"context\":\"{}\",\"score\":{:.3},\"grade\":\"{}\",\"cache_hit_rate\":{:.1}}}", 
+            timestamp, context, score.value, score.grade, score.cache_hit_rate * 100.0);
+    } else {
+        let cache_indicator = if score.cache_hit_rate > 0.0 { "⚡" } else { "🔄" };
+        println!("[{}] {} {} {:.1}% ({})", timestamp, cache_indicator, score.grade, score.value * 100.0, context);
+        
+        if verbose {
+            println!("  Correctness: {:.1}%", score.components.correctness * 100.0);
+            println!("  Performance: {:.1}%", score.components.performance * 100.0);  
+            println!("  Maintainability: {:.1}%", score.components.maintainability * 100.0);
+            println!("  Safety: {:.1}%", score.components.safety * 100.0);
+            println!("  Idiomaticity: {:.1}%", score.components.idiomaticity * 100.0);
+            println!("  Confidence: {:.1}%", score.confidence * 100.0);
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn calculate_quality_score(
     path: &Path,
     depth: &str,
@@ -5576,8 +5681,13 @@ fn calculate_quality_score(
     let ast = parser.parse()?;
     
     // Create score engine and calculate score
-    let engine = ScoreEngine::new(score_config);
-    let score = engine.score(&ast, analysis_depth);
+    let mut engine = ScoreEngine::new(score_config);
+    
+    if watch {
+        return run_watch_mode(engine, &path.to_path_buf(), analysis_depth, format, verbose);
+    }
+    
+    let score = engine.score_incremental(&ast, path.to_path_buf(), &content, analysis_depth);
     
     // Handle baseline comparison if provided
     let explanation = if let Some(baseline_path) = baseline {
