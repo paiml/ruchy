@@ -34,7 +34,14 @@
   - ✅ Project-wide formatting with `--all` flag
   - ✅ Diff display with `--diff` for reviewing changes
   - ✅ AST-based formatting preserves semantics, only changes style
-- [ ] **RUCHY-0753**: Expand `ruchy ast` analysis capabilities
+- [x] **RUCHY-0753**: ✅ COMPLETED - Expand `ruchy ast` analysis capabilities
+  - ✅ JSON output for tooling integration with `--json` flag
+  - ✅ DOT graph generation for AST visualization with `--graph` flag
+  - ✅ Comprehensive metrics calculation with `--metrics` flag
+  - ✅ Symbol table analysis with `--symbols` flag (defined, used, unused symbols)
+  - ✅ Dependency analysis with `--deps` flag (external deps, internal calls, exports)
+  - ✅ Verbose output mode with `--verbose` for detailed analysis
+  - ✅ Output file specification with `--output` for graph/analysis results
 - [ ] **RUCHY-0754**: Implement `ruchy provability` formal verification
 - [ ] **RUCHY-0755**: Create `ruchy runtime` performance analysis
 - [ ] **RUCHY-0756**: Package and release enhanced binary tooling
