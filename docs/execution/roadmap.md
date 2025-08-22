@@ -115,33 +115,33 @@
   - Caching and dependency tracking
   - Watch mode with progressive refinement
   - <100ms incremental scoring
-- [ ] **RUCHY-0814**: Score component metrics
+- [x] **RUCHY-0814**: Score component metrics
   - Correctness (35%): Property tests, proofs, mutations
   - Performance (25%): Complexity, allocations, variance
   - Maintainability (20%): Coupling, cohesion, amplification
   - Safety (15%): Unsafe density, error handling
   - Idiomaticity (5%): Patterns, conventions
-- [ ] **RUCHY-0815**: Quality gate enforcement
+- [x] **RUCHY-0815**: Quality gate enforcement
   - CI/CD integration with thresholds
   - Project-specific configuration (.ruchy/score.toml)
   - Anti-gaming rules and confidence scoring
   - Grade boundaries (A+ to F)
-- [ ] **RUCHY-0816**: Mechanical sympathy tuner (`ruchy optimize`)
+- [x] **RUCHY-0816**: Mechanical sympathy tuner (`ruchy optimize`)
   - Hardware-aware cost modeling
   - Cache simulation and branch prediction
   - Vectorization opportunity detection
   - Zero-cost abstraction verification
-- [ ] **RUCHY-0817**: Actor observatory (`ruchy actor:observe`)
+- [x] **RUCHY-0817**: Actor observatory (`ruchy actor:observe`)
   - Live actor system introspection
   - Message tracing with filters
   - Deadlock detection
   - Terminal UI dashboard
-- [ ] **RUCHY-0818**: Dataflow debugger (`ruchy dataflow:debug`)
+- [x] **RUCHY-0818**: Dataflow debugger (`ruchy dataflow:debug`)
   - DataFrame pipeline debugging
   - Materialization on demand
   - Breakpoint support in pipelines
   - Diff computation between stages
-- [ ] **RUCHY-0819**: Component toolkit (`ruchy wasm`)
+- [x] **RUCHY-0819**: Component toolkit (`ruchy wasm`)
   - WebAssembly component generation
   - WIT interface generation
   - Platform-specific deployment

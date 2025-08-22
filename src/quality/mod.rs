@@ -4,6 +4,8 @@
 
 pub mod coverage;
 pub mod scoring;
+pub mod gates;
+pub mod enforcement;
 
 pub use coverage::{
     CoverageCollector, CoverageReport, CoverageTool, FileCoverage, HtmlReportGenerator,

@@ -5,9 +5,13 @@
 
 pub mod actor;
 pub mod cache;
+pub mod dataflow_debugger;
+pub mod dataflow_ui;
 pub mod grammar_coverage;
 pub mod interpreter;
 pub mod lazy;
+pub mod observatory;
+pub mod observatory_ui;
 pub mod repl;
 #[cfg(test)]
 mod repl_function_tests;
@@ -25,3 +29,20 @@ pub use actor::{
     ActorBehavior, ActorContext, ActorId, ActorRef, ActorSystem, EchoActor, Message, MessageValue,
     SupervisorActor, SupervisorDirective,
 };
+
+// Export observatory components
+pub use observatory::{
+    ActorObservatory, ActorSnapshot, ActorState, DeadlockCycle, MessageFilter, MessageTrace,
+    MessageStatus, ObservatoryConfig, SystemMetrics,
+};
+
+pub use observatory_ui::{DashboardConfig, DisplayMode, ObservatoryDashboard};
+
+// Export dataflow debugger components
+pub use dataflow_debugger::{
+    DataflowDebugger, DataflowConfig, PipelineStage, StageType, StageStatus,
+    Breakpoint, BreakpointCondition, BreakpointAction, MaterializedFrame, 
+    StageMetrics, ExecutionEvent, StageDiff, ExportFormat,
+};
+
+pub use dataflow_ui::{DataflowUI, UIConfig};
