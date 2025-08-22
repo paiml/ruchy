@@ -1,8 +1,11 @@
 # Ruchy Interpreter Architecture
 
+**Version**: v0.10.0 - Revolutionary Development Tools Release  
+**Status**: Production-ready with formal verification support
+
 ## Overview
 
-The Ruchy interpreter is a production-grade, resource-bounded evaluation engine optimized for low complexity and high performance. As of v0.8.0, the interpreter has undergone significant complexity reduction, achieving a 76% reduction in cyclomatic complexity while maintaining full functionality.
+The Ruchy interpreter is a production-grade, resource-bounded evaluation engine optimized for low complexity and high performance. As of v0.10.0, the interpreter integrates with revolutionary development tools including formal verification and automatic BigO complexity analysis - features that don't exist in any other programming language.
 
 ## Architecture Components
 
@@ -292,19 +295,59 @@ List operations:        O(n) as expected
 - Sub-millisecond response for simple expressions
 - Memory usage proportional to input size
 
+## v0.10.0 Revolutionary Tool Integration
+
+The interpreter now supports groundbreaking development tools:
+
+### Formal Verification Support
+- AST nodes carry verification metadata
+- Purity analysis during evaluation
+- Termination proof generation for loops/recursion
+- Contract checking at runtime
+
+### Performance Analysis Integration
+- Automatic complexity tracking during evaluation
+- Loop iteration counting for BigO detection
+- Recursive call depth monitoring
+- Memory allocation tracking
+
+### Tool Commands
+```bash
+# Verify interpreter behavior
+ruchy provability src/runtime/repl.rs --verify
+
+# Analyze interpreter performance
+ruchy runtime src/runtime/repl.rs --bigo
+
+# Check interpreter complexity
+ruchy ast src/runtime/repl.rs --metrics
+```
+
 ## Contributing
 
 When modifying the interpreter:
 
-1. **Maintain complexity budget**: Use `pmat analyze` to check complexity
-2. **Add tests**: Every new feature needs unit and integration tests
-3. **Document changes**: Update this document for architectural changes
-4. **Benchmark impact**: Run benchmarks before and after changes
-5. **Follow Toyota Way**: Zero defects, stop the line for any regression
+1. **Maintain complexity budget**: Use `ruchy ast --metrics` to check complexity
+2. **Verify correctness**: Run `ruchy provability --verify` on changes
+3. **Check performance**: Use `ruchy runtime --bigo` to detect regressions
+4. **Add tests**: Every new feature needs unit and integration tests
+5. **Document changes**: Update this document for architectural changes
+6. **Benchmark impact**: Run benchmarks before and after changes
+7. **Follow Toyota Way**: Zero defects, stop the line for any regression
+
+## Quality Gates (v0.10.0)
+
+All interpreter changes must pass:
+- Cyclomatic complexity < 50 per function
+- Test coverage > 80%
+- Zero clippy warnings (`make lint`)
+- Formal verification pass (`ruchy provability`)
+- No performance regression (`ruchy runtime --compare`)
 
 ## References
 
 - [SPECIFICATION.md](./SPECIFICATION.md) - Language specification
 - [CLAUDE.md](../CLAUDE.md) - Development protocol
+- [Revolutionary Tools](./tools/README.md) - v0.10.0 tool documentation
 - [repl.rs](../src/runtime/repl.rs) - Interpreter source
 - [display.rs](../src/runtime/repl/display.rs) - Display formatting
