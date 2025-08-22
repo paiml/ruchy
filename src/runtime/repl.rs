@@ -732,6 +732,11 @@ impl Repl {
             ExprKind::QualifiedName { module, name } => {
                 Ok(Self::evaluate_qualified_name(module, name))
             }
+            ExprKind::Module { name: _name, body } => {
+                // Evaluate the module body in the current scope
+                // Module scoping and exports will be enhanced in future iterations
+                self.evaluate_expr(body, deadline, depth + 1)
+            }
             ExprKind::Let {
                 name, type_annotation: _, value, body, ..
             } => self.evaluate_let_binding(name, value, body, deadline, depth),
