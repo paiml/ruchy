@@ -90,7 +90,7 @@ fn test_parse_actor_with_message_params() {
 
 #[test]
 fn test_parse_send_operation() {
-    let input = "counter ! Increment";
+    let input = "counter <- Increment";
 
     let mut parser = Parser::new(input);
     let result = parser.parse();
@@ -98,7 +98,7 @@ fn test_parse_send_operation() {
     assert!(result.is_ok(), "Failed to parse send: {result:?}");
     let expr = result.unwrap();
 
-    if let ExprKind::Send { actor, message } = &expr.kind {
+    if let ExprKind::ActorSend { actor, message } = &expr.kind {
         if let ExprKind::Identifier(name) = &actor.kind {
             assert_eq!(name, "counter");
         } else {
@@ -116,7 +116,7 @@ fn test_parse_send_operation() {
 
 #[test]
 fn test_parse_ask_operation() {
-    let input = "calculator ? GetResult";
+    let input = "calculator <? GetResult";
 
     let mut parser = Parser::new(input);
     let result = parser.parse();
@@ -124,10 +124,9 @@ fn test_parse_ask_operation() {
     assert!(result.is_ok(), "Failed to parse ask: {result:?}");
     let expr = result.unwrap();
 
-    if let ExprKind::Ask {
+    if let ExprKind::ActorQuery {
         actor,
         message,
-        timeout,
     } = &expr.kind
     {
         if let ExprKind::Identifier(name) = &actor.kind {
@@ -140,9 +139,8 @@ fn test_parse_ask_operation() {
         } else {
             panic!("Expected message to be identifier");
         }
-        assert!(timeout.is_none());
     } else {
-        panic!("Expected Ask expression, got {:?}", expr.kind);
+        panic!("Expected ActorQuery expression, got {:?}", expr.kind);
     }
 }
 
@@ -179,7 +177,7 @@ fn test_transpile_actor() {
 
 #[test]
 fn test_transpile_send() {
-    let input = "counter ! Increment";
+    let input = "counter <- Increment";
 
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
@@ -198,7 +196,7 @@ fn test_transpile_send() {
 
 #[test]
 fn test_transpile_ask() {
-    let input = "calculator ? GetResult";
+    let input = "calculator <? GetResult";
 
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
