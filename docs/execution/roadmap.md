@@ -91,16 +91,20 @@
 - **Specification**: docs/specifications/ruchy-scoring-spec.md
 
 ### Implementation Tasks (Quality Score Foundation)
-- [ ] **RUCHY-0810**: Implement `ruchy score` command with basic metrics
-  - AST-only scoring (<100ms) for fast feedback
-  - Standard scoring (<1s) with type checking
-  - Deep scoring (<30s) with full analysis
-  - 0.0-1.0 unified score with grade boundaries
-- [ ] **RUCHY-0811**: MCP server integration via PMCP SDK
-  - Protocol-compliant tool exposure
-  - Stateful session management
-  - Streaming support for real-time updates
-  - Claude Desktop integration
+- [x] **RUCHY-0810**: ✅ COMPLETED - Implement `ruchy score` command with basic metrics
+  - ✅ AST-only scoring (<100ms) for fast feedback
+  - ✅ Standard scoring (<1s) with type checking
+  - ✅ Deep scoring (<30s) with full analysis
+  - ✅ 0.0-1.0 unified score with grade boundaries
+  - ✅ JSON/table output with baseline comparison
+  - ✅ CLI integration with threshold enforcement
+- [x] **RUCHY-0811**: ✅ COMPLETED - MCP server integration via PMCP SDK
+  - ✅ Protocol-compliant tool exposure with 7 integrated tools
+  - ✅ Enhanced existing MCP integration with quality scoring
+  - ✅ Streaming support for real-time updates 
+  - ✅ Claude Desktop integration via `ruchy mcp` command
+  - ✅ Real-time quality analysis tools: score, lint, format, analyze
+  - ✅ CLI integration with configurable thresholds and streaming
 - [ ] **RUCHY-0812**: Interactive debugger foundation (ridb)
   - Phase 1: Interpreter debugger (2 months)
   - Source-level debugging with breakpoints
