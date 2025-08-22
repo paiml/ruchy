@@ -1,6 +1,6 @@
 # Ruchy: Complete Language and System Specification
 
-*Version 11.0 - Single source of truth consolidating all 35 specification documents*
+*Version 13.0 - Single source of truth consolidating all 37 specification documents*
 
 ## Table of Contents
 
@@ -15,48 +15,47 @@
 8. [Functional Programming Specification](#8-functional-programming-specification)
 9. [Interpreter Specification](#9-interpreter-specification)
 10. [Unary Operator Specification](#10-unary-operator-specification)
+11. [Systems Operations Specification](#11-systems-operations-specification)
 
 ### Architecture Specifications
-11. [MCP Message-Passing Architecture](#11-mcp-message-passing-architecture)
-12. [LSP Specification](#12-lsp-specification)
-13. [Critical Missing Components](#13-critical-missing-components)
-14. [Binary Architecture](#14-binary-architecture)
-15. [Edge Cases Specification](#15-edge-cases-specification)
-16. [REPL Testing Specification](#16-repl-testing-specification)
-17. [REPL UX Specification](#17-repl-ux-specification)
-18. [Docker Specification](#18-docker-specification)
+12. [MCP Message-Passing Architecture](#12-mcp-message-passing-architecture)
+13. [LSP Specification](#13-lsp-specification)
+14. [Critical Missing Components](#14-critical-missing-components)
+15. [Binary Architecture](#15-binary-architecture)
+16. [Edge Cases Specification](#16-edge-cases-specification)
+17. [REPL Testing Specification](#17-repl-testing-specification)
+18. [REPL UX Specification](#18-repl-ux-specification)
+19. [Docker Specification](#19-docker-specification)
 
 ### Integration Specifications
-19. [Cargo Integration](#19-cargo-integration)
-20. [Depyler Integration](#20-depyler-integration)
-21. [Rust Cargo InterOp](#21-rust-cargo-interop)
+20. [Cargo Integration](#20-cargo-integration)
+21. [Depyler Integration](#21-depyler-integration)
+22. [Rust Cargo InterOp](#22-rust-cargo-interop)
 
 ### Execution Mode Specifications
-22. [One-Liner and Script Execution](#22-one-liner-and-script-execution)
-23. [Disassembly Specification](#23-disassembly-specification)
-24. [Advanced Mathematical REPL](#24-advanced-mathematical-repl)
+23. [One-Liner and Script Execution](#23-one-liner-and-script-execution)
+24. [Disassembly Specification](#24-disassembly-specification)
+25. [Advanced Mathematical REPL](#25-advanced-mathematical-repl)
 
 ### Quality & Testing Specifications
-25. [Quality Gates](#25-quality-gates)
-26. [Provability](#26-provability)
-27. [Lint Specification](#27-lint-specification)
-
-### Development Tools Specifications
-23. [Revolutionary Development Tools](#23-revolutionary-development-tools)
+26. [Quality Gates](#26-quality-gates)
+27. [Provability](#27-provability)
+28. [Lint Specification](#28-lint-specification)
+29. [Quality Scoring Specification](#29-quality-scoring-specification)
 
 ### Project Management
-28. [Master TODO](#28-master-todo)
-29. [Project Status](#29-project-status)
-30. [Deep Context](#30-deep-context)
+30. [Master TODO](#30-master-todo)
+31. [Project Status](#31-project-status)
+32. [Deep Context](#32-deep-context)
 
 ### External Dependencies
-31. [PMAT Integration](#31-pmat-integration)
-32. [PDMT Integration](#32-pdmt-integration)
-33. [External Tool Dependencies](#33-external-tool-dependencies)
+33. [PMAT Integration](#33-pmat-integration)
+34. [PDMT Integration](#34-pdmt-integration)
+35. [External Tool Dependencies](#35-external-tool-dependencies)
 
 ### Appendices
-34. [Complete Grammar Definition](#34-complete-grammar-definition)
-35. [Meta-Specification](#35-meta-specification)
+36. [Complete Grammar Definition](#36-complete-grammar-definition)
+37. [Meta-Specification](#37-meta-specification)
 
 ---
 
@@ -1953,41 +1952,68 @@ impl Interpreter {
 
 ### 10.1 Operator Inventory
 
-Eight unary operators with distinct semantic domains:
+Three unary operators aligned with high-level scripting semantics:
 
 ```rust
 pub enum UnaryOp {
     // Arithmetic
-    Negate,     // -x → negate value
+    Negate,     // -x → arithmetic negation
     
     // Logical  
     Not,        // !x → logical negation
     
-    // Bitwise
-    BitwiseNot, // ~x → bitwise complement
-    
-    // Memory
-    Deref,      // *x → dereference pointer
-    Borrow,     // &x → take reference
-    BorrowMut,  // &mut x → take mutable reference
-    
     // Control
     Await,      // await x → suspend until ready
-    Try,        // x? → propagate error
+}
+
+// Postfix operators (separate category)
+pub enum PostfixOp {
+    Try,        // x? → error propagation
+    Optional,   // x?.field → optional chaining
 }
 ```
 
-### 10.2 Precedence and Associativity
+### 10.2 Design Rationale
 
-All unary operators bind tighter than binary operators, right-associative:
+Memory operators (`&`, `&mut`, `*`) are **compiler-internal** transformations, not surface syntax. Escape analysis determines borrowing automatically:
 
 ```rust
-// Precedence level 11 (of 15 total)
--!*x  parses as  -(!(*(x)))
-await -x?  parses as  await (-(x?))
+// Ruchy source
+let y = process(x)
+
+// Transpiler determines based on escape analysis:
+let y = process(&x)     // if x escapes
+let y = process(x)      // if x moves
 ```
 
-### 10.3 Type-Directed Semantics
+Bitwise operations use **method syntax** for clarity:
+
+```rust
+// Not: ~x (C-style)
+// But: x.bit_not() (method)
+
+x.bit_not()
+x.bit_and(y)
+x.bit_or(y)
+```
+
+### 10.3 Precedence and Associativity
+
+Unary operators at precedence level 11, right-associative:
+
+```rust
+-!x  parses as  -(!(x))
+await -x  parses as  await (-x)
+```
+
+Postfix operators at precedence level 12, left-associative:
+
+```rust
+x?.field  parses as  (x?).field
+x?[0]  parses as  (x?)[0]
+```
+
+### 10.4 Type-Directed Semantics
 
 ```rust
 impl UnaryOp {
@@ -1998,52 +2024,13 @@ impl UnaryOp {
             (Negate, Type::Float(n)) => Ok(Type::Float(n)),
             (Negate, Type::Unsigned(_)) => Err(TypeError::CannotNegateUnsigned),
             
-            // Logical negation
+            // Logical negation (bool only)
             (Not, Type::Bool) => Ok(Type::Bool),
-            (Not, t) if t.implements("Not") => Ok(Type::Bool),
+            (Not, _) => Err(TypeError::NotRequiresBool),
             
-            // Bitwise complement
-            (BitwiseNot, Type::Int(n)) => Ok(Type::Int(n)),
-            (BitwiseNot, Type::Unsigned(n)) => Ok(Type::Unsigned(n)),
-            
-            // Memory operations
-            (Deref, Type::Ref(inner)) => Ok(*inner),
-            (Deref, Type::Ptr(inner)) => Ok(*inner),
-            (Borrow, t) => Ok(Type::Ref(Box::new(t))),
-            (BorrowMut, t) => Ok(Type::RefMut(Box::new(t))),
-            
-            // Control flow
+            // Await (futures only)
             (Await, Type::Future(inner)) => Ok(*inner),
-            (Try, Type::Result(ok, _)) => Ok(*ok),
-            (Try, Type::Option(some)) => Ok(*some),
-            
-            _ => Err(TypeError::InvalidUnaryOperand),
-        }
-    }
-}
-```
-
-### 10.4 Overloading via Traits
-
-```rust
-// User-defined unary operators via trait implementation
-trait Neg {
-    type Output;
-    fn neg(self) -> Self::Output;
-}
-
-trait Not {
-    type Output;
-    fn not(self) -> Self::Output;
-}
-
-// Custom type example
-impl Neg for Complex {
-    type Output = Complex;
-    fn neg(self) -> Complex {
-        Complex { 
-            real: -self.real, 
-            imag: -self.imag 
+            (Await, _) => Err(TypeError::AwaitRequiresFuture),
         }
     }
 }
@@ -2057,25 +2044,44 @@ impl UnaryTranspiler {
         let operand_tokens = self.transpile_expr(operand);
         
         match op {
-            // Direct mapping
             Negate => quote! { -(#operand_tokens) },
             Not => quote! { !(#operand_tokens) },
-            BitwiseNot => quote! { !(#operand_tokens) }, // Rust uses ! for bitwise
-            
-            // Memory operations preserved
-            Deref => quote! { *(#operand_tokens) },
-            Borrow => quote! { &(#operand_tokens) },
-            BorrowMut => quote! { &mut (#operand_tokens) },
-            
-            // Control flow
             Await => quote! { (#operand_tokens).await },
+        }
+    }
+    
+    fn transpile_postfix(&self, op: PostfixOp, operand: &Expr) -> TokenStream {
+        let operand_tokens = self.transpile_expr(operand);
+        
+        match op {
             Try => quote! { (#operand_tokens)? },
+            Optional => self.desugar_optional_chain(operand),
         }
     }
 }
 ```
 
-### 10.6 Constant Folding
+### 10.6 Memory Operation Inference
+
+Compiler internally adds borrowing based on usage analysis:
+
+```rust
+impl EscapeAnalyzer {
+    fn infer_borrowing(&self, expr: &Expr, context: &Context) -> BorrowKind {
+        match self.analyze_lifetime(expr, context) {
+            Lifetime::Local => BorrowKind::None,        // Move/copy
+            Lifetime::Escapes => BorrowKind::Shared,    // &
+            Lifetime::Mutated => BorrowKind::Mutable,   // &mut
+        }
+    }
+}
+
+// Ruchy: data.process()
+// Rust: (&data).process()  // if data used later
+// Rust: data.process()      // if data consumed
+```
+
+### 10.7 Constant Folding
 
 ```rust
 impl ConstantFolder {
@@ -2084,36 +2090,26 @@ impl ConstantFolder {
             (Negate, Value::Int(n)) => Some(Value::Int(-n)),
             (Negate, Value::Float(f)) => Some(Value::Float(-f)),
             (Not, Value::Bool(b)) => Some(Value::Bool(!b)),
-            (BitwiseNot, Value::Int(n)) => Some(Value::Int(!n)),
-            _ => None, // Cannot fold at compile time
+            (Await, _) => None, // Runtime only
         }
     }
 }
 ```
 
-### 10.7 Error Production
+### 10.8 Error Messages
 
 ```rust
-pub enum UnaryError {
-    UnsignedNegation { type_: Type },
-    NonBooleanNot { type_: Type, span: Span },
-    NonNumericBitwise { type_: Type },
-    DerefNonPointer { type_: Type },
-    AwaitNonFuture { type_: Type },
-    TryNonResult { type_: Type },
-}
-
 impl UnaryError {
     fn diagnostic(&self) -> Diagnostic {
         match self {
             Self::UnsignedNegation { type_ } => {
                 Diagnostic::error("cannot negate unsigned type")
                     .with_note(format!("{} is always non-negative", type_))
-                    .with_suggestion("cast to signed type first")
+                    .with_suggestion("cast to signed type: -(x as i32)")
             }
-            Self::DerefNonPointer { type_ } => {
-                Diagnostic::error(format!("cannot dereference {}", type_))
-                    .with_note("only references and pointers can be dereferenced")
+            Self::NotRequiresBool { type_ } => {
+                Diagnostic::error(format!("! operator requires bool, found {}", type_))
+                    .with_suggestion("for bitwise NOT, use: x.bit_not()")
             }
             _ => self.default_diagnostic(),
         }
@@ -2121,7 +2117,7 @@ impl UnaryError {
 }
 ```
 
-### 10.8 Optimization Opportunities
+### 10.9 Optimization
 
 ```rust
 impl MirOptimizer {
@@ -2129,17 +2125,15 @@ impl MirOptimizer {
         match (op, &operand) {
             // Double negation elimination
             (Negate, MirExpr::Unary(Negate, inner)) => *inner.clone(),
-            
-            // Boolean simplification
             (Not, MirExpr::Unary(Not, inner)) => *inner.clone(),
             
-            // Strength reduction
-            (BitwiseNot, MirExpr::Const(Value::Int(-1))) => {
-                MirExpr::Const(Value::Int(0))
+            // Constant propagation
+            (op, MirExpr::Const(val)) => {
+                match self.fold_unary(op, val) {
+                    Some(result) => MirExpr::Const(result),
+                    None => MirExpr::Unary(op, Box::new(operand)),
+                }
             }
-            
-            // Borrow/deref cancellation
-            (Deref, MirExpr::Unary(Borrow, inner)) => *inner.clone(),
             
             _ => MirExpr::Unary(op, Box::new(operand)),
         }
@@ -2147,44 +2141,339 @@ impl MirOptimizer {
 }
 ```
 
-### 10.9 Special Cases
-
-```rust
-// Chained unary operators
---x     // Valid: double negation
-!!x     // Valid: double logical not  
-**x     // Valid: double dereference
-&&x     // Valid: reference to reference
-
-// Disambiguation required
--x.f    // Parses as -(x.f), not (-x).f
-!x[0]   // Parses as !(x[0]), not (!x)[0]
-
-// Await binding
-await x.f()  // Parses as await (x.f())
-await x?     // Parses as await (x?)
-```
-
 ### 10.10 Performance Characteristics
 
 ```rust
 pub struct UnaryPerformance {
-    // Zero-cost operations (compile-time only)
-    const_folding: &[UnaryOp],     // [Negate, Not, BitwiseNot] on literals
+    // Single CPU instruction
+    negate: Duration,    // 1 cycle for int/float
+    not: Duration,       // 1 cycle for bool
     
-    // Single instruction operations
-    arithmetic: Duration,           // 1 CPU cycle
-    bitwise: Duration,             // 1 CPU cycle
-    
-    // Memory operations (may cause cache miss)
-    deref: Duration,               // 1-300 cycles depending on cache
-    
-    // Control flow (context switch possible)
-    await_overhead: Duration,      // 10-1000ns depending on executor
+    // Context switch possible
+    await: Duration,     // 10-1000ns depending on executor
+}
+
+// Memory operations (compiler-inserted) costs:
+// & reference: 0 cycles (compile-time)
+// * dereference: 1-300 cycles (cache-dependent)
+```
+
+## 11. Systems Operations Specification
+
+### 11.1 File I/O Operations
+
+Zero-cost abstractions over Rust's std::fs with automatic resource management:
+
+```rust
+// Simple file operations
+let content = read_file("data.txt")?
+write_file("output.txt", content)?
+
+// Streaming operations
+for line in read_lines("large.csv")? {
+    process(line?)
+}
+
+// Automatic resource cleanup via RAII
+with_file("data.bin", "r") { |file|
+    let header = file.read_bytes(256)?
+    process_header(header)
+}  // File closed automatically
+```
+
+### 11.2 Process Management
+
+```rust
+// Command execution with builder pattern
+let output = Command("git")
+    .args(["status", "--short"])
+    .env("GIT_PAGER", "")
+    .capture()?
+
+// Async process spawning
+let proc = spawn_async("server") {
+    env: { "PORT": "8080" },
+    stdout: Pipe,
+    stderr: Inherit,
+}
+
+let output = proc.wait_with_output().await?
+
+// Process pipelines
+let result = pipeline! {
+    Command("cat", "data.txt") |
+    Command("grep", "error") |
+    Command("wc", "-l")
 }
 ```
 
-## 11. MCP Message-Passing Architecture
+### 11.3 Network Operations
+
+```rust
+// HTTP client (reqwest backend)
+let response = http::get("https://api.example.com/data").await?
+let json: DataFrame = response.json().await?
+
+// TCP operations
+let listener = TcpListener::bind("127.0.0.1:8080")?
+for stream in listener.incoming() {
+    spawn_actor(handle_connection(stream?))
+}
+
+// UDP operations
+let socket = UdpSocket::bind("0.0.0.0:34254")?
+socket.send_to(b"hello", "127.0.0.1:8080")?
+```
+
+### 11.4 Environment and Configuration
+
+```rust
+// Environment variables
+let path = env::var("PATH").unwrap_or("/usr/bin")
+env::set_var("RUST_LOG", "debug")
+
+// Configuration files (TOML/JSON/YAML)
+let config = Config::from_file("config.toml")?
+let port: u16 = config.get("server.port").unwrap_or(8080)
+
+// Command-line arguments
+let args = Args::parse()
+if args.verbose {
+    set_log_level(LogLevel::Debug)
+}
+```
+
+### 11.5 Filesystem Operations
+
+```rust
+// Path manipulation
+let path = Path::new("/usr/local")
+    .join("bin")
+    .with_extension("exe")
+
+// Directory operations
+create_dir_all("output/logs")?
+for entry in read_dir(".")? {
+    let entry = entry?
+    if entry.is_file() && entry.extension() == "txt" {
+        process_text_file(entry.path())?
+    }
+}
+
+// File metadata
+let metadata = file_metadata("data.bin")?
+println!("Size: {} bytes", metadata.size())
+println!("Modified: {}", metadata.modified()?)
+
+// Glob patterns
+for path in glob("**/*.rs")? {
+    lint_rust_file(path?)?
+}
+```
+
+### 11.6 Inter-Process Communication
+
+```rust
+// Unix sockets
+let socket = UnixSocket::bind("/tmp/ruchy.sock")?
+socket.listen(128)?
+
+// Named pipes (FIFOs)
+create_fifo("/tmp/ruchy_pipe", 0o644)?
+let pipe = open_fifo("/tmp/ruchy_pipe", Read)?
+
+// Shared memory
+let shm = SharedMemory::create("ruchy_shm", 1024 * 1024)?
+let data = shm.as_slice_mut()
+data[0..4].copy_from_slice(&[1, 2, 3, 4])
+
+// Message queues via actors
+actor LogCollector {
+    receive {
+        LogMessage(level, text) => {
+            append_log(level, text)?
+        }
+    }
+}
+```
+
+### 11.7 System Information
+
+```rust
+// CPU information
+let cpu_count = sys::cpu_count()
+let cpu_usage = sys::cpu_usage()  // 0.0 - 1.0
+
+// Memory information
+let mem = sys::memory_info()
+println!("Total: {} GB", mem.total / (1024 * 1024 * 1024))
+println!("Available: {} GB", mem.available / (1024 * 1024 * 1024))
+
+// Disk information
+let disk = sys::disk_usage("/")?
+println!("Free space: {} GB", disk.free / (1024 * 1024 * 1024))
+
+// Process information
+let pid = sys::current_pid()
+let memory = sys::process_memory(pid)?
+```
+
+### 11.8 Signal Handling
+
+```rust
+// Register signal handlers
+signal::handle(Signal::SIGINT) { |_sig|
+    println!("Interrupted! Cleaning up...")
+    cleanup_and_exit(0)
+}
+
+signal::handle(Signal::SIGTERM) { |_sig|
+    graceful_shutdown()
+}
+
+// Send signals
+signal::send(pid, Signal::SIGUSR1)?
+```
+
+### 11.9 Date and Time Operations
+
+```rust
+// Current time
+let now = DateTime::now()
+let unix_time = now.timestamp()
+
+// Formatting and parsing
+let formatted = now.format("%Y-%m-%d %H:%M:%S")
+let parsed = DateTime::parse("2025-01-17 10:30:00", "%Y-%m-%d %H:%M:%S")?
+
+// Duration and arithmetic
+let duration = Duration::from_secs(3600)
+let later = now + duration
+
+// Timezone handling
+let utc = now.to_utc()
+let tokyo = now.with_timezone("Asia/Tokyo")
+```
+
+### 11.10 Logging and Diagnostics
+
+```rust
+// Structured logging
+log::info!("Server started", { port: 8080, workers: 4 })
+log::error!("Connection failed", { error: e, retry_count: 3 })
+
+// Log levels
+log::set_level(LogLevel::Debug)
+log::debug!("Detailed information for debugging")
+
+// Custom loggers
+let logger = Logger::new()
+    .with_target(File("app.log"))
+    .with_target(Console)
+    .with_format(JsonFormat)
+
+logger.info("Application initialized")
+```
+
+### 11.11 Cryptography and Security
+
+```rust
+// Hashing
+let hash = sha256("password")
+let verified = verify_sha256("password", hash)
+
+// Encryption (via ring/rustls)
+let key = generate_key(256)
+let encrypted = encrypt_aes(data, key)?
+let decrypted = decrypt_aes(encrypted, key)?
+
+// Random generation
+let random_bytes = random::bytes(32)
+let random_int = random::range(1, 100)
+```
+
+### 11.12 Transpilation Strategy
+
+```rust
+impl SystemsTranspiler {
+    fn transpile_io(&self, op: IoOp) -> TokenStream {
+        match op {
+            IoOp::ReadFile(path) => quote! {
+                std::fs::read_to_string(#path)
+            },
+            IoOp::WriteFile(path, content) => quote! {
+                std::fs::write(#path, #content)
+            },
+            IoOp::WithFile(path, mode, body) => {
+                // Generate RAII wrapper
+                quote! {
+                    {
+                        let file = std::fs::File::open(#path)?;
+                        let result = #body(file);
+                        drop(file);
+                        result
+                    }
+                }
+            }
+        }
+    }
+    
+    fn transpile_command(&self, cmd: Command) -> TokenStream {
+        quote! {
+            std::process::Command::new(#cmd.program)
+                #(.arg(#cmd.args))*
+                #(.env(#cmd.env.0, #cmd.env.1))*
+                .output()
+        }
+    }
+}
+```
+
+### 11.13 Error Handling
+
+All systems operations return `Result<T, SystemError>`:
+
+```rust
+pub enum SystemError {
+    Io(std::io::Error),
+    Network(NetworkError),
+    Process(ProcessError),
+    Permission(PermissionError),
+    Timeout(Duration),
+}
+
+impl SystemError {
+    fn is_transient(&self) -> bool {
+        matches!(self, 
+            SystemError::Network(_) | 
+            SystemError::Timeout(_)
+        )
+    }
+    
+    fn should_retry(&self) -> bool {
+        self.is_transient()
+    }
+}
+```
+
+### 11.14 Performance Characteristics
+
+```rust
+pub struct SystemsPerformance {
+    // I/O operations
+    file_read_throughput: BytesPerSec,     // ~2 GB/s (NVMe SSD)
+    network_throughput: BytesPerSec,       // ~10 Gb/s (10GbE)
+    
+    // Process operations
+    spawn_overhead: Duration,              // ~1-5ms
+    ipc_latency: Duration,                 // ~1-10μs (shared memory)
+    
+    // Overhead vs raw syscalls
+    abstraction_cost: Percent,             // <1% for most operations
+}
+```
+
+## 12. MCP Message-Passing Architecture
 
 ### 7.1 Actor Model with MCP Integration
 
@@ -4020,357 +4309,7 @@ impl LintRegistry {
 }
 ```
 
-## 23. Revolutionary Development Tools
-
-### 23.1 Overview
-
-Ruchy v0.10.0 introduces the world's first programming language with built-in formal verification and automatic BigO complexity analysis. These revolutionary development tools have no equivalent in any other programming language.
-
-### 23.2 Tool Architecture
-
-```rust
-pub enum RuchyTool {
-    // Core development tools
-    Test(TestOptions),
-    Lint(LintOptions),
-    Fmt(FmtOptions),
-    Check(CheckOptions),
-    
-    // Revolutionary tools (World's First)
-    Ast(AstOptions),         // Enhanced AST analysis
-    Provability(ProvabilityOptions),  // Formal verification
-    Runtime(RuntimeOptions),  // BigO complexity detection
-}
-
-pub struct ToolchainContext {
-    parser: Parser,
-    type_checker: TypeChecker,
-    analyzer: StaticAnalyzer,
-    verifier: FormalVerifier,
-    complexity_analyzer: ComplexityAnalyzer,
-}
-```
-
-### 23.3 AST Analysis Tool (`ruchy ast`)
-
-Enhanced Abstract Syntax Tree analysis with multiple output formats and deep insights.
-
-```bash
-# Basic AST generation
-ruchy ast script.ruchy           # Pretty-printed AST
-ruchy ast --json script.ruchy    # JSON for tooling
-ruchy ast --graph script.ruchy   # DOT graph visualization
-
-# Advanced analysis
-ruchy ast --metrics script.ruchy # Complexity metrics
-ruchy ast --symbols script.ruchy # Symbol table analysis
-ruchy ast --deps script.ruchy    # Dependency tracking
-```
-
-#### Implementation:
-
-```rust
-pub struct AstAnalyzer {
-    ast: Expr,
-    metrics: AstMetrics,
-    symbols: SymbolTable,
-    dependencies: DependencyGraph,
-}
-
-impl AstAnalyzer {
-    pub fn analyze(&mut self) -> AstAnalysisResult {
-        self.calculate_metrics();
-        self.build_symbol_table();
-        self.track_dependencies();
-        
-        AstAnalysisResult {
-            ast: self.ast.clone(),
-            metrics: self.metrics.clone(),
-            symbols: self.symbols.clone(),
-            dependencies: self.dependencies.clone(),
-        }
-    }
-    
-    pub fn to_json(&self) -> serde_json::Value {
-        json!({
-            "ast": self.ast,
-            "metrics": {
-                "cyclomatic_complexity": self.metrics.cyclomatic,
-                "depth": self.metrics.max_depth,
-                "node_count": self.metrics.total_nodes,
-            },
-            "symbols": self.symbols.to_json(),
-            "dependencies": self.dependencies.to_json(),
-        })
-    }
-    
-    pub fn to_dot(&self) -> String {
-        let mut dot = String::from("digraph AST {\n");
-        dot.push_str("  node [shape=box];\n");
-        self.write_dot_nodes(&mut dot, &self.ast, 0);
-        dot.push_str("}\n");
-        dot
-    }
-}
-```
-
-### 23.4 Formal Verification (`ruchy provability`)
-
-**World's First**: Mathematical correctness guarantees in a systems programming language.
-
-```bash
-# Basic provability analysis
-ruchy provability script.ruchy
-
-# Full formal verification
-ruchy provability script.ruchy --verify --verbose
-
-# Specific verification modes
-ruchy provability --contracts    # Pre/post conditions
-ruchy provability --invariants   # Loop invariants
-ruchy provability --termination  # Termination proofs
-ruchy provability --bounds       # Array bounds checking
-```
-
-#### Verification Engine:
-
-```rust
-pub struct FormalVerifier {
-    smt_solver: Z3Solver,
-    invariant_generator: InvariantGenerator,
-    contract_checker: ContractChecker,
-}
-
-impl FormalVerifier {
-    pub fn verify(&self, ast: &Expr) -> ProvabilityResult {
-        let mut result = ProvabilityResult::default();
-        
-        // Function purity analysis
-        result.purity_score = self.analyze_purity(ast);
-        
-        // Termination analysis
-        result.termination = self.prove_termination(ast);
-        
-        // Memory safety
-        result.memory_safety = self.verify_bounds(ast);
-        
-        // Contract verification
-        if let Some(contracts) = self.extract_contracts(ast) {
-            result.contracts_verified = self.verify_contracts(contracts);
-        }
-        
-        // Generate provability score (0-100)
-        result.score = self.calculate_provability_score(&result);
-        
-        result
-    }
-    
-    fn prove_termination(&self, expr: &Expr) -> TerminationProof {
-        match &expr.kind {
-            ExprKind::While { condition, body } => {
-                // Find ranking function
-                let ranking = self.find_ranking_function(condition, body);
-                self.verify_decreasing(ranking)
-            }
-            ExprKind::Function { body, .. } => {
-                // Check for structural recursion
-                self.verify_structural_recursion(body)
-            }
-            _ => TerminationProof::Trivial,
-        }
-    }
-    
-    fn verify_bounds(&self, expr: &Expr) -> BoundsProof {
-        // Use SMT solver for array access verification
-        let constraints = self.extract_array_constraints(expr);
-        self.smt_solver.check_sat(constraints)
-    }
-}
-```
-
-### 23.5 Performance Analysis (`ruchy runtime`)
-
-**World's First**: Automatic BigO algorithmic complexity detection.
-
-```bash
-# Basic performance metrics
-ruchy runtime script.ruchy
-
-# Detailed profiling
-ruchy runtime --profile script.ruchy
-
-# Algorithmic complexity analysis
-ruchy runtime --bigo script.ruchy
-
-# Benchmarking
-ruchy runtime --bench script.ruchy
-ruchy runtime --compare v1.ruchy v2.ruchy
-
-# Memory analysis
-ruchy runtime --memory script.ruchy
-```
-
-#### Complexity Detection Engine:
-
-```rust
-pub struct ComplexityAnalyzer {
-    loop_analyzer: LoopComplexityAnalyzer,
-    recursion_analyzer: RecursionAnalyzer,
-    data_flow: DataFlowAnalyzer,
-}
-
-impl ComplexityAnalyzer {
-    pub fn analyze_bigo(&self, ast: &Expr) -> BigOComplexity {
-        match &ast.kind {
-            ExprKind::For { iterator, body, .. } => {
-                let loop_complexity = self.analyze_loop_bounds(iterator);
-                let body_complexity = self.analyze_bigo(body);
-                self.combine_complexities(loop_complexity, body_complexity)
-            }
-            ExprKind::While { condition, body } => {
-                // Analyze loop invariants for complexity
-                let iterations = self.estimate_iterations(condition, body);
-                let body_complexity = self.analyze_bigo(body);
-                BigOComplexity::multiply(iterations, body_complexity)
-            }
-            ExprKind::Function { params, body, .. } => {
-                // Detect recursive patterns
-                if self.is_recursive(ast) {
-                    self.analyze_recursive_complexity(params, body)
-                } else {
-                    self.analyze_bigo(body)
-                }
-            }
-            _ => BigOComplexity::Constant,
-        }
-    }
-    
-    fn analyze_recursive_complexity(&self, params: &[Param], body: &Expr) -> BigOComplexity {
-        // Detect common patterns
-        if self.is_divide_conquer(body) {
-            BigOComplexity::NLogN
-        } else if self.is_linear_recursion(body) {
-            BigOComplexity::Linear
-        } else if self.is_tree_recursion(body) {
-            BigOComplexity::Exponential
-        } else {
-            BigOComplexity::Unknown
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum BigOComplexity {
-    Constant,        // O(1)
-    Logarithmic,     // O(log n)
-    Linear,          // O(n)
-    NLogN,           // O(n log n)
-    Quadratic,       // O(n²)
-    Cubic,           // O(n³)
-    Exponential,     // O(2^n)
-    Factorial,       // O(n!)
-    Unknown,
-}
-```
-
-### 23.6 Test Framework (`ruchy test`)
-
-Professional testing with coverage analysis matching Deno's developer experience.
-
-```bash
-# Run tests with coverage
-ruchy test --coverage
-ruchy test --coverage --html
-ruchy test --coverage --threshold 80
-
-# Parallel execution
-ruchy test --parallel
-
-# Watch mode
-ruchy test --watch
-
-# Output formats
-ruchy test --format json
-ruchy test --format junit
-```
-
-#### Coverage Engine:
-
-```rust
-pub struct TestRunner {
-    executor: TestExecutor,
-    coverage: CoverageCollector,
-    reporter: TestReporter,
-}
-
-impl TestRunner {
-    pub fn run_tests(&mut self, options: &TestOptions) -> TestResult {
-        let test_files = self.discover_tests(&options.path);
-        
-        if options.parallel {
-            self.run_parallel(test_files, options)
-        } else {
-            self.run_sequential(test_files, options)
-        }
-    }
-    
-    fn collect_coverage(&mut self, ast: &Expr) -> CoverageData {
-        let mut coverage = CoverageData::new();
-        
-        // Instrument code for coverage
-        let instrumented = self.instrument_ast(ast);
-        
-        // Execute and track coverage
-        self.executor.execute_with_coverage(&instrumented, &mut coverage);
-        
-        coverage
-    }
-}
-```
-
-### 23.7 Code Formatter (`ruchy fmt`)
-
-Production-ready code formatting with configurable styles.
-
-```bash
-# Format files
-ruchy fmt script.ruchy
-ruchy fmt --check         # CI mode
-ruchy fmt --config custom.toml
-```
-
-### 23.8 Linter (`ruchy lint`)
-
-Grammar-based code analysis with auto-fix capabilities.
-
-```bash
-# Lint with auto-fix
-ruchy lint --fix
-ruchy lint --strict
-ruchy lint --rules unused,style,complexity
-```
-
-### 23.9 Innovation Comparison
-
-| Feature | Ruchy | Rust | Go | Python | TypeScript |
-|---------|-------|------|-----|--------|------------|
-| Formal Verification | ✅ Built-in | ❌ | ❌ | ❌ | ❌ |
-| Automatic BigO Analysis | ✅ Built-in | ❌ | ❌ | ❌ | ❌ |
-| Mathematical Provability | ✅ Built-in | ❌ | ❌ | ❌ | ❌ |
-| AST Visualization | ✅ Built-in | ❌ | ❌ | ❌ | ❌ |
-| Coverage Analysis | ✅ Built-in | 🔧 External | ✅ | ✅ | ✅ |
-| Auto-formatting | ✅ Built-in | ✅ | ✅ | ✅ | ✅ |
-
-### 23.10 Performance Guarantees
-
-- **AST Analysis**: <5ms for typical files
-- **Linting**: <20ms for 1000-line files
-- **Formatting**: <10ms for typical files
-- **Provability Analysis**: <100ms for basic verification
-- **Runtime Analysis**: <200ms for complexity detection
-- **Test Execution**: <50ms overhead for typical suites
-
-## 24. Master TODO
+## 23. Master TODO
 
 ### 22.1 Implementation Roadmap (REVISED)
 

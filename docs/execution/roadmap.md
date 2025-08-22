@@ -82,13 +82,79 @@
 - ✅ **Performance targets exceeded**: All tools execute in <200ms
 - ✅ **Published to crates.io** - v0.10.0 available for public installation
 
-## NEXT PRIORITIES: Self-Hosting and Production Deployment
+## CURRENT SPRINT: Unified Quality Scoring System
 
-### Upcoming Sprint Tasks
+### Sprint Overview  
+- **Task IDs**: RUCHY-0810 to RUCHY-0820
+- **Duration**: 8 weeks (Phase 0 enforcement + scoring MVP)
+- **Priority**: P0 - Foundation for all quality gates
+- **Specification**: docs/specifications/ruchy-scoring-spec.md
+
+### Implementation Tasks (Quality Score Foundation)
+- [ ] **RUCHY-0810**: Implement `ruchy score` command with basic metrics
+  - AST-only scoring (<100ms) for fast feedback
+  - Standard scoring (<1s) with type checking
+  - Deep scoring (<30s) with full analysis
+  - 0.0-1.0 unified score with grade boundaries
+- [ ] **RUCHY-0811**: MCP server integration via PMCP SDK
+  - Protocol-compliant tool exposure
+  - Stateful session management
+  - Streaming support for real-time updates
+  - Claude Desktop integration
+- [ ] **RUCHY-0812**: Interactive debugger foundation (ridb)
+  - Phase 1: Interpreter debugger (2 months)
+  - Source-level debugging with breakpoints
+  - Expression evaluation in context
+  - Actor-aware debugging support
+- [ ] **RUCHY-0813**: Incremental scoring architecture
+  - Three-tier analysis depth (Shallow/Standard/Deep)
+  - Caching and dependency tracking
+  - Watch mode with progressive refinement
+  - <100ms incremental scoring
+- [ ] **RUCHY-0814**: Score component metrics
+  - Correctness (35%): Property tests, proofs, mutations
+  - Performance (25%): Complexity, allocations, variance
+  - Maintainability (20%): Coupling, cohesion, amplification
+  - Safety (15%): Unsafe density, error handling
+  - Idiomaticity (5%): Patterns, conventions
+- [ ] **RUCHY-0815**: Quality gate enforcement
+  - CI/CD integration with thresholds
+  - Project-specific configuration (.ruchy/score.toml)
+  - Anti-gaming rules and confidence scoring
+  - Grade boundaries (A+ to F)
+- [ ] **RUCHY-0816**: Mechanical sympathy tuner (`ruchy optimize`)
+  - Hardware-aware cost modeling
+  - Cache simulation and branch prediction
+  - Vectorization opportunity detection
+  - Zero-cost abstraction verification
+- [ ] **RUCHY-0817**: Actor observatory (`ruchy actor:observe`)
+  - Live actor system introspection
+  - Message tracing with filters
+  - Deadlock detection
+  - Terminal UI dashboard
+- [ ] **RUCHY-0818**: Dataflow debugger (`ruchy dataflow:debug`)
+  - DataFrame pipeline debugging
+  - Materialization on demand
+  - Breakpoint support in pipelines
+  - Diff computation between stages
+- [ ] **RUCHY-0819**: Component toolkit (`ruchy wasm`)
+  - WebAssembly component generation
+  - WIT interface generation
+  - Platform-specific deployment
+  - Portability scoring
+- [ ] **RUCHY-0820**: Interactive prover (`ruchy prove`)
+  - REPL-based refinement type verification
+  - Tactic library with ML suggestions
+  - Counterexample to test generation
+  - SMT solver integration (Z3)
+
+## FUTURE PRIORITIES: Self-Hosting and Production
+
+### Next Sprint Tasks (After Scoring Foundation)
 - [ ] **RUCHY-0800**: Complete self-hosting capability
 - [ ] **RUCHY-0801**: Binary compilation via LLVM
 - [ ] **RUCHY-0802**: DataFrame operations completion
-- [ ] **RUCHY-0803**: Actor system implementation
+- [ ] **RUCHY-0803**: Actor system implementation  
 - [ ] **RUCHY-0804**: Module system and package management
 - [ ] **RUCHY-0805**: IDE integrations (VSCode, IntelliJ)
 - **Innovation differentiators**: Formal verification + BigO analysis
