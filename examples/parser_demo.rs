@@ -11,7 +11,7 @@ fn main() {
         // If expression
         "if x > 0 { positive } else { negative }",
         // Pipeline
-        "[1, 2, 3] |> map(double) |> filter(even)",
+        "[1, 2, 3] >> map(double) >> filter(even)",
         // Let binding
         "let x = 42 in x + 1",
         // Complex expression

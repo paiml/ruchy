@@ -524,9 +524,7 @@ fn analyze_expr(expr: &crate::frontend::ast::Expr, metrics: &mut AstMetrics, dep
             analyze_expr(match_expr, metrics, depth + 1, nesting);
             for arm in arms {
                 metrics.cyclomatic_complexity += 1;
-                if let Some(guard) = &arm.guard {
-                    analyze_expr(guard, metrics, depth + 1, nesting + 1);
-                }
+                // Guards have been removed from the grammar
                 analyze_expr(&arm.body, metrics, depth + 1, nesting + 1);
             }
         }
@@ -706,11 +704,6 @@ fn analyze_error_handling_recursive(
 ) {
     
     match &expr.kind {
-        ExprKind::Try { expr: inner } => {
-            *total_fallible_ops += 1;
-            *handled_ops += 1;
-            analyze_error_handling_recursive(inner, total_fallible_ops, handled_ops);
-        }
         ExprKind::Match { expr: match_expr, arms } => {
             // Check if matching on Result type (heuristic)
             if arms.len() >= 2 {
@@ -1273,13 +1266,6 @@ fn analyze_resource_management(ast: &crate::frontend::ast::Expr) -> f64 {
 fn analyze_resources_recursive(expr: &crate::frontend::ast::Expr, allocations: &mut i32, cleanup: &mut i32) {
     
     match &expr.kind {
-        ExprKind::TryCatch { try_block, finally_block, .. } => {
-            *allocations += 1;
-            if finally_block.is_some() {
-                *cleanup += 1; // Finally block suggests proper cleanup
-            }
-            analyze_resources_recursive(try_block, allocations, cleanup);
-        }
         ExprKind::Block(exprs) => {
             for e in exprs {
                 analyze_resources_recursive(e, allocations, cleanup);

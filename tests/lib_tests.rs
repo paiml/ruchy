@@ -57,7 +57,7 @@ fn test_get_parse_error_no_error() {
 
 #[test]
 fn test_compile_pipeline() {
-    let result = compile("[1, 2, 3] |> map(x => x * 2)");
+    let result = compile("[1, 2, 3] >> map(|x| x * 2)");
     // Should compile even if not fully implemented
     assert!(result.is_ok() || result.is_err());
 }

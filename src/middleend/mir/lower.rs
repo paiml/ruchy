@@ -296,7 +296,6 @@ impl LoweringContext {
             AstBinOp::BitwiseOr => BinOp::BitOr,
             AstBinOp::BitwiseXor => BinOp::BitXor,
             AstBinOp::LeftShift => BinOp::Shl,
-            AstBinOp::RightShift => BinOp::Shr,
         }
     }
 
@@ -381,8 +380,7 @@ impl LoweringContext {
             | AstBinOp::BitwiseAnd
             | AstBinOp::BitwiseOr
             | AstBinOp::BitwiseXor
-            | AstBinOp::LeftShift
-            | AstBinOp::RightShift => Type::I32,
+            | AstBinOp::LeftShift => Type::I32,
             AstBinOp::Equal
             | AstBinOp::NotEqual
             | AstBinOp::Less

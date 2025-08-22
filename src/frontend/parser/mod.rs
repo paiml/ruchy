@@ -102,7 +102,7 @@ pub(crate) fn parse_expr_with_precedence_recursive(
         let token_clone = token.clone();
 
         // Try different infix operator types
-        if let Some(new_left) = try_actor_operators(state, left.clone(), &token_clone, min_prec)? {
+        if let Some(new_left) = try_new_actor_operators(state, left.clone(), &token_clone, min_prec)? {
             left = new_left;
             continue;
         }
@@ -154,12 +154,6 @@ fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) -> Result<E
             Some((Token::LeftBracket, _)) => {
                 left = handle_array_indexing(state, left)?;
                 handled_postfix = true;
-            }
-            Some((Token::Question, _)) => {
-                if let Some(new_left) = try_parse_try_operator(state, left.clone()) {
-                    left = new_left;
-                    handled_postfix = true;
-                }
             }
             Some((Token::LeftBrace, _)) => {
                 if let Some(new_left) = try_parse_struct_literal(state, &left)? {
@@ -240,36 +234,6 @@ fn handle_array_indexing(state: &mut ParserState, left: Expr) -> Result<Expr> {
     }
 }
 
-/// Try to parse try operator (?)
-fn try_parse_try_operator(state: &mut ParserState, left: Expr) -> Option<Expr> {
-    let next_token = state.tokens.peek_nth(1);
-    let is_try = match next_token {
-        None => true,
-        Some((Token::Identifier(_), _)) => false,
-        Some((token, _)) => matches!(
-            token,
-            Token::Semicolon
-                | Token::Comma
-                | Token::RightParen
-                | Token::RightBracket
-                | Token::RightBrace
-                | Token::Else
-                | Token::In
-        ),
-    };
-    if is_try {
-        state.tokens.advance();
-        Some(Expr {
-            kind: ExprKind::Try {
-                expr: Box::new(left),
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-        })
-    } else {
-        None
-    }
-}
 
 /// Try to parse struct literal
 fn try_parse_struct_literal(state: &mut ParserState, left: &Expr) -> Result<Option<Expr>> {
@@ -386,6 +350,50 @@ fn try_binary_operators(
     }
 }
 
+/// Try to parse new actor operations (<- and <?)
+fn try_new_actor_operators(
+    state: &mut ParserState,
+    left: Expr,
+    token: &Token,
+    min_prec: i32,
+) -> Result<Option<Expr>> {
+    let (expr_kind, prec) = match token {
+        Token::LeftArrow => {
+            // Parse actor <- message
+            let prec = 1; // Same as assignment
+            if prec < min_prec {
+                return Ok(None);
+            }
+            state.tokens.advance();
+            let message = parse_expr_with_precedence_recursive(state, prec)?;
+            (ExprKind::ActorSend {
+                actor: Box::new(left),
+                message: Box::new(message),
+            }, prec)
+        }
+        Token::ActorQuery => {
+            // Parse actor <? message
+            let prec = 1; // Same as assignment
+            if prec < min_prec {
+                return Ok(None);
+            }
+            state.tokens.advance();
+            let message = parse_expr_with_precedence_recursive(state, prec)?;
+            (ExprKind::ActorQuery {
+                actor: Box::new(left),
+                message: Box::new(message),
+            }, prec)
+        }
+        _ => return Ok(None),
+    };
+
+    Ok(Some(Expr {
+        kind: expr_kind,
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
+    }))
+}
+
 /// Try to parse assignment operators
 fn try_assignment_operators(
     state: &mut ParserState,
@@ -442,12 +450,11 @@ fn get_compound_assignment_op(token: &Token) -> BinaryOp {
         Token::PipeEqual => BinaryOp::BitwiseOr,
         Token::CaretEqual => BinaryOp::BitwiseXor,
         Token::LeftShiftEqual => BinaryOp::LeftShift,
-        Token::RightShiftEqual => BinaryOp::RightShift,
         _ => unreachable!("Already checked is_assignment_op"),
     }
 }
 
-/// Try to parse pipeline operators (|>)
+/// Try to parse pipeline operators (>>)
 fn try_pipeline_operators(
     state: &mut ParserState,
     left: Expr,

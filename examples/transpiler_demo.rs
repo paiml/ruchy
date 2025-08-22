@@ -12,7 +12,7 @@ fn main() {
         ("If expression", "if x > 0 { positive } else { negative }"),
         ("List creation", "[1, 2, 3]"),
         ("Let binding", "let x = 42 in x + 1"),
-        ("Pipeline", "[1, 2, 3] |> map(double) |> filter(even)"),
+        ("Pipeline", "[1, 2, 3] >> map(double) >> filter(even)"),
         (
             "Fibonacci",
             "fun fibonacci(n: i32) -> i32 {

@@ -182,7 +182,7 @@ fn test_transpile_list_comprehension_with_filter() {
 
 #[test]
 fn test_transpile_pipeline() {
-    let code = "x |> f |> g";
+    let code = "x >> f >> g";
     let result = compile(code).unwrap();
     assert!(result.contains('g'));
     assert!(result.contains('f'));

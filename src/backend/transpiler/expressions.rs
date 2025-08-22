@@ -85,7 +85,7 @@ impl Transpiler {
     fn transpile_binary_op(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {
         use BinaryOp::{
             Add, And, BitwiseAnd, BitwiseOr, BitwiseXor, Divide, Equal, Greater, GreaterEqual,
-            LeftShift, Less, LessEqual, Modulo, Multiply, NotEqual, Or, Power, RightShift,
+            LeftShift, Less, LessEqual, Modulo, Multiply, NotEqual, Or, Power,
             Subtract,
         };
         match op {
@@ -100,7 +100,7 @@ impl Transpiler {
             // Logical operations
             And | Or => Self::transpile_logical_op(left, op, right),
             // Bitwise operations
-            BitwiseAnd | BitwiseOr | BitwiseXor | LeftShift | RightShift => {
+            BitwiseAnd | BitwiseOr | BitwiseXor | LeftShift => {
                 Self::transpile_bitwise_op(left, op, right)
             }
         }
@@ -193,7 +193,6 @@ impl Transpiler {
     fn transpile_shift_ops(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {
         match op {
             BinaryOp::LeftShift => quote! { #left << #right },
-            BinaryOp::RightShift => quote! { #left >> #right },
             _ => unreachable!(),
         }
     }
@@ -209,11 +208,6 @@ impl Transpiler {
         })
     }
 
-    /// Transpiles try operator (?)
-    pub fn transpile_try(&self, expr: &Expr) -> Result<TokenStream> {
-        let expr_tokens = self.transpile_expr(expr)?;
-        Ok(quote! { #expr_tokens? })
-    }
 
     /// Transpiles await expressions
     pub fn transpile_await(&self, expr: &Expr) -> Result<TokenStream> {

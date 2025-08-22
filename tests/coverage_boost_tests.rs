@@ -130,7 +130,7 @@ fn test_collection_operations() {
 #[test]
 fn test_pipeline_operations() {
     // Basic pipeline
-    assert!(is_valid_syntax("x |> f |> g"));
+    assert!(is_valid_syntax("x >> f >> g"));
 }
 
 #[test]
@@ -226,7 +226,7 @@ fn test_complex_expressions() {
     assert!(is_valid_syntax("arr[0][1][2]"));
 
     // Mixed operations
-    assert!(is_valid_syntax("(a + b) * c[0].method() |> f"));
+    assert!(is_valid_syntax("(a + b) * c[0].method() >> f"));
 }
 
 #[test]

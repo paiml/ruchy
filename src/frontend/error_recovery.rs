@@ -625,6 +625,7 @@ impl<'a> RecoveryParser<'a> {
                 ty,
                 span: name_span,
                 is_mutable: false,
+                default_value: None,
             });
 
             match self.tokens.peek() {
@@ -778,7 +779,7 @@ impl<'a> RecoveryParser<'a> {
             Token::Ampersand => 5,
             Token::EqualEqual | Token::NotEqual => 6,
             Token::Less | Token::LessEqual | Token::Greater | Token::GreaterEqual => 7,
-            Token::LeftShift | Token::RightShift => 8,
+            Token::LeftShift => 8,
             Token::Plus | Token::Minus => 9,
             Token::Star | Token::Slash | Token::Percent => 10,
             Token::Power => 11,
@@ -806,7 +807,6 @@ impl<'a> RecoveryParser<'a> {
             Token::Pipe => BinaryOp::BitwiseOr,
             Token::Caret => BinaryOp::BitwiseXor,
             Token::LeftShift => BinaryOp::LeftShift,
-            Token::RightShift => BinaryOp::RightShift,
             _ => anyhow::bail!("Not a binary operator: {:?}", token),
         })
     }

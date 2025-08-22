@@ -334,7 +334,6 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::Mod => parse_module(state),
         Token::Break => Ok(control_flow::parse_break(state)),
         Token::Continue => Ok(control_flow::parse_continue(state)),
-        Token::Try => control_flow::parse_try_catch(state),
         Token::Return => control_flow::parse_return(state),
         Token::Command => parse_command(state),
         Token::Result => {
@@ -517,7 +516,6 @@ pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {
         Token::Pipe => Some(BinaryOp::BitwiseOr),
         Token::Caret => Some(BinaryOp::BitwiseXor),
         Token::LeftShift => Some(BinaryOp::LeftShift),
-        Token::RightShift => Some(BinaryOp::RightShift),
         _ => None,
     }
 }
@@ -531,7 +529,7 @@ pub fn get_precedence(op: BinaryOp) -> i32 {
         BinaryOp::BitwiseAnd => 5,
         BinaryOp::Equal | BinaryOp::NotEqual => 6,
         BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => 7,
-        BinaryOp::LeftShift | BinaryOp::RightShift => 8,
+        BinaryOp::LeftShift => 8,
         BinaryOp::Add | BinaryOp::Subtract => 9,
         BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 10,
         BinaryOp::Power => 11,

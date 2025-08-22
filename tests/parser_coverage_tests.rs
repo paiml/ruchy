@@ -179,7 +179,7 @@ fn test_parse_try_operator() -> Result<()> {
 
 #[test]
 fn test_parse_pipeline_operator() -> Result<()> {
-    let input = "data |> filter(x > 5) |> map(x * 2)";
+    let input = "data >> filter(x > 5) >> map(x * 2)";
 
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;

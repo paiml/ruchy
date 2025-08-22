@@ -42,7 +42,6 @@ impl Transpiler {
             | ExprKind::Unary { .. }
             | ExprKind::Assign { .. }
             | ExprKind::CompoundAssign { .. }
-            | ExprKind::Try { .. }
             | ExprKind::Await { .. }
             | ExprKind::AsyncBlock { .. } => self.transpile_operator_only_expr(expr),
             // Control flow
@@ -63,7 +62,6 @@ impl Transpiler {
             ExprKind::Unary { op, operand } => self.transpile_unary(*op, operand),
             ExprKind::Assign { target, value } => self.transpile_assign(target, value),
             ExprKind::CompoundAssign { target, op, value } => self.transpile_compound_assign(target, *op, value),
-            ExprKind::Try { expr } => self.transpile_try(expr),
             ExprKind::Await { expr } => self.transpile_await(expr),
             ExprKind::AsyncBlock { body } => self.transpile_async_block(body),
             _ => unreachable!(),
@@ -188,8 +186,7 @@ impl Transpiler {
             | ExprKind::Tuple(_)
             | ExprKind::ListComprehension { .. }
             | ExprKind::Range { .. } => self.transpile_data_only_expr(expr),
-            ExprKind::TryCatch { .. }
-            | ExprKind::Throw { .. }
+ ExprKind::Throw { .. }
             | ExprKind::Ok { .. }
             | ExprKind::Err { .. } => self.transpile_error_only_expr(expr),
             _ => unreachable!("Non-data/error expression in transpile_data_error_expr"),
@@ -223,11 +220,6 @@ impl Transpiler {
 
     fn transpile_error_only_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
-            ExprKind::TryCatch {
-                try_block,
-                catch_clauses,
-                finally_block,
-            } => self.transpile_try_catch(try_block, catch_clauses, finally_block.as_deref()),
             ExprKind::Throw { expr } => self.transpile_throw(expr),
             ExprKind::Ok { value } => self.transpile_result_ok(value),
             ExprKind::Err { error } => self.transpile_result_err(error),
@@ -259,6 +251,11 @@ impl Transpiler {
                 message,
                 timeout,
             } => self.transpile_ask(actor, message, timeout.as_deref()),
+            ExprKind::ActorSend { actor, message } => self.transpile_send(actor, message),
+            ExprKind::ActorQuery { actor, message } => {
+                // Actor query is like Ask without timeout
+                self.transpile_ask(actor, message, None)
+            }
             ExprKind::Command { program, args, env, working_dir } => {
                 self.transpile_command(program, args, env, working_dir)
             }

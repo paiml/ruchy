@@ -148,7 +148,7 @@ fn test_string_interpolation() {
 
 #[test]
 fn test_pipeline_operator() {
-    let output = run_repl_command("[1, 2, 3] |> map(x => x * 2)");
+    let output = run_repl_command("[1, 2, 3] >> map(|x| x * 2)");
     // Even if not fully implemented, should not crash
     assert!(!output.is_empty());
 }

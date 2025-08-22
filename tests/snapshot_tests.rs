@@ -107,9 +107,9 @@ fn snapshot_transpile_match() {
 fn snapshot_transpile_pipeline() {
     let input = r"
         let result = data
-            |> filter(|x| x > 0)
-            |> map(|x| x * 2)
-            |> sum()
+            >> filter(|x| x > 0)
+            >> map(|x| x * 2)
+            >> sum()
     ";
     let mut parser = Parser::new(input);
     let ast = parser.parse().unwrap();

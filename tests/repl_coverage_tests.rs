@@ -277,7 +277,7 @@ fn test_repl_pipeline_operator() {
     let mut repl = Repl::new().expect("Failed to create REPL");
 
     // Pipeline operator works with functions
-    assert_eq!(repl.eval("1 |> println").unwrap(), "()");
+    assert_eq!(repl.eval("1 >> println").unwrap(), "()");
 }
 
 #[test]

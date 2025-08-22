@@ -332,10 +332,9 @@ mod tests {
     }
 
     #[test]
-    fn test_compile_shift_ops() {
-        let result = compile("x << 2 >> 1").unwrap();
+    fn test_compile_left_shift() {
+        let result = compile("x << 2").unwrap();
         assert!(result.contains("<<"));
-        assert!(result.contains(">>"));
     }
 
     #[test]
@@ -487,13 +486,13 @@ mod tests {
 
     #[test]
     fn test_compile_pipeline() {
-        let result = compile("data |> filter |> map").unwrap();
+        let result = compile("data >> filter >> map").unwrap();
         assert!(result.contains("("));
     }
 
     #[test]
     fn test_compile_send_operation() {
-        let result = compile("myactor ! message").unwrap();
+        let result = compile("myactor <- message").unwrap();
         assert!(result.contains(". send (")); // Formatted with spaces
         assert!(result.contains(". await")); // Formatted with spaces
     }

@@ -32,7 +32,7 @@ fn parse_complex_expr(c: &mut Criterion) {
 
 // Benchmark pipeline operators
 fn parse_pipeline(c: &mut Criterion) {
-    let input = "[1, 2, 3, 4, 5] |> map(double) |> filter(even) |> reduce(sum)";
+    let input = "[1, 2, 3, 4, 5] >> map(double) >> filter(even) >> reduce(sum)";
 
     c.bench_function("parse_pipeline", |b| {
         b.iter(|| {

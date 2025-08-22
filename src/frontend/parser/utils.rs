@@ -172,7 +172,13 @@ pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
                     bail!("Expected 'self' after '&'");
                 }
             }
-            _ => parse_pattern(state)?,
+            Some((Token::Identifier(name), _)) => {
+                // Only accept simple identifier patterns for parameters
+                let name = name.clone();
+                state.tokens.advance();
+                Pattern::Identifier(name)
+            }
+            _ => bail!("Function parameters must be simple identifiers (destructuring patterns not supported)"),
         };
 
         // Type annotation is optional for gradual typing
@@ -187,11 +193,20 @@ pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
             }
         };
 
+        // Parse optional default value (only on simple identifiers)
+        let default_value = if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+            state.tokens.advance(); // consume =
+            Some(Box::new(super::parse_expr_recursive(state)?))
+        } else {
+            None
+        };
+
         params.push(Param {
             pattern,
             ty,
             span: Span { start: 0, end: 0 },
             is_mutable,
+            default_value,
         });
 
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {

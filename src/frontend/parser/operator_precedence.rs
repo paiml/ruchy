@@ -56,10 +56,13 @@ pub fn get_operator_info(token: &Token) -> Option<(Precedence, Associativity)> {
         | Token::PipeEqual
         | Token::CaretEqual
         | Token::LeftShiftEqual
-        | Token::RightShiftEqual => Option::Some((Precedence::ASSIGNMENT, Right)),
+ => Option::Some((Precedence::ASSIGNMENT, Right)),
 
         // Pipeline operator (left-associative)
         Token::Pipeline => Option::Some((Precedence::PIPELINE, Left)),
+
+        // Actor operators (right-associative, like assignment)
+        Token::LeftArrow | Token::ActorQuery => Option::Some((Precedence::ASSIGNMENT, Right)),
 
         // Logical operators
         Token::OrOr => Option::Some((Precedence::LOGICAL_OR, Left)),
@@ -77,7 +80,7 @@ pub fn get_operator_info(token: &Token) -> Option<(Precedence, Associativity)> {
         Token::Pipe => Option::Some((Precedence::BITWISE_OR, Left)),
         Token::Caret => Option::Some((Precedence::BITWISE_XOR, Left)),
         Token::Ampersand => Option::Some((Precedence::BITWISE_AND, Left)),
-        Token::LeftShift | Token::RightShift => Option::Some((Precedence::SHIFT, Left)),
+        Token::LeftShift => Option::Some((Precedence::SHIFT, Left)),
 
         // Range operators
         Token::DotDot | Token::DotDotEqual => Option::Some((Precedence::RANGE, Left)),

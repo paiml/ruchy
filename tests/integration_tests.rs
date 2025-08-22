@@ -78,7 +78,7 @@ fn test_end_to_end_pattern_matching() {
 #[test]
 #[ignore = "Lambda expressions not yet implemented"]
 fn test_end_to_end_pipeline_operator() {
-    let input = "data |> filter(x => x > 0) |> map(x => x * 2)";
+    let input = "data >> filter(|x| x > 0) >> map(|x| x * 2)";
 
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
