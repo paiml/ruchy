@@ -1,7 +1,7 @@
 //! Parsing utilities and helper functions
 
 use super::{ParserState, *};
-use crate::frontend::ast::{ImportItem, StructPatternField};
+use crate::frontend::ast::ImportItem;
 
 /// Validate URL imports for security
 fn validate_url_import(url: &str) -> Result<()> {
@@ -40,122 +40,6 @@ fn validate_url_import(url: &str) -> Result<()> {
 /// - Struct patterns: `User { name, age }`
 /// - Wildcard patterns: `_`
 ///
-/// # Errors
-///
-/// Returns an error if the pattern syntax is invalid
-pub fn parse_pattern(state: &mut ParserState) -> Result<Pattern> {
-    match state.tokens.peek() {
-        Some((Token::Identifier(name), _)) => {
-            let name = name.clone();
-            state.tokens.advance();
-
-            // Check if this is a struct pattern: User { fields }
-            if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
-                state.tokens.advance(); // consume {
-
-                let mut fields = Vec::new();
-                while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                    if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
-                        let field_name = field_name.clone();
-                        state.tokens.advance();
-
-                        // Check for : pattern
-                        let pattern = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-                            state.tokens.advance(); // consume :
-                            parse_pattern(state)?
-                        } else {
-                            // Shorthand: field means field: field
-                            Pattern::Identifier(field_name.clone())
-                        };
-
-                        fields.push(StructPatternField {
-                            name: field_name,
-                            pattern: Some(pattern),
-                        });
-
-                        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                            state.tokens.advance();
-                        } else {
-                            break;
-                        }
-                    } else {
-                        bail!("Expected field name in struct pattern");
-                    }
-                }
-
-                state.tokens.expect(&Token::RightBrace)?;
-                Ok(Pattern::Struct { name, fields })
-            } else {
-                // Simple identifier pattern
-                Ok(Pattern::Identifier(name))
-            }
-        }
-        Some((Token::LeftParen, _)) => {
-            // Tuple pattern: (a, b, c)
-            state.tokens.advance(); // consume (
-
-            let mut patterns = Vec::new();
-            while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                patterns.push(parse_pattern(state)?);
-
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                } else {
-                    break;
-                }
-            }
-
-            state.tokens.expect(&Token::RightParen)?;
-            Ok(Pattern::Tuple(patterns))
-        }
-        Some((Token::LeftBracket, _)) => {
-            // List pattern: [a, b, c]
-            state.tokens.advance(); // consume [
-
-            let mut patterns = Vec::new();
-            while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-                patterns.push(parse_pattern(state)?);
-
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                } else {
-                    break;
-                }
-            }
-
-            state.tokens.expect(&Token::RightBracket)?;
-            Ok(Pattern::List(patterns))
-        }
-        Some((Token::Underscore, _)) => {
-            // Wildcard pattern: _
-            state.tokens.advance();
-            Ok(Pattern::Wildcard)
-        }
-        Some((Token::Integer(n), _)) => {
-            // Literal pattern
-            let n = *n;
-            state.tokens.advance();
-            Ok(Pattern::Literal(Literal::Integer(n)))
-        }
-        Some((Token::Float(f), _)) => {
-            // Literal pattern
-            let f = *f;
-            state.tokens.advance();
-            Ok(Pattern::Literal(Literal::Float(f)))
-        }
-        Some((Token::String(s) | Token::RawString(s), _)) => {
-            // Literal pattern
-            let s = s.clone();
-            state.tokens.advance();
-            Ok(Pattern::Literal(Literal::String(s)))
-        }
-        _ => bail!("Expected pattern"),
-    }
-}
-
-/// # Errors
-///
-/// Returns an error if the operation fails
 /// # Errors
 ///
 /// Returns an error if the operation fails

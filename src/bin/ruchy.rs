@@ -7038,7 +7038,7 @@ fn start_dataflow_debugger(
     export: Option<&PathBuf>,
     verbose: bool,
     breakpoints: &[String],
-    start_mode: &str,
+    _start_mode: &str,
 ) -> Result<()> {
     use ruchy::runtime::{DataflowDebugger, DataflowConfig, DataflowUI, UIConfig};
     use ruchy::runtime::{Breakpoint, BreakpointCondition, BreakpointAction};
@@ -7168,7 +7168,7 @@ fn start_dataflow_debugger(
                 .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
 
             let session_status = debugger_lock.get_session_status()?;
-            let execution_history = debugger_lock.get_execution_history()?;
+            let _execution_history = debugger_lock.get_execution_history()?;
             let stage_metrics = debugger_lock.get_stage_metrics()?;
 
             println!("=== DATAFLOW DEBUG REPORT ===");

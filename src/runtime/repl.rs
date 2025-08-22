@@ -1880,7 +1880,6 @@ impl Repl {
     }
 
     /// Evaluate try operator (?) (complexity: 1)
-
     /// Evaluate `DataFrame` operation (complexity: 1)
     fn evaluate_dataframe_operation() -> Result<Value> {
         // DataFrame operations not yet implemented in REPL

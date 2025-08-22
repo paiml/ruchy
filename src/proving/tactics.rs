@@ -27,7 +27,7 @@ pub struct TacticLibrary {
     tactics: HashMap<String, Box<dyn Tactic>>,
     
     /// ML model for suggestions (placeholder)
-    suggestion_model: SuggestionModel,
+    _suggestion_model: SuggestionModel,
 }
 
 /// ML model for tactic suggestions
@@ -70,7 +70,7 @@ impl TacticLibrary {
         
         Self {
             tactics,
-            suggestion_model: SuggestionModel {},
+            _suggestion_model: SuggestionModel {},
         }
     }
     

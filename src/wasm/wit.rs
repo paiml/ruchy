@@ -40,10 +40,10 @@ pub struct WitGenerator {
     config: WitConfig,
     
     /// Type registry
-    type_registry: TypeRegistry,
+    _type_registry: TypeRegistry,
     
     /// Import tracking
-    imports: HashSet<String>,
+    _imports: HashSet<String>,
 }
 
 /// Configuration for WIT generation
@@ -335,10 +335,10 @@ pub struct WorldExport {
 /// Type registry for managing type definitions
 struct TypeRegistry {
     /// Registered types
-    types: HashMap<String, TypeDefinition>,
+    _types: HashMap<String, TypeDefinition>,
     
     /// Type dependencies
-    dependencies: HashMap<String, HashSet<String>>,
+    _dependencies: HashMap<String, HashSet<String>>,
 }
 
 impl Default for WitConfig {
@@ -359,8 +359,8 @@ impl WitGenerator {
     pub fn new() -> Self {
         Self {
             config: WitConfig::default(),
-            type_registry: TypeRegistry::new(),
-            imports: HashSet::new(),
+            _type_registry: TypeRegistry::new(),
+            _imports: HashSet::new(),
         }
     }
     
@@ -368,8 +368,8 @@ impl WitGenerator {
     pub fn new_with_config(config: WitConfig) -> Self {
         Self {
             config,
-            type_registry: TypeRegistry::new(),
-            imports: HashSet::new(),
+            _type_registry: TypeRegistry::new(),
+            _imports: HashSet::new(),
         }
     }
     
@@ -646,19 +646,8 @@ impl WitInterface {
 impl TypeRegistry {
     fn new() -> Self {
         Self {
-            types: HashMap::new(),
-            dependencies: HashMap::new(),
+            _types: HashMap::new(),
+            _dependencies: HashMap::new(),
         }
-    }
-    
-    fn register_type(&mut self, type_def: TypeDefinition) {
-        self.types.insert(type_def.name.clone(), type_def);
-    }
-    
-    fn add_dependency(&mut self, type_name: String, dependency: String) {
-        self.dependencies
-            .entry(type_name)
-            .or_insert_with(HashSet::new)
-            .insert(dependency);
     }
 }
