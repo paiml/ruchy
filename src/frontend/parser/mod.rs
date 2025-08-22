@@ -269,57 +269,6 @@ fn create_post_decrement(left: Expr) -> Expr {
     }
 }
 
-/// Try to parse actor message operators (! and ?)
-fn try_actor_operators(
-    state: &mut ParserState,
-    left: Expr,
-    token: &Token,
-    min_prec: i32,
-) -> Result<Option<Expr>> {
-    if !matches!(token, Token::Bang | Token::Question) {
-        return Ok(None);
-    }
-
-    let is_binary_op = if let Some(next_token) = state.tokens.peek_nth(1) {
-        !matches!(next_token.0, Token::LeftParen)
-    } else {
-        true
-    };
-
-    if !is_binary_op {
-        return Ok(None);
-    }
-
-    let prec = 10;
-    if prec < min_prec {
-        return Ok(None);
-    }
-
-    state.tokens.advance();
-    let message = expressions::parse_prefix(state)?;
-
-    let expr = if matches!(token, Token::Bang) {
-        Expr {
-            kind: ExprKind::Send {
-                actor: Box::new(left),
-                message: Box::new(message),
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-        }
-    } else {
-        Expr {
-            kind: ExprKind::Ask {
-                actor: Box::new(left),
-                message: Box::new(message),
-                timeout: None,
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-        }
-    };
-    Ok(Some(expr))
-}
 
 /// Try to parse binary operators
 fn try_binary_operators(
@@ -357,7 +306,7 @@ fn try_new_actor_operators(
     token: &Token,
     min_prec: i32,
 ) -> Result<Option<Expr>> {
-    let (expr_kind, prec) = match token {
+    let (expr_kind, _prec) = match token {
         Token::LeftArrow => {
             // Parse actor <- message
             let prec = 1; // Same as assignment

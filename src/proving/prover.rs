@@ -9,7 +9,7 @@ use super::tactics::TacticLibrary;
 
 /// Interactive prover
 pub struct InteractiveProver {
-    backend: SmtBackend,
+    _backend: SmtBackend,
     tactics: TacticLibrary,
     timeout: u64,
     ml_suggestions: bool,
@@ -19,7 +19,7 @@ impl InteractiveProver {
     /// Create new prover
     pub fn new(backend: SmtBackend) -> Self {
         Self {
-            backend,
+            _backend: backend,
             tactics: TacticLibrary::default(),
             timeout: 5000,
             ml_suggestions: false,

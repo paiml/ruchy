@@ -45,7 +45,7 @@ pub fn get_operator_info(token: &Token) -> Option<(Precedence, Associativity)> {
     use Associativity::{Left, Right};
 
     match token {
-        // Assignment operators (right-associative)
+        // Assignment and actor operators (right-associative)
         Token::Equal
         | Token::PlusEqual
         | Token::MinusEqual
@@ -56,13 +56,11 @@ pub fn get_operator_info(token: &Token) -> Option<(Precedence, Associativity)> {
         | Token::PipeEqual
         | Token::CaretEqual
         | Token::LeftShiftEqual
- => Option::Some((Precedence::ASSIGNMENT, Right)),
+        | Token::LeftArrow
+        | Token::ActorQuery => Option::Some((Precedence::ASSIGNMENT, Right)),
 
         // Pipeline operator (left-associative)
         Token::Pipeline => Option::Some((Precedence::PIPELINE, Left)),
-
-        // Actor operators (right-associative, like assignment)
-        Token::LeftArrow | Token::ActorQuery => Option::Some((Precedence::ASSIGNMENT, Right)),
 
         // Logical operators
         Token::OrOr => Option::Some((Precedence::LOGICAL_OR, Left)),

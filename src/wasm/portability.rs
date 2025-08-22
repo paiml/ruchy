@@ -288,7 +288,7 @@ struct PlatformRequirements {
     size_limit: Option<usize>,
     
     /// API requirements
-    api_requirements: HashSet<String>,
+    _api_requirements: HashSet<String>,
 }
 
 /// Feature compatibility matrix
@@ -698,7 +698,7 @@ impl PortabilityAnalyzer {
             optional_features: HashSet::from(["bulk-memory".to_string(), "reference-types".to_string()]),
             incompatible_features: HashSet::from(["threads".to_string()]),
             size_limit: Some(10 * 1024 * 1024),
-            api_requirements: HashSet::new(),
+            _api_requirements: HashSet::new(),
         });
         
         // Browser requirements
@@ -707,7 +707,7 @@ impl PortabilityAnalyzer {
             optional_features: HashSet::from(["simd".to_string(), "threads".to_string()]),
             incompatible_features: HashSet::new(),
             size_limit: Some(100 * 1024 * 1024),
-            api_requirements: HashSet::new(),
+            _api_requirements: HashSet::new(),
         });
         
         requirements

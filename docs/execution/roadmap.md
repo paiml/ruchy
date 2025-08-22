@@ -158,56 +158,56 @@
 **Goal**: Eliminate parser ambiguities, reduce grammar complexity by 40%, align with Rust transpilation
 
 ### Week 1: Parser Fixes (RUCHY-0830 Series)
-- [ ] **RUCHY-0830**: Implement `>>` pipeline operator
+- [x] **RUCHY-0830**: Implement `>>` pipeline operator
   - Replace `|>` with `>>` for function composition
   - Eliminate lookahead requirement in parser
   - Update all existing pipeline usage
   - Test transpilation correctness
-- [ ] **RUCHY-0831**: Remove `=>` lambda syntax variant
+- [x] **RUCHY-0831**: Remove `=>` lambda syntax variant
   - Keep only `|params| -> type { body }` form  
   - Remove arrow function syntax completely
   - Simplify parser grammar productions
   - Update documentation and examples
-- [ ] **RUCHY-0832**: Restrict parameter patterns to identifiers
+- [x] **RUCHY-0832**: Restrict parameter patterns to identifiers
   - Remove destructuring patterns from function parameters
   - Simplify parameter parsing logic
   - Default values only on simple identifiers
   - Migration guide for existing destructuring
-- [ ] **RUCHY-0833**: Add explicit actor operations
+- [x] **RUCHY-0833**: Add explicit actor operations
   - Implement `<-` operator for fire-and-forget sends
   - Implement `<?` operator for request-reply pattern
   - Resolve precedence conflicts with `?` operator
   - Actor syntax integration tests
 
 ### Week 2: Feature Removal (RUCHY-0834 Series)
-- [ ] **RUCHY-0834**: Remove try/catch blocks from grammar
+- [x] **RUCHY-0834**: Remove try/catch blocks from grammar
   - Strip try/catch from AST definitions
   - Remove from parser completely
   - Update error handling to use Result<T,E> + `?` only
   - Documentation migration to canonical error handling
-- [ ] **RUCHY-0835**: Remove `when` pattern matching keyword
+- [x] **RUCHY-0835**: Remove pattern guards from match expressions
   - Delete when expressions from parser
   - Force migration to `match` expressions
   - Update all test cases using when
   - Simplify pattern matching grammar
-- [ ] **RUCHY-0836**: Remove `priv` keyword for visibility
+- [x] **RUCHY-0836**: Remove `priv` keyword for visibility
   - Default to private visibility model (Rust-aligned)
   - Remove priv from lexer and parser
   - Update visibility parsing to `pub?` only
   - Clean up all existing priv usage
 
 ### Week 3: Transpiler Alignment (RUCHY-0837 Series)  
-- [ ] **RUCHY-0837**: String interpolation syntax update
+- [x] **RUCHY-0837**: String interpolation syntax update
   - Change from `\(expr)` to `{expr}` in f-strings
   - Align with Rust format strings and Python f-strings
   - Update lexer token recognition
   - Transpiler generation of format! macros
-- [ ] **RUCHY-0838**: Refinement type syntax simplification
+- [x] **RUCHY-0838**: Refinement type syntax simplification
   - Change from `{x: T | pred}` to `T where pred`
   - Eliminate ambiguity with closure syntax
   - Clear separation of type and constraint
   - Update refinement type checker integration
-- [ ] **RUCHY-0839**: Import disambiguation with URL prefix
+- [x] **RUCHY-0839**: Import disambiguation with URL prefix
   - Explicit `"https://..."` syntax for URL imports
   - Module path vs URL path clear distinction
   - Update import resolution logic

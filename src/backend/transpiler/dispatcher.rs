@@ -245,13 +245,14 @@ impl Transpiler {
                 state,
                 handlers,
             } => self.transpile_actor(name, state, handlers),
-            ExprKind::Send { actor, message } => self.transpile_send(actor, message),
+            ExprKind::Send { actor, message } | ExprKind::ActorSend { actor, message } => {
+                self.transpile_send(actor, message)
+            }
             ExprKind::Ask {
                 actor,
                 message,
                 timeout,
             } => self.transpile_ask(actor, message, timeout.as_deref()),
-            ExprKind::ActorSend { actor, message } => self.transpile_send(actor, message),
             ExprKind::ActorQuery { actor, message } => {
                 // Actor query is like Ask without timeout
                 self.transpile_ask(actor, message, None)

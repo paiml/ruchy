@@ -112,7 +112,7 @@ struct CacheSimulator {
 /// Cache level simulation
 struct CacheLevel {
     /// Cache size in bytes
-    size: usize,
+    _size: usize,
     
     /// Cache line size in bytes
     line_size: usize,
@@ -121,7 +121,7 @@ struct CacheLevel {
     sets: usize,
     
     /// Associativity
-    associativity: usize,
+    _associativity: usize,
     
     /// Cache state (simplified)
     state: HashMap<u64, CacheLine>,
@@ -147,23 +147,23 @@ struct CacheLine {
 /// Memory access record
 struct MemoryAccess {
     /// Address accessed
-    address: u64,
+    _address: u64,
     
     /// Access type (read/write)
-    access_type: AccessType,
+    _access_type: AccessType,
     
     /// Size of access in bytes
-    size: usize,
+    _size: usize,
     
     /// Timestamp
-    timestamp: u64,
+    _timestamp: u64,
 }
 
 /// Memory access type
 #[derive(Debug, Clone, Copy)]
 enum AccessType {
     Read,
-    Write,
+    _Write,
 }
 
 /// Analyze cache behavior of AST
@@ -423,10 +423,10 @@ impl CacheSimulator {
     
     fn access_memory(&mut self, address: u64, access_type: AccessType, size: usize) {
         let access = MemoryAccess {
-            address,
-            access_type,
-            size,
-            timestamp: self.access_history.len() as u64,
+            _address: address,
+            _access_type: access_type,
+            _size: size,
+            _timestamp: self.access_history.len() as u64,
         };
         
         // Try L1 first
@@ -458,10 +458,10 @@ impl CacheLevel {
         let sets = size / (line_size * associativity);
         
         Self {
-            size,
+            _size: size,
             line_size,
             sets,
-            associativity,
+            _associativity: associativity,
             state: HashMap::new(),
             hits: 0,
             misses: 0,
