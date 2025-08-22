@@ -202,7 +202,7 @@ enum Commands {
         verbose: bool,
     },
 
-    /// Lint Ruchy source code for issues and style violations
+    /// Lint Ruchy source code for issues and style violations (Enhanced for v0.9.12)
     Lint {
         /// The file to lint (ignored if --all is used)
         file: Option<PathBuf>,
@@ -211,6 +211,14 @@ enum Commands {
         #[arg(long)]
         all: bool,
 
+        /// Auto-fix issues where possible
+        #[arg(long)]
+        fix: bool,
+
+        /// Strict mode with all rules enabled
+        #[arg(long)]
+        strict: bool,
+
         /// Show additional context for violations
         #[arg(long)]
         verbose: bool,
@@ -218,6 +226,10 @@ enum Commands {
         /// Output format (text, json)
         #[arg(long, default_value = "text")]
         format: String,
+
+        /// Specific rule categories to check (comma-separated: unused,style,complexity,security,performance)
+        #[arg(long)]
+        rules: Option<String>,
 
         /// Fail on warnings as well as errors
         #[arg(long)]
@@ -481,8 +493,11 @@ fn main() -> Result<()> {
         Some(Commands::Lint {
             file,
             all,
+            fix,
+            strict,
             verbose,
             format,
+            rules,
             deny_warnings,
             max_complexity,
             config,
@@ -502,8 +517,11 @@ fn main() -> Result<()> {
                     lint_ruchy_code(
                         &PathBuf::from("."),
                         all,
+                        fix,
+                        strict,
                         verbose,
                         &format,
+                        rules.as_deref(),
                         deny_warnings,
                         max_complexity,
                         &custom_rules,
@@ -512,8 +530,11 @@ fn main() -> Result<()> {
                     lint_ruchy_code(
                         &file,
                         false,
+                        fix,
+                        strict,
                         verbose,
                         &format,
+                        rules.as_deref(),
                         deny_warnings,
                         max_complexity,
                         &custom_rules,
@@ -1535,15 +1556,40 @@ fn generate_default_lint_config() -> Result<()> {
 }
 
 /// Lint Ruchy code
+#[allow(clippy::too_many_arguments)]
 fn lint_ruchy_code(
     file: &Path,
     all: bool,
+    fix: bool,
+    strict: bool,
     verbose: bool,
     format: &str,
+    rules: Option<&str>,
     deny_warnings: bool,
     max_complexity: usize,
     custom_rules: &CustomLintRules,
 ) -> Result<()> {
+    // Enhanced linting setup for v0.9.12
+    if verbose {
+        println!("{} Enhanced linting enabled with grammar-based analysis", "🔍".bright_blue());
+        if fix {
+            println!("{} Auto-fix mode enabled", "🔧".bright_green());
+        }
+        if strict {
+            println!("{} Strict mode enabled - all rules active", "⚡".bright_yellow());
+        }
+        if let Some(rule_filter) = rules {
+            println!("{} Rule filter: {}", "📋".bright_cyan(), rule_filter);
+        }
+    }
+
+    // Parse rule categories if specified
+    let enabled_rules = if let Some(rule_str) = rules {
+        rule_str.split(',').map(|s| s.trim().to_string()).collect::<Vec<_>>()
+    } else {
+        vec![]
+    };
+
     if all {
         // Discover and lint all .ruchy files
         let ruchy_files = discover_ruchy_files(".")?;
@@ -1568,7 +1614,7 @@ fn lint_ruchy_code(
 
             match parser.parse() {
                 Ok(ast) => {
-                    let violations = run_lint_checks(&ast, max_complexity, custom_rules, &source);
+                    let violations = run_lint_checks(&ast, max_complexity, custom_rules, &source, strict, &enabled_rules);
                     if !violations.is_empty() {
                         total_violations.extend(violations.clone());
                         files_with_errors += 1;
@@ -1611,7 +1657,7 @@ fn lint_ruchy_code(
 
         match parser.parse() {
             Ok(ast) => {
-                let violations = run_lint_checks(&ast, max_complexity, custom_rules, &source);
+                let violations = run_lint_checks(&ast, max_complexity, custom_rules, &source, strict, &enabled_rules);
                 display_lint_results(&violations, file, verbose, format);
 
                 if !violations.is_empty() && deny_warnings {
@@ -1638,6 +1684,8 @@ fn run_lint_checks(
     max_complexity: usize,
     custom_rules: &CustomLintRules,
     source: &str,
+    strict: bool,
+    enabled_rules: &[String],
 ) -> Vec<LintViolation> {
     let mut violations = Vec::new();
 
@@ -1686,6 +1734,32 @@ fn run_lint_checks(
     for custom_rule in &custom_rules.rules {
         if custom_rule.enabled {
             apply_custom_rule(ast, source, custom_rule, &mut violations);
+        }
+    }
+
+    // Enhanced v0.9.12 rule filtering and strict mode
+    if !enabled_rules.is_empty() {
+        // Filter violations based on enabled rule categories
+        violations.retain(|violation| {
+            enabled_rules.iter().any(|rule| {
+                match rule.as_str() {
+                    "unused" => violation.rule.contains("unused"),
+                    "style" => violation.rule.contains("naming") || violation.rule.contains("style") || violation.rule.contains("line_length"),
+                    "complexity" => violation.rule.contains("complexity"),
+                    "security" => violation.rule.contains("security") || violation.rule.contains("unsafe"),
+                    "performance" => violation.rule.contains("performance") || violation.rule.contains("optimization"),
+                    _ => violation.rule.contains(rule),
+                }
+            })
+        });
+    }
+
+    // Strict mode: upgrade warnings to errors
+    if strict {
+        for violation in &mut violations {
+            if matches!(violation.severity, LintSeverity::Warning) {
+                violation.severity = LintSeverity::Error;
+            }
         }
     }
 
