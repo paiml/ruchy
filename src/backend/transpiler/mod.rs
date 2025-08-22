@@ -57,25 +57,63 @@ impl Transpiler {
 
     /// Wraps transpiled code in a complete Rust program with necessary imports
     pub fn transpile_to_program(&self, expr: &Expr) -> Result<TokenStream> {
-        let body = self.transpile_expr(expr)?;
         let needs_polars = Self::contains_dataframe(expr);
-
-        if needs_polars {
-            Ok(quote! {
-                use polars::prelude::*;
-
-                fn main() {
-                    let result = #body;
-                    println!("{:?}", result);
-                }
-            })
+        
+        // Check if this is a function definition
+        if matches!(expr.kind, ExprKind::Function { .. }) {
+            // For function definitions, transpile as a top-level item and add empty main
+            let func = self.transpile_expr(expr)?;
+            if needs_polars {
+                Ok(quote! {
+                    use polars::prelude::*;
+                    
+                    #func
+                    
+                    fn main() {
+                        // Function defined but not called
+                    }
+                })
+            } else {
+                Ok(quote! {
+                    #func
+                    
+                    fn main() {
+                        // Function defined but not called
+                    }
+                })
+            }
         } else {
-            Ok(quote! {
-                fn main() {
-                    let result = #body;
-                    println!("{:?}", result);
-                }
-            })
+            // For expressions, wrap in main and execute
+            let body = self.transpile_expr(expr)?;
+            if needs_polars {
+                Ok(quote! {
+                    use polars::prelude::*;
+
+                    fn main() {
+                        let result = #body;
+                        // Use Display trait for strings, Debug for other types
+                        match &result {
+                            s if std::any::type_name_of_val(&s).contains("String") || 
+                                 std::any::type_name_of_val(&s).contains("&str") => println!("{}", s),
+                            _ => println!("{:?}", result)
+                        }
+                    }
+                })
+            } else {
+                Ok(quote! {
+                    fn main() {
+                        let result = #body;
+                        // For strings, print without quotes
+                        if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<String>() {
+                            println!("{}", s);
+                        } else if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<&str>() {
+                            println!("{}", s);
+                        } else {
+                            println!("{:?}", result);
+                        }
+                    }
+                })
+            }
         }
     }
 
@@ -105,10 +143,11 @@ impl Transpiler {
     /// Panics if label names cannot be parsed as valid Rust tokens
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         use ExprKind::{
-            Actor, Ask, AsyncBlock, Await, Binary, Call, Command, DataFrame, DataFrameOperation, Err,
-            FieldAccess, For, Function, Identifier, If, IndexAccess, Lambda, List, ListComprehension, 
-            Literal, Macro, Match, MethodCall, ObjectLiteral, Ok, QualifiedName, Range, Send, Slice,
-            StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, Tuple, Unary, While,
+            Actor, Ask, Assign, AsyncBlock, Await, Binary, Call, Command, CompoundAssign, DataFrame, 
+            DataFrameOperation, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess, Lambda, 
+            List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, ObjectLiteral, Ok, QualifiedName, 
+            Range, Send, Slice, StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, 
+            Tuple, Unary, While, WhileLet,
         };
 
         // Dispatch to specialized handlers to keep complexity below 10
@@ -121,13 +160,18 @@ impl Transpiler {
             // Operators and control flow
             Binary { .. }
             | Unary { .. }
+            | Assign { .. }
+            | CompoundAssign { .. }
             | Try { .. }
             | Await { .. }
             | AsyncBlock { .. }
             | If { .. }
+            | IfLet { .. }
             | Match { .. }
             | For { .. }
-            | While { .. } => self.transpile_operator_control_expr(expr),
+            | While { .. }
+            | WhileLet { .. }
+            | Loop { .. } => self.transpile_operator_control_expr(expr),
 
             // Functions
             Function { .. } | Lambda { .. } | Call { .. } | MethodCall { .. } | Macro { .. } => {

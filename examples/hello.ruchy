@@ -1,1 +1,1 @@
-let greeting = "Hello, Ruchy!" in greeting
+let greeting = "Hello, World!" in greeting
