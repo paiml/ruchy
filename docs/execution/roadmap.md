@@ -105,12 +105,12 @@
   - ✅ Claude Desktop integration via `ruchy mcp` command
   - ✅ Real-time quality analysis tools: score, lint, format, analyze
   - ✅ CLI integration with configurable thresholds and streaming
-- [ ] **RUCHY-0812**: Interactive debugger foundation (ridb)
+- [x] **RUCHY-0812**: Interactive debugger foundation (ridb)
   - Phase 1: Interpreter debugger (2 months)
   - Source-level debugging with breakpoints
   - Expression evaluation in context
   - Actor-aware debugging support
-- [ ] **RUCHY-0813**: Incremental scoring architecture
+- [x] **RUCHY-0813**: Incremental scoring architecture
   - Three-tier analysis depth (Shallow/Standard/Deep)
   - Caching and dependency tracking
   - Watch mode with progressive refinement

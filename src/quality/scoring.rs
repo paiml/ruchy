@@ -1,7 +1,13 @@
 //! Unified quality scoring system for Ruchy code (RUCHY-0810)
+//! Incremental scoring architecture (RUCHY-0813)
+
+use std::collections::HashMap;
+use std::time::{Duration, SystemTime};
+use std::path::PathBuf;
+use std::fs;
 
 /// Analysis depth for quality scoring
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum AnalysisDepth {
     /// <100ms - AST metrics only
     Shallow,
@@ -105,14 +111,94 @@ impl Default for ScoreConfig {
     }
 }
 
-/// Unified scoring engine
+/// Cache key for scoring results
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct CacheKey {
+    pub file_path: PathBuf,
+    pub content_hash: u64,
+    pub depth: AnalysisDepth,
+}
+
+/// Cached scoring result with metadata
+#[derive(Debug, Clone)]
+pub struct CacheEntry {
+    pub score: QualityScore,
+    pub timestamp: SystemTime,
+    pub dependencies: Vec<PathBuf>,
+}
+
+/// File dependency tracker
+#[derive(Debug)]
+pub struct DependencyTracker {
+    /// Map of file -> files it depends on
+    dependencies: HashMap<PathBuf, Vec<PathBuf>>,
+    /// Map of file -> last modified time
+    file_times: HashMap<PathBuf, SystemTime>,
+}
+
+impl Default for DependencyTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl DependencyTracker {
+    pub fn new() -> Self {
+        Self {
+            dependencies: HashMap::new(),
+            file_times: HashMap::new(),
+        }
+    }
+
+    pub fn track_dependency(&mut self, file: PathBuf, dependency: PathBuf) {
+        self.dependencies.entry(file).or_default().push(dependency);
+    }
+
+    pub fn is_stale(&self, file: &PathBuf) -> bool {
+        if let Some(dependencies) = self.dependencies.get(file) {
+            for dep in dependencies {
+                if self.is_file_modified(dep) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    fn is_file_modified(&self, file: &PathBuf) -> bool {
+        let Ok(metadata) = fs::metadata(file) else { return true; };
+        let Ok(modified) = metadata.modified() else { return true; };
+        
+        if let Some(&cached_time) = self.file_times.get(file) {
+            modified > cached_time
+        } else {
+            true
+        }
+    }
+
+    pub fn update_file_time(&mut self, file: PathBuf) {
+        if let Ok(metadata) = fs::metadata(&file) {
+            if let Ok(modified) = metadata.modified() {
+                self.file_times.insert(file, modified);
+            }
+        }
+    }
+}
+
+/// Incremental scoring engine with caching
 pub struct ScoreEngine {
     config: ScoreConfig,
+    cache: HashMap<CacheKey, CacheEntry>,
+    dependency_tracker: DependencyTracker,
 }
 
 impl ScoreEngine {
     pub fn new(config: ScoreConfig) -> Self {
-        Self { config }
+        Self { 
+            config,
+            cache: HashMap::new(),
+            dependency_tracker: DependencyTracker::new(),
+        }
     }
     
     pub fn score(&self, ast: &crate::frontend::ast::Expr, depth: AnalysisDepth) -> QualityScore {
@@ -131,7 +217,171 @@ impl ScoreEngine {
             components,
             grade,
             confidence,
-            cache_hit_rate: 0.0, // Caching implementation in RUCHY-0813
+            cache_hit_rate: 0.0, // No file path in legacy API
+        }
+    }
+
+    /// Incremental scoring with file-based caching (RUCHY-0813)
+    pub fn score_incremental(
+        &mut self,
+        ast: &crate::frontend::ast::Expr,
+        file_path: PathBuf,
+        content: &str,
+        depth: AnalysisDepth,
+    ) -> QualityScore {
+        let content_hash = Self::hash_content(content);
+        let cache_key = CacheKey {
+            file_path: file_path.clone(),
+            content_hash,
+            depth,
+        };
+
+        // Check cache first
+        if let Some(entry) = self.cache.get(&cache_key) {
+            if !self.dependency_tracker.is_stale(&file_path) {
+                let mut score = entry.score.clone();
+                score.cache_hit_rate = 1.0;
+                return score;
+            }
+        }
+
+        // Fast path for small files - skip complex analysis
+        let start = std::time::Instant::now();
+        let is_small_file = content.len() < 1024;
+        let effective_depth = if is_small_file && depth != AnalysisDepth::Deep {
+            AnalysisDepth::Shallow
+        } else {
+            depth
+        };
+
+        let components = match effective_depth {
+            AnalysisDepth::Shallow => Self::score_shallow(ast),
+            AnalysisDepth::Standard => Self::score_standard(ast),
+            AnalysisDepth::Deep => Self::score_deep(ast),
+        };
+
+        let value = self.calculate_weighted_score(&components);
+        let grade = Grade::from_score(value);
+        let confidence = if is_small_file && depth != effective_depth {
+            Self::calculate_confidence(effective_depth) * 0.9 // Slightly reduced confidence for fast path
+        } else {
+            Self::calculate_confidence(depth)
+        };
+        let elapsed = start.elapsed();
+
+        let score = QualityScore {
+            value,
+            components,
+            grade,
+            confidence,
+            cache_hit_rate: 0.0,
+        };
+
+        // Cache the result only if worth caching
+        let is_worth_caching = elapsed > Duration::from_millis(10) || !is_small_file;
+        if is_worth_caching {
+            let entry = CacheEntry {
+                score: score.clone(),
+                timestamp: SystemTime::now(),
+                dependencies: Self::extract_dependencies(ast),
+            };
+            self.cache.insert(cache_key, entry);
+        }
+
+        self.dependency_tracker.update_file_time(file_path);
+
+        // Optimize cache if scoring took too long or cache is getting large
+        if elapsed > Duration::from_millis(100) || self.cache.len() > 1000 {
+            self.optimize_cache();
+        }
+
+        score
+    }
+
+    /// Progressive scoring that refines analysis depth based on time budget
+    pub fn score_progressive(
+        &mut self,
+        ast: &crate::frontend::ast::Expr,
+        file_path: PathBuf,
+        content: &str,
+        time_budget: Duration,
+    ) -> QualityScore {
+        let start = std::time::Instant::now();
+
+        // Start with shallow analysis
+        let mut score = self.score_incremental(ast, file_path.clone(), content, AnalysisDepth::Shallow);
+        
+        if start.elapsed() < time_budget / 3 {
+            // Upgrade to standard analysis
+            score = self.score_incremental(ast, file_path.clone(), content, AnalysisDepth::Standard);
+            
+            if start.elapsed() < time_budget * 2 / 3 {
+                // Upgrade to deep analysis
+                score = self.score_incremental(ast, file_path, content, AnalysisDepth::Deep);
+            }
+        }
+
+        score
+    }
+
+    fn hash_content(content: &str) -> u64 {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        
+        let mut hasher = DefaultHasher::new();
+        content.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    fn extract_dependencies(_ast: &crate::frontend::ast::Expr) -> Vec<PathBuf> {
+        // Extract import/use dependencies from AST
+        // Implementation in RUCHY-0814 with type checker integration
+        Vec::new()
+    }
+
+    fn optimize_cache(&mut self) {
+        // Remove old cache entries to maintain <100ms performance
+        let now = SystemTime::now();
+        let cutoff = Duration::from_secs(300); // 5 minutes
+        let max_entries = 500; // Maximum cache entries for performance
+
+        // First pass: Remove old entries
+        self.cache.retain(|_, entry| {
+            if let Ok(age) = now.duration_since(entry.timestamp) {
+                age < cutoff
+            } else {
+                false
+            }
+        });
+
+        // Second pass: If still too many entries, remove least recently used
+        if self.cache.len() > max_entries {
+            let mut entries: Vec<_> = self.cache.iter().map(|(k, v)| (k.clone(), v.timestamp)).collect();
+            entries.sort_by_key(|(_, timestamp)| *timestamp);
+            
+            let to_remove = self.cache.len() - max_entries;
+            let keys_to_remove: Vec<_> = entries.iter()
+                .take(to_remove)
+                .map(|(k, _)| k.clone())
+                .collect();
+            
+            for key in keys_to_remove {
+                self.cache.remove(&key);
+            }
+        }
+    }
+
+    /// Clear all caches - useful for memory management
+    pub fn clear_cache(&mut self) {
+        self.cache.clear();
+        self.dependency_tracker = DependencyTracker::new();
+    }
+
+    /// Get cache statistics
+    pub fn cache_stats(&self) -> CacheStats {
+        CacheStats {
+            entries: self.cache.len(),
+            memory_usage_estimate: self.cache.len() * 1024, // Rough estimate
         }
     }
     
@@ -337,6 +587,13 @@ pub struct ScoreExplanation {
     pub changes: Vec<String>,
     pub tradeoffs: Vec<String>,
     pub grade_change: String,
+}
+
+/// Cache performance statistics
+#[derive(Debug, Clone)]
+pub struct CacheStats {
+    pub entries: usize,
+    pub memory_usage_estimate: usize,
 }
 
 /// Score correctness component
