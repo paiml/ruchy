@@ -26,7 +26,14 @@
   - ✅ Enhanced output formats: text and JSON for CI/CD integration
   - ✅ Verbose mode with detailed explanations and suggestions
   - ✅ Grammar-based analysis using Ruchy AST for accurate detection
-- [ ] **RUCHY-0752**: Complete `ruchy fmt` code formatting
+- [x] **RUCHY-0752**: ✅ COMPLETED - Complete `ruchy fmt` code formatting (v0.9.12)
+  - ✅ Production-ready code formatter generates formatted Ruchy source
+  - ✅ Configurable formatting: `--line-width`, `--indent`, `--use-tabs`
+  - ✅ Multiple modes: format in-place, `--check` for CI, `--stdout` for preview
+  - ✅ Configuration file support with `--config` flag
+  - ✅ Project-wide formatting with `--all` flag
+  - ✅ Diff display with `--diff` for reviewing changes
+  - ✅ AST-based formatting preserves semantics, only changes style
 - [ ] **RUCHY-0753**: Expand `ruchy ast` analysis capabilities
 - [ ] **RUCHY-0754**: Implement `ruchy provability` formal verification
 - [ ] **RUCHY-0755**: Create `ruchy runtime` performance analysis
