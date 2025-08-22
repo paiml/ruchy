@@ -1,0 +1,141 @@
+name: Binary Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for manual release'
+        required: false
+        default: 'manual-release'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-linux:
+    name: Build Linux Binaries
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          # Future targets:
+          # - x86_64-unknown-linux-musl (requires musl-tools)
+          # - aarch64-unknown-linux-gnu (requires cross-compilation)
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Build optimized binary
+        run: |
+          # Note: Using standard release profile as release-dist requires --profile flag
+          # which conflicts with --release. The release profile already has LTO enabled.
+          cargo build --release --target ${{ matrix.target }} --locked
+          
+      - name: Prepare binary
+        run: |
+          cd target/${{ matrix.target }}/release
+          strip ruchy || true
+          tar czf ruchy-${{ github.ref_name }}-${{ matrix.target }}.tar.gz ruchy
+          mv *.tar.gz ../../../
+          
+      - name: Generate checksums
+        run: |
+          sha256sum ruchy-*.tar.gz > SHA256SUMS-${{ matrix.target }}
+          
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ruchy-${{ matrix.target }}
+          path: |
+            ruchy-*.tar.gz
+            SHA256SUMS-*
+
+  create-release:
+    name: Create GitHub Release
+    needs: build-linux
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Prepare release files
+        run: |
+          mkdir -p release-files
+          find artifacts -name "*.tar.gz" -exec mv {} release-files/ \;
+          find artifacts -name "SHA256SUMS-*" -exec cat {} >> release-files/SHA256SUMS \;
+          cd release-files
+          ls -la
+      
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="${{ github.event.inputs.tag_name }}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## Ruchy ${{ steps.version.outputs.version }}
+            
+            ### Installation
+            
+            #### Linux x86_64
+            ```bash
+            # Quick install with script
+            curl -sSL https://raw.githubusercontent.com/paiml/ruchy/main/install.sh | bash
+            
+            # Or manual install
+            curl -L https://github.com/paiml/ruchy/releases/download/${{ steps.version.outputs.version }}/ruchy-${{ steps.version.outputs.version }}-x86_64-unknown-linux-gnu.tar.gz | tar xz
+            sudo mv ruchy /usr/local/bin/
+            ```
+            
+            #### Build from source
+            ```bash
+            cargo install ruchy --version ${{ steps.version.outputs.version }}
+            ```
+            
+            ### Checksums
+            See `SHA256SUMS` file for verification.
+          files: |
+            release-files/*
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          generate_release_notes: true
