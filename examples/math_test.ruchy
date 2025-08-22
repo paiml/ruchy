@@ -1,0 +1,37 @@
+// Example test file for the new ruchy test command
+// RUCHY-0750: Enhanced test framework with coverage
+
+fun add(x: i32, y: i32) -> i32 {
+    x + y
+}
+
+fun multiply(x: i32, y: i32) -> i32 {
+    x * y
+}
+
+fun test_addition() {
+    let result = add(2, 3)
+    if result == 5 {
+        println("✅ Addition test passed")
+    } else {
+        println("❌ Addition test failed: expected 5, got " + result)
+    }
+}
+
+fun test_multiplication() {
+    let result = multiply(4, 5)
+    if result == 20 {
+        println("✅ Multiplication test passed")
+    } else {
+        println("❌ Multiplication test failed: expected 20, got " + result)
+    }
+}
+
+fun test_edge_case() {
+    let result = add(0, 0)
+    if result == 0 {
+        println("✅ Edge case test passed")
+    } else {
+        println("❌ Edge case test failed: expected 0, got " + result)
+    }
+}
