@@ -17,6 +17,10 @@ debug_*
 .DS_Store
 *.orig
 
+# Test artifacts - coverage reports
+coverage.html
+coverage.json
+
 # Context files
 deep_context.md
 *_context.md
