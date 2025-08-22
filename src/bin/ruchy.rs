@@ -13,10 +13,13 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use ruchy::{runtime::repl::Repl, ExprKind, Parser as RuchyParser, Transpiler};
+use ruchy::optimization::{MechanicalSympathyTuner, HardwareProfile, Priority};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{self, IsTerminal, Read};
 use std::path::{Path, PathBuf};
+
+use ruchy::quality::enforcement::enforce_quality_gates;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -289,6 +292,40 @@ enum Commands {
         output: Option<PathBuf>,
     },
 
+    /// Quality gate enforcement (RUCHY-0815)
+    QualityGate {
+        /// The file or directory to check
+        path: PathBuf,
+
+        /// Configuration file (.ruchy/score.toml)
+        #[arg(long)]
+        config: Option<PathBuf>,
+
+        /// Analysis depth (shallow/standard/deep)
+        #[arg(long, default_value = "standard")]
+        depth: String,
+
+        /// Fail fast on first violation
+        #[arg(long)]
+        fail_fast: bool,
+
+        /// Output format (console/json/junit)
+        #[arg(long, default_value = "console")]
+        format: String,
+
+        /// Export CI/CD results
+        #[arg(long)]
+        export: Option<PathBuf>,
+
+        /// Run in CI mode (strict thresholds)
+        #[arg(long)]
+        ci: bool,
+
+        /// Show detailed violation information
+        #[arg(long)]
+        verbose: bool,
+    },
+
     /// Format Ruchy source code (Enhanced for v0.9.12)
     Fmt {
         /// The file to format
@@ -489,6 +526,246 @@ enum Commands {
         /// Configuration file path
         #[arg(short, long)]
         config: Option<PathBuf>,
+    },
+
+    /// Hardware-aware optimization analysis (RUCHY-0816)
+    Optimize {
+        /// The file to analyze for optimization opportunities
+        file: PathBuf,
+
+        /// Hardware profile to use (detect, intel, amd, arm)
+        #[arg(long, default_value = "detect")]
+        hardware: String,
+
+        /// Analysis depth (quick, standard, deep)
+        #[arg(long, default_value = "standard")]
+        depth: String,
+
+        /// Show cache behavior analysis
+        #[arg(long)]
+        cache: bool,
+
+        /// Show branch prediction analysis
+        #[arg(long)]
+        branches: bool,
+
+        /// Show vectorization opportunities
+        #[arg(long)]
+        vectorization: bool,
+
+        /// Show abstraction cost analysis
+        #[arg(long)]
+        abstractions: bool,
+
+        /// Benchmark hardware characteristics
+        #[arg(long)]
+        benchmark: bool,
+
+        /// Output format (text, json, html)
+        #[arg(long, default_value = "text")]
+        format: String,
+
+        /// Save analysis to file
+        #[arg(long)]
+        output: Option<PathBuf>,
+
+        /// Show verbose optimization details
+        #[arg(long)]
+        verbose: bool,
+
+        /// Minimum impact threshold for recommendations (0.0-1.0)
+        #[arg(long, default_value = "0.05")]
+        threshold: f64,
+    },
+
+    /// Actor observatory for live system introspection (RUCHY-0817)
+    #[command(name = "actor:observe")]
+    ActorObserve {
+        /// Actor system configuration file
+        #[arg(long)]
+        config: Option<PathBuf>,
+
+        /// Observatory refresh interval in milliseconds
+        #[arg(long, default_value = "1000")]
+        refresh_interval: u64,
+
+        /// Maximum number of message traces to display
+        #[arg(long, default_value = "50")]
+        max_traces: usize,
+
+        /// Maximum number of actors to display
+        #[arg(long, default_value = "20")]
+        max_actors: usize,
+
+        /// Enable deadlock detection
+        #[arg(long)]
+        enable_deadlock_detection: bool,
+
+        /// Deadlock detection interval in milliseconds
+        #[arg(long, default_value = "1000")]
+        deadlock_interval: u64,
+
+        /// Start in a specific view mode (overview, actors, messages, metrics, deadlocks)
+        #[arg(long, default_value = "overview")]
+        start_mode: String,
+
+        /// Disable color output
+        #[arg(long)]
+        no_color: bool,
+
+        /// Output format (interactive, json, text)
+        #[arg(long, default_value = "interactive")]
+        format: String,
+
+        /// Export observations to file
+        #[arg(long)]
+        export: Option<PathBuf>,
+
+        /// Duration to observe in seconds (0 for infinite)
+        #[arg(long, default_value = "0")]
+        duration: u64,
+
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
+
+        /// Add message filter by actor name pattern
+        #[arg(long)]
+        filter_actor: Option<String>,
+
+        /// Add message filter for failed messages only
+        #[arg(long)]
+        filter_failed: bool,
+
+        /// Add message filter for slow messages (minimum microseconds)
+        #[arg(long)]
+        filter_slow: Option<u64>,
+    },
+
+    /// Dataflow debugger for DataFrame pipeline debugging (RUCHY-0818)
+    #[command(name = "dataflow:debug")]
+    DataflowDebug {
+        /// Pipeline configuration file
+        #[arg(long)]
+        config: Option<PathBuf>,
+        
+        /// Maximum rows to materialize per stage
+        #[arg(long, default_value = "1000")]
+        max_rows: usize,
+        
+        /// Auto-materialize data at each stage
+        #[arg(long)]
+        auto_materialize: bool,
+        
+        /// Enable performance profiling
+        #[arg(long, default_value = "true")]
+        enable_profiling: bool,
+        
+        /// Stage execution timeout in milliseconds
+        #[arg(long, default_value = "30000")]
+        timeout: u64,
+        
+        /// Enable memory tracking
+        #[arg(long)]
+        track_memory: bool,
+        
+        /// Compute diffs between stages
+        #[arg(long)]
+        compute_diffs: bool,
+        
+        /// Sample rate for large datasets (0.0-1.0)
+        #[arg(long, default_value = "1.0")]
+        sample_rate: f64,
+        
+        /// UI refresh interval in milliseconds
+        #[arg(long, default_value = "1000")]
+        refresh_interval: u64,
+        
+        /// Disable color output
+        #[arg(long)]
+        no_color: bool,
+        
+        /// Output format (interactive, json, text)
+        #[arg(long, default_value = "interactive")]
+        format: String,
+        
+        /// Export debug data to file
+        #[arg(long)]
+        export: Option<PathBuf>,
+        
+        /// Show verbose debugging output
+        #[arg(long)]
+        verbose: bool,
+        
+        /// Add breakpoint at stage (can be used multiple times)
+        #[arg(long)]
+        breakpoint: Vec<String>,
+        
+        /// Start mode (overview, stages, data, metrics, history)
+        #[arg(long, default_value = "overview")]
+        start_mode: String,
+    },
+
+    /// WebAssembly component toolkit (RUCHY-0819)
+    Wasm {
+        /// The source file to compile to WASM
+        file: PathBuf,
+        
+        /// Output file for the WASM component
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        
+        /// Target platform (wasm32, wasi, browser, nodejs, cloudflare-workers)
+        #[arg(long, default_value = "wasm32")]
+        target: String,
+        
+        /// Generate WIT interface definition
+        #[arg(long)]
+        wit: bool,
+        
+        /// Deploy to target platform
+        #[arg(long)]
+        deploy: bool,
+        
+        /// Deployment target (cloudflare, fastly, aws-lambda, vercel, deno)
+        #[arg(long)]
+        deploy_target: Option<String>,
+        
+        /// Analyze portability across platforms
+        #[arg(long)]
+        portability: bool,
+        
+        /// Optimization level (none, O1, O2, O3, Os, Oz)
+        #[arg(long, default_value = "O2")]
+        opt_level: String,
+        
+        /// Include debug information
+        #[arg(long)]
+        debug: bool,
+        
+        /// Enable SIMD instructions
+        #[arg(long)]
+        simd: bool,
+        
+        /// Enable threads and atomics
+        #[arg(long)]
+        threads: bool,
+        
+        /// Enable component model
+        #[arg(long, default_value = "true")]
+        component_model: bool,
+        
+        /// Component name
+        #[arg(long)]
+        name: Option<String>,
+        
+        /// Component version
+        #[arg(long, default_value = "0.1.0")]
+        version: String,
+        
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
     },
 }
 
@@ -709,6 +986,18 @@ fn main() -> Result<()> {
             let output_str = output.as_ref().and_then(|p| p.to_str());
             calculate_quality_score(&path, &depth, fast, deep, watch, explain, baseline_str, min, config_str, &format, verbose, output_str).map_err(|e| anyhow::anyhow!("{}", e))?;
         }
+        Some(Commands::QualityGate {
+            path,
+            config,
+            depth,
+            fail_fast,
+            format,
+            export,
+            ci,
+            verbose,
+        }) => {
+            enforce_quality_gates(&path, config.as_deref(), &depth, fail_fast, &format, export.as_deref(), ci, verbose)?;
+        }
         Some(Commands::Fmt {
             file,
             all,
@@ -832,6 +1121,142 @@ fn main() -> Result<()> {
         }) => {
             let config_str = config.as_ref().and_then(|p| p.to_str());
             start_mcp_server(&name, streaming, timeout, min_score, max_complexity, verbose, config_str)?;
+        }
+
+        Some(Commands::Optimize {
+            file,
+            hardware,
+            depth,
+            cache,
+            branches,
+            vectorization,
+            abstractions,
+            benchmark,
+            format,
+            output,
+            verbose,
+            threshold,
+        }) => {
+            optimize_file(
+                &file,
+                &hardware,
+                &depth,
+                cache,
+                branches,
+                vectorization,
+                abstractions,
+                benchmark,
+                &format,
+                output.as_ref().map(|v| &**v),
+                verbose,
+                threshold,
+            )?;
+        }
+
+        Some(Commands::ActorObserve {
+            config,
+            refresh_interval,
+            max_traces,
+            max_actors,
+            enable_deadlock_detection,
+            deadlock_interval,
+            start_mode,
+            no_color,
+            format,
+            export,
+            duration,
+            verbose,
+            filter_actor,
+            filter_failed,
+            filter_slow,
+        }) => {
+            start_actor_observatory(
+                config.as_ref(),
+                refresh_interval,
+                max_traces,
+                max_actors,
+                enable_deadlock_detection,
+                deadlock_interval,
+                &start_mode,
+                !no_color,
+                &format,
+                export.as_ref(),
+                duration,
+                verbose,
+                filter_actor.as_ref(),
+                filter_failed,
+                filter_slow,
+            )?;
+        }
+        Some(Commands::DataflowDebug {
+            config,
+            max_rows,
+            auto_materialize,
+            enable_profiling,
+            timeout,
+            track_memory,
+            compute_diffs,
+            sample_rate,
+            refresh_interval,
+            no_color,
+            format,
+            export,
+            verbose,
+            breakpoint,
+            start_mode,
+        }) => {
+            start_dataflow_debugger(
+                config.as_ref(),
+                max_rows,
+                auto_materialize,
+                enable_profiling,
+                timeout,
+                track_memory,
+                compute_diffs,
+                sample_rate,
+                refresh_interval,
+                !no_color,
+                &format,
+                export.as_ref(),
+                verbose,
+                &breakpoint,
+                &start_mode,
+            )?;
+        }
+        Some(Commands::Wasm { 
+            file,
+            output,
+            target,
+            wit,
+            deploy,
+            deploy_target,
+            portability,
+            opt_level,
+            debug,
+            simd,
+            threads,
+            component_model,
+            name,
+            version,
+            verbose,
+        }) => {
+            handle_wasm_command(
+                &file,
+                output.as_deref(),
+                &target,
+                wit,
+                deploy,
+                deploy_target.as_deref(),
+                portability,
+                &opt_level,
+                debug,
+                simd,
+                threads,
+                component_model,
+                name.as_deref(),
+                &version,
+                verbose,
+            )?;
         }
     }
 
@@ -5885,4 +6310,1049 @@ fn start_mcp_server(
         // This is just a placeholder that runs indefinitely
         // Users can stop with Ctrl+C from terminal
     }
+}
+
+/// Perform hardware-aware optimization analysis on a Ruchy file (RUCHY-0816)
+#[allow(clippy::too_many_arguments)]
+fn optimize_file(
+    file: &Path,
+    hardware: &str,
+    depth: &str,
+    show_cache: bool,
+    show_branches: bool,
+    show_vectorization: bool,
+    show_abstractions: bool,
+    benchmark: bool,
+    format: &str,
+    output: Option<&Path>,
+    verbose: bool,
+    threshold: f64,
+) -> Result<()> {
+    use ruchy::optimization::hardware::benchmark_hardware_characteristics;
+    
+    let start = Instant::now();
+    
+    if verbose {
+        println!("🔧 Starting mechanical sympathy analysis...");
+        println!("   - File: {}", file.display());
+        println!("   - Hardware: {}", hardware);
+        println!("   - Depth: {}", depth);
+        println!("   - Threshold: {:.2}%", threshold * 100.0);
+    }
+    
+    // Read and parse the source file
+    let source = fs::read_to_string(file)
+        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    
+    let mut parser = RuchyParser::new(&source);
+    let ast = parser.parse()
+        .with_context(|| format!("Failed to parse file: {}", file.display()))?;
+    
+    if verbose {
+        println!("   - AST parsed successfully ({} nodes)", count_ast_nodes(&ast));
+    }
+    
+    // Create hardware profile
+    let hardware_profile = match hardware {
+        "detect" => HardwareProfile::default(),
+        "intel" => create_intel_profile(),
+        "amd" => create_amd_profile(),
+        "arm" => create_arm_profile(),
+        _ => {
+            eprintln!("⚠️ Unknown hardware profile '{}', using detection", hardware);
+            HardwareProfile::default()
+        }
+    };
+    
+    // Benchmark hardware if requested
+    if benchmark {
+        if verbose {
+            println!("🏃 Benchmarking hardware characteristics...");
+        }
+        
+        let benchmark_results = benchmark_hardware_characteristics();
+        println!("\n{} Hardware Benchmark Results:", "🏁".bright_green());
+        println!("   - Memory Bandwidth: {:.1} GB/s", benchmark_results.memory_bandwidth);
+        println!("   - L1 Cache Latency: {:.1} cycles", benchmark_results.cache_latencies.get("L1").unwrap_or(&0.0));
+        println!("   - L2 Cache Latency: {:.1} cycles", benchmark_results.cache_latencies.get("L2").unwrap_or(&0.0));
+        println!("   - L3 Cache Latency: {:.1} cycles", benchmark_results.cache_latencies.get("L3").unwrap_or(&0.0));
+        println!("   - Branch Predictor Accuracy: {:.1}%", benchmark_results.branch_predictor_accuracy * 100.0);
+    }
+    
+    // Create mechanical sympathy tuner
+    let tuner = MechanicalSympathyTuner::with_hardware_profile(hardware_profile.clone());
+    
+    // Perform analysis
+    if verbose {
+        println!("🔍 Analyzing code for optimization opportunities...");
+    }
+    
+    let analysis = tuner.analyze(&ast, file.to_string_lossy().as_ref());
+    
+    let analysis_time = start.elapsed();
+    
+    // Filter recommendations by threshold
+    let significant_recommendations: Vec<_> = analysis.recommendations
+        .iter()
+        .filter(|rec| rec.impact >= threshold)
+        .collect();
+    
+    // Display results based on format
+    match format {
+        "json" => {
+            let json_output = serde_json::to_string_pretty(&analysis)
+                .with_context(|| "Failed to serialize analysis to JSON")?;
+            
+            if let Some(output_path) = output {
+                fs::write(output_path, &json_output)
+                    .with_context(|| format!("Failed to write JSON to {}", output_path.display()))?;
+                println!("JSON analysis written to {}", output_path.display());
+            } else {
+                println!("{}", json_output);
+            }
+        }
+        
+        "text" | _ => {
+            display_optimization_analysis(&analysis, &significant_recommendations, show_cache, show_branches, show_vectorization, show_abstractions, verbose);
+            
+            if let Some(output_path) = output {
+                let report = generate_text_report(&analysis, &significant_recommendations, show_cache, show_branches, show_vectorization, show_abstractions);
+                fs::write(output_path, &report)
+                    .with_context(|| format!("Failed to write report to {}", output_path.display()))?;
+                println!("\nText report written to {}", output_path.display());
+            }
+        }
+    }
+    
+    // Summary
+    println!("\n{} Analysis Summary:", "📊".bright_blue());
+    println!("   - File: {}", file.display());
+    println!("   - Performance Score: {:.1}%", analysis.performance_score * 100.0);
+    println!("   - Total Recommendations: {}", analysis.recommendations.len());
+    println!("   - Significant (≥{:.1}%): {}", threshold * 100.0, significant_recommendations.len());
+    println!("   - Analysis Time: {:.2}ms", analysis_time.as_secs_f64() * 1000.0);
+    
+    // Show performance score with color coding
+    let score_color = if analysis.performance_score >= 0.9 {
+        colored::Color::Green
+    } else if analysis.performance_score >= 0.7 {
+        colored::Color::Yellow
+    } else {
+        colored::Color::Red
+    };
+    
+    println!("\n{} Overall Performance: {:.1}%", 
+        "🎯".bright_blue(),
+        format!("{:.1}", analysis.performance_score * 100.0).color(score_color).bold()
+    );
+    
+    if significant_recommendations.is_empty() {
+        println!("🎉 No significant optimization opportunities found!");
+    } else {
+        println!("💡 Found {} optimization opportunities above threshold", significant_recommendations.len());
+    }
+    
+    Ok(())
+}
+
+fn display_optimization_analysis(
+    analysis: &ruchy::optimization::OptimizationAnalysis,
+    recommendations: &[&ruchy::optimization::OptimizationRecommendation],
+    show_cache: bool,
+    show_branches: bool,
+    show_vectorization: bool,
+    show_abstractions: bool,
+    verbose: bool,
+) {
+    println!("\n{} Mechanical Sympathy Analysis", "🔧".bright_cyan().bold());
+    println!("{}", "=".repeat(50));
+    
+    // Hardware profile summary
+    println!("\n{} Hardware Profile:", "💻".bright_blue());
+    println!("   - Architecture: {}", analysis.hardware.architecture);
+    println!("   - Cores: {}", analysis.hardware.cores);
+    println!("   - L1 Cache: {} KB", analysis.hardware.l1_cache_size / 1024);
+    println!("   - L2 Cache: {} KB", analysis.hardware.l2_cache_size / 1024);
+    if let Some(l3_size) = analysis.hardware.l3_cache_size {
+        println!("   - L3 Cache: {} MB", l3_size / (1024 * 1024));
+    }
+    println!("   - Vector Units: {:?}", analysis.hardware.vector_units.instruction_sets);
+    
+    // Cache analysis
+    if show_cache || verbose {
+        println!("\n{} Cache Behavior Analysis:", "🗄️".bright_green());
+        println!("   - Miss Rate: {:.1}%", analysis.cache_analysis.cache_miss_rate * 100.0);
+        println!("   - Layout Efficiency: {:.1}%", analysis.cache_analysis.layout_efficiency * 100.0);
+        println!("   - False Sharing Risk: {:.1}%", analysis.cache_analysis.false_sharing_risk * 100.0);
+        println!("   - Cache Friendliness: {:.1}%", analysis.cache_analysis.cache_friendly_score * 100.0);
+        println!("   - Access Patterns: {}", analysis.cache_analysis.access_patterns.len());
+    }
+    
+    // Branch prediction analysis
+    if show_branches || verbose {
+        println!("\n{} Branch Prediction Analysis:", "🌳".bright_yellow());
+        println!("   - Total Branches: {}", analysis.branch_analysis.total_branches);
+        println!("   - Unpredictable: {}", analysis.branch_analysis.unpredictable_branches);
+        println!("   - Miss Rate: {:.1}%", analysis.branch_analysis.branch_miss_rate * 100.0);
+        println!("   - Patterns Found: {}", analysis.branch_analysis.patterns.len());
+    }
+    
+    // Vectorization opportunities
+    if show_vectorization || verbose {
+        println!("\n{} Vectorization Opportunities:", "⚡".bright_magenta());
+        println!("   - Total Opportunities: {}", analysis.vectorization_opportunities.len());
+        for opportunity in &analysis.vectorization_opportunities {
+            println!("   - {}: {:.1}x speedup potential", 
+                opportunity.description, 
+                opportunity.speedup_potential
+            );
+        }
+    }
+    
+    // Abstraction analysis
+    if show_abstractions || verbose {
+        println!("\n{} Zero-Cost Abstraction Analysis:", "🎭".bright_cyan());
+        println!("   - Runtime Overhead: {:.1}%", analysis.abstraction_analysis.runtime_overhead * 100.0);
+        println!("   - Allocation Overhead: {:.1}%", analysis.abstraction_analysis.allocation_overhead * 100.0);
+        println!("   - Type Overhead: {:.1}%", analysis.abstraction_analysis.type_overhead * 100.0);
+        println!("   - Patterns Analyzed: {}", analysis.abstraction_analysis.patterns.len());
+        println!("   - Inlining Opportunities: {}", analysis.abstraction_analysis.inlining_opportunities.len());
+    }
+    
+    // Recommendations
+    if !recommendations.is_empty() {
+        println!("\n{} Optimization Recommendations:", "💡".bright_yellow().bold());
+        
+        for (i, rec) in recommendations.iter().enumerate() {
+            let priority_icon = match rec.priority {
+                Priority::Critical => "🔴",
+                Priority::High => "🟡", 
+                Priority::Medium => "🟠",
+                Priority::Low => "🟢",
+            };
+            
+            let impact_pct = rec.impact * 100.0;
+            
+            println!("\n{}. {} {} ({:.1}% impact)", 
+                i + 1,
+                priority_icon,
+                rec.description,
+                impact_pct
+            );
+            
+            if verbose {
+                println!("      Type: {:?}", rec.optimization_type);
+                println!("      Suggestion: {}", rec.suggestion);
+            } else {
+                println!("      💡 {}", rec.suggestion);
+            }
+        }
+    }
+}
+
+fn generate_text_report(
+    analysis: &ruchy::optimization::OptimizationAnalysis,
+    recommendations: &[&ruchy::optimization::OptimizationRecommendation],
+    show_cache: bool,
+    show_branches: bool,
+    show_vectorization: bool,
+    show_abstractions: bool,
+) -> String {
+    let mut report = String::new();
+    
+    report.push_str("# Ruchy Mechanical Sympathy Analysis Report\n\n");
+    report.push_str(&format!("Performance Score: {:.1}%\n", analysis.performance_score * 100.0));
+    report.push_str(&format!("Total Recommendations: {}\n\n", analysis.recommendations.len()));
+    
+    // Hardware Profile
+    report.push_str("## Hardware Profile\n\n");
+    report.push_str(&format!("- Architecture: {}\n", analysis.hardware.architecture));
+    report.push_str(&format!("- Cores: {}\n", analysis.hardware.cores));
+    report.push_str(&format!("- L1 Cache: {} KB\n", analysis.hardware.l1_cache_size / 1024));
+    report.push_str(&format!("- L2 Cache: {} KB\n", analysis.hardware.l2_cache_size / 1024));
+    if let Some(l3_size) = analysis.hardware.l3_cache_size {
+        report.push_str(&format!("- L3 Cache: {} MB\n", l3_size / (1024 * 1024)));
+    }
+    report.push_str("\n");
+    
+    // Analysis sections
+    if show_cache {
+        report.push_str("## Cache Analysis\n\n");
+        report.push_str(&format!("- Miss Rate: {:.1}%\n", analysis.cache_analysis.cache_miss_rate * 100.0));
+        report.push_str(&format!("- Layout Efficiency: {:.1}%\n", analysis.cache_analysis.layout_efficiency * 100.0));
+        report.push_str(&format!("- False Sharing Risk: {:.1}%\n", analysis.cache_analysis.false_sharing_risk * 100.0));
+        report.push_str("\n");
+    }
+    
+    if show_branches {
+        report.push_str("## Branch Prediction\n\n");
+        report.push_str(&format!("- Total Branches: {}\n", analysis.branch_analysis.total_branches));
+        report.push_str(&format!("- Unpredictable: {}\n", analysis.branch_analysis.unpredictable_branches));
+        report.push_str(&format!("- Miss Rate: {:.1}%\n", analysis.branch_analysis.branch_miss_rate * 100.0));
+        report.push_str("\n");
+    }
+    
+    if show_vectorization {
+        report.push_str("## Vectorization Opportunities\n\n");
+        for opp in &analysis.vectorization_opportunities {
+            report.push_str(&format!("- {}: {:.1}x speedup\n", opp.description, opp.speedup_potential));
+        }
+        report.push_str("\n");
+    }
+    
+    if show_abstractions {
+        report.push_str("## Abstraction Analysis\n\n");
+        report.push_str(&format!("- Runtime Overhead: {:.1}%\n", analysis.abstraction_analysis.runtime_overhead * 100.0));
+        report.push_str(&format!("- Allocation Overhead: {:.1}%\n", analysis.abstraction_analysis.allocation_overhead * 100.0));
+        report.push_str("\n");
+    }
+    
+    // Recommendations
+    if !recommendations.is_empty() {
+        report.push_str("## Recommendations\n\n");
+        for (i, rec) in recommendations.iter().enumerate() {
+            report.push_str(&format!("{}. **{}** ({:.1}% impact)\n", i + 1, rec.description, rec.impact * 100.0));
+            report.push_str(&format!("   {}\n\n", rec.suggestion));
+        }
+    }
+    
+    report
+}
+
+fn create_intel_profile() -> HardwareProfile {
+    let mut profile = HardwareProfile::default();
+    profile.architecture = "x86_64".to_string();
+    profile.vector_units.instruction_sets = vec!["SSE".to_string(), "SSE2".to_string(), "AVX".to_string(), "AVX2".to_string()];
+    profile.vector_units.register_width = 256;
+    profile.branch_predictor.regular_accuracy = 0.95;
+    profile.branch_predictor.irregular_accuracy = 0.75;
+    profile
+}
+
+fn create_amd_profile() -> HardwareProfile {
+    let mut profile = HardwareProfile::default();
+    profile.architecture = "x86_64".to_string();
+    profile.vector_units.instruction_sets = vec!["SSE".to_string(), "SSE2".to_string(), "AVX".to_string(), "AVX2".to_string()];
+    profile.vector_units.register_width = 256;
+    profile.branch_predictor.regular_accuracy = 0.93;
+    profile.branch_predictor.irregular_accuracy = 0.72;
+    profile
+}
+
+fn create_arm_profile() -> HardwareProfile {
+    let mut profile = HardwareProfile::default();
+    profile.architecture = "aarch64".to_string();
+    profile.vector_units.instruction_sets = vec!["NEON".to_string()];
+    profile.vector_units.register_width = 128;
+    profile.branch_predictor.regular_accuracy = 0.90;
+    profile.branch_predictor.irregular_accuracy = 0.65;
+    profile.l1_cache_size = 64 * 1024;
+    profile.l2_cache_size = 512 * 1024;
+    profile
+}
+
+fn count_ast_nodes(expr: &ruchy::frontend::ast::Expr) -> usize {
+    match &expr.kind {
+        ExprKind::Block(exprs) => 1 + exprs.iter().map(count_ast_nodes).sum::<usize>(),
+        ExprKind::If { condition, then_branch, else_branch } => {
+            1 + count_ast_nodes(condition) + count_ast_nodes(then_branch) +
+            else_branch.as_ref().map_or(0, |e| count_ast_nodes(e))
+        }
+        ExprKind::Binary { left, right, .. } => 1 + count_ast_nodes(left) + count_ast_nodes(right),
+        ExprKind::Call { func, args } => 1 + count_ast_nodes(func) + args.iter().map(count_ast_nodes).sum::<usize>(),
+        ExprKind::For { iter, body, .. } => 1 + count_ast_nodes(iter) + count_ast_nodes(body),
+        ExprKind::While { condition, body } => 1 + count_ast_nodes(condition) + count_ast_nodes(body),
+        ExprKind::Match { expr, arms } => 1 + count_ast_nodes(expr) + arms.iter().map(|arm| count_ast_nodes(&arm.body)).sum::<usize>(),
+        ExprKind::List(exprs) => 1 + exprs.iter().map(count_ast_nodes).sum::<usize>(),
+        ExprKind::Lambda { body, .. } => 1 + count_ast_nodes(body),
+        ExprKind::Pipeline { expr, stages } => 1 + count_ast_nodes(expr) + stages.iter().map(|s| count_ast_nodes(&s.op)).sum::<usize>(),
+        _ => 1,
+    }
+}
+
+/// Start the actor observatory for live system introspection (RUCHY-0817)
+#[allow(clippy::too_many_arguments)]
+fn start_actor_observatory(
+    config: Option<&PathBuf>,
+    refresh_interval: u64,
+    max_traces: usize,
+    max_actors: usize,
+    enable_deadlock_detection: bool,
+    deadlock_interval: u64,
+    start_mode: &str,
+    enable_colors: bool,
+    format: &str,
+    export: Option<&PathBuf>,
+    duration: u64,
+    verbose: bool,
+    filter_actor: Option<&String>,
+    filter_failed: bool,
+    filter_slow: Option<u64>,
+) -> Result<()> {
+    use ruchy::runtime::{ActorSystem, ActorObservatory, ObservatoryConfig, DashboardConfig, 
+                         ObservatoryDashboard, DisplayMode, MessageFilter};
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    if verbose {
+        println!("🔍 Starting Actor Observatory...");
+        println!("   - Refresh interval: {}ms", refresh_interval);
+        println!("   - Max traces: {}", max_traces);
+        println!("   - Max actors: {}", max_actors);
+        println!("   - Deadlock detection: {}", enable_deadlock_detection);
+        println!("   - Format: {}", format);
+    }
+
+    // Create a new actor system
+    let actor_system = ActorSystem::new();
+
+    // Create observatory configuration
+    let mut observatory_config = ObservatoryConfig::default();
+    observatory_config.max_traces = max_traces;
+    observatory_config.enable_deadlock_detection = enable_deadlock_detection;
+    observatory_config.deadlock_check_interval_ms = deadlock_interval;
+
+    if let Some(config_path) = config {
+        if verbose {
+            println!("   - Loading configuration from: {}", config_path.display());
+        }
+        // In a real implementation, we would load config from file
+        // For now, use default configuration
+    }
+
+    // Create the observatory
+    let mut observatory = ActorObservatory::new(actor_system, observatory_config);
+
+    // Add message filters based on CLI arguments
+    if let Some(actor_pattern) = filter_actor {
+        let filter = MessageFilter::new(&format!("actor-filter-{}", actor_pattern));
+        observatory.add_filter(filter);
+        if verbose {
+            println!("   - Added actor filter: {}", actor_pattern);
+        }
+    }
+
+    if filter_failed {
+        let filter = MessageFilter::failed_messages_only("failed-filter");
+        observatory.add_filter(filter);
+        if verbose {
+            println!("   - Added filter for failed messages only");
+        }
+    }
+
+    if let Some(min_time_us) = filter_slow {
+        let filter = MessageFilter::slow_messages("slow-filter", min_time_us);
+        observatory.add_filter(filter);
+        if verbose {
+            println!("   - Added filter for slow messages (>{}µs)", min_time_us);
+        }
+    }
+
+    // Wrap observatory in Arc<Mutex<>> for sharing
+    let observatory_arc = Arc::new(Mutex::new(observatory));
+
+    match format {
+        "interactive" => {
+            // Create dashboard configuration
+            let mut dashboard_config = DashboardConfig::default();
+            dashboard_config.refresh_interval_ms = refresh_interval;
+            dashboard_config.max_traces_display = max_traces;
+            dashboard_config.max_actors_display = max_actors;
+            dashboard_config.enable_colors = enable_colors;
+            dashboard_config.auto_refresh = duration == 0; // Auto-refresh if duration is infinite
+
+            // Determine starting display mode
+            let display_mode = match start_mode {
+                "overview" => DisplayMode::Overview,
+                "actors" => DisplayMode::ActorList,
+                "messages" => DisplayMode::MessageTraces,
+                "metrics" => DisplayMode::Metrics,
+                "deadlocks" => DisplayMode::Deadlocks,
+                "help" => DisplayMode::Help,
+                _ => {
+                    eprintln!("⚠️ Unknown start mode '{}', using overview", start_mode);
+                    DisplayMode::Overview
+                }
+            };
+
+            // Create and start the dashboard
+            let mut dashboard = ObservatoryDashboard::new(observatory_arc.clone(), dashboard_config);
+            dashboard.set_display_mode(display_mode);
+
+            println!("🚀 Actor Observatory Dashboard Starting...");
+            println!("   - View mode: {}", start_mode);
+            println!("   - Press 'h' for help, 'q' to quit");
+            println!();
+
+            // Start the interactive dashboard
+            if duration > 0 {
+                println!("   - Will run for {} seconds", duration);
+                // In a real implementation, we would set a timer here
+            }
+
+            dashboard.start_interactive()
+        }
+        
+        "json" => {
+            println!("📊 Collecting actor system data...");
+            
+            // Collect data for the specified duration
+            let collect_duration = if duration > 0 {
+                Duration::from_secs(duration)
+            } else {
+                Duration::from_secs(10) // Default to 10 seconds for JSON output
+            };
+
+            std::thread::sleep(collect_duration);
+
+            // Export collected data as JSON
+            let observatory_lock = observatory_arc.lock()
+                .map_err(|_| anyhow::anyhow!("Failed to acquire observatory lock"))?;
+
+            let metrics = observatory_lock.get_metrics()?;
+            let traces = observatory_lock.get_traces(Some(max_traces), None)?;
+            let snapshots = observatory_lock.get_actor_snapshots()?;
+            let deadlocks = observatory_lock.detect_deadlocks()?;
+
+            let data = serde_json::json!({
+                "timestamp": std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+                "metrics": metrics,
+                "traces": traces,
+                "actor_snapshots": snapshots,
+                "deadlocks": deadlocks,
+                "observatory_config": {
+                    "refresh_interval_ms": refresh_interval,
+                    "max_traces": max_traces,
+                    "max_actors": max_actors,
+                    "deadlock_detection": enable_deadlock_detection
+                }
+            });
+
+            if let Some(export_path) = export {
+                std::fs::write(export_path, serde_json::to_string_pretty(&data)?)
+                    .map_err(|_| anyhow::anyhow!("Failed to write export file"))?;
+                println!("✅ Data exported to {}", export_path.display());
+            } else {
+                println!("{}", serde_json::to_string_pretty(&data)?);
+            }
+
+            Ok(())
+        }
+
+        "text" => {
+            println!("📈 Actor System Observatory Report");
+            println!("{}", "=".repeat(50));
+            
+            // Collect data for the specified duration
+            let collect_duration = if duration > 0 {
+                Duration::from_secs(duration)
+            } else {
+                Duration::from_secs(5) // Default to 5 seconds for text output
+            };
+
+            if verbose {
+                println!("Collecting data for {} seconds...", collect_duration.as_secs());
+            }
+
+            std::thread::sleep(collect_duration);
+
+            // Generate text report
+            let observatory_lock = observatory_arc.lock()
+                .map_err(|_| anyhow::anyhow!("Failed to acquire observatory lock"))?;
+
+            let metrics = observatory_lock.get_metrics()?;
+            let traces = observatory_lock.get_traces(Some(max_traces), None)?;
+            let snapshots = observatory_lock.get_actor_snapshots()?;
+            let deadlocks = observatory_lock.detect_deadlocks()?;
+
+            // System metrics
+            println!("\nSystem Metrics:");
+            println!("  Active Actors: {}", metrics.active_actors);
+            println!("  Total Messages Processed: {}", metrics.total_messages_processed);
+            println!("  Messages/second: {:.2}", metrics.system_messages_per_second);
+            println!("  Average Mailbox Size: {:.1}", metrics.avg_mailbox_size);
+            println!("  Total Memory Usage: {} bytes", metrics.total_memory_usage);
+
+            // Actor summary
+            println!("\nActor Summary:");
+            if snapshots.is_empty() {
+                println!("  No active actors");
+            } else {
+                for snapshot in snapshots.values() {
+                    println!("  {} ({}): {:?} - {} queued", 
+                             snapshot.actor_id, 
+                             snapshot.name,
+                             snapshot.state,
+                             snapshot.mailbox_size);
+                }
+            }
+
+            // Message traces
+            println!("\nRecent Messages ({} traces):", traces.len());
+            if traces.is_empty() {
+                println!("  No message traces available");
+            } else {
+                for trace in &traces {
+                    let duration_str = if let Some(duration) = trace.processing_duration_us {
+                        format!(" ({}µs)", duration)
+                    } else {
+                        String::new()
+                    };
+                    println!("  {} → {}: {:?}{}", 
+                             trace.source.map_or("external".to_string(), |id| id.to_string()),
+                             trace.destination,
+                             trace.status,
+                             duration_str);
+                }
+            }
+
+            // Deadlocks
+            println!("\nDeadlock Analysis:");
+            if deadlocks.is_empty() {
+                println!("  ✅ No deadlocks detected");
+            } else {
+                println!("  ⚠️ {} deadlock(s) detected:", deadlocks.len());
+                for (i, deadlock) in deadlocks.iter().enumerate() {
+                    println!("    {}. Actors: {:?} ({}ms duration)", 
+                             i + 1, 
+                             deadlock.actors,
+                             deadlock.duration_estimate_ms);
+                    println!("       Suggestion: {}", deadlock.resolution_suggestion);
+                }
+            }
+
+            // Export to file if requested
+            if let Some(export_path) = export {
+                let report = format!("# Actor Observatory Report\n\n{}", 
+                    format!("Generated at: {}\n\nSystem Metrics:\n- Active Actors: {}\n- Total Messages: {}\n- Messages/sec: {:.2}\n",
+                        std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_secs(),
+                        metrics.active_actors,
+                        metrics.total_messages_processed,
+                        metrics.system_messages_per_second));
+                
+                std::fs::write(export_path, report)
+                    .map_err(|_| anyhow::anyhow!("Failed to write export file"))?;
+                println!("\n📄 Report exported to {}", export_path.display());
+            }
+
+            Ok(())
+        }
+
+        _ => {
+            eprintln!("❌ Unknown format '{}'. Supported formats: interactive, json, text", format);
+            std::process::exit(1);
+        }
+    }
+}
+
+
+/// Start the dataflow debugger with the given configuration  
+fn start_dataflow_debugger(
+    config: Option<&PathBuf>,
+    max_rows: usize,
+    auto_materialize: bool,
+    enable_profiling: bool,
+    timeout: u64,
+    track_memory: bool,
+    compute_diffs: bool,
+    sample_rate: f64,
+    refresh_interval: u64,
+    enable_colors: bool,
+    format: &str,
+    export: Option<&PathBuf>,
+    verbose: bool,
+    breakpoints: &[String],
+    start_mode: &str,
+) -> Result<()> {
+    use ruchy::runtime::{DataflowDebugger, DataflowConfig, DataflowUI, UIConfig};
+    use ruchy::runtime::{Breakpoint, BreakpointCondition, BreakpointAction};
+    use std::sync::{Arc, Mutex};
+    
+    if verbose {
+        println!("🐛 Starting Dataflow Debugger...");
+        println!("   - Max rows per stage: {}", max_rows);
+        println!("   - Auto-materialize: {}", auto_materialize);
+        println!("   - Performance profiling: {}", enable_profiling);
+        println!("   - Memory tracking: {}", track_memory);
+        println!("   - Compute diffs: {}", compute_diffs);
+        println!("   - Sample rate: {:.2}", sample_rate);
+        println!("   - Format: {}", format);
+    }
+
+    // Create dataflow debugger configuration
+    let mut debugger_config = DataflowConfig::default();
+    debugger_config.max_rows_per_stage = max_rows;
+    debugger_config.auto_materialize = auto_materialize;
+    debugger_config.enable_profiling = enable_profiling;
+    debugger_config.stage_timeout_ms = timeout;
+    debugger_config.track_memory = track_memory;
+    debugger_config.compute_diffs = compute_diffs;
+    debugger_config.sample_rate = sample_rate;
+    
+    if let Some(config_path) = config {
+        if verbose {
+            println!("   - Loading configuration from: {}", config_path.display());
+        }
+        // In a real implementation, we would load config from file
+        // For now, use the default configuration with CLI overrides
+    }
+
+    // Create the dataflow debugger
+    let debugger = DataflowDebugger::new(debugger_config);
+    let debugger_arc = Arc::new(Mutex::new(debugger));
+
+    // Add breakpoints specified via CLI
+    if !breakpoints.is_empty() {
+        let debugger_lock = debugger_arc
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
+        
+        for stage_id in breakpoints {
+            let breakpoint = Breakpoint {
+                stage_id: stage_id.clone(),
+                condition: Some(BreakpointCondition::Always),
+                active: true,
+                hit_count: 0,
+                actions: vec![BreakpointAction::Pause, BreakpointAction::Materialize],
+            };
+            
+            debugger_lock.add_breakpoint(breakpoint)?;
+            
+            if verbose {
+                println!("   - Added breakpoint at stage: {}", stage_id);
+            }
+        }
+    }
+
+    // Start debugging session
+    {
+        let debugger_lock = debugger_arc
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
+        debugger_lock.start_session()?;
+    }
+
+    match format {
+        "interactive" => {
+            // Create UI configuration
+            let ui_config = UIConfig {
+                max_preview_rows: max_rows.min(50), // Limit preview rows for better display
+                auto_refresh: true,
+                refresh_interval_ms: refresh_interval,
+                enable_colors,
+                show_metrics: enable_profiling,
+                compact_mode: false,
+                ..UIConfig::default()
+            };
+
+            // Start interactive UI
+            let mut ui = DataflowUI::new(debugger_arc.clone(), ui_config);
+            ui.run_interactive()?;
+        }
+        "json" => {
+            // JSON output mode
+            if verbose {
+                println!("📊 Dataflow Debug Information (JSON Format)");
+            }
+
+            let debugger_lock = debugger_arc
+                .lock()
+                .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
+
+            let session_status = debugger_lock.get_session_status()?;
+            let execution_history = debugger_lock.get_execution_history()?;
+            let stage_metrics = debugger_lock.get_stage_metrics()?;
+
+            let result = serde_json::json!({
+                "dataflow_debugger": {
+                    "session": session_status,
+                    "execution_history": execution_history,
+                    "stage_metrics": stage_metrics,
+                    "config": {
+                        "max_rows_per_stage": max_rows,
+                        "auto_materialize": auto_materialize,
+                        "enable_profiling": enable_profiling,
+                        "track_memory": track_memory,
+                        "compute_diffs": compute_diffs,
+                        "sample_rate": sample_rate
+                    }
+                }
+            });
+
+            println!("{}", serde_json::to_string_pretty(&result)?);
+        }
+        "text" => {
+            // Text output mode
+            if verbose {
+                println!("📊 Dataflow Debug Information (Text Format)");
+            }
+
+            let debugger_lock = debugger_arc
+                .lock()
+                .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
+
+            let session_status = debugger_lock.get_session_status()?;
+            let execution_history = debugger_lock.get_execution_history()?;
+            let stage_metrics = debugger_lock.get_stage_metrics()?;
+
+            println!("=== DATAFLOW DEBUG REPORT ===");
+            println!();
+            
+            println!("Session Status:");
+            println!("  Active: {}", session_status.active);
+            if let Some(current) = &session_status.current_stage {
+                println!("  Current Stage: {}", current);
+            }
+            println!("  Total Execution Time: {}ms", session_status.total_execution_time.as_millis());
+            println!("  Breakpoints Hit: {}", session_status.breakpoints_hit);
+
+            println!();
+            println!("Performance Metrics:");
+            if stage_metrics.is_empty() {
+                println!("  No performance metrics available");
+            } else {
+                for (stage_id, metrics) in &stage_metrics {
+                    println!("  {}: {}ms, {} → {} rows", 
+                             stage_id,
+                             metrics.execution_time.as_millis(),
+                             metrics.input_rows,
+                             metrics.output_rows);
+                }
+            }
+        }
+        _ => {
+            eprintln!("❌ Unknown format. Supported: interactive, json, text");
+            std::process::exit(1);
+        }
+    }
+
+    // Export debug data if requested
+    if let Some(export_path) = export {
+        if verbose {
+            println!("💾 Exporting debug data to: {}", export_path.display());
+        }
+        
+        let debugger_lock = debugger_arc
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Failed to acquire debugger lock"))?;
+            
+        use ruchy::runtime::ExportFormat;
+        let export_format = if export_path.extension().and_then(|s| s.to_str()) == Some("json") {
+            ExportFormat::Json
+        } else {
+            ExportFormat::Debug
+        };
+        
+        debugger_lock.export_debug_data(export_format, &export_path.to_string_lossy())?;
+        
+        if verbose {
+            println!("✅ Debug data exported successfully");
+        }
+    }
+
+    Ok(())
+}
+
+/// Handle WebAssembly component generation and deployment (RUCHY-0819)
+fn handle_wasm_command(
+    file: &Path,
+    output: Option<&Path>,
+    target: &str,
+    wit: bool,
+    deploy: bool,
+    deploy_target: Option<&str>,
+    portability: bool,
+    _opt_level: &str,
+    debug: bool,
+    simd: bool,
+    threads: bool,
+    component_model: bool,
+    name: Option<&str>,
+    version: &str,
+    verbose: bool,
+) -> Result<()> {
+    use ruchy::wasm::{ComponentBuilder, ComponentConfig, WitGenerator, Deployer, DeploymentConfig, DeploymentTarget, PortabilityAnalyzer};
+    use std::path::PathBuf;
+    
+    if verbose {
+        println!("🔧 Starting WebAssembly component generation for: {}", file.display());
+    }
+    
+    // Read the source file
+    let source = fs::read_to_string(file)
+        .with_context(|| format!("Failed to read source file: {}", file.display()))?;
+    
+    // Parse the source
+    let mut parser = RuchyParser::new(&source);
+    let ast = parser.parse()
+        .with_context(|| format!("Failed to parse source file: {}", file.display()))?;
+    
+    // Transpile to Rust
+    let transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile(&ast)?;
+    
+    // Configure the component builder
+    let mut config = ComponentConfig::default();
+    // Parse target architecture
+    config.target = match target {
+        "wasm32" => ruchy::wasm::component::TargetArchitecture::Wasm32,
+        "wasm64" => ruchy::wasm::component::TargetArchitecture::Wasm64,
+        _ => ruchy::wasm::component::TargetArchitecture::Wasm32,
+    };
+    
+    // Set feature flags
+    config.features.simd = simd;
+    config.features.threads = threads;
+    config.features.component_model = component_model;
+    
+    // Set optimization
+    config.optimization.optimize_size = true;
+    
+    // Build the component
+    let mut builder = ComponentBuilder::new();
+    builder = builder.with_config(config);
+    builder = builder.with_source(rust_code.to_string());
+    builder = builder.with_debug_info(debug);
+    
+    if verbose {
+        println!("📦 Building WebAssembly component...");
+    }
+    
+    // Set component name and version
+    if let Some(component_name) = name {
+        builder.set_name(component_name.to_string());
+    }
+    builder.set_version(version.to_string());
+    
+    let component = builder.build()?;
+    
+    if verbose {
+        println!("✅ Component built successfully");
+        println!("  Name: {}", component.name);
+        println!("  Version: {}", component.version);
+        println!("  Size: {} bytes", component.bytecode.len());
+    }
+    
+    // Generate WIT interface if requested
+    if wit {
+        if verbose {
+            println!("📝 Generating WIT interface...");
+        }
+        
+        let mut wit_gen = WitGenerator::new();
+        wit_gen.with_world("default");
+        
+        let wit_interface = wit_gen.generate(&component)?;
+        
+        let wit_path = output.map(|p| p.with_extension("wit"))
+            .unwrap_or_else(|| PathBuf::from("component.wit"));
+        
+        fs::write(&wit_path, wit_interface.to_string())
+            .with_context(|| format!("Failed to write WIT file: {}", wit_path.display()))?;
+        
+        if verbose {
+            println!("✅ WIT interface written to: {}", wit_path.display());
+        }
+    }
+    
+    // Generate portability report if requested
+    if portability {
+        if verbose {
+            println!("📊 Analyzing portability...");
+        }
+        
+        let analyzer = PortabilityAnalyzer::new();
+        let report = analyzer.analyze(&component)?;
+        
+        println!("\n{}", "═".repeat(60));
+        println!("{:^60}", "Portability Report".bright_cyan().bold());
+        println!("{}", "═".repeat(60));
+        
+        println!("\n📊 Overall Score: {:.1}%", report.score.overall_score * 100.0);
+        
+        println!("\n🌐 Platform Compatibility:");
+        for (platform, score) in &report.score.platform_scores {
+            let score_pct = score * 100.0;
+            let color = if score_pct >= 80.0 {
+                "green"
+            } else if score_pct >= 60.0 {
+                "yellow"
+            } else {
+                "red"
+            };
+            
+            let score_str = format!("{:.1}%", score_pct);
+            let colored_score = match color {
+                "green" => score_str.green(),
+                "yellow" => score_str.yellow(),
+                _ => score_str.red(),
+            };
+            
+            println!("  {} {}: {}", 
+                if score_pct >= 80.0 { "✅" } else if score_pct >= 60.0 { "⚠️" } else { "❌" },
+                platform,
+                colored_score
+            );
+        }
+        
+        if !report.recommendations.is_empty() {
+            println!("\n💡 Recommendations:");
+            for rec in &report.recommendations {
+                println!("  • {}", rec);
+            }
+        }
+        
+        println!("\n{}", "═".repeat(60));
+    }
+    
+    // Deploy if requested
+    if deploy {
+        if verbose {
+            println!("🚀 Starting deployment...");
+        }
+        
+        // Load deployment configuration
+        let deploy_cfg = DeploymentConfig::default();
+        
+        // Determine deployment target
+        let deployment_target = match deploy_target.unwrap_or(target) {
+            "cloudflare-workers" | "cloudflare" => DeploymentTarget::CloudflareWorkers,
+            "aws-lambda" | "lambda" => DeploymentTarget::AwsLambda,
+            "vercel-edge" | "vercel" => DeploymentTarget::VercelEdge,
+            "deno-deploy" | "deno" => DeploymentTarget::DenoDeploy,
+            "browser" => DeploymentTarget::Browser,
+            "nodejs" | "node" => DeploymentTarget::NodeJs,
+            "wasmtime" => DeploymentTarget::Wasmtime,
+            "wasmedge" => DeploymentTarget::WasmEdge,
+            _ => DeploymentTarget::Wasmtime,
+        };
+        
+        let deployer = Deployer::new(deployment_target, deploy_cfg);
+        let result = deployer.deploy(&component)?;
+        
+        println!("\n🎉 Deployment successful!");
+        println!("  ID: {}", result.deployment_id);
+        if let Some(url) = &result.url {
+            println!("  URL: {}", url.bright_blue().underline());
+        }
+    }
+    
+    // Write output file
+    let default_output = PathBuf::from("output.wasm");
+    let output_path = output.unwrap_or(&default_output);
+    
+    fs::write(output_path, &component.bytecode)
+        .with_context(|| format!("Failed to write output file: {}", output_path.display()))?;
+    
+    if verbose {
+        println!("💾 Component written to: {}", output_path.display());
+    }
+    
+    Ok(())
 }

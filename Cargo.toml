@@ -233,6 +233,10 @@ colored = "2.1"
 clap = { version = "4.5", features = ["derive"] }
 # DataFrame support
 polars = { version = "0.35", features = ["lazy"], optional = true }
+# WebAssembly support
+uuid = { version = "1.6", features = ["v4"] }
+# Hardware detection
+num_cpus = "1.16"
 # MCP Integration
 pmcp = { version = "1.2.2", features = ["full"] }
 tokio = { version = "1.46", features = ["full"] }

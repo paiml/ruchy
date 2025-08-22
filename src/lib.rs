@@ -15,12 +15,14 @@ pub mod lints;
 pub mod lsp;
 pub mod mcp;
 pub mod middleend;
+pub mod optimization;
 pub mod parser;
 pub mod quality;
 pub mod runtime;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 pub mod transpiler;
+pub mod wasm;
 
 pub use actors::{
     Actor, ActorHandle, McpActor, McpMessage, McpResponse, SupervisionStrategy, Supervisor,
@@ -34,6 +36,7 @@ pub use quality::{
     CiQualityEnforcer, CoverageCollector, CoverageReport, CoverageTool, FileCoverage,
     HtmlReportGenerator, QualityGates, QualityMetrics, QualityReport, QualityThresholds,
 };
+pub use quality::gates::{QualityGateEnforcer, QualityGateConfig, GateResult};
 
 use anyhow::Result;
 
