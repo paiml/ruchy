@@ -40,6 +40,8 @@ impl Transpiler {
             // Operators
             ExprKind::Binary { .. }
             | ExprKind::Unary { .. }
+            | ExprKind::Assign { .. }
+            | ExprKind::CompoundAssign { .. }
             | ExprKind::Try { .. }
             | ExprKind::Await { .. }
             | ExprKind::AsyncBlock { .. } => self.transpile_operator_only_expr(expr),
@@ -59,6 +61,8 @@ impl Transpiler {
         match &expr.kind {
             ExprKind::Binary { left, op, right } => self.transpile_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.transpile_unary(*op, operand),
+            ExprKind::Assign { target, value } => self.transpile_assign(target, value),
+            ExprKind::CompoundAssign { target, op, value } => self.transpile_compound_assign(target, *op, value),
             ExprKind::Try { expr } => self.transpile_try(expr),
             ExprKind::Await { expr } => self.transpile_await(expr),
             ExprKind::AsyncBlock { body } => self.transpile_async_block(body),
