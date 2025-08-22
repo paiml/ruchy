@@ -1,0 +1,136 @@
+// Memory Efficiency Validation Script for Ruchy
+// Tests interpreter memory usage with large codebases
+
+// Generate a large function with many expressions
+fun generate_large_expression(depth: i32) -> i32 {
+    if depth <= 0 {
+        42
+    } else {
+        let a = generate_large_expression(depth - 1)
+        let b = generate_large_expression(depth - 1) 
+        let c = [a, b, a + b, a * b, a - b]
+        let d = {
+            let x = a + b
+            let y = x * 2
+            let z = y + depth
+            z
+        }
+        let result = match depth % 4 {
+            0 => d,
+            1 => a + b,
+            2 => a * b,
+            _ => a - b
+        }
+        result
+    }
+}
+
+// Test memory with deeply nested data structures
+fun create_nested_lists(depth: i32) -> [i32] {
+    if depth <= 0 {
+        [1, 2, 3]
+    } else {
+        let inner = create_nested_lists(depth - 1)
+        let combined = inner.clone()
+        [depth] + combined + [depth * 2]
+    }
+}
+
+// Test memory with complex pattern matching
+fun complex_pattern_test(n: i32) -> String {
+    let data = (n, n * 2, [n, n + 1, n + 2])
+    
+    match data {
+        (0, _, _) => "zero",
+        (1, 2, [1, 2, 3]) => "exact match",
+        (x, y, list) if x > 0 && y == x * 2 => {
+            let result = f"computed: x={x}, y={y}, len={list.len()}"
+            result
+        },
+        _ => "default"
+    }
+}
+
+// Test memory with module definitions
+mod memory_test {
+    pub fun fibonacci_memo(n: i32) -> i64 {
+        if n <= 1 {
+            n as i64
+        } else {
+            fibonacci_memo(n - 1) + fibonacci_memo(n - 2)
+        }
+    }
+    
+    pub fun factorial(n: i32) -> i64 {
+        if n <= 1 {
+            1
+        } else {
+            (n as i64) * factorial(n - 1)
+        }
+    }
+    
+    pub fun generate_sequence(len: i32) -> [i32] {
+        let mut result = []
+        for i in 0..len {
+            result.push(i * i)
+        }
+        result
+    }
+}
+
+// Memory stress test function
+fun run_memory_stress_test() -> String {
+    println("🧠 Starting Memory Stress Test...")
+    
+    // Test 1: Deep recursion
+    println("Test 1: Deep expression evaluation")
+    let expr_result = generate_large_expression(8)
+    println(f"Expression result: {expr_result}")
+    
+    // Test 2: Large data structures
+    println("Test 2: Nested data structures")
+    let nested_result = create_nested_lists(6)
+    println(f"Nested list length: {nested_result.len()}")
+    
+    // Test 3: Complex pattern matching
+    println("Test 3: Complex pattern matching")
+    for i in 0..100 {
+        let pattern_result = complex_pattern_test(i)
+        if i % 20 == 0 {
+            println(f"Pattern result for {i}: {pattern_result}")
+        }
+    }
+    
+    // Test 4: Module functions
+    println("Test 4: Module function calls")
+    let fib_result = memory_test::fibonacci_memo(20)
+    let fact_result = memory_test::factorial(15)
+    let seq_result = memory_test::generate_sequence(1000)
+    
+    println(f"Fibonacci(20): {fib_result}")
+    println(f"Factorial(15): {fact_result}")
+    println(f"Sequence length: {seq_result.len()}")
+    
+    // Test 5: Large computation
+    println("Test 5: Large computation simulation")
+    let mut accumulator = 0
+    for i in 0..10000 {
+        let temp = {
+            let a = i * 2
+            let b = a + 1
+            let c = [a, b, a + b]
+            c[2]
+        }
+        accumulator = accumulator + temp
+        
+        if i % 1000 == 0 {
+            println(f"Progress: {i}/10000, accumulator: {accumulator}")
+        }
+    }
+    
+    println("✅ Memory stress test completed!")
+    f"Final accumulator: {accumulator}"
+}
+
+// Run the memory validation
+run_memory_stress_test()

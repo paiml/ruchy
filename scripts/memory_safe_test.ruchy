@@ -1,0 +1,50 @@
+// Safe memory test without integer overflow
+println("🧠 Memory Efficiency Baseline Test")
+println("==================================")
+
+// Test 1: Fibonacci (controlled depth)
+fun fibonacci(n: i32) -> i32 {
+    if n <= 1 {
+        n
+    } else {
+        fibonacci(n - 1) + fibonacci(n - 2)
+    }
+}
+
+println("Test 1: Fibonacci computation")
+let fib_result = fibonacci(20)
+println("Fibonacci(20):")
+println(fib_result)
+
+// Test 2: Array processing
+println("Test 2: Array creation and access")
+let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+let first = numbers[0]
+let last = numbers[9]
+println("First + Last:")
+println(first + last)
+
+// Test 3: Loop computation
+println("Test 3: Loop-based computation")
+let mut total = 0
+for i in 0..1000 {
+    total = total + i
+}
+println("Sum 0..1000:")
+println(total)
+
+// Test 4: Nested function calls
+fun double_it(x: i32) -> i32 {
+    x * 2
+}
+
+fun triple_it(x: i32) -> i32 {
+    x * 3
+}
+
+println("Test 4: Function composition")
+let composed = triple_it(double_it(7))
+println("triple(double(7)):")
+println(composed)
+
+println("✅ Baseline memory test completed!")

@@ -1,0 +1,91 @@
+// Memory Efficiency Validation Script for Ruchy
+// Tests interpreter memory usage with current language support
+
+// Simple recursive fibonacci 
+fun fibonacci(n: i32) -> i32 {
+    if n <= 1 {
+        n
+    } else {
+        fibonacci(n - 1) + fibonacci(n - 2)
+    }
+}
+
+// Factorial for memory testing
+fun factorial(n: i32) -> i32 {
+    if n <= 1 {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
+}
+
+// Test deep expression nesting
+fun deep_expression(depth: i32) -> i32 {
+    if depth <= 0 {
+        42
+    } else {
+        let a = deep_expression(depth - 1)
+        let b = deep_expression(depth - 1)
+        a + b
+    }
+}
+
+// Array creation test
+fun create_array(size: i32) -> [i32] {
+    if size <= 0 {
+        []
+    } else {
+        [size, size - 1, size - 2]
+    }
+}
+
+println("🧠 Starting Memory Efficiency Test...")
+println("=====================================")
+
+// Test 1: Fibonacci computation (recursive calls)
+println("Test 1: Fibonacci recursion")
+let fib_start = 15
+let fib_result = fibonacci(fib_start)
+println("Fibonacci(15):")
+println(fib_result)
+
+// Test 2: Factorial computation (tail recursion)
+println("Test 2: Factorial computation")
+let fact_result = factorial(12)
+println("Factorial(12):")
+println(fact_result)
+
+// Test 3: Deep expression evaluation
+println("Test 3: Deep expression evaluation")
+let deep_result = deep_expression(4)
+println("Deep expression result:")
+println(deep_result)
+
+// Test 4: Array creation and manipulation
+println("Test 4: Array operations")
+let arr = create_array(10)
+println("Array:")
+println(arr)
+
+// Test 5: Loop-based computation
+println("Test 5: Large loop computation")
+let mut sum = 0
+let iterations = 5000
+for i in 0..iterations {
+    sum = sum + i * i
+    if i % 1000 == 0 {
+        println("Progress: ")
+        println(i)
+    }
+}
+println("Final sum:")
+println(sum)
+
+// Test 6: Nested function calls
+println("Test 6: Nested function calls")
+let nested_result = factorial(fibonacci(8))
+println("Factorial(Fibonacci(8)):")
+println(nested_result)
+
+println("✅ Memory efficiency test completed!")
+println("All tests executed successfully")

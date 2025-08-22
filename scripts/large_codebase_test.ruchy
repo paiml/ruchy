@@ -1,0 +1,64 @@
+// Large codebase memory test - multiple functions and computations
+
+fun function_1(x: i32) -> i32 { x + 1 }
+fun function_2(x: i32) -> i32 { x * 2 }
+fun function_3(x: i32) -> i32 { x - 1 }
+fun function_4(x: i32) -> i32 { x * x }
+fun function_5(x: i32) -> i32 { x + 10 }
+fun function_6(x: i32) -> i32 { x / 2 }
+fun function_7(x: i32) -> i32 { x * 3 }
+fun function_8(x: i32) -> i32 { x + 5 }
+fun function_9(x: i32) -> i32 { x - 3 }
+fun function_10(x: i32) -> i32 { x * 4 }
+
+fun function_11(x: i32) -> i32 { function_1(x) + function_2(x) }
+fun function_12(x: i32) -> i32 { function_3(x) * function_4(x) }
+fun function_13(x: i32) -> i32 { function_5(x) - function_6(x) }
+fun function_14(x: i32) -> i32 { function_7(x) + function_8(x) }
+fun function_15(x: i32) -> i32 { function_9(x) * function_10(x) }
+
+fun function_16(x: i32) -> i32 { function_11(x) + function_12(x) }
+fun function_17(x: i32) -> i32 { function_13(x) * function_14(x) }
+fun function_18(x: i32) -> i32 { function_15(x) - function_16(x) }
+fun function_19(x: i32) -> i32 { function_17(x) + function_18(x) }
+fun function_20(x: i32) -> i32 { function_19(x) * 2 }
+
+fun array_processor_1() -> [i32] { [1, 2, 3, 4, 5] }
+fun array_processor_2() -> [i32] { [6, 7, 8, 9, 10] }
+fun array_processor_3() -> [i32] { [11, 12, 13, 14, 15] }
+fun array_processor_4() -> [i32] { [16, 17, 18, 19, 20] }
+fun array_processor_5() -> [i32] { [21, 22, 23, 24, 25] }
+
+fun complex_computation(n: i32) -> i32 {
+    let mut result = 0
+    for i in 0..n {
+        result = result + function_20(i)
+    }
+    result
+}
+
+println("🧠 Large Codebase Memory Test")
+println("============================")
+println("Testing with 25+ functions and complex computations...")
+
+let test_input = 10
+println("Computing with input:")
+println(test_input)
+
+let result1 = function_20(test_input)
+println("Complex function result:")
+println(result1)
+
+let arr1 = array_processor_1()
+let arr2 = array_processor_2()
+let arr3 = array_processor_3()
+println("Array results:")
+println(arr1)
+println(arr2)
+println(arr3)
+
+let final_result = complex_computation(100)
+println("Complex computation result:")
+println(final_result)
+
+println("✅ Large codebase test completed!")

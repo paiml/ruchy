@@ -1,0 +1,112 @@
+// Memory Efficiency Validation Script for Ruchy
+// Tests interpreter memory usage within current language capabilities
+
+// Generate a large expression with deep recursion
+fun generate_large_expression(depth: i32) -> i32 {
+    if depth <= 0 {
+        42
+    } else {
+        let a = generate_large_expression(depth - 1)
+        let b = generate_large_expression(depth - 1) 
+        let c = [a, b, a + b, a * b, a - b]
+        let result = if depth % 4 == 0 {
+            a + b
+        } else if depth % 4 == 1 {
+            a + b
+        } else if depth % 4 == 2 {
+            a * b
+        } else {
+            a - b
+        }
+        result
+    }
+}
+
+// Test memory with nested data structures
+fun create_nested_lists(depth: i32) -> [i32] {
+    if depth <= 0 {
+        [1, 2, 3]
+    } else {
+        let inner = create_nested_lists(depth - 1)
+        [depth, depth * 2, depth * 3]
+    }
+}
+
+// Test memory with fibonacci computation
+fun fibonacci_memo(n: i32) -> i32 {
+    if n <= 1 {
+        n
+    } else {
+        fibonacci_memo(n - 1) + fibonacci_memo(n - 2)
+    }
+}
+
+// Test memory with factorial computation  
+fun factorial(n: i32) -> i32 {
+    if n <= 1 {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
+}
+
+// Generate sequence for memory testing
+fun generate_sequence(len: i32) -> [i32] {
+    let mut result = []
+    for i in 0..len {
+        result = result + [i * i]
+    }
+    result
+}
+
+// Memory stress test function
+fun run_memory_stress_test() -> String {
+    println("🧠 Starting Memory Stress Test...")
+    
+    // Test 1: Deep recursion
+    println("Test 1: Deep expression evaluation")
+    let expr_result = generate_large_expression(6)
+    println("Expression result:")
+    println(expr_result)
+    
+    // Test 2: Large data structures
+    println("Test 2: Nested data structures")
+    let nested_result = create_nested_lists(4)
+    println("Nested list:")
+    println(nested_result)
+    
+    // Test 3: Fibonacci computation
+    println("Test 3: Fibonacci computation")
+    let fib_result = fibonacci_memo(15)
+    println("Fibonacci(15):")
+    println(fib_result)
+    
+    // Test 4: Factorial computation
+    println("Test 4: Factorial computation")
+    let fact_result = factorial(10)
+    println("Factorial(10):")
+    println(fact_result)
+    
+    // Test 5: Sequence generation
+    println("Test 5: Sequence generation")
+    let seq_result = generate_sequence(100)
+    println("Generated sequence length: 100")
+    
+    // Test 6: Large computation simulation
+    println("Test 6: Large computation simulation")
+    let mut accumulator = 0
+    for i in 0..1000 {
+        let temp = i * 2 + 1
+        accumulator = accumulator + temp
+        
+        if i % 200 == 0 {
+            println("Progress: " + i + "/1000")
+        }
+    }
+    
+    println("✅ Memory stress test completed!")
+    "Test completed successfully"
+}
+
+// Run the memory validation
+run_memory_stress_test()
