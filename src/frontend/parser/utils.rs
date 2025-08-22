@@ -3,6 +3,34 @@
 use super::{ParserState, *};
 use crate::frontend::ast::{ImportItem, StructPatternField};
 
+/// Validate URL imports for security
+fn validate_url_import(url: &str) -> Result<()> {
+    // Security checks for URL imports
+    
+    // 1. Must be HTTPS in production (allow HTTP for local dev)
+    if !url.starts_with("https://") && !url.starts_with("http://localhost") 
+        && !url.starts_with("http://127.0.0.1") {
+        bail!("URL imports must use HTTPS (except for localhost)");
+    }
+    
+    // 2. Must end with .ruchy or .rchy extension
+    if !url.ends_with(".ruchy") && !url.ends_with(".rchy") {
+        bail!("URL imports must reference .ruchy or .rchy files");
+    }
+    
+    // 3. Basic URL validation - no path traversal
+    if url.contains("..") || url.contains("/.") {
+        bail!("URL imports cannot contain path traversal sequences");
+    }
+    
+    // 4. Disallow certain suspicious patterns
+    if url.contains("javascript:") || url.contains("data:") || url.contains("file:") {
+        bail!("Invalid URL scheme for import");
+    }
+    
+    Ok(())
+}
+
 /// Parse a pattern for destructuring
 ///
 /// Supports:
@@ -408,7 +436,31 @@ pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
 
     let mut path_parts = Vec::new();
 
-    // Parse the path (e.g., std::io::prelude)
+    // Check for URL import (e.g., import "https://example.com/module.ruchy")
+    if let Some((Token::String(url), _)) = state.tokens.peek() {
+        // URL import - validate it starts with https://
+        if !url.starts_with("https://") && !url.starts_with("http://") {
+            bail!("URL imports must start with 'https://' or 'http://'");
+        }
+        
+        // Security validation for URL imports
+        validate_url_import(&url)?;
+        
+        let url = url.clone();
+        state.tokens.advance();
+        
+        // URL imports are always single module imports (no wildcard or specific items)
+        let span = start_span; // simplified for now
+        return Ok(Expr::new(
+            ExprKind::Import {
+                path: url,
+                items: vec![ImportItem::Named("*".to_string())], // Import all from URL
+            },
+            span,
+        ));
+    }
+    
+    // Parse regular module path (e.g., std::io::prelude)
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         path_parts.push(name.clone());
         state.tokens.advance();
