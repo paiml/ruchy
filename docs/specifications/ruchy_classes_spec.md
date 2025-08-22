@@ -49,10 +49,10 @@ impl Point {
 
 ```rust
 struct Name {
-    field: Type,
-    optional: Type? = None,     // Optional with default
+    field: Type,                // Private by default
+    pub optional: Type? = None, // Public optional with default
     mutable: mut Type,          // Interior mutability hint
-    private: priv Type,         // Private field
+    pub public_field: Type,     // Explicit public field
 }
 ```
 
@@ -60,11 +60,13 @@ struct Name {
 
 | Ruchy | Rust Output |
 |-------|-------------|
-| `field: Type` | `pub field: Type` |
-| `field: Type?` | `pub field: Option<Type>` |
+| `field: Type` | `field: Type` (private by default) |
+| `pub field: Type` | `pub field: Type` |
+| `field: Type?` | `field: Option<Type>` |
+| `pub field: Type?` | `pub field: Option<Type>` |
 | `field: Type = value` | Constructor default |
-| `priv field: Type` | `field: Type` |
-| `mut field: Type` | `pub field: RefCell<Type>` |
+| `mut field: Type` | `field: RefCell<Type>` |
+| `pub mut field: Type` | `pub field: RefCell<Type>` |
 
 ### 2.3 Constructor Generation
 

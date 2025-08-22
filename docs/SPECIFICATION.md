@@ -397,7 +397,7 @@ column_def      = STRING ':' '[' expr (',' expr)* ']'
 ```
 fun let var const if else when match for while loop break continue
 return struct enum trait impl actor receive send ask async await
-defer guard try catch throw import export module pub priv mut
+defer guard try catch throw import export module pub mut
 type alias where in is as true false null
 df col mean std quantile filter groupby agg sort select
 ```
