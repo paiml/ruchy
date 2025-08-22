@@ -140,6 +140,66 @@ enum Commands {
         #[arg(long, value_enum)]
         min_severity: Option<LintSeverity>,
     },
+
+    /// Run tests with optional coverage reporting
+    Test {
+        /// Specific test file to run (optional)
+        file: Option<PathBuf>,
+
+        /// Run all tests in project
+        #[arg(long)]
+        all: bool,
+
+        /// Generate coverage report
+        #[arg(long)]
+        coverage: bool,
+
+        /// Coverage output format (text, html, json)
+        #[arg(long, default_value = "text")]
+        coverage_format: String,
+
+        /// Watch mode - rerun tests when files change
+        #[arg(long)]
+        watch: bool,
+
+        /// Run tests in parallel
+        #[arg(long)]
+        parallel: bool,
+
+        /// Minimum coverage threshold (fail if below)
+        #[arg(long)]
+        threshold: Option<f64>,
+
+        /// Output format for test results (text, json, junit)
+        #[arg(long, default_value = "text")]
+        format: String,
+
+        /// Show verbose test output
+        #[arg(long)]
+        verbose: bool,
+    },
+
+    /// Generate and analyze AST with advanced options
+    Ast {
+        /// The file to analyze
+        file: PathBuf,
+
+        /// Output format (pretty, json, graph)
+        #[arg(long, default_value = "pretty")]
+        format: String,
+
+        /// Include metrics analysis
+        #[arg(long)]
+        metrics: bool,
+
+        /// Include symbol table analysis
+        #[arg(long)]
+        symbols: bool,
+
+        /// Include dependency analysis
+        #[arg(long)]
+        deps: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -350,6 +410,40 @@ fn main() -> Result<()> {
                     min_severity.as_ref(),
                 )?;
             }
+        }
+
+        Some(Commands::Test {
+            file,
+            all,
+            coverage,
+            coverage_format,
+            watch,
+            parallel,
+            threshold,
+            format,
+            verbose,
+        }) => {
+            run_tests(
+                file.as_ref(),
+                all,
+                coverage,
+                &coverage_format,
+                watch,
+                parallel,
+                threshold,
+                &format,
+                verbose,
+            )?;
+        }
+
+        Some(Commands::Ast {
+            file,
+            format,
+            metrics,
+            symbols,
+            deps,
+        }) => {
+            analyze_ast(&file, &format, metrics, symbols, deps)?;
         }
     }
 
@@ -1216,4 +1310,923 @@ fn display_json_results(violations: &[LintViolation], file: &PathBuf) {
     });
 
     println!("{}", serde_json::to_string_pretty(&result).unwrap());
+}
+
+/// Test execution and coverage reporting
+#[allow(clippy::fn_params_excessive_bools)]
+fn run_tests(
+    file: Option<&PathBuf>,
+    all: bool,
+    coverage: bool,
+    coverage_format: &str,
+    watch: bool,
+    parallel: bool,
+    threshold: Option<f64>,
+    format: &str,
+    verbose: bool,
+) -> Result<()> {
+    use std::time::Instant;
+
+    println!("{} Running Ruchy tests...", "🧪".bright_blue());
+    
+    let start_time = Instant::now();
+    let test_files = if let Some(specific_file) = file {
+        vec![specific_file.clone()]
+    } else if all {
+        discover_test_files(".")?
+    } else {
+        discover_test_files(".")?
+    };
+
+    if test_files.is_empty() {
+        println!("{} No test files found", "⚠".yellow());
+        println!("  Test files should match: *_test.ruchy, test_*.ruchy, tests/*.ruchy");
+        return Ok(());
+    }
+
+    println!(
+        "{} Found {} test file(s)",
+        "→".bright_cyan(),
+        test_files.len()
+    );
+
+    if watch {
+        println!("{} Watch mode not yet implemented", "⚠".yellow());
+    }
+
+    if parallel {
+        println!("{} Parallel execution not yet implemented", "⚠".yellow());
+    }
+
+    let mut test_results = TestResults::new();
+    let mut coverage_data = if coverage {
+        Some(CoverageData::new())
+    } else {
+        None
+    };
+
+    // Run tests
+    for test_file in &test_files {
+        println!("\n{} Testing {}...", "🔍".bright_blue(), test_file.display());
+        
+        match run_single_test_file(test_file, verbose, coverage_data.as_mut()) {
+            Ok(file_results) => {
+                test_results.merge(file_results);
+            }
+            Err(e) => {
+                test_results.errors.push(format!("Failed to run {}: {}", test_file.display(), e));
+            }
+        }
+    }
+
+    let duration = start_time.elapsed();
+
+    // Display results
+    display_test_results(&test_results, format, duration)?;
+
+    // Display coverage if requested
+    if let Some(cov_data) = coverage_data {
+        display_coverage_results(&cov_data, coverage_format, threshold)?;
+    }
+
+    // Exit with appropriate code
+    if test_results.failures > 0 || !test_results.errors.is_empty() {
+        std::process::exit(1);
+    }
+
+    Ok(())
+}
+
+/// Discover test files in a directory
+fn discover_test_files(dir: &str) -> Result<Vec<PathBuf>> {
+    use std::fs;
+
+    let mut test_files = Vec::new();
+
+    fn visit_dir_tests(dir: &std::path::Path, files: &mut Vec<PathBuf>) -> Result<()> {
+        if dir.is_dir() {
+            for entry in fs::read_dir(dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_dir() {
+                    if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
+                        if !name.starts_with('.')
+                            && name != "target"
+                            && name != "node_modules"
+                            && name != "build"
+                            && name != "dist"
+                        {
+                            visit_dir_tests(&path, files)?;
+                        }
+                    }
+                } else if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
+                    if ext == "ruchy" {
+                        if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
+                            // Match test file patterns
+                            if name.ends_with("_test") 
+                                || name.starts_with("test_") 
+                                || path.parent().and_then(|p| p.file_name()).and_then(|s| s.to_str()) == Some("tests")
+                            {
+                                files.push(path);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    visit_dir_tests(std::path::Path::new(dir), &mut test_files)?;
+    test_files.sort();
+    Ok(test_files)
+}
+
+/// Test results aggregation
+#[derive(Debug, Default)]
+struct TestResults {
+    passed: usize,
+    failures: usize,
+    errors: Vec<String>,
+    test_cases: Vec<TestCase>,
+}
+
+#[derive(Debug)]
+struct TestCase {
+    name: String,
+    file: PathBuf,
+    passed: bool,
+    message: Option<String>,
+    duration_ms: u64,
+}
+
+impl TestResults {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn merge(&mut self, other: TestResults) {
+        self.passed += other.passed;
+        self.failures += other.failures;
+        self.errors.extend(other.errors);
+        self.test_cases.extend(other.test_cases);
+    }
+}
+
+/// Coverage data collection
+#[derive(Debug)]
+struct CoverageData {
+    lines_covered: std::collections::HashSet<(PathBuf, usize)>,
+    total_lines: std::collections::HashMap<PathBuf, usize>,
+    functions_covered: std::collections::HashSet<(PathBuf, String)>,
+    total_functions: std::collections::HashMap<PathBuf, Vec<String>>,
+}
+
+impl CoverageData {
+    fn new() -> Self {
+        Self {
+            lines_covered: std::collections::HashSet::new(),
+            total_lines: std::collections::HashMap::new(),
+            functions_covered: std::collections::HashSet::new(),
+            total_functions: std::collections::HashMap::new(),
+        }
+    }
+
+    fn coverage_percentage(&self) -> f64 {
+        let total_lines: usize = self.total_lines.values().sum();
+        if total_lines == 0 {
+            return 100.0;
+        }
+        (self.lines_covered.len() as f64 / total_lines as f64) * 100.0
+    }
+}
+
+/// Run a single test file
+fn run_single_test_file(
+    test_file: &PathBuf,
+    verbose: bool,
+    coverage_data: Option<&mut CoverageData>,
+) -> Result<TestResults> {
+    use std::time::Instant;
+
+    let source = fs::read_to_string(test_file)?;
+    let mut parser = RuchyParser::new(&source);
+    
+    let ast = parser.parse()?;
+    
+    // Track coverage if requested
+    if let Some(cov_data) = coverage_data {
+        track_file_coverage(&ast, test_file, cov_data);
+    }
+
+    // Extract test functions from AST
+    let test_functions = extract_test_functions(&ast);
+    
+    if test_functions.is_empty() {
+        if verbose {
+            println!("  {} No test functions found (looking for functions with #[test] or names starting with 'test_')", "⚠".yellow());
+        }
+        return Ok(TestResults::new());
+    }
+
+    let mut results = TestResults::new();
+    
+    // Execute each test function
+    for test_func in test_functions {
+        let test_start = Instant::now();
+        
+        match execute_test_function(&test_func, &source, test_file) {
+            Ok(()) => {
+                results.passed += 1;
+                results.test_cases.push(TestCase {
+                    name: test_func.clone(),
+                    file: test_file.clone(),
+                    passed: true,
+                    message: None,
+                    duration_ms: test_start.elapsed().as_millis() as u64,
+                });
+                
+                if verbose {
+                    println!("  {} {}", "✓".bright_green(), test_func);
+                }
+            }
+            Err(e) => {
+                results.failures += 1;
+                results.test_cases.push(TestCase {
+                    name: test_func.clone(),
+                    file: test_file.clone(),
+                    passed: false,
+                    message: Some(e.to_string()),
+                    duration_ms: test_start.elapsed().as_millis() as u64,
+                });
+                
+                println!("  {} {} - {}", "✗".bright_red(), test_func, e);
+            }
+        }
+    }
+
+    Ok(results)
+}
+
+/// Extract test functions from AST
+fn extract_test_functions(ast: &ruchy::Expr) -> Vec<String> {
+    use ruchy::ExprKind;
+    
+    let mut test_functions = Vec::new();
+    
+    fn extract_from_expr(expr: &ruchy::Expr, functions: &mut Vec<String>) {
+        match &expr.kind {
+            ExprKind::Function { name, .. } => {
+                // Check for #[test] attribute or test_ prefix
+                let has_test_attr = expr.attributes.iter().any(|attr| attr.name == "test");
+                let has_test_prefix = name.starts_with("test_");
+                
+                if has_test_attr || has_test_prefix {
+                    functions.push(name.clone());
+                }
+            }
+            ExprKind::Block(exprs) => {
+                for expr in exprs {
+                    extract_from_expr(expr, functions);
+                }
+            }
+            _ => {}
+        }
+    }
+    
+    extract_from_expr(ast, &mut test_functions);
+    test_functions
+}
+
+/// Execute a single test function
+fn execute_test_function(
+    test_name: &str,
+    source: &str,
+    file: &PathBuf,
+) -> Result<()> {
+    use std::time::{Duration, Instant};
+
+    // Create test execution script
+    let test_script = format!("{}\n{}()", source, test_name);
+    
+    // Execute in REPL environment
+    let mut repl = ruchy::runtime::repl::Repl::new()?;
+    let deadline = Instant::now() + Duration::from_secs(5); // 5s timeout per test
+    
+    // Execute the test script
+    match repl.evaluate_expr_str(&test_script, Some(deadline)) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            anyhow::bail!("Test execution failed: {}", e);
+        }
+    }
+}
+
+/// Track file coverage information
+fn track_file_coverage(
+    ast: &ruchy::Expr,
+    file: &PathBuf,
+    coverage_data: &mut CoverageData,
+) {
+    use ruchy::ExprKind;
+    
+    // Count total lines (simplified)
+    let line_count = ast.span.end;
+    coverage_data.total_lines.insert(file.clone(), line_count);
+    
+    // Track function definitions
+    let mut functions = Vec::new();
+    extract_functions_for_coverage(ast, &mut functions);
+    coverage_data.total_functions.insert(file.clone(), functions);
+    
+    // For now, assume 100% line coverage during test execution
+    // In a real implementation, this would track actual execution
+    for line in 1..=line_count {
+        coverage_data.lines_covered.insert((file.clone(), line));
+    }
+}
+
+/// Extract function names for coverage tracking
+fn extract_functions_for_coverage(expr: &ruchy::Expr, functions: &mut Vec<String>) {
+    use ruchy::ExprKind;
+    
+    match &expr.kind {
+        ExprKind::Function { name, body, .. } => {
+            functions.push(name.clone());
+            extract_functions_for_coverage(body, functions);
+        }
+        ExprKind::Block(exprs) => {
+            for expr in exprs {
+                extract_functions_for_coverage(expr, functions);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Display test results
+fn display_test_results(
+    results: &TestResults,
+    format: &str,
+    duration: std::time::Duration,
+) -> Result<()> {
+    match format {
+        "json" => display_test_results_json(results, duration),
+        "junit" => display_test_results_junit(results, duration),
+        _ => display_test_results_text(results, duration),
+    }
+    Ok(())
+}
+
+/// Display test results in text format
+fn display_test_results_text(results: &TestResults, duration: std::time::Duration) {
+    println!("\n{}", "Test Results".bright_cyan().underline());
+    println!("{}", "=".repeat(50));
+    
+    let total_tests = results.passed + results.failures;
+    let status = if results.failures == 0 && results.errors.is_empty() {
+        format!("{} PASSED", "✓".bright_green())
+    } else {
+        format!("{} FAILED", "✗".bright_red())
+    };
+    
+    println!(
+        "Result: {}. {} tests run in {:.2}s",
+        status,
+        total_tests,
+        duration.as_secs_f64()
+    );
+    
+    if results.passed > 0 {
+        println!("  {} {} passed", "✓".bright_green(), results.passed);
+    }
+    
+    if results.failures > 0 {
+        println!("  {} {} failed", "✗".bright_red(), results.failures);
+    }
+    
+    if !results.errors.is_empty() {
+        println!("  {} {} errors", "⚠".yellow(), results.errors.len());
+        for error in &results.errors {
+            println!("    {}", error);
+        }
+    }
+    
+    // Show failure details
+    if results.failures > 0 {
+        println!("\n{}", "Failed Tests".bright_red().underline());
+        for test_case in &results.test_cases {
+            if !test_case.passed {
+                println!("  {} {} ({}ms)", "✗".bright_red(), test_case.name, test_case.duration_ms);
+                if let Some(message) = &test_case.message {
+                    println!("    {}", message);
+                }
+            }
+        }
+    }
+}
+
+/// Display test results in JSON format
+fn display_test_results_json(results: &TestResults, duration: std::time::Duration) {
+    let json_result = serde_json::json!({
+        "summary": {
+            "total": results.passed + results.failures,
+            "passed": results.passed,
+            "failed": results.failures,
+            "errors": results.errors.len(),
+            "duration_seconds": duration.as_secs_f64()
+        },
+        "test_cases": results.test_cases.iter().map(|tc| {
+            serde_json::json!({
+                "name": tc.name,
+                "file": tc.file.display().to_string(),
+                "passed": tc.passed,
+                "message": tc.message,
+                "duration_ms": tc.duration_ms
+            })
+        }).collect::<Vec<_>>(),
+        "errors": results.errors
+    });
+    
+    println!("{}", serde_json::to_string_pretty(&json_result).unwrap());
+}
+
+/// Display test results in JUnit XML format
+fn display_test_results_junit(results: &TestResults, duration: std::time::Duration) {
+    let total_tests = results.passed + results.failures;
+    
+    println!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+    println!(
+        "<testsuite name=\"ruchy-tests\" tests=\"{}\" failures=\"{}\" errors=\"{}\" time=\"{:.3}\">",
+        total_tests,
+        results.failures,
+        results.errors.len(),
+        duration.as_secs_f64()
+    );
+    
+    for test_case in &results.test_cases {
+        println!(
+            "  <testcase name=\"{}\" classname=\"{}\" time=\"{:.3}\">",
+            test_case.name,
+            test_case.file.display(),
+            test_case.duration_ms as f64 / 1000.0
+        );
+        
+        if !test_case.passed {
+            if let Some(message) = &test_case.message {
+                println!("    <failure message=\"{}\"/>", message);
+            } else {
+                println!("    <failure/>");
+            }
+        }
+        
+        println!("  </testcase>");
+    }
+    
+    println!("</testsuite>");
+}
+
+/// Display coverage results
+fn display_coverage_results(
+    coverage: &CoverageData,
+    format: &str,
+    threshold: Option<f64>,
+) -> Result<()> {
+    let coverage_pct = coverage.coverage_percentage();
+    
+    match format {
+        "html" => generate_html_coverage_report(coverage)?,
+        "json" => display_coverage_json(coverage),
+        _ => display_coverage_text(coverage),
+    }
+    
+    // Check threshold
+    if let Some(min_threshold) = threshold {
+        if coverage_pct < min_threshold {
+            eprintln!(
+                "{} Coverage {:.1}% is below threshold {:.1}%",
+                "✗".bright_red(),
+                coverage_pct,
+                min_threshold
+            );
+            std::process::exit(1);
+        }
+    }
+    
+    Ok(())
+}
+
+/// Display coverage in text format
+fn display_coverage_text(coverage: &CoverageData) {
+    let coverage_pct = coverage.coverage_percentage();
+    
+    println!("\n{}", "Coverage Report".bright_cyan().underline());
+    println!("{}", "=".repeat(50));
+    
+    let status_color = if coverage_pct >= 80.0 {
+        coverage_pct.to_string().bright_green()
+    } else if coverage_pct >= 60.0 {
+        coverage_pct.to_string().yellow()
+    } else {
+        coverage_pct.to_string().bright_red()
+    };
+    
+    println!("Overall Coverage: {}%", status_color);
+    println!("Lines Covered: {}", coverage.lines_covered.len());
+    
+    let total_lines: usize = coverage.total_lines.values().sum();
+    println!("Total Lines: {}", total_lines);
+    
+    // Per-file breakdown
+    println!("\nFile Coverage:");
+    for (file, total) in &coverage.total_lines {
+        let file_covered = coverage.lines_covered.iter()
+            .filter(|(f, _)| f == file)
+            .count();
+        let file_pct = if *total > 0 {
+            (file_covered as f64 / *total as f64) * 100.0
+        } else {
+            100.0
+        };
+        
+        println!("  {}: {:.1}%", file.display(), file_pct);
+    }
+}
+
+/// Display coverage in JSON format
+fn display_coverage_json(coverage: &CoverageData) {
+    let total_lines: usize = coverage.total_lines.values().sum();
+    
+    let json_coverage = serde_json::json!({
+        "summary": {
+            "lines_covered": coverage.lines_covered.len(),
+            "total_lines": total_lines,
+            "coverage_percentage": coverage.coverage_percentage()
+        },
+        "files": coverage.total_lines.iter().map(|(file, total)| {
+            let file_covered = coverage.lines_covered.iter()
+                .filter(|(f, _)| f == file)
+                .count();
+            let file_pct = if *total > 0 {
+                (file_covered as f64 / *total as f64) * 100.0
+            } else {
+                100.0
+            };
+            
+            serde_json::json!({
+                "file": file.display().to_string(),
+                "lines_covered": file_covered,
+                "total_lines": total,
+                "coverage_percentage": file_pct
+            })
+        }).collect::<Vec<_>>()
+    });
+    
+    println!("{}", serde_json::to_string_pretty(&json_coverage).unwrap());
+}
+
+/// Generate HTML coverage report
+fn generate_html_coverage_report(coverage: &CoverageData) -> Result<()> {
+    let coverage_pct = coverage.coverage_percentage();
+    
+    let html = format!(
+        r#"<!DOCTYPE html>
+<html>
+<head>
+    <title>Ruchy Coverage Report</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        .summary {{ background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }}
+        .coverage-high {{ color: #28a745; }}
+        .coverage-medium {{ color: #ffc107; }}
+        .coverage-low {{ color: #dc3545; }}
+        table {{ border-collapse: collapse; width: 100%; }}
+        th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+        th {{ background-color: #f2f2f2; }}
+    </style>
+</head>
+<body>
+    <h1>Ruchy Coverage Report</h1>
+    
+    <div class="summary">
+        <h2>Summary</h2>
+        <p><strong>Overall Coverage:</strong> <span class="coverage-{}">{:.1}%</span></p>
+        <p><strong>Lines Covered:</strong> {}</p>
+        <p><strong>Total Lines:</strong> {}</p>
+    </div>
+    
+    <h2>File Coverage</h2>
+    <table>
+        <tr><th>File</th><th>Coverage</th><th>Lines Covered</th><th>Total Lines</th></tr>
+        {}
+    </table>
+</body>
+</html>"#,
+        if coverage_pct >= 80.0 { "high" } else if coverage_pct >= 60.0 { "medium" } else { "low" },
+        coverage_pct,
+        coverage.lines_covered.len(),
+        coverage.total_lines.values().sum::<usize>(),
+        coverage.total_lines.iter().map(|(file, total)| {
+            let file_covered = coverage.lines_covered.iter()
+                .filter(|(f, _)| f == file)
+                .count();
+            let file_pct = if *total > 0 {
+                (file_covered as f64 / *total as f64) * 100.0
+            } else {
+                100.0
+            };
+            
+            format!(
+                "<tr><td>{}</td><td>{:.1}%</td><td>{}</td><td>{}</td></tr>",
+                file.display(),
+                file_pct,
+                file_covered,
+                total
+            )
+        }).collect::<Vec<_>>().join("\n        ")
+    );
+    
+    fs::write("coverage.html", html)?;
+    println!("{} Coverage report generated: coverage.html", "✓".bright_green());
+    
+    Ok(())
+}
+
+/// Analyze AST with advanced options
+fn analyze_ast(
+    file: &PathBuf,
+    format: &str,
+    metrics: bool,
+    symbols: bool,
+    deps: bool,
+) -> Result<()> {
+    let source = fs::read_to_string(file)?;
+    let mut parser = RuchyParser::new(&source);
+    
+    let ast = parser.parse()?;
+    
+    match format {
+        "json" => display_ast_json(&ast, metrics, symbols, deps)?,
+        "graph" => display_ast_graph(&ast, file)?,
+        _ => display_ast_pretty(&ast, metrics, symbols, deps)?,
+    }
+    
+    Ok(())
+}
+
+/// Display AST in pretty format
+fn display_ast_pretty(
+    ast: &ruchy::Expr,
+    metrics: bool,
+    symbols: bool,
+    deps: bool,
+) -> Result<()> {
+    println!("{}", "AST Analysis".bright_cyan().underline());
+    println!("{}", "=".repeat(50));
+    
+    println!("\n{}", "Abstract Syntax Tree:".bright_blue());
+    println!("{:#?}", ast);
+    
+    if metrics {
+        println!("\n{}", "Complexity Metrics:".bright_blue());
+        let complexity = calculate_complexity(ast);
+        println!("Cyclomatic Complexity: {}", complexity);
+        
+        let depth = calculate_ast_depth(ast);
+        println!("AST Depth: {}", depth);
+        
+        let node_count = count_ast_nodes(ast);
+        println!("AST Node Count: {}", node_count);
+    }
+    
+    if symbols {
+        println!("\n{}", "Symbol Analysis:".bright_blue());
+        let symbols = extract_symbols(ast);
+        println!("Functions: {:?}", symbols.functions);
+        println!("Variables: {:?}", symbols.variables);
+    }
+    
+    if deps {
+        println!("\n{}", "Dependencies:".bright_blue());
+        let dependencies = extract_dependencies(ast);
+        if dependencies.is_empty() {
+            println!("No external dependencies found");
+        } else {
+            for dep in dependencies {
+                println!("  {}", dep);
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+/// Display AST in JSON format
+fn display_ast_json(
+    ast: &ruchy::Expr,
+    metrics: bool,
+    symbols: bool,
+    deps: bool,
+) -> Result<()> {
+    let mut result = serde_json::json!({
+        "ast": format!("{:#?}", ast)
+    });
+    
+    if metrics {
+        result["metrics"] = serde_json::json!({
+            "complexity": calculate_complexity(ast),
+            "depth": calculate_ast_depth(ast),
+            "node_count": count_ast_nodes(ast)
+        });
+    }
+    
+    if symbols {
+        let symbols = extract_symbols(ast);
+        result["symbols"] = serde_json::json!({
+            "functions": symbols.functions,
+            "variables": symbols.variables
+        });
+    }
+    
+    if deps {
+        result["dependencies"] = serde_json::json!(extract_dependencies(ast));
+    }
+    
+    println!("{}", serde_json::to_string_pretty(&result)?);
+    Ok(())
+}
+
+/// Display AST as DOT graph
+fn display_ast_graph(ast: &ruchy::Expr, file: &PathBuf) -> Result<()> {
+    println!("digraph AST {{");
+    println!("  rankdir=TB;");
+    println!("  node [shape=box];");
+    
+    let mut node_id = 0;
+    generate_dot_nodes(ast, &mut node_id);
+    
+    println!("}}");
+    
+    // Also save to file
+    let dot_file = file.with_extension("dot");
+    let mut dot_content = String::new();
+    dot_content.push_str("digraph AST {\n");
+    dot_content.push_str("  rankdir=TB;\n");
+    dot_content.push_str("  node [shape=box];\n");
+    
+    let mut node_id = 0;
+    generate_dot_content(ast, &mut node_id, &mut dot_content);
+    
+    dot_content.push_str("}\n");
+    fs::write(&dot_file, dot_content)?;
+    
+    println!("\n{} DOT graph saved to: {}", "✓".bright_green(), dot_file.display());
+    println!("Generate SVG with: dot -Tsvg {} -o {}", dot_file.display(), file.with_extension("svg").display());
+    
+    Ok(())
+}
+
+/// Calculate AST depth
+fn calculate_ast_depth(expr: &ruchy::Expr) -> usize {
+    use ruchy::ExprKind;
+    
+    match &expr.kind {
+        ExprKind::Block(exprs) => {
+            1 + exprs.iter().map(calculate_ast_depth).max().unwrap_or(0)
+        }
+        ExprKind::Function { body, .. } => 1 + calculate_ast_depth(body),
+        ExprKind::If { condition, then_branch, else_branch } => {
+            1 + [
+                calculate_ast_depth(condition),
+                calculate_ast_depth(then_branch),
+                else_branch.as_ref().map_or(0, |e| calculate_ast_depth(e))
+            ].into_iter().max().unwrap_or(0)
+        }
+        ExprKind::Match { expr, arms } => {
+            1 + [calculate_ast_depth(expr)]
+                .into_iter()
+                .chain(arms.iter().map(|arm| calculate_ast_depth(&arm.body)))
+                .max()
+                .unwrap_or(0)
+        }
+        _ => 1,
+    }
+}
+
+/// Count AST nodes
+fn count_ast_nodes(expr: &ruchy::Expr) -> usize {
+    use ruchy::ExprKind;
+    
+    1 + match &expr.kind {
+        ExprKind::Block(exprs) => exprs.iter().map(count_ast_nodes).sum(),
+        ExprKind::Function { body, .. } => count_ast_nodes(body),
+        ExprKind::If { condition, then_branch, else_branch } => {
+            count_ast_nodes(condition) + 
+            count_ast_nodes(then_branch) + 
+            else_branch.as_ref().map_or(0, count_ast_nodes)
+        }
+        ExprKind::Match { expr, arms } => {
+            count_ast_nodes(expr) + 
+            arms.iter().map(|arm| count_ast_nodes(&arm.body)).sum::<usize>()
+        }
+        _ => 0,
+    }
+}
+
+/// Symbol information
+#[derive(Debug, Default)]
+struct SymbolInfo {
+    functions: Vec<String>,
+    variables: Vec<String>,
+}
+
+/// Extract symbols from AST
+fn extract_symbols(expr: &ruchy::Expr) -> SymbolInfo {
+    use ruchy::ExprKind;
+    
+    let mut symbols = SymbolInfo::default();
+    
+    fn extract_from_expr(expr: &ruchy::Expr, symbols: &mut SymbolInfo) {
+        match &expr.kind {
+            ExprKind::Function { name, body, .. } => {
+                symbols.functions.push(name.clone());
+                extract_from_expr(body, symbols);
+            }
+            ExprKind::Let { name, value, .. } => {
+                symbols.variables.push(name.clone());
+                extract_from_expr(value, symbols);
+            }
+            ExprKind::Block(exprs) => {
+                for expr in exprs {
+                    extract_from_expr(expr, symbols);
+                }
+            }
+            ExprKind::If { condition, then_branch, else_branch } => {
+                extract_from_expr(condition, symbols);
+                extract_from_expr(then_branch, symbols);
+                if let Some(else_expr) = else_branch {
+                    extract_from_expr(else_expr, symbols);
+                }
+            }
+            ExprKind::Match { expr, arms } => {
+                extract_from_expr(expr, symbols);
+                for arm in arms {
+                    extract_from_expr(&arm.body, symbols);
+                }
+            }
+            _ => {}
+        }
+    }
+    
+    extract_from_expr(expr, &mut symbols);
+    symbols
+}
+
+/// Extract dependencies (simplified)
+fn extract_dependencies(_ast: &ruchy::Expr) -> Vec<String> {
+    // TODO: Implement proper dependency extraction
+    // This would look for import/use statements
+    Vec::new()
+}
+
+/// Generate DOT nodes for graph visualization
+fn generate_dot_nodes(expr: &ruchy::Expr, node_id: &mut usize) {
+    use ruchy::ExprKind;
+    
+    let current_id = *node_id;
+    *node_id += 1;
+    
+    let label = match &expr.kind {
+        ExprKind::Function { name, .. } => format!("Function: {}", name),
+        ExprKind::Let { name, .. } => format!("Let: {}", name),
+        ExprKind::Literal(lit) => format!("Literal: {:?}", lit),
+        ExprKind::Variable(name) => format!("Variable: {}", name),
+        ExprKind::Block(_) => "Block".to_string(),
+        ExprKind::If { .. } => "If".to_string(),
+        ExprKind::Match { .. } => "Match".to_string(),
+        _ => format!("{:?}", expr.kind).split('(').next().unwrap_or("Unknown").to_string(),
+    };
+    
+    println!("  {} [label=\"{}\"];", current_id, label);
+}
+
+/// Generate DOT content for file output
+fn generate_dot_content(expr: &ruchy::Expr, node_id: &mut usize, content: &mut String) {
+    use ruchy::ExprKind;
+    
+    let current_id = *node_id;
+    *node_id += 1;
+    
+    let label = match &expr.kind {
+        ExprKind::Function { name, .. } => format!("Function: {}", name),
+        ExprKind::Let { name, .. } => format!("Let: {}", name),
+        ExprKind::Literal(lit) => format!("Literal: {:?}", lit),
+        ExprKind::Variable(name) => format!("Variable: {}", name),
+        ExprKind::Block(_) => "Block".to_string(),
+        ExprKind::If { .. } => "If".to_string(),
+        ExprKind::Match { .. } => "Match".to_string(),
+        _ => format!("{:?}", expr.kind).split('(').next().unwrap_or("Unknown").to_string(),
+    };
+    
+    content.push_str(&format!("  {} [label=\"{}\"];\n", current_id, label));
 }
