@@ -1038,7 +1038,6 @@ fn check_function_complexity(
     max_complexity: usize,
     violations: &mut Vec<LintViolation>,
 ) {
-    use ruchy::ExprKind;
 
     // Simple recursive traversal to find function definitions
     match &ast.kind {
@@ -1086,7 +1085,6 @@ fn check_function_complexity(
 
 /// Calculate cyclomatic complexity of an expression
 fn calculate_complexity(expr: &ruchy::Expr) -> usize {
-    use ruchy::ExprKind;
 
     match &expr.kind {
         ExprKind::If {
@@ -1121,7 +1119,6 @@ fn check_unused_variables(_ast: &ruchy::Expr, _violations: &mut Vec<LintViolatio
 
 /// Check for missing documentation
 fn check_missing_docs(ast: &ruchy::Expr, violations: &mut Vec<LintViolation>) {
-    use ruchy::ExprKind;
 
     match &ast.kind {
         ExprKind::Function { name, .. } => {
@@ -1148,7 +1145,6 @@ fn check_missing_docs(ast: &ruchy::Expr, violations: &mut Vec<LintViolation>) {
 
 /// Check naming conventions
 fn check_naming_conventions(ast: &ruchy::Expr, violations: &mut Vec<LintViolation>) {
-    use ruchy::ExprKind;
 
     match &ast.kind {
         ExprKind::Function { name, .. } => {
@@ -1570,7 +1566,6 @@ fn run_single_test_file(
 
 /// Extract test functions from AST
 fn extract_test_functions(ast: &ruchy::Expr) -> Vec<String> {
-    use ruchy::ExprKind;
     
     let mut test_functions = Vec::new();
     
@@ -1602,7 +1597,7 @@ fn extract_test_functions(ast: &ruchy::Expr) -> Vec<String> {
 fn execute_test_function(
     test_name: &str,
     source: &str,
-    file: &PathBuf,
+    _file: &PathBuf,
 ) -> Result<()> {
     use std::time::{Duration, Instant};
 
@@ -1628,7 +1623,6 @@ fn track_file_coverage(
     file: &PathBuf,
     coverage_data: &mut CoverageData,
 ) {
-    use ruchy::ExprKind;
     
     // Count total lines (simplified)
     let line_count = ast.span.end;
@@ -1648,7 +1642,6 @@ fn track_file_coverage(
 
 /// Extract function names for coverage tracking
 fn extract_functions_for_coverage(expr: &ruchy::Expr, functions: &mut Vec<String>) {
-    use ruchy::ExprKind;
     
     match &expr.kind {
         ExprKind::Function { name, body, .. } => {
@@ -2088,7 +2081,6 @@ fn display_ast_graph(ast: &ruchy::Expr, file: &PathBuf) -> Result<()> {
 
 /// Calculate AST depth
 fn calculate_ast_depth(expr: &ruchy::Expr) -> usize {
-    use ruchy::ExprKind;
     
     match &expr.kind {
         ExprKind::Block(exprs) => {
@@ -2115,7 +2107,6 @@ fn calculate_ast_depth(expr: &ruchy::Expr) -> usize {
 
 /// Count AST nodes
 fn count_ast_nodes(expr: &ruchy::Expr) -> usize {
-    use ruchy::ExprKind;
     
     1 + match &expr.kind {
         ExprKind::Block(exprs) => exprs.iter().map(count_ast_nodes).sum(),
@@ -2123,7 +2114,7 @@ fn count_ast_nodes(expr: &ruchy::Expr) -> usize {
         ExprKind::If { condition, then_branch, else_branch } => {
             count_ast_nodes(condition) + 
             count_ast_nodes(then_branch) + 
-            else_branch.as_ref().map_or(0, count_ast_nodes)
+            else_branch.as_ref().map_or(0, |expr| count_ast_nodes(expr))
         }
         ExprKind::Match { expr, arms } => {
             count_ast_nodes(expr) + 
@@ -2142,7 +2133,6 @@ struct SymbolInfo {
 
 /// Extract symbols from AST
 fn extract_symbols(expr: &ruchy::Expr) -> SymbolInfo {
-    use ruchy::ExprKind;
     
     let mut symbols = SymbolInfo::default();
     
@@ -2191,7 +2181,6 @@ fn extract_dependencies(_ast: &ruchy::Expr) -> Vec<String> {
 
 /// Generate DOT nodes for graph visualization
 fn generate_dot_nodes(expr: &ruchy::Expr, node_id: &mut usize) {
-    use ruchy::ExprKind;
     
     let current_id = *node_id;
     *node_id += 1;
@@ -2200,7 +2189,7 @@ fn generate_dot_nodes(expr: &ruchy::Expr, node_id: &mut usize) {
         ExprKind::Function { name, .. } => format!("Function: {}", name),
         ExprKind::Let { name, .. } => format!("Let: {}", name),
         ExprKind::Literal(lit) => format!("Literal: {:?}", lit),
-        ExprKind::Variable(name) => format!("Variable: {}", name),
+        ExprKind::Identifier(name) => format!("Identifier: {}", name),
         ExprKind::Block(_) => "Block".to_string(),
         ExprKind::If { .. } => "If".to_string(),
         ExprKind::Match { .. } => "Match".to_string(),
@@ -2212,7 +2201,6 @@ fn generate_dot_nodes(expr: &ruchy::Expr, node_id: &mut usize) {
 
 /// Generate DOT content for file output
 fn generate_dot_content(expr: &ruchy::Expr, node_id: &mut usize, content: &mut String) {
-    use ruchy::ExprKind;
     
     let current_id = *node_id;
     *node_id += 1;
@@ -2221,7 +2209,7 @@ fn generate_dot_content(expr: &ruchy::Expr, node_id: &mut usize, content: &mut S
         ExprKind::Function { name, .. } => format!("Function: {}", name),
         ExprKind::Let { name, .. } => format!("Let: {}", name),
         ExprKind::Literal(lit) => format!("Literal: {:?}", lit),
-        ExprKind::Variable(name) => format!("Variable: {}", name),
+        ExprKind::Identifier(name) => format!("Identifier: {}", name),
         ExprKind::Block(_) => "Block".to_string(),
         ExprKind::If { .. } => "If".to_string(),
         ExprKind::Match { .. } => "Match".to_string(),
