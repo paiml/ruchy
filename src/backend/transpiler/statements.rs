@@ -5,7 +5,7 @@
 #![allow(clippy::collapsible_else_if)]
 
 use super::*;
-use crate::frontend::ast::{CatchClause, Literal, Param, Pattern, PipelineStage};
+use crate::frontend::ast::{Literal, Param, Pattern, PipelineStage};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -458,77 +458,6 @@ impl Transpiler {
         }
     }
 
-    /// Transpiles try-catch blocks
-    pub fn transpile_try_catch(
-        &self,
-        try_block: &Expr,
-        catch_clauses: &[CatchClause],
-        finally_block: Option<&Expr>,
-    ) -> Result<TokenStream> {
-        // Rust doesn't have traditional try-catch, so we need to be creative
-        // We'll use a combination of Result types and match expressions
-
-        let try_tokens = self.transpile_expr(try_block)?;
-
-        if catch_clauses.is_empty() && finally_block.is_none() {
-            // Just a try block with no handlers
-            return Ok(try_tokens);
-        }
-
-        // Build the catch handling logic
-        let mut catch_arms = Vec::new();
-
-        for clause in catch_clauses {
-            let var_ident = format_ident!("{}", clause.variable);
-            let body_tokens = self.transpile_expr(&clause.body)?;
-
-            if let Some(ref ty) = clause.exception_type {
-                // Typed catch clause - convert string to type
-                let type_ident = format_ident!("{}", ty);
-                catch_arms.push(quote! {
-                    Err(#var_ident) if #var_ident.is::<#type_ident>() => {
-                        #body_tokens
-                    }
-                });
-            } else {
-                // Generic catch clause
-                catch_arms.push(quote! {
-                    Err(#var_ident) => {
-                        #body_tokens
-                    }
-                });
-            }
-        }
-
-        // Add Ok arm
-        catch_arms.insert(
-            0,
-            quote! {
-                Ok(value) => value
-            },
-        );
-
-        let match_expr = quote! {
-            match (|| -> Result<_, Box<dyn std::error::Error>> {
-                Ok(#try_tokens)
-            })() {
-                #(#catch_arms,)*
-            }
-        };
-
-        if let Some(finally) = finally_block {
-            let finally_tokens = self.transpile_expr(finally)?;
-            Ok(quote! {
-                {
-                    let result = #match_expr;
-                    #finally_tokens;
-                    result
-                }
-            })
-        } else {
-            Ok(match_expr)
-        }
-    }
 
     /// Transpiles module declarations
     pub fn transpile_module(&self, name: &str, body: &Expr) -> Result<TokenStream> {

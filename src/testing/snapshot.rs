@@ -274,7 +274,7 @@ pub fn core_snapshot_tests() -> Vec<(&'static str, &'static str)> {
         ("if_no_else", "if x > 0 { x }"),
         ("list_empty", "[]"),
         ("list_numbers", "[1, 2, 3]"),
-        ("pipeline_simple", "data |> filter |> map"),
+        ("pipeline_simple", "data >> filter >> map"),
         ("match_simple", "match x { 1 => \"one\", _ => \"other\" }"),
     ]
 }

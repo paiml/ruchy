@@ -30,15 +30,15 @@ match result {
 // Result combinators
 let numbers = [1, 2, 3, 4, 5]
 let results = numbers
-    |> map(n => divide(100, n))
-    |> filter(r => r.is_ok())
-    |> map(r => r.unwrap())
+    >> map(|n| divide(100, n))
+    >> filter(|r| r.is_ok())
+    >> map(|r| r.unwrap())
 
 // Chaining operations with and_then
 let computation = Ok(10)
-    |> and_then(x => divide(x, 2))
-    |> and_then(x => divide(x, 2))
-    |> map(x => x * 10)
+    >> and_then(|x| divide(x, 2))
+    >> and_then(|x| divide(x, 2))
+    >> map(|x| x * 10)
 
 // Custom error types
 enum MyError {

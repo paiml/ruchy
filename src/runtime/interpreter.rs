@@ -2816,6 +2816,7 @@ mod tests {
             },
             span: Span::new(0, 1),
             is_mutable: false,
+            default_value: None,
         };
 
         let left = Box::new(Expr::new(
@@ -2863,6 +2864,7 @@ mod tests {
             },
             span: Span::new(0, 1),
             is_mutable: false,
+            default_value: None,
         };
 
         let left = Box::new(Expr::new(
@@ -2922,6 +2924,7 @@ mod tests {
             },
             span: Span::new(0, 1),
             is_mutable: false,
+            default_value: None,
         };
 
         let left = Box::new(Expr::new(
@@ -2980,6 +2983,7 @@ mod tests {
             },
             span: Span::new(0, 1),
             is_mutable: false,
+            default_value: None,
         };
 
         // if n <= 1 then 1 else n * factorial(n - 1)
@@ -3095,6 +3099,7 @@ mod tests {
             },
             span: Span::new(0, 1),
             is_mutable: false,
+            default_value: None,
         };
 
         let left = Box::new(Expr::new(
@@ -3421,6 +3426,7 @@ mod tests {
             },
             span: Span::new(0, 1),
             is_mutable: false,
+            default_value: None,
         };
 
         let left_body = Box::new(Expr::new(

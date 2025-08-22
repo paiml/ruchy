@@ -145,12 +145,6 @@ pub enum Token {
     Async,
     #[token("await")]
     Await,
-    #[token("try")]
-    Try,
-    #[token("catch")]
-    Catch,
-    #[token("finally")]
-    Finally,
     #[token("throw")]
     Throw,
     #[token("return")]
@@ -238,6 +232,10 @@ pub enum Token {
     EqualEqual,
     #[token("!=")]
     NotEqual,
+    #[token("<?")]
+    ActorQuery,
+    #[token("<-")]
+    LeftArrow,
     #[token("<")]
     Less,
     #[token("<=")]
@@ -266,8 +264,6 @@ pub enum Token {
     Backslash,
     #[token("<<")]
     LeftShift,
-    #[token(">>")]
-    RightShift,
 
     #[token("=")]
     Equal,
@@ -291,15 +287,13 @@ pub enum Token {
     CaretEqual,
     #[token("<<=")]
     LeftShiftEqual,
-    #[token(">>=")]
-    RightShiftEqual,
 
     #[token("++")]
     Increment,
     #[token("--")]
     Decrement,
 
-    #[token("|>")]
+    #[token(">>")]
     Pipeline,
     #[token("->")]
     Arrow,
@@ -372,7 +366,6 @@ impl Token {
                 | Token::Pipe
                 | Token::Caret
                 | Token::LeftShift
-                | Token::RightShift
         )
     }
 
@@ -399,7 +392,6 @@ impl Token {
                 | Token::PipeEqual
                 | Token::CaretEqual
                 | Token::LeftShiftEqual
-                | Token::RightShiftEqual
         )
     }
 }
@@ -537,7 +529,7 @@ mod tests {
 
     #[test]
     fn test_tokenize_pipeline() {
-        let mut stream = TokenStream::new("[1, 2, 3] |> map(x => x * 2)");
+        let mut stream = TokenStream::new("[1, 2, 3] >> map(|x| x * 2)");
 
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::LeftBracket));
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Integer(1)));

@@ -146,7 +146,7 @@ impl Transpiler {
             Actor, Ask, Assign, AsyncBlock, Await, Binary, Call, Command, CompoundAssign, DataFrame, 
             DataFrameOperation, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess, Lambda, 
             List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, ObjectLiteral, Ok, QualifiedName, 
-            Range, Send, Slice, StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, 
+            Range, Send, Slice, StringInterpolation, Struct, StructLiteral, Throw, 
             Tuple, Unary, While, WhileLet,
         };
 
@@ -162,7 +162,6 @@ impl Transpiler {
             | Unary { .. }
             | Assign { .. }
             | CompoundAssign { .. }
-            | Try { .. }
             | Await { .. }
             | AsyncBlock { .. }
             | If { .. }
@@ -191,7 +190,6 @@ impl Transpiler {
             | Tuple(_)
             | ListComprehension { .. }
             | Range { .. }
-            | TryCatch { .. }
             | Throw { .. }
             | Ok { .. }
             | Err { .. } => self.transpile_data_error_expr(expr),

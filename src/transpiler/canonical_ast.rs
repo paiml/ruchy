@@ -174,8 +174,7 @@ impl AstNormalizer {
                     BinaryOp::BitwiseAnd
                     | BinaryOp::BitwiseOr
                     | BinaryOp::BitwiseXor
-                    | BinaryOp::LeftShift
-                    | BinaryOp::RightShift => {
+                    | BinaryOp::LeftShift => {
                         panic!("Bitwise operations not yet supported in core language")
                     }
                 };

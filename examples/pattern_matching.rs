@@ -50,9 +50,6 @@ fn example_basic_patterns() {
                         Pattern::Wildcard => println!("  Case {}: Wildcard (_)", i + 1),
                         Pattern::Identifier(name) => {
                             println!("  Case {}: Identifier ({})", i + 1, name);
-                            if arm.guard.is_some() {
-                                println!("    with guard condition");
-                            }
                         }
                         _ => println!("  Case {}: Other pattern", i + 1),
                     }

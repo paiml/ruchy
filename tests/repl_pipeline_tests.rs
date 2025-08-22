@@ -14,7 +14,7 @@ fn test_basic_pipeline() {
     assert!(repl.eval("fun double(x: i32) -> i32 { x * 2 }").is_ok());
 
     // Test pipeline with function
-    let result = repl.eval("10 |> double");
+    let result = repl.eval("10 >> double");
     if result.is_ok() {
         let output = result.unwrap();
         assert_eq!(output, "20");
@@ -31,7 +31,7 @@ fn test_chained_pipeline() {
     assert!(repl.eval("fun add_one(x: i32) -> i32 { x + 1 }").is_ok());
 
     // Test chained pipeline
-    let result = repl.eval("5 |> double |> add_one");
+    let result = repl.eval("5 >> double >> add_one");
     if result.is_ok() {
         let output = result.unwrap();
         assert_eq!(output, "11"); // 5 * 2 + 1 = 11

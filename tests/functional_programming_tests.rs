@@ -112,7 +112,7 @@ fn test_chained_operations() {
 #[test]
 fn test_function_composition() {
     // Pipeline operator
-    let code = "5 |> double |> square";
+    let code = "5 >> double >> square";
     assert!(is_valid_syntax(code));
 }
 

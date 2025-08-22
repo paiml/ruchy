@@ -45,7 +45,6 @@ pub fn arb_binary_op() -> BoxedStrategy<BinaryOp> {
         Just(BinaryOp::BitwiseOr),
         Just(BinaryOp::BitwiseXor),
         Just(BinaryOp::LeftShift),
-        Just(BinaryOp::RightShift),
     ]
     .boxed()
 }

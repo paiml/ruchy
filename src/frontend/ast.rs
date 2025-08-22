@@ -73,14 +73,6 @@ pub enum ExprKind {
         op: UnaryOp,
         operand: Box<Expr>,
     },
-    Try {
-        expr: Box<Expr>,
-    },
-    TryCatch {
-        try_block: Box<Expr>,
-        catch_clauses: Vec<CatchClause>,
-        finally_block: Option<Box<Expr>>,
-    },
     Throw {
         expr: Box<Expr>,
     },
@@ -195,6 +187,16 @@ pub enum ExprKind {
         actor: Box<Expr>,
         message: Box<Expr>,
         timeout: Option<Box<Expr>>,
+    },
+    /// Fire-and-forget actor send (left <- right)
+    ActorSend {
+        actor: Box<Expr>,
+        message: Box<Expr>,
+    },
+    /// Actor query with reply (left <? right)
+    ActorQuery {
+        actor: Box<Expr>,
+        message: Box<Expr>,
     },
     Call {
         func: Box<Expr>,
@@ -348,7 +350,6 @@ pub enum BinaryOp {
     BitwiseOr,
     BitwiseXor,
     LeftShift,
-    RightShift,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -365,6 +366,7 @@ pub struct Param {
     pub ty: Type,
     pub span: Span,
     pub is_mutable: bool,
+    pub default_value: Option<Box<Expr>>,
 }
 
 impl Param {
@@ -448,7 +450,6 @@ pub struct PipelineStage {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MatchArm {
     pub pattern: Pattern,
-    pub guard: Option<Box<Expr>>,
     pub body: Box<Expr>,
     pub span: Span,
 }
@@ -522,15 +523,6 @@ pub struct StructPatternField {
     pub pattern: Option<Pattern>, // None for shorthand like { x } instead of { x: x }
 }
 
-/// Catch clause for try/catch expressions
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CatchClause {
-    pub exception_type: Option<String>, // None for catch-all
-    pub variable: String,
-    pub condition: Option<Box<Expr>>, // Guard condition
-    pub body: Box<Expr>,
-    pub span: Span,
-}
 
 /// Custom error type definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -621,7 +613,6 @@ impl fmt::Display for BinaryOp {
             Self::BitwiseOr => write!(f, "|"),
             Self::BitwiseXor => write!(f, "^"),
             Self::LeftShift => write!(f, "<<"),
-            Self::RightShift => write!(f, ">>"),
         }
     }
 }
@@ -748,7 +739,6 @@ mod tests {
         assert_eq!(BinaryOp::BitwiseOr.to_string(), "|");
         assert_eq!(BinaryOp::BitwiseXor.to_string(), "^");
         assert_eq!(BinaryOp::LeftShift.to_string(), "<<");
-        assert_eq!(BinaryOp::RightShift.to_string(), ">>");
     }
 
     #[test]
@@ -927,6 +917,7 @@ mod tests {
             },
             span: Span::new(8, 13),
             is_mutable: false,
+            default_value: None,
         }];
         let body = Box::new(Expr::new(
             ExprKind::Identifier("x".to_string()),
@@ -1190,7 +1181,6 @@ mod tests {
         let arms = vec![
             MatchArm {
                 pattern: Pattern::Literal(Literal::Integer(1)),
-                guard: None,
                 body: Box::new(Expr::new(
                     ExprKind::Literal(Literal::String("one".to_string())),
                     Span::new(15, 20),
@@ -1199,7 +1189,6 @@ mod tests {
             },
             MatchArm {
                 pattern: Pattern::Wildcard,
-                guard: None,
                 body: Box::new(Expr::new(
                     ExprKind::Literal(Literal::String("other".to_string())),
                     Span::new(28, 35),
@@ -1340,6 +1329,7 @@ mod tests {
             },
             span: Span::new(0, 11),
             is_mutable: false,
+            default_value: None,
         };
 
         assert_eq!(param.name(), "count");

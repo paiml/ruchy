@@ -1,7 +1,7 @@
 //! Control flow parsing (if/else, match, loops, try/catch)
 
 use super::{ParserState, *};
-use crate::frontend::ast::{CatchClause, StructPatternField};
+use crate::frontend::ast::StructPatternField;
 
 /// # Errors
 ///
@@ -152,14 +152,6 @@ pub fn parse_match(state: &mut ParserState) -> Result<Expr> {
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         let pattern = parse_pattern(state);
 
-        // Optional guard
-        let guard = if matches!(state.tokens.peek(), Some((Token::If, _))) {
-            state.tokens.advance(); // consume if
-            Some(Box::new(super::parse_expr_recursive(state)?))
-        } else {
-            None
-        };
-
         // Expect => or ->
         if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
             state.tokens.advance();
@@ -172,7 +164,6 @@ pub fn parse_match(state: &mut ParserState) -> Result<Expr> {
 
         arms.push(MatchArm {
             pattern,
-            guard,
             body: Box::new(body),
             span: arm_span,
         });
@@ -551,96 +542,6 @@ pub fn parse_continue(state: &mut ParserState) -> Expr {
 /// # Errors
 ///
 /// Returns an error if the operation fails
-/// # Errors
-///
-/// Returns an error if the operation fails
-pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume try
-
-    // Parse the try block
-    let try_block = super::parse_expr_recursive(state)?;
-
-    // Parse catch clauses
-    let mut catch_clauses = Vec::new();
-
-    while matches!(state.tokens.peek(), Some((Token::Catch, _))) {
-        catch_clauses.push(parse_catch_clause(state)?);
-    }
-
-    // Parse optional finally block
-    let finally_block = if matches!(state.tokens.peek(), Some((Token::Finally, _))) {
-        state.tokens.advance(); // consume finally
-        Some(Box::new(super::parse_expr_recursive(state)?))
-    } else {
-        None
-    };
-
-    // Must have at least one catch clause or a finally block
-    if catch_clauses.is_empty() && finally_block.is_none() {
-        bail!("Expected 'catch' or 'finally' after 'try'");
-    }
-
-    Ok(Expr::new(
-        ExprKind::TryCatch {
-            try_block: Box::new(try_block),
-            catch_clauses,
-            finally_block,
-        },
-        start_span,
-    ))
-}
-
-/// Parse a single catch clause
-fn parse_catch_clause(state: &mut ParserState) -> Result<CatchClause> {
-    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume catch
-
-    // Parse catch signature: catch (ExceptionType variable) or catch variable
-    let has_parens = matches!(state.tokens.peek(), Some((Token::LeftParen, _)));
-    if has_parens {
-        state.tokens.advance(); // consume (
-    }
-
-    // Parse exception type and variable name
-    let (exception_type, variable) =
-        if let Some((Token::Identifier(first_name), _)) = state.tokens.peek() {
-            let first_name = first_name.clone();
-            state.tokens.advance();
-
-            // Check if there's a second identifier (TypeName variable pattern)
-            if let Some((Token::Identifier(second_name), _)) = state.tokens.peek() {
-                let second_name = second_name.clone();
-                state.tokens.advance();
-                (Some(first_name), second_name) // first is type, second is variable
-            } else {
-                (None, first_name) // first is variable, no type
-            }
-        } else {
-            bail!("Expected variable name in catch clause");
-        };
-
-    if has_parens {
-        state.tokens.expect(&Token::RightParen)?; // consume )
-    }
-
-    // Parse optional guard condition: if condition
-    let condition = if matches!(state.tokens.peek(), Some((Token::If, _))) {
-        state.tokens.advance(); // consume if
-        Some(Box::new(super::parse_expr_recursive(state)?))
-    } else {
-        None
-    };
-
-    // Parse catch body
-    let body = Box::new(super::parse_expr_recursive(state)?);
-
-    Ok(CatchClause {
-        exception_type,
-        variable,
-        condition,
-        body,
-        span: start_span,
-    })
-}
 
 /// # Errors
 ///

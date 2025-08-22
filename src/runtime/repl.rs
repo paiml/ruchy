@@ -799,18 +799,6 @@ impl Repl {
             ExprKind::StringInterpolation { parts } => {
                 self.evaluate_string_interpolation(parts, deadline, depth)
             }
-            ExprKind::TryCatch {
-                try_block,
-                catch_clauses,
-                finally_block,
-            } => self.evaluate_try_catch(
-                try_block,
-                catch_clauses,
-                finally_block.as_deref(),
-                deadline,
-                depth,
-            ),
-            ExprKind::Try { expr } => self.evaluate_try_operator(expr, deadline, depth),
             ExprKind::Ok { value } => self.evaluate_result_ok(value, deadline, depth),
             ExprKind::Err { error } => self.evaluate_result_err(error, deadline, depth),
             ExprKind::Some { value } => self.evaluate_option_some(value, deadline, depth),
@@ -1493,39 +1481,6 @@ impl Repl {
         })
     }
 
-    /// Evaluate try/catch block (complexity: 8)
-    fn evaluate_try_catch(
-        &mut self,
-        try_block: &Expr,
-        catch_clauses: &[crate::frontend::ast::CatchClause],
-        finally_block: Option<&Expr>,
-        deadline: Instant,
-        depth: usize,
-    ) -> Result<Value> {
-        // Execute try block
-        let try_result = self.evaluate_expr(try_block, deadline, depth + 1);
-
-        let result = match try_result {
-            Ok(value) => Ok(value),
-            Err(error) => {
-                // Try failed, check catch clauses
-                if let Some(_catch_clause) = catch_clauses.iter().next() {
-                    // For now, just catch any error and return unit
-                    // Proper error handling would evaluate catch_clause.body
-                    Ok(Value::Unit)
-                } else {
-                    Err(error)
-                }
-            }
-        };
-
-        // Execute finally block if present
-        if let Some(finally) = finally_block {
-            let _ = self.evaluate_expr(finally, deadline, depth + 1);
-        }
-
-        result
-    }
 
     /// Evaluate `Result::Ok` constructor (complexity: 3)
     fn evaluate_result_ok(
@@ -1925,16 +1880,6 @@ impl Repl {
     }
 
     /// Evaluate try operator (?) (complexity: 1)
-    fn evaluate_try_operator(
-        &mut self,
-        expr: &Expr,
-        deadline: Instant,
-        depth: usize,
-    ) -> Result<Value> {
-        // The ? operator - for now just evaluate the expression
-        // Error propagation requires Result type system integration
-        self.evaluate_expr(expr, deadline, depth + 1)
-    }
 
     /// Evaluate `DataFrame` operation (complexity: 1)
     fn evaluate_dataframe_operation() -> Result<Value> {
@@ -2223,7 +2168,6 @@ impl Repl {
             (Int(a), BinaryOp::BitwiseOr, Int(b)) => Ok(Int(a | b)),
             (Int(a), BinaryOp::BitwiseXor, Int(b)) => Ok(Int(a ^ b)),
             (Int(a), BinaryOp::LeftShift, Int(b)) => Ok(Int(a << b)),
-            (Int(a), BinaryOp::RightShift, Int(b)) => Ok(Int(a >> b)),
 
             _ => bail!(
                 "Type mismatch in binary operation: {:?} {:?} {:?}",
@@ -2585,7 +2529,7 @@ impl Repl {
         trimmed.ends_with('/') ||
         trimmed.ends_with("&&") ||
         trimmed.ends_with("||") ||
-        trimmed.ends_with("|>")
+        trimmed.ends_with(">>")
     }
 
     /// Compile and run the current session
@@ -3301,24 +3245,10 @@ impl Repl {
                     self.bindings.insert(name, value);
                 }
 
-                let guard_passes = if let Some(guard) = &arm.guard {
-                    let guard_val = self.evaluate_expr(guard, deadline, depth + 1)?;
-                    match guard_val {
-                        Value::Bool(true) => true,
-                        Value::Bool(false) => false,
-                        _ => bail!("Guard expression must be boolean"),
-                    }
-                } else {
-                    true
-                };
-
-                if guard_passes {
-                    let result = self.evaluate_expr(&arm.body, deadline, depth + 1)?;
-                    self.bindings = saved_bindings;
-                    return Ok(result);
-                }
-
+                // Guards have been removed from the grammar - always proceed
+                let result = self.evaluate_expr(&arm.body, deadline, depth + 1)?;
                 self.bindings = saved_bindings;
+                return Ok(result);
             }
         }
 

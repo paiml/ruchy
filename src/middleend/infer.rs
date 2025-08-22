@@ -77,12 +77,6 @@ impl InferenceContext {
             ExprKind::StringInterpolation { parts } => self.infer_string_interpolation(parts),
             ExprKind::Binary { left, op, right } => self.infer_binary(left, *op, right),
             ExprKind::Unary { op, operand } => self.infer_unary(*op, operand),
-            ExprKind::Try { expr } => self.infer_try(expr),
-            ExprKind::TryCatch {
-                try_block,
-                catch_clauses,
-                finally_block,
-            } => self.infer_try_catch(try_block, catch_clauses, finally_block.as_deref()),
             ExprKind::Throw { expr } => self.infer_throw(expr),
             ExprKind::Ok { value } => self.infer_result_ok(value),
             ExprKind::Err { error } => self.infer_result_err(error),
@@ -180,6 +174,11 @@ impl InferenceContext {
                 message,
                 timeout,
             } => self.infer_ask(actor, message, timeout.as_deref()),
+            ExprKind::ActorSend { actor, message } => self.infer_send(actor, message),
+            ExprKind::ActorQuery { actor, message } => {
+                // Actor query returns a Future or Result - for now treat like Ask without timeout
+                self.infer_ask(actor, message, None)
+            }
             ExprKind::Command { .. } => {
                 // Commands return strings (stdout)
                 Ok(MonoType::String)
@@ -312,8 +311,7 @@ impl InferenceContext {
             BinaryOp::BitwiseAnd
             | BinaryOp::BitwiseOr
             | BinaryOp::BitwiseXor
-            | BinaryOp::LeftShift
-            | BinaryOp::RightShift => {
+            | BinaryOp::LeftShift => {
                 self.unifier.unify(&left_ty, &MonoType::Int)?;
                 self.unifier.unify(&right_ty, &MonoType::Int)?;
                 Ok(MonoType::Int)
@@ -345,75 +343,6 @@ impl InferenceContext {
         }
     }
 
-    fn infer_try(&mut self, expr: &Expr) -> Result<MonoType> {
-        // The expression must be Result<T, E>
-        let expr_ty = self.infer_expr(expr)?;
-
-        // Create fresh type variables for ok and error types
-        let ok_ty = MonoType::Var(self.gen.fresh());
-        let err_ty = MonoType::Var(self.gen.fresh());
-
-        // Unify with Result type
-        let result_ty = MonoType::Result(Box::new(ok_ty.clone()), Box::new(err_ty));
-        self.unifier.unify(&expr_ty, &result_ty)?;
-
-        // The ? operator returns the Ok value or propagates the error
-        Ok(self.unifier.apply(&ok_ty))
-    }
-
-    fn infer_try_catch(
-        &mut self,
-        try_block: &Expr,
-        catch_clauses: &[crate::frontend::ast::CatchClause],
-        finally_block: Option<&Expr>,
-    ) -> Result<MonoType> {
-        // The try block can return any type T
-        let try_ty = self.infer_expr(try_block)?;
-
-        // Infer types for all catch clauses
-        let mut catch_types = Vec::new();
-        for clause in catch_clauses {
-            let old_env = self.env.clone();
-
-            // Bind catch variable with appropriate error type
-            let error_ty = if let Some(ref exc_type) = clause.exception_type {
-                MonoType::Named(exc_type.clone())
-            } else {
-                MonoType::Named("Error".to_string()) // Generic error
-            };
-
-            self.env = self
-                .env
-                .extend(&clause.variable, TypeScheme::mono(error_ty));
-
-            // Check guard condition if present
-            if let Some(ref condition) = clause.condition {
-                let cond_ty = self.infer_expr(condition)?;
-                self.unifier.unify(&cond_ty, &MonoType::Bool)?;
-            }
-
-            // Infer catch body type
-            let catch_ty = self.infer_expr(&clause.body)?;
-            catch_types.push(catch_ty);
-
-            self.env = old_env;
-        }
-
-        // All catch clauses and try block must return the same type
-        for catch_ty in &catch_types {
-            self.unifier.unify(&try_ty, catch_ty)?;
-        }
-
-        // Infer finally block type (should be Unit)
-        if let Some(finally) = finally_block {
-            let finally_ty = self.infer_expr(finally)?;
-            // Finally block's type is ignored, but we still check it
-            // In a full implementation, we might want to ensure it's Unit
-            drop(finally_ty);
-        }
-
-        Ok(self.unifier.apply(&try_ty))
-    }
 
     fn infer_throw(&mut self, expr: &Expr) -> Result<MonoType> {
         // Infer the type of the expression being thrown
@@ -846,11 +775,7 @@ impl InferenceContext {
             let old_env = self.env.clone();
             self.infer_pattern(&arm.pattern, &expr_ty)?;
 
-            // Check guard if present
-            if let Some(guard) = &arm.guard {
-                let guard_ty = self.infer_expr(guard)?;
-                self.unifier.unify(&guard_ty, &MonoType::Bool)?;
-            }
+            // Guards have been removed from the grammar
 
             // Infer body type
             let body_ty = self.infer_expr(&arm.body)?;
@@ -1143,8 +1068,7 @@ impl InferenceContext {
             BinaryOp::BitwiseAnd
             | BinaryOp::BitwiseOr
             | BinaryOp::BitwiseXor
-            | BinaryOp::LeftShift
-            | BinaryOp::RightShift => {
+            | BinaryOp::LeftShift => {
                 // Bitwise operations: both operands must be Int, result is Int
                 self.unifier.unify(left_ty, &MonoType::Int)?;
                 self.unifier.unify(right_ty, &MonoType::Int)?;
