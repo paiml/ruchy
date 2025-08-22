@@ -38,8 +38,8 @@ fn test_pattern_matching_edge_cases() {
     // Pattern with literals
     assert!(is_valid_syntax("match x { 1 => a, 2 => b, _ => c }"));
 
-    // Pattern with guards
-    assert!(is_valid_syntax("match x { n if n > 0 => 1, _ => 0 }"));
+    // Pattern guards removed in RUCHY-0835
+    // assert!(is_valid_syntax("match x { n if n > 0 => 1, _ => 0 }"));
 }
 
 #[test]
@@ -180,8 +180,8 @@ fn test_import_operations() {
 
 #[test]
 fn test_error_handling() {
-    // Try operator
-    assert!(is_valid_syntax("f()?"));
+    // Try operator removed in RUCHY-0834
+    // assert!(is_valid_syntax("f()?"));
 }
 
 #[test]
@@ -200,7 +200,7 @@ fn test_assignment_operations() {
     assert!(is_valid_syntax("x |= 5"));
     assert!(is_valid_syntax("x ^= 5"));
     assert!(is_valid_syntax("x <<= 2"));
-    assert!(is_valid_syntax("x >>= 2"));
+    // assert!(is_valid_syntax("x >>= 2")); // >> is now pipeline operator, not right shift
 }
 
 #[test]

@@ -306,7 +306,7 @@ fn test_parse_all_literal_types() -> Result<()> {
 fn test_parse_all_binary_operators() -> Result<()> {
     let operators = vec![
         "+", "-", "*", "/", "%", "**", "==", "!=", "<", "<=", ">", ">=", "&&", "||", "&", "|", "^",
-        "<<", ">>",
+        "<<", // Note: >> is now pipeline operator, not right shift
     ];
 
     for op in operators {

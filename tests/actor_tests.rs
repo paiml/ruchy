@@ -34,7 +34,7 @@ fn test_actor_definition() {
 
 #[test]
 fn test_actor_send() {
-    let code = "counter ! Increment(5)";
+    let code = "counter <- Increment(5)";
     assert!(is_valid_syntax(code));
     let result = compile(code).unwrap();
     assert!(result.contains("send"));
@@ -43,7 +43,7 @@ fn test_actor_send() {
 
 #[test]
 fn test_actor_ask() {
-    let code = "counter ? GetCount()";
+    let code = "counter <? GetCount()";
     assert!(is_valid_syntax(code));
     let result = compile(code).unwrap();
     assert!(result.contains("ask"));
@@ -98,8 +98,8 @@ fn test_actor_spawn() {
 fn test_actor_pipeline() {
     let code = r#"
         let counter = spawn Counter::new()
-        counter ! Increment(10)
-        let count = counter ? GetCount()
+        counter <- Increment(10)
+        let count = counter <? GetCount()
     "#;
 
     assert!(is_valid_syntax(code));
