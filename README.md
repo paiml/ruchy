@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![Tests](https://img.shields.io/badge/tests-271%20passing-green.svg)](./tests)
-[![v0.8.0](https://img.shields.io/badge/v0.8.0-Interpreter%20Complexity%20Reduction-blue.svg)](./ROADMAP.md)
+[![v0.9.12](https://img.shields.io/badge/v0.9.12-Enhanced%20Testing%20Framework-blue.svg)](./docs/execution/roadmap.md)
 
 A functional programming language that transpiles to idiomatic Rust, featuring a production-grade REPL with complexity-optimized interpreter and comprehensive test coverage.
 
@@ -24,6 +24,10 @@ ruchy repl
 
 # Run a script
 ruchy run script.ruchy
+
+# Enhanced Testing (NEW in v0.9.12)
+ruchy test examples/ --coverage --format json
+ruchy test --coverage --coverage-format html
 ```
 
 ## ✨ Key Features
@@ -72,6 +76,24 @@ let result = {
 - Option<T> and Result<T, E> types
 - Generic functions and structs
 - Trait definitions and implementations
+
+### Enhanced Testing Framework (v0.9.12)
+- **Coverage analysis**: Line-level tracking with HTML/JSON/text reports
+- **Multiple output formats**: text, JSON, JUnit XML for CI/CD integration
+- **Professional workflow**: Deno-style development experience
+- **Performance optimized**: <20ms overhead for typical test suites
+- **Parallel execution**: Concurrent test running for speed
+
+```bash
+# Run tests with coverage
+ruchy test examples/ --coverage --parallel
+
+# Generate HTML coverage report
+ruchy test --coverage --coverage-format html
+
+# CI/CD friendly output
+ruchy test --format junit --coverage --coverage-format json
+```
 
 ## 🏗️ Architecture
 

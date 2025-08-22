@@ -16,10 +16,9 @@
 ```yaml
 Navigation:
 1. SPECIFICATION.md     # What to build (reference)
-2. ROADMAP.md          # Strategic priorities
+2. docs/execution/roadmap.md  # Strategic priorities and current tasks
 3. docs/execution/      # Tactical work breakdown
    ├── roadmap.yaml    # PDMT task generation template
-   ├── roadmap.md      # Generated execution DAG
    └── velocity.json   # Empirical performance data
 4. ../ruchy-book/INTEGRATION.md  # Book compatibility tracking
 ```
