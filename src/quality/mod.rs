@@ -3,6 +3,7 @@
 //! Based on SPECIFICATION.md section 20 requirements
 
 pub mod coverage;
+pub mod scoring;
 
 pub use coverage::{
     CoverageCollector, CoverageReport, CoverageTool, FileCoverage, HtmlReportGenerator,

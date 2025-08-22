@@ -239,6 +239,56 @@ enum Commands {
         output: Option<PathBuf>,
     },
 
+    /// Unified quality scoring (RUCHY-0810)
+    Score {
+        /// The file or directory to score
+        path: PathBuf,
+
+        /// Analysis depth (shallow/standard/deep)
+        #[arg(long, default_value = "standard")]
+        depth: String,
+
+        /// Fast feedback mode (AST-only, <100ms)
+        #[arg(long)]
+        fast: bool,
+
+        /// Deep analysis for CI (complete, <30s)
+        #[arg(long)]
+        deep: bool,
+
+        /// Watch mode with progressive refinement
+        #[arg(long)]
+        watch: bool,
+
+        /// Explain score changes from baseline
+        #[arg(long)]
+        explain: bool,
+
+        /// Baseline branch/commit for comparison
+        #[arg(long)]
+        baseline: Option<String>,
+
+        /// Minimum score threshold (0.0-1.0)
+        #[arg(long)]
+        min: Option<f64>,
+
+        /// Configuration file
+        #[arg(long)]
+        config: Option<PathBuf>,
+
+        /// Output format (text/json/html)
+        #[arg(long, default_value = "text")]
+        format: String,
+
+        /// Verbose output
+        #[arg(long)]
+        verbose: bool,
+
+        /// Output file for score report
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+
     /// Format Ruchy source code (Enhanced for v0.9.12)
     Fmt {
         /// The file to format
@@ -608,6 +658,25 @@ fn main() -> Result<()> {
             output 
         }) => {
             analyze_runtime(&file, profile, bigo, bench, compare.as_deref(), memory, verbose, output.as_deref())?;
+        }
+        Some(Commands::Score {
+            path,
+            depth,
+            fast,
+            deep,
+            watch,
+            explain,
+            baseline,
+            min,
+            config,
+            format,
+            verbose,
+            output,
+        }) => {
+            let baseline_str = baseline.as_deref();
+            let config_str = config.as_ref().and_then(|p| p.to_str());
+            let output_str = output.as_ref().and_then(|p| p.to_str());
+            calculate_quality_score(&path, &depth, fast, deep, watch, explain, baseline_str, min, config_str, &format, verbose, output_str).map_err(|e| anyhow::anyhow!("{}", e))?;
         }
         Some(Commands::Fmt {
             file,
@@ -5415,5 +5484,176 @@ fn write_performance_report(
     
     fs::write(output_path, report)?;
     println!("{} Performance report written to {}", "✓".bright_green(), output_path.display());
+    Ok(())
+}
+
+/// Calculate unified quality score for a file (RUCHY-0810)
+#[allow(clippy::too_many_arguments)]
+fn calculate_quality_score(
+    path: &Path,
+    depth: &str,
+    fast: bool,
+    deep: bool,
+    watch: bool,
+    _explain: bool,
+    baseline: Option<&str>,
+    min_score: Option<f64>,
+    config: Option<&str>,
+    format: &str,
+    verbose: bool,
+    output: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use ruchy::quality::scoring::{AnalysisDepth, ScoreConfig, ScoreEngine};
+    
+    // Determine analysis depth
+    let analysis_depth = if deep {
+        AnalysisDepth::Deep
+    } else if fast {
+        AnalysisDepth::Shallow
+    } else {
+        match depth {
+            "shallow" => AnalysisDepth::Shallow,
+            "standard" => AnalysisDepth::Standard,
+            "deep" => AnalysisDepth::Deep,
+            _ => AnalysisDepth::Standard,
+        }
+    };
+    
+    // Load configuration
+    let score_config = if let Some(_config_path) = config {
+        // Configuration loading will be implemented in RUCHY-0815
+        ScoreConfig::default()
+    } else {
+        ScoreConfig::default()
+    };
+    
+    // Read and parse file
+    let content = fs::read_to_string(path)?;
+    let mut parser = ruchy::frontend::parser::Parser::new(&content);
+    let ast = parser.parse()?;
+    
+    // Create score engine and calculate score
+    let engine = ScoreEngine::new(score_config);
+    let score = engine.score(&ast, analysis_depth);
+    
+    // Handle baseline comparison if provided
+    let explanation = if let Some(baseline_path) = baseline {
+        let baseline_content = fs::read_to_string(baseline_path)?;
+        let mut baseline_parser = ruchy::frontend::parser::Parser::new(&baseline_content);
+        let baseline_ast = baseline_parser.parse()?;
+        let baseline_score = engine.score(&baseline_ast, analysis_depth);
+        Some(score.explain_delta(&baseline_score))
+    } else {
+        None
+    };
+    
+    // Format output
+    if format == "json" {
+        let output_data = serde_json::json!({
+            "score": score.value,
+            "grade": score.grade.to_string(),
+            "confidence": score.confidence,
+            "components": {
+                "correctness": score.components.correctness,
+                "performance": score.components.performance,
+                "maintainability": score.components.maintainability,
+                "safety": score.components.safety,
+                "idiomaticity": score.components.idiomaticity
+            },
+            "explanation": explanation.map(|e| serde_json::json!({
+                "delta": e.delta,
+                "changes": e.changes,
+                "tradeoffs": e.tradeoffs,
+                "grade_change": e.grade_change
+            }))
+        });
+        
+        let json_str = if verbose {
+            serde_json::to_string_pretty(&output_data)?
+        } else {
+            serde_json::to_string(&output_data)?
+        };
+        
+        if let Some(output_path) = output {
+            fs::write(output_path, &json_str)?;
+            println!("Quality score written to {}", output_path);
+        } else {
+            println!("{}", json_str);
+        }
+    } else {
+        println!("\n{}", "Quality Score Report".bright_cyan().bold());
+            println!("{}", "=".repeat(50));
+            
+            println!("\n{}: {:.3} ({})", 
+                "Overall Score".bright_white().bold(), 
+                score.value, 
+                match score.grade {
+                    ruchy::quality::scoring::Grade::APlus => "A+".bright_green(),
+                    ruchy::quality::scoring::Grade::A => "A".bright_green(),
+                    ruchy::quality::scoring::Grade::AMinus => "A-".green(),
+                    ruchy::quality::scoring::Grade::BPlus => "B+".yellow(),
+                    ruchy::quality::scoring::Grade::B => "B".yellow(),
+                    ruchy::quality::scoring::Grade::BMinus => "B-".yellow(),
+                    ruchy::quality::scoring::Grade::CPlus => "C+".bright_red(),
+                    ruchy::quality::scoring::Grade::C => "C".bright_red(),
+                    ruchy::quality::scoring::Grade::CMinus => "C-".bright_red(),
+                    ruchy::quality::scoring::Grade::D => "D".red(),
+                    ruchy::quality::scoring::Grade::F => "F".red(),
+                }
+            );
+            
+            println!("{}: {:.1}%", "Confidence".bright_white(), score.confidence * 100.0);
+            
+            println!("\n{}", "Component Breakdown:".bright_white().bold());
+            println!("  {}: {:.3} (35%)", "Correctness".bright_white(), score.components.correctness);
+            println!("  {}: {:.3} (25%)", "Performance".bright_white(), score.components.performance);
+            println!("  {}: {:.3} (20%)", "Maintainability".bright_white(), score.components.maintainability);
+            println!("  {}: {:.3} (15%)", "Safety".bright_white(), score.components.safety);
+            println!("  {}: {:.3} (5%)", "Idiomaticity".bright_white(), score.components.idiomaticity);
+            
+            if let Some(explanation) = explanation {
+                println!("\n{}", "Comparison with Baseline:".bright_white().bold());
+                println!("  {}: {:.3}", "Delta".bright_white(), explanation.delta);
+                println!("  {}: {}", "Grade Change".bright_white(), explanation.grade_change);
+                
+                if !explanation.changes.is_empty() {
+                    println!("  {}:", "Changes".bright_white());
+                    for change in explanation.changes {
+                        println!("    • {}", change);
+                    }
+                }
+                
+                if !explanation.tradeoffs.is_empty() {
+                    println!("  {}:", "Tradeoffs".bright_white());
+                    for tradeoff in explanation.tradeoffs {
+                        println!("    • {}", tradeoff);
+                    }
+                }
+            }
+            
+            if let Some(output_path) = output {
+                let report = format!("Quality Score: {:.3} ({})\nConfidence: {:.1}%\n", 
+                    score.value, score.grade, score.confidence * 100.0);
+                fs::write(output_path, &report)?;
+                println!("\nReport written to {}", output_path);
+            }
+        }
+    
+    // Check minimum score threshold
+    if let Some(min) = min_score {
+        if score.value < min {
+            eprintln!("\n{} Quality score {:.3} is below minimum threshold {:.3}", 
+                "✗".bright_red(), score.value, min);
+            std::process::exit(1);
+        }
+    }
+    
+    // Watch mode (simplified for now)
+    if watch {
+        println!("\n{} Watching {} for changes...", "👀".bright_blue(), path.display());
+        // File watching will be implemented in RUCHY-0819
+        return Err("Watch mode not yet implemented".into());
+    }
+    
     Ok(())
 }
