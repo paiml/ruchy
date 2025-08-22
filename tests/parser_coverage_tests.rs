@@ -172,7 +172,9 @@ fn test_parse_try_operator() -> Result<()> {
     let mut parser = Parser::new(input);
     let ast = parser.parse()?;
 
-    assert!(matches!(ast.kind, ExprKind::Try { .. }));
+    // Try expressions were removed in RUCHY-0834
+    // This should now parse as a method call with ? operator
+    assert!(matches!(ast.kind, ExprKind::MethodCall { .. }));
 
     Ok(())
 }
