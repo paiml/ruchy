@@ -3,7 +3,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
-use ruchy::{runtime::repl::Repl, Parser as RuchyParser, Transpiler};
+use ruchy::{runtime::repl::Repl, ExprKind, Parser as RuchyParser, Transpiler};
 use std::fs;
 use std::path::{Path, PathBuf};
 
