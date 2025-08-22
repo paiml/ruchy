@@ -155,7 +155,7 @@ impl InferenceContext {
             }
             ExprKind::ObjectLiteral { fields } => self.infer_object_literal(fields),
             ExprKind::FieldAccess { object, field: _ } => self.infer_field_access(object),
-            ExprKind::IndexAccess { object, index: _ } => self.infer_index_access(object),
+            ExprKind::IndexAccess { object, index } => self.infer_index_access(object, index),
             ExprKind::Slice { object, .. } => self.infer_slice(object),
             ExprKind::Trait { .. } => {
                 // Trait definitions return Unit, they just register the trait
@@ -1300,12 +1300,30 @@ impl InferenceContext {
         Ok(MonoType::Var(self.gen.fresh()))
     }
 
-    fn infer_index_access(&mut self, object: &Expr) -> Result<MonoType> {
+    fn infer_index_access(&mut self, object: &Expr, index: &Expr) -> Result<MonoType> {
         let object_ty = self.infer_expr(object)?;
-        // For arrays/lists, return the element type
-        // For now, we'll use a fresh type variable until we have proper collection typing
+        let index_ty = self.infer_expr(index)?;
+        
+        // Check if the index is a range (which results in slicing)
+        if let MonoType::List(inner_ty) = &index_ty {
+            if matches!(**inner_ty, MonoType::Int) {
+                // This is a range (List of integers), so return the same collection type
+                return Ok(object_ty);
+            }
+        }
+        
+        // Regular integer indexing - return the element type
         match object_ty {
-            MonoType::List(element_ty) => Ok(*element_ty),
+            MonoType::List(element_ty) => {
+                // Ensure index is an integer
+                self.unifier.unify(&index_ty, &MonoType::Int)?;
+                Ok(*element_ty)
+            }
+            MonoType::String => {
+                // Ensure index is an integer
+                self.unifier.unify(&index_ty, &MonoType::Int)?;
+                Ok(MonoType::String)
+            }
             _ => Ok(MonoType::Var(self.gen.fresh())),
         }
     }
