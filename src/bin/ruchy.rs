@@ -9,7 +9,7 @@
 #![allow(clippy::fn_params_excessive_bools)]
 #![allow(clippy::too_many_lines)]
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use ruchy::{runtime::repl::Repl, ExprKind, Parser as RuchyParser, Transpiler};
@@ -137,10 +137,38 @@ enum Commands {
         format: String,
     },
 
-    /// Show AST for a file
+    /// Show AST for a file (Enhanced for v0.9.12)
     Ast {
         /// The file to parse
         file: PathBuf,
+
+        /// Output AST in JSON format for tooling integration
+        #[arg(long)]
+        json: bool,
+
+        /// Generate visual AST graph in DOT format
+        #[arg(long)]
+        graph: bool,
+
+        /// Calculate and show complexity metrics
+        #[arg(long)]
+        metrics: bool,
+
+        /// Perform symbol table analysis
+        #[arg(long)]
+        symbols: bool,
+
+        /// Analyze module dependencies
+        #[arg(long)]
+        deps: bool,
+
+        /// Show verbose analysis output
+        #[arg(long)]
+        verbose: bool,
+
+        /// Output file for graph/analysis results
+        #[arg(long)]
+        output: Option<PathBuf>,
     },
 
     /// Format Ruchy source code (Enhanced for v0.9.12)
@@ -477,16 +505,17 @@ fn main() -> Result<()> {
                 )?;
             }
         }
-        Some(Commands::Ast { file }) => {
-            let source = fs::read_to_string(&file)?;
-            let mut parser = RuchyParser::new(&source);
-            match parser.parse() {
-                Ok(ast) => println!("{ast:#?}"),
-                Err(e) => {
-                    eprintln!("Parse error: {e}");
-                    std::process::exit(1);
-                }
-            }
+        Some(Commands::Ast { 
+            file, 
+            json, 
+            graph, 
+            metrics, 
+            symbols, 
+            deps, 
+            verbose, 
+            output 
+        }) => {
+            analyze_ast(&file, json, graph, metrics, symbols, deps, verbose, output.as_deref())?;
         }
         Some(Commands::Fmt {
             file,
@@ -3671,4 +3700,496 @@ fn generate_enhanced_html_coverage_report(coverage: &EnhancedCoverageData) -> Re
     println!("{} Enhanced coverage report generated: coverage.html", "✓".bright_green());
     
     Ok(())
+}
+
+/// Comprehensive AST analysis and inspection (RUCHY-0753)
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::fn_params_excessive_bools)]
+fn analyze_ast(
+    file: &Path,
+    json: bool,
+    graph: bool,
+    metrics: bool,
+    symbols: bool,
+    deps: bool,
+    verbose: bool,
+    output: Option<&Path>,
+) -> Result<()> {
+    let source = fs::read_to_string(file)
+        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+
+    let mut parser = ruchy::Parser::new(&source);
+    let ast = parser.parse()
+        .with_context(|| format!("Failed to parse file: {}", file.display()))?;
+
+    // Default: Pretty-printed AST
+    if !json && !graph && !metrics && !symbols && !deps {
+        println!("{} AST for {}", "→".bright_cyan(), file.display());
+        println!("{:#?}", ast);
+        return Ok(());
+    }
+
+    // JSON output for tooling integration
+    if json {
+        let json_output = generate_json_ast(&ast)?;
+        if let Some(output_path) = output {
+            fs::write(output_path, &json_output)?;
+            println!("{} JSON AST written to {}", "✓".bright_green(), output_path.display());
+        } else {
+            println!("{}", json_output);
+        }
+    }
+
+    // DOT graph generation for visualization
+    if graph {
+        let dot_output = generate_dot_graph(&ast, file);
+        let output_path = if let Some(path) = output {
+            path.with_extension("dot")
+        } else {
+            file.with_extension("dot")
+        };
+        fs::write(&output_path, &dot_output)?;
+        println!("{} DOT graph written to {}", "✓".bright_green(), output_path.display());
+        
+        if verbose {
+            println!("  Use: dot -Tpng {} -o {}", output_path.display(), output_path.with_extension("png").display());
+        }
+    }
+
+    // Complexity metrics calculation
+    if metrics {
+        let ast_metrics = calculate_ast_metrics(&ast);
+        println!("{} AST Metrics for {}", "📊".bright_blue(), file.display());
+        println!("  Total Nodes: {}", ast_metrics.node_count);
+        println!("  Max Depth: {}", ast_metrics.max_depth);
+        println!("  Function Count: {}", ast_metrics.function_count);
+        println!("  Cyclomatic Complexity: {}", ast_metrics.cyclomatic_complexity);
+        println!("  Expression Count: {}", ast_metrics.expression_count);
+        println!("  Block Count: {}", ast_metrics.block_count);
+        
+        if verbose {
+            println!("  Complexity per Function:");
+            for (name, complexity) in &ast_metrics.function_complexity {
+                let status = if *complexity > 10 {
+                    "⚠".yellow()
+                } else {
+                    "✓".bright_green()
+                };
+                println!("    {}: {} {}", name, complexity, status);
+            }
+        }
+    }
+
+    // Symbol table analysis
+    if symbols {
+        let symbol_analysis = analyze_symbols(&ast);
+        println!("{} Symbol Analysis for {}", "🔍".bright_magenta(), file.display());
+        println!("  Defined Symbols: {}", symbol_analysis.defined.len());
+        println!("  Used Symbols: {}", symbol_analysis.used.len());
+        
+        if symbol_analysis.unused.is_empty() {
+            println!("  {} No unused symbols", "✓".bright_green());
+        } else {
+            println!("  {} Unused Symbols: {}", "⚠".yellow(), symbol_analysis.unused.len());
+            if verbose {
+                for symbol in &symbol_analysis.unused {
+                    println!("    {}", symbol);
+                }
+            }
+        }
+
+        if verbose {
+            println!("  Defined Symbols:");
+            for (symbol, scope) in &symbol_analysis.defined {
+                println!("    {} (scope: {})", symbol, scope);
+            }
+        }
+    }
+
+    // Module dependency analysis
+    if deps {
+        let dep_analysis = analyze_dependencies(&ast, file);
+        println!("{} Dependency Analysis for {}", "🔗".bright_cyan(), file.display());
+        println!("  External Dependencies: {}", dep_analysis.external_deps.len());
+        println!("  Internal Calls: {}", dep_analysis.internal_calls.len());
+        println!("  Exported Functions: {}", dep_analysis.exports.len());
+        
+        if verbose {
+            if !dep_analysis.external_deps.is_empty() {
+                println!("  External Dependencies:");
+                for dep in &dep_analysis.external_deps {
+                    println!("    {}", dep);
+                }
+            }
+            
+            if !dep_analysis.internal_calls.is_empty() {
+                println!("  Internal Function Calls:");
+                for call in &dep_analysis.internal_calls {
+                    println!("    {}", call);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Generate JSON representation of AST for tooling integration
+fn generate_json_ast(ast: &ruchy::Expr) -> Result<String> {
+    use serde_json::{Map, Value};
+    
+    fn expr_to_json(expr: &ruchy::Expr) -> Value {
+        let mut obj = Map::new();
+        obj.insert("type".to_string(), Value::String("Expr".to_string()));
+        
+        match &expr.kind {
+            ruchy::ExprKind::Literal(lit) => {
+                obj.insert("kind".to_string(), Value::String("Literal".to_string()));
+                obj.insert("value".to_string(), Value::String(format!("{:?}", lit)));
+            }
+            ruchy::ExprKind::Identifier(name) => {
+                obj.insert("kind".to_string(), Value::String("Identifier".to_string()));
+                obj.insert("name".to_string(), Value::String(name.clone()));
+            }
+            ruchy::ExprKind::Function { name, params, return_type, body, .. } => {
+                obj.insert("kind".to_string(), Value::String("Function".to_string()));
+                obj.insert("name".to_string(), Value::String(name.clone()));
+                obj.insert("params".to_string(), Value::Array(
+                    params.iter().map(|p| Value::String(format!("{:?}", p))).collect()
+                ));
+                if let Some(ret_ty) = return_type {
+                    obj.insert("return_type".to_string(), Value::String(format!("{:?}", ret_ty)));
+                }
+                obj.insert("body".to_string(), expr_to_json(body));
+            }
+            ruchy::ExprKind::Block(exprs) => {
+                obj.insert("kind".to_string(), Value::String("Block".to_string()));
+                obj.insert("expressions".to_string(), Value::Array(
+                    exprs.iter().map(expr_to_json).collect()
+                ));
+            }
+            ruchy::ExprKind::If { condition, then_branch, else_branch } => {
+                obj.insert("kind".to_string(), Value::String("If".to_string()));
+                obj.insert("condition".to_string(), expr_to_json(condition));
+                obj.insert("then_branch".to_string(), expr_to_json(then_branch));
+                if let Some(else_expr) = else_branch {
+                    obj.insert("else_branch".to_string(), expr_to_json(else_expr));
+                }
+            }
+            ruchy::ExprKind::Call { func, args } => {
+                obj.insert("kind".to_string(), Value::String("Call".to_string()));
+                obj.insert("function".to_string(), expr_to_json(func));
+                obj.insert("arguments".to_string(), Value::Array(
+                    args.iter().map(expr_to_json).collect()
+                ));
+            }
+            _ => {
+                obj.insert("kind".to_string(), Value::String("Other".to_string()));
+                obj.insert("debug".to_string(), Value::String(format!("{:?}", expr.kind)));
+            }
+        }
+        
+        Value::Object(obj)
+    }
+    
+    let json_ast = expr_to_json(ast);
+    Ok(serde_json::to_string_pretty(&json_ast)?)
+}
+
+/// Generate DOT graph for AST visualization
+#[allow(clippy::items_after_statements)]
+fn generate_dot_graph(ast: &ruchy::Expr, file: &Path) -> String {
+    let mut dot = String::new();
+    dot.push_str(&format!("digraph \"{}\" {{\n", file.display()));
+    dot.push_str("  node [shape=box, style=rounded];\n");
+    dot.push_str("  rankdir=TB;\n\n");
+    
+    let mut node_counter = 0;
+    
+    fn generate_nodes(
+        expr: &ruchy::Expr, 
+        dot: &mut String, 
+        counter: &mut usize,
+        parent: Option<usize>
+    ) -> usize {
+        let current_id = *counter;
+        *counter += 1;
+        
+        let label = match &expr.kind {
+            ruchy::ExprKind::Literal(lit) => format!("Literal\\n{:?}", lit),
+            ruchy::ExprKind::Identifier(name) => format!("Identifier\\n{}", name),
+            ruchy::ExprKind::Function { name, .. } => format!("Function\\n{}", name),
+            ruchy::ExprKind::Block(_) => "Block".to_string(),
+            ruchy::ExprKind::If { .. } => "If".to_string(),
+            ruchy::ExprKind::Call { .. } => "Call".to_string(),
+            _ => format!("{:?}", expr.kind).split('(').next().unwrap_or("Unknown").to_string(),
+        };
+        
+        dot.push_str(&format!("  n{} [label=\"{}\"];\n", current_id, label));
+        
+        if let Some(parent_id) = parent {
+            dot.push_str(&format!("  n{} -> n{};\n", parent_id, current_id));
+        }
+        
+        match &expr.kind {
+            ruchy::ExprKind::Function { body, .. } => {
+                generate_nodes(body, dot, counter, Some(current_id));
+            }
+            ruchy::ExprKind::Block(exprs) => {
+                for expr in exprs {
+                    generate_nodes(expr, dot, counter, Some(current_id));
+                }
+            }
+            ruchy::ExprKind::If { condition, then_branch, else_branch } => {
+                generate_nodes(condition, dot, counter, Some(current_id));
+                generate_nodes(then_branch, dot, counter, Some(current_id));
+                if let Some(else_expr) = else_branch {
+                    generate_nodes(else_expr, dot, counter, Some(current_id));
+                }
+            }
+            ruchy::ExprKind::Call { func, args } => {
+                generate_nodes(func, dot, counter, Some(current_id));
+                for arg in args {
+                    generate_nodes(arg, dot, counter, Some(current_id));
+                }
+            }
+            _ => {}
+        }
+        
+        current_id
+    }
+    
+    generate_nodes(ast, &mut dot, &mut node_counter, None);
+    dot.push_str("}\n");
+    
+    dot
+}
+
+/// AST complexity metrics
+#[derive(Debug)]
+struct AstMetrics {
+    node_count: usize,
+    max_depth: usize,
+    function_count: usize,
+    cyclomatic_complexity: usize,
+    expression_count: usize,
+    block_count: usize,
+    function_complexity: Vec<(String, usize)>,
+}
+
+/// Calculate comprehensive AST metrics
+#[allow(clippy::items_after_statements)]
+fn calculate_ast_metrics(ast: &ruchy::Expr) -> AstMetrics {
+    let mut metrics = AstMetrics {
+        node_count: 0,
+        max_depth: 0,
+        function_count: 0,
+        cyclomatic_complexity: 1, // Base complexity
+        expression_count: 0,
+        block_count: 0,
+        function_complexity: Vec::new(),
+    };
+    
+    fn visit_expr(expr: &ruchy::Expr, metrics: &mut AstMetrics, depth: usize) {
+        metrics.node_count += 1;
+        metrics.expression_count += 1;
+        metrics.max_depth = metrics.max_depth.max(depth);
+        
+        match &expr.kind {
+            ruchy::ExprKind::Function { name, body, .. } => {
+                metrics.function_count += 1;
+                let mut func_complexity = 1;
+                visit_expr_complexity(body, &mut func_complexity);
+                metrics.function_complexity.push((name.clone(), func_complexity));
+                visit_expr(body, metrics, depth + 1);
+            }
+            ruchy::ExprKind::Block(exprs) => {
+                metrics.block_count += 1;
+                for expr in exprs {
+                    visit_expr(expr, metrics, depth + 1);
+                }
+            }
+            ruchy::ExprKind::If { condition, then_branch, else_branch } => {
+                metrics.cyclomatic_complexity += 1;
+                visit_expr(condition, metrics, depth + 1);
+                visit_expr(then_branch, metrics, depth + 1);
+                if let Some(else_expr) = else_branch {
+                    visit_expr(else_expr, metrics, depth + 1);
+                }
+            }
+            ruchy::ExprKind::Call { func, args } => {
+                visit_expr(func, metrics, depth + 1);
+                for arg in args {
+                    visit_expr(arg, metrics, depth + 1);
+                }
+            }
+            _ => {}
+        }
+    }
+    
+    fn visit_expr_complexity(expr: &ruchy::Expr, complexity: &mut usize) {
+        match &expr.kind {
+            ruchy::ExprKind::If { condition, then_branch, else_branch } => {
+                *complexity += 1;
+                visit_expr_complexity(condition, complexity);
+                visit_expr_complexity(then_branch, complexity);
+                if let Some(else_expr) = else_branch {
+                    visit_expr_complexity(else_expr, complexity);
+                }
+            }
+            ruchy::ExprKind::Block(exprs) => {
+                for expr in exprs {
+                    visit_expr_complexity(expr, complexity);
+                }
+            }
+            ruchy::ExprKind::Call { func, args } => {
+                visit_expr_complexity(func, complexity);
+                for arg in args {
+                    visit_expr_complexity(arg, complexity);
+                }
+            }
+            _ => {}
+        }
+    }
+    
+    visit_expr(ast, &mut metrics, 0);
+    metrics
+}
+
+/// Symbol analysis results
+#[derive(Debug)]
+struct SymbolAnalysis {
+    defined: Vec<(String, String)>, // (symbol, scope)
+    used: Vec<String>,
+    unused: Vec<String>,
+}
+
+/// Analyze symbols in AST (definitions, usage, unused)
+#[allow(clippy::items_after_statements)]
+fn analyze_symbols(ast: &ruchy::Expr) -> SymbolAnalysis {
+    let mut defined = Vec::new();
+    let mut used = Vec::new();
+    
+    fn collect_symbols(expr: &ruchy::Expr, defined: &mut Vec<(String, String)>, used: &mut Vec<String>, scope: &str) {
+        match &expr.kind {
+            ruchy::ExprKind::Function { name, params, body, .. } => {
+                defined.push((name.clone(), scope.to_string()));
+                let func_scope = format!("{}::{}", scope, name);
+                for param in params {
+                    defined.push((format!("{:?}", param), func_scope.clone()));
+                }
+                collect_symbols(body, defined, used, &func_scope);
+            }
+            ruchy::ExprKind::Identifier(name) => {
+                used.push(name.clone());
+            }
+            ruchy::ExprKind::Block(exprs) => {
+                for expr in exprs {
+                    collect_symbols(expr, defined, used, scope);
+                }
+            }
+            ruchy::ExprKind::If { condition, then_branch, else_branch } => {
+                collect_symbols(condition, defined, used, scope);
+                collect_symbols(then_branch, defined, used, scope);
+                if let Some(else_expr) = else_branch {
+                    collect_symbols(else_expr, defined, used, scope);
+                }
+            }
+            ruchy::ExprKind::Call { func, args } => {
+                collect_symbols(func, defined, used, scope);
+                for arg in args {
+                    collect_symbols(arg, defined, used, scope);
+                }
+            }
+            _ => {}
+        }
+    }
+    
+    collect_symbols(ast, &mut defined, &mut used, "global");
+    
+    let defined_names: Vec<String> = defined.iter().map(|(name, _)| name.clone()).collect();
+    let unused: Vec<String> = defined_names
+        .iter()
+        .filter(|name| !used.contains(name))
+        .cloned()
+        .collect();
+    
+    SymbolAnalysis {
+        defined,
+        used,
+        unused,
+    }
+}
+
+/// Dependency analysis results
+#[derive(Debug)]
+struct DependencyAnalysis {
+    external_deps: Vec<String>,
+    internal_calls: Vec<String>,
+    exports: Vec<String>,
+}
+
+/// Analyze module dependencies and function calls
+#[allow(clippy::items_after_statements)]
+fn analyze_dependencies(ast: &ruchy::Expr, _file: &Path) -> DependencyAnalysis {
+    let mut external_deps = Vec::new();
+    let mut internal_calls = Vec::new();
+    let mut exports = Vec::new();
+    
+    fn collect_dependencies(
+        expr: &ruchy::Expr, 
+        external: &mut Vec<String>, 
+        internal: &mut Vec<String>,
+        exports: &mut Vec<String>
+    ) {
+        match &expr.kind {
+            ruchy::ExprKind::Function { name, body, .. } => {
+                exports.push(name.clone());
+                collect_dependencies(body, external, internal, exports);
+            }
+            ruchy::ExprKind::Call { func, args } => {
+                if let ruchy::ExprKind::Identifier(name) = &func.kind {
+                    // Simple heuristic: if it contains :: or starts with uppercase, it's external
+                    if name.contains("::") || name.chars().next().is_some_and(char::is_uppercase) {
+                        external.push(name.clone());
+                    } else {
+                        internal.push(name.clone());
+                    }
+                }
+                collect_dependencies(func, external, internal, exports);
+                for arg in args {
+                    collect_dependencies(arg, external, internal, exports);
+                }
+            }
+            ruchy::ExprKind::Block(exprs) => {
+                for expr in exprs {
+                    collect_dependencies(expr, external, internal, exports);
+                }
+            }
+            ruchy::ExprKind::If { condition, then_branch, else_branch } => {
+                collect_dependencies(condition, external, internal, exports);
+                collect_dependencies(then_branch, external, internal, exports);
+                if let Some(else_expr) = else_branch {
+                    collect_dependencies(else_expr, external, internal, exports);
+                }
+            }
+            _ => {}
+        }
+    }
+    
+    collect_dependencies(ast, &mut external_deps, &mut internal_calls, &mut exports);
+    
+    // Remove duplicates
+    external_deps.sort();
+    external_deps.dedup();
+    internal_calls.sort();
+    internal_calls.dedup();
+    exports.sort();
+    exports.dedup();
+    
+    DependencyAnalysis {
+        external_deps,
+        internal_calls,
+        exports,
+    }
 }
