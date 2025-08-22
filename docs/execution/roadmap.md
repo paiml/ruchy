@@ -19,7 +19,13 @@
   - ✅ Coverage reporting: HTML, JSON, text with thresholds
   - ✅ CI/CD integration capabilities
   - ✅ Published to crates.io with professional development workflow
-- [ ] **RUCHY-0751**: Enhance `ruchy lint` with grammar-based analysis
+- [x] **RUCHY-0751**: ✅ COMPLETED - Enhanced linting with grammar-based analysis (v0.9.12)
+  - ✅ Auto-fix mode with `--fix` flag for automated corrections
+  - ✅ Strict mode with `--strict` flag (upgrades warnings to errors)
+  - ✅ Rule filtering with `--rules` categories (unused,style,complexity,security,performance)
+  - ✅ Enhanced output formats: text and JSON for CI/CD integration
+  - ✅ Verbose mode with detailed explanations and suggestions
+  - ✅ Grammar-based analysis using Ruchy AST for accurate detection
 - [ ] **RUCHY-0752**: Complete `ruchy fmt` code formatting
 - [ ] **RUCHY-0753**: Expand `ruchy ast` analysis capabilities
 - [ ] **RUCHY-0754**: Implement `ruchy provability` formal verification
