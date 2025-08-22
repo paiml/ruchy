@@ -318,7 +318,11 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 Some((Token::Impl, _)) => {
                     types::parse_impl_with_visibility(state, true)
                 }
-                _ => bail!("Expected 'fn', 'struct', 'enum', 'trait', or 'impl' after 'pub'")
+                Some((Token::Mod, _)) => {
+                    // For now, treat pub mod the same as mod (visibility not yet fully implemented)
+                    parse_module(state)
+                }
+                _ => bail!("Expected 'fn', 'struct', 'enum', 'trait', 'impl', or 'mod' after 'pub'")
             }
         }
         Token::Fun | Token::Fn => functions::parse_function(state),
@@ -327,6 +331,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::For => control_flow::parse_for(state),
         Token::While => control_flow::parse_while(state),
         Token::Loop => control_flow::parse_loop(state),
+        Token::Mod => parse_module(state),
         Token::Break => Ok(control_flow::parse_break(state)),
         Token::Continue => Ok(control_flow::parse_continue(state)),
         Token::Try => control_flow::parse_try_catch(state),
@@ -581,4 +586,51 @@ fn parse_command(state: &mut ParserState) -> Result<Expr> {
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
     })
+}
+
+/// Parse a module definition
+pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume mod
+    
+    // Parse module name
+    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected module name after 'mod'");
+    };
+    
+    // Parse module body
+    state.tokens.expect(&Token::LeftBrace)?;
+    
+    // Parse module contents as a block
+    let mut items = Vec::new();
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        items.push(super::parse_expr_recursive(state)?);
+        
+        // Optional semicolon between items
+        if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+            state.tokens.advance();
+        }
+    }
+    
+    state.tokens.expect(&Token::RightBrace)?;
+    
+    let body = if items.len() == 1 {
+        items.into_iter().next().expect("checked that len == 1")
+    } else {
+        Expr::new(
+            ExprKind::Block(items),
+            start_span,
+        )
+    };
+    
+    Ok(Expr::new(
+        ExprKind::Module {
+            name,
+            body: Box::new(body),
+        },
+        start_span,
+    ))
 }

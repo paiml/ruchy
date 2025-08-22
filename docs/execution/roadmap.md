@@ -487,6 +487,9 @@ graph TD
 - [x] **RUCHY-0716**: Add macro system for println! and vec! ✅ COMPLETED v0.9.8
 - [x] **RUCHY-0717**: Fix binary compilation with proper main() wrapping ✅ COMPLETED v0.9.10
 - [x] **RUCHY-0718**: Implement Linux x86_64 binary releases with GitHub Actions ✅ COMPLETED v0.9.11
+- [x] **RUCHY-0719**: Implement real module system with file-based modules
+- [ ] **RUCHY-0720**: Port lexer to Ruchy as self-hosting proof of concept
+- [ ] **RUCHY-0721**: Port parser to Ruchy after lexer validation
 
 ### Phase 3: Self-Hosting (v1.0)
 - [ ] **RUCHY-0608**: Rewrite Ruchy compiler in Ruchy
