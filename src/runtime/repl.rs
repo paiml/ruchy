@@ -1672,6 +1672,57 @@ impl Repl {
         let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
         let index_val = self.evaluate_expr(index, deadline, depth + 1)?;
         
+        
+        // Check for range indexing first
+        if let Value::Range { start, end, inclusive } = index_val {
+            match obj_val {
+                Value::List(list) => {
+                    let start_idx = usize::try_from(start)
+                        .map_err(|_| anyhow::anyhow!("Invalid start index: {}", start))?;
+                    let end_idx = if inclusive {
+                        usize::try_from(end + 1)
+                            .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end + 1))?
+                    } else {
+                        usize::try_from(end)
+                            .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end))?
+                    };
+                    
+                    if start_idx > list.len() || end_idx > list.len() {
+                        return Err(anyhow::anyhow!("Slice indices out of bounds"));
+                    }
+                    if start_idx > end_idx {
+                        return Err(anyhow::anyhow!("Invalid slice range: start > end"));
+                    }
+                    
+                    return Ok(Value::List(list[start_idx..end_idx].to_vec()));
+                }
+                Value::String(s) => {
+                    let chars: Vec<char> = s.chars().collect();
+                    let start_idx = usize::try_from(start)
+                        .map_err(|_| anyhow::anyhow!("Invalid start index: {}", start))?;
+                    let end_idx = if inclusive {
+                        usize::try_from(end + 1)
+                            .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end + 1))?
+                    } else {
+                        usize::try_from(end)
+                            .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end))?
+                    };
+                    
+                    if start_idx > chars.len() || end_idx > chars.len() {
+                        return Err(anyhow::anyhow!("Slice indices out of bounds"));
+                    }
+                    if start_idx > end_idx {
+                        return Err(anyhow::anyhow!("Invalid slice range: start > end"));
+                    }
+                    
+                    return Ok(Value::String(chars[start_idx..end_idx].iter().collect()));
+                }
+                _ => {
+                    return Err(anyhow::anyhow!("Cannot slice into {:?}", obj_val));
+                }
+            }
+        }
+
         match (obj_val, index_val) {
             (Value::List(list), Value::Int(idx)) => {
                 let idx = usize::try_from(idx)
@@ -1690,7 +1741,7 @@ impl Repl {
                 }
                 Ok(Value::String(chars[idx].to_string()))
             }
-            (obj_val, _) => Err(anyhow::anyhow!("Cannot index into {:?}", obj_val)),
+            (obj_val, index_val) => Err(anyhow::anyhow!("Cannot index into {:?} with index {:?}", obj_val, index_val)),
         }
     }
 

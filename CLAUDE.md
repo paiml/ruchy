@@ -631,3 +631,4 @@ Always maintain in .gitignore:
 - no "cruft" at root of repo.  always clean up temp files/documents before committing.  Zero tolerance for waste.  we follow toyota way.
 - if fixing documentation, always ensure a doctests exists, if not create.
 - add test-execution to quality gates
+- ruchy-cli is deprecated, stop publishing it.
