@@ -581,6 +581,13 @@ pub enum ImportItem {
     Wildcard,
 }
 
+impl ImportItem {
+    /// Check if this import is for a URL module
+    pub fn is_url_import(path: &str) -> bool {
+        path.starts_with("https://") || path.starts_with("http://")
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AggregateOp {
     Sum(String),
