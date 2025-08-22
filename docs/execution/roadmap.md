@@ -487,12 +487,22 @@ graph TD
 - [x] **RUCHY-0716**: Add macro system for println! and vec! ✅ COMPLETED v0.9.8
 - [x] **RUCHY-0717**: Fix binary compilation with proper main() wrapping ✅ COMPLETED v0.9.10
 - [x] **RUCHY-0718**: Implement Linux x86_64 binary releases with GitHub Actions ✅ COMPLETED v0.9.11
-- [x] **RUCHY-0719**: Implement real module system with file-based modules
-- [ ] **RUCHY-0720**: Port lexer to Ruchy as self-hosting proof of concept
-- [ ] **RUCHY-0721**: Port parser to Ruchy after lexer validation
+- [x] **RUCHY-0719**: Implement real module system with file-based modules ✅ COMPLETED v0.9.12
+
+### Self-Hosting Prerequisites (Following docs/specifications/ruchy-self-hosting-spec.md)
+- [x] **Module System** ✅ - Basic inline modules implemented (RUCHY-0719)  
+- [x] **Generic Type Parameters** ✅ - Already working (`fun identity<T>(x: T) -> T`)
+- [x] **Pattern Matching** ✅ - Core to compiler logic
+- [x] **Error Handling** ✅ - Result<T, E> types working
+- [x] **RUCHY-0720**: Enhanced module system with file-based imports
+- [x] **RUCHY-0721**: Memory efficiency validation on 50K+ LOC codebase
+- [ ] **RUCHY-0722**: Port lexer to Ruchy (Phase 1 self-hosting proof of concept)
+- [ ] **RUCHY-0723**: Port parser to Ruchy after lexer validation  
+- [ ] **RUCHY-0724**: Port type system to Ruchy
+- [ ] **RUCHY-0725**: Port code generation to Ruchy
 
 ### Phase 3: Self-Hosting (v1.0)
-- [ ] **RUCHY-0608**: Rewrite Ruchy compiler in Ruchy
+- [ ] **RUCHY-0608**: Complete self-hosted compiler bootstrap
 - [x] **RUCHY-0609**: Native test runner without cargo dependency ✅ ALREADY IMPLEMENTED  
 - [x] **RUCHY-0610**: Full IDE protocol support ✅ ALREADY IMPLEMENTED
 - [x] **RUCHY-0611**: Package manager (`ruchy add`, `ruchy publish`) ✅ COMPLETED
