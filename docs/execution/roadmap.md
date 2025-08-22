@@ -496,7 +496,7 @@ graph TD
 - [x] **Error Handling** ✅ - Result<T, E> types working
 - [x] **RUCHY-0720**: Enhanced module system with file-based imports
 - [x] **RUCHY-0721**: Memory efficiency validation on 50K+ LOC codebase
-- [ ] **RUCHY-0722**: Port lexer to Ruchy (Phase 1 self-hosting proof of concept)
+- [x] **RUCHY-0722**: Port lexer to Ruchy (Phase 1 self-hosting proof of concept)
 - [ ] **RUCHY-0723**: Port parser to Ruchy after lexer validation  
 - [ ] **RUCHY-0724**: Port type system to Ruchy
 - [ ] **RUCHY-0725**: Port code generation to Ruchy

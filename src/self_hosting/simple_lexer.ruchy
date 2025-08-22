@@ -1,0 +1,251 @@
+// Self-hosted Ruchy Lexer - Simplified Proof of Concept  
+// RUCHY-0722: Port lexer to Ruchy (Phase 1 self-hosting)
+
+// Simple character-based lexer implementation
+fun is_digit(ch: char) -> bool {
+    ch >= '0' && ch <= '9'
+}
+
+fun is_letter(ch: char) -> bool {
+    (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
+}
+
+fun is_alphanumeric(ch: char) -> bool {
+    is_letter(ch) || is_digit(ch)
+}
+
+fun char_at(s: String, pos: i32) -> char {
+    let chars = []
+    for ch in s.chars() {
+        chars = chars + [ch]
+    }
+    if pos >= 0 && pos < chars.len() as i32 {
+        chars[pos as usize]
+    } else {
+        ' '  // Default character for out of bounds
+    }
+}
+
+// Simple token types for proof of concept
+enum SimpleToken {
+    Number(i32),
+    Word(String),
+    Plus,
+    Minus,
+    Equal,
+    LeftParen,
+    RightParen,
+    LeftBrace,
+    RightBrace,
+    Semicolon,
+    Let,
+    Fun,
+    Unknown,
+    Eof,
+}
+
+// Basic lexer state
+struct SimpleLexer {
+    input: String,
+    position: i32,
+    length: i32,
+}
+
+fun create_lexer(input: String) -> SimpleLexer {
+    SimpleLexer {
+        input: input,
+        position: 0,
+        length: input.len() as i32,
+    }
+}
+
+fun current_char(lexer: SimpleLexer) -> char {
+    if lexer.position >= lexer.length {
+        '\0'
+    } else {
+        char_at(lexer.input, lexer.position)
+    }
+}
+
+fun peek_char(lexer: SimpleLexer) -> char {
+    if lexer.position + 1 >= lexer.length {
+        '\0'
+    } else {
+        char_at(lexer.input, lexer.position + 1)
+    }
+}
+
+fun advance_lexer(lexer: SimpleLexer) -> SimpleLexer {
+    SimpleLexer {
+        input: lexer.input,
+        position: lexer.position + 1,
+        length: lexer.length,
+    }
+}
+
+fun skip_whitespace(lexer: SimpleLexer) -> SimpleLexer {
+    let mut current = lexer
+    let mut ch = current_char(current)
+    
+    while ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
+        current = advance_lexer(current)
+        ch = current_char(current)
+        if current.position >= current.length {
+            break
+        }
+    }
+    
+    current
+}
+
+fun read_number(lexer: SimpleLexer) -> (SimpleToken, SimpleLexer) {
+    let mut current = lexer
+    let mut number_str = ""
+    let mut ch = current_char(current)
+    
+    while is_digit(ch) {
+        number_str = number_str + ch
+        current = advance_lexer(current)
+        ch = current_char(current)
+        if current.position >= current.length {
+            break
+        }
+    }
+    
+    let number = if number_str == "" { 0 } else { number_str.parse::<i32>().unwrap_or(0) }
+    (SimpleToken::Number(number), current)
+}
+
+fun read_word(lexer: SimpleLexer) -> (SimpleToken, SimpleLexer) {
+    let mut current = lexer
+    let mut word = ""
+    let mut ch = current_char(current)
+    
+    while is_alphanumeric(ch) {
+        word = word + ch
+        current = advance_lexer(current)
+        ch = current_char(current)
+        if current.position >= current.length {
+            break
+        }
+    }
+    
+    let token = if word == "let" {
+        SimpleToken::Let
+    } else if word == "fun" {
+        SimpleToken::Fun
+    } else {
+        SimpleToken::Word(word)
+    }
+    
+    (token, current)
+}
+
+fun next_token(lexer: SimpleLexer) -> (SimpleToken, SimpleLexer) {
+    let current = skip_whitespace(lexer)
+    
+    if current.position >= current.length {
+        return (SimpleToken::Eof, current)
+    }
+    
+    let ch = current_char(current)
+    
+    if is_digit(ch) {
+        read_number(current)
+    } else if is_letter(ch) {
+        read_word(current)
+    } else if ch == '+' {
+        (SimpleToken::Plus, advance_lexer(current))
+    } else if ch == '-' {
+        (SimpleToken::Minus, advance_lexer(current))
+    } else if ch == '=' {
+        (SimpleToken::Equal, advance_lexer(current))
+    } else if ch == '(' {
+        (SimpleToken::LeftParen, advance_lexer(current))
+    } else if ch == ')' {
+        (SimpleToken::RightParen, advance_lexer(current))
+    } else if ch == '{' {
+        (SimpleToken::LeftBrace, advance_lexer(current))
+    } else if ch == '}' {
+        (SimpleToken::RightBrace, advance_lexer(current))
+    } else if ch == ';' {
+        (SimpleToken::Semicolon, advance_lexer(current))
+    } else {
+        (SimpleToken::Unknown, advance_lexer(current))
+    }
+}
+
+fun token_to_string(token: SimpleToken) -> String {
+    match token {
+        SimpleToken::Number(n) => "Number(" + n + ")",
+        SimpleToken::Word(w) => "Word(" + w + ")",
+        SimpleToken::Plus => "Plus",
+        SimpleToken::Minus => "Minus", 
+        SimpleToken::Equal => "Equal",
+        SimpleToken::LeftParen => "LeftParen",
+        SimpleToken::RightParen => "RightParen",
+        SimpleToken::LeftBrace => "LeftBrace",
+        SimpleToken::RightBrace => "RightBrace",
+        SimpleToken::Semicolon => "Semicolon",
+        SimpleToken::Let => "Let",
+        SimpleToken::Fun => "Fun",
+        SimpleToken::Unknown => "Unknown",
+        SimpleToken::Eof => "Eof",
+    }
+}
+
+fun tokenize_string(input: String) -> [SimpleToken] {
+    let mut lexer = create_lexer(input)
+    let mut tokens = []
+    
+    loop {
+        let (token, new_lexer) = next_token(lexer)
+        lexer = new_lexer
+        
+        let is_eof = match token {
+            SimpleToken::Eof => true,
+            _ => false,
+        }
+        
+        tokens = tokens + [token]
+        
+        if is_eof {
+            break
+        }
+    }
+    
+    tokens
+}
+
+fun test_simple_lexer() {
+    println("🔧 Testing Self-Hosted Simple Lexer...")
+    
+    // Test 1: Numbers and operators
+    let test1 = "42 + 10"
+    println("Test 1: " + test1)
+    let tokens1 = tokenize_string(test1)
+    for token in tokens1 {
+        println("  " + token_to_string(token))
+    }
+    
+    // Test 2: Let statement
+    let test2 = "let x = 5"
+    println("Test 2: " + test2)
+    let tokens2 = tokenize_string(test2)
+    for token in tokens2 {
+        println("  " + token_to_string(token))
+    }
+    
+    // Test 3: Function definition skeleton
+    let test3 = "fun add"
+    println("Test 3: " + test3)
+    let tokens3 = tokenize_string(test3)
+    for token in tokens3 {
+        println("  " + token_to_string(token))
+    }
+    
+    println("✅ Self-hosted simple lexer tests completed!")
+}
+
+// Run the test
+test_simple_lexer()
