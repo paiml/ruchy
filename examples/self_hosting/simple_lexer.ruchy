@@ -1,0 +1,71 @@
+// Simple Ruchy lexer - proof of concept for self-hosting
+// This demonstrates that Ruchy can implement its own lexer
+
+// Define a simple token type using an enum
+enum Token {
+    Number,
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    LeftParen,
+    RightParen,
+    Eof
+}
+
+// Tokenize a simple arithmetic expression
+fun tokenize_char(ch: str) -> Token {
+    match ch {
+        "+" => Token::Plus,
+        "-" => Token::Minus,
+        "*" => Token::Star,
+        "/" => Token::Slash,
+        "(" => Token::LeftParen,
+        ")" => Token::RightParen,
+        _ => Token::Number
+    }
+}
+
+// Process a simple string
+fun tokenize_string(input: str) -> [Token] {
+    let tokens = [];
+    let chars = input.split("");
+    
+    for ch in chars {
+        if ch != " " && ch != "" {
+            let token = tokenize_char(ch);
+            tokens.push(token);
+        }
+    }
+    
+    tokens.push(Token::Eof);
+    tokens
+}
+
+// Display token
+fun display_token(token: Token) -> str {
+    match token {
+        Token::Number => "Number",
+        Token::Plus => "Plus",
+        Token::Minus => "Minus", 
+        Token::Star => "Star",
+        Token::Slash => "Slash",
+        Token::LeftParen => "LeftParen",
+        Token::RightParen => "RightParen",
+        Token::Eof => "EOF"
+    }
+}
+
+// Main function to test the lexer
+fun main() {
+    let input = "1 + 2 * 3";
+    println("Input: {input}");
+    
+    let tokens = tokenize_string(input);
+    
+    println("Tokens:");
+    for token in tokens {
+        let name = display_token(token);
+        println("  {name}");
+    }
+}
