@@ -17,6 +17,7 @@ pub mod mcp;
 pub mod middleend;
 pub mod optimization;
 pub mod parser;
+pub mod proving;
 pub mod quality;
 pub mod runtime;
 #[cfg(any(test, feature = "testing"))]

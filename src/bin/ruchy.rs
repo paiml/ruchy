@@ -23,6 +23,9 @@ use ruchy::quality::enforcement::enforce_quality_gates;
 use std::thread;
 use std::time::{Duration, Instant};
 
+mod handlers;
+use handlers::handle_prove_command;
+
 /// Configuration for code formatting
 #[derive(Debug, Clone)]
 struct FormatConfig {
@@ -767,6 +770,48 @@ enum Commands {
         #[arg(long)]
         verbose: bool,
     },
+    
+    /// Interactive theorem prover (RUCHY-0820)
+    Prove {
+        /// The file to verify (optional, starts REPL if not provided)
+        file: Option<PathBuf>,
+        
+        /// SMT backend (z3, cvc5, yices2)
+        #[arg(long, default_value = "z3")]
+        backend: String,
+        
+        /// Enable ML-powered tactic suggestions
+        #[arg(long)]
+        ml_suggestions: bool,
+        
+        /// Timeout for SMT queries in milliseconds
+        #[arg(long, default_value = "5000")]
+        timeout: u64,
+        
+        /// Load proof script
+        #[arg(long)]
+        script: Option<PathBuf>,
+        
+        /// Export proof to file
+        #[arg(long)]
+        export: Option<PathBuf>,
+        
+        /// Non-interactive mode (check proofs only)
+        #[arg(long)]
+        check: bool,
+        
+        /// Generate counterexamples for failed proofs
+        #[arg(long)]
+        counterexample: bool,
+        
+        /// Show verbose proof output
+        #[arg(long)]
+        verbose: bool,
+        
+        /// Output format (text, json, coq, lean)
+        #[arg(long, default_value = "text")]
+        format: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -1256,6 +1301,31 @@ fn main() -> Result<()> {
                 name.as_deref(),
                 &version,
                 verbose,
+            )?;
+        }
+        Some(Commands::Prove {
+            file,
+            backend,
+            ml_suggestions,
+            timeout,
+            script,
+            export,
+            check,
+            counterexample,
+            verbose,
+            format,
+        }) => {
+            handle_prove_command(
+                file.as_deref(),
+                &backend,
+                ml_suggestions,
+                timeout,
+                script.as_deref(),
+                export.as_deref(),
+                check,
+                counterexample,
+                verbose,
+                &format,
             )?;
         }
     }

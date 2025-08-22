@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 use std::path::PathBuf;
 use std::fs;
+use crate::frontend::ast::ExprKind;
 
 /// Analysis depth for quality scoring
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -487,7 +488,6 @@ fn analyze_ast_metrics(ast: &crate::frontend::ast::Expr) -> AstMetrics {
 }
 
 fn analyze_expr(expr: &crate::frontend::ast::Expr, metrics: &mut AstMetrics, depth: usize, nesting: usize) {
-    use crate::frontend::ast::ExprKind;
     
     metrics.max_depth = metrics.max_depth.max(depth);
     metrics.max_nesting = metrics.max_nesting.max(nesting);
@@ -640,7 +640,6 @@ fn analyze_pattern_completeness_recursive(
     total_matches: &mut usize,
     complete_matches: &mut usize,
 ) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::Match { expr: match_expr, arms } => {
@@ -705,7 +704,6 @@ fn analyze_error_handling_recursive(
     total_fallible_ops: &mut usize,
     handled_ops: &mut usize,
 ) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::Try { expr: inner } => {
@@ -762,7 +760,6 @@ fn analyze_logical_soundness(ast: &crate::frontend::ast::Expr) -> f64 {
 }
 
 fn has_unreachable_code(ast: &crate::frontend::ast::Expr) -> bool {
-    use crate::frontend::ast::ExprKind;
     
     match &ast.kind {
         ExprKind::Block(exprs) => {
@@ -786,7 +783,6 @@ fn has_unreachable_code(ast: &crate::frontend::ast::Expr) -> bool {
 }
 
 fn is_diverging_expr(expr: &crate::frontend::ast::Expr) -> bool {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::Call { func, .. } => {
@@ -802,7 +798,6 @@ fn is_diverging_expr(expr: &crate::frontend::ast::Expr) -> bool {
 }
 
 fn has_potential_infinite_loops(ast: &crate::frontend::ast::Expr) -> bool {
-    use crate::frontend::ast::ExprKind;
     
     match &ast.kind {
         ExprKind::While { condition, body } => {
@@ -821,7 +816,6 @@ fn has_potential_infinite_loops(ast: &crate::frontend::ast::Expr) -> bool {
 }
 
 fn has_break_statement(ast: &crate::frontend::ast::Expr) -> bool {
-    use crate::frontend::ast::ExprKind;
     
     match &ast.kind {
         ExprKind::Break { .. } => true,
@@ -898,7 +892,6 @@ fn analyze_complexity_recursive(
     recursive_calls: &mut i32,
     current_nesting: i32,
 ) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::For { iter, body, .. } | ExprKind::While { condition: iter, body } => {
@@ -968,7 +961,6 @@ fn count_allocations_recursive(
     allocations: &mut i32,
     large_allocations: &mut i32,
 ) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::List(items) => {
@@ -1054,7 +1046,6 @@ fn analyze_coupling(ast: &crate::frontend::ast::Expr) -> f64 {
 }
 
 fn count_coupling_metrics(expr: &crate::frontend::ast::Expr, external_calls: &mut i32, total_functions: &mut i32) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::Function { body, .. } => {
@@ -1101,7 +1092,6 @@ fn analyze_cohesion(_ast: &crate::frontend::ast::Expr, metrics: &AstMetrics) -> 
 
 /// Analyze code duplication (simplified heuristic)
 fn analyze_duplication(ast: &crate::frontend::ast::Expr) -> f64 {
-    use crate::frontend::ast::ExprKind;
     let mut expression_patterns = std::collections::HashMap::new();
     
     collect_expression_patterns(ast, &mut expression_patterns);
@@ -1118,7 +1108,6 @@ fn analyze_duplication(ast: &crate::frontend::ast::Expr) -> f64 {
 }
 
 fn collect_expression_patterns(expr: &crate::frontend::ast::Expr, patterns: &mut std::collections::HashMap<String, i32>) {
-    use crate::frontend::ast::ExprKind;
     
     // Simplified pattern matching - use expression kind as pattern
     let pattern = format!("{:?}", std::mem::discriminant(&expr.kind));
@@ -1146,7 +1135,6 @@ fn collect_expression_patterns(expr: &crate::frontend::ast::Expr, patterns: &mut
 
 /// Analyze naming quality (basic heuristics)
 fn analyze_naming_quality(ast: &crate::frontend::ast::Expr) -> f64 {
-    use crate::frontend::ast::ExprKind;
     let mut good_names = 0;
     let mut total_names = 0;
     
@@ -1162,7 +1150,6 @@ fn analyze_naming_quality(ast: &crate::frontend::ast::Expr) -> f64 {
 }
 
 fn analyze_names_recursive(expr: &crate::frontend::ast::Expr, good_names: &mut i32, total_names: &mut i32) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::Function { name, .. } => {
@@ -1221,7 +1208,6 @@ pub fn score_safety(ast: &crate::frontend::ast::Expr) -> f64 {
 
 /// Analyze null safety patterns
 fn analyze_null_safety(ast: &crate::frontend::ast::Expr) -> f64 {
-    use crate::frontend::ast::ExprKind;
     let mut option_uses = 0;
     let mut unsafe_accesses = 0;
     
@@ -1242,7 +1228,6 @@ fn analyze_null_safety(ast: &crate::frontend::ast::Expr) -> f64 {
 }
 
 fn analyze_null_safety_recursive(expr: &crate::frontend::ast::Expr, option_uses: &mut i32, unsafe_accesses: &mut i32) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::Some { .. } | ExprKind::None => {
@@ -1271,7 +1256,6 @@ fn analyze_null_safety_recursive(expr: &crate::frontend::ast::Expr, option_uses:
 
 /// Analyze resource management patterns
 fn analyze_resource_management(ast: &crate::frontend::ast::Expr) -> f64 {
-    use crate::frontend::ast::ExprKind;
     let mut resource_allocations = 0;
     let mut proper_cleanup = 0;
     
@@ -1287,7 +1271,6 @@ fn analyze_resource_management(ast: &crate::frontend::ast::Expr) -> f64 {
 }
 
 fn analyze_resources_recursive(expr: &crate::frontend::ast::Expr, allocations: &mut i32, cleanup: &mut i32) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::TryCatch { try_block, finally_block, .. } => {
@@ -1330,7 +1313,6 @@ pub fn score_idiomaticity(ast: &crate::frontend::ast::Expr) -> f64 {
 
 /// Analyze usage of pattern matching (idiomatic)
 fn analyze_pattern_usage(ast: &crate::frontend::ast::Expr) -> f64 {
-    use crate::frontend::ast::ExprKind;
     let mut matches = 0;
     let mut conditionals = 0;
     
@@ -1355,7 +1337,6 @@ fn analyze_pattern_usage(ast: &crate::frontend::ast::Expr) -> f64 {
 }
 
 fn count_pattern_vs_conditional(expr: &crate::frontend::ast::Expr, matches: &mut i32, conditionals: &mut i32) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::Match { arms, .. } => {
@@ -1386,7 +1367,6 @@ fn count_pattern_vs_conditional(expr: &crate::frontend::ast::Expr, matches: &mut
 
 /// Analyze iterator usage patterns
 fn analyze_iterator_usage(ast: &crate::frontend::ast::Expr) -> f64 {
-    use crate::frontend::ast::ExprKind;
     let mut iterators = 0;
     let mut loops = 0;
     
@@ -1411,7 +1391,6 @@ fn analyze_iterator_usage(ast: &crate::frontend::ast::Expr) -> f64 {
 }
 
 fn count_iterator_vs_loops(expr: &crate::frontend::ast::Expr, iterators: &mut i32, loops: &mut i32) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::For { .. } => {
@@ -1434,7 +1413,6 @@ fn count_iterator_vs_loops(expr: &crate::frontend::ast::Expr, iterators: &mut i3
 
 /// Analyze lambda/closure usage
 fn analyze_lambda_usage(ast: &crate::frontend::ast::Expr) -> f64 {
-    use crate::frontend::ast::ExprKind;
     let mut lambdas = 0;
     let mut total_functions = 0;
     
@@ -1458,7 +1436,6 @@ fn analyze_lambda_usage(ast: &crate::frontend::ast::Expr) -> f64 {
 }
 
 fn count_lambda_usage(expr: &crate::frontend::ast::Expr, lambdas: &mut i32, total_functions: &mut i32) {
-    use crate::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::Lambda { .. } => {
