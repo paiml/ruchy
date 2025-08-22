@@ -96,7 +96,7 @@ impl RefinementType {
 impl fmt::Display for RefinementType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(pred) = &self.predicate {
-            write!(f, "{{ {}: {} | {} }}", pred.var, self.base, pred.expr)
+            write!(f, "{} where {}", self.base, pred.expr)
         } else {
             write!(f, "{}", self.base)
         }
@@ -390,10 +390,10 @@ mod tests {
     #[test]
     fn test_refinement_type_display() {
         let ty = RefinementType::positive_int();
-        assert_eq!(ty.to_string(), "{ x: Int | (> x 0) }");
+        assert_eq!(ty.to_string(), "Int where (> x 0)");
         
         let bounded = RefinementType::bounded_int(0, 100);
-        assert_eq!(bounded.to_string(), "{ x: Int | (and (>= x 0) (<= x 100)) }");
+        assert_eq!(bounded.to_string(), "Int where (and (>= x 0) (<= x 100))");
     }
     
     #[test]

@@ -207,7 +207,7 @@ impl RefinementChecker {
 }
 
 // Example: Array bounds checking elimination
-type BoundedIndex(n: usize) = {i: usize | 0 <= i && i < n}
+type BoundedIndex(n: usize) = usize where 0 <= i && i < n
 
 fn safe_index<T, const N: usize>(
     arr: [T; N], 

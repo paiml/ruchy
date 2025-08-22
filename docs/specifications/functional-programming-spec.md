@@ -392,7 +392,7 @@ fn prop_fusion_preserves_semantics(xs: List<i32>) {
 ### 9.2 SMT-Based Refinement Checking
 
 ```rust
-type NonEmpty<T> = {xs: List<T> | len(xs) > 0}
+type NonEmpty<T> = List<T> where len(xs) > 0
 
 fn head(xs: NonEmpty<T>) -> T {
     xs[0]  // Verified safe by Z3
