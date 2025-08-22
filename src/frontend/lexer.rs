@@ -189,6 +189,8 @@ pub enum Token {
     Ask,
     #[token("type")]
     Type,
+    #[token("where")]
+    Where,
     #[token("const")]
     Const,
     #[token("static")]

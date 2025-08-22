@@ -106,8 +106,8 @@ type Callback = fun(i32) -> bool
 type Point = (x: f64, y: f64)
 
 // Refinement Types (future)
-{x: i32 | x > 0}     // Positive integers
-{s: String | s.len() < 100}  // Bounded strings
+i32 where x > 0     // Positive integers
+String where s.len() < 100  // Bounded strings
 ```
 
 ### 1.3 Core Language Features
@@ -3950,14 +3950,14 @@ fun prop_actor_message_ordering(
 ```rust
 // Future: SMT-based verification
 #[refine]
-fun safe_divide(x: i32, y: {y: i32 | y != 0}) -> i32 {
+fun safe_divide(x: i32, y: i32 where y != 0) -> i32 {
     x / y  // Statically verified safe
 }
 
 #[refine]
 fun bounded_index<T>(
     array: [T; N],
-    index: {i: usize | i < N}
+    index: usize where i < N
 ) -> T {
     array[index]  // No bounds check needed
 }
