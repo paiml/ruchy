@@ -1,0 +1,355 @@
+// Self-hosted Ruchy Lexer - Working Proof of Concept
+// RUCHY-0722: Port lexer to Ruchy using current language features
+
+// Character classification functions
+fun is_digit_simple(ch: char) -> bool {
+    ch == '0' || ch == '1' || ch == '2' || ch == '3' || ch == '4' || 
+    ch == '5' || ch == '6' || ch == '7' || ch == '8' || ch == '9'
+}
+
+fun is_letter_simple(ch: char) -> bool {
+    (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
+}
+
+fun is_whitespace(ch: char) -> bool {
+    ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
+}
+
+// Simple token representation
+enum BasicToken {
+    Number(i32),
+    Identifier(String),
+    Keyword(String),
+    Operator(String),
+    Delimiter(String),
+    Eof,
+}
+
+// Basic lexer state
+struct BasicLexer {
+    input: String,
+    position: i32,
+    length: i32,
+}
+
+fun create_basic_lexer(input: String) -> BasicLexer {
+    BasicLexer {
+        input: input,
+        position: 0,
+        length: input.len() as i32,
+    }
+}
+
+// Character access using string slicing
+fun get_char_at(s: String, pos: i32) -> char {
+    if pos >= 0 && pos < s.len() as i32 {
+        let start = pos as usize
+        let end = start + 1
+        let char_str = s[start..end]
+        if char_str.len() > 0 {
+            // Convert single-character string to char
+            if char_str == "0" { '0' }
+            else if char_str == "1" { '1' }
+            else if char_str == "2" { '2' }
+            else if char_str == "3" { '3' }
+            else if char_str == "4" { '4' }
+            else if char_str == "5" { '5' }
+            else if char_str == "6" { '6' }
+            else if char_str == "7" { '7' }
+            else if char_str == "8" { '8' }
+            else if char_str == "9" { '9' }
+            else if char_str == "a" { 'a' }
+            else if char_str == "b" { 'b' }
+            else if char_str == "c" { 'c' }
+            else if char_str == "d" { 'd' }
+            else if char_str == "e" { 'e' }
+            else if char_str == "f" { 'f' }
+            else if char_str == "g" { 'g' }
+            else if char_str == "h" { 'h' }
+            else if char_str == "i" { 'i' }
+            else if char_str == "j" { 'j' }
+            else if char_str == "k" { 'k' }
+            else if char_str == "l" { 'l' }
+            else if char_str == "m" { 'm' }
+            else if char_str == "n" { 'n' }
+            else if char_str == "o" { 'o' }
+            else if char_str == "p" { 'p' }
+            else if char_str == "q" { 'q' }
+            else if char_str == "r" { 'r' }
+            else if char_str == "s" { 's' }
+            else if char_str == "t" { 't' }
+            else if char_str == "u" { 'u' }
+            else if char_str == "v" { 'v' }
+            else if char_str == "w" { 'w' }
+            else if char_str == "x" { 'x' }
+            else if char_str == "y" { 'y' }
+            else if char_str == "z" { 'z' }
+            else if char_str == "A" { 'A' }
+            else if char_str == "B" { 'B' }
+            else if char_str == "C" { 'C' }
+            else if char_str == "D" { 'D' }
+            else if char_str == "E" { 'E' }
+            else if char_str == "F" { 'F' }
+            else if char_str == "G" { 'G' }
+            else if char_str == "H" { 'H' }
+            else if char_str == "I" { 'I' }
+            else if char_str == "J" { 'J' }
+            else if char_str == "K" { 'K' }
+            else if char_str == "L" { 'L' }
+            else if char_str == "M" { 'M' }
+            else if char_str == "N" { 'N' }
+            else if char_str == "O" { 'O' }
+            else if char_str == "P" { 'P' }
+            else if char_str == "Q" { 'Q' }
+            else if char_str == "R" { 'R' }
+            else if char_str == "S" { 'S' }
+            else if char_str == "T" { 'T' }
+            else if char_str == "U" { 'U' }
+            else if char_str == "V" { 'V' }
+            else if char_str == "W" { 'W' }
+            else if char_str == "X" { 'X' }
+            else if char_str == "Y" { 'Y' }
+            else if char_str == "Z" { 'Z' }
+            else if char_str == "_" { '_' }
+            else if char_str == " " { ' ' }
+            else if char_str == "+" { '+' }
+            else if char_str == "-" { '-' }
+            else if char_str == "*" { '*' }
+            else if char_str == "/" { '/' }
+            else if char_str == "=" { '=' }
+            else if char_str == "(" { '(' }
+            else if char_str == ")" { ')' }
+            else if char_str == "{" { '{' }
+            else if char_str == "}" { '}' }
+            else if char_str == "[" { '[' }
+            else if char_str == "]" { ']' }
+            else if char_str == ";" { ';' }
+            else if char_str == "," { ',' }
+            else if char_str == "." { '.' }
+            else if char_str == ":" { ':' }
+            else if char_str == "\t" { '\t' }
+            else if char_str == "\n" { '\n' }
+            else if char_str == "\r" { '\r' }
+            else { '?' }  // Unknown character
+        } else {
+            '\0'
+        }
+    } else {
+        '\0'
+    }
+}
+
+fun current_char(lexer: BasicLexer) -> char {
+    get_char_at(lexer.input, lexer.position)
+}
+
+fun advance_position(lexer: BasicLexer) -> BasicLexer {
+    BasicLexer {
+        input: lexer.input,
+        position: lexer.position + 1,
+        length: lexer.length,
+    }
+}
+
+fun skip_whitespace_chars(lexer: BasicLexer) -> BasicLexer {
+    let mut current = lexer
+    
+    while current.position < current.length {
+        let ch = current_char(current)
+        if is_whitespace(ch) {
+            current = advance_position(current)
+        } else {
+            break
+        }
+    }
+    
+    current
+}
+
+fun read_number_token(lexer: BasicLexer) -> (BasicToken, BasicLexer) {
+    let mut current = lexer
+    let mut number_str = ""
+    
+    while current.position < current.length {
+        let ch = current_char(current)
+        if is_digit_simple(ch) {
+            number_str = number_str + ch
+            current = advance_position(current)
+        } else {
+            break
+        }
+    }
+    
+    let number = if number_str == "" {
+        0
+    } else {
+        number_str.parse::<i32>().unwrap_or(0)
+    }
+    
+    (BasicToken::Number(number), current)
+}
+
+fun read_identifier_token(lexer: BasicLexer) -> (BasicToken, BasicLexer) {
+    let mut current = lexer
+    let mut word = ""
+    
+    while current.position < current.length {
+        let ch = current_char(current)
+        if is_letter_simple(ch) || is_digit_simple(ch) {
+            word = word + ch
+            current = advance_position(current)
+        } else {
+            break
+        }
+    }
+    
+    // Check for keywords
+    let token = if word == "let" {
+        BasicToken::Keyword("let")
+    } else if word == "fun" {
+        BasicToken::Keyword("fun")
+    } else if word == "if" {
+        BasicToken::Keyword("if")
+    } else if word == "else" {
+        BasicToken::Keyword("else")
+    } else if word == "while" {
+        BasicToken::Keyword("while")
+    } else if word == "for" {
+        BasicToken::Keyword("for")
+    } else if word == "match" {
+        BasicToken::Keyword("match")
+    } else {
+        BasicToken::Identifier(word)
+    }
+    
+    (token, current)
+}
+
+fun next_basic_token(lexer: BasicLexer) -> (BasicToken, BasicLexer) {
+    let current = skip_whitespace_chars(lexer)
+    
+    if current.position >= current.length {
+        return (BasicToken::Eof, current)
+    }
+    
+    let ch = current_char(current)
+    
+    if is_digit_simple(ch) {
+        read_number_token(current)
+    } else if is_letter_simple(ch) {
+        read_identifier_token(current)
+    } else if ch == '+' {
+        (BasicToken::Operator("+"), advance_position(current))
+    } else if ch == '-' {
+        (BasicToken::Operator("-"), advance_position(current))
+    } else if ch == '*' {
+        (BasicToken::Operator("*"), advance_position(current))
+    } else if ch == '/' {
+        (BasicToken::Operator("/"), advance_position(current))
+    } else if ch == '=' {
+        (BasicToken::Operator("="), advance_position(current))
+    } else if ch == '(' {
+        (BasicToken::Delimiter("("), advance_position(current))
+    } else if ch == ')' {
+        (BasicToken::Delimiter(")"), advance_position(current))
+    } else if ch == '{' {
+        (BasicToken::Delimiter("{"), advance_position(current))
+    } else if ch == '}' {
+        (BasicToken::Delimiter("}"), advance_position(current))
+    } else if ch == '[' {
+        (BasicToken::Delimiter("["), advance_position(current))
+    } else if ch == ']' {
+        (BasicToken::Delimiter("]"), advance_position(current))
+    } else if ch == ';' {
+        (BasicToken::Delimiter(";"), advance_position(current))
+    } else if ch == ',' {
+        (BasicToken::Delimiter(","), advance_position(current))
+    } else if ch == '.' {
+        (BasicToken::Delimiter("."), advance_position(current))
+    } else if ch == ':' {
+        (BasicToken::Delimiter(":"), advance_position(current))
+    } else {
+        // Skip unknown characters
+        (BasicToken::Delimiter("?"), advance_position(current))
+    }
+}
+
+fun token_to_display(token: BasicToken) -> String {
+    match token {
+        BasicToken::Number(n) => "Number(" + n + ")",
+        BasicToken::Identifier(name) => "Id(" + name + ")",
+        BasicToken::Keyword(kw) => "Keyword(" + kw + ")",
+        BasicToken::Operator(op) => "Op(" + op + ")",
+        BasicToken::Delimiter(delim) => "Delim(" + delim + ")",
+        BasicToken::Eof => "EOF",
+    }
+}
+
+fun tokenize_input(input: String) -> [BasicToken] {
+    let mut lexer = create_basic_lexer(input)
+    let mut tokens = []
+    
+    while lexer.position < lexer.length {
+        let (token, new_lexer) = next_basic_token(lexer)
+        lexer = new_lexer
+        
+        let should_continue = match token {
+            BasicToken::Eof => false,
+            _ => true,
+        }
+        
+        tokens = tokens + [token]
+        
+        if !should_continue {
+            break
+        }
+    }
+    
+    // Add EOF if not already present
+    if tokens.len() == 0 || !matches!(tokens[tokens.len() - 1], BasicToken::Eof) {
+        tokens = tokens + [BasicToken::Eof]
+    }
+    
+    tokens
+}
+
+fun test_working_lexer() {
+    println("🔧 Testing Working Self-Hosted Lexer...")
+    
+    // Test 1: Simple numbers
+    let test1 = "123 456"
+    println("Test 1: " + test1)
+    let tokens1 = tokenize_input(test1)
+    for token in tokens1 {
+        println("  " + token_to_display(token))
+    }
+    
+    // Test 2: Simple identifier
+    let test2 = "hello world"  
+    println("Test 2: " + test2)
+    let tokens2 = tokenize_input(test2)
+    for token in tokens2 {
+        println("  " + token_to_display(token))
+    }
+    
+    // Test 3: Let statement
+    let test3 = "let x = 42"
+    println("Test 3: " + test3)
+    let tokens3 = tokenize_input(test3)
+    for token in tokens3 {
+        println("  " + token_to_display(token))
+    }
+    
+    // Test 4: Function definition start
+    let test4 = "fun add(x, y)"
+    println("Test 4: " + test4)
+    let tokens4 = tokenize_input(test4)
+    for token in tokens4 {
+        println("  " + token_to_display(token))
+    }
+    
+    println("✅ Working self-hosted lexer proof of concept completed!")
+    println("This demonstrates basic tokenization in pure Ruchy!")
+}
+
+test_working_lexer()

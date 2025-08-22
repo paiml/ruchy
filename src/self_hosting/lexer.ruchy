@@ -1,0 +1,489 @@
+// Self-hosted Ruchy Lexer - Phase 1 of self-hosting implementation
+// RUCHY-0722: Port lexer to Ruchy (proof of concept)
+
+enum Token {
+    // Literals
+    Integer(i64),
+    Float(f64),
+    String(String),
+    Char(char),
+    Bool(bool),
+    
+    // Keywords
+    Fun, Fn, Let, Mod, If, Else, Match, For, In, While, Loop,
+    Async, Await, Try, Catch, Finally, Throw, Return,
+    Command, Ok, Err, Some, None, Result, Option,
+    Break, Continue, Struct, Enum, Impl, Trait, Extend,
+    Actor, State, Receive, Send, Ask, Type, Const, Static,
+    Mut, Pub, Import, Use, As, Module, Export, DataFrame,
+    
+    // Identifiers
+    Identifier(String),
+    
+    // Operators
+    Plus, Minus, Star, Slash, Percent, Power,
+    EqualEqual, NotEqual, Less, LessEqual, Greater, GreaterEqual,
+    AndAnd, OrOr, Bang, Ampersand, Pipe, Caret, Tilde, Backslash,
+    LeftShift, RightShift, Equal, PlusEqual, MinusEqual, StarEqual,
+    SlashEqual, PercentEqual, PowerEqual, AmpersandEqual, PipeEqual,
+    CaretEqual, LeftShiftEqual, RightShiftEqual, Increment, Decrement,
+    Pipeline, Arrow, FatArrow, DotDot, DotDotEqual, DotDotDot,
+    Question, SafeNav,
+    
+    // Delimiters
+    LeftParen, RightParen, LeftBracket, RightBracket,
+    LeftBrace, RightBrace,
+    
+    // Punctuation
+    Comma, Dot, Colon, ColonColon, Semicolon, Underscore, Hash,
+    
+    // Control
+    Newline,
+    Eof,
+}
+
+struct Span {
+    start: i32,
+    end: i32,
+}
+
+struct LexError {
+    message: String,
+    position: i32,
+}
+
+struct Lexer {
+    input: String,
+    position: i32,
+    current_char: Option<char>,
+}
+
+impl Lexer {
+    fun new(input: String) -> Lexer {
+        let mut lexer = Lexer {
+            input: input,
+            position: 0,
+            current_char: None,
+        }
+        lexer.advance()
+        lexer
+    }
+    
+    fun advance(&mut self) {
+        if self.position >= self.input.len() as i32 {
+            self.current_char = None
+        } else {
+            // Get character at current position
+            let chars: [char] = self.input.chars().collect()
+            self.current_char = Some(chars[self.position as usize])
+            self.position = self.position + 1
+        }
+    }
+    
+    fun peek(&self) -> Option<char> {
+        if self.position >= self.input.len() as i32 {
+            None
+        } else {
+            let chars: [char] = self.input.chars().collect()
+            Some(chars[self.position as usize])
+        }
+    }
+    
+    fun skip_whitespace(&mut self) {
+        while let Some(ch) = self.current_char {
+            if ch == ' ' || ch == '\t' || ch == '\r' {
+                self.advance()
+            } else {
+                break
+            }
+        }
+    }
+    
+    fun read_number(&mut self) -> Token {
+        let mut number = String::new()
+        let start_pos = self.position - 1
+        let mut is_float = false
+        
+        while let Some(ch) = self.current_char {
+            if ch.is_ascii_digit() {
+                number.push(ch)
+                self.advance()
+            } else if ch == '.' && !is_float {
+                // Check if next character is a digit
+                if let Some(next_ch) = self.peek() {
+                    if next_ch.is_ascii_digit() {
+                        is_float = true
+                        number.push(ch)
+                        self.advance()
+                    } else {
+                        break
+                    }
+                } else {
+                    break
+                }
+            } else {
+                break
+            }
+        }
+        
+        if is_float {
+            // Parse as float
+            let value = number.parse::<f64>().unwrap_or(0.0)
+            Token::Float(value)
+        } else {
+            // Parse as integer
+            let value = number.parse::<i64>().unwrap_or(0)
+            Token::Integer(value)
+        }
+    }
+    
+    fun read_string(&mut self) -> Token {
+        let mut string_value = String::new()
+        self.advance() // Skip opening quote
+        
+        while let Some(ch) = self.current_char {
+            if ch == '"' {
+                self.advance() // Skip closing quote
+                break
+            } else if ch == '\\' {
+                // Handle escape sequences
+                self.advance()
+                if let Some(escaped) = self.current_char {
+                    match escaped {
+                        'n' => string_value.push('\n'),
+                        't' => string_value.push('\t'),
+                        'r' => string_value.push('\r'),
+                        '\\' => string_value.push('\\'),
+                        '"' => string_value.push('"'),
+                        '\'' => string_value.push('\''),
+                        '0' => string_value.push('\0'),
+                        _ => {
+                            string_value.push('\\')
+                            string_value.push(escaped)
+                        }
+                    }
+                    self.advance()
+                }
+            } else {
+                string_value.push(ch)
+                self.advance()
+            }
+        }
+        
+        Token::String(string_value)
+    }
+    
+    fun read_identifier(&mut self) -> Token {
+        let mut identifier = String::new()
+        
+        while let Some(ch) = self.current_char {
+            if ch.is_ascii_alphanumeric() || ch == '_' {
+                identifier.push(ch)
+                self.advance()
+            } else {
+                break
+            }
+        }
+        
+        // Check if it's a keyword
+        match identifier.as_str() {
+            "fun" => Token::Fun,
+            "fn" => Token::Fn,
+            "let" => Token::Let,
+            "mod" => Token::Mod,
+            "if" => Token::If,
+            "else" => Token::Else,
+            "match" => Token::Match,
+            "for" => Token::For,
+            "in" => Token::In,
+            "while" => Token::While,
+            "loop" => Token::Loop,
+            "true" => Token::Bool(true),
+            "false" => Token::Bool(false),
+            "async" => Token::Async,
+            "await" => Token::Await,
+            "try" => Token::Try,
+            "catch" => Token::Catch,
+            "finally" => Token::Finally,
+            "throw" => Token::Throw,
+            "return" => Token::Return,
+            "command" => Token::Command,
+            "Ok" => Token::Ok,
+            "Err" => Token::Err,
+            "Some" => Token::Some,
+            "None" => Token::None,
+            "Result" => Token::Result,
+            "Option" => Token::Option,
+            "break" => Token::Break,
+            "continue" => Token::Continue,
+            "struct" => Token::Struct,
+            "enum" => Token::Enum,
+            "impl" => Token::Impl,
+            "trait" => Token::Trait,
+            "extend" => Token::Extend,
+            "actor" => Token::Actor,
+            "state" => Token::State,
+            "receive" => Token::Receive,
+            "send" => Token::Send,
+            "ask" => Token::Ask,
+            "type" => Token::Type,
+            "const" => Token::Const,
+            "static" => Token::Static,
+            "mut" => Token::Mut,
+            "pub" => Token::Pub,
+            "import" => Token::Import,
+            "use" => Token::Use,
+            "as" => Token::As,
+            "module" => Token::Module,
+            "export" => Token::Export,
+            "df" => Token::DataFrame,
+            "_" => Token::Underscore,
+            _ => Token::Identifier(identifier),
+        }
+    }
+    
+    fun next_token(&mut self) -> Token {
+        self.skip_whitespace()
+        
+        match self.current_char {
+            None => Token::Eof,
+            Some('\n') => {
+                self.advance()
+                Token::Newline
+            },
+            Some(ch) if ch.is_ascii_digit() => self.read_number(),
+            Some('"') => self.read_string(),
+            Some(ch) if ch.is_ascii_alphabetic() || ch == '_' => self.read_identifier(),
+            Some('(') => { self.advance(); Token::LeftParen },
+            Some(')') => { self.advance(); Token::RightParen },
+            Some('[') => { self.advance(); Token::LeftBracket },
+            Some(']') => { self.advance(); Token::RightBracket },
+            Some('{') => { self.advance(); Token::LeftBrace },
+            Some('}') => { self.advance(); Token::RightBrace },
+            Some(',') => { self.advance(); Token::Comma },
+            Some('.') => {
+                self.advance()
+                match self.current_char {
+                    Some('.') => {
+                        self.advance()
+                        match self.current_char {
+                            Some('=') => { self.advance(); Token::DotDotEqual },
+                            Some('.') => { self.advance(); Token::DotDotDot },
+                            _ => Token::DotDot,
+                        }
+                    },
+                    _ => Token::Dot,
+                }
+            },
+            Some(':') => {
+                self.advance()
+                match self.current_char {
+                    Some(':') => { self.advance(); Token::ColonColon },
+                    _ => Token::Colon,
+                }
+            },
+            Some(';') => { self.advance(); Token::Semicolon },
+            Some('#') => { self.advance(); Token::Hash },
+            Some('+') => {
+                self.advance()
+                match self.current_char {
+                    Some('=') => { self.advance(); Token::PlusEqual },
+                    Some('+') => { self.advance(); Token::Increment },
+                    _ => Token::Plus,
+                }
+            },
+            Some('-') => {
+                self.advance()
+                match self.current_char {
+                    Some('=') => { self.advance(); Token::MinusEqual },
+                    Some('-') => { self.advance(); Token::Decrement },
+                    Some('>') => { self.advance(); Token::Arrow },
+                    _ => Token::Minus,
+                }
+            },
+            Some('*') => {
+                self.advance()
+                match self.current_char {
+                    Some('*') => { self.advance(); Token::Power },
+                    Some('=') => { self.advance(); Token::StarEqual },
+                    _ => Token::Star,
+                }
+            },
+            Some('/') => {
+                self.advance()
+                match self.current_char {
+                    Some('=') => { self.advance(); Token::SlashEqual },
+                    _ => Token::Slash,
+                }
+            },
+            Some('%') => {
+                self.advance()
+                match self.current_char {
+                    Some('=') => { self.advance(); Token::PercentEqual },
+                    _ => Token::Percent,
+                }
+            },
+            Some('=') => {
+                self.advance()
+                match self.current_char {
+                    Some('=') => { self.advance(); Token::EqualEqual },
+                    Some('>') => { self.advance(); Token::FatArrow },
+                    _ => Token::Equal,
+                }
+            },
+            Some('!') => {
+                self.advance()
+                match self.current_char {
+                    Some('=') => { self.advance(); Token::NotEqual },
+                    _ => Token::Bang,
+                }
+            },
+            Some('<') => {
+                self.advance()
+                match self.current_char {
+                    Some('=') => { self.advance(); Token::LessEqual },
+                    Some('<') => { self.advance(); Token::LeftShift },
+                    _ => Token::Less,
+                }
+            },
+            Some('>') => {
+                self.advance()
+                match self.current_char {
+                    Some('=') => { self.advance(); Token::GreaterEqual },
+                    Some('>') => { self.advance(); Token::RightShift },
+                    _ => Token::Greater,
+                }
+            },
+            Some('&') => {
+                self.advance()
+                match self.current_char {
+                    Some('&') => { self.advance(); Token::AndAnd },
+                    Some('=') => { self.advance(); Token::AmpersandEqual },
+                    _ => Token::Ampersand,
+                }
+            },
+            Some('|') => {
+                self.advance()
+                match self.current_char {
+                    Some('|') => { self.advance(); Token::OrOr },
+                    Some('>') => { self.advance(); Token::Pipeline },
+                    Some('=') => { self.advance(); Token::PipeEqual },
+                    _ => Token::Pipe,
+                }
+            },
+            Some('^') => {
+                self.advance()
+                match self.current_char {
+                    Some('=') => { self.advance(); Token::CaretEqual },
+                    _ => Token::Caret,
+                }
+            },
+            Some('~') => { self.advance(); Token::Tilde },
+            Some('\\') => { self.advance(); Token::Backslash },
+            Some('?') => { self.advance(); Token::Question },
+            Some(_) => {
+                // Unknown character, skip it and try again
+                self.advance()
+                self.next_token()
+            },
+        }
+    }
+}
+
+struct TokenStream {
+    tokens: [Token],
+    position: i32,
+}
+
+impl TokenStream {
+    fun new(input: String) -> TokenStream {
+        let mut lexer = Lexer::new(input)
+        let mut tokens = []
+        
+        loop {
+            let token = lexer.next_token()
+            let is_eof = match token {
+                Token::Eof => true,
+                _ => false,
+            }
+            tokens.push(token)
+            if is_eof {
+                break
+            }
+        }
+        
+        TokenStream {
+            tokens: tokens,
+            position: 0,
+        }
+    }
+    
+    fun peek(&self) -> Option<Token> {
+        if self.position >= self.tokens.len() as i32 {
+            None
+        } else {
+            Some(self.tokens[self.position as usize].clone())
+        }
+    }
+    
+    fun advance(&mut self) -> Option<Token> {
+        if self.position >= self.tokens.len() as i32 {
+            None
+        } else {
+            let token = self.tokens[self.position as usize].clone()
+            self.position = self.position + 1
+            Some(token)
+        }
+    }
+    
+    fun expect(&mut self, expected: Token) -> bool {
+        match self.advance() {
+            Some(token) => {
+                // Simple token comparison for proof of concept
+                match (token, expected) {
+                    (Token::Let, Token::Let) => true,
+                    (Token::Fun, Token::Fun) => true,
+                    (Token::Equal, Token::Equal) => true,
+                    (Token::LeftParen, Token::LeftParen) => true,
+                    (Token::RightParen, Token::RightParen) => true,
+                    _ => false,
+                }
+            },
+            None => false,
+        }
+    }
+}
+
+// Test the lexer with basic functionality
+fun test_lexer() {
+    println("🔧 Testing Self-Hosted Ruchy Lexer...")
+    
+    // Test 1: Simple tokens
+    let input1 = "let x = 42"
+    let stream1 = TokenStream::new(input1)
+    println("Test 1: Basic tokenization")
+    println("Input: " + input1)
+    
+    // Test 2: Function definition
+    let input2 = "fun add(x: i32, y: i32) -> i32 { x + y }"
+    let stream2 = TokenStream::new(input2)
+    println("Test 2: Function definition")
+    println("Input: " + input2)
+    
+    // Test 3: String literals
+    let input3 = "let greeting = \"Hello, Ruchy!\""
+    let stream3 = TokenStream::new(input3)
+    println("Test 3: String literals")
+    println("Input: " + input3)
+    
+    // Test 4: Operators
+    let input4 = "a + b * c == d && e"
+    let stream4 = TokenStream::new(input4)
+    println("Test 4: Operators")
+    println("Input: " + input4)
+    
+    println("✅ Self-hosted lexer basic tests completed!")
+}
+
+// Run the tests
+test_lexer()
