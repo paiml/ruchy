@@ -9,7 +9,7 @@ use std::process::Command;
 #[test]
 fn test_eval_flag_basic() {
     let output = Command::new("cargo")
-        .args(["run", "-p", "ruchy-cli", "--", "-e", "2 + 2"])
+        .args(["run", "--bin", "ruchy", "--", "-e", "2 + 2"])
         .output()
         .expect("Failed to execute command");
 
@@ -22,8 +22,8 @@ fn test_eval_flag_println() {
     let output = Command::new("cargo")
         .args([
             "run",
-            "-p",
-            "ruchy-cli",
+            "--bin",
+            "ruchy",
             "--",
             "-e",
             r#"println("hello world")"#,
@@ -41,7 +41,7 @@ fn test_eval_flag_println() {
 #[test]
 fn test_eval_flag_complex_expression() {
     let output = Command::new("cargo")
-        .args(["run", "-p", "ruchy-cli", "--", "-e", "(10 + 5) * 2 - 3"])
+        .args(["run", "--bin", "ruchy", "--", "-e", "(10 + 5) * 2 - 3"])
         .output()
         .expect("Failed to execute command");
 
@@ -54,8 +54,8 @@ fn test_eval_flag_string_concat() {
     let output = Command::new("cargo")
         .args([
             "run",
-            "-p",
-            "ruchy-cli",
+            "--bin",
+            "ruchy",
             "--",
             "-e",
             r#""hello" + " " + "world""#,
@@ -73,7 +73,7 @@ fn test_eval_flag_string_concat() {
 #[test]
 fn test_eval_flag_boolean() {
     let output = Command::new("cargo")
-        .args(["run", "-p", "ruchy-cli", "--", "-e", "true && false"])
+        .args(["run", "--bin", "ruchy", "--", "-e", "true && false"])
         .output()
         .expect("Failed to execute command");
 
@@ -86,8 +86,8 @@ fn test_eval_flag_if_expression() {
     let output = Command::new("cargo")
         .args([
             "run",
-            "-p",
-            "ruchy-cli",
+            "--bin",
+            "ruchy",
             "--",
             "-e",
             "if 5 > 3 { 100 } else { 200 }",
@@ -124,8 +124,8 @@ fn test_json_output_format() {
     let output = Command::new("cargo")
         .args([
             "run",
-            "-p",
-            "ruchy-cli",
+            "--bin",
+            "ruchy",
             "--",
             "-e",
             "42",
@@ -144,8 +144,8 @@ fn test_json_output_string() {
     let output = Command::new("cargo")
         .args([
             "run",
-            "-p",
-            "ruchy-cli",
+            "--bin",
+            "ruchy",
             "--",
             "-e",
             r#""hello""#,
@@ -162,7 +162,7 @@ fn test_json_output_string() {
 #[test]
 fn test_error_exit_code() {
     let output = Command::new("cargo")
-        .args(["run", "-p", "ruchy-cli", "--", "-e", "undefined_variable"])
+        .args(["run", "--bin", "ruchy", "--", "-e", "undefined_variable"])
         .output()
         .expect("Failed to execute command");
 
@@ -193,8 +193,8 @@ fn test_multiple_print_statements() {
     let output = Command::new("cargo")
         .args([
             "run",
-            "-p",
-            "ruchy-cli",
+            "--bin",
+            "ruchy",
             "--",
             "-e",
             r#"{ println("line1"); println("line2"); 42 }"#,

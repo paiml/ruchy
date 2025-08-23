@@ -173,8 +173,12 @@ impl MinimalCodeGen {
             }
             
             _ => {
-                // For self-hosting MVP, use simplified fallbacks
-                Ok(format!("/* TODO: {} */", std::any::type_name::<ExprKind>()))
+                // For self-hosting MVP, unsupported constructs generate compile errors
+                // This ensures developers know what needs to be implemented
+                Err(anyhow::anyhow!(
+                    "Minimal codegen does not support {:?} - use full transpiler for complete language support", 
+                    expr.kind
+                ))
             }
         }
     }
