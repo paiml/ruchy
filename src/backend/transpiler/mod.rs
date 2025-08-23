@@ -82,18 +82,24 @@ impl Transpiler {
         match (needs_polars, needs_main) {
             (true, true) => Ok(quote! {
                 use polars::prelude::*;
+                use std::collections::HashMap;
                 #func
                 fn main() { /* Function defined but not called */ }
             }),
             (true, false) => Ok(quote! {
                 use polars::prelude::*;
+                use std::collections::HashMap;
                 #func
             }),
             (false, true) => Ok(quote! {
+                use std::collections::HashMap;
                 #func
                 fn main() { /* Function defined but not called */ }
             }),
-            (false, false) => Ok(quote! { #func })
+            (false, false) => Ok(quote! { 
+                use std::collections::HashMap;
+                #func 
+            })
         }
     }
     
@@ -149,11 +155,13 @@ impl Transpiler {
             if needs_polars {
                 Ok(quote! {
                     use polars::prelude::*;
+                    use std::collections::HashMap;
                     #(#functions)*
                     #main_tokens
                 })
             } else {
                 Ok(quote! {
+                    use std::collections::HashMap;
                     #(#functions)*
                     #main_tokens
                 })
@@ -169,6 +177,7 @@ impl Transpiler {
             if needs_polars {
                 Ok(quote! {
                     use polars::prelude::*;
+                    use std::collections::HashMap;
                     #(#functions)*
                     fn main() {
                         // Top-level statements execute first
@@ -180,6 +189,7 @@ impl Transpiler {
                 })
             } else {
                 Ok(quote! {
+                    use std::collections::HashMap;
                     #(#functions)*
                     fn main() {
                         // Top-level statements execute first
@@ -208,11 +218,13 @@ impl Transpiler {
         if needs_polars {
             Ok(quote! {
                 use polars::prelude::*;
+                use std::collections::HashMap;
                 #(#functions)*
                 fn main() { #(#statements;)* }
             })
         } else {
             Ok(quote! {
+                use std::collections::HashMap;
                 #(#functions)*
                 fn main() { #(#statements;)* }
             })
@@ -229,6 +241,7 @@ impl Transpiler {
         if needs_polars {
             Ok(quote! {
                 use polars::prelude::*;
+                use std::collections::HashMap;
                 fn main() {
                     let result = #body;
                     match &result {
@@ -240,6 +253,7 @@ impl Transpiler {
             })
         } else {
             Ok(quote! {
+                use std::collections::HashMap;
                 fn main() {
                     let result = #body;
                     if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<String>() {

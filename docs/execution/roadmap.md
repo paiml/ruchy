@@ -351,9 +351,72 @@ log("Environment:", environment);
 | Transpilation complexity | O(n²) | O(n) | O(n) |
 | Learning curve (hours) | ~10 | ~3 | <5 |
 
-## FUTURE PRIORITIES: Self-Hosting and Production
+## CURRENT SPRINT: Language Usability (v1.4.0) - CRITICAL BEFORE SELF-HOSTING
 
-### Next Sprint Tasks (After Scoring Foundation)
+### Sprint Overview
+- **Duration**: 3-5 days (August 23-28, 2025)
+- **Priority**: P0 - BLOCKING SELF-HOSTING
+- **Goal**: Complete language usability - fix collection methods and missing stdlib
+- **Focus**: Vec methods, HashMap support, string interpolation fixes
+- **Critical Path**: Self-hosting requires working collection transformations
+
+### Implementation Tasks (Language Completeness)
+- [ ] **USABLE-001**: Vec Collection Methods (CRITICAL FOR SELF-HOSTING)
+  - [ ] Implement .map() method for Vec<T> 
+  - [ ] Add .filter() method for Vec<T>
+  - [ ] Add .reduce() method for Vec<T>
+  - [ ] Enable method chaining: v.map(f).filter(p).reduce(op)
+  - **Why Critical**: Compiler needs AST transformations via collection methods
+
+- [ ] **USABLE-002**: HashMap Standard Library Integration
+  - [ ] Add std::collections::HashMap to prelude 
+  - [ ] Enable HashMap::new() constructor
+  - [ ] Support HashMap literal syntax: {key: value}
+  - [ ] Basic insert/get operations
+  - **Why Critical**: Compiler needs symbol tables and environments
+
+- [ ] **USABLE-003**: String Interpolation Fixes
+  - [ ] Fix f"Hello, {name}!" syntax compilation errors
+  - [ ] Ensure f-strings generate valid Rust format! macros
+  - [ ] Support expression interpolation: f"Result: {compute()}"
+  - **Why Critical**: Essential for readable code generation
+
+- [ ] **USABLE-004**: Essential Iterator Support  
+  - [ ] Add .iter() method to Vec<T>
+  - [ ] Support iterator chaining
+  - [ ] Enable for-in loops with iterators
+  - **Why Critical**: Idiomatic traversals needed everywhere
+
+### Exit Criteria (All Must Pass)
+- ✅ `[1,2,3].map(x => x * 2)` compiles and runs
+- ✅ `HashMap::new()` available and working
+- ✅ `f"Hello, {name}!"` compiles to valid Rust
+- ✅ Iterator chains work: `v.iter().map().filter().collect()`
+
+### Success Metrics
+- **Collection Methods**: 100% of basic Vec operations working
+- **HashMap**: Constructor + literal syntax working
+- **String Interpolation**: Zero compilation errors
+- **Book Compatibility**: 80%+ (from current 69%)
+
+## NEXT SPRINT: Self-Hosting MVP (Week 1 of Self-Hosting Spec)
+
+### Sprint Overview  
+- **Duration**: 5 days (After Language Usability complete)
+- **Priority**: P0 - CRITICAL PATH TO PRODUCTION
+- **Goal**: Bootstrap Ruchy compiler in Ruchy
+- **Specification**: docs/specifications/ruchy-group5-mvp-self-hosting.spec.md
+- **Prerequisite**: Language Usability sprint MUST be complete
+
+### Week 1 Implementation (Self-Hosting Spec)
+- [ ] **SH-001**: Day 1 - Fat Arrow Lambda Unification ✅ COMPLETE
+- [ ] **SH-002**: Day 2 - Parser AST Completeness  
+- [ ] **SH-003**: Day 3-4 - Type Inference Core (Algorithm W)
+- [ ] **SH-004**: Day 5 - Codegen Minimalism
+
+## FUTURE PRIORITIES: Production Features
+
+### Post Self-Hosting Tasks
 - [x] **RUCHY-0800**: Complete self-hosting capability
 - [x] **RUCHY-0801**: Binary compilation via LLVM
 - [x] **RUCHY-0802**: DataFrame operations completion ✅ v0.12.0
