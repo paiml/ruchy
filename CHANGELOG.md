@@ -11,6 +11,15 @@ All notable changes to the Ruchy programming language will be documented in this
   - Works in both REPL and transpiled code
   - Example: `let value = Some(42)?` returns `42`
 
+- **Result/Option Methods** - Essential error handling methods
+  - `.unwrap()` - Unwraps Ok/Some values, panics on Err/None
+  - `.expect(msg)` - Like unwrap but with custom panic message
+  - Full REPL support with proper error messages
+  - Examples:
+    - `Some(42).unwrap()` returns `42`
+    - `None.unwrap()` panics with descriptive error
+    - `Err("oops").expect("failed")` panics with "failed"
+
 ### Discovered Features (Already Implemented)
 - **Enhanced Pattern Matching** - All advanced patterns already work!
   - Pattern guards with `if` conditions: `n if n > 0 => "positive"`
