@@ -1,14 +1,52 @@
 # Ruchy Book Integration Guide
 
+## 🎉 Self-Hosting Edition (v1.5.0)
+
+**With Ruchy now self-hosting**, the book can showcase compiler-writing examples using Ruchy itself!
+
 ## Quick Start for ruchy-book Repository
 
-### 1. Add Ruchy as a Dependency
+### 1. Add Ruchy Self-Hosting Version
 
 In your `ruchy-book/Cargo.toml`:
 
 ```toml
 [dev-dependencies]
-ruchy = "0.4.14"
+ruchy = "1.5.0"  # Self-hosting version
+```
+
+### 2. Self-Hosting Chapter Examples
+
+Create `ruchy-book/src/self_hosting/` with:
+
+```rust
+// Chapter 10: Self-Hosting Compiler
+// Examples can now be written in Ruchy itself!
+
+struct BookExampleCompiler {
+    input: String
+}
+
+impl BookExampleCompiler {
+    fn tokenize(&self) -> Vec<String> {
+        // Tokenization example for the book
+        self.input.split_whitespace().map(|s| s.to_string()).collect()
+    }
+    
+    fn parse(&self, tokens: Vec<String>) -> String {
+        // Parsing example showing self-hosting
+        tokens.join(" -> ")
+    }
+}
+
+fn main() {
+    let compiler = BookExampleCompiler { 
+        input: "fn hello() { println(\"Book example!\") }".to_string() 
+    }
+    let tokens = compiler.tokenize()
+    let ast = compiler.parse(tokens)
+    println("Book AST: {}", ast)
+}
 ```
 
 ### 2. Create Test File

@@ -1,0 +1,105 @@
+// Minimal Ruchy compiler written in Ruchy for self-hosting bootstrap test
+// Based on the self-hosting specification
+
+// Core data structures
+struct Token {
+    kind: String,
+    value: String,
+    position: i32
+}
+
+struct Parser {
+    tokens: Vec<Token>,
+    current: i32
+}
+
+enum Expr {
+    Literal(String),
+    Identifier(String),
+    Lambda(Vec<String>, Box<Expr>),
+    FunctionCall(String, Vec<Expr>),
+    Binary(Box<Expr>, String, Box<Expr>)
+}
+
+// Tokenizer implementation
+fn tokenize(input: String) -> Vec<Token> {
+    let mut tokens = vec![]
+    let mut position = 0
+    
+    // Simplified tokenization for bootstrap test
+    if input.contains("fn") {
+        tokens.push(Token { kind: "FN".to_string(), value: "fn".to_string(), position: 0 })
+    }
+    if input.contains("=>") {
+        tokens.push(Token { kind: "ARROW".to_string(), value: "=>".to_string(), position: 1 })
+    }
+    if input.contains("let") {
+        tokens.push(Token { kind: "LET".to_string(), value: "let".to_string(), position: 2 })
+    }
+    
+    tokens
+}
+
+// Parser implementation
+fn create_parser(tokens: Vec<Token>) -> Parser {
+    Parser { tokens, current: 0 }
+}
+
+fn parse_expression(parser: Parser) -> Expr {
+    // Simplified parsing for bootstrap test
+    if parser.current < parser.tokens.len() {
+        let token = parser.tokens[parser.current]
+        match token.kind {
+            "FN" => Expr::Identifier("function_def".to_string()),
+            "LET" => Expr::Identifier("let_binding".to_string()),
+            _ => Expr::Literal(token.value)
+        }
+    } else {
+        Expr::Literal("empty".to_string())
+    }
+}
+
+// Code generation (simplified)
+fn generate_rust_code(ast: Expr) -> String {
+    match ast {
+        Expr::Literal(s) => format!("\"{}\"", s),
+        Expr::Identifier(name) => name,
+        Expr::Lambda(params, body) => {
+            let param_list = params.join(", ")
+            let body_code = generate_rust_code(*body)
+            format!("|{}| {}", param_list, body_code)
+        },
+        Expr::FunctionCall(name, args) => {
+            let arg_codes = args.iter().map(|arg| generate_rust_code(*arg)).collect::<Vec<_>>().join(", ")
+            format!("{}({})", name, arg_codes)
+        },
+        Expr::Binary(left, op, right) => {
+            let left_code = generate_rust_code(*left)
+            let right_code = generate_rust_code(*right)
+            format!("({} {} {})", left_code, op, right_code)
+        }
+    }
+}
+
+// Main compiler pipeline
+fn compile(source: String) -> String {
+    let tokens = tokenize(source)
+    let parser = create_parser(tokens)
+    let ast = parse_expression(parser)
+    let rust_code = generate_rust_code(ast)
+    
+    format!("use std::collections::HashMap;\n\nfn main() {{\n    let result = {};\n    println!(\"{{:?}}\", result);\n}}", rust_code)
+}
+
+// Test the bootstrap compiler
+fn main() {
+    let test_program = "fn test() { let x = 42 }".to_string()
+    let compiled_rust = compile(test_program)
+    
+    println("=== Bootstrap Compiler Test ===")
+    println("Input Ruchy code:")
+    println(test_program)
+    println("\nGenerated Rust code:")
+    println(compiled_rust)
+    println("\n=== Bootstrap Test Complete ===")
+}

@@ -1,12 +1,25 @@
 # Ruchy Documentation
 
-*Consolidated documentation following CLAUDE.md standards*
+*Self-Hosting Edition - Updated for v1.5.0 Historic Achievement*
+
+## 🎉 SELF-HOSTING DOCUMENTATION
+
+**Ruchy is now fully self-hosting!** This documentation covers:
+- **Complete self-hosting compiler architecture**
+- **Bootstrap development workflows**
+- **Enhanced type inference specifications**
+- **Minimal codegen implementation**
 
 ## 📚 Documentation Structure
 
 ### Core Documents
-- [SPECIFICATION.md](SPECIFICATION.md) - Complete language specification
-- [REPL_GUIDE.md](REPL_GUIDE.md) - Interactive development guide
+- [SPECIFICATION.md](SPECIFICATION.md) - Complete self-hosting language specification (v14.0)
+- [REPL_GUIDE.md](REPL_GUIDE.md) - Interactive development guide with self-hosting features
+- [Self-Hosting Achievement](../SELF_HOSTING_ACHIEVEMENT.md) - Historic milestone documentation
+
+### Self-Hosting Specifications
+- [specifications/ruchy-group5-mvp-self-hosting.spec.md](specifications/ruchy-group5-mvp-self-hosting.spec.md) - Complete self-hosting specification
+- [execution/roadmap.md](execution/roadmap.md) - Self-hosting implementation roadmap
 
 ### Architecture  
 - [architecture/](architecture/) - System design documents

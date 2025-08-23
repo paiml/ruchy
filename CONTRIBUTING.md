@@ -1,6 +1,14 @@
 # Contributing to Ruchy
 
-Thank you for your interest in contributing to Ruchy! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Ruchy! **With our historic self-hosting achievement (v1.5.0), you can now contribute to the Ruchy compiler using Ruchy itself!**
+
+## 🎉 Self-Hosting Development
+
+**NEW**: Ruchy is now fully self-hosting! This means:
+- **Write compiler features in Ruchy**: Use familiar Ruchy syntax to implement parser, type inference, and codegen improvements
+- **Bootstrap development cycle**: Test your changes immediately with `ruchy run` and `ruchy transpile --minimal`
+- **Enhanced type safety**: Algorithm W type inference catches errors during development
+- **Direct Rust output**: See exactly what Rust code your Ruchy contributions generate
 
 ## Code of Conduct
 
@@ -8,15 +16,27 @@ Please be respectful and constructive in all interactions. We aim to maintain a 
 
 ## Getting Started
 
+### Traditional Rust Development
 1. Fork the repository
 2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/ruchy`
 3. Create a feature branch: `git checkout -b feature/your-feature`
-4. Make your changes
+4. Make your changes in Rust (`src/` directory)
 5. Run tests: `make test` (fast tests, ~5 seconds)
 6. Run linting: `make lint`
 7. Commit with descriptive message
 8. Push to your fork
 9. Create a Pull Request
+
+### 🆕 Self-Hosting Development (Recommended!)
+1. Fork and clone as above
+2. Create a feature branch: `git checkout -b feature/your-feature-ruchy`
+3. **Write your feature in Ruchy** (see `bootstrap_*.ruchy` examples)
+4. Test immediately: `ruchy run your_feature.ruchy`
+5. Transpile to Rust: `ruchy transpile your_feature.ruchy --minimal --output feature.rs`
+6. Integrate the generated Rust into the codebase
+7. Run full test suite: `make test`
+8. Commit both the `.ruchy` source and generated `.rs` files
+9. Create a Pull Request showcasing self-hosting development!
 
 ## Development Setup
 

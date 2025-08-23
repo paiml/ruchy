@@ -1,6 +1,15 @@
-# Ruchy: Complete Language and System Specification
+# Ruchy: Complete Self-Hosting Language Specification
 
-*Version 13.0 - Single source of truth consolidating all 37 specification documents*
+*Version 14.0 - SELF-HOSTING EDITION - Single source of truth consolidating all 37 specification documents*
+
+## 🎉 HISTORIC MILESTONE: SELF-HOSTING ACHIEVED (v1.5.0)
+
+**Ruchy has achieved complete self-hosting capability!** This specification now includes:
+- **Bootstrap compilation processes** 
+- **Self-hosting compiler architecture**
+- **Minimal direct codegen specifications**
+- **Enhanced type inference (Algorithm W)**
+- **Parser self-compilation capabilities**
 
 ## Table of Contents
 

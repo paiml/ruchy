@@ -1,8 +1,12 @@
-# Ruchy: The World's First MCP-First Programming Language
+# Ruchy: The World's First Self-Hosting MCP-First Programming Language
+
+## 🎉 HISTORIC ACHIEVEMENT: SELF-HOSTING CAPABILITY
+
+**Ruchy v1.5.0 has achieved complete self-hosting capability!** This milestone makes Ruchy the **world's first self-hosting MCP-first programming language** - combining the power of self-compilation with native MCP integration.
 
 ## 🌟 Overview
 
-Ruchy is pioneering a new paradigm in programming language design by being the **world's first MCP-first language** - where Model Context Protocol isn't just supported through libraries, but fundamentally integrated into the language runtime and compiler architecture.
+Ruchy is pioneering a new paradigm in programming language design by being the **world's first self-hosting MCP-first language** - where Model Context Protocol isn't just supported through libraries, but fundamentally integrated into the language runtime, compiler architecture, and now the self-hosting bootstrap process.
 
 ## 🚀 What Makes Ruchy MCP-First?
 

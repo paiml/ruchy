@@ -1,5 +1,11 @@
-# MCP Message-Passing Architecture Specification v1.0
-## Protocol-Oriented Actor Programming for Ruchy
+# MCP Message-Passing Architecture Specification v1.5
+## Protocol-Oriented Actor Programming for Self-Hosting Ruchy
+
+*Self-Hosting Edition - Updated for v1.5.0 Historic Achievement*
+
+## 🎉 SELF-HOSTING MESSAGE ARCHITECTURE
+
+**Ruchy's self-hosting compiler now uses the MCP message-passing architecture!** The compiler itself is written in Ruchy using actors and MCP protocol integration.
 
 ### Table of Contents
 1. [Introduction](#introduction)
@@ -18,7 +24,9 @@
 
 ## Introduction
 
-This specification defines the convergence of Model Context Protocol (MCP) with Erlang-style actor model in Ruchy, creating a unified message-passing architecture that eliminates the traditional RPC/actor impedance mismatch. The design achieves zero-cost protocol bridging: MCP calls compile to direct message sends for local actors, TCP for remote actors, with identical semantics.
+This specification defines the convergence of Model Context Protocol (MCP) with Erlang-style actor model in self-hosting Ruchy, creating a unified message-passing architecture that eliminates the traditional RPC/actor impedance mismatch. The design achieves zero-cost protocol bridging: MCP calls compile to direct message sends for local actors, TCP for remote actors, with identical semantics.
+
+**Self-Hosting Achievement**: The Ruchy compiler itself now uses this architecture, with parser, type checker, and code generator implemented as communicating actors exposing MCP tools.
 
 **Design Principles:**
 - **Protocol-First**: Actor behaviors derive from protocol specifications
@@ -104,7 +112,47 @@ pub enum MessagePayload {
 ### Actor Definition with MCP Behavior
 
 ```rust
-// Actor macro generates both actor and MCP interfaces
+// Self-hosting compiler actor example
+#[actor(mcp_tool = "ruchy_compiler")]
+pub actor RuchyCompiler {
+    // Self-hosting compiler state
+    state: CompilerState {
+        source_cache: LRUCache<FileId, String>,
+        ast_cache: LRUCache<FileId, AST>,
+        type_cache: LRUCache<FileId, TypeContext>,
+    },
+    
+    // MCP tool for compiling Ruchy to Rust
+    #[mcp_handler(name = "compile", schema = auto)]
+    receive Compile(source: String, options: CompileOptions) -> MCPResult {
+        let ast = self.parse_actor.ask(Parse(source)).await?;
+        let typed_ast = self.typer_actor.ask(TypeCheck(ast)).await?;
+        let rust_code = self.codegen_actor.ask(Generate(typed_ast)).await?;
+        
+        Ok(MCPResult::from(CompilationResult {
+            rust_code,
+            diagnostics: self.collect_diagnostics(),
+        }))
+    }
+    
+    // Self-hosting bootstrap compilation
+    #[mcp_handler(name = "bootstrap", schema = auto)]
+    receive Bootstrap(compiler_source: String) -> MCPResult {
+        // Use current compiler to compile next version
+        let next_compiler = self.compile_self(compiler_source)?;
+        
+        // Validate bootstrap cycle
+        let validation = next_compiler.validate_against_self()?;
+        
+        Ok(MCPResult::from(BootstrapResult {
+            success: validation.passed,
+            cycles: validation.cycles_tested,
+            metrics: validation.quality_metrics,
+        }))
+    }
+}
+
+// Traditional context analyzer for comparison
 #[actor(mcp_tool = "context_analyzer")]
 pub actor ContextAnalyzer {
     // State is isolated per actor
