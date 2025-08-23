@@ -76,7 +76,7 @@ impl Transpiler {
                 else_branch,
             } => self.transpile_if(condition, then_branch, else_branch.as_deref()),
             ExprKind::Match { expr, arms } => self.transpile_match(expr, arms),
-            ExprKind::For { var, iter, body } => self.transpile_for(var, iter, body),
+            ExprKind::For { var, pattern, iter, body } => self.transpile_for(var, pattern.as_ref(), iter, body),
             ExprKind::While { condition, body } => self.transpile_while(condition, body),
             ExprKind::IfLet {
                 pattern,

@@ -775,8 +775,8 @@ impl Repl {
                 expr: match_expr,
                 arms,
             } => self.evaluate_match(match_expr, arms, deadline, depth),
-            ExprKind::For { var, iter, body } => {
-                self.evaluate_for_loop(var, iter, body, deadline, depth)
+            ExprKind::For { var, pattern, iter, body } => {
+                self.evaluate_for_loop(var, pattern.as_ref(), iter, body, deadline, depth)
             }
             ExprKind::While { condition, body } => {
                 self.evaluate_while_loop(condition, body, deadline, depth)
@@ -1119,6 +1119,7 @@ impl Repl {
     fn evaluate_for_loop(
         &mut self,
         var: &str,
+        pattern: Option<&Pattern>,
         iter: &Expr,
         body: &Expr,
         deadline: Instant,
@@ -1129,10 +1130,23 @@ impl Repl {
 
         // Save the previous value of the loop variable (if any)
         let saved_loop_var = self.bindings.get(var).cloned();
+        
+        // If we have a pattern, save all variables it will bind
+        let saved_pattern_vars = if let Some(pat) = pattern {
+            self.save_pattern_variables(pat)
+        } else {
+            HashMap::new()
+        };
 
         // Execute the loop based on iterable type
         let result = match iterable {
-            Value::List(items) => self.iterate_list(var, items, body, deadline, depth),
+            Value::List(items) => {
+                if let Some(pat) = pattern {
+                    self.iterate_list_with_pattern(pat, items, body, deadline, depth)
+                } else {
+                    self.iterate_list(var, items, body, deadline, depth)
+                }
+            },
             Value::Range {
                 start,
                 end,
@@ -1150,6 +1164,15 @@ impl Repl {
             self.bindings.insert(var.to_string(), prev_value);
         } else {
             self.bindings.remove(var);
+        }
+        
+        // Restore pattern variables
+        for (name, value) in saved_pattern_vars {
+            if let Some(val) = value {
+                self.bindings.insert(name, val);
+            } else {
+                self.bindings.remove(&name);
+            }
         }
 
         result
@@ -1223,6 +1246,72 @@ impl Repl {
             }
         }
         Ok(result)
+    }
+
+    /// Helper: Save pattern variables for restoration
+    fn save_pattern_variables(&self, pattern: &Pattern) -> HashMap<String, Option<Value>> {
+        let mut saved = HashMap::new();
+        self.collect_pattern_vars(pattern, &mut saved);
+        saved
+    }
+    
+    /// Helper: Collect all variables from a pattern
+    fn collect_pattern_vars(&self, pattern: &Pattern, saved: &mut HashMap<String, Option<Value>>) {
+        match pattern {
+            Pattern::Identifier(name) => {
+                saved.insert(name.clone(), self.bindings.get(name).cloned());
+            }
+            Pattern::Tuple(patterns) => {
+                for p in patterns {
+                    self.collect_pattern_vars(p, saved);
+                }
+            }
+            _ => {} // Other patterns don't bind variables
+        }
+    }
+    
+    /// Helper: Iterate over a list with pattern destructuring
+    fn iterate_list_with_pattern(
+        &mut self,
+        pattern: &Pattern,
+        items: Vec<Value>,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut result = Value::Unit;
+        for item in items {
+            // Bind the pattern variables
+            self.bind_pattern(pattern, &item)?;
+            
+            match self.evaluate_expr(body, deadline, depth + 1) {
+                Ok(value) => result = value,
+                Err(e) if e.to_string() == "break" => break,
+                Err(e) if e.to_string() == "continue" => {},
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(result)
+    }
+    
+    /// Helper: Bind pattern variables from a value
+    fn bind_pattern(&mut self, pattern: &Pattern, value: &Value) -> Result<()> {
+        match (pattern, value) {
+            (Pattern::Identifier(name), val) => {
+                self.bindings.insert(name.clone(), val.clone());
+                Ok(())
+            }
+            (Pattern::Tuple(patterns), Value::Tuple(values)) => {
+                if patterns.len() != values.len() {
+                    bail!("Pattern tuple has {} elements but value has {}", patterns.len(), values.len());
+                }
+                for (p, v) in patterns.iter().zip(values.iter()) {
+                    self.bind_pattern(p, v)?;
+                }
+                Ok(())
+            }
+            _ => bail!("Pattern does not match value")
+        }
     }
 
     /// Evaluate while loop (complexity: 8)

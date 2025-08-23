@@ -64,7 +64,7 @@ fn find_opportunities_recursive(
     depth: usize,
 ) {
     match &expr.kind {
-        ExprKind::For { var: _, iter, body } => {
+        ExprKind::For { var: _, iter, body, .. } => {
             analyze_loop_vectorization(iter, body, opportunities);
             find_opportunities_recursive(iter, opportunities, depth + 1);
             find_opportunities_recursive(body, opportunities, depth + 1);
