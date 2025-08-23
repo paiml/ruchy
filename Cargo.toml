@@ -149,7 +149,7 @@ print_stdout = "warn"
 print_stderr = "warn"
 
 [workspace.package]
-version = "0.13.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
