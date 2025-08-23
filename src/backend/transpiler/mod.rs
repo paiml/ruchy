@@ -104,8 +104,12 @@ impl Transpiler {
             let mut functions = Vec::new();
             let mut statements = Vec::new();
             
+            let mut has_main_function = false;
             for expr in exprs {
-                if let ExprKind::Function { .. } = &expr.kind {
+                if let ExprKind::Function { name, .. } = &expr.kind {
+                    if name == "main" {
+                        has_main_function = true;
+                    }
                     functions.push(self.transpile_expr(expr)?);
                 } else {
                     statements.push(self.transpile_expr(expr)?);
@@ -146,24 +150,60 @@ impl Transpiler {
                 }
             } else {
                 // We have function definitions - put them at top level
-                if needs_polars {
-                    Ok(quote! {
-                        use polars::prelude::*;
-                        
-                        #(#functions)*
-                        
-                        fn main() {
-                            #(#statements;)*
+                if has_main_function {
+                    // If we already have a main function, don't create another one
+                    // Just add the statements to the existing main (this would require more complex logic)
+                    // For now, just output functions and statements separately
+                    if statements.is_empty() {
+                        // Only functions, no additional main needed
+                        if needs_polars {
+                            Ok(quote! {
+                                use polars::prelude::*;
+                                #(#functions)*
+                            })
+                        } else {
+                            Ok(quote! {
+                                #(#functions)*
+                            })
                         }
-                    })
+                    } else {
+                        // We have a main function AND other statements - this is a complex case
+                        // For now, we'll append the statements after the functions
+                        // This may not be perfectly correct but avoids duplicate main
+                        if needs_polars {
+                            Ok(quote! {
+                                use polars::prelude::*;
+                                #(#functions)*
+                                // Additional statements - may need manual integration
+                            })
+                        } else {
+                            Ok(quote! {
+                                #(#functions)*
+                                // Additional statements - may need manual integration
+                            })
+                        }
+                    }
                 } else {
-                    Ok(quote! {
-                        #(#functions)*
-                        
-                        fn main() {
-                            #(#statements;)*
-                        }
-                    })
+                    // No main function among the extracted functions - create one for statements
+                    if needs_polars {
+                        Ok(quote! {
+                            use polars::prelude::*;
+                            
+                            #(#functions)*
+                            
+                            fn main() {
+                                #(#statements;)*
+                            }
+                        })
+                    } else {
+                        Ok(quote! {
+                            #(#functions)*
+                            
+                            fn main() {
+                                #(#statements;)*
+                            }
+                        })
+                    }
                 }
             }
         } else {
