@@ -822,6 +822,9 @@ impl Repl {
                     }
                     Value::Int(n) => Self::evaluate_int_methods(n, method),
                     Value::Float(f) => Self::evaluate_float_methods(f, method),
+                    Value::Object(obj) => {
+                        Self::evaluate_object_methods(obj, method, args, deadline, depth)
+                    }
                     _ => bail!("Method {} not supported on this type", method),
                 }
             }
@@ -1088,6 +1091,7 @@ impl Repl {
             "log10" => Ok(Value::Float((n as f64).log10())),
             #[allow(clippy::cast_precision_loss)]
             "exp" => Ok(Value::Float((n as f64).exp())),
+            "to_string" => Ok(Value::String(n.to_string())),
             _ => bail!("Unknown integer method: {}", method),
         }
     }
@@ -1107,6 +1111,46 @@ impl Repl {
             "ceil" => Ok(Value::Float(f.ceil())),
             "round" => Ok(Value::Float(f.round())),
             _ => bail!("Unknown float method: {}", method),
+        }
+    }
+
+    /// Handle method calls on object values (complexity < 10)
+    fn evaluate_object_methods(
+        obj: HashMap<String, Value>,
+        method: &str,
+        _args: &[Expr],
+        _deadline: Instant,
+        _depth: usize,
+    ) -> Result<Value> {
+        match method {
+            "items" => {
+                // Return list of (key, value) tuples
+                let mut items = Vec::new();
+                for (key, value) in obj {
+                    let tuple = Value::Tuple(vec![Value::String(key), value]);
+                    items.push(tuple);
+                }
+                Ok(Value::List(items))
+            }
+            "keys" => {
+                // Return list of keys
+                let keys: Vec<Value> = obj.keys().map(|k| Value::String(k.clone())).collect();
+                Ok(Value::List(keys))
+            }
+            "values" => {
+                // Return list of values
+                let values: Vec<Value> = obj.values().cloned().collect();
+                Ok(Value::List(values))
+            }
+            "len" => {
+                // Return length of object
+                Ok(Value::Int(obj.len() as i64))
+            }
+            "has_key" => {
+                // This would need args handling - simplified for now
+                bail!("has_key method requires arguments")
+            }
+            _ => bail!("Unknown object method: {}", method),
         }
     }
 
@@ -1789,6 +1833,13 @@ impl Repl {
                     return Err(anyhow::anyhow!("Index {} out of bounds for string of length {}", idx, chars.len()));
                 }
                 Ok(Value::String(chars[idx].to_string()))
+            }
+            (Value::Object(obj), Value::String(key)) => {
+                // Object indexing with string keys
+                match obj.get(&key) {
+                    Some(value) => Ok(value.clone()),
+                    None => Err(anyhow::anyhow!("Key '{}' not found in object", key)),
+                }
             }
             (obj_val, index_val) => Err(anyhow::anyhow!("Cannot index into {:?} with index {:?}", obj_val, index_val)),
         }

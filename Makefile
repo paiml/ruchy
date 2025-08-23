@@ -30,6 +30,9 @@ help:
 	@echo "  make doc         - Generate documentation"
 	@echo "  make install     - Install ruchy locally"
 	@echo ""
+	@echo "Language Compatibility:"
+	@echo "  make compatibility - Run comprehensive language feature compatibility tests"
+	@echo ""
 	@echo "Publishing:"
 	@echo "  make prepare-publish - Prepare for crates.io publication"
 	@echo "  make pre-release-checks - Run all pre-release quality checks"
@@ -565,3 +568,18 @@ release-verify:
 	echo "📦 Testing installation from crates.io..."; \
 	cargo install ruchy --force && ruchy --version; \
 	echo "✅ Release verification complete!"
+
+# Run comprehensive language feature compatibility tests
+compatibility:
+	@echo "🔍 RUCHY LANGUAGE COMPATIBILITY TEST SUITE"
+	@echo $$(printf '=%.0s' $$(seq 1 60))
+	@echo ""
+	@echo "Running comprehensive compatibility tests based on:"
+	@echo "  • Rust, Python, Elixir, Ruby, SQLite, Haskell, JS/Deno best practices"
+	@echo "  • Performance regression detection (SQLite standard)"
+	@echo "  • Property-based testing (Haskell QuickCheck style)"
+	@echo ""
+	@cargo test compatibility_report --test compatibility_suite -- --nocapture --ignored
+	@echo ""
+	@echo "✅ Language compatibility verification complete!"
+	@echo "📊 Use results to prioritize development for maximum compatibility improvement"
