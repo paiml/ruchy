@@ -293,6 +293,7 @@ impl Transpiler {
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
             ExprKind::Import { path, items } => Ok(Self::transpile_import(path, items)),
+            ExprKind::Module { name, body } => self.transpile_module(name, body),
             ExprKind::Trait { .. }
             | ExprKind::Impl { .. }
             | ExprKind::Extension { .. }
