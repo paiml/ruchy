@@ -112,28 +112,7 @@ impl Transpiler {
                 }
             }
             
-            if !functions.is_empty() {
-                // We have function definitions - put them at top level
-                if needs_polars {
-                    Ok(quote! {
-                        use polars::prelude::*;
-                        
-                        #(#functions)*
-                        
-                        fn main() {
-                            #(#statements;)*
-                        }
-                    })
-                } else {
-                    Ok(quote! {
-                        #(#functions)*
-                        
-                        fn main() {
-                            #(#statements;)*
-                        }
-                    })
-                }
-            } else {
+            if functions.is_empty() {
                 // No functions, treat as normal expression block
                 let body = self.transpile_expr(expr)?;
                 if needs_polars {
@@ -162,6 +141,27 @@ impl Transpiler {
                             } else {
                                 println!("{:?}", result);
                             }
+                        }
+                    })
+                }
+            } else {
+                // We have function definitions - put them at top level
+                if needs_polars {
+                    Ok(quote! {
+                        use polars::prelude::*;
+                        
+                        #(#functions)*
+                        
+                        fn main() {
+                            #(#statements;)*
+                        }
+                    })
+                } else {
+                    Ok(quote! {
+                        #(#functions)*
+                        
+                        fn main() {
+                            #(#statements;)*
                         }
                     })
                 }
