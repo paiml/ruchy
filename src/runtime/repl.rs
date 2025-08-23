@@ -720,6 +720,41 @@ impl Repl {
             bail!("Maximum recursion depth {} exceeded", self.config.max_depth);
         }
 
+        // COMPLEXITY REDUCTION: Dispatcher pattern by expression category
+        match &expr.kind {
+            // Basic expressions (literals, identifiers, binaries, unaries)
+            ExprKind::Literal(_) | ExprKind::Binary { .. } | ExprKind::Unary { .. } 
+            | ExprKind::Identifier(_) | ExprKind::QualifiedName { .. } => {
+                self.evaluate_basic_expr(expr, deadline, depth)
+            }
+            
+            // Control flow expressions
+            ExprKind::If { .. } | ExprKind::Match { .. } | ExprKind::For { .. } 
+            | ExprKind::While { .. } | ExprKind::IfLet { .. } | ExprKind::WhileLet { .. }
+            | ExprKind::Loop { .. } | ExprKind::Break { .. } | ExprKind::Continue { .. } => {
+                self.evaluate_control_flow_expr(expr, deadline, depth)
+            }
+            
+            // Data structure expressions
+            ExprKind::List(_) | ExprKind::Tuple(_) | ExprKind::ObjectLiteral { .. }
+            | ExprKind::Range { .. } | ExprKind::FieldAccess { .. } | ExprKind::IndexAccess { .. } 
+            | ExprKind::Slice { .. } => {
+                self.evaluate_data_structure_expr(expr, deadline, depth)
+            }
+            
+            // Function and call expressions
+            ExprKind::Function { .. } | ExprKind::Lambda { .. } | ExprKind::Call { .. }
+            | ExprKind::MethodCall { .. } => {
+                self.evaluate_function_expr(expr, deadline, depth)
+            }
+            
+            // Advanced language features
+            _ => self.evaluate_advanced_expr(expr, deadline, depth)
+        }
+    }
+
+    // COMPLEXITY REDUCTION: Basic expressions dispatcher  
+    fn evaluate_basic_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         match &expr.kind {
             ExprKind::Literal(lit) => self.evaluate_literal(lit),
             ExprKind::Binary { left, op, right } => {
@@ -732,87 +767,70 @@ impl Repl {
             ExprKind::QualifiedName { module, name } => {
                 Ok(Self::evaluate_qualified_name(module, name))
             }
-            ExprKind::Module { name: _name, body } => {
-                // Evaluate the module body in the current scope
-                // Module scoping and exports will be enhanced in future iterations
-                self.evaluate_expr(body, deadline, depth + 1)
+            _ => bail!("Non-basic expression in basic dispatcher"),
+        }
+    }
+
+    // COMPLEXITY REDUCTION: Control flow expressions dispatcher
+    fn evaluate_control_flow_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
+        match &expr.kind {
+            ExprKind::If { condition, then_branch, else_branch } => {
+                self.evaluate_if(condition, then_branch, else_branch.as_deref(), deadline, depth)
             }
-            ExprKind::Let {
-                name, type_annotation: _, value, body, ..
-            } => self.evaluate_let_binding(name, value, body, deadline, depth),
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            } => self.evaluate_if(
-                condition,
-                then_branch,
-                else_branch.as_deref(),
-                deadline,
-                depth,
-            ),
-            ExprKind::Block(exprs) => self.evaluate_block(exprs, deadline, depth),
-            ExprKind::List(elements) => self.evaluate_list_literal(elements, deadline, depth),
-            ExprKind::Tuple(elements) => self.evaluate_tuple_literal(elements, deadline, depth),
-            ExprKind::Assign { target, value } => {
-                self.evaluate_assignment(target, value, deadline, depth)
+            ExprKind::Match { expr: match_expr, arms } => {
+                self.evaluate_match(match_expr, arms, deadline, depth)
             }
-            ExprKind::Range {
-                start,
-                end,
-                inclusive,
-            } => self.evaluate_range_literal(start, end, *inclusive, deadline, depth),
-            ExprKind::Function {
-                name, params, body, ..
-            } => Ok(self.evaluate_function_definition(name, params, body)),
-            ExprKind::Lambda { params, body } => Ok(Self::evaluate_lambda_expression(params, body)),
-            ExprKind::Call { func, args } => self.evaluate_call(func, args, deadline, depth),
-            ExprKind::DataFrame { columns } => {
-                self.evaluate_dataframe_literal(columns, deadline, depth)
-            }
-            ExprKind::DataFrameOperation { .. } => Self::evaluate_dataframe_operation(),
-            ExprKind::Match {
-                expr: match_expr,
-                arms,
-            } => self.evaluate_match(match_expr, arms, deadline, depth),
             ExprKind::For { var, pattern, iter, body } => {
                 self.evaluate_for_loop(var, pattern.as_ref(), iter, body, deadline, depth)
             }
             ExprKind::While { condition, body } => {
                 self.evaluate_while_loop(condition, body, deadline, depth)
             }
-            ExprKind::IfLet {
-                pattern,
-                expr,
-                then_branch,
-                else_branch,
-            } => self.evaluate_if_let(pattern, expr, then_branch, else_branch.as_deref(), deadline, depth),
-            ExprKind::WhileLet {
-                pattern,
-                expr,
-                body,
-            } => self.evaluate_while_let(pattern, expr, body, deadline, depth),
+            ExprKind::IfLet { pattern, expr, then_branch, else_branch } => {
+                self.evaluate_if_let(pattern, expr, then_branch, else_branch.as_deref(), deadline, depth)
+            }
+            ExprKind::WhileLet { pattern, expr, body } => {
+                self.evaluate_while_let(pattern, expr, body, deadline, depth)
+            }
             ExprKind::Loop { body } => self.evaluate_loop(body, deadline, depth),
-            ExprKind::Pipeline { expr, stages } => {
-                self.evaluate_pipeline(expr, stages, deadline, depth)
-            }
-            ExprKind::StringInterpolation { parts } => {
-                self.evaluate_string_interpolation(parts, deadline, depth)
-            }
-            ExprKind::Ok { value } => self.evaluate_result_ok(value, deadline, depth),
-            ExprKind::Err { error } => self.evaluate_result_err(error, deadline, depth),
-            ExprKind::Some { value } => self.evaluate_option_some(value, deadline, depth),
-            ExprKind::None => Ok(Self::evaluate_option_none()),
-            ExprKind::MethodCall {
-                receiver,
-                method,
-                args,
-            } => {
-                // Evaluate the receiver
-                let receiver_val = self.evaluate_expr(receiver, deadline, depth + 1)?;
+            ExprKind::Break { .. } => Err(anyhow::anyhow!("break")),
+            ExprKind::Continue { .. } => Err(anyhow::anyhow!("continue")),
+            _ => bail!("Non-control-flow expression in control flow dispatcher"),
+        }
+    }
 
-                // Delegate to type-specific method handlers
-                // Complexity reduced from 225+ lines to < 10 lines
+    // COMPLEXITY REDUCTION: Data structure expressions dispatcher
+    fn evaluate_data_structure_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
+        match &expr.kind {
+            ExprKind::List(elements) => self.evaluate_list_literal(elements, deadline, depth),
+            ExprKind::Tuple(elements) => self.evaluate_tuple_literal(elements, deadline, depth),
+            ExprKind::ObjectLiteral { fields } => self.evaluate_object_literal(fields, deadline, depth),
+            ExprKind::Range { start, end, inclusive } => {
+                self.evaluate_range_literal(start, end, *inclusive, deadline, depth)
+            }
+            ExprKind::FieldAccess { object, field } => {
+                self.evaluate_field_access(object, field, deadline, depth)
+            }
+            ExprKind::IndexAccess { object, index } => {
+                self.evaluate_index_access(object, index, deadline, depth)
+            }
+            ExprKind::Slice { object, start, end } => {
+                self.evaluate_slice(object, start.as_deref(), end.as_deref(), deadline, depth)
+            }
+            _ => bail!("Non-data-structure expression in data structure dispatcher"),
+        }
+    }
+
+    // COMPLEXITY REDUCTION: Function expressions dispatcher
+    fn evaluate_function_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
+        match &expr.kind {
+            ExprKind::Function { name, params, body, .. } => {
+                Ok(self.evaluate_function_definition(name, params, body))
+            }
+            ExprKind::Lambda { params, body } => Ok(Self::evaluate_lambda_expression(params, body)),
+            ExprKind::Call { func, args } => self.evaluate_call(func, args, deadline, depth),
+            ExprKind::MethodCall { receiver, method, args } => {
+                let receiver_val = self.evaluate_expr(receiver, deadline, depth + 1)?;
                 match receiver_val {
                     Value::List(items) => {
                         self.evaluate_list_methods(items, method, args, deadline, depth)
@@ -828,11 +846,39 @@ impl Repl {
                     _ => bail!("Method {} not supported on this type", method),
                 }
             }
+            _ => bail!("Non-function expression in function dispatcher"),
+        }
+    }
+
+    // COMPLEXITY REDUCTION: Advanced expressions dispatcher
+    fn evaluate_advanced_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
+        match &expr.kind {
+            ExprKind::Module { name: _name, body } => {
+                self.evaluate_expr(body, deadline, depth + 1)
+            }
+            ExprKind::Let { name, type_annotation: _, value, body, .. } => {
+                self.evaluate_let_binding(name, value, body, deadline, depth)
+            }
+            ExprKind::Block(exprs) => self.evaluate_block(exprs, deadline, depth),
+            ExprKind::Assign { target, value } => {
+                self.evaluate_assignment(target, value, deadline, depth)
+            }
+            ExprKind::DataFrame { columns } => {
+                self.evaluate_dataframe_literal(columns, deadline, depth)
+            }
+            ExprKind::DataFrameOperation { .. } => Self::evaluate_dataframe_operation(),
+            ExprKind::Pipeline { expr, stages } => {
+                self.evaluate_pipeline(expr, stages, deadline, depth)
+            }
+            ExprKind::StringInterpolation { parts } => {
+                self.evaluate_string_interpolation(parts, deadline, depth)
+            }
+            ExprKind::Ok { value } => self.evaluate_result_ok(value, deadline, depth),
+            ExprKind::Err { error } => self.evaluate_result_err(error, deadline, depth),
+            ExprKind::Some { value } => self.evaluate_option_some(value, deadline, depth),
+            ExprKind::None => Ok(Self::evaluate_option_none()),
             ExprKind::Await { expr } => self.evaluate_await_expr(expr, deadline, depth),
             ExprKind::AsyncBlock { body } => self.evaluate_async_block(body, deadline, depth),
-            ExprKind::ObjectLiteral { fields } => {
-                self.evaluate_object_literal(fields, deadline, depth)
-            }
             ExprKind::Enum { name, variants, .. } => {
                 Ok(self.evaluate_enum_definition(name, variants))
             }
@@ -842,25 +888,13 @@ impl Repl {
             ExprKind::StructLiteral { name: _, fields } => {
                 self.evaluate_struct_literal(fields, deadline, depth)
             }
-            ExprKind::FieldAccess { object, field } => {
-                self.evaluate_field_access(object, field, deadline, depth)
-            }
-            ExprKind::IndexAccess { object, index } => {
-                self.evaluate_index_access(object, index, deadline, depth)
-            }
-            ExprKind::Slice { object, start, end } => {
-                self.evaluate_slice(object, start.as_deref(), end.as_deref(), deadline, depth)
-            }
             ExprKind::Trait { name, methods, .. } => {
                 Ok(Self::evaluate_trait_definition(name, methods))
             }
-            ExprKind::Impl {
-                for_type, methods, ..
-            } => Ok(self.evaluate_impl_block(for_type, methods)),
-            ExprKind::Break { .. } => Err(anyhow::anyhow!("break")),
-            ExprKind::Continue { .. } => Err(anyhow::anyhow!("continue")),
+            ExprKind::Impl { for_type, methods, .. } => {
+                Ok(self.evaluate_impl_block(for_type, methods))
+            }
             ExprKind::Return { value } => {
-                // Return throws an error with the value to unwind the stack
                 if let Some(val) = value {
                     let result = self.evaluate_expr(val, deadline, depth + 1)?;
                     Err(anyhow::anyhow!("return:{}", result))
