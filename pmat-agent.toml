@@ -1,0 +1,189 @@
+# PMAT Agent Configuration for Ruchy Language Development
+# Toyota Way Quality Engineering with Agent Mode Integration
+# Version: 2.10.0 - Agent Mode "Toyota Way Excellence"
+
+[agent]
+version = "2.10.0"
+name = "ruchy-toyota-way-agent"
+environment = "development"
+
+# Toyota Way Standards (BLOCKING - No Compromise)
+complexity_threshold = 10        # Stricter than industry standard (20)
+satd_enabled = true             # Zero SATD tolerance - Toyota Way principle
+check_interval_seconds = 30     # Frequent Kaizen monitoring
+watch_patterns = ["*.rs", "Cargo.toml", "tests/*.rs", "benches/*.rs", "src/**/*.rs"]
+
+[quality_monitor]
+enabled = true
+debounce_ms = 1000              # Fast feedback loop for immediate correction
+full_analysis_interval_minutes = 15
+incremental_analysis = true
+
+# Real-time file system watching for continuous quality
+watch_depth = 8
+ignore_patterns = [
+    "target/", ".git/", "*.tmp", "*.log", 
+    "fuzz/corpus/", "coverage/", "*.backup"
+]
+max_file_size_mb = 10
+
+[toyota_way]
+# Toyota Production System Integration
+jidoka_enabled = true           # Autonomation with human touch
+kaizen_interval_minutes = 30    # Continuous improvement cycles
+genchi_genbutsu_analysis = true # Go and see the actual code
+poka_yoke_prevention = true     # Error prevention at source
+zero_defect_tolerance = true    # No defect is too small
+
+# Toyota Way Thresholds
+max_function_complexity = 10    # Cognitive load management
+max_file_complexity = 50       # Keep files manageable
+max_satd_comments = 0          # Zero technical debt
+min_test_coverage = 80         # Quality assurance
+
+[daemon]
+# Agent Mode Background Operation
+enabled = true
+pid_file = "/tmp/ruchy-pmat-agent.pid"
+log_file = "/tmp/ruchy-pmat-agent.log"
+working_directory = "/home/noah/src/ruchy"
+
+# Health monitoring for continuous operation
+health_check_interval_secs = 60
+max_memory_mb = 200            # Lightweight for development
+auto_restart = true
+shutdown_timeout_secs = 10
+
+[mcp]
+# Model Context Protocol Configuration
+protocol_version = "2024-11-05"
+server_name = "ruchy-toyota-way-agent"
+debug_mode = false             # Production-ready agent mode
+
+# Tool Configuration - All Toyota Way Tools Enabled
+[mcp.tools]
+enable_all = true
+complexity_analysis = true
+quality_gates = true
+continuous_monitoring = true
+kaizen_refactoring = true
+jidoka_enforcement = true
+genchi_genbutsu_analysis = true
+satd_detection = true
+dead_code_analysis = true
+
+# Rate limiting for development (generous limits)
+[mcp.rate_limiting]
+enabled = false                # No limits in development
+max_requests_per_minute = 1000
+max_concurrent_requests = 50
+
+[persistence]
+# State persistence for quality trend tracking
+state_dir = "/tmp/ruchy-pmat-agent-state"
+auto_save_interval_secs = 300  # Save every 5 minutes
+history_retention_days = 7     # Development history
+max_snapshots = 100
+
+# No backup needed in development
+[persistence.backup]
+enabled = false
+
+[logging]
+# Development logging - comprehensive for debugging
+level = "info"
+format = "pretty"              # Human-readable for development
+show_timestamp = true
+show_file_location = true
+show_thread_ids = false
+
+# Simple log rotation for development
+[logging.rotation]
+enabled = true
+max_size_mb = 10
+max_files = 3
+compress = false
+
+[performance]
+# Performance tuning for development environment
+max_concurrent_analyses = 2    # Single developer use
+cache_size_mb = 100           # Moderate caching
+analysis_timeout_secs = 30    # Fast feedback
+
+# Resource limits appropriate for development
+[performance.limits]
+max_cpu_percent = 30          # Leave CPU for IDE and compilation
+max_io_operations_per_sec = 500
+nice_priority = 5             # Low priority to not interfere
+
+[security]
+# Development security settings
+require_authentication = false
+allowed_paths = ["/home/noah/src/ruchy"]
+disallowed_patterns = ["../", "~/", "/etc/", "/sys/", "/proc/"]
+
+[monitoring]
+# Lightweight monitoring for development
+metrics_enabled = false       # No metrics server needed
+metrics_port = 9090
+metrics_path = "/metrics"
+
+# Development alerts - console only
+[monitoring.alerts]
+enabled = true
+webhook_url = ""              # Console alerts only in development
+alert_on_high_complexity = true
+alert_on_satd_increase = true
+alert_on_quality_drop = true
+quality_threshold = 90.0      # High quality standards
+
+[integration]
+# No external integrations in development
+github_enabled = false
+gitlab_enabled = false
+jira_enabled = false
+
+# Local CI/CD integration for pre-commit hooks
+[integration.ci]
+enabled = true
+output_format = "claude-friendly"  # Integration with Claude Code
+fail_on_quality_gate_failure = true
+generate_reports = false      # No reports needed in development
+report_dir = "/tmp/ruchy-pmat-reports"
+
+# Ruchy-Specific Configuration
+[ruchy]
+# Language-specific settings
+language = "rust"
+project_type = "compiler"
+transpiler_mode = true
+repl_mode = true
+
+# Ruchy quality standards
+max_repl_function_complexity = 15  # REPL allows slightly higher complexity
+transpiler_complexity_limit = 10   # Transpiler must be pristine
+ast_complexity_limit = 8           # AST manipulation kept simple
+
+# File-specific overrides
+[[ruchy.file_overrides]]
+pattern = "tests/**/*.rs"
+max_complexity = 20            # Tests can be more complex
+satd_allowed = false           # Still no SATD in tests
+
+[[ruchy.file_overrides]]
+pattern = "benches/**/*.rs"
+max_complexity = 25            # Benchmarks can be complex
+satd_allowed = false
+
+[[ruchy.file_overrides]]
+pattern = "fuzz/**/*.rs"
+max_complexity = 30            # Fuzz tests can be very complex
+satd_allowed = false
+
+# Toyota Way Quality Messages
+[messages]
+jidoka_stop = "🏭 TOYOTA WAY JIDOKA: Stop the line - quality defect detected"
+kaizen_suggestion = "🔧 KAIZEN: Continuous improvement opportunity identified"
+genchi_genbutsu = "📍 GENCHI GENBUTSU: Go and see the actual problem"
+poka_yoke = "🚫 POKA-YOKE: Error prevention activated"
+zero_defect = "✅ ZERO DEFECT: Toyota Way quality standard achieved"

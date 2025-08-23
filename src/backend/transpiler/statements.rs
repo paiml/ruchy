@@ -122,7 +122,7 @@ impl Transpiler {
             if token_str == "_" {
                 // Use a single generic type T for all inferred parameters (for operations like addition)
                 if !has_inferred_types {
-                    all_type_params.push("T: std::ops::Add<Output=T> + std::fmt::Display + std::fmt::Debug + Clone".to_string());
+                    all_type_params.push("T: std::ops::Add<Output=T> + std::ops::Mul<Output=T> + std::fmt::Display + std::fmt::Debug + Clone".to_string());
                     has_inferred_types = true;
                 }
             }
