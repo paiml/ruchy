@@ -173,7 +173,46 @@ log("Environment:", environment);
   - [x] ✅ Path resolution - WORKS
   - [x] ✅ Public/private visibility - WORKS (pub keyword supported)
 
-## CURRENT SPRINT: Unified Quality Scoring System
+## Phase 5: Developer Experience & Book Compatibility (v1.4.0)
+
+### Sprint Overview
+- **Duration**: 1-2 weeks
+- **Priority**: P1 - Developer experience and book compatibility
+- **Goal**: Reach 80%+ book compatibility, improve error messages
+- **Focus**: Fat arrow syntax, better errors, missing conveniences
+
+### Implementation Tasks (Phase 5 DX)
+- [ ] **DX-001**: Fat Arrow Syntax Support
+  - [ ] Add `=>` token to lexer
+  - [ ] Parse `x => x * 2` as lambda syntax
+  - [ ] Maintain backward compatibility with `|x|` syntax
+  - [ ] Enable in array methods and pipelines
+
+- [ ] **DX-002**: Enhanced Error Messages
+  - [ ] Add source location to all error messages
+  - [ ] Provide helpful suggestions for common mistakes
+  - [ ] Show context around errors (like Rust/Elm)
+  - [ ] Add "did you mean?" suggestions
+
+- [ ] **DX-003**: Missing Convenience Features
+  - [ ] Multiline strings with triple quotes
+  - [ ] Raw strings for regex patterns
+  - [ ] Default parameter values in functions
+  - [ ] Destructuring in let bindings
+
+- [ ] **DX-004**: REPL Improvements
+  - [ ] Multi-line editing support
+  - [ ] Tab completion for functions/variables
+  - [ ] Show type information on hover
+  - [ ] Better formatting of complex outputs
+
+- [ ] **DX-005**: Standard Library Expansion
+  - [ ] File system operations (read_dir, exists, etc.)
+  - [ ] JSON parsing and serialization
+  - [ ] Regular expression support
+  - [ ] Date/time handling basics
+
+## CURRENT SPRINT: Phase 5 Developer Experience
 
 ### Sprint Overview  
 - **Task IDs**: RUCHY-0810 to RUCHY-0820
