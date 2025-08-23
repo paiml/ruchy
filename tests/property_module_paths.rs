@@ -1,4 +1,5 @@
 //! Property-based tests for module path syntax
+#![allow(clippy::uninlined_format_args, clippy::doc_markdown, clippy::redundant_clone)] // Test code
 
 use proptest::prelude::*;
 use ruchy::frontend::parser::Parser;

@@ -1,8 +1,10 @@
 //! Example demonstrating module path (::) support in Ruchy
 //!
-//! Run with: cargo run --example module_paths
+//! Run with: cargo run --example `module_paths`
 
-use ruchy::{Parser as RuchyParser, Transpiler, runtime::repl::Repl};
+#![allow(clippy::print_stdout, clippy::uninlined_format_args, clippy::unnecessary_wraps)] // Examples are meant to print output
+
+use ruchy::{Parser as RuchyParser, Transpiler};
 use anyhow::Result;
 
 fn main() -> Result<()> {
@@ -35,20 +37,20 @@ Database::store(parsed)
 
     // Example 3: Nested module paths
     println!("\n3. Deeply Nested Modules:");
-    let code3 = r#"
+    let code3 = r"
 fn connect(config: app::config::database::ConnectionConfig) -> app::models::Connection {
     app::database::pool::Manager::connect(config)
 }
-"#;
+";
     demonstrate_code(code3, "Deeply nested module paths")?;
 
     // Example 4: Generic types with module paths
     println!("\n4. Generic Types with Module Paths:");
-    let code4 = r#"
+    let code4 = r"
 fn create_cache() -> std::collections::HashMap<std::string::String, web::models::User> {
     std::collections::HashMap::new()
 }
-"#;
+";
     demonstrate_code(code4, "Generic types with qualified names")?;
 
     // Example 5: Import statements

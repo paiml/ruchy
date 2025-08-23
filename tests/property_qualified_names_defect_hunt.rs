@@ -1,4 +1,5 @@
 //! Property-based defect hunting for qualified name parsing
+#![allow(clippy::expect_used, clippy::print_stdout, clippy::uninlined_format_args, clippy::manual_let_else, clippy::needless_borrows_for_generic_args, clippy::single_char_pattern)] // Test code allows these
 //! 
 //! This systematically tests the boundary conditions where parsing fails
 //! in REPL vs unit tests to find the EXACT root cause
