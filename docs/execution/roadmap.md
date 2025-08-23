@@ -226,11 +226,64 @@
 ### Next Sprint Tasks (After Scoring Foundation)
 - [x] **RUCHY-0800**: Complete self-hosting capability
 - [x] **RUCHY-0801**: Binary compilation via LLVM
-- [ ] **RUCHY-0802**: DataFrame operations completion
-- [ ] **RUCHY-0803**: Actor system implementation  
-- [ ] **RUCHY-0804**: Module system and package management
+- [x] **RUCHY-0802**: DataFrame operations completion ✅ v0.12.0
+- [x] **RUCHY-0803**: Actor system implementation ✅ v0.12.0 
+- [x] **RUCHY-0804**: Module system and package management ✅ v0.12.0
 - [ ] **RUCHY-0805**: IDE integrations (VSCode, IntelliJ)
 - **Innovation differentiators**: Formal verification + BigO analysis
+
+## Current Sprint: v0.13.0 - Path to 60% Compatibility
+
+### Sprint Overview
+- **Duration**: 1 week (August 23-30, 2025)
+- **Goal**: Reach 60% book compatibility by fixing high-impact parse errors
+- **Focus**: Macro syntax, object literals, for loop improvements
+
+### Implementation Tasks (RUCHY-0850 Series)
+- [ ] **RUCHY-0850**: Support macro!{} syntax alongside macro![] and macro!()
+  - Many macros use brace syntax in examples
+  - Add TokenTree support for flexible macro bodies
+  - ~30 examples affected
+  
+- [ ] **RUCHY-0851**: Implement object literal syntax {key: value}
+  - JavaScript-style object creation
+  - Maps to HashMap or struct initialization
+  - ~15 examples affected
+  
+- [ ] **RUCHY-0852**: Support tuple destructuring in for loops
+  - `for (x, y) in items` pattern
+  - `for key, value in map` syntax
+  - ~10 examples affected
+  
+- [ ] **RUCHY-0853**: Improve error messages for common patterns
+  - Better hints for macro syntax
+  - Suggest alternatives for unsupported features
+  - Developer experience improvement
+
+## Previous Sprint: v0.12.0 Foundation Complete ✅ RELEASED
+
+### Sprint Summary (August 23, 2025)
+- **Version**: v0.12.0 "Foundation Complete"
+- **Achievement**: 44% book compatibility (122/280 examples)
+- **Discovery**: All major features already implemented!
+
+### Major Features Validated
+1. **✅ Return Statements**: Full implementation working
+2. **✅ Module Paths (::)**: Complete support for qualified names
+3. **✅ Type Annotations**: Full syntax with generics, functions, tuples
+4. **✅ Visibility (pub)**: Functions, structs, fields all working
+5. **✅ DataFrames**: Polars integration via df![] macro
+6. **✅ Actors**: Tokio-based async message passing
+7. **✅ Module System**: Rust/Cargo/crates.io integration
+
+### 100% Working Chapters (7 total)
+- Hello World (8/8)
+- Variables & Types (9/9)  
+- Functions (12/12)
+- Testing Functions (12/12)
+- Command Line Tools (14/14)
+- Interpreter Scripting (15/15)
+- Tooling (6/6)
 
 ## Previous Sprint: v0.7.22 Interpreter Quality Refactoring ✅ COMPLETED
 - **Duration**: 2 days (2025-08-21 - 2025-08-22)
