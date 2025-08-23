@@ -123,7 +123,7 @@ impl InferenceContext {
                 condition,
             } => self.infer_list_comprehension(element, variable, iterable, condition.as_deref()),
             ExprKind::Match { expr, arms } => self.infer_match(expr, arms),
-            ExprKind::For { var, iter, body } => self.infer_for(var, iter, body),
+            ExprKind::For { var, iter, body, .. } => self.infer_for(var, iter, body),
             ExprKind::While { condition, body } => self.infer_while(condition, body),
             ExprKind::Loop { body } => self.infer_loop(body),
             ExprKind::Range { start, end, .. } => self.infer_range(start, end),

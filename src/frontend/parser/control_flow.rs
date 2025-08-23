@@ -449,11 +449,36 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
 pub fn parse_for(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume for
 
-    // Parse variable name
+    // Check if we have a tuple pattern (multiple identifiers separated by commas)
+    let mut identifiers = Vec::new();
+    let mut pattern = None;
+    
+    // Parse first identifier
     let var = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         let name = name.clone();
+        identifiers.push(name);
         state.tokens.advance();
-        name
+        
+        // Check for comma (indicating tuple pattern)
+        while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance(); // consume comma
+            
+            if let Some((Token::Identifier(next_name), _)) = state.tokens.peek() {
+                identifiers.push(next_name.clone());
+                state.tokens.advance();
+            } else {
+                bail!("Expected identifier after comma in for loop pattern");
+            }
+        }
+        
+        // If we have multiple identifiers, create a tuple pattern
+        if identifiers.len() > 1 {
+            pattern = Some(Pattern::Tuple(
+                identifiers.iter().map(|id| Pattern::Identifier(id.clone())).collect()
+            ));
+        }
+        
+        identifiers[0].clone() // Return first identifier as var for compatibility
     } else {
         bail!("Expected identifier after 'for'");
     };
@@ -470,6 +495,7 @@ pub fn parse_for(state: &mut ParserState) -> Result<Expr> {
     Ok(Expr::new(
         ExprKind::For {
             var,
+            pattern,
             iter: Box::new(iter),
             body: Box::new(body),
         },

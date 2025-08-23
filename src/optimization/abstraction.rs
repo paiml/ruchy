@@ -135,7 +135,7 @@ fn analyze_abstractions_recursive(
             analyze_abstractions_recursive(body, patterns, inlining, depth + 1);
         }
         
-        ExprKind::For { var: _, iter, body } => {
+        ExprKind::For { var: _, iter, body, .. } => {
             analyze_iterator_pattern(iter, body, patterns);
             analyze_abstractions_recursive(iter, patterns, inlining, depth + 1);
             analyze_abstractions_recursive(body, patterns, inlining, depth + 1);

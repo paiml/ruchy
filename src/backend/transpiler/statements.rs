@@ -345,16 +345,27 @@ impl Transpiler {
     }
 
     /// Transpiles for loops
-    pub fn transpile_for(&self, var: &str, iter: &Expr, body: &Expr) -> Result<TokenStream> {
-        let var_ident = format_ident!("{}", var);
+    pub fn transpile_for(&self, var: &str, pattern: Option<&Pattern>, iter: &Expr, body: &Expr) -> Result<TokenStream> {
         let iter_tokens = self.transpile_expr(iter)?;
         let body_tokens = self.transpile_expr(body)?;
 
-        Ok(quote! {
-            for #var_ident in #iter_tokens {
-                #body_tokens
-            }
-        })
+        // If we have a pattern, use it for destructuring
+        if let Some(pat) = pattern {
+            let pattern_tokens = self.transpile_pattern(pat)?;
+            Ok(quote! {
+                for #pattern_tokens in #iter_tokens {
+                    #body_tokens
+                }
+            })
+        } else {
+            // Fall back to simple variable
+            let var_ident = format_ident!("{}", var);
+            Ok(quote! {
+                for #var_ident in #iter_tokens {
+                    #body_tokens
+                }
+            })
+        }
     }
 
     /// Transpiles while loops

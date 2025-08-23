@@ -236,7 +236,8 @@ pub enum ExprKind {
         operation: DataFrameOp,
     },
     For {
-        var: String,
+        var: String,  // Keep for backward compatibility
+        pattern: Option<Pattern>,  // New: Support destructuring patterns
         iter: Box<Expr>,
         body: Box<Expr>,
     },
@@ -1052,6 +1053,7 @@ mod tests {
         let expr = Expr::new(
             ExprKind::For {
                 var: "i".to_string(),
+                pattern: None,
                 iter,
                 body,
             },
@@ -1063,6 +1065,7 @@ mod tests {
                 var,
                 iter: it,
                 body: b,
+                ..
             } => {
                 assert_eq!(var, "i");
                 match it.kind {
