@@ -1,4 +1,5 @@
 //! Toyota Way: Idiot-proof separation of parsing vs runtime testing
+#![allow(clippy::expect_used, clippy::print_stdout, clippy::uninlined_format_args, clippy::needless_borrows_for_generic_args, clippy::cast_sign_loss)] // Test code allows these
 //! 
 //! This test suite ensures we NEVER confuse parsing failures with runtime failures again.
 //! Each test explicitly separates the two phases and tests them independently.

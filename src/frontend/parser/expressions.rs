@@ -2,7 +2,7 @@
 
 use super::{ParserState, *};
 
-/// Parse module path segments like std::fs::read_file
+/// Parse module path segments like `std::fs::read_file`
 /// Complexity: 3 (PMAT target <10)
 fn parse_module_path_segments(state: &mut ParserState, first_segment: String) -> Result<Vec<String>> {
     let mut path_segments = vec![first_segment];
@@ -60,7 +60,7 @@ fn should_break_for_special_case(state: &mut ParserState, path_segments: &[Strin
     is_result_ok_err || is_option_some_none
 }
 
-/// Parse Result::Ok(value) or Result::Err(error) constructs
+/// Parse `Result::Ok(value)` or `Result::Err(error)` constructs
 /// Complexity: 4 (PMAT target <10)
 fn parse_result_constructor(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
     if !matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
@@ -88,7 +88,7 @@ fn parse_result_constructor(state: &mut ParserState, span: Span) -> Result<Optio
     }
 }
 
-/// Parse Option::Some(value) or Option::None constructs  
+/// Parse `Option::Some(value)` or `Option::None` constructs
 /// Complexity: 4 (PMAT target <10)
 fn parse_option_constructor(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
     if !matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
@@ -173,7 +173,7 @@ fn parse_unqualified_result_constructor(state: &mut ParserState, name: &str, spa
 /// Complexity: 7 (PMAT target <10) 
 fn parse_identifier_token(state: &mut ParserState, name: String, span: Span) -> Result<Expr> {
     // Parse the full module path (e.g., std::fs::read_file)
-    let path_segments = parse_module_path_segments(state, name.clone())?;
+    let path_segments = parse_module_path_segments(state, name)?;
     
     // Handle special cases based on the last segment
     let last_segment = path_segments.last().unwrap();

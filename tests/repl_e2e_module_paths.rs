@@ -1,4 +1,5 @@
 //! E2E tests to catch REPL vs unit test discrepancies
+#![allow(clippy::expect_used, clippy::print_stdout, clippy::uninlined_format_args, clippy::needless_borrows_for_generic_args, clippy::items_after_statements, dropping_references)] // Test code allows these
 //! Toyota Way: This defect must never happen again
 
 use std::process::{Command, Stdio};

@@ -1,4 +1,5 @@
 //! Tests for module path (::) syntax support
+#![allow(clippy::print_stdout, clippy::uninlined_format_args)] // Test debugging output
 
 use ruchy::frontend::parser::Parser;
 use ruchy::frontend::ast::{ExprKind, TypeKind};
