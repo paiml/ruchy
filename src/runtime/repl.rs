@@ -845,6 +845,9 @@ impl Repl {
                     Value::Object(obj) => {
                         Self::evaluate_object_methods(obj, method, args, deadline, depth)
                     }
+                    Value::EnumVariant { .. } => {
+                        self.evaluate_enum_methods(receiver_val, method, args, deadline, depth)
+                    }
                     _ => bail!("Method {} not supported on this type", method),
                 }
             }
@@ -1742,6 +1745,91 @@ impl Repl {
         
         // If not a Result or Option, return as-is (this might be an error case)
         Ok(val)
+    }
+
+    /// Evaluate methods on enum variants (Result/Option types)
+    fn evaluate_enum_methods(
+        &mut self,
+        receiver: Value,
+        method: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if let Value::EnumVariant { enum_name, variant_name, data } = receiver {
+            match (enum_name.as_str(), variant_name.as_str(), method) {
+                // Result methods
+                ("Result", "Ok", "unwrap") if args.is_empty() => {
+                    if let Some(values) = data {
+                        if !values.is_empty() {
+                            return Ok(values[0].clone());
+                        }
+                    }
+                    Ok(Value::Unit)
+                }
+                ("Result", "Err", "unwrap") if args.is_empty() => {
+                    let error_msg = if let Some(values) = &data {
+                        if values.is_empty() {
+                            "called `Result::unwrap()` on an `Err` value".to_string()
+                        } else {
+                            format!("called `Result::unwrap()` on an `Err` value: {}", values[0])
+                        }
+                    } else {
+                        "called `Result::unwrap()` on an `Err` value".to_string()
+                    };
+                    bail!(error_msg)
+                }
+                ("Result", "Ok", "expect") if args.len() == 1 => {
+                    // Ignore the custom message for Ok variant
+                    if let Some(values) = data {
+                        if !values.is_empty() {
+                            return Ok(values[0].clone());
+                        }
+                    }
+                    Ok(Value::Unit)
+                }
+                ("Result", "Err", "expect") if args.len() == 1 => {
+                    let custom_msg = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                    let msg = match custom_msg {
+                        Value::String(s) => s,
+                        _ => format!("{custom_msg}"),
+                    };
+                    bail!(msg)
+                }
+                // Option methods
+                ("Option", "Some", "unwrap") if args.is_empty() => {
+                    if let Some(values) = data {
+                        if !values.is_empty() {
+                            return Ok(values[0].clone());
+                        }
+                    }
+                    Ok(Value::Unit)
+                }
+                ("Option", "None", "unwrap") if args.is_empty() => {
+                    bail!("called `Option::unwrap()` on a `None` value")
+                }
+                ("Option", "Some", "expect") if args.len() == 1 => {
+                    // Ignore the custom message for Some variant
+                    if let Some(values) = data {
+                        if !values.is_empty() {
+                            return Ok(values[0].clone());
+                        }
+                    }
+                    Ok(Value::Unit)
+                }
+                ("Option", "None", "expect") if args.len() == 1 => {
+                    let custom_msg = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                    let msg = match custom_msg {
+                        Value::String(s) => s,
+                        _ => format!("{custom_msg}"),
+                    };
+                    bail!(msg)
+                }
+                _ => bail!("Method {} not supported on {}", method, enum_name),
+            }
+        } else {
+            bail!("evaluate_enum_methods called on non-enum variant")
+        }
     }
 
     /// Evaluate object literal (complexity: 10)
