@@ -2,7 +2,12 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
-## [Unreleased] - Phase 3 Complete!
+## [Unreleased] - Phase 4 In Progress
+
+### Phase 4: Module System
+- Working on ADV-004: Module System implementation
+
+## [1.2.0] - 2025-08-23 (PHASE 3: ADVANCED LANGUAGE FEATURES COMPLETE)
 
 ### New Features
 - **Try Operator (`?`)** - Error propagation for Result and Option types
