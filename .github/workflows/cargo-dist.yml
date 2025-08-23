@@ -1,0 +1,229 @@
+# Multi-platform binary distribution for Ruchy v1.5.0
+# Builds binaries for all major platforms and creates GitHub releases
+
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  pull_request:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - '[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  # Plan the release
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      val: ${{ steps.plan.outputs.manifest }}
+      tag: ${{ !github.event.pull_request && github.ref_name || '' }}
+      tag-flag: ${{ !github.event.pull_request && format('--tag={0}', github.ref_name) || '' }}
+      publishing: ${{ !github.event.pull_request }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install cargo-dist
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://github.com/axodotdev/cargo-dist/releases/download/v0.28.0/cargo-dist-installer.sh | sh
+      
+      - name: Cache cargo-dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: cargo-dist-cache
+          path: ~/.cargo/bin/cargo-dist
+      
+      - id: plan
+        run: |
+          cargo dist ${{ (!github.event.pull_request && format('host --steps=create --tag={0}', github.ref_name)) || 'plan' }} \
+            --output-format=json > plan-dist-manifest.json
+          echo "cargo dist ran successfully"
+          cat plan-dist-manifest.json
+          echo "manifest=$(jq -c "." plan-dist-manifest.json)" >> "$GITHUB_OUTPUT"
+      
+      - name: Upload dist-manifest.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-plan-dist-manifest
+          path: plan-dist-manifest.json
+
+  # Build platform-specific binaries
+  build-local-artifacts:
+    name: build-local-artifacts (${{ join(matrix.targets, ', ') }})
+    needs:
+      - plan
+    if: ${{ fromJson(needs.plan.outputs.val).ci.github.artifacts_matrix.include != null && (needs.plan.outputs.publishing == 'true' || fromJson(needs.plan.outputs.val).ci.github.pr_run_mode == 'upload') }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.plan.outputs.val).ci.github.artifacts_matrix }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      BUILD_MANIFEST_NAME: target/distrib/${{ join(matrix.targets, '-') }}-dist-manifest.json
+    steps:
+      - name: Enable Windows longpaths
+        if: ${{ contains(matrix.runner, 'windows') }}
+        run: |
+          git config --global core.longpaths true
+      
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install cargo-dist
+        run: ${{ matrix.install_dist }}
+      
+      - name: Fetch local artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: artifacts-*
+          path: target/distrib/
+          merge-multiple: true
+      
+      - name: Install dependencies
+        run: |
+          ${{ matrix.packages_install }}
+      
+      - name: Build artifacts
+        run: |
+          cargo dist build ${{ needs.plan.outputs.tag-flag }} \
+            --print=linkage --output-format=json ${{ matrix.dist_args }} > dist-manifest.json
+          echo "cargo dist ran successfully"
+      
+      - id: cargo-dist
+        name: Post-build
+        shell: bash
+        run: |
+          echo "paths<<EOF" >> "$GITHUB_OUTPUT"
+          jq --raw-output ".upload_files[]" dist-manifest.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-build-local-${{ join(matrix.targets, '-') }}
+          path: |
+            ${{ steps.cargo-dist.outputs.paths }}
+            dist-manifest.json
+
+  # Build global artifacts
+  build-global-artifacts:
+    needs:
+      - plan
+      - build-local-artifacts
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      BUILD_MANIFEST_NAME: target/distrib/global-dist-manifest.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install cargo-dist
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://github.com/axodotdev/cargo-dist/releases/download/v0.28.0/cargo-dist-installer.sh | sh
+      
+      - name: Fetch artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: artifacts-*
+          path: target/distrib/
+          merge-multiple: true
+      
+      - name: Build global artifacts
+        run: |
+          cargo dist build ${{ needs.plan.outputs.tag-flag }} \
+            --output-format=json "--artifacts=global" > dist-manifest.json
+          echo "cargo dist ran successfully"
+      
+      - id: cargo-dist
+        shell: bash
+        run: |
+          echo "paths<<EOF" >> "$GITHUB_OUTPUT"
+          jq --raw-output ".upload_files[]" dist-manifest.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-build-global
+          path: |
+            ${{ steps.cargo-dist.outputs.paths }}
+            dist-manifest.json
+
+  # Create GitHub release
+  host:
+    needs:
+      - plan
+      - build-local-artifacts
+      - build-global-artifacts
+    if: ${{ needs.plan.outputs.publishing == 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      val: ${{ steps.host.outputs.manifest }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install cargo-dist
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://github.com/axodotdev/cargo-dist/releases/download/v0.28.0/cargo-dist-installer.sh | sh
+      
+      - name: Fetch artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: artifacts-*
+          path: target/distrib/
+          merge-multiple: true
+      
+      - id: host
+        shell: bash
+        run: |
+          cargo dist host ${{ needs.plan.outputs.tag-flag }} \
+            --steps=upload --steps=release --output-format=json > dist-manifest.json
+          echo "artifacts uploaded and released successfully"
+          cat dist-manifest.json
+          echo "manifest=$(jq -c "." dist-manifest.json)" >> "$GITHUB_OUTPUT"
+      
+      - name: Upload dist-manifest.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-dist-manifest
+          path: dist-manifest.json
+
+  # Publish to package registries
+  publish:
+    needs:
+      - plan
+      - host
+    if: ${{ needs.plan.outputs.publishing == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Publish to crates.io
+        run: |
+          cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      
+      - name: Update announcement
+        run: |
+          echo "🎉 Ruchy v1.5.0 - Historic Self-Hosting Achievement Released!"
+          echo ""
+          echo "The world's first self-hosting MCP-first programming language is now available!"
+          echo ""
+          echo "Download: https://github.com/paiml/ruchy/releases/tag/${{ needs.plan.outputs.tag }}"
