@@ -3005,8 +3005,8 @@ impl Repl {
                     self.bindings.insert(param.clone(), value.clone());
                 }
 
-                // Evaluate body
-                let result = self.evaluate_expr(&body, deadline, depth + 1)?;
+                // Evaluate body with return handling
+                let result = self.evaluate_function_body(&body, deadline, depth)?;
 
                 // Restore bindings
                 self.bindings = saved_bindings;
@@ -3193,7 +3193,7 @@ impl Repl {
                         self.bindings.insert(param.clone(), arg_value);
                     }
 
-                    let result = self.evaluate_expr(&body, deadline, depth + 1)?;
+                    let result = self.evaluate_function_body(&body, deadline, depth)?;
                     self.bindings = saved_bindings;
                     Ok(result)
                 }
@@ -3213,7 +3213,7 @@ impl Repl {
                         self.bindings.insert(param.clone(), arg_value);
                     }
 
-                    let result = self.evaluate_expr(&body, deadline, depth + 1)?;
+                    let result = self.evaluate_function_body(&body, deadline, depth)?;
                     self.bindings = saved_bindings;
                     Ok(result)
                 }
@@ -3223,6 +3223,47 @@ impl Repl {
             }
         } else {
             bail!("Unknown function: {}", func_name);
+        }
+    }
+
+    /// Helper to evaluate a function body and handle return statements
+    fn evaluate_function_body(
+        &mut self,
+        body: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        match self.evaluate_expr(body, deadline, depth + 1) {
+            Ok(val) => Ok(val),
+            Err(e) => {
+                // Check if this is a return statement
+                let err_str = e.to_string();
+                if let Some(return_val) = err_str.strip_prefix("return:") {
+                    // Parse the return value - it's already a formatted Value string
+                    // For now, just extract the string representation
+                    // The value was already evaluated, just passed through error
+                    if return_val == "()" {
+                        Ok(Value::Unit)
+                    } else if return_val.starts_with('"') && return_val.ends_with('"') {
+                        // String value - remove quotes
+                        let s = return_val[1..return_val.len()-1].to_string();
+                        Ok(Value::String(s))
+                    } else if let Ok(i) = return_val.parse::<i64>() {
+                        Ok(Value::Int(i))
+                    } else if let Ok(f) = return_val.parse::<f64>() {
+                        Ok(Value::Float(f))
+                    } else if return_val == "true" {
+                        Ok(Value::Bool(true))
+                    } else if return_val == "false" {
+                        Ok(Value::Bool(false))
+                    } else {
+                        // Return as string for complex values
+                        Ok(Value::String(return_val.to_string()))
+                    }
+                } else {
+                    Err(e)
+                }
+            }
         }
     }
 

@@ -404,6 +404,38 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
             state.tokens.advance(); // consume None
             Pattern::None
         }
+        Some((Token::Ok, _)) => {
+            state.tokens.advance(); // consume Ok
+            
+            // Check for Ok(pattern)
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                state.tokens.advance(); // consume (
+                let inner = parse_pattern_base(state);
+                if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                    state.tokens.advance(); // consume )
+                }
+                Pattern::Ok(Box::new(inner))
+            } else {
+                // Just Ok without parentheses - treat as constructor pattern
+                Pattern::Ok(Box::new(Pattern::Wildcard))
+            }
+        }
+        Some((Token::Err, _)) => {
+            state.tokens.advance(); // consume Err
+            
+            // Check for Err(pattern)
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                state.tokens.advance(); // consume (
+                let inner = parse_pattern_base(state);
+                if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                    state.tokens.advance(); // consume )
+                }
+                Pattern::Err(Box::new(inner))
+            } else {
+                // Just Err without parentheses - treat as constructor pattern
+                Pattern::Err(Box::new(Pattern::Wildcard))
+            }
+        }
         _ => Pattern::Wildcard, // Default fallback
     }
 }

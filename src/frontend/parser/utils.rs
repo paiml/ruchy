@@ -226,8 +226,29 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
             }
         }
         Some((Token::Identifier(name), _)) => {
-            let name = name.clone();
+            let mut name = name.clone();
             state.tokens.advance();
+
+            // Check for qualified type names: std::string::String
+            while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                state.tokens.advance(); // consume ::
+                
+                let next_name = match state.tokens.peek() {
+                    Some((Token::Identifier(next), _)) => next.clone(),
+                    // Handle special tokens that can be type names
+                    Some((Token::Result, _)) => "Result".to_string(),
+                    Some((Token::Option, _)) => "Option".to_string(),
+                    Some((Token::Ok, _)) => "Ok".to_string(),
+                    Some((Token::Err, _)) => "Err".to_string(),
+                    Some((Token::Some, _)) => "Some".to_string(),
+                    Some((Token::None, _)) => "None".to_string(),
+                    _ => bail!("Expected identifier after :: in type name"),
+                };
+                
+                name.push_str("::");
+                name.push_str(&next_name);
+                state.tokens.advance();
+            }
 
             // Check for generic types: Vec<T>, Result<T, E>
             if matches!(state.tokens.peek(), Some((Token::Less, _))) {
