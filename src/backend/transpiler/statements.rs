@@ -97,18 +97,15 @@ impl Transpiler {
             .map(|p| {
                 let param_name = format_ident!("{}", p.name());
                 // HOTFIX: For function signatures, use single generic type T for inferred types
-                let type_tokens = match self.transpile_type(&p.ty) {
-                    Ok(tokens) => {
-                        let token_str = tokens.to_string();
-                        if token_str == "_" {
-                            // Use single generic type T for all inferred parameters
-                            quote! { T }
-                        } else {
-                            tokens
-                        }
-                    },
-                    Err(_) => quote! { T }
-                };
+                let type_tokens = if let Ok(tokens) = self.transpile_type(&p.ty) {
+                    let token_str = tokens.to_string();
+                    if token_str == "_" {
+                        // Use single generic type T for all inferred parameters
+                        quote! { T }
+                    } else {
+                        tokens
+                    }
+                } else { quote! { T } };
                 quote! { #param_name: #type_tokens }
             })
             .collect();
@@ -116,7 +113,7 @@ impl Transpiler {
         // HOTFIX: Add inferred generic type parameters with appropriate trait bounds
         let mut all_type_params = type_params.to_vec();
         let mut has_inferred_types = false;
-        for (_i, p) in params.iter().enumerate() {
+        for p in params {
             let type_tokens = self.transpile_type(&p.ty).unwrap_or_else(|_| quote! { _ });
             let token_str = type_tokens.to_string();
             if token_str == "_" {
@@ -151,7 +148,7 @@ impl Transpiler {
         let type_param_tokens: Vec<TokenStream> = all_type_params
             .iter()
             .map(|p| {
-                if p.contains(":") {
+                if p.contains(':') {
                     // Complex trait bound - parse as TokenStream
                     p.parse().unwrap_or_else(|_| quote! { T })
                 } else {
@@ -253,10 +250,9 @@ impl Transpiler {
                 if args.len() > 1 {
                     let format_str = (0..args.len()).map(|_| "{}").collect::<Vec<_>>().join(" ");
                     return Ok(quote! { #func_tokens!(#format_str, #(#arg_tokens),*) });
-                } else {
-                    // Single string literal - use as-is
-                    return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
                 }
+                // Single string literal - use as-is
+                return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
             }
         }
 
