@@ -2,7 +2,7 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
-## [Unreleased] - Phase 3 In Progress
+## [Unreleased] - Phase 3 Complete!
 
 ### New Features
 - **Try Operator (`?`)** - Error propagation for Result and Option types
@@ -21,6 +21,13 @@ All notable changes to the Ruchy programming language will be documented in this
     - `Err("oops").expect("failed")` panics with "failed"
 
 ### Discovered Features (Already Implemented)
+- **Async/Await Support** - Full async programming support!
+  - `async fun` for async functions
+  - `await` keyword for Future resolution  
+  - Transpiles to proper Rust async/await
+  - REPL provides synchronous evaluation for testing
+
+### Previously Discovered Features
 - **Enhanced Pattern Matching** - All advanced patterns already work!
   - Pattern guards with `if` conditions: `n if n > 0 => "positive"`
   - Range patterns: `1..=10 => "small"` (inclusive), `1..10` (exclusive)

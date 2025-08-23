@@ -1748,6 +1748,7 @@ impl Repl {
     }
 
     /// Evaluate methods on enum variants (Result/Option types)
+    #[allow(clippy::too_many_lines)]
     fn evaluate_enum_methods(
         &mut self,
         receiver: Value,
@@ -1824,6 +1825,149 @@ impl Repl {
                         _ => format!("{custom_msg}"),
                     };
                     bail!(msg)
+                }
+                // Result combinators
+                ("Result", "Ok", "map") if args.len() == 1 => {
+                    // Apply function to Ok value
+                    if let Some(values) = data {
+                        if !values.is_empty() {
+                            let func_arg = &args[0];
+                            // Create a synthetic call expression
+                            let call_expr = Expr::new(
+                                ExprKind::Call {
+                                    func: Box::new(func_arg.clone()),
+                                    args: vec![Expr::new(
+                                        ExprKind::Literal(crate::frontend::ast::Literal::from_value(&values[0])),
+                                        Span { start: 0, end: 0 },
+                                    )],
+                                },
+                                Span { start: 0, end: 0 },
+                            );
+                            let mapped_value = self.evaluate_expr(&call_expr, deadline, depth + 1)?;
+                            return Ok(Value::EnumVariant {
+                                enum_name: "Result".to_string(),
+                                variant_name: "Ok".to_string(),
+                                data: Some(vec![mapped_value]),
+                            });
+                        }
+                    }
+                    Ok(Value::EnumVariant {
+                        enum_name: "Result".to_string(),
+                        variant_name: "Ok".to_string(),
+                        data: Some(vec![Value::Unit]),
+                    })
+                }
+                ("Result", "Err", "map") if args.len() == 1 => {
+                    // map does nothing on Err, return as-is
+                    Ok(Value::EnumVariant {
+                        enum_name,
+                        variant_name,
+                        data,
+                    })
+                }
+                ("Result", "Ok", "and_then") if args.len() == 1 => {
+                    // Apply function that returns Result to Ok value
+                    if let Some(values) = data {
+                        if !values.is_empty() {
+                            let func_arg = &args[0];
+                            let call_expr = Expr::new(
+                                ExprKind::Call {
+                                    func: Box::new(func_arg.clone()),
+                                    args: vec![Expr::new(
+                                        ExprKind::Literal(crate::frontend::ast::Literal::from_value(&values[0])),
+                                        Span { start: 0, end: 0 },
+                                    )],
+                                },
+                                Span { start: 0, end: 0 },
+                            );
+                            // and_then flattens the Result
+                            return self.evaluate_expr(&call_expr, deadline, depth + 1);
+                        }
+                    }
+                    Ok(Value::EnumVariant {
+                        enum_name: "Result".to_string(),
+                        variant_name: "Ok".to_string(),
+                        data: Some(vec![Value::Unit]),
+                    })
+                }
+                ("Result", "Err", "and_then") if args.len() == 1 => {
+                    // and_then does nothing on Err, return as-is
+                    Ok(Value::EnumVariant {
+                        enum_name,
+                        variant_name,
+                        data,
+                    })
+                }
+                // Option combinators
+                ("Option", "Some", "map") if args.len() == 1 => {
+                    // Apply function to Some value
+                    if let Some(values) = data {
+                        if !values.is_empty() {
+                            let func_arg = &args[0];
+                            let call_expr = Expr::new(
+                                ExprKind::Call {
+                                    func: Box::new(func_arg.clone()),
+                                    args: vec![Expr::new(
+                                        ExprKind::Literal(crate::frontend::ast::Literal::from_value(&values[0])),
+                                        Span { start: 0, end: 0 },
+                                    )],
+                                },
+                                Span { start: 0, end: 0 },
+                            );
+                            let mapped_value = self.evaluate_expr(&call_expr, deadline, depth + 1)?;
+                            return Ok(Value::EnumVariant {
+                                enum_name: "Option".to_string(),
+                                variant_name: "Some".to_string(),
+                                data: Some(vec![mapped_value]),
+                            });
+                        }
+                    }
+                    Ok(Value::EnumVariant {
+                        enum_name: "Option".to_string(),
+                        variant_name: "Some".to_string(),
+                        data: Some(vec![Value::Unit]),
+                    })
+                }
+                ("Option", "None", "map") if args.len() == 1 => {
+                    // map does nothing on None, return as-is
+                    Ok(Value::EnumVariant {
+                        enum_name,
+                        variant_name,
+                        data,
+                    })
+                }
+                ("Option", "Some", "and_then") if args.len() == 1 => {
+                    // Apply function that returns Option to Some value
+                    if let Some(values) = data {
+                        if !values.is_empty() {
+                            let func_arg = &args[0];
+                            let call_expr = Expr::new(
+                                ExprKind::Call {
+                                    func: Box::new(func_arg.clone()),
+                                    args: vec![Expr::new(
+                                        ExprKind::Literal(crate::frontend::ast::Literal::from_value(&values[0])),
+                                        Span { start: 0, end: 0 },
+                                    )],
+                                },
+                                Span { start: 0, end: 0 },
+                            );
+                            // and_then flattens the Option
+                            return self.evaluate_expr(&call_expr, deadline, depth + 1);
+                        }
+                    }
+                    Ok(Value::EnumVariant {
+                        enum_name: "Option".to_string(),
+                        variant_name: "Some".to_string(),
+                        data: Some(vec![Value::Unit]),
+                    })
+                }
+                ("Option", "None", "and_then") if args.len() == 1 => {
+                    // and_then does nothing on None, return as-is
+                    Ok(Value::EnumVariant {
+                        enum_name,
+                        variant_name,
+                        data,
+                    })
                 }
                 _ => bail!("Method {} not supported on {}", method, enum_name),
             }
