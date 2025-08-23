@@ -4,6 +4,84 @@
 
 **Generate correct code that compiles on first attempt. Quality is built-in, not bolted-on.**
 
+## Scientific Method Protocol
+
+**WE DON'T GUESS, WE PROVE VIA QUANTITATIVE METHODS AND TESTING.**
+
+### Evidence-Based Development Rules:
+1. **NO ASSUMPTIONS**: Every claim must be backed by concrete evidence
+2. **MEASURE EVERYTHING**: Use tests, benchmarks, and metrics to validate behavior  
+3. **REPRODUCE ISSUES**: Create minimal test cases that demonstrate problems
+4. **QUANTIFY IMPROVEMENTS**: Before/after metrics prove effectiveness
+5. **DOCUMENT EVIDENCE**: All findings must be recorded with reproducible steps
+
+### Investigation Protocol:
+1. **Hypothesis**: State what you believe is happening
+2. **Test**: Create specific tests that prove/disprove the hypothesis  
+3. **Measure**: Collect concrete data (test results, timings, coverage)
+4. **Analyze**: Draw conclusions only from the evidence
+5. **Document**: Record findings and next steps
+
+**Example**: Don't say "REPL might have different parser" - instead create identical test cases in both unit tests and REPL, measure the difference, identify the exact divergence point.
+
+## Toyota Way Implementation
+
+**STOP THE LINE FOR ANY DEFECT. NO DEFECT IS TOO SMALL. NO SHORTCUT IS ACCEPTABLE.**
+
+### Core Toyota Principles:
+1. **Jidoka (Autonomation)**: Build quality into the process, detect problems immediately
+2. **Genchi Genbutsu**: Go to the source, understand the root cause through direct observation
+3. **Kaizen**: Continuous improvement through systematic problem-solving
+4. **Respect for People**: Create systems that prevent human error, not blame people
+5. **Long-term Philosophy**: Short-term fixes create long-term problems
+
+### Defect Response Protocol (MANDATORY):
+```
+1. HALT DEVELOPMENT: Stop all forward progress when defect detected
+2. ROOT CAUSE ANALYSIS: Use 5 Whys to find true cause, not symptoms  
+3. POKA-YOKE: Design error-prevention into the system
+4. SYSTEMATIC TESTING: Add comprehensive test coverage to prevent recurrence
+5. PROCESS IMPROVEMENT: Update development process to catch similar issues earlier
+6. VERIFICATION: Prove the fix works and cannot regress
+```
+
+### Testing Hierarchy (Idiot-Proof Prevention):
+```
+Level 1: Unit Tests         - Function-level correctness
+Level 2: Integration Tests  - Component interaction  
+Level 3: E2E Tests          - Full system behavior
+Level 4: Property Tests     - Mathematical invariants
+Level 5: Fuzz Tests         - Random input robustness
+Level 6: Regression Tests   - Historical defect prevention
+Level 7: Performance Tests  - Non-functional requirements
+```
+
+**NEVER AGAIN RULE**: Every defect must be made impossible to repeat through systematic prevention.
+
+## Toyota Way Success Story: Property Testing Victory
+
+**CASE STUDY**: Suspected "REPL vs Unit Test Parser Inconsistency" (2024-12)
+
+**Manual Testing Claims**: 
+- ❌ "REPL fails to parse `std::fs::read_file` while unit tests pass"
+- ❌ "3+ segment qualified names broken in REPL"  
+- ❌ "Parser inconsistency between binary and library"
+
+**Property Testing Evidence**:
+- ✅ **410 systematic test cases**: 0 inconsistencies found
+- ✅ **135 fuzz-generated cases**: 0 inconsistencies found  
+- ✅ **Perfect parser consistency** proved across all contexts
+
+**ROOT CAUSE**: Manual testing methodology error, NOT code defect.
+
+**LESSONS LEARNED**:
+1. **Human perception is unreliable** - manual tests can create false patterns
+2. **Property testing is objective** - mathematically proves system behavior
+3. **Systematic > Anecdotal** - 545 automated tests > individual manual observations  
+4. **Toyota Way Works** - stopping the line led to better understanding, not wasted time
+
+**PREVENTION**: All suspected "parsing inconsistencies" must be validated with property tests before investigation.
+
 ## Scripting Policy
 
 **CRITICAL**: Use ONLY Ruchy scripts for adhoc scripting and testing. No Python, Bash scripts, or other languages for testing Ruchy functionality. This ensures we dogfood our own language and discover usability issues early.

@@ -2,6 +2,207 @@
 
 use super::{ParserState, *};
 
+/// Parse module path segments like std::fs::read_file
+/// Complexity: 3 (PMAT target <10)
+fn parse_module_path_segments(state: &mut ParserState, first_segment: String) -> Result<Vec<String>> {
+    let mut path_segments = vec![first_segment];
+    
+    // Keep consuming :: and identifiers to build the full path
+    while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        // Peek ahead to see if this is a special case
+        let is_special_case = should_break_for_special_case(state, &path_segments);
+        if is_special_case {
+            break;
+        }
+        
+        state.tokens.advance(); // consume ::
+        
+        // Get the next segment
+        let next_segment = match state.tokens.peek() {
+            Some((Token::Identifier(next_segment), _)) => next_segment.clone(),
+            // Handle special tokens that can be part of module paths
+            Some((Token::Result, _)) => "Result".to_string(),
+            Some((Token::Option, _)) => "Option".to_string(),
+            Some((Token::Ok, _)) => {
+                // Only break for Ok/Err/Some/None if they follow certain patterns
+                break;
+            }
+            Some((Token::Err, _)) => {
+                break;
+            }
+            Some((Token::Some, _)) => {
+                break;  
+            }
+            Some((Token::None, _)) => {
+                break;
+            }
+            _ => bail!("Expected identifier after '::'")
+        };
+        
+        path_segments.push(next_segment);
+        state.tokens.advance();
+    }
+    
+    Ok(path_segments)
+}
+
+/// Check if we should break module path parsing for special cases
+/// Complexity: 3 (PMAT target <10)  
+fn should_break_for_special_case(state: &mut ParserState, path_segments: &[String]) -> bool {
+    // Check if the last segment is "Result" or "Option" and next tokens are special
+    let last_segment = path_segments.last().unwrap();
+    
+    let is_result_ok_err = last_segment == "Result" 
+        && matches!(state.tokens.peek_nth(1), Some((Token::Ok | Token::Err, _)));
+    let is_option_some_none = last_segment == "Option"
+        && matches!(state.tokens.peek_nth(1), Some((Token::Some | Token::None, _)));
+        
+    is_result_ok_err || is_option_some_none
+}
+
+/// Parse Result::Ok(value) or Result::Err(error) constructs
+/// Complexity: 4 (PMAT target <10)
+fn parse_result_constructor(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
+    if !matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        return Ok(None);
+    }
+    
+    state.tokens.advance(); // consume ::
+    
+    match state.tokens.peek() {
+        Some((Token::Ok, _)) => {
+            state.tokens.advance(); // consume Ok
+            state.tokens.expect(&Token::LeftParen)?;
+            let value = super::parse_expr_recursive(state)?;
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(Some(Expr::new(ExprKind::Ok { value: Box::new(value) }, span)))
+        }
+        Some((Token::Err, _)) => {
+            state.tokens.advance(); // consume Err
+            state.tokens.expect(&Token::LeftParen)?;
+            let value = super::parse_expr_recursive(state)?;
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(Some(Expr::new(ExprKind::Err { error: Box::new(value) }, span)))
+        }
+        _ => Ok(None)
+    }
+}
+
+/// Parse Option::Some(value) or Option::None constructs  
+/// Complexity: 4 (PMAT target <10)
+fn parse_option_constructor(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
+    if !matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        return Ok(None);
+    }
+    
+    state.tokens.advance(); // consume ::
+    
+    match state.tokens.peek() {
+        Some((Token::Some, _)) => {
+            state.tokens.advance(); // consume Some
+            state.tokens.expect(&Token::LeftParen)?;
+            let value = super::parse_expr_recursive(state)?;
+            state.tokens.expect(&Token::RightParen)?;
+            Ok(Some(Expr::new(
+                ExprKind::Call {
+                    func: Box::new(Expr::new(ExprKind::Identifier("Some".to_string()), span)),
+                    args: vec![value],
+                },
+                span,
+            )))
+        }
+        Some((Token::None, _)) => {
+            state.tokens.advance(); // consume None
+            Ok(Some(Expr::new(
+                ExprKind::Call {
+                    func: Box::new(Expr::new(ExprKind::Identifier("None".to_string()), span)),
+                    args: vec![],
+                },
+                span,
+            )))
+        }
+        _ => Ok(None)
+    }
+}
+
+/// Create qualified name expression from path segments
+/// Complexity: 1 (PMAT target <10)
+fn create_qualified_name_expr(path_segments: Vec<String>, span: Span) -> Expr {
+    if path_segments.len() > 1 {
+        // Join all but the last segment as the module path
+        let module_path = path_segments[0..path_segments.len()-1].join("::");
+        let name = path_segments.last().unwrap().clone();
+        
+        Expr::new(
+            ExprKind::QualifiedName {
+                module: module_path,
+                name,
+            },
+            span,
+        )
+    } else {
+        // Single identifier
+        Expr::new(ExprKind::Identifier(path_segments[0].clone()), span)
+    }
+}
+
+/// Parse unqualified Result constructors Ok(value) or Err(error)
+/// Complexity: 4 (PMAT target <10)
+fn parse_unqualified_result_constructor(state: &mut ParserState, name: &str, span: Span) -> Result<Option<Expr>> {
+    if name != "Ok" && name != "Err" {
+        return Ok(None);
+    }
+    
+    // Expect parentheses with value
+    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        state.tokens.advance(); // consume (
+        let value = super::parse_expr_recursive(state)?;
+        state.tokens.expect(&Token::RightParen)?;
+
+        if name == "Ok" {
+            Ok(Some(Expr::new(ExprKind::Ok { value: Box::new(value) }, span)))
+        } else {
+            Ok(Some(Expr::new(ExprKind::Err { error: Box::new(value) }, span)))
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+/// Main coordinator function for parsing identifier tokens
+/// Complexity: 7 (PMAT target <10) 
+fn parse_identifier_token(state: &mut ParserState, name: String, span: Span) -> Result<Expr> {
+    // Parse the full module path (e.g., std::fs::read_file)
+    let path_segments = parse_module_path_segments(state, name.clone())?;
+    
+    // Handle special cases based on the last segment
+    let last_segment = path_segments.last().unwrap();
+    
+    // Try Result::Ok/Err constructors (works for any path length)
+    if last_segment == "Result" {
+        if let Some(expr) = parse_result_constructor(state, span)? {
+            return Ok(expr);
+        }
+    }
+    
+    // Try Option::Some/None constructors (works for any path length)
+    if last_segment == "Option" {
+        if let Some(expr) = parse_option_constructor(state, span)? {
+            return Ok(expr);
+        }
+    }
+    
+    // Try unqualified Ok/Err constructors (only for single segments)
+    if path_segments.len() == 1 {
+        if let Some(expr) = parse_unqualified_result_constructor(state, last_segment, span)? {
+            return Ok(expr);
+        }
+    }
+    
+    // Create the appropriate expression based on path length
+    Ok(create_qualified_name_expr(path_segments, span))
+}
+
 #[allow(clippy::too_many_lines)]
 /// # Errors
 ///
@@ -74,135 +275,8 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::Identifier(name) => {
             state.tokens.advance();
-
-            // Check for qualified name (module::name)
-            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                state.tokens.advance(); // consume ::
-                
-                // Handle special tokens after ::
-                match state.tokens.peek() {
-                    Some((Token::Ok, _)) if name == "Result" => {
-                        state.tokens.advance(); // consume Ok
-                        state.tokens.expect(&Token::LeftParen)?;
-                        let value = super::parse_expr_recursive(state)?;
-                        state.tokens.expect(&Token::RightParen)?;
-                        
-                        return Ok(Expr::new(
-                            ExprKind::Ok {
-                                value: Box::new(value),
-                            },
-                            span_clone,
-                        ));
-                    }
-                    Some((Token::Err, _)) if name == "Result" => {
-                        state.tokens.advance(); // consume Err
-                        state.tokens.expect(&Token::LeftParen)?;
-                        let value = super::parse_expr_recursive(state)?;
-                        state.tokens.expect(&Token::RightParen)?;
-                        
-                        return Ok(Expr::new(
-                            ExprKind::Err {
-                                error: Box::new(value),
-                            },
-                            span_clone,
-                        ));
-                    }
-                    Some((Token::Some, _)) if name == "Option" => {
-                        state.tokens.advance(); // consume Some
-                        state.tokens.expect(&Token::LeftParen)?;
-                        let value = super::parse_expr_recursive(state)?;
-                        state.tokens.expect(&Token::RightParen)?;
-                        
-                        return Ok(Expr::new(
-                            ExprKind::Call {
-                                func: Box::new(Expr::new(
-                                    ExprKind::Identifier("Some".to_string()),
-                                    span_clone,
-                                )),
-                                args: vec![value],
-                            },
-                            span_clone,
-                        ));
-                    }
-                    Some((Token::None, _)) if name == "Option" => {
-                        state.tokens.advance(); // consume None
-                        
-                        return Ok(Expr::new(
-                            ExprKind::Call {
-                                func: Box::new(Expr::new(
-                                    ExprKind::Identifier("None".to_string()),
-                                    span_clone,
-                                )),
-                                args: vec![],
-                            },
-                            span_clone,
-                        ));
-                    }
-                    Some((Token::Identifier(qualified_name), _)) => {
-                        let qualified_name = qualified_name.clone();
-                        state.tokens.advance();
-                        
-                        // Check if qualified name is a Result constructor
-                        if name == "Result" && (qualified_name == "Ok" || qualified_name == "Err")
-                            && matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-                                state.tokens.advance(); // consume (
-                                let value = super::parse_expr_recursive(state)?;
-                                state.tokens.expect(&Token::RightParen)?;
-                                
-                                if qualified_name == "Ok" {
-                                    return Ok(Expr::new(
-                                        ExprKind::Ok {
-                                            value: Box::new(value),
-                                        },
-                                        span_clone,
-                                    ));
-                                }
-                                return Ok(Expr::new(
-                                    ExprKind::Err {
-                                        error: Box::new(value),
-                                    },
-                                    span_clone,
-                                ));
-                            }
-                        
-                        return Ok(Expr::new(
-                            ExprKind::QualifiedName {
-                                module: name,
-                                name: qualified_name,
-                            },
-                            span_clone,
-                        ));
-                    }
-                    _ => bail!("Expected identifier after '::'")
-                }
-            }
-
-            // Check for Result constructors Ok and Err (unqualified)
-            if name == "Ok" || name == "Err" {
-                // Expect parentheses with value
-                if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-                    state.tokens.advance(); // consume (
-                    let value = super::parse_expr_recursive(state)?;
-                    state.tokens.expect(&Token::RightParen)?;
-
-                    if name == "Ok" {
-                        return Ok(Expr::new(
-                            ExprKind::Ok {
-                                value: Box::new(value),
-                            },
-                            span_clone,
-                        ));
-                    }
-                    return Ok(Expr::new(
-                        ExprKind::Err {
-                            error: Box::new(value),
-                        },
-                        span_clone,
-                    ));
-                }
-            }
-
-            // Check for macro call (identifier!)
+            
+            // Check for macro call (identifier!) first
             if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
                 state.tokens.advance(); // consume !
                 
@@ -243,8 +317,8 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 ));
             }
 
-            // Only handle postfix operators that can't be confused with binary operators
-            Ok(Expr::new(ExprKind::Identifier(name), span_clone))
+            // Parse module paths and special constructors
+            parse_identifier_token(state, name, span_clone)
         }
         Token::LeftParen => {
             state.tokens.advance(); // consume (
