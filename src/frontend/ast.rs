@@ -86,6 +86,9 @@ pub enum ExprKind {
         value: Box<Expr>,
     },
     None,
+    Try {
+        expr: Box<Expr>,
+    },
     Await {
         expr: Box<Expr>,
     },

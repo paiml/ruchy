@@ -171,6 +171,16 @@ fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) -> Result<E
                 left = create_post_decrement(left);
                 handled_postfix = true;
             }
+            Some((Token::Question, _)) => {
+                state.tokens.advance();
+                left = Expr::new(
+                    ExprKind::Try {
+                        expr: Box::new(left),
+                    },
+                    Span { start: 0, end: 0 },
+                );
+                handled_postfix = true;
+            }
             _ => {}
         }
     }

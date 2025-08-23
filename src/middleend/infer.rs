@@ -247,6 +247,14 @@ impl InferenceContext {
                 Ok(MonoType::Unit)
             }
             ExprKind::AsyncBlock { body } => self.infer_async_block(body),
+            ExprKind::Try { expr } => {
+                // The ? operator unwraps Result<T, E> to T or Option<T> to T
+                let expr_type = self.infer(expr)?;
+                
+                // Returns the inner type for Result/Option
+                // Full type checking will be implemented with proper Result/Option type inference
+                Ok(expr_type)
+            }
         }
     }
 

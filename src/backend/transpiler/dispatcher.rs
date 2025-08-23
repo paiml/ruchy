@@ -188,7 +188,10 @@ impl Transpiler {
             | ExprKind::Range { .. } => self.transpile_data_only_expr(expr),
  ExprKind::Throw { .. }
             | ExprKind::Ok { .. }
-            | ExprKind::Err { .. } => self.transpile_error_only_expr(expr),
+            | ExprKind::Err { .. }
+            | ExprKind::Some { .. }
+            | ExprKind::None
+            | ExprKind::Try { .. } => self.transpile_error_only_expr(expr),
             _ => unreachable!("Non-data/error expression in transpile_data_error_expr"),
         }
     }
@@ -223,6 +226,9 @@ impl Transpiler {
             ExprKind::Throw { expr } => self.transpile_throw(expr),
             ExprKind::Ok { value } => self.transpile_result_ok(value),
             ExprKind::Err { error } => self.transpile_result_err(error),
+            ExprKind::Some { value } => self.transpile_option_some(value),
+            ExprKind::None => Ok(quote! { None }),
+            ExprKind::Try { expr } => self.transpile_try_operator(expr),
             _ => unreachable!(),
         }
     }
@@ -235,6 +241,16 @@ impl Transpiler {
     fn transpile_result_err(&self, error: &Expr) -> Result<TokenStream> {
         let error_tokens = self.transpile_expr(error)?;
         Ok(quote! { Err(#error_tokens) })
+    }
+    
+    fn transpile_option_some(&self, value: &Expr) -> Result<TokenStream> {
+        let value_tokens = self.transpile_expr(value)?;
+        Ok(quote! { Some(#value_tokens) })
+    }
+    
+    fn transpile_try_operator(&self, expr: &Expr) -> Result<TokenStream> {
+        let expr_tokens = self.transpile_expr(expr)?;
+        Ok(quote! { #expr_tokens? })
     }
 
     /// Transpile actor system expressions

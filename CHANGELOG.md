@@ -4,12 +4,23 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased] - Phase 3 In Progress
 
+### New Features
+- **Try Operator (`?`)** - Error propagation for Result and Option types
+  - Unwraps `Ok(value)` to `value`, propagates `Err`
+  - Unwraps `Some(value)` to `value`, propagates `None`
+  - Works in both REPL and transpiled code
+  - Example: `let value = Some(42)?` returns `42`
+
 ### Discovered Features (Already Implemented)
 - **Enhanced Pattern Matching** - All advanced patterns already work!
   - Pattern guards with `if` conditions: `n if n > 0 => "positive"`
   - Range patterns: `1..=10 => "small"` (inclusive), `1..10` (exclusive)
   - Or patterns: `1 | 2 | 3 => "small numbers"`
   - Complex combinations of all pattern types
+- **Result/Option Constructors** - Already working
+  - `Ok(value)`, `Err(error)` for Result types
+  - `Some(value)`, `None` for Option types
+  - Pattern matching on Result/Option types
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

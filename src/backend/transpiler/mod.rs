@@ -282,8 +282,8 @@ impl Transpiler {
         use ExprKind::{
             Actor, ActorQuery, ActorSend, Ask, Assign, AsyncBlock, Await, Binary, Call, Command, CompoundAssign, DataFrame, 
             DataFrameOperation, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess, Lambda, 
-            List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, ObjectLiteral, Ok, QualifiedName, 
-            Range, Send, Slice, StringInterpolation, Struct, StructLiteral, Throw, 
+            List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None, ObjectLiteral, Ok, QualifiedName, 
+            Range, Send, Slice, Some, StringInterpolation, Struct, StructLiteral, Throw, Try,
             Tuple, Unary, While, WhileLet,
         };
 
@@ -329,7 +329,10 @@ impl Transpiler {
             | Range { .. }
             | Throw { .. }
             | Ok { .. }
-            | Err { .. } => self.transpile_data_error_expr(expr),
+            | Err { .. }
+            | Some { .. }
+            | None
+            | Try { .. } => self.transpile_data_error_expr(expr),
 
             // Actor system and process execution
             Actor { .. } | Send { .. } | Ask { .. } | ActorSend { .. } | ActorQuery { .. } | Command { .. } => self.transpile_actor_expr(expr),
