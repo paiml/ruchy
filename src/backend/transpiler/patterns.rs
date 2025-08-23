@@ -19,10 +19,17 @@ impl Transpiler {
             let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
             let body_tokens = self.transpile_expr(&arm.body)?;
 
-            // Guards have been removed from the grammar
-            arm_tokens.push(quote! {
-                #pattern_tokens => #body_tokens
-            });
+            // Handle pattern guards if present
+            if let Some(guard_expr) = &arm.guard {
+                let guard_tokens = self.transpile_expr(guard_expr)?;
+                arm_tokens.push(quote! {
+                    #pattern_tokens if #guard_tokens => #body_tokens
+                });
+            } else {
+                arm_tokens.push(quote! {
+                    #pattern_tokens => #body_tokens
+                });
+            }
         }
 
         Ok(quote! {
