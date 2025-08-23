@@ -879,6 +879,7 @@ impl Repl {
             ExprKind::Err { error } => self.evaluate_result_err(error, deadline, depth),
             ExprKind::Some { value } => self.evaluate_option_some(value, deadline, depth),
             ExprKind::None => Ok(Self::evaluate_option_none()),
+            ExprKind::Try { expr } => self.evaluate_try_operator(expr, deadline, depth),
             ExprKind::Await { expr } => self.evaluate_await_expr(expr, deadline, depth),
             ExprKind::AsyncBlock { body } => self.evaluate_async_block(body, deadline, depth),
             ExprKind::Enum { name, variants, .. } => {
@@ -1703,6 +1704,44 @@ impl Repl {
             variant_name: "None".to_string(),
             data: None,
         }
+    }
+    
+    /// Evaluate try operator (?) - early return on Err or None
+    fn evaluate_try_operator(
+        &mut self,
+        expr: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let val = self.evaluate_expr(expr, deadline, depth + 1)?;
+        
+        // Check if it's a Result::Err or Option::None and propagate
+        if let Value::EnumVariant { enum_name, variant_name, data } = &val {
+            if enum_name == "Result" && variant_name == "Err" {
+                // For Result::Err, propagate the error
+                return Ok(val.clone());
+            } else if enum_name == "Option" && variant_name == "None" {
+                // For Option::None, propagate None
+                return Ok(val.clone());
+            } else if enum_name == "Result" && variant_name == "Ok" {
+                // For Result::Ok, unwrap the value
+                if let Some(values) = data {
+                    if !values.is_empty() {
+                        return Ok(values[0].clone());
+                    }
+                }
+            } else if enum_name == "Option" && variant_name == "Some" {
+                // For Option::Some, unwrap the value
+                if let Some(values) = data {
+                    if !values.is_empty() {
+                        return Ok(values[0].clone());
+                    }
+                }
+            }
+        }
+        
+        // If not a Result or Option, return as-is (this might be an error case)
+        Ok(val)
     }
 
     /// Evaluate object literal (complexity: 10)
