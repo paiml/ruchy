@@ -170,8 +170,37 @@ fn parse_unqualified_result_constructor(state: &mut ParserState, name: &str, spa
 }
 
 /// Main coordinator function for parsing identifier tokens
-/// Complexity: 7 (PMAT target <10) 
+/// Complexity: 8 (PMAT target <10) 
 fn parse_identifier_token(state: &mut ParserState, name: String, span: Span) -> Result<Expr> {
+    // Check for fat arrow lambda syntax: x => x * 2 (before parsing module paths)
+    if !matches!(state.tokens.peek(), Some((Token::ColonColon, _))) 
+        && matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+        state.tokens.advance(); // consume =>
+        
+        // Create parameter
+        let param = Param {
+            pattern: Pattern::Identifier(name),
+            ty: Type {
+                kind: TypeKind::Named("_".to_string()),
+                span: Span { start: 0, end: 0 },
+            },
+            span,
+            is_mutable: false,
+            default_value: None,
+        };
+        
+        // Parse body
+        let body = super::parse_expr_recursive(state)?;
+        
+        return Ok(Expr::new(
+            ExprKind::Lambda {
+                params: vec![param],
+                body: Box::new(body),
+            },
+            span,
+        ));
+    }
+    
     // Parse the full module path (e.g., std::fs::read_file)
     let path_segments = parse_module_path_segments(state, name)?;
     
@@ -204,6 +233,7 @@ fn parse_identifier_token(state: &mut ParserState, name: String, span: Span) -> 
 }
 
 #[allow(clippy::too_many_lines)]
+#[allow(clippy::cognitive_complexity)]
 /// # Errors
 ///
 /// Returns an error if the operation fails
@@ -323,11 +353,88 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         }
         Token::LeftParen => {
             state.tokens.advance(); // consume (
-                                    // Check for unit literal ()
+            
+            // Check for unit literal ()
             if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                 state.tokens.advance(); // consume )
+                
+                // Check for fat arrow lambda: () => expr
+                if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+                    state.tokens.advance(); // consume =>
+                    let body = super::parse_expr_recursive(state)?;
+                    return Ok(Expr::new(
+                        ExprKind::Lambda {
+                            params: vec![],
+                            body: Box::new(body),
+                        },
+                        span_clone,
+                    ));
+                }
+                
                 Ok(Expr::new(ExprKind::Literal(Literal::Unit), span_clone))
             } else {
+                // Try to parse as lambda parameters for fat arrow syntax
+                let saved_pos = state.tokens.position();
+                
+                // Try to parse lambda params: (x, y) => x + y
+                let mut could_be_lambda = true;
+                let mut param_names = Vec::new();
+                
+                // Check first item
+                if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                    param_names.push(name.clone());
+                    state.tokens.advance();
+                    
+                    // Check for more parameters
+                    while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                        state.tokens.advance(); // consume comma
+                        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                            param_names.push(name.clone());
+                            state.tokens.advance();
+                        } else {
+                            could_be_lambda = false;
+                            break;
+                        }
+                    }
+                    
+                    // Check for closing paren and fat arrow
+                    if could_be_lambda 
+                        && matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                        state.tokens.advance(); // consume )
+                        
+                        if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+                            // It's a fat arrow lambda!
+                            state.tokens.advance(); // consume =>
+                            
+                            // Create parameters
+                            let params = param_names.into_iter().map(|name| Param {
+                                pattern: Pattern::Identifier(name),
+                                ty: Type {
+                                    kind: TypeKind::Named("_".to_string()),
+                                    span: Span { start: 0, end: 0 },
+                                },
+                                span: span_clone,
+                                is_mutable: false,
+                                default_value: None,
+                            }).collect();
+                            
+                            // Parse body
+                            let body = super::parse_expr_recursive(state)?;
+                            
+                            return Ok(Expr::new(
+                                ExprKind::Lambda {
+                                    params,
+                                    body: Box::new(body),
+                                },
+                                span_clone,
+                            ));
+                        }
+                    }
+                }
+                
+                // Not a lambda, restore position and parse as normal expression/tuple
+                state.tokens.set_position(saved_pos);
+                
                 let first_expr = super::parse_expr_recursive(state)?;
 
                 // Check if this is a tuple or just a grouped expression
