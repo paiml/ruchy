@@ -347,22 +347,25 @@ impl Diagnostic {
 
 ## PMAT MCP Quality Proxy (Real-Time Enforcement)
 
-### MCP Server Configuration
+### MCP Server Configuration (Updated 2025)
 ```json
 // ~/.config/claude/mcps/pmat.json
 {
   "mcpServers": {
     "pmat": {
       "command": "~/.local/bin/pmat",
-      "args": ["serve", "--mode", "mcp", "--config", "~/ruchy/pmat.toml"],
+      "args": ["serve", "--mode", "agent", "--config", "~/ruchy/pmat.toml"],
       "env": {
         "PMAT_PROJECT_ROOT": "~/ruchy",
-        "PMAT_QUALITY_MODE": "strict"
+        "PMAT_QUALITY_MODE": "strict",
+        "PMAT_AGENT_MODE": "enabled"
       }
     }
   }
 }
 ```
+
+**CRITICAL UPDATE**: PMAT now supports **agent mode** for autonomous quality enforcement. Use `--mode agent` for enhanced quality gate automation.
 
 ### PMAT Thresholds (Enforced in Real-Time)
 ```toml
@@ -377,9 +380,9 @@ satd_comments = 0               # Zero technical debt
 mutation_score = 75             # Mutation testing gate
 ```
 
-### MCP Quality Proxy Tools
+### MCP Quality Proxy Tools (Agent Mode Enhanced)
 ```bash
-# PMAT exposes these MCP tools to Claude:
+# PMAT exposes these enhanced MCP tools to Claude:
 
 pmat_analyze_code       # Real-time complexity analysis
 pmat_check_coverage     # Test coverage verification  
@@ -388,12 +391,18 @@ pmat_suggest_refactor   # Automated refactoring hints
 pmat_mutation_test      # Mutation testing on-demand
 pmat_quality_gate       # Full quality check
 
-# These run automatically as you code via MCP
+# NEW AGENT MODE CAPABILITIES:
+pmat_auto_fix           # Autonomous code fixing
+pmat_suggest_patterns   # Pattern-based improvements
+pmat_enforce_standards  # Automatic standard enforcement
+pmat_continuous_watch   # Real-time file monitoring
+
+# These run automatically as you code via MCP Agent Mode
 ```
 
-### Live Quality Feedback Pattern
+### Live Quality Feedback Pattern (Agent Mode)
 ```rust
-// As you type, PMAT MCP provides instant feedback:
+// PMAT Agent Mode provides instant feedback + autonomous fixes:
 
 fn process_data(data: &Data) -> Result<(), Error> {
     // PMAT: Complexity 3/10 ✅
@@ -402,7 +411,8 @@ fn process_data(data: &Data) -> Result<(), Error> {
     if data.complex {  // PMAT: +1 complexity (4/10)
         for item in &data.items {  // PMAT: +2 (6/10)
             if item.check() {  // PMAT: +3 nested (9/10) ⚠️
-                // PMAT WARNING: Approaching complexity limit
+                // PMAT AGENT: Auto-refactoring suggested
+                // PMAT AGENT: Would you like me to extract process_items()?
                 process_item(item)?;
             }
         }
@@ -410,8 +420,11 @@ fn process_data(data: &Data) -> Result<(), Error> {
     Ok(())
 }
 
-// PMAT automatically suggests:
-// "Extract loop to process_items() function"
+// PMAT Agent Mode can:
+// 1. Auto-suggest: "Extract loop to process_items() function"  
+// 2. Auto-implement the refactoring
+// 3. Run tests to verify the refactoring worked
+// 4. Commit the improvement with proper message
 ```
 
 ### Zero-SATD Enforcement
@@ -492,27 +505,41 @@ echo 'println("Hello")' | timeout 5s ruchy repl | grep -q "Hello" || {
     exit 1
 }
 
-# GATE 2: Complexity enforcement
-pmat check --max-complexity 10 --fail-fast || {
-    echo "❌ BLOCKED: Complexity exceeds 10"
-    echo "Refactor before committing"
+# GATE 2: Language Feature Compatibility (CRITICAL - NO REGRESSIONS ALLOWED)
+echo "🔍 Testing language feature compatibility..."
+cargo test test_one_liners --test compatibility_suite --quiet || {
+    echo "❌ FATAL: One-liner compatibility regression detected"
+    echo "One-liners are our baseline - fix immediately"
     exit 1
 }
 
-# GATE 3: Zero SATD policy
+cargo test test_basic_language_features --test compatibility_suite --quiet || {
+    echo "❌ FATAL: Basic language features broken"
+    echo "Core language regression detected - fix immediately"  
+    exit 1
+}
+
+# GATE 3: Complexity enforcement (PMAT Agent Mode Enhanced)
+pmat agent analyze --max-complexity 10 --auto-fix || {
+    echo "❌ BLOCKED: Complexity exceeds 10"
+    echo "PMAT Agent Mode can auto-refactor - run: pmat agent refactor"
+    exit 1
+}
+
+# GATE 4: Zero SATD policy
 ! grep -r "TODO\|FIXME\|HACK" src/ --include="*.rs" || {
     echo "❌ BLOCKED: SATD comments found"
     echo "Fix or file GitHub issues, don't commit debt"
     exit 1
 }
 
-# GATE 4: Lint zero tolerance
+# GATE 5: Lint zero tolerance
 cargo clippy --all-targets --all-features -- -D warnings || {
     echo "❌ BLOCKED: Lint warnings found" 
     exit 1
 }
 
-# GATE 5: Coverage threshold
+# GATE 6: Coverage threshold
 cargo tarpaulin --min 80 --fail-under || {
     echo "❌ BLOCKED: Coverage below 80%"
     exit 1
@@ -708,10 +735,88 @@ Always maintain in .gitignore:
 - `!*.rs` (except rust source files)
 - `!*.toml` (except config files)
 
+## Language Feature Testing Protocol
+
+### CRITICAL REQUIREMENT: Language Compatibility First
+
+**NO CODE CHANGES can be committed without passing language feature compatibility tests.**
+
+Following research from Rust, Python, Elixir, Ruby, SQLite, Haskell, and JavaScript/Deno ecosystems, we implement multi-tier testing:
+
+#### 1. **Compatibility Test Suite** (MANDATORY)
+```bash
+# Run before EVERY commit - no exceptions
+make compatibility  # Or: cargo test compatibility_report --test compatibility_suite -- --nocapture --ignored
+```
+
+**Current Standards (v0.13.0+)**:
+- ✅ **One-liners**: 100% (15/15) - BASELINE - never regress
+- ✅ **Basic Language Features**: 100% (5/5) - Core syntax must work  
+- ✅ **Control Flow**: 100% (5/5) - if/match/for/while
+- ✅ **Data Structures**: 100% (7/7) - Object indexing FIXED + .items() method added! 🎉
+- ✅ **String Operations**: 100% (5/5) - All string methods work
+- ✅ **Numeric Operations**: 100% (4/4) - Integer.to_string() FIXED! 🎉
+- ⚠️ **Advanced Features**: 75% (3/4) - Only pattern guards remain
+
+**ACHIEVEMENT: 90%+ Language Compatibility Reached!** 🚀
+
+#### 2. **Property-Based Testing** (Best Practice from Haskell/Elixir)
+```bash
+# Test mathematical invariants and edge cases  
+cargo test properties/ --release
+```
+
+Tests universal properties like:
+- Arithmetic commutativity: `a + b == b + a`
+- String associativity: `(a + b) + c == a + (b + c)`
+- Parser robustness with malformed input
+- Function call determinism
+
+#### 3. **Performance Regression Detection** (SQLite Standard)
+```bash
+# Detect performance regressions automatically
+cargo test --test compatibility_suite -- --nocapture
+```
+
+Thresholds (fail if exceeded):
+- Simple arithmetic: <10ms
+- Function calls: <20ms  
+- Loop iteration: <50ms
+- String operations: <30ms
+
+#### 4. **Regression Prevention** (Toyota Way)
+Every GitHub issue and bug MUST have a corresponding test to prevent recurrence.
+
+### Test Organization (Industry Standard)
+```
+tests/
+├── compatibility_suite.rs      # Main feature compatibility (100% required)
+├── properties/                 # Property-based testing (Haskell style)
+├── regression/                 # Bug prevention (every GitHub issue)
+└── benchmarks/                # Performance baselines (SQLite style)
+```
+
+### Implementation Status
+
+✅ **COMPLETED**:
+- Comprehensive compatibility test suite
+- Performance regression detection  
+- Statistical reporting (Python pytest style)
+- Multi-tier test categorization
+
+🎯 **NEXT PHASE**:
+- Property-based testing with QuickCheck patterns
+- Fuzzing integration for parser robustness
+- Cross-platform compatibility verification
+
+### Quality Gate Integration
+
+Language compatibility testing is now **GATE 2** in our mandatory pre-commit hooks - more critical than complexity or linting because **language regressions break user code**.
+
 ---
 
 **Remember**: Compiler engineering is about systematic transformation, not clever hacks. Every abstraction must have zero runtime cost. Every error must be actionable. Every line of code must justify its complexity budget.
 - no "cruft" at root of repo.  always clean up temp files/documents before committing.  Zero tolerance for waste.  we follow toyota way.
 - if fixing documentation, always ensure a doctests exists, if not create.
-- add test-execution to quality gates
+- Language compatibility tests are now MANDATORY quality gates - never bypass
 - ruchy-cli is deprecated, stop publishing it.
