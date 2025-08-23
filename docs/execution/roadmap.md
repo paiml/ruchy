@@ -464,33 +464,110 @@ log("Environment:", environment);
 - [ ] **RUCHY-0805**: IDE integrations (VSCode, IntelliJ) - **DEFERRED TO TBD**
 - **Innovation differentiators**: Formal verification + BigO analysis
 
-## Current Sprint: v0.13.0 - Path to 60% Compatibility
+## CURRENT SPRINT: Quality Excellence (v1.6.0) - Toyota Way Enforcement
 
 ### Sprint Overview
-- **Duration**: 1 week (August 23-30, 2025)
-- **Goal**: Reach 60% book compatibility by fixing high-impact parse errors
-- **Focus**: Macro syntax, object literals, for loop improvements
+- **Duration**: 1 week (Priority P0 - STOP THE LINE)
+- **Goal**: Achieve 80% test coverage and pass all PMAT quality gates
+- **Focus**: Zero technical debt, complexity reduction, comprehensive testing
+- **Principle**: Toyota Way - Quality built-in, not bolted-on
 
-### Implementation Tasks (RUCHY-0850 Series)
-- [ ] **RUCHY-0850**: Support macro!{} syntax alongside macro![] and macro!()
-  - Many macros use brace syntax in examples
-  - Add TokenTree support for flexible macro bodies
-  - ~30 examples affected
+### Current Quality Issues (MUST FIX)
+- **Test Coverage**: Currently ~77% → Target 80%+
+- **Complexity Violations**: 95 errors, 142 warnings (Max cyclomatic: 159)
+- **SATD Comments**: 2 found (must be 0)
+- **Failing Tests**: 12 CLI oneliner tests failing
+- **Top Complexity Offenders**:
+  - repl.rs: Cyclomatic 2006, Cognitive 3008 (110 functions)
+  - ruchy.rs: Cyclomatic 1314, Cognitive 1818 (150 functions)
+  - infer.rs: Cyclomatic 845, Cognitive 989 (67 functions)
+
+### Quality Tasks (QUALITY-001 to QUALITY-010)
+
+#### Test Coverage (Target: 80%+)
+- [ ] **QUALITY-001**: Fix 12 failing CLI oneliner tests
+  - Root cause: stdin piping issues
+  - Add proper test fixtures
+  - Ensure consistent behavior
   
-- [ ] **RUCHY-0851**: Implement object literal syntax {key: value}
-  - JavaScript-style object creation
-  - Maps to HashMap or struct initialization
-  - ~15 examples affected
+- [ ] **QUALITY-002**: Add integration tests for rosetta-ruchy examples
+  - 34 Ruchy examples need validation
+  - Create test harness for benchmark examples
+  - Verify all algorithms produce correct output
   
-- [ ] **RUCHY-0852**: Support tuple destructuring in for loops
-  - `for (x, y) in items` pattern
-  - `for key, value in map` syntax
-  - ~10 examples affected
+- [ ] **QUALITY-003**: Increase unit test coverage
+  - Focus on uncovered paths in transpiler
+  - Add edge case tests for type inference
+  - Test error conditions thoroughly
+
+#### Complexity Reduction (Target: ≤20 per function)
+- [ ] **QUALITY-004**: Refactor repl.rs (Current: 2006 cyclomatic)
+  - Extract command handlers to separate modules
+  - Simplify evaluation logic
+  - Target: <500 total cyclomatic
   
-- [ ] **RUCHY-0853**: Improve error messages for common patterns
-  - Better hints for macro syntax
-  - Suggest alternatives for unsupported features
-  - Developer experience improvement
+- [ ] **QUALITY-005**: Refactor ruchy.rs CLI (Current: 1314 cyclomatic)
+  - Modularize command implementations
+  - Extract validation logic
+  - Target: <400 total cyclomatic
+  
+- [ ] **QUALITY-006**: Refactor infer.rs (Current: 845 cyclomatic)
+  - Simplify constraint solving
+  - Extract helper functions
+  - Target: <300 total cyclomatic
+
+#### Zero SATD Policy
+- [ ] **QUALITY-007**: Remove 2 SATD comments
+  - src/backend/transpiler/codegen_minimal.rs: TODO comment
+  - src/quality/mod.rs: Pattern for detecting SATD
+  - Replace with proper implementation or GitHub issues
+
+#### Quality Gates Implementation
+- [ ] **QUALITY-008**: Implement PMAT quality gates in CI
+  - Add pre-commit hooks for complexity checks
+  - Enforce 80% coverage threshold
+  - Block merges on quality violations
+  
+- [ ] **QUALITY-009**: Create quality dashboard
+  - Track complexity trends
+  - Monitor test coverage
+  - Display quality metrics in README
+
+#### Book & Ecosystem Quality
+- [ ] **QUALITY-010**: Validate ruchy-book integration
+  - Ensure all 38/38 TDD examples continue passing
+  - Add regression tests for book examples
+  - Document quality requirements
+
+### Success Criteria (ALL MUST PASS)
+- ✅ Test coverage ≥80% (measured by tarpaulin)
+- ✅ Zero SATD comments (no TODO/FIXME/HACK)
+- ✅ All functions ≤20 cyclomatic complexity
+- ✅ All tests passing (library + integration + CLI)
+- ✅ PMAT quality gates passing
+- ✅ ruchy-book: 38/38 examples passing
+- ✅ rosetta-ruchy: All Ruchy examples validated
+
+### Quality Metrics Dashboard
+```
+Current State → Target State
+Coverage:     77% → 80%+
+SATD:         2   → 0
+Max Complex:  159 → 20
+Failing:      12  → 0
+Functions>20: 95  → 0
+Warnings:     142 → 0
+```
+
+## DEFERRED: v0.13.0 - Path to 60% Compatibility
+
+*Note: Feature development deferred until quality gates pass*
+
+### Deferred Tasks
+- **RUCHY-0850**: Support macro!{} syntax (DEFERRED)
+- **RUCHY-0851**: Object literal syntax (DEFERRED)
+- **RUCHY-0852**: Tuple destructuring in for loops (DEFERRED)
+- **RUCHY-0853**: Error message improvements (DEFERRED)
 
 ## Previous Sprint: v0.12.0 Foundation Complete ✅ RELEASED
 
