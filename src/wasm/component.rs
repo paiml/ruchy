@@ -371,6 +371,12 @@ impl Default for OptimizationConfig {
     }
 }
 
+impl Default for ComponentBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ComponentBuilder {
     /// Create a new component builder with default config
     pub fn new() -> Self {
@@ -633,7 +639,7 @@ impl WasmComponent {
         }
         
         // Check magic number
-        if &self.bytecode[0..4] != &[0x00, 0x61, 0x73, 0x6d] {
+        if self.bytecode[0..4] != [0x00, 0x61, 0x73, 0x6d] {
             return Err(anyhow::anyhow!("Invalid WASM module: wrong magic number"));
         }
         

@@ -50,7 +50,7 @@ impl RefinementType {
             base: BaseType::Int,
             predicate: Some(Predicate {
                 var: "x".to_string(),
-                expr: format!("(and (>= x {}) (<= x {}))", min, max),
+                expr: format!("(and (>= x {min}) (<= x {max}))"),
             }),
             params: Vec::new(),
         }
@@ -110,12 +110,12 @@ impl fmt::Display for BaseType {
             Self::Bool => write!(f, "Bool"),
             Self::String => write!(f, "String"),
             Self::Float => write!(f, "Float"),
-            Self::Array(t) => write!(f, "[{}]", t),
+            Self::Array(t) => write!(f, "[{t}]"),
             Self::Tuple(ts) => {
                 write!(f, "(")?;
                 for (i, t) in ts.iter().enumerate() {
                     if i > 0 { write!(f, ", ")?; }
-                    write!(f, "{}", t)?;
+                    write!(f, "{t}")?;
                 }
                 write!(f, ")")
             }
@@ -123,11 +123,11 @@ impl fmt::Display for BaseType {
                 write!(f, "(")?;
                 for (i, p) in params.iter().enumerate() {
                     if i > 0 { write!(f, ", ")?; }
-                    write!(f, "{}", p)?;
+                    write!(f, "{p}")?;
                 }
-                write!(f, ") -> {}", ret)
+                write!(f, ") -> {ret}")
             }
-            Self::Custom(name) => write!(f, "{}", name),
+            Self::Custom(name) => write!(f, "{name}"),
         }
     }
 }
@@ -237,7 +237,7 @@ impl RefinementChecker {
         let mut solver = SmtSolver::new(self.backend);
         
         solver.assert(antecedent);
-        solver.assert(&format!("(not {})", consequent));
+        solver.assert(&format!("(not {consequent})"));
         
         match solver.check_sat()? {
             SmtResult::Unsat => Ok(true),
@@ -259,7 +259,7 @@ impl RefinementChecker {
         solver.assert(body);
         
         for post in &refinement.postconditions {
-            solver.assert(&format!("(not {})", post));
+            solver.assert(&format!("(not {post})"));
         }
         
         match solver.check_sat()? {
@@ -277,7 +277,7 @@ impl RefinementChecker {
         
         solver.assert(body);
         
-        solver.assert(&format!("(not {})", invariant));
+        solver.assert(&format!("(not {invariant})"));
         
         match solver.check_sat()? {
             SmtResult::Unsat => Ok(true),
@@ -339,7 +339,7 @@ impl LiquidTypeInference {
                     base: BaseType::Int,
                     predicate: Some(Predicate {
                         var: "x".to_string(),
-                        expr: format!("(= x {})", n),
+                        expr: format!("(= x {n})"),
                     }),
                     params: Vec::new(),
                 })

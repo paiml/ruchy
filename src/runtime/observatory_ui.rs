@@ -265,7 +265,7 @@ impl ObservatoryDashboard {
                 };
                 
                 let duration_str = if let Some(duration) = trace.processing_duration_us {
-                    format!(" ({}µs)", duration)
+                    format!(" ({duration}µs)")
                 } else {
                     String::new()
                 };
@@ -320,7 +320,7 @@ impl ObservatoryDashboard {
             };
             
             let state_display = match &snapshot.state {
-                ActorState::Processing(msg_type) => format!("Proc({})", msg_type),
+                ActorState::Processing(msg_type) => format!("Proc({msg_type})"),
                 ActorState::Failed(reason) => format!("Failed({reason})"),
                 other => state_display(other),
             };
@@ -375,7 +375,7 @@ impl ObservatoryDashboard {
             };
             
             let duration_str = if let Some(duration) = trace.processing_duration_us {
-                format!("{:>7}µs", duration)
+                format!("{duration:>7}µs")
             } else {
                 "       -".to_string()
             };
@@ -549,7 +549,7 @@ fn state_display(state: &ActorState) -> String {
     match state {
         ActorState::Starting => "Starting".to_string(),
         ActorState::Running => "Running".to_string(),
-        ActorState::Processing(msg) => format!("Proc({})", msg),
+        ActorState::Processing(msg) => format!("Proc({msg})"),
         ActorState::Restarting => "Restarting".to_string(),
         ActorState::Stopping => "Stopping".to_string(),
         ActorState::Stopped => "Stopped".to_string(),

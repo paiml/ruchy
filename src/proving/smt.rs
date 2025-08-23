@@ -65,7 +65,7 @@ impl SmtSolver {
     pub fn declare_var(&mut self, name: &str, sort: &str) {
         self.declarations.insert(
             name.to_string(),
-            format!("(declare-fun {} () {})", name, sort)
+            format!("(declare-fun {name} () {sort})")
         );
     }
     
@@ -74,13 +74,13 @@ impl SmtSolver {
         let params_str = params.join(" ");
         self.declarations.insert(
             name.to_string(),
-            format!("(declare-fun {} ({}) {})", name, params_str, ret)
+            format!("(declare-fun {name} ({params_str}) {ret})")
         );
     }
     
     /// Add an assertion
     pub fn assert(&mut self, expr: &str) {
-        self.assertions.push(format!("(assert {})", expr));
+        self.assertions.push(format!("(assert {expr})"));
     }
     
     /// Check satisfiability
@@ -104,7 +104,7 @@ impl SmtSolver {
     /// Check validity (prove formula)
     pub fn prove(&self, formula: &str) -> Result<SmtResult> {
         let mut solver = self.clone();
-        solver.assert(&format!("(not {})", formula));
+        solver.assert(&format!("(not {formula})"));
         
         match solver.check_sat()? {
             SmtResult::Unsat => Ok(SmtResult::Valid),
@@ -167,7 +167,7 @@ impl SmtSolver {
         } else if output.contains("timeout") {
             Ok(SmtResult::Timeout)
         } else {
-            Ok(SmtResult::Error(format!("Unexpected output: {}", output)))
+            Ok(SmtResult::Error(format!("Unexpected output: {output}")))
         }
     }
     
@@ -281,13 +281,13 @@ impl ProofAutomation {
     
     /// Prove implication
     pub fn prove_implication(&mut self, antecedent: &str, consequent: &str) -> Result<SmtResult> {
-        let formula = format!("(=> {} {})", antecedent, consequent);
+        let formula = format!("(=> {antecedent} {consequent})");
         self.prove(&formula)
     }
     
     /// Prove equivalence
     pub fn prove_equivalence(&mut self, left: &str, right: &str) -> Result<SmtResult> {
-        let formula = format!("(= {} {})", left, right);
+        let formula = format!("(= {left} {right})");
         self.prove(&formula)
     }
     

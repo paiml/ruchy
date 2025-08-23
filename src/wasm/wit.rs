@@ -354,6 +354,12 @@ impl Default for WitConfig {
     }
 }
 
+impl Default for WitGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WitGenerator {
     /// Create a new WIT generator with default config
     pub fn new() -> Self {
@@ -485,7 +491,7 @@ impl WitGenerator {
         // Type definitions
         for type_def in &interface.types {
             if let Some(doc) = &type_def.documentation {
-                wit.push_str(&format!("  /// {}\n", doc));
+                wit.push_str(&format!("  /// {doc}\n"));
             }
             wit.push_str(&format!("  {}\n\n", self.format_type_definition(type_def)));
         }
@@ -493,7 +499,7 @@ impl WitGenerator {
         // Function definitions
         for func in &interface.functions {
             if let Some(doc) = &func.documentation {
-                wit.push_str(&format!("  /// {}\n", doc));
+                wit.push_str(&format!("  /// {doc}\n"));
             }
             wit.push_str(&format!("  {}\n", self.format_function(func)));
         }
@@ -514,7 +520,7 @@ impl WitGenerator {
                 let mut s = format!("record {} {{\n", type_def.name);
                 for field in fields {
                     if let Some(doc) = &field.documentation {
-                        s.push_str(&format!("    /// {}\n", doc));
+                        s.push_str(&format!("    /// {doc}\n"));
                     }
                     s.push_str(&format!("    {}: {},\n", field.name, self.format_wit_type(&field.field_type)));
                 }
@@ -525,7 +531,7 @@ impl WitGenerator {
                 let mut s = format!("variant {} {{\n", type_def.name);
                 for case in cases {
                     if let Some(doc) = &case.documentation {
-                        s.push_str(&format!("    /// {}\n", doc));
+                        s.push_str(&format!("    /// {doc}\n"));
                     }
                     if let Some(payload) = &case.payload {
                         s.push_str(&format!("    {}({}),\n", case.name, self.format_wit_type(payload)));
@@ -539,7 +545,7 @@ impl WitGenerator {
             TypeKind::Flags(flags) => {
                 let mut s = format!("flags {} {{\n", type_def.name);
                 for flag in flags {
-                    s.push_str(&format!("    {},\n", flag));
+                    s.push_str(&format!("    {flag},\n"));
                 }
                 s.push_str("  }");
                 s
@@ -585,16 +591,16 @@ impl WitGenerator {
             WitType::List(inner) => format!("list<{}>", self.format_wit_type(inner)),
             WitType::Option(inner) => format!("option<{}>", self.format_wit_type(inner)),
             WitType::Result { ok, err } => {
-                let ok_str = ok.as_ref().map(|t| self.format_wit_type(t)).unwrap_or_else(|| "_".to_string());
-                let err_str = err.as_ref().map(|t| self.format_wit_type(t)).unwrap_or_else(|| "_".to_string());
-                format!("result<{}, {}>", ok_str, err_str)
+                let ok_str = ok.as_ref().map_or_else(|| "_".to_string(), |t| self.format_wit_type(t));
+                let err_str = err.as_ref().map_or_else(|| "_".to_string(), |t| self.format_wit_type(t));
+                format!("result<{ok_str}, {err_str}>")
             }
             WitType::Tuple(types) => {
                 let types_str = types.iter()
                     .map(|t| self.format_wit_type(t))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("tuple<{}>", types_str)
+                format!("tuple<{types_str}>")
             }
         }
     }
@@ -603,7 +609,7 @@ impl WitGenerator {
         let mut s = String::new();
         
         if let Some(doc) = &world.documentation {
-            s.push_str(&format!("/// {}\n", doc));
+            s.push_str(&format!("/// {doc}\n"));
         }
         
         s.push_str(&format!("world {} {{\n", world.name));

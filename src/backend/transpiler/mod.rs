@@ -60,13 +60,33 @@ impl Transpiler {
         let needs_polars = Self::contains_dataframe(expr);
         
         // Check if this is a function definition
-        if matches!(expr.kind, ExprKind::Function { .. }) {
-            // For function definitions, transpile as a top-level item and add empty main
+        if let ExprKind::Function { name, .. } = &expr.kind {
+            // For function definitions, transpile as a top-level item
             let func = self.transpile_expr(expr)?;
+            
+            // Only add empty main if the function is not already named "main"
+            let needs_main = name != "main";
+            
             if needs_polars {
+                if needs_main {
+                    Ok(quote! {
+                        use polars::prelude::*;
+                        
+                        #func
+                        
+                        fn main() {
+                            // Function defined but not called
+                        }
+                    })
+                } else {
+                    Ok(quote! {
+                        use polars::prelude::*;
+                        
+                        #func
+                    })
+                }
+            } else if needs_main {
                 Ok(quote! {
-                    use polars::prelude::*;
-                    
                     #func
                     
                     fn main() {
@@ -76,10 +96,6 @@ impl Transpiler {
             } else {
                 Ok(quote! {
                     #func
-                    
-                    fn main() {
-                        // Function defined but not called
-                    }
                 })
             }
         } else {

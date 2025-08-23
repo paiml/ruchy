@@ -8,6 +8,12 @@
 #![allow(clippy::match_same_arms)]
 #![allow(clippy::fn_params_excessive_bools)]
 #![allow(clippy::too_many_lines)]
+#![allow(clippy::redundant_field_names)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::collapsible_else_if)]
+#![allow(clippy::field_reassign_with_default)]
+#![allow(clippy::format_in_format_args)]
+#![allow(clippy::items_after_statements)]
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -93,6 +99,32 @@ enum Commands {
     Run {
         /// The file to run
         file: PathBuf,
+    },
+    
+    /// Compile a Ruchy file to a standalone binary (RUCHY-0801)
+    Compile {
+        /// The file to compile
+        file: PathBuf,
+        
+        /// Output binary path
+        #[arg(short, long, default_value = "a.out")]
+        output: PathBuf,
+        
+        /// Optimization level (0-3, or 's' for size)
+        #[arg(short = 'O', long, default_value = "2")]
+        opt_level: String,
+        
+        /// Strip debug symbols
+        #[arg(long)]
+        strip: bool,
+        
+        /// Static linking
+        #[arg(long)]
+        static_link: bool,
+        
+        /// Target triple (e.g., x86_64-unknown-linux-gnu)
+        #[arg(long)]
+        target: Option<String>,
     },
 
     /// Check syntax without running
@@ -645,7 +677,7 @@ enum Commands {
         filter_slow: Option<u64>,
     },
 
-    /// Dataflow debugger for DataFrame pipeline debugging (RUCHY-0818)
+    /// Dataflow debugger for `DataFrame` pipeline debugging (RUCHY-0818)
     #[command(name = "dataflow:debug")]
     DataflowDebug {
         /// Pipeline configuration file
@@ -941,6 +973,16 @@ fn main() -> Result<()> {
         Some(Commands::Run { file }) => {
             run_file(&file)?;
         }
+        Some(Commands::Compile { 
+            file, 
+            output, 
+            opt_level, 
+            strip, 
+            static_link, 
+            target 
+        }) => {
+            compile_to_binary(&file, output, opt_level, strip, static_link, target)?;
+        }
         Some(Commands::Check { file, watch }) => {
             if watch {
                 watch_and_check(&file)?;
@@ -1192,7 +1234,7 @@ fn main() -> Result<()> {
                 abstractions,
                 benchmark,
                 &format,
-                output.as_ref().map(|v| &**v),
+                output.as_deref(),
                 verbose,
                 threshold,
             )?;
@@ -1773,6 +1815,67 @@ fn format_single_file(file: &Path, check: bool, stdout: bool, diff: bool, config
             std::process::exit(1);
         }
     }
+}
+
+/// Compile a Ruchy file to a standalone binary
+fn compile_to_binary(
+    file: &Path,
+    output: PathBuf,
+    opt_level: String,
+    strip: bool,
+    static_link: bool,
+    target: Option<String>,
+) -> Result<()> {
+    use ruchy::backend::{CompileOptions, compile_to_binary as backend_compile};
+    
+    // Check if rustc is available
+    if let Err(e) = ruchy::backend::compiler::check_rustc_available() {
+        eprintln!("{} {}", "Error:".bright_red(), e);
+        eprintln!("Please install Rust toolchain from https://rustup.rs/");
+        std::process::exit(1);
+    }
+    
+    println!("{} Compiling {}...", "→".bright_blue(), file.display());
+    
+    let options = CompileOptions {
+        output: output,
+        opt_level,
+        strip,
+        static_link,
+        target,
+        rustc_flags: Vec::new(),
+    };
+    
+    match backend_compile(file, &options) {
+        Ok(binary_path) => {
+            println!(
+                "{} Successfully compiled to: {}",
+                "✓".bright_green(),
+                binary_path.display()
+            );
+            
+            // Make the binary executable on Unix
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mut perms = fs::metadata(&binary_path)?.permissions();
+                perms.set_mode(0o755);
+                fs::set_permissions(&binary_path, perms)?;
+            }
+            
+            println!(
+                "{} Binary size: {} bytes",
+                "ℹ".bright_blue(),
+                fs::metadata(&binary_path)?.len()
+            );
+        }
+        Err(e) => {
+            eprintln!("{} Compilation failed: {}", "✗".bright_red(), e);
+            std::process::exit(1);
+        }
+    }
+    
+    Ok(())
 }
 
 /// Load formatting configuration from file
@@ -6450,7 +6553,7 @@ fn optimize_file(
     }
     
     // Create mechanical sympathy tuner
-    let tuner = MechanicalSympathyTuner::with_hardware_profile(hardware_profile.clone());
+    let tuner = MechanicalSympathyTuner::with_hardware_profile(hardware_profile);
     
     // Perform analysis
     if verbose {
@@ -6468,29 +6571,25 @@ fn optimize_file(
         .collect();
     
     // Display results based on format
-    match format {
-        "json" => {
-            let json_output = serde_json::to_string_pretty(&analysis)
-                .with_context(|| "Failed to serialize analysis to JSON")?;
-            
-            if let Some(output_path) = output {
-                fs::write(output_path, &json_output)
-                    .with_context(|| format!("Failed to write JSON to {}", output_path.display()))?;
-                println!("JSON analysis written to {}", output_path.display());
-            } else {
-                println!("{}", json_output);
-            }
-        }
+    if format == "json" {
+        let json_output = serde_json::to_string_pretty(&analysis)
+            .with_context(|| "Failed to serialize analysis to JSON")?;
         
-        "text" | _ => {
-            display_optimization_analysis(&analysis, &significant_recommendations, show_cache, show_branches, show_vectorization, show_abstractions, verbose);
-            
-            if let Some(output_path) = output {
-                let report = generate_text_report(&analysis, &significant_recommendations, show_cache, show_branches, show_vectorization, show_abstractions);
-                fs::write(output_path, &report)
-                    .with_context(|| format!("Failed to write report to {}", output_path.display()))?;
-                println!("\nText report written to {}", output_path.display());
-            }
+        if let Some(output_path) = output {
+            fs::write(output_path, &json_output)
+                .with_context(|| format!("Failed to write JSON to {}", output_path.display()))?;
+            println!("JSON analysis written to {}", output_path.display());
+        } else {
+            println!("{}", json_output);
+        }
+    } else {
+        display_optimization_analysis(&analysis, &significant_recommendations, show_cache, show_branches, show_vectorization, show_abstractions, verbose);
+        
+        if let Some(output_path) = output {
+            let report = generate_text_report(&analysis, &significant_recommendations, show_cache, show_branches, show_vectorization, show_abstractions);
+            fs::write(output_path, &report)
+                .with_context(|| format!("Failed to write report to {}", output_path.display()))?;
+            println!("\nText report written to {}", output_path.display());
         }
     }
     
@@ -6643,7 +6742,7 @@ fn generate_text_report(
     if let Some(l3_size) = analysis.hardware.l3_cache_size {
         report.push_str(&format!("- L3 Cache: {} MB\n", l3_size / (1024 * 1024)));
     }
-    report.push_str("\n");
+    report.push('\n');
     
     // Analysis sections
     if show_cache {
@@ -6651,7 +6750,7 @@ fn generate_text_report(
         report.push_str(&format!("- Miss Rate: {:.1}%\n", analysis.cache_analysis.cache_miss_rate * 100.0));
         report.push_str(&format!("- Layout Efficiency: {:.1}%\n", analysis.cache_analysis.layout_efficiency * 100.0));
         report.push_str(&format!("- False Sharing Risk: {:.1}%\n", analysis.cache_analysis.false_sharing_risk * 100.0));
-        report.push_str("\n");
+        report.push('\n');
     }
     
     if show_branches {
@@ -6659,7 +6758,7 @@ fn generate_text_report(
         report.push_str(&format!("- Total Branches: {}\n", analysis.branch_analysis.total_branches));
         report.push_str(&format!("- Unpredictable: {}\n", analysis.branch_analysis.unpredictable_branches));
         report.push_str(&format!("- Miss Rate: {:.1}%\n", analysis.branch_analysis.branch_miss_rate * 100.0));
-        report.push_str("\n");
+        report.push('\n');
     }
     
     if show_vectorization {
@@ -6667,14 +6766,14 @@ fn generate_text_report(
         for opp in &analysis.vectorization_opportunities {
             report.push_str(&format!("- {}: {:.1}x speedup\n", opp.description, opp.speedup_potential));
         }
-        report.push_str("\n");
+        report.push('\n');
     }
     
     if show_abstractions {
         report.push_str("## Abstraction Analysis\n\n");
         report.push_str(&format!("- Runtime Overhead: {:.1}%\n", analysis.abstraction_analysis.runtime_overhead * 100.0));
         report.push_str(&format!("- Allocation Overhead: {:.1}%\n", analysis.abstraction_analysis.allocation_overhead * 100.0));
-        report.push_str("\n");
+        report.push('\n');
     }
     
     // Recommendations
@@ -6846,7 +6945,7 @@ fn start_actor_observatory(
             };
 
             // Create and start the dashboard
-            let mut dashboard = ObservatoryDashboard::new(observatory_arc.clone(), dashboard_config);
+            let mut dashboard = ObservatoryDashboard::new(observatory_arc, dashboard_config);
             dashboard.set_display_mode(display_mode);
 
             println!("🚀 Actor Observatory Dashboard Starting...");
@@ -7320,8 +7419,7 @@ fn handle_wasm_command(
         
         let wit_interface = wit_gen.generate(&component)?;
         
-        let wit_path = output.map(|p| p.with_extension("wit"))
-            .unwrap_or_else(|| PathBuf::from("component.wit"));
+        let wit_path = output.map_or_else(|| PathBuf::from("component.wit"), |p| p.with_extension("wit"));
         
         fs::write(&wit_path, wit_interface.to_string())
             .with_context(|| format!("Failed to write WIT file: {}", wit_path.display()))?;

@@ -76,13 +76,13 @@ impl TacticLibrary {
     
     /// Get all tactics
     pub fn all_tactics(&self) -> Vec<&dyn Tactic> {
-        self.tactics.values().map(|t| t.as_ref()).collect()
+        self.tactics.values().map(std::convert::AsRef::as_ref).collect()
     }
     
     /// Get a specific tactic
     pub fn get_tactic(&self, name: &str) -> Result<&dyn Tactic> {
         self.tactics.get(name)
-            .map(|t| t.as_ref())
+            .map(std::convert::AsRef::as_ref)
             .ok_or_else(|| anyhow::anyhow!("Unknown tactic: {}", name))
     }
     
@@ -128,9 +128,9 @@ impl TacticLibrary {
 struct IntroTactic;
 
 impl Tactic for IntroTactic {
-    fn name(&self) -> &str { "intro" }
+    fn name(&self) -> &'static str { "intro" }
     
-    fn description(&self) -> &str { "Introduce hypothesis from implication" }
+    fn description(&self) -> &'static str { "Introduce hypothesis from implication" }
     
     fn apply(&self, goal: &ProofGoal, _args: &[&str], _context: &ProofContext) -> Result<StepResult> {
         if goal.statement.contains("->") {
@@ -151,9 +151,9 @@ impl Tactic for IntroTactic {
 struct SplitTactic;
 
 impl Tactic for SplitTactic {
-    fn name(&self) -> &str { "split" }
+    fn name(&self) -> &'static str { "split" }
     
-    fn description(&self) -> &str { "Split conjunction into subgoals" }
+    fn description(&self) -> &'static str { "Split conjunction into subgoals" }
     
     fn apply(&self, goal: &ProofGoal, _args: &[&str], _context: &ProofContext) -> Result<StepResult> {
         if goal.statement.contains("&&") {
@@ -173,9 +173,9 @@ impl Tactic for SplitTactic {
 struct InductionTactic;
 
 impl Tactic for InductionTactic {
-    fn name(&self) -> &str { "induction" }
+    fn name(&self) -> &'static str { "induction" }
     
-    fn description(&self) -> &str { "Proof by induction" }
+    fn description(&self) -> &'static str { "Proof by induction" }
     
     fn apply(&self, goal: &ProofGoal, args: &[&str], _context: &ProofContext) -> Result<StepResult> {
         if args.is_empty() {
@@ -186,14 +186,14 @@ impl Tactic for InductionTactic {
         Ok(StepResult::Subgoals(vec![
             format!("Base case: {} when {} = 0", goal.statement, var),
             format!("Inductive step: {} implies {}", 
-                goal.statement.replace(var, &format!("{}",var)),
-                goal.statement.replace(var, &format!("{}+1", var))
+                goal.statement.replace(var, &var.to_string()),
+                goal.statement.replace(var, &format!("{var}+1"))
             ),
         ]))
     }
     
     fn is_applicable(&self, goal: &ProofGoal, _context: &ProofContext) -> bool {
-        goal.statement.contains("forall") || goal.statement.contains("n")
+        goal.statement.contains("forall") || goal.statement.contains('n')
     }
 }
 
@@ -201,15 +201,15 @@ impl Tactic for InductionTactic {
 struct ContradictionTactic;
 
 impl Tactic for ContradictionTactic {
-    fn name(&self) -> &str { "contradiction" }
+    fn name(&self) -> &'static str { "contradiction" }
     
-    fn description(&self) -> &str { "Proof by contradiction" }
+    fn description(&self) -> &'static str { "Proof by contradiction" }
     
     fn apply(&self, _goal: &ProofGoal, _args: &[&str], context: &ProofContext) -> Result<StepResult> {
         // Check for contradictory assumptions
         for assumption in &context.assumptions {
-            if assumption.contains("!") {
-                let negated = assumption.replace("!", "");
+            if assumption.contains('!') {
+                let negated = assumption.replace('!', "");
                 if context.assumptions.contains(&negated) {
                     return Ok(StepResult::Solved);
                 }
@@ -227,9 +227,9 @@ impl Tactic for ContradictionTactic {
 struct ReflexivityTactic;
 
 impl Tactic for ReflexivityTactic {
-    fn name(&self) -> &str { "reflexivity" }
+    fn name(&self) -> &'static str { "reflexivity" }
     
-    fn description(&self) -> &str { "Prove equality by reflexivity" }
+    fn description(&self) -> &'static str { "Prove equality by reflexivity" }
     
     fn apply(&self, goal: &ProofGoal, _args: &[&str], _context: &ProofContext) -> Result<StepResult> {
         if goal.statement.contains("==") {
@@ -250,9 +250,9 @@ impl Tactic for ReflexivityTactic {
 struct SimplifyTactic;
 
 impl Tactic for SimplifyTactic {
-    fn name(&self) -> &str { "simplify" }
+    fn name(&self) -> &'static str { "simplify" }
     
-    fn description(&self) -> &str { "Simplify expression" }
+    fn description(&self) -> &'static str { "Simplify expression" }
     
     fn apply(&self, goal: &ProofGoal, _args: &[&str], _context: &ProofContext) -> Result<StepResult> {
         let mut simplified = goal.statement.clone();
@@ -265,10 +265,10 @@ impl Tactic for SimplifyTactic {
         simplified = simplified.replace("!!!", "!");
         simplified = simplified.replace("!!", "");
         
-        if simplified != goal.statement {
-            Ok(StepResult::Simplified(simplified))
-        } else {
+        if simplified == goal.statement {
             Ok(StepResult::Failed("No simplification possible".to_string()))
+        } else {
+            Ok(StepResult::Simplified(simplified))
         }
     }
     
@@ -281,9 +281,9 @@ impl Tactic for SimplifyTactic {
 struct UnfoldTactic;
 
 impl Tactic for UnfoldTactic {
-    fn name(&self) -> &str { "unfold" }
+    fn name(&self) -> &'static str { "unfold" }
     
-    fn description(&self) -> &str { "Unfold definition" }
+    fn description(&self) -> &'static str { "Unfold definition" }
     
     fn apply(&self, goal: &ProofGoal, args: &[&str], context: &ProofContext) -> Result<StepResult> {
         if args.is_empty() {
@@ -295,7 +295,7 @@ impl Tactic for UnfoldTactic {
             let unfolded = goal.statement.replace(def_name, definition);
             Ok(StepResult::Simplified(unfolded))
         } else {
-            Ok(StepResult::Failed(format!("Unknown definition: {}", def_name)))
+            Ok(StepResult::Failed(format!("Unknown definition: {def_name}")))
         }
     }
     
@@ -308,9 +308,9 @@ impl Tactic for UnfoldTactic {
 struct RewriteTactic;
 
 impl Tactic for RewriteTactic {
-    fn name(&self) -> &str { "rewrite" }
+    fn name(&self) -> &'static str { "rewrite" }
     
-    fn description(&self) -> &str { "Rewrite using equality" }
+    fn description(&self) -> &'static str { "Rewrite using equality" }
     
     fn apply(&self, goal: &ProofGoal, args: &[&str], context: &ProofContext) -> Result<StepResult> {
         if args.is_empty() {
@@ -344,9 +344,9 @@ impl Tactic for RewriteTactic {
 struct ApplyTactic;
 
 impl Tactic for ApplyTactic {
-    fn name(&self) -> &str { "apply" }
+    fn name(&self) -> &'static str { "apply" }
     
-    fn description(&self) -> &str { "Apply theorem or lemma" }
+    fn description(&self) -> &'static str { "Apply theorem or lemma" }
     
     fn apply(&self, _goal: &ProofGoal, args: &[&str], _context: &ProofContext) -> Result<StepResult> {
         if args.is_empty() {
@@ -366,9 +366,9 @@ impl Tactic for ApplyTactic {
 struct AssumptionTactic;
 
 impl Tactic for AssumptionTactic {
-    fn name(&self) -> &str { "assumption" }
+    fn name(&self) -> &'static str { "assumption" }
     
-    fn description(&self) -> &str { "Prove using an assumption" }
+    fn description(&self) -> &'static str { "Prove using an assumption" }
     
     fn apply(&self, goal: &ProofGoal, _args: &[&str], context: &ProofContext) -> Result<StepResult> {
         if context.assumptions.contains(&goal.statement) {

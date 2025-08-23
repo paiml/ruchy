@@ -12,7 +12,7 @@ use crate::frontend::ast::Expr;
 /// Hardware characteristics for optimization modeling
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HardwareProfile {
-    /// CPU architecture (x86_64, aarch64, etc.)
+    /// CPU architecture (`x86_64`, aarch64, etc.)
     pub architecture: String,
     
     /// Number of CPU cores
@@ -313,7 +313,7 @@ impl MechanicalSympathyTuner {
         let abstraction_score = 1.0 - abstraction.runtime_overhead;
         
         // Weighted average
-        (cache_score * 0.4 + branch_score * 0.2 + vector_score * 0.2 + abstraction_score * 0.2).max(0.0).min(1.0)
+        (cache_score * 0.4 + branch_score * 0.2 + vector_score * 0.2 + abstraction_score * 0.2).clamp(0.0, 1.0)
     }
 }
 

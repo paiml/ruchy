@@ -181,7 +181,7 @@ fn analyze_function_call(
                 pattern_type: AbstractionType::HigherOrder,
                 is_zero_cost,
                 overhead_estimate: if is_zero_cost { 0.0 } else { 0.1 },
-                description: format!("Higher-order function call: {}", name),
+                description: format!("Higher-order function call: {name}"),
                 location: None,
                 suggestions: if is_zero_cost {
                     vec!["This abstraction should compile to zero cost".to_string()]
@@ -294,7 +294,7 @@ fn analyze_pattern_matching(
         pattern_type: AbstractionType::Generic, // Using Generic for pattern matching
         is_zero_cost,
         overhead_estimate: if is_zero_cost { 0.0 } else { 0.02 * (arm_count - 4) as f64 },
-        description: format!("Pattern matching with {} arms", arm_count),
+        description: format!("Pattern matching with {arm_count} arms"),
         location: None,
         suggestions: if is_zero_cost {
             vec!["Pattern matching should compile to jump table or conditional chain".to_string()]
@@ -368,7 +368,7 @@ fn can_capture_by_value(_expr: &Expr) -> bool {
 fn contains_side_effects(expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::Call { .. } => true, // Conservatively assume calls have side effects
-        ExprKind::Block(exprs) => exprs.iter().any(|e| contains_side_effects(e)),
+        ExprKind::Block(exprs) => exprs.iter().any(contains_side_effects),
         _ => false,
     }
 }
@@ -376,7 +376,7 @@ fn contains_side_effects(expr: &Expr) -> bool {
 fn contains_complex_control_flow(expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::If { .. } | ExprKind::Match { .. } | ExprKind::While { .. } => true,
-        ExprKind::Block(exprs) => exprs.iter().any(|e| contains_complex_control_flow(e)),
+        ExprKind::Block(exprs) => exprs.iter().any(contains_complex_control_flow),
         _ => false,
     }
 }

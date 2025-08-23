@@ -317,6 +317,12 @@ impl Default for AnalysisConfig {
     }
 }
 
+impl Default for PortabilityAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PortabilityAnalyzer {
     /// Create a new portability analyzer with default config
     pub fn new() -> Self {
@@ -472,7 +478,7 @@ impl PortabilityAnalyzer {
                 }
             }
             
-            let score = support_count as f64 / total_platforms as f64;
+            let score = f64::from(support_count) / total_platforms as f64;
             scores.insert(feature.clone(), score);
         }
         
@@ -522,16 +528,16 @@ impl PortabilityAnalyzer {
         performance_portability: f64,
         security_compliance: f64,
     ) -> f64 {
-        let platform_avg = if !platform_scores.is_empty() {
-            platform_scores.values().sum::<f64>() / platform_scores.len() as f64
-        } else {
+        let platform_avg = if platform_scores.is_empty() {
             0.0
+        } else {
+            platform_scores.values().sum::<f64>() / platform_scores.len() as f64
         };
         
-        let feature_avg = if !feature_scores.is_empty() {
-            feature_scores.values().sum::<f64>() / feature_scores.len() as f64
-        } else {
+        let feature_avg = if feature_scores.is_empty() {
             1.0
+        } else {
+            feature_scores.values().sum::<f64>() / feature_scores.len() as f64
         };
         
         // Weighted average
@@ -646,7 +652,7 @@ impl PortabilityAnalyzer {
             section_sizes.insert(name.clone(), data.len());
         }
         
-        let custom_sections_size: usize = component.custom_sections.values().map(|v| v.len()).sum();
+        let custom_sections_size: usize = component.custom_sections.values().map(std::vec::Vec::len).sum();
         
         Ok(SizeAnalysis {
             total_size: component.bytecode.len(),

@@ -117,7 +117,7 @@ fn analyze_loop_vectorization(
             
             opportunities.push(VectorizationOpportunity {
                 vector_type: VectorType::AutoVectorization,
-                description: format!("Loop with {} vectorizable operations", body_operations),
+                description: format!("Loop with {body_operations} vectorizable operations"),
                 speedup_potential: speedup,
                 required_width: 4, // Default to 4-wide SIMD
                 confidence,
@@ -165,13 +165,13 @@ fn analyze_arithmetic_vectorization(
         
         opportunities.push(VectorizationOpportunity {
             vector_type: VectorType::SIMD,
-            description: format!("Arithmetic operation {:?} on array data", op),
+            description: format!("Arithmetic operation {op:?} on array data"),
             speedup_potential: speedup,
             required_width: 4,
             confidence: 0.9,
             location: None,
             suggestions: vec![
-                format!("Use SIMD instructions for {} operations", format!("{:?}", op).to_lowercase()),
+                format!("Use SIMD instructions for {} operations", format!("{op:?}").to_lowercase()),
                 "Ensure data alignment for optimal SIMD performance".to_string(),
             ],
         });
@@ -230,7 +230,7 @@ fn analyze_function_vectorization(
                 if args.len() >= 2 && is_array_expression(&args[1]) {
                     opportunities.push(VectorizationOpportunity {
                         vector_type: VectorType::AutoVectorization,
-                        description: format!("Higher-order function '{}' on array data", name),
+                        description: format!("Higher-order function '{name}' on array data"),
                         speedup_potential: match name.as_str() {
                             "map" => 4.0,
                             "filter" => 2.0,
@@ -250,7 +250,7 @@ fn analyze_function_vectorization(
             "dot" | "cross" | "normalize" => {
                 opportunities.push(VectorizationOpportunity {
                     vector_type: VectorType::Matrix,
-                    description: format!("Vector operation '{}' suitable for SIMD", name),
+                    description: format!("Vector operation '{name}' suitable for SIMD"),
                     speedup_potential: 3.0,
                     required_width: 4,
                     confidence: 0.95,
@@ -262,10 +262,10 @@ fn analyze_function_vectorization(
                 });
             }
             "sin" | "cos" | "sqrt" | "exp" | "log" => {
-                if args.iter().any(|arg| is_array_expression(arg)) {
+                if args.iter().any(is_array_expression) {
                     opportunities.push(VectorizationOpportunity {
                         vector_type: VectorType::SIMD,
-                        description: format!("Mathematical function '{}' on array data", name),
+                        description: format!("Mathematical function '{name}' on array data"),
                         speedup_potential: 2.0,
                         required_width: 4,
                         confidence: 0.7,
@@ -292,7 +292,7 @@ fn analyze_block_vectorization(
     if independent_ops >= 4 {
         opportunities.push(VectorizationOpportunity {
             vector_type: VectorType::SIMD,
-            description: format!("Block with {} independent operations", independent_ops),
+            description: format!("Block with {independent_ops} independent operations"),
             speedup_potential: (independent_ops / 4) as f64,
             required_width: 4,
             confidence: 0.6,
@@ -336,7 +336,7 @@ fn contains_arithmetic_operations(expr: &Expr) -> bool {
             contains_arithmetic_operations(left) || 
             contains_arithmetic_operations(right)
         }
-        ExprKind::Block(exprs) => exprs.iter().any(|e| contains_arithmetic_operations(e)),
+        ExprKind::Block(exprs) => exprs.iter().any(contains_arithmetic_operations),
         _ => false,
     }
 }
@@ -344,11 +344,11 @@ fn contains_arithmetic_operations(expr: &Expr) -> bool {
 fn count_vectorizable_operations(expr: &Expr) -> usize {
     match &expr.kind {
         ExprKind::Binary { op, left, right } => {
-            let count = if is_vectorizable_operation(op) { 1 } else { 0 };
+            let count = usize::from(is_vectorizable_operation(op));
             count + count_vectorizable_operations(left) + count_vectorizable_operations(right)
         }
-        ExprKind::Block(exprs) => exprs.iter().map(|e| count_vectorizable_operations(e)).sum(),
-        ExprKind::Call { args, .. } => args.iter().map(|e| count_vectorizable_operations(e)).sum(),
+        ExprKind::Block(exprs) => exprs.iter().map(count_vectorizable_operations).sum(),
+        ExprKind::Call { args, .. } => args.iter().map(count_vectorizable_operations).sum(),
         _ => 0,
     }
 }
@@ -410,7 +410,7 @@ fn calculate_control_flow_complexity(expr: &Expr) -> usize {
         ExprKind::While { condition, body } => {
             2 + calculate_control_flow_complexity(condition) + calculate_control_flow_complexity(body)
         }
-        ExprKind::Block(exprs) => exprs.iter().map(|e| calculate_control_flow_complexity(e)).sum(),
+        ExprKind::Block(exprs) => exprs.iter().map(calculate_control_flow_complexity).sum(),
         _ => 0,
     }
 }
