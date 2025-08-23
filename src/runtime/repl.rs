@@ -3421,14 +3421,31 @@ impl Repl {
             if let Some(bindings) = Self::pattern_matches(&match_value, &arm.pattern)? {
                 let saved_bindings = self.bindings.clone();
 
+                // Apply pattern bindings temporarily
                 for (name, value) in bindings {
                     self.bindings.insert(name, value);
                 }
 
-                // Guards have been removed from the grammar - always proceed
-                let result = self.evaluate_expr(&arm.body, deadline, depth + 1)?;
+                // Check pattern guard if present
+                let guard_passes = if let Some(guard_expr) = &arm.guard {
+                    if let Value::Bool(b) = self.evaluate_expr(guard_expr, deadline, depth + 1)? { 
+                        b 
+                    } else {
+                        self.bindings = saved_bindings;
+                        continue; // Guard didn't evaluate to boolean, try next arm
+                    }
+                } else {
+                    true // No guard, so it passes
+                };
+
+                if guard_passes {
+                    let result = self.evaluate_expr(&arm.body, deadline, depth + 1)?;
+                    self.bindings = saved_bindings;
+                    return Ok(result);
+                }
+                
+                // Guard failed, restore bindings and try next arm
                 self.bindings = saved_bindings;
-                return Ok(result);
             }
         }
 

@@ -152,6 +152,14 @@ pub fn parse_match(state: &mut ParserState) -> Result<Expr> {
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         let pattern = parse_pattern(state);
 
+        // Check for pattern guard: if condition
+        let guard = if matches!(state.tokens.peek(), Some((Token::If, _))) {
+            state.tokens.advance(); // consume 'if'
+            Some(Box::new(super::parse_expr_recursive(state)?))
+        } else {
+            None
+        };
+
         // Expect => or ->
         if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
             state.tokens.advance();
@@ -164,6 +172,7 @@ pub fn parse_match(state: &mut ParserState) -> Result<Expr> {
 
         arms.push(MatchArm {
             pattern,
+            guard,
             body: Box::new(body),
             span: arm_span,
         });

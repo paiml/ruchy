@@ -451,6 +451,7 @@ pub struct PipelineStage {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MatchArm {
     pub pattern: Pattern,
+    pub guard: Option<Box<Expr>>,  // Pattern guard: if condition
     pub body: Box<Expr>,
     pub span: Span,
 }
@@ -1191,6 +1192,7 @@ mod tests {
         let arms = vec![
             MatchArm {
                 pattern: Pattern::Literal(Literal::Integer(1)),
+                guard: None,
                 body: Box::new(Expr::new(
                     ExprKind::Literal(Literal::String("one".to_string())),
                     Span::new(15, 20),
@@ -1199,6 +1201,7 @@ mod tests {
             },
             MatchArm {
                 pattern: Pattern::Wildcard,
+                guard: None,
                 body: Box::new(Expr::new(
                     ExprKind::Literal(Literal::String("other".to_string())),
                     Span::new(28, 35),
