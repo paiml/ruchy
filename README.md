@@ -42,7 +42,7 @@ ruchy test --coverage --coverage-format html
 ### 🆕 v1.1.0 Standard Library Features (Phase 2 Complete!)
 
 #### Top-Level Statements (Natural Scripting)
-```ruchy
+```rust
 // No main() required - just write your script!
 let environment = "production"
 let servers = ["web-01", "web-02", "api-01"]
@@ -59,7 +59,7 @@ println("Deployment ready:", report)
 ```
 
 #### Complete Array Methods
-```ruchy
+```rust
 let numbers = [1, 2, 3, 4, 5]
 numbers.len()        // 5
 numbers.first()      // 1
@@ -72,7 +72,7 @@ numbers.reduce(0, |a, b| a + b)  // 15
 ```
 
 #### String Processing
-```ruchy
+```rust
 let text = "  Hello World  "
 text.len()        // 15
 text.trim()       // "Hello World"
@@ -81,7 +81,7 @@ text.to_lower()   // "  hello world  "
 ```
 
 ### Core Language Features
-```ruchy
+```rust
 // Pattern matching with exhaustiveness checking
 match value {
     0 => "zero",
