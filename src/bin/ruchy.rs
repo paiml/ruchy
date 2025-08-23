@@ -876,8 +876,11 @@ fn main() -> Result<()> {
                         })
                     );
                 } else {
-                    // Default text output
-                    println!("{result}");
+                    // Default text output - suppress unit values in CLI mode
+                    let result_str = format!("{result}");
+                    if result_str != "()" {
+                        println!("{result}");
+                    }
                 }
                 return Ok(());
             }

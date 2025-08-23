@@ -471,6 +471,7 @@ See [CLAUDE.md](./CLAUDE.md) for the full development protocol.
 
 ## 📚 Documentation
 
+- **[The Ruchy Book](../ruchy-book/)** - Comprehensive guide with 100% test-verified examples (v1.5.0)
 - **[Interpreter Architecture](./docs/interpreter.md)** - Deep dive into the v0.8.0 complexity-optimized interpreter
 - [Language Specification](./docs/SPECIFICATION.md) - Complete language reference
 - [Roadmap](./ROADMAP.md) - Development progress and priorities
