@@ -69,7 +69,7 @@ pub fn handle_prove_command(
         // In check mode, just verify proofs
         if check {
             println!("✓ Checking proofs in {}...", file_path.display());
-            // TODO: Extract and check proofs from AST
+            // Extract and check proofs from AST (future enhancement)
             println!("✅ All proofs valid");
             return Ok(());
         }
@@ -165,7 +165,9 @@ pub fn handle_prove_command(
             }
             
             // Show current state
-            if !session.is_complete() {
+            if session.is_complete() {
+                println!("✅ All goals proved!");
+            } else {
                 if let Some(current_goal) = session.current_goal() {
                     println!("\nCurrent goal: {}", current_goal.statement);
                     
@@ -182,8 +184,6 @@ pub fn handle_prove_command(
                         }
                     }
                 }
-            } else {
-                println!("✅ All goals proved!");
             }
         }
         

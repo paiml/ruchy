@@ -364,9 +364,15 @@ fn temporary_hack() {
 **Toyota Way Principle**: Stop the line for ANY defect. No defect is too small. No shortcut is acceptable.
 
 **CRITICAL RULE**: NEVER use `--no-verify` in git commits. This bypasses critical quality gates that protect code integrity. If quality gates are blocking:
-1. Fix the underlying issues (clippy warnings, test failures, etc.)
+1. Fix ALL clippy warnings immediately - add `# Errors` sections, doctests, etc.
 2. If gates are genuinely broken, fix the gates themselves
-3. NEVER bypass with --no-verify
+3. NEVER bypass with --no-verify - this is ABSOLUTELY FORBIDDEN
+
+**WHEN CLIPPY BLOCKS**: Always fix the root cause:
+- Missing `# Errors` sections → Add proper documentation with examples
+- Using `unwrap()` → Replace with `expect()` with meaningful messages  
+- Dead code warnings → Remove or prefix with underscore
+- Missing doctests → Add runnable examples to documentation
 
 If quality gates hang or fail:
 1. Debug and fix the quality gate itself

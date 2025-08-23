@@ -328,7 +328,7 @@ pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
         }
         
         // Security validation for URL imports
-        validate_url_import(&url)?;
+        validate_url_import(url)?;
         
         let url = url.clone();
         state.tokens.advance();

@@ -1,6 +1,6 @@
 //! Terminal UI for dataflow debugger (RUCHY-0818)
 //!
-//! Provides an interactive terminal interface for debugging DataFrame pipelines,
+//! Provides an interactive terminal interface for debugging `DataFrame` pipelines,
 //! displaying breakpoints, materialized data, and execution flow.
 
 use crate::runtime::dataflow_debugger::{
@@ -203,13 +203,9 @@ impl DataflowUI {
             
             let reset_color = if self.colors_enabled { "\x1b[0m" } else { "" };
             
-            let time_str = stage.execution_time
-                .map(|t| format!("{}ms", t.as_millis()))
-                .unwrap_or_else(|| "-".to_string());
+            let time_str = stage.execution_time.map_or_else(|| "-".to_string(), |t| format!("{}ms", t.as_millis()));
             
-            let rows_str = stage.rows_processed
-                .map(|r| format!("{r}"))
-                .unwrap_or_else(|| "-".to_string());
+            let rows_str = stage.rows_processed.map_or_else(|| "-".to_string(), |r| format!("{r}"));
             
             println!("{:<4} {:<20} {:<12} {}{:<10}{} {:<15} {:<10}", 
                      i + 1,
@@ -344,7 +340,7 @@ impl DataflowUI {
                 } else {
                     value_str
                 };
-                print!("{:<15} ", truncated);
+                print!("{truncated:<15} ");
             }
             println!();
         }
@@ -378,9 +374,7 @@ impl DataflowUI {
         self.print_separator()?;
         
         for (stage_id, metric) in &metrics {
-            let cache_hit = metric.cache_hit_ratio
-                .map(|r| format!("{:.1}%", r * 100.0))
-                .unwrap_or_else(|| "-".to_string());
+            let cache_hit = metric.cache_hit_ratio.map_or_else(|| "-".to_string(), |r| format!("{:.1}%", r * 100.0));
             
             println!("{:<20} {:<10} {:<12} {:<12} {:<10} {:<10}", 
                      stage_id,
@@ -423,7 +417,7 @@ impl DataflowUI {
         for event in recent_events {
             let timestamp_str = self.format_timestamp(event.timestamp);
             let details = event.data.iter()
-                .map(|(k, v)| format!("{}:{}", k, v))
+                .map(|(k, v)| format!("{k}:{v}"))
                 .collect::<Vec<_>>()
                 .join(", ");
             
@@ -439,7 +433,7 @@ impl DataflowUI {
     
     /// Render stage diff comparison
     fn render_diff(&self, stage1: &str, stage2: &str) -> Result<()> {
-        self.print_title(&format!("🔄 Stage Diff: {} → {}", stage1, stage2))?;
+        self.print_title(&format!("🔄 Stage Diff: {stage1} → {stage2}"))?;
         
         let debugger = self.debugger
             .lock()
@@ -456,7 +450,7 @@ impl DataflowUI {
                     println!();
                     self.print_section_header("Column Changes")?;
                     for change in &diff.column_changes {
-                        println!("  {:?}", change);
+                        println!("  {change:?}");
                     }
                 }
                 
@@ -464,7 +458,7 @@ impl DataflowUI {
                     println!();
                     self.print_section_header("Data Changes")?;
                     for change in &diff.data_changes {
-                        println!("  {:?}", change);
+                        println!("  {change:?}");
                     }
                 }
             }
@@ -511,7 +505,7 @@ impl DataflowUI {
     
     /// Handle user commands
     fn handle_command(&mut self, command: &str) -> Result<UIAction> {
-        let parts: Vec<&str> = command.trim().split_whitespace().collect();
+        let parts: Vec<&str> = command.split_whitespace().collect();
         if parts.is_empty() {
             return Ok(UIAction::Continue);
         }
@@ -564,7 +558,7 @@ impl DataflowUI {
             }
             "refresh" | "r" => {
                 // Force refresh on next loop
-                self.last_refresh = Instant::now() - self.refresh_interval;
+                self.last_refresh = Instant::now().checked_sub(self.refresh_interval).unwrap();
                 Ok(UIAction::Continue)
             }
             "colors" => {

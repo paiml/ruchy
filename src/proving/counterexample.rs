@@ -38,15 +38,15 @@ pub enum Value {
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Int(n) => write!(f, "{}", n),
-            Self::Bool(b) => write!(f, "{}", b),
-            Self::String(s) => write!(f, "\"{}\"", s),
-            Self::Float(x) => write!(f, "{}", x),
+            Self::Int(n) => write!(f, "{n}"),
+            Self::Bool(b) => write!(f, "{b}"),
+            Self::String(s) => write!(f, "\"{s}\""),
+            Self::Float(x) => write!(f, "{x}"),
             Self::Array(vs) => {
                 write!(f, "[")?;
                 for (i, v) in vs.iter().enumerate() {
                     if i > 0 { write!(f, ", ")?; }
-                    write!(f, "{}", v)?;
+                    write!(f, "{v}")?;
                 }
                 write!(f, "]")
             }
@@ -54,7 +54,7 @@ impl fmt::Display for Value {
                 write!(f, "(")?;
                 for (i, v) in vs.iter().enumerate() {
                     if i > 0 { write!(f, ", ")?; }
-                    write!(f, "{}", v)?;
+                    write!(f, "{v}")?;
                 }
                 write!(f, ")")
             }
@@ -117,7 +117,7 @@ impl Counterexample {
         if !self.assignments.is_empty() {
             report.push_str("Variable Assignments:\n");
             for (var, val) in &self.assignments {
-                report.push_str(&format!("  {} = {}\n", var, val));
+                report.push_str(&format!("  {var} = {val}\n"));
             }
             report.push('\n');
         }
@@ -129,7 +129,7 @@ impl Counterexample {
                     step.step, step.operation, step.location));
                 if !step.state.is_empty() {
                     for (var, val) in &step.state {
-                        report.push_str(&format!("    {} = {}\n", var, val));
+                        report.push_str(&format!("    {var} = {val}\n"));
                     }
                 }
             }
@@ -138,7 +138,7 @@ impl Counterexample {
         
         if let Some(explanation) = &self.explanation {
             report.push_str("Explanation:\n");
-            report.push_str(&format!("  {}\n", explanation));
+            report.push_str(&format!("  {explanation}\n"));
         }
         
         report
@@ -182,7 +182,7 @@ impl TestCase {
     pub fn to_ruchy_test(&self, test_name: &str) -> String {
         let mut code = String::new();
         
-        code.push_str(&format!("#[test]\nfn {}() {{\n", test_name));
+        code.push_str(&format!("#[test]\nfn {test_name}() {{\n"));
         
         for (name, value) in &self.inputs {
             code.push_str(&format!("    let {} = {};\n", name, 
@@ -206,8 +206,8 @@ impl TestCase {
         match value {
             Value::Int(n) => n.to_string(),
             Value::Bool(b) => b.to_string(),
-            Value::String(s) => format!("\"{}\"", s),
-            Value::Float(x) => format!("{:.6}", x),
+            Value::String(s) => format!("\"{s}\""),
+            Value::Float(x) => format!("{x:.6}"),
             Value::Array(vs) => {
                 let items: Vec<String> = vs.iter()
                     .map(|v| self.value_to_ruchy(v))
@@ -260,7 +260,7 @@ impl CounterexampleGenerator {
             solver.declare_var(name, sort);
         }
         
-        solver.assert(&format!("(not {})", property));
+        solver.assert(&format!("(not {property})"));
         
         match solver.check_sat()? {
             SmtResult::Sat => {
@@ -355,7 +355,7 @@ impl CounterexampleGenerator {
                 }
             }
             
-            solver.assert(&format!("(not {})", property));
+            solver.assert(&format!("(not {property})"));
             
             match solver.check_sat()? {
                 SmtResult::Sat => {
@@ -383,8 +383,8 @@ impl CounterexampleGenerator {
         match value {
             Value::Int(n) => n.to_string(),
             Value::Bool(b) => b.to_string(),
-            Value::String(s) => format!("\"{}\"", s),
-            Value::Float(x) => format!("{:.6}", x),
+            Value::String(s) => format!("\"{s}\""),
+            Value::Float(x) => format!("{x:.6}"),
             _ => "null".to_string(),
         }
     }
@@ -427,7 +427,7 @@ impl SymbolicExecutor {
     pub fn find_error_path(&self, error_condition: &str) -> Result<Option<Counterexample>> {
         let mut solver = SmtSolver::new(self.generator.backend);
         
-        for (var, _) in &self.symbolic_state {
+        for var in self.symbolic_state.keys() {
             solver.declare_var(var, "Int");
         }
         

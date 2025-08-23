@@ -19,7 +19,7 @@ pub fn enforce_quality_gates(
     // Load configuration
     let project_root = find_project_root(path)?;
     let mut gate_config = if let Some(config_path) = config {
-        QualityGateEnforcer::load_config(&config_path.parent().unwrap_or(Path::new(".")))?
+        QualityGateEnforcer::load_config(config_path.parent().unwrap_or(Path::new(".")))?
     } else {
         QualityGateEnforcer::load_config(&project_root)?
     };
@@ -71,7 +71,7 @@ pub fn enforce_quality_gates(
     let failed_gates = all_results.iter().filter(|r| !r.passed).count();
     
     if failed_gates > 0 {
-        eprintln!("❌ {} quality gate(s) failed", failed_gates);
+        eprintln!("❌ {failed_gates} quality gate(s) failed");
         std::process::exit(1);
     } else {
         println!("✅ All quality gates passed!");
@@ -153,7 +153,7 @@ fn process_directory(
         let entry = entry?;
         let path = entry.path();
         
-        if path.is_file() && path.extension().map_or(false, |ext| ext == "ruchy") {
+        if path.is_file() && path.extension().is_some_and(|ext| ext == "ruchy") {
             match process_file(enforcer, &path, depth, verbose) {
                 Ok(result) => {
                     if fail_fast && !result.passed {
@@ -199,7 +199,7 @@ fn print_console_results(results: &[crate::quality::gates::GateResult], verbose:
         if !result.gaming_warnings.is_empty() {
             println!("   Warnings:");
             for warning in &result.gaming_warnings {
-                println!("     ⚠️ {}", warning);
+                println!("     ⚠️ {warning}");
             }
         }
     }
@@ -207,14 +207,14 @@ fn print_console_results(results: &[crate::quality::gates::GateResult], verbose:
     let passed = results.iter().filter(|r| r.passed).count();
     let total = results.len();
     
-    println!("\n📊 Summary: {}/{} gates passed", passed, total);
+    println!("\n📊 Summary: {passed}/{total} gates passed");
     
     Ok(())
 }
 
 fn print_json_results(results: &[crate::quality::gates::GateResult]) -> Result<()> {
     let json = serde_json::to_string_pretty(results)?;
-    println!("{}", json);
+    println!("{json}");
     Ok(())
 }
 
@@ -223,14 +223,14 @@ fn print_junit_results(results: &[crate::quality::gates::GateResult]) -> Result<
     let failures = results.iter().filter(|r| !r.passed).count();
     
     println!(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
-    println!(r#"<testsuite name="Quality Gates" tests="{}" failures="{}" time="0.0">"#, total, failures);
+    println!(r#"<testsuite name="Quality Gates" tests="{total}" failures="{failures}" time="0.0">"#);
     
     for (i, result) in results.iter().enumerate() {
-        let test_name = format!("quality-gate-{}", i);
+        let test_name = format!("quality-gate-{i}");
         if result.passed {
-            println!(r#"  <testcase name="{}" classname="QualityGate" time="0.0"/>"#, test_name);
+            println!(r#"  <testcase name="{test_name}" classname="QualityGate" time="0.0"/>"#);
         } else {
-            println!(r#"  <testcase name="{}" classname="QualityGate" time="0.0">"#, test_name);
+            println!(r#"  <testcase name="{test_name}" classname="QualityGate" time="0.0">"#);
             println!(r#"    <failure message="Quality gate violation">Score: {:.1}%, Grade: {}</failure>"#, 
                 result.score * 100.0, result.grade);
             println!(r"  </testcase>");

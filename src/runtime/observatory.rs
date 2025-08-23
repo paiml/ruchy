@@ -575,7 +575,13 @@ impl ActorObservatory {
     fn trace_matches_filter(&self, trace: &MessageTrace, filter_name: &str) -> bool {
         self.filters.iter()
             .find(|f| f.name == filter_name)
-            .map_or(false, |filter| self.message_matches_filter(trace, filter))
+            .is_some_and(|filter| self.message_matches_filter(trace, filter))
+    }
+}
+
+impl Default for DeadlockDetector {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

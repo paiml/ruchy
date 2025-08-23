@@ -78,8 +78,7 @@ impl InteractiveProver {
     /// Process input
     pub fn process_input(&mut self, session: &mut ProverSession, input: &str) -> Result<ProofResult> {
         // Try to parse as goal
-        if input.starts_with("prove ") {
-            let goal = &input[6..];
+        if let Some(goal) = input.strip_prefix("prove ") {
             session.add_goal(goal.to_string());
             return Ok(ProofResult::Progress);
         }
@@ -168,7 +167,8 @@ impl ProverSession {
         let mut proof = String::new();
         proof.push_str("Proof:\n");
         for line in &self.history {
-            proof.push_str(&format!("  {}\n", line));
+            use std::fmt::Write;
+            let _ = writeln!(proof, "  {line}");
         }
         if self.is_complete() {
             proof.push_str("Qed.\n");

@@ -210,7 +210,7 @@ workspace = true
 [features]
 default = []
 dataframe = ["polars"]
-testing = ["tempfile", "proptest"]
+testing = ["proptest"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -250,8 +250,8 @@ notify = "4.0"
 # LSP support
 tower-lsp = "0.20"
 once_cell = "1.19"
-# Testing support (optional)
-tempfile = { version = "3.8", optional = true }
+# Compilation support
+tempfile = "3.8"
 proptest = { version = "1.4", optional = true }
 
 [dev-dependencies]

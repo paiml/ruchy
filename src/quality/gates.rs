@@ -71,7 +71,7 @@ pub struct CiIntegration {
     /// Fail CI/CD pipeline on gate failure
     pub fail_on_violation: bool,
     
-    /// Export results in JUnit XML format
+    /// Export results in `JUnit` XML format
     pub junit_xml: bool,
     
     /// Export results in JSON format for tooling
@@ -263,10 +263,10 @@ impl QualityGateEnforcer {
         }
         
         // Check component thresholds
-        self.check_component_thresholds(&score, &mut violations);
+        self.check_component_thresholds(score, &mut violations);
         
         // Check anti-gaming rules
-        self.check_anti_gaming_rules(&score, file_path, &mut gaming_warnings, &mut violations);
+        self.check_anti_gaming_rules(score, file_path, &mut gaming_warnings, &mut violations);
         
         // Check confidence threshold
         if score.confidence < self.config.anti_gaming.min_confidence {
@@ -398,8 +398,8 @@ impl QualityGateEnforcer {
             
             // Check if critical files require deep analysis
             let path_str = path.to_string_lossy();
-            if self.config.anti_gaming.require_deep_analysis.iter().any(|p| path_str.contains(p)) {
-                if score.confidence < 0.9 {
+            if self.config.anti_gaming.require_deep_analysis.iter().any(|p| path_str.contains(p))
+                && score.confidence < 0.9 {
                     violations.push(Violation {
                         violation_type: ViolationType::Gaming,
                         actual: score.confidence,
@@ -411,7 +411,6 @@ impl QualityGateEnforcer {
                         ),
                     });
                 }
-            }
         }
     }
     
@@ -442,16 +441,15 @@ impl QualityGateEnforcer {
         let failures = results.iter().filter(|r| !r.passed).count();
         
         let mut xml = format!(r#"<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="Quality Gates" tests="{}" failures="{}" time="0.0">
-"#, total, failures);
+<testsuite name="Quality Gates" tests="{total}" failures="{failures}" time="0.0">
+"#);
         
         for (i, result) in results.iter().enumerate() {
-            let test_name = format!("quality-gate-{}", i);
+            let test_name = format!("quality-gate-{i}");
             if result.passed {
                 xml.push_str(&format!(
-                    r#"  <testcase name="{}" classname="QualityGate" time="0.0"/>
-"#,
-                    test_name
+                    r#"  <testcase name="{test_name}" classname="QualityGate" time="0.0"/>
+"#
                 ));
             } else {
                 xml.push_str(&format!(
@@ -481,7 +479,7 @@ impl PartialOrd for Grade {
 impl Ord for Grade {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         // use std::cmp::Ordering;
-        use Grade::*;
+        use Grade::{F, D, CMinus, C, CPlus, BMinus, B, BPlus, AMinus, A, APlus};
         
         let self_rank = match self {
             F => 0,

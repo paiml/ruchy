@@ -1,6 +1,6 @@
-//! Dataflow debugger for DataFrame pipeline debugging (RUCHY-0818)
+//! Dataflow debugger for `DataFrame` pipeline debugging (RUCHY-0818)
 //!
-//! Provides comprehensive debugging capabilities for DataFrame operations,
+//! Provides comprehensive debugging capabilities for `DataFrame` operations,
 //! including breakpoints, materialization on demand, and stage-by-stage analysis.
 
 use anyhow::Result;
@@ -10,7 +10,7 @@ use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-/// Dataflow debugger for DataFrame pipeline analysis
+/// Dataflow debugger for `DataFrame` pipeline analysis
 pub struct DataflowDebugger {
     /// Pipeline execution stages
     #[allow(dead_code)] // Future feature for pipeline management
@@ -63,7 +63,7 @@ pub struct DataflowConfig {
     pub sample_rate: f64,
 }
 
-/// Individual stage in the DataFrame pipeline
+/// Individual stage in the `DataFrame` pipeline
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PipelineStage {
     /// Unique identifier for the stage
@@ -72,16 +72,16 @@ pub struct PipelineStage {
     /// Human-readable name
     pub stage_name: String,
     
-    /// Stage type (filter, map, group_by, etc.)
+    /// Stage type (filter, map, `group_by`, etc.)
     pub stage_type: StageType,
     
     /// Stage execution status
     pub status: StageStatus,
     
-    /// Input DataFrame schema
+    /// Input `DataFrame` schema
     pub input_schema: Option<DataSchema>,
     
-    /// Output DataFrame schema  
+    /// Output `DataFrame` schema  
     pub output_schema: Option<DataSchema>,
     
     /// Stage execution time
@@ -97,7 +97,7 @@ pub struct PipelineStage {
     pub metadata: HashMap<String, String>,
 }
 
-/// Types of DataFrame operations
+/// Types of `DataFrame` operations
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum StageType {
     /// Data loading stage
@@ -195,7 +195,7 @@ pub enum BreakpointAction {
     Pause,
     /// Print debug information
     Print(String),
-    /// Materialize current DataFrame
+    /// Materialize current `DataFrame`
     Materialize,
     /// Compute diff with previous stage
     ComputeDiff,
@@ -203,13 +203,13 @@ pub enum BreakpointAction {
     Export { format: ExportFormat, path: String },
 }
 
-/// Materialized DataFrame data for inspection
+/// Materialized `DataFrame` data for inspection
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaterializedFrame {
     /// Stage ID where data was materialized
     pub stage_id: String,
     
-    /// DataFrame schema
+    /// `DataFrame` schema
     pub schema: DataSchema,
     
     /// Sample of data rows (limited by config)
@@ -225,7 +225,7 @@ pub struct MaterializedFrame {
     pub memory_size: usize,
 }
 
-/// DataFrame schema information
+/// `DataFrame` schema information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DataSchema {
     /// Column definitions
@@ -235,7 +235,7 @@ pub struct DataSchema {
     pub schema_hash: u64,
 }
 
-/// Column definition in DataFrame schema
+/// Column definition in `DataFrame` schema
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ColumnDef {
     /// Column name
@@ -248,7 +248,7 @@ pub struct ColumnDef {
     pub nullable: bool,
 }
 
-/// Supported data types in DataFrames
+/// Supported data types in `DataFrames`
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DataType {
     Boolean,
@@ -260,14 +260,14 @@ pub enum DataType {
     Struct(Vec<(String, DataType)>),
 }
 
-/// Single row of data in materialized DataFrame
+/// Single row of data in materialized `DataFrame`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DataRow {
     /// Values for each column
     pub values: Vec<DataValue>,
 }
 
-/// Individual data value in a DataFrame cell
+/// Individual data value in a `DataFrame` cell
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DataValue {
     Boolean(bool),
@@ -445,7 +445,7 @@ impl DataflowDebugger {
         
         // Check for breakpoints
         if let Some(breakpoint) = self.check_breakpoint(&pipeline_stage.stage_id)? {
-            if self.should_break(&pipeline_stage, &breakpoint)? {
+            if self.should_break(pipeline_stage, &breakpoint)? {
                 pipeline_stage.status = StageStatus::Paused;
                 self.handle_breakpoint_hit(&pipeline_stage.stage_id, &breakpoint)?;
                 return Ok(StageExecutionResult::Paused);
@@ -490,7 +490,7 @@ impl DataflowDebugger {
         Ok(StageExecutionResult::Completed)
     }
     
-    /// Materialize DataFrame data at a specific stage
+    /// Materialize `DataFrame` data at a specific stage
     pub fn materialize_stage(&self, stage_id: &str) -> Result<MaterializedFrame> {
         // In a real implementation, this would materialize actual DataFrame data
         let materialized = MaterializedFrame {
@@ -564,7 +564,7 @@ impl DataflowDebugger {
         
         self.record_event(
             EventType::DiffComputed,
-            format!("{}:{}", stage1_id, stage2_id),
+            format!("{stage1_id}:{stage2_id}"),
             HashMap::from([("row_diff".to_string(), row_count_diff.to_string())])
         )?;
         
@@ -622,7 +622,7 @@ impl DataflowDebugger {
                 std::fs::write(output_path, json_data)?;
             }
             ExportFormat::Debug => {
-                let debug_str = format!("{:#?}", debug_data);
+                let debug_str = format!("{debug_data:#?}");
                 std::fs::write(output_path, debug_str)?;
             }
             _ => {
@@ -749,13 +749,13 @@ impl DataflowDebugger {
         
         for col in &cols2 {
             if !cols1.contains(col) {
-                changes.push(ColumnChange::Added(col.to_string()));
+                changes.push(ColumnChange::Added((*col).to_string()));
             }
         }
         
         for col in &cols1 {
             if !cols2.contains(col) {
-                changes.push(ColumnChange::Removed(col.to_string()));
+                changes.push(ColumnChange::Removed((*col).to_string()));
             }
         }
         
@@ -869,7 +869,7 @@ impl fmt::Display for StageType {
             Self::Sort => write!(f, "Sort"),
             Self::Window => write!(f, "Window"),
             Self::Union => write!(f, "Union"),
-            Self::Custom(name) => write!(f, "Custom({})", name),
+            Self::Custom(name) => write!(f, "Custom({name})"),
         }
     }
 }

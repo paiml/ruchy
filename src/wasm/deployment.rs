@@ -24,7 +24,7 @@ pub enum DeploymentTarget {
     DenoDeploy,
     /// Wasmtime runtime
     Wasmtime,
-    /// WasmEdge runtime
+    /// `WasmEdge` runtime
     WasmEdge,
     /// Browser environment
     Browser,
@@ -83,6 +83,7 @@ pub enum Environment {
 
 /// Deployment credentials
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct Credentials {
     /// API key
     pub api_key: Option<String>,
@@ -533,16 +534,6 @@ impl Default for DeploymentConfig {
     }
 }
 
-impl Default for Credentials {
-    fn default() -> Self {
-        Self {
-            api_key: None,
-            account_id: None,
-            auth_token: None,
-            custom: HashMap::new(),
-        }
-    }
-}
 
 impl Default for DeploymentOptimization {
     fn default() -> Self {

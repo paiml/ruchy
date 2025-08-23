@@ -1026,7 +1026,7 @@ fn analyze_coupling(ast: &crate::frontend::ast::Expr) -> f64 {
     }
     
     #[allow(clippy::cast_precision_loss)]
-    let coupling_ratio = external_calls as f64 / total_functions as f64;
+    let coupling_ratio = f64::from(external_calls) / f64::from(total_functions);
     
     // Lower coupling is better
     if coupling_ratio > 5.0 {
@@ -1138,7 +1138,7 @@ fn analyze_naming_quality(ast: &crate::frontend::ast::Expr) -> f64 {
     }
     
     #[allow(clippy::cast_precision_loss)]
-    let good_ratio = good_names as f64 / total_names as f64;
+    let good_ratio = f64::from(good_names) / f64::from(total_names);
     good_ratio.max(0.5) // Minimum score for naming
 }
 
@@ -1215,7 +1215,7 @@ fn analyze_null_safety(ast: &crate::frontend::ast::Expr) -> f64 {
         1.0 // All nullable accesses are safe
     } else {
         #[allow(clippy::cast_precision_loss)]
-        let safety_ratio = option_uses as f64 / (option_uses + unsafe_accesses) as f64;
+        let safety_ratio = f64::from(option_uses) / f64::from(option_uses + unsafe_accesses);
         safety_ratio.max(0.5) // Minimum safety score
     }
 }
@@ -1259,7 +1259,7 @@ fn analyze_resource_management(ast: &crate::frontend::ast::Expr) -> f64 {
     }
     
     #[allow(clippy::cast_precision_loss)]
-    let cleanup_ratio = proper_cleanup as f64 / resource_allocations as f64;
+    let cleanup_ratio = f64::from(proper_cleanup) / f64::from(resource_allocations);
     cleanup_ratio.max(0.7) // Minimum score for resource management
 }
 
@@ -1310,7 +1310,7 @@ fn analyze_pattern_usage(ast: &crate::frontend::ast::Expr) -> f64 {
     }
     
     #[allow(clippy::cast_precision_loss)]
-    let pattern_ratio = matches as f64 / total as f64;
+    let pattern_ratio = f64::from(matches) / f64::from(total);
     
     // Higher ratio of matches vs if-else is more idiomatic
     if pattern_ratio > 0.7 {
@@ -1364,7 +1364,7 @@ fn analyze_iterator_usage(ast: &crate::frontend::ast::Expr) -> f64 {
     }
     
     #[allow(clippy::cast_precision_loss)]
-    let iterator_ratio = iterators as f64 / total as f64;
+    let iterator_ratio = f64::from(iterators) / f64::from(total);
     
     // Higher ratio of iterators vs manual loops is more idiomatic
     if iterator_ratio > 0.6 {
@@ -1409,7 +1409,7 @@ fn analyze_lambda_usage(ast: &crate::frontend::ast::Expr) -> f64 {
     }
     
     #[allow(clippy::cast_precision_loss)]
-    let lambda_ratio = lambdas as f64 / total_functions as f64;
+    let lambda_ratio = f64::from(lambdas) / f64::from(total_functions);
     
     // Some lambda usage indicates functional style
     if lambda_ratio > 0.3 {
