@@ -93,6 +93,10 @@ enum Commands {
         /// Output file (defaults to stdout)
         #[arg(short, long)]
         output: Option<PathBuf>,
+
+        /// Use minimal codegen for self-hosting (direct Rust mapping, no optimization)
+        #[arg(long)]
+        minimal: bool,
     },
 
     /// Compile and run a Ruchy file
@@ -948,7 +952,7 @@ fn main() -> Result<()> {
                 }
             }
         }
-        Some(Commands::Transpile { file, output }) => {
+        Some(Commands::Transpile { file, output, minimal }) => {
             let source = if file.as_os_str() == "-" {
                 // Read from stdin
                 let mut input = String::new();
@@ -961,8 +965,15 @@ fn main() -> Result<()> {
             let mut parser = RuchyParser::new(&source);
             let ast = parser.parse()?;
             let transpiler = Transpiler::new();
-            let rust_code = transpiler.transpile(&ast)?;
-            let rust_code_str = rust_code.to_string();
+            
+            let rust_code_str = if minimal {
+                // Use minimal codegen for self-hosting
+                transpiler.transpile_minimal(&ast)?
+            } else {
+                // Use full transpiler
+                let rust_code = transpiler.transpile(&ast)?;
+                rust_code.to_string()
+            };
 
             if let Some(output_path) = output {
                 fs::write(output_path, rust_code_str)?;

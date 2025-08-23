@@ -14,6 +14,7 @@ mod patterns;
 mod result_type;
 mod statements;
 mod types;
+mod codegen_minimal;
 
 use crate::frontend::ast::{Attribute, Expr, ExprKind, Span, Type};
 use anyhow::Result;
@@ -285,6 +286,11 @@ impl Transpiler {
         }
 
         Ok(result)
+    }
+
+    /// Generate minimal code for self-hosting (direct Rust mapping, no optimization)
+    pub fn transpile_minimal(&self, expr: &Expr) -> Result<String> {
+        codegen_minimal::MinimalCodeGen::gen_program(expr)
     }
 
     /// Main expression transpilation dispatcher

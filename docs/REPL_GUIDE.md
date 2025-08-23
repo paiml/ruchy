@@ -1,5 +1,11 @@
 # Ruchy REPL Guide
 
+*Self-Hosting Edition - Updated for v1.5.0 Historic Achievement*
+
+## 🎉 SELF-HOSTING REPL
+
+**Ruchy REPL now supports self-hosting development!** You can write compiler code in Ruchy and execute it directly in the REPL.
+
 ## 🚀 Quick Start - The Golden Path
 
 The Ruchy REPL is your interactive playground for learning and experimenting with the language. Like Elixir's IEx or Julia's REPL, it provides immediate feedback and is the best way to learn Ruchy.
@@ -7,14 +13,15 @@ The Ruchy REPL is your interactive playground for learning and experimenting wit
 ### Start the REPL
 
 ```bash
-cargo run -p ruchy-cli -- repl
+cargo run -- repl
 # Or if installed: ruchy repl
 ```
 
 You'll see:
 ```
-Welcome to Ruchy REPL v0.4.0
+Welcome to Ruchy REPL v1.5.0 - Self-Hosting Edition
 Type :help for commands, :quit to exit
+Self-hosting compiler ready!
 
 ruchy> 
 ```
@@ -201,17 +208,50 @@ ruchy> fun greet(name: String) { println("Hello", name) }
 "fn greet(name)"
 ```
 
-### 11. Lambda Expressions
+### 11. Lambda Expressions (Both Syntaxes)
 
 ```ruchy
 ruchy> |x| x + 1
 "|x| <body>"
 
+ruchy> x => x + 1
+"x => <body>"
+
 ruchy> |x, y| x * y
 "|x, y| <body>"
+
+ruchy> (x, y) => x * y  
+"(x, y) => <body>"
 ```
 
-### 12. Range Expressions
+### 12. Self-Hosting Compiler Development
+
+```ruchy
+ruchy> struct RuchyCompiler {
+    input: String
+}
+
+ruchy> impl RuchyCompiler {
+    fn tokenize(&self) -> Vec<String> {
+        self.input.split_whitespace().map(|s| s.to_string()).collect()
+    }
+    
+    fn parse(&self, tokens: Vec<String>) -> String {
+        tokens.join(" -> ")
+    }
+}
+
+ruchy> let compiler = RuchyCompiler { 
+    input: "let x = 42".to_string() 
+}
+
+ruchy> let tokens = compiler.tokenize()
+ruchy> let ast = compiler.parse(tokens)
+ruchy> println("Self-hosting AST: {}", ast)
+Self-hosting AST: let -> x -> = -> 42
+```
+
+### 13. Range Expressions
 
 ```ruchy
 ruchy> 0..10
@@ -242,7 +282,9 @@ ruchy> 1..5
 
 ```ruchy
 :compile           # Compile current session to Rust
+:transpile         # Transpile session with --minimal flag for self-hosting
 :load <file>       # Load and execute a .ruchy file
+:bootstrap         # Test bootstrap compilation cycle
 ```
 
 ## 📋 Currently Supported Grammar
@@ -263,7 +305,9 @@ ruchy> 1..5
 | **Blocks** | `{ let x = 1; x + 1 }` | `2` |
 | **Match** | `match x { 1 => "one", _ => "other" }` | Result varies |
 | **Functions** | `fun f(x: i32) { x }` | Function stored |
-| **Lambdas** | `\|x\| x * 2` | Lambda stored |
+| **Lambdas (Pipe)** | `\|x\| x * 2` | Lambda stored |
+| **Lambdas (Arrow)** | `x => x * 2` | Lambda stored |
+| **Self-Hosting** | `struct Compiler { ... }` | Self-hosting support |
 | **Printing** | `println("Hi")` | Prints `Hi` |
 | **String Concat** | `"a" + "b"` | `"ab"` |
 
@@ -523,9 +567,11 @@ print("no newline")
 Once comfortable with the REPL basics:
 
 1. Try loading example files with `:load examples/fibonacci.ruchy`
-2. Experiment with more complex expressions
-3. Use `:compile` to see generated Rust code
-4. Read the [Language Specification](./SPECIFICATION.md) for advanced features
-5. Check [ROADMAP.md](../ROADMAP.md) to see what's coming next
+2. Experiment with self-hosting compiler development using `:bootstrap`
+3. Use `:transpile` to generate minimal Rust code for self-hosting
+4. Use `:compile` to see optimized generated Rust code
+5. Read the [Language Specification](./SPECIFICATION.md) for advanced features
+6. Check [ROADMAP.md](../ROADMAP.md) to see what's coming next
+7. Explore the self-hosting achievement in [SELF_HOSTING_ACHIEVEMENT.md](../SELF_HOSTING_ACHIEVEMENT.md)
 
-Remember: The REPL is your friend! It's the fastest way to learn Ruchy and test ideas. Keep it open while coding and use it to verify your understanding.
+Remember: The REPL is your friend and now supports self-hosting development! It's the fastest way to learn Ruchy and test compiler ideas. Keep it open while coding and use it to verify your understanding.
