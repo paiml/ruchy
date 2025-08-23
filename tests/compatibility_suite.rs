@@ -481,7 +481,7 @@ fn test_one_liners() {
 #[test]
 #[ignore] // Run with: cargo test compatibility_report -- --ignored
 fn compatibility_report() {
-    println!("\n🚀 RUCHY COMPATIBILITY REPORT v0.13.0");
+    println!("\n🚀 RUCHY COMPATIBILITY REPORT v1.0.0");
     println!("{}", "=".repeat(50));
     
     // Run all test categories
