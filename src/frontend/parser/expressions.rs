@@ -280,11 +280,12 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
                 state.tokens.advance(); // consume !
                 
-                // Determine if using parentheses or square brackets
+                // Determine if using parentheses, square brackets, or braces
                 let (open_token, close_token) = match state.tokens.peek() {
                     Some((Token::LeftParen, _)) => (Token::LeftParen, Token::RightParen),
                     Some((Token::LeftBracket, _)) => (Token::LeftBracket, Token::RightBracket),
-                    _ => bail!("Expected '(' or '[' after macro name"),
+                    Some((Token::LeftBrace, _)) => (Token::LeftBrace, Token::RightBrace),
+                    _ => bail!("Expected '(', '[', or '{{' after macro name"),
                 };
                 
                 state.tokens.expect(&open_token)?;
