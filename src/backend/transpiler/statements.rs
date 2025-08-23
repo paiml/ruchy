@@ -307,12 +307,30 @@ impl Transpiler {
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
 
-        // Special handling for DataFrame methods
+        // Special handling for collection and DataFrame methods
         match method {
-            "select" | "filter" | "groupby" | "agg" | "sort" | "join" | "mean" | "std" | "min"
+            // Vec collection methods - transform to iterator operations
+            "map" => {
+                // vec.map(f) -> vec.iter().map(f).collect::<Vec<_>>()
+                Ok(quote! { #obj_tokens.iter().map(#(#arg_tokens),*).collect::<Vec<_>>() })
+            }
+            "filter" => {
+                // vec.filter(f) -> vec.into_iter().filter(f).collect()
+                Ok(quote! { #obj_tokens.into_iter().filter(#(#arg_tokens),*).collect() })
+            }
+            "reduce" => {
+                // vec.reduce(f) -> vec.into_iter().reduce(f)
+                Ok(quote! { #obj_tokens.into_iter().reduce(#(#arg_tokens),*) })
+            }
+            "iter" => {
+                // vec.iter() -> vec.iter()
+                Ok(quote! { #obj_tokens.iter() })
+            }
+            
+            // DataFrame operations that should be chained
+            "select" | "groupby" | "agg" | "sort" | "join" | "mean" | "std" | "min"
             | "max" | "sum" | "count" | "unique" | "drop_nulls" | "fill_null" | "pivot"
             | "melt" | "head" | "tail" | "sample" | "describe" => {
-                // These are DataFrame operations that should be chained
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
             _ => {
