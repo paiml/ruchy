@@ -49,22 +49,32 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let name_ident = format_ident!("{}", name);
         let value_tokens = self.transpile_expr(value)?;
-        let body_tokens = self.transpile_expr(body)?;
-
-        if is_mutable {
-            Ok(quote! {
-                {
-                    let mut #name_ident = #value_tokens;
-                    #body_tokens
-                }
-            })
+        
+        // HOTFIX: If body is Unit, this is a top-level let statement without scoping
+        if matches!(body.kind, crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)) {
+            if is_mutable {
+                Ok(quote! { let mut #name_ident = #value_tokens })
+            } else {
+                Ok(quote! { let #name_ident = #value_tokens })
+            }
         } else {
-            Ok(quote! {
-                {
-                    let #name_ident = #value_tokens;
-                    #body_tokens
-                }
-            })
+            // Traditional let-in expression with proper scoping
+            let body_tokens = self.transpile_expr(body)?;
+            if is_mutable {
+                Ok(quote! {
+                    {
+                        let mut #name_ident = #value_tokens;
+                        #body_tokens
+                    }
+                })
+            } else {
+                Ok(quote! {
+                    {
+                        let #name_ident = #value_tokens;
+                        #body_tokens
+                    }
+                })
+            }
         }
     }
 
@@ -86,10 +96,37 @@ impl Transpiler {
             .iter()
             .map(|p| {
                 let param_name = format_ident!("{}", p.name());
-                let type_tokens = self.transpile_type(&p.ty).unwrap_or_else(|_| quote! { _ });
+                // HOTFIX: For function signatures, use single generic type T for inferred types
+                let type_tokens = match self.transpile_type(&p.ty) {
+                    Ok(tokens) => {
+                        let token_str = tokens.to_string();
+                        if token_str == "_" {
+                            // Use single generic type T for all inferred parameters
+                            quote! { T }
+                        } else {
+                            tokens
+                        }
+                    },
+                    Err(_) => quote! { T }
+                };
                 quote! { #param_name: #type_tokens }
             })
             .collect();
+
+        // HOTFIX: Add inferred generic type parameters with appropriate trait bounds
+        let mut all_type_params = type_params.to_vec();
+        let mut has_inferred_types = false;
+        for (_i, p) in params.iter().enumerate() {
+            let type_tokens = self.transpile_type(&p.ty).unwrap_or_else(|_| quote! { _ });
+            let token_str = type_tokens.to_string();
+            if token_str == "_" {
+                // Use a single generic type T for all inferred parameters (for operations like addition)
+                if !has_inferred_types {
+                    all_type_params.push("T: std::ops::Add<Output=T> + std::fmt::Display + std::fmt::Debug + Clone".to_string());
+                    has_inferred_types = true;
+                }
+            }
+        }
 
         let body_tokens = if is_async {
             let mut async_transpiler = Transpiler::new();
@@ -99,19 +136,35 @@ impl Transpiler {
             self.transpile_expr(body)?
         };
 
+        // HOTFIX: Infer return type for functions with inferred parameters
         let return_type_tokens = if let Some(ty) = return_type {
             let ty_tokens = self.transpile_type(ty)?;
             quote! { -> #ty_tokens }
+        } else if has_inferred_types {
+            // If we have inferred parameters, likely returning the same type
+            quote! { -> T }
         } else {
             quote! {}
         };
 
-        let type_param_tokens: Vec<_> =
-            type_params.iter().map(|p| format_ident!("{}", p)).collect();
+        // HOTFIX: Handle complex trait bounds that can't use format_ident
+        let type_param_tokens: Vec<TokenStream> = all_type_params
+            .iter()
+            .map(|p| {
+                if p.contains(":") {
+                    // Complex trait bound - parse as TokenStream
+                    p.parse().unwrap_or_else(|_| quote! { T })
+                } else {
+                    // Simple type parameter
+                    let ident = format_ident!("{}", p);
+                    quote! { #ident }
+                }
+            })
+            .collect();
 
         let visibility = if is_pub { quote! { pub } } else { quote! {} };
 
-        if type_params.is_empty() {
+        if all_type_params.is_empty() {
             if is_async {
                 Ok(quote! {
                     #visibility async fn #fn_name(#(#param_tokens),*) #return_type_tokens {
@@ -196,8 +249,14 @@ impl Transpiler {
                         return Ok(quote! { #func_tokens!(#format_str, #arg) });
                     }
                 }
-                // For multiple arguments or string literals, use them as-is
-                return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
+                // HOTFIX: For multiple arguments, generate format string with placeholders
+                if args.len() > 1 {
+                    let format_str = (0..args.len()).map(|_| "{}").collect::<Vec<_>>().join(" ");
+                    return Ok(quote! { #func_tokens!(#format_str, #(#arg_tokens),*) });
+                } else {
+                    // Single string literal - use as-is
+                    return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
+                }
             }
         }
 
@@ -278,8 +337,8 @@ impl Transpiler {
         for (i, expr) in exprs.iter().enumerate() {
             let expr_tokens = self.transpile_expr(expr)?;
 
-            // Add semicolon to all but the last expression (unless it's a control flow construct)
-            if i < exprs.len() - 1 || Self::needs_semicolon(&expr.kind) {
+            // HOTFIX: Never add semicolon to the last expression in a block (it should be the return value)  
+            if i < exprs.len() - 1 {
                 statements.push(quote! { #expr_tokens; });
             } else {
                 statements.push(expr_tokens);
@@ -293,18 +352,6 @@ impl Transpiler {
         })
     }
 
-    /// Determines if an expression needs a semicolon when used as a statement
-    fn needs_semicolon(kind: &ExprKind) -> bool {
-        !matches!(
-            kind,
-            ExprKind::If { .. }
-                | ExprKind::Match { .. }
-                | ExprKind::For { .. }
-                | ExprKind::While { .. }
-                | ExprKind::Loop { .. }
-                | ExprKind::Block(_)
-        )
-    }
 
     /// Transpiles pipeline expressions
     pub fn transpile_pipeline(&self, expr: &Expr, stages: &[PipelineStage]) -> Result<TokenStream> {

@@ -25,6 +25,8 @@ impl Transpiler {
                     "bool" => quote! { bool },
                     "string" | "String" => quote! { String },
                     "char" => quote! { char },
+                    // PERFORMANCE OPTIMIZATION: Use Rust type inference instead of Any
+                    "_" | "Any" => quote! { _ },
                     _ => {
                         let type_ident = format_ident!("{}", name);
                         quote! { #type_ident }
