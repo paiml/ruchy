@@ -220,6 +220,8 @@ impl RuchyCompleter {
             "print".to_string(),
             "curry".to_string(),
             "uncurry".to_string(),
+            "read_file".to_string(),
+            "write_file".to_string(),
         ];
 
         // Create HashSets for O(1) lookups
@@ -3149,6 +3151,8 @@ impl Repl {
                 "print" => self.evaluate_print(args, deadline, depth),
                 "curry" => self.evaluate_curry(args, deadline, depth),
                 "uncurry" => self.evaluate_uncurry(args, deadline, depth),
+                "read_file" => self.evaluate_read_file(args, deadline, depth),
+                "write_file" => self.evaluate_write_file(args, deadline, depth),
                 _ => self.evaluate_user_function(func_name, args, deadline, depth),
             }
         } else if let ExprKind::QualifiedName { module, name } = &func.kind {
@@ -3290,6 +3294,60 @@ impl Repl {
         }
         print!("{output}");
         Ok(Value::Unit)
+    }
+
+    /// Evaluate `read_file` function
+    fn evaluate_read_file(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("read_file expects exactly 1 argument (filename)");
+        }
+
+        let filename_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let Value::String(filename) = filename_val else {
+            bail!("read_file expects a string filename")
+        };
+
+        match std::fs::read_to_string(&filename) {
+            Ok(content) => Ok(Value::String(content)),
+            Err(e) => bail!("Failed to read file '{}': {}", filename, e),
+        }
+    }
+
+    /// Evaluate `write_file` function  
+    fn evaluate_write_file(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 2 {
+            bail!("write_file expects exactly 2 arguments (filename, content)");
+        }
+
+        let filename_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let Value::String(filename) = filename_val else {
+            bail!("write_file expects a string filename")
+        };
+
+        let content_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let content = if let Value::String(s) = content_val {
+            s
+        } else {
+            content_val.to_string()
+        };
+
+        match std::fs::write(&filename, content) {
+            Ok(()) => {
+                println!("File '{filename}' written successfully");
+                Ok(Value::Unit)
+            }
+            Err(e) => bail!("Failed to write file '{}': {}", filename, e),
+        }
     }
 
     /// Evaluate user-defined functions

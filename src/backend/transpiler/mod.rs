@@ -15,12 +15,15 @@ mod result_type;
 mod statements;
 mod types;
 
-use crate::frontend::ast::{Attribute, Expr, ExprKind, Type};
+use crate::frontend::ast::{Attribute, Expr, ExprKind, Span, Type};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::quote;
 
 // Module exports are handled by the impl blocks in each module
+
+/// Block categorization result: (functions, statements, `has_main`, `main_expr`)
+type BlockCategorization<'a> = (Vec<TokenStream>, Vec<TokenStream>, bool, Option<&'a Expr>);
 
 /// The main transpiler struct
 pub struct Transpiler {
@@ -59,185 +62,195 @@ impl Transpiler {
     pub fn transpile_to_program(&self, expr: &Expr) -> Result<TokenStream> {
         let needs_polars = Self::contains_dataframe(expr);
         
-        // Check if this is a function definition
-        if let ExprKind::Function { name, .. } = &expr.kind {
-            // For function definitions, transpile as a top-level item
-            let func = self.transpile_expr(expr)?;
-            
-            // Only add empty main if the function is not already named "main"
-            let needs_main = name != "main";
-            
-            if needs_polars {
-                if needs_main {
-                    Ok(quote! {
-                        use polars::prelude::*;
-                        
-                        #func
-                        
-                        fn main() {
-                            // Function defined but not called
-                        }
-                    })
-                } else {
-                    Ok(quote! {
-                        use polars::prelude::*;
-                        
-                        #func
-                    })
-                }
-            } else if needs_main {
-                Ok(quote! {
-                    #func
-                    
-                    fn main() {
-                        // Function defined but not called
-                    }
-                })
-            } else {
-                Ok(quote! {
-                    #func
-                })
+        match &expr.kind {
+            ExprKind::Function { name, .. } => {
+                self.transpile_single_function(expr, name, needs_polars)
             }
-        } else if let ExprKind::Block(exprs) = &expr.kind {
-            // Handle blocks that contain function definitions and statements
-            // Check if this block contains functions - if so, extract them as top-level items
-            let mut functions = Vec::new();
-            let mut statements = Vec::new();
-            
-            let mut has_main_function = false;
-            for expr in exprs {
-                if let ExprKind::Function { name, .. } = &expr.kind {
-                    if name == "main" {
-                        has_main_function = true;
-                    }
-                    functions.push(self.transpile_expr(expr)?);
-                } else {
-                    statements.push(self.transpile_expr(expr)?);
-                }
+            ExprKind::Block(exprs) => {
+                self.transpile_program_block(exprs, needs_polars)
             }
-            
-            if functions.is_empty() {
-                // No functions, treat as normal expression block
-                let body = self.transpile_expr(expr)?;
-                if needs_polars {
-                    Ok(quote! {
-                        use polars::prelude::*;
-
-                        fn main() {
-                            let result = #body;
-                            // Use Display trait for strings, Debug for other types
-                            match &result {
-                                s if std::any::type_name_of_val(&s).contains("String") || 
-                                     std::any::type_name_of_val(&s).contains("&str") => println!("{}", s),
-                                _ => println!("{:?}", result)
-                            }
-                        }
-                    })
-                } else {
-                    Ok(quote! {
-                        fn main() {
-                            let result = #body;
-                            // For strings, print without quotes
-                            if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<String>() {
-                                println!("{}", s);
-                            } else if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<&str>() {
-                                println!("{}", s);
-                            } else {
-                                println!("{:?}", result);
-                            }
-                        }
-                    })
-                }
-            } else {
-                // We have function definitions - put them at top level
-                if has_main_function {
-                    // If we already have a main function, don't create another one
-                    // Just add the statements to the existing main (this would require more complex logic)
-                    // For now, just output functions and statements separately
-                    if statements.is_empty() {
-                        // Only functions, no additional main needed
-                        if needs_polars {
-                            Ok(quote! {
-                                use polars::prelude::*;
-                                #(#functions)*
-                            })
-                        } else {
-                            Ok(quote! {
-                                #(#functions)*
-                            })
-                        }
-                    } else {
-                        // We have a main function AND other statements - this is a complex case
-                        // For now, we'll append the statements after the functions
-                        // This may not be perfectly correct but avoids duplicate main
-                        if needs_polars {
-                            Ok(quote! {
-                                use polars::prelude::*;
-                                #(#functions)*
-                                // Additional statements - may need manual integration
-                            })
-                        } else {
-                            Ok(quote! {
-                                #(#functions)*
-                                // Additional statements - may need manual integration
-                            })
-                        }
-                    }
-                } else {
-                    // No main function among the extracted functions - create one for statements
-                    if needs_polars {
-                        Ok(quote! {
-                            use polars::prelude::*;
-                            
-                            #(#functions)*
-                            
-                            fn main() {
-                                #(#statements;)*
-                            }
-                        })
-                    } else {
-                        Ok(quote! {
-                            #(#functions)*
-                            
-                            fn main() {
-                                #(#statements;)*
-                            }
-                        })
-                    }
-                }
+            _ => {
+                self.transpile_expression_program(expr, needs_polars)
             }
+        }
+    }
+    
+    fn transpile_single_function(&self, expr: &Expr, name: &str, needs_polars: bool) -> Result<TokenStream> {
+        let func = self.transpile_expr(expr)?;
+        let needs_main = name != "main";
+        
+        match (needs_polars, needs_main) {
+            (true, true) => Ok(quote! {
+                use polars::prelude::*;
+                #func
+                fn main() { /* Function defined but not called */ }
+            }),
+            (true, false) => Ok(quote! {
+                use polars::prelude::*;
+                #func
+            }),
+            (false, true) => Ok(quote! {
+                #func
+                fn main() { /* Function defined but not called */ }
+            }),
+            (false, false) => Ok(quote! { #func })
+        }
+    }
+    
+    fn transpile_program_block(&self, exprs: &[Expr], needs_polars: bool) -> Result<TokenStream> {
+        let (functions, statements, has_main, main_expr) = self.categorize_block_expressions(exprs)?;
+        
+        if functions.is_empty() && !has_main {
+            self.transpile_statement_only_block(exprs, needs_polars)
+        } else if has_main {
+            self.transpile_block_with_main_function(&functions, &statements, main_expr, needs_polars)
         } else {
-            // For expressions, wrap in main and execute
-            let body = self.transpile_expr(expr)?;
+            self.transpile_block_with_functions(&functions, &statements, needs_polars)
+        }
+    }
+    
+    fn categorize_block_expressions<'a>(&self, exprs: &'a [Expr]) -> Result<BlockCategorization<'a>> {
+        let mut functions = Vec::new();
+        let mut statements = Vec::new();
+        let mut has_main_function = false;
+        let mut main_function_expr = None;
+        
+        for expr in exprs {
+            if let ExprKind::Function { name, .. } = &expr.kind {
+                if name == "main" {
+                    has_main_function = true;
+                    main_function_expr = Some(expr);
+                } else {
+                    functions.push(self.transpile_expr(expr)?);
+                }
+            } else {
+                statements.push(self.transpile_expr(expr)?);
+            }
+        }
+        
+        Ok((functions, statements, has_main_function, main_function_expr))
+    }
+    
+    fn transpile_statement_only_block(&self, exprs: &[Expr], needs_polars: bool) -> Result<TokenStream> {
+        let block_expr = Expr::new(ExprKind::Block(exprs.to_vec()), Span::new(0, 0));
+        let body = self.transpile_expr(&block_expr)?;
+        self.wrap_in_main_with_result_printing(body, needs_polars)
+    }
+    
+    fn transpile_block_with_main_function(&self, functions: &[TokenStream], statements: &[TokenStream], main_expr: Option<&Expr>, needs_polars: bool) -> Result<TokenStream> {
+        if statements.is_empty() {
+            // Only functions, just emit them normally (includes user's main)
+            let main_tokens = if let Some(main) = main_expr {
+                self.transpile_expr(main)?
+            } else {
+                return Err(anyhow::anyhow!("Expected main function expression"));
+            };
+            
             if needs_polars {
                 Ok(quote! {
                     use polars::prelude::*;
-
+                    #(#functions)*
+                    #main_tokens
+                })
+            } else {
+                Ok(quote! {
+                    #(#functions)*
+                    #main_tokens
+                })
+            }
+        } else {
+            // TOP-LEVEL STATEMENTS: Extract main body and combine with statements
+            let main_body = if let Some(main) = main_expr {
+                self.extract_main_function_body(main)?
+            } else {
+                return Err(anyhow::anyhow!("Expected main function expression"));
+            };
+            
+            if needs_polars {
+                Ok(quote! {
+                    use polars::prelude::*;
+                    #(#functions)*
                     fn main() {
-                        let result = #body;
-                        // Use Display trait for strings, Debug for other types
-                        match &result {
-                            s if std::any::type_name_of_val(&s).contains("String") || 
-                                 std::any::type_name_of_val(&s).contains("&str") => println!("{}", s),
-                            _ => println!("{:?}", result)
-                        }
+                        // Top-level statements execute first
+                        #(#statements;)*
+                        
+                        // Then user's main function body  
+                        #main_body
                     }
                 })
             } else {
                 Ok(quote! {
+                    #(#functions)*
                     fn main() {
-                        let result = #body;
-                        // For strings, print without quotes
-                        if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<String>() {
-                            println!("{}", s);
-                        } else if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<&str>() {
-                            println!("{}", s);
-                        } else {
-                            println!("{:?}", result);
-                        }
+                        // Top-level statements execute first
+                        #(#statements;)*
+                        
+                        // Then user's main function body
+                        #main_body
                     }
                 })
             }
+        }
+    }
+    
+    /// Extracts the body of a main function for inlining with top-level statements
+    fn extract_main_function_body(&self, main_expr: &Expr) -> Result<TokenStream> {
+        if let ExprKind::Function { body, .. } = &main_expr.kind {
+            // Transpile just the body, not the entire function definition
+            self.transpile_expr(body)
+        } else {
+            Err(anyhow::anyhow!("Expected function expression for main body extraction"))
+        }
+    }
+    
+    fn transpile_block_with_functions(&self, functions: &[TokenStream], statements: &[TokenStream], needs_polars: bool) -> Result<TokenStream> {
+        // No main function among extracted functions - create one for statements
+        if needs_polars {
+            Ok(quote! {
+                use polars::prelude::*;
+                #(#functions)*
+                fn main() { #(#statements;)* }
+            })
+        } else {
+            Ok(quote! {
+                #(#functions)*
+                fn main() { #(#statements;)* }
+            })
+        }
+    }
+    
+    
+    fn transpile_expression_program(&self, expr: &Expr, needs_polars: bool) -> Result<TokenStream> {
+        let body = self.transpile_expr(expr)?;
+        self.wrap_in_main_with_result_printing(body, needs_polars)
+    }
+    
+    fn wrap_in_main_with_result_printing(&self, body: TokenStream, needs_polars: bool) -> Result<TokenStream> {
+        if needs_polars {
+            Ok(quote! {
+                use polars::prelude::*;
+                fn main() {
+                    let result = #body;
+                    match &result {
+                        s if std::any::type_name_of_val(&s).contains("String") || 
+                             std::any::type_name_of_val(&s).contains("&str") => println!("{}", s),
+                        _ => println!("{:?}", result)
+                    }
+                }
+            })
+        } else {
+            Ok(quote! {
+                fn main() {
+                    let result = #body;
+                    if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<String>() {
+                        println!("{}", s);
+                    } else if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<&str>() {
+                        println!("{}", s);
+                    } else {
+                        println!("{:?}", result);
+                    }
+                }
+            })
         }
     }
 

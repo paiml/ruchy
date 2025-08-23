@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![Tests](https://img.shields.io/badge/tests-271%20passing-green.svg)](./tests)
-[![v0.10.0](https://img.shields.io/badge/v0.10.0-Revolutionary%20Development%20Tools-blue.svg)](./docs/execution/roadmap.md)
+[![v1.1.0](https://img.shields.io/badge/v1.1.0-Phase%202%20Standard%20Library-blue.svg)](./CHANGELOG.md)
 
-**The world's first programming language with built-in formal verification and automatic BigO complexity analysis.** A functional language that transpiles to idiomatic Rust, featuring revolutionary development tools that don't exist in any other language.
+**The world's first programming language with built-in formal verification and automatic BigO complexity analysis.** A DevOps-ready scripting language that transpiles to idiomatic Rust, featuring a complete standard library for real-world automation.
 
 ## 🎯 Quick Start
 
@@ -39,6 +39,47 @@ ruchy test --coverage --coverage-format html
 - **Tab completion**: Context-aware completions with O(1) keyword lookups
 - **Persistent history**: Cross-session command history
 
+### 🆕 v1.1.0 Standard Library Features (Phase 2 Complete!)
+
+#### Top-Level Statements (Natural Scripting)
+```ruchy
+// No main() required - just write your script!
+let environment = "production"
+let servers = ["web-01", "web-02", "api-01"]
+
+// File I/O operations (NEW!)
+write_file("config.txt", environment)
+let config = read_file("config.txt")
+
+// Functional programming with arrays
+let web_servers = servers.filter(|s| s.starts_with("web"))
+let report = web_servers.map(|s| "✅ " + s)
+
+println("Deployment ready:", report)
+```
+
+#### Complete Array Methods
+```ruchy
+let numbers = [1, 2, 3, 4, 5]
+numbers.len()        // 5
+numbers.first()      // 1
+numbers.last()       // 5
+numbers.sum()        // 15
+numbers.reverse()    // [5, 4, 3, 2, 1]
+numbers.map(|x| x * 2)      // [2, 4, 6, 8, 10]
+numbers.filter(|x| x > 2)   // [3, 4, 5]
+numbers.reduce(0, |a, b| a + b)  // 15
+```
+
+#### String Processing
+```ruchy
+let text = "  Hello World  "
+text.len()        // 15
+text.trim()       // "Hello World"
+text.to_upper()   // "  HELLO WORLD  "
+text.to_lower()   // "  hello world  "
+```
+
 ### Core Language Features
 ```ruchy
 // Pattern matching with exhaustiveness checking
@@ -48,11 +89,7 @@ match value {
     _ => "large"
 }
 
-// String interpolation
-let name = "Ruchy"
-println(f"Hello from {name}!")
-
-// Functional programming
+// Functional programming chains
 [1, 2, 3, 4, 5]
     .map(|x| x * 2)
     .filter(|x| x > 5)

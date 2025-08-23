@@ -2248,6 +2248,9 @@ impl Interpreter {
                 .last()
                 .cloned()
                 .ok_or_else(|| InterpreterError::RuntimeError("Array is empty".to_string())),
+            (Value::Array(arr), "is_empty") => {
+                Ok(Value::from_bool(arr.is_empty()))
+            }
 
             // Type information
             (obj, "type") => Ok(Value::String(Rc::new(obj.type_name().to_string()))),

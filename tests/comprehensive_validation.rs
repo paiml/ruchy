@@ -8,6 +8,18 @@
 use std::process::Command;
 use std::fs;
 use std::path::Path;
+use std::collections::HashMap;
+
+// Helper function for property tests
+fn run_expression(expr: &str) -> String {
+    let output = Command::new("./target/release/ruchy")
+        .arg("-e")
+        .arg(expr)
+        .output()
+        .expect("Failed to run expression");
+        
+    String::from_utf8_lossy(&output.stdout).trim().to_string()
+}
 
 /// TIER 1: File Compilation Tests (Critical Gap from v1.0.0)
 #[test]  
@@ -33,7 +45,7 @@ fn test_file_compilation_regression() {
     let total = test_cases.len();
     
     for (name, code) in test_cases {
-        let filename = format!("/tmp/test_{}.ruchy", name);
+        let filename = format!("/tmp/test_{name}.ruchy");
         fs::write(&filename, code).expect("Failed to write test file");
         
         let output = Command::new("./target/release/ruchy")
@@ -43,7 +55,7 @@ fn test_file_compilation_regression() {
             .expect("Failed to run ruchy compile");
             
         if output.status.success() {
-            println!("✅ {}: File compilation PASSED", name);
+            println!("✅ {name}: File compilation PASSED");
             passed += 1;
             
             // Also test execution
@@ -59,7 +71,7 @@ fn test_file_compilation_regression() {
                 let _ = fs::remove_file("a.out"); // Cleanup
             }
         } else {
-            println!("❌ {}: File compilation FAILED", name);
+            println!("❌ {name}: File compilation FAILED");
             println!("   Error: {}", String::from_utf8_lossy(&output.stderr));
         }
         
@@ -107,9 +119,9 @@ fn test_repl_file_consistency() {
         let file_result = String::from_utf8_lossy(&file_output.stdout);
         
         if repl_result.trim() == file_result.trim() {
-            println!("✅ Consistency: {}", expr);
+            println!("✅ Consistency: {expr}");
         } else {
-            println!("❌ INCONSISTENCY: {}", expr);
+            println!("❌ INCONSISTENCY: {expr}");
             println!("   REPL: {}", repl_result.trim());
             println!("   FILE: {}", file_result.trim());
         }
@@ -123,19 +135,18 @@ fn test_repl_file_consistency() {
 fn test_arithmetic_properties() {
     println!("🧮 TIER 3: Property-Based Arithmetic Tests");
     
-    use std::collections::HashMap;
     let mut results = HashMap::new();
     
     // Commutative property: a + b = b + a
     for a in [1, 5, 10, 100] {
         for b in [2, 7, 15, 50] {
-            let expr1 = format!("{} + {}", a, b);
-            let expr2 = format!("{} + {}", b, a);
+            let expr1 = format!("{a} + {b}");
+            let expr2 = format!("{b} + {a}");
             
-            let result1 = run_expression(&expr1);
-            let result2 = run_expression(&expr2);
+            let expr1_result = run_expression(&expr1);
+            let expr2_result = run_expression(&expr2);
             
-            results.insert(format!("commutative_{}_{}", a, b), result1 == result2);
+            results.insert(format!("commutative_{a}_{b}"), expr1_result == expr2_result);
         }
     }
     
@@ -143,13 +154,13 @@ fn test_arithmetic_properties() {
     for a in [1, 5, 10] {
         for b in [2, 7, 15] {
             for c in [3, 8, 20] {
-                let expr1 = format!("({} + {}) + {}", a, b, c);
-                let expr2 = format!("{} + ({} + {})", a, b, c);
+                let expr1 = format!("({a} + {b}) + {c}");
+                let expr2 = format!("{a} + ({b} + {c})");
                 
-                let result1 = run_expression(&expr1);
-                let result2 = run_expression(&expr2);
+                let expr1_result = run_expression(&expr1);
+                let expr2_result = run_expression(&expr2);
                 
-                results.insert(format!("associative_{}_{}_{}", a, b, c), result1 == result2);
+                results.insert(format!("associative_{a}_{b}_{c}"), expr1_result == expr2_result);
             }
         }
     }
@@ -157,11 +168,11 @@ fn test_arithmetic_properties() {
     let passed = results.values().filter(|&&v| v).count();
     let total = results.len();
     
-    println!("📊 Property Tests: {}/{} passed", passed, total);
+    println!("📊 Property Tests: {passed}/{total} passed");
     
     for (test, passed) in results {
         if !passed {
-            println!("❌ PROPERTY VIOLATION: {}", test);
+            println!("❌ PROPERTY VIOLATION: {test}");
         }
     }
     
@@ -200,7 +211,7 @@ fn test_parser_fuzz_robustness() {
     let total = fuzz_inputs.len();
     
     for (i, input) in fuzz_inputs.iter().enumerate() {
-        let filename = format!("/tmp/fuzz_test_{}.ruchy", i);
+        let filename = format!("/tmp/fuzz_test_{i}.ruchy");
         fs::write(&filename, input).expect("Failed to write fuzz file");
         
         let output = Command::new("./target/release/ruchy")
@@ -212,7 +223,7 @@ fn test_parser_fuzz_robustness() {
         // Parser should not crash, even on invalid input
         if !output.status.success() && output.stderr.is_empty() {
             crash_count += 1;
-            println!("💥 CRASH on input: {:?}", input);
+            println!("💥 CRASH on input: {input:?}");
         }
         
         let _ = fs::remove_file(&filename);
@@ -240,7 +251,7 @@ fn test_documentation_examples() {
     
     let total_examples = doc_examples.len();
     for (name, code) in doc_examples {
-        let filename = format!("/tmp/doc_test_{}.ruchy", name);
+        let filename = format!("/tmp/doc_test_{name}.ruchy");
         fs::write(&filename, code).expect("Failed to write doc test");
         
         let output = Command::new("./target/release/ruchy")
@@ -250,17 +261,17 @@ fn test_documentation_examples() {
             .expect("Failed to run doc example");
             
         if output.status.success() {
-            println!("✅ Doc example '{}': PASSED", name);
+            println!("✅ Doc example '{name}': PASSED");
             passed += 1;
         } else {
-            println!("❌ Doc example '{}': FAILED", name);
+            println!("❌ Doc example '{name}': FAILED");
             println!("   Error: {}", String::from_utf8_lossy(&output.stderr));
         }
         
         let _ = fs::remove_file(&filename);
     }
     
-    println!("📊 Documentation: {}/{} examples working", passed, total_examples);
+    println!("📊 Documentation: {passed}/{total_examples} examples working");
 }
 
 /// TIER 6: End-to-End Workflow Tests
@@ -333,15 +344,4 @@ fun main() {
     
     let _ = fs::remove_file(filename);
     println!("🎯 E2E: Complete workflow validated");
-}
-
-// Helper function for property tests
-fn run_expression(expr: &str) -> String {
-    let output = Command::new("./target/release/ruchy")
-        .arg("-e")
-        .arg(expr)
-        .output()
-        .expect("Failed to run expression");
-        
-    String::from_utf8_lossy(&output.stdout).trim().to_string()
 }
