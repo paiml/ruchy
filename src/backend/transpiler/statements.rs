@@ -546,8 +546,16 @@ impl Transpiler {
         } else if items.len() == 1 {
             match &items[0] {
                 ImportItem::Named(name) => {
-                    let item_ident = format_ident!("{}", name);
-                    quote! { use #path_tokens::#item_ident; }
+                    // Check if the path already ends with the item name
+                    // This happens when parsing "use math::add"
+                    if path.ends_with(&format!("::{name}")) {
+                        // Path already includes the item, just use it directly
+                        quote! { use #path_tokens; }
+                    } else {
+                        // Path doesn't include item, append it
+                        let item_ident = format_ident!("{}", name);
+                        quote! { use #path_tokens::#item_ident; }
+                    }
                 }
                 ImportItem::Aliased { name, alias } => {
                     let name_ident = format_ident!("{}", name);
