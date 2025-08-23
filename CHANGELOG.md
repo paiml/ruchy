@@ -2,6 +2,15 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [Unreleased] - Phase 3 In Progress
+
+### Discovered Features (Already Implemented)
+- **Enhanced Pattern Matching** - All advanced patterns already work!
+  - Pattern guards with `if` conditions: `n if n > 0 => "positive"`
+  - Range patterns: `1..=10 => "small"` (inclusive), `1..10` (exclusive)
+  - Or patterns: `1 | 2 | 3 => "small numbers"`
+  - Complex combinations of all pattern types
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
