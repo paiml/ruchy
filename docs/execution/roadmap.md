@@ -461,7 +461,7 @@ log("Environment:", environment);
 - [x] **RUCHY-0802**: DataFrame operations completion ✅ v0.12.0
 - [x] **RUCHY-0803**: Actor system implementation ✅ v0.12.0 
 - [x] **RUCHY-0804**: Module system and package management ✅ v0.12.0
-- [ ] **RUCHY-0805**: IDE integrations (VSCode, IntelliJ)
+- [ ] **RUCHY-0805**: IDE integrations (VSCode, IntelliJ) - **DEFERRED TO TBD**
 - **Innovation differentiators**: Formal verification + BigO analysis
 
 ## Current Sprint: v0.13.0 - Path to 60% Compatibility
