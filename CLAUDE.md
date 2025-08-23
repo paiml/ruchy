@@ -345,86 +345,209 @@ impl Diagnostic {
 }
 ```
 
-## PMAT MCP Quality Proxy (Real-Time Enforcement)
+## PMAT Agent Mode Integration (Toyota Way Real-Time Quality Engineering)
 
-### MCP Server Configuration (Updated 2025)
+**BREAKTHROUGH**: PMAT v2.10.0 Agent Mode provides autonomous quality engineering following Toyota Way principles with continuous monitoring, proactive refactoring, and intelligent quality gate enforcement.
+
+### Claude Code MCP Agent Configuration
 ```json
-// ~/.config/claude/mcps/pmat.json
+// ~/.config/claude/mcps/pmat-agent.json - Full Agent Mode Integration
 {
   "mcpServers": {
-    "pmat": {
-      "command": "~/.local/bin/pmat",
-      "args": ["serve", "--mode", "agent", "--config", "~/ruchy/pmat.toml"],
-      "env": {
-        "PMAT_PROJECT_ROOT": "~/ruchy",
-        "PMAT_QUALITY_MODE": "strict",
-        "PMAT_AGENT_MODE": "enabled"
+    "pmat-agent": {
+      "command": "pmat",
+      "args": ["mcp", "serve", "--mode", "agent", "--config", "/home/noah/src/ruchy/pmat-agent.toml"],
+      "transport": "stdio",
+      "settings": {
+        "quality_monitoring": {
+          "enabled": true,
+          "complexity_threshold": 10,    // Toyota Way: stricter than standard
+          "watch_patterns": ["**/*.rs", "Cargo.toml", "src/**/*.rs"],
+          "notify_on_violations": true,
+          "continuous_monitoring": true
+        },
+        "toyota_way": {
+          "enforce_complexity": true,     // ≤10 complexity mandatory
+          "zero_satd_tolerance": true,    // No technical debt allowed
+          "require_tests": true,          // Test coverage required
+          "kaizen_mode": true,            // Continuous improvement
+          "genchi_genbutsu": true         // Go and see real problems
+        },
+        "agent_behavior": {
+          "proactive_suggestions": true,
+          "auto_refactor_threshold": 15,  // Suggest refactoring at 15 complexity
+          "background_daemon": true,      // Continuous monitoring
+          "jidoka_mode": true            // Stop the line for quality issues
+        }
       }
     }
   }
 }
 ```
 
-**CRITICAL UPDATE**: PMAT now supports **agent mode** for autonomous quality enforcement. Use `--mode agent` for enhanced quality gate automation.
-
-### PMAT Thresholds (Enforced in Real-Time)
+### Ruchy Project PMAT Agent Configuration
 ```toml
-# pmat.toml - MCP proxy blocks violations instantly
-[thresholds]
-cyclomatic_complexity = 10      # Blocks at write-time
-cognitive_complexity = 15        # No mental overload
-halstead_effort = 5000          # Computational limits
-maintainability_index = 70      # Minimum maintainability
-test_coverage = 80              # Coverage gate
-satd_comments = 0               # Zero technical debt
-mutation_score = 75             # Mutation testing gate
+# pmat-agent.toml - Toyota Way Quality Engineering Configuration
+[agent]
+version = "2.10.0"
+name = "ruchy-toyota-way-agent"
+environment = "development"
+
+# Toyota Way Standards (BLOCKING)
+complexity_threshold = 10        # Strict Toyota Way standard (vs industry 20)
+satd_enabled = true             # Zero SATD tolerance
+check_interval_seconds = 30     # Frequent Kaizen monitoring
+watch_patterns = ["*.rs", "Cargo.toml", "tests/*.rs", "benches/*.rs"]
+
+[quality_monitor]
+enabled = true
+debounce_ms = 1000              # Fast feedback loop
+full_analysis_interval_minutes = 15
+incremental_analysis = true
+
+# Real-time file system watching
+watch_depth = 8
+ignore_patterns = ["target/", ".git/", "*.tmp", "*.log", "fuzz/corpus/"]
+max_file_size_mb = 10
+
+[toyota_way]
+# Toyota Production System integration
+jidoka_enabled = true           # Autonomation with human touch
+kaizen_interval_minutes = 30    # Continuous improvement cycles
+genchi_genbutsu_analysis = true # Go and see the actual code
+poka_yoke_prevention = true     # Error prevention at source
+
+[mcp]
+protocol_version = "2024-11-05"
+server_name = "ruchy-toyota-way-agent" 
+debug_mode = false
+
+# Enable all Toyota Way tools
+[mcp.tools]
+enable_all = true
+complexity_analysis = true
+quality_gates = true
+continuous_monitoring = true
+kaizen_refactoring = true
+jidoka_enforcement = true
 ```
 
-### MCP Quality Proxy Tools (Agent Mode Enhanced)
-```bash
-# PMAT exposes these enhanced MCP tools to Claude:
-
-pmat_analyze_code       # Real-time complexity analysis
-pmat_check_coverage     # Test coverage verification  
-pmat_detect_smells      # Code smell detection
-pmat_suggest_refactor   # Automated refactoring hints
-pmat_mutation_test      # Mutation testing on-demand
-pmat_quality_gate       # Full quality check
-
-# NEW AGENT MODE CAPABILITIES:
-pmat_auto_fix           # Autonomous code fixing
-pmat_suggest_patterns   # Pattern-based improvements
-pmat_enforce_standards  # Automatic standard enforcement
-pmat_continuous_watch   # Real-time file monitoring
-
-# These run automatically as you code via MCP Agent Mode
+### PMAT Agent MCP Tools (Toyota Way Integration)
+```typescript
+interface PmatAgentTools {
+  // Continuous Quality Monitoring (Jidoka)
+  start_quality_monitoring: {
+    project_path: "/home/noah/src/ruchy"
+    complexity_threshold: 10        // Toyota Way strict standard
+    toyota_way_mode: true
+    jidoka_enabled: true           // Stop line for defects
+  }
+  
+  // Kaizen-Based Refactoring
+  suggest_kaizen_refactoring: {
+    file_path: string
+    target_complexity: 10
+    refactor_strategy: "toyota-way"   // Small, incremental improvements
+    genchi_genbutsu: true            // Analyze root cause
+  }
+  
+  // Real-Time Quality Gates (Poka-Yoke)
+  run_toyota_quality_gates: {
+    scope: "repository" | "file" | "function"
+    target: string
+    prevent_defects: true           // Error prevention
+    output_format: "claude-friendly"
+  }
+  
+  // Genchi Genbutsu Analysis
+  analyze_complexity_trends: {
+    time_window: "24h"
+    genchi_genbutsu: true          // Go see actual complexity trends
+    predict_quality_issues: true
+    kaizen_opportunities: true
+  }
+  
+  // Jidoka Health Check
+  toyota_way_health_check: {
+    include_satd: true             // Zero SATD tolerance
+    include_dead_code: true
+    include_complexity_violations: true
+    stop_line_on_defects: true     // Toyota Way principle
+    generate_kaizen_plan: true
+  }
+}
 ```
 
-### Live Quality Feedback Pattern (Agent Mode)
+### Live Toyota Way Quality Feedback
 ```rust
-// PMAT Agent Mode provides instant feedback + autonomous fixes:
+// PMAT Agent provides Toyota Way guidance as you code:
 
-fn process_data(data: &Data) -> Result<(), Error> {
-    // PMAT: Complexity 3/10 ✅
-    validate(data)?;
+pub fn evaluate_expr(&mut self, expr: &Expr) -> Result<Value, EvalError> {
+    // 🏭 PMAT TOYOTA WAY AGENT: Function complexity 138/10 ❌ JIDOKA STOP!
+    // 🔧 KAIZEN SUGGESTION: Split into 5 dispatcher functions  
+    // 📍 GENCHI GENBUTSU: Root cause is massive match expression
+    // 🚫 POKA-YOKE: Preventing further complexity increases
     
-    if data.complex {  // PMAT: +1 complexity (4/10)
-        for item in &data.items {  // PMAT: +2 (6/10)
-            if item.check() {  // PMAT: +3 nested (9/10) ⚠️
-                // PMAT AGENT: Auto-refactoring suggested
-                // PMAT AGENT: Would you like me to extract process_items()?
-                process_item(item)?;
-            }
+    match &expr.kind {
+        ExprKind::Literal(lit) => {
+            // ✅ PMAT AGENT: Extracted evaluate_literal_expr() - complexity reduced
+            self.evaluate_literal_expr(lit)
         }
+        ExprKind::Variable(name) => {
+            // ✅ PMAT AGENT: Dispatcher pattern applied successfully  
+            self.evaluate_variable_expr(name)
+        }
+        // PMAT AGENT: 47 more cases -> Extract to evaluate_complex_expr()
+        _ => self.evaluate_complex_expr(expr)
     }
-    Ok(())
 }
 
-// PMAT Agent Mode can:
-// 1. Auto-suggest: "Extract loop to process_items() function"  
-// 2. Auto-implement the refactoring
-// 3. Run tests to verify the refactoring worked
-// 4. Commit the improvement with proper message
+// 🎯 PMAT Agent Toyota Way Recommendations:
+// 1. KAIZEN: "Reduce complexity from 138 → 10 through dispatcher pattern"
+// 2. JIDOKA: "Stop development until complexity is fixed"
+// 3. GENCHI GENBUTSU: "Analyze AST structure to understand root cause"
+// 4. POKA-YOKE: "Prevent new complexity through real-time monitoring"
+```
+
+### Toyota Way Quality Gate Integration
+```bash
+#!/bin/bash
+# Enhanced Toyota Way pre-commit hook with PMAT Agent
+
+set -e
+
+echo "🏭 PMAT Toyota Way Agent: Jidoka Quality Gates"
+
+# Kaizen: Continuous improvement check
+pmat mcp call toyota_way_health_check '{
+  "stop_line_on_defects": true,
+  "generate_kaizen_plan": true,
+  "zero_satd_tolerance": true
+}'
+
+# Genchi Genbutsu: Go and see the actual problems  
+pmat mcp call analyze_complexity_trends '{
+  "genchi_genbutsu": true,
+  "kaizen_opportunities": true,
+  "predict_quality_issues": true
+}'
+
+# Jidoka: Autonomation with human touch
+pmat mcp call run_toyota_quality_gates '{
+  "scope": "repository",
+  "prevent_defects": true,
+  "toyota_way_strict": true
+}'
+
+# Poka-Yoke: Error prevention verification
+if [ $? -ne 0 ]; then
+    echo "❌ JIDOKA STOP: Quality defects detected"
+    echo "Following Toyota Way - must fix ALL defects before proceeding"
+    echo "No compromise on quality - every defect matters"
+    exit 1
+fi
+
+echo "✅ Toyota Way Agent: All quality gates passed - continue with confidence"
 ```
 
 ### Zero-SATD Enforcement

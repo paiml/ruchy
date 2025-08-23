@@ -98,6 +98,74 @@ impl Transpiler {
                     #func
                 })
             }
+        } else if let ExprKind::Block(exprs) = &expr.kind {
+            // Handle blocks that contain function definitions and statements
+            // Check if this block contains functions - if so, extract them as top-level items
+            let mut functions = Vec::new();
+            let mut statements = Vec::new();
+            
+            for expr in exprs {
+                if let ExprKind::Function { .. } = &expr.kind {
+                    functions.push(self.transpile_expr(expr)?);
+                } else {
+                    statements.push(self.transpile_expr(expr)?);
+                }
+            }
+            
+            if !functions.is_empty() {
+                // We have function definitions - put them at top level
+                if needs_polars {
+                    Ok(quote! {
+                        use polars::prelude::*;
+                        
+                        #(#functions)*
+                        
+                        fn main() {
+                            #(#statements;)*
+                        }
+                    })
+                } else {
+                    Ok(quote! {
+                        #(#functions)*
+                        
+                        fn main() {
+                            #(#statements;)*
+                        }
+                    })
+                }
+            } else {
+                // No functions, treat as normal expression block
+                let body = self.transpile_expr(expr)?;
+                if needs_polars {
+                    Ok(quote! {
+                        use polars::prelude::*;
+
+                        fn main() {
+                            let result = #body;
+                            // Use Display trait for strings, Debug for other types
+                            match &result {
+                                s if std::any::type_name_of_val(&s).contains("String") || 
+                                     std::any::type_name_of_val(&s).contains("&str") => println!("{}", s),
+                                _ => println!("{:?}", result)
+                            }
+                        }
+                    })
+                } else {
+                    Ok(quote! {
+                        fn main() {
+                            let result = #body;
+                            // For strings, print without quotes
+                            if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<String>() {
+                                println!("{}", s);
+                            } else if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<&str>() {
+                                println!("{}", s);
+                            } else {
+                                println!("{:?}", result);
+                            }
+                        }
+                    })
+                }
+            }
         } else {
             // For expressions, wrap in main and execute
             let body = self.transpile_expr(expr)?;
