@@ -6,7 +6,7 @@
 
 use super::*;
 use crate::frontend::ast::{Literal, Param, Pattern, PipelineStage, UnaryOp};
-use anyhow::Result;
+use anyhow::{Result, bail};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -362,6 +362,61 @@ impl Transpiler {
             if name == "round" && args.len() == 1 {
                 let arg = self.transpile_expr(&args[0])?;
                 return Ok(quote! { (#arg as f64).round() });
+            }
+            
+            // Input functions
+            if name == "input" {
+                if args.len() > 1 {
+                    bail!("input expects 0 or 1 arguments (optional prompt)");
+                }
+                if args.is_empty() {
+                    return Ok(quote! { 
+                        {
+                            let mut input = String::new();
+                            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+                            if input.ends_with('\n') {
+                                input.pop();
+                                if input.ends_with('\r') {
+                                    input.pop();
+                                }
+                            }
+                            input
+                        }
+                    });
+                } else {
+                    let prompt = self.transpile_expr(&args[0])?;
+                    return Ok(quote! { 
+                        {
+                            print!("{}", #prompt);
+                            std::io::Write::flush(&mut std::io::stdout()).unwrap();
+                            let mut input = String::new();
+                            std::io::stdin().read_line(&mut input).expect("Failed to read input");
+                            if input.ends_with('\n') {
+                                input.pop();
+                                if input.ends_with('\r') {
+                                    input.pop();
+                                }
+                            }
+                            input
+                        }
+                    });
+                }
+            }
+            
+            if name == "readline" && args.is_empty() {
+                return Ok(quote! { 
+                    {
+                        let mut input = String::new();
+                        std::io::stdin().read_line(&mut input).expect("Failed to read input");
+                        if input.ends_with('\n') {
+                            input.pop();
+                            if input.ends_with('\r') {
+                                input.pop();
+                            }
+                        }
+                        input
+                    }
+                });
             }
             
             // Collection constructors
