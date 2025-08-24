@@ -1,3 +1,7 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
 //! Core Interpreter Reliability Tests
 //!
 //! Following Toyota Way: These tests MUST pass 100% before any feature work

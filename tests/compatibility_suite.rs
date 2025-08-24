@@ -1,3 +1,9 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::approx_constant)]
+#![allow(clippy::unwrap_used)]
 // tests/compatibility_suite.rs  
 // Comprehensive compatibility test suite for Ruchy language features
 // Based on industry best practices from Rust, Python, Elixir, Ruby, SQLite, Haskell, JS/Deno

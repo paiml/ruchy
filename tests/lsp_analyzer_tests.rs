@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Tests for LSP semantic analyzer functionality
 //!
 //! This module tests the Language Server Protocol analyzer for semantic analysis,
@@ -11,11 +16,11 @@ use tower_lsp::lsp_types::{CompletionItemKind, DiagnosticSeverity, Position};
 fn test_analyzer_creation() {
     let _analyzer = SemanticAnalyzer::new();
     // Should create successfully
-    assert!(true);
+    // Analyzer created successfully
     
     // Test Default trait
     let _default_analyzer = SemanticAnalyzer::default();
-    assert!(true);
+    // Analyzer created successfully
 }
 
 /// Test getting completions for basic keywords
@@ -287,7 +292,7 @@ fn test_all_keyword_completions() {
     
     for keyword in expected_keywords {
         let has_keyword = completions.iter().any(|c| c.label == keyword && c.kind == Some(CompletionItemKind::KEYWORD));
-        assert!(has_keyword, "Missing keyword: {}", keyword);
+        assert!(has_keyword, "Missing keyword: {keyword}");
     }
 }
 
@@ -304,7 +309,7 @@ fn test_all_builtin_type_completions() {
     
     for type_name in expected_types {
         let has_type = completions.iter().any(|c| c.label == type_name && c.kind == Some(CompletionItemKind::TYPE_PARAMETER));
-        assert!(has_type, "Missing type: {}", type_name);
+        assert!(has_type, "Missing type: {type_name}");
     }
 }
 

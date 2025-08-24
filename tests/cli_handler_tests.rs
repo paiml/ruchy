@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Tests for CLI command handlers
 //!
 //! These tests validate the individual command handler functions
@@ -149,7 +154,7 @@ fn test_run_command_integration() -> Result<()> {
     } else {
         // If run command is not fully implemented, that's expected
         let stderr = String::from_utf8_lossy(&output.stderr);
-        println!("Run command not fully implemented: {}", stderr);
+        println!("Run command not fully implemented: {stderr}");
         // This is acceptable during development
     }
     

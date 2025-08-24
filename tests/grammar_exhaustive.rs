@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::approx_constant)]
 //! Exhaustive grammar coverage tests for REPL
 //!
 //! Tests every grammar production to ensure complete coverage

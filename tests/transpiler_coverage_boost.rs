@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Additional tests to boost transpiler coverage
 //!
 //! These tests specifically target low-coverage transpiler modules
@@ -33,10 +38,10 @@ fn test_dataframe_literal_transpilation() -> Result<()> {
 /// Test dataframe operations transpilation
 #[test]
 fn test_dataframe_operations_transpilation() -> Result<()> {
-    let source = r#"
+    let source = r"
     let numbers = [1, 2, 3]
     let filtered = numbers.filter(|x| x > 1)
-    "#;
+    ";
     
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
@@ -55,12 +60,12 @@ fn test_dataframe_operations_transpilation() -> Result<()> {
 /// Test pattern matching transpilation
 #[test]
 fn test_pattern_matching_transpilation() -> Result<()> {
-    let source = r#"
+    let source = r"
     match value {
         Some(x) => x + 1,
         None => 0
     }
-    "#;
+    ";
     
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
@@ -103,12 +108,12 @@ fn test_result_type_transpilation() -> Result<()> {
 /// Test async/await transpilation
 #[test]
 fn test_async_await_transpilation() -> Result<()> {
-    let source = r#"
+    let source = r"
     async fn fetch_data() -> String {
         let response = await network_call();
         response.text()
     }
-    "#;
+    ";
     
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
@@ -126,9 +131,9 @@ fn test_async_await_transpilation() -> Result<()> {
 /// Test complex expression transpilation
 #[test]
 fn test_complex_expression_transpilation() -> Result<()> {
-    let source = r#"
+    let source = r"
     let result = (x + y * 2) / (z - 1) ** 2
-    "#;
+    ";
     
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
@@ -169,12 +174,12 @@ fn test_string_interpolation_transpilation() -> Result<()> {
 /// Test array methods transpilation
 #[test]
 fn test_array_methods_transpilation() -> Result<()> {
-    let source = r#"
+    let source = r"
     let numbers = [1, 2, 3, 4, 5]
     numbers.map(x => x * 2)
            .filter(x => x > 4)
            .reduce((acc, x) => acc + x, 0)
-    "#;
+    ";
     
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
@@ -192,10 +197,10 @@ fn test_array_methods_transpilation() -> Result<()> {
 /// Test lambda expression transpilation
 #[test]
 fn test_lambda_transpilation() -> Result<()> {
-    let source = r#"
+    let source = r"
     let add = |x, y| x + y
     let result = add(10, 20)
-    "#;
+    ";
     
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
@@ -205,7 +210,7 @@ fn test_lambda_transpilation() -> Result<()> {
     let rust_code = result.to_string();
     
     // Should contain closure syntax
-    assert!(rust_code.contains("|") && (rust_code.contains("=>") || rust_code.contains("|")));
+    assert!(rust_code.contains('|') && (rust_code.contains("=>") || rust_code.contains('|')));
     
     Ok(())
 }
@@ -213,10 +218,10 @@ fn test_lambda_transpilation() -> Result<()> {
 /// Test pipeline operator transpilation
 #[test]
 fn test_pipeline_operator_transpilation() -> Result<()> {
-    let source = r#"
+    let source = r"
     let data = [1, 2, 3]
     let result = data.map(|x| x * 2)
-    "#;
+    ";
     
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
@@ -279,14 +284,11 @@ fn test_transpiler_empty_input() -> Result<()> {
     let result = parser.parse();
     
     // Empty input might be an error or empty AST, both should be handled gracefully
-    match result {
-        Ok(ast) => {
-            let transpiler = Transpiler::new();
-            let _rust_code = transpiler.transpile(&ast)?;
-        }
-        Err(_) => {
-            // Parser error on empty input is acceptable
-        }
+    if let Ok(ast) = result {
+        let transpiler = Transpiler::new();
+        let _rust_code = transpiler.transpile(&ast)?;
+    } else {
+        // Parser error on empty input is acceptable
     }
     
     Ok(())

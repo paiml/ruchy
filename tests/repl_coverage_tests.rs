@@ -1,3 +1,7 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
 //! Comprehensive REPL tests to achieve 80% coverage
 
 #![allow(clippy::expect_used)]

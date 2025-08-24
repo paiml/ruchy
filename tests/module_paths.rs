@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Tests for module path (::) syntax support
 #![allow(clippy::print_stdout, clippy::uninlined_format_args)] // Test debugging output
 

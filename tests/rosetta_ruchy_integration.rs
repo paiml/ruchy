@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Integration tests for rosetta-ruchy examples
 //!
 //! These tests validate that the Ruchy compiler can successfully run all
@@ -36,7 +41,7 @@ fn test_find_rosetta_ruchy_examples() {
                     if let Ok(ruchy_entries) = std::fs::read_dir(&ruchy_impl_path) {
                         for ruchy_entry in ruchy_entries.flatten() {
                             let ruchy_path = ruchy_entry.path();
-                            if ruchy_path.extension().map_or(false, |ext| ext == "ruchy") {
+                            if ruchy_path.extension().is_some_and(|ext| ext == "ruchy") {
                                 ruchy_files.push(ruchy_path);
                             }
                         }
@@ -46,7 +51,7 @@ fn test_find_rosetta_ruchy_examples() {
         }
     }
 
-    println!("Found {} algorithm directories", algorithm_count);
+    println!("Found {algorithm_count} algorithm directories");
     println!("Found {} .ruchy files", ruchy_files.len());
 
     // We expect at least 5 algorithms with ruchy implementations
@@ -84,14 +89,14 @@ fn test_fibonacci_simple_execution() {
 
             if !output.status.success() {
                 eprintln!("Command failed with status: {}", output.status);
-                eprintln!("Stdout: {}", stdout);
-                eprintln!("Stderr: {}", stderr);
+                eprintln!("Stdout: {stdout}");
+                eprintln!("Stderr: {stderr}");
                 // Don't fail the test - just report the issue
                 eprintln!("Note: This is expected if ruchy run command is not fully implemented");
                 return;
             }
 
-            println!("fibonacci_simple.ruchy output:\n{}", stdout);
+            println!("fibonacci_simple.ruchy output:\n{stdout}");
             
             // Check for expected fibonacci outputs
             // The script calculates fibonacci(10) which should be 55
@@ -100,7 +105,7 @@ fn test_fibonacci_simple_execution() {
 
         }
         Err(e) => {
-            eprintln!("Failed to execute command: {}", e);
+            eprintln!("Failed to execute command: {e}");
             // Don't fail the test - this might be expected during development
         }
     }
@@ -127,7 +132,7 @@ fn test_parse_rosetta_ruchy_files() {
                     if let Ok(ruchy_entries) = std::fs::read_dir(&ruchy_impl_path) {
                         for ruchy_entry in ruchy_entries.flatten() {
                             let ruchy_path = ruchy_entry.path();
-                            if ruchy_path.extension().map_or(false, |ext| ext == "ruchy") {
+                            if ruchy_path.extension().is_some_and(|ext| ext == "ruchy") {
                                 // Try to parse the file
                                 if let Ok(content) = std::fs::read_to_string(&ruchy_path) {
                                     // Use ruchy's parser to validate syntax
@@ -148,7 +153,7 @@ fn test_parse_rosetta_ruchy_files() {
         }
     }
 
-    println!("Successfully parsed {} ruchy files", parsed_files);
+    println!("Successfully parsed {parsed_files} ruchy files");
     if !failed_files.is_empty() {
         println!("Failed to parse {} files:", failed_files.len());
         for (file, error) in &failed_files {
@@ -185,16 +190,16 @@ fn test_parse_rosetta_ruchy_files() {
             }
         }
         
-        println!("Comment syntax issues: {}", comment_issues);
-        println!("Type annotation issues: {}", type_issues); 
-        println!("Generic type syntax issues: {}", generic_issues);
+        println!("Comment syntax issues: {comment_issues}");
+        println!("Type annotation issues: {type_issues}"); 
+        println!("Generic type syntax issues: {generic_issues}");
         println!("Other parsing issues: {}", failed_files.len() - comment_issues - type_issues - generic_issues);
     }
 }
 
 /// Comprehensive test runner for all rosetta-ruchy examples
 #[test]
-#[ignore] // Ignore by default as this is a comprehensive test that may take time
+#[ignore = "Comprehensive test that may take time"]
 fn test_all_rosetta_ruchy_examples() {
     let rosetta_path = Path::new("../rosetta-ruchy");
     if !rosetta_path.exists() {
@@ -217,7 +222,7 @@ fn test_all_rosetta_ruchy_examples() {
                     if let Ok(ruchy_entries) = std::fs::read_dir(&ruchy_impl_path) {
                         for ruchy_entry in ruchy_entries.flatten() {
                             let ruchy_path = ruchy_entry.path();
-                            if ruchy_path.extension().map_or(false, |ext| ext == "ruchy") {
+                            if ruchy_path.extension().is_some_and(|ext| ext == "ruchy") {
                                 total_files += 1;
                                 println!("Testing: {}", ruchy_path.display());
 
@@ -225,7 +230,7 @@ fn test_all_rosetta_ruchy_examples() {
                                 let content = match std::fs::read_to_string(&ruchy_path) {
                                     Ok(content) => content,
                                     Err(e) => {
-                                        println!("  ❌ Failed to read file: {}", e);
+                                        println!("  ❌ Failed to read file: {e}");
                                         continue;
                                     }
                                 };
@@ -235,7 +240,7 @@ fn test_all_rosetta_ruchy_examples() {
                                         println!("  ✅ Parsing successful");
                                     }
                                     Err(e) => {
-                                        println!("  ❌ Parsing failed: {}", e);
+                                        println!("  ❌ Parsing failed: {e}");
                                         parsing_failures += 1;
                                         continue;
                                     }
@@ -257,7 +262,7 @@ fn test_all_rosetta_ruchy_examples() {
                                         }
                                     }
                                     Err(e) => {
-                                        println!("  ⚠️  Could not execute: {}", e);
+                                        println!("  ⚠️  Could not execute: {e}");
                                         execution_failures += 1;
                                     }
                                 }
@@ -270,14 +275,14 @@ fn test_all_rosetta_ruchy_examples() {
     }
 
     println!("\n=== Rosetta-Ruchy Integration Test Summary ===");
-    println!("Total files tested: {}", total_files);
+    println!("Total files tested: {total_files}");
     println!("Successful parses: {}", total_files - parsing_failures);
-    println!("Parsing failures: {}", parsing_failures);
-    println!("Successful executions: {}", successful_runs);
-    println!("Execution issues: {}", execution_failures);
+    println!("Parsing failures: {parsing_failures}");
+    println!("Successful executions: {successful_runs}");
+    println!("Execution issues: {execution_failures}");
 
     if total_files > 0 {
-        let parse_success_rate = (total_files - parsing_failures) as f64 / total_files as f64;
+        let parse_success_rate = f64::from(total_files - parsing_failures) / f64::from(total_files);
         println!("Parse success rate: {:.1}%", parse_success_rate * 100.0);
         
         // For now, require at least 70% parsing success

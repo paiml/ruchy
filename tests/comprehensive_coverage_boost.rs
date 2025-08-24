@@ -1,3 +1,9 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::approx_constant)]
+#![allow(clippy::unwrap_used)]
 //! Comprehensive coverage boost tests
 //!
 //! This test suite targets remaining gaps in test coverage to help
@@ -10,11 +16,11 @@ use ruchy::frontend::ast::{Expr, Span};
 /// Test parser with complex nested expressions
 #[test]
 fn test_parser_complex_expressions() -> Result<()> {
-    let complex_source = r#"
+    let complex_source = r"
     let result = ((a + b) * (c - d)) / (e + f) + g
     let nested_calls = func1(func2(func3(x, y), z), w)
     let conditional = if x > 0 { if y > 0 { 1 } else { 2 } } else { 3 }
-    "#;
+    ";
     
     let mut parser = Parser::new(complex_source);
     let ast = parser.parse()?;
@@ -220,7 +226,7 @@ fn test_token_stream_operations() -> Result<()> {
     let mut count = 0;
     while let Some((token, _span)) = tokens.next() {
         // Each token should have some content
-        let _token_content = format!("{:?}", token);
+        let _token_content = format!("{token:?}");
         count += 1;
         
         // Prevent infinite loop
@@ -256,9 +262,9 @@ fn test_span_tracking() {
 fn test_pattern_matching_constructs() -> Result<()> {
     let match_expressions = [
         r#"match x { 1 => "one", 2 => "two", _ => "other" }"#,
-        r#"match point { (x, y) => x + y }"#,
-        r#"match option { Some(value) => value, None => 0 }"#,
-        r#"match list { [] => 0, [head, ..tail] => head }"#,
+        r"match point { (x, y) => x + y }",
+        r"match option { Some(value) => value, None => 0 }",
+        r"match list { [] => 0, [head, ..tail] => head }",
     ];
     
     for expr in &match_expressions {

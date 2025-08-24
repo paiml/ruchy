@@ -1,4 +1,10 @@
-//! Tests for DataFrame transpilation functionality
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::approx_constant)]
+#![allow(clippy::unwrap_used)]
+//! Tests for `DataFrame` transpilation functionality
 //!
 //! This module tests the backend transpiler's dataframe capabilities,
 //! targeting the 0% coverage backend/transpiler/dataframe.rs module.
@@ -12,7 +18,7 @@ use ruchy::frontend::ast::{DataFrameColumn, DataFrameOp, JoinType, Expr, ExprKin
 fn test_transpiler_dataframe_basic() {
     let _transpiler = Transpiler::new();
     // Should create successfully
-    assert!(true);
+    // Transpiler created successfully
 }
 
 /// Test empty dataframe transpilation

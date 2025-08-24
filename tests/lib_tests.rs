@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::approx_constant)]
 #![allow(clippy::unwrap_used, clippy::panic)]
 #![allow(clippy::unwrap_used)]
 

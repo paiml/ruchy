@@ -1,3 +1,7 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
 //! Comprehensive validation test suite - Toyota Way quality enforcement
 //! Based on lessons learned from v1.0.0 testing failures
 

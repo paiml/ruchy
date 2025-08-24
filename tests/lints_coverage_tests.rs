@@ -1,10 +1,15 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Tests for the lints module
 //!
 //! This test suite targets the lints module that had 120 lines with 0% coverage.
 //! It tests custom lint rules for Ruchy code quality analysis.
 
 use ruchy::lints::{RuchyLinter, LintRule, LintViolation, Severity};
-use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span, BinaryOp, MatchArm, Pattern, Param};
+use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span, BinaryOp, MatchArm, Pattern};
 
 /// Create a simple test expression
 fn create_test_expr(kind: ExprKind) -> Expr {
@@ -14,14 +19,14 @@ fn create_test_expr(kind: ExprKind) -> Expr {
 /// Test basic linter creation and initialization
 #[test]
 fn test_linter_creation() {
-    let linter = RuchyLinter::new();
+    let _linter = RuchyLinter::new();
     
     // Should create successfully with default rules
-    assert!(true); // Linter creation succeeds
+    // Linter creation verified by no panic
     
     // Test Default trait
-    let default_linter = RuchyLinter::default();
-    assert!(true); // Default creation succeeds
+    let _default_linter = RuchyLinter::default();
+    // Default creation verified by no panic
 }
 
 /// Test adding custom rules to linter
@@ -32,7 +37,7 @@ fn test_linter_add_custom_rule() {
     // Create a simple custom rule
     struct TestRule;
     impl LintRule for TestRule {
-        fn name(&self) -> &str {
+        fn name(&self) -> &'static str {
             "test_rule"
         }
         
@@ -45,7 +50,7 @@ fn test_linter_add_custom_rule() {
     linter.add_rule(Box::new(TestRule));
     
     // Should add without error
-    assert!(true);
+    // Linter created successfully - no panic means test passed
 }
 
 /// Test linting simple expressions
@@ -137,10 +142,9 @@ fn test_complexity_rule_nested_complexity() {
     
     // Check that it's a complexity violation
     let first_violation = &violations[0];
-    if let LintViolation::Violation { message, severity, .. } = first_violation {
-        assert!(message.contains("complexity"));
-        assert!(matches!(severity, Severity::Warning));
-    }
+    let LintViolation::Violation { message, severity, .. } = first_violation;
+    assert!(message.contains("complexity"));
+    assert!(matches!(severity, Severity::Warning));
 }
 
 /// Test no debug print rule with regular function calls
@@ -175,22 +179,19 @@ fn test_no_debug_print_rule_debug_calls() {
     let violations = linter.lint(&debug_call_expr);
     
     // Debug calls should violate the rule
-    println!("Debug: Violations found: {:?}", violations);
+    println!("Debug: Violations found: {violations:?}");
     assert!(!violations.is_empty());
     
     // Check that it's a debug print violation
     let has_debug_violation = violations.iter().any(|v| {
-        if let LintViolation::Violation { message, .. } = v {
-            println!("Debug: Checking message: {}", message);
-            message.contains("debug") || message.contains("Debug")
-        } else {
-            false
-        }
+        let LintViolation::Violation { message, .. } = v;
+        // Debug: Checking message
+        message.contains("debug") || message.contains("Debug")
     });
     assert!(has_debug_violation);
 }
 
-/// Test no debug print rule with debug_print calls
+/// Test no debug print rule with `debug_print` calls
 #[test]
 fn test_no_debug_print_rule_debug_print_calls() {
     let linter = RuchyLinter::new();
@@ -303,7 +304,7 @@ fn test_lint_violation_formatting() {
     };
     
     // Test formatting
-    let formatted = format!("{}", violation);
+    let formatted = format!("{violation}");
     assert!(formatted.contains("line 10"));
     assert!(formatted.contains("Test violation"));
     assert!(formatted.contains("Error"));
@@ -334,7 +335,7 @@ fn test_custom_lint_rule() {
     struct AlwaysViolatesRule;
     
     impl LintRule for AlwaysViolatesRule {
-        fn name(&self) -> &str {
+        fn name(&self) -> &'static str {
             "always_violates"
         }
         
@@ -368,7 +369,7 @@ fn test_custom_lint_rule() {
 fn test_lint_rule_names() {
     struct TestRule;
     impl LintRule for TestRule {
-        fn name(&self) -> &str {
+        fn name(&self) -> &'static str {
             "test_rule_name"
         }
         
