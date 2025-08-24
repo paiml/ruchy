@@ -1,5 +1,8 @@
 # CLAUDE.md - Ruchy Compiler Implementation Protocol
 
+## IMPORTANT: Auto-Generated Files
+**NEVER EDIT `deep_context.md`** - This file is auto-generated and will be overwritten. Any changes should be made to the source files instead.
+
 ## Prime Directive
 
 **Generate correct code that compiles on first attempt. Quality is built-in, not bolted-on.**

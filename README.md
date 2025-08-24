@@ -2,8 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/tests-280%2B%20passing-green.svg)](./tests)
-[![v1.5.0](https://img.shields.io/badge/v1.5.0-SELF--HOSTING-gold.svg)](./CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-640%2B%20passing-green.svg)](./tests)
+[![v1.6.0](https://img.shields.io/badge/v1.6.0-QUALITY--EXCELLENCE-gold.svg)](./CHANGELOG.md)
 [![Self-Hosting](https://img.shields.io/badge/🎊%20SELF--HOSTING-ACHIEVED-brightgreen.svg)](./SELF_HOSTING_ACHIEVEMENT.md)
 
 ## 🎉 HISTORIC ACHIEVEMENT: RUCHY IS NOW SELF-HOSTING! 🎉
@@ -39,6 +39,12 @@ ruchy provability script.ruchy --verify --contracts
 ```
 
 ## ✨ Key Features
+
+### 📊 QUALITY EXCELLENCE (v1.6.0)
+- **80% Test Coverage Target**: Systematic improvement from 37.25% baseline
+- **Zero-Warning Build**: All clippy warnings resolved
+- **Comprehensive Testing**: 640+ tests across 71 test files
+- **Toyota Way Enforcement**: Zero-defect quality gates
 
 ### 🎊 SELF-HOSTING CAPABILITY (v1.5.0)
 - **Bootstrap Compilation**: Ruchy compiler written in Ruchy itself
