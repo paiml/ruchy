@@ -966,6 +966,72 @@ impl Repl {
                 }
                 Ok(Value::Int(sum))
             }
+            "push" => {
+                if args.len() != 1 {
+                    bail!("push requires exactly 1 argument");
+                }
+                let mut new_items = items;
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                new_items.push(value);
+                Ok(Value::List(new_items))
+            }
+            "pop" => {
+                if !args.is_empty() {
+                    bail!("pop requires no arguments");
+                }
+                let mut new_items = items;
+                if let Some(popped) = new_items.pop() {
+                    Ok(popped)
+                } else {
+                    bail!("Cannot pop from empty list")
+                }
+            }
+            "append" => {
+                if args.len() != 1 {
+                    bail!("append requires exactly 1 argument");
+                }
+                let mut new_items = items;
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                if let Value::List(other_items) = value {
+                    new_items.extend(other_items);
+                    Ok(Value::List(new_items))
+                } else {
+                    bail!("append requires a list argument");
+                }
+            }
+            "insert" => {
+                if args.len() != 2 {
+                    bail!("insert requires exactly 2 arguments (index, value)");
+                }
+                let mut new_items = items;
+                let index = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let value = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                if let Value::Int(idx) = index {
+                    if idx < 0 || idx as usize > new_items.len() {
+                        bail!("Insert index out of bounds");
+                    }
+                    new_items.insert(idx as usize, value);
+                    Ok(Value::List(new_items))
+                } else {
+                    bail!("Insert index must be an integer");
+                }
+            }
+            "remove" => {
+                if args.len() != 1 {
+                    bail!("remove requires exactly 1 argument (index)");
+                }
+                let mut new_items = items;
+                let index = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                if let Value::Int(idx) = index {
+                    if idx < 0 || idx as usize >= new_items.len() {
+                        bail!("Remove index out of bounds");
+                    }
+                    let removed = new_items.remove(idx as usize);
+                    Ok(removed)
+                } else {
+                    bail!("Remove index must be an integer");
+                }
+            }
             _ => bail!("Unknown list method: {}", method),
         }
     }
