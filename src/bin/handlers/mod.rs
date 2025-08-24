@@ -1,3 +1,153 @@
+use anyhow::{Context, Result};
+use ruchy::{Parser as RuchyParser, Transpiler};
+use std::fs;
+use std::io::{self, Read};
+use std::path::Path;
+
+/// Handle parse command - show AST for a Ruchy file
+pub fn handle_parse_command(file: &Path, verbose: bool) -> Result<()> {
+    if verbose {
+        eprintln!("Parsing file: {}", file.display());
+    }
+    
+    let source = fs::read_to_string(file)
+        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    
+    let mut parser = RuchyParser::new(&source);
+    match parser.parse() {
+        Ok(ast) => {
+            println!("{ast:#?}");
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("Parse error: {e}");
+            std::process::exit(1);
+        }
+    }
+}
+
+/// Handle transpile command - convert Ruchy to Rust
+pub fn handle_transpile_command(
+    file: &Path, 
+    output: Option<&Path>, 
+    minimal: bool,
+    verbose: bool
+) -> Result<()> {
+    if verbose {
+        eprintln!("Transpiling file: {}", file.display());
+        if minimal {
+            eprintln!("Using minimal codegen for self-hosting");
+        }
+    }
+    
+    let source = if file.as_os_str() == "-" {
+        // Read from stdin
+        if verbose {
+            eprintln!("Reading from stdin...");
+        }
+        let mut input = String::new();
+        io::stdin().read_to_string(&mut input)?;
+        input
+    } else {
+        fs::read_to_string(file)
+            .with_context(|| format!("Failed to read file: {}", file.display()))?
+    };
+
+    let mut parser = RuchyParser::new(&source);
+    let ast = parser.parse()
+        .with_context(|| "Failed to parse input")?;
+
+    let transpiler = Transpiler::new();
+    let rust_code = if minimal {
+        transpiler.transpile_minimal(&ast)
+            .with_context(|| "Failed to transpile to Rust (minimal)")?
+    } else {
+        transpiler.transpile(&ast)
+            .map(|tokens| tokens.to_string())
+            .with_context(|| "Failed to transpile to Rust")?
+    };
+
+    // Output the generated Rust code
+    if let Some(output_path) = output {
+        fs::write(output_path, &rust_code)
+            .with_context(|| format!("Failed to write output file: {}", output_path.display()))?;
+        
+        if verbose {
+            eprintln!("Output written to: {}", output_path.display());
+        }
+    } else {
+        print!("{rust_code}");
+    }
+
+    Ok(())
+}
+
+/// Handle run command - compile and execute a Ruchy file
+pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
+    if verbose {
+        eprintln!("Running file: {}", file.display());
+    }
+    
+    let source = fs::read_to_string(file)
+        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+
+    let mut parser = RuchyParser::new(&source);
+    let ast = parser.parse()
+        .with_context(|| "Failed to parse input")?;
+
+    let transpiler = Transpiler::new();
+    let rust_code = transpiler.transpile(&ast)
+        .map(|tokens| tokens.to_string())
+        .with_context(|| "Failed to transpile to Rust")?;
+
+    // Write to temporary file
+    let temp_dir = std::env::temp_dir();
+    let temp_file = temp_dir.join("ruchy_temp.rs");
+    fs::write(&temp_file, &rust_code)
+        .with_context(|| "Failed to write temporary file")?;
+
+    if verbose {
+        eprintln!("Temporary Rust file: {}", temp_file.display());
+        eprintln!("Compiling and running...");
+    }
+
+    // Compile and run using rustc
+    let output = std::process::Command::new("rustc")
+        .arg("--edition=2021")
+        .arg("-o")
+        .arg(temp_dir.join("ruchy_temp"))
+        .arg(&temp_file)
+        .output()
+        .with_context(|| "Failed to run rustc")?;
+
+    if !output.status.success() {
+        eprintln!("Compilation failed:");
+        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
+        std::process::exit(1);
+    }
+
+    // Run the compiled binary
+    let run_output = std::process::Command::new(temp_dir.join("ruchy_temp"))
+        .output()
+        .with_context(|| "Failed to run compiled binary")?;
+
+    // Print the output
+    print!("{}", String::from_utf8_lossy(&run_output.stdout));
+    if !run_output.stderr.is_empty() {
+        eprint!("{}", String::from_utf8_lossy(&run_output.stderr));
+    }
+
+    // Cleanup temporary files
+    let _ = fs::remove_file(&temp_file);
+    let _ = fs::remove_file(temp_dir.join("ruchy_temp"));
+
+    if !run_output.status.success() {
+        std::process::exit(run_output.status.code().unwrap_or(1));
+    }
+
+    Ok(())
+}
+
 /// Handle interactive theorem prover (RUCHY-0820)
 pub fn handle_prove_command(
     file: Option<&std::path::Path>,

@@ -696,7 +696,7 @@ impl InferenceContext {
         self.type_constraints.push(TypeConstraint::MethodCall(
             receiver_ty.clone(),
             method.to_string(),
-            arg_types.clone(),
+            arg_types,
         ));
 
         // For now, we'll handle some common methods

@@ -30,7 +30,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 mod handlers;
-use handlers::handle_prove_command;
+use handlers::{handle_prove_command, handle_parse_command, handle_transpile_command, handle_run_command};
 
 /// Configuration for code formatting
 #[derive(Debug, Clone)]
@@ -877,7 +877,7 @@ fn main() -> Result<()> {
                     );
                 } else {
                     // Default text output - suppress unit values in CLI mode
-                    let result_str = format!("{result}");
+                    let result_str = result.to_string();
                     if result_str != "()" {
                         println!("{result}");
                     }
@@ -945,47 +945,13 @@ fn main() -> Result<()> {
             repl.run()?;
         }
         Some(Commands::Parse { file }) => {
-            let source = fs::read_to_string(&file)?;
-            let mut parser = RuchyParser::new(&source);
-            match parser.parse() {
-                Ok(ast) => println!("{ast:#?}"),
-                Err(e) => {
-                    eprintln!("Parse error: {e}");
-                    std::process::exit(1);
-                }
-            }
+            handle_parse_command(&file, cli.verbose)?;
         }
         Some(Commands::Transpile { file, output, minimal }) => {
-            let source = if file.as_os_str() == "-" {
-                // Read from stdin
-                let mut input = String::new();
-                io::stdin().read_to_string(&mut input)?;
-                input
-            } else {
-                fs::read_to_string(&file)?
-            };
-
-            let mut parser = RuchyParser::new(&source);
-            let ast = parser.parse()?;
-            let transpiler = Transpiler::new();
-            
-            let rust_code_str = if minimal {
-                // Use minimal codegen for self-hosting
-                transpiler.transpile_minimal(&ast)?
-            } else {
-                // Use full transpiler
-                let rust_code = transpiler.transpile(&ast)?;
-                rust_code.to_string()
-            };
-
-            if let Some(output_path) = output {
-                fs::write(output_path, rust_code_str)?;
-            } else {
-                println!("{rust_code_str}");
-            }
+            handle_transpile_command(&file, output.as_deref(), minimal, cli.verbose)?;
         }
         Some(Commands::Run { file }) => {
-            run_file(&file)?;
+            handle_run_command(&file, cli.verbose)?;
         }
         Some(Commands::Compile { 
             file, 
