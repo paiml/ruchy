@@ -9,6 +9,55 @@ All notable changes to the Ruchy programming language will be documented in this
 - Production-grade tooling expansion
 - Community ecosystem development
 
+## [1.9.7] - 2025-08-24
+
+### 🎯 INTERACTIVE PROGRAMMING REVOLUTION: Input Functions Complete
+
+This release delivers complete input/output capabilities for interactive programming, addressing the #2 priority from sister project feedback.
+
+#### 🚀 Interactive Programming Features
+- **Input Function** - `input("prompt")` for prompted user input with cross-platform support
+- **Readline Function** - `readline()` for raw line input from stdin  
+- **REPL Integration** - Full interactive support with proper memory management
+- **Transpiler Support** - Both functions generate proper Rust stdin handling code
+
+#### 🔧 Technical Implementation
+- **Built-in Functions**: Added `input()` and `readline()` to core function registry
+- **Memory Management**: Proper memory allocation tracking for input strings
+- **Error Handling**: Robust stdin reading with cross-platform line ending support
+- **Prompt Handling**: Professional stdout flushing for immediate prompt display
+
+#### 📊 Cross-Platform Support
+- **Line Endings**: Automatic Windows (`\r\n`) and Unix (`\n`) handling
+- **Input Buffering**: Proper stdin flushing for immediate user interaction
+- **Error Recovery**: Graceful handling of input failures with meaningful messages
+
+#### ✅ Validation Results
+```ruchy
+// ✅ REPL Interactive Usage
+let name = input("What's your name? ");  
+println(f"Hello, {name}!");
+
+// ✅ Menu Systems  
+let choice = input("Choose option (1-3): ");
+match choice {
+    "1" => println("Option A selected"),
+    "2" => println("Option B selected"), 
+    _ => println("Invalid choice")
+}
+
+// ✅ Raw Input
+let raw = readline();  // No prompt, raw input
+println(f"You typed: {raw}");
+```
+
+#### 📈 Sister Project Impact
+- **ruchy-book Integration**: Interactive programming examples now fully supported
+- **rosetta-ruchy Compatibility**: Input validation patterns unlocked for scientific applications
+- **User Experience**: Complete command-line application development now possible
+
+This release transforms Ruchy from a computational language to a complete interactive programming environment, enabling CLI applications, user input validation, and interactive data processing workflows.
+
 ## [1.9.6] - 2025-08-24
 
 ### 🎯 MAJOR BREAKTHROUGH: Qualified Name Pattern Support Complete
