@@ -48,6 +48,11 @@ impl Transpiler {
                 let ident = format_ident!("{}", name);
                 Ok(quote! { #ident })
             }
+            Pattern::QualifiedName(path) => {
+                // Generate qualified path like Ordering::Less
+                let segments: Vec<_> = path.iter().map(|s| format_ident!("{}", s)).collect();
+                Ok(quote! { #(#segments)::* })
+            }
             Pattern::Tuple(patterns) => {
                 let pattern_tokens: Result<Vec<_>> =
                     patterns.iter().map(|p| self.transpile_pattern(p)).collect();

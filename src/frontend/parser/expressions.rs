@@ -591,11 +591,19 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             Ok(Expr::new(ExprKind::Err { error }, span_clone))
         }
         Token::Some => {
-            state.tokens.advance(); // consume Some
-            state.tokens.expect(&Token::LeftParen)?;
-            let value = Box::new(super::parse_expr_recursive(state)?);
-            state.tokens.expect(&Token::RightParen)?;
-            Ok(Expr::new(ExprKind::Some { value }, span_clone))
+            state.tokens.advance(); // consume Some first
+            
+            // Check for qualified path like Some::Value
+            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                // We're in Some::Something case, delegate to qualified name parsing
+                parse_identifier_token(state, "Some".to_string(), span_clone)
+            } else {
+                // Standard Some(value) constructor (already consumed Some above)
+                state.tokens.expect(&Token::LeftParen)?;
+                let value = Box::new(super::parse_expr_recursive(state)?);
+                state.tokens.expect(&Token::RightParen)?;
+                Ok(Expr::new(ExprKind::Some { value }, span_clone))
+            }
         }
         Token::None => {
             state.tokens.advance(); // consume None

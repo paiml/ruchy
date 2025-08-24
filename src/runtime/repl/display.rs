@@ -50,6 +50,32 @@ impl Value {
         write!(f, "}}")
     }
 
+    pub(super) fn fmt_hashmap(f: &mut fmt::Formatter<'_>, map: &std::collections::HashMap<Value, Value>) -> fmt::Result {
+        write!(f, "HashMap{{")?;
+        let mut first = true;
+        for (key, value) in map {
+            if !first {
+                write!(f, ", ")?;
+            }
+            write!(f, "{key}: {value}")?;
+            first = false;
+        }
+        write!(f, "}}")
+    }
+
+    pub(super) fn fmt_hashset(f: &mut fmt::Formatter<'_>, set: &std::collections::HashSet<Value>) -> fmt::Result {
+        write!(f, "HashSet{{")?;
+        let mut first = true;
+        for value in set {
+            if !first {
+                write!(f, ", ")?;
+            }
+            write!(f, "{value}")?;
+            first = false;
+        }
+        write!(f, "}}")
+    }
+
     pub(super) fn fmt_enum_variant(
         f: &mut fmt::Formatter<'_>,
         enum_name: &str,

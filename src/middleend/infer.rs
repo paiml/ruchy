@@ -946,6 +946,11 @@ impl InferenceContext {
                 self.env = self.env.extend(name, TypeScheme::mono(expected_ty.clone()));
                 Ok(())
             }
+            Pattern::QualifiedName(_path) => {
+                // Qualified names in patterns should match against specific enum variants
+                // For now, assume it's valid
+                Ok(())
+            }
             Pattern::List(patterns) => {
                 let elem_ty = MonoType::Var(self.gen.fresh());
                 self.unifier

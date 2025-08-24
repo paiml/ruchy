@@ -84,6 +84,8 @@ pub enum Value {
         columns: Vec<DataFrameColumn>,
     },
     Object(HashMap<String, Value>),
+    HashMap(HashMap<Value, Value>),
+    HashSet(HashSet<Value>),
     Range {
         start: i64,
         end: i64,
@@ -102,6 +104,59 @@ pub enum Value {
 pub struct DataFrameColumn {
     pub name: String,
     pub values: Vec<Value>,
+}
+
+// Manual Eq implementation for Value
+impl Eq for Value {}
+
+// Manual Hash implementation for Value
+impl std::hash::Hash for Value {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(self).hash(state);
+        match self {
+            Value::Int(n) => n.hash(state),
+            Value::Float(f) => {
+                // Hash floats by their bit representation to handle NaN properly
+                f.to_bits().hash(state);
+            },
+            Value::String(s) => s.hash(state),
+            Value::Bool(b) => b.hash(state),
+            Value::Char(c) => c.hash(state),
+            Value::List(items) => {
+                for item in items {
+                    item.hash(state);
+                }
+            },
+            Value::Tuple(items) => {
+                for item in items {
+                    item.hash(state);
+                }
+            },
+            // Functions, DataFrames, Objects, HashMaps, and HashSets are not hashable
+            // We'll just hash their discriminant
+            Value::Function { name, .. } => name.hash(state),
+            Value::Lambda { .. } => "lambda".hash(state),
+            Value::DataFrame { .. } => "dataframe".hash(state),
+            Value::Object(_) => "object".hash(state),
+            Value::HashMap(_) => "hashmap".hash(state),
+            Value::HashSet(_) => "hashset".hash(state),
+            Value::Range { start, end, inclusive } => {
+                start.hash(state);
+                end.hash(state);
+                inclusive.hash(state);
+            },
+            Value::EnumVariant { enum_name, variant_name, data } => {
+                enum_name.hash(state);
+                variant_name.hash(state);
+                if let Some(d) = data {
+                    for item in d {
+                        item.hash(state);
+                    }
+                }
+            },
+            Value::Unit => "unit".hash(state),
+        }
+    }
 }
 
 // Display implementations moved to repl_display.rs
@@ -124,6 +179,8 @@ impl fmt::Display for Value {
             }
             Value::DataFrame { columns } => Self::format_dataframe(f, columns),
             Value::Object(map) => Self::fmt_object(f, map),
+            Value::HashMap(map) => Self::fmt_hashmap(f, map),
+            Value::HashSet(set) => Self::fmt_hashset(f, set),
             Value::Range {
                 start,
                 end,
@@ -223,6 +280,8 @@ impl RuchyCompleter {
             "uncurry".to_string(),
             "read_file".to_string(),
             "write_file".to_string(),
+            "HashMap".to_string(),
+            "HashSet".to_string(),
         ];
 
         // Create HashSets for O(1) lookups
@@ -846,6 +905,12 @@ impl Repl {
                     Value::Object(obj) => {
                         Self::evaluate_object_methods(obj, method, args, deadline, depth)
                     }
+                    Value::HashMap(map) => {
+                        self.evaluate_hashmap_methods(map, method, args, deadline, depth)
+                    }
+                    Value::HashSet(set) => {
+                        self.evaluate_hashset_methods(set, method, args, deadline, depth)
+                    }
                     Value::EnumVariant { .. } => {
                         self.evaluate_enum_methods(receiver_val, method, args, deadline, depth)
                     }
@@ -1362,6 +1427,106 @@ impl Repl {
                 bail!("has_key method requires arguments")
             }
             _ => bail!("Unknown object method: {}", method),
+        }
+    }
+
+    /// Handle method calls on `HashMap` values (complexity < 10)
+    fn evaluate_hashmap_methods(
+        &mut self,
+        mut map: HashMap<Value, Value>,
+        method: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        match method {
+            "insert" => {
+                if args.len() != 2 {
+                    bail!("insert requires exactly 2 arguments (key, value)");
+                }
+                let key = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let value = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                map.insert(key, value);
+                Ok(Value::HashMap(map))
+            }
+            "get" => {
+                if args.len() != 1 {
+                    bail!("get requires exactly 1 argument (key)");
+                }
+                let key = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                match map.get(&key) {
+                    Some(value) => Ok(value.clone()),
+                    None => Ok(Value::Unit), // Could return Option::None in future
+                }
+            }
+            "contains_key" => {
+                if args.len() != 1 {
+                    bail!("contains_key requires exactly 1 argument (key)");
+                }
+                let key = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                Ok(Value::Bool(map.contains_key(&key)))
+            }
+            "remove" => {
+                if args.len() != 1 {
+                    bail!("remove requires exactly 1 argument (key)");
+                }
+                let key = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let removed_value = map.remove(&key);
+                match removed_value {
+                    Some(value) => Ok(Value::Tuple(vec![Value::HashMap(map), value])),
+                    None => Ok(Value::Tuple(vec![Value::HashMap(map), Value::Unit])),
+                }
+            }
+            "len" => Ok(Value::Int(map.len() as i64)),
+            "is_empty" => Ok(Value::Bool(map.is_empty())),
+            "clear" => {
+                map.clear();
+                Ok(Value::HashMap(map))
+            }
+            _ => bail!("Unknown HashMap method: {}", method),
+        }
+    }
+
+    /// Handle method calls on `HashSet` values (complexity < 10)
+    fn evaluate_hashset_methods(
+        &mut self,
+        mut set: HashSet<Value>,
+        method: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        match method {
+            "insert" => {
+                if args.len() != 1 {
+                    bail!("insert requires exactly 1 argument (value)");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let was_new = set.insert(value);
+                Ok(Value::Tuple(vec![Value::HashSet(set), Value::Bool(was_new)]))
+            }
+            "contains" => {
+                if args.len() != 1 {
+                    bail!("contains requires exactly 1 argument (value)");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                Ok(Value::Bool(set.contains(&value)))
+            }
+            "remove" => {
+                if args.len() != 1 {
+                    bail!("remove requires exactly 1 argument (value)");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let was_present = set.remove(&value);
+                Ok(Value::Tuple(vec![Value::HashSet(set), Value::Bool(was_present)]))
+            }
+            "len" => Ok(Value::Int(set.len() as i64)),
+            "is_empty" => Ok(Value::Bool(set.is_empty())),
+            "clear" => {
+                set.clear();
+                Ok(Value::HashSet(set))
+            }
+            _ => bail!("Unknown HashSet method: {}", method),
         }
     }
 
@@ -3617,9 +3782,38 @@ impl Repl {
                 "uncurry" => self.evaluate_uncurry(args, deadline, depth),
                 "read_file" => self.evaluate_read_file(args, deadline, depth),
                 "write_file" => self.evaluate_write_file(args, deadline, depth),
+                "HashMap" => {
+                    if !args.is_empty() {
+                        bail!("HashMap() constructor expects no arguments, got {}", args.len());
+                    }
+                    Ok(Value::HashMap(HashMap::new()))
+                }
+                "HashSet" => {
+                    if !args.is_empty() {
+                        bail!("HashSet() constructor expects no arguments, got {}", args.len());
+                    }
+                    Ok(Value::HashSet(HashSet::new()))
+                }
                 _ => self.evaluate_user_function(func_name, args, deadline, depth),
             }
         } else if let ExprKind::QualifiedName { module, name } = &func.kind {
+            // Handle built-in static constructors
+            match (module.as_str(), name.as_str()) {
+                ("HashMap", "new") => {
+                    if !args.is_empty() {
+                        bail!("HashMap::new() expects no arguments, got {}", args.len());
+                    }
+                    return Ok(Value::HashMap(HashMap::new()));
+                }
+                ("HashSet", "new") => {
+                    if !args.is_empty() {
+                        bail!("HashSet::new() expects no arguments, got {}", args.len());
+                    }
+                    return Ok(Value::HashSet(HashSet::new()));
+                }
+                _ => {}
+            }
+            
             // Handle static method calls (Type::method)
             let qualified_name = format!("{module}::{name}");
             if let Some((param_names, body)) = self.impl_methods.get(&qualified_name).cloned() {
@@ -3856,6 +4050,8 @@ impl Repl {
     }
 
     /// Evaluate user-defined functions
+    #[allow(clippy::cognitive_complexity)]
+    #[allow(clippy::too_many_lines)]
     fn evaluate_user_function(
         &mut self,
         func_name: &str,
@@ -4242,6 +4438,12 @@ impl Repl {
                     Value::Float(f) => Self::evaluate_float_methods(*f, method),
                     Value::Object(obj) => {
                         Self::evaluate_object_methods(obj.clone(), method, args, deadline, depth)
+                    }
+                    Value::HashMap(map) => {
+                        self.evaluate_hashmap_methods(map.clone(), method, args, deadline, depth)
+                    }
+                    Value::HashSet(set) => {
+                        self.evaluate_hashset_methods(set.clone(), method, args, deadline, depth)
                     }
                     Value::EnumVariant { .. } => {
                         self.evaluate_enum_methods(current_value.clone(), method, args, deadline, depth)

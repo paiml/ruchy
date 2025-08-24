@@ -229,6 +229,23 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
             let name = name.clone();
             state.tokens.advance();
 
+            // Check for qualified name patterns like Ordering::Less
+            let mut path = vec![name.clone()];
+            while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                state.tokens.advance(); // consume ::
+                if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
+                    path.push(segment.clone());
+                    state.tokens.advance();
+                } else {
+                    break;
+                }
+            }
+
+            // If we have a qualified path, return it
+            if path.len() > 1 {
+                return Pattern::QualifiedName(path);
+            }
+
             // Check for Ok/Err patterns
             if (name == "Ok" || name == "Err")
                 && matches!(state.tokens.peek(), Some((Token::LeftParen, _)))

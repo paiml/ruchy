@@ -480,6 +480,7 @@ pub enum Pattern {
     Wildcard,
     Literal(Literal),
     Identifier(String),
+    QualifiedName(Vec<String>), // For patterns like Ordering::Less
     Tuple(Vec<Pattern>),
     List(Vec<Pattern>),
     Struct {
@@ -506,6 +507,7 @@ impl Pattern {
     pub fn primary_name(&self) -> String {
         match self {
             Pattern::Identifier(name) => name.clone(),
+            Pattern::QualifiedName(path) => path.join("::"),
             Pattern::Tuple(patterns) => {
                 // Return the name of the first pattern
                 patterns
@@ -1295,7 +1297,8 @@ mod tests {
                 | Pattern::Ok(_)
                 | Pattern::Err(_)
                 | Pattern::Some(_)
-                | Pattern::None => {} // Simple patterns
+                | Pattern::None
+                | Pattern::QualifiedName(_) => {} // Simple patterns
             }
         }
     }

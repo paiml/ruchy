@@ -9,6 +9,35 @@ All notable changes to the Ruchy programming language will be documented in this
 - Production-grade tooling expansion
 - Community ecosystem development
 
+## [1.9.4] - 2025-08-24
+
+### HashMap and HashSet Collections Added
+
+This release adds HashMap and HashSet support with comprehensive method APIs.
+
+#### New Features
+- **HashMap Type** - Key-value mapping with any hashable keys
+- **HashSet Type** - Set collection for unique values
+- **Constructor Support** - HashMap() and HashSet() creation
+- **Complete Method API**:
+  - `.insert(key, value)` / `.insert(value)` - Add entries
+  - `.get(key)` - Retrieve values by key
+  - `.contains_key(key)` / `.contains(value)` - Check membership
+  - `.remove(key)` / `.remove(value)` - Remove entries
+  - `.len()` - Get collection size
+  - `.is_empty()` - Check if empty
+  - `.clear()` - Remove all entries
+
+#### Pattern Matching Infrastructure  
+- **Qualified Name Patterns** - Support for `Ordering::Less` in match expressions
+- **Transpiler Support** - Qualified patterns compile to Rust correctly
+- **Type System** - Value types now support Hash/Eq for collection keys
+
+#### Impact
+- **rosetta-ruchy**: HashMap-based algorithms (topological sort, etc.) now possible
+- **Sister Projects**: Critical missing data structure support added
+- **Self-hosting**: Collections needed for advanced compiler features
+
 ## [1.9.3] - 2025-08-24
 
 ### Core Math Functions Added
