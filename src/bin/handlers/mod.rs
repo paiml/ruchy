@@ -62,7 +62,7 @@ pub fn handle_transpile_command(
         transpiler.transpile_minimal(&ast)
             .with_context(|| "Failed to transpile to Rust (minimal)")?
     } else {
-        transpiler.transpile(&ast)
+        transpiler.transpile_to_program(&ast)
             .map(|tokens| tokens.to_string())
             .with_context(|| "Failed to transpile to Rust")?
     };
@@ -96,7 +96,7 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
         .with_context(|| "Failed to parse input")?;
 
     let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile(&ast)
+    let rust_code = transpiler.transpile_to_program(&ast)
         .map(|tokens| tokens.to_string())
         .with_context(|| "Failed to transpile to Rust")?;
 

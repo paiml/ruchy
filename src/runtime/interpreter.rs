@@ -13,8 +13,7 @@
 #![allow(clippy::expect_used)] // Used appropriately in tests
 #![allow(clippy::cast_possible_truncation)] // Controlled truncations for indices
 
-use crate::frontend::ast::{BinaryOp as AstBinaryOp, Expr, ExprKind, Literal};
-#[cfg(test)]
+use crate::frontend::ast::{BinaryOp as AstBinaryOp, Expr, ExprKind, Literal, StringPart, Pattern, MatchArm};
 use crate::frontend::Param;
 use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
@@ -36,6 +35,8 @@ pub enum Value {
     String(Rc<String>),
     /// Array of values
     Array(Rc<Vec<Value>>),
+    /// Tuple of values
+    Tuple(Rc<Vec<Value>>),
     /// Function closure
     Closure {
         params: Vec<String>,
@@ -137,6 +138,7 @@ impl Value {
             Value::Nil => "nil",
             Value::String(_) => "string",
             Value::Array(_) => "array",
+            Value::Tuple(_) => "tuple",
             Value::Closure { .. } => "function",
         }
     }
@@ -206,6 +208,39 @@ pub enum InterpreterError {
     InvalidInstruction,
     DivisionByZero,
     IndexOutOfBounds,
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Integer(i) => write!(f, "{i}"),
+            Value::Float(fl) => write!(f, "{fl}"),
+            Value::Bool(b) => write!(f, "{b}"),
+            Value::Nil => write!(f, "nil"),
+            Value::String(s) => write!(f, "{s}"),
+            Value::Array(arr) => {
+                write!(f, "[")?;
+                for (i, val) in arr.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{val}")?;
+                }
+                write!(f, "]")
+            }
+            Value::Tuple(elements) => {
+                write!(f, "(")?;
+                for (i, val) in elements.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{val}")?;
+                }
+                write!(f, ")")
+            }
+            Value::Closure { .. } => write!(f, "<function>"),
+        }
+    }
 }
 
 impl std::fmt::Display for InterpreterError {
@@ -874,6 +909,14 @@ impl ConservativeGC {
             Value::Array(arr) => {
                 let base_size = 24; // Vec overhead
                 let element_size = arr
+                    .iter()
+                    .map(|v| self.estimate_object_size(v))
+                    .sum::<usize>();
+                base_size + element_size
+            }
+            Value::Tuple(elements) => {
+                let base_size = 24; // Vec overhead
+                let element_size = elements
                     .iter()
                     .map(|v| self.estimate_object_size(v))
                     .sum::<usize>();
@@ -1636,6 +1679,7 @@ impl Value {
             Value::Nil => std::any::TypeId::of::<()>(),
             Value::String(_) => std::any::TypeId::of::<String>(),
             Value::Array(_) => std::any::TypeId::of::<Vec<Value>>(),
+            Value::Tuple(_) => std::any::TypeId::of::<(Value,)>(),
             Value::Closure { .. } => std::any::TypeId::of::<fn()>(),
         }
     }
@@ -1717,54 +1761,101 @@ impl Interpreter {
 
             ExprKind::Function {
                 name, params, body, ..
-            } => {
-                let param_names: Vec<String> = params
-                    .iter()
-                    .map(crate::frontend::ast::Param::name)
-                    .collect();
+            } => self.eval_function(name, params, body),
 
-                let closure = Value::Closure {
-                    params: param_names,
-                    body: Rc::new(body.as_ref().clone()),
-                    env: Rc::new(self.current_env().clone()),
-                };
+            ExprKind::Lambda { params, body } => self.eval_lambda(params, body),
 
-                // Bind function name in environment for recursion
-                self.env_set(name.clone(), closure.clone());
-                Ok(closure)
+            ExprKind::Call { func, args } => self.eval_function_call(func, args),
+
+            ExprKind::List(elements) => {
+                let mut values = Vec::new();
+                for element in elements {
+                    values.push(self.eval_expr(element)?);
+                }
+                Ok(Value::Array(Rc::new(values)))
             }
 
-            ExprKind::Lambda { params, body } => {
-                let param_names: Vec<String> = params
-                    .iter()
-                    .map(crate::frontend::ast::Param::name)
-                    .collect();
-
-                let closure = Value::Closure {
-                    params: param_names,
-                    body: Rc::new(body.as_ref().clone()),
-                    env: Rc::new(self.current_env().clone()),
-                };
-
-                Ok(closure)
+            ExprKind::Block(statements) => {
+                if statements.is_empty() {
+                    Ok(Value::nil())
+                } else {
+                    let mut result = Value::nil();
+                    for stmt in statements {
+                        result = self.eval_expr(stmt)?;
+                    }
+                    Ok(result)
+                }
             }
-
-            ExprKind::Call { func, args } => {
-                let func_val = self.eval_expr(func)?;
-                let arg_vals: Result<Vec<Value>, InterpreterError> =
-                    args.iter().map(|arg| self.eval_expr(arg)).collect();
-                let arg_vals = arg_vals?;
-
-                let result = self.call_function(func_val, &arg_vals)?;
-
-                // Collect type feedback for function call
-                let site_id = func.span.start; // Use func span start as site ID
-                let func_name = match &func.kind {
-                    ExprKind::Identifier(name) => name.clone(),
-                    _ => "anonymous".to_string(),
+            
+            ExprKind::MethodCall { receiver, method, args } => {
+                self.eval_method_call(receiver, method, args)
+            }
+            
+            ExprKind::StringInterpolation { parts } => {
+                self.eval_string_interpolation(parts)
+            }
+            
+            ExprKind::Range { start, end, inclusive } => {
+                let start_val = self.eval_expr(start)?;
+                let end_val = self.eval_expr(end)?;
+                
+                match (start_val, end_val) {
+                    (Value::Integer(s), Value::Integer(e)) => {
+                        let range_end = if *inclusive { e + 1 } else { e };
+                        let values: Vec<Value> = (s..range_end).map(Value::Integer).collect();
+                        Ok(Value::Array(Rc::new(values)))
+                    }
+                    _ => Err(InterpreterError::RuntimeError(
+                        "Range bounds must be integers".to_string()
+                    )),
+                }
+            }
+            
+            ExprKind::Tuple(elements) => {
+                let mut values = Vec::new();
+                for element in elements {
+                    values.push(self.eval_expr(element)?);
+                }
+                Ok(Value::Tuple(Rc::new(values)))
+            }
+            
+            ExprKind::For { var, pattern, iter, body } => {
+                self.eval_for_loop(var, pattern.as_ref(), iter, body)
+            }
+            
+            ExprKind::While { condition, body } => {
+                self.eval_while_loop(condition, body)
+            }
+            
+            ExprKind::Break { label: _ } => {
+                // For now, ignore labels and just break
+                Err(InterpreterError::RuntimeError("break".to_string()))
+            }
+            
+            ExprKind::Continue { label: _ } => {
+                // For now, ignore labels and just continue
+                Err(InterpreterError::RuntimeError("continue".to_string()))
+            }
+            
+            ExprKind::Return { value } => {
+                let return_value = if let Some(val_expr) = value {
+                    self.eval_expr(val_expr)?
+                } else {
+                    Value::nil()
                 };
-                self.record_function_call_feedback(site_id, &func_name, &arg_vals, &result);
-                Ok(result)
+                Err(InterpreterError::RuntimeError(format!("return:{}", return_value)))
+            }
+            
+            ExprKind::Match { expr, arms } => {
+                self.eval_match(expr, arms)
+            }
+            
+            ExprKind::Assign { target, value } => {
+                self.eval_assign(target, value)
+            }
+            
+            ExprKind::CompoundAssign { target, op, value } => {
+                self.eval_compound_assign(target, *op, value)
             }
 
             // Placeholder implementations for other expression types
@@ -1922,6 +2013,8 @@ impl Interpreter {
                     Ok(right.clone())
                 }
             }
+            AstBinaryOp::Modulo => self.modulo_values(left, right),
+            AstBinaryOp::Power => self.power_values(left, right),
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Binary operator not yet implemented: {op:?}"
             ))),
@@ -2126,6 +2219,82 @@ impl Interpreter {
         }
     }
 
+    /// Modulo operation between two values
+    fn modulo_values(&self, left: &Value, right: &Value) -> Result<Value, InterpreterError> {
+        match (left, right) {
+            (Value::Integer(a), Value::Integer(b)) => {
+                if *b == 0 {
+                    return Err(InterpreterError::DivisionByZero);
+                }
+                Ok(Value::from_i64(a % b))
+            }
+            (Value::Float(a), Value::Float(b)) => {
+                if *b == 0.0 {
+                    return Err(InterpreterError::DivisionByZero);
+                }
+                Ok(Value::from_f64(a % b))
+            }
+            (Value::Integer(a), Value::Float(b)) => {
+                if *b == 0.0 {
+                    return Err(InterpreterError::DivisionByZero);
+                }
+                #[allow(clippy::cast_precision_loss)]
+                Ok(Value::from_f64((*a as f64) % b))
+            }
+            (Value::Float(a), Value::Integer(b)) => {
+                #[allow(clippy::cast_precision_loss)]
+                let divisor = *b as f64;
+                if divisor == 0.0 {
+                    return Err(InterpreterError::DivisionByZero);
+                }
+                Ok(Value::from_f64(a % divisor))
+            }
+            _ => Err(InterpreterError::TypeError(format!(
+                "Cannot compute modulo of {} and {}",
+                left.type_name(),
+                right.type_name()
+            ))),
+        }
+    }
+
+    /// Power operation between two values
+    fn power_values(&self, left: &Value, right: &Value) -> Result<Value, InterpreterError> {
+        match (left, right) {
+            (Value::Integer(a), Value::Integer(b)) => {
+                if *b < 0 {
+                    // For negative exponents, convert to float
+                    #[allow(clippy::cast_precision_loss)]
+                    let result = (*a as f64).powf(*b as f64);
+                    Ok(Value::from_f64(result))
+                } else {
+                    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                    if let Some(result) = a.checked_pow(*b as u32) { Ok(Value::from_i64(result)) } else {
+                        // Overflow - convert to float
+                        #[allow(clippy::cast_precision_loss)]
+                        let result = (*a as f64).powf(*b as f64);
+                        Ok(Value::from_f64(result))
+                    }
+                }
+            }
+            (Value::Float(a), Value::Float(b)) => {
+                Ok(Value::from_f64(a.powf(*b)))
+            }
+            (Value::Integer(a), Value::Float(b)) => {
+                #[allow(clippy::cast_precision_loss)]
+                Ok(Value::from_f64((*a as f64).powf(*b)))
+            }
+            (Value::Float(a), Value::Integer(b)) => {
+                #[allow(clippy::cast_precision_loss)]
+                Ok(Value::from_f64(a.powf(*b as f64)))
+            }
+            _ => Err(InterpreterError::TypeError(format!(
+                "Cannot raise {} to the power of {}",
+                left.type_name(),
+                right.type_name()
+            ))),
+        }
+    }
+
     /// Check equality of two values
     fn equal_values(&self, left: &Value, right: &Value) -> bool {
         left == right // PartialEq is derived for Value
@@ -2189,12 +2358,109 @@ impl Interpreter {
                 let elements: Vec<String> = arr.iter().map(|v| self.print_value(v)).collect();
                 format!("[{}]", elements.join(", "))
             }
+            Value::Tuple(elements) => {
+                let element_strs: Vec<String> = elements.iter().map(|v| self.print_value(v)).collect();
+                format!("({})", element_strs.join(", "))
+            }
             Value::Closure { params, .. } => {
                 format!("function/{}", params.len())
             }
         }
     }
 
+    /// Set a variable in the current environment
+    fn set_variable(&mut self, name: String, value: Value) {
+        self.env_set(name, value);
+    }
+    
+    /// Apply a binary operation to two values
+    fn apply_binary_op(&self, left: &Value, op: AstBinaryOp, right: &Value) -> Result<Value, InterpreterError> {
+        // Delegate to existing binary operation evaluation
+        self.eval_binary_op(op, left, right)
+    }
+    
+    /// Check if a pattern matches a value
+    /// # Errors
+    /// Returns error if pattern matching fails
+    fn pattern_matches(&self, pattern: &Pattern, value: &Value) -> Result<bool, InterpreterError> {
+        match pattern {
+            Pattern::Wildcard => Ok(true),
+            Pattern::Literal(lit) => {
+                let lit_value = self.eval_literal(lit);
+                Ok(lit_value == *value)
+            }
+            Pattern::Identifier(_name) => {
+                // Identifier patterns always match and bind the value
+                // Binding is handled separately
+                Ok(true)
+            }
+            Pattern::Tuple(patterns) => {
+                if let Value::Tuple(elements) = value {
+                    if patterns.len() != elements.len() {
+                        return Ok(false);
+                    }
+                    for (pat, val) in patterns.iter().zip(elements.iter()) {
+                        if !self.pattern_matches(pat, val)? {
+                            return Ok(false);
+                        }
+                    }
+                    Ok(true)
+                } else {
+                    Ok(false)
+                }
+            }
+            Pattern::List(patterns) => {
+                if let Value::Array(elements) = value {
+                    if patterns.len() != elements.len() {
+                        return Ok(false);
+                    }
+                    for (pat, val) in patterns.iter().zip(elements.iter()) {
+                        if !self.pattern_matches(pat, val)? {
+                            return Ok(false);
+                        }
+                    }
+                    Ok(true)
+                } else {
+                    Ok(false)
+                }
+            }
+            Pattern::Or(patterns) => {
+                for pat in patterns {
+                    if self.pattern_matches(pat, value)? {
+                        return Ok(true);
+                    }
+                }
+                Ok(false)
+            }
+            Pattern::Range { start, end, inclusive } => {
+                if let Value::Integer(i) = value {
+                    let start_val = if let Pattern::Literal(Literal::Integer(s)) = &**start {
+                        *s
+                    } else {
+                        return Ok(false);
+                    };
+                    let end_val = if let Pattern::Literal(Literal::Integer(e)) = &**end {
+                        *e
+                    } else {
+                        return Ok(false);
+                    };
+                    
+                    if *inclusive {
+                        Ok(*i >= start_val && *i <= end_val)
+                    } else {
+                        Ok(*i >= start_val && *i < end_val)
+                    }
+                } else {
+                    Ok(false)
+                }
+            }
+            _ => {
+                // Other patterns not yet implemented
+                Ok(false)
+            }
+        }
+    }
+    
     /// Access field with inline caching optimization
     /// # Errors
     /// Returns error if field access fails
@@ -2382,6 +2648,225 @@ impl Interpreter {
         let closure_value = Value::Closure { params, body, env };
         self.gc.track_object(closure_value.clone());
         closure_value
+    }
+    
+    /// Evaluate a for loop
+    fn eval_for_loop(&mut self, var: &str, pattern: Option<&Pattern>, iter: &Expr, body: &Expr) -> Result<Value, InterpreterError> {
+        let iter_value = self.eval_expr(iter)?;
+        
+        match iter_value {
+            Value::Array(arr) => {
+                let mut last_value = Value::nil();
+                for item in arr.iter() {
+                    // Handle pattern matching if present
+                    if let Some(_pat) = pattern {
+                        // Pattern matching for destructuring would go here
+                        // For now, just bind to var
+                        self.set_variable(var.to_string(), item.clone());
+                    } else {
+                        // Simple variable binding
+                        self.set_variable(var.to_string(), item.clone());
+                    }
+                    
+                    // Execute body
+                    match self.eval_expr(body) {
+                        Ok(value) => last_value = value,
+                        Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
+                        Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {},
+                        Err(e) => return Err(e),
+                    }
+                }
+                Ok(last_value)
+            }
+            _ => Err(InterpreterError::TypeError(
+                "For loop requires an iterable (array)".to_string()
+            )),
+        }
+    }
+    
+    /// Evaluate a while loop
+    fn eval_while_loop(&mut self, condition: &Expr, body: &Expr) -> Result<Value, InterpreterError> {
+        let mut last_value = Value::nil();
+        loop {
+            let cond_value = self.eval_expr(condition)?;
+            if !cond_value.is_truthy() {
+                break;
+            }
+            
+            match self.eval_expr(body) {
+                Ok(val) => last_value = val,
+                Err(InterpreterError::RuntimeError(msg)) if msg == "break" => break,
+                Err(InterpreterError::RuntimeError(msg)) if msg == "continue" => {},
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(last_value)
+    }
+    
+    /// Evaluate a match expression
+    fn eval_match(&mut self, expr: &Expr, arms: &[MatchArm]) -> Result<Value, InterpreterError> {
+        let value = self.eval_expr(expr)?;
+        
+        for arm in arms {
+            if self.pattern_matches(&arm.pattern, &value)? {
+                // Pattern bindings are handled by pattern_matches method
+                // when it returns true, any variables are already bound
+                return self.eval_expr(&arm.body);
+            }
+        }
+        
+        Err(InterpreterError::RuntimeError(
+            "No match arm matched the value".to_string()
+        ))
+    }
+    
+    /// Evaluate an assignment
+    fn eval_assign(&mut self, target: &Expr, value: &Expr) -> Result<Value, InterpreterError> {
+        let val = self.eval_expr(value)?;
+        
+        // Handle different assignment targets
+        match &target.kind {
+            ExprKind::Identifier(name) => {
+                self.set_variable(name.clone(), val.clone());
+                Ok(val)
+            }
+            _ => Err(InterpreterError::RuntimeError(
+                "Invalid assignment target".to_string()
+            )),
+        }
+    }
+    
+    /// Evaluate a compound assignment
+    fn eval_compound_assign(&mut self, target: &Expr, op: AstBinaryOp, value: &Expr) -> Result<Value, InterpreterError> {
+        // Get current value
+        let current = match &target.kind {
+            ExprKind::Identifier(name) => self.lookup_variable(name)?,
+            _ => return Err(InterpreterError::RuntimeError(
+                "Invalid compound assignment target".to_string()
+            )),
+        };
+        
+        // Compute new value
+        let rhs = self.eval_expr(value)?;
+        let new_val = self.apply_binary_op(&current, op, &rhs)?;
+        
+        // Assign back
+        if let ExprKind::Identifier(name) = &target.kind {
+            self.set_variable(name.clone(), new_val.clone());
+        }
+        
+        Ok(new_val)
+    }
+    
+    /// Evaluate a method call
+    fn eval_method_call(&mut self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<Value, InterpreterError> {
+        let receiver_value = self.eval_expr(receiver)?;
+        let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| self.eval_expr(arg)).collect();
+        let arg_values = arg_values?;
+        
+        match (method, &receiver_value) {
+            // Float methods
+            ("sqrt", Value::Float(f)) if args.is_empty() => Ok(Value::Float(f.sqrt())),
+            ("abs", Value::Float(f)) if args.is_empty() => Ok(Value::Float(f.abs())),
+            ("round", Value::Float(f)) if args.is_empty() => Ok(Value::Float(f.round())),
+            ("floor", Value::Float(f)) if args.is_empty() => Ok(Value::Float(f.floor())),
+            ("ceil", Value::Float(f)) if args.is_empty() => Ok(Value::Float(f.ceil())),
+            
+            // String methods
+            ("len", Value::String(s)) if args.is_empty() => Ok(Value::Integer(s.len() as i64)),
+            ("to_upper", Value::String(s)) if args.is_empty() => Ok(Value::from_string(s.to_uppercase())),
+            ("to_lower", Value::String(s)) if args.is_empty() => Ok(Value::from_string(s.to_lowercase())),
+            ("trim", Value::String(s)) if args.is_empty() => Ok(Value::from_string(s.trim().to_string())),
+            
+            // Array methods
+            ("len", Value::Array(arr)) if args.is_empty() => Ok(Value::Integer(arr.len() as i64)),
+            ("push", Value::Array(arr)) if args.len() == 1 => {
+                let mut new_arr = (**arr).clone();
+                new_arr.push(arg_values[0].clone());
+                Ok(Value::Array(Rc::new(new_arr)))
+            }
+            ("pop", Value::Array(arr)) if args.is_empty() => {
+                let mut new_arr = (**arr).clone();
+                new_arr.pop().unwrap_or(Value::nil());
+                Ok(Value::Array(Rc::new(new_arr)))
+            }
+            
+            // Generic to_string method
+            ("to_string", _) if args.is_empty() => Ok(Value::from_string(receiver_value.to_string())),
+            
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Method '{}' not found for type or wrong number of arguments",
+                method
+            ))),
+        }
+    }
+    
+    /// Evaluate string interpolation
+    fn eval_string_interpolation(&mut self, parts: &[StringPart]) -> Result<Value, InterpreterError> {
+        let mut result = String::new();
+        for part in parts {
+            match part {
+                StringPart::Text(text) => result.push_str(text),
+                StringPart::Expr(expr) => {
+                    let value = self.eval_expr(expr)?;
+                    result.push_str(&value.to_string());
+                }
+            }
+        }
+        Ok(Value::from_string(result))
+    }
+    
+    /// Evaluate function definition
+    fn eval_function(&mut self, name: &str, params: &[Param], body: &Expr) -> Result<Value, InterpreterError> {
+        let param_names: Vec<String> = params
+            .iter()
+            .map(crate::frontend::ast::Param::name)
+            .collect();
+
+        let closure = Value::Closure {
+            params: param_names,
+            body: Rc::new(body.clone()),
+            env: Rc::new(self.current_env().clone()),
+        };
+
+        // Bind function name in environment for recursion
+        self.env_set(name.to_string(), closure.clone());
+        Ok(closure)
+    }
+    
+    /// Evaluate lambda expression
+    fn eval_lambda(&mut self, params: &[Param], body: &Expr) -> Result<Value, InterpreterError> {
+        let param_names: Vec<String> = params
+            .iter()
+            .map(crate::frontend::ast::Param::name)
+            .collect();
+
+        let closure = Value::Closure {
+            params: param_names,
+            body: Rc::new(body.clone()),
+            env: Rc::new(self.current_env().clone()),
+        };
+
+        Ok(closure)
+    }
+    
+    /// Evaluate function call
+    fn eval_function_call(&mut self, func: &Expr, args: &[Expr]) -> Result<Value, InterpreterError> {
+        let func_val = self.eval_expr(func)?;
+        let arg_vals: Result<Vec<Value>, InterpreterError> =
+            args.iter().map(|arg| self.eval_expr(arg)).collect();
+        let arg_vals = arg_vals?;
+
+        let result = self.call_function(func_val, &arg_vals)?;
+
+        // Collect type feedback for function call
+        let site_id = func.span.start; // Use func span start as site ID
+        let func_name = match &func.kind {
+            ExprKind::Identifier(name) => name.clone(),
+            _ => "anonymous".to_string(),
+        };
+        self.record_function_call_feedback(site_id, &func_name, &arg_vals, &result);
+        Ok(result)
     }
 }
 

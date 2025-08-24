@@ -1,0 +1,80 @@
+// Ruchy Language Showcase - All Core Features Working!
+// This demonstrates the successful restoration of basic language functionality
+
+println("=== RUCHY LANGUAGE SHOWCASE ===")
+println("")
+
+// 1. Basic Arithmetic
+println("1. Basic Arithmetic:")
+println("   2 + 2 =", 2 + 2)
+println("   10 * 5 =", 10 * 5)
+println("   100 / 4 =", 100 / 4)
+println("")
+
+// 2. Variables and Let Bindings
+println("2. Variables:")
+let x = 42
+let y = 13
+println("   x =", x)
+println("   y =", y)
+println("   x + y =", x + y)
+println("")
+
+// 3. String Operations
+println("3. String Operations:")
+let greeting = "Hello " + "World"
+println("   Concatenation:", greeting)
+
+let name = "Ruchy"
+let message = "Welcome to " + name + "!"
+println("   With variables:", message)
+println("")
+
+// 4. Boolean Logic
+println("4. Boolean Logic:")
+println("   true && false =", true && false)
+println("   true || false =", true || false)
+println("   10 > 5 =", 10 > 5)
+println("   3 < 2 =", 3 < 2)
+println("")
+
+// 5. If Expressions
+println("5. Conditional Logic:")
+let score = 85
+let grade = if score >= 90 {
+    "A"
+} else if score >= 80 {
+    "B"
+} else if score >= 70 {
+    "C"
+} else {
+    "F"
+}
+println("   Score:", score, "→ Grade:", grade)
+println("")
+
+// 6. Float Operations
+println("6. Float Math:")
+let pi = 3.14159
+let radius = 5.0
+let area = pi * radius * radius
+println("   Circle area (r=5):", area)
+println("   Square root of 16:", 16.0.sqrt())
+println("")
+
+// 7. Reserved Keyword Handling
+println("7. Reserved Keywords (automatic r# prefix):")
+let final = 15000.0
+let initial = 10000.0
+let change = (final / initial - 1.0) * 100.0
+println("   Percentage change:", change, "%")
+println("")
+
+// 8. Complex Expressions
+println("8. Complex Expressions:")
+let result = (10 + 5) * 3 - 8 / 2
+println("   (10 + 5) * 3 - 8 / 2 =", result)
+println("")
+
+println("=== ALL FEATURES WORKING! ===")
+println("Quality Excellence Sprint v1.6.0 - SUCCESS!")

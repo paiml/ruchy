@@ -47,7 +47,13 @@ impl Transpiler {
         body: &Expr,
         is_mutable: bool,
     ) -> Result<TokenStream> {
-        let name_ident = format_ident!("{}", name);
+        // Handle Rust reserved keywords by prefixing with r#
+        let safe_name = if Self::is_rust_reserved_keyword(name) {
+            format!("r#{name}")
+        } else {
+            name.to_string()
+        };
+        let name_ident = format_ident!("{}", safe_name);
         let value_tokens = self.transpile_expr(value)?;
         
         // HOTFIX: If body is Unit, this is a top-level let statement without scoping
