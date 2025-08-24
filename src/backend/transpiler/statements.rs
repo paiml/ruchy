@@ -419,6 +419,48 @@ impl Transpiler {
                 });
             }
             
+            // Assert functions - generate Rust assert macros
+            if name == "assert" {
+                if args.len() < 1 || args.len() > 2 {
+                    bail!("assert expects 1 or 2 arguments (condition, optional message)");
+                }
+                let condition = self.transpile_expr(&args[0])?;
+                if args.len() == 1 {
+                    return Ok(quote! { assert!(#condition) });
+                } else {
+                    let message = self.transpile_expr(&args[1])?;
+                    return Ok(quote! { assert!(#condition, "{}", #message) });
+                }
+            }
+            
+            if name == "assert_eq" {
+                if args.len() < 2 || args.len() > 3 {
+                    bail!("assert_eq expects 2 or 3 arguments (left, right, optional message)");
+                }
+                let left = self.transpile_expr(&args[0])?;
+                let right = self.transpile_expr(&args[1])?;
+                if args.len() == 2 {
+                    return Ok(quote! { assert_eq!(#left, #right) });
+                } else {
+                    let message = self.transpile_expr(&args[2])?;
+                    return Ok(quote! { assert_eq!(#left, #right, "{}", #message) });
+                }
+            }
+            
+            if name == "assert_ne" {
+                if args.len() < 2 || args.len() > 3 {
+                    bail!("assert_ne expects 2 or 3 arguments (left, right, optional message)");
+                }
+                let left = self.transpile_expr(&args[0])?;
+                let right = self.transpile_expr(&args[1])?;
+                if args.len() == 2 {
+                    return Ok(quote! { assert_ne!(#left, #right) });
+                } else {
+                    let message = self.transpile_expr(&args[2])?;
+                    return Ok(quote! { assert_ne!(#left, #right, "{}", #message) });
+                }
+            }
+            
             // Collection constructors
             if name == "HashMap" && args.is_empty() {
                 return Ok(quote! { std::collections::HashMap::new() });
