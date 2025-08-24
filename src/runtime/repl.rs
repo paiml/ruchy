@@ -357,113 +357,105 @@ impl RuchyCompleter {
 
         while let Some(ch) = chars.next() {
             match ch {
-                // Handle strings
-                '"' => {
-                    result.push_str(&"\"".bright_green().to_string());
-                    while let Some(string_ch) = chars.next() {
-                        if string_ch == '"' {
-                            result.push_str(&"\"".bright_green().to_string());
-                            break;
-                        } else if string_ch == '\\' {
-                            result.push_str(&"\\".bright_green().to_string());
-                            if let Some(escaped) = chars.next() {
-                                result.push_str(&escaped.to_string().bright_green().to_string());
-                            }
-                        } else {
-                            result.push_str(&string_ch.to_string().bright_green().to_string());
-                        }
-                    }
-                }
-
-                // Handle single-quoted chars
-                '\'' => {
-                    result.push_str(&"'".bright_yellow().to_string());
-                    if let Some(char_ch) = chars.next() {
-                        result.push_str(&char_ch.to_string().bright_yellow().to_string());
-                        if let Some(quote) = chars.next() {
-                            if quote == '\'' {
-                                result.push_str(&"'".bright_yellow().to_string());
-                            } else {
-                                result.push(quote); // malformed char literal
-                            }
-                        }
-                    }
-                }
-
-                // Handle numbers
-                '0'..='9' => {
-                    let mut number = String::new();
-                    number.push(ch);
-
-                    while let Some(&next_ch) = chars.peek() {
-                        if next_ch.is_ascii_digit() || next_ch == '.' || next_ch == '_' {
-                            number.push(chars.next().expect("Digit continuation expected"));
-                        } else {
-                            break;
-                        }
-                    }
-                    result.push_str(&number.bright_blue().to_string());
-                }
-
-                // Handle identifiers and keywords
-                'a'..='z' | 'A'..='Z' | '_' => {
-                    let mut identifier = String::new();
-                    identifier.push(ch);
-
-                    while let Some(&next_ch) = chars.peek() {
-                        if next_ch.is_alphanumeric() || next_ch == '_' {
-                            identifier
-                                .push(chars.next().expect("Identifier continuation expected"));
-                        } else {
-                            break;
-                        }
-                    }
-
-                    // Check if it's a keyword - O(1) lookup with HashSet
-                    let highlighted = if self.keywords_set.contains(&identifier) {
-                        identifier.bright_magenta().bold().to_string()
-                    } else if self.builtin_functions_set.contains(&identifier) {
-                        identifier.bright_cyan().to_string()
-                    } else {
-                        identifier
-                    };
-
-                    result.push_str(&highlighted);
-                }
-
-                // Handle comments first (before operators)
+                '"' => self.highlight_string(&mut result, &mut chars),
+                '\'' => self.highlight_char(&mut result, &mut chars),
+                '0'..='9' => self.highlight_number(&mut result, &mut chars, ch),
+                'a'..='z' | 'A'..='Z' | '_' => self.highlight_identifier(&mut result, &mut chars, ch),
                 '/' if chars.peek() == Some(&'/') => {
-                    result.push_str(&"//".bright_black().to_string());
-                    chars.next(); // consume second '/'
-
-                    // Rest of line is comment
-                    for comment_ch in chars.by_ref() {
-                        result.push_str(&comment_ch.to_string().bright_black().to_string());
-                    }
+                    self.highlight_comment(&mut result, &mut chars);
                     break;
                 }
-
-                // Handle operators and punctuation
                 '+' | '-' | '*' | '/' | '%' | '=' | '!' | '<' | '>' | '&' | '|' | '^' | '~' => {
                     result.push_str(&ch.to_string().bright_red().to_string());
                 }
-
-                // Handle delimiters
                 '(' | ')' | '[' | ']' | '{' | '}' => {
                     result.push_str(&ch.to_string().bright_white().bold().to_string());
                 }
-
-                // Handle punctuation
                 ',' | ';' | ':' | '.' => {
                     result.push_str(&ch.to_string().bright_black().to_string());
                 }
-
-                // Default: no highlighting
                 _ => result.push(ch),
             }
         }
 
         result
+    }
+
+    fn highlight_string(&self, result: &mut String, chars: &mut std::iter::Peekable<std::str::Chars>) {
+        result.push_str(&"\"".bright_green().to_string());
+        while let Some(string_ch) = chars.next() {
+            if string_ch == '"' {
+                result.push_str(&"\"".bright_green().to_string());
+                break;
+            } else if string_ch == '\\' {
+                result.push_str(&"\\".bright_green().to_string());
+                if let Some(escaped) = chars.next() {
+                    result.push_str(&escaped.to_string().bright_green().to_string());
+                }
+            } else {
+                result.push_str(&string_ch.to_string().bright_green().to_string());
+            }
+        }
+    }
+
+    fn highlight_char(&self, result: &mut String, chars: &mut std::iter::Peekable<std::str::Chars>) {
+        result.push_str(&"'".bright_yellow().to_string());
+        if let Some(char_ch) = chars.next() {
+            result.push_str(&char_ch.to_string().bright_yellow().to_string());
+            if let Some(quote) = chars.next() {
+                if quote == '\'' {
+                    result.push_str(&"'".bright_yellow().to_string());
+                } else {
+                    result.push(quote);
+                }
+            }
+        }
+    }
+
+    fn highlight_number(&self, result: &mut String, chars: &mut std::iter::Peekable<std::str::Chars>, first_char: char) {
+        let mut number = String::new();
+        number.push(first_char);
+
+        while let Some(&next_ch) = chars.peek() {
+            if next_ch.is_ascii_digit() || next_ch == '.' || next_ch == '_' {
+                number.push(chars.next().expect("Digit continuation expected"));
+            } else {
+                break;
+            }
+        }
+        result.push_str(&number.bright_blue().to_string());
+    }
+
+    fn highlight_identifier(&self, result: &mut String, chars: &mut std::iter::Peekable<std::str::Chars>, first_char: char) {
+        let mut identifier = String::new();
+        identifier.push(first_char);
+
+        while let Some(&next_ch) = chars.peek() {
+            if next_ch.is_alphanumeric() || next_ch == '_' {
+                identifier.push(chars.next().expect("Identifier continuation expected"));
+            } else {
+                break;
+            }
+        }
+
+        let highlighted = if self.keywords_set.contains(&identifier) {
+            identifier.bright_magenta().bold().to_string()
+        } else if self.builtin_functions_set.contains(&identifier) {
+            identifier.bright_cyan().to_string()
+        } else {
+            identifier
+        };
+
+        result.push_str(&highlighted);
+    }
+
+    fn highlight_comment(&self, result: &mut String, chars: &mut std::iter::Peekable<std::str::Chars>) {
+        result.push_str(&"//".bright_black().to_string());
+        chars.next(); // consume second '/'
+        
+        for comment_ch in chars.by_ref() {
+            result.push_str(&comment_ch.to_string().bright_black().to_string());
+        }
     }
 }
 

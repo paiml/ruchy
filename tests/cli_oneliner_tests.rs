@@ -102,7 +102,7 @@ fn test_eval_flag_if_expression() {
 #[test]
 fn test_stdin_pipe() {
     let mut child = Command::new("cargo")
-        .args(["run", "-p", "ruchy-cli"])
+        .args(["run", "--bin", "ruchy"])
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .spawn()
@@ -136,7 +136,7 @@ fn test_json_output_format() {
         .expect("Failed to execute command");
 
     assert!(output.status.success());
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), "42");
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), r#"{"success":true,"result":"42"}"#);
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn test_json_output_string() {
         .expect("Failed to execute command");
 
     assert!(output.status.success());
-    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), r#""hello""#);
+    assert_eq!(String::from_utf8_lossy(&output.stdout).trim(), r#"{"success":true,"result":"\"hello\""}"#);
 }
 
 #[test]
@@ -178,7 +178,7 @@ fn test_script_file_execution() {
         .expect("Failed to write test file");
 
     let output = Command::new("cargo")
-        .args(["run", "-p", "ruchy-cli", temp_file])
+        .args(["run", "--bin", "ruchy", "--", temp_file])
         .output()
         .expect("Failed to execute command");
 
