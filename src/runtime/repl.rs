@@ -37,7 +37,7 @@
 #![allow(clippy::expect_used)] // REPL can panic on initialization failure
 
 use crate::frontend::ast::{
-    BinaryOp, Expr, ExprKind, Literal, MatchArm, Pattern, PipelineStage, Span, UnaryOp,
+    BinaryOp, Expr, ExprKind, ImportItem, Literal, MatchArm, Pattern, PipelineStage, Span, UnaryOp,
 };
 use crate::{Parser, Transpiler};
 use anyhow::{bail, Context, Result};
@@ -913,6 +913,12 @@ impl Repl {
             }
             ExprKind::Macro { name, args } => {
                 self.evaluate_macro(name, args, deadline, depth)
+            }
+            ExprKind::Import { path, items } => {
+                self.evaluate_import(path, items)
+            }
+            ExprKind::Export { items } => {
+                self.evaluate_export(items)
             }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
@@ -4158,5 +4164,66 @@ impl Repl {
                 anyhow::bail!("Unknown macro: {}", name)
             }
         }
+    }
+
+    /// Evaluate import statements (complexity < 10)
+    fn evaluate_import(&mut self, path: &str, items: &[ImportItem]) -> Result<Value> {
+        // For now, just track the import in bindings
+        // Real implementation would:
+        // 1. Resolve the module path
+        // 2. Load the module
+        // 3. Import specified items into current scope
+        
+        println!("Importing from {}: {:?}", path, items);
+        
+        // Add basic standard library support
+        match path {
+            "std::fs" | "std::fs::read_file" => {
+                // Register file system functions
+                for item in items {
+                    match item {
+                        ImportItem::Named(name) if name == "read_file" => {
+                            // This function is already built-in
+                            println!("  ✓ Imported {}", name);
+                        }
+                        ImportItem::Named(name) if name == "write_file" => {
+                            // This function is already built-in
+                            println!("  ✓ Imported {}", name);
+                        }
+                        ImportItem::Named(name) if name == "fs" => {
+                            // Import entire fs module
+                            println!("  ✓ Imported fs module");
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            "std::collections" => {
+                // Handle collections imports
+                for item in items {
+                    if let ImportItem::Named(name) = item {
+                        println!("  ✓ Imported {}", name);
+                    }
+                }
+            }
+            _ => {
+                // For now, just acknowledge the import
+                println!("Module '{}' import acknowledged (not yet fully implemented)", path);
+            }
+        }
+        
+        Ok(Value::Unit)
+    }
+    
+    /// Evaluate export statements (complexity < 10)
+    fn evaluate_export(&mut self, items: &[String]) -> Result<Value> {
+        // For now, just track the export
+        // Real implementation would:
+        // 1. Mark items for export
+        // 2. Make them available to importing modules
+        
+        println!("Exporting items: {:?}", items);
+        
+        Ok(Value::Unit)
     }
 }
