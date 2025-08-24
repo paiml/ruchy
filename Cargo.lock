@@ -3116,7 +3116,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "1.9.4"
+version = "1.9.5"
 dependencies = [
  "anyhow",
  "async-trait",
