@@ -4052,21 +4052,48 @@ impl Repl {
 
                 self.evaluate_expr(&call, deadline, depth + 1)
             }
-            _ => bail!("Pipeline stages must be function calls or identifiers"),
+            ExprKind::MethodCall { receiver: _, method, args } => {
+                // For method calls in pipeline, current_value becomes the receiver
+                match current_value {
+                    Value::List(items) => {
+                        self.evaluate_list_methods(items.clone(), method, args, deadline, depth)
+                    }
+                    Value::String(s) => {
+                        Self::evaluate_string_methods(s, method, args, deadline, depth)
+                    }
+                    Value::Int(n) => Self::evaluate_int_methods(*n, method),
+                    Value::Float(f) => Self::evaluate_float_methods(*f, method),
+                    Value::Object(obj) => {
+                        Self::evaluate_object_methods(obj.clone(), method, args, deadline, depth)
+                    }
+                    Value::EnumVariant { .. } => {
+                        self.evaluate_enum_methods(current_value.clone(), method, args, deadline, depth)
+                    }
+                    _ => bail!("Cannot call method {} on value of this type", method),
+                }
+            }
+            _ => bail!("Pipeline stages must be function calls, method calls, or identifiers"),
         }
     }
 
     /// Convert value to literal expression for pipeline
     fn value_to_literal_expr(value: &Value, span: Span) -> Result<Expr> {
-        let literal = match value {
-            Value::Int(n) => Literal::Integer(*n),
-            Value::Float(f) => Literal::Float(*f),
-            Value::String(s) => Literal::String(s.clone()),
-            Value::Bool(b) => Literal::Bool(*b),
-            Value::Unit => Literal::Unit,
+        let expr_kind = match value {
+            Value::Int(n) => ExprKind::Literal(Literal::Integer(*n)),
+            Value::Float(f) => ExprKind::Literal(Literal::Float(*f)),
+            Value::String(s) => ExprKind::Literal(Literal::String(s.clone())),
+            Value::Bool(b) => ExprKind::Literal(Literal::Bool(*b)),
+            Value::Unit => ExprKind::Literal(Literal::Unit),
+            Value::List(items) => {
+                let elements: Result<Vec<Expr>> = items
+                    .iter()
+                    .map(|item| Self::value_to_literal_expr(item, span))
+                    .collect();
+                ExprKind::List(elements?)
+            }
             _ => bail!("Cannot pipeline complex value types yet"),
         };
-        Ok(Expr::new(ExprKind::Literal(literal), span))
+        Ok(Expr::new(expr_kind, span))
     }
 
     /// Evaluate command execution
