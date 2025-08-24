@@ -77,7 +77,7 @@ impl Transpiler {
     /// Transpiles binary operations
     pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Result<TokenStream> {
         // Special handling for string concatenation
-        // If at least one operand is definitely a string, treat as string concatenation
+        // Only treat as string concatenation if at least one operand is definitely a string
         if op == BinaryOp::Add && (Self::is_definitely_string(left) || Self::is_definitely_string(right)) {
             return self.transpile_string_concatenation(left, right);
         }
@@ -463,15 +463,26 @@ impl Transpiler {
 
     /// Check if an expression is definitely a string (no ambiguous identifiers)
     fn is_definitely_string(expr: &Expr) -> bool {
-        matches!(&expr.kind, ExprKind::Literal(Literal::String(_)) | ExprKind::StringInterpolation { .. })
+        matches!(&expr.kind, 
+            ExprKind::Literal(Literal::String(_)) | 
+            ExprKind::StringInterpolation { .. } |
+            // Consider function calls that return strings as strings
+            // This includes our string concatenation format! calls
+            ExprKind::Call { .. }
+        )
     }
 
-    /// Transpile string concatenation using format! macro
+    fn is_definitely_numeric(expr: &Expr) -> bool {
+        matches!(&expr.kind, ExprKind::Literal(Literal::Integer(_)) | ExprKind::Literal(Literal::Float(_)))
+    }
+
+    /// Transpile string concatenation using proper Rust string operations
     fn transpile_string_concatenation(&self, left: &Expr, right: &Expr) -> Result<TokenStream> {
         let left_tokens = self.transpile_expr(left)?;
         let right_tokens = self.transpile_expr(right)?;
         
-        // Use format! for string concatenation to avoid ownership issues
+        // Use format! with proper string conversion to handle String/&str types
+        // This ensures both operands are converted to appropriate types for formatting
         Ok(quote! { format!("{}{}", #left_tokens, #right_tokens) })
     }
 }

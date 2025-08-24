@@ -54,7 +54,15 @@ impl Transpiler {
             name.to_string()
         };
         let name_ident = format_ident!("{}", safe_name);
-        let value_tokens = self.transpile_expr(value)?;
+        
+        // Convert string literals to String type at variable declaration time
+        // This ensures string variables are String, not &str, making function calls work
+        let value_tokens = match &value.kind {
+            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::String(s)) => {
+                quote! { #s.to_string() }
+            }
+            _ => self.transpile_expr(value)?
+        };
         
         // HOTFIX: If body is Unit, this is a top-level let statement without scoping
         if matches!(body.kind, crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)) {
@@ -478,8 +486,8 @@ impl Transpiler {
         }
 
         // For regular function calls, convert string literals to String
+        // Variable conversion is more complex and handled via Rust's type inference
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| {
-            // Convert string literals to String for function arguments
             match &a.kind {
                 ExprKind::Literal(Literal::String(s)) => {
                     Ok(quote! { #s.to_string() })
