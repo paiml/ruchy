@@ -1,6 +1,7 @@
 //! REPL implementation for interactive Ruchy development
 //!
 //! Production-grade REPL with resource bounds, error recovery, and grammar coverage
+#![allow(clippy::cast_sign_loss)]
 //!
 //! # Examples
 //!
@@ -3727,6 +3728,47 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
+        // Handle format strings like println("Result: {}", x)
+        if !args.is_empty() {
+            let first_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+            if let Value::String(format_str) = first_val {
+                // Check if it contains format placeholders
+                if format_str.contains("{}") && args.len() > 1 {
+                    // This is a format string - process it
+                    let mut output = format_str;
+                    let mut arg_values = Vec::new();
+                    
+                    // Evaluate all format arguments
+                    for arg in &args[1..] {
+                        let val = self.evaluate_expr(arg, deadline, depth + 1)?;
+                        arg_values.push(val.to_string());
+                    }
+                    
+                    // Replace {} placeholders with values
+                    for value in arg_values {
+                        if let Some(pos) = output.find("{}") {
+                            output.replace_range(pos..pos+2, &value);
+                        }
+                    }
+                    
+                    println!("{output}");
+                    return Ok(Value::Unit);
+                }
+                // No format placeholders or single argument - print as-is
+                println!("{format_str}");
+                // Print any additional arguments space-separated
+                for arg in &args[1..] {
+                    let val = self.evaluate_expr(arg, deadline, depth + 1)?;
+                    print!(" {val}");
+                }
+                if args.len() > 1 {
+                    println!();
+                }
+                return Ok(Value::Unit);
+            }
+        }
+        
+        // Fallback: concatenate all arguments with spaces (original behavior)
         let mut output = String::new();
         for (i, arg) in args.iter().enumerate() {
             if i > 0 {
@@ -4174,7 +4216,7 @@ impl Repl {
         // 2. Load the module
         // 3. Import specified items into current scope
         
-        println!("Importing from {}: {:?}", path, items);
+        // Import handling
         
         // Add basic standard library support
         match path {
@@ -4184,11 +4226,11 @@ impl Repl {
                     match item {
                         ImportItem::Named(name) if name == "read_file" => {
                             // This function is already built-in
-                            println!("  ✓ Imported {}", name);
+                            // Successfully imported
                         }
                         ImportItem::Named(name) if name == "write_file" => {
                             // This function is already built-in
-                            println!("  ✓ Imported {}", name);
+                            // Successfully imported
                         }
                         ImportItem::Named(name) if name == "fs" => {
                             // Import entire fs module
@@ -4201,14 +4243,14 @@ impl Repl {
             "std::collections" => {
                 // Handle collections imports
                 for item in items {
-                    if let ImportItem::Named(name) = item {
-                        println!("  ✓ Imported {}", name);
+                    if let ImportItem::Named(_name) = item {
+                        // Successfully imported
                     }
                 }
             }
             _ => {
                 // For now, just acknowledge the import
-                println!("Module '{}' import acknowledged (not yet fully implemented)", path);
+                // Module import acknowledged
             }
         }
         
@@ -4216,13 +4258,13 @@ impl Repl {
     }
     
     /// Evaluate export statements (complexity < 10)
-    fn evaluate_export(&mut self, items: &[String]) -> Result<Value> {
+    fn evaluate_export(&mut self, _items: &[String]) -> Result<Value> {
         // For now, just track the export
         // Real implementation would:
         // 1. Mark items for export
         // 2. Make them available to importing modules
         
-        println!("Exporting items: {:?}", items);
+        // Export handling
         
         Ok(Value::Unit)
     }

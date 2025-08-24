@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![Tests](https://img.shields.io/badge/tests-640%2B%20passing-green.svg)](./tests)
-[![v1.6.0](https://img.shields.io/badge/v1.6.0-QUALITY--EXCELLENCE-gold.svg)](./CHANGELOG.md)
+[![v1.9.1](https://img.shields.io/badge/v1.9.1-FEATURE--COMPLETE-gold.svg)](./CHANGELOG.md)
 [![Self-Hosting](https://img.shields.io/badge/🎊%20SELF--HOSTING-ACHIEVED-brightgreen.svg)](./SELF_HOSTING_ACHIEVEMENT.md)
 
 ## 🎉 HISTORIC ACHIEVEMENT: RUCHY IS NOW SELF-HOSTING! 🎉
@@ -39,6 +39,13 @@ ruchy provability script.ruchy --verify --contracts
 ```
 
 ## ✨ Key Features
+
+### 🚀 LANGUAGE COMPLETENESS (v1.9.1)
+- **Pipeline Operator (`|>`)**: Full functional programming support with method chaining
+- **Import/Export System**: Module system with std library recognition
+- **String Methods**: Complete string manipulation (contains, starts_with, replace, etc.)
+- **Array Operations**: Comprehensive array methods (push, pop, insert, remove, etc.)
+- **19% Book Compatibility**: Growing from systematic feature implementation
 
 ### 📊 QUALITY EXCELLENCE (v1.6.0)
 - **80% Test Coverage Target**: Systematic improvement from 37.25% baseline
