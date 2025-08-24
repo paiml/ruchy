@@ -2462,9 +2462,30 @@ impl Repl {
                 Ok(Self::is_option_none(value))
             }
 
-            // Struct patterns not yet implemented
-            (_, Pattern::Struct { .. }) => {
-                bail!("Struct patterns not yet implemented in REPL");
+            // Struct patterns
+            (Value::Object(obj_fields), Pattern::Struct { name: _struct_name, fields: pattern_fields }) => {
+                // For now, we don't check struct name since objects are generic
+                // Check all pattern fields match
+                for pattern_field in pattern_fields {
+                    let field_name = &pattern_field.name;
+                    
+                    // Find the corresponding field in the object
+                    if let Some(field_value) = obj_fields.get(field_name) {
+                        // Check if pattern matches (if specified)
+                        if let Some(pattern) = &pattern_field.pattern {
+                            let mut temp_bindings = HashMap::new();
+                            if !Self::pattern_matches_recursive(field_value, pattern, &mut temp_bindings)? {
+                                return Ok(false);
+                            }
+                        }
+                        // For shorthand patterns ({ x } instead of { x: x }), 
+                        // we just check the field exists, which it does
+                    } else {
+                        // Required field not found in struct
+                        return Ok(false);
+                    }
+                }
+                Ok(true)
             }
 
             // Type mismatches
