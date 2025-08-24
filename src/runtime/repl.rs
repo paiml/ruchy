@@ -254,6 +254,14 @@ impl RuchyCompleter {
                 "to_lower".to_string(),
                 "trim".to_string(),
                 "split".to_string(),
+                "contains".to_string(),
+                "starts_with".to_string(),
+                "ends_with".to_string(),
+                "replace".to_string(),
+                "substring".to_string(),
+                "repeat".to_string(),
+                "chars".to_string(),
+                "reverse".to_string(),
             ],
             commands: vec![
                 ":help".to_string(),
@@ -1161,11 +1169,109 @@ impl Repl {
                 if args.len() != 1 {
                     bail!("split expects 1 argument");
                 }
-                let parts: Vec<Value> = s
-                    .split_whitespace()
-                    .map(|p| Value::String(p.to_string()))
+                // For now, handle simple string literal separators
+                if let ExprKind::Literal(Literal::String(sep)) = &args[0].kind {
+                    let parts: Vec<Value> = s
+                        .split(sep)
+                        .map(|p| Value::String(p.to_string()))
+                        .collect();
+                    Ok(Value::List(parts))
+                } else {
+                    bail!("split separator must be a string literal");
+                }
+            }
+            "contains" => {
+                if args.len() != 1 {
+                    bail!("contains expects 1 argument");
+                }
+                if let ExprKind::Literal(Literal::String(needle)) = &args[0].kind {
+                    Ok(Value::Bool(s.contains(needle)))
+                } else {
+                    bail!("contains argument must be a string literal");
+                }
+            }
+            "starts_with" => {
+                if args.len() != 1 {
+                    bail!("starts_with expects 1 argument");
+                }
+                if let ExprKind::Literal(Literal::String(prefix)) = &args[0].kind {
+                    Ok(Value::Bool(s.starts_with(prefix)))
+                } else {
+                    bail!("starts_with argument must be a string literal");
+                }
+            }
+            "ends_with" => {
+                if args.len() != 1 {
+                    bail!("ends_with expects 1 argument");
+                }
+                if let ExprKind::Literal(Literal::String(suffix)) = &args[0].kind {
+                    Ok(Value::Bool(s.ends_with(suffix)))
+                } else {
+                    bail!("ends_with argument must be a string literal");
+                }
+            }
+            "replace" => {
+                if args.len() != 2 {
+                    bail!("replace expects 2 arguments (from, to)");
+                }
+                if let (ExprKind::Literal(Literal::String(from)), ExprKind::Literal(Literal::String(to))) = 
+                    (&args[0].kind, &args[1].kind) {
+                    Ok(Value::String(s.replace(from, to)))
+                } else {
+                    bail!("replace arguments must be string literals");
+                }
+            }
+            "substring" | "substr" => {
+                if args.len() == 2 {
+                    // substring(start, end)
+                    if let (ExprKind::Literal(Literal::Integer(start)), ExprKind::Literal(Literal::Integer(end))) =
+                        (&args[0].kind, &args[1].kind) {
+                        let start_idx = (*start as usize).min(s.len());
+                        let end_idx = (*end as usize).min(s.len());
+                        if start_idx <= end_idx {
+                            Ok(Value::String(s[start_idx..end_idx].to_string()))
+                        } else {
+                            Ok(Value::String(String::new()))
+                        }
+                    } else {
+                        bail!("substring arguments must be integers");
+                    }
+                } else if args.len() == 1 {
+                    // substring(start) - to end of string
+                    if let ExprKind::Literal(Literal::Integer(start)) = &args[0].kind {
+                        let start_idx = (*start as usize).min(s.len());
+                        Ok(Value::String(s[start_idx..].to_string()))
+                    } else {
+                        bail!("substring argument must be an integer");
+                    }
+                } else {
+                    bail!("substring expects 1 or 2 arguments");
+                }
+            }
+            "repeat" => {
+                if args.len() != 1 {
+                    bail!("repeat expects 1 argument");
+                }
+                if let ExprKind::Literal(Literal::Integer(count)) = &args[0].kind {
+                    if *count < 0 {
+                        bail!("repeat count cannot be negative");
+                    }
+                    Ok(Value::String(s.repeat(*count as usize)))
+                } else {
+                    bail!("repeat argument must be an integer");
+                }
+            }
+            "chars" => {
+                // Return array of single-character strings
+                let chars: Vec<Value> = s
+                    .chars()
+                    .map(|c| Value::String(c.to_string()))
                     .collect();
-                Ok(Value::List(parts))
+                Ok(Value::List(chars))
+            }
+            "reverse" => {
+                let reversed: String = s.chars().rev().collect();
+                Ok(Value::String(reversed))
             }
             _ => bail!("Unknown string method: {}", method),
         }
