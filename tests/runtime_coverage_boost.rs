@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Additional tests to boost runtime coverage
 //!
 //! These tests target runtime modules that had low test coverage
@@ -12,13 +17,13 @@ fn test_interpreter_basic_arithmetic() -> Result<()> {
     let mut interpreter = Repl::new()?;
     
     let result = interpreter.eval("2 + 3")?;
-    assert_eq!(result.to_string(), "5");
+    assert_eq!(result, "5");
     
     let result = interpreter.eval("10 * 4")?;
-    assert_eq!(result.to_string(), "40");
+    assert_eq!(result, "40");
     
     let result = interpreter.eval("15 / 3")?;
-    assert_eq!(result.to_string(), "5");
+    assert_eq!(result, "5");
     
     Ok(())
 }
@@ -29,11 +34,11 @@ fn test_interpreter_string_operations() -> Result<()> {
     let mut interpreter = Repl::new()?;
     
     let result = interpreter.eval(r#""hello" + " world""#)?;
-    assert!(result.to_string().contains("hello") && result.to_string().contains("world"));
+    assert!(result.contains("hello") && result.contains("world"));
     
     let result = interpreter.eval(r#""test".len()"#)?;
     // Length operation might not be implemented, just ensure it doesn't panic
-    let _output = result.to_string();
+    let _output = result;
     
     Ok(())
 }
@@ -46,12 +51,12 @@ fn test_interpreter_variable_bindings() -> Result<()> {
     // Test variable assignment
     let _result = interpreter.eval("let x = 42")?;
     let result = interpreter.eval("x")?;
-    assert_eq!(result.to_string(), "42");
+    assert_eq!(result, "42");
     
     // Test variable shadowing
     let _result = interpreter.eval("let x = 99")?;
     let result = interpreter.eval("x")?;
-    assert_eq!(result.to_string(), "99");
+    assert_eq!(result, "99");
     
     Ok(())
 }
@@ -62,13 +67,13 @@ fn test_interpreter_conditionals() -> Result<()> {
     let mut interpreter = Repl::new()?;
     
     let result = interpreter.eval("if true { 10 } else { 20 }")?;
-    assert_eq!(result.to_string(), "10");
+    assert_eq!(result, "10");
     
     let result = interpreter.eval("if false { 10 } else { 20 }")?;
-    assert_eq!(result.to_string(), "20");
+    assert_eq!(result, "20");
     
     let result = interpreter.eval("if 5 > 3 { \"yes\" } else { \"no\" }")?;
-    assert!(result.to_string().contains("yes"));
+    assert!(result.contains("yes"));
     
     Ok(())
 }
@@ -83,7 +88,7 @@ fn test_interpreter_functions() -> Result<()> {
     
     // Call the function
     let result = interpreter.eval("double(21)")?;
-    assert_eq!(result.to_string(), "42");
+    assert_eq!(result, "42");
     
     Ok(())
 }
@@ -94,13 +99,13 @@ fn test_interpreter_boolean_logic() -> Result<()> {
     let mut interpreter = Repl::new()?;
     
     let result = interpreter.eval("true && false")?;
-    assert_eq!(result.to_string(), "false");
+    assert_eq!(result, "false");
     
     let result = interpreter.eval("true || false")?;
-    assert_eq!(result.to_string(), "true");
+    assert_eq!(result, "true");
     
     let result = interpreter.eval("!true")?;
-    assert_eq!(result.to_string(), "false");
+    assert_eq!(result, "false");
     
     Ok(())
 }
@@ -111,16 +116,16 @@ fn test_interpreter_comparisons() -> Result<()> {
     let mut interpreter = Repl::new()?;
     
     let result = interpreter.eval("5 > 3")?;
-    assert_eq!(result.to_string(), "true");
+    assert_eq!(result, "true");
     
     let result = interpreter.eval("2 < 1")?;
-    assert_eq!(result.to_string(), "false");
+    assert_eq!(result, "false");
     
     let result = interpreter.eval("4 == 4")?;
-    assert_eq!(result.to_string(), "true");
+    assert_eq!(result, "true");
     
     let result = interpreter.eval("3 != 3")?;
-    assert_eq!(result.to_string(), "false");
+    assert_eq!(result, "false");
     
     Ok(())
 }
@@ -132,12 +137,12 @@ fn test_interpreter_lists() -> Result<()> {
     
     // Create a list
     let result = interpreter.eval("[1, 2, 3]")?;
-    assert!(result.to_string().contains("1") && result.to_string().contains("3"));
+    assert!(result.contains('1') && result.contains('3'));
     
     // Store list in variable
     let _result = interpreter.eval("let numbers = [10, 20, 30]")?;
     let result = interpreter.eval("numbers")?;
-    assert!(result.to_string().contains("10"));
+    assert!(result.contains("10"));
     
     Ok(())
 }
@@ -148,10 +153,10 @@ fn test_interpreter_nested_expressions() -> Result<()> {
     let mut interpreter = Repl::new()?;
     
     let result = interpreter.eval("(2 + 3) * (4 - 1)")?;
-    assert_eq!(result.to_string(), "15");
+    assert_eq!(result, "15");
     
     let result = interpreter.eval("if (10 > 5) && (3 < 7) { 100 } else { 0 }")?;
-    assert_eq!(result.to_string(), "100");
+    assert_eq!(result, "100");
     
     Ok(())
 }
@@ -185,7 +190,7 @@ fn test_interpreter_pattern_matching() -> Result<()> {
             _ => "not found"
         }
     "#)?;
-    assert!(result.to_string().contains("found"));
+    assert!(result.contains("found"));
     
     Ok(())
 }
@@ -196,13 +201,13 @@ fn test_interpreter_loops() -> Result<()> {
     let mut interpreter = Repl::new()?;
     
     // Simple for loop (if supported)
-    let result = interpreter.eval(r#"
+    let result = interpreter.eval(r"
         let sum = 0
         for i in [1, 2, 3] {
             sum = sum + i
         }
         sum
-    "#);
+    ");
     
     // Loop syntax might not be fully implemented, just ensure it doesn't panic
     let _output = result.is_ok() || result.is_err();
@@ -222,7 +227,7 @@ fn test_interpreter_state_persistence() -> Result<()> {
     
     let result = interpreter.eval("counter")?;
     // The exact result depends on implementation, just ensure it doesn't crash
-    let _output = result.to_string();
+    let _output = result;
     
     Ok(())
 }
@@ -250,7 +255,7 @@ fn test_interpreter_recursion() -> Result<()> {
     let mut interpreter = Repl::new()?;
     
     // Define factorial function
-    let _result = interpreter.eval(r#"
+    let _result = interpreter.eval(r"
         fn factorial(n) {
             if n <= 1 { 
                 1 
@@ -258,11 +263,11 @@ fn test_interpreter_recursion() -> Result<()> {
                 n * factorial(n - 1) 
             }
         }
-    "#)?;
+    ")?;
     
     // Test factorial calculation
     let result = interpreter.eval("factorial(5)")?;
-    assert_eq!(result.to_string(), "120");
+    assert_eq!(result, "120");
     
     Ok(())
 }

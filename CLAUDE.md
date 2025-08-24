@@ -968,3 +968,4 @@ Language compatibility testing is now **GATE 2** in our mandatory pre-commit hoo
 - if fixing documentation, always ensure a doctests exists, if not create.
 - Language compatibility tests are now MANDATORY quality gates - never bypass
 - ruchy-cli is deprecated, stop publishing it.
+- when increasing test coverage ensure a proper mix of unit/doctests/property-tests/fuzz/cargo run --examples.

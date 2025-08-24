@@ -1,3 +1,7 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
 //! Integration tests for CLI one-liner mode
 
 #![allow(clippy::expect_used)] // Tests can use expect

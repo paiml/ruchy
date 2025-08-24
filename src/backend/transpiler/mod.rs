@@ -29,7 +29,7 @@ type BlockCategorization<'a> = (Vec<TokenStream>, Vec<TokenStream>, bool, Option
 /// The main transpiler struct
 pub struct Transpiler {
     /// Track whether we're in an async context
-    in_async_context: bool,
+    pub in_async_context: bool,
 }
 
 impl Default for Transpiler {
@@ -40,6 +40,15 @@ impl Default for Transpiler {
 
 impl Transpiler {
     /// Creates a new transpiler instance
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::Transpiler;
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// assert!(!transpiler.in_async_context);
+    /// ```
     pub fn new() -> Self {
         Self {
             in_async_context: false,
@@ -47,6 +56,23 @@ impl Transpiler {
     }
 
     /// Transpiles an expression to a `TokenStream`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let mut parser = Parser::new("42");
+    /// let ast = parser.parse().unwrap();
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let result = transpiler.transpile(&ast);
+    /// assert!(result.is_ok());
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the AST cannot be transpiled to valid Rust code.
     pub fn transpile(&self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_expr(expr)
     }
@@ -60,6 +86,27 @@ impl Transpiler {
     }
 
     /// Wraps transpiled code in a complete Rust program with necessary imports
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let mut parser = Parser::new("42");
+    /// let ast = parser.parse().unwrap();
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let result = transpiler.transpile_to_program(&ast);
+    /// assert!(result.is_ok());
+    /// 
+    /// let code = result.unwrap().to_string();
+    /// assert!(code.contains("fn main"));
+    /// assert!(code.contains("42"));
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the AST cannot be transpiled to a valid Rust program.
     pub fn transpile_to_program(&self, expr: &Expr) -> Result<TokenStream> {
         let needs_polars = Self::contains_dataframe(expr);
         

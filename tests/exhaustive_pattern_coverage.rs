@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Exhaustive pattern matching coverage test
 //!
 //! This test ensures that all `ExprKind` variants are handled in critical match statements.

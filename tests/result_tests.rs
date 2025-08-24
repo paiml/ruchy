@@ -1,3 +1,7 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
 //! Tests for Result type support
 #![allow(clippy::unwrap_used)] // Tests need unwrap for assertions
 

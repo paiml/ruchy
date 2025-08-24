@@ -1,3 +1,7 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
 //! Regression tests for critical bugs fixed in v0.4.7
 //! These tests ensure that the emergency fixes remain stable
 

@@ -1,3 +1,7 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
 #![allow(clippy::unwrap_used)] // Property tests need unwrap
 #![allow(dead_code)] // Some test strategies may not be used
 

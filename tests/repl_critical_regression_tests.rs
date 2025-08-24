@@ -1,3 +1,7 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
 //! Critical REPL regression tests to prevent future command handler bypass bugs
 //!
 //! These tests specifically verify that piped input to REPL commands

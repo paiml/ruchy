@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Property-based tests for module path syntax
 #![allow(clippy::uninlined_format_args, clippy::doc_markdown, clippy::redundant_clone)] // Test code
 

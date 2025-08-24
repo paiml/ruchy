@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Toyota Way: Idiot-proof separation of parsing vs runtime testing
 #![allow(clippy::expect_used, clippy::print_stdout, clippy::uninlined_format_args, clippy::needless_borrows_for_generic_args, clippy::cast_sign_loss)] // Test code allows these
 //! 

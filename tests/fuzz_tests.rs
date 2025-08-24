@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 #![allow(clippy::unwrap_used, clippy::uninlined_format_args, clippy::useless_vec)]
 //! Fuzz tests for Ruchy compiler - find edge cases and crashes
 

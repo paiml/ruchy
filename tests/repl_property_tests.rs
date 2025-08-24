@@ -1,3 +1,7 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unwrap_used)]
 #![allow(clippy::unwrap_used, clippy::panic)]
 #![allow(clippy::unreadable_literal)] // Property tests generate random values
 #![allow(unused_imports)] // Test utilities may not all be used

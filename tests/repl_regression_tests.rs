@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! REPL Regression Tests - Never allow v0.7.0 disasters again
 //!
 //! These tests MUST pass before ANY release

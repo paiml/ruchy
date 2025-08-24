@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Property-based defect hunting for qualified name parsing
 #![allow(clippy::expect_used, clippy::print_stdout, clippy::uninlined_format_args, clippy::manual_let_else, clippy::needless_borrows_for_generic_args, clippy::single_char_pattern)] // Test code allows these
 //! 

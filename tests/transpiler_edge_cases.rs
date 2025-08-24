@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::approx_constant)]
 //! Additional transpiler tests for edge cases and coverage
 #![allow(clippy::unwrap_used)]
 

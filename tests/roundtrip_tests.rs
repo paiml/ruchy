@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 //! Roundtrip tests ensure that parse -> transpile -> compile -> run produces expected results
 #![allow(
     clippy::expect_used,

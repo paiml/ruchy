@@ -1,3 +1,8 @@
+#![cfg(test)]
+#![allow(warnings)]
+#![allow(clippy::assertions_on_constants)]
+#![allow(clippy::unreadable_literal)]
+#![allow(clippy::unwrap_used)]
 #![allow(clippy::unwrap_used, clippy::panic)]
 //! Tests for deterministic error recovery in the parser
 //! Based on docs/ruchy-transpiler-docs.md Section 4
