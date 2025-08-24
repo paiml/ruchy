@@ -9,6 +9,50 @@ All notable changes to the Ruchy programming language will be documented in this
 - Production-grade tooling expansion
 - Community ecosystem development
 
+## [1.9.6] - 2025-08-24
+
+### 🎯 MAJOR BREAKTHROUGH: Qualified Name Pattern Support Complete
+
+This release resolves the critical pattern matching bug reported by sister projects and delivers complete support for qualified name patterns like `Status::Ok` and `Ordering::Less`.
+
+#### 🚀 Pattern Matching Revolution
+- **Qualified Name Patterns** - `Status::Ok`, `Ordering::Less`, `Result::Ok` patterns now work perfectly
+- **Expression Parsing Fixed** - `Status::Ok` expressions parse correctly (was broken in parser)  
+- **Pattern Evaluation** - Complete pattern matching support in REPL for enum variants
+- **Transpiler Support** - Qualified patterns transpile correctly to Rust match arms
+
+#### 🔧 Technical Breakthroughs
+- **Parser Fix**: Expression parsing no longer breaks on Ok/Err/Some/None tokens
+- **Pattern Parser**: Added comprehensive token handling for qualified patterns  
+- **Evaluator Enhancement**: Implemented Pattern::QualifiedName matching logic
+- **Full Coverage**: Works with any `Module::Variant` pattern structure
+
+#### 📊 Sister Project Impact
+- **ruchy-book Integration**: Priority pattern matching issue RESOLVED
+- **rosetta-ruchy Compatibility**: Scientific validation patterns now functional
+- **User Bug Report**: Original `Ordering::Less` matching bug FIXED
+
+#### ✅ Validation Results  
+```ruchy
+let x = Status::Ok
+match x {
+    Status::Ok => println("SUCCESS!"),     // ✅ Now works!
+    Status::Error => println("Error"),
+    _ => println("other")
+}
+// Output: "SUCCESS!" ✅
+
+let ordering = Ordering::Less  
+match ordering {
+    Ordering::Less => println("less"),     // ✅ Original bug fixed!
+    Ordering::Equal => println("equal"), 
+    _ => println("other")
+}
+// Output: "less" ✅
+```
+
+This release addresses the #1 feedback from sister projects and represents a major step toward complete pattern matching parity with modern languages.
+
 ## [1.9.5] - 2025-08-24
 
 ### HashMap/HashSet Transpiler Support Complete
