@@ -4,7 +4,7 @@
 //! cyclomatic complexity below 10 for each function.
 
 use super::Transpiler;
-use crate::frontend::ast::{Expr, ExprKind};
+use crate::frontend::ast::{Expr, ExprKind, Literal};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -141,7 +141,15 @@ impl Transpiler {
             "println" => {
                 let arg_tokens: Result<Vec<_>, _> = args
                     .iter()
-                    .map(|arg| self.transpile_expr(arg))
+                    .map(|arg| {
+                        // Handle string literals directly for format strings
+                        match &arg.kind {
+                            ExprKind::Literal(Literal::String(s)) => {
+                                Ok(quote! { #s })
+                            }
+                            _ => self.transpile_expr(arg)
+                        }
+                    })
                     .collect();
                 let arg_tokens = arg_tokens?;
 

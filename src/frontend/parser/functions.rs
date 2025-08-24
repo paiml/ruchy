@@ -248,6 +248,7 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
     ))
 }
 
+
 /// # Errors
 ///
 /// Returns an error if the operation fails
