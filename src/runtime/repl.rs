@@ -2473,13 +2473,14 @@ impl Repl {
                     if let Some(field_value) = obj_fields.get(field_name) {
                         // Check if pattern matches (if specified)
                         if let Some(pattern) = &pattern_field.pattern {
-                            let mut temp_bindings = HashMap::new();
-                            if !Self::pattern_matches_recursive(field_value, pattern, &mut temp_bindings)? {
+                            if !Self::pattern_matches_recursive(field_value, pattern, bindings)? {
                                 return Ok(false);
                             }
+                        } else {
+                            // Shorthand pattern ({ x } instead of { x: x })
+                            // This creates a binding: x => field_value
+                            bindings.insert(field_name.clone(), field_value.clone());
                         }
-                        // For shorthand patterns ({ x } instead of { x: x }), 
-                        // we just check the field exists, which it does
                     } else {
                         // Required field not found in struct
                         return Ok(false);
