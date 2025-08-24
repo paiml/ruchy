@@ -9,6 +9,29 @@ All notable changes to the Ruchy programming language will be documented in this
 - Production-grade tooling expansion
 - Community ecosystem development
 
+## [1.9.5] - 2025-08-24
+
+### HashMap/HashSet Transpiler Support Complete
+
+This release completes HashMap/HashSet support with full transpiler integration.
+
+#### New Features
+- **HashMap Transpiler Support** - HashMap operations now transpile correctly to Rust
+- **HashSet Transpiler Support** - HashSet operations transpile to efficient Rust code
+- **Method Call Transpilation** - insert, get, contains_key, etc. work in compiled mode
+- **Lifetime Management** - HashMap.get() properly handles Rust lifetime requirements
+- **Homogeneous Collection Support** - Collections with same-type elements transpile perfectly
+
+#### Transpiler Improvements
+- HashMap.get() uses .cloned() to return owned values instead of references
+- Comprehensive method pattern matching for all collection operations
+- Zero-cost abstraction - collection methods compile to optimal Rust
+
+#### Language Completeness
+- HashMap/HashSet work identically in REPL and compiled modes
+- Collection constructors (HashMap(), HashSet()) fully functional
+- Full method API coverage for both collection types
+
 ## [1.9.4] - 2025-08-24
 
 ### HashMap and HashSet Collections Added
