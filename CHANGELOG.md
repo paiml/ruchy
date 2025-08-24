@@ -9,6 +9,35 @@ All notable changes to the Ruchy programming language will be documented in this
 - Production-grade tooling expansion
 - Community ecosystem development
 
+## [1.9.3] - 2025-08-24
+
+### Core Math Functions Added
+
+This release adds essential mathematical functions that algorithms need.
+
+#### New Functions
+- **sqrt(x)** - Square root (works with int and float)
+- **pow(base, exp)** - Power/exponentiation (int and float)
+- **abs(x)** - Absolute value (int and float)
+- **min(a, b)** - Minimum of two values
+- **max(a, b)** - Maximum of two values
+- **floor(x)** - Round down to integer
+- **ceil(x)** - Round up to integer
+- **round(x)** - Round to nearest integer
+
+#### Impact
+- **ruchy-book compatibility**: Another ~10% improvement
+- **rosetta-ruchy**: Math-heavy algorithms can now be implemented
+- **Standard library**: Core math functions essential for real work
+
+#### Example
+```rust
+println("sqrt(16) = {}", sqrt(16))        // 4
+println("pow(2, 10) = {}", pow(2, 10))    // 1024
+println("min(10, 20) = {}", min(10, 20))  // 10
+println("abs(-42) = {}", abs(-42))        // 42
+```
+
 ## [1.9.2] - 2025-08-24
 
 ### 🚨 Critical Fix: Format Strings Now Work!

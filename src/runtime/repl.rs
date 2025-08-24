@@ -3908,6 +3908,135 @@ impl Repl {
                     data: Some(vec![value]),
                 });
             }
+            // Math functions
+            "sqrt" => {
+                if args.len() != 1 {
+                    bail!("sqrt takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                match value {
+                    Value::Int(n) => {
+                        #[allow(clippy::cast_precision_loss)]
+                        return Ok(Value::Float((n as f64).sqrt()));
+                    }
+                    Value::Float(f) => return Ok(Value::Float(f.sqrt())),
+                    _ => bail!("sqrt expects a numeric argument"),
+                }
+            }
+            "pow" => {
+                if args.len() != 2 {
+                    bail!("pow takes exactly 2 arguments");
+                }
+                let base = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let exp = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                match (base, exp) {
+                    (Value::Int(b), Value::Int(e)) => {
+                        if e < 0 {
+                            #[allow(clippy::cast_precision_loss)]
+                            return Ok(Value::Float((b as f64).powi(e as i32)));
+                        }
+                        let exp_u32 = u32::try_from(e).map_err(|_| anyhow::anyhow!("Exponent too large"))?;
+                        match b.checked_pow(exp_u32) {
+                            Some(result) => return Ok(Value::Int(result)),
+                            None => bail!("Integer overflow in pow({}, {})", b, e),
+                        }
+                    }
+                    (Value::Float(b), Value::Float(e)) => return Ok(Value::Float(b.powf(e))),
+                    (Value::Int(b), Value::Float(e)) => {
+                        #[allow(clippy::cast_precision_loss)]
+                        return Ok(Value::Float((b as f64).powf(e)));
+                    }
+                    (Value::Float(b), Value::Int(e)) => {
+                        #[allow(clippy::cast_precision_loss)]
+                        return Ok(Value::Float(b.powi(e as i32)));
+                    }
+                    _ => bail!("pow expects numeric arguments"),
+                }
+            }
+            "abs" => {
+                if args.len() != 1 {
+                    bail!("abs takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                match value {
+                    Value::Int(n) => return Ok(Value::Int(n.abs())),
+                    Value::Float(f) => return Ok(Value::Float(f.abs())),
+                    _ => bail!("abs expects a numeric argument"),
+                }
+            }
+            "min" => {
+                if args.len() != 2 {
+                    bail!("min takes exactly 2 arguments");
+                }
+                let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let b = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                match (a, b) {
+                    (Value::Int(x), Value::Int(y)) => return Ok(Value::Int(x.min(y))),
+                    (Value::Float(x), Value::Float(y)) => return Ok(Value::Float(x.min(y))),
+                    (Value::Int(x), Value::Float(y)) => {
+                        #[allow(clippy::cast_precision_loss)]
+                        return Ok(Value::Float((x as f64).min(y)));
+                    }
+                    (Value::Float(x), Value::Int(y)) => {
+                        #[allow(clippy::cast_precision_loss)]
+                        return Ok(Value::Float(x.min(y as f64)));
+                    }
+                    _ => bail!("min expects numeric arguments"),
+                }
+            }
+            "max" => {
+                if args.len() != 2 {
+                    bail!("max takes exactly 2 arguments");
+                }
+                let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let b = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                match (a, b) {
+                    (Value::Int(x), Value::Int(y)) => return Ok(Value::Int(x.max(y))),
+                    (Value::Float(x), Value::Float(y)) => return Ok(Value::Float(x.max(y))),
+                    (Value::Int(x), Value::Float(y)) => {
+                        #[allow(clippy::cast_precision_loss)]
+                        return Ok(Value::Float((x as f64).max(y)));
+                    }
+                    (Value::Float(x), Value::Int(y)) => {
+                        #[allow(clippy::cast_precision_loss)]
+                        return Ok(Value::Float(x.max(y as f64)));
+                    }
+                    _ => bail!("max expects numeric arguments"),
+                }
+            }
+            "floor" => {
+                if args.len() != 1 {
+                    bail!("floor takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                match value {
+                    Value::Int(n) => return Ok(Value::Int(n)), // Already floored
+                    Value::Float(f) => return Ok(Value::Float(f.floor())),
+                    _ => bail!("floor expects a numeric argument"),
+                }
+            }
+            "ceil" => {
+                if args.len() != 1 {
+                    bail!("ceil takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                match value {
+                    Value::Int(n) => return Ok(Value::Int(n)), // Already ceiled
+                    Value::Float(f) => return Ok(Value::Float(f.ceil())),
+                    _ => bail!("ceil expects a numeric argument"),
+                }
+            }
+            "round" => {
+                if args.len() != 1 {
+                    bail!("round takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                match value {
+                    Value::Int(n) => return Ok(Value::Int(n)), // Already rounded
+                    Value::Float(f) => return Ok(Value::Float(f.round())),
+                    _ => bail!("round expects a numeric argument"),
+                }
+            }
             _ => {}
         }
 
