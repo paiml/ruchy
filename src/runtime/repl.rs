@@ -2833,6 +2833,26 @@ impl Repl {
                 Ok(true)
             }
 
+            // Qualified name patterns (like Status::Ok, Ordering::Less)
+            (Value::EnumVariant { enum_name, variant_name, data: _ }, Pattern::QualifiedName(path)) => {
+                // Match if qualified name matches enum variant  
+                if path.len() >= 2 {
+                    let pattern_enum = &path[path.len() - 2];
+                    let pattern_variant = &path[path.len() - 1];
+                    Ok(enum_name == pattern_enum && variant_name == pattern_variant)
+                } else {
+                    Ok(false)
+                }
+            }
+            
+            // Qualified name patterns should also match qualified name expressions
+            (value, Pattern::QualifiedName(path)) => {
+                // Convert value to string and compare with pattern path
+                let value_str = format!("{value}");
+                let pattern_str = path.join("::");
+                Ok(value_str == pattern_str)
+            }
+
             // Type mismatches
             _ => Ok(false),
         }
