@@ -132,6 +132,27 @@ Priority fixes from book testing:
 - File operations now work correctly
 - 3.7x improvement in book compatibility
 
+## Critical Quality Gate Defect (Toyota Way Investigation)
+
+**DEFECT**: Pre-commit hook hangs at dogfooding test (discovered 2024-12)
+
+**Five Whys Root Cause Analysis**:
+1. Why does quality gate hang? → Dogfooding test never completes
+2. Why doesn't it complete? → The debug binary is used instead of release
+3. Why does debug binary fail? → It generates invalid Rust code (wraps in {} incorrectly)
+4. Why are debug/release different? → Different optimization levels expose transpiler bugs
+5. Why wasn't this caught? → Pre-commit hook inconsistently uses debug vs release binaries
+
+**ROOT CAUSE**: Transpiler generates different code in debug vs release mode, violating determinism
+
+**IMMEDIATE FIX**: Always use release binary in quality gates
+**LONG-TERM FIX**: Ensure transpiler is deterministic across all build modes
+
+**PREVENTION**: 
+- Add property test: `assert!(transpile_debug(x) == transpile_release(x))`
+- Quality gates must use consistent binary paths
+- Never allow behavioral differences between debug/release
+
 ## Task Execution Protocol
 
 ### Pre-Implementation Verification
