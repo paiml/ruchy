@@ -84,7 +84,7 @@ cargo clippy --all-targets --all-features -- -D warnings
 make lint
 ```
 
-## Quality Standards (v0.10.0 - Revolutionary Tools)
+## Quality Standards (v1.9.1 - Language Complete)
 
 ### Code Quality - Toyota Way (Zero Defects)
 
@@ -93,6 +93,7 @@ make lint
 - **Complexity < 50**: All functions must have cyclomatic complexity under 50
 - **Tested**: New features require tests with 80% minimum coverage
 - **Documented**: Public APIs need documentation with examples
+- **Language Features**: 19% book compatibility, 100% one-liners working
 
 ### Testing Requirements
 

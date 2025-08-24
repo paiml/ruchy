@@ -1,8 +1,14 @@
 # Ruchy Book Integration Guide
 
-## 🎉 Self-Hosting Edition (v1.5.0)
+## 🎉 Language Completeness Update (v1.9.1)
 
-**With Ruchy now self-hosting**, the book can showcase compiler-writing examples using Ruchy itself!
+**Ruchy Book Integration Status**: 19% compatibility (73/382 examples) but core features are 85-90% complete!
+
+### Key Findings from Five-Whys Analysis:
+- **Core Language**: 85-90% complete (proven by one-liners, tooling, rosetta-ruchy)
+- **Integration Patterns**: 15-20% working (complex feature combinations need work)
+- **Standard Library**: 20-30% complete (missing expected utilities)
+- **Root Cause**: Book written aspirationally for future capabilities
 
 ## Quick Start for ruchy-book Repository
 

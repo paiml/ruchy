@@ -9,6 +9,73 @@ All notable changes to the Ruchy programming language will be documented in this
 - Production-grade tooling expansion
 - Community ecosystem development
 
+## [1.9.2] - 2025-08-24
+
+### 🚨 Critical Fix: Format Strings Now Work!
+
+This emergency release fixes the #1 blocker that was preventing Ruchy from being usable for real work.
+
+#### Fixed
+- **Format strings in REPL**: `println("Result: {}", x)` now correctly outputs `Result: 42` instead of `Result: {} 42`
+- **Multiple placeholders**: `println("{} + {} = {}", 1, 2, 3)` works correctly
+- **Mixed types**: String and numeric values can be mixed in format strings
+- **Expressions in format args**: `println("Sum: {}", a + b)` evaluates expressions
+
+#### Impact
+- **ruchy-book compatibility**: Jumps from 19% → ~40% (estimated)
+- **rosetta-ruchy**: All algorithms can now display their results properly
+- **Real-world usability**: Format strings are essential for any practical programming
+
+#### Technical Details
+The REPL's `evaluate_println` function was simply concatenating arguments with spaces instead of processing format placeholders. Now it:
+1. Detects format strings by checking for `{}` placeholders
+2. Evaluates all format arguments
+3. Replaces placeholders with values in order
+4. Falls back to space-separated concatenation for non-format cases
+
+#### Tests Added
+Comprehensive test suite in `tests/format_strings_test.rs` covering:
+- Simple format strings
+- Multiple placeholders
+- Mixed types
+- Expressions in arguments
+- Format strings in loops
+- Edge cases
+
+## [1.9.1] - 2025-08-24 🌐 IMPORT/EXPORT SYSTEM
+
+### Import/Export Implementation
+- **Import Evaluation**: Full import statement processing in REPL
+- **Export Tracking**: Export statement acknowledgment
+- **Standard Library**: Recognition of std::fs, std::collections
+- **Error Fix**: Resolved "Expression type not yet implemented" for imports
+
+## [1.9.0] - 2025-08-24 🔄 PIPELINE OPERATOR
+
+### Pipeline Operator (`|>`) Implementation
+- **Token Fix**: Corrected pipeline token from `>>` to `|>`
+- **List Support**: Arrays flow through pipelines correctly
+- **Method Chaining**: Full support for method calls in pipeline stages
+- **Function Calls**: Regular functions work as pipeline stages
+- **Complete FP**: Functional programming paradigm fully enabled
+
+### Examples Working:
+```ruchy
+42 |> println                          # Function calls
+[1,2,3] |> dummy.len()                 # Method calls → 3
+[1,2,3] |> dummy.reverse() |> dummy.first()  # Chaining → 3
+"hello" |> dummy.to_upper() |> dummy.reverse()  # String pipeline → "OLLEH"
+```
+
+## [1.8.9] - 2025-08-24 📝 STRING METHODS
+
+### Comprehensive String Methods
+- **New Methods**: contains, starts_with, ends_with, replace, substring, repeat, chars, reverse
+- **Split Fix**: Now uses provided separator instead of split_whitespace
+- **Type Safety**: All methods validate argument types and counts
+- **Immutable**: Functional style returning new values
+- **Autocompletion**: Updated REPL completion with all methods
+
 ## [1.6.0] - 2025-08-24 📊 QUALITY EXCELLENCE SPRINT
 
 ### Test Coverage Breakthrough
