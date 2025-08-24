@@ -337,9 +337,8 @@ impl Transpiler {
                     || matches!(&args[1].kind, ExprKind::Literal(Literal::Float(_)));
                 if is_float {
                     return Ok(quote! { (#a as f64).min(#b as f64) });
-                } else {
-                    return Ok(quote! { std::cmp::min(#a, #b) });
                 }
+                return Ok(quote! { std::cmp::min(#a, #b) });
             }
             if name == "max" && args.len() == 2 {
                 let a = self.transpile_expr(&args[0])?;
@@ -349,9 +348,8 @@ impl Transpiler {
                     || matches!(&args[1].kind, ExprKind::Literal(Literal::Float(_)));
                 if is_float {
                     return Ok(quote! { (#a as f64).max(#b as f64) });
-                } else {
-                    return Ok(quote! { std::cmp::max(#a, #b) });
                 }
+                return Ok(quote! { std::cmp::max(#a, #b) });
             }
             if name == "floor" && args.len() == 1 {
                 let arg = self.transpile_expr(&args[0])?;
@@ -364,6 +362,14 @@ impl Transpiler {
             if name == "round" && args.len() == 1 {
                 let arg = self.transpile_expr(&args[0])?;
                 return Ok(quote! { (#arg as f64).round() });
+            }
+            
+            // Collection constructors
+            if name == "HashMap" && args.is_empty() {
+                return Ok(quote! { std::collections::HashMap::new() });
+            }
+            if name == "HashSet" && args.is_empty() {
+                return Ok(quote! { std::collections::HashSet::new() });
             }
         }
 
@@ -448,6 +454,7 @@ impl Transpiler {
     }
 
     /// Transpiles method calls
+    #[allow(clippy::cognitive_complexity)]
     pub fn transpile_method_call(
         &self,
         object: &Expr,
@@ -475,9 +482,27 @@ impl Transpiler {
                 // vec.reduce(f) -> vec.into_iter().reduce(f)
                 Ok(quote! { #obj_tokens.into_iter().reduce(#(#arg_tokens),*) })
             }
-            "iter" => {
-                // vec.iter() -> vec.iter()
-                Ok(quote! { #obj_tokens.iter() })
+            
+            // HashMap/HashSet specific methods
+            "get" => {
+                // HashMap.get() returns Option<&V>, but we want owned values
+                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*).cloned() })
+            }
+            "contains_key" | "keys" | "values" | "entry" => {
+                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+            }
+            "contains" => {
+                // HashSet contains method
+                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+            }
+            "union" | "intersection" | "difference" | "symmetric_difference" => {
+                // HashSet set operations
+                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+            }
+            
+            // Common collection methods (Vec, HashMap, HashSet)
+            "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
+                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
             
             // DataFrame operations that should be chained
