@@ -51,3 +51,4 @@ deep_context.md
 # Added by cargo
 
 /target
+coverage-report/
