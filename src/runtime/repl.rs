@@ -276,6 +276,8 @@ impl RuchyCompleter {
         let builtin_functions = vec![
             "println".to_string(),
             "print".to_string(),
+            "input".to_string(),
+            "readline".to_string(),
             "curry".to_string(),
             "uncurry".to_string(),
             "read_file".to_string(),
@@ -3798,6 +3800,8 @@ impl Repl {
             match func_name.as_str() {
                 "println" => self.evaluate_println(args, deadline, depth),
                 "print" => self.evaluate_print(args, deadline, depth),
+                "input" => self.evaluate_input(args, deadline, depth),
+                "readline" => self.evaluate_readline(args, deadline, depth),
                 "curry" => self.evaluate_curry(args, deadline, depth),
                 "uncurry" => self.evaluate_uncurry(args, deadline, depth),
                 "read_file" => self.evaluate_read_file(args, deadline, depth),
@@ -4013,6 +4017,68 @@ impl Repl {
         }
         print!("{output}");
         Ok(Value::Unit)
+    }
+
+    /// Evaluate `input` function - prompt user for input
+    fn evaluate_input(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        use std::io::{self, Write};
+        
+        // Handle optional prompt argument
+        if args.len() > 1 {
+            bail!("input expects 0 or 1 arguments (optional prompt)");
+        }
+        
+        // Show prompt if provided
+        if let Some(prompt_expr) = args.first() {
+            let prompt_val = self.evaluate_expr(prompt_expr, deadline, depth + 1)?;
+            match prompt_val {
+                Value::String(prompt) => print!("{prompt}"),
+                other => print!("{other}"),
+            }
+            io::stdout().flush().unwrap_or(());
+        }
+        
+        // Read line from stdin
+        let mut input = String::new();
+        match io::stdin().read_line(&mut input) {
+            Ok(_) => {
+                // Remove trailing newline
+                if input.ends_with('\n') {
+                    input.pop();
+                    if input.ends_with('\r') {
+                        input.pop();
+                    }
+                }
+                self.memory.try_alloc(input.len())?;
+                Ok(Value::String(input))
+            }
+            Err(e) => bail!("Failed to read input: {e}"),
+        }
+    }
+
+    /// Evaluate `readline` function - read a line from stdin 
+    fn evaluate_readline(&mut self, args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
+        use std::io;
+        
+        if !args.is_empty() {
+            bail!("readline expects no arguments");
+        }
+        
+        let mut input = String::new();
+        match io::stdin().read_line(&mut input) {
+            Ok(_) => {
+                // Remove trailing newline
+                if input.ends_with('\n') {
+                    input.pop();
+                    if input.ends_with('\r') {
+                        input.pop();
+                    }
+                }
+                self.memory.try_alloc(input.len())?;
+                Ok(Value::String(input))
+            }
+            Err(e) => bail!("Failed to read line: {e}"),
+        }
     }
 
     /// Evaluate `read_file` function
