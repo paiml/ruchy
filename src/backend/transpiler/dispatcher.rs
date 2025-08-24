@@ -159,6 +159,27 @@ impl Transpiler {
                     Ok(quote! { println!(#(#arg_tokens),*) })
                 }
             }
+            "print" => {
+                let arg_tokens: Result<Vec<_>, _> = args
+                    .iter()
+                    .map(|arg| {
+                        // Handle string literals directly for format strings
+                        match &arg.kind {
+                            ExprKind::Literal(Literal::String(s)) => {
+                                Ok(quote! { #s })
+                            }
+                            _ => self.transpile_expr(arg)
+                        }
+                    })
+                    .collect();
+                let arg_tokens = arg_tokens?;
+
+                if arg_tokens.is_empty() {
+                    Ok(quote! { print!() })
+                } else {
+                    Ok(quote! { print!(#(#arg_tokens),*) })
+                }
+            }
             "vec" => {
                 let arg_tokens: Result<Vec<_>, _> = args
                     .iter()
@@ -167,6 +188,40 @@ impl Transpiler {
                 let arg_tokens = arg_tokens?;
 
                 Ok(quote! { vec![#(#arg_tokens),*] })
+            }
+            "assert" => {
+                let arg_tokens: Result<Vec<_>, _> = args
+                    .iter()
+                    .map(|arg| self.transpile_expr(arg))
+                    .collect();
+                let arg_tokens = arg_tokens?;
+
+                if arg_tokens.is_empty() {
+                    Ok(quote! { assert!() })
+                } else {
+                    Ok(quote! { assert!(#(#arg_tokens),*) })
+                }
+            }
+            "panic" => {
+                let arg_tokens: Result<Vec<_>, _> = args
+                    .iter()
+                    .map(|arg| {
+                        // Handle string literals directly
+                        match &arg.kind {
+                            ExprKind::Literal(Literal::String(s)) => {
+                                Ok(quote! { #s })
+                            }
+                            _ => self.transpile_expr(arg)
+                        }
+                    })
+                    .collect();
+                let arg_tokens = arg_tokens?;
+
+                if arg_tokens.is_empty() {
+                    Ok(quote! { panic!() })
+                } else {
+                    Ok(quote! { panic!(#(#arg_tokens),*) })
+                }
             }
             _ => {
                 anyhow::bail!("Unknown macro: {}", name)
