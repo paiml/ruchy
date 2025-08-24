@@ -24,17 +24,17 @@ fn parse_module_path_segments(state: &mut ParserState, first_segment: String) ->
             Some((Token::Result, _)) => "Result".to_string(),
             Some((Token::Option, _)) => "Option".to_string(),
             Some((Token::Ok, _)) => {
-                // Only break for Ok/Err/Some/None if they follow certain patterns
-                break;
+                // Only break if this is after Result/Option (handled by should_break_for_special_case)
+                "Ok".to_string()
             }
             Some((Token::Err, _)) => {
-                break;
+                "Err".to_string()
             }
             Some((Token::Some, _)) => {
-                break;  
+                "Some".to_string()
             }
             Some((Token::None, _)) => {
-                break;
+                "None".to_string()
             }
             _ => bail!("Expected identifier after '::'")
         };

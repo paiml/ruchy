@@ -233,11 +233,36 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
             let mut path = vec![name.clone()];
             while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
                 state.tokens.advance(); // consume ::
-                if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
-                    path.push(segment.clone());
-                    state.tokens.advance();
-                } else {
-                    break;
+                match state.tokens.peek() {
+                    Some((Token::Identifier(segment), _)) => {
+                        path.push(segment.clone());
+                        state.tokens.advance();
+                    }
+                    Some((Token::Ok, _)) => {
+                        path.push("Ok".to_string());
+                        state.tokens.advance();
+                    }
+                    Some((Token::Err, _)) => {
+                        path.push("Err".to_string());
+                        state.tokens.advance();
+                    }
+                    Some((Token::Some, _)) => {
+                        path.push("Some".to_string());
+                        state.tokens.advance();
+                    }
+                    Some((Token::None, _)) => {
+                        path.push("None".to_string());
+                        state.tokens.advance();
+                    }
+                    Some((Token::Result, _)) => {
+                        path.push("Result".to_string());
+                        state.tokens.advance();
+                    }
+                    Some((Token::Option, _)) => {
+                        path.push("Option".to_string());
+                        state.tokens.advance();
+                    }
+                    _ => break,
                 }
             }
 
