@@ -85,7 +85,7 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
         state.tokens.advance(); // consume mut
         true
     } else {
-        false
+        true  // Variables are mutable by default in Ruchy
     };
 
     // Parse variable name
