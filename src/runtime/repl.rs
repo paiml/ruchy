@@ -278,6 +278,9 @@ impl RuchyCompleter {
             "print".to_string(),
             "input".to_string(),
             "readline".to_string(),
+            "assert".to_string(),
+            "assert_eq".to_string(),
+            "assert_ne".to_string(),
             "curry".to_string(),
             "uncurry".to_string(),
             "read_file".to_string(),
@@ -3802,6 +3805,9 @@ impl Repl {
                 "print" => self.evaluate_print(args, deadline, depth),
                 "input" => self.evaluate_input(args, deadline, depth),
                 "readline" => self.evaluate_readline(args, deadline, depth),
+                "assert" => self.evaluate_assert(args, deadline, depth),
+                "assert_eq" => self.evaluate_assert_eq(args, deadline, depth), 
+                "assert_ne" => self.evaluate_assert_ne(args, deadline, depth),
                 "curry" => self.evaluate_curry(args, deadline, depth),
                 "uncurry" => self.evaluate_uncurry(args, deadline, depth),
                 "read_file" => self.evaluate_read_file(args, deadline, depth),
@@ -4078,6 +4084,119 @@ impl Repl {
                 Ok(Value::String(input))
             }
             Err(e) => bail!("Failed to read line: {e}"),
+        }
+    }
+
+    /// Evaluate `assert` function - panic if condition is false
+    fn evaluate_assert(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() < 1 || args.len() > 2 {
+            bail!("assert expects 1 or 2 arguments (condition, optional message)");
+        }
+        
+        // Evaluate condition
+        let condition = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let is_true = match condition {
+            Value::Bool(b) => b,
+            _ => bail!("assert expects a boolean condition, got {}", std::any::type_name_of_val(&condition)),
+        };
+        
+        if !is_true {
+            // Get optional message
+            let message = if args.len() > 1 {
+                let msg_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                match msg_val {
+                    Value::String(s) => s,
+                    other => other.to_string(),
+                }
+            } else {
+                "Assertion failed".to_string()
+            };
+            
+            bail!("Assertion failed: {}", message);
+        }
+        
+        Ok(Value::Unit)
+    }
+
+    /// Evaluate `assert_eq` function - panic if values are not equal
+    fn evaluate_assert_eq(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() < 2 || args.len() > 3 {
+            bail!("assert_eq expects 2 or 3 arguments (left, right, optional message)");
+        }
+        
+        // Evaluate both values
+        let left = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let right = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        
+        // Compare values
+        let are_equal = self.values_equal(&left, &right);
+        
+        if !are_equal {
+            // Get optional message
+            let message = if args.len() > 2 {
+                let msg_val = self.evaluate_expr(&args[2], deadline, depth + 1)?;
+                match msg_val {
+                    Value::String(s) => s,
+                    other => other.to_string(),
+                }
+            } else {
+                format!("assertion failed: `(left == right)`\n  left: `{}`\n right: `{}`", left, right)
+            };
+            
+            bail!("Assertion failed: {}", message);
+        }
+        
+        Ok(Value::Unit)
+    }
+
+    /// Evaluate `assert_ne` function - panic if values are equal
+    fn evaluate_assert_ne(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() < 2 || args.len() > 3 {
+            bail!("assert_ne expects 2 or 3 arguments (left, right, optional message)");
+        }
+        
+        // Evaluate both values
+        let left = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let right = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        
+        // Compare values
+        let are_equal = self.values_equal(&left, &right);
+        
+        if are_equal {
+            // Get optional message
+            let message = if args.len() > 2 {
+                let msg_val = self.evaluate_expr(&args[2], deadline, depth + 1)?;
+                match msg_val {
+                    Value::String(s) => s,
+                    other => other.to_string(),
+                }
+            } else {
+                format!("assertion failed: `(left != right)`\n  left: `{}`\n right: `{}`", left, right)
+            };
+            
+            bail!("Assertion failed: {}", message);
+        }
+        
+        Ok(Value::Unit)
+    }
+
+    /// Compare two values for equality (helper for assertions)
+    fn values_equal(&self, left: &Value, right: &Value) -> bool {
+        match (left, right) {
+            (Value::Int(a), Value::Int(b)) => a == b,
+            (Value::Float(a), Value::Float(b)) => (a - b).abs() < f64::EPSILON,
+            (Value::Int(a), Value::Float(b)) => (*a as f64 - b).abs() < f64::EPSILON,
+            (Value::Float(a), Value::Int(b)) => (a - *b as f64).abs() < f64::EPSILON,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Unit, Value::Unit) => true,
+            (Value::List(a), Value::List(b)) => {
+                a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| self.values_equal(x, y))
+            }
+            (Value::Tuple(a), Value::Tuple(b)) => {
+                a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| self.values_equal(x, y))
+            }
+            _ => false,
         }
     }
 
