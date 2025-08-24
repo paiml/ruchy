@@ -1111,3 +1111,4 @@ Language compatibility testing is now **GATE 2** in our mandatory pre-commit hoo
 - ruchy-cli is deprecated, stop publishing it.
 - when increasing test coverage ensure a proper mix of unit/doctests/property-tests/fuzz/cargo run --examples.
 - always look at ../ruchy-book and ../rosetta-ruchy to ensure quality on each start of sprint.
+- also, any time we fail more than once.  add more testing (doctests, property tests, fuzz tests, cargo run --example).  this is mandatory and a sign this code path needs more testing.  also check complexity and fix it.

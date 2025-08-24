@@ -224,9 +224,92 @@ impl Transpiler {
     }
 
     /// Transpiles function calls
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new(r#"println("Hello, {}", name)"#);
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains(r#"println ! ( "Hello, {}" , name )"#));
+    /// ```
+    /// 
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new(r#"println("Simple message")"#);
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains(r#"println ! ( "Simple message" )"#));
+    /// ```
+    /// 
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("some_function(\"test\")");
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains(r#"some_function ( "test" . to_string ( ) )"#));
+    /// ```
     pub fn transpile_call(&self, func: &Expr, args: &[Expr]) -> Result<TokenStream> {
         let func_tokens = self.transpile_expr(func)?;
 
+        // Check if this is a macro first (before string conversion)
+        if let ExprKind::Identifier(name) = &func.kind {
+            if name == "println" || name == "print" || name == "dbg" || name == "panic" {
+                // These are macros in Rust, not functions
+                // Special handling for string interpolation in println/print
+                if (name == "println" || name == "print") && args.len() == 1 {
+                    if let ExprKind::StringInterpolation { parts } = &args[0].kind {
+                        // Generate println!/print! with format string directly
+                        return self.transpile_print_with_interpolation(name, parts);
+                    }
+                    // For single non-string arguments, add "{}" format string
+                    if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
+                        let arg_tokens = self.transpile_expr(&args[0])?;
+                        let format_str = "{}";
+                        return Ok(quote! { #func_tokens!(#format_str, #arg_tokens) });
+                    }
+                }
+                // For multiple arguments with first being a string literal OR string interpolation, treat as format string + args
+                if args.len() > 1 {
+                    match &args[0].kind {
+                        ExprKind::Literal(Literal::String(_)) => {
+                            // First argument is format string literal, remaining are format arguments  
+                            let format_arg = self.transpile_expr(&args[0])?;
+                            let format_args: Result<Vec<_>> = args[1..].iter().map(|a| self.transpile_expr(a)).collect();
+                            let format_args = format_args?;
+                            return Ok(quote! { #func_tokens!(#format_arg, #(#format_args),*) });
+                        }
+                        ExprKind::StringInterpolation { parts } => {
+                            // Handle format string with printf-style formatting
+                            let format_str = self.build_printf_format_string(parts)?;
+                            let format_args: Result<Vec<_>> = args[1..].iter().map(|a| self.transpile_expr(a)).collect();
+                            let format_args = format_args?;
+                            return Ok(quote! { #func_tokens!(#format_str, #(#format_args),*) });
+                        }
+                        _ => {
+                            // Generate format string with placeholders for all arguments
+                            let format_str = (0..args.len()).map(|_| "{}").collect::<Vec<_>>().join(" ");
+                            let all_args: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
+                            let all_args = all_args?;
+                            return Ok(quote! { #func_tokens!(#format_str, #(#all_args),*) });
+                        }
+                    }
+                }
+                // Single string literal - use as-is for macros
+                let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
+                let arg_tokens = arg_tokens?;
+                return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
+            }
+        }
+
+        // For regular function calls, convert string literals to String
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| {
             // Convert string literals to String for function arguments
             match &a.kind {
@@ -238,39 +321,37 @@ impl Transpiler {
         }).collect();
         let arg_tokens = arg_tokens?;
 
-        // Check if this is a DataFrame constructor, column function, or macro
+        // Check if this is a DataFrame constructor or column function
         if let ExprKind::Identifier(name) = &func.kind {
             if name == "col" && args.len() == 1 {
                 // Special handling for col() function in DataFrame context
                 if let ExprKind::Literal(Literal::String(col_name)) = &args[0].kind {
                     return Ok(quote! { polars::prelude::col(#col_name) });
                 }
-            } else if name == "println" || name == "print" || name == "dbg" || name == "panic" {
-                // These are macros in Rust, not functions
-                // Special handling for string interpolation in println/print
-                if (name == "println" || name == "print") && args.len() == 1 {
-                    if let ExprKind::StringInterpolation { parts } = &args[0].kind {
-                        // Generate println!/print! with format string directly
-                        return self.transpile_print_with_interpolation(name, parts);
-                    }
-                    // For single non-string arguments, add "{}" format string
-                    if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
-                        let arg = &arg_tokens[0];
-                        let format_str = "{}";
-                        return Ok(quote! { #func_tokens!(#format_str, #arg) });
-                    }
-                }
-                // HOTFIX: For multiple arguments, generate format string with placeholders
-                if args.len() > 1 {
-                    let format_str = (0..args.len()).map(|_| "{}").collect::<Vec<_>>().join(" ");
-                    return Ok(quote! { #func_tokens!(#format_str, #(#arg_tokens),*) });
-                }
-                // Single string literal - use as-is
-                return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
             }
         }
 
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
+    }
+
+    /// Build printf-style format string for macros (preserves {} as format specifiers)
+    fn build_printf_format_string(&self, parts: &[crate::frontend::ast::StringPart]) -> Result<TokenStream> {
+        let mut format_string = String::new();
+        
+        for part in parts {
+            match part {
+                crate::frontend::ast::StringPart::Text(s) => {
+                    // Don't escape {} in printf context - they are format specifiers
+                    format_string.push_str(s);
+                }
+                crate::frontend::ast::StringPart::Expr(_) => {
+                    // String interpolation expressions become {} placeholders
+                    format_string.push_str("{}");
+                }
+            }
+        }
+        
+        Ok(quote! { #format_string })
     }
 
     /// Transpiles println/print with string interpolation directly
