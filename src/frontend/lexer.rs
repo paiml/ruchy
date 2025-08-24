@@ -295,7 +295,7 @@ pub enum Token {
     #[token("--")]
     Decrement,
 
-    #[token(">>")]
+    #[token("|>")]
     Pipeline,
     #[token("->")]
     Arrow,
