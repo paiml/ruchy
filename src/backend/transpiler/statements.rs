@@ -5,7 +5,7 @@
 #![allow(clippy::collapsible_else_if)]
 
 use super::*;
-use crate::frontend::ast::{Literal, Param, Pattern, PipelineStage};
+use crate::frontend::ast::{Literal, Param, Pattern, PipelineStage, UnaryOp};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -306,6 +306,64 @@ impl Transpiler {
                 let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
                 let arg_tokens = arg_tokens?;
                 return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
+            }
+            
+            // Math functions - generate method calls or use std functions
+            if name == "sqrt" && args.len() == 1 {
+                let arg = self.transpile_expr(&args[0])?;
+                return Ok(quote! { (#arg as f64).sqrt() });
+            }
+            if name == "pow" && args.len() == 2 {
+                let base = self.transpile_expr(&args[0])?;
+                let exp = self.transpile_expr(&args[1])?;
+                return Ok(quote! { (#base as f64).powf(#exp as f64) });
+            }
+            if name == "abs" && args.len() == 1 {
+                let arg = self.transpile_expr(&args[0])?;
+                // Check if arg is negative literal to handle type
+                if let ExprKind::Unary { op: UnaryOp::Negate, operand } = &args[0].kind {
+                    if matches!(&operand.kind, ExprKind::Literal(Literal::Float(_))) {
+                        return Ok(quote! { (#arg).abs() });
+                    }
+                }
+                // For all other cases, try both int and float abs
+                return Ok(quote! { #arg.abs() });
+            }
+            if name == "min" && args.len() == 2 {
+                let a = self.transpile_expr(&args[0])?;
+                let b = self.transpile_expr(&args[1])?;
+                // Check if args are float literals to determine type
+                let is_float = matches!(&args[0].kind, ExprKind::Literal(Literal::Float(_))) 
+                    || matches!(&args[1].kind, ExprKind::Literal(Literal::Float(_)));
+                if is_float {
+                    return Ok(quote! { (#a as f64).min(#b as f64) });
+                } else {
+                    return Ok(quote! { std::cmp::min(#a, #b) });
+                }
+            }
+            if name == "max" && args.len() == 2 {
+                let a = self.transpile_expr(&args[0])?;
+                let b = self.transpile_expr(&args[1])?;
+                // Check if args are float literals to determine type
+                let is_float = matches!(&args[0].kind, ExprKind::Literal(Literal::Float(_))) 
+                    || matches!(&args[1].kind, ExprKind::Literal(Literal::Float(_)));
+                if is_float {
+                    return Ok(quote! { (#a as f64).max(#b as f64) });
+                } else {
+                    return Ok(quote! { std::cmp::max(#a, #b) });
+                }
+            }
+            if name == "floor" && args.len() == 1 {
+                let arg = self.transpile_expr(&args[0])?;
+                return Ok(quote! { (#arg as f64).floor() });
+            }
+            if name == "ceil" && args.len() == 1 {
+                let arg = self.transpile_expr(&args[0])?;
+                return Ok(quote! { (#arg as f64).ceil() });
+            }
+            if name == "round" && args.len() == 1 {
+                let arg = self.transpile_expr(&args[0])?;
+                return Ok(quote! { (#arg as f64).round() });
             }
         }
 
