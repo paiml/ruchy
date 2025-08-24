@@ -142,10 +142,27 @@ impl Transpiler {
                 let arg_tokens: Result<Vec<_>, _> = args
                     .iter()
                     .map(|arg| {
-                        // Handle string literals directly for format strings
+                        // Handle string literals and format strings for println!
                         match &arg.kind {
                             ExprKind::Literal(Literal::String(s)) => {
                                 Ok(quote! { #s })
+                            }
+                            ExprKind::StringInterpolation { parts } => {
+                                // Check if this is just a format string (only Text parts, no Expr parts)
+                                let has_expressions = parts.iter().any(|part| matches!(part, crate::frontend::ast::StringPart::Expr(_)));
+                                if !has_expressions {
+                                    // This is a format string like "Hello {}" - treat as literal
+                                    let format_string = parts.iter()
+                                        .map(|part| match part {
+                                            crate::frontend::ast::StringPart::Text(s) => s.as_str(),
+                                            _ => unreachable!()
+                                        })
+                                        .collect::<String>();
+                                    Ok(quote! { #format_string })
+                                } else {
+                                    // This has actual interpolation - transpile normally
+                                    self.transpile_expr(arg)
+                                }
                             }
                             _ => self.transpile_expr(arg)
                         }
@@ -163,10 +180,27 @@ impl Transpiler {
                 let arg_tokens: Result<Vec<_>, _> = args
                     .iter()
                     .map(|arg| {
-                        // Handle string literals directly for format strings
+                        // Handle string literals and format strings for print!
                         match &arg.kind {
                             ExprKind::Literal(Literal::String(s)) => {
                                 Ok(quote! { #s })
+                            }
+                            ExprKind::StringInterpolation { parts } => {
+                                // Check if this is just a format string (only Text parts, no Expr parts)
+                                let has_expressions = parts.iter().any(|part| matches!(part, crate::frontend::ast::StringPart::Expr(_)));
+                                if !has_expressions {
+                                    // This is a format string like "Hello {}" - treat as literal
+                                    let format_string = parts.iter()
+                                        .map(|part| match part {
+                                            crate::frontend::ast::StringPart::Text(s) => s.as_str(),
+                                            _ => unreachable!()
+                                        })
+                                        .collect::<String>();
+                                    Ok(quote! { #format_string })
+                                } else {
+                                    // This has actual interpolation - transpile normally
+                                    self.transpile_expr(arg)
+                                }
                             }
                             _ => self.transpile_expr(arg)
                         }
@@ -202,14 +236,57 @@ impl Transpiler {
                     Ok(quote! { assert!(#(#arg_tokens),*) })
                 }
             }
+            "assert_eq" => {
+                let arg_tokens: Result<Vec<_>, _> = args
+                    .iter()
+                    .map(|arg| self.transpile_expr(arg))
+                    .collect();
+                let arg_tokens = arg_tokens?;
+
+                if arg_tokens.len() >= 2 {
+                    Ok(quote! { assert_eq!(#(#arg_tokens),*) })
+                } else {
+                    anyhow::bail!("assert_eq! requires at least 2 arguments")
+                }
+            }
+            "assert_ne" => {
+                let arg_tokens: Result<Vec<_>, _> = args
+                    .iter()
+                    .map(|arg| self.transpile_expr(arg))
+                    .collect();
+                let arg_tokens = arg_tokens?;
+
+                if arg_tokens.len() >= 2 {
+                    Ok(quote! { assert_ne!(#(#arg_tokens),*) })
+                } else {
+                    anyhow::bail!("assert_ne! requires at least 2 arguments")
+                }
+            }
             "panic" => {
                 let arg_tokens: Result<Vec<_>, _> = args
                     .iter()
                     .map(|arg| {
-                        // Handle string literals directly
+                        // Handle string literals and format strings for panic!
                         match &arg.kind {
                             ExprKind::Literal(Literal::String(s)) => {
                                 Ok(quote! { #s })
+                            }
+                            ExprKind::StringInterpolation { parts } => {
+                                // Check if this is just a format string (only Text parts, no Expr parts)
+                                let has_expressions = parts.iter().any(|part| matches!(part, crate::frontend::ast::StringPart::Expr(_)));
+                                if !has_expressions {
+                                    // This is a format string like "Error: {}" - treat as literal
+                                    let format_string = parts.iter()
+                                        .map(|part| match part {
+                                            crate::frontend::ast::StringPart::Text(s) => s.as_str(),
+                                            _ => unreachable!()
+                                        })
+                                        .collect::<String>();
+                                    Ok(quote! { #format_string })
+                                } else {
+                                    // This has actual interpolation - transpile normally
+                                    self.transpile_expr(arg)
+                                }
                             }
                             _ => self.transpile_expr(arg)
                         }

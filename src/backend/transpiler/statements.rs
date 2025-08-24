@@ -261,13 +261,20 @@ impl Transpiler {
 
         // Check if this is a macro first (before string conversion)
         if let ExprKind::Identifier(name) = &func.kind {
-            if name == "println" || name == "print" || name == "dbg" || name == "panic" {
+            // Handle Rust-style macro syntax (println!, assert!, etc.)
+            let base_name = if name.ends_with('!') {
+                name.strip_suffix('!').unwrap()
+            } else {
+                name
+            };
+            
+            if base_name == "println" || base_name == "print" || base_name == "dbg" || base_name == "panic" {
                 // These are macros in Rust, not functions
                 // Special handling for string interpolation in println/print
-                if (name == "println" || name == "print") && args.len() == 1 {
+                if (base_name == "println" || base_name == "print") && args.len() == 1 {
                     if let ExprKind::StringInterpolation { parts } = &args[0].kind {
                         // Generate println!/print! with format string directly
-                        return self.transpile_print_with_interpolation(name, parts);
+                        return self.transpile_print_with_interpolation(base_name, parts);
                     }
                     // For single non-string arguments, add "{}" format string
                     if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
@@ -309,16 +316,16 @@ impl Transpiler {
             }
             
             // Math functions - generate method calls or use std functions
-            if name == "sqrt" && args.len() == 1 {
+            if base_name == "sqrt" && args.len() == 1 {
                 let arg = self.transpile_expr(&args[0])?;
                 return Ok(quote! { (#arg as f64).sqrt() });
             }
-            if name == "pow" && args.len() == 2 {
+            if base_name == "pow" && args.len() == 2 {
                 let base = self.transpile_expr(&args[0])?;
                 let exp = self.transpile_expr(&args[1])?;
                 return Ok(quote! { (#base as f64).powf(#exp as f64) });
             }
-            if name == "abs" && args.len() == 1 {
+            if base_name == "abs" && args.len() == 1 {
                 let arg = self.transpile_expr(&args[0])?;
                 // Check if arg is negative literal to handle type
                 if let ExprKind::Unary { op: UnaryOp::Negate, operand } = &args[0].kind {
@@ -329,7 +336,7 @@ impl Transpiler {
                 // For all other cases, try both int and float abs
                 return Ok(quote! { #arg.abs() });
             }
-            if name == "min" && args.len() == 2 {
+            if base_name == "min" && args.len() == 2 {
                 let a = self.transpile_expr(&args[0])?;
                 let b = self.transpile_expr(&args[1])?;
                 // Check if args are float literals to determine type
@@ -340,7 +347,7 @@ impl Transpiler {
                 }
                 return Ok(quote! { std::cmp::min(#a, #b) });
             }
-            if name == "max" && args.len() == 2 {
+            if base_name == "max" && args.len() == 2 {
                 let a = self.transpile_expr(&args[0])?;
                 let b = self.transpile_expr(&args[1])?;
                 // Check if args are float literals to determine type
@@ -351,21 +358,21 @@ impl Transpiler {
                 }
                 return Ok(quote! { std::cmp::max(#a, #b) });
             }
-            if name == "floor" && args.len() == 1 {
+            if base_name == "floor" && args.len() == 1 {
                 let arg = self.transpile_expr(&args[0])?;
                 return Ok(quote! { (#arg as f64).floor() });
             }
-            if name == "ceil" && args.len() == 1 {
+            if base_name == "ceil" && args.len() == 1 {
                 let arg = self.transpile_expr(&args[0])?;
                 return Ok(quote! { (#arg as f64).ceil() });
             }
-            if name == "round" && args.len() == 1 {
+            if base_name == "round" && args.len() == 1 {
                 let arg = self.transpile_expr(&args[0])?;
                 return Ok(quote! { (#arg as f64).round() });
             }
             
             // Input functions
-            if name == "input" {
+            if base_name == "input" {
                 if args.len() > 1 {
                     bail!("input expects 0 or 1 arguments (optional prompt)");
                 }
@@ -403,7 +410,7 @@ impl Transpiler {
                 }
             }
             
-            if name == "readline" && args.is_empty() {
+            if base_name == "readline" && args.is_empty() {
                 return Ok(quote! { 
                     {
                         let mut input = String::new();
@@ -420,7 +427,7 @@ impl Transpiler {
             }
             
             // Assert functions - generate Rust assert macros
-            if name == "assert" {
+            if base_name == "assert" {
                 if args.len() < 1 || args.len() > 2 {
                     bail!("assert expects 1 or 2 arguments (condition, optional message)");
                 }
@@ -433,7 +440,7 @@ impl Transpiler {
                 }
             }
             
-            if name == "assert_eq" {
+            if base_name == "assert_eq" {
                 if args.len() < 2 || args.len() > 3 {
                     bail!("assert_eq expects 2 or 3 arguments (left, right, optional message)");
                 }
@@ -447,7 +454,7 @@ impl Transpiler {
                 }
             }
             
-            if name == "assert_ne" {
+            if base_name == "assert_ne" {
                 if args.len() < 2 || args.len() > 3 {
                     bail!("assert_ne expects 2 or 3 arguments (left, right, optional message)");
                 }
@@ -462,10 +469,10 @@ impl Transpiler {
             }
             
             // Collection constructors
-            if name == "HashMap" && args.is_empty() {
+            if base_name == "HashMap" && args.is_empty() {
                 return Ok(quote! { std::collections::HashMap::new() });
             }
-            if name == "HashSet" && args.is_empty() {
+            if base_name == "HashSet" && args.is_empty() {
                 return Ok(quote! { std::collections::HashSet::new() });
             }
         }
@@ -484,7 +491,12 @@ impl Transpiler {
 
         // Check if this is a DataFrame constructor or column function
         if let ExprKind::Identifier(name) = &func.kind {
-            if name == "col" && args.len() == 1 {
+            let base_name = if name.ends_with('!') {
+                name.strip_suffix('!').unwrap()
+            } else {
+                name
+            };
+            if base_name == "col" && args.len() == 1 {
                 // Special handling for col() function in DataFrame context
                 if let ExprKind::Literal(Literal::String(col_name)) = &args[0].kind {
                     return Ok(quote! { polars::prelude::col(#col_name) });
