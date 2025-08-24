@@ -227,7 +227,15 @@ impl Transpiler {
     pub fn transpile_call(&self, func: &Expr, args: &[Expr]) -> Result<TokenStream> {
         let func_tokens = self.transpile_expr(func)?;
 
-        let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
+        let arg_tokens: Result<Vec<_>> = args.iter().map(|a| {
+            // Convert string literals to String for function arguments
+            match &a.kind {
+                ExprKind::Literal(Literal::String(s)) => {
+                    Ok(quote! { #s.to_string() })
+                }
+                _ => self.transpile_expr(a)
+            }
+        }).collect();
         let arg_tokens = arg_tokens?;
 
         // Check if this is a DataFrame constructor, column function, or macro
