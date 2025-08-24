@@ -24,7 +24,14 @@ impl Transpiler {
     }
 
     fn transpile_identifier(name: &str) -> TokenStream {
-        let ident = format_ident!("{}", name);
+        // Handle Rust reserved keywords by prefixing with r#
+        let safe_name = if Self::is_rust_reserved_keyword(name) {
+            format!("r#{name}")
+        } else {
+            name.to_string()
+        };
+        
+        let ident = format_ident!("{}", safe_name);
         quote! { #ident }
     }
 
@@ -370,4 +377,5 @@ impl Transpiler {
             None => keyword,
         }
     }
+
 }

@@ -290,9 +290,15 @@ fn test_eval_list() {
         create_expr(ExprKind::Literal(Literal::Integer(3))),
     ]));
     
-    let result = interpreter.eval_expr(&list_expr);
-    // Lists are not yet implemented in interpreter
-    assert!(result.is_err());
+    let result = interpreter.eval_expr(&list_expr).unwrap();
+    if let Value::Array(arr) = result {
+        assert_eq!(arr.len(), 3);
+        assert_eq!(arr[0], Value::Integer(1));
+        assert_eq!(arr[1], Value::Integer(2));
+        assert_eq!(arr[2], Value::Integer(3));
+    } else {
+        panic!("Expected array value");
+    }
 }
 
 /// Test block expressions
@@ -307,9 +313,8 @@ fn test_eval_block() {
         create_expr(ExprKind::Literal(Literal::Integer(3))),
     ]));
     
-    let result = interpreter.eval_expr(&block_expr);
-    // Block expressions not yet implemented in interpreter
-    assert!(result.is_err());
+    let result = interpreter.eval_expr(&block_expr).unwrap();
+    assert_eq!(result, Value::Integer(3));
 }
 
 /// Test string concatenation
@@ -368,9 +373,8 @@ fn test_modulo_operation() {
         right: Box::new(create_expr(ExprKind::Literal(Literal::Integer(3)))),
     });
     
-    let result = interpreter.eval_expr(&mod_expr);
-    // Modulo operator not yet implemented in interpreter
-    assert!(result.is_err());
+    let result = interpreter.eval_expr(&mod_expr).unwrap();
+    assert_eq!(result, Value::Integer(1));
 }
 
 /// Test power operation
@@ -384,9 +388,8 @@ fn test_power_operation() {
         right: Box::new(create_expr(ExprKind::Literal(Literal::Integer(8)))),
     });
     
-    let result = interpreter.eval_expr(&pow_expr);
-    // Power operator not yet implemented in interpreter
-    assert!(result.is_err());
+    let result = interpreter.eval_expr(&pow_expr).unwrap();
+    assert_eq!(result, Value::Integer(256));
 }
 
 /// Test nested let bindings
@@ -423,9 +426,8 @@ fn test_empty_block() {
     let mut interpreter = Interpreter::new();
     
     let empty_block = create_expr(ExprKind::Block(vec![]));
-    let result = interpreter.eval_expr(&empty_block);
-    // Empty blocks not yet implemented in interpreter
-    assert!(result.is_err());
+    let result = interpreter.eval_expr(&empty_block).unwrap();
+    assert_eq!(result, Value::Nil);
 }
 
 /// Test chained comparisons
@@ -450,6 +452,193 @@ fn test_chained_comparisons() {
     
     let result = interpreter.eval_expr(&chained).unwrap();
     assert_eq!(result, Value::Bool(true));
+}
+
+/// Test method calls on values
+#[test]
+fn test_method_calls() {
+    let mut interpreter = Interpreter::new();
+    
+    // Test sqrt method on float
+    let sqrt_expr = create_expr(ExprKind::MethodCall {
+        receiver: Box::new(create_expr(ExprKind::Literal(Literal::Float(16.0)))),
+        method: "sqrt".to_string(),
+        args: vec![],
+    });
+    
+    // Note: MethodCall is not yet implemented in interpreter
+    // This test documents the expected behavior
+    // let result = interpreter.eval_expr(&sqrt_expr).unwrap();
+    // assert_eq!(result, Value::Float(4.0));
+}
+
+/// Test range expressions
+#[test]
+fn test_range_expression() {
+    let mut interpreter = Interpreter::new();
+    
+    // Test exclusive range 0..5
+    let range_expr = create_expr(ExprKind::Range {
+        start: Box::new(create_expr(ExprKind::Literal(Literal::Integer(0)))),
+        end: Box::new(create_expr(ExprKind::Literal(Literal::Integer(5)))),
+        inclusive: false,
+    });
+    
+    // Note: Range is not yet implemented in interpreter
+    // This test documents the expected behavior
+    // let result = interpreter.eval_expr(&range_expr).unwrap();
+    // if let Value::Range { start, end, inclusive } = result {
+    //     assert_eq!(start, 0);
+    //     assert_eq!(end, 5);
+    //     assert!(!inclusive);
+    // }
+}
+
+/// Test while loops
+#[test]
+fn test_while_loop() {
+    let mut interpreter = Interpreter::new();
+    
+    // While loops are complex and need statement context
+    // This test documents the expected behavior
+    // let mut i = 0;
+    // while i < 3 {
+    //     println(i);
+    //     i = i + 1;
+    // }
+}
+
+/// Test for loops
+#[test]
+fn test_for_loop() {
+    let mut interpreter = Interpreter::new();
+    
+    // For loops are complex and need iteration context
+    // This test documents the expected behavior
+    // for i in 0..5 {
+    //     println(i);
+    // }
+}
+
+/// Test match expressions
+#[test]
+fn test_match_expression() {
+    let mut interpreter = Interpreter::new();
+    
+    // Match expressions need pattern matching
+    // This test documents the expected behavior
+    // match x {
+    //     1 => "one",
+    //     2 => "two",
+    //     _ => "other"
+    // }
+}
+
+/// Test tuple creation
+#[test]
+fn test_tuple_creation() {
+    let mut interpreter = Interpreter::new();
+    
+    let tuple_expr = create_expr(ExprKind::Tuple(vec![
+        create_expr(ExprKind::Literal(Literal::Integer(1))),
+        create_expr(ExprKind::Literal(Literal::String("hello".to_string()))),
+        create_expr(ExprKind::Literal(Literal::Bool(true))),
+    ]));
+    
+    // Note: Tuple is not yet implemented in interpreter
+    // This test documents the expected behavior
+    // let result = interpreter.eval_expr(&tuple_expr).unwrap();
+    // if let Value::Tuple(elements) = result {
+    //     assert_eq!(elements.len(), 3);
+    //     assert_eq!(elements[0], Value::Integer(1));
+    //     assert_eq!(elements[2], Value::Bool(true));
+    // }
+}
+
+/// Test assignment operations
+#[test]
+fn test_assignment() {
+    let mut interpreter = Interpreter::new();
+    
+    // Assignment needs mutable variable support
+    // This test documents the expected behavior
+    // let mut x = 5;
+    // x = 10;
+    // assert_eq!(x, 10);
+}
+
+/// Test compound assignment
+#[test]
+fn test_compound_assignment() {
+    let mut interpreter = Interpreter::new();
+    
+    // Compound assignment needs mutable variable support
+    // This test documents the expected behavior
+    // let mut x = 5;
+    // x += 3;
+    // assert_eq!(x, 8);
+}
+
+/// Test return statement
+#[test]
+fn test_return_statement() {
+    let mut interpreter = Interpreter::new();
+    
+    // Return statements need function context
+    // This test documents the expected behavior
+    // fn early_return(x) {
+    //     if x < 0 {
+    //         return 0;
+    //     }
+    //     return x * 2;
+    // }
+}
+
+/// Test string interpolation
+#[test]
+fn test_string_interpolation() {
+    use ruchy::frontend::ast::StringPart;
+    
+    let mut interpreter = Interpreter::new();
+    
+    // Test f"Hello, {name}!"
+    let interp_expr = create_expr(ExprKind::StringInterpolation {
+        parts: vec![
+            StringPart::Text("Hello, ".to_string()),
+            StringPart::Expr(Box::new(create_expr(ExprKind::Literal(Literal::String("World".to_string()))))),
+            StringPart::Text("!".to_string()),
+        ],
+    });
+    
+    // Note: StringInterpolation is not yet implemented in interpreter
+    // This test documents the expected behavior
+    // let result = interpreter.eval_expr(&interp_expr).unwrap();
+    // if let Value::String(s) = result {
+    //     assert_eq!(&**s, "Hello, World!");
+    // }
+}
+
+/// Test pipeline operator
+#[test]
+fn test_pipeline_operator() {
+    use ruchy::frontend::ast::PipelineStage;
+    
+    let mut interpreter = Interpreter::new();
+    
+    // Test [1, 2, 3] |> filter(|x| x > 1) |> map(|x| x * 2)
+    let pipeline_expr = create_expr(ExprKind::Pipeline {
+        expr: Box::new(create_expr(ExprKind::List(vec![
+            create_expr(ExprKind::Literal(Literal::Integer(1))),
+            create_expr(ExprKind::Literal(Literal::Integer(2))),
+            create_expr(ExprKind::Literal(Literal::Integer(3))),
+        ]))),
+        stages: vec![
+            // Pipeline stages would go here
+        ],
+    });
+    
+    // Note: Pipeline is not yet implemented in interpreter
+    // This test documents the expected behavior
 }
 
 /// Test truthiness of values

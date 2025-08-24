@@ -76,6 +76,12 @@ impl Transpiler {
 
     /// Transpiles binary operations
     pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Result<TokenStream> {
+        // Special handling for string concatenation
+        // If at least one operand is definitely a string, treat as string concatenation
+        if op == BinaryOp::Add && (Self::is_definitely_string(left) || Self::is_definitely_string(right)) {
+            return self.transpile_string_concatenation(left, right);
+        }
+
         let left_tokens = self.transpile_expr(left)?;
         let right_tokens = self.transpile_expr(right)?;
 
@@ -453,5 +459,19 @@ impl Transpiler {
                 #(#field_tokens,)*
             }
         })
+    }
+
+    /// Check if an expression is definitely a string (no ambiguous identifiers)
+    fn is_definitely_string(expr: &Expr) -> bool {
+        matches!(&expr.kind, ExprKind::Literal(Literal::String(_)) | ExprKind::StringInterpolation { .. })
+    }
+
+    /// Transpile string concatenation using format! macro
+    fn transpile_string_concatenation(&self, left: &Expr, right: &Expr) -> Result<TokenStream> {
+        let left_tokens = self.transpile_expr(left)?;
+        let right_tokens = self.transpile_expr(right)?;
+        
+        // Use format! for string concatenation to avoid ownership issues
+        Ok(quote! { format!("{}{}", #left_tokens, #right_tokens) })
     }
 }

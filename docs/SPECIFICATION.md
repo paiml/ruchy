@@ -1,15 +1,6 @@
-# Ruchy: Complete Self-Hosting Language Specification
+# Ruchy: Complete Language and System Specification
 
-*Version 14.0 - SELF-HOSTING EDITION - Single source of truth consolidating all 37 specification documents*
-
-## 🎉 HISTORIC MILESTONE: SELF-HOSTING ACHIEVED (v1.5.0)
-
-**Ruchy has achieved complete self-hosting capability!** This specification now includes:
-- **Bootstrap compilation processes** 
-- **Self-hosting compiler architecture**
-- **Minimal direct codegen specifications**
-- **Enhanced type inference (Algorithm W)**
-- **Parser self-compilation capabilities**
+*Version 14.0 - Single source of truth consolidating all 38 specification documents*
 
 ## Table of Contents
 
@@ -25,46 +16,47 @@
 9. [Interpreter Specification](#9-interpreter-specification)
 10. [Unary Operator Specification](#10-unary-operator-specification)
 11. [Systems Operations Specification](#11-systems-operations-specification)
+12. [Security Specification](#12-security-specification)
 
 ### Architecture Specifications
-12. [MCP Message-Passing Architecture](#12-mcp-message-passing-architecture)
-13. [LSP Specification](#13-lsp-specification)
-14. [Critical Missing Components](#14-critical-missing-components)
-15. [Binary Architecture](#15-binary-architecture)
-16. [Edge Cases Specification](#16-edge-cases-specification)
-17. [REPL Testing Specification](#17-repl-testing-specification)
-18. [REPL UX Specification](#18-repl-ux-specification)
-19. [Docker Specification](#19-docker-specification)
+13. [MCP Message-Passing Architecture](#13-mcp-message-passing-architecture)
+14. [LSP Specification](#14-lsp-specification)
+15. [Critical Missing Components](#15-critical-missing-components)
+16. [Binary Architecture](#16-binary-architecture)
+17. [Edge Cases Specification](#17-edge-cases-specification)
+18. [REPL Testing Specification](#18-repl-testing-specification)
+19. [REPL UX Specification](#19-repl-ux-specification)
+20. [Docker Specification](#20-docker-specification)
 
 ### Integration Specifications
-20. [Cargo Integration](#20-cargo-integration)
-21. [Depyler Integration](#21-depyler-integration)
-22. [Rust Cargo InterOp](#22-rust-cargo-interop)
+21. [Cargo Integration](#21-cargo-integration)
+22. [Depyler Integration](#22-depyler-integration)
+23. [Rust Cargo InterOp](#23-rust-cargo-interop)
 
 ### Execution Mode Specifications
-23. [One-Liner and Script Execution](#23-one-liner-and-script-execution)
-24. [Disassembly Specification](#24-disassembly-specification)
-25. [Advanced Mathematical REPL](#25-advanced-mathematical-repl)
+24. [One-Liner and Script Execution](#24-one-liner-and-script-execution)
+25. [Disassembly Specification](#25-disassembly-specification)
+26. [Advanced Mathematical REPL](#26-advanced-mathematical-repl)
 
 ### Quality & Testing Specifications
-26. [Quality Gates](#26-quality-gates)
-27. [Provability](#27-provability)
-28. [Lint Specification](#28-lint-specification)
-29. [Quality Scoring Specification](#29-quality-scoring-specification)
+27. [Quality Gates](#27-quality-gates)
+28. [Provability](#28-provability)
+29. [Lint Specification](#29-lint-specification)
+30. [Quality Scoring Specification](#30-quality-scoring-specification)
 
 ### Project Management
-30. [Master TODO](#30-master-todo)
-31. [Project Status](#31-project-status)
-32. [Deep Context](#32-deep-context)
+31. [Master TODO](#31-master-todo)
+32. [Project Status](#32-project-status)
+33. [Deep Context](#33-deep-context)
 
 ### External Dependencies
-33. [PMAT Integration](#33-pmat-integration)
-34. [PDMT Integration](#34-pdmt-integration)
-35. [External Tool Dependencies](#35-external-tool-dependencies)
+34. [PMAT Integration](#34-pmat-integration)
+35. [PDMT Integration](#35-pdmt-integration)
+36. [External Tool Dependencies](#36-external-tool-dependencies)
 
 ### Appendices
-36. [Complete Grammar Definition](#36-complete-grammar-definition)
-37. [Meta-Specification](#37-meta-specification)
+37. [Complete Grammar Definition](#37-complete-grammar-definition)
+38. [Meta-Specification](#38-meta-specification)
 
 ---
 
@@ -115,8 +107,8 @@ type Callback = fun(i32) -> bool
 type Point = (x: f64, y: f64)
 
 // Refinement Types (future)
-i32 where x > 0     // Positive integers
-String where s.len() < 100  // Bounded strings
+{x: i32 | x > 0}     // Positive integers
+{s: String | s.len() < 100}  // Bounded strings
 ```
 
 ### 1.3 Core Language Features
@@ -406,7 +398,7 @@ column_def      = STRING ':' '[' expr (',' expr)* ']'
 ```
 fun let var const if else when match for while loop break continue
 return struct enum trait impl actor receive send ask async await
-defer guard try catch throw import export module pub mut
+defer guard try catch throw import export module pub priv mut
 type alias where in is as true false null
 df col mean std quantile filter groupby agg sort select
 ```
@@ -2482,7 +2474,359 @@ pub struct SystemsPerformance {
 }
 ```
 
-## 12. MCP Message-Passing Architecture
+## 12. Security Specification
+
+### 12.1 Memory Safety Guarantees
+
+Ruchy inherits Rust's memory safety through transpilation. No unsafe blocks in generated code unless explicitly marked:
+
+```rust
+// Ruchy source - safe by default
+fun process_buffer(data: [u8]) {
+    data.iter().map(|b| b ^ 0xFF).collect()
+}
+
+// Transpiles to safe Rust
+fn process_buffer(data: &[u8]) -> Vec<u8> {
+    data.iter().map(|b| b ^ 0xFF).collect()
+}
+
+// Unsafe requires explicit annotation
+@[unsafe]
+fun raw_pointer_access(ptr: *const u8, len: usize) -> [u8] {
+    unsafe { std::slice::from_raw_parts(ptr, len).to_vec() }
+}
+```
+
+### 12.2 Input Validation
+
+Compile-time and runtime validation layers:
+
+```rust
+pub struct InputValidator {
+    max_string_length: usize,     // 10MB default
+    max_array_size: usize,        // 1M elements
+    max_recursion_depth: usize,   // 1000 levels
+}
+
+impl InputValidator {
+    fn validate_string(&self, s: &str) -> Result<(), SecurityError> {
+        if s.len() > self.max_string_length {
+            return Err(SecurityError::StringTooLarge);
+        }
+        if !s.is_char_boundary(0) {
+            return Err(SecurityError::InvalidUtf8);
+        }
+        Ok(())
+    }
+    
+    fn validate_regex(&self, pattern: &str) -> Result<(), SecurityError> {
+        // Prevent ReDoS attacks
+        let complexity = self.calculate_regex_complexity(pattern);
+        if complexity > MAX_REGEX_COMPLEXITY {
+            return Err(SecurityError::RegexTooComplex);
+        }
+        Ok(())
+    }
+}
+```
+
+### 12.3 Sandboxing
+
+REPL and script execution sandboxing:
+
+```rust
+pub struct SecuritySandbox {
+    fs_whitelist: Vec<PathBuf>,
+    network_whitelist: Vec<IpAddr>,
+    syscall_filter: SeccompFilter,
+    resource_limits: ResourceLimits,
+}
+
+impl SecuritySandbox {
+    pub fn execute<T>(&self, code: impl FnOnce() -> T) -> Result<T> {
+        // Apply seccomp filter
+        self.syscall_filter.apply()?;
+        
+        // Set resource limits
+        rlimit::setrlimit(Resource::AS, self.resource_limits.memory)?;
+        rlimit::setrlimit(Resource::CPU, self.resource_limits.cpu_time)?;
+        
+        // Drop privileges
+        caps::drop(caps::Capability::ALL)?;
+        
+        // Execute in restricted context
+        Ok(code())
+    }
+}
+```
+
+### 12.4 Dependency Scanning
+
+Automated vulnerability detection:
+
+```rust
+pub struct DependencyScanner {
+    advisory_db: RustSecAdvisoryDb,
+    license_checker: LicenseChecker,
+}
+
+impl DependencyScanner {
+    pub fn scan(&self, manifest: &Cargo.toml) -> SecurityReport {
+        let mut vulnerabilities = Vec::new();
+        
+        for dependency in manifest.dependencies() {
+            // Check for known CVEs
+            if let Some(advisories) = self.advisory_db.check(dependency) {
+                vulnerabilities.extend(advisories);
+            }
+            
+            // License compliance
+            if !self.license_checker.is_allowed(dependency.license()) {
+                vulnerabilities.push(Vulnerability::License(dependency));
+            }
+            
+            // Version pinning
+            if dependency.version().contains("*") {
+                vulnerabilities.push(Vulnerability::Unpinned(dependency));
+            }
+        }
+        
+        SecurityReport { vulnerabilities }
+    }
+}
+```
+
+### 12.5 Cryptographic Operations
+
+Secure-by-default crypto via ring/rustls:
+
+```rust
+// No home-grown crypto - use audited libraries
+pub struct CryptoProvider {
+    rng: SystemRandom,
+}
+
+impl CryptoProvider {
+    pub fn generate_key(&self) -> Key {
+        let mut key = [0u8; 32];
+        self.rng.fill(&mut key).expect("RNG failure");
+        Key::from(key)
+    }
+    
+    pub fn constant_time_compare(&self, a: &[u8], b: &[u8]) -> bool {
+        ring::constant_time::verify_slices_are_equal(a, b).is_ok()
+    }
+    
+    pub fn hash_password(&self, password: &str) -> String {
+        // Argon2id with secure defaults
+        argon2::hash_encoded(
+            password.as_bytes(),
+            &self.generate_salt(),
+            &argon2::Config::default()
+        ).unwrap()
+    }
+}
+```
+
+### 12.6 Taint Analysis
+
+Track untrusted data through the program:
+
+```rust
+#[derive(Clone)]
+pub struct TaintedValue<T> {
+    value: T,
+    taint: TaintLevel,
+    origin: TaintOrigin,
+}
+
+pub enum TaintLevel {
+    Untrusted,     // User input, network data
+    Sanitized,     // Validated but not trusted
+    Trusted,       // Internal computation
+}
+
+impl<T> TaintedValue<T> {
+    pub fn propagate<U>(&self, f: impl FnOnce(&T) -> U) -> TaintedValue<U> {
+        TaintedValue {
+            value: f(&self.value),
+            taint: self.taint.clone(),
+            origin: self.origin.clone(),
+        }
+    }
+    
+    pub fn assert_trusted(self) -> Result<T, SecurityError> {
+        match self.taint {
+            TaintLevel::Trusted => Ok(self.value),
+            _ => Err(SecurityError::UntrustedValue),
+        }
+    }
+}
+```
+
+### 12.7 Secure Defaults
+
+```rust
+pub struct SecurityDefaults {
+    // Network
+    tls_min_version: TlsVersion::Tls13,
+    cipher_suites: &[CipherSuite::TLS13_AES_256_GCM_SHA384],
+    
+    // File I/O
+    file_permissions: 0o600,  // Owner read/write only
+    directory_permissions: 0o700,
+    
+    // Process
+    enable_aslr: true,
+    enable_dep: true,
+    enable_pie: true,
+    
+    // Memory
+    zero_on_drop: true,
+    stack_canaries: true,
+}
+```
+
+### 12.8 Audit Logging
+
+```rust
+pub struct SecurityAuditLog {
+    sink: AuditSink,
+    encryption: Option<EncryptionKey>,
+}
+
+impl SecurityAuditLog {
+    pub fn log_event(&self, event: SecurityEvent) {
+        let entry = AuditEntry {
+            timestamp: SystemTime::now(),
+            event,
+            context: self.capture_context(),
+            hash: self.compute_hash(&event),
+        };
+        
+        let serialized = if let Some(key) = &self.encryption {
+            self.encrypt(&entry, key)
+        } else {
+            entry.serialize()
+        };
+        
+        self.sink.write(serialized);
+    }
+}
+
+pub enum SecurityEvent {
+    AuthenticationFailure { user: String, ip: IpAddr },
+    PrivilegeEscalation { from: UserId, to: UserId },
+    SuspiciousPattern { pattern: String, score: f64 },
+    ResourceExhaustion { resource: Resource, limit: u64 },
+}
+```
+
+### 12.9 Supply Chain Security
+
+```rust
+pub struct SupplyChainValidator {
+    allowed_registries: Vec<Url>,
+    signing_keys: Vec<PublicKey>,
+    reproducible_builds: bool,
+}
+
+impl SupplyChainValidator {
+    pub fn validate_dependency(&self, dep: &Dependency) -> Result<()> {
+        // Registry validation
+        if !self.allowed_registries.contains(&dep.registry()) {
+            return Err(SecurityError::UntrustedRegistry);
+        }
+        
+        // Signature verification
+        if let Some(sig) = dep.signature() {
+            self.verify_signature(dep, sig)?;
+        } else if self.require_signatures {
+            return Err(SecurityError::UnsignedDependency);
+        }
+        
+        // Reproducible build verification
+        if self.reproducible_builds {
+            self.verify_reproducible_build(dep)?;
+        }
+        
+        Ok(())
+    }
+}
+```
+
+### 12.10 Threat Model
+
+```rust
+pub enum ThreatVector {
+    // Memory corruption (mitigated by Rust)
+    BufferOverflow,      // Prevented by bounds checking
+    UseAfterFree,        // Prevented by ownership
+    DataRace,            // Prevented by borrow checker
+    
+    // Logic vulnerabilities (require analysis)
+    InjectionAttack,     // SQL, command, path injection
+    XSS,                 // Cross-site scripting
+    CSRF,                // Cross-site request forgery
+    
+    // Resource exhaustion
+    MemoryExhaustion,    // OOM attacks
+    CPUExhaustion,       // Algorithmic complexity attacks
+    DiskExhaustion,      // Storage filling
+    
+    // Supply chain
+    MaliciousDependency, // Backdoored packages
+    Typosquatting,       // Similar package names
+    DependencyConfusion, // Internal/external package confusion
+}
+
+impl ThreatModel {
+    pub fn assess_risk(&self, code: &Ast) -> RiskAssessment {
+        let mut risks = Vec::new();
+        
+        // Static analysis passes
+        risks.extend(self.check_injection_vulnerabilities(code));
+        risks.extend(self.check_resource_exhaustion(code));
+        risks.extend(self.check_unsafe_patterns(code));
+        
+        RiskAssessment {
+            severity: risks.iter().map(|r| r.severity).max(),
+            mitigations: self.suggest_mitigations(&risks),
+        }
+    }
+}
+```
+
+### 12.11 Security Configuration
+
+```toml
+[security]
+# Compilation
+forbid_unsafe = true
+require_overflow_checks = true
+strip_symbols = true
+
+# Runtime
+sandbox.enabled = true
+sandbox.fs_whitelist = ["./data", "/tmp/ruchy"]
+sandbox.network_whitelist = ["127.0.0.1"]
+sandbox.max_memory = "1GB"
+sandbox.max_cpu_time = "60s"
+
+# Dependencies
+dependency_scanning = true
+allow_git_dependencies = false
+require_signed_packages = true
+allowed_registries = ["https://crates.io"]
+
+# Audit
+audit_log.enabled = true
+audit_log.encryption = true
+audit_log.retention_days = 90
+```
+
+## 13. MCP Message-Passing Architecture
 
 ### 7.1 Actor Model with MCP Integration
 
@@ -3959,14 +4303,14 @@ fun prop_actor_message_ordering(
 ```rust
 // Future: SMT-based verification
 #[refine]
-fun safe_divide(x: i32, y: i32 where y != 0) -> i32 {
+fun safe_divide(x: i32, y: {y: i32 | y != 0}) -> i32 {
     x / y  // Statically verified safe
 }
 
 #[refine]
 fun bounded_index<T>(
     array: [T; N],
-    index: usize where i < N
+    index: {i: usize | i < N}
 ) -> T {
     array[index]  // No bounds check needed
 }

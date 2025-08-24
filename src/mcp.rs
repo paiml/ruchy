@@ -3,6 +3,14 @@
 //! This module provides integration with the Model Context Protocol (MCP)
 //! using the high-quality pmcp crate, providing type-safe MCP tools that
 //! work with Ruchy's type system and actor runtime.
+//!
+//! Includes comprehensive tool discovery for exposing Ruchy compiler
+//! functionality as MCP tools for Claude Code agent mode.
+
+pub mod tool_discovery;
+
+// Re-export tool discovery for easy access
+pub use tool_discovery::RuchyToolDiscovery;
 
 // Re-export all pmcp types except Result to avoid conflicts
 pub use pmcp::{
@@ -225,6 +233,18 @@ impl RuchyMCPTool {
     pub fn with_output_type(mut self, output_type: MonoType) -> Self {
         self.output_type = Some(output_type);
         self
+    }
+    
+    /// Get the tool name
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    
+    /// Get the tool description
+    #[must_use]
+    pub fn description(&self) -> &str {
+        &self.description
     }
 }
 

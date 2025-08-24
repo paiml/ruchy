@@ -340,6 +340,20 @@ impl Transpiler {
         codegen_minimal::MinimalCodeGen::gen_program(expr)
     }
 
+    /// Check if a name is a Rust reserved keyword
+    pub(crate) fn is_rust_reserved_keyword(name: &str) -> bool {
+        // List of Rust reserved keywords that would conflict
+        matches!(name, 
+            "as" | "break" | "const" | "continue" | "crate" | "else" | "enum" | "extern" |
+            "false" | "fn" | "for" | "if" | "impl" | "in" | "let" | "loop" | "match" |
+            "mod" | "move" | "mut" | "pub" | "ref" | "return" | "self" | "Self" |
+            "static" | "struct" | "super" | "trait" | "true" | "type" | "unsafe" |
+            "use" | "where" | "while" | "async" | "await" | "dyn" | "final" | "try" |
+            "abstract" | "become" | "box" | "do" | "override" | "priv" | "typeof" |
+            "unsized" | "virtual" | "yield"
+        )
+    }
+
     /// Main expression transpilation dispatcher
     ///
     /// # Panics
