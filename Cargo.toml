@@ -199,9 +199,10 @@ readme = "README.md"
 keywords = ["language", "compiler", "transpiler", "rust", "scripting"]
 categories = ["compilers", "development-tools", "parser-implementations"]
 
-[[bin]]
-name = "ruchy"
-path = "src/bin/ruchy.rs"
+# [[bin]]
+# name = "ruchy"
+# path = "src/bin/ruchy.rs"
+# Temporarily disabled due to refactoring in progress
 
 [lints]
 workspace = true
