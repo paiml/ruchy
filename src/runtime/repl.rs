@@ -2144,9 +2144,9 @@ impl Repl {
     ) -> Result<Value> {
         if let Value::EnumVariant { enum_name, variant_name, data } = receiver {
             match enum_name.as_str() {
-                "Result" => self.evaluate_result_methods(&variant_name, method, &data, args, deadline, depth),
-                "Option" => self.evaluate_option_methods(&variant_name, method, &data, args, deadline, depth),
-                "Vec" => self.evaluate_vec_methods(&variant_name, method, &data, args, deadline, depth),
+                "Result" => self.evaluate_result_methods(&variant_name, method, data.as_ref(), args, deadline, depth),
+                "Option" => self.evaluate_option_methods(&variant_name, method, data.as_ref(), args, deadline, depth),
+                "Vec" => self.evaluate_vec_methods(&variant_name, method, data.as_ref(), args, deadline, depth),
                 _ => bail!("Method {} not supported on {}", method, enum_name),
             }
         } else {
@@ -2154,7 +2154,7 @@ impl Repl {
         }
     }
 
-    /// Handle Result enum methods (unwrap, expect, map, and_then)
+    /// Handle Result enum methods (unwrap, expect, map, `and_then`)
     /// 
     /// # Examples
     /// 
@@ -2174,13 +2174,13 @@ impl Repl {
         &mut self,
         variant_name: &str,
         method: &str,
-        data: &Option<Vec<Value>>,
+        data: Option<&Vec<Value>>,
         args: &[Expr],
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
         match (variant_name, method) {
-            ("Ok", "unwrap") | ("Ok", "expect") if args.is_empty() || args.len() == 1 => {
+            ("Ok", "unwrap" | "expect") if args.is_empty() || args.len() == 1 => {
                 self.extract_value_or_unit(data)
             }
             ("Err", "unwrap") if args.is_empty() => {
@@ -2199,7 +2199,7 @@ impl Repl {
                 Ok(Value::EnumVariant {
                     enum_name: "Result".to_string(),
                     variant_name: variant_name.to_string(),
-                    data: data.clone(),
+                    data: data.cloned(),
                 })
             }
             ("Ok", "and_then") if args.len() == 1 => {
@@ -2209,25 +2209,25 @@ impl Repl {
                 Ok(Value::EnumVariant {
                     enum_name: "Result".to_string(),
                     variant_name: variant_name.to_string(),
-                    data: data.clone(),
+                    data: data.cloned(),
                 })
             }
             _ => bail!("Method {} not supported on Result::{}", method, variant_name),
         }
     }
 
-    /// Handle Option enum methods (unwrap, expect, map, and_then)
+    /// Handle Option enum methods (unwrap, expect, map, `and_then`)
     fn evaluate_option_methods(
         &mut self,
         variant_name: &str,
         method: &str,
-        data: &Option<Vec<Value>>,
+        data: Option<&Vec<Value>>,
         args: &[Expr],
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
         match (variant_name, method) {
-            ("Some", "unwrap") | ("Some", "expect") if args.is_empty() || args.len() == 1 => {
+            ("Some", "unwrap" | "expect") if args.is_empty() || args.len() == 1 => {
                 self.extract_value_or_unit(data)
             }
             ("None", "unwrap") if args.is_empty() => {
@@ -2241,11 +2241,11 @@ impl Repl {
             ("Some", "map") if args.len() == 1 => {
                 self.apply_function_to_value("Option", "Some", data, &args[0], deadline, depth)
             }
-            ("None", "map") | ("None", "and_then") if args.len() == 1 => {
+            ("None", "map" | "and_then") if args.len() == 1 => {
                 Ok(Value::EnumVariant {
                     enum_name: "Option".to_string(),
                     variant_name: variant_name.to_string(),
-                    data: data.clone(),
+                    data: data.cloned(),
                 })
             }
             ("Some", "and_then") if args.len() == 1 => {
@@ -2260,7 +2260,7 @@ impl Repl {
         &mut self,
         variant_name: &str,
         method: &str,
-        data: &Option<Vec<Value>>,
+        data: Option<&Vec<Value>>,
         args: &[Expr],
         deadline: Instant,
         depth: usize,
@@ -2269,7 +2269,7 @@ impl Repl {
             "len" => Ok(Value::Int(data.as_ref().map_or(0, |v| v.len() as i64))),
             "push" if args.len() == 1 => {
                 let new_elem = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                let mut vec_data = data.clone().unwrap_or_default();
+                let mut vec_data = data.cloned().unwrap_or_default();
                 vec_data.push(new_elem);
                 Ok(Value::EnumVariant {
                     enum_name: "Vec".to_string(),
@@ -2282,7 +2282,7 @@ impl Repl {
     }
 
     /// Extract value from enum data or return Unit
-    fn extract_value_or_unit(&self, data: &Option<Vec<Value>>) -> Result<Value> {
+    fn extract_value_or_unit(&self, data: Option<&Vec<Value>>) -> Result<Value> {
         if let Some(values) = data {
             if !values.is_empty() {
                 return Ok(values[0].clone());
@@ -2292,15 +2292,15 @@ impl Repl {
     }
 
     /// Format error message for unwrap operations
-    fn format_error_message(&self, method: &str, variant: &str, data: &Option<Vec<Value>>) -> String {
+    fn format_error_message(&self, method: &str, variant: &str, data: Option<&Vec<Value>>) -> String {
         if let Some(values) = data {
             if values.is_empty() {
-                format!("called `{}` on an `{}` value", method, variant)
+                format!("called `{method}` on an `{variant}` value")
             } else {
                 format!("called `{}` on an `{}` value: {}", method, variant, values[0])
             }
         } else {
-            format!("called `{}` on an `{}` value", method, variant)
+            format!("called `{method}` on an `{variant}` value")
         }
     }
 
@@ -2308,7 +2308,7 @@ impl Repl {
     fn value_to_string(&self, value: Value) -> String {
         match value {
             Value::String(s) => s,
-            other => format!("{}", other),
+            other => format!("{other}"),
         }
     }
 
@@ -2317,7 +2317,7 @@ impl Repl {
         &mut self,
         enum_name: &str,
         variant_name: &str,
-        data: &Option<Vec<Value>>,
+        data: Option<&Vec<Value>>,
         func_arg: &Expr,
         deadline: Instant,
         depth: usize,
@@ -2340,10 +2340,10 @@ impl Repl {
         })
     }
 
-    /// Apply function and flatten result (for and_then operations)
+    /// Apply function and flatten result (for `and_then` operations)
     fn apply_function_and_flatten(
         &mut self,
-        data: &Option<Vec<Value>>,
+        data: Option<&Vec<Value>>,
         func_arg: &Expr,
         deadline: Instant,
         depth: usize,
@@ -4409,6 +4409,113 @@ impl Repl {
         Ok(result)
     }
 
+    /// Validate argument count for math functions.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ruchy::runtime::repl::Repl;
+    /// # use ruchy::frontend::ast::{Expr, ExprKind};
+    /// let repl = Repl::new();
+    /// let args = vec![Expr { kind: ExprKind::Int(4), span: Default::default() }];
+    /// let result = repl.validate_arg_count("sqrt", &args, 1);
+    /// assert!(result.is_ok());
+    /// ```
+    fn validate_arg_count(&self, func_name: &str, args: &[Expr], expected: usize) -> Result<()> {
+        if args.len() != expected {
+            bail!("{} takes exactly {} argument{}", func_name, expected, if expected == 1 { "" } else { "s" });
+        }
+        Ok(())
+    }
+
+    /// Apply unary math operation to a numeric value.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ruchy::runtime::repl::Repl;
+    /// # use ruchy::runtime::value::Value;
+    /// let repl = Repl::new();
+    /// let result = repl.apply_unary_math_op(&Value::Int(4), "sqrt").unwrap();
+    /// assert!(matches!(result, Value::Float(_)));
+    /// ```
+    fn apply_unary_math_op(&self, value: &Value, op: &str) -> Result<Value> {
+        match (value, op) {
+            (Value::Int(n), "sqrt") => {
+                #[allow(clippy::cast_precision_loss)]
+                Ok(Value::Float((*n as f64).sqrt()))
+            }
+            (Value::Float(f), "sqrt") => Ok(Value::Float(f.sqrt())),
+            (Value::Int(n), "abs") => Ok(Value::Int(n.abs())),
+            (Value::Float(f), "abs") => Ok(Value::Float(f.abs())),
+            (Value::Int(n), "floor") => Ok(Value::Int(*n)), // Already floored
+            (Value::Float(f), "floor") => Ok(Value::Float(f.floor())),
+            (Value::Int(n), "ceil") => Ok(Value::Int(*n)), // Already ceiled
+            (Value::Float(f), "ceil") => Ok(Value::Float(f.ceil())),
+            (Value::Int(n), "round") => Ok(Value::Int(*n)), // Already rounded
+            (Value::Float(f), "round") => Ok(Value::Float(f.round())),
+            _ => bail!("{} expects a numeric argument", op),
+        }
+    }
+
+    /// Apply binary math operation to two numeric values.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ruchy::runtime::repl::Repl;
+    /// # use ruchy::runtime::value::Value;
+    /// let repl = Repl::new();
+    /// let result = repl.apply_binary_math_op(&Value::Int(2), &Value::Int(3), "pow").unwrap();
+    /// assert!(matches!(result, Value::Int(8)));
+    /// ```
+    fn apply_binary_math_op(&self, a: &Value, b: &Value, op: &str) -> Result<Value> {
+        match (a, b, op) {
+            (Value::Int(base), Value::Int(exp), "pow") => {
+                if *exp < 0 {
+                    #[allow(clippy::cast_precision_loss)]
+                    Ok(Value::Float((*base as f64).powi(*exp as i32)))
+                } else {
+                    let exp_u32 = u32::try_from(*exp).map_err(|_| anyhow::anyhow!("Exponent too large"))?;
+                    match base.checked_pow(exp_u32) {
+                        Some(result) => Ok(Value::Int(result)),
+                        None => bail!("Integer overflow in pow({}, {})", base, exp),
+                    }
+                }
+            }
+            (Value::Float(base), Value::Float(exp), "pow") => Ok(Value::Float(base.powf(*exp))),
+            (Value::Int(base), Value::Float(exp), "pow") => {
+                #[allow(clippy::cast_precision_loss)]
+                Ok(Value::Float((*base as f64).powf(*exp)))
+            }
+            (Value::Float(base), Value::Int(exp), "pow") => {
+                #[allow(clippy::cast_precision_loss)]
+                Ok(Value::Float(base.powi(*exp as i32)))
+            }
+            (Value::Int(x), Value::Int(y), "min") => Ok(Value::Int((*x).min(*y))),
+            (Value::Float(x), Value::Float(y), "min") => Ok(Value::Float(x.min(*y))),
+            (Value::Int(x), Value::Float(y), "min") => {
+                #[allow(clippy::cast_precision_loss)]
+                Ok(Value::Float((*x as f64).min(*y)))
+            }
+            (Value::Float(x), Value::Int(y), "min") => {
+                #[allow(clippy::cast_precision_loss)]
+                Ok(Value::Float(x.min(*y as f64)))
+            }
+            (Value::Int(x), Value::Int(y), "max") => Ok(Value::Int((*x).max(*y))),
+            (Value::Float(x), Value::Float(y), "max") => Ok(Value::Float(x.max(*y))),
+            (Value::Int(x), Value::Float(y), "max") => {
+                #[allow(clippy::cast_precision_loss)]
+                Ok(Value::Float((*x as f64).max(*y)))
+            }
+            (Value::Float(x), Value::Int(y), "max") => {
+                #[allow(clippy::cast_precision_loss)]
+                Ok(Value::Float(x.max(*y as f64)))
+            }
+            _ => bail!("{} expects numeric arguments", op),
+        }
+    }
+
     /// Handle built-in math functions (sqrt, pow, abs, min, max, floor, ceil, round).
     /// 
     /// Returns `Ok(Some(value))` if the function name matches a math function,
@@ -4434,134 +4541,18 @@ impl Repl {
         depth: usize,
     ) -> Result<Option<Value>> {
         match func_name {
-            "sqrt" => {
-                if args.len() != 1 {
-                    bail!("sqrt takes exactly 1 argument");
-                }
+            // Unary math functions
+            "sqrt" | "abs" | "floor" | "ceil" | "round" => {
+                self.validate_arg_count(func_name, args, 1)?;
                 let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                match value {
-                    Value::Int(n) => {
-                        #[allow(clippy::cast_precision_loss)]
-                        Ok(Some(Value::Float((n as f64).sqrt())))
-                    }
-                    Value::Float(f) => Ok(Some(Value::Float(f.sqrt()))),
-                    _ => bail!("sqrt expects a numeric argument"),
-                }
+                Ok(Some(self.apply_unary_math_op(&value, func_name)?))
             }
-            "pow" => {
-                if args.len() != 2 {
-                    bail!("pow takes exactly 2 arguments");
-                }
-                let base = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                let exp = self.evaluate_expr(&args[1], deadline, depth + 1)?;
-                match (base, exp) {
-                    (Value::Int(b), Value::Int(e)) => {
-                        if e < 0 {
-                            #[allow(clippy::cast_precision_loss)]
-                            Ok(Some(Value::Float((b as f64).powi(e as i32))))
-                        } else {
-                            let exp_u32 = u32::try_from(e).map_err(|_| anyhow::anyhow!("Exponent too large"))?;
-                            match b.checked_pow(exp_u32) {
-                                Some(result) => Ok(Some(Value::Int(result))),
-                                None => bail!("Integer overflow in pow({}, {})", b, e),
-                            }
-                        }
-                    }
-                    (Value::Float(b), Value::Float(e)) => Ok(Some(Value::Float(b.powf(e)))),
-                    (Value::Int(b), Value::Float(e)) => {
-                        #[allow(clippy::cast_precision_loss)]
-                        Ok(Some(Value::Float((b as f64).powf(e))))
-                    }
-                    (Value::Float(b), Value::Int(e)) => {
-                        #[allow(clippy::cast_precision_loss)]
-                        Ok(Some(Value::Float(b.powi(e as i32))))
-                    }
-                    _ => bail!("pow expects numeric arguments"),
-                }
-            }
-            "abs" => {
-                if args.len() != 1 {
-                    bail!("abs takes exactly 1 argument");
-                }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                match value {
-                    Value::Int(n) => Ok(Some(Value::Int(n.abs()))),
-                    Value::Float(f) => Ok(Some(Value::Float(f.abs()))),
-                    _ => bail!("abs expects a numeric argument"),
-                }
-            }
-            "min" => {
-                if args.len() != 2 {
-                    bail!("min takes exactly 2 arguments");
-                }
+            // Binary math functions
+            "pow" | "min" | "max" => {
+                self.validate_arg_count(func_name, args, 2)?;
                 let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 let b = self.evaluate_expr(&args[1], deadline, depth + 1)?;
-                match (a, b) {
-                    (Value::Int(x), Value::Int(y)) => Ok(Some(Value::Int(x.min(y)))),
-                    (Value::Float(x), Value::Float(y)) => Ok(Some(Value::Float(x.min(y)))),
-                    (Value::Int(x), Value::Float(y)) => {
-                        #[allow(clippy::cast_precision_loss)]
-                        Ok(Some(Value::Float((x as f64).min(y))))
-                    }
-                    (Value::Float(x), Value::Int(y)) => {
-                        #[allow(clippy::cast_precision_loss)]
-                        Ok(Some(Value::Float(x.min(y as f64))))
-                    }
-                    _ => bail!("min expects numeric arguments"),
-                }
-            }
-            "max" => {
-                if args.len() != 2 {
-                    bail!("max takes exactly 2 arguments");
-                }
-                let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                let b = self.evaluate_expr(&args[1], deadline, depth + 1)?;
-                match (a, b) {
-                    (Value::Int(x), Value::Int(y)) => Ok(Some(Value::Int(x.max(y)))),
-                    (Value::Float(x), Value::Float(y)) => Ok(Some(Value::Float(x.max(y)))),
-                    (Value::Int(x), Value::Float(y)) => {
-                        #[allow(clippy::cast_precision_loss)]
-                        Ok(Some(Value::Float((x as f64).max(y))))
-                    }
-                    (Value::Float(x), Value::Int(y)) => {
-                        #[allow(clippy::cast_precision_loss)]
-                        Ok(Some(Value::Float(x.max(y as f64))))
-                    }
-                    _ => bail!("max expects numeric arguments"),
-                }
-            }
-            "floor" => {
-                if args.len() != 1 {
-                    bail!("floor takes exactly 1 argument");
-                }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                match value {
-                    Value::Int(n) => Ok(Some(Value::Int(n))), // Already floored
-                    Value::Float(f) => Ok(Some(Value::Float(f.floor()))),
-                    _ => bail!("floor expects a numeric argument"),
-                }
-            }
-            "ceil" => {
-                if args.len() != 1 {
-                    bail!("ceil takes exactly 1 argument");
-                }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                match value {
-                    Value::Int(n) => Ok(Some(Value::Int(n))), // Already ceiled
-                    Value::Float(f) => Ok(Some(Value::Float(f.ceil()))),
-                    _ => bail!("ceil expects a numeric argument"),
-                }
-            }
-            "round" => {
-                if args.len() != 1 {
-                    bail!("round takes exactly 1 argument");
-                }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                match value {
-                    Value::Int(n) => Ok(Some(Value::Int(n))), // Already rounded
-                    Value::Float(f) => Ok(Some(Value::Float(f.round()))),
-                    _ => bail!("round expects a numeric argument"),
-                }
+                Ok(Some(self.apply_binary_math_op(&a, &b, func_name)?))
             }
             _ => Ok(None), // Not a math function
         }
