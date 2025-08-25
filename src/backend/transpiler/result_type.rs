@@ -14,6 +14,20 @@ use quote::{format_ident, quote};
 
 impl Transpiler {
     /// Generates Result type helpers and combinators
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::Transpiler;
+    /// 
+    /// let helpers = Transpiler::generate_result_helpers();
+    /// let code = helpers.to_string();
+    /// assert!(code.contains("trait ResultExt"));
+    /// assert!(code.contains("map_err_with"));
+    /// assert!(code.contains("unwrap_or_else_with"));
+    /// assert!(code.contains("and_then_with"));
+    /// assert!(code.contains("or_else_with"));
+    /// ```
     pub fn generate_result_helpers() -> TokenStream {
         quote! {
             // Result extension trait for additional combinators
@@ -68,6 +82,21 @@ impl Transpiler {
     }
 
     /// Transpiles Result pattern matching
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new(r#"match result { Ok(val) => val, Err(e) => 0 }"#);
+    /// let ast = parser.parse().unwrap();
+    /// 
+    /// let result = transpiler.transpile(&ast).unwrap();
+    /// let code = result.to_string();
+    /// assert!(code.contains("Ok"));
+    /// assert!(code.contains("Err"));
+    /// ```
     pub fn transpile_result_match(
         &self,
         expr: &Expr,
@@ -96,6 +125,20 @@ impl Transpiler {
     }
 
     /// Transpiles Result chaining with ? operator
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("result?");
+    /// let ast = parser.parse().unwrap();
+    /// 
+    /// let result = transpiler.transpile(&ast).unwrap();
+    /// let code = result.to_string();
+    /// assert!(code.contains("?"));
+    /// ```
     pub fn transpile_result_chain(&self, operations: &[Expr]) -> Result<TokenStream> {
         if operations.is_empty() {
             return Ok(quote! { Ok(()) });
