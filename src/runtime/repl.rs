@@ -1932,9 +1932,31 @@ impl Repl {
                         other => result.push_str(&other.to_string()),
                     }
                 }
+                StringPart::ExprWithFormat { expr, format_spec } => {
+                    let value = self.evaluate_expr(expr, deadline, depth + 1)?;
+                    // Apply format specifier for REPL
+                    let formatted = Self::format_value_with_spec(&value, format_spec);
+                    result.push_str(&formatted);
+                }
             }
         }
         Ok(Value::String(result))
+    }
+
+    /// Format a value with a format specifier like :.2 for floats
+    fn format_value_with_spec(value: &Value, spec: &str) -> String {
+        // Parse format specifier (e.g., ":.2" -> precision 2)
+        if let Some(stripped) = spec.strip_prefix(":.") {
+            if let Ok(precision) = stripped.parse::<usize>() {
+                match value {
+                    Value::Float(f) => return format!("{f:.precision$}"),
+                    Value::Int(i) => return format!("{:.precision$}", *i as f64, precision = precision),
+                    _ => {}
+                }
+            }
+        }
+        // Default formatting if spec doesn't match or isn't supported
+        value.to_string()
     }
 
     /// Evaluate function definition (complexity: 5)
@@ -4089,15 +4111,14 @@ impl Repl {
 
     /// Evaluate `assert` function - panic if condition is false
     fn evaluate_assert(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
-        if args.len() < 1 || args.len() > 2 {
+        if args.is_empty() || args.len() > 2 {
             bail!("assert expects 1 or 2 arguments (condition, optional message)");
         }
         
         // Evaluate condition
         let condition = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        let is_true = match condition {
-            Value::Bool(b) => b,
-            _ => bail!("assert expects a boolean condition, got {}", std::any::type_name_of_val(&condition)),
+        let Value::Bool(is_true) = condition else {
+            bail!("assert expects a boolean condition, got {}", std::any::type_name_of_val(&condition))
         };
         
         if !is_true {
@@ -4140,7 +4161,7 @@ impl Repl {
                     other => other.to_string(),
                 }
             } else {
-                format!("assertion failed: `(left == right)`\n  left: `{}`\n right: `{}`", left, right)
+                format!("assertion failed: `(left == right)`\n  left: `{left}`\n right: `{right}`")
             };
             
             bail!("Assertion failed: {}", message);
@@ -4171,7 +4192,7 @@ impl Repl {
                     other => other.to_string(),
                 }
             } else {
-                format!("assertion failed: `(left != right)`\n  left: `{}`\n right: `{}`", left, right)
+                format!("assertion failed: `(left != right)`\n  left: `{left}`\n right: `{right}`")
             };
             
             bail!("Assertion failed: {}", message);

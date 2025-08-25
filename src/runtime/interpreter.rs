@@ -2811,9 +2811,31 @@ impl Interpreter {
                     let value = self.eval_expr(expr)?;
                     result.push_str(&value.to_string());
                 }
+                StringPart::ExprWithFormat { expr, format_spec } => {
+                    let value = self.eval_expr(expr)?;
+                    // Apply format specifier for interpreter
+                    let formatted = Self::format_value_with_spec(&value, format_spec);
+                    result.push_str(&formatted);
+                }
             }
         }
         Ok(Value::from_string(result))
+    }
+
+    /// Format a value with a format specifier like :.2 for floats
+    fn format_value_with_spec(value: &Value, spec: &str) -> String {
+        // Parse format specifier (e.g., ":.2" -> precision 2)
+        if let Some(stripped) = spec.strip_prefix(":.") {
+            if let Ok(precision) = stripped.parse::<usize>() {
+                match value {
+                    Value::Float(f) => return format!("{:.precision$}", f, precision = precision),
+                    Value::Integer(i) => return format!("{:.precision$}", *i as f64, precision = precision),
+                    _ => {}
+                }
+            }
+        }
+        // Default formatting if spec doesn't match or isn't supported
+        value.to_string()
     }
     
     /// Evaluate function definition

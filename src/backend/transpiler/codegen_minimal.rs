@@ -165,6 +165,12 @@ impl MinimalCodeGen {
                             format_str.push_str("{}");
                             args.push(Self::gen_expr(expr)?);
                         }
+                        crate::frontend::ast::StringPart::ExprWithFormat { expr, format_spec } => {
+                            format_str.push('{');
+                            format_str.push_str(format_spec);
+                            format_str.push('}');
+                            args.push(Self::gen_expr(expr)?);
+                        }
                     }
                 }
                 

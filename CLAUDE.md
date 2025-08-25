@@ -59,6 +59,29 @@ Level 7: Performance Tests  - Non-functional requirements
 
 **NEVER AGAIN RULE**: Every defect must be made impossible to repeat through systematic prevention.
 
+### Mandatory Testing Requirements for Quality Issues
+
+**CRITICAL**: Any regression or quality problem REQUIRES this diverse testing approach:
+
+1. **Doctests**: Every public function MUST have runnable documentation examples
+2. **Property Tests**: Use proptest to verify invariants with 10,000+ random inputs
+3. **Fuzz Tests**: Use cargo-fuzz or AFL to find edge cases with millions of inputs
+4. **Examples**: Create working examples in examples/ directory demonstrating correct usage
+5. **Integration Tests**: End-to-end scenarios covering real-world usage patterns
+6. **Regression Tests**: Specific test case that reproduces and prevents the exact defect
+
+**Code Coverage Requirements**:
+- **Target**: 80% coverage (aspirational goal)
+- **Minimum During Active Development**: 70% coverage (quality gate)
+- **Direction**: Coverage must increase or stay same, NEVER decrease
+- **Enforcement**: Pre-commit hook blocks commits below 70% coverage
+
+**Complexity Requirements** (PMAT Enforced):
+- **Maximum Cyclomatic Complexity**: 10 per function
+- **Maximum Cognitive Complexity**: 15 per function  
+- **Enforcement**: Pre-commit hook blocks commits exceeding limits
+- **Refactoring**: Functions exceeding limits MUST be decomposed immediately
+
 ## Toyota Way Success Stories
 
 ### Property Testing Victory (2024-12)
