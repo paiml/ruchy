@@ -259,8 +259,10 @@ criterion = { workspace = true }
 insta = { workspace = true }
 tracing-subscriber = { workspace = true }
 quickcheck = { workspace = true }
-quickcheck_macros = { workspace = true }
+assert_cmd = "2.0"
+predicates = "3.0"
 tempfile = "3.8"
+quickcheck_macros = { workspace = true }
 
 [[bench]]
 name = "parser"

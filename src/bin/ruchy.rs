@@ -924,11 +924,16 @@ fn main() -> Result<()> {
             )?;
         }
         Some(command) => {
-            handle_complex_command(command)?;
+            handle_advanced_command(command)?;
         }
     } 
 
     Ok(())
+}
+
+fn handle_advanced_command(command: Commands) -> Result<()> {
+    // Delegate to the existing handle_complex_command from cli module
+    handle_complex_command(command)
 }
 
 fn run_file(file: &Path) -> Result<()> {

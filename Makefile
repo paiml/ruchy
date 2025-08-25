@@ -234,8 +234,8 @@ examples:
 # Run example scripts
 example-scripts:
 	@echo "Testing Ruchy scripts..."
-	@cargo run --package ruchy-cli --bin ruchy -- transpile examples/fibonacci.ruchy
-	@cargo run --package ruchy-cli --bin ruchy -- transpile examples/marco_polo.ruchy
+	@cargo run --bin ruchy -- transpile examples/fibonacci.ruchy
+	@cargo run --bin ruchy -- transpile examples/marco_polo.ruchy
 	@echo "✓ Script examples complete"
 
 # Run benchmarks
@@ -301,15 +301,15 @@ test-examples:
 	@echo "✅ Rust examples passed"
 	@echo ""
 	@echo "2️⃣  Running Ruchy script transpilation tests..."
-	@cargo run --package ruchy-cli --bin ruchy -- transpile examples/fibonacci.ruchy > /dev/null
-	@cargo run --package ruchy-cli --bin ruchy -- transpile examples/marco_polo.ruchy > /dev/null
+	@cargo run --bin ruchy -- transpile examples/fibonacci.ruchy > /dev/null
+	@cargo run --bin ruchy -- transpile examples/marco_polo.ruchy > /dev/null
 	@echo "✅ Ruchy script transpilation passed"
 	@echo ""
 	@echo "3️⃣  Running working Ruchy script execution tests..."
 	@echo "Testing fibonacci.ruchy..."
-	@echo 'fibonacci(10)' | cargo run --package ruchy-cli --bin ruchy -- run examples/fibonacci.ruchy > /dev/null 2>&1 || true
+	@echo 'fibonacci(10)' | cargo run --bin ruchy -- run examples/fibonacci.ruchy > /dev/null 2>&1 || true
 	@echo "Testing marco_polo.ruchy..."
-	@echo '' | cargo run --package ruchy-cli --bin ruchy -- run examples/marco_polo.ruchy > /dev/null 2>&1 || true
+	@echo '' | cargo run --bin ruchy -- run examples/marco_polo.ruchy > /dev/null 2>&1 || true
 	@echo "✅ Working Ruchy scripts tested"
 	@echo ""
 	@echo "4️⃣  Checking problematic examples (expected to fail)..."
@@ -318,7 +318,7 @@ test-examples:
 		case "$$example" in \
 			*fibonacci*|*marco_polo.ruchy) ;; \
 			*) echo "Checking $$example (may fail - expected)..."; \
-			   cargo run --package ruchy-cli --bin ruchy -- run $$example 2>/dev/null || echo "  ⚠️  Failed as expected (unsupported syntax)"; ;; \
+			   cargo run --bin ruchy -- run $$example 2>/dev/null || echo "  ⚠️  Failed as expected (unsupported syntax)"; ;; \
 		esac \
 	done
 	@echo ""
@@ -329,7 +329,7 @@ test-binary:
 	@echo "Running binary validation tests..."
 	@for example in examples/*.ruchy; do \
 		echo "Testing $$example..."; \
-		cargo run --package ruchy-cli --bin ruchy -- run $$example || exit 1; \
+		cargo run --bin ruchy -- run $$example || exit 1; \
 	done
 	@echo "✓ Binary validation complete"
 
@@ -494,7 +494,7 @@ pre-release-checks:
 	@echo "7️⃣ Dry-run publish check..."
 	@cargo publish --dry-run --package ruchy --quiet
 	@echo "✅ Package ruchy ready for publication"
-	@cargo publish --dry-run --package ruchy-cli --quiet 2>/dev/null || echo "⚠️  ruchy-cli may need separate publication"
+	@cargo publish --dry-run --quiet 2>/dev/null || echo "⚠️  ruchy-cli may need separate publication"
 	@echo ""
 	@echo "✅ All pre-release checks completed!"
 
@@ -552,7 +552,7 @@ crate-release:
 			echo "Waiting 30 seconds for crates.io to index..."; \
 			sleep 30; \
 			echo "Publishing ruchy-cli..."; \
-			cargo publish --package ruchy-cli || echo "ruchy-cli may already be published or needs manual intervention"; \
+			cargo publish || echo "ruchy-cli may already be published or needs manual intervention"; \
 			;; \
 		*) echo "❌ Publish cancelled" ;; \
 	esac

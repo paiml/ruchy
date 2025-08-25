@@ -571,36 +571,142 @@ log("Environment:", environment);
 ### Quality Tasks Phase 3 (QUALITY-016 to QUALITY-025)
 
 #### Final Complexity Elimination (Target: 100% compliance)
-- [ ] **QUALITY-016**: Refactor Repl::try_math_function (83 → <10)
+- [x] **QUALITY-016**: ✅ Refactor Repl::try_math_function (83 → <10)
   - Extract math function categories: basic math, trigonometry, rounding, etc.
   - Add comprehensive math function tests with property testing
   - Ensure numerical correctness and precision
   - Target: Math operation specialist functions
 
-- [ ] **QUALITY-017**: Refactor Interpreter::eval_expr_kind (52 → <10)
+- [x] **QUALITY-017**: ✅ Refactor Interpreter::eval_expr_kind (52 → <10)
   - Extract expression evaluation by kind: literals, calls, operations, etc.
   - Add interpreter expression tests
   - Maintain evaluation semantics
   - Target: Expression-specific evaluators
 
-- [ ] **QUALITY-018**: Refactor Repl::evaluate_index_access (51 → <10)
+- [x] **QUALITY-018**: ✅ Refactor Repl::evaluate_index_access (51 → <10)
   - Extract indexing operations: array access, tuple access, string indexing
   - Add comprehensive indexing tests
   - Ensure bounds checking and error handling
   - Target: Type-specific indexing handlers
 
-- [ ] **QUALITY-019**: Refactor parse_control_flow_prefix (49 → <10)
+- [x] **QUALITY-019**: ✅ Refactor parse_control_flow_prefix (49 → <10)
   - Extract control flow parsers: if, match, for, while, etc.
   - Add parser tests for control structures
   - Maintain parsing correctness
   - Target: Control structure specialist parsers
 
-- [ ] **QUALITY-020**: Restore CLI Binary (complexity N/A)
-  - Re-enable CLI binary in Cargo.toml
-  - Fix handler import issues and placeholder implementations
-  - Ensure all basic commands work (parse, transpile, run, repl, compile)
-  - Add CLI integration tests
-  - Target: Fully functional CLI with quality handlers
+### Quality Tasks Phase 4 (QUALITY-021 to QUALITY-035) - CLI Tool Implementation
+
+**CRITICAL**: After CLI binary restoration, implement all advanced commands that were marked "not yet implemented" during refactoring.
+
+#### Advanced CLI Commands Implementation
+
+- [ ] **QUALITY-021**: Implement AST Analysis Command (ast)
+  - Advanced AST visualization with JSON output
+  - Symbol table analysis and dependency graphs 
+  - AST metrics and complexity analysis
+  - Target: Full AST introspection capabilities
+
+- [ ] **QUALITY-022**: Implement Provability Analysis Command (provability)
+  - Formal verification and correctness analysis
+  - Contract verification and invariant checking
+  - Termination analysis and bounds checking
+  - Target: Mathematical proof capabilities
+
+- [ ] **QUALITY-023**: Implement Runtime Analysis Command (runtime) 
+  - Performance analysis and BigO complexity detection
+  - Memory profiling and benchmark comparisons
+  - Runtime behavior analysis
+  - Target: Performance optimization insights
+
+- [ ] **QUALITY-024**: Implement Quality Score Command (score)
+  - Unified quality scoring across all dimensions
+  - Baseline comparison and trend analysis
+  - Configurable quality metrics and thresholds
+  - Target: Comprehensive quality assessment
+
+- [ ] **QUALITY-025**: Implement Quality Gate Command (quality-gate)
+  - Automated quality gate enforcement
+  - CI/CD integration with configurable gates
+  - Export reports and gate status
+  - Target: Production-ready quality gates
+
+- [ ] **QUALITY-026**: Implement Code Formatting Command (fmt)
+  - Automatic code formatting with configurable style
+  - Check mode for CI/CD validation
+  - Diff output and batch processing
+  - Target: Consistent code style enforcement
+
+- [ ] **QUALITY-027**: Implement Documentation Generation Command (doc)
+  - Generate documentation from source code
+  - Multiple output formats (HTML, Markdown, PDF)
+  - Cross-references and API documentation
+  - Target: Automated documentation pipeline
+
+- [ ] **QUALITY-028**: Implement Advanced Benchmarking (bench)
+  - Statistical benchmarking with warmup
+  - Comparison against baselines
+  - Performance regression detection
+  - Target: Scientific performance measurement
+
+- [ ] **QUALITY-029**: Implement Advanced Linting (lint)
+  - Custom lint rules and configuration
+  - Style violations and best practices
+  - Automatic fixes where possible
+  - Target: Comprehensive code quality enforcement
+
+- [ ] **QUALITY-030**: Implement Package Management (add/publish)
+  - Add dependencies to projects
+  - Publish packages to registry
+  - Version management and dependency resolution
+  - Target: Complete package ecosystem
+
+- [ ] **QUALITY-031**: Implement MCP Server Integration (mcp)
+  - Real-time quality analysis server
+  - Streaming analysis and notifications
+  - Integration with development tools
+  - Target: Live quality feedback
+
+- [ ] **QUALITY-032**: Implement Hardware Optimization (optimize)
+  - Hardware-aware optimization analysis
+  - Cache-friendly code suggestions
+  - Vectorization and parallelization hints
+  - Target: Performance optimization guidance
+
+- [ ] **QUALITY-033**: Implement Actor Observatory (actor:observe)
+  - Live system introspection for actor systems
+  - Deadlock detection and performance monitoring
+  - Real-time actor behavior analysis
+  - Target: Production actor system monitoring
+
+- [ ] **QUALITY-034**: Implement Dataflow Debugger (dataflow:debug)
+  - DataFrame pipeline debugging and profiling
+  - Memory usage tracking and optimization
+  - Data flow visualization and breakpoints
+  - Target: Advanced data processing debugging
+
+- [ ] **QUALITY-035**: Implement WebAssembly Toolkit (wasm)
+  - WebAssembly component compilation
+  - WIT interface generation and deployment
+  - Cross-platform WASM optimization
+  - Target: Full WebAssembly ecosystem support
+
+#### Implementation Priority
+1. **Phase 4A (P0)**: Basic tooling - ast, fmt, doc, bench, lint (QUALITY-021, 026, 027, 028, 029)
+2. **Phase 4B (P1)**: Quality systems - score, quality-gate, mcp (QUALITY-024, 025, 031) 
+3. **Phase 4C (P2)**: Advanced analysis - provability, runtime, optimize (QUALITY-022, 023, 032)
+4. **Phase 4D (P3)**: Specialized tools - actor:observe, dataflow:debug, wasm (QUALITY-033, 034, 035)
+5. **Phase 4E (P1)**: Package management - add, publish (QUALITY-030)
+
+### Current Phase Continuation
+
+- [x] **QUALITY-020**: ✅ Restore CLI Binary (complexity N/A) ✅ COMPLETED
+  - ✅ Re-enabled CLI binary in Cargo.toml
+  - ✅ Fixed handler import issues and compilation errors
+  - ✅ All basic commands work (parse, transpile, run, repl, compile, check, test)
+  - ✅ Yanked broken v1.13.0 from crates.io
+  - ✅ Ready for v1.14.0 publish once rate limit resets
+  - ✅ Target: Fully functional CLI with quality handlers
 
 #### Previous Phase Tasks (COMPLETED ✅)
 - [x] **QUALITY-001**: Fix CLI oneliner tests ✅ COMPLETED

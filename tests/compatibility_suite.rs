@@ -41,7 +41,18 @@ fn run_ruchy_code(code: &str) -> TestResult {
     fs::write(test_file, code).expect("Failed to write test file");
     
     let start = Instant::now();
-    let output = Command::new("./target/release/ruchy")
+    // Use the binary from the current build target
+    let ruchy_bin = if std::path::Path::new("./target/llvm-cov-target/debug/ruchy").exists() {
+        "./target/llvm-cov-target/debug/ruchy"
+    } else if std::path::Path::new("./target/release/ruchy").exists() {
+        "./target/release/ruchy"
+    } else if std::path::Path::new("./target/debug/ruchy").exists() {
+        "./target/debug/ruchy"
+    } else {
+        panic!("Could not find ruchy binary");
+    };
+    
+    let output = Command::new(ruchy_bin)
         .arg("run")
         .arg(test_file)
         .output()

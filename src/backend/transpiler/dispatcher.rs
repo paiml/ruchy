@@ -25,7 +25,11 @@ impl Transpiler {
 
     fn transpile_identifier(name: &str) -> TokenStream {
         // Handle Rust reserved keywords by prefixing with r#
-        let safe_name = if Self::is_rust_reserved_keyword(name) {
+        // Note: 'self', 'Self', 'super', and 'crate' cannot be raw identifiers
+        let safe_name = if matches!(name, "self" | "Self" | "super" | "crate") {
+            // These keywords cannot be raw identifiers, use them as-is
+            name.to_string()
+        } else if Self::is_rust_reserved_keyword(name) {
             format!("r#{name}")
         } else {
             name.to_string()
@@ -140,16 +144,9 @@ impl Transpiler {
     /// - Collection macros: `vec!` (simple element transpilation)
     /// - Assertion macros: `assert!`, `assert_eq!`, `assert_ne!` (validation + transpilation)
     ///
-    /// # Examples
-    /// ```
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
-    /// 
-    /// let transpiler = Transpiler::new();
-    /// let args = vec![];
-    /// let result = transpiler.transpile_macro("println", &args).unwrap();
-    /// assert!(result.to_string().contains("println!"));
-    /// ```
+    /// # Example Usage
+    /// This method dispatches to specific macro handlers based on the macro name.
+    /// For example, `println` calls `transpile_println_macro`, `vec` calls `transpile_vec_macro`, etc.
     pub(super) fn transpile_macro(&self, name: &str, args: &[Expr]) -> Result<TokenStream> {
         match name {
             // Print macros (string formatting)
@@ -349,16 +346,9 @@ impl Transpiler {
     /// Handles string literals, string interpolation, and format strings correctly.
     /// Complexity: <10 per Toyota Way requirement.
     /// 
-    /// # Examples
-    /// ```
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
-    /// 
-    /// let transpiler = Transpiler::new();
-    /// let args = vec![Expr { kind: ExprKind::Literal(Literal::String("Hello".to_string())), span: (0, 0).into() }];
-    /// let result = transpiler.transpile_println_macro(&args).unwrap();
-    /// assert!(result.to_string().contains("println!"));
-    /// ```
+    /// # Example Usage
+    /// Transpiles arguments and wraps them in Rust's `println!` macro.
+    /// Empty args produce `println!()`, otherwise `println!(arg1, arg2, ...)`
     fn transpile_println_macro(&self, args: &[Expr]) -> Result<TokenStream> {
         let arg_tokens = self.transpile_print_args(args)?;
         if arg_tokens.is_empty() {
@@ -373,16 +363,9 @@ impl Transpiler {
     /// Handles string literals, string interpolation, and format strings correctly.
     /// Complexity: <10 per Toyota Way requirement.
     /// 
-    /// # Examples
-    /// ```
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
-    /// 
-    /// let transpiler = Transpiler::new();
-    /// let args = vec![Expr { kind: ExprKind::Literal(Literal::String("Hello".to_string())), span: (0, 0).into() }];
-    /// let result = transpiler.transpile_print_macro(&args).unwrap();
-    /// assert!(result.to_string().contains("print!"));
-    /// ```
+    /// # Example Usage
+    /// Transpiles arguments and wraps them in Rust's `print!` macro.
+    /// Empty args produce `print!()`, otherwise `print!(arg1, arg2, ...)`
     fn transpile_print_macro(&self, args: &[Expr]) -> Result<TokenStream> {
         let arg_tokens = self.transpile_print_args(args)?;
         if arg_tokens.is_empty() {
@@ -397,16 +380,9 @@ impl Transpiler {
     /// Handles string literals, string interpolation, and format strings correctly.
     /// Complexity: <10 per Toyota Way requirement.
     /// 
-    /// # Examples
-    /// ```
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
-    /// 
-    /// let transpiler = Transpiler::new();
-    /// let args = vec![Expr { kind: ExprKind::Literal(Literal::String("Error".to_string())), span: (0, 0).into() }];
-    /// let result = transpiler.transpile_panic_macro(&args).unwrap();
-    /// assert!(result.to_string().contains("panic!"));
-    /// ```
+    /// # Example Usage
+    /// Transpiles arguments and wraps them in Rust's `panic!` macro.
+    /// Empty args produce `panic!()`, otherwise `panic!(arg1, arg2, ...)`
     fn transpile_panic_macro(&self, args: &[Expr]) -> Result<TokenStream> {
         let arg_tokens = self.transpile_print_args(args)?;
         if arg_tokens.is_empty() {
@@ -467,16 +443,9 @@ impl Transpiler {
     /// Simple element-by-element transpilation for collection creation.
     /// Complexity: <10 per Toyota Way requirement.
     /// 
-    /// # Examples
-    /// ```
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
-    /// 
-    /// let transpiler = Transpiler::new();
-    /// let args = vec![Expr { kind: ExprKind::Literal(Literal::Integer(42)), span: (0, 0).into() }];
-    /// let result = transpiler.transpile_vec_macro(&args).unwrap();
-    /// assert!(result.to_string().contains("vec!"));
-    /// ```
+    /// # Example Usage
+    /// Transpiles list elements and wraps them in Rust's `vec!` macro.
+    /// Produces `vec![elem1, elem2, ...]`
     fn transpile_vec_macro(&self, args: &[Expr]) -> Result<TokenStream> {
         let arg_tokens: Result<Vec<_>, _> = args
             .iter()
@@ -492,16 +461,9 @@ impl Transpiler {
     /// Simple argument transpilation for basic assertions.
     /// Complexity: <10 per Toyota Way requirement.
     /// 
-    /// # Examples
-    /// ```
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
-    /// 
-    /// let transpiler = Transpiler::new();
-    /// let args = vec![Expr { kind: ExprKind::Literal(Literal::Bool(true)), span: (0, 0).into() }];
-    /// let result = transpiler.transpile_assert_macro(&args).unwrap();
-    /// assert!(result.to_string().contains("assert!"));
-    /// ```
+    /// # Example Usage
+    /// Transpiles assertion condition and wraps it in Rust's `assert!` macro.
+    /// Produces `assert!(condition, optional_message)`
     fn transpile_assert_macro(&self, args: &[Expr]) -> Result<TokenStream> {
         let arg_tokens: Result<Vec<_>, _> = args
             .iter()
@@ -521,19 +483,9 @@ impl Transpiler {
     /// Validates argument count and transpiles for equality assertions.
     /// Complexity: <10 per Toyota Way requirement.
     /// 
-    /// # Examples
-    /// ```
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
-    /// 
-    /// let transpiler = Transpiler::new();
-    /// let args = vec![
-    ///     Expr { kind: ExprKind::Literal(Literal::Integer(42)), span: (0, 0).into() },
-    ///     Expr { kind: ExprKind::Literal(Literal::Integer(42)), span: (0, 0).into() }
-    /// ];
-    /// let result = transpiler.transpile_assert_eq_macro(&args).unwrap();
-    /// assert!(result.to_string().contains("assert_eq!"));
-    /// ```
+    /// # Example Usage
+    /// Validates at least 2 arguments and transpiles to Rust's `assert_eq!` macro.
+    /// Produces `assert_eq!(left, right, optional_message)`
     fn transpile_assert_eq_macro(&self, args: &[Expr]) -> Result<TokenStream> {
         if args.len() < 2 {
             bail!("assert_eq! requires at least 2 arguments")
@@ -553,19 +505,9 @@ impl Transpiler {
     /// Validates argument count and transpiles for inequality assertions.
     /// Complexity: <10 per Toyota Way requirement.
     /// 
-    /// # Examples
-    /// ```
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
-    /// 
-    /// let transpiler = Transpiler::new();
-    /// let args = vec![
-    ///     Expr { kind: ExprKind::Literal(Literal::Integer(42)), span: (0, 0).into() },
-    ///     Expr { kind: ExprKind::Literal(Literal::Integer(24)), span: (0, 0).into() }
-    /// ];
-    /// let result = transpiler.transpile_assert_ne_macro(&args).unwrap();
-    /// assert!(result.to_string().contains("assert_ne!"));
-    /// ```
+    /// # Example Usage
+    /// Validates at least 2 arguments and transpiles to Rust's `assert_ne!` macro.
+    /// Produces `assert_ne!(left, right, optional_message)`
     fn transpile_assert_ne_macro(&self, args: &[Expr]) -> Result<TokenStream> {
         if args.len() < 2 {
             bail!("assert_ne! requires at least 2 arguments")

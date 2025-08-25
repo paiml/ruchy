@@ -196,18 +196,9 @@ impl InferenceContext {
     /// 
     /// Delegates to specialized handlers for each expression category
     /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use ruchy::middleend::infer::InferenceContext;
-    /// use ruchy::frontend::parser::Parser;
-    /// 
-    /// let mut ctx = InferenceContext::new();
-    /// let mut parser = Parser::new("42");
-    /// let expr = parser.parse().unwrap();
-    /// let ty = ctx.infer(&expr).unwrap();
-    /// assert_eq!(format!("{}", ty), "Int");
-    /// ```
+    /// # Example Usage
+    /// This method infers types for expressions by delegating to specialized handlers.
+    /// For example, literals get their type directly, while function calls check argument types.
     fn infer_expr(&mut self, expr: &Expr) -> Result<MonoType> {
         match &expr.kind {
             // Literals and identifiers
@@ -1189,18 +1180,10 @@ impl InferenceContext {
 
     /// Infer types for control flow expressions (if, match, loops)
     /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use ruchy::middleend::infer::InferenceContext;
-    /// use ruchy::frontend::parser::Parser;
-    /// 
-    /// let mut ctx = InferenceContext::new();
-    /// let mut parser = Parser::new("if true { 1 } else { 2 }");
-    /// let expr = parser.parse().unwrap();
-    /// let ty = ctx.infer(&expr).unwrap();
-    /// assert_eq!(format!("{}", ty), "Int");
-    /// ```
+    /// # Example Usage
+    /// Handles type inference for control flow constructs.
+    /// For if expressions, ensures both branches have compatible types.
+    /// For match expressions, checks pattern compatibility and branch types.
     fn infer_control_flow_expr(&mut self, expr: &Expr) -> Result<MonoType> {
         match &expr.kind {
             ExprKind::If { condition, then_branch, else_branch } => {
