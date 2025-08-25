@@ -939,7 +939,7 @@ impl Transpiler {
         }
     }
     
-    /// Handle assert functions (assert, assert_eq, assert_ne)
+    /// Handle assert functions (assert, `assert_eq`, `assert_ne`)
     /// 
     /// # Examples
     /// 
@@ -1001,7 +1001,7 @@ impl Transpiler {
         }
     }
     
-    /// Handle collection constructors (HashMap, HashSet)
+    /// Handle collection constructors (`HashMap`, `HashSet`)
     /// 
     /// # Examples
     /// 
@@ -1022,7 +1022,7 @@ impl Transpiler {
         }
     }
     
-    /// Handle DataFrame functions (col)
+    /// Handle `DataFrame` functions (col)
     /// 
     /// # Examples
     /// 
