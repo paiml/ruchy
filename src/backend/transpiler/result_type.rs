@@ -222,5 +222,32 @@ mod tests {
         let code = helpers.to_string();
         assert!(code.contains("ResultExt"));
         assert!(code.contains("map_err_with"));
+        assert!(code.contains("unwrap_or_else_with"));
+        assert!(code.contains("and_then_with"));
+        assert!(code.contains("or_else_with"));
+    }
+
+    #[test]
+    fn test_transpile_error_type() {
+        let transpiler = Transpiler::new();
+        let variants = vec![
+            ("NotFound".to_string(), None),
+            ("InvalidInput".to_string(), Some("String".to_string())),
+            ("NetworkError".to_string(), Some("std::io::Error".to_string())),
+        ];
+        
+        let error_type = transpiler.transpile_error_type("AppError", &variants);
+        let code = error_type.to_string();
+        
+        // Check enum definition
+        assert!(code.contains("enum AppError"));
+        assert!(code.contains("NotFound"));
+        assert!(code.contains("InvalidInput(String)"));
+        assert!(code.contains("NetworkError(std :: io :: Error)"));
+        
+        // Check trait implementations
+        assert!(code.contains("#[derive(Debug, Clone)]"));
+        assert!(code.contains("impl std::fmt::Display"));
+        assert!(code.contains("impl std::error::Error"));
     }
 }
