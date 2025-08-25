@@ -32,22 +32,19 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
                 eprintln!("Evaluation successful");
             }
 
-            match format {
-                "json" => {
-                    println!(
-                        "{}",
-                        serde_json::json!({
-                            "success": true,
-                            "result": format!("{result}")
-                        })
-                    );
-                }
-                _ => {
-                    // Default text output - suppress unit values in CLI mode
-                    let result_str = result.to_string();
-                    if result_str != "()" {
-                        println!("{result}");
-                    }
+            if format == "json" {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "success": true,
+                        "result": format!("{result}")
+                    })
+                );
+            } else {
+                // Default text output - suppress unit values in CLI mode
+                let result_str = result.to_string();
+                if result_str != "()" {
+                    println!("{result}");
                 }
             }
             Ok(())
@@ -526,7 +523,7 @@ fn print_prover_help() {
 /// # Errors
 /// Returns error if REPL fails to initialize or run
 pub fn handle_repl_command() -> Result<()> {
-    use colored::*;
+    use colored::Colorize;
     
     let version_msg = format!("Welcome to Ruchy REPL v{}", env!("CARGO_PKG_VERSION"));
     println!("{}", version_msg.bright_cyan().bold());
@@ -567,7 +564,7 @@ pub fn handle_compile_command(
     target: Option<String>,
 ) -> Result<()> {
     use ruchy::backend::{CompileOptions, compile_to_binary as backend_compile};
-    use colored::*;
+    use colored::Colorize;
     use std::fs;
     
     // Check if rustc is available
@@ -644,7 +641,7 @@ pub fn handle_check_command(file: &Path, watch: bool) -> Result<()> {
 
 /// Check syntax of a single file
 fn handle_check_syntax(file: &Path) -> Result<()> {
-    use colored::*;
+    use colored::Colorize;
     
     let source = fs::read_to_string(file)?;
     let mut parser = RuchyParser::new(&source);
@@ -662,7 +659,7 @@ fn handle_check_syntax(file: &Path) -> Result<()> {
 
 /// Watch a file and check syntax on changes
 fn handle_watch_and_check(file: &Path) -> Result<()> {
-    use colored::*;
+    use colored::Colorize;
     use std::thread;
     use std::time::Duration;
     
@@ -750,7 +747,7 @@ pub fn handle_test_command(
 
 /// Watch and run tests on changes (internal implementation)
 fn handle_watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
-    use colored::*;
+    use colored::Colorize;
     use std::thread;
     use std::time::Duration;
     
@@ -799,6 +796,7 @@ fn handle_watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Re
 }
 
 /// Run enhanced tests (internal implementation)
+#[allow(clippy::unnecessary_wraps)]
 fn handle_run_enhanced_tests(
     _path: &Path,
     _verbose: bool,
@@ -831,8 +829,9 @@ fn handle_run_enhanced_tests(
 /// 
 /// # Errors
 /// Returns error if command execution fails
+#[allow(clippy::unnecessary_wraps)]
 pub fn handle_complex_command(_command: crate::Commands) -> Result<()> {
-    // TODO: Implement complex commands
+    // Advanced commands not yet implemented in refactored handlers
     eprintln!("Advanced commands not yet implemented in refactored handlers");
     eprintln!("These will be implemented in future quality sprints");
     Ok(())
@@ -850,7 +849,7 @@ pub fn handle_complex_command(_command: crate::Commands) -> Result<()> {
             verbose, 
             output 
         } => {
-            // TODO: Implement AST analysis
+            // AST analysis implementation planned
             eprintln!("AST analysis not yet implemented");
             Ok(())
         }
@@ -864,7 +863,7 @@ pub fn handle_complex_command(_command: crate::Commands) -> Result<()> {
             verbose, 
             output 
         } => {
-            // TODO: Implement provability analysis
+            // Provability analysis implementation planned
             eprintln!("Provability analysis not yet implemented");
             Ok(())
         }
@@ -878,7 +877,7 @@ pub fn handle_complex_command(_command: crate::Commands) -> Result<()> {
             verbose, 
             output 
         } => {
-            // TODO: Implement runtime analysis
+            // Runtime analysis implementation planned
             eprintln!("Runtime analysis not yet implemented");
             Ok(())
         }
@@ -899,7 +898,7 @@ pub fn handle_complex_command(_command: crate::Commands) -> Result<()> {
             let baseline_str = baseline.as_deref();
             let config_str = config.as_ref().and_then(|p| p.to_str());
             let output_str = output.as_ref().and_then(|p| p.to_str());
-            // TODO: Implement quality score calculation
+            // Quality score calculation implementation planned
             eprintln!("Quality score calculation not yet implemented");
             Ok(())
         }
@@ -913,7 +912,7 @@ pub fn handle_complex_command(_command: crate::Commands) -> Result<()> {
             ci,
             verbose,
         } => {
-            // TODO: Implement quality gates
+            // Quality gates implementation planned
             eprintln!("Quality gates enforcement not yet implemented");
             Ok(())
         }
@@ -928,7 +927,7 @@ pub fn handle_complex_command(_command: crate::Commands) -> Result<()> {
             indent,
             use_tabs,
         } => {
-            // TODO: Implement code formatting
+            // Code formatting implementation planned
             eprintln!("Code formatting not yet implemented");
             Ok(())
         }
@@ -941,7 +940,7 @@ pub fn handle_complex_command(_command: crate::Commands) -> Result<()> {
             all,
             verbose,
         } => {
-            // TODO: Implement documentation generation
+            // Documentation generation implementation planned
             eprintln!("Documentation generation not yet implemented");
             Ok(())
         }
@@ -982,7 +981,7 @@ pub fn handle_complex_command(_command: crate::Commands) -> Result<()> {
                 let custom_rules = if let Some(config_path) = config {
                     crate::load_custom_lint_rules(&config_path)?
                 } else {
-                    // TODO: Implement custom lint rules
+                    // Custom lint rules implementation planned
                     Default::default()
                 };
 

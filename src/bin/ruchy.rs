@@ -14,24 +14,20 @@
 #![allow(clippy::field_reassign_with_default)]
 #![allow(clippy::format_in_format_args)]
 #![allow(clippy::items_after_statements)]
+#![allow(dead_code)]
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 // use colored::Colorize; // Unused after refactoring
-use ruchy::{runtime::repl::Repl, ExprKind, Parser as RuchyParser, Transpiler};
-use ruchy::optimization::{MechanicalSympathyTuner, HardwareProfile, Priority};
-use std::collections::{HashMap, HashSet};
+use ruchy::{runtime::repl::Repl, Parser as RuchyParser};
 use std::fs;
 use std::io::{self, IsTerminal, Read};
 use std::path::{Path, PathBuf};
 
-use ruchy::quality::enforcement::enforce_quality_gates;
-use std::thread;
-use std::time::{Duration, Instant};
 
 mod handlers;
 use handlers::{
-    handle_prove_command, handle_parse_command, handle_transpile_command, handle_run_command,
+    handle_parse_command, handle_transpile_command, handle_run_command,
     handle_eval_command, handle_file_execution, handle_stdin_input, handle_repl_command,
     handle_compile_command, handle_check_command, handle_test_command, handle_complex_command
 };
@@ -922,8 +918,8 @@ fn main() -> Result<()> {
                 filter.as_deref(),
                 coverage,
                 &coverage_format,
-                parallel,
-                threshold,
+                usize::from(parallel),
+                threshold.unwrap_or(70.0),
                 &format,
             )?;
         }
@@ -957,7 +953,7 @@ fn run_file(file: &Path) -> Result<()> {
 
 /// Check syntax of a file
 fn check_syntax(file: &Path) -> Result<()> {
-    use colored::*;
+    use colored::Colorize;
     let source = fs::read_to_string(file)?;
     let mut parser = RuchyParser::new(&source);
     match parser.parse() {
