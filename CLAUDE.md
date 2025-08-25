@@ -162,16 +162,55 @@ Navigation:
 
 ## Task Execution Protocol
 
+### MANDATORY: Roadmap and Ticket Tracking
+
+**CRITICAL**: ALL development work MUST follow roadmap-driven development:
+
+1. **ALWAYS Use Ticket Numbers**: Every commit, PR, and task MUST reference a ticket ID from docs/execution/roadmap.md
+2. **Roadmap-First Development**: No work begins without a corresponding roadmap entry
+3. **Ticket Format**: Use format "RUCHY-XXXX" or established ticket naming (e.g., QUALITY-001, USABLE-001)
+4. **Traceability**: Every change must be traceable back to business requirements via ticket system
+5. **Sprint Planning**: Work is organized by sprint with clear task dependencies and priorities
+
 ### Pre-Implementation Verification
 ```rust
 // HALT. Before implementing ANY feature:
 □ Check ../ruchy-book/INTEGRATION.md for latest compatibility report
 □ Check ../ruchy-book/docs/bugs/ruchy-runtime-bugs.md for known issues
 □ Locate specification section in SPECIFICATION.md
-□ Find task ID in docs/execution/roadmap.md
-□ Verify dependencies completed via DAG
+□ Find task ID in docs/execution/roadmap.md (MANDATORY)
+□ Verify ticket dependencies completed via DAG
+□ Reference ticket number in all commits/PRs
 □ Check existing patterns in codebase
 □ Confirm complexity budget (<10 cognitive)
+```
+
+### Commit Message Format (MANDATORY)
+```
+[TICKET-ID] Brief description
+
+Detailed explanation of changes
+- Specific improvements made
+- Test coverage added
+- Performance impact
+- Breaking changes (if any)
+
+Closes: TICKET-ID
+```
+
+**Example**:
+```
+[QUALITY-001] Refactor parse_prefix complexity from 161 to 8
+
+Extracted 8 helper functions following single responsibility principle:
+- parse_literal_prefix (complexity: 5)
+- parse_string_prefix (complexity: 4)
+- parse_identifier_prefix (complexity: 7)
+
+Added comprehensive doctests and property tests for all helpers.
+Performance trade-off: ~100ms -> ~200ms acceptable for maintainability.
+
+Closes: QUALITY-001
 ```
 
 ## Compiler Architecture Patterns
