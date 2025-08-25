@@ -3,6 +3,8 @@
 
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::expect_used)]
+#![allow(clippy::needless_raw_string_hashes)]
+#![allow(clippy::similar_names)]
 
 use ruchy::{Transpiler, Parser};
 

@@ -1,6 +1,8 @@
 //! Property tests for transpiler call functions
 //! These tests verify the mathematical properties and behaviors of refactored transpiler functions
 
+#![allow(clippy::similar_names)]
+
 use proptest::prelude::*;
 use ruchy::{Transpiler, Parser};
 

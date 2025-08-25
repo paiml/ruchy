@@ -5,6 +5,7 @@
 #![allow(clippy::unwrap_used, clippy::panic)]
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::expect_used)]
+#![allow(clippy::needless_raw_string_hashes)]
 #![allow(clippy::panic)] // Tests can panic
 
 use ruchy::backend::transpiler::Transpiler;

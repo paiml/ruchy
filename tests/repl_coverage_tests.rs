@@ -5,6 +5,7 @@
 //! Comprehensive REPL tests to achieve 80% coverage
 
 #![allow(clippy::expect_used)]
+#![allow(clippy::needless_raw_string_hashes)]
 #![allow(clippy::unwrap_used)]
 
 use ruchy::runtime::{Repl, ReplConfig, Value};

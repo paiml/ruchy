@@ -7,6 +7,7 @@
 
 #![allow(clippy::print_stdout)]
 #![allow(clippy::expect_used)]
+#![allow(clippy::needless_raw_string_hashes)]
 #![allow(clippy::unwrap_used)]
 
 use std::process::Command;
