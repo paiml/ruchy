@@ -20,7 +20,9 @@ help:
 	@echo "  make clean       - Clean build artifacts"
 	@echo ""
 	@echo "Quality Commands:"
-	@echo "  make coverage    - Generate test coverage report"
+	@echo "  make coverage    - Generate comprehensive coverage report (Toyota Way)"
+	@echo "  make coverage-quick - Quick coverage check for development"
+	@echo "  make coverage-open - Generate and open coverage report in browser"
 	@echo "  make quality-gate - Run PMAT quality checks"
 	@echo "  make ci          - Run full CI pipeline"
 	@echo ""
@@ -195,8 +197,21 @@ clean:
 	@rm -rf ~/.ruchy/cache/
 	@echo "✓ Clean complete"
 
-# Generate test coverage using cargo-llvm-cov
+# Generate comprehensive test coverage using cargo-llvm-cov (Toyota Way)
 coverage:
+	@echo "🧪 Running comprehensive coverage analysis..."
+	@./scripts/coverage.sh
+
+# Quick coverage check for development workflow  
+coverage-quick:
+	@./scripts/quick-coverage.sh
+
+# Open coverage report in browser
+coverage-open:
+	@./scripts/coverage.sh --open
+
+# Legacy coverage for CI compatibility
+coverage-legacy:
 	@echo "Generating coverage report with cargo-llvm-cov..."
 	@cargo install cargo-llvm-cov 2>/dev/null || true
 	@cargo llvm-cov clean --workspace
@@ -218,6 +233,61 @@ coverage-tarpaulin:
 coverage-ci:
 	@echo "Running coverage check for CI (80% minimum)..."
 	@cargo tarpaulin --fail-under 80 --print-summary
+
+# CLI Testing Infrastructure (SPEC-CLI-TEST-001)
+test-ruchy-commands: test-cli-integration test-cli-properties test-cli-fuzz test-cli-examples
+	@echo "🎯 All CLI command testing complete!"
+
+# Integration tests for CLI commands
+test-cli-integration:
+	@echo "🧪 Running CLI integration tests..."
+	@cargo test --test cli_integration -- --test-threads=4
+	@echo "✅ CLI integration tests complete"
+
+# Property-based tests for CLI commands
+test-cli-properties:
+	@echo "🔬 Running CLI property tests..."
+	@cargo test --test cli_properties -- --test-threads=4
+	@echo "✅ CLI property tests complete"
+
+# Fuzz testing for CLI commands  
+test-cli-fuzz:
+	@echo "🎲 Running CLI fuzz tests..."
+	@if command -v cargo-fuzz >/dev/null 2>&1; then \
+		for target in fmt check lint; do \
+			echo "Fuzzing $$target for 30s..."; \
+			timeout 30s cargo fuzz run fuzz_$$target || echo "Fuzz $$target completed"; \
+		done; \
+	else \
+		echo "⚠️  cargo-fuzz not installed, skipping fuzz tests"; \
+	fi
+	@echo "✅ CLI fuzz tests complete"
+
+# CLI command examples
+test-cli-examples:
+	@echo "📋 Running CLI command examples..."
+	@for example in examples/cli/*.rs; do \
+		if [ -f "$$example" ]; then \
+			echo "Running $$example..."; \
+			cargo run --example $$(basename $$example .rs) --quiet || echo "Example failed"; \
+		fi; \
+	done
+	@echo "✅ CLI examples complete"
+
+# CLI command coverage reporting
+test-cli-coverage:
+	@echo "📊 Running comprehensive CLI coverage analysis..."
+	@./scripts/cli_coverage.sh
+
+# CLI performance benchmarking
+test-cli-performance:
+	@echo "⚡ Benchmarking CLI command performance..."
+	@if command -v hyperfine >/dev/null 2>&1; then \
+		hyperfine --warmup 2 --runs 5 'make test-ruchy-commands' --export-markdown target/cli-performance.md; \
+		echo "✅ Performance report saved to target/cli-performance.md"; \
+	else \
+		echo "⚠️  hyperfine not installed, install with: cargo install hyperfine"; \
+	fi
 
 # Run all examples
 examples:

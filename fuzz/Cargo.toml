@@ -11,6 +11,7 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
+tempfile = "3.0"
 
 [dependencies.ruchy]
 path = ".."
@@ -39,6 +40,20 @@ bench = false
 [[bin]]
 name = "full_pipeline"
 path = "fuzz_targets/full_pipeline.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_fmt"
+path = "fuzz_targets/fuzz_fmt.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_cli"
+path = "fuzz_targets/fuzz_cli.rs"
 test = false
 doc = false
 bench = false

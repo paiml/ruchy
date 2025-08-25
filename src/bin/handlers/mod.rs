@@ -232,23 +232,28 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
         .map(|tokens| tokens.to_string())
         .with_context(|| "Failed to transpile to Rust")?;
 
-    // Write to temporary file
-    let temp_dir = std::env::temp_dir();
-    let temp_file = temp_dir.join("ruchy_temp.rs");
-    fs::write(&temp_file, &rust_code)
+    // Write to unique temporary file to avoid race conditions
+    let temp_source = tempfile::NamedTempFile::new()
+        .with_context(|| "Failed to create temporary file")?;
+    fs::write(temp_source.path(), &rust_code)
         .with_context(|| "Failed to write temporary file")?;
 
     if verbose {
-        eprintln!("Temporary Rust file: {}", temp_file.display());
+        eprintln!("Temporary Rust file: {}", temp_source.path().display());
         eprintln!("Compiling and running...");
     }
 
+    // Create unique output binary path
+    let temp_binary = tempfile::NamedTempFile::new()
+        .with_context(|| "Failed to create temporary binary file")?;
+    let binary_path = temp_binary.path();
+    
     // Compile and run using rustc
     let output = std::process::Command::new("rustc")
         .arg("--edition=2021")
         .arg("-o")
-        .arg(temp_dir.join("ruchy_temp"))
-        .arg(&temp_file)
+        .arg(binary_path)
+        .arg(temp_source.path())
         .output()
         .with_context(|| "Failed to run rustc")?;
 
@@ -259,7 +264,7 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
     }
 
     // Run the compiled binary
-    let run_output = std::process::Command::new(temp_dir.join("ruchy_temp"))
+    let run_output = std::process::Command::new(binary_path)
         .output()
         .with_context(|| "Failed to run compiled binary")?;
 
@@ -269,9 +274,7 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
         eprint!("{}", String::from_utf8_lossy(&run_output.stderr));
     }
 
-    // Cleanup temporary files
-    let _ = fs::remove_file(&temp_file);
-    let _ = fs::remove_file(temp_dir.join("ruchy_temp"));
+    // Temporary files will be automatically cleaned up when NamedTempFile goes out of scope
 
     if !run_output.status.success() {
         std::process::exit(run_output.status.code().unwrap_or(1));
