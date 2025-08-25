@@ -13,6 +13,50 @@ use quote::{format_ident, quote};
 
 impl Transpiler {
     /// Transpiles type annotations
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// // Basic types
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("let x: i32 = 42");
+    /// let ast = parser.parse().unwrap();
+    /// 
+    /// let result = transpiler.transpile(&ast).unwrap();
+    /// let code = result.to_string();
+    /// assert!(code.contains("i32"));
+    /// assert!(code.contains("42"));
+    /// ```
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// // Generic types
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("let v: Vec<i32> = vec![1, 2, 3]");
+    /// let ast = parser.parse().unwrap();
+    /// 
+    /// let result = transpiler.transpile(&ast).unwrap();
+    /// let code = result.to_string();
+    /// assert!(code.contains("Vec"));
+    /// assert!(code.contains("i32"));
+    /// ```
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// // Optional types
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("let opt: Option<i32> = Some(42)");
+    /// let ast = parser.parse().unwrap();
+    /// 
+    /// let result = transpiler.transpile(&ast).unwrap();
+    /// let code = result.to_string();
+    /// assert!(code.contains("Option"));
+    /// assert!(code.contains("Some"));
+    /// ```
     pub fn transpile_type(&self, ty: &Type) -> Result<TokenStream> {
         use crate::frontend::ast::TypeKind;
 
@@ -520,5 +564,195 @@ impl Transpiler {
                 #(#impl_method_tokens)*
             }
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Type, TypeKind, Span};
+
+    #[test]
+    fn test_transpile_basic_types() {
+        let transpiler = Transpiler::new();
+        
+        // Test int type
+        let int_type = Type::new(TypeKind::Named("int".to_string()), Span::new(0, 3));
+        let result = transpiler.transpile_type(&int_type).unwrap();
+        assert!(result.to_string().contains("i64"));
+        
+        // Test float type
+        let float_type = Type::new(TypeKind::Named("float".to_string()), Span::new(0, 5));
+        let result = transpiler.transpile_type(&float_type).unwrap();
+        assert!(result.to_string().contains("f64"));
+        
+        // Test bool type
+        let bool_type = Type::new(TypeKind::Named("bool".to_string()), Span::new(0, 4));
+        let result = transpiler.transpile_type(&bool_type).unwrap();
+        assert!(result.to_string().contains("bool"));
+        
+        // Test string type
+        let string_type = Type::new(TypeKind::Named("String".to_string()), Span::new(0, 6));
+        let result = transpiler.transpile_type(&string_type).unwrap();
+        assert!(result.to_string().contains("String"));
+    }
+
+    #[test]
+    fn test_transpile_generic_types() {
+        let transpiler = Transpiler::new();
+        
+        // Test Vec<i32>
+        let vec_type = Type::new(
+            TypeKind::Generic {
+                base: "Vec".to_string(),
+                params: vec![Type::new(TypeKind::Named("i32".to_string()), Span::new(0, 3))],
+            },
+            Span::new(0, 10),
+        );
+        let result = transpiler.transpile_type(&vec_type).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("Vec"));
+        assert!(code.contains("i32"));
+    }
+
+    #[test]
+    fn test_transpile_optional_type() {
+        let transpiler = Transpiler::new();
+        
+        let opt_type = Type::new(
+            TypeKind::Optional(Box::new(Type::new(
+                TypeKind::Named("i32".to_string()),
+                Span::new(0, 3),
+            ))),
+            Span::new(0, 10),
+        );
+        let result = transpiler.transpile_type(&opt_type).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("Option"));
+        assert!(code.contains("i32"));
+    }
+
+    #[test]
+    fn test_transpile_list_type() {
+        let transpiler = Transpiler::new();
+        
+        let list_type = Type::new(
+            TypeKind::List(Box::new(Type::new(
+                TypeKind::Named("String".to_string()),
+                Span::new(0, 6),
+            ))),
+            Span::new(0, 10),
+        );
+        let result = transpiler.transpile_type(&list_type).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("Vec"));
+        assert!(code.contains("String"));
+    }
+
+    #[test]
+    fn test_transpile_tuple_type() {
+        let transpiler = Transpiler::new();
+        
+        let tuple_type = Type::new(
+            TypeKind::Tuple(vec![
+                Type::new(TypeKind::Named("i32".to_string()), Span::new(0, 3)),
+                Type::new(TypeKind::Named("String".to_string()), Span::new(0, 6)),
+            ]),
+            Span::new(0, 15),
+        );
+        let result = transpiler.transpile_type(&tuple_type).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("("));
+        assert!(code.contains("i32"));
+        assert!(code.contains("String"));
+        assert!(code.contains(")"));
+    }
+
+    #[test]
+    fn test_transpile_function_type() {
+        let transpiler = Transpiler::new();
+        
+        let fn_type = Type::new(
+            TypeKind::Function {
+                params: vec![Type::new(TypeKind::Named("i32".to_string()), Span::new(0, 3))],
+                return_type: Box::new(Type::new(TypeKind::Named("bool".to_string()), Span::new(0, 4))),
+            },
+            Span::new(0, 20),
+        );
+        let result = transpiler.transpile_type(&fn_type).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("fn"));
+        assert!(code.contains("i32"));
+        assert!(code.contains("bool"));
+    }
+
+    #[test]
+    fn test_transpile_struct_definition() {
+        let transpiler = Transpiler::new();
+        let mut parser = Parser::new("struct Point { x: i32, y: i32 }");
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("struct"));
+        assert!(code.contains("Point"));
+        assert!(code.contains("x"));
+        assert!(code.contains("i32"));
+        assert!(code.contains("y"));
+    }
+
+    #[test]
+    fn test_transpile_enum_definition() {
+        let transpiler = Transpiler::new();
+        let mut parser = Parser::new("enum Color { Red, Green, Blue }");
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("enum"));
+        assert!(code.contains("Color"));
+        assert!(code.contains("Red"));
+        assert!(code.contains("Green"));
+        assert!(code.contains("Blue"));
+    }
+
+    #[test]
+    fn test_transpile_trait_definition() {
+        let transpiler = Transpiler::new();
+        let mut parser = Parser::new("trait Display { fun fmt(&self) -> String }");
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("trait"));
+        assert!(code.contains("Display"));
+        assert!(code.contains("fmt"));
+        assert!(code.contains("String"));
+    }
+
+    #[test]
+    fn test_transpile_impl_block() {
+        let transpiler = Transpiler::new();
+        let mut parser = Parser::new("impl Point { fun new(x: i32, y: i32) -> Point { Point { x, y } } }");
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("impl"));
+        assert!(code.contains("Point"));
+        assert!(code.contains("new"));
+    }
+
+    #[test]
+    fn test_transpile_type_alias() {
+        let transpiler = Transpiler::new();
+        let mut parser = Parser::new("type NodeId = i32");
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let code = result.to_string();
+        assert!(code.contains("type"));
+        assert!(code.contains("NodeId"));
+        assert!(code.contains("i32"));
     }
 }

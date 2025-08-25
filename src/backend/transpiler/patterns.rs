@@ -11,6 +11,22 @@ use quote::{format_ident, quote};
 
 impl Transpiler {
     /// Transpiles match expressions
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new(r#"match x { 1 => "one", _ => "other" }"#);
+    /// let ast = parser.parse().unwrap();
+    /// 
+    /// let result = transpiler.transpile(&ast).unwrap();
+    /// let code = result.to_string();
+    /// assert!(code.contains("match"));
+    /// assert!(code.contains("1 =>"));
+    /// assert!(code.contains("_ =>"));
+    /// ```
     pub fn transpile_match(&self, expr: &Expr, arms: &[MatchArm]) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
 
@@ -40,6 +56,43 @@ impl Transpiler {
     }
 
     /// Transpiles patterns
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// // Wildcard pattern
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("match x { _ => 42 }");
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap();
+    /// assert!(result.to_string().contains("_ =>"));
+    /// ```
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// // Identifier pattern
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("match x { y => y + 1 }");
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap();
+    /// assert!(result.to_string().contains("y =>"));
+    /// ```
+    ///
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// // Tuple pattern
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("match pair { (a, b) => a + b }");
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap();
+    /// assert!(result.to_string().contains("("));
+    /// assert!(result.to_string().contains("a"));
+    /// assert!(result.to_string().contains("b"));
+    /// ```
     pub fn transpile_pattern(&self, pattern: &Pattern) -> Result<TokenStream> {
         match pattern {
             Pattern::Wildcard => Ok(quote! { _ }),
