@@ -483,7 +483,7 @@ fn parse_parentheses_prefix(state: &mut ParserState, span: Span) -> Result<Expr>
                             kind: TypeKind::Named("_".to_string()),
                             span: Span { start: 0, end: 0 },
                         },
-                        span: span,
+                        span,
                         is_mutable: false,
                         default_value: None,
                     }).collect();
