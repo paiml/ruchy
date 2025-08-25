@@ -5,6 +5,7 @@
 //! REPL function definition and calling tests
 
 #![allow(clippy::expect_used)]
+#![allow(clippy::needless_raw_string_hashes)]
 #![allow(clippy::unwrap_used)]
 
 use ruchy::runtime::Repl;

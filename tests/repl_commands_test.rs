@@ -6,6 +6,7 @@
 //! Integration tests for REPL commands and features
 
 #![allow(clippy::expect_used)] // Tests can use expect
+#![allow(clippy::needless_raw_string_hashes)]
 
 use std::io::Write;
 use std::process::{Command, Stdio};

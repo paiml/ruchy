@@ -8,6 +8,7 @@
 //! This is our "Andon Cord" - if these fail, we stop everything
 
 #![allow(clippy::expect_used)]
+#![allow(clippy::needless_raw_string_hashes)]
 #![allow(clippy::unwrap_used)]
 
 use ruchy::runtime::Repl;

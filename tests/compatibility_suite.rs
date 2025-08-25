@@ -15,6 +15,7 @@
 #![allow(clippy::cast_precision_loss)] // Test statistics precision is not critical
 #![allow(clippy::cast_lossless)]       // Test code casting is acceptable
 #![allow(clippy::expect_used)]         // Tests can use expect for setup
+#![allow(clippy::needless_raw_string_hashes)]
 #![allow(clippy::ignore_without_reason)] // Test ignores are documented  
 #![allow(clippy::doc_markdown)]        // Test documentation less strict
 #![allow(clippy::map_unwrap_or)]       // Test utility functions acceptable

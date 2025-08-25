@@ -3,6 +3,7 @@
 
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::expect_used)]
+#![allow(clippy::similar_names)]
 
 use ruchy::{Transpiler, Parser};
 
