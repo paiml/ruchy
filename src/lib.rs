@@ -49,6 +49,8 @@ pub mod quality;
 pub mod runtime;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
+#[cfg(any(test, feature = "testing"))]
+pub use testing::AstBuilder;
 pub mod transpiler;
 pub mod wasm;
 
