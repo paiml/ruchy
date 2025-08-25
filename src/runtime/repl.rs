@@ -4275,62 +4275,129 @@ impl Repl {
         }
     }
 
-    /// Evaluate user-defined functions
-    #[allow(clippy::cognitive_complexity)]
-    #[allow(clippy::too_many_lines)]
-    fn evaluate_user_function(
+    /// Execute a user-defined function or lambda by name.
+    /// 
+    /// Looks up the function in bindings and executes it with parameter binding.
+    /// Handles both regular functions and lambdas with identical execution logic.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `func_name` - Name of the function to execute
+    /// * `args` - Arguments to pass to the function
+    /// * `deadline` - Execution deadline for timeout handling
+    /// * `depth` - Current recursion depth
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ruchy::runtime::repl::Repl;
+    /// # use ruchy::frontend::ast::{Expr, ExprKind};
+    /// # use std::time::Instant;
+    /// let mut repl = Repl::new();
+    /// let args = vec![];
+    /// let deadline = Instant::now() + std::time::Duration::from_secs(1);
+    /// // Assuming a function "test_func" is defined in bindings
+    /// let result = repl.execute_user_defined_function("test_func", &args, deadline, 0);
+    /// ```
+    fn execute_user_defined_function(
         &mut self,
         func_name: &str,
         args: &[Expr],
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        // Check if this is a built-in enum variant constructor
+        if let Some(func_value) = self.bindings.get(func_name).cloned() {
+            match func_value {
+                Value::Function { params, body, .. } => {
+                    self.execute_function_with_params(func_name, &params, &body, args, deadline, depth, "Function")
+                }
+                Value::Lambda { params, body } => {
+                    self.execute_function_with_params(func_name, &params, &body, args, deadline, depth, "Lambda")
+                }
+                _ => {
+                    bail!("'{}' is not a function", func_name);
+                }
+            }
+        } else {
+            bail!("Unknown function: {}", func_name);
+        }
+    }
+
+    /// Execute a function or lambda with parameter binding and scope management.
+    /// 
+    /// This helper consolidates the common logic between functions and lambdas:
+    /// - Validates argument count matches parameter count
+    /// - Saves current bindings scope
+    /// - Binds arguments to parameters
+    /// - Executes function body
+    /// - Restores previous scope
+    /// 
+    /// # Arguments
+    /// 
+    /// * `func_name` - Name of the function (for error messages)
+    /// * `params` - Function parameter names
+    /// * `body` - Function body expression
+    /// * `args` - Arguments to bind to parameters
+    /// * `deadline` - Execution deadline
+    /// * `depth` - Recursion depth
+    /// * `func_type` - Either "Function" or "Lambda" for error messages
+    fn execute_function_with_params(
+        &mut self,
+        func_name: &str,
+        params: &[String],
+        body: &Expr,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+        func_type: &str,
+    ) -> Result<Value> {
+        if args.len() != params.len() {
+            bail!(
+                "{} {} expects {} arguments, got {}",
+                func_type,
+                func_name,
+                params.len(),
+                args.len()
+            );
+        }
+
+        let saved_bindings = self.bindings.clone();
+
+        for (param, arg) in params.iter().zip(args.iter()) {
+            let arg_value = self.evaluate_expr(arg, deadline, depth + 1)?;
+            self.bindings.insert(param.clone(), arg_value);
+        }
+
+        let result = self.evaluate_function_body(body, deadline, depth)?;
+        self.bindings = saved_bindings;
+        Ok(result)
+    }
+
+    /// Handle built-in math functions (sqrt, pow, abs, min, max, floor, ceil, round).
+    /// 
+    /// Returns `Ok(Some(value))` if the function name matches a math function,
+    /// `Ok(None)` if it doesn't match any math function, or `Err` if there's an error.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ruchy::runtime::repl::Repl;
+    /// # use ruchy::frontend::ast::{Expr, ExprKind};
+    /// # use std::time::Instant;
+    /// let mut repl = Repl::new();
+    /// let args = vec![Expr { kind: ExprKind::Int(4), span: Default::default() }];
+    /// let deadline = Instant::now() + std::time::Duration::from_secs(1);
+    /// let result = repl.try_math_function("sqrt", &args, deadline, 0).unwrap();
+    /// assert!(result.is_some());
+    /// ```
+    fn try_math_function(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Option<Value>> {
         match func_name {
-            "None" => {
-                if !args.is_empty() {
-                    bail!("None takes no arguments");
-                }
-                return Ok(Value::EnumVariant {
-                    enum_name: "Option".to_string(),
-                    variant_name: "None".to_string(),
-                    data: None,
-                });
-            }
-            "Some" => {
-                if args.len() != 1 {
-                    bail!("Some takes exactly 1 argument");
-                }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                return Ok(Value::EnumVariant {
-                    enum_name: "Option".to_string(),
-                    variant_name: "Some".to_string(),
-                    data: Some(vec![value]),
-                });
-            }
-            "Ok" => {
-                if args.len() != 1 {
-                    bail!("Ok takes exactly 1 argument");
-                }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                return Ok(Value::EnumVariant {
-                    enum_name: "Result".to_string(),
-                    variant_name: "Ok".to_string(),
-                    data: Some(vec![value]),
-                });
-            }
-            "Err" => {
-                if args.len() != 1 {
-                    bail!("Err takes exactly 1 argument");
-                }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                return Ok(Value::EnumVariant {
-                    enum_name: "Result".to_string(),
-                    variant_name: "Err".to_string(),
-                    data: Some(vec![value]),
-                });
-            }
-            // Math functions
             "sqrt" => {
                 if args.len() != 1 {
                     bail!("sqrt takes exactly 1 argument");
@@ -4339,9 +4406,9 @@ impl Repl {
                 match value {
                     Value::Int(n) => {
                         #[allow(clippy::cast_precision_loss)]
-                        return Ok(Value::Float((n as f64).sqrt()));
+                        Ok(Some(Value::Float((n as f64).sqrt())))
                     }
-                    Value::Float(f) => return Ok(Value::Float(f.sqrt())),
+                    Value::Float(f) => Ok(Some(Value::Float(f.sqrt()))),
                     _ => bail!("sqrt expects a numeric argument"),
                 }
             }
@@ -4355,22 +4422,23 @@ impl Repl {
                     (Value::Int(b), Value::Int(e)) => {
                         if e < 0 {
                             #[allow(clippy::cast_precision_loss)]
-                            return Ok(Value::Float((b as f64).powi(e as i32)));
-                        }
-                        let exp_u32 = u32::try_from(e).map_err(|_| anyhow::anyhow!("Exponent too large"))?;
-                        match b.checked_pow(exp_u32) {
-                            Some(result) => return Ok(Value::Int(result)),
-                            None => bail!("Integer overflow in pow({}, {})", b, e),
+                            Ok(Some(Value::Float((b as f64).powi(e as i32))))
+                        } else {
+                            let exp_u32 = u32::try_from(e).map_err(|_| anyhow::anyhow!("Exponent too large"))?;
+                            match b.checked_pow(exp_u32) {
+                                Some(result) => Ok(Some(Value::Int(result))),
+                                None => bail!("Integer overflow in pow({}, {})", b, e),
+                            }
                         }
                     }
-                    (Value::Float(b), Value::Float(e)) => return Ok(Value::Float(b.powf(e))),
+                    (Value::Float(b), Value::Float(e)) => Ok(Some(Value::Float(b.powf(e)))),
                     (Value::Int(b), Value::Float(e)) => {
                         #[allow(clippy::cast_precision_loss)]
-                        return Ok(Value::Float((b as f64).powf(e)));
+                        Ok(Some(Value::Float((b as f64).powf(e))))
                     }
                     (Value::Float(b), Value::Int(e)) => {
                         #[allow(clippy::cast_precision_loss)]
-                        return Ok(Value::Float(b.powi(e as i32)));
+                        Ok(Some(Value::Float(b.powi(e as i32))))
                     }
                     _ => bail!("pow expects numeric arguments"),
                 }
@@ -4381,8 +4449,8 @@ impl Repl {
                 }
                 let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 match value {
-                    Value::Int(n) => return Ok(Value::Int(n.abs())),
-                    Value::Float(f) => return Ok(Value::Float(f.abs())),
+                    Value::Int(n) => Ok(Some(Value::Int(n.abs()))),
+                    Value::Float(f) => Ok(Some(Value::Float(f.abs()))),
                     _ => bail!("abs expects a numeric argument"),
                 }
             }
@@ -4393,15 +4461,15 @@ impl Repl {
                 let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 let b = self.evaluate_expr(&args[1], deadline, depth + 1)?;
                 match (a, b) {
-                    (Value::Int(x), Value::Int(y)) => return Ok(Value::Int(x.min(y))),
-                    (Value::Float(x), Value::Float(y)) => return Ok(Value::Float(x.min(y))),
+                    (Value::Int(x), Value::Int(y)) => Ok(Some(Value::Int(x.min(y)))),
+                    (Value::Float(x), Value::Float(y)) => Ok(Some(Value::Float(x.min(y)))),
                     (Value::Int(x), Value::Float(y)) => {
                         #[allow(clippy::cast_precision_loss)]
-                        return Ok(Value::Float((x as f64).min(y)));
+                        Ok(Some(Value::Float((x as f64).min(y))))
                     }
                     (Value::Float(x), Value::Int(y)) => {
                         #[allow(clippy::cast_precision_loss)]
-                        return Ok(Value::Float(x.min(y as f64)));
+                        Ok(Some(Value::Float(x.min(y as f64))))
                     }
                     _ => bail!("min expects numeric arguments"),
                 }
@@ -4413,15 +4481,15 @@ impl Repl {
                 let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 let b = self.evaluate_expr(&args[1], deadline, depth + 1)?;
                 match (a, b) {
-                    (Value::Int(x), Value::Int(y)) => return Ok(Value::Int(x.max(y))),
-                    (Value::Float(x), Value::Float(y)) => return Ok(Value::Float(x.max(y))),
+                    (Value::Int(x), Value::Int(y)) => Ok(Some(Value::Int(x.max(y)))),
+                    (Value::Float(x), Value::Float(y)) => Ok(Some(Value::Float(x.max(y)))),
                     (Value::Int(x), Value::Float(y)) => {
                         #[allow(clippy::cast_precision_loss)]
-                        return Ok(Value::Float((x as f64).max(y)));
+                        Ok(Some(Value::Float((x as f64).max(y))))
                     }
                     (Value::Float(x), Value::Int(y)) => {
                         #[allow(clippy::cast_precision_loss)]
-                        return Ok(Value::Float(x.max(y as f64)));
+                        Ok(Some(Value::Float(x.max(y as f64))))
                     }
                     _ => bail!("max expects numeric arguments"),
                 }
@@ -4432,8 +4500,8 @@ impl Repl {
                 }
                 let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 match value {
-                    Value::Int(n) => return Ok(Value::Int(n)), // Already floored
-                    Value::Float(f) => return Ok(Value::Float(f.floor())),
+                    Value::Int(n) => Ok(Some(Value::Int(n))), // Already floored
+                    Value::Float(f) => Ok(Some(Value::Float(f.floor()))),
                     _ => bail!("floor expects a numeric argument"),
                 }
             }
@@ -4443,8 +4511,8 @@ impl Repl {
                 }
                 let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 match value {
-                    Value::Int(n) => return Ok(Value::Int(n)), // Already ceiled
-                    Value::Float(f) => return Ok(Value::Float(f.ceil())),
+                    Value::Int(n) => Ok(Some(Value::Int(n))), // Already ceiled
+                    Value::Float(f) => Ok(Some(Value::Float(f.ceil()))),
                     _ => bail!("ceil expects a numeric argument"),
                 }
             }
@@ -4454,64 +4522,107 @@ impl Repl {
                 }
                 let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 match value {
-                    Value::Int(n) => return Ok(Value::Int(n)), // Already rounded
-                    Value::Float(f) => return Ok(Value::Float(f.round())),
+                    Value::Int(n) => Ok(Some(Value::Int(n))), // Already rounded
+                    Value::Float(f) => Ok(Some(Value::Float(f.round()))),
                     _ => bail!("round expects a numeric argument"),
                 }
             }
-            _ => {}
+            _ => Ok(None), // Not a math function
         }
+    }
 
-        if let Some(func_value) = self.bindings.get(func_name).cloned() {
-            match func_value {
-                Value::Function { params, body, .. } => {
-                    if args.len() != params.len() {
-                        bail!(
-                            "Function {} expects {} arguments, got {}",
-                            func_name,
-                            params.len(),
-                            args.len()
-                        );
-                    }
-
-                    let saved_bindings = self.bindings.clone();
-
-                    for (param, arg) in params.iter().zip(args.iter()) {
-                        let arg_value = self.evaluate_expr(arg, deadline, depth + 1)?;
-                        self.bindings.insert(param.clone(), arg_value);
-                    }
-
-                    let result = self.evaluate_function_body(&body, deadline, depth)?;
-                    self.bindings = saved_bindings;
-                    Ok(result)
+    /// Handle built-in enum variant constructors (None, Some, Ok, Err).
+    /// 
+    /// Returns `Ok(Some(value))` if the function name matches an enum constructor,
+    /// `Ok(None)` if it doesn't match any constructor, or `Err` if there's an error.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use ruchy::runtime::repl::Repl;
+    /// # use ruchy::frontend::ast::Expr;
+    /// # use std::time::Instant;
+    /// let mut repl = Repl::new();
+    /// let args = vec![];
+    /// let deadline = Instant::now() + std::time::Duration::from_secs(1);
+    /// let result = repl.try_enum_constructor("None", &args, deadline, 0).unwrap();
+    /// assert!(result.is_some());
+    /// ```
+    fn try_enum_constructor(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Option<Value>> {
+        match func_name {
+            "None" => {
+                if !args.is_empty() {
+                    bail!("None takes no arguments");
                 }
-                Value::Lambda { params, body } => {
-                    if args.len() != params.len() {
-                        bail!(
-                            "Lambda expects {} arguments, got {}",
-                            params.len(),
-                            args.len()
-                        );
-                    }
-
-                    let saved_bindings = self.bindings.clone();
-
-                    for (param, arg) in params.iter().zip(args.iter()) {
-                        let arg_value = self.evaluate_expr(arg, deadline, depth + 1)?;
-                        self.bindings.insert(param.clone(), arg_value);
-                    }
-
-                    let result = self.evaluate_function_body(&body, deadline, depth)?;
-                    self.bindings = saved_bindings;
-                    Ok(result)
-                }
-                _ => {
-                    bail!("'{}' is not a function", func_name);
-                }
+                Ok(Some(Value::EnumVariant {
+                    enum_name: "Option".to_string(),
+                    variant_name: "None".to_string(),
+                    data: None,
+                }))
             }
-        } else {
-            bail!("Unknown function: {}", func_name);
+            "Some" => {
+                if args.len() != 1 {
+                    bail!("Some takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                Ok(Some(Value::EnumVariant {
+                    enum_name: "Option".to_string(),
+                    variant_name: "Some".to_string(),
+                    data: Some(vec![value]),
+                }))
+            }
+            "Ok" => {
+                if args.len() != 1 {
+                    bail!("Ok takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                Ok(Some(Value::EnumVariant {
+                    enum_name: "Result".to_string(),
+                    variant_name: "Ok".to_string(),
+                    data: Some(vec![value]),
+                }))
+            }
+            "Err" => {
+                if args.len() != 1 {
+                    bail!("Err takes exactly 1 argument");
+                }
+                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                Ok(Some(Value::EnumVariant {
+                    enum_name: "Result".to_string(),
+                    variant_name: "Err".to_string(),
+                    data: Some(vec![value]),
+                }))
+            }
+            _ => Ok(None), // Not an enum constructor
         }
+    }
+
+    /// Evaluate user-defined functions
+    fn evaluate_user_function(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        // Try enum constructor first
+        if let Some(result) = self.try_enum_constructor(func_name, args, deadline, depth)? {
+            return Ok(result);
+        }
+
+        // Try built-in math function
+        if let Some(result) = self.try_math_function(func_name, args, deadline, depth)? {
+            return Ok(result);
+        }
+
+        // Try user-defined function lookup and execution
+        self.execute_user_defined_function(func_name, args, deadline, depth)
     }
 
     /// Helper to evaluate a function body and handle return statements

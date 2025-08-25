@@ -4,8 +4,11 @@
 //! invariant preservation, and recovery paths as specified in ruchy-repl-testing-todo.yaml
 
 use crate::runtime::repl::Repl;
+use crate::frontend::ast::{Expr, ExprKind, Span};
+use crate::runtime::value::Value;
 use proptest::prelude::*;
 use std::collections::HashSet;
+use std::time::Instant;
 
 #[derive(Debug, Clone)]
 pub enum ReplAction {
@@ -412,6 +415,106 @@ mod unit_tests {
         proptest!(config, |(expr in arb_invalid_expression())| {
             assert!(!expr.trim().is_empty());
             assert!(expr.len() < 1000); // Reasonable size limit
+        });
+    }
+
+    /// Property: Enum constructors always succeed or fail deterministically
+    #[test]
+    fn test_enum_constructor_determinism() {
+        let config = ProptestConfig::with_cases(100);
+        
+        proptest!(config, |(func_name in prop::sample::select(vec!["None", "Some", "Ok", "Err"]))| {
+            let mut repl = Repl::new().expect("Failed to create REPL");
+            let deadline = Instant::now() + std::time::Duration::from_secs(1);
+            
+            let args = match func_name.as_str() {
+                "None" => vec![],
+                _ => vec![Expr { kind: ExprKind::Int(42), span: Span::default() }],
+            };
+            
+            let result1 = repl.try_enum_constructor(&func_name, &args, deadline, 0);
+            let result2 = repl.try_enum_constructor(&func_name, &args, deadline, 0);
+            
+            // Same input should produce same result (determinism)
+            prop_assert_eq!(result1.is_ok(), result2.is_ok());
+            
+            if let (Ok(Some(val1)), Ok(Some(val2))) = (&result1, &result2) {
+                // Values should be equivalent for enum variants
+                prop_assert!(matches!((val1, val2), 
+                    (Value::EnumVariant { enum_name: ref e1, variant_name: ref v1, .. },
+                     Value::EnumVariant { enum_name: ref e2, variant_name: ref v2, .. }) 
+                    if e1 == e2 && v1 == v2));
+            }
+        });
+    }
+
+    /// Property: Math functions preserve mathematical properties
+    #[test]
+    fn test_math_function_properties() {
+        let config = ProptestConfig::with_cases(200);
+        
+        proptest!(config, |(
+            x in -1000i64..1000i64,
+            y in -1000i64..1000i64
+        )| {
+            let mut repl = Repl::new().expect("Failed to create REPL");
+            let deadline = Instant::now() + std::time::Duration::from_secs(1);
+            
+            // Test abs is always non-negative
+            let abs_arg = vec![Expr { kind: ExprKind::Int(x), span: Span::default() }];
+            if let Ok(Some(Value::Int(result))) = repl.try_math_function("abs", &abs_arg, deadline, 0) {
+                prop_assert!(result >= 0, "abs({}) = {} should be non-negative", x, result);
+            }
+            
+            // Test min/max properties if y != 0 to avoid edge cases
+            if y != 0 {
+                let min_args = vec![
+                    Expr { kind: ExprKind::Int(x), span: Span::default() },
+                    Expr { kind: ExprKind::Int(y), span: Span::default() },
+                ];
+                let max_args = min_args.clone();
+                
+                if let (Ok(Some(Value::Int(min_val))), Ok(Some(Value::Int(max_val)))) = (
+                    repl.try_math_function("min", &min_args, deadline, 0),
+                    repl.try_math_function("max", &max_args, deadline, 0)
+                ) {
+                    prop_assert!(min_val <= max_val, "min({}, {}) = {} should be <= max({}, {}) = {}", 
+                               x, y, min_val, x, y, max_val);
+                    prop_assert!(min_val <= x && min_val <= y, "min should be <= both inputs");
+                    prop_assert!(max_val >= x && max_val >= y, "max should be >= both inputs");
+                }
+            }
+        });
+    }
+
+    /// Property: User function execution preserves scope isolation
+    #[test] 
+    fn test_user_function_scope_isolation() {
+        let config = ProptestConfig::with_cases(50);
+        
+        proptest!(config, |(var_name in "[a-z]{1,5}", value in -100i64..100i64)| {
+            let mut repl = Repl::new().expect("Failed to create REPL");
+            let deadline = Instant::now() + std::time::Duration::from_secs(1);
+            
+            // Set up a variable in global scope
+            repl.bindings.insert(var_name.clone(), Value::Int(value));
+            let original_bindings = repl.bindings.clone();
+            
+            // Define a simple function that modifies a parameter with the same name
+            let func_body = Expr { kind: ExprKind::Int(999), span: Span::default() };
+            repl.bindings.insert("test_func".to_string(), Value::Function {
+                params: vec![var_name.clone()],
+                body: Box::new(func_body),
+                is_async: false,
+            });
+            
+            // Call the function
+            let args = vec![Expr { kind: ExprKind::Int(42), span: Span::default() }];
+            let _result = repl.execute_user_defined_function("test_func", &args, deadline, 0);
+            
+            // Original variable should be unchanged (scope isolation)
+            prop_assert_eq!(repl.bindings.get(&var_name), original_bindings.get(&var_name),
+                          "Global variable '{}' should be unchanged after function call", var_name);
         });
     }
 }
