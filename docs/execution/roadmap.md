@@ -31,37 +31,68 @@
   - ✅ Documented parser gaps blocking 40% of transpiler tests
   - ✅ Created AstBuilder for direct AST construction
   - ✅ Demonstrated testing advanced features (or-patterns, guards)
-- [ ] **QUALITY-007**: Establish coverage regression prevention
-  - [ ] Add coverage gates to pre-commit hooks (minimum 70%)
-  - [ ] Create GitHub Actions coverage reporting
-  - [ ] Document coverage requirements in CLAUDE.md
-- [ ] **QUALITY-008**: Performance optimization sprint
+- [ ] **QUALITY-007**: 🎯 Parser Enhancement for Test Coverage
+  - [ ] Fix pattern guards (`n if n > 0`) syntax support
+  - [ ] Add or-patterns (`1 | 2 | 3`) syntax support
+  - [ ] Fix complex string interpolation edge cases
+  - [ ] Unblock 40+ existing transpiler tests
+  - **Impact**: +15-20% coverage immediately
+  - **Timeline**: 1-2 weeks
+  - **Ticket**: [QUALITY-007-parser-enhancement.md](tickets/QUALITY-007-parser-enhancement.md)
+
+- [ ] **QUALITY-008**: 🛡️ Coverage Regression Prevention
+  - [ ] Enhance pre-commit hooks with coverage checking
+  - [ ] Create GitHub Actions coverage reporting on PRs
+  - [ ] Update CLAUDE.md with coverage requirements
+  - [ ] Establish coverage baselines (37.13% overall minimum)
+  - **Impact**: Maintain quality gains sustainably
+  - **Timeline**: 1 week
+  - **Ticket**: [QUALITY-008-coverage-regression-prevention.md](tickets/QUALITY-008-coverage-regression-prevention.md)
+
+- [ ] **QUALITY-009**: 🔗 Integration Testing Suite
+  - [ ] End-to-end compilation test harness (20+ scenarios)
+  - [ ] REPL integration tests (15+ interactive scenarios)
+  - [ ] Cross-module integration tests (15+ workflows)
+  - [ ] Performance monitoring and golden file testing
+  - **Impact**: Better testing of complex functionality
+  - **Timeline**: 2 weeks
+  - **Ticket**: [QUALITY-009-integration-testing-suite.md](tickets/QUALITY-009-integration-testing-suite.md)
+
+- [ ] **QUALITY-010**: ⚡ Performance Optimization Sprint
   - [ ] Benchmark critical paths with criterion
-  - [ ] Optimize hot paths identified by profiling
+  - [ ] Optimize hot paths identified by profiling  
+  - [ ] Memory usage optimization
   - [ ] Target: <100ms for typical compilation
-- [ ] **QUALITY-009**: Fuzzing infrastructure setup
+
+- [ ] **QUALITY-011**: 🎲 Fuzzing Infrastructure Setup
   - [ ] Create cargo-fuzz targets for parser
   - [ ] Add AFL fuzzing for transpiler
   - [ ] Integrate with OSS-Fuzz for continuous fuzzing
-- [ ] **QUALITY-010**: Property testing expansion
+  - [ ] Random input generation for edge cases
+
+- [ ] **QUALITY-012**: 🧮 Property Testing Expansion
   - [ ] Add proptest for all public APIs
   - [ ] Create quickcheck tests for invariants
+  - [ ] Mathematical property verification
   - [ ] Target: 10,000+ property test cases
-- [ ] **QUALITY-011**: Integration test suite
-  - [ ] End-to-end compilation tests
-  - [ ] Cross-module integration tests
-  - [ ] Real-world example programs
-- [ ] **QUALITY-012**: Release v1.17.0 with quality gates
-  - [ ] All coverage targets met
+
+- [ ] **QUALITY-013**: 🚀 Release v1.17.0 with Quality Gates
+  - [ ] All coverage baselines maintained
   - [ ] Zero regression policy enforced
   - [ ] Performance benchmarks documented
+  - [ ] Quality infrastructure complete
 
-### Success Criteria
-- Transpiler coverage: 70% (currently 54.85%)
-- Interpreter coverage: 85% (currently 62%)
-- Zero coverage regression via pre-commit hooks
-- All tests passing with <1s execution time
-- Property tests with 10,000+ cases
+### Success Criteria (Updated based on sprint findings)
+- **Immediate Goals (QUALITY-007)**:
+  - Transpiler coverage: 70% (currently 54.85% - blocked by parser)
+  - Unblock 40+ existing tests that currently fail due to parser limitations
+- **Sustainable Goals (QUALITY-008)**:
+  - Maintain current baselines: 37.13% overall, 54.85% transpiler, 69.57% interpreter
+  - Zero coverage regressions policy enforced
+- **Long-term Goals (QUALITY-009+)**:
+  - Integration test coverage for complex workflows
+  - Performance benchmarking and optimization
+  - Comprehensive quality infrastructure
 
 ---
 
