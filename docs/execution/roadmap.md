@@ -24,27 +24,34 @@
   - ✅ Created interpreter_coverage_boost.rs with 20 tests
   - ✅ Created interpreter_enhanced_coverage.rs with 10 tests
   - ✅ Coverage stable at 69.57% (target was 85%)
-- [ ] **QUALITY-005**: Establish coverage regression prevention
+- [x] **QUALITY-005**: ✅ REPL coverage analysis - Added 17 tests (12 passing)
+  - ✅ Created repl_coverage_boost.rs targeting 8.33% coverage
+  - ⚠️ REPL needs integration testing approach, not unit tests
+- [x] **QUALITY-006**: ✅ Parser limitations analysis and workarounds
+  - ✅ Documented parser gaps blocking 40% of transpiler tests
+  - ✅ Created AstBuilder for direct AST construction
+  - ✅ Demonstrated testing advanced features (or-patterns, guards)
+- [ ] **QUALITY-007**: Establish coverage regression prevention
   - [ ] Add coverage gates to pre-commit hooks (minimum 70%)
   - [ ] Create GitHub Actions coverage reporting
   - [ ] Document coverage requirements in CLAUDE.md
-- [ ] **QUALITY-006**: Performance optimization sprint
+- [ ] **QUALITY-008**: Performance optimization sprint
   - [ ] Benchmark critical paths with criterion
   - [ ] Optimize hot paths identified by profiling
   - [ ] Target: <100ms for typical compilation
-- [ ] **QUALITY-007**: Fuzzing infrastructure setup
+- [ ] **QUALITY-009**: Fuzzing infrastructure setup
   - [ ] Create cargo-fuzz targets for parser
   - [ ] Add AFL fuzzing for transpiler
   - [ ] Integrate with OSS-Fuzz for continuous fuzzing
-- [ ] **QUALITY-008**: Property testing expansion
+- [ ] **QUALITY-010**: Property testing expansion
   - [ ] Add proptest for all public APIs
   - [ ] Create quickcheck tests for invariants
   - [ ] Target: 10,000+ property test cases
-- [ ] **QUALITY-009**: Integration test suite
+- [ ] **QUALITY-011**: Integration test suite
   - [ ] End-to-end compilation tests
   - [ ] Cross-module integration tests
   - [ ] Real-world example programs
-- [ ] **QUALITY-010**: Release v1.17.0 with quality gates
+- [ ] **QUALITY-012**: Release v1.17.0 with quality gates
   - [ ] All coverage targets met
   - [ ] Zero regression policy enforced
   - [ ] Performance benchmarks documented
