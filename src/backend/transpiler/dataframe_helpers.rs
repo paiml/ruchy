@@ -140,3 +140,73 @@ pub fn generate_pipeline_helpers() -> TokenStream {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_dataframe_helpers() {
+        let helpers = generate_dataframe_helpers();
+        let code = helpers.to_string();
+        
+        // Check trait definition
+        assert!(code.contains("trait DataFrameExt"));
+        assert!(code.contains("fn filter_by"));
+        assert!(code.contains("fn select_columns"));
+        assert!(code.contains("fn sort_by"));
+        assert!(code.contains("fn group_and_agg"));
+        assert!(code.contains("fn head_n"));
+        assert!(code.contains("fn tail_n"));
+        assert!(code.contains("fn join_with"));
+        
+        // Check enum types
+        assert!(code.contains("enum AggOp"));
+        assert!(code.contains("Sum(String)"));
+        assert!(code.contains("Mean(String)"));
+        assert!(code.contains("enum JoinType"));
+        assert!(code.contains("Inner"));
+        assert!(code.contains("Left"));
+        
+        // Check Row struct
+        assert!(code.contains("struct Row"));
+        assert!(code.contains("HashMap<String, Value>"));
+    }
+
+    #[test]
+    fn test_generate_dataframe_builder() {
+        let builder = generate_dataframe_builder();
+        let code = builder.to_string();
+        
+        // Check builder struct
+        assert!(code.contains("struct DataFrameBuilder"));
+        assert!(code.contains("columns: Vec<(String, Vec<Value>)>"));
+        
+        // Check builder methods
+        assert!(code.contains("fn new()"));
+        assert!(code.contains("fn column"));
+        assert!(code.contains("fn build"));
+        
+        // Check macro
+        assert!(code.contains("macro_rules! dataframe"));
+        assert!(code.contains("DataFrameBuilder::new()"));
+    }
+
+    #[test]
+    fn test_generate_pipeline_helpers() {
+        let pipeline = generate_pipeline_helpers();
+        let code = pipeline.to_string();
+        
+        // Check trait definition
+        assert!(code.contains("trait Pipeline"));
+        assert!(code.contains("fn pipe"));
+        assert!(code.contains("fn pipe_ref"));
+        assert!(code.contains("fn pipe_mut"));
+        
+        // Check implementation
+        assert!(code.contains("impl<T> Pipeline<T> for T"));
+        assert!(code.contains("FnOnce(T) -> R"));
+        assert!(code.contains("FnOnce(&T) -> R"));
+        assert!(code.contains("FnOnce(&mut T) -> R"));
+    }
+}
