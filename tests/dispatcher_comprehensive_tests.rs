@@ -252,12 +252,26 @@ fn test_transpile_function_calls() {
     assert!(result.to_string().contains("println"));
 }
 
-/// Test transpiling macro expressions
+/// Test transpiling macro expressions (QUALITY-013 Refactored)
+///
+/// This test verifies that our macro refactoring from complexity 73 to <10 
+/// maintains correct transpilation behavior for all macro categories:
+/// - Print macros: println, print, panic
+/// - Collection macros: vec
+/// - Assertion macros: assert, assert_eq, assert_ne
 #[test]
 fn test_transpile_macro_expressions() {
     let transpiler = Transpiler::new();
     
-    // println macro
+    // Test print macros category
+    test_print_macros(&transpiler);
+    test_collection_macros(&transpiler);
+    test_assertion_macros(&transpiler);
+}
+
+/// Test print-style macros (println, print, panic) after refactoring
+fn test_print_macros(transpiler: &Transpiler) {
+    // println macro with string literal
     let println_expr = create_expr(ExprKind::Macro {
         name: "println".to_string(),
         args: vec![
@@ -265,10 +279,32 @@ fn test_transpile_macro_expressions() {
         ],
     });
     let result = transpiler.transpile_expr(&println_expr).unwrap();
-    assert!(result.to_string().contains("println"));
-    assert!(result.to_string().contains('!'));
+    assert!(result.to_string().contains("println!"));
+    assert!(result.to_string().contains("Test"));
     
-    // vec macro
+    // print macro with no args
+    let print_expr = create_expr(ExprKind::Macro {
+        name: "print".to_string(),
+        args: vec![],
+    });
+    let result = transpiler.transpile_expr(&print_expr).unwrap();
+    assert!(result.to_string().contains("print!()"));
+    
+    // panic macro with string literal
+    let panic_expr = create_expr(ExprKind::Macro {
+        name: "panic".to_string(),
+        args: vec![
+            create_expr(ExprKind::Literal(Literal::String("Error".to_string()))),
+        ],
+    });
+    let result = transpiler.transpile_expr(&panic_expr).unwrap();
+    assert!(result.to_string().contains("panic!"));
+    assert!(result.to_string().contains("Error"));
+}
+
+/// Test collection-style macros (vec) after refactoring  
+fn test_collection_macros(transpiler: &Transpiler) {
+    // vec macro with multiple elements
     let vec_expr = create_expr(ExprKind::Macro {
         name: "vec".to_string(),
         args: vec![
@@ -278,8 +314,93 @@ fn test_transpile_macro_expressions() {
         ],
     });
     let result = transpiler.transpile_expr(&vec_expr).unwrap();
-    assert!(result.to_string().contains("vec"));
-    assert!(result.to_string().contains('!'));
+    assert!(result.to_string().contains("vec!"));
+    assert!(result.to_string().contains("1"));
+    assert!(result.to_string().contains("2"));
+    assert!(result.to_string().contains("3"));
+    
+    // vec macro with no elements
+    let empty_vec_expr = create_expr(ExprKind::Macro {
+        name: "vec".to_string(),
+        args: vec![],
+    });
+    let result = transpiler.transpile_expr(&empty_vec_expr).unwrap();
+    assert!(result.to_string().contains("vec![]"));
+}
+
+/// Test assertion-style macros (assert, assert_eq, assert_ne) after refactoring
+fn test_assertion_macros(transpiler: &Transpiler) {
+    // assert macro with boolean expression
+    let assert_expr = create_expr(ExprKind::Macro {
+        name: "assert".to_string(),
+        args: vec![
+            create_expr(ExprKind::Literal(Literal::Bool(true))),
+        ],
+    });
+    let result = transpiler.transpile_expr(&assert_expr).unwrap();
+    assert!(result.to_string().contains("assert!"));
+    assert!(result.to_string().contains("true"));
+    
+    // assert_eq macro with two arguments
+    let assert_eq_expr = create_expr(ExprKind::Macro {
+        name: "assert_eq".to_string(),
+        args: vec![
+            create_expr(ExprKind::Literal(Literal::Integer(1))),
+            create_expr(ExprKind::Literal(Literal::Integer(1))),
+        ],
+    });
+    let result = transpiler.transpile_expr(&assert_eq_expr).unwrap();
+    assert!(result.to_string().contains("assert_eq!"));
+    
+    // assert_ne macro with two arguments
+    let assert_ne_expr = create_expr(ExprKind::Macro {
+        name: "assert_ne".to_string(),
+        args: vec![
+            create_expr(ExprKind::Literal(Literal::Integer(1))),
+            create_expr(ExprKind::Literal(Literal::Integer(2))),
+        ],
+    });
+    let result = transpiler.transpile_expr(&assert_ne_expr).unwrap();
+    assert!(result.to_string().contains("assert_ne!"));
+}
+
+/// Test macro validation - assert_eq requires >= 2 arguments  
+#[test]
+fn test_macro_validation() {
+    let transpiler = Transpiler::new();
+    
+    // assert_eq with insufficient arguments should fail
+    let invalid_assert_eq = create_expr(ExprKind::Macro {
+        name: "assert_eq".to_string(),
+        args: vec![
+            create_expr(ExprKind::Literal(Literal::Integer(1))),
+            // Missing second argument
+        ],
+    });
+    let result = transpiler.transpile_expr(&invalid_assert_eq);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("requires at least 2 arguments"));
+    
+    // assert_ne with insufficient arguments should fail
+    let invalid_assert_ne = create_expr(ExprKind::Macro {
+        name: "assert_ne".to_string(),
+        args: vec![
+            create_expr(ExprKind::Literal(Literal::Integer(1))),
+            // Missing second argument
+        ],
+    });
+    let result = transpiler.transpile_expr(&invalid_assert_ne);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("requires at least 2 arguments"));
+    
+    // Unknown macro should fail
+    let unknown_macro = create_expr(ExprKind::Macro {
+        name: "unknown_macro".to_string(),
+        args: vec![],
+    });
+    let result = transpiler.transpile_expr(&unknown_macro);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Unknown macro"));
 }
 
 /// Test transpiling struct literal expressions

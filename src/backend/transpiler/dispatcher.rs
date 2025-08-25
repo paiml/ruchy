@@ -133,185 +133,39 @@ impl Transpiler {
         }
     }
 
-    /// Transpile macro expressions
+    /// Transpile macro expressions with clean dispatch pattern
+    ///
+    /// This function uses specialized handlers for different macro categories:
+    /// - Print macros: `println!`, `print!`, `panic!` (string formatting)
+    /// - Collection macros: `vec!` (simple element transpilation)
+    /// - Assertion macros: `assert!`, `assert_eq!`, `assert_ne!` (validation + transpilation)
+    ///
+    /// # Examples
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let args = vec![];
+    /// let result = transpiler.transpile_macro("println", &args).unwrap();
+    /// assert!(result.to_string().contains("println!"));
+    /// ```
     pub(super) fn transpile_macro(&self, name: &str, args: &[Expr]) -> Result<TokenStream> {
-        use quote::quote;
-
         match name {
-            "println" => {
-                let arg_tokens: Result<Vec<_>, _> = args
-                    .iter()
-                    .map(|arg| {
-                        // Handle string literals and format strings for println!
-                        match &arg.kind {
-                            ExprKind::Literal(Literal::String(s)) => {
-                                Ok(quote! { #s })
-                            }
-                            ExprKind::StringInterpolation { parts } => {
-                                // Check if this is just a format string (only Text parts, no Expr parts)
-                                let has_expressions = parts.iter().any(|part| matches!(part, 
-                                    crate::frontend::ast::StringPart::Expr(_) | 
-                                    crate::frontend::ast::StringPart::ExprWithFormat { .. }));
-                                if has_expressions {
-                                    // This has actual interpolation - transpile normally
-                                    self.transpile_expr(arg)
-                                } else {
-                                    // This is a format string like "Hello {}" - treat as literal
-                                    let format_string = parts.iter()
-                                        .map(|part| match part {
-                                            crate::frontend::ast::StringPart::Text(s) => s.as_str(),
-                                            crate::frontend::ast::StringPart::Expr(_) | 
-                                            crate::frontend::ast::StringPart::ExprWithFormat { .. } => unreachable!()
-                                        })
-                                        .collect::<String>();
-                                    Ok(quote! { #format_string })
-                                }
-                            }
-                            _ => self.transpile_expr(arg)
-                        }
-                    })
-                    .collect();
-                let arg_tokens = arg_tokens?;
-
-                if arg_tokens.is_empty() {
-                    Ok(quote! { println!() })
-                } else {
-                    Ok(quote! { println!(#(#arg_tokens),*) })
-                }
-            }
-            "print" => {
-                let arg_tokens: Result<Vec<_>, _> = args
-                    .iter()
-                    .map(|arg| {
-                        // Handle string literals and format strings for print!
-                        match &arg.kind {
-                            ExprKind::Literal(Literal::String(s)) => {
-                                Ok(quote! { #s })
-                            }
-                            ExprKind::StringInterpolation { parts } => {
-                                // Check if this is just a format string (only Text parts, no Expr parts)
-                                let has_expressions = parts.iter().any(|part| matches!(part, 
-                                    crate::frontend::ast::StringPart::Expr(_) | 
-                                    crate::frontend::ast::StringPart::ExprWithFormat { .. }));
-                                if has_expressions {
-                                    // This has actual interpolation - transpile normally
-                                    self.transpile_expr(arg)
-                                } else {
-                                    // This is a format string like "Hello {}" - treat as literal
-                                    let format_string = parts.iter()
-                                        .map(|part| match part {
-                                            crate::frontend::ast::StringPart::Text(s) => s.as_str(),
-                                            crate::frontend::ast::StringPart::Expr(_) | 
-                                            crate::frontend::ast::StringPart::ExprWithFormat { .. } => unreachable!()
-                                        })
-                                        .collect::<String>();
-                                    Ok(quote! { #format_string })
-                                }
-                            }
-                            _ => self.transpile_expr(arg)
-                        }
-                    })
-                    .collect();
-                let arg_tokens = arg_tokens?;
-
-                if arg_tokens.is_empty() {
-                    Ok(quote! { print!() })
-                } else {
-                    Ok(quote! { print!(#(#arg_tokens),*) })
-                }
-            }
-            "vec" => {
-                let arg_tokens: Result<Vec<_>, _> = args
-                    .iter()
-                    .map(|arg| self.transpile_expr(arg))
-                    .collect();
-                let arg_tokens = arg_tokens?;
-
-                Ok(quote! { vec![#(#arg_tokens),*] })
-            }
-            "assert" => {
-                let arg_tokens: Result<Vec<_>, _> = args
-                    .iter()
-                    .map(|arg| self.transpile_expr(arg))
-                    .collect();
-                let arg_tokens = arg_tokens?;
-
-                if arg_tokens.is_empty() {
-                    Ok(quote! { assert!() })
-                } else {
-                    Ok(quote! { assert!(#(#arg_tokens),*) })
-                }
-            }
-            "assert_eq" => {
-                let arg_tokens: Result<Vec<_>, _> = args
-                    .iter()
-                    .map(|arg| self.transpile_expr(arg))
-                    .collect();
-                let arg_tokens = arg_tokens?;
-
-                if arg_tokens.len() >= 2 {
-                    Ok(quote! { assert_eq!(#(#arg_tokens),*) })
-                } else {
-                    anyhow::bail!("assert_eq! requires at least 2 arguments")
-                }
-            }
-            "assert_ne" => {
-                let arg_tokens: Result<Vec<_>, _> = args
-                    .iter()
-                    .map(|arg| self.transpile_expr(arg))
-                    .collect();
-                let arg_tokens = arg_tokens?;
-
-                if arg_tokens.len() >= 2 {
-                    Ok(quote! { assert_ne!(#(#arg_tokens),*) })
-                } else {
-                    anyhow::bail!("assert_ne! requires at least 2 arguments")
-                }
-            }
-            "panic" => {
-                let arg_tokens: Result<Vec<_>, _> = args
-                    .iter()
-                    .map(|arg| {
-                        // Handle string literals and format strings for panic!
-                        match &arg.kind {
-                            ExprKind::Literal(Literal::String(s)) => {
-                                Ok(quote! { #s })
-                            }
-                            ExprKind::StringInterpolation { parts } => {
-                                // Check if this is just a format string (only Text parts, no Expr parts)
-                                let has_expressions = parts.iter().any(|part| matches!(part, 
-                                    crate::frontend::ast::StringPart::Expr(_) | 
-                                    crate::frontend::ast::StringPart::ExprWithFormat { .. }));
-                                if has_expressions {
-                                    // This has actual interpolation - transpile normally
-                                    self.transpile_expr(arg)
-                                } else {
-                                    // This is a format string like "Error: {}" - treat as literal
-                                    let format_string = parts.iter()
-                                        .map(|part| match part {
-                                            crate::frontend::ast::StringPart::Text(s) => s.as_str(),
-                                            crate::frontend::ast::StringPart::Expr(_) | 
-                                            crate::frontend::ast::StringPart::ExprWithFormat { .. } => unreachable!()
-                                        })
-                                        .collect::<String>();
-                                    Ok(quote! { #format_string })
-                                }
-                            }
-                            _ => self.transpile_expr(arg)
-                        }
-                    })
-                    .collect();
-                let arg_tokens = arg_tokens?;
-
-                if arg_tokens.is_empty() {
-                    Ok(quote! { panic!() })
-                } else {
-                    Ok(quote! { panic!(#(#arg_tokens),*) })
-                }
-            }
-            _ => {
-                anyhow::bail!("Unknown macro: {}", name)
-            }
+            // Print macros (string formatting)
+            "println" => self.transpile_println_macro(args),
+            "print" => self.transpile_print_macro(args),
+            "panic" => self.transpile_panic_macro(args),
+            
+            // Collection macros (simple transpilation)
+            "vec" => self.transpile_vec_macro(args),
+            
+            // Assertion macros (validation + transpilation)
+            "assert" => self.transpile_assert_macro(args),
+            "assert_eq" => self.transpile_assert_eq_macro(args),
+            "assert_ne" => self.transpile_assert_ne_macro(args),
+            
+            _ => bail!("Unknown macro: {}", name),
         }
     }
 
@@ -488,6 +342,242 @@ impl Transpiler {
             } => self.transpile_enum(name, type_params, variants, *is_pub),
             _ => unreachable!(),
         }
+    }
+
+    /// Transpile println! macro with string formatting support
+    /// 
+    /// Handles string literals, string interpolation, and format strings correctly.
+    /// Complexity: <10 per Toyota Way requirement.
+    /// 
+    /// # Examples
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let args = vec![Expr { kind: ExprKind::Literal(Literal::String("Hello".to_string())), span: (0, 0).into() }];
+    /// let result = transpiler.transpile_println_macro(&args).unwrap();
+    /// assert!(result.to_string().contains("println!"));
+    /// ```
+    fn transpile_println_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+        let arg_tokens = self.transpile_print_args(args)?;
+        if arg_tokens.is_empty() {
+            Ok(quote! { println!() })
+        } else {
+            Ok(quote! { println!(#(#arg_tokens),*) })
+        }
+    }
+
+    /// Transpile print! macro with string formatting support
+    /// 
+    /// Handles string literals, string interpolation, and format strings correctly.
+    /// Complexity: <10 per Toyota Way requirement.
+    /// 
+    /// # Examples
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let args = vec![Expr { kind: ExprKind::Literal(Literal::String("Hello".to_string())), span: (0, 0).into() }];
+    /// let result = transpiler.transpile_print_macro(&args).unwrap();
+    /// assert!(result.to_string().contains("print!"));
+    /// ```
+    fn transpile_print_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+        let arg_tokens = self.transpile_print_args(args)?;
+        if arg_tokens.is_empty() {
+            Ok(quote! { print!() })
+        } else {
+            Ok(quote! { print!(#(#arg_tokens),*) })
+        }
+    }
+
+    /// Transpile panic! macro with string formatting support
+    /// 
+    /// Handles string literals, string interpolation, and format strings correctly.
+    /// Complexity: <10 per Toyota Way requirement.
+    /// 
+    /// # Examples
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let args = vec![Expr { kind: ExprKind::Literal(Literal::String("Error".to_string())), span: (0, 0).into() }];
+    /// let result = transpiler.transpile_panic_macro(&args).unwrap();
+    /// assert!(result.to_string().contains("panic!"));
+    /// ```
+    fn transpile_panic_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+        let arg_tokens = self.transpile_print_args(args)?;
+        if arg_tokens.is_empty() {
+            Ok(quote! { panic!() })
+        } else {
+            Ok(quote! { panic!(#(#arg_tokens),*) })
+        }
+    }
+
+    /// Common helper for transpiling print-style macro arguments
+    /// 
+    /// Handles string literals, string interpolation, and format strings.
+    /// This eliminates code duplication between println!, print!, and panic!.
+    /// Complexity: <10 per Toyota Way requirement.
+    fn transpile_print_args(&self, args: &[Expr]) -> Result<Vec<TokenStream>> {
+        args.iter()
+            .map(|arg| {
+                match &arg.kind {
+                    ExprKind::Literal(Literal::String(s)) => {
+                        Ok(quote! { #s })
+                    }
+                    ExprKind::StringInterpolation { parts } => {
+                        self.transpile_string_interpolation_for_print(parts)
+                    }
+                    _ => self.transpile_expr(arg)
+                }
+            })
+            .collect()
+    }
+
+    /// Handle string interpolation for print-style macros
+    /// 
+    /// Detects if string interpolation has expressions or is just format text.
+    /// Complexity: <10 per Toyota Way requirement.
+    fn transpile_string_interpolation_for_print(&self, parts: &[crate::frontend::ast::StringPart]) -> Result<TokenStream> {
+        let has_expressions = parts.iter().any(|part| matches!(part, 
+            crate::frontend::ast::StringPart::Expr(_) | 
+            crate::frontend::ast::StringPart::ExprWithFormat { .. }));
+        
+        if has_expressions {
+            // This has actual interpolation - transpile normally
+            self.transpile_string_interpolation(parts)
+        } else {
+            // This is a format string like "Hello {}" - treat as literal
+            let format_string = parts.iter()
+                .map(|part| match part {
+                    crate::frontend::ast::StringPart::Text(s) => s.as_str(),
+                    crate::frontend::ast::StringPart::Expr(_) | 
+                    crate::frontend::ast::StringPart::ExprWithFormat { .. } => unreachable!()
+                })
+                .collect::<String>();
+            Ok(quote! { #format_string })
+        }
+    }
+
+    /// Transpile vec! macro
+    /// 
+    /// Simple element-by-element transpilation for collection creation.
+    /// Complexity: <10 per Toyota Way requirement.
+    /// 
+    /// # Examples
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let args = vec![Expr { kind: ExprKind::Literal(Literal::Integer(42)), span: (0, 0).into() }];
+    /// let result = transpiler.transpile_vec_macro(&args).unwrap();
+    /// assert!(result.to_string().contains("vec!"));
+    /// ```
+    fn transpile_vec_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+        let arg_tokens: Result<Vec<_>, _> = args
+            .iter()
+            .map(|arg| self.transpile_expr(arg))
+            .collect();
+        let arg_tokens = arg_tokens?;
+
+        Ok(quote! { vec![#(#arg_tokens),*] })
+    }
+
+    /// Transpile assert! macro
+    /// 
+    /// Simple argument transpilation for basic assertions.
+    /// Complexity: <10 per Toyota Way requirement.
+    /// 
+    /// # Examples
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let args = vec![Expr { kind: ExprKind::Literal(Literal::Bool(true)), span: (0, 0).into() }];
+    /// let result = transpiler.transpile_assert_macro(&args).unwrap();
+    /// assert!(result.to_string().contains("assert!"));
+    /// ```
+    fn transpile_assert_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+        let arg_tokens: Result<Vec<_>, _> = args
+            .iter()
+            .map(|arg| self.transpile_expr(arg))
+            .collect();
+        let arg_tokens = arg_tokens?;
+
+        if arg_tokens.is_empty() {
+            Ok(quote! { assert!() })
+        } else {
+            Ok(quote! { assert!(#(#arg_tokens),*) })
+        }
+    }
+
+    /// Transpile assert_eq! macro with validation
+    /// 
+    /// Validates argument count and transpiles for equality assertions.
+    /// Complexity: <10 per Toyota Way requirement.
+    /// 
+    /// # Examples
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let args = vec![
+    ///     Expr { kind: ExprKind::Literal(Literal::Integer(42)), span: (0, 0).into() },
+    ///     Expr { kind: ExprKind::Literal(Literal::Integer(42)), span: (0, 0).into() }
+    /// ];
+    /// let result = transpiler.transpile_assert_eq_macro(&args).unwrap();
+    /// assert!(result.to_string().contains("assert_eq!"));
+    /// ```
+    fn transpile_assert_eq_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+        if args.len() < 2 {
+            bail!("assert_eq! requires at least 2 arguments")
+        }
+        
+        let arg_tokens: Result<Vec<_>, _> = args
+            .iter()
+            .map(|arg| self.transpile_expr(arg))
+            .collect();
+        let arg_tokens = arg_tokens?;
+
+        Ok(quote! { assert_eq!(#(#arg_tokens),*) })
+    }
+
+    /// Transpile assert_ne! macro with validation
+    /// 
+    /// Validates argument count and transpiles for inequality assertions.
+    /// Complexity: <10 per Toyota Way requirement.
+    /// 
+    /// # Examples
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let args = vec![
+    ///     Expr { kind: ExprKind::Literal(Literal::Integer(42)), span: (0, 0).into() },
+    ///     Expr { kind: ExprKind::Literal(Literal::Integer(24)), span: (0, 0).into() }
+    /// ];
+    /// let result = transpiler.transpile_assert_ne_macro(&args).unwrap();
+    /// assert!(result.to_string().contains("assert_ne!"));
+    /// ```
+    fn transpile_assert_ne_macro(&self, args: &[Expr]) -> Result<TokenStream> {
+        if args.len() < 2 {
+            bail!("assert_ne! requires at least 2 arguments")
+        }
+        
+        let arg_tokens: Result<Vec<_>, _> = args
+            .iter()
+            .map(|arg| self.transpile_expr(arg))
+            .collect();
+        let arg_tokens = arg_tokens?;
+
+        Ok(quote! { assert_ne!(#(#arg_tokens),*) })
     }
 
     fn transpile_control_misc_expr(expr: &Expr) -> Result<TokenStream> {
