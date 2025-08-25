@@ -2112,6 +2112,28 @@ impl Repl {
 
     /// Evaluate methods on enum variants (Result/Option types)
     #[allow(clippy::too_many_lines)]
+    /// Evaluate enum methods with complexity <10
+    /// 
+    /// Delegates to specialized handlers for each enum type
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::runtime::{Repl, Value};
+    /// use std::time::{Duration, Instant};
+    /// 
+    /// let mut repl = Repl::new().unwrap();
+    /// let deadline = Instant::now() + Duration::from_secs(1);
+    /// 
+    /// // Test Result::Ok unwrap
+    /// let ok_val = Value::EnumVariant {
+    ///     enum_name: "Result".to_string(),
+    ///     variant_name: "Ok".to_string(),
+    ///     data: Some(vec![Value::Int(42)]),
+    /// };
+    /// let result = repl.evaluate_enum_methods(ok_val, "unwrap", &[], deadline, 0).unwrap();
+    /// assert_eq!(result, Value::Int(42));
+    /// ```
     fn evaluate_enum_methods(
         &mut self,
         receiver: Value,
@@ -2121,222 +2143,236 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         if let Value::EnumVariant { enum_name, variant_name, data } = receiver {
-            match (enum_name.as_str(), variant_name.as_str(), method) {
-                // Result methods
-                ("Result", "Ok", "unwrap") if args.is_empty() => {
-                    if let Some(values) = data {
-                        if !values.is_empty() {
-                            return Ok(values[0].clone());
-                        }
-                    }
-                    Ok(Value::Unit)
-                }
-                ("Result", "Err", "unwrap") if args.is_empty() => {
-                    let error_msg = if let Some(values) = &data {
-                        if values.is_empty() {
-                            "called `Result::unwrap()` on an `Err` value".to_string()
-                        } else {
-                            format!("called `Result::unwrap()` on an `Err` value: {}", values[0])
-                        }
-                    } else {
-                        "called `Result::unwrap()` on an `Err` value".to_string()
-                    };
-                    bail!(error_msg)
-                }
-                ("Result", "Ok", "expect") if args.len() == 1 => {
-                    // Ignore the custom message for Ok variant
-                    if let Some(values) = data {
-                        if !values.is_empty() {
-                            return Ok(values[0].clone());
-                        }
-                    }
-                    Ok(Value::Unit)
-                }
-                ("Result", "Err", "expect") if args.len() == 1 => {
-                    let custom_msg = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                    let msg = match custom_msg {
-                        Value::String(s) => s,
-                        _ => format!("{custom_msg}"),
-                    };
-                    bail!(msg)
-                }
-                // Option methods
-                ("Option", "Some", "unwrap") if args.is_empty() => {
-                    if let Some(values) = data {
-                        if !values.is_empty() {
-                            return Ok(values[0].clone());
-                        }
-                    }
-                    Ok(Value::Unit)
-                }
-                ("Option", "None", "unwrap") if args.is_empty() => {
-                    bail!("called `Option::unwrap()` on a `None` value")
-                }
-                ("Option", "Some", "expect") if args.len() == 1 => {
-                    // Ignore the custom message for Some variant
-                    if let Some(values) = data {
-                        if !values.is_empty() {
-                            return Ok(values[0].clone());
-                        }
-                    }
-                    Ok(Value::Unit)
-                }
-                ("Option", "None", "expect") if args.len() == 1 => {
-                    let custom_msg = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                    let msg = match custom_msg {
-                        Value::String(s) => s,
-                        _ => format!("{custom_msg}"),
-                    };
-                    bail!(msg)
-                }
-                // Result combinators
-                ("Result", "Ok", "map") if args.len() == 1 => {
-                    // Apply function to Ok value
-                    if let Some(values) = data {
-                        if !values.is_empty() {
-                            let func_arg = &args[0];
-                            // Create a synthetic call expression
-                            let call_expr = Expr::new(
-                                ExprKind::Call {
-                                    func: Box::new(func_arg.clone()),
-                                    args: vec![Expr::new(
-                                        ExprKind::Literal(crate::frontend::ast::Literal::from_value(&values[0])),
-                                        Span { start: 0, end: 0 },
-                                    )],
-                                },
-                                Span { start: 0, end: 0 },
-                            );
-                            let mapped_value = self.evaluate_expr(&call_expr, deadline, depth + 1)?;
-                            return Ok(Value::EnumVariant {
-                                enum_name: "Result".to_string(),
-                                variant_name: "Ok".to_string(),
-                                data: Some(vec![mapped_value]),
-                            });
-                        }
-                    }
-                    Ok(Value::EnumVariant {
-                        enum_name: "Result".to_string(),
-                        variant_name: "Ok".to_string(),
-                        data: Some(vec![Value::Unit]),
-                    })
-                }
-                ("Result", "Err", "map") if args.len() == 1 => {
-                    // map does nothing on Err, return as-is
-                    Ok(Value::EnumVariant {
-                        enum_name,
-                        variant_name,
-                        data,
-                    })
-                }
-                ("Result", "Ok", "and_then") if args.len() == 1 => {
-                    // Apply function that returns Result to Ok value
-                    if let Some(values) = data {
-                        if !values.is_empty() {
-                            let func_arg = &args[0];
-                            let call_expr = Expr::new(
-                                ExprKind::Call {
-                                    func: Box::new(func_arg.clone()),
-                                    args: vec![Expr::new(
-                                        ExprKind::Literal(crate::frontend::ast::Literal::from_value(&values[0])),
-                                        Span { start: 0, end: 0 },
-                                    )],
-                                },
-                                Span { start: 0, end: 0 },
-                            );
-                            // and_then flattens the Result
-                            return self.evaluate_expr(&call_expr, deadline, depth + 1);
-                        }
-                    }
-                    Ok(Value::EnumVariant {
-                        enum_name: "Result".to_string(),
-                        variant_name: "Ok".to_string(),
-                        data: Some(vec![Value::Unit]),
-                    })
-                }
-                ("Result", "Err", "and_then") if args.len() == 1 => {
-                    // and_then does nothing on Err, return as-is
-                    Ok(Value::EnumVariant {
-                        enum_name,
-                        variant_name,
-                        data,
-                    })
-                }
-                // Option combinators
-                ("Option", "Some", "map") if args.len() == 1 => {
-                    // Apply function to Some value
-                    if let Some(values) = data {
-                        if !values.is_empty() {
-                            let func_arg = &args[0];
-                            let call_expr = Expr::new(
-                                ExprKind::Call {
-                                    func: Box::new(func_arg.clone()),
-                                    args: vec![Expr::new(
-                                        ExprKind::Literal(crate::frontend::ast::Literal::from_value(&values[0])),
-                                        Span { start: 0, end: 0 },
-                                    )],
-                                },
-                                Span { start: 0, end: 0 },
-                            );
-                            let mapped_value = self.evaluate_expr(&call_expr, deadline, depth + 1)?;
-                            return Ok(Value::EnumVariant {
-                                enum_name: "Option".to_string(),
-                                variant_name: "Some".to_string(),
-                                data: Some(vec![mapped_value]),
-                            });
-                        }
-                    }
-                    Ok(Value::EnumVariant {
-                        enum_name: "Option".to_string(),
-                        variant_name: "Some".to_string(),
-                        data: Some(vec![Value::Unit]),
-                    })
-                }
-                ("Option", "None", "map") if args.len() == 1 => {
-                    // map does nothing on None, return as-is
-                    Ok(Value::EnumVariant {
-                        enum_name,
-                        variant_name,
-                        data,
-                    })
-                }
-                ("Option", "Some", "and_then") if args.len() == 1 => {
-                    // Apply function that returns Option to Some value
-                    if let Some(values) = data {
-                        if !values.is_empty() {
-                            let func_arg = &args[0];
-                            let call_expr = Expr::new(
-                                ExprKind::Call {
-                                    func: Box::new(func_arg.clone()),
-                                    args: vec![Expr::new(
-                                        ExprKind::Literal(crate::frontend::ast::Literal::from_value(&values[0])),
-                                        Span { start: 0, end: 0 },
-                                    )],
-                                },
-                                Span { start: 0, end: 0 },
-                            );
-                            // and_then flattens the Option
-                            return self.evaluate_expr(&call_expr, deadline, depth + 1);
-                        }
-                    }
-                    Ok(Value::EnumVariant {
-                        enum_name: "Option".to_string(),
-                        variant_name: "Some".to_string(),
-                        data: Some(vec![Value::Unit]),
-                    })
-                }
-                ("Option", "None", "and_then") if args.len() == 1 => {
-                    // and_then does nothing on None, return as-is
-                    Ok(Value::EnumVariant {
-                        enum_name,
-                        variant_name,
-                        data,
-                    })
-                }
+            match enum_name.as_str() {
+                "Result" => self.evaluate_result_methods(&variant_name, method, &data, args, deadline, depth),
+                "Option" => self.evaluate_option_methods(&variant_name, method, &data, args, deadline, depth),
+                "Vec" => self.evaluate_vec_methods(&variant_name, method, &data, args, deadline, depth),
                 _ => bail!("Method {} not supported on {}", method, enum_name),
             }
         } else {
             bail!("evaluate_enum_methods called on non-enum variant")
         }
+    }
+
+    /// Handle Result enum methods (unwrap, expect, map, and_then)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::runtime::{Repl, Value};
+    /// use std::time::{Duration, Instant};
+    /// 
+    /// let mut repl = Repl::new().unwrap();
+    /// let deadline = Instant::now() + Duration::from_secs(1);
+    /// let data = Some(vec![Value::Int(42)]);
+    /// 
+    /// // Test Ok unwrap
+    /// let result = repl.evaluate_result_methods("Ok", "unwrap", &data, &[], deadline, 0).unwrap();
+    /// assert_eq!(result, Value::Int(42));
+    /// ```
+    fn evaluate_result_methods(
+        &mut self,
+        variant_name: &str,
+        method: &str,
+        data: &Option<Vec<Value>>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        match (variant_name, method) {
+            ("Ok", "unwrap") | ("Ok", "expect") if args.is_empty() || args.len() == 1 => {
+                self.extract_value_or_unit(data)
+            }
+            ("Err", "unwrap") if args.is_empty() => {
+                let error_msg = self.format_error_message("Result::unwrap()", "Err", data);
+                bail!(error_msg)
+            }
+            ("Err", "expect") if args.len() == 1 => {
+                let custom_msg = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let msg = self.value_to_string(custom_msg);
+                bail!(msg)
+            }
+            ("Ok", "map") if args.len() == 1 => {
+                self.apply_function_to_value("Result", "Ok", data, &args[0], deadline, depth)
+            }
+            ("Err", "map") if args.len() == 1 => {
+                Ok(Value::EnumVariant {
+                    enum_name: "Result".to_string(),
+                    variant_name: variant_name.to_string(),
+                    data: data.clone(),
+                })
+            }
+            ("Ok", "and_then") if args.len() == 1 => {
+                self.apply_function_and_flatten(data, &args[0], deadline, depth)
+            }
+            ("Err", "and_then") if args.len() == 1 => {
+                Ok(Value::EnumVariant {
+                    enum_name: "Result".to_string(),
+                    variant_name: variant_name.to_string(),
+                    data: data.clone(),
+                })
+            }
+            _ => bail!("Method {} not supported on Result::{}", method, variant_name),
+        }
+    }
+
+    /// Handle Option enum methods (unwrap, expect, map, and_then)
+    fn evaluate_option_methods(
+        &mut self,
+        variant_name: &str,
+        method: &str,
+        data: &Option<Vec<Value>>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        match (variant_name, method) {
+            ("Some", "unwrap") | ("Some", "expect") if args.is_empty() || args.len() == 1 => {
+                self.extract_value_or_unit(data)
+            }
+            ("None", "unwrap") if args.is_empty() => {
+                bail!("called `Option::unwrap()` on a `None` value")
+            }
+            ("None", "expect") if args.len() == 1 => {
+                let custom_msg = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let msg = self.value_to_string(custom_msg);
+                bail!(msg)
+            }
+            ("Some", "map") if args.len() == 1 => {
+                self.apply_function_to_value("Option", "Some", data, &args[0], deadline, depth)
+            }
+            ("None", "map") | ("None", "and_then") if args.len() == 1 => {
+                Ok(Value::EnumVariant {
+                    enum_name: "Option".to_string(),
+                    variant_name: variant_name.to_string(),
+                    data: data.clone(),
+                })
+            }
+            ("Some", "and_then") if args.len() == 1 => {
+                self.apply_function_and_flatten(data, &args[0], deadline, depth)
+            }
+            _ => bail!("Method {} not supported on Option::{}", method, variant_name),
+        }
+    }
+
+    /// Handle Vec enum methods (placeholder for future Vec methods)
+    fn evaluate_vec_methods(
+        &mut self,
+        variant_name: &str,
+        method: &str,
+        data: &Option<Vec<Value>>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        match method {
+            "len" => Ok(Value::Int(data.as_ref().map_or(0, |v| v.len() as i64))),
+            "push" if args.len() == 1 => {
+                let new_elem = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let mut vec_data = data.clone().unwrap_or_default();
+                vec_data.push(new_elem);
+                Ok(Value::EnumVariant {
+                    enum_name: "Vec".to_string(),
+                    variant_name: variant_name.to_string(),
+                    data: Some(vec_data),
+                })
+            }
+            _ => bail!("Method {} not supported on Vec", method),
+        }
+    }
+
+    /// Extract value from enum data or return Unit
+    fn extract_value_or_unit(&self, data: &Option<Vec<Value>>) -> Result<Value> {
+        if let Some(values) = data {
+            if !values.is_empty() {
+                return Ok(values[0].clone());
+            }
+        }
+        Ok(Value::Unit)
+    }
+
+    /// Format error message for unwrap operations
+    fn format_error_message(&self, method: &str, variant: &str, data: &Option<Vec<Value>>) -> String {
+        if let Some(values) = data {
+            if values.is_empty() {
+                format!("called `{}` on an `{}` value", method, variant)
+            } else {
+                format!("called `{}` on an `{}` value: {}", method, variant, values[0])
+            }
+        } else {
+            format!("called `{}` on an `{}` value", method, variant)
+        }
+    }
+
+    /// Convert Value to string representation
+    fn value_to_string(&self, value: Value) -> String {
+        match value {
+            Value::String(s) => s,
+            other => format!("{}", other),
+        }
+    }
+
+    /// Apply function to enum value (for map operations)
+    fn apply_function_to_value(
+        &mut self,
+        enum_name: &str,
+        variant_name: &str,
+        data: &Option<Vec<Value>>,
+        func_arg: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if let Some(values) = data {
+            if !values.is_empty() {
+                let call_expr = self.create_function_call(func_arg, &values[0]);
+                let mapped_value = self.evaluate_expr(&call_expr, deadline, depth + 1)?;
+                return Ok(Value::EnumVariant {
+                    enum_name: enum_name.to_string(),
+                    variant_name: variant_name.to_string(),
+                    data: Some(vec![mapped_value]),
+                });
+            }
+        }
+        Ok(Value::EnumVariant {
+            enum_name: enum_name.to_string(),
+            variant_name: variant_name.to_string(),
+            data: Some(vec![Value::Unit]),
+        })
+    }
+
+    /// Apply function and flatten result (for and_then operations)
+    fn apply_function_and_flatten(
+        &mut self,
+        data: &Option<Vec<Value>>,
+        func_arg: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if let Some(values) = data {
+            if !values.is_empty() {
+                let call_expr = self.create_function_call(func_arg, &values[0]);
+                return self.evaluate_expr(&call_expr, deadline, depth + 1);
+            }
+        }
+        Ok(Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Ok".to_string(),
+            data: Some(vec![Value::Unit]),
+        })
+    }
+
+    /// Create function call expression for enum combinators
+    fn create_function_call(&self, func_arg: &Expr, value: &Value) -> Expr {
+        Expr::new(
+            ExprKind::Call {
+                func: Box::new(func_arg.clone()),
+                args: vec![Expr::new(
+                    ExprKind::Literal(crate::frontend::ast::Literal::from_value(value)),
+                    Span { start: 0, end: 0 },
+                )],
+            },
+            Span { start: 0, end: 0 },
+        )
     }
 
     /// Evaluate object literal (complexity: 10)
