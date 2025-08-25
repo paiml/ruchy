@@ -1,13 +1,9 @@
-// Marco Polo - Simple Ruchy Demo Script
-// Version A: Ultra-minimal implementation
-
 fun main() {
-    let command = "marco"  // Simplified - would be from args
-    
+    let command = "marco" in
     match command {
-        "marco" => marco()
-        "polo" => polo("World")
-        "play" => play(3)
+        "marco" => marco(),
+        "polo" => polo("World"),
+        "play" => play(3),
         _ => help()
     }
 }
@@ -21,7 +17,7 @@ fun polo(name: String) -> String {
 }
 
 fun play(times: i32) {
-    let i = 1
+    let i = 1 in
     if i <= times {
         marco()
     } else {

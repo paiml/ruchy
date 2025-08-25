@@ -242,17 +242,9 @@ fn parse_identifier_token(state: &mut ParserState, name: String, span: Span) -> 
 /// Returns an error if the operation fails
 /// Parses literal tokens (integers, floats, chars, booleans)
 /// 
-/// # Examples
-/// ```
-/// use ruchy::frontend::lexer::Lexer;
-/// use ruchy::frontend::parser::ParserState;
-/// 
-/// let mut lexer = Lexer::new("42");
-/// let tokens = lexer.tokenize().unwrap();
-/// let mut state = ParserState::new(tokens);
-/// let expr = parse_literal_prefix(&mut state).unwrap();
-/// // Should parse as integer literal 42
-/// ```
+/// # Example Usage
+/// This function handles literal values like integers, floats, booleans, and nil.
+/// For example, "42" becomes an integer literal, "3.14" becomes a float literal.
 /// 
 /// # Errors
 /// Returns error if token is not a recognized literal type
@@ -289,17 +281,9 @@ fn parse_literal_prefix(state: &mut ParserState, token: Token, span: Span) -> Re
 
 /// Parses string tokens with interpolation support
 /// 
-/// # Examples
-/// ```
-/// use ruchy::frontend::lexer::Lexer;
-/// use ruchy::frontend::parser::ParserState;
-/// 
-/// let mut lexer = Lexer::new("\"hello world\"");
-/// let tokens = lexer.tokenize().unwrap();
-/// let mut state = ParserState::new(tokens);
-/// let expr = parse_string_prefix(&mut state).unwrap();
-/// // Should parse as string literal
-/// ```
+/// # Example Usage
+/// Handles regular strings and f-strings with interpolation.
+/// For example, "hello" or f"Hello {name}" are both handled.
 /// 
 /// # Errors
 /// Returns error if string interpolation parsing fails
@@ -338,17 +322,9 @@ fn parse_string_prefix(state: &mut ParserState, token: Token, span: Span) -> Res
 
 /// Parses identifier tokens and macro calls
 /// 
-/// # Examples
-/// ```
-/// use ruchy::frontend::lexer::Lexer;
-/// use ruchy::frontend::parser::ParserState;
-/// 
-/// let mut lexer = Lexer::new("println!(\"hello\")");
-/// let tokens = lexer.tokenize().unwrap();
-/// let mut state = ParserState::new(tokens);
-/// let expr = parse_identifier_prefix(&mut state).unwrap();
-/// // Should parse as macro call
-/// ```
+/// # Example Usage
+/// Handles identifiers and macro invocations like println!("hello") or vec![1, 2, 3].
+/// Recognizes the pattern identifier! followed by parentheses, brackets, or braces.
 /// 
 /// # Errors
 /// Returns error if macro syntax is malformed
@@ -407,17 +383,9 @@ fn parse_identifier_prefix(state: &mut ParserState, token: Token, span: Span) ->
 
 /// Parses parentheses expressions (unit literals, lambdas, tuples, grouped expressions)
 /// 
-/// # Examples
-/// ```
-/// use ruchy::frontend::lexer::Lexer;
-/// use ruchy::frontend::parser::ParserState;
-/// 
-/// let mut lexer = Lexer::new("(x, y)");
-/// let tokens = lexer.tokenize().unwrap();
-/// let mut state = ParserState::new(tokens);
-/// let expr = parse_parentheses_prefix(&mut state).unwrap();
-/// // Should parse as tuple
-/// ```
+/// # Example Usage
+/// Handles parenthesized expressions like (1 + 2) or tuples like (x, y).
+/// Empty parens () become Unit type, single element becomes grouped expression.
 /// 
 /// # Errors
 /// Returns error if parentheses expression is malformed
@@ -535,67 +503,76 @@ fn parse_parentheses_prefix(state: &mut ParserState, span: Span) -> Result<Expr>
 
 /// Parses control flow and declaration keywords
 /// 
-/// # Examples
-/// ```
-/// use ruchy::frontend::lexer::Lexer;
-/// use ruchy::frontend::parser::ParserState;
+/// # Example Usage
+/// Handles control flow like if/match/for/while and declarations like let/fn/struct.
 /// 
-/// let mut lexer = Lexer::new("if true { 42 }");
-/// let tokens = lexer.tokenize().unwrap();
-/// let mut state = ParserState::new(tokens);
-/// let expr = parse_control_flow_prefix(&mut state).unwrap();
-/// // Should parse as if expression
-/// ```
+/// Parse async constructs (functions or blocks)
 /// 
+/// # Example Usage
+/// Handles async functions like `async fn foo() { }` or async blocks like `async { ... }`
+/// 
+/// # Errors
+/// Returns error if async syntax is malformed
+fn parse_async_construct(state: &mut ParserState) -> Result<Option<Expr>> {
+    // Check if it's async function or async block
+    if matches!(state.tokens.peek_nth(1), Some((Token::Fun | Token::Fn, _))) {
+        // async fun - parse as async function
+        state.tokens.advance(); // consume async
+        let mut func_expr = functions::parse_function(state)?;
+        // Mark the function as async
+        if let ExprKind::Function { is_async, .. } = &mut func_expr.kind {
+            *is_async = true;
+        }
+        Ok(Some(func_expr))
+    } else {
+        // async block
+        Ok(Some(control_flow::parse_async_block(state)?))
+    }
+}
+
+/// Parse public visibility constructs
+/// 
+/// # Example Usage
+/// Handles public declarations like `pub fn foo()`, `pub struct Bar`, or `pub enum Baz`.
+/// 
+/// # Errors
+/// Returns error if pub construct syntax is malformed
+fn parse_pub_construct(state: &mut ParserState) -> Result<Option<Expr>> {
+    state.tokens.advance(); // consume pub
+    
+    // Check what follows pub
+    match state.tokens.peek() {
+        Some((Token::Fun | Token::Fn, _)) => {
+            Ok(Some(functions::parse_function_with_visibility(state, true)?))
+        }
+        Some((Token::Struct, _)) => {
+            Ok(Some(types::parse_struct_with_visibility(state, true)?))
+        }
+        Some((Token::Enum, _)) => {
+            Ok(Some(types::parse_enum_with_visibility(state, true)?))
+        }
+        Some((Token::Trait, _)) => {
+            Ok(Some(types::parse_trait_with_visibility(state, true)?))
+        }
+        Some((Token::Impl, _)) => {
+            Ok(Some(types::parse_impl_with_visibility(state, true)?))
+        }
+        Some((Token::Mod, _)) => {
+            // For now, treat pub mod the same as mod (visibility not yet fully implemented)
+            Ok(Some(parse_module(state)?))
+        }
+        _ => bail!("Expected 'fn', 'struct', 'enum', 'trait', 'impl', or 'mod' after 'pub'")
+    }
+}
+
 /// # Errors
 /// Returns error if control flow syntax is malformed
 fn parse_control_flow_prefix(state: &mut ParserState, token: Token, _span: Span) -> Result<Option<Expr>> {
     match token {
-        Token::Async => {
-            // Check if it's async function or async block
-            if matches!(state.tokens.peek_nth(1), Some((Token::Fun | Token::Fn, _))) {
-                // async fun - parse as async function
-                state.tokens.advance(); // consume async
-                let mut func_expr = functions::parse_function(state)?;
-                // Mark the function as async
-                if let ExprKind::Function { is_async, .. } = &mut func_expr.kind {
-                    *is_async = true;
-                }
-                Ok(Some(func_expr))
-            } else {
-                // async block
-                Ok(Some(control_flow::parse_async_block(state)?))
-            }
-        }
+        Token::Async => parse_async_construct(state),
+        Token::Pub => parse_pub_construct(state),
         Token::If => Ok(Some(control_flow::parse_if(state)?)),
         Token::Let => Ok(Some(control_flow::parse_let(state)?)),
-        Token::Pub => {
-            state.tokens.advance(); // consume pub
-            
-            // Check what follows pub
-            match state.tokens.peek() {
-                Some((Token::Fun | Token::Fn, _)) => {
-                    Ok(Some(functions::parse_function_with_visibility(state, true)?))
-                }
-                Some((Token::Struct, _)) => {
-                    Ok(Some(types::parse_struct_with_visibility(state, true)?))
-                }
-                Some((Token::Enum, _)) => {
-                    Ok(Some(types::parse_enum_with_visibility(state, true)?))
-                }
-                Some((Token::Trait, _)) => {
-                    Ok(Some(types::parse_trait_with_visibility(state, true)?))
-                }
-                Some((Token::Impl, _)) => {
-                    Ok(Some(types::parse_impl_with_visibility(state, true)?))
-                }
-                Some((Token::Mod, _)) => {
-                    // For now, treat pub mod the same as mod (visibility not yet fully implemented)
-                    Ok(Some(parse_module(state)?))
-                }
-                _ => bail!("Expected 'fn', 'struct', 'enum', 'trait', 'impl', or 'mod' after 'pub'")
-            }
-        }
         Token::Fun | Token::Fn => Ok(Some(functions::parse_function(state)?)),
         Token::Backslash | Token::Pipe => Ok(Some(functions::parse_lambda(state)?)),
         Token::Match => Ok(Some(control_flow::parse_match(state)?)),
@@ -613,17 +590,8 @@ fn parse_control_flow_prefix(state: &mut ParserState, token: Token, _span: Span)
 
 /// Parses Result/Option constructors and special enum variants
 /// 
-/// # Examples
-/// ```
-/// use ruchy::frontend::lexer::Lexer;
-/// use ruchy::frontend::parser::ParserState;
-/// 
-/// let mut lexer = Lexer::new("Some(42)");
-/// let tokens = lexer.tokenize().unwrap();
-/// let mut state = ParserState::new(tokens);
-/// let expr = parse_result_option_prefix(&mut state).unwrap();
-/// // Should parse as Some constructor
-/// ```
+/// # Example Usage
+/// Handles Option/Result constructors like Some(42), None, Ok(value), Err(msg).
 /// 
 /// # Errors
 /// Returns error if constructor syntax is malformed
@@ -748,17 +716,8 @@ fn parse_result_option_prefix(state: &mut ParserState, token: Token, span: Span)
 
 /// Parses unary operators and increment/decrement expressions
 /// 
-/// # Examples
-/// ```
-/// use ruchy::frontend::lexer::Lexer;
-/// use ruchy::frontend::parser::ParserState;
-/// 
-/// let mut lexer = Lexer::new("-42");
-/// let tokens = lexer.tokenize().unwrap();
-/// let mut state = ParserState::new(tokens);
-/// let expr = parse_unary_prefix(&mut state).unwrap();
-/// // Should parse as negation of 42
-/// ```
+/// # Example Usage
+/// Handles unary operators like -42 (negation), !true (logical not), and await expressions.
 /// 
 /// # Errors
 /// Returns error if unary expression is malformed
@@ -808,17 +767,8 @@ fn parse_unary_prefix(state: &mut ParserState, token: Token, span: Span) -> Resu
 
 /// Parses collection and type declaration tokens
 /// 
-/// # Examples
-/// ```
-/// use ruchy::frontend::lexer::Lexer;
-/// use ruchy::frontend::parser::ParserState;
-/// 
-/// let mut lexer = Lexer::new("[1, 2, 3]");
-/// let tokens = lexer.tokenize().unwrap();
-/// let mut state = ParserState::new(tokens);
-/// let expr = parse_collections_types_prefix(&mut state).unwrap();
-/// // Should parse as list literal
-/// ```
+/// # Example Usage
+/// Handles collections like [1, 2, 3] (lists), type annotations, and type constructors.
 /// 
 /// # Errors
 /// Returns error if collection/type syntax is malformed

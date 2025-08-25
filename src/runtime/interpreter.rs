@@ -1711,153 +1711,41 @@ impl Interpreter {
     /// Returns error if evaluation fails
     fn eval_expr_kind(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         match expr_kind {
+            // Basic expressions
             ExprKind::Literal(lit) => Ok(self.eval_literal(lit)),
-
             ExprKind::Identifier(name) => self.lookup_variable(name),
-
-            ExprKind::Binary { left, op, right } => {
-                let left_val = self.eval_expr(left)?;
-                let right_val = self.eval_expr(right)?;
-                let result = self.eval_binary_op(*op, &left_val, &right_val)?;
-                // Collect type feedback for this binary operation
-                let site_id = left.span.start; // Use span start as site ID
-                self.record_binary_op_feedback(site_id, &left_val, &right_val, &result);
-                Ok(result)
-            }
-
-            ExprKind::Unary { op, operand } => {
-                let operand_val = self.eval_expr(operand)?;
-                self.eval_unary_op(*op, &operand_val)
-            }
-
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            } => {
-                let cond_val = self.eval_expr(condition)?;
-                if cond_val.is_truthy() {
-                    self.eval_expr(then_branch)
-                } else if let Some(else_branch) = else_branch {
-                    self.eval_expr(else_branch)
-                } else {
-                    Ok(Value::nil())
-                }
-            }
-
-            ExprKind::Let {
-                name, value, body, ..
-            } => {
-                let val = self.eval_expr(value)?;
-                // Collect type feedback for variable assignment
-                self.record_variable_assignment_feedback(name, &val);
-                // Store in current environment
-                self.env_set(name.clone(), val);
-                let result = self.eval_expr(body)?;
-                // Remove binding
-                self.env_remove(name);
-                Ok(result)
-            }
-
-            ExprKind::Function {
-                name, params, body, ..
-            } => self.eval_function(name, params, body),
-
-            ExprKind::Lambda { params, body } => self.eval_lambda(params, body),
-
+            
+            // Operations and calls
+            ExprKind::Binary { left, op, right } => self.eval_binary_expr(left, *op, right),
+            ExprKind::Unary { op, operand } => self.eval_unary_expr(*op, operand),
             ExprKind::Call { func, args } => self.eval_function_call(func, args),
-
-            ExprKind::List(elements) => {
-                let mut values = Vec::new();
-                for element in elements {
-                    values.push(self.eval_expr(element)?);
-                }
-                Ok(Value::Array(Rc::new(values)))
-            }
-
-            ExprKind::Block(statements) => {
-                if statements.is_empty() {
-                    Ok(Value::nil())
-                } else {
-                    let mut result = Value::nil();
-                    for stmt in statements {
-                        result = self.eval_expr(stmt)?;
-                    }
-                    Ok(result)
-                }
-            }
+            ExprKind::MethodCall { receiver, method, args } => self.eval_method_call(receiver, method, args),
             
-            ExprKind::MethodCall { receiver, method, args } => {
-                self.eval_method_call(receiver, method, args)
-            }
+            // Functions and lambdas
+            ExprKind::Function { name, params, body, .. } => self.eval_function(name, params, body),
+            ExprKind::Lambda { params, body } => self.eval_lambda(params, body),
             
-            ExprKind::StringInterpolation { parts } => {
-                self.eval_string_interpolation(parts)
-            }
+            // Control flow
+            ExprKind::If { condition, then_branch, else_branch } => self.eval_if_expr(condition, then_branch, else_branch.as_deref()),
+            ExprKind::Let { name, value, body, .. } => self.eval_let_expr(name, value, body),
+            ExprKind::For { var, pattern, iter, body } => self.eval_for_loop(var, pattern.as_ref(), iter, body),
+            ExprKind::While { condition, body } => self.eval_while_loop(condition, body),
+            ExprKind::Match { expr, arms } => self.eval_match(expr, arms),
+            ExprKind::Break { label: _ } => Err(InterpreterError::RuntimeError("break".to_string())),
+            ExprKind::Continue { label: _ } => Err(InterpreterError::RuntimeError("continue".to_string())),
+            ExprKind::Return { value } => self.eval_return_expr(value.as_deref()),
             
-            ExprKind::Range { start, end, inclusive } => {
-                let start_val = self.eval_expr(start)?;
-                let end_val = self.eval_expr(end)?;
-                
-                match (start_val, end_val) {
-                    (Value::Integer(s), Value::Integer(e)) => {
-                        let range_end = if *inclusive { e + 1 } else { e };
-                        let values: Vec<Value> = (s..range_end).map(Value::Integer).collect();
-                        Ok(Value::Array(Rc::new(values)))
-                    }
-                    _ => Err(InterpreterError::RuntimeError(
-                        "Range bounds must be integers".to_string()
-                    )),
-                }
-            }
+            // Data structures
+            ExprKind::List(elements) => self.eval_list_expr(elements),
+            ExprKind::Block(statements) => self.eval_block_expr(statements),
+            ExprKind::Tuple(elements) => self.eval_tuple_expr(elements),
+            ExprKind::Range { start, end, inclusive } => self.eval_range_expr(start, end, *inclusive),
             
-            ExprKind::Tuple(elements) => {
-                let mut values = Vec::new();
-                for element in elements {
-                    values.push(self.eval_expr(element)?);
-                }
-                Ok(Value::Tuple(Rc::new(values)))
-            }
+            // String and assignment
+            ExprKind::StringInterpolation { parts } => self.eval_string_interpolation(parts),
+            ExprKind::Assign { target, value } => self.eval_assign(target, value),
+            ExprKind::CompoundAssign { target, op, value } => self.eval_compound_assign(target, *op, value),
             
-            ExprKind::For { var, pattern, iter, body } => {
-                self.eval_for_loop(var, pattern.as_ref(), iter, body)
-            }
-            
-            ExprKind::While { condition, body } => {
-                self.eval_while_loop(condition, body)
-            }
-            
-            ExprKind::Break { label: _ } => {
-                // For now, ignore labels and just break
-                Err(InterpreterError::RuntimeError("break".to_string()))
-            }
-            
-            ExprKind::Continue { label: _ } => {
-                // For now, ignore labels and just continue
-                Err(InterpreterError::RuntimeError("continue".to_string()))
-            }
-            
-            ExprKind::Return { value } => {
-                let return_value = if let Some(val_expr) = value {
-                    self.eval_expr(val_expr)?
-                } else {
-                    Value::nil()
-                };
-                Err(InterpreterError::RuntimeError(format!("return:{}", return_value)))
-            }
-            
-            ExprKind::Match { expr, arms } => {
-                self.eval_match(expr, arms)
-            }
-            
-            ExprKind::Assign { target, value } => {
-                self.eval_assign(target, value)
-            }
-            
-            ExprKind::CompoundAssign { target, op, value } => {
-                self.eval_compound_assign(target, *op, value)
-            }
-
             // Placeholder implementations for other expression types
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Expression type not yet implemented: {expr_kind:?}"
@@ -1900,21 +1788,14 @@ impl Interpreter {
     /// Set a variable in the current environment
     #[allow(clippy::expect_used)] // Environment stack invariant ensures this never panics
     fn env_set(&mut self, name: String, value: Value) {
+        // Record type feedback for optimization
+        self.record_variable_assignment_feedback(&name, &value);
+        
         let env = self
             .env_stack
             .last_mut()
             .expect("Environment stack should never be empty");
         env.insert(name, value);
-    }
-
-    /// Remove a variable from the current environment
-    #[allow(clippy::expect_used)] // Environment stack invariant ensures this never panics
-    fn env_remove(&mut self, name: &str) {
-        let env = self
-            .env_stack
-            .last_mut()
-            .expect("Environment stack should never be empty");
-        env.remove(name);
     }
 
     /// Push a new environment onto the stack
@@ -2041,6 +1922,125 @@ impl Interpreter {
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Unary operator not yet implemented: {op:?}"
             ))),
+        }
+    }
+
+    /// Evaluate binary expression
+    fn eval_binary_expr(
+        &mut self,
+        left: &Expr,
+        op: crate::frontend::ast::BinaryOp,
+        right: &Expr,
+    ) -> Result<Value, InterpreterError> {
+        let left_val = self.eval_expr(left)?;
+        let right_val = self.eval_expr(right)?;
+        let result = self.eval_binary_op(op, &left_val, &right_val)?;
+        
+        // Record type feedback for optimization
+        let site_id = left.span.start; // Use span start as site ID
+        self.record_binary_op_feedback(site_id, &left_val, &right_val, &result);
+        
+        Ok(result)
+    }
+
+    /// Evaluate unary expression
+    fn eval_unary_expr(
+        &mut self,
+        op: crate::frontend::ast::UnaryOp,
+        operand: &Expr,
+    ) -> Result<Value, InterpreterError> {
+        let operand_val = self.eval_expr(operand)?;
+        self.eval_unary_op(op, &operand_val)
+    }
+
+    /// Evaluate if expression
+    fn eval_if_expr(
+        &mut self,
+        condition: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Expr>,
+    ) -> Result<Value, InterpreterError> {
+        let condition_val = self.eval_expr(condition)?;
+        if condition_val.is_truthy() {
+            self.eval_expr(then_branch)
+        } else if let Some(else_expr) = else_branch {
+            self.eval_expr(else_expr)
+        } else {
+            Ok(Value::nil())
+        }
+    }
+
+    /// Evaluate let expression
+    fn eval_let_expr(
+        &mut self,
+        name: &str,
+        value: &Expr,
+        body: &Expr,
+    ) -> Result<Value, InterpreterError> {
+        let val = self.eval_expr(value)?;
+        self.env_set(name.to_string(), val);
+        self.eval_expr(body)
+    }
+
+    /// Evaluate return expression
+    fn eval_return_expr(&mut self, value: Option<&Expr>) -> Result<Value, InterpreterError> {
+        if let Some(expr) = value {
+            let val = self.eval_expr(expr)?;
+            Err(InterpreterError::RuntimeError(format!("return {val:?}")))
+        } else {
+            Err(InterpreterError::RuntimeError("return".to_string()))
+        }
+    }
+
+    /// Evaluate list expression
+    fn eval_list_expr(&mut self, elements: &[Expr]) -> Result<Value, InterpreterError> {
+        let mut values = Vec::new();
+        for elem in elements {
+            values.push(self.eval_expr(elem)?);
+        }
+        Ok(Value::from_array(values))
+    }
+
+    /// Evaluate block expression
+    fn eval_block_expr(&mut self, statements: &[Expr]) -> Result<Value, InterpreterError> {
+        let mut result = Value::nil();
+        for stmt in statements {
+            result = self.eval_expr(stmt)?;
+        }
+        Ok(result)
+    }
+
+    /// Evaluate tuple expression
+    fn eval_tuple_expr(&mut self, elements: &[Expr]) -> Result<Value, InterpreterError> {
+        let mut values = Vec::new();
+        for elem in elements {
+            values.push(self.eval_expr(elem)?);
+        }
+        Ok(Value::Tuple(Rc::new(values)))
+    }
+
+    /// Evaluate range expression
+    fn eval_range_expr(
+        &mut self,
+        start: &Expr,
+        end: &Expr,
+        inclusive: bool,
+    ) -> Result<Value, InterpreterError> {
+        let start_val = self.eval_expr(start)?;
+        let end_val = self.eval_expr(end)?;
+        
+        match (start_val, end_val) {
+            (Value::Integer(start_i), Value::Integer(end_i)) => {
+                let range: Vec<Value> = if inclusive {
+                    (start_i..=end_i).map(Value::from_i64).collect()
+                } else {
+                    (start_i..end_i).map(Value::from_i64).collect()
+                };
+                Ok(Value::from_array(range))
+            }
+            _ => Err(InterpreterError::TypeError(
+                "Range bounds must be integers".to_string(),
+            )),
         }
     }
 
@@ -2544,6 +2544,7 @@ impl Interpreter {
     }
 
     /// Record type feedback for binary operations
+    #[allow(dead_code)] // Used by tests and type feedback system
     fn record_binary_op_feedback(
         &mut self,
         site_id: usize,
@@ -2556,6 +2557,7 @@ impl Interpreter {
     }
 
     /// Record type feedback for variable assignments
+    #[allow(dead_code)] // Used by tests and type feedback system
     fn record_variable_assignment_feedback(&mut self, var_name: &str, value: &Value) {
         let type_id = value.type_id();
         self.type_feedback

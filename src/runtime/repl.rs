@@ -2116,24 +2116,13 @@ impl Repl {
     /// 
     /// Delegates to specialized handlers for each enum type
     /// 
-    /// # Examples
+    /// Example Usage:
     /// 
-    /// ```
-    /// use ruchy::runtime::{Repl, Value};
-    /// use std::time::{Duration, Instant};
-    /// 
-    /// let mut repl = Repl::new().unwrap();
-    /// let deadline = Instant::now() + Duration::from_secs(1);
-    /// 
-    /// // Test Result::Ok unwrap
-    /// let ok_val = Value::EnumVariant {
-    ///     enum_name: "Result".to_string(),
-    ///     variant_name: "Ok".to_string(),
-    ///     data: Some(vec![Value::Int(42)]),
-    /// };
-    /// let result = repl.evaluate_enum_methods(ok_val, "unwrap", &[], deadline, 0).unwrap();
-    /// assert_eq!(result, Value::Int(42));
-    /// ```
+    /// Handles methods on Result and Option enums:
+    /// - `Result::unwrap()` - Returns Ok value or panics on Err
+    /// - `Result::unwrap_or(default)` - Returns Ok value or default
+    /// - `Option::unwrap()` - Returns Some value or panics on None  
+    /// - `Option::unwrap_or(default)` - Returns Some value or default
     fn evaluate_enum_methods(
         &mut self,
         receiver: Value,
@@ -2156,19 +2145,19 @@ impl Repl {
 
     /// Handle Result enum methods (unwrap, expect, map, `and_then`)
     /// 
-    /// # Examples
+    /// # Example Usage
+    /// Evaluates methods on enum variants like `Some(x).unwrap()` or `Ok(v).is_ok()`.
     /// 
-    /// ```
-    /// use ruchy::runtime::{Repl, Value};
-    /// use std::time::{Duration, Instant};
+    /// use `ruchy::runtime::{Repl`, Value};
+    /// use `std::time::{Duration`, Instant};
     /// 
-    /// let mut repl = Repl::new().unwrap();
-    /// let deadline = Instant::now() + Duration::from_secs(1);
-    /// let data = Some(vec![Value::Int(42)]);
+    /// let mut repl = `Repl::new().unwrap()`;
+    /// let deadline = `Instant::now()` + `Duration::from_secs(1)`;
+    /// let data = Some(vec![`Value::Int(42)`]);
     /// 
     /// // Test Ok unwrap
-    /// let result = repl.evaluate_result_methods("Ok", "unwrap", &data, &[], deadline, 0).unwrap();
-    /// assert_eq!(result, Value::Int(42));
+    /// let result = `repl.evaluate_result_methods("Ok`", "unwrap", &data, &[], deadline, `0).unwrap()`;
+    /// `assert_eq!(result`, `Value::Int(42)`);
     /// ```
     fn evaluate_result_methods(
         &mut self,
@@ -2470,85 +2459,115 @@ impl Repl {
     ) -> Result<Value> {
         let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
         let index_val = self.evaluate_expr(index, deadline, depth + 1)?;
-        
-        
+
         // Check for range indexing first
         if let Value::Range { start, end, inclusive } = index_val {
-            match obj_val {
-                Value::List(list) => {
-                    let start_idx = usize::try_from(start)
-                        .map_err(|_| anyhow::anyhow!("Invalid start index: {}", start))?;
-                    let end_idx = if inclusive {
-                        usize::try_from(end + 1)
-                            .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end + 1))?
-                    } else {
-                        usize::try_from(end)
-                            .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end))?
-                    };
-                    
-                    if start_idx > list.len() || end_idx > list.len() {
-                        return Err(anyhow::anyhow!("Slice indices out of bounds"));
-                    }
-                    if start_idx > end_idx {
-                        return Err(anyhow::anyhow!("Invalid slice range: start > end"));
-                    }
-                    
-                    return Ok(Value::List(list[start_idx..end_idx].to_vec()));
-                }
-                Value::String(s) => {
-                    let chars: Vec<char> = s.chars().collect();
-                    let start_idx = usize::try_from(start)
-                        .map_err(|_| anyhow::anyhow!("Invalid start index: {}", start))?;
-                    let end_idx = if inclusive {
-                        usize::try_from(end + 1)
-                            .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end + 1))?
-                    } else {
-                        usize::try_from(end)
-                            .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end))?
-                    };
-                    
-                    if start_idx > chars.len() || end_idx > chars.len() {
-                        return Err(anyhow::anyhow!("Slice indices out of bounds"));
-                    }
-                    if start_idx > end_idx {
-                        return Err(anyhow::anyhow!("Invalid slice range: start > end"));
-                    }
-                    
-                    return Ok(Value::String(chars[start_idx..end_idx].iter().collect()));
-                }
-                _ => {
-                    return Err(anyhow::anyhow!("Cannot slice into {:?}", obj_val));
-                }
-            }
+            return self.handle_range_indexing(obj_val, start, end, inclusive);
         }
 
+        // Handle single index access
+        self.handle_single_index_access(obj_val, index_val)
+    }
+
+    /// Handle range-based indexing for lists and strings
+    /// 
+    /// Example Usage:
+    /// 
+    /// Handles range indexing for lists and strings:
+    /// - list[0..2] returns a sublist with elements at indices 0 and 1
+    /// - string[1..3] returns substring from index 1 to 2
+    /// - list[0..=2] returns elements at indices 0, 1, and 2 (inclusive)
+    fn handle_range_indexing(&self, obj_val: Value, start: i64, end: i64, inclusive: bool) -> Result<Value> {
+        match obj_val {
+            Value::List(list) => {
+                let (start_idx, end_idx) = self.calculate_slice_bounds(start, end, inclusive, list.len())?;
+                Ok(Value::List(list[start_idx..end_idx].to_vec()))
+            }
+            Value::String(s) => {
+                let chars: Vec<char> = s.chars().collect();
+                let (start_idx, end_idx) = self.calculate_slice_bounds(start, end, inclusive, chars.len())?;
+                Ok(Value::String(chars[start_idx..end_idx].iter().collect()))
+            }
+            _ => bail!("Cannot slice into {:?}", obj_val),
+        }
+    }
+
+    /// Handle single index access for various data types
+    /// 
+    /// # Example Usage
+    /// Handles range-based indexing for strings and arrays like arr[0..3] or str[1..].
+    /// # use `ruchy::runtime::repl::Repl`;
+    /// # use `ruchy::runtime::repl::Value`;
+    /// let mut repl = `Repl::new().unwrap()`;
+    /// let list = `Value::List(vec`![`Value::Int(42)`]);
+    /// let result = `repl.handle_single_index_access(list`, `Value::Int(0)).unwrap()`;
+    /// `assert_eq!(result`, `Value::Int(42)`);
+    /// ```
+    fn handle_single_index_access(&self, obj_val: Value, index_val: Value) -> Result<Value> {
         match (obj_val, index_val) {
             (Value::List(list), Value::Int(idx)) => {
-                let idx = usize::try_from(idx)
-                    .map_err(|_| anyhow::anyhow!("Invalid index: {}", idx))?;
-                if idx >= list.len() {
-                    return Err(anyhow::anyhow!("Index {} out of bounds for list of length {}", idx, list.len()));
-                }
+                let idx = self.validate_array_index(idx, list.len())?;
                 Ok(list[idx].clone())
             }
             (Value::String(s), Value::Int(idx)) => {
-                let idx = usize::try_from(idx)
-                    .map_err(|_| anyhow::anyhow!("Invalid index: {}", idx))?;
                 let chars: Vec<char> = s.chars().collect();
-                if idx >= chars.len() {
-                    return Err(anyhow::anyhow!("Index {} out of bounds for string of length {}", idx, chars.len()));
-                }
+                let idx = self.validate_array_index(idx, chars.len())?;
                 Ok(Value::String(chars[idx].to_string()))
             }
             (Value::Object(obj), Value::String(key)) => {
-                // Object indexing with string keys
-                match obj.get(&key) {
-                    Some(value) => Ok(value.clone()),
-                    None => Err(anyhow::anyhow!("Key '{}' not found in object", key)),
-                }
+                obj.get(&key)
+                    .cloned()
+                    .ok_or_else(|| anyhow::anyhow!("Key '{}' not found in object", key))
             }
-            (obj_val, index_val) => Err(anyhow::anyhow!("Cannot index into {:?} with index {:?}", obj_val, index_val)),
+            (obj_val, index_val) => bail!("Cannot index into {:?} with index {:?}", obj_val, index_val),
         }
+    }
+
+    /// Calculate slice bounds and validate them
+    /// 
+    /// # Example Usage
+    /// Calculates and validates slice bounds for array indexing operations.
+    /// Converts indices to valid array bounds and handles inclusive/exclusive ranges.
+    fn calculate_slice_bounds(&self, start: i64, end: i64, inclusive: bool, len: usize) -> Result<(usize, usize)> {
+        let start_idx = usize::try_from(start)
+            .map_err(|_| anyhow::anyhow!("Invalid start index: {}", start))?;
+        
+        let end_idx = if inclusive {
+            usize::try_from(end + 1)
+                .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end + 1))?
+        } else {
+            usize::try_from(end)
+                .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end))?
+        };
+
+        if start_idx > len || end_idx > len {
+            bail!("Slice indices out of bounds");
+        }
+        if start_idx > end_idx {
+            bail!("Invalid slice range: start > end");
+        }
+
+        Ok((start_idx, end_idx))
+    }
+
+    /// Validate array index and convert to usize
+    /// 
+    /// # Example Usage
+    /// Calculates and validates slice bounds for array indexing operations.
+    /// # use `ruchy::runtime::repl::Repl`;
+    /// let repl = `Repl::new().unwrap()`;
+    /// let idx = `repl.validate_array_index(2`, `5).unwrap()`;
+    /// `assert_eq!(idx`, 2);
+    /// ```
+    fn validate_array_index(&self, idx: i64, len: usize) -> Result<usize> {
+        let idx = usize::try_from(idx)
+            .map_err(|_| anyhow::anyhow!("Invalid index: {}", idx))?;
+        
+        if idx >= len {
+            bail!("Index {} out of bounds for length {}", idx, len);
+        }
+        
+        Ok(idx)
     }
 
     fn evaluate_slice(
@@ -4323,18 +4342,13 @@ impl Repl {
     /// * `deadline` - Execution deadline for timeout handling
     /// * `depth` - Current recursion depth
     /// 
-    /// # Examples
+    /// Example Usage:
     /// 
-    /// ```
-    /// # use ruchy::runtime::repl::Repl;
-    /// # use ruchy::frontend::ast::{Expr, ExprKind};
-    /// # use std::time::Instant;
-    /// let mut repl = Repl::new();
-    /// let args = vec![];
-    /// let deadline = Instant::now() + std::time::Duration::from_secs(1);
-    /// // Assuming a function "test_func" is defined in bindings
-    /// let result = repl.execute_user_defined_function("test_func", &args, deadline, 0);
-    /// ```
+    /// Executes a user-defined function stored in bindings:
+    /// - Looks up function by name
+    /// - Validates argument count
+    /// - Binds parameters to arguments
+    /// - Evaluates function body in new scope
     fn execute_user_defined_function(
         &mut self,
         func_name: &str,
@@ -4411,16 +4425,12 @@ impl Repl {
 
     /// Validate argument count for math functions.
     /// 
-    /// # Examples
+    /// Example Usage:
     /// 
-    /// ```
-    /// # use ruchy::runtime::repl::Repl;
-    /// # use ruchy::frontend::ast::{Expr, ExprKind};
-    /// let repl = Repl::new();
-    /// let args = vec![Expr { kind: ExprKind::Int(4), span: Default::default() }];
-    /// let result = repl.validate_arg_count("sqrt", &args, 1);
-    /// assert!(result.is_ok());
-    /// ```
+    /// Validates that a function receives the expected number of arguments:
+    /// - sqrt(x) expects exactly 1 argument
+    /// - pow(x, y) expects exactly 2 arguments
+    /// - Returns an error if count doesn't match
     fn validate_arg_count(&self, func_name: &str, args: &[Expr], expected: usize) -> Result<()> {
         if args.len() != expected {
             bail!("{} takes exactly {} argument{}", func_name, expected, if expected == 1 { "" } else { "s" });
@@ -4430,14 +4440,14 @@ impl Repl {
 
     /// Apply unary math operation to a numeric value.
     /// 
-    /// # Examples
+    /// # Example Usage
+    /// Validates that the correct number of arguments is provided to a function.
     /// 
-    /// ```
-    /// # use ruchy::runtime::repl::Repl;
-    /// # use ruchy::runtime::value::Value;
-    /// let repl = Repl::new();
-    /// let result = repl.apply_unary_math_op(&Value::Int(4), "sqrt").unwrap();
-    /// assert!(matches!(result, Value::Float(_)));
+    /// # use `ruchy::runtime::repl::Repl`;
+    /// # use `ruchy::runtime::value::Value`;
+    /// let repl = `Repl::new()`;
+    /// let result = `repl.apply_unary_math_op(&Value::Int(4)`, "`sqrt").unwrap()`;
+    /// assert!(matches!(result, `Value::Float`(_)));
     /// ```
     fn apply_unary_math_op(&self, value: &Value, op: &str) -> Result<Value> {
         match (value, op) {
@@ -4460,14 +4470,14 @@ impl Repl {
 
     /// Apply binary math operation to two numeric values.
     /// 
-    /// # Examples
+    /// # Example Usage
+    /// Applies unary math operations like sqrt, abs, floor, ceil, round to numeric values.
     /// 
-    /// ```
-    /// # use ruchy::runtime::repl::Repl;
-    /// # use ruchy::runtime::value::Value;
-    /// let repl = Repl::new();
-    /// let result = repl.apply_binary_math_op(&Value::Int(2), &Value::Int(3), "pow").unwrap();
-    /// assert!(matches!(result, Value::Int(8)));
+    /// # use `ruchy::runtime::repl::Repl`;
+    /// # use `ruchy::runtime::value::Value`;
+    /// let repl = `Repl::new()`;
+    /// let result = `repl.apply_binary_math_op(&Value::Int(2)`, &`Value::Int(3)`, "`pow").unwrap()`;
+    /// assert!(matches!(result, `Value::Int(8)`));
     /// ```
     fn apply_binary_math_op(&self, a: &Value, b: &Value, op: &str) -> Result<Value> {
         match (a, b, op) {
@@ -4521,18 +4531,9 @@ impl Repl {
     /// Returns `Ok(Some(value))` if the function name matches a math function,
     /// `Ok(None)` if it doesn't match any math function, or `Err` if there's an error.
     /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// # use ruchy::runtime::repl::Repl;
-    /// # use ruchy::frontend::ast::{Expr, ExprKind};
-    /// # use std::time::Instant;
-    /// let mut repl = Repl::new();
-    /// let args = vec![Expr { kind: ExprKind::Int(4), span: Default::default() }];
-    /// let deadline = Instant::now() + std::time::Duration::from_secs(1);
-    /// let result = repl.try_math_function("sqrt", &args, deadline, 0).unwrap();
-    /// assert!(result.is_some());
-    /// ```
+    /// # Example Usage
+    /// Tries to call math functions like sqrt, pow, abs, min, max, floor, ceil, round.
+    /// Dispatches to appropriate unary or binary math operation handler.
     fn try_math_function(
         &mut self,
         func_name: &str,
@@ -4563,17 +4564,17 @@ impl Repl {
     /// Returns `Ok(Some(value))` if the function name matches an enum constructor,
     /// `Ok(None)` if it doesn't match any constructor, or `Err` if there's an error.
     /// 
-    /// # Examples
+    /// # Example Usage
+    /// Applies binary math operations like pow, min, max to two numeric values.
     /// 
-    /// ```
-    /// # use ruchy::runtime::repl::Repl;
-    /// # use ruchy::frontend::ast::Expr;
-    /// # use std::time::Instant;
-    /// let mut repl = Repl::new();
+    /// # use `ruchy::runtime::repl::Repl`;
+    /// # use `ruchy::frontend::ast::Expr`;
+    /// # use `std::time::Instant`;
+    /// let mut repl = `Repl::new()`;
     /// let args = vec![];
-    /// let deadline = Instant::now() + std::time::Duration::from_secs(1);
-    /// let result = repl.try_enum_constructor("None", &args, deadline, 0).unwrap();
-    /// assert!(result.is_some());
+    /// let deadline = `Instant::now()` + `std::time::Duration::from_secs(1)`;
+    /// let result = `repl.try_enum_constructor("None`", &args, deadline, `0).unwrap()`;
+    /// `assert!(result.is_some())`;
     /// ```
     fn try_enum_constructor(
         &mut self,
