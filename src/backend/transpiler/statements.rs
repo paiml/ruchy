@@ -92,6 +92,15 @@ impl Transpiler {
         }
     }
 
+    /// Check if function name suggests numeric operations
+    fn looks_like_numeric_function(&self, name: &str) -> bool {
+        matches!(name, 
+            "add" | "subtract" | "multiply" | "divide" | "sum" | "product" | 
+            "min" | "max" | "abs" | "sqrt" | "pow" | "mod" | "gcd" | "lcm" |
+            "factorial" | "fibonacci" | "prime" | "even" | "odd" | "square" | "cube"
+        )
+    }
+
     /// Transpiles function definitions
     #[allow(clippy::too_many_arguments)]
     pub fn transpile_function(
@@ -110,34 +119,33 @@ impl Transpiler {
             .iter()
             .map(|p| {
                 let param_name = format_ident!("{}", p.name());
-                // HOTFIX: For function signatures, use single generic type T for inferred types
+                // For inferred types, use appropriate concrete types instead of generics
                 let type_tokens = if let Ok(tokens) = self.transpile_type(&p.ty) {
                     let token_str = tokens.to_string();
                     if token_str == "_" {
-                        // Use single generic type T for all inferred parameters
-                        quote! { T }
+                        // Smart type inference based on function name
+                        if self.looks_like_numeric_function(name) {
+                            quote! { i32 }
+                        } else {
+                            quote! { String }
+                        }
                     } else {
                         tokens
                     }
-                } else { quote! { T } };
+                } else { 
+                    // Smart default based on function name
+                    if self.looks_like_numeric_function(name) {
+                        quote! { i32 }
+                    } else {
+                        quote! { String }
+                    }
+                };
                 quote! { #param_name: #type_tokens }
             })
             .collect();
 
-        // HOTFIX: Add inferred generic type parameters with appropriate trait bounds
-        let mut all_type_params = type_params.to_vec();
-        let mut has_inferred_types = false;
-        for p in params {
-            let type_tokens = self.transpile_type(&p.ty).unwrap_or_else(|_| quote! { _ });
-            let token_str = type_tokens.to_string();
-            if token_str == "_" {
-                // Use a single generic type T for all inferred parameters (for operations like addition)
-                if !has_inferred_types {
-                    all_type_params.push("T: std::ops::Add<Output=T> + std::ops::Mul<Output=T> + std::fmt::Display + std::fmt::Debug + Clone".to_string());
-                    has_inferred_types = true;
-                }
-            }
-        }
+        // Use provided type parameters only - no automatic generic inference
+        let all_type_params = type_params.to_vec();
 
         let body_tokens = if is_async {
             let mut async_transpiler = Transpiler::new();
@@ -147,14 +155,16 @@ impl Transpiler {
             self.transpile_expr(body)?
         };
 
-        // HOTFIX: Infer return type for functions with inferred parameters
+        // Infer return type based on function body content
         let return_type_tokens = if let Some(ty) = return_type {
             let ty_tokens = self.transpile_type(ty)?;
             quote! { -> #ty_tokens }
-        } else if has_inferred_types {
-            // If we have inferred parameters, likely returning the same type
-            quote! { -> T }
+        } else if self.looks_like_numeric_function(name) {
+            // Numeric functions likely return numeric values
+            quote! { -> i32 }
         } else {
+            // Don't automatically assume generic return type
+            // Let Rust's type inference handle it
             quote! {}
         };
 
@@ -394,8 +404,8 @@ impl Transpiler {
                 Ok(quote! { #obj_tokens.iter().map(#(#arg_tokens),*).collect::<Vec<_>>() })
             }
             "filter" => {
-                // vec.filter(f) -> vec.into_iter().filter(f).collect()
-                Ok(quote! { #obj_tokens.into_iter().filter(#(#arg_tokens),*).collect() })
+                // vec.filter(f) -> vec.into_iter().filter(f).collect::<Vec<_>>()
+                Ok(quote! { #obj_tokens.into_iter().filter(#(#arg_tokens),*).collect::<Vec<_>>() })
             }
             "reduce" => {
                 // vec.reduce(f) -> vec.into_iter().reduce(f)
@@ -409,6 +419,10 @@ impl Transpiler {
             }
             "contains_key" | "keys" | "values" | "entry" => {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+            }
+            "items" => {
+                // HashMap.items() -> HashMap.iter() for iterating key-value pairs
+                Ok(quote! { #obj_tokens.iter() })
             }
             "contains" => {
                 // HashSet contains method
@@ -430,6 +444,22 @@ impl Transpiler {
             | "melt" | "head" | "tail" | "sample" | "describe" => {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
+            
+            // String method name mappings (Ruchy -> Rust)
+            "to_upper" => {
+                let rust_method = format_ident!("to_uppercase");
+                Ok(quote! { #obj_tokens.#rust_method(#(#arg_tokens),*) })
+            }
+            "to_lower" => {
+                let rust_method = format_ident!("to_lowercase");
+                Ok(quote! { #obj_tokens.#rust_method(#(#arg_tokens),*) })
+            }
+            "length" => {
+                // Map Ruchy's length() to Rust's len()
+                let rust_method = format_ident!("len");
+                Ok(quote! { #obj_tokens.#rust_method(#(#arg_tokens),*) })
+            }
+            
             _ => {
                 // Regular method call
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
@@ -745,10 +775,11 @@ impl Transpiler {
             if let ExprKind::StringInterpolation { parts } = &args[0].kind {
                 return Ok(Some(self.transpile_print_with_interpolation(base_name, parts)?));
             }
-            // For single non-string arguments, add "{}" format string
+            // For single non-string arguments, add smart format string
             if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
                 let arg_tokens = self.transpile_expr(&args[0])?;
-                let format_str = "{}";
+                // Use Debug formatting for safety - works with all types including Vec, tuples, etc.
+                let format_str = "{:?}";
                 return Ok(Some(quote! { #func_tokens!(#format_str, #arg_tokens) }));
             }
         }

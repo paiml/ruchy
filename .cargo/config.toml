@@ -22,6 +22,13 @@ test-prop = "test property_ --lib -- --test-threads=2"
 test-heavy = "test --lib -- --ignored --test-threads=1"
 test-quick = "test --lib -- --test-threads=4 --skip property_"
 
+# Coverage aliases - Toyota Way: Easy access to quality metrics
+cov = "llvm-cov --html"
+cov-report = "llvm-cov report"
+cov-json = "llvm-cov --json"
+cov-lcov = "llvm-cov --lcov --output-path lcov.info"
+cov-open = "llvm-cov --html --open"
+
 [build]
 # Optimize build for test runs
 incremental = true

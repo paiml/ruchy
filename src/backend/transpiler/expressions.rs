@@ -252,12 +252,26 @@ impl Transpiler {
 
     /// Transpiles index access (array[index])
     pub fn transpile_index_access(&self, object: &Expr, index: &Expr) -> Result<TokenStream> {
+        use crate::frontend::ast::{ExprKind, Literal};
+        
         let obj_tokens = self.transpile_expr(object)?;
         let index_tokens = self.transpile_expr(index)?;
         
-        // Convert index to usize to handle i32 variables in array indexing
-        // This resolves the rosetta-ruchy blocking issue with i32 vs usize mismatch
-        Ok(quote! { #obj_tokens[#index_tokens as usize] })
+        // Smart index access: HashMap.get() for string keys, array indexing for numeric
+        match &index.kind {
+            // String literal keys use HashMap.get()
+            ExprKind::Literal(Literal::String(_)) => {
+                Ok(quote! { 
+                    #obj_tokens.get(#index_tokens)
+                        .cloned()
+                        .unwrap_or_else(|| panic!("Key not found"))
+                })
+            }
+            // Numeric and other keys use array indexing
+            _ => {
+                Ok(quote! { #obj_tokens[#index_tokens as usize] })
+            }
+        }
     }
 
     /// Transpiles slice access (array[start:end])
@@ -412,15 +426,17 @@ impl Transpiler {
         &self,
         fields: &[crate::frontend::ast::ObjectField],
     ) -> Result<TokenStream> {
-        let field_tokens = self.collect_object_field_tokens(fields)?;
+        let field_tokens = self.collect_hashmap_field_tokens(fields)?;
         Ok(quote! {
             {
-                #(#field_tokens,)*
+                let mut map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+                #(#field_tokens)*
+                map
             }
         })
     }
 
-    fn collect_object_field_tokens(
+    fn collect_hashmap_field_tokens(
         &self,
         fields: &[crate::frontend::ast::ObjectField],
     ) -> Result<Vec<TokenStream>> {
@@ -430,19 +446,25 @@ impl Transpiler {
         for field in fields {
             let token = match field {
                 ObjectField::KeyValue { key, value } => {
-                    let key_ident = format_ident!("{}", key);
                     let value_tokens = self.transpile_expr(value)?;
-                    quote! { #key_ident: #value_tokens }
+                    quote! { map.insert(#key.to_string(), (#value_tokens).to_string()); }
                 }
                 ObjectField::Spread { expr } => {
                     let expr_tokens = self.transpile_expr(expr)?;
-                    quote! { ..#expr_tokens }
+                    // For spread syntax, merge the other map into this one
+                    quote! { 
+                        for (k, v) in #expr_tokens {
+                            map.insert(k, v);
+                        }
+                    }
                 }
             };
             field_tokens.push(token);
         }
+
         Ok(field_tokens)
     }
+
 
     /// Transpiles struct literals
     pub fn transpile_struct_literal(

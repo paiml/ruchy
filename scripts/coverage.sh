@@ -1,9 +1,19 @@
 #!/bin/bash
+# Comprehensive Test Coverage Analysis for Ruchy
+# Toyota Way: Quantitative quality measurement and continuous improvement
 
-# Code coverage script for Ruchy using cargo-llvm-cov
 set -e
 
-echo "🔍 Running code coverage analysis with cargo-llvm-cov..."
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+echo -e "${BOLD}🧪 Ruchy Test Coverage Analysis${NC}"
+echo "=================================="
 
 # Install cargo-llvm-cov if not present
 if ! command -v cargo-llvm-cov &> /dev/null; then

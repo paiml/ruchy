@@ -25,6 +25,7 @@
 use std::process::Command;
 use std::fs;
 use std::time::{Duration, Instant};
+use tempfile::NamedTempFile;
 
 /// Test execution result with performance metrics
 #[derive(Debug)]
@@ -37,8 +38,9 @@ struct TestResult {
 
 /// Run a Ruchy code snippet and return detailed test results
 fn run_ruchy_code(code: &str) -> TestResult {
-    let test_file = "/tmp/ruchy_test.ruchy";
-    fs::write(test_file, code).expect("Failed to write test file");
+    // Use unique temporary file to avoid race conditions
+    let mut test_file = NamedTempFile::new().expect("Failed to create temp file");
+    fs::write(test_file.path(), code).expect("Failed to write test file");
     
     let start = Instant::now();
     // Use the binary from the current build target
@@ -54,7 +56,7 @@ fn run_ruchy_code(code: &str) -> TestResult {
     
     let output = Command::new(ruchy_bin)
         .arg("run")
-        .arg(test_file)
+        .arg(test_file.path())
         .output()
         .expect("Failed to execute ruchy");
     let duration = start.elapsed();

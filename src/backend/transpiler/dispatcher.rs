@@ -407,11 +407,17 @@ impl Transpiler {
                     ExprKind::StringInterpolation { parts } => {
                         self.transpile_string_interpolation_for_print(parts)
                     }
-                    _ => self.transpile_expr(arg)
+                    _ => {
+                        // Use Debug formatting for all non-string expressions to be safe
+                        // This prevents Display trait errors and works with all types
+                        let expr_tokens = self.transpile_expr(arg)?;
+                        Ok(quote! { "{:?}", #expr_tokens })
+                    }
                 }
             })
             .collect()
     }
+
 
     /// Handle string interpolation for print-style macros
     /// 
