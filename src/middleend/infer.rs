@@ -192,197 +192,55 @@ impl InferenceContext {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
+    /// Core type inference dispatcher with complexity <10
+    /// 
+    /// Delegates to specialized handlers for each expression category
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::middleend::infer::InferenceContext;
+    /// use ruchy::frontend::parser::Parser;
+    /// 
+    /// let mut ctx = InferenceContext::new();
+    /// let mut parser = Parser::new("42");
+    /// let expr = parser.parse().unwrap();
+    /// let ty = ctx.infer(&expr).unwrap();
+    /// assert_eq!(format!("{}", ty), "Int");
+    /// ```
     fn infer_expr(&mut self, expr: &Expr) -> Result<MonoType> {
         match &expr.kind {
+            // Literals and identifiers
             ExprKind::Literal(lit) => Ok(Self::infer_literal(lit)),
             ExprKind::Identifier(name) => self.infer_identifier(name),
-            ExprKind::QualifiedName { module: _, name } => {
-                // For now, just treat qualified names like regular identifiers
-                // In a full implementation, we'd resolve the module and check its exports
-                self.infer_identifier(name)
+            ExprKind::QualifiedName { module: _, name } => self.infer_identifier(name),
+            
+            // Control flow and pattern matching  
+            ExprKind::If { condition: _, then_branch: _, else_branch: _ } => {
+                self.infer_control_flow_expr(expr)
             }
-            ExprKind::StringInterpolation { parts } => self.infer_string_interpolation(parts),
-            ExprKind::Binary { left, op, right } => self.infer_binary(left, *op, right),
-            ExprKind::Unary { op, operand } => self.infer_unary(*op, operand),
-            ExprKind::Throw { expr } => self.infer_throw(expr),
-            ExprKind::Ok { value } => self.infer_result_ok(value),
-            ExprKind::Err { error } => self.infer_result_err(error),
-            ExprKind::Await { expr } => self.infer_await(expr),
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            } => self.infer_if(condition, then_branch, else_branch.as_deref()),
-            ExprKind::Let {
-                name,
-                type_annotation: _,
-                value,
-                body,
-                is_mutable,
-            } => self.infer_let(name, value, body, *is_mutable),
-            ExprKind::Function {
-                name,
-                params,
-                body,
-                return_type,
-                is_async,
-                ..
-            } => self.infer_function(name, params, body, return_type.as_ref(), *is_async),
-            ExprKind::Lambda { params, body } => self.infer_lambda(params, body),
-            ExprKind::Call { func, args } => self.infer_call(func, args),
-            ExprKind::MethodCall {
-                receiver,
-                method,
-                args,
-            } => self.infer_method_call(receiver, method, args),
-            ExprKind::Block(exprs) => self.infer_block(exprs),
-            ExprKind::List(elements) => self.infer_list(elements),
-            ExprKind::Tuple(elements) => {
-                // Infer tuple type
-                let element_types: Result<Vec<_>> =
-                    elements.iter().map(|e| self.infer_expr(e)).collect();
-                Ok(MonoType::Tuple(element_types?))
-            }
-            ExprKind::ListComprehension {
-                element,
-                variable,
-                iterable,
-                condition,
-            } => self.infer_list_comprehension(element, variable, iterable, condition.as_deref()),
             ExprKind::Match { expr, arms } => self.infer_match(expr, arms),
-            ExprKind::For { var, iter, body, .. } => self.infer_for(var, iter, body),
-            ExprKind::While { condition, body } => self.infer_while(condition, body),
-            ExprKind::Loop { body } => self.infer_loop(body),
-            ExprKind::Range { start, end, .. } => self.infer_range(start, end),
-            ExprKind::Pipeline { expr, stages } => self.infer_pipeline(expr, stages),
-            ExprKind::Import { .. } | ExprKind::Export { .. } => Ok(MonoType::Unit), // Imports/exports don't have runtime values
-            ExprKind::Module { body, .. } => {
-                // Modules evaluate to their body type
-                self.infer_expr(body)
+            ExprKind::IfLet { .. } | ExprKind::WhileLet { .. } => {
+                self.infer_control_flow_expr(expr)
             }
-            ExprKind::DataFrame { columns } => self.infer_dataframe(columns),
-            ExprKind::Struct { .. } => {
-                // Struct definitions return Unit, they just register the type
-                Ok(MonoType::Unit)
+            
+            // Functions and lambdas
+            ExprKind::Function { .. } | ExprKind::Lambda { .. } => {
+                self.infer_function_expr(expr)
             }
-            ExprKind::Enum { .. } => {
-                // Enum definitions return Unit, they just register the type
-                Ok(MonoType::Unit)
+            
+            // Collections and data structures
+            ExprKind::List(..) | ExprKind::Tuple(..) | ExprKind::ListComprehension { .. } => {
+                self.infer_collection_expr(expr)
             }
-            ExprKind::StructLiteral { name, fields: _ } => {
-                // For now, return a named type for the struct
-                // In a full implementation, we'd validate fields against the struct definition
-                Ok(MonoType::Named(name.clone()))
+            
+            // Operations and method calls
+            ExprKind::Binary { .. } | ExprKind::Unary { .. } | ExprKind::Call { .. } | ExprKind::MethodCall { .. } => {
+                self.infer_operation_expr(expr)
             }
-            ExprKind::ObjectLiteral { fields } => self.infer_object_literal(fields),
-            ExprKind::FieldAccess { object, field: _ } => self.infer_field_access(object),
-            ExprKind::IndexAccess { object, index } => self.infer_index_access(object, index),
-            ExprKind::Slice { object, .. } => self.infer_slice(object),
-            ExprKind::Trait { .. } => {
-                // Trait definitions return Unit, they just register the trait
-                Ok(MonoType::Unit)
-            }
-            ExprKind::Impl { .. } => {
-                // Impl blocks return Unit, they just provide implementations
-                Ok(MonoType::Unit)
-            }
-            ExprKind::Extension { .. } => {
-                // Extension blocks return Unit, they just provide implementations
-                Ok(MonoType::Unit)
-            }
-            ExprKind::Actor { name: _, .. } => {
-                // Actor definitions return Unit, they register the actor type
-                // In a full implementation, we'd register the actor in the type environment
-                Ok(MonoType::Unit)
-            }
-            ExprKind::Send { actor, message } => self.infer_send(actor, message),
-            ExprKind::Ask {
-                actor,
-                message,
-                timeout,
-            } => self.infer_ask(actor, message, timeout.as_deref()),
-            ExprKind::ActorSend { actor, message } => self.infer_send(actor, message),
-            ExprKind::ActorQuery { actor, message } => {
-                // Actor query returns a Future or Result - for now treat like Ask without timeout
-                self.infer_ask(actor, message, None)
-            }
-            ExprKind::Command { .. } => {
-                // Commands return strings (stdout)
-                Ok(MonoType::String)
-            }
-            ExprKind::Macro { name, args } => {
-                self.infer_macro(name, args)
-            }
-            ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } => {
-                // Break, continue, and return don't return a value (they diverge)
-                // In Rust, they have type ! (never), but we'll use Unit for simplicity
-                Ok(MonoType::Unit)
-            }
-            ExprKind::Assign { target, value } => self.infer_assign(target, value),
-            ExprKind::CompoundAssign { target, op, value } => {
-                self.infer_compound_assign(target, *op, value)
-            }
-            ExprKind::PreIncrement { target }
-            | ExprKind::PostIncrement { target }
-            | ExprKind::PreDecrement { target }
-            | ExprKind::PostDecrement { target } => self.infer_increment_decrement(target),
-            ExprKind::DataFrameOperation { source, operation } => {
-                self.infer_dataframe_operation(source, operation)
-            }
-            ExprKind::Some { value } => {
-                let inner_type = self.infer_expr(value)?;
-                Ok(MonoType::Optional(Box::new(inner_type)))
-            }
-            ExprKind::None => {
-                // None is polymorphic - its type is Option<T> where T is inferred from context
-                let type_var = MonoType::Var(self.gen.fresh());
-                Ok(MonoType::Optional(Box::new(type_var)))
-            }
-            ExprKind::IfLet {
-                pattern: _,
-                expr,
-                then_branch,
-                else_branch,
-            } => {
-                // Type check the expression being matched
-                let _expr_ty = self.infer_expr(expr)?;
-                
-                // Type check the branches
-                let then_ty = self.infer_expr(then_branch)?;
-                let else_ty = if let Some(else_expr) = else_branch {
-                    self.infer_expr(else_expr)?
-                } else {
-                    MonoType::Unit
-                };
-                
-                // Both branches should have the same type
-                self.unifier.unify(&then_ty, &else_ty)?;
-                Ok(then_ty)
-            }
-            ExprKind::WhileLet {
-                pattern: _,
-                expr,
-                body,
-            } => {
-                // Type check the expression being matched
-                let _expr_ty = self.infer_expr(expr)?;
-                
-                // Type check the body
-                let _body_ty = self.infer_expr(body)?;
-                
-                // While-let expressions return Unit
-                Ok(MonoType::Unit)
-            }
-            ExprKind::AsyncBlock { body } => self.infer_async_block(body),
-            ExprKind::Try { expr } => {
-                // The ? operator unwraps Result<T, E> to T or Option<T> to T
-                let expr_type = self.infer(expr)?;
-                
-                // Returns the inner type for Result/Option
-                // Full type checking will be implemented with proper Result/Option type inference
-                Ok(expr_type)
-            }
+            
+            // All other expressions
+            _ => self.infer_other_expr(expr),
         }
     }
 
@@ -1329,6 +1187,153 @@ impl InferenceContext {
         self.unifier.apply(ty)
     }
 
+    /// Infer types for control flow expressions (if, match, loops)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::middleend::infer::InferenceContext;
+    /// use ruchy::frontend::parser::Parser;
+    /// 
+    /// let mut ctx = InferenceContext::new();
+    /// let mut parser = Parser::new("if true { 1 } else { 2 }");
+    /// let expr = parser.parse().unwrap();
+    /// let ty = ctx.infer(&expr).unwrap();
+    /// assert_eq!(format!("{}", ty), "Int");
+    /// ```
+    fn infer_control_flow_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
+            ExprKind::If { condition, then_branch, else_branch } => {
+                self.infer_if(condition, then_branch, else_branch.as_deref())
+            }
+            ExprKind::For { var, iter, body, .. } => self.infer_for(var, iter, body),
+            ExprKind::While { condition, body } => self.infer_while(condition, body),
+            ExprKind::Loop { body } => self.infer_loop(body),
+            ExprKind::IfLet { pattern: _, expr, then_branch, else_branch } => {
+                let _expr_ty = self.infer_expr(expr)?;
+                let then_ty = self.infer_expr(then_branch)?;
+                let else_ty = if let Some(else_expr) = else_branch {
+                    self.infer_expr(else_expr)?
+                } else {
+                    MonoType::Unit
+                };
+                self.unifier.unify(&then_ty, &else_ty)?;
+                Ok(then_ty)
+            }
+            ExprKind::WhileLet { pattern: _, expr, body } => {
+                let _expr_ty = self.infer_expr(expr)?;
+                let _body_ty = self.infer_expr(body)?;
+                Ok(MonoType::Unit)
+            }
+            _ => bail!("Unexpected expression type in control flow handler"),
+        }
+    }
+    
+    /// Infer types for function and lambda expressions
+    fn infer_function_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
+            ExprKind::Function { name, params, body, return_type, is_async, .. } => {
+                self.infer_function(name, params, body, return_type.as_ref(), *is_async)
+            }
+            ExprKind::Lambda { params, body } => self.infer_lambda(params, body),
+            _ => bail!("Unexpected expression type in function handler"),
+        }
+    }
+    
+    /// Infer types for collection expressions (lists, tuples, comprehensions)
+    fn infer_collection_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
+            ExprKind::List(elements) => self.infer_list(elements),
+            ExprKind::Tuple(elements) => {
+                let element_types: Result<Vec<_>> = elements.iter().map(|e| self.infer_expr(e)).collect();
+                Ok(MonoType::Tuple(element_types?))
+            }
+            ExprKind::ListComprehension { element, variable, iterable, condition } => {
+                self.infer_list_comprehension(element, variable, iterable, condition.as_deref())
+            }
+            _ => bail!("Unexpected expression type in collection handler"),
+        }
+    }
+    
+    /// Infer types for operations and method calls
+    fn infer_operation_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
+            ExprKind::Binary { left, op, right } => self.infer_binary(left, *op, right),
+            ExprKind::Unary { op, operand } => self.infer_unary(*op, operand),
+            ExprKind::Call { func, args } => self.infer_call(func, args),
+            ExprKind::MethodCall { receiver, method, args } => {
+                self.infer_method_call(receiver, method, args)
+            }
+            _ => bail!("Unexpected expression type in operation handler"),
+        }
+    }
+    
+    /// Infer types for all other expressions
+    fn infer_other_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
+            ExprKind::StringInterpolation { parts } => self.infer_string_interpolation(parts),
+            ExprKind::Throw { expr } => self.infer_throw(expr),
+            ExprKind::Ok { value } => self.infer_result_ok(value),
+            ExprKind::Err { error } => self.infer_result_err(error),
+            ExprKind::Await { expr } => self.infer_await(expr),
+            ExprKind::Let { name, type_annotation: _, value, body, is_mutable } => {
+                self.infer_let(name, value, body, *is_mutable)
+            }
+            ExprKind::Block(exprs) => self.infer_block(exprs),
+            ExprKind::Range { start, end, .. } => self.infer_range(start, end),
+            ExprKind::Pipeline { expr, stages } => self.infer_pipeline(expr, stages),
+            ExprKind::Import { .. } | ExprKind::Export { .. } => Ok(MonoType::Unit),
+            ExprKind::Module { body, .. } => self.infer_expr(body),
+            ExprKind::DataFrame { columns } => self.infer_dataframe(columns),
+            ExprKind::Struct { .. } | ExprKind::Enum { .. } | ExprKind::Trait { .. } | 
+            ExprKind::Impl { .. } | ExprKind::Extension { .. } | ExprKind::Actor { .. } => {
+                Ok(MonoType::Unit)
+            }
+            ExprKind::StructLiteral { name, fields: _ } => Ok(MonoType::Named(name.clone())),
+            ExprKind::ObjectLiteral { fields } => self.infer_object_literal(fields),
+            ExprKind::FieldAccess { object, field: _ } => self.infer_field_access(object),
+            ExprKind::IndexAccess { object, index } => self.infer_index_access(object, index),
+            ExprKind::Slice { object, .. } => self.infer_slice(object),
+            ExprKind::Send { actor, message } | ExprKind::ActorSend { actor, message } => {
+                self.infer_send(actor, message)
+            }
+            ExprKind::Ask { actor, message, timeout } => {
+                self.infer_ask(actor, message, timeout.as_deref())
+            }
+            ExprKind::ActorQuery { actor, message } => self.infer_ask(actor, message, None),
+            ExprKind::Command { .. } => Ok(MonoType::String),
+            ExprKind::Macro { name, args } => self.infer_macro(name, args),
+            ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } => {
+                Ok(MonoType::Unit)
+            }
+            ExprKind::Assign { target, value } => self.infer_assign(target, value),
+            ExprKind::CompoundAssign { target, op, value } => {
+                self.infer_compound_assign(target, *op, value)
+            }
+            ExprKind::PreIncrement { target } | ExprKind::PostIncrement { target } |
+            ExprKind::PreDecrement { target } | ExprKind::PostDecrement { target } => {
+                self.infer_increment_decrement(target)
+            }
+            ExprKind::DataFrameOperation { source, operation } => {
+                self.infer_dataframe_operation(source, operation)
+            }
+            ExprKind::Some { value } => {
+                let inner_type = self.infer_expr(value)?;
+                Ok(MonoType::Optional(Box::new(inner_type)))
+            }
+            ExprKind::None => {
+                let type_var = MonoType::Var(self.gen.fresh());
+                Ok(MonoType::Optional(Box::new(type_var)))
+            }
+            ExprKind::AsyncBlock { body } => self.infer_async_block(body),
+            ExprKind::Try { expr } => {
+                let expr_type = self.infer(expr)?;
+                Ok(expr_type)
+            }
+            _ => bail!("Unknown expression type in inference"),
+        }
+    }
+    
     /// Helper methods for complex expression groups
     fn infer_string_interpolation(
         &mut self,
