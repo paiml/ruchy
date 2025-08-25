@@ -8,7 +8,7 @@ proptest! {
     #[test]
     fn test_math_function_sqrt_always_positive(x in 0.0f64..1000.0) {
         let transpiler = Transpiler::new();
-        let input = format!("sqrt({})", x);
+        let input = format!("sqrt({x})");
         let mut parser = Parser::new(&input);
         
         if let Ok(ast) = parser.parse() {
@@ -25,7 +25,7 @@ proptest! {
     #[test]  
     fn test_math_function_pow_deterministic(base in 0.0f64..100.0, exp in 0.0f64..5.0) {
         let transpiler = Transpiler::new();
-        let input = format!("pow({}, {})", base, exp);
+        let input = format!("pow({base}, {exp})");
         let mut parser = Parser::new(&input);
         
         if let Ok(ast) = parser.parse() {
@@ -42,7 +42,7 @@ proptest! {
     #[test]
     fn test_math_function_abs_preserves_structure(x in -1000.0f64..1000.0) {
         let transpiler = Transpiler::new();
-        let input = format!("abs({})", x);
+        let input = format!("abs({x})");
         let mut parser = Parser::new(&input);
         
         if let Ok(ast) = parser.parse() {
@@ -59,7 +59,7 @@ proptest! {
         let transpiler = Transpiler::new();
         
         // Test min function
-        let input_min = format!("min({}, {})", a, b);
+        let input_min = format!("min({a}, {b})");
         let mut parser_min = Parser::new(&input_min);
         if let Ok(ast_min) = parser_min.parse() {
             if let Ok(result_min) = transpiler.transpile(&ast_min) {
@@ -69,7 +69,7 @@ proptest! {
         }
         
         // Test max function  
-        let input_max = format!("max({}, {})", a, b);
+        let input_max = format!("max({a}, {b})");
         let mut parser_max = Parser::new(&input_max);
         if let Ok(ast_max) = parser_max.parse() {
             if let Ok(result_max) = transpiler.transpile(&ast_max) {
@@ -82,7 +82,7 @@ proptest! {
     #[test]
     fn test_print_macro_format_strings(s in r"[a-zA-Z0-9 ]{1,20}") {
         let transpiler = Transpiler::new();
-        let input = format!(r#"println("{}")"#, s);
+        let input = format!(r#"println("{s}")"#);
         let mut parser = Parser::new(&input);
         
         if let Ok(ast) = parser.parse() {
@@ -99,7 +99,7 @@ proptest! {
     #[test]
     fn test_assert_functions_preserve_structure(condition in any::<bool>()) {
         let transpiler = Transpiler::new();
-        let input = format!("assert({})", condition);
+        let input = format!("assert({condition})");
         let mut parser = Parser::new(&input);
         
         if let Ok(ast) = parser.parse() {
@@ -116,7 +116,7 @@ proptest! {
     #[test]
     fn test_regular_function_calls_preserve_name(func_name in r"[a-zA-Z_][a-zA-Z0-9_]{0,10}") {
         let transpiler = Transpiler::new();
-        let input = format!(r#"{}("test")"#, func_name);
+        let input = format!(r#"{func_name}("test")"#);
         let mut parser = Parser::new(&input);
         
         if let Ok(ast) = parser.parse() {
@@ -136,21 +136,15 @@ proptest! {
         let mut parser1 = Parser::new(&input);
         let mut parser2 = Parser::new(&input);
         
-        match (parser1.parse(), parser2.parse()) {
-            (Ok(ast1), Ok(ast2)) => {
-                match (transpiler.transpile(&ast1), transpiler.transpile(&ast2)) {
-                    (Ok(result1), Ok(result2)) => {
-                        // Same input should always produce same output (determinism)
-                        prop_assert_eq!(result1.to_string(), result2.to_string());
-                    }
-                    _ => {
-                        // If one fails, both should fail (consistency)
-                    }
-                }
+        if let (Ok(ast1), Ok(ast2)) = (parser1.parse(), parser2.parse()) {
+            if let (Ok(result1), Ok(result2)) = (transpiler.transpile(&ast1), transpiler.transpile(&ast2)) {
+                // Same input should always produce same output (determinism)
+                prop_assert_eq!(result1.to_string(), result2.to_string());
+            } else {
+                // If one fails, both should fail (consistency)
             }
-            _ => {
-                // Parser failures are acceptable for malformed input
-            }
+        } else {
+            // Parser failures are acceptable for malformed input
         }
     }
 }
@@ -185,8 +179,7 @@ mod unit_tests {
                     for token in expected_tokens {
                         assert!(
                             result_str.contains(token),
-                            "Input '{}' should contain '{}' but got: {}",
-                            input, token, result_str
+                            "Input '{input}' should contain '{token}' but got: {result_str}"
                         );
                     }
                 }
