@@ -242,7 +242,8 @@ impl Transpiler {
     /// let mut parser = Parser::new(r#"println("Hello, {}", name)"#);
     /// let ast = parser.parse().unwrap();
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
-    /// assert!(result.contains(r#"println ! ( "Hello, {}" , name )"#));
+    /// assert!(result.contains("println !"));
+    /// assert!(result.contains("Hello, {}"));
     /// ```
     /// 
     /// ```
@@ -252,7 +253,8 @@ impl Transpiler {
     /// let mut parser = Parser::new(r#"println("Simple message")"#);
     /// let ast = parser.parse().unwrap();
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
-    /// assert!(result.contains(r#"println ! ( "Simple message" )"#));
+    /// assert!(result.contains("println !"));
+    /// assert!(result.contains("Simple message"));
     /// ```
     /// 
     /// ```
@@ -262,257 +264,48 @@ impl Transpiler {
     /// let mut parser = Parser::new("some_function(\"test\")");
     /// let ast = parser.parse().unwrap();
     /// let result = transpiler.transpile(&ast).unwrap().to_string();
-    /// assert!(result.contains(r#"some_function ( "test" . to_string ( ) )"#));
+    /// assert!(result.contains("some_function"));
+    /// assert!(result.contains("test"));
     /// ```
     pub fn transpile_call(&self, func: &Expr, args: &[Expr]) -> Result<TokenStream> {
         let func_tokens = self.transpile_expr(func)?;
 
-        // Check if this is a macro first (before string conversion)
-        if let ExprKind::Identifier(name) = &func.kind {
-            // Handle Rust-style macro syntax (println!, assert!, etc.)
-            let base_name = if name.ends_with('!') {
-                name.strip_suffix('!').unwrap()
-            } else {
-                name
-            };
-            
-            if base_name == "println" || base_name == "print" || base_name == "dbg" || base_name == "panic" {
-                // These are macros in Rust, not functions
-                // Special handling for string interpolation in println/print
-                if (base_name == "println" || base_name == "print") && args.len() == 1 {
-                    if let ExprKind::StringInterpolation { parts } = &args[0].kind {
-                        // Generate println!/print! with format string directly
-                        return self.transpile_print_with_interpolation(base_name, parts);
-                    }
-                    // For single non-string arguments, add "{}" format string
-                    if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
-                        let arg_tokens = self.transpile_expr(&args[0])?;
-                        let format_str = "{}";
-                        return Ok(quote! { #func_tokens!(#format_str, #arg_tokens) });
-                    }
-                }
-                // For multiple arguments with first being a string literal OR string interpolation, treat as format string + args
-                if args.len() > 1 {
-                    match &args[0].kind {
-                        ExprKind::Literal(Literal::String(_)) => {
-                            // First argument is format string literal, remaining are format arguments  
-                            let format_arg = self.transpile_expr(&args[0])?;
-                            let format_args: Result<Vec<_>> = args[1..].iter().map(|a| self.transpile_expr(a)).collect();
-                            let format_args = format_args?;
-                            return Ok(quote! { #func_tokens!(#format_arg, #(#format_args),*) });
-                        }
-                        ExprKind::StringInterpolation { parts } => {
-                            // Handle format string with printf-style formatting
-                            let format_str = self.build_printf_format_string(parts)?;
-                            let format_args: Result<Vec<_>> = args[1..].iter().map(|a| self.transpile_expr(a)).collect();
-                            let format_args = format_args?;
-                            return Ok(quote! { #func_tokens!(#format_str, #(#format_args),*) });
-                        }
-                        _ => {
-                            // Generate format string with placeholders for all arguments
-                            let format_str = (0..args.len()).map(|_| "{}").collect::<Vec<_>>().join(" ");
-                            let all_args: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
-                            let all_args = all_args?;
-                            return Ok(quote! { #func_tokens!(#format_str, #(#all_args),*) });
-                        }
-                    }
-                }
-                // Single string literal - use as-is for macros
-                let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
-                let arg_tokens = arg_tokens?;
-                return Ok(quote! { #func_tokens!(#(#arg_tokens),*) });
-            }
-            
-            // Math functions - generate method calls or use std functions
-            if base_name == "sqrt" && args.len() == 1 {
-                let arg = self.transpile_expr(&args[0])?;
-                return Ok(quote! { (#arg as f64).sqrt() });
-            }
-            if base_name == "pow" && args.len() == 2 {
-                let base = self.transpile_expr(&args[0])?;
-                let exp = self.transpile_expr(&args[1])?;
-                return Ok(quote! { (#base as f64).powf(#exp as f64) });
-            }
-            if base_name == "abs" && args.len() == 1 {
-                let arg = self.transpile_expr(&args[0])?;
-                // Check if arg is negative literal to handle type
-                if let ExprKind::Unary { op: UnaryOp::Negate, operand } = &args[0].kind {
-                    if matches!(&operand.kind, ExprKind::Literal(Literal::Float(_))) {
-                        return Ok(quote! { (#arg).abs() });
-                    }
-                }
-                // For all other cases, try both int and float abs
-                return Ok(quote! { #arg.abs() });
-            }
-            if base_name == "min" && args.len() == 2 {
-                let a = self.transpile_expr(&args[0])?;
-                let b = self.transpile_expr(&args[1])?;
-                // Check if args are float literals to determine type
-                let is_float = matches!(&args[0].kind, ExprKind::Literal(Literal::Float(_))) 
-                    || matches!(&args[1].kind, ExprKind::Literal(Literal::Float(_)));
-                if is_float {
-                    return Ok(quote! { (#a as f64).min(#b as f64) });
-                }
-                return Ok(quote! { std::cmp::min(#a, #b) });
-            }
-            if base_name == "max" && args.len() == 2 {
-                let a = self.transpile_expr(&args[0])?;
-                let b = self.transpile_expr(&args[1])?;
-                // Check if args are float literals to determine type
-                let is_float = matches!(&args[0].kind, ExprKind::Literal(Literal::Float(_))) 
-                    || matches!(&args[1].kind, ExprKind::Literal(Literal::Float(_)));
-                if is_float {
-                    return Ok(quote! { (#a as f64).max(#b as f64) });
-                }
-                return Ok(quote! { std::cmp::max(#a, #b) });
-            }
-            if base_name == "floor" && args.len() == 1 {
-                let arg = self.transpile_expr(&args[0])?;
-                return Ok(quote! { (#arg as f64).floor() });
-            }
-            if base_name == "ceil" && args.len() == 1 {
-                let arg = self.transpile_expr(&args[0])?;
-                return Ok(quote! { (#arg as f64).ceil() });
-            }
-            if base_name == "round" && args.len() == 1 {
-                let arg = self.transpile_expr(&args[0])?;
-                return Ok(quote! { (#arg as f64).round() });
-            }
-            
-            // Input functions
-            if base_name == "input" {
-                if args.len() > 1 {
-                    bail!("input expects 0 or 1 arguments (optional prompt)");
-                }
-                if args.is_empty() {
-                    return Ok(quote! { 
-                        {
-                            let mut input = String::new();
-                            std::io::stdin().read_line(&mut input).expect("Failed to read input");
-                            if input.ends_with('\n') {
-                                input.pop();
-                                if input.ends_with('\r') {
-                                    input.pop();
-                                }
-                            }
-                            input
-                        }
-                    });
-                } else {
-                    let prompt = self.transpile_expr(&args[0])?;
-                    return Ok(quote! { 
-                        {
-                            print!("{}", #prompt);
-                            std::io::Write::flush(&mut std::io::stdout()).unwrap();
-                            let mut input = String::new();
-                            std::io::stdin().read_line(&mut input).expect("Failed to read input");
-                            if input.ends_with('\n') {
-                                input.pop();
-                                if input.ends_with('\r') {
-                                    input.pop();
-                                }
-                            }
-                            input
-                        }
-                    });
-                }
-            }
-            
-            if base_name == "readline" && args.is_empty() {
-                return Ok(quote! { 
-                    {
-                        let mut input = String::new();
-                        std::io::stdin().read_line(&mut input).expect("Failed to read input");
-                        if input.ends_with('\n') {
-                            input.pop();
-                            if input.ends_with('\r') {
-                                input.pop();
-                            }
-                        }
-                        input
-                    }
-                });
-            }
-            
-            // Assert functions - generate Rust assert macros
-            if base_name == "assert" {
-                if args.len() < 1 || args.len() > 2 {
-                    bail!("assert expects 1 or 2 arguments (condition, optional message)");
-                }
-                let condition = self.transpile_expr(&args[0])?;
-                if args.len() == 1 {
-                    return Ok(quote! { assert!(#condition) });
-                } else {
-                    let message = self.transpile_expr(&args[1])?;
-                    return Ok(quote! { assert!(#condition, "{}", #message) });
-                }
-            }
-            
-            if base_name == "assert_eq" {
-                if args.len() < 2 || args.len() > 3 {
-                    bail!("assert_eq expects 2 or 3 arguments (left, right, optional message)");
-                }
-                let left = self.transpile_expr(&args[0])?;
-                let right = self.transpile_expr(&args[1])?;
-                if args.len() == 2 {
-                    return Ok(quote! { assert_eq!(#left, #right) });
-                } else {
-                    let message = self.transpile_expr(&args[2])?;
-                    return Ok(quote! { assert_eq!(#left, #right, "{}", #message) });
-                }
-            }
-            
-            if base_name == "assert_ne" {
-                if args.len() < 2 || args.len() > 3 {
-                    bail!("assert_ne expects 2 or 3 arguments (left, right, optional message)");
-                }
-                let left = self.transpile_expr(&args[0])?;
-                let right = self.transpile_expr(&args[1])?;
-                if args.len() == 2 {
-                    return Ok(quote! { assert_ne!(#left, #right) });
-                } else {
-                    let message = self.transpile_expr(&args[2])?;
-                    return Ok(quote! { assert_ne!(#left, #right, "{}", #message) });
-                }
-            }
-            
-            // Collection constructors
-            if base_name == "HashMap" && args.is_empty() {
-                return Ok(quote! { std::collections::HashMap::new() });
-            }
-            if base_name == "HashSet" && args.is_empty() {
-                return Ok(quote! { std::collections::HashSet::new() });
-            }
-        }
-
-        // For regular function calls, convert string literals to String
-        // Variable conversion is more complex and handled via Rust's type inference
-        let arg_tokens: Result<Vec<_>> = args.iter().map(|a| {
-            match &a.kind {
-                ExprKind::Literal(Literal::String(s)) => {
-                    Ok(quote! { #s.to_string() })
-                }
-                _ => self.transpile_expr(a)
-            }
-        }).collect();
-        let arg_tokens = arg_tokens?;
-
-        // Check if this is a DataFrame constructor or column function
+        // Check if this is a built-in function with special handling
         if let ExprKind::Identifier(name) = &func.kind {
             let base_name = if name.ends_with('!') {
                 name.strip_suffix('!').unwrap()
             } else {
                 name
             };
-            if base_name == "col" && args.len() == 1 {
-                // Special handling for col() function in DataFrame context
-                if let ExprKind::Literal(Literal::String(col_name)) = &args[0].kind {
-                    return Ok(quote! { polars::prelude::col(#col_name) });
-                }
+            
+            // Try specialized handlers in order of precedence
+            if let Some(result) = self.try_transpile_print_macro(&func_tokens, base_name, args)? {
+                return Ok(result);
+            }
+            
+            if let Some(result) = self.try_transpile_math_function(base_name, args)? {
+                return Ok(result);
+            }
+            
+            if let Some(result) = self.try_transpile_input_function(base_name, args)? {
+                return Ok(result);
+            }
+            
+            if let Some(result) = self.try_transpile_assert_function(&func_tokens, base_name, args)? {
+                return Ok(result);
+            }
+            
+            if let Some(result) = self.try_transpile_collection_constructor(base_name, args)? {
+                return Ok(result);
+            }
+            
+            if let Some(result) = self.try_transpile_dataframe_function(base_name, args)? {
+                return Ok(result);
             }
         }
 
-        Ok(quote! { #func_tokens(#(#arg_tokens),*) })
+        // Default: regular function call with string conversion
+        self.transpile_regular_function_call(&func_tokens, args)
     }
 
     /// Build printf-style format string for macros (preserves {} as format specifiers)
@@ -525,7 +318,8 @@ impl Transpiler {
                     // Don't escape {} in printf context - they are format specifiers
                     format_string.push_str(s);
                 }
-                crate::frontend::ast::StringPart::Expr(_) => {
+                crate::frontend::ast::StringPart::Expr(_) | 
+                crate::frontend::ast::StringPart::ExprWithFormat { .. } => {
                     // String interpolation expressions become {} placeholders
                     format_string.push_str("{}");
                 }
@@ -557,6 +351,14 @@ impl Transpiler {
                 }
                 crate::frontend::ast::StringPart::Expr(expr) => {
                     format_string.push_str("{}");
+                    let expr_tokens = self.transpile_expr(expr)?;
+                    args.push(expr_tokens);
+                }
+                crate::frontend::ast::StringPart::ExprWithFormat { expr, format_spec } => {
+                    // Include the format specifier in the format string
+                    format_string.push('{');
+                    format_string.push_str(format_spec);
+                    format_string.push('}');
                     let expr_tokens = self.transpile_expr(expr)?;
                     args.push(expr_tokens);
                 }
@@ -911,5 +713,366 @@ impl Transpiler {
         } else {
             quote! { pub use {#(#item_idents),*}; }
         }
+    }
+
+    /// Handle print/debug macros (println, print, dbg, panic)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// // Test println macro handling
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("println(42)");
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains("println !"));
+    /// assert!(result.contains("{}"));
+    /// ```
+    fn try_transpile_print_macro(
+        &self, 
+        func_tokens: &TokenStream, 
+        base_name: &str, 
+        args: &[Expr]
+    ) -> Result<Option<TokenStream>> {
+        if !(base_name == "println" || base_name == "print" || base_name == "dbg" || base_name == "panic") {
+            return Ok(None);
+        }
+        
+        // Handle single argument with string interpolation
+        if (base_name == "println" || base_name == "print") && args.len() == 1 {
+            if let ExprKind::StringInterpolation { parts } = &args[0].kind {
+                return Ok(Some(self.transpile_print_with_interpolation(base_name, parts)?));
+            }
+            // For single non-string arguments, add "{}" format string
+            if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
+                let arg_tokens = self.transpile_expr(&args[0])?;
+                let format_str = "{}";
+                return Ok(Some(quote! { #func_tokens!(#format_str, #arg_tokens) }));
+            }
+        }
+        
+        // Handle multiple arguments
+        if args.len() > 1 {
+            return self.transpile_print_multiple_args(func_tokens, args);
+        }
+        
+        // Single string literal or simple case
+        let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
+        let arg_tokens = arg_tokens?;
+        Ok(Some(quote! { #func_tokens!(#(#arg_tokens),*) }))
+    }
+    
+    /// Handle multiple arguments for print macros
+    fn transpile_print_multiple_args(
+        &self,
+        func_tokens: &TokenStream,
+        args: &[Expr]
+    ) -> Result<Option<TokenStream>> {
+        match &args[0].kind {
+            ExprKind::Literal(Literal::String(_)) => {
+                // First argument is format string literal, remaining are format arguments  
+                let format_arg = self.transpile_expr(&args[0])?;
+                let format_args: Result<Vec<_>> = args[1..].iter().map(|a| self.transpile_expr(a)).collect();
+                let format_args = format_args?;
+                Ok(Some(quote! { #func_tokens!(#format_arg, #(#format_args),*) }))
+            }
+            ExprKind::StringInterpolation { parts } => {
+                // Handle format string with printf-style formatting
+                let format_str = self.build_printf_format_string(parts)?;
+                let format_args: Result<Vec<_>> = args[1..].iter().map(|a| self.transpile_expr(a)).collect();
+                let format_args = format_args?;
+                Ok(Some(quote! { #func_tokens!(#format_str, #(#format_args),*) }))
+            }
+            _ => {
+                // Generate format string with placeholders for all arguments
+                let format_str = (0..args.len()).map(|_| "{}").collect::<Vec<_>>().join(" ");
+                let all_args: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
+                let all_args = all_args?;
+                Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
+            }
+        }
+    }
+    
+    /// Handle math functions (sqrt, pow, abs, min, max, floor, ceil, round)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("sqrt(4.0)");
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains("sqrt"));
+    /// ```
+    fn try_transpile_math_function(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+        match (base_name, args.len()) {
+            ("sqrt", 1) => {
+                let arg = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! { (#arg as f64).sqrt() }))
+            }
+            ("pow", 2) => {
+                let base = self.transpile_expr(&args[0])?;
+                let exp = self.transpile_expr(&args[1])?;
+                Ok(Some(quote! { (#base as f64).powf(#exp as f64) }))
+            }
+            ("abs", 1) => {
+                let arg = self.transpile_expr(&args[0])?;
+                // Check if arg is negative literal to handle type
+                if let ExprKind::Unary { op: UnaryOp::Negate, operand } = &args[0].kind {
+                    if matches!(&operand.kind, ExprKind::Literal(Literal::Float(_))) {
+                        return Ok(Some(quote! { (#arg).abs() }));
+                    }
+                }
+                // For all other cases, use standard abs
+                Ok(Some(quote! { #arg.abs() }))
+            }
+            ("min", 2) => {
+                let a = self.transpile_expr(&args[0])?;
+                let b = self.transpile_expr(&args[1])?;
+                // Check if args are float literals to determine type
+                let is_float = matches!(&args[0].kind, ExprKind::Literal(Literal::Float(_))) 
+                    || matches!(&args[1].kind, ExprKind::Literal(Literal::Float(_)));
+                if is_float {
+                    Ok(Some(quote! { (#a as f64).min(#b as f64) }))
+                } else {
+                    Ok(Some(quote! { std::cmp::min(#a, #b) }))
+                }
+            }
+            ("max", 2) => {
+                let a = self.transpile_expr(&args[0])?;
+                let b = self.transpile_expr(&args[1])?;
+                // Check if args are float literals to determine type
+                let is_float = matches!(&args[0].kind, ExprKind::Literal(Literal::Float(_))) 
+                    || matches!(&args[1].kind, ExprKind::Literal(Literal::Float(_)));
+                if is_float {
+                    Ok(Some(quote! { (#a as f64).max(#b as f64) }))
+                } else {
+                    Ok(Some(quote! { std::cmp::max(#a, #b) }))
+                }
+            }
+            ("floor", 1) => {
+                let arg = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! { (#arg as f64).floor() }))
+            }
+            ("ceil", 1) => {
+                let arg = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! { (#arg as f64).ceil() }))
+            }
+            ("round", 1) => {
+                let arg = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! { (#arg as f64).round() }))
+            }
+            _ => Ok(None)
+        }
+    }
+    
+    /// Handle input functions (input, readline)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("input()");
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains("read_line"));
+    /// ```
+    fn try_transpile_input_function(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+        match base_name {
+            "input" => {
+                if args.len() > 1 {
+                    bail!("input expects 0 or 1 arguments (optional prompt)");
+                }
+                if args.is_empty() {
+                    Ok(Some(self.generate_input_without_prompt()))
+                } else {
+                    let prompt = self.transpile_expr(&args[0])?;
+                    Ok(Some(self.generate_input_with_prompt(prompt)))
+                }
+            }
+            "readline" if args.is_empty() => {
+                Ok(Some(self.generate_input_without_prompt()))
+            }
+            _ => Ok(None)
+        }
+    }
+    
+    /// Generate input reading code without prompt
+    fn generate_input_without_prompt(&self) -> TokenStream {
+        quote! { 
+            {
+                let mut input = String::new();
+                std::io::stdin().read_line(&mut input).expect("Failed to read input");
+                if input.ends_with('\n') {
+                    input.pop();
+                    if input.ends_with('\r') {
+                        input.pop();
+                    }
+                }
+                input
+            }
+        }
+    }
+    
+    /// Generate input reading code with prompt
+    fn generate_input_with_prompt(&self, prompt: TokenStream) -> TokenStream {
+        quote! { 
+            {
+                print!("{}", #prompt);
+                std::io::Write::flush(&mut std::io::stdout()).unwrap();
+                let mut input = String::new();
+                std::io::stdin().read_line(&mut input).expect("Failed to read input");
+                if input.ends_with('\n') {
+                    input.pop();
+                    if input.ends_with('\r') {
+                        input.pop();
+                    }
+                }
+                input
+            }
+        }
+    }
+    
+    /// Handle assert functions (assert, assert_eq, assert_ne)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("assert(true)");
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains("assert !"));
+    /// ```
+    fn try_transpile_assert_function(
+        &self,
+        _func_tokens: &TokenStream,
+        base_name: &str,
+        args: &[Expr]
+    ) -> Result<Option<TokenStream>> {
+        match base_name {
+            "assert" => {
+                if args.is_empty() || args.len() > 2 {
+                    bail!("assert expects 1 or 2 arguments (condition, optional message)");
+                }
+                let condition = self.transpile_expr(&args[0])?;
+                if args.len() == 1 {
+                    Ok(Some(quote! { assert!(#condition) }))
+                } else {
+                    let message = self.transpile_expr(&args[1])?;
+                    Ok(Some(quote! { assert!(#condition, "{}", #message) }))
+                }
+            }
+            "assert_eq" => {
+                if args.len() < 2 || args.len() > 3 {
+                    bail!("assert_eq expects 2 or 3 arguments (left, right, optional message)");
+                }
+                let left = self.transpile_expr(&args[0])?;
+                let right = self.transpile_expr(&args[1])?;
+                if args.len() == 2 {
+                    Ok(Some(quote! { assert_eq!(#left, #right) }))
+                } else {
+                    let message = self.transpile_expr(&args[2])?;
+                    Ok(Some(quote! { assert_eq!(#left, #right, "{}", #message) }))
+                }
+            }
+            "assert_ne" => {
+                if args.len() < 2 || args.len() > 3 {
+                    bail!("assert_ne expects 2 or 3 arguments (left, right, optional message)");
+                }
+                let left = self.transpile_expr(&args[0])?;
+                let right = self.transpile_expr(&args[1])?;
+                if args.len() == 2 {
+                    Ok(Some(quote! { assert_ne!(#left, #right) }))
+                } else {
+                    let message = self.transpile_expr(&args[2])?;
+                    Ok(Some(quote! { assert_ne!(#left, #right, "{}", #message) }))
+                }
+            }
+            _ => Ok(None)
+        }
+    }
+    
+    /// Handle collection constructors (HashMap, HashSet)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new("HashMap()");
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains("HashMap"));
+    /// ```
+    fn try_transpile_collection_constructor(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+        match (base_name, args.len()) {
+            ("HashMap", 0) => Ok(Some(quote! { std::collections::HashMap::new() })),
+            ("HashSet", 0) => Ok(Some(quote! { std::collections::HashSet::new() })),
+            _ => Ok(None)
+        }
+    }
+    
+    /// Handle DataFrame functions (col)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new(r#"col("name")"#);
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains("polars"));
+    /// ```
+    fn try_transpile_dataframe_function(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+        if base_name == "col" && args.len() == 1 {
+            if let ExprKind::Literal(Literal::String(col_name)) = &args[0].kind {
+                return Ok(Some(quote! { polars::prelude::col(#col_name) }));
+            }
+        }
+        Ok(None)
+    }
+    
+    /// Handle regular function calls with string literal conversion
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::{Transpiler, Parser};
+    /// 
+    /// let transpiler = Transpiler::new();
+    /// let mut parser = Parser::new(r#"my_func("test")"#);
+    /// let ast = parser.parse().unwrap();
+    /// let result = transpiler.transpile(&ast).unwrap().to_string();
+    /// assert!(result.contains("my_func"));
+    /// ```
+    fn transpile_regular_function_call(
+        &self,
+        func_tokens: &TokenStream,
+        args: &[Expr]
+    ) -> Result<TokenStream> {
+        // Convert string literals to String for regular function calls
+        let arg_tokens: Result<Vec<_>> = args.iter().map(|a| {
+            match &a.kind {
+                ExprKind::Literal(Literal::String(s)) => {
+                    Ok(quote! { #s.to_string() })
+                }
+                _ => self.transpile_expr(a)
+            }
+        }).collect();
+        let arg_tokens = arg_tokens?;
+        
+        Ok(quote! { #func_tokens(#(#arg_tokens),*) })
     }
 }

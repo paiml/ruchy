@@ -339,8 +339,13 @@ impl Literal {
 pub enum StringPart {
     /// Literal text portion of the string
     Text(String),
-    /// Expression to be interpolated
+    /// Expression to be interpolated without format specifier
     Expr(Box<Expr>),
+    /// Expression with format specifier (e.g., {value:.2})
+    ExprWithFormat {
+        expr: Box<Expr>,
+        format_spec: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

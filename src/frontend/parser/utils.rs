@@ -607,10 +607,34 @@ pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Vec<Stri
                     }
                 }
 
-                // Parse the expression
-                let mut expr_parser = super::core::Parser::new(&expr_text);
+                // Check if there's a format specifier (e.g., "score:.2" -> "score" and ":.2")
+                let (expr_part, format_spec) = if let Some(colon_pos) = expr_text.find(':') {
+                    // Check if the colon is not inside a string or character literal
+                    // Simple heuristic: if there are no quotes before the colon, it's likely a format spec
+                    let before_colon = &expr_text[..colon_pos];
+                    if !before_colon.contains('"') && !before_colon.contains('\'') {
+                        (&expr_text[..colon_pos], Some(&expr_text[colon_pos..]))
+                    } else {
+                        (expr_text.as_str(), None)
+                    }
+                } else {
+                    (expr_text.as_str(), None)
+                };
+                
+                // Parse the expression part (without format specifier)
+                let mut expr_parser = super::core::Parser::new(expr_part);
                 match expr_parser.parse() {
-                    Ok(expr) => parts.push(StringPart::Expr(Box::new(expr))),
+                    Ok(expr) => {
+                        // Store the expression with or without format specifier
+                        if let Some(spec) = format_spec {
+                            parts.push(StringPart::ExprWithFormat {
+                                expr: Box::new(expr),
+                                format_spec: spec.to_string(),
+                            });
+                        } else {
+                            parts.push(StringPart::Expr(Box::new(expr)));
+                        }
+                    }
                     Err(_) => {
                         // Fallback to text if parsing fails
                         parts.push(StringPart::Text(format!("{{{expr_text}}}")));

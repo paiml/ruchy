@@ -515,7 +515,7 @@ mod tests {
 
     #[test]
     fn test_compile_pipeline() {
-        let result = compile("data >> filter >> map").unwrap();
+        let result = compile("data |> filter |> map").unwrap();
         assert!(result.contains("("));
     }
 

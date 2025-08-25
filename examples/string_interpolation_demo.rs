@@ -69,6 +69,9 @@ fn demo_interpolation(input: &str) {
                             ruchy::frontend::ast::StringPart::Expr(_) => {
                                 println!("    {}. Expression: {{...}}", i + 1);
                             }
+                            ruchy::frontend::ast::StringPart::ExprWithFormat { .. } => {
+                                println!("    {}. Expression with format: {{...}}", i + 1);
+                            }
                         }
                     }
                 }

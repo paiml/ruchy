@@ -66,6 +66,14 @@ impl Transpiler {
                     let expr_tokens = self.transpile_expr(expr)?;
                     args.push(expr_tokens);
                 }
+                StringPart::ExprWithFormat { expr, format_spec } => {
+                    // Include the format specifier in the format string
+                    format_string.push('{');
+                    format_string.push_str(format_spec);
+                    format_string.push('}');
+                    let expr_tokens = self.transpile_expr(expr)?;
+                    args.push(expr_tokens);
+                }
             }
         }
 
@@ -246,7 +254,10 @@ impl Transpiler {
     pub fn transpile_index_access(&self, object: &Expr, index: &Expr) -> Result<TokenStream> {
         let obj_tokens = self.transpile_expr(object)?;
         let index_tokens = self.transpile_expr(index)?;
-        Ok(quote! { #obj_tokens[#index_tokens] })
+        
+        // Convert index to usize to handle i32 variables in array indexing
+        // This resolves the rosetta-ruchy blocking issue with i32 vs usize mismatch
+        Ok(quote! { #obj_tokens[#index_tokens as usize] })
     }
 
     /// Transpiles slice access (array[start:end])
@@ -261,18 +272,18 @@ impl Transpiler {
             (None, Some(end)) => {
                 // Slice from beginning [..end]
                 let end_tokens = self.transpile_expr(end)?;
-                Ok(quote! { &#obj_tokens[..#end_tokens] })
+                Ok(quote! { &#obj_tokens[..#end_tokens as usize] })
             }
             (Some(start), None) => {
                 // Slice to end [start..]
                 let start_tokens = self.transpile_expr(start)?;
-                Ok(quote! { &#obj_tokens[#start_tokens..] })
+                Ok(quote! { &#obj_tokens[#start_tokens as usize..] })
             }
             (Some(start), Some(end)) => {
                 // Full range slice [start..end]
                 let start_tokens = self.transpile_expr(start)?;
                 let end_tokens = self.transpile_expr(end)?;
-                Ok(quote! { &#obj_tokens[#start_tokens..#end_tokens] })
+                Ok(quote! { &#obj_tokens[#start_tokens as usize..#end_tokens as usize] })
             }
         }
     }
@@ -461,20 +472,23 @@ impl Transpiler {
         })
     }
 
-    /// Check if an expression is definitely a string (no ambiguous identifiers)
+    /// Check if an expression is definitely a string (conservative detection)
     fn is_definitely_string(expr: &Expr) -> bool {
-        matches!(&expr.kind, 
-            ExprKind::Literal(Literal::String(_)) | 
-            ExprKind::StringInterpolation { .. } |
-            // Consider function calls that return strings as strings
-            // This includes our string concatenation format! calls
-            ExprKind::Call { .. }
-        )
+        match &expr.kind {
+            // String literals are definitely strings
+            ExprKind::Literal(Literal::String(_)) => true,
+            // String interpolation is definitely strings
+            ExprKind::StringInterpolation { .. } => true,
+            // Variables could be strings, but we can't be sure without type info
+            // For now, be conservative and don't assume variables are strings
+            ExprKind::Identifier(_) => false,
+            // Function calls are NOT definitely strings - they could return any type
+            ExprKind::Call { .. } => false,
+            // Other expressions are not strings
+            _ => false,
+        }
     }
 
-    fn is_definitely_numeric(expr: &Expr) -> bool {
-        matches!(&expr.kind, ExprKind::Literal(Literal::Integer(_)) | ExprKind::Literal(Literal::Float(_)))
-    }
 
     /// Transpile string concatenation using proper Rust string operations
     fn transpile_string_concatenation(&self, left: &Expr, right: &Expr) -> Result<TokenStream> {

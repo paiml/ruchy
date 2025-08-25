@@ -149,19 +149,22 @@ impl Transpiler {
                             }
                             ExprKind::StringInterpolation { parts } => {
                                 // Check if this is just a format string (only Text parts, no Expr parts)
-                                let has_expressions = parts.iter().any(|part| matches!(part, crate::frontend::ast::StringPart::Expr(_)));
-                                if !has_expressions {
+                                let has_expressions = parts.iter().any(|part| matches!(part, 
+                                    crate::frontend::ast::StringPart::Expr(_) | 
+                                    crate::frontend::ast::StringPart::ExprWithFormat { .. }));
+                                if has_expressions {
+                                    // This has actual interpolation - transpile normally
+                                    self.transpile_expr(arg)
+                                } else {
                                     // This is a format string like "Hello {}" - treat as literal
                                     let format_string = parts.iter()
                                         .map(|part| match part {
                                             crate::frontend::ast::StringPart::Text(s) => s.as_str(),
-                                            _ => unreachable!()
+                                            crate::frontend::ast::StringPart::Expr(_) | 
+                                            crate::frontend::ast::StringPart::ExprWithFormat { .. } => unreachable!()
                                         })
                                         .collect::<String>();
                                     Ok(quote! { #format_string })
-                                } else {
-                                    // This has actual interpolation - transpile normally
-                                    self.transpile_expr(arg)
                                 }
                             }
                             _ => self.transpile_expr(arg)
@@ -187,19 +190,22 @@ impl Transpiler {
                             }
                             ExprKind::StringInterpolation { parts } => {
                                 // Check if this is just a format string (only Text parts, no Expr parts)
-                                let has_expressions = parts.iter().any(|part| matches!(part, crate::frontend::ast::StringPart::Expr(_)));
-                                if !has_expressions {
+                                let has_expressions = parts.iter().any(|part| matches!(part, 
+                                    crate::frontend::ast::StringPart::Expr(_) | 
+                                    crate::frontend::ast::StringPart::ExprWithFormat { .. }));
+                                if has_expressions {
+                                    // This has actual interpolation - transpile normally
+                                    self.transpile_expr(arg)
+                                } else {
                                     // This is a format string like "Hello {}" - treat as literal
                                     let format_string = parts.iter()
                                         .map(|part| match part {
                                             crate::frontend::ast::StringPart::Text(s) => s.as_str(),
-                                            _ => unreachable!()
+                                            crate::frontend::ast::StringPart::Expr(_) | 
+                                            crate::frontend::ast::StringPart::ExprWithFormat { .. } => unreachable!()
                                         })
                                         .collect::<String>();
                                     Ok(quote! { #format_string })
-                                } else {
-                                    // This has actual interpolation - transpile normally
-                                    self.transpile_expr(arg)
                                 }
                             }
                             _ => self.transpile_expr(arg)
@@ -273,19 +279,22 @@ impl Transpiler {
                             }
                             ExprKind::StringInterpolation { parts } => {
                                 // Check if this is just a format string (only Text parts, no Expr parts)
-                                let has_expressions = parts.iter().any(|part| matches!(part, crate::frontend::ast::StringPart::Expr(_)));
-                                if !has_expressions {
+                                let has_expressions = parts.iter().any(|part| matches!(part, 
+                                    crate::frontend::ast::StringPart::Expr(_) | 
+                                    crate::frontend::ast::StringPart::ExprWithFormat { .. }));
+                                if has_expressions {
+                                    // This has actual interpolation - transpile normally
+                                    self.transpile_expr(arg)
+                                } else {
                                     // This is a format string like "Error: {}" - treat as literal
                                     let format_string = parts.iter()
                                         .map(|part| match part {
                                             crate::frontend::ast::StringPart::Text(s) => s.as_str(),
-                                            _ => unreachable!()
+                                            crate::frontend::ast::StringPart::Expr(_) | 
+                                            crate::frontend::ast::StringPart::ExprWithFormat { .. } => unreachable!()
                                         })
                                         .collect::<String>();
                                     Ok(quote! { #format_string })
-                                } else {
-                                    // This has actual interpolation - transpile normally
-                                    self.transpile_expr(arg)
                                 }
                             }
                             _ => self.transpile_expr(arg)
