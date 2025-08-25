@@ -17,7 +17,7 @@
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use colored::Colorize;
+// use colored::Colorize; // Unused after refactoring
 use ruchy::{runtime::repl::Repl, ExprKind, Parser as RuchyParser, Transpiler};
 use ruchy::optimization::{MechanicalSympathyTuner, HardwareProfile, Priority};
 use std::collections::{HashMap, HashSet};
