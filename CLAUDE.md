@@ -132,6 +132,7 @@ Navigation:
 2. docs/execution/roadmap.md  # Strategic priorities and current tasks
 3. docs/execution/      # Tactical work breakdown
 4. ../ruchy-book/INTEGRATION.md  # Book compatibility tracking
+5. CHANGELOG.md         # Version history and release notes
 ```
 
 ## Book Compatibility Monitoring
