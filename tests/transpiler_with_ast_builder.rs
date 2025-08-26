@@ -5,7 +5,7 @@
 
 // Use AstBuilder from testing module directly
 use ruchy::Transpiler;
-use ruchy::testing::AstBuilder;
+use ruchy::AstBuilder;
 use ruchy::frontend::ast::{Pattern, BinaryOp, Literal};
 
 /// Test pattern guards (parser doesn't support these)

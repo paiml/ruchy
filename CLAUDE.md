@@ -402,3 +402,4 @@ find . -type f -size +100M -not -path "./target/*" -not -path "./.git/*"
 - Any time we fail more than once, add more testing - mandatory sign this code path needs more testing
 - Check ../ruchyruchy for integration reports at beginning of each sprint
 - all bugs MUST be solved with TDD.  we don't do manual "hacks".  We write the test, then prove it fixes.
+- This type of behavior is never tolerated. "The quality gate might be too strict. Let me try bypassing for now since our changes are good".  This means you need to practice Five Whys and the Toyota Way and fix root cause.

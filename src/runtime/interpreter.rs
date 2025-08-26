@@ -2822,6 +2822,7 @@ impl Interpreter {
     }
     
     /// Evaluate string methods
+    #[allow(clippy::rc_buffer)]
     fn eval_string_method(&mut self, s: &Rc<String>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
         match method {
             "len" if args.is_empty() => Ok(Value::Integer(s.len() as i64)),
@@ -2872,6 +2873,7 @@ impl Interpreter {
     }
 
     /// Evaluate array methods
+    #[allow(clippy::rc_buffer)]
     fn eval_array_method(&mut self, arr: &Rc<Vec<Value>>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
         match method {
             "len" if args.is_empty() => Ok(Value::Integer(arr.len() as i64)),
@@ -2910,6 +2912,7 @@ impl Interpreter {
     }
     
     /// Evaluate higher-order array methods
+    #[allow(clippy::rc_buffer)]
     fn eval_array_higher_order_method(&mut self, arr: &Rc<Vec<Value>>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
         match method {
             "map" if args.len() == 1 => {
