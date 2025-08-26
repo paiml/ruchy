@@ -451,26 +451,6 @@ impl Transpiler {
         self.transpile_regular_function_call(&func_tokens, args)
     }
 
-    /// Build printf-style format string for macros (preserves {} as format specifiers)
-    fn build_printf_format_string(&self, parts: &[crate::frontend::ast::StringPart]) -> Result<TokenStream> {
-        let mut format_string = String::new();
-        
-        for part in parts {
-            match part {
-                crate::frontend::ast::StringPart::Text(s) => {
-                    // Don't escape {} in printf context - they are format specifiers
-                    format_string.push_str(s);
-                }
-                crate::frontend::ast::StringPart::Expr(_) | 
-                crate::frontend::ast::StringPart::ExprWithFormat { .. } => {
-                    // String interpolation expressions become {} placeholders
-                    format_string.push_str("{}");
-                }
-            }
-        }
-        
-        Ok(quote! { #format_string })
-    }
 
     /// Transpiles println/print with string interpolation directly
     fn transpile_print_with_interpolation(
@@ -934,28 +914,24 @@ impl Transpiler {
         func_tokens: &TokenStream,
         args: &[Expr]
     ) -> Result<Option<TokenStream>> {
-        match &args[0].kind {
-            ExprKind::Literal(Literal::String(_)) => {
-                // First argument is format string literal, remaining are format arguments  
-                let format_arg = self.transpile_expr(&args[0])?;
-                let format_args: Result<Vec<_>> = args[1..].iter().map(|a| self.transpile_expr(a)).collect();
-                let format_args = format_args?;
-                Ok(Some(quote! { #func_tokens!(#format_arg, #(#format_args),*) }))
-            }
-            ExprKind::StringInterpolation { parts } => {
-                // Handle format string with printf-style formatting
-                let format_str = self.build_printf_format_string(parts)?;
-                let format_args: Result<Vec<_>> = args[1..].iter().map(|a| self.transpile_expr(a)).collect();
-                let format_args = format_args?;
-                Ok(Some(quote! { #func_tokens!(#format_str, #(#format_args),*) }))
-            }
-            _ => {
-                // Generate format string with placeholders for all arguments
-                let format_str = (0..args.len()).map(|_| "{}").collect::<Vec<_>>().join(" ");
-                let all_args: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
-                let all_args = all_args?;
-                Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
-            }
+        // FIXED: Don't treat first string argument as format string
+        // Instead, treat all arguments as values to print with spaces
+        if args.is_empty() {
+            return Ok(Some(quote! { #func_tokens!() }));
+        }
+        
+        let all_args: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
+        let all_args = all_args?;
+        
+        if args.len() == 1 {
+            // Single argument - use simple format
+            Ok(Some(quote! { #func_tokens!("{}", #(#all_args)*) }))
+        } else {
+            // Multiple arguments - print each separated by spaces
+            let arg_count = all_args.len();
+            let mut format_str = "{} ".repeat(arg_count - 1);
+            format_str.push_str("{}");
+            Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
         }
     }
     
@@ -974,64 +950,80 @@ impl Transpiler {
     /// ```
     fn try_transpile_math_function(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
         match (base_name, args.len()) {
-            ("sqrt", 1) => {
-                let arg = self.transpile_expr(&args[0])?;
-                Ok(Some(quote! { (#arg as f64).sqrt() }))
-            }
-            ("pow", 2) => {
-                let base = self.transpile_expr(&args[0])?;
-                let exp = self.transpile_expr(&args[1])?;
-                Ok(Some(quote! { (#base as f64).powf(#exp as f64) }))
-            }
-            ("abs", 1) => {
-                let arg = self.transpile_expr(&args[0])?;
-                // Check if arg is negative literal to handle type
-                if let ExprKind::Unary { op: UnaryOp::Negate, operand } = &args[0].kind {
-                    if matches!(&operand.kind, ExprKind::Literal(Literal::Float(_))) {
-                        return Ok(Some(quote! { (#arg).abs() }));
-                    }
-                }
-                // For all other cases, use standard abs
-                Ok(Some(quote! { #arg.abs() }))
-            }
-            ("min", 2) => {
-                let a = self.transpile_expr(&args[0])?;
-                let b = self.transpile_expr(&args[1])?;
-                // Check if args are float literals to determine type
-                let is_float = matches!(&args[0].kind, ExprKind::Literal(Literal::Float(_))) 
-                    || matches!(&args[1].kind, ExprKind::Literal(Literal::Float(_)));
-                if is_float {
-                    Ok(Some(quote! { (#a as f64).min(#b as f64) }))
-                } else {
-                    Ok(Some(quote! { std::cmp::min(#a, #b) }))
-                }
-            }
-            ("max", 2) => {
-                let a = self.transpile_expr(&args[0])?;
-                let b = self.transpile_expr(&args[1])?;
-                // Check if args are float literals to determine type
-                let is_float = matches!(&args[0].kind, ExprKind::Literal(Literal::Float(_))) 
-                    || matches!(&args[1].kind, ExprKind::Literal(Literal::Float(_)));
-                if is_float {
-                    Ok(Some(quote! { (#a as f64).max(#b as f64) }))
-                } else {
-                    Ok(Some(quote! { std::cmp::max(#a, #b) }))
-                }
-            }
-            ("floor", 1) => {
-                let arg = self.transpile_expr(&args[0])?;
-                Ok(Some(quote! { (#arg as f64).floor() }))
-            }
-            ("ceil", 1) => {
-                let arg = self.transpile_expr(&args[0])?;
-                Ok(Some(quote! { (#arg as f64).ceil() }))
-            }
-            ("round", 1) => {
-                let arg = self.transpile_expr(&args[0])?;
-                Ok(Some(quote! { (#arg as f64).round() }))
-            }
+            ("sqrt", 1) => self.transpile_sqrt(&args[0]).map(Some),
+            ("pow", 2) => self.transpile_pow(&args[0], &args[1]).map(Some),
+            ("abs", 1) => self.transpile_abs(&args[0]).map(Some),
+            ("min", 2) => self.transpile_min(&args[0], &args[1]).map(Some),
+            ("max", 2) => self.transpile_max(&args[0], &args[1]).map(Some),
+            ("floor", 1) => self.transpile_floor(&args[0]).map(Some),
+            ("ceil", 1) => self.transpile_ceil(&args[0]).map(Some),
+            ("round", 1) => self.transpile_round(&args[0]).map(Some),
             _ => Ok(None)
         }
+    }
+
+    fn transpile_sqrt(&self, arg: &Expr) -> Result<TokenStream> {
+        let arg_tokens = self.transpile_expr(arg)?;
+        Ok(quote! { (#arg_tokens as f64).sqrt() })
+    }
+
+    fn transpile_pow(&self, base: &Expr, exp: &Expr) -> Result<TokenStream> {
+        let base_tokens = self.transpile_expr(base)?;
+        let exp_tokens = self.transpile_expr(exp)?;
+        Ok(quote! { (#base_tokens as f64).powf(#exp_tokens as f64) })
+    }
+
+    fn transpile_abs(&self, arg: &Expr) -> Result<TokenStream> {
+        let arg_tokens = self.transpile_expr(arg)?;
+        // Check if arg is negative literal to handle type
+        if let ExprKind::Unary { op: UnaryOp::Negate, operand } = &arg.kind {
+            if matches!(&operand.kind, ExprKind::Literal(Literal::Float(_))) {
+                return Ok(quote! { (#arg_tokens).abs() });
+            }
+        }
+        // For all other cases, use standard abs
+        Ok(quote! { #arg_tokens.abs() })
+    }
+
+    fn transpile_min(&self, a: &Expr, b: &Expr) -> Result<TokenStream> {
+        let a_tokens = self.transpile_expr(a)?;
+        let b_tokens = self.transpile_expr(b)?;
+        // Check if args are float literals to determine type
+        let is_float = matches!(&a.kind, ExprKind::Literal(Literal::Float(_))) 
+            || matches!(&b.kind, ExprKind::Literal(Literal::Float(_)));
+        if is_float {
+            Ok(quote! { (#a_tokens as f64).min(#b_tokens as f64) })
+        } else {
+            Ok(quote! { std::cmp::min(#a_tokens, #b_tokens) })
+        }
+    }
+
+    fn transpile_max(&self, a: &Expr, b: &Expr) -> Result<TokenStream> {
+        let a_tokens = self.transpile_expr(a)?;
+        let b_tokens = self.transpile_expr(b)?;
+        // Check if args are float literals to determine type
+        let is_float = matches!(&a.kind, ExprKind::Literal(Literal::Float(_))) 
+            || matches!(&b.kind, ExprKind::Literal(Literal::Float(_)));
+        if is_float {
+            Ok(quote! { (#a_tokens as f64).max(#b_tokens as f64) })
+        } else {
+            Ok(quote! { std::cmp::max(#a_tokens, #b_tokens) })
+        }
+    }
+
+    fn transpile_floor(&self, arg: &Expr) -> Result<TokenStream> {
+        let arg_tokens = self.transpile_expr(arg)?;
+        Ok(quote! { (#arg_tokens as f64).floor() })
+    }
+
+    fn transpile_ceil(&self, arg: &Expr) -> Result<TokenStream> {
+        let arg_tokens = self.transpile_expr(arg)?;
+        Ok(quote! { (#arg_tokens as f64).ceil() })
+    }
+
+    fn transpile_round(&self, arg: &Expr) -> Result<TokenStream> {
+        let arg_tokens = self.transpile_expr(arg)?;
+        Ok(quote! { (#arg_tokens as f64).round() })
     }
     
     /// Handle input functions (input, readline)
