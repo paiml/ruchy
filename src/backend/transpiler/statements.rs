@@ -783,8 +783,14 @@ impl Transpiler {
         })
     }
 
-    /// Transpiles import statements
+    
+    /// Static method for transpiling inline imports (backward compatibility)
     pub fn transpile_import(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        Self::transpile_import_inline(path, items)
+    }
+    
+    /// Core inline import transpilation logic
+    fn transpile_import_inline(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
         use crate::frontend::ast::ImportItem;
 
         // Build the path as a TokenStream
@@ -924,13 +930,23 @@ impl Transpiler {
         let all_args = all_args?;
         
         if args.len() == 1 {
-            // Single argument - use simple format
-            Ok(Some(quote! { #func_tokens!("{}", #(#all_args)*) }))
+            // Single argument - check if it's a string literal
+            if let ExprKind::Literal(Literal::String(_)) = &args[0].kind {
+                // String literal - use Display format
+                Ok(Some(quote! { #func_tokens!("{}", #(#all_args)*) }))
+            } else {
+                // Other types - use Debug format for complex types
+                Ok(Some(quote! { #func_tokens!("{:?}", #(#all_args)*) }))
+            }
         } else {
-            // Multiple arguments - print each separated by spaces
-            let arg_count = all_args.len();
-            let mut format_str = "{} ".repeat(arg_count - 1);
-            format_str.push_str("{}");
+            // Multiple arguments - use appropriate format for each
+            let format_parts: Vec<_> = args.iter().map(|arg| {
+                match &arg.kind {
+                    ExprKind::Literal(Literal::String(_)) => "{}",
+                    _ => "{:?}"
+                }
+            }).collect();
+            let format_str = format_parts.join(" ");
             Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
         }
     }

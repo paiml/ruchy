@@ -4055,14 +4055,21 @@ impl Repl {
                     println!("{output}");
                     return Ok(Value::Unit);
                 }
-                // No format placeholders or single argument - print as-is
-                println!("{format_str}");
-                // Print any additional arguments space-separated
-                for arg in &args[1..] {
-                    let val = self.evaluate_expr(arg, deadline, depth + 1)?;
-                    print!(" {val}");
-                }
-                if args.len() > 1 {
+                // No format placeholders - treat all args equally, space-separated
+                if args.len() == 1 {
+                    // Single argument - just print it
+                    println!("{format_str}");
+                } else {
+                    // Multiple arguments - print all space-separated
+                    print!("{format_str}");
+                    for arg in &args[1..] {
+                        let val = self.evaluate_expr(arg, deadline, depth + 1)?;
+                        // Print strings without quotes, other types with their normal formatting
+                        match val {
+                            Value::String(s) => print!(" {s}"),
+                            other => print!(" {other}"),
+                        }
+                    }
                     println!();
                 }
                 return Ok(Value::Unit);

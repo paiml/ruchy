@@ -90,10 +90,54 @@ impl Transpiler {
             return self.transpile_string_concatenation(left, right);
         }
 
-        let left_tokens = self.transpile_expr(left)?;
-        let right_tokens = self.transpile_expr(right)?;
+        // Transpile operands with precedence-aware parentheses
+        let left_tokens = self.transpile_expr_with_precedence(left, op, true)?;
+        let right_tokens = self.transpile_expr_with_precedence(right, op, false)?;
 
         Ok(Self::transpile_binary_op(left_tokens, op, right_tokens))
+    }
+
+    /// Transpile expression with precedence-aware parentheses
+    /// 
+    /// Adds parentheses around sub-expressions when needed to preserve precedence
+    fn transpile_expr_with_precedence(&self, expr: &Expr, parent_op: BinaryOp, is_left_operand: bool) -> Result<TokenStream> {
+        let tokens = self.transpile_expr(expr)?;
+        
+        // Check if we need parentheses
+        if let ExprKind::Binary { op: child_op, .. } = &expr.kind {
+            let parent_prec = Self::get_operator_precedence(parent_op);
+            let child_prec = Self::get_operator_precedence(*child_op);
+            
+            // Add parentheses if child has lower precedence
+            // For right operands, also add parentheses if precedence is equal and parent is right-associative  
+            let needs_parens = child_prec < parent_prec ||
+                (!is_left_operand && child_prec == parent_prec && Self::is_right_associative(parent_op));
+            
+            if needs_parens {
+                return Ok(quote! { (#tokens) });
+            }
+        }
+        
+        Ok(tokens)
+    }
+
+    /// Get operator precedence (higher number = higher precedence)
+    fn get_operator_precedence(op: BinaryOp) -> i32 {
+        match op {
+            BinaryOp::Or => 10,
+            BinaryOp::And => 20,
+            BinaryOp::Equal | BinaryOp::NotEqual => 30,
+            BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => 40,
+            BinaryOp::Add | BinaryOp::Subtract => 50,
+            BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 60,
+            BinaryOp::Power => 70,
+            _ => 0, // Default for other operators
+        }
+    }
+    
+    /// Check if operator is right-associative
+    fn is_right_associative(op: BinaryOp) -> bool {
+        matches!(op, BinaryOp::Power) // Only power is right-associative in most languages
     }
 
     fn transpile_binary_op(left: TokenStream, op: BinaryOp, right: TokenStream) -> TokenStream {

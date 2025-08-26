@@ -40,7 +40,7 @@ impl Default for Transpiler {
 }
 
 impl Transpiler {
-    /// Creates a new transpiler instance
+    /// Creates a new transpiler instance without module loader
     ///
     /// # Examples
     ///
@@ -200,14 +200,14 @@ impl Transpiler {
                     use polars::prelude::*;
                     use std::collections::HashMap;
                     fn main() {
-                        #(#statements)*
+                        #(#statements;)*
                     }
                 })
             } else {
                 Ok(quote! {
                     use std::collections::HashMap;
                     fn main() {
-                        #(#statements)*
+                        #(#statements;)*
                     }
                 })
             }
@@ -220,14 +220,13 @@ impl Transpiler {
     }
     
     fn is_statement_expr(&self, expr: &Expr) -> bool {
-        use ExprKind::*;
         match &expr.kind {
             // Let bindings are statements
-            Let { .. } | LetPattern { .. } => true,
+            ExprKind::Let { .. } | ExprKind::LetPattern { .. } => true,
             // Assignment operations are statements  
-            Assign { .. } | CompoundAssign { .. } => true,
+            ExprKind::Assign { .. } | ExprKind::CompoundAssign { .. } => true,
             // Function calls that don't return meaningful values (like println)
-            Call { func, .. } => {
+            ExprKind::Call { func, .. } => {
                 if let ExprKind::Identifier(name) = &func.kind {
                     matches!(name.as_str(), "println" | "print" | "dbg")
                 } else {
@@ -235,7 +234,7 @@ impl Transpiler {
                 }
             }
             // Blocks containing statements
-            Block(exprs) => exprs.iter().any(|e| self.is_statement_expr(e)),
+            ExprKind::Block(exprs) => exprs.iter().any(|e| self.is_statement_expr(e)),
             // Most other expressions are not statements
             _ => false,
         }
