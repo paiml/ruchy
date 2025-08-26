@@ -39,16 +39,23 @@ fn apply(f: impl Fn(i32) -> i32, x: String) { f(x) }  // Works perfectly!
   - `Vec<T>`, `Option<T>` syntax fails
   - Blocks all generic programming examples
 
-## 🎯 NEXT SPRINT: Continue Bug Fix Sprint - URGENT
+## 🎯 CURRENT SPRINT: Book Compatibility Recovery Sprint
 
-**GOAL**: Fix remaining critical bugs blocking book examples and restore compatibility.
+**GOAL**: Achieve 50%+ book compatibility (from current 20%) through methodical bug fixes.
 
 ### Sprint Overview
-- **Task IDs**: RECOVERY-001 to RECOVERY-010
-- **Duration**: 2-3 days (Started 2025-08-26)
-- **Priority**: P0 - CRITICAL COMPILER BUG
-- **Goal**: Fix higher-order functions with 80% test coverage
-- **Focus**: Test-first development following Toyota Way investigation
+- **Task IDs**: BOOK-001 to BOOK-005
+- **Duration**: 1 week (Started 2025-08-26)
+- **Priority**: P0 - CRITICAL USER EXPERIENCE
+- **Goal**: Fix top 5 issues blocking book examples with 80% test coverage
+- **Focus**: Test-first development following Toyota Way with PMAT quality gates
+
+### Sprint Tasks (Priority Order)
+- [ ] **BOOK-001 (BUG-003)**: Type Annotations Parser Support - Impact: ~100+ examples
+- [ ] **BOOK-002 (BUG-004)**: Standard Library Methods - Impact: ~80+ examples  
+- [ ] **BOOK-003 (BUG-007)**: Void Function Return Type Inference - Impact: ~40+ examples
+- [ ] **BOOK-004 (BUG-001)**: v1.17 Regression Root Cause Analysis - Impact: Understanding 299 failures
+- [ ] **BOOK-005 (FEATURE-001)**: Basic Module System Support - Impact: Multi-file examples
 
 ### Critical Context
 - **v1.18.0 YANKED**: Broke all basic programs (main() -> i32 bug)
