@@ -205,94 +205,72 @@ impl Transpiler {
 
     /// Transpiles function definitions
     #[allow(clippy::too_many_arguments)]
-    pub fn transpile_function(
-        &self,
-        name: &str,
-        type_params: &[String],
-        params: &[Param],
-        body: &Expr,
-        is_async: bool,
-        return_type: Option<&Type>,
-        is_pub: bool,
-    ) -> Result<TokenStream> {
-        let fn_name = format_ident!("{}", name);
+    /// Infer parameter type based on usage in function body
+    fn infer_param_type(&self, param: &Param, body: &Expr, func_name: &str) -> TokenStream {
+        use super::type_inference::{is_param_used_as_function, is_param_used_numerically, is_param_used_as_function_argument};
+        
+        if is_param_used_as_function(&param.name(), body) {
+            quote! { impl Fn(i32) -> i32 }
+        } else if is_param_used_numerically(&param.name(), body) || 
+                  self.looks_like_numeric_function(func_name) ||
+                  is_param_used_as_function_argument(&param.name(), body) {
+            quote! { i32 }
+        } else {
+            quote! { String }
+        }
+    }
 
-        let param_tokens: Vec<TokenStream> = params
+    /// Generate parameter tokens with proper type inference
+    fn generate_param_tokens(&self, params: &[Param], body: &Expr, func_name: &str) -> Result<Vec<TokenStream>> {
+        params
             .iter()
             .map(|p| {
                 let param_name = format_ident!("{}", p.name());
-                // For inferred types, use appropriate concrete types instead of generics
                 let type_tokens = if let Ok(tokens) = self.transpile_type(&p.ty) {
                     let token_str = tokens.to_string();
                     if token_str == "_" {
-                        // Smart type inference based on usage in function body
-                        use super::type_inference::{is_param_used_as_function, is_param_used_numerically, is_param_used_as_function_argument};
-                        
-                        if is_param_used_as_function(&p.name(), body) {
-                            // Parameter is used as a function
-                            quote! { impl Fn(i32) -> i32 }
-                        } else if is_param_used_numerically(&p.name(), body) || 
-                                  self.looks_like_numeric_function(name) ||
-                                  is_param_used_as_function_argument(&p.name(), body) {
-                            // Parameter is used in numeric operations, function name suggests numeric, 
-                            // or parameter is used as argument to function call
-                            quote! { i32 }
-                        } else {
-                            // Default to String for general use
-                            quote! { String }
-                        }
+                        self.infer_param_type(p, body, func_name)
                     } else {
                         tokens
                     }
-                } else { 
-                    // Smart default based on usage analysis
-                    use super::type_inference::{is_param_used_as_function, is_param_used_numerically, is_param_used_as_function_argument};
-                    
-                    if is_param_used_as_function(&p.name(), body) {
-                        quote! { impl Fn(i32) -> i32 }
-                    } else if is_param_used_numerically(&p.name(), body) || 
-                              self.looks_like_numeric_function(name) ||
-                              is_param_used_as_function_argument(&p.name(), body) {
-                        quote! { i32 }
-                    } else {
-                        quote! { String }
-                    }
+                } else {
+                    self.infer_param_type(p, body, func_name)
                 };
-                quote! { #param_name: #type_tokens }
+                Ok(quote! { #param_name: #type_tokens })
             })
-            .collect();
+            .collect()
+    }
 
-        // Use provided type parameters only - no automatic generic inference
-        let all_type_params = type_params.to_vec();
+    /// Generate return type tokens based on function analysis
+    fn generate_return_type_tokens(&self, name: &str, return_type: Option<&Type>, body: &Expr) -> Result<TokenStream> {
+        if let Some(ty) = return_type {
+            let ty_tokens = self.transpile_type(ty)?;
+            Ok(quote! { -> #ty_tokens })
+        } else if name == "main" {
+            Ok(quote! {})
+        } else if self.looks_like_numeric_function(name) {
+            Ok(quote! { -> i32 })
+        } else if self.has_non_unit_expression(body) {
+            Ok(quote! { -> i32 })
+        } else {
+            Ok(quote! {})
+        }
+    }
 
-        let body_tokens = if is_async {
+    /// Generate body tokens with async support
+    fn generate_body_tokens(&self, body: &Expr, is_async: bool) -> Result<TokenStream> {
+        if is_async {
             let mut async_transpiler = Transpiler::new();
             async_transpiler.in_async_context = true;
-            async_transpiler.transpile_expr(body)?
+            async_transpiler.transpile_expr(body)
         } else {
-            self.transpile_expr(body)?
-        };
+            self.transpile_expr(body)
+        }
+    }
 
-        // Infer return type based on function body content
-        let return_type_tokens = if let Some(ty) = return_type {
-            let ty_tokens = self.transpile_type(ty)?;
-            quote! { -> #ty_tokens }
-        } else if name == "main" {
-            // main function should not have explicit return type
-            quote! {}
-        } else if self.looks_like_numeric_function(name) {
-            // Numeric functions likely return numeric values
-            quote! { -> i32 }
-        } else if self.has_non_unit_expression(body) {
-            // If the body has a non-unit expression, assume i32 return type for now
-            quote! { -> i32 }
-        } else {
-            // For void functions (like print_hello), let Rust's type inference handle it
-            quote! {}
-        };
-
-        // HOTFIX: Handle complex trait bounds that can't use format_ident
-        let type_param_tokens: Vec<TokenStream> = all_type_params
+    /// Generate type parameter tokens with trait bound support
+    fn generate_type_param_tokens(&self, type_params: &[String]) -> Result<Vec<TokenStream>> {
+        Ok(type_params
             .iter()
             .map(|p| {
                 if p.contains(':') {
@@ -304,39 +282,71 @@ impl Transpiler {
                     quote! { #ident }
                 }
             })
-            .collect();
+            .collect())
+    }
 
+    /// Generate complete function signature
+    fn generate_function_signature(
+        &self,
+        is_pub: bool,
+        is_async: bool,
+        fn_name: &proc_macro2::Ident,
+        type_param_tokens: &[TokenStream],
+        param_tokens: &[TokenStream],
+        return_type_tokens: &TokenStream,
+        body_tokens: &TokenStream,
+    ) -> Result<TokenStream> {
         let visibility = if is_pub { quote! { pub } } else { quote! {} };
+        
+        Ok(match (type_param_tokens.is_empty(), is_async) {
+            (true, false) => quote! {
+                #visibility fn #fn_name(#(#param_tokens),*) #return_type_tokens {
+                    #body_tokens
+                }
+            },
+            (true, true) => quote! {
+                #visibility async fn #fn_name(#(#param_tokens),*) #return_type_tokens {
+                    #body_tokens
+                }
+            },
+            (false, false) => quote! {
+                #visibility fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #return_type_tokens {
+                    #body_tokens
+                }
+            },
+            (false, true) => quote! {
+                #visibility async fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #return_type_tokens {
+                    #body_tokens
+                }
+            },
+        })
+    }
 
-        if all_type_params.is_empty() {
-            if is_async {
-                Ok(quote! {
-                    #visibility async fn #fn_name(#(#param_tokens),*) #return_type_tokens {
-                        #body_tokens
-                    }
-                })
-            } else {
-                Ok(quote! {
-                    #visibility fn #fn_name(#(#param_tokens),*) #return_type_tokens {
-                        #body_tokens
-                    }
-                })
-            }
-        } else {
-            if is_async {
-                Ok(quote! {
-                    #visibility async fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #return_type_tokens {
-                        #body_tokens
-                    }
-                })
-            } else {
-                Ok(quote! {
-                    #visibility fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #return_type_tokens {
-                        #body_tokens
-                    }
-                })
-            }
-        }
+    pub fn transpile_function(
+        &self,
+        name: &str,
+        type_params: &[String],
+        params: &[Param],
+        body: &Expr,
+        is_async: bool,
+        return_type: Option<&Type>,
+        is_pub: bool,
+    ) -> Result<TokenStream> {
+        let fn_name = format_ident!("{}", name);
+        let param_tokens = self.generate_param_tokens(params, body, name)?;
+        let body_tokens = self.generate_body_tokens(body, is_async)?;
+        let return_type_tokens = self.generate_return_type_tokens(name, return_type, body)?;
+        let type_param_tokens = self.generate_type_param_tokens(type_params)?;
+
+        self.generate_function_signature(
+            is_pub, 
+            is_async, 
+            &fn_name, 
+            &type_param_tokens, 
+            &param_tokens, 
+            &return_type_tokens, 
+            &body_tokens
+        )
     }
 
     /// Transpiles lambda expressions
