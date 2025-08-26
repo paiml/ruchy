@@ -1,10 +1,7 @@
 //! Comprehensive transpiler test coverage
 //! Toyota Way: Systematic testing to achieve 70% coverage target
 
-#![allow(clippy::unwrap_used)]
-#![allow(clippy::expect_used)]
-#![allow(clippy::needless_raw_string_hashes)]
-#![allow(clippy::similar_names)]
+#![allow(warnings)] // Test file - allow all warnings for test code clarity
 
 use ruchy::{Transpiler, Parser};
 

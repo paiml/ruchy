@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use ruchy::{Parser, Transpiler};
-use ruchy::frontend::ast::{Expr, ExprKind, Literal, Pattern, Span};
+use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
 
 fn transpile_literals(c: &mut Criterion) {
     let mut group = c.benchmark_group("transpile_literals");
@@ -75,16 +75,16 @@ fn transpile_functions(c: &mut Criterion) {
     
     let functions = vec![
         ("simple", "fun add(a: i32, b: i32) -> i32 { a + b }"),
-        ("recursive", r#"
+        ("recursive", r"
             fun factorial(n: i32) -> i32 {
                 if n <= 1 { 1 } else { n * factorial(n - 1) }
             }
-        "#),
-        ("higher_order", r#"
+        "),
+        ("higher_order", r"
             fun map(f: (i32) -> i32, list: [i32]) -> [i32] {
                 list.map(f)
             }
-        "#),
+        "),
     ];
     
     for (name, code) in functions {
@@ -158,7 +158,7 @@ fn transpile_real_world(c: &mut Criterion) {
     let mut group = c.benchmark_group("transpile_real_world");
     
     let programs = vec![
-        ("quicksort", r#"
+        ("quicksort", r"
             fun quicksort(arr: [i32]) -> [i32] {
                 if arr.len() <= 1 {
                     arr
@@ -170,8 +170,8 @@ fn transpile_real_world(c: &mut Criterion) {
                     quicksort(less) + equal + quicksort(greater)
                 }
             }
-        "#),
-        ("fibonacci_memo", r#"
+        "),
+        ("fibonacci_memo", r"
             let mut cache = {}
             
             fun fib_memo(n: i32) -> i32 {
@@ -183,14 +183,14 @@ fn transpile_real_world(c: &mut Criterion) {
                     result
                 }
             }
-        "#),
-        ("data_pipeline", r#"
+        "),
+        ("data_pipeline", r"
             let data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
             let result = data
                 .map(|x| x * 2)
                 .filter(|x| x > 10)
                 .reduce(0, |acc, x| acc + x)
-        "#),
+        "),
     ];
     
     for (name, code) in programs {

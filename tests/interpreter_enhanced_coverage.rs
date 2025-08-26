@@ -4,7 +4,7 @@
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::expect_used)]
 
-use ruchy::runtime::interpreter::{Interpreter, Value, InterpreterError};
+use ruchy::runtime::interpreter::{Interpreter, Value};
 use ruchy::frontend::Parser;
 
 // Helper to parse and eval

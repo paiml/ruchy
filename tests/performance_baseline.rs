@@ -13,32 +13,32 @@ fn test_compilation_performance_baseline() {
     let test_cases = vec![
         (
             "simple",
-            r#"let x = 42"#,
+            r"let x = 42",
             100, // Expected max ms
         ),
         (
             "hello_world",
-            r#"println("Hello, World!")"#,
+            r"println("Hello, World!")",
             100,
         ),
         (
             "arithmetic",
-            r#"let x = 10 + 20 * 30 - 40 / 5"#,
+            r"let x = 10 + 20 * 30 - 40 / 5",
             100,
         ),
         (
             "function",
-            r#"
+            r"
             fun add(a: i32, b: i32) -> i32 {
                 a + b
             }
             add(5, 3)
-            "#,
+            ",
             100,
         ),
         (
             "fibonacci",
-            r#"
+            r"
             fun fibonacci(n: i32) -> i32 {
                 if n <= 1 {
                     n
@@ -47,26 +47,26 @@ fn test_compilation_performance_baseline() {
                 }
             }
             fibonacci(10)
-            "#,
+            ",
             100,
         ),
         (
             "match_expression",
-            r#"
+            r"
             match x {
                 0 => "zero",
                 1 => "one",
                 _ => "other"
             }
-            "#,
+            ",
             100,
         ),
         (
             "list_operations",
-            r#"
+            r"
             let numbers = [1, 2, 3, 4, 5]
             numbers.map(|x| x * 2).filter(|x| x > 5)
-            "#,
+            ",
             100,
         ),
     ];
@@ -209,7 +209,7 @@ fn test_nested_expression_performance() {
 fn test_complex_program_performance() {
     println!("\n=== Complex Program Performance ===\n");
     
-    let complex_program = r#"
+    let complex_program = r"
         fun quicksort(arr: [i32]) -> [i32] {
             if arr.len() <= 1 {
                 arr

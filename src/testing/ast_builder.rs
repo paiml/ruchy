@@ -25,7 +25,7 @@ impl AstBuilder {
     pub fn int(&self, value: i64) -> Expr {
         Expr {
             kind: ExprKind::Literal(Literal::Integer(value)),
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -34,7 +34,7 @@ impl AstBuilder {
     pub fn float(&self, value: f64) -> Expr {
         Expr {
             kind: ExprKind::Literal(Literal::Float(value)),
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -43,7 +43,7 @@ impl AstBuilder {
     pub fn string(&self, value: &str) -> Expr {
         Expr {
             kind: ExprKind::Literal(Literal::String(value.to_string())),
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -52,7 +52,7 @@ impl AstBuilder {
     pub fn bool(&self, value: bool) -> Expr {
         Expr {
             kind: ExprKind::Literal(Literal::Bool(value)),
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -61,7 +61,7 @@ impl AstBuilder {
     pub fn ident(&self, name: &str) -> Expr {
         Expr {
             kind: ExprKind::Identifier(name.to_string()),
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -74,7 +74,7 @@ impl AstBuilder {
                 op,
                 right: Box::new(right),
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -86,7 +86,7 @@ impl AstBuilder {
                 op,
                 operand: Box::new(operand),
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -99,7 +99,7 @@ impl AstBuilder {
                 then_branch: Box::new(then_branch),
                 else_branch: else_branch.map(Box::new),
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -111,7 +111,7 @@ impl AstBuilder {
                 expr: Box::new(expr),
                 arms,
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -122,7 +122,7 @@ impl AstBuilder {
             pattern,
             guard: guard.map(Box::new),
             body: Box::new(body),
-            span: self.span.clone(),
+            span: self.span,
         }
     }
     
@@ -171,7 +171,7 @@ impl AstBuilder {
                 func: Box::new(func),
                 args,
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -183,7 +183,7 @@ impl AstBuilder {
                 params,
                 body: Box::new(body),
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -192,7 +192,7 @@ impl AstBuilder {
     pub fn block(&self, statements: Vec<Expr>) -> Expr {
         Expr {
             kind: ExprKind::Block(statements),
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -207,11 +207,11 @@ impl AstBuilder {
                 is_mutable: false,
                 body: Box::new(Expr {
                     kind: ExprKind::Literal(Literal::Unit),
-                    span: self.span.clone(),
+                    span: self.span,
                     attributes: vec![],
                 }),
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -223,48 +223,48 @@ impl AstBuilder {
                 target: Box::new(target),
                 value: Box::new(value),
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
     
-    /// Create a Result::Ok variant
+    /// Create a `Result::Ok` variant
     pub fn ok(&self, value: Expr) -> Expr {
         Expr {
             kind: ExprKind::Call {
                 func: Box::new(self.ident("Ok")),
                 args: vec![value],
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
     
-    /// Create a Result::Err variant
+    /// Create a `Result::Err` variant
     pub fn err(&self, value: Expr) -> Expr {
         Expr {
             kind: ExprKind::Call {
                 func: Box::new(self.ident("Err")),
                 args: vec![value],
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
     
-    /// Create an Option::Some variant
+    /// Create an `Option::Some` variant
     pub fn some(&self, value: Expr) -> Expr {
         Expr {
             kind: ExprKind::Call {
                 func: Box::new(self.ident("Some")),
                 args: vec![value],
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
     
-    /// Create an Option::None variant
+    /// Create an `Option::None` variant
     pub fn none(&self) -> Expr {
         self.ident("None")
     }
@@ -273,7 +273,7 @@ impl AstBuilder {
     pub fn list(&self, elements: Vec<Expr>) -> Expr {
         Expr {
             kind: ExprKind::List(elements),
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -282,7 +282,7 @@ impl AstBuilder {
     pub fn tuple(&self, elements: Vec<Expr>) -> Expr {
         Expr {
             kind: ExprKind::Tuple(elements),
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -291,7 +291,7 @@ impl AstBuilder {
     pub fn string_interpolation(&self, parts: Vec<StringPart>) -> Expr {
         Expr {
             kind: ExprKind::StringInterpolation { parts },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -305,7 +305,7 @@ impl AstBuilder {
                 body: Box::new(body),
                 pattern: None,
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -317,7 +317,7 @@ impl AstBuilder {
                 condition: Box::new(condition),
                 body: Box::new(body),
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -328,7 +328,7 @@ impl AstBuilder {
             kind: ExprKind::Loop {
                 body: Box::new(body),
             },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -337,7 +337,7 @@ impl AstBuilder {
     pub fn break_expr(&self, label: Option<String>) -> Expr {
         Expr {
             kind: ExprKind::Break { label },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -346,7 +346,7 @@ impl AstBuilder {
     pub fn continue_expr(&self, label: Option<String>) -> Expr {
         Expr {
             kind: ExprKind::Continue { label },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -355,7 +355,7 @@ impl AstBuilder {
     pub fn return_expr(&self, value: Option<Expr>) -> Expr {
         Expr {
             kind: ExprKind::Return { value: value.map(Box::new) },
-            span: self.span.clone(),
+            span: self.span,
             attributes: vec![],
         }
     }
@@ -364,7 +364,7 @@ impl AstBuilder {
     pub fn type_int(&self) -> Type {
         Type {
             kind: TypeKind::Named("i32".to_string()),
-            span: self.span.clone(),
+            span: self.span,
         }
     }
     
@@ -375,7 +375,7 @@ impl AstBuilder {
                 base: "Result".to_string(),
                 params: vec![ok, err],
             },
-            span: self.span.clone(),
+            span: self.span,
         }
     }
     
@@ -386,7 +386,7 @@ impl AstBuilder {
                 base: "Option".to_string(),
                 params: vec![inner],
             },
-            span: self.span.clone(),
+            span: self.span,
         }
     }
 }
