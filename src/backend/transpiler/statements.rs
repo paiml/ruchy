@@ -930,13 +930,34 @@ impl Transpiler {
         let all_args = all_args?;
         
         if args.len() == 1 {
-            // Single argument - check if it's a string literal
-            if let ExprKind::Literal(Literal::String(_)) = &args[0].kind {
-                // String literal - use Display format
-                Ok(Some(quote! { #func_tokens!("{}", #(#all_args)*) }))
-            } else {
-                // Other types - use Debug format for complex types
-                Ok(Some(quote! { #func_tokens!("{:?}", #(#all_args)*) }))
+            // Single argument - check if it's a string-like expression
+            match &args[0].kind {
+                ExprKind::Literal(Literal::String(_)) | 
+                ExprKind::StringInterpolation { .. } => {
+                    // String literal or interpolation - use Display format
+                    Ok(Some(quote! { #func_tokens!("{}", #(#all_args)*) }))
+                }
+                ExprKind::Identifier(_) => {
+                    // For identifiers, we can't know the type at compile time
+                    // Use a runtime check to decide format
+                    let arg = &all_args[0];
+                    Ok(Some(quote! {
+                        {
+                            let value = #arg;
+                            // Check if it's a String type at runtime
+                            if std::any::type_name_of_val(&value).contains("String") || 
+                               std::any::type_name_of_val(&value).contains("&str") {
+                                #func_tokens!("{}", value)
+                            } else {
+                                #func_tokens!("{:?}", value)
+                            }
+                        }
+                    }))
+                }
+                _ => {
+                    // Other types - use Debug format for complex types
+                    Ok(Some(quote! { #func_tokens!("{:?}", #(#all_args)*) }))
+                }
             }
         } else {
             // Multiple arguments - use appropriate format for each
