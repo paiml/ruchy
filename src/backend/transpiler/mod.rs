@@ -18,14 +18,15 @@ mod types;
 mod codegen_minimal;
 
 use crate::frontend::ast::{Attribute, Expr, ExprKind, Span, Type};
+use crate::backend::module_resolver::ModuleResolver;
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 
 // Module exports are handled by the impl blocks in each module
 
-/// Block categorization result: (functions, statements, `has_main`, `main_expr`)
-type BlockCategorization<'a> = (Vec<TokenStream>, Vec<TokenStream>, bool, Option<&'a Expr>);
+/// Block categorization result: (functions, statements, modules, `has_main`, `main_expr`)
+type BlockCategorization<'a> = (Vec<TokenStream>, Vec<TokenStream>, Vec<TokenStream>, bool, Option<&'a Expr>);
 
 /// The main transpiler struct
 pub struct Transpiler {
@@ -54,6 +55,28 @@ impl Transpiler {
         Self {
             in_async_context: false,
         }
+    }
+
+    /// Resolves file imports in the AST using `ModuleResolver`
+    #[allow(dead_code)]
+    fn resolve_imports(&self, expr: &Expr) -> Result<Expr> {
+        // For now, just use default search paths since we don't have file context here
+        let mut resolver = ModuleResolver::new();
+        resolver.resolve_imports(expr.clone())
+    }
+
+    /// Resolves file imports with a specific file context for search paths
+    fn resolve_imports_with_context(&self, expr: &Expr, file_path: Option<&std::path::Path>) -> Result<Expr> {
+        let mut resolver = ModuleResolver::new();
+        
+        // Add the file's directory to search paths if provided
+        if let Some(path) = file_path {
+            if let Some(dir) = path.parent() {
+                resolver.add_search_path(dir);
+            }
+        }
+        
+        resolver.resolve_imports(expr.clone())
     }
 
     /// Transpiles an expression to a `TokenStream`
@@ -109,17 +132,24 @@ impl Transpiler {
     ///
     /// Returns an error if the AST cannot be transpiled to a valid Rust program.
     pub fn transpile_to_program(&self, expr: &Expr) -> Result<TokenStream> {
-        let needs_polars = Self::contains_dataframe(expr);
+        self.transpile_to_program_with_context(expr, None)
+    }
+
+    /// Transpile with file context for module resolution
+    pub fn transpile_to_program_with_context(&self, expr: &Expr, file_path: Option<&std::path::Path>) -> Result<TokenStream> {
+        // First, resolve any file imports using the module resolver
+        let resolved_expr = self.resolve_imports_with_context(expr, file_path)?;
+        let needs_polars = Self::contains_dataframe(&resolved_expr);
         
-        match &expr.kind {
+        match &resolved_expr.kind {
             ExprKind::Function { name, .. } => {
-                self.transpile_single_function(expr, name, needs_polars)
+                self.transpile_single_function(&resolved_expr, name, needs_polars)
             }
             ExprKind::Block(exprs) => {
                 self.transpile_program_block(exprs, needs_polars)
             }
             _ => {
-                self.transpile_expression_program(expr, needs_polars)
+                self.transpile_expression_program(&resolved_expr, needs_polars)
             }
         }
     }
@@ -153,12 +183,12 @@ impl Transpiler {
     }
     
     fn transpile_program_block(&self, exprs: &[Expr], needs_polars: bool) -> Result<TokenStream> {
-        let (functions, statements, has_main, main_expr) = self.categorize_block_expressions(exprs)?;
+        let (functions, statements, modules, has_main, main_expr) = self.categorize_block_expressions(exprs)?;
         
-        if functions.is_empty() && !has_main {
+        if functions.is_empty() && !has_main && modules.is_empty() {
             self.transpile_statement_only_block(exprs, needs_polars)
-        } else if has_main {
-            self.transpile_block_with_main_function(&functions, &statements, main_expr, needs_polars)
+        } else if has_main || !modules.is_empty() {
+            self.transpile_block_with_main_function(&functions, &statements, &modules, main_expr, needs_polars)
         } else {
             self.transpile_block_with_functions(&functions, &statements, needs_polars)
         }
@@ -167,23 +197,67 @@ impl Transpiler {
     fn categorize_block_expressions<'a>(&self, exprs: &'a [Expr]) -> Result<BlockCategorization<'a>> {
         let mut functions = Vec::new();
         let mut statements = Vec::new();
+        let mut modules = Vec::new();
         let mut has_main_function = false;
         let mut main_function_expr = None;
         
         for expr in exprs {
-            if let ExprKind::Function { name, .. } = &expr.kind {
-                if name == "main" {
-                    has_main_function = true;
-                    main_function_expr = Some(expr);
-                } else {
-                    functions.push(self.transpile_expr(expr)?);
+            match &expr.kind {
+                ExprKind::Function { name, .. } => {
+                    if name == "main" {
+                        has_main_function = true;
+                        main_function_expr = Some(expr);
+                    } else {
+                        functions.push(self.transpile_expr(expr)?);
+                    }
+                },
+                ExprKind::Module { name, body } => {
+                    // Extract module declarations for top-level placement
+                    modules.push(self.transpile_module_declaration(name, body)?);
+                },
+                ExprKind::Block(block_exprs) => {
+                    // Check if this is a module-containing block from the resolver
+                    if block_exprs.len() == 2 
+                        && matches!(block_exprs[0].kind, ExprKind::Module { .. })
+                        && matches!(block_exprs[1].kind, ExprKind::Import { .. }) {
+                        // This is a module resolver block: extract the module and keep the import as statement
+                        if let ExprKind::Module { name, body } = &block_exprs[0].kind {
+                            modules.push(self.transpile_module_declaration(name, body)?);
+                        }
+                        statements.push(self.transpile_expr(&block_exprs[1])?);
+                    } else {
+                        // Regular block, treat as statement
+                        statements.push(self.transpile_expr(expr)?);
+                    }
+                },
+                _ => {
+                    statements.push(self.transpile_expr(expr)?);
                 }
-            } else {
-                statements.push(self.transpile_expr(expr)?);
             }
         }
         
-        Ok((functions, statements, has_main_function, main_function_expr))
+        Ok((functions, statements, modules, has_main_function, main_function_expr))
+    }
+
+    fn transpile_module_declaration(&self, name: &str, body: &Expr) -> Result<TokenStream> {
+        let module_name = format_ident!("{}", name);
+        
+        // Handle module body - if it's a block, transpile its contents directly
+        let body_tokens = if let ExprKind::Block(exprs) = &body.kind {
+            // Transpile each expression in the block as individual items
+            let items: Result<Vec<_>> = exprs.iter().map(|expr| self.transpile_expr(expr)).collect();
+            let items = items?;
+            quote! { #(#items)* }
+        } else {
+            // Single expression - transpile normally
+            self.transpile_expr(body)?
+        };
+
+        Ok(quote! {
+            mod #module_name {
+                #body_tokens
+            }
+        })
     }
     
     fn transpile_statement_only_block(&self, exprs: &[Expr], needs_polars: bool) -> Result<TokenStream> {
@@ -267,8 +341,8 @@ impl Transpiler {
         }
     }
     
-    fn transpile_block_with_main_function(&self, functions: &[TokenStream], statements: &[TokenStream], main_expr: Option<&Expr>, needs_polars: bool) -> Result<TokenStream> {
-        if statements.is_empty() {
+    fn transpile_block_with_main_function(&self, functions: &[TokenStream], statements: &[TokenStream], modules: &[TokenStream], main_expr: Option<&Expr>, needs_polars: bool) -> Result<TokenStream> {
+        if statements.is_empty() && main_expr.is_some() {
             // Only functions, just emit them normally (includes user's main)
             let main_tokens = if let Some(main) = main_expr {
                 self.transpile_expr(main)?
@@ -280,12 +354,14 @@ impl Transpiler {
                 Ok(quote! {
                     use polars::prelude::*;
                     use std::collections::HashMap;
+                    #(#modules)*
                     #(#functions)*
                     #main_tokens
                 })
             } else {
                 Ok(quote! {
                     use std::collections::HashMap;
+                    #(#modules)*
                     #(#functions)*
                     #main_tokens
                 })
@@ -295,13 +371,15 @@ impl Transpiler {
             let main_body = if let Some(main) = main_expr {
                 self.extract_main_function_body(main)?
             } else {
-                return Err(anyhow::anyhow!("Expected main function expression"));
+                // No user main function, just use empty body
+                quote! {}
             };
             
             if needs_polars {
                 Ok(quote! {
                     use polars::prelude::*;
                     use std::collections::HashMap;
+                    #(#modules)*
                     #(#functions)*
                     fn main() {
                         // Top-level statements execute first
@@ -314,6 +392,7 @@ impl Transpiler {
             } else {
                 Ok(quote! {
                     use std::collections::HashMap;
+                    #(#modules)*
                     #(#functions)*
                     fn main() {
                         // Top-level statements execute first

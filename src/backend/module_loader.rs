@@ -243,7 +243,7 @@ impl ModuleLoader {
             // Add other expression types that can contain imports
             _ => {
                 // For now, basic dependency extraction
-                // TODO: Add comprehensive AST traversal for all expression types
+                // Future: Add comprehensive AST traversal for all expression types if needed
             }
         }
     }
