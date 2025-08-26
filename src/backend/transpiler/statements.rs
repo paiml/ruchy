@@ -182,14 +182,16 @@ impl Transpiler {
                     let token_str = tokens.to_string();
                     if token_str == "_" {
                         // Smart type inference based on usage in function body
-                        use super::type_inference::{is_param_used_as_function, is_param_used_numerically};
+                        use super::type_inference::{is_param_used_as_function, is_param_used_numerically, is_param_used_as_function_argument};
                         
                         if is_param_used_as_function(&p.name(), body) {
                             // Parameter is used as a function
                             quote! { impl Fn(i32) -> i32 }
                         } else if is_param_used_numerically(&p.name(), body) || 
-                                  self.looks_like_numeric_function(name) {
-                            // Parameter is used in numeric operations or function name suggests numeric
+                                  self.looks_like_numeric_function(name) ||
+                                  is_param_used_as_function_argument(&p.name(), body) {
+                            // Parameter is used in numeric operations, function name suggests numeric, 
+                            // or parameter is used as argument to function call
                             quote! { i32 }
                         } else {
                             // Default to String for general use
@@ -200,12 +202,13 @@ impl Transpiler {
                     }
                 } else { 
                     // Smart default based on usage analysis
-                    use super::type_inference::{is_param_used_as_function, is_param_used_numerically};
+                    use super::type_inference::{is_param_used_as_function, is_param_used_numerically, is_param_used_as_function_argument};
                     
                     if is_param_used_as_function(&p.name(), body) {
                         quote! { impl Fn(i32) -> i32 }
                     } else if is_param_used_numerically(&p.name(), body) || 
-                              self.looks_like_numeric_function(name) {
+                              self.looks_like_numeric_function(name) ||
+                              is_param_used_as_function_argument(&p.name(), body) {
                         quote! { i32 }
                     } else {
                         quote! { String }
