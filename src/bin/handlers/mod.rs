@@ -243,16 +243,17 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
         eprintln!("Compiling and running...");
     }
 
-    // Create unique output binary path
-    let temp_binary = tempfile::NamedTempFile::new()
-        .with_context(|| "Failed to create temporary binary file")?;
-    let binary_path = temp_binary.path();
+    // Create unique output binary path (use Builder to avoid keeping file open)
+    let temp_dir = tempfile::tempdir()
+        .with_context(|| "Failed to create temporary directory")?;
+    let binary_path = temp_dir.path().join("ruchy_temp_bin");
     
     // Compile and run using rustc
     let output = std::process::Command::new("rustc")
         .arg("--edition=2021")
+        .arg("--crate-name=ruchy_temp")
         .arg("-o")
-        .arg(binary_path)
+        .arg(&binary_path)
         .arg(temp_source.path())
         .output()
         .with_context(|| "Failed to run rustc")?;
@@ -264,7 +265,7 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
     }
 
     // Run the compiled binary
-    let run_output = std::process::Command::new(binary_path)
+    let run_output = std::process::Command::new(&binary_path)
         .output()
         .with_context(|| "Failed to run compiled binary")?;
 

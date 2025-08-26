@@ -2889,7 +2889,7 @@ impl Repl {
             }
 
             // Struct patterns
-            (Value::Object(obj_fields), Pattern::Struct { name: _struct_name, fields: pattern_fields }) => {
+            (Value::Object(obj_fields), Pattern::Struct { name: _struct_name, fields: pattern_fields, has_rest: _ }) => {
                 // For now, we don't check struct name since objects are generic
                 // Check all pattern fields match
                 for pattern_field in pattern_fields {

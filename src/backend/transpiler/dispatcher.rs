@@ -297,6 +297,13 @@ impl Transpiler {
                 body,
                 is_mutable,
             } => self.transpile_let(name, value, body, *is_mutable),
+            ExprKind::LetPattern {
+                pattern,
+                type_annotation: _,
+                value,
+                body,
+                is_mutable: _,
+            } => self.transpile_let_pattern(pattern, value, body),
             ExprKind::Block(exprs) => self.transpile_block(exprs),
             ExprKind::Pipeline { expr, stages } => self.transpile_pipeline(expr, stages),
             ExprKind::Import { path, items } => Ok(Self::transpile_import(path, items)),

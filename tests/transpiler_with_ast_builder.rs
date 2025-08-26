@@ -3,8 +3,9 @@
 
 #![allow(clippy::unwrap_used)]
 
-// Since AstBuilder is behind feature gate, include inline
+// Use AstBuilder from testing module directly
 use ruchy::Transpiler;
+use ruchy::testing::AstBuilder;
 use ruchy::frontend::ast::{Pattern, BinaryOp, Literal};
 
 /// Test pattern guards (parser doesn't support these)

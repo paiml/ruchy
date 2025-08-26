@@ -113,6 +113,13 @@ pub enum ExprKind {
         body: Box<Expr>,
         is_mutable: bool,
     },
+    LetPattern {
+        pattern: Pattern,
+        type_annotation: Option<Type>,
+        value: Box<Expr>,
+        body: Box<Expr>,
+        is_mutable: bool,
+    },
     Function {
         name: String,
         type_params: Vec<String>,
@@ -491,6 +498,7 @@ pub enum Pattern {
     Struct {
         name: String,
         fields: Vec<StructPatternField>,
+        has_rest: bool,
     },
     Range {
         start: Box<Pattern>,
@@ -499,6 +507,7 @@ pub enum Pattern {
     },
     Or(Vec<Pattern>),
     Rest, // For ... patterns
+    RestNamed(String), // For ..name patterns
     Ok(Box<Pattern>),
     Err(Box<Pattern>),
     Some(Box<Pattern>),
@@ -539,6 +548,7 @@ impl Pattern {
             }
             Pattern::Wildcard => "_".to_string(),
             Pattern::Rest => "_rest".to_string(),
+            Pattern::RestNamed(name) => name.clone(),
             Pattern::Literal(lit) => format!("_literal_{lit:?}"),
             Pattern::Range { .. } => "_range".to_string(),
         }
@@ -1276,6 +1286,7 @@ mod tests {
                     name: "x".to_string(),
                     pattern: Some(Pattern::Identifier("x".to_string())),
                 }],
+                has_rest: false,
             },
             Pattern::Range {
                 start: Box::new(Pattern::Literal(Literal::Integer(1))),
@@ -1299,6 +1310,7 @@ mod tests {
                 | Pattern::Literal(_)
                 | Pattern::Identifier(_)
                 | Pattern::Rest
+                | Pattern::RestNamed(_)
                 | Pattern::Ok(_)
                 | Pattern::Err(_)
                 | Pattern::Some(_)
