@@ -597,121 +597,137 @@ fn parse_control_flow_prefix(state: &mut ParserState, token: Token, _span: Span)
 /// Returns error if constructor syntax is malformed
 fn parse_result_option_prefix(state: &mut ParserState, token: Token, span: Span) -> Result<Option<Expr>> {
     match token {
-        Token::Result => {
-            state.tokens.advance(); // consume Result
-            
-            // Check for qualified Result::Ok or Result::Err
-            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                state.tokens.advance(); // consume ::
-                
-                match state.tokens.peek() {
-                    Some((Token::Ok, _)) => {
-                        state.tokens.advance(); // consume Ok
-                        state.tokens.expect(&Token::LeftParen)?;
-                        let value = Box::new(super::parse_expr_recursive(state)?);
-                        state.tokens.expect(&Token::RightParen)?;
-                        
-                        Ok(Some(Expr::new(ExprKind::Ok { value }, span)))
-                    }
-                    Some((Token::Err, _)) => {
-                        state.tokens.advance(); // consume Err
-                        state.tokens.expect(&Token::LeftParen)?;
-                        let error = Box::new(super::parse_expr_recursive(state)?);
-                        state.tokens.expect(&Token::RightParen)?;
-                        
-                        Ok(Some(Expr::new(ExprKind::Err { error }, span)))
-                    }
-                    _ => bail!("Expected Ok or Err after Result::")
-                }
-            } else {
-                // Just Result as an identifier
-                Ok(Some(Expr::new(ExprKind::Identifier("Result".to_string()), span)))
-            }
-        }
-        Token::Option => {
-            state.tokens.advance(); // consume Option
-            
-            // Check for qualified Option::Some or Option::None
-            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                state.tokens.advance(); // consume ::
-                
-                match state.tokens.peek() {
-                    Some((Token::Some, _)) => {
-                        state.tokens.advance(); // consume Some
-                        state.tokens.expect(&Token::LeftParen)?;
-                        let value = Box::new(super::parse_expr_recursive(state)?);
-                        state.tokens.expect(&Token::RightParen)?;
-                        
-                        Ok(Some(Expr::new(ExprKind::Some { value }, span)))
-                    }
-                    Some((Token::None, _)) => {
-                        state.tokens.advance(); // consume None
-                        Ok(Some(Expr::new(ExprKind::None, span)))
-                    }
-                    _ => bail!("Expected Some or None after Option::")
-                }
-            } else {
-                // Just Option as an identifier
-                Ok(Some(Expr::new(ExprKind::Identifier("Option".to_string()), span)))
-            }
-        }
-        Token::Ok => {
-            state.tokens.advance(); // consume Ok
-            state.tokens.expect(&Token::LeftParen)?;
-            let value = Box::new(super::parse_expr_recursive(state)?);
-            state.tokens.expect(&Token::RightParen)?;
-            Ok(Some(Expr::new(ExprKind::Ok { value }, span)))
-        }
-        Token::Err => {
-            state.tokens.advance(); // consume Err
-            state.tokens.expect(&Token::LeftParen)?;
-            let error = Box::new(super::parse_expr_recursive(state)?);
-            state.tokens.expect(&Token::RightParen)?;
-            Ok(Some(Expr::new(ExprKind::Err { error }, span)))
-        }
-        Token::Some => {
-            state.tokens.advance(); // consume Some first
-            
-            // Check for qualified path like Some::Value
-            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                // We're in Some::Something case, delegate to qualified name parsing
-                Ok(Some(parse_identifier_token(state, "Some".to_string(), span)?))
-            } else {
-                // Standard Some(value) constructor (already consumed Some above)
+        Token::Result => parse_result_token(state, span),
+        Token::Option => parse_option_token(state, span),
+        Token::Ok => parse_ok_token(state, span),
+        Token::Err => parse_err_token(state, span),
+        Token::Some => parse_some_token(state, span),
+        Token::None => parse_none_token(state, span),
+        Token::Throw => parse_throw_token(state, span),
+        Token::Await => parse_await_token(state, span),
+        _ => Ok(None), // Not a Result/Option token
+    }
+}
+
+fn parse_result_token(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
+    state.tokens.advance(); // consume Result
+    
+    // Check for qualified Result::Ok or Result::Err
+    if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        state.tokens.advance(); // consume ::
+        
+        match state.tokens.peek() {
+            Some((Token::Ok, _)) => {
+                state.tokens.advance(); // consume Ok
                 state.tokens.expect(&Token::LeftParen)?;
                 let value = Box::new(super::parse_expr_recursive(state)?);
                 state.tokens.expect(&Token::RightParen)?;
+                
+                Ok(Some(Expr::new(ExprKind::Ok { value }, span)))
+            }
+            Some((Token::Err, _)) => {
+                state.tokens.advance(); // consume Err
+                state.tokens.expect(&Token::LeftParen)?;
+                let error = Box::new(super::parse_expr_recursive(state)?);
+                state.tokens.expect(&Token::RightParen)?;
+                
+                Ok(Some(Expr::new(ExprKind::Err { error }, span)))
+            }
+            _ => bail!("Expected Ok or Err after Result::")
+        }
+    } else {
+        // Just Result as an identifier
+        Ok(Some(Expr::new(ExprKind::Identifier("Result".to_string()), span)))
+    }
+}
+
+fn parse_option_token(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
+    state.tokens.advance(); // consume Option
+    
+    // Check for qualified Option::Some or Option::None
+    if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        state.tokens.advance(); // consume ::
+        
+        match state.tokens.peek() {
+            Some((Token::Some, _)) => {
+                state.tokens.advance(); // consume Some
+                state.tokens.expect(&Token::LeftParen)?;
+                let value = Box::new(super::parse_expr_recursive(state)?);
+                state.tokens.expect(&Token::RightParen)?;
+                
                 Ok(Some(Expr::new(ExprKind::Some { value }, span)))
             }
+            Some((Token::None, _)) => {
+                state.tokens.advance(); // consume None
+                Ok(Some(Expr::new(ExprKind::None, span)))
+            }
+            _ => bail!("Expected Some or None after Option::")
         }
-        Token::None => {
-            state.tokens.advance(); // consume None
-            Ok(Some(Expr::new(ExprKind::None, span)))
-        }
-        Token::Throw => {
-            state.tokens.advance(); // consume throw
-            let expr = super::parse_expr_recursive(state)?;
-            Ok(Some(Expr::new(
-                ExprKind::Throw {
-                    expr: Box::new(expr),
-                },
-                span,
-            )))
-        }
-        Token::Await => {
-            // Parse as prefix but it will transpile to postfix
-            state.tokens.advance(); // consume await
-            // Parse the full expression including postfix operations like calls
-            let expr = super::parse_expr_recursive(state)?;
-            Ok(Some(Expr::new(
-                ExprKind::Await {
-                    expr: Box::new(expr),
-                },
-                span,
-            )))
-        }
-        _ => Ok(None), // Not a Result/Option token
+    } else {
+        // Just Option as an identifier
+        Ok(Some(Expr::new(ExprKind::Identifier("Option".to_string()), span)))
     }
+}
+
+fn parse_ok_token(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
+    state.tokens.advance(); // consume Ok
+    state.tokens.expect(&Token::LeftParen)?;
+    let value = Box::new(super::parse_expr_recursive(state)?);
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(Some(Expr::new(ExprKind::Ok { value }, span)))
+}
+
+fn parse_err_token(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
+    state.tokens.advance(); // consume Err
+    state.tokens.expect(&Token::LeftParen)?;
+    let error = Box::new(super::parse_expr_recursive(state)?);
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(Some(Expr::new(ExprKind::Err { error }, span)))
+}
+
+fn parse_some_token(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
+    state.tokens.advance(); // consume Some first
+    
+    // Check for qualified path like Some::Value
+    if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        // We're in Some::Something case, delegate to qualified name parsing
+        Ok(Some(parse_identifier_token(state, "Some".to_string(), span)?))
+    } else {
+        // Standard Some(value) constructor (already consumed Some above)
+        state.tokens.expect(&Token::LeftParen)?;
+        let value = Box::new(super::parse_expr_recursive(state)?);
+        state.tokens.expect(&Token::RightParen)?;
+        Ok(Some(Expr::new(ExprKind::Some { value }, span)))
+    }
+}
+
+fn parse_none_token(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
+    state.tokens.advance(); // consume None
+    Ok(Some(Expr::new(ExprKind::None, span)))
+}
+
+fn parse_throw_token(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
+    state.tokens.advance(); // consume throw
+    let expr = super::parse_expr_recursive(state)?;
+    Ok(Some(Expr::new(
+        ExprKind::Throw {
+            expr: Box::new(expr),
+        },
+        span,
+    )))
+}
+
+fn parse_await_token(state: &mut ParserState, span: Span) -> Result<Option<Expr>> {
+    // Parse as prefix but it will transpile to postfix
+    state.tokens.advance(); // consume await
+    // Parse the full expression including postfix operations like calls
+    let expr = super::parse_expr_recursive(state)?;
+    Ok(Some(Expr::new(
+        ExprKind::Await {
+            expr: Box::new(expr),
+        },
+        span,
+    )))
 }
 
 /// Parses unary operators and increment/decrement expressions
