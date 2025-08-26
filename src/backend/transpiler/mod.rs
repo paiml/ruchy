@@ -191,23 +191,50 @@ impl Transpiler {
         let has_statements = exprs.iter().any(|expr| self.is_statement_expr(expr));
         
         if has_statements {
-            // Generate statements directly without wrapping in result expression
-            let statements: Result<Vec<_>> = exprs.iter().map(|expr| self.transpile_expr(expr)).collect();
-            let statements = statements?;
+            // Split into statements and possible final expression
+            let (statements, final_expr) = if !exprs.is_empty() && !self.is_statement_expr(exprs.last().unwrap()) {
+                // Last item is an expression, not a statement
+                (&exprs[..exprs.len() - 1], Some(exprs.last().unwrap()))
+            } else {
+                // All are statements
+                (exprs, None)
+            };
+            
+            // Transpile all statements
+            let statement_tokens: Result<Vec<_>> = statements.iter().map(|expr| self.transpile_expr(expr)).collect();
+            let statement_tokens = statement_tokens?;
+            
+            // Handle final expression if present
+            let main_body = if let Some(final_expr) = final_expr {
+                let final_tokens = self.transpile_expr(final_expr)?;
+                quote! {
+                    #(#statement_tokens;)*
+                    let result = #final_tokens;
+                    // Use a match on type name to handle strings properly
+                    match std::any::type_name_of_val(&result) {
+                        name if name.contains("String") || name.contains("&str") => println!("{}", result),
+                        _ => println!("{:?}", result)
+                    }
+                }
+            } else {
+                quote! {
+                    #(#statement_tokens;)*
+                }
+            };
             
             if needs_polars {
                 Ok(quote! {
                     use polars::prelude::*;
                     use std::collections::HashMap;
                     fn main() {
-                        #(#statements;)*
+                        #main_body
                     }
                 })
             } else {
                 Ok(quote! {
                     use std::collections::HashMap;
                     fn main() {
-                        #(#statements;)*
+                        #main_body
                     }
                 })
             }
