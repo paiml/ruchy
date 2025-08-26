@@ -631,6 +631,9 @@ pub struct Repl {
     config: ReplConfig,
     /// Memory tracker
     memory: MemoryTracker,
+    /// O(1) in-memory module cache: path -> parsed functions
+    /// Guarantees O(1) performance regardless of storage backend (EFS, NFS, etc)
+    module_cache: HashMap<String, HashMap<String, Value>>,
 }
 
 impl Repl {
@@ -674,6 +677,7 @@ impl Repl {
             session_counter: 0,
             config,
             memory,
+            module_cache: HashMap::new(),
         };
 
         // Initialize built-in types
@@ -4060,17 +4064,17 @@ impl Repl {
                     // Single argument - just print it
                     println!("{format_str}");
                 } else {
-                    // Multiple arguments - print all space-separated
+                    // Multiple arguments - print all space-separated on same line
                     print!("{format_str}");
                     for arg in &args[1..] {
                         let val = self.evaluate_expr(arg, deadline, depth + 1)?;
                         // Print strings without quotes, other types with their normal formatting
                         match val {
                             Value::String(s) => print!(" {s}"),
-                            other => print!(" {other}"),
+                            other => print!(" {other:?}"),
                         }
                     }
-                    println!();
+                    println!(); // Only one newline at the end
                 }
                 return Ok(Value::Unit);
             }
@@ -4952,12 +4956,105 @@ impl Repl {
                 }
             }
             _ => {
-                // For now, just acknowledge the import
-                // Module import acknowledged
+                // O(1) cache lookup first - NO filesystem access if cached
+                if let Some(cached_functions) = self.module_cache.get(path) {
+                    // CACHE HIT: O(1) performance - import functions from cache
+                    for (func_name, func_value) in cached_functions {
+                        let should_import = items.is_empty() || 
+                            items.iter().any(|item| match item {
+                                ImportItem::Wildcard => true,
+                                ImportItem::Named(item_name) => item_name == func_name,
+                                ImportItem::Aliased { name: item_name, .. } => item_name == func_name,
+                            });
+                        
+                        if should_import {
+                            self.bindings.insert(func_name.clone(), func_value.clone());
+                        }
+                    }
+                } else {
+                    // CACHE MISS: Load once and cache forever
+                    let module_path = format!("{path}.ruchy");
+                    
+                    if std::path::Path::new(&module_path).exists() {
+                        // Read and parse the module file (only once!)
+                        let module_content = std::fs::read_to_string(&module_path)
+                            .with_context(|| format!("Failed to read module file: {module_path}"))?;
+                        
+                        // Parse the module (only once!)
+                        let mut parser = crate::frontend::Parser::new(&module_content);
+                        let module_ast = parser.parse()
+                            .with_context(|| format!("Failed to parse module: {module_path}"))?;
+                        
+                        // Extract and cache all functions from the module
+                        let mut module_functions = HashMap::new();
+                        self.extract_module_functions(&module_ast, &mut module_functions)?;
+                        
+                        // Store in O(1) cache for future imports
+                        self.module_cache.insert(path.to_string(), module_functions.clone());
+                        
+                        // Import requested functions into current scope
+                        for (func_name, func_value) in &module_functions {
+                            let should_import = items.is_empty() ||
+                                items.iter().any(|item| match item {
+                                    ImportItem::Wildcard => true,
+                                    ImportItem::Named(item_name) => item_name == func_name,
+                                    ImportItem::Aliased { name: item_name, .. } => item_name == func_name,
+                                });
+                            
+                            if should_import {
+                                self.bindings.insert(func_name.clone(), func_value.clone());
+                            }
+                        }
+                    } else {
+                        bail!("Module not found: {}", path);
+                    }
+                }
             }
         }
         
         Ok(Value::Unit)
+    }
+    
+    /// Extract functions from a module AST into a `HashMap` for caching
+    fn extract_module_functions(&mut self, module_ast: &Expr, functions_map: &mut HashMap<String, Value>) -> Result<()> {
+        // Extract all functions from the module for caching
+        if let ExprKind::Block(exprs) = &module_ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { name, params, body, .. } = &expr.kind {
+                    // Extract function and store in cache map
+                    let param_names: Vec<String> = params.iter()
+                        .map(|p| match &p.pattern {
+                            Pattern::Identifier(name) => name.clone(),
+                            _ => "unknown".to_string(), // Simplified for now
+                        })
+                        .collect();
+                    
+                    let function_value = Value::Function {
+                        name: name.clone(),
+                        params: param_names,
+                        body: body.clone(),
+                    };
+                    functions_map.insert(name.clone(), function_value);
+                }
+            }
+        } else if let ExprKind::Function { name, params, body, .. } = &module_ast.kind {
+            // Single function module
+            let param_names: Vec<String> = params.iter()
+                .map(|p| match &p.pattern {
+                    Pattern::Identifier(name) => name.clone(),
+                    _ => "unknown".to_string(), // Simplified for now
+                })
+                .collect();
+            
+            let function_value = Value::Function {
+                name: name.clone(),
+                params: param_names,
+                body: body.clone(),
+            };
+            functions_map.insert(name.clone(), function_value);
+        }
+        
+        Ok(())
     }
     
     /// Evaluate export statements (complexity < 10)

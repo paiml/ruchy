@@ -228,7 +228,7 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
         .with_context(|| "Failed to parse input")?;
 
     let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_program(&ast)
+    let rust_code = transpiler.transpile_to_program_with_context(&ast, Some(file))
         .map(|tokens| tokens.to_string())
         .with_context(|| "Failed to transpile to Rust")?;
 
