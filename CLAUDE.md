@@ -401,3 +401,4 @@ find . -type f -size +100M -not -path "./target/*" -not -path "./.git/*"
 - Always look at ../ruchy-book and ../rosetta-ruchy to ensure quality at sprint start
 - Any time we fail more than once, add more testing - mandatory sign this code path needs more testing
 - Check ../ruchyruchy for integration reports at beginning of each sprint
+- all bugs MUST be solved with TDD.  we don't do manual "hacks".  We write the test, then prove it fixes.

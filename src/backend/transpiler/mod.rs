@@ -13,6 +13,7 @@ mod expressions;
 mod patterns;
 mod result_type;
 mod statements;
+mod type_inference;
 mod types;
 mod codegen_minimal;
 

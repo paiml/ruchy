@@ -1,0 +1,29 @@
+// Higher-order function: apply
+// Demonstrates passing functions as parameters
+
+fun apply(f, x) {
+    f(x)
+}
+
+fun double(n) {
+    n * 2
+}
+
+fun square(n) {
+    n * n
+}
+
+fun greet(name) {
+    println("Hello, " + name)
+}
+
+// Using apply with different functions
+let result1 = apply(double, 5)
+println("double(5) = " + result1)
+
+let result2 = apply(square, 4)
+println("square(4) = " + result2)
+
+// This should work but currently fails in v1.17.0
+// because function parameters are typed as String
+apply(greet, "World")
