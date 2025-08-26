@@ -128,12 +128,21 @@ impl Transpiler {
     }
 
 
-    /// Check if expression is a print-like call that returns unit
-    fn is_print_like_call(&self, expr: &Expr) -> bool {
+    /// Check if expression is a void/unit function call
+    fn is_void_function_call(&self, expr: &Expr) -> bool {
         match &expr.kind {
             crate::frontend::ast::ExprKind::Call { func, .. } => {
                 if let crate::frontend::ast::ExprKind::Identifier(name) = &func.kind {
-                    matches!(name.as_str(), "println" | "print" | "dbg" | "panic")
+                    // Comprehensive list of void functions
+                    matches!(name.as_str(), 
+                        // Output functions
+                        "println" | "print" | "eprintln" | "eprint" |
+                        // Debug functions
+                        "dbg" | "debug" | "trace" | "info" | "warn" | "error" |
+                        // Control flow functions
+                        "panic" | "assert" | "assert_eq" | "assert_ne" |
+                        "todo" | "unimplemented" | "unreachable"
+                    )
                 } else {
                     false
                 }
@@ -141,21 +150,56 @@ impl Transpiler {
             _ => false
         }
     }
+    
+    /// Check if an expression is void (returns unit/nothing)
+    fn is_void_expression(&self, expr: &Expr) -> bool {
+        match &expr.kind {
+            // Unit literal is void
+            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit) => true,
+            
+            // Void function calls
+            crate::frontend::ast::ExprKind::Call { .. } if self.is_void_function_call(expr) => true,
+            
+            // Assignments are void
+            crate::frontend::ast::ExprKind::Assign { .. } |
+            crate::frontend::ast::ExprKind::CompoundAssign { .. } => true,
+            
+            // Loops are void
+            crate::frontend::ast::ExprKind::While { .. } |
+            crate::frontend::ast::ExprKind::For { .. } => true,
+            
+            // Let bindings - check the body expression
+            crate::frontend::ast::ExprKind::Let { body, .. } => {
+                self.is_void_expression(body)
+            }
+            
+            // Block - check last expression
+            crate::frontend::ast::ExprKind::Block(exprs) => {
+                exprs.last().is_none_or(|e| self.is_void_expression(e))
+            }
+            
+            // If expression - both branches must be void
+            crate::frontend::ast::ExprKind::If { then_branch, else_branch, .. } => {
+                self.is_void_expression(then_branch) && 
+                else_branch.as_ref().is_none_or(|e| self.is_void_expression(e))
+            }
+            
+            // Match expression - all arms must be void
+            crate::frontend::ast::ExprKind::Match { arms, .. } => {
+                arms.iter().all(|arm| self.is_void_expression(&arm.body))
+            }
+            
+            // Return without value is void
+            crate::frontend::ast::ExprKind::Return { value } if value.is_none() => true,
+            
+            // Everything else produces a value
+            _ => false
+        }
+    }
 
     /// Check if expression has a non-unit value (i.e., returns something meaningful)
     fn has_non_unit_expression(&self, body: &Expr) -> bool {
-        match &body.kind {
-            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit) => false,
-            crate::frontend::ast::ExprKind::Block(exprs) => {
-                // Check if the last expression in the block is non-unit
-                exprs.last().is_some_and(|e| self.has_non_unit_expression(e))
-            }
-            crate::frontend::ast::ExprKind::Call { .. } if self.is_print_like_call(body) => {
-                // Print-like calls are effectively void
-                false
-            }
-            _ => true // Most other expressions produce a value
-        }
+        !self.is_void_expression(body)
     }
 
 

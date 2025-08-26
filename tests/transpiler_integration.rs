@@ -34,16 +34,16 @@ fn test_complete_programs() {
     
     for program in programs {
         let mut parser = Parser::new(program);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", program));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {program}"));
         
         let result = transpiler.transpile_to_program(&ast)
-            .expect(&format!("Failed to transpile program: {}", program));
+            .unwrap_or_else(|_| panic!("Failed to transpile program: {program}"));
         let code = result.to_string();
         
         // Should generate valid Rust program structure
-        assert!(code.contains("fn main"), "Program should contain main function: {}", program);
-        assert!(code.contains("{"), "Program should have block structure: {}", program);
-        assert!(code.contains("}"), "Program should have closing braces: {}", program);
+        assert!(code.contains("fn main"), "Program should contain main function: {program}");
+        assert!(code.contains("{"), "Program should have block structure: {program}");
+        assert!(code.contains("}"), "Program should have closing braces: {program}");
     }
 }
 

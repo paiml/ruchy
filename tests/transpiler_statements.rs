@@ -32,9 +32,9 @@ fn test_transpile_assignments() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
@@ -62,9 +62,9 @@ fn test_transpile_compound_assignments() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
@@ -98,9 +98,9 @@ fn test_transpile_return_statements() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
@@ -131,9 +131,9 @@ fn test_transpile_loop_control_statements() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
@@ -164,9 +164,9 @@ fn test_transpile_expression_statements() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
@@ -203,9 +203,9 @@ fn test_transpile_let_statements() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
@@ -236,9 +236,9 @@ fn test_transpile_statement_blocks() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
@@ -269,9 +269,9 @@ fn test_transpile_import_statements() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
@@ -299,9 +299,9 @@ fn test_transpile_export_statements() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
@@ -329,9 +329,9 @@ fn test_transpile_chained_statements() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
