@@ -172,6 +172,32 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
     let span = Span { start: 0, end: 0 }; // Simplified for now
 
     match state.tokens.peek() {
+        Some((Token::Fn, _)) => {
+            // Function type with fn keyword: fn(T1, T2) -> T3
+            state.tokens.advance(); // consume fn
+            state.tokens.expect(&Token::LeftParen)?;
+            
+            let mut param_types = Vec::new();
+            if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                param_types.push(parse_type(state)?);
+                while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance(); // consume comma
+                    param_types.push(parse_type(state)?);
+                }
+            }
+            
+            state.tokens.expect(&Token::RightParen)?;
+            state.tokens.expect(&Token::Arrow)?;
+            let ret_type = parse_type(state)?;
+            
+            Ok(Type {
+                kind: TypeKind::Function {
+                    params: param_types,
+                    ret: Box::new(ret_type),
+                },
+                span,
+            })
+        }
         Some((Token::LeftBracket, _)) => {
             state.tokens.advance(); // consume [
             let inner = parse_type(state)?;
