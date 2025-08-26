@@ -53,9 +53,9 @@ fn apply(f: impl Fn(i32) -> i32, x: String) { f(x) }  // Works perfectly!
 ### Sprint Tasks (Priority Order)
 - [x] **BOOK-001 (BUG-003)**: Type Annotations Parser Support - Impact: ~100+ examples (84% COMPLETE)
 - [x] **BOOK-002 (BUG-004)**: Standard Library Methods - Impact: ~80+ examples (100% COMPLETE - 33 tests)
-- [ ] **BOOK-003 (BUG-007)**: Void Function Return Type Inference - Impact: ~40+ examples
-- [ ] **BOOK-004 (BUG-001)**: v1.17 Regression Root Cause Analysis - Impact: Understanding 299 failures
-- [ ] **BOOK-005 (FEATURE-001)**: Basic Module System Support - Impact: Multi-file examples
+- [x] **BOOK-003 (BUG-007)**: Void Function Return Type Inference - Impact: ~40+ examples (89% COMPLETE - 24/27 tests)
+- [x] **BOOK-004 (BUG-001)**: v1.17 Regression Root Cause Analysis - Impact: Understanding 299 failures (100% COMPLETE - Root causes identified)
+- [x] **BOOK-005 (FEATURE-001)**: Basic Module System Support - Impact: Multi-file examples (PHASE 1 COMPLETE - Inline modules working, 2/2 book examples pass)
 
 ### Critical Context
 - **v1.18.0 YANKED**: Broke all basic programs (main() -> i32 bug)
