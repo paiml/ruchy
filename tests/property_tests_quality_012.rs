@@ -4,6 +4,13 @@
 
 #![cfg(test)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::print_stdout)] // Tests need to print output
+#![allow(clippy::uninlined_format_args)] // Test code doesn't need this optimization
+#![allow(dead_code)] // Test utilities may not all be used
+#![allow(clippy::redundant_clone, clippy::redundant_closure, clippy::redundant_closure_for_method_calls)] // Test code clarity over optimization
+#![allow(clippy::format_push_string)] // Test code clarity
+#![allow(clippy::match_same_arms, clippy::single_match)] // Test patterns
+#![allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)] // Test data sizes
 
 use proptest::prelude::*;
 use ruchy::{Parser, Transpiler};
@@ -34,7 +41,7 @@ fn type_name_strategy() -> impl Strategy<Value = String> {
 fn arithmetic_expr_strategy() -> impl Strategy<Value = String> {
     prop::collection::vec(1i32..100, 1..5)
         .prop_flat_map(|nums| {
-            let ops = vec!["+", "-", "*"];
+            let ops = ["+", "-", "*"];
             let mut expr = nums[0].to_string();
             for (i, num) in nums.iter().skip(1).enumerate() {
                 expr.push_str(&format!(" {} {}", ops[i % ops.len()], num));
@@ -209,7 +216,7 @@ proptest! {
         a in -1000i32..1000,
         b in -1000i32..1000
     ) {
-        let test_cases = vec![
+        let test_cases = [
             (format!("{} + {}", a, b), a.wrapping_add(b)),
             (format!("{} - {}", a, b), a.wrapping_sub(b)),
             (format!("{} * {}", a, b), a.wrapping_mul(b)),
@@ -232,7 +239,7 @@ proptest! {
         a in any::<i32>(),
         b in any::<i32>()
     ) {
-        let test_cases = vec![
+        let test_cases = [
             (format!("{} < {}", a, b), a < b),
             (format!("{} > {}", a, b), a > b),
             (format!("{} <= {}", a, b), a <= b),

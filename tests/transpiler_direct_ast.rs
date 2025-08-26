@@ -5,7 +5,7 @@
 
 use ruchy::Transpiler;
 use ruchy::frontend::ast::{
-    Expr, ExprKind, Literal, Pattern, MatchArm, BinaryOp, Span,
+    Expr, ExprKind, Literal, Pattern, MatchArm, Span,
 };
 
 /// Test simple match expression

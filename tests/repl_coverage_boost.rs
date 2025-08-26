@@ -1,8 +1,7 @@
 //! Comprehensive REPL tests to boost coverage from 8.33% to 50%+
 //! Focus on all public methods and edge cases
 
-#![allow(clippy::unwrap_used)]
-#![allow(clippy::expect_used)]
+#![allow(warnings)] // Test file
 
 use ruchy::runtime::repl::{Repl, ReplConfig, Value};
 use std::time::{Duration, Instant};

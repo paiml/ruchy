@@ -1,13 +1,10 @@
 //! Comprehensive interpreter tests to boost coverage to 85%
 //! Target: Cover edge cases, error conditions, and all value operations
 
-#![allow(clippy::unwrap_used)]
-#![allow(clippy::expect_used)]
+#![allow(warnings)] // Test file
 
-use ruchy::runtime::interpreter::{Interpreter, Value, InterpreterError};
-use ruchy::frontend::{Parser, Expr, ExprKind, Literal};
-use std::rc::Rc;
-use std::collections::HashMap;
+use ruchy::runtime::interpreter::{Interpreter, Value};
+use ruchy::frontend::Parser;
 
 // Helper function to parse and eval string
 fn eval_str(interpreter: &mut Interpreter, input: &str) -> Result<Value, Box<dyn std::error::Error>> {

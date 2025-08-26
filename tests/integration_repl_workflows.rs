@@ -139,11 +139,11 @@ fn test_multiline_function_definition() {
     // > factorial(5)
     // 120
     
-    let factorial_def = r#"
+    let factorial_def = r"
         fun factorial(n: i32) -> i32 {
             if n <= 1 { 1 } else { n * factorial(n - 1) }
         }
-    "#;
+    ";
     
     harness.execute_ok(factorial_def.trim())
         .expect("Should define factorial function");
