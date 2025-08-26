@@ -229,6 +229,7 @@ proc-macro2 = { workspace = true }
 prettyplease = { workspace = true }
 rustyline = { workspace = true }
 colored = "2.1"
+walkdir = "2.4"
 clap = { version = "4.5", features = ["derive"] }
 # DataFrame support
 polars = { version = "0.35", features = ["lazy"], optional = true }
