@@ -126,6 +126,97 @@ impl Transpiler {
         )
     }
 
+    /// Analyze if a parameter is used as a function in the body
+    fn is_param_used_as_function(&self, param_name: &str, body: &Expr) -> bool {
+        match &body.kind {
+            crate::frontend::ast::ExprKind::Call { func, args } => {
+                // Check if the function being called is the parameter
+                if let crate::frontend::ast::ExprKind::Identifier(name) = &func.kind {
+                    if name == param_name {
+                        return true;
+                    }
+                }
+                // Also check if parameter is used as function in arguments (for nested calls)
+                args.iter().any(|arg| self.is_param_used_as_function(param_name, arg))
+            }
+            crate::frontend::ast::ExprKind::Block(exprs) => {
+                // Check each expression in the block
+                exprs.iter().any(|e| self.is_param_used_as_function(param_name, e))
+            }
+            crate::frontend::ast::ExprKind::Let { body, value, .. } => {
+                // Check both value and body
+                self.is_param_used_as_function(param_name, value) ||
+                self.is_param_used_as_function(param_name, body)
+            }
+            crate::frontend::ast::ExprKind::LetPattern { body, value, .. } => {
+                // Check both value and body
+                self.is_param_used_as_function(param_name, value) ||
+                self.is_param_used_as_function(param_name, body)
+            }
+            crate::frontend::ast::ExprKind::If { condition, then_branch, else_branch } => {
+                // Check condition and both branches
+                self.is_param_used_as_function(param_name, condition) ||
+                self.is_param_used_as_function(param_name, then_branch) ||
+                else_branch.as_ref().map_or(false, |e| self.is_param_used_as_function(param_name, e))
+            }
+            crate::frontend::ast::ExprKind::Binary { left, right, .. } => {
+                // Check both operands
+                self.is_param_used_as_function(param_name, left) ||
+                self.is_param_used_as_function(param_name, right)
+            }
+            crate::frontend::ast::ExprKind::Unary { operand, .. } => {
+                self.is_param_used_as_function(param_name, operand)
+            }
+            crate::frontend::ast::ExprKind::Lambda { body, .. } => {
+                // Check lambda body
+                self.is_param_used_as_function(param_name, body)
+            }
+            _ => false
+        }
+    }
+
+    /// Check if expression has a non-unit value (i.e., returns something)
+    fn has_non_unit_expression(&self, body: &Expr) -> bool {
+        match &body.kind {
+            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit) => false,
+            crate::frontend::ast::ExprKind::Block(exprs) => {
+                // Check if the last expression in the block is non-unit
+                exprs.last().map_or(false, |e| self.has_non_unit_expression(e))
+            }
+            _ => true // Most expressions produce a value
+        }
+    }
+
+    /// Infer parameter types by analyzing usage in function body
+    fn infer_param_types(&self, params: &[Param], body: &Expr) -> Vec<TokenStream> {
+        params.iter().map(|p| {
+            let param_name = format_ident!("{}", p.name());
+            let param_name_str = p.name();
+            
+            // Try to transpile the provided type
+            if let Ok(tokens) = self.transpile_type(&p.ty) {
+                let token_str = tokens.to_string();
+                if token_str != "_" {
+                    // Use the provided type
+                    return quote! { #param_name: #tokens };
+                }
+            }
+            
+            // Type inference needed
+            if self.is_param_used_as_function(&param_name_str, body) {
+                // Parameter is used as a function - use generic function type
+                // For now, assume it takes one argument and returns something
+                quote! { #param_name: impl Fn(i32) -> i32 }
+            } else if self.looks_like_numeric_function(&param_name_str) {
+                // Numeric-sounding parameter
+                quote! { #param_name: i32 }
+            } else {
+                // Default to i32 for now (better than String for most cases)
+                quote! { #param_name: i32 }
+            }
+        }).collect()
+    }
+
     /// Transpiles function definitions
     #[allow(clippy::too_many_arguments)]
     pub fn transpile_function(
@@ -140,34 +231,8 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let fn_name = format_ident!("{}", name);
 
-        let param_tokens: Vec<TokenStream> = params
-            .iter()
-            .map(|p| {
-                let param_name = format_ident!("{}", p.name());
-                // For inferred types, use appropriate concrete types instead of generics
-                let type_tokens = if let Ok(tokens) = self.transpile_type(&p.ty) {
-                    let token_str = tokens.to_string();
-                    if token_str == "_" {
-                        // Smart type inference based on function name
-                        if self.looks_like_numeric_function(name) {
-                            quote! { i32 }
-                        } else {
-                            quote! { String }
-                        }
-                    } else {
-                        tokens
-                    }
-                } else { 
-                    // Smart default based on function name
-                    if self.looks_like_numeric_function(name) {
-                        quote! { i32 }
-                    } else {
-                        quote! { String }
-                    }
-                };
-                quote! { #param_name: #type_tokens }
-            })
-            .collect();
+        // Use our new intelligent type inference
+        let param_tokens: Vec<TokenStream> = self.infer_param_types(params, body);
 
         // Use provided type parameters only - no automatic generic inference
         let all_type_params = type_params.to_vec();
@@ -186,6 +251,9 @@ impl Transpiler {
             quote! { -> #ty_tokens }
         } else if self.looks_like_numeric_function(name) {
             // Numeric functions likely return numeric values
+            quote! { -> i32 }
+        } else if self.has_non_unit_expression(body) {
+            // If the body has a non-unit expression, assume i32 return type for now
             quote! { -> i32 }
         } else {
             // Don't automatically assume generic return type

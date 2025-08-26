@@ -1,8 +1,32 @@
 # Ruchy Development Roadmap
 
-## 🎯 CURRENT SPRINT: Coverage Excellence Phase 1 - IN PROGRESS
+## 🚨 CRITICAL BUGS FROM INTEGRATION TESTING (TOP PRIORITY)
 
-**GOAL**: Achieve 70% transpiler coverage and 85% interpreter coverage through systematic testing.
+Based on integration testing with ruchy-book and ruchy-repl-demos, the following critical bugs must be addressed immediately:
+
+### P0 - Critical Bugs (Blocking Book Examples)
+- [ ] **BUG-001**: Major v1.17.0 Book Regression - 80% failure rate (299/375 examples)
+  - Book examples failing after quality sprint changes
+  - Need to investigate stricter validation causing breakage
+- [ ] **BUG-002**: Function Definitions Cannot Be Executed
+  - Parser generates correct AST but interpreter fails
+  - Affects all function-based examples
+- [ ] **BUG-003**: Type Annotations Break Parser
+  - Rust-style type syntax (`fn(i32) -> i32`) causes parser errors
+  - Blocks all typed examples in book
+- [ ] **BUG-004**: Missing Standard Library Methods
+  - Common methods like `.to_string()`, `format!()` not available
+  - Affects string manipulation examples
+- [ ] **BUG-005**: Pattern Matching Limitations
+  - Complex destructuring and guards not working
+  - Affects advanced pattern examples
+- [ ] **BUG-006**: Generic Types Not Supported
+  - `Vec<T>`, `Option<T>` syntax fails
+  - Blocks all generic programming examples
+
+## 🎯 CURRENT SPRINT: Bug Fix Sprint - URGENT
+
+**GOAL**: Fix critical bugs blocking book examples and restore compatibility.
 
 ### Sprint Overview
 - **Task IDs**: QUALITY-002 to QUALITY-010
