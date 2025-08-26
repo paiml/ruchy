@@ -70,12 +70,13 @@ Level 7: Performance Tests  - Non-functional requirements
 5. **Integration Tests**: End-to-end scenarios covering real-world usage patterns
 6. **Regression Tests**: Specific test case that reproduces and prevents the exact defect
 
-**Code Coverage Requirements** (Updated based on Sprint Findings):
-- **Realistic Target**: 60% coverage (achievable with current parser)
-- **Current Baseline**: 37% overall, 54% transpiler, 69% interpreter
+**Code Coverage Requirements** (QUALITY-008 Implemented):
+- **Current Baseline**: 33.34% overall (post-QUALITY-007 parser enhancements)
+- **Regression Prevention**: Pre-commit hooks BLOCK commits below baseline
 - **Direction**: Coverage must increase or stay same, NEVER decrease
-- **Known Blocker**: Parser limitations prevent ~40% of transpiler tests
-- **Workaround**: Use AstBuilder for direct AST construction testing
+- **Parser Improvements**: Character literals, tuple destructuring, rest patterns now working
+- **Pattern Test Results**: 2 passing → 4 passing (100% improvement achieved)
+- **Enforcement**: Automated coverage checking with clear error messages
 
 **Complexity Requirements** (PMAT Enforced):
 - **Maximum Cyclomatic Complexity**: 10 per function

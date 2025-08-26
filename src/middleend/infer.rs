@@ -866,7 +866,7 @@ impl InferenceContext {
                 let tuple_ty = MonoType::Tuple(elem_types);
                 self.unifier.unify(expected_ty, &tuple_ty)
             }
-            Pattern::Struct { name, fields } => {
+            Pattern::Struct { name, fields, has_rest: _ } => {
                 // For now, treat struct patterns as a named type
                 // In a more complete implementation, we'd look up the struct definition
                 let struct_ty = MonoType::Named(name.clone());
@@ -901,6 +901,12 @@ impl InferenceContext {
             }
             Pattern::Rest => {
                 // Rest patterns don't bind to specific types
+                Ok(())
+            }
+            Pattern::RestNamed(name) => {
+                // Named rest patterns bind the remaining elements to the name
+                // For arrays [first, ..rest], rest should be array type
+                self.env = self.env.extend(name, TypeScheme::mono(expected_ty.clone()));
                 Ok(())
             }
         }

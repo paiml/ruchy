@@ -88,13 +88,68 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
         true  // Variables are mutable by default in Ruchy
     };
 
-    // Parse variable name
+    // Check if this is a pattern or simple identifier
+    let is_pattern = matches!(
+        state.tokens.peek(),
+        Some((Token::LeftParen | Token::LeftBracket, _))
+    ) || {
+        // Check for struct patterns like Point { x, y }
+        match state.tokens.peek() {
+            Some((Token::Identifier(name), _)) => {
+                name.chars().next().is_some_and(char::is_uppercase) 
+                && matches!(state.tokens.peek_nth(1), Some((Token::LeftBrace, _)))
+            }
+            _ => false
+        }
+    };
+
+    if is_pattern {
+        // Parse as pattern destructuring
+        let pattern = parse_pattern(state);
+
+        // Optional type annotation
+        let type_annotation = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+            state.tokens.advance(); // consume :
+            Some(utils::parse_type(state)?)
+        } else {
+            None
+        };
+
+        // Expect =
+        state.tokens.expect(&Token::Equal)?;
+
+        // Parse value
+        let value = super::parse_expr_recursive(state)?;
+
+        // Check if 'in' keyword is present (optional for REPL-style let statements)
+        let body = if matches!(state.tokens.peek(), Some((Token::In, _))) {
+            state.tokens.advance(); // consume 'in'
+            super::parse_expr_recursive(state)?
+        } else {
+            // REPL-style let statement without 'in' - create a unit body
+            use crate::frontend::ast::{ExprKind, Literal, Span};
+            Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })
+        };
+
+        return Ok(Expr::new(
+            ExprKind::LetPattern {
+                pattern,
+                type_annotation,
+                value: Box::new(value),
+                body: Box::new(body),
+                is_mutable,
+            },
+            start_span,
+        ));
+    }
+
+    // Parse as simple identifier (existing behavior)
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
         state.tokens.advance();
         name
     } else {
-        bail!("Expected identifier after 'let' or 'let mut'");
+        bail!("Expected identifier or pattern after 'let' or 'let mut'");
     };
 
     // Optional type annotation
@@ -290,9 +345,15 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
             if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
                 state.tokens.advance(); // consume {
                 let mut fields = Vec::new();
+                let mut has_rest = false;
 
                 while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                    if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
+                    // Check for rest pattern ..
+                    if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
+                        state.tokens.advance(); // consume ..
+                        has_rest = true;
+                        break;
+                    } else if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
                         let field_name = field_name.clone();
                         state.tokens.advance();
 
@@ -321,7 +382,7 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
                     state.tokens.advance(); // consume }
                 }
 
-                return Pattern::Struct { name, fields };
+                return Pattern::Struct { name, fields, has_rest };
             }
 
             Pattern::Identifier(name)
@@ -375,8 +436,18 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
             let mut patterns = Vec::new();
 
             while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-                // Check for rest pattern ...
-                if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
+                // Check for rest pattern .. or ...
+                if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
+                    state.tokens.advance();
+                    // Check if there's an identifier after .. (e.g., ..rest)
+                    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                        let name = name.clone();
+                        state.tokens.advance();
+                        patterns.push(Pattern::RestNamed(name));
+                    } else {
+                        patterns.push(Pattern::Rest);
+                    }
+                } else if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
                     state.tokens.advance();
                     patterns.push(Pattern::Rest);
                 } else {
@@ -432,6 +503,11 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
             let b = *b;
             state.tokens.advance();
             Pattern::Literal(Literal::Bool(b))
+        }
+        Some((Token::Char(c), _)) => {
+            let c = *c;
+            state.tokens.advance();
+            Pattern::Literal(Literal::Char(c))
         }
         Some((Token::DotDotDot, _)) => {
             state.tokens.advance();

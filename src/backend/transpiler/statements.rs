@@ -92,6 +92,31 @@ impl Transpiler {
         }
     }
 
+    /// Transpiles let pattern bindings (destructuring)
+    pub fn transpile_let_pattern(
+        &self,
+        pattern: &crate::frontend::ast::Pattern,
+        value: &Expr,
+        body: &Expr,
+    ) -> Result<TokenStream> {
+        let pattern_tokens = self.transpile_pattern(pattern)?;
+        let value_tokens = self.transpile_expr(value)?;
+        
+        // HOTFIX: If body is Unit, this is a top-level let statement without scoping
+        if matches!(body.kind, crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)) {
+            Ok(quote! { let #pattern_tokens = #value_tokens })
+        } else {
+            // Traditional let-in expression with proper scoping
+            let body_tokens = self.transpile_expr(body)?;
+            Ok(quote! {
+                {
+                    let #pattern_tokens = #value_tokens;
+                    #body_tokens
+                }
+            })
+        }
+    }
+
     /// Check if function name suggests numeric operations
     fn looks_like_numeric_function(&self, name: &str) -> bool {
         matches!(name, 

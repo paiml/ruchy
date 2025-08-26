@@ -5,9 +5,8 @@
 
 use crate::frontend::ast::{
     Expr, ExprKind, Literal, Pattern, MatchArm, Type, TypeKind,
-    Param, Span, BinaryOp, UnaryOp, StringPart, AssignOp, StructPatternField,
+    Param, Span, BinaryOp, UnaryOp, StringPart, StructPatternField,
 };
-use std::collections::HashMap;
 
 /// Builder for creating AST expressions programmatically
 pub struct AstBuilder {
@@ -121,8 +120,9 @@ impl AstBuilder {
     pub fn match_arm(&self, pattern: Pattern, guard: Option<Expr>, body: Expr) -> MatchArm {
         MatchArm {
             pattern,
-            guard,
-            body,
+            guard: guard.map(Box::new),
+            body: Box::new(body),
+            span: self.span.clone(),
         }
     }
     
@@ -154,9 +154,9 @@ impl AstBuilder {
     /// Create a struct pattern
     pub fn pattern_struct(&self, name: String, fields: Vec<(String, Pattern)>) -> Pattern {
         let struct_fields = fields.into_iter().map(|(name, pattern)| {
-            StructPatternField { name, pattern }
+            StructPatternField { name, pattern: Some(pattern) }
         }).collect();
-        Pattern::Struct { name, fields: struct_fields }
+        Pattern::Struct { name, fields: struct_fields, has_rest: false }
     }
     
     /// Create a rest pattern (..)
@@ -182,7 +182,6 @@ impl AstBuilder {
             kind: ExprKind::Lambda {
                 params,
                 body: Box::new(body),
-                return_type: None,
             },
             span: self.span.clone(),
             attributes: vec![],
@@ -199,13 +198,18 @@ impl AstBuilder {
     }
     
     /// Create a let expression
-    pub fn let_expr(&self, pattern: Pattern, value: Expr) -> Expr {
+    pub fn let_expr(&self, name: String, value: Expr) -> Expr {
         Expr {
             kind: ExprKind::Let {
-                pattern,
+                name,
                 value: Box::new(value),
                 type_annotation: None,
                 is_mutable: false,
+                body: Box::new(Expr {
+                    kind: ExprKind::Literal(Literal::Unit),
+                    span: self.span.clone(),
+                    attributes: vec![],
+                }),
             },
             span: self.span.clone(),
             attributes: vec![],
@@ -350,7 +354,7 @@ impl AstBuilder {
     /// Create a return expression
     pub fn return_expr(&self, value: Option<Expr>) -> Expr {
         Expr {
-            kind: ExprKind::Return(value.map(Box::new)),
+            kind: ExprKind::Return { value: value.map(Box::new) },
             span: self.span.clone(),
             attributes: vec![],
         }
@@ -359,7 +363,7 @@ impl AstBuilder {
     /// Create a type annotation
     pub fn type_int(&self) -> Type {
         Type {
-            kind: TypeKind::Name("i32".to_string()),
+            kind: TypeKind::Named("i32".to_string()),
             span: self.span.clone(),
         }
     }
@@ -368,11 +372,8 @@ impl AstBuilder {
     pub fn type_result(&self, ok: Type, err: Type) -> Type {
         Type {
             kind: TypeKind::Generic {
-                base: Box::new(Type {
-                    kind: TypeKind::Name("Result".to_string()),
-                    span: self.span.clone(),
-                }),
-                args: vec![ok, err],
+                base: "Result".to_string(),
+                params: vec![ok, err],
             },
             span: self.span.clone(),
         }
@@ -382,11 +383,8 @@ impl AstBuilder {
     pub fn type_option(&self, inner: Type) -> Type {
         Type {
             kind: TypeKind::Generic {
-                base: Box::new(Type {
-                    kind: TypeKind::Name("Option".to_string()),
-                    span: self.span.clone(),
-                }),
-                args: vec![inner],
+                base: "Option".to_string(),
+                params: vec![inner],
             },
             span: self.span.clone(),
         }

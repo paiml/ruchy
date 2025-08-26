@@ -117,16 +117,19 @@ impl Transpiler {
                     Ok(quote! { [] })
                 } else {
                     // Check for rest pattern
-                    let has_rest = patterns.iter().any(|p| matches!(p, Pattern::Rest));
+                    let has_rest = patterns.iter().any(|p| matches!(p, Pattern::Rest | Pattern::RestNamed(_)));
 
                     if has_rest {
                         // Handle patterns with rest
                         let mut pattern_tokens = Vec::new();
                         for p in patterns {
-                            if let Pattern::Rest = p {
-                                pattern_tokens.push(quote! { .. });
-                            } else {
-                                pattern_tokens.push(self.transpile_pattern(p)?);
+                            match p {
+                                Pattern::Rest => pattern_tokens.push(quote! { .. }),
+                                Pattern::RestNamed(name) => {
+                                    let name_ident = format_ident!("{}", name);
+                                    pattern_tokens.push(quote! { ..#name_ident });
+                                }
+                                _ => pattern_tokens.push(self.transpile_pattern(p)?),
                             }
                         }
                         Ok(quote! { [#(#pattern_tokens),*] })
@@ -139,7 +142,7 @@ impl Transpiler {
                     }
                 }
             }
-            Pattern::Struct { name, fields } => {
+            Pattern::Struct { name, fields, has_rest } => {
                 let struct_name = format_ident!("{}", name);
 
                 if fields.is_empty() {
@@ -159,7 +162,11 @@ impl Transpiler {
                         })
                         .collect();
                     let field_patterns = field_patterns?;
-                    Ok(quote! { #struct_name { #(#field_patterns),* } })
+                    if *has_rest {
+                        Ok(quote! { #struct_name { #(#field_patterns),*, .. } })
+                    } else {
+                        Ok(quote! { #struct_name { #(#field_patterns),* } })
+                    }
                 }
             }
             Pattern::Or(patterns) => {
@@ -192,6 +199,10 @@ impl Transpiler {
                 }
             }
             Pattern::Rest => Ok(quote! { .. }),
+            Pattern::RestNamed(name) => {
+                let name_ident = format_ident!("{}", name);
+                Ok(quote! { ..#name_ident })
+            }
             Pattern::Ok(pattern) => {
                 let inner = self.transpile_pattern(pattern)?;
                 Ok(quote! { Ok(#inner) })
