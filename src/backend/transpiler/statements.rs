@@ -67,9 +67,9 @@ impl Transpiler {
         // HOTFIX: If body is Unit, this is a top-level let statement without scoping
         if matches!(body.kind, crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)) {
             if is_mutable {
-                Ok(quote! { let mut #name_ident = #value_tokens })
+                Ok(quote! { let mut #name_ident = #value_tokens; })
             } else {
-                Ok(quote! { let #name_ident = #value_tokens })
+                Ok(quote! { let #name_ident = #value_tokens; })
             }
         } else {
             // Traditional let-in expression with proper scoping

@@ -187,9 +187,58 @@ impl Transpiler {
     }
     
     fn transpile_statement_only_block(&self, exprs: &[Expr], needs_polars: bool) -> Result<TokenStream> {
-        let block_expr = Expr::new(ExprKind::Block(exprs.to_vec()), Span::new(0, 0));
-        let body = self.transpile_expr(&block_expr)?;
-        self.wrap_in_main_with_result_printing(body, needs_polars)
+        // Check if this is a statement sequence (contains let, assignments, etc.) or an expression sequence
+        let has_statements = exprs.iter().any(|expr| self.is_statement_expr(expr));
+        
+        if has_statements {
+            // Generate statements directly without wrapping in result expression
+            let statements: Result<Vec<_>> = exprs.iter().map(|expr| self.transpile_expr(expr)).collect();
+            let statements = statements?;
+            
+            if needs_polars {
+                Ok(quote! {
+                    use polars::prelude::*;
+                    use std::collections::HashMap;
+                    fn main() {
+                        #(#statements)*
+                    }
+                })
+            } else {
+                Ok(quote! {
+                    use std::collections::HashMap;
+                    fn main() {
+                        #(#statements)*
+                    }
+                })
+            }
+        } else {
+            // Pure expression sequence - use existing result printing approach
+            let block_expr = Expr::new(ExprKind::Block(exprs.to_vec()), Span::new(0, 0));
+            let body = self.transpile_expr(&block_expr)?;
+            self.wrap_in_main_with_result_printing(body, needs_polars)
+        }
+    }
+    
+    fn is_statement_expr(&self, expr: &Expr) -> bool {
+        use ExprKind::*;
+        match &expr.kind {
+            // Let bindings are statements
+            Let { .. } | LetPattern { .. } => true,
+            // Assignment operations are statements  
+            Assign { .. } | CompoundAssign { .. } => true,
+            // Function calls that don't return meaningful values (like println)
+            Call { func, .. } => {
+                if let ExprKind::Identifier(name) = &func.kind {
+                    matches!(name.as_str(), "println" | "print" | "dbg")
+                } else {
+                    false
+                }
+            }
+            // Blocks containing statements
+            Block(exprs) => exprs.iter().any(|e| self.is_statement_expr(e)),
+            // Most other expressions are not statements
+            _ => false,
+        }
     }
     
     fn transpile_block_with_main_function(&self, functions: &[TokenStream], statements: &[TokenStream], main_expr: Option<&Expr>, needs_polars: bool) -> Result<TokenStream> {
