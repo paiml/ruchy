@@ -9,6 +9,43 @@ All notable changes to the Ruchy programming language will be documented in this
 - Package manager development
 - IDE integration improvements
 
+## [1.18.0] - 2025-08-26
+
+### 🔧 CRITICAL BUG FIXES - HIGHER-ORDER FUNCTION SUPPORT
+
+**This release fixes critical bugs discovered during integration testing with ruchy-book and ruchy-repl-demos, restoring higher-order function capabilities that were broken in v1.17.0.**
+
+#### 🐛 Major Bug Fixes
+- **BUG-002 Fixed**: Higher-order functions now correctly transpile with proper function types
+  - Function parameters are now typed as `impl Fn` instead of incorrectly as `String`
+  - Intelligent type inference detects when parameters are used as functions
+  - Return types are properly inferred for functions returning values
+
+#### ✅ Comprehensive Testing Added
+- **11 Higher-Order Function Tests**: Complete test coverage for function-as-parameter patterns
+  - Simple function application (`apply(f, x)`)
+  - Function composition (`compose(f, g, x)`)
+  - Lambda arguments support
+  - Map/filter/reduce patterns
+  - Currying and partial application
+  - Recursive higher-order functions
+- **10 Integration Regression Tests**: End-to-end validation of real-world usage
+  - Tests ensure bugs never regress
+  - Coverage of all common functional programming patterns
+
+#### 🎯 Working Features
+- ✅ Functions can be passed as parameters
+- ✅ Functions can be returned from other functions  
+- ✅ Lambdas can be used as arguments
+- ✅ Function composition works correctly
+- ✅ Map/filter/reduce patterns supported
+- ✅ Nested function calls work properly
+
+#### 📈 Impact
+- Restores functional programming capabilities broken in v1.17.0
+- Enables higher-order function patterns critical for book examples
+- Improves compatibility with functional programming paradigms
+
 ## [1.17.0] - 2025-08-26
 
 ### 🏆 QUALITY EXCELLENCE SPRINT - WORLD-CLASS INFRASTRUCTURE
