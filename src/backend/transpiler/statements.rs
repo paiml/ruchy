@@ -128,7 +128,21 @@ impl Transpiler {
     }
 
 
-    /// Check if expression has a non-unit value (i.e., returns something)
+    /// Check if expression is a print-like call that returns unit
+    fn is_print_like_call(&self, expr: &Expr) -> bool {
+        match &expr.kind {
+            crate::frontend::ast::ExprKind::Call { func, .. } => {
+                if let crate::frontend::ast::ExprKind::Identifier(name) = &func.kind {
+                    matches!(name.as_str(), "println" | "print" | "dbg" | "panic")
+                } else {
+                    false
+                }
+            }
+            _ => false
+        }
+    }
+
+    /// Check if expression has a non-unit value (i.e., returns something meaningful)
     fn has_non_unit_expression(&self, body: &Expr) -> bool {
         match &body.kind {
             crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit) => false,
@@ -136,7 +150,11 @@ impl Transpiler {
                 // Check if the last expression in the block is non-unit
                 exprs.last().is_some_and(|e| self.has_non_unit_expression(e))
             }
-            _ => true // Most expressions produce a value
+            crate::frontend::ast::ExprKind::Call { .. } if self.is_print_like_call(body) => {
+                // Print-like calls are effectively void
+                false
+            }
+            _ => true // Most other expressions produce a value
         }
     }
 
@@ -212,6 +230,9 @@ impl Transpiler {
         let return_type_tokens = if let Some(ty) = return_type {
             let ty_tokens = self.transpile_type(ty)?;
             quote! { -> #ty_tokens }
+        } else if name == "main" {
+            // main function should not have explicit return type
+            quote! {}
         } else if self.looks_like_numeric_function(name) {
             // Numeric functions likely return numeric values
             quote! { -> i32 }
@@ -219,8 +240,7 @@ impl Transpiler {
             // If the body has a non-unit expression, assume i32 return type for now
             quote! { -> i32 }
         } else {
-            // Don't automatically assume generic return type
-            // Let Rust's type inference handle it
+            // For void functions (like print_hello), let Rust's type inference handle it
             quote! {}
         };
 
