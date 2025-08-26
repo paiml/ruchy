@@ -1,0 +1,10 @@
+// Basic hello world program
+// Should compile and run without any issues
+
+fun main() {
+    println("Hello, World!")
+    println("Welcome to Ruchy!")
+    
+    let name = "Ruchy"
+    println("Hello from " + name)
+}

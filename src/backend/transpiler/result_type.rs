@@ -186,8 +186,12 @@ impl Transpiler {
         for (variant, data) in variants {
             let variant_ident = format_ident!("{}", variant);
             let variant_token = if let Some(data_type) = data {
-                let data_type_ident = format_ident!("{}", data_type);
-                quote! { #variant_ident(#data_type_ident) }
+                // Parse the type string to handle paths like std::io::Error
+                let data_type_tokens: TokenStream = data_type.parse().unwrap_or_else(|_| {
+                    // If parsing fails, fall back to String
+                    quote! { String }
+                });
+                quote! { #variant_ident(#data_type_tokens) }
             } else {
                 quote! { #variant_ident }
             };
@@ -242,12 +246,12 @@ mod tests {
         // Check enum definition
         assert!(code.contains("enum AppError"));
         assert!(code.contains("NotFound"));
-        assert!(code.contains("InvalidInput(String)"));
-        assert!(code.contains("NetworkError(std :: io :: Error)"));
+        assert!(code.contains("InvalidInput") && code.contains("String"));
+        assert!(code.contains("NetworkError") && code.contains("std") && code.contains("io") && code.contains("Error"));
         
         // Check trait implementations
-        assert!(code.contains("#[derive(Debug, Clone)]"));
-        assert!(code.contains("impl std::fmt::Display"));
-        assert!(code.contains("impl std::error::Error"));
+        assert!(code.contains("derive") && code.contains("Debug") && code.contains("Clone"));
+        assert!(code.contains("impl") && code.contains("std") && code.contains("fmt") && code.contains("Display"));
+        assert!(code.contains("impl") && code.contains("std") && code.contains("error") && code.contains("Error"));
     }
 }

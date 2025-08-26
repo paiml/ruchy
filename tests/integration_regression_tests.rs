@@ -3,6 +3,8 @@
 //! These tests ensure that bugs found in integration testing (from ruchy-book and ruchy-repl-demos)
 //! are fixed and never regress. Each test corresponds to a BUG ticket from the roadmap.
 
+#![allow(clippy::needless_raw_string_hashes)]
+
 use std::process::Command;
 use std::fs;
 use tempfile::NamedTempFile;

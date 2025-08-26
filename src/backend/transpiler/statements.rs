@@ -122,58 +122,11 @@ impl Transpiler {
         matches!(name, 
             "add" | "subtract" | "multiply" | "divide" | "sum" | "product" | 
             "min" | "max" | "abs" | "sqrt" | "pow" | "mod" | "gcd" | "lcm" |
-            "factorial" | "fibonacci" | "prime" | "even" | "odd" | "square" | "cube"
+            "factorial" | "fibonacci" | "prime" | "even" | "odd" | "square" | "cube" |
+            "double" | "triple" | "quadruple"  // Added common numeric function names
         )
     }
 
-    /// Analyze if a parameter is used as a function in the body
-    fn is_param_used_as_function(&self, param_name: &str, body: &Expr) -> bool {
-        match &body.kind {
-            crate::frontend::ast::ExprKind::Call { func, args } => {
-                // Check if the function being called is the parameter
-                if let crate::frontend::ast::ExprKind::Identifier(name) = &func.kind {
-                    if name == param_name {
-                        return true;
-                    }
-                }
-                // Also check if parameter is used as function in arguments (for nested calls)
-                args.iter().any(|arg| self.is_param_used_as_function(param_name, arg))
-            }
-            crate::frontend::ast::ExprKind::Block(exprs) => {
-                // Check each expression in the block
-                exprs.iter().any(|e| self.is_param_used_as_function(param_name, e))
-            }
-            crate::frontend::ast::ExprKind::Let { body, value, .. } => {
-                // Check both value and body
-                self.is_param_used_as_function(param_name, value) ||
-                self.is_param_used_as_function(param_name, body)
-            }
-            crate::frontend::ast::ExprKind::LetPattern { body, value, .. } => {
-                // Check both value and body
-                self.is_param_used_as_function(param_name, value) ||
-                self.is_param_used_as_function(param_name, body)
-            }
-            crate::frontend::ast::ExprKind::If { condition, then_branch, else_branch } => {
-                // Check condition and both branches
-                self.is_param_used_as_function(param_name, condition) ||
-                self.is_param_used_as_function(param_name, then_branch) ||
-                else_branch.as_ref().map_or(false, |e| self.is_param_used_as_function(param_name, e))
-            }
-            crate::frontend::ast::ExprKind::Binary { left, right, .. } => {
-                // Check both operands
-                self.is_param_used_as_function(param_name, left) ||
-                self.is_param_used_as_function(param_name, right)
-            }
-            crate::frontend::ast::ExprKind::Unary { operand, .. } => {
-                self.is_param_used_as_function(param_name, operand)
-            }
-            crate::frontend::ast::ExprKind::Lambda { body, .. } => {
-                // Check lambda body
-                self.is_param_used_as_function(param_name, body)
-            }
-            _ => false
-        }
-    }
 
     /// Check if expression has a non-unit value (i.e., returns something)
     fn has_non_unit_expression(&self, body: &Expr) -> bool {
@@ -181,41 +134,12 @@ impl Transpiler {
             crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit) => false,
             crate::frontend::ast::ExprKind::Block(exprs) => {
                 // Check if the last expression in the block is non-unit
-                exprs.last().map_or(false, |e| self.has_non_unit_expression(e))
+                exprs.last().is_some_and(|e| self.has_non_unit_expression(e))
             }
             _ => true // Most expressions produce a value
         }
     }
 
-    /// Infer parameter types by analyzing usage in function body
-    fn infer_param_types(&self, params: &[Param], body: &Expr) -> Vec<TokenStream> {
-        params.iter().map(|p| {
-            let param_name = format_ident!("{}", p.name());
-            let param_name_str = p.name();
-            
-            // Try to transpile the provided type
-            if let Ok(tokens) = self.transpile_type(&p.ty) {
-                let token_str = tokens.to_string();
-                if token_str != "_" {
-                    // Use the provided type
-                    return quote! { #param_name: #tokens };
-                }
-            }
-            
-            // Type inference needed
-            if self.is_param_used_as_function(&param_name_str, body) {
-                // Parameter is used as a function - use generic function type
-                // For now, assume it takes one argument and returns something
-                quote! { #param_name: impl Fn(i32) -> i32 }
-            } else if self.looks_like_numeric_function(&param_name_str) {
-                // Numeric-sounding parameter
-                quote! { #param_name: i32 }
-            } else {
-                // Default to i32 for now (better than String for most cases)
-                quote! { #param_name: i32 }
-            }
-        }).collect()
-    }
 
     /// Transpiles function definitions
     #[allow(clippy::too_many_arguments)]
@@ -231,8 +155,47 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let fn_name = format_ident!("{}", name);
 
-        // Use our new intelligent type inference
-        let param_tokens: Vec<TokenStream> = self.infer_param_types(params, body);
+        let param_tokens: Vec<TokenStream> = params
+            .iter()
+            .map(|p| {
+                let param_name = format_ident!("{}", p.name());
+                // For inferred types, use appropriate concrete types instead of generics
+                let type_tokens = if let Ok(tokens) = self.transpile_type(&p.ty) {
+                    let token_str = tokens.to_string();
+                    if token_str == "_" {
+                        // Smart type inference based on usage in function body
+                        use super::type_inference::{is_param_used_as_function, is_param_used_numerically};
+                        
+                        if is_param_used_as_function(&p.name(), body) {
+                            // Parameter is used as a function
+                            quote! { impl Fn(i32) -> i32 }
+                        } else if is_param_used_numerically(&p.name(), body) || 
+                                  self.looks_like_numeric_function(name) {
+                            // Parameter is used in numeric operations or function name suggests numeric
+                            quote! { i32 }
+                        } else {
+                            // Default to String for general use
+                            quote! { String }
+                        }
+                    } else {
+                        tokens
+                    }
+                } else { 
+                    // Smart default based on usage analysis
+                    use super::type_inference::{is_param_used_as_function, is_param_used_numerically};
+                    
+                    if is_param_used_as_function(&p.name(), body) {
+                        quote! { impl Fn(i32) -> i32 }
+                    } else if is_param_used_numerically(&p.name(), body) || 
+                              self.looks_like_numeric_function(name) {
+                        quote! { i32 }
+                    } else {
+                        quote! { String }
+                    }
+                };
+                quote! { #param_name: #type_tokens }
+            })
+            .collect();
 
         // Use provided type parameters only - no automatic generic inference
         let all_type_params = type_params.to_vec();
@@ -1198,5 +1161,327 @@ impl Transpiler {
         let arg_tokens = arg_tokens?;
         
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::single_char_pattern)]
+mod tests {
+    use super::*;
+    use crate::Parser;
+
+    fn create_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+
+    #[test]
+    fn test_transpile_if_with_else() {
+        let transpiler = create_transpiler();
+        let code = "if true { 1 } else { 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        assert!(rust_str.contains("if"));
+        assert!(rust_str.contains("else"));
+    }
+
+    #[test]
+    fn test_transpile_if_without_else() {
+        let transpiler = create_transpiler();
+        let code = "if true { 1 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        assert!(rust_str.contains("if"));
+        assert!(!rust_str.contains("else"));
+    }
+
+    #[test]
+    fn test_transpile_let_binding() {
+        let transpiler = create_transpiler();
+        let code = "let x = 5; x";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        assert!(rust_str.contains("let"));
+        assert!(rust_str.contains("x"));
+        assert!(rust_str.contains("5"));
+    }
+
+    #[test]
+    fn test_transpile_mutable_let() {
+        let transpiler = create_transpiler();
+        let code = "let mut x = 5; x";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        assert!(rust_str.contains("mut"));
+    }
+
+    #[test]
+    fn test_transpile_for_loop() {
+        let transpiler = create_transpiler();
+        let code = "for x in [1, 2, 3] { x }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        assert!(rust_str.contains("for"));
+        assert!(rust_str.contains("in"));
+    }
+
+    #[test]
+    fn test_transpile_while_loop() {
+        let transpiler = create_transpiler();
+        let code = "while true { }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        assert!(rust_str.contains("while"));
+    }
+
+    #[test]
+    fn test_function_with_parameters() {
+        let transpiler = create_transpiler();
+        let code = "fun add(x, y) { x + y }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        assert!(rust_str.contains("fn add"));
+        assert!(rust_str.contains("x"));
+        assert!(rust_str.contains("y"));
+    }
+
+    #[test]
+    fn test_function_without_parameters() {
+        let transpiler = create_transpiler();
+        let code = "fun hello() { \"world\" }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        assert!(rust_str.contains("fn hello"));
+        assert!(rust_str.contains("()"));
+    }
+
+    #[test]
+    fn test_looks_like_numeric_function() {
+        let transpiler = create_transpiler();
+        
+        // Test known numeric function names
+        assert!(transpiler.looks_like_numeric_function("double"));
+        assert!(transpiler.looks_like_numeric_function("add"));
+        assert!(transpiler.looks_like_numeric_function("square"));
+        
+        // Test non-numeric function names
+        assert!(!transpiler.looks_like_numeric_function("hello"));
+        assert!(!transpiler.looks_like_numeric_function("main"));
+        assert!(!transpiler.looks_like_numeric_function("test"));
+    }
+
+    #[test]
+    fn test_match_expression() {
+        let transpiler = create_transpiler();
+        let code = "match x { 1 => \"one\", _ => \"other\" }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        assert!(rust_str.contains("match"));
+    }
+
+    #[test]
+    fn test_lambda_expression() {
+        let transpiler = create_transpiler();
+        let code = "(x) => x + 1";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        // Lambda should be transpiled to closure
+        assert!(rust_str.contains("|") || rust_str.contains("move"));
+    }
+
+    #[test]
+    fn test_reserved_keyword_handling() {
+        let transpiler = create_transpiler();
+        let code = "let final = 5; final";  // Use regular keyword, not r# syntax
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        // Should handle Rust reserved keywords by prefixing with r#
+        assert!(rust_str.contains("r#final") || rust_str.contains("final"));
+    }
+
+    #[test]
+    fn test_generic_function() {
+        let transpiler = create_transpiler();
+        let code = "fun identity<T>(x: T) -> T { x }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        assert!(rust_str.contains("fn identity"));
+    }
+
+    #[test]
+    fn test_main_function_special_case() {
+        let transpiler = create_transpiler();
+        let code = "fun main() { println(\"Hello\") }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        // main should not have explicit return type
+        assert!(!rust_str.contains("fn main() ->"));
+        assert!(!rust_str.contains("fn main () ->"));
+    }
+
+    #[test]
+    fn test_dataframe_function_call() {
+        let transpiler = create_transpiler();
+        let code = "col(\"name\")";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        // Should transpile DataFrame column access
+        assert!(rust_str.contains("polars") || rust_str.contains("col"));
+    }
+
+    #[test]
+    fn test_regular_function_call_string_conversion() {
+        let transpiler = create_transpiler();
+        let code = "my_func(\"test\")";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        // Regular function calls should convert string literals
+        assert!(rust_str.contains("my_func"));
+        assert!(rust_str.contains("to_string") || rust_str.contains("\"test\""));
+    }
+
+    #[test]
+    fn test_nested_expressions() {
+        let transpiler = create_transpiler();
+        let code = "if true { let x = 5; x + 1 } else { 0 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        // Should handle nested let inside if
+        assert!(rust_str.contains("if"));
+        assert!(rust_str.contains("let"));
+        assert!(rust_str.contains("else"));
+    }
+
+    #[test]
+    fn test_type_inference_integration() {
+        let transpiler = create_transpiler();
+        
+        // Test function parameter as function
+        let code1 = "fun apply(f, x) { f(x) }";
+        let mut parser1 = Parser::new(code1);
+        let ast1 = parser1.parse().unwrap();
+        let result1 = transpiler.transpile(&ast1).unwrap();
+        let rust_str1 = result1.to_string();
+        assert!(rust_str1.contains("impl Fn"));
+        
+        // Test numeric parameter
+        let code2 = "fun double(n) { n * 2 }";
+        let mut parser2 = Parser::new(code2);
+        let ast2 = parser2.parse().unwrap();
+        let result2 = transpiler.transpile(&ast2).unwrap();
+        let rust_str2 = result2.to_string();
+        assert!(rust_str2.contains("n : i32") || rust_str2.contains("n: i32"));
+        
+        // Test string parameter
+        let code3 = "fun greet(name) { \"Hello \" + name }";
+        let mut parser3 = Parser::new(code3);
+        let ast3 = parser3.parse().unwrap();
+        let result3 = transpiler.transpile(&ast3).unwrap();
+        let rust_str3 = result3.to_string();
+        assert!(rust_str3.contains("name : String") || rust_str3.contains("name: String"));
+    }
+
+    #[test]
+    fn test_return_type_inference() {
+        let transpiler = create_transpiler();
+        
+        // Test numeric function gets return type
+        let code = "fun double(n) { n * 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("-> i32"));
+    }
+
+    #[test]
+    fn test_void_function_no_return_type() {
+        let transpiler = create_transpiler();
+        let code = "fun print_hello() { println(\"Hello\") }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        // Should not have explicit return type for void functions
+        assert!(!rust_str.contains("-> "));
+    }
+
+    #[test]
+    fn test_complex_function_combinations() {
+        let transpiler = create_transpiler();
+        let code = "fun transform(f, n, m) { f(n + m) * 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().unwrap();
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        
+        // f should be function, n and m should be i32
+        assert!(rust_str.contains("impl Fn"));
+        assert!(rust_str.contains("n : i32") || rust_str.contains("n: i32"));
+        assert!(rust_str.contains("m : i32") || rust_str.contains("m: i32"));
     }
 }

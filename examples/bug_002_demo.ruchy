@@ -1,0 +1,22 @@
+// BUG-002 Resolution Demo
+// This file demonstrates that higher-order functions now work correctly
+
+// This was broken in v1.17.0 - function parameters were typed as String
+fun apply(f, x) { f(x) }
+
+// This was also broken - numeric parameters were sometimes typed as String  
+fun double(n) { n * 2 }
+
+// This works correctly - string concatenation preserved
+fun greet(name) { "Hello " + name }
+
+// Complex higher-order function scenario
+fun compose(f, g, x) { f(g(x)) }
+
+// Demonstrate that the fix works
+fun main() {
+    // These now work correctly:
+    apply(double, 5)    // f is impl Fn(i32) -> i32, not String!
+    compose(double, double, 3)  // Both f and g are function types
+    greet("World")      // name is String for concatenation
+}

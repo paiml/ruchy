@@ -1,0 +1,21 @@
+// Higher-order function: map
+// Demonstrates functional programming patterns
+
+fun map_value(f, value) {
+    f(value)
+}
+
+fun triple(n) {
+    n * 3
+}
+
+fun add_ten(n) {
+    n + 10
+}
+
+// Map operations
+let result1 = map_value(triple, 7)
+println("triple(7) = " + result1)
+
+let result2 = map_value(add_ten, 15)
+println("add_ten(15) = " + result2)

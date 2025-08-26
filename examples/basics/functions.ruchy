@@ -1,0 +1,35 @@
+// Basic function examples
+// Tests that regular functions work correctly
+
+fun add(a, b) {
+    a + b
+}
+
+fun multiply(x, y) {
+    x * y
+}
+
+fun greet(name) {
+    println("Hello, " + name + "!")
+}
+
+fun factorial(n) {
+    if n <= 1 {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
+}
+
+// Test the functions
+let sum = add(3, 4)
+println("3 + 4 = " + sum)
+
+let product = multiply(5, 6)
+println("5 * 6 = " + product)
+
+greet("Alice")
+greet("Bob")
+
+let fact5 = factorial(5)
+println("5! = " + fact5)
