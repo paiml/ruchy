@@ -57,7 +57,7 @@ pub mod wasm;
 pub use actors::{
     Actor, ActorHandle, McpActor, McpMessage, McpResponse, SupervisionStrategy, Supervisor,
 };
-pub use backend::transpiler::Transpiler;
+pub use backend::{ModuleResolver, Transpiler};
 pub use frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, UnaryOp};
 pub use frontend::lexer::{Token, TokenStream};
 pub use frontend::parser::Parser;

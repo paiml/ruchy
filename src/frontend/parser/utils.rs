@@ -479,10 +479,14 @@ pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
                 bail!("Expected alias name after 'as'");
             }
         } else {
-            // Simple import without alias - import the last part of the path
+            // Simple import without alias
             if path_parts.is_empty() {
                 Vec::new()
+            } else if path_parts.len() == 1 {
+                // Single segment like "use math;" - treat as wildcard (use math::*)
+                Vec::new() // Empty items = wildcard import in transpiler
             } else {
+                // Multi-segment like "use std::collections::HashMap;" - import the last part
                 vec![ImportItem::Named(
                     path_parts
                         .last()
