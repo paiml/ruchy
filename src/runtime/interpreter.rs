@@ -1688,9 +1688,16 @@ impl Value {
 impl Interpreter {
     /// Create new interpreter instance
     pub fn new() -> Self {
+        let mut global_env = HashMap::new();
+        
+        // Add builtin functions to global environment
+        // These are special markers that will be handled in eval_function_call
+        global_env.insert("format".to_string(), Value::String(Rc::new("__builtin_format__".to_string())));
+        global_env.insert("HashMap".to_string(), Value::String(Rc::new("__builtin_hashmap__".to_string())));
+        
         Self {
             stack: Vec::with_capacity(1024), // Pre-allocate stack
-            env_stack: vec![HashMap::new()], // Start with global environment
+            env_stack: vec![global_env], // Start with global environment containing builtins
             frames: Vec::new(),
             execution_counts: HashMap::new(),
             field_caches: HashMap::new(),
@@ -1745,6 +1752,19 @@ impl Interpreter {
             ExprKind::StringInterpolation { parts } => self.eval_string_interpolation(parts),
             ExprKind::Assign { target, value } => self.eval_assign(target, value),
             ExprKind::CompoundAssign { target, op, value } => self.eval_compound_assign(target, *op, value),
+            
+            // Handle qualified names (like HashMap::new)
+            ExprKind::QualifiedName { module, name } => {
+                if module == "HashMap" && name == "new" {
+                    // Return the builtin HashMap marker
+                    Ok(Value::String(Rc::new("__builtin_hashmap__".to_string())))
+                } else {
+                    Err(InterpreterError::RuntimeError(format!(
+                        "Unknown qualified name: {}::{}",
+                        module, name
+                    )))
+                }
+            }
             
             // Placeholder implementations for other expression types
             _ => Err(InterpreterError::RuntimeError(format!(
@@ -1813,9 +1833,50 @@ impl Interpreter {
         }
     }
 
+    /// Helper method to call a Value function with arguments (for array methods)
+    fn eval_function_call_value(&mut self, func: &Value, args: &[Value]) -> Result<Value, InterpreterError> {
+        self.call_function(func.clone(), args)
+    }
+    
     /// Call a function with given arguments
     fn call_function(&mut self, func: Value, args: &[Value]) -> Result<Value, InterpreterError> {
         match func {
+            Value::String(s) if s.starts_with("__builtin_") => {
+                // Handle builtin functions
+                match s.as_str() {
+                    "__builtin_format__" => {
+                        if args.is_empty() {
+                            return Err(InterpreterError::RuntimeError("format requires at least one argument".to_string()));
+                        }
+                        
+                        // First argument is the format string
+                        if let Value::String(format_str) = &args[0] {
+                            let mut result = format_str.to_string();
+                            let mut arg_index = 1;
+                            
+                            // Simple format string replacement - find {} and replace with arguments
+                            while let Some(pos) = result.find("{}") {
+                                if arg_index < args.len() {
+                                    let replacement = args[arg_index].to_string();
+                                    result.replace_range(pos..pos+2, &replacement);
+                                    arg_index += 1;
+                                } else {
+                                    break;
+                                }
+                            }
+                            
+                            Ok(Value::from_string(result))
+                        } else {
+                            Err(InterpreterError::RuntimeError("format expects string as first argument".to_string()))
+                        }
+                    }
+                    "__builtin_hashmap__" => {
+                        // For now, we don't have a proper HashMap type, so return empty string representation
+                        Ok(Value::from_string("{}".to_string()))
+                    }
+                    _ => Err(InterpreterError::RuntimeError(format!("Unknown builtin function: {}", s))),
+                }
+            }
             Value::Closure { params, body, env } => {
                 // Check argument count
                 if args.len() != params.len() {
@@ -2760,48 +2821,211 @@ impl Interpreter {
         Ok(new_val)
     }
     
+    /// Evaluate string methods
+    fn eval_string_method(&mut self, s: &Rc<String>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
+        match method {
+            "len" if args.is_empty() => Ok(Value::Integer(s.len() as i64)),
+            "to_upper" if args.is_empty() => Ok(Value::from_string(s.to_uppercase())),
+            "to_lower" if args.is_empty() => Ok(Value::from_string(s.to_lowercase())),
+            "trim" if args.is_empty() => Ok(Value::from_string(s.trim().to_string())),
+            "to_string" if args.is_empty() => Ok(Value::from_string(s.to_string())),
+            "contains" if args.len() == 1 => {
+                if let Value::String(needle) = &args[0] {
+                    Ok(Value::Bool(s.contains(needle.as_str())))
+                } else {
+                    Err(InterpreterError::RuntimeError("contains expects string argument".to_string()))
+                }
+            }
+            "starts_with" if args.len() == 1 => {
+                if let Value::String(prefix) = &args[0] {
+                    Ok(Value::Bool(s.starts_with(prefix.as_str())))
+                } else {
+                    Err(InterpreterError::RuntimeError("starts_with expects string argument".to_string()))
+                }
+            }
+            "ends_with" if args.len() == 1 => {
+                if let Value::String(suffix) = &args[0] {
+                    Ok(Value::Bool(s.ends_with(suffix.as_str())))
+                } else {
+                    Err(InterpreterError::RuntimeError("ends_with expects string argument".to_string()))
+                }
+            }
+            "replace" if args.len() == 2 => {
+                if let (Value::String(from), Value::String(to)) = (&args[0], &args[1]) {
+                    Ok(Value::from_string(s.replace(from.as_str(), to.as_str())))
+                } else {
+                    Err(InterpreterError::RuntimeError("replace expects two string arguments".to_string()))
+                }
+            }
+            "split" if args.len() == 1 => {
+                if let Value::String(separator) = &args[0] {
+                    let parts: Vec<Value> = s.split(separator.as_str())
+                        .map(|part| Value::from_string(part.to_string()))
+                        .collect();
+                    Ok(Value::Array(Rc::new(parts)))
+                } else {
+                    Err(InterpreterError::RuntimeError("split expects string argument".to_string()))
+                }
+            }
+            _ => Err(InterpreterError::RuntimeError(format!("Unknown string method: {}", method))),
+        }
+    }
+
+    /// Evaluate array methods
+    fn eval_array_method(&mut self, arr: &Rc<Vec<Value>>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
+        match method {
+            "len" if args.is_empty() => Ok(Value::Integer(arr.len() as i64)),
+            "push" if args.len() == 1 => {
+                let mut new_arr = (**arr).clone();
+                new_arr.push(args[0].clone());
+                Ok(Value::Array(Rc::new(new_arr)))
+            }
+            "pop" if args.is_empty() => {
+                let mut new_arr = (**arr).clone();
+                new_arr.pop().unwrap_or(Value::nil());
+                Ok(Value::Array(Rc::new(new_arr)))
+            }
+            "get" if args.len() == 1 => {
+                if let Value::Integer(idx) = &args[0] {
+                    if *idx < 0 {
+                        return Ok(Value::Nil);
+                    }
+                    #[allow(clippy::cast_sign_loss)]
+                    let index = *idx as usize;
+                    if index < arr.len() {
+                        Ok(arr[index].clone())
+                    } else {
+                        Ok(Value::Nil)
+                    }
+                } else {
+                    Err(InterpreterError::RuntimeError("get expects integer index".to_string()))
+                }
+            }
+            "first" if args.is_empty() => Ok(arr.first().cloned().unwrap_or(Value::Nil)),
+            "last" if args.is_empty() => Ok(arr.last().cloned().unwrap_or(Value::Nil)),
+            "map" | "filter" | "reduce" | "any" | "all" | "find" => 
+                self.eval_array_higher_order_method(arr, method, args),
+            _ => Err(InterpreterError::RuntimeError(format!("Unknown array method: {}", method))),
+        }
+    }
+    
+    /// Evaluate higher-order array methods
+    fn eval_array_higher_order_method(&mut self, arr: &Rc<Vec<Value>>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
+        match method {
+            "map" if args.len() == 1 => {
+                if let Value::Closure { .. } = &args[0] {
+                    let mut result = Vec::new();
+                    for item in arr.iter() {
+                        let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
+                        result.push(func_result);
+                    }
+                    Ok(Value::Array(Rc::new(result)))
+                } else {
+                    Err(InterpreterError::RuntimeError("map expects a function argument".to_string()))
+                }
+            }
+            "filter" if args.len() == 1 => {
+                if let Value::Closure { .. } = &args[0] {
+                    let mut result = Vec::new();
+                    for item in arr.iter() {
+                        let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
+                        if func_result.is_truthy() {
+                            result.push(item.clone());
+                        }
+                    }
+                    Ok(Value::Array(Rc::new(result)))
+                } else {
+                    Err(InterpreterError::RuntimeError("filter expects a function argument".to_string()))
+                }
+            }
+            "reduce" if args.len() == 2 => {
+                if let Value::Closure { .. } = &args[0] {
+                    let mut accumulator = args[1].clone();
+                    for item in arr.iter() {
+                        accumulator = self.eval_function_call_value(&args[0], &[accumulator, item.clone()])?;
+                    }
+                    Ok(accumulator)
+                } else {
+                    Err(InterpreterError::RuntimeError("reduce expects a function and initial value".to_string()))
+                }
+            }
+            "any" if args.len() == 1 => {
+                if let Value::Closure { .. } = &args[0] {
+                    for item in arr.iter() {
+                        let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
+                        if func_result.is_truthy() {
+                            return Ok(Value::Bool(true));
+                        }
+                    }
+                    Ok(Value::Bool(false))
+                } else {
+                    Err(InterpreterError::RuntimeError("any expects a function argument".to_string()))
+                }
+            }
+            "all" if args.len() == 1 => {
+                if let Value::Closure { .. } = &args[0] {
+                    for item in arr.iter() {
+                        let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
+                        if !func_result.is_truthy() {
+                            return Ok(Value::Bool(false));
+                        }
+                    }
+                    Ok(Value::Bool(true))
+                } else {
+                    Err(InterpreterError::RuntimeError("all expects a function argument".to_string()))
+                }
+            }
+            "find" if args.len() == 1 => {
+                if let Value::Closure { .. } = &args[0] {
+                    for item in arr.iter() {
+                        let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
+                        if func_result.is_truthy() {
+                            return Ok(item.clone());
+                        }
+                    }
+                    Ok(Value::Nil)
+                } else {
+                    Err(InterpreterError::RuntimeError("find expects a function argument".to_string()))
+                }
+            }
+            _ => Err(InterpreterError::RuntimeError(format!("Unknown array method: {}", method))),
+        }
+    }
+
     /// Evaluate a method call
     fn eval_method_call(&mut self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<Value, InterpreterError> {
         let receiver_value = self.eval_expr(receiver)?;
         let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| self.eval_expr(arg)).collect();
         let arg_values = arg_values?;
         
-        match (method, &receiver_value) {
-            // Float methods
-            ("sqrt", Value::Float(f)) if args.is_empty() => Ok(Value::Float(f.sqrt())),
-            ("abs", Value::Float(f)) if args.is_empty() => Ok(Value::Float(f.abs())),
-            ("round", Value::Float(f)) if args.is_empty() => Ok(Value::Float(f.round())),
-            ("floor", Value::Float(f)) if args.is_empty() => Ok(Value::Float(f.floor())),
-            ("ceil", Value::Float(f)) if args.is_empty() => Ok(Value::Float(f.ceil())),
-            
-            // String methods
-            ("len", Value::String(s)) if args.is_empty() => Ok(Value::Integer(s.len() as i64)),
-            ("to_upper", Value::String(s)) if args.is_empty() => Ok(Value::from_string(s.to_uppercase())),
-            ("to_lower", Value::String(s)) if args.is_empty() => Ok(Value::from_string(s.to_lowercase())),
-            ("trim", Value::String(s)) if args.is_empty() => Ok(Value::from_string(s.trim().to_string())),
-            
-            // Array methods
-            ("len", Value::Array(arr)) if args.is_empty() => Ok(Value::Integer(arr.len() as i64)),
-            ("push", Value::Array(arr)) if args.len() == 1 => {
-                let mut new_arr = (**arr).clone();
-                new_arr.push(arg_values[0].clone());
-                Ok(Value::Array(Rc::new(new_arr)))
+        match &receiver_value {
+            Value::String(s) => self.eval_string_method(s, method, &arg_values),
+            Value::Array(arr) => self.eval_array_method(arr, method, &arg_values),
+            Value::Float(f) => match method {
+                "sqrt" if args.is_empty() => Ok(Value::Float(f.sqrt())),
+                "abs" if args.is_empty() => Ok(Value::Float(f.abs())),
+                "round" if args.is_empty() => Ok(Value::Float(f.round())),
+                "floor" if args.is_empty() => Ok(Value::Float(f.floor())),
+                "ceil" if args.is_empty() => Ok(Value::Float(f.ceil())),
+                "to_string" if args.is_empty() => Ok(Value::from_string(f.to_string())),
+                _ => Err(InterpreterError::RuntimeError(format!("Unknown float method: {}", method))),
+            },
+            Value::Integer(n) => match method {
+                "abs" if args.is_empty() => Ok(Value::Integer(n.abs())),
+                "to_string" if args.is_empty() => Ok(Value::from_string(n.to_string())),
+                _ => Err(InterpreterError::RuntimeError(format!("Unknown integer method: {}", method))),
+            },
+            _ if method == "to_string" && args.is_empty() => {
+                Ok(Value::from_string(receiver_value.to_string()))
             }
-            ("pop", Value::Array(arr)) if args.is_empty() => {
-                let mut new_arr = (**arr).clone();
-                new_arr.pop().unwrap_or(Value::nil());
-                Ok(Value::Array(Rc::new(new_arr)))
-            }
-            
-            // Generic to_string method
-            ("to_string", _) if args.is_empty() => Ok(Value::from_string(receiver_value.to_string())),
-            
             _ => Err(InterpreterError::RuntimeError(format!(
-                "Method '{}' not found for type or wrong number of arguments",
-                method
+                "Method '{}' not found for type {}",
+                method,
+                receiver_value.type_name()
             ))),
         }
     }
+    
     
     /// Evaluate string interpolation
     fn eval_string_interpolation(&mut self, parts: &[StringPart]) -> Result<Value, InterpreterError> {

@@ -51,8 +51,8 @@ fn apply(f: impl Fn(i32) -> i32, x: String) { f(x) }  // Works perfectly!
 - **Focus**: Test-first development following Toyota Way with PMAT quality gates
 
 ### Sprint Tasks (Priority Order)
-- [ ] **BOOK-001 (BUG-003)**: Type Annotations Parser Support - Impact: ~100+ examples
-- [ ] **BOOK-002 (BUG-004)**: Standard Library Methods - Impact: ~80+ examples  
+- [x] **BOOK-001 (BUG-003)**: Type Annotations Parser Support - Impact: ~100+ examples (84% COMPLETE)
+- [x] **BOOK-002 (BUG-004)**: Standard Library Methods - Impact: ~80+ examples (100% COMPLETE - 33 tests)
 - [ ] **BOOK-003 (BUG-007)**: Void Function Return Type Inference - Impact: ~40+ examples
 - [ ] **BOOK-004 (BUG-001)**: v1.17 Regression Root Cause Analysis - Impact: Understanding 299 failures
 - [ ] **BOOK-005 (FEATURE-001)**: Basic Module System Support - Impact: Multi-file examples
