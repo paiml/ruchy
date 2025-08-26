@@ -352,12 +352,10 @@ pub fn handle_prove_command(
             println!("📋 Extracted proof goals from source");
         }
         
-        // In check mode, just verify proofs
+        // In check mode, verify proofs from AST
         if check {
             println!("✓ Checking proofs in {}...", file_path.display());
-            // Extract and check proofs from AST (future enhancement)
-            println!("✅ All proofs valid");
-            return Ok(());
+            return verify_proofs_from_ast(&_ast, file_path, format, counterexample, verbose);
         }
     }
     
@@ -804,19 +802,293 @@ fn handle_watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Re
 /// Run enhanced tests (internal implementation)
 #[allow(clippy::unnecessary_wraps)]
 fn handle_run_enhanced_tests(
-    _path: &Path,
-    _verbose: bool,
-    _filter: Option<&str>,
-    _coverage: bool,
-    _coverage_format: &str,
+    path: &Path,
+    verbose: bool,
+    filter: Option<&str>,
+    coverage: bool,
+    coverage_format: &str,
     _parallel: usize,
-    _threshold: f64,
-    _format: &str,
+    threshold: f64,
+    format: &str,
 ) -> Result<()> {
-    // This is a simplified implementation
-    // In a full implementation, this would run the actual test suite
-    println!("Running tests... (simplified implementation)");
-    println!("✅ All tests passed");
+    use colored::Colorize;
+    use std::time::Instant;
+    use walkdir::WalkDir;
+    
+    if verbose {
+        println!("🔍 Discovering .ruchy test files in {}", path.display());
+    }
+    
+    // Discover .ruchy test files
+    let mut test_files = Vec::new();
+    
+    if path.is_file() {
+        if path.extension().map_or(false, |ext| ext == "ruchy") {
+            test_files.push(path.to_path_buf());
+        } else {
+            return Err(anyhow::anyhow!("File {} is not a .ruchy file", path.display()));
+        }
+    } else if path.is_dir() {
+        for entry in WalkDir::new(path) {
+            let entry = entry?;
+            if entry.path().extension().map_or(false, |ext| ext == "ruchy") {
+                // Apply filter if provided
+                if let Some(filter_pattern) = filter {
+                    let file_name = entry.path().file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("");
+                    if !file_name.contains(filter_pattern) {
+                        continue;
+                    }
+                }
+                test_files.push(entry.path().to_path_buf());
+            }
+        }
+    } else {
+        return Err(anyhow::anyhow!("Path {} does not exist", path.display()));
+    }
+    
+    if test_files.is_empty() {
+        println!("⚠️  No .ruchy test files found in {}", path.display());
+        return Ok(());
+    }
+    
+    let total_start = Instant::now();
+    let mut passed = 0;
+    let mut failed = 0;
+    let mut test_results = Vec::new();
+    
+    println!("🧪 Running {} .ruchy test files...\n", test_files.len());
+    
+    // Execute each test file
+    for test_file in &test_files {
+        if verbose {
+            println!("📄 Testing: {}", test_file.display());
+        }
+        
+        let test_start = Instant::now();
+        let result = run_ruchy_test_file(test_file, verbose);
+        let test_duration = test_start.elapsed();
+        
+        match result {
+            Ok(()) => {
+                passed += 1;
+                if verbose {
+                    println!("   ✅ {} ({:.2}ms)", test_file.file_name().unwrap().to_str().unwrap(), test_duration.as_secs_f64() * 1000.0);
+                } else {
+                    print!(".");
+                }
+                test_results.push((test_file.clone(), true, test_duration, None));
+            }
+            Err(e) => {
+                failed += 1;
+                let error_msg = format!("{}", e);
+                if verbose {
+                    println!("   ❌ {} ({:.2}ms): {}", test_file.file_name().unwrap().to_str().unwrap(), test_duration.as_secs_f64() * 1000.0, error_msg);
+                } else {
+                    print!("F");
+                }
+                test_results.push((test_file.clone(), false, test_duration, Some(error_msg)));
+            }
+        }
+        
+        if !verbose {
+            std::io::Write::flush(&mut std::io::stdout())?;
+        }
+    }
+    
+    let total_duration = total_start.elapsed();
+    
+    if !verbose {
+        println!(); // New line after dots/F's
+    }
+    
+    // Print summary
+    println!("\n📊 Test Results:");
+    println!("   Total: {}", test_files.len());
+    println!("   Passed: {}", passed.to_string().green());
+    if failed > 0 {
+        println!("   Failed: {}", failed.to_string().red());
+    }
+    println!("   Duration: {:.2}s", total_duration.as_secs_f64());
+    
+    // Show failures in detail if any
+    if failed > 0 && !verbose {
+        println!("\n❌ Failed Tests:");
+        for (test_file, success, _duration, error) in &test_results {
+            if !success {
+                println!("   {} - {}", test_file.display(), error.as_ref().unwrap_or(&"Unknown error".to_string()));
+            }
+        }
+    }
+    
+    // Coverage reporting (placeholder for now)
+    if coverage {
+        println!("\n📈 Coverage Report:");
+        println!("   Coverage reporting not yet implemented for .ruchy files");
+        println!("   Format: {}", coverage_format);
+        if threshold > 0.0 {
+            println!("   Threshold: {:.1}%", threshold);
+        }
+    }
+    
+    // Format output as JSON if requested
+    if format == "json" {
+        let json_output = serde_json::json!({
+            "total": test_files.len(),
+            "passed": passed,
+            "failed": failed,
+            "duration_seconds": total_duration.as_secs_f64(),
+            "results": test_results.iter().map(|(path, success, duration, error)| {
+                serde_json::json!({
+                    "file": path.display().to_string(),
+                    "success": success,
+                    "duration_ms": duration.as_secs_f64() * 1000.0,
+                    "error": error
+                })
+            }).collect::<Vec<_>>()
+        });
+        println!("\n{}", serde_json::to_string_pretty(&json_output)?);
+    }
+    
+    // Exit with non-zero status if tests failed
+    if failed > 0 {
+        std::process::exit(1);
+    }
+    
+    println!("\n✅ All tests passed!");
+    Ok(())
+}
+
+/// Run a single .ruchy test file using the Ruchy interpreter
+fn run_ruchy_test_file(test_file: &Path, verbose: bool) -> Result<()> {
+    use ruchy::runtime::repl::Repl;
+    use std::fs;
+    
+    // Read the test file
+    let test_content = fs::read_to_string(test_file)
+        .with_context(|| format!("Failed to read test file: {}", test_file.display()))?;
+    
+    if verbose {
+        println!("   📖 Parsing test file...");
+    }
+    
+    if verbose {
+        println!("   🏃 Executing test...");
+    }
+    
+    // Execute the test using the REPL's evaluation engine
+    let mut repl = Repl::new()?;
+    let result = repl.evaluate_expr_str(&test_content, None)
+        .with_context(|| format!("Test execution failed for: {}", test_file.display()))?;
+    
+    if verbose {
+        println!("   📤 Test result: {:?}", result);
+    }
+    
+    // For now, we consider any successful execution a pass
+    // In the future, we could have test-specific assertions
+    Ok(())
+}
+
+/// Verify proofs extracted from AST
+fn verify_proofs_from_ast(
+    ast: &ruchy::frontend::ast::Expr, 
+    file_path: &std::path::Path, 
+    format: &str,
+    counterexample: bool, 
+    verbose: bool
+) -> Result<()> {
+    use ruchy::proving::{extract_assertions_from_ast, verify_assertions_batch};
+    
+    // Extract assertions from the AST
+    let assertions = extract_assertions_from_ast(ast);
+    
+    if assertions.is_empty() {
+        if verbose {
+            println!("No assertions found in {}", file_path.display());
+        }
+        if format == "json" {
+            let json_result = serde_json::json!({
+                "file": file_path.display().to_string(),
+                "status": "no_proofs",
+                "total": 0,
+                "passed": 0,
+                "failed": 0,
+                "proofs": []
+            });
+            println!("{}", serde_json::to_string_pretty(&json_result)?);
+        } else {
+            println!("✅ No proofs found (file valid)");
+        }
+        return Ok(());
+    }
+    
+    if verbose {
+        println!("Found {} assertions to verify", assertions.len());
+        for (i, assertion) in assertions.iter().enumerate() {
+            println!("  {}: {}", i + 1, assertion);
+        }
+    }
+    
+    // Verify all assertions
+    let results = verify_assertions_batch(&assertions, counterexample);
+    
+    let total = results.len();
+    let passed = results.iter().filter(|r| r.is_verified).count();
+    let failed = total - passed;
+    
+    if format == "json" {
+        let json_result = serde_json::json!({
+            "file": file_path.display().to_string(),
+            "status": if failed == 0 { "verified" } else { "failed" },
+            "total": total,
+            "passed": passed,
+            "failed": failed,
+            "proofs": results
+        });
+        println!("{}", serde_json::to_string_pretty(&json_result)?);
+    } else {
+        // Text output
+        if failed == 0 {
+            println!("✅ All {} proofs verified successfully", total);
+            if verbose {
+                for (i, result) in results.iter().enumerate() {
+                    println!("  ✅ Proof {}: {} ({:.1}ms)", 
+                        i + 1, result.assertion, result.verification_time_ms);
+                }
+            }
+        } else {
+            println!("❌ {} of {} proofs failed verification", failed, total);
+            for (i, result) in results.iter().enumerate() {
+                if !result.is_verified {
+                    println!("  ❌ Proof {}: {}", i + 1, result.assertion);
+                    if let Some(ref counterex) = result.counterexample {
+                        println!("     Counterexample: {}", counterex);
+                    }
+                    if let Some(ref error) = result.error {
+                        println!("     Error: {}", error);
+                    }
+                }
+            }
+            
+            if verbose {
+                println!("\nPassed proofs:");
+                for (i, result) in results.iter().enumerate() {
+                    if result.is_verified {
+                        println!("  ✅ Proof {}: {} ({:.1}ms)", 
+                            i + 1, result.assertion, result.verification_time_ms);
+                    }
+                }
+            }
+        }
+    }
+    
+    // Exit with non-zero status if proofs failed
+    if failed > 0 {
+        std::process::exit(1);
+    }
+    
     Ok(())
 }
 
@@ -1007,6 +1279,31 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
                 eprintln!("Error: Either provide a file or use --all flag");
                 std::process::exit(1);
             }
+        }
+        crate::Commands::Prove {
+            file,
+            backend,
+            ml_suggestions,
+            timeout,
+            script,
+            export,
+            check,
+            counterexample,
+            verbose,
+            format,
+        } => {
+            handle_prove_command(
+                file.as_deref(),
+                &backend,
+                ml_suggestions,
+                timeout,
+                script.as_deref(),
+                export.as_deref(),
+                check,
+                counterexample,
+                verbose,
+                &format,
+            )
         }
         _ => {
             // Other commands not yet implemented
