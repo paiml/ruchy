@@ -371,7 +371,7 @@ pub fn handle_score_command(
     let ast = parser.parse()?;
     
     // Calculate quality score
-    let score = calculate_quality_score(&ast);
+    let score = calculate_quality_score(&ast, &source);
     
     let output_content = if format == "json" {
         serde_json::to_string_pretty(&serde_json::json!({
@@ -493,24 +493,311 @@ fn calculate_ast_depth(_ast: &ruchy::frontend::ast::Expr) -> usize {
     1 // Placeholder
 }
 
-fn calculate_provability_score(_ast: &ruchy::frontend::ast::Expr) -> f64 {
-    // Calculate how provable the code is
-    75.0 // Placeholder
+fn calculate_provability_score(ast: &ruchy::frontend::ast::Expr) -> f64 {
+    // Calculate how provable the code is based on assertions and invariants
+    let mut assertion_count = 0;
+    let mut total_statements = 0;
+    count_assertions_recursive(ast, &mut assertion_count, &mut total_statements);
+    
+    if total_statements == 0 {
+        return 50.0; // Default for empty code
+    }
+    
+    // Score based on assertion density
+    let assertion_ratio = assertion_count as f64 / total_statements as f64;
+    (assertion_ratio * 100.0).min(100.0)
 }
 
-fn calculate_quality_score(_ast: &ruchy::frontend::ast::Expr) -> f64 {
-    // Calculate overall quality score
-    0.85 // Placeholder
+fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f64 {
+    use ruchy::frontend::ast::{ExprKind, Literal};
+    
+    // Calculate various quality metrics
+    let complexity = calculate_complexity(ast);
+    let mut metrics = QualityMetrics::default();
+    
+    // Check for SATD in comments
+    for line in source.lines() {
+        if let Some(comment_pos) = line.find("//") {
+            let comment = &line[comment_pos..];
+            if comment.contains("TODO") || comment.contains("FIXME") || comment.contains("HACK") {
+                metrics.has_satd = true;
+                break;
+            }
+        }
+    }
+    
+    analyze_ast_quality(ast, &mut metrics);
+    
+    // Score components (each out of 100, then averaged)
+    let mut scores = Vec::new();
+    
+    // 1. Complexity score (lower is better)
+    let complexity_score = if complexity == 0 {
+        100.0
+    } else {
+        (100.0 / (1.0 + complexity as f64 / 5.0)).max(0.0)
+    };
+    scores.push(complexity_score);
+    
+    // 2. Function length score
+    let avg_function_length = if metrics.function_count == 0 {
+        0.0
+    } else {
+        metrics.total_function_lines as f64 / metrics.function_count as f64
+    };
+    let length_score = (100.0 / (1.0 + avg_function_length / 20.0)).max(0.0);
+    scores.push(length_score);
+    
+    // 3. Documentation score (functions with names > 1 char are considered documented for now)
+    let doc_score = if metrics.function_count == 0 {
+        50.0
+    } else {
+        (metrics.documented_functions as f64 / metrics.function_count as f64 * 100.0)
+    };
+    scores.push(doc_score);
+    
+    // 4. Naming quality score
+    let naming_score = if metrics.total_identifiers == 0 {
+        50.0
+    } else {
+        (metrics.good_names as f64 / metrics.total_identifiers as f64 * 100.0)
+    };
+    scores.push(naming_score);
+    
+    // 5. No SATD bonus
+    let satd_score = if metrics.has_satd { 60.0 } else { 100.0 };
+    scores.push(satd_score);
+    
+    // Calculate weighted average
+    let total_score = scores.iter().sum::<f64>() / scores.len() as f64;
+    
+    // Convert to 0-1 scale
+    total_score / 100.0
 }
 
-fn calculate_complexity(_ast: &ruchy::frontend::ast::Expr) -> usize {
+fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
+    use ruchy::frontend::ast::ExprKind;
+    
     // Calculate cyclomatic complexity
-    5 // Placeholder
+    let mut complexity = 1; // Base complexity
+    
+    fn count_branches(expr: &ruchy::frontend::ast::Expr, complexity: &mut usize) {
+        use ruchy::frontend::ast::ExprKind;
+        
+        match &expr.kind {
+            ExprKind::If { condition: _, then_branch, else_branch } => {
+                *complexity += 1; // Each if adds a branch
+                count_branches(then_branch, complexity);
+                if let Some(else_expr) = else_branch {
+                    count_branches(else_expr, complexity);
+                }
+            }
+            ExprKind::Match { expr: _, arms } => {
+                *complexity += arms.len().saturating_sub(1); // Each arm is a branch
+                for arm in arms {
+                    count_branches(&arm.body, complexity);
+                }
+            }
+            ExprKind::While { condition: _, body } => {
+                *complexity += 1; // Loops add complexity
+                count_branches(body, complexity);
+            }
+            ExprKind::For { var: _, pattern: _, iter: _, body } => {
+                *complexity += 1; // Loops add complexity
+                count_branches(body, complexity);
+            }
+            ExprKind::Binary { op: _, left, right } => {
+                count_branches(left, complexity);
+                count_branches(right, complexity);
+            }
+            ExprKind::Block(exprs) => {
+                for expr in exprs {
+                    count_branches(expr, complexity);
+                }
+            }
+            ExprKind::Function { name: _, type_params: _, params: _, body, return_type: _, is_async: _, is_pub: _ } => {
+                count_branches(body, complexity);
+            }
+            ExprKind::Let { name: _, type_annotation: _, value, body, is_mutable: _ } => {
+                count_branches(value, complexity);
+                count_branches(body, complexity);
+            }
+            _ => {}
+        }
+    }
+    
+    count_branches(ast, &mut complexity);
+    complexity
 }
 
-fn analyze_complexity(_ast: &ruchy::frontend::ast::Expr) -> String {
-    // Analyze algorithmic complexity
-    "n".to_string() // Placeholder - linear complexity
+fn analyze_complexity(ast: &ruchy::frontend::ast::Expr) -> String {
+    // Analyze algorithmic complexity based on loop nesting
+    let nesting_depth = calculate_max_nesting(ast);
+    
+    match nesting_depth {
+        0 => "1".to_string(),           // Constant
+        1 => "n".to_string(),           // Linear
+        2 => "n²".to_string(),          // Quadratic
+        3 => "n³".to_string(),          // Cubic
+        _ => format!("n^{}", nesting_depth), // Higher polynomial
+    }
+}
+
+// Helper structures and functions
+#[derive(Default)]
+struct QualityMetrics {
+    function_count: usize,
+    documented_functions: usize,
+    total_function_lines: usize,
+    total_identifiers: usize,
+    good_names: usize,
+    has_satd: bool,
+}
+
+fn analyze_ast_quality(expr: &ruchy::frontend::ast::Expr, metrics: &mut QualityMetrics) {
+    use ruchy::frontend::ast::{ExprKind, Literal};
+    
+    match &expr.kind {
+        ExprKind::Function { name, type_params: _, params: _, body, return_type: _, is_async: _, is_pub: _ } => {
+            metrics.function_count += 1;
+            
+            // Check if function is "documented" (has descriptive name)
+            if name.len() > 1 && !name.chars().all(|c| c == '_') {
+                metrics.documented_functions += 1;
+                metrics.good_names += 1;
+            }
+            
+            metrics.total_identifiers += 1;
+            
+            // Count lines in function (simplified)
+            let function_lines = count_lines_in_expr(body);
+            metrics.total_function_lines += function_lines;
+            
+            analyze_ast_quality(body, metrics);
+        }
+        ExprKind::Identifier(name) => {
+            metrics.total_identifiers += 1;
+            // Good names are > 1 char and not single letters
+            if name.len() > 1 && !matches!(name.as_str(), "a" | "b" | "x" | "y" | "i" | "j") {
+                metrics.good_names += 1;
+            }
+        }
+        ExprKind::Let { name, type_annotation: _, value, body, is_mutable: _ } => {
+            metrics.total_identifiers += 1;
+            if name.len() > 1 {
+                metrics.good_names += 1;
+            }
+            analyze_ast_quality(value, metrics);
+            analyze_ast_quality(body, metrics);
+        }
+        // Note: Comments are not in AST, need to check source text separately
+        ExprKind::Block(exprs) => {
+            for expr in exprs {
+                analyze_ast_quality(expr, metrics);
+            }
+        }
+        ExprKind::If { condition, then_branch, else_branch } => {
+            analyze_ast_quality(condition, metrics);
+            analyze_ast_quality(then_branch, metrics);
+            if let Some(else_expr) = else_branch {
+                analyze_ast_quality(else_expr, metrics);
+            }
+        }
+        ExprKind::Match { expr, arms } => {
+            analyze_ast_quality(expr, metrics);
+            for arm in arms {
+                analyze_ast_quality(&arm.body, metrics);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn count_lines_in_expr(expr: &ruchy::frontend::ast::Expr) -> usize {
+    // Simplified line counting - counts expression depth as proxy for lines
+    use ruchy::frontend::ast::ExprKind;
+    
+    match &expr.kind {
+        ExprKind::Block(exprs) => exprs.len() + exprs.iter().map(count_lines_in_expr).sum::<usize>(),
+        ExprKind::If { condition, then_branch, else_branch } => {
+            1 + count_lines_in_expr(condition) 
+              + count_lines_in_expr(then_branch)
+              + else_branch.as_ref().map(|e| count_lines_in_expr(e)).unwrap_or(0)
+        }
+        _ => 1
+    }
+}
+
+fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
+    use ruchy::frontend::ast::ExprKind;
+    
+    fn nesting_helper(expr: &ruchy::frontend::ast::Expr, current_depth: usize) -> usize {
+        use ruchy::frontend::ast::ExprKind;
+        
+        match &expr.kind {
+            ExprKind::For { var: _, pattern: _, iter: _, body } => {
+                nesting_helper(body, current_depth + 1)
+            }
+            ExprKind::While { condition: _, body } => {
+                nesting_helper(body, current_depth + 1)
+            }
+            ExprKind::Block(exprs) => {
+                exprs.iter()
+                    .map(|e| nesting_helper(e, current_depth))
+                    .max()
+                    .unwrap_or(current_depth)
+            }
+            ExprKind::If { condition: _, then_branch, else_branch } => {
+                let then_depth = nesting_helper(then_branch, current_depth);
+                let else_depth = else_branch
+                    .as_ref()
+                    .map(|e| nesting_helper(e, current_depth))
+                    .unwrap_or(current_depth);
+                then_depth.max(else_depth)
+            }
+            _ => current_depth
+        }
+    }
+    
+    nesting_helper(expr, 0)
+}
+
+fn count_assertions_recursive(
+    expr: &ruchy::frontend::ast::Expr, 
+    assertion_count: &mut usize,
+    total_statements: &mut usize
+) {
+    use ruchy::frontend::ast::ExprKind;
+    
+    *total_statements += 1;
+    
+    match &expr.kind {
+        ExprKind::MethodCall { receiver: _, method, args: _ } => {
+            if method == "assert" || method == "assert_eq" || method == "assert_ne" {
+                *assertion_count += 1;
+            }
+        }
+        ExprKind::Call { func, args: _ } => {
+            if let ExprKind::Identifier(name) = &func.kind {
+                if name == "assert" || name == "assert_eq" || name == "assert_ne" {
+                    *assertion_count += 1;
+                }
+            }
+        }
+        ExprKind::Block(exprs) => {
+            for expr in exprs {
+                count_assertions_recursive(expr, assertion_count, total_statements);
+            }
+        }
+        ExprKind::If { condition, then_branch, else_branch } => {
+            count_assertions_recursive(condition, assertion_count, total_statements);
+            count_assertions_recursive(then_branch, assertion_count, total_statements);
+            if let Some(else_expr) = else_branch {
+                count_assertions_recursive(else_expr, assertion_count, total_statements);
+            }
+        }
+        _ => {}
+    }
 }
 
 struct SymbolInfo {
