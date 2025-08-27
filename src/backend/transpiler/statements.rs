@@ -556,8 +556,18 @@ impl Transpiler {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
             "union" | "intersection" | "difference" | "symmetric_difference" => {
-                // HashSet set operations
-                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+                // HashSet set operations - need to collect the iterator results
+                if arg_tokens.len() != 1 {
+                    bail!("{} requires exactly 1 argument", method);
+                }
+                let other = &arg_tokens[0];
+                let method_ident = format_ident!("{}", method);
+                Ok(quote! { 
+                    {
+                        use std::collections::HashSet;
+                        #obj_tokens.#method_ident(&#other).cloned().collect::<HashSet<_>>()
+                    }
+                })
             }
             
             // Common collection methods (Vec, HashMap, HashSet)
