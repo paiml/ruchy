@@ -9,7 +9,7 @@ All notable changes to the Ruchy programming language will be documented in this
 - Package manager development
 - IDE integration improvements
 
-## [1.20.0] - 2025-08-27
+## [1.20.1] - 2025-08-27
 
 ### 🛡️ CRITICAL BUG FIXES & COMPREHENSIVE TESTING INFRASTRUCTURE
 
