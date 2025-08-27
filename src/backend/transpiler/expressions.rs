@@ -545,6 +545,15 @@ impl Transpiler {
             ExprKind::Literal(Literal::String(_)) => true,
             // String interpolation is definitely strings
             ExprKind::StringInterpolation { .. } => true,
+            // Binary expressions with + that involve strings are string concatenations
+            ExprKind::Binary { op: BinaryOp::Add, left, right } => {
+                Self::is_definitely_string(left) || Self::is_definitely_string(right)
+            },
+            // Method calls on strings that return strings
+            ExprKind::MethodCall { receiver, method, .. } => {
+                matches!(method.as_str(), "to_string" | "trim" | "to_uppercase" | "to_lowercase") ||
+                Self::is_definitely_string(receiver)
+            },
             // Variables could be strings, but we can't be sure without type info
             // For now, be conservative and don't assume variables are strings
             ExprKind::Identifier(_) => false,
@@ -561,8 +570,8 @@ impl Transpiler {
         let left_tokens = self.transpile_expr(left)?;
         let right_tokens = self.transpile_expr(right)?;
         
-        // Use format! with proper string conversion to handle String/&str types
-        // This ensures both operands are converted to appropriate types for formatting
+        // Use format! with proper string handling - convert both to strings to avoid type mismatches
+        // This avoids the String + String issue in Rust by using format! exclusively
         Ok(quote! { format!("{}{}", #left_tokens, #right_tokens) })
     }
 }

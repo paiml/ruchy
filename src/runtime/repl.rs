@@ -297,6 +297,9 @@ impl RuchyCompleter {
             "Some".to_string(),
             "None".to_string(),
             "Option".to_string(),
+            "Ok".to_string(),
+            "Err".to_string(),
+            "Result".to_string(),
         ];
 
         // Create HashSets for O(1) lookups
@@ -4065,6 +4068,8 @@ impl Repl {
                 "args" => self.evaluate_args(args, deadline, depth),
                 "Some" => self.evaluate_some(args, deadline, depth),
                 "None" => self.evaluate_none(args, deadline, depth),
+                "Ok" => self.evaluate_ok(args, deadline, depth),
+                "Err" => self.evaluate_err(args, deadline, depth),
                 // Type conversion functions
                 "str" => self.evaluate_str_conversion(args, deadline, depth),
                 "int" => self.evaluate_int_conversion(args, deadline, depth),
@@ -4722,6 +4727,44 @@ impl Repl {
             enum_name: "Option".to_string(),
             variant_name: "None".to_string(),
             data: None,
+        })
+    }
+
+    /// Evaluate `Ok` constructor
+    fn evaluate_ok(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("Ok expects exactly 1 argument");
+        }
+
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        Ok(Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Ok".to_string(),
+            data: Some(vec![value]),
+        })
+    }
+
+    /// Evaluate `Err` constructor
+    fn evaluate_err(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("Err expects exactly 1 argument");
+        }
+
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        Ok(Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Err".to_string(),
+            data: Some(vec![value]),
         })
     }
 
