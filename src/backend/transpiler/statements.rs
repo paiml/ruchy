@@ -566,8 +566,8 @@ impl Transpiler {
             }
             
             // DataFrame operations that should be chained
-            "select" | "groupby" | "agg" | "sort" | "join" | "mean" | "std" | "min"
-            | "max" | "sum" | "count" | "unique" | "drop_nulls" | "fill_null" | "pivot"
+            "select" | "groupby" | "agg" | "sort" | "mean" | "std" | "min"
+            | "max" | "sum" | "count" | "drop_nulls" | "fill_null" | "pivot"
             | "melt" | "head" | "tail" | "sample" | "describe" => {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
@@ -587,6 +587,65 @@ impl Transpiler {
                 Ok(quote! { #obj_tokens.#rust_method(#(#arg_tokens),*) })
             }
             
+            // New collection methods
+            "slice" => {
+                // vec.slice(start, end) -> vec[start..end].to_vec()
+                if arg_tokens.len() != 2 {
+                    bail!("slice requires exactly 2 arguments");
+                }
+                let start = &arg_tokens[0];
+                let end = &arg_tokens[1];
+                Ok(quote! { #obj_tokens[#start as usize..#end as usize].to_vec() })
+            }
+            "concat" => {
+                // vec.concat(other) -> [vec, other].concat()
+                if arg_tokens.len() != 1 {
+                    bail!("concat requires exactly 1 argument");
+                }
+                let other = &arg_tokens[0];
+                Ok(quote! { [#obj_tokens, #other].concat() })
+            }
+            "flatten" => {
+                // vec.flatten() -> vec.into_iter().flatten().collect()
+                if !arg_tokens.is_empty() {
+                    bail!("flatten requires no arguments");
+                }
+                Ok(quote! { #obj_tokens.into_iter().flatten().collect::<Vec<_>>() })
+            }
+            "unique" => {
+                // vec.unique() -> vec.into_iter().collect::<HashSet<_>>().into_iter().collect()
+                if !arg_tokens.is_empty() {
+                    bail!("unique requires no arguments");
+                }
+                Ok(quote! { 
+                    {
+                        use std::collections::HashSet;
+                        #obj_tokens.into_iter().collect::<HashSet<_>>().into_iter().collect::<Vec<_>>()
+                    }
+                })
+            }
+            "join" => {
+                // vec.join(separator) -> vec.join(separator) (for Vec<String>)
+                if arg_tokens.len() != 1 {
+                    bail!("join requires exactly 1 argument");
+                }
+                let separator = &arg_tokens[0];
+                Ok(quote! { #obj_tokens.join(&#separator) })
+            }
+            "substring" => {
+                // string.substring(start, end) -> string.chars().skip(start).take(end-start).collect()
+                if arg_tokens.len() != 2 {
+                    bail!("substring requires exactly 2 arguments");
+                }
+                let start = &arg_tokens[0];
+                let end = &arg_tokens[1];
+                Ok(quote! { 
+                    #obj_tokens.chars()
+                        .skip(#start as usize)
+                        .take((#end as usize).saturating_sub(#start as usize))
+                        .collect::<String>()
+                })
+            }
             _ => {
                 // Regular method call
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })

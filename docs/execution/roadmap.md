@@ -151,11 +151,11 @@ fn apply(f: impl Fn(i32) -> i32, x: String) { f(x) }  // Works perfectly!
 - [x] **STDLIB-002**: ✅ Advanced Math Functions - Impact: Data science examples - COMPLETED
   - Added sin(), cos(), tan(), log(), log10(), random()
   - Mapped to Rust std math library
-- [ ] **STDLIB-003**: Collection Methods - Impact: ~30+ examples
-  - Implement slice(), concat(), flatten(), unique(), join()
-  - Custom transpiler implementations needed
-- [ ] **STDLIB-004**: String substring() Method - Impact: Text processing
-  - Add substring(start, end) with UTF-8 support
+- [x] **STDLIB-003**: ✅ Collection Methods - Impact: ~30+ examples - COMPLETED
+  - Implemented slice(), concat(), flatten(), unique(), join()
+  - Custom transpiler implementations working
+- [x] **STDLIB-004**: ✅ String substring() Method - Impact: Text processing - COMPLETED
+  - Added substring(start, end) with UTF-8 support
 - [ ] **STDLIB-005**: HashSet Operations - Impact: Set theory examples
   - Add union(), intersection(), difference()
 - [ ] **STDLIB-006**: File I/O Operations - Impact: Real-world scripts

@@ -1121,6 +1121,94 @@ impl Repl {
                     bail!("Remove index must be an integer");
                 }
             }
+            "slice" => {
+                if args.len() != 2 {
+                    bail!("slice requires exactly 2 arguments (start, end)");
+                }
+                let start_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let end_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                
+                if let (Value::Int(start), Value::Int(end)) = (start_val, end_val) {
+                    let start = start as usize;
+                    let end = end as usize;
+                    
+                    if start > items.len() || end > items.len() || start > end {
+                        Ok(Value::List(Vec::new())) // Return empty for out of bounds
+                    } else {
+                        Ok(Value::List(items[start..end].to_vec()))
+                    }
+                } else {
+                    bail!("slice arguments must be integers");
+                }
+            }
+            "concat" => {
+                if args.len() != 1 {
+                    bail!("concat requires exactly 1 argument");
+                }
+                let other_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                
+                if let Value::List(other_items) = other_val {
+                    let mut result = items;
+                    result.extend(other_items);
+                    Ok(Value::List(result))
+                } else {
+                    bail!("concat argument must be a list");
+                }
+            }
+            "flatten" => {
+                if !args.is_empty() {
+                    bail!("flatten requires no arguments");
+                }
+                let mut result = Vec::new();
+                for item in items {
+                    if let Value::List(inner_items) = item {
+                        result.extend(inner_items);
+                    } else {
+                        result.push(item);
+                    }
+                }
+                Ok(Value::List(result))
+            }
+            "unique" => {
+                if !args.is_empty() {
+                    bail!("unique requires no arguments");
+                }
+                use std::collections::HashSet;
+                let mut seen = HashSet::new();
+                let mut result = Vec::new();
+                
+                for item in items {
+                    // Use string representation for hashing since Value doesn't implement Hash
+                    let key = format!("{:?}", item);
+                    if seen.insert(key) {
+                        result.push(item);
+                    }
+                }
+                Ok(Value::List(result))
+            }
+            "join" => {
+                if args.len() != 1 {
+                    bail!("join requires exactly 1 argument (separator)");
+                }
+                let sep_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                
+                if let Value::String(separator) = sep_val {
+                    let strings: Result<Vec<String>, _> = items.iter().map(|item| {
+                        if let Value::String(s) = item {
+                            Ok(s.clone())
+                        } else {
+                            bail!("join requires a list of strings");
+                        }
+                    }).collect();
+                    
+                    match strings {
+                        Ok(string_vec) => Ok(Value::String(string_vec.join(&separator))),
+                        Err(e) => Err(e),
+                    }
+                } else {
+                    bail!("join separator must be a string");
+                }
+            }
             _ => bail!("Unknown list method: {}", method),
         }
     }
