@@ -344,7 +344,7 @@ pub fn handle_prove_command(
         
         // Parse and extract proof goals from source
         let mut parser = RuchyParser::new(&source);
-        let _ast = parser.parse()
+        let ast = parser.parse()
             .with_context(|| format!("Failed to parse file: {}", file_path.display()))?;
         
         // Extract proof goals from AST (simplified for now)
@@ -355,7 +355,7 @@ pub fn handle_prove_command(
         // In check mode, verify proofs from AST
         if check {
             println!("✓ Checking proofs in {}...", file_path.display());
-            return verify_proofs_from_ast(&_ast, file_path, format, counterexample, verbose);
+            return verify_proofs_from_ast(&ast, file_path, format, counterexample, verbose);
         }
     }
     
@@ -823,7 +823,7 @@ fn handle_run_enhanced_tests(
     let mut test_files = Vec::new();
     
     if path.is_file() {
-        if path.extension().map_or(false, |ext| ext == "ruchy") {
+        if path.extension().is_some_and(|ext| ext == "ruchy") {
             test_files.push(path.to_path_buf());
         } else {
             return Err(anyhow::anyhow!("File {} is not a .ruchy file", path.display()));
@@ -831,7 +831,7 @@ fn handle_run_enhanced_tests(
     } else if path.is_dir() {
         for entry in WalkDir::new(path) {
             let entry = entry?;
-            if entry.path().extension().map_or(false, |ext| ext == "ruchy") {
+            if entry.path().extension().is_some_and(|ext| ext == "ruchy") {
                 // Apply filter if provided
                 if let Some(filter_pattern) = filter {
                     let file_name = entry.path().file_stem()

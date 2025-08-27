@@ -1743,7 +1743,23 @@ impl Repl {
         }
     }
 
-    /// Evaluate while loop (complexity: 8)
+    /// Evaluate while loop (complexity: 7)
+    /// 
+    /// While loops always return Unit, regardless of body expression.
+    /// 
+    /// # Example
+    /// ```
+    /// use ruchy::runtime::Repl;
+    /// let mut repl = Repl::new().unwrap();
+    /// 
+    /// // While loops return Unit, not the last body value
+    /// let result = repl.eval("let i = 0; while i < 3 { i = i + 1 }; i").unwrap();
+    /// assert_eq!(result.to_string(), "3"); // i is 3 after loop
+    /// 
+    /// // While loop doesn't return body value
+    /// let result = repl.eval("let i = 0; while i < 1 { i = i + 1; 42 }").unwrap();
+    /// assert_eq!(result.to_string(), "()"); // Returns Unit, not 42
+    /// ```
     fn evaluate_while_loop(
         &mut self,
         condition: &Expr,
@@ -1751,7 +1767,6 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        let mut result = Value::Unit;
         let max_iterations = 1000; // Prevent infinite loops in REPL
         let mut iterations = 0;
 
@@ -1767,15 +1782,16 @@ impl Repl {
             let cond_val = self.evaluate_expr(condition, deadline, depth + 1)?;
             match cond_val {
                 Value::Bool(true) => {
-                    result = self.evaluate_expr(body, deadline, depth + 1)?;
+                    // Execute body but don't save result - while loops return Unit
+                    self.evaluate_expr(body, deadline, depth + 1)?;
                     iterations += 1;
                 }
                 Value::Bool(false) => break,
                 _ => bail!("While condition must be boolean, got: {:?}", cond_val),
             }
         }
-
-        Ok(result)
+        // While loops always return Unit
+        Ok(Value::Unit)
     }
 
     /// Evaluate loop expression (complexity: 6)

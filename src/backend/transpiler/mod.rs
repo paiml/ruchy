@@ -326,6 +326,8 @@ impl Transpiler {
             ExprKind::Let { .. } | ExprKind::LetPattern { .. } => true,
             // Assignment operations are statements  
             ExprKind::Assign { .. } | ExprKind::CompoundAssign { .. } => true,
+            // Loops are statements (void/unit type)
+            ExprKind::While { .. } | ExprKind::For { .. } | ExprKind::Loop { .. } => true,
             // Function calls that don't return meaningful values (like println)
             ExprKind::Call { func, .. } => {
                 if let ExprKind::Identifier(name) = &func.kind {
