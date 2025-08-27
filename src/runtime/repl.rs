@@ -285,8 +285,18 @@ impl RuchyCompleter {
             "uncurry".to_string(),
             "read_file".to_string(),
             "write_file".to_string(),
+            "append_file".to_string(),
+            "file_exists".to_string(),
+            "delete_file".to_string(),
+            "current_dir".to_string(),
+            "env".to_string(),
+            "set_env".to_string(),
+            "args".to_string(),
             "HashMap".to_string(),
             "HashSet".to_string(),
+            "Some".to_string(),
+            "None".to_string(),
+            "Option".to_string(),
         ];
 
         // Create HashSets for O(1) lookups
@@ -613,6 +623,8 @@ impl MemoryTracker {
 pub struct Repl {
     /// History of successfully parsed expressions
     history: Vec<String>,
+    /// History of evaluation results (for _ and _n variables)
+    result_history: Vec<Value>,
     /// Accumulated definitions for the session
     definitions: Vec<String>,
     /// Bindings and their types/values
@@ -668,6 +680,7 @@ impl Repl {
 
         let mut repl = Self {
             history: Vec::new(),
+            result_history: Vec::new(),
             definitions: Vec::new(),
             bindings: HashMap::new(),
             impl_methods: HashMap::new(),
@@ -758,6 +771,12 @@ impl Repl {
         // Track input memory
         self.memory.try_alloc(input.len())?;
 
+        // Check for magic commands
+        let trimmed = input.trim();
+        if trimmed.starts_with('%') {
+            return self.handle_magic_command(trimmed);
+        }
+
         // Set evaluation deadline
         let deadline = Instant::now() + self.config.timeout;
 
@@ -773,6 +792,10 @@ impl Repl {
 
         // Store successful evaluation
         self.history.push(input.to_string());
+        self.result_history.push(value.clone());
+
+        // Update history variables
+        self.update_history_variables();
 
         // Let bindings are handled in evaluate_expr, no need to duplicate here
 
@@ -4033,6 +4056,15 @@ impl Repl {
                 "uncurry" => self.evaluate_uncurry(args, deadline, depth),
                 "read_file" => self.evaluate_read_file(args, deadline, depth),
                 "write_file" => self.evaluate_write_file(args, deadline, depth),
+                "append_file" => self.evaluate_append_file(args, deadline, depth),
+                "file_exists" => self.evaluate_file_exists(args, deadline, depth),
+                "delete_file" => self.evaluate_delete_file(args, deadline, depth),
+                "current_dir" => self.evaluate_current_dir(args, deadline, depth),
+                "env" => self.evaluate_env(args, deadline, depth),
+                "set_env" => self.evaluate_set_env(args, deadline, depth),
+                "args" => self.evaluate_args(args, deadline, depth),
+                "Some" => self.evaluate_some(args, deadline, depth),
+                "None" => self.evaluate_none(args, deadline, depth),
                 // Type conversion functions
                 "str" => self.evaluate_str_conversion(args, deadline, depth),
                 "int" => self.evaluate_int_conversion(args, deadline, depth),
@@ -4490,6 +4522,315 @@ impl Repl {
                 Ok(Value::Unit)
             }
             Err(e) => bail!("Failed to write file '{}': {}", filename, e),
+        }
+    }
+
+    /// Evaluate `append_file` function
+    fn evaluate_append_file(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 2 {
+            bail!("append_file expects exactly 2 arguments (filename, content)");
+        }
+
+        let filename_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let Value::String(filename) = filename_val else {
+            bail!("append_file expects a string filename")
+        };
+
+        let content_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let content = if let Value::String(s) = content_val {
+            s
+        } else {
+            content_val.to_string()
+        };
+
+        match std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&filename)
+        {
+            Ok(mut file) => {
+                use std::io::Write;
+                match file.write_all(content.as_bytes()) {
+                    Ok(()) => Ok(Value::Unit),
+                    Err(e) => bail!("Failed to append to file '{}': {}", filename, e),
+                }
+            }
+            Err(e) => bail!("Failed to open file '{}' for append: {}", filename, e),
+        }
+    }
+
+    /// Evaluate `file_exists` function
+    fn evaluate_file_exists(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("file_exists expects exactly 1 argument (filename)");
+        }
+
+        let filename_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let Value::String(filename) = filename_val else {
+            bail!("file_exists expects a string filename")
+        };
+
+        let exists = std::path::Path::new(&filename).exists();
+        Ok(Value::Bool(exists))
+    }
+
+    /// Evaluate `delete_file` function
+    fn evaluate_delete_file(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("delete_file expects exactly 1 argument (filename)");
+        }
+
+        let filename_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let Value::String(filename) = filename_val else {
+            bail!("delete_file expects a string filename")
+        };
+
+        match std::fs::remove_file(&filename) {
+            Ok(()) => Ok(Value::Unit),
+            Err(e) => bail!("Failed to delete file '{}': {}", filename, e),
+        }
+    }
+
+    /// Evaluate `current_dir` function
+    fn evaluate_current_dir(
+        &mut self,
+        args: &[Expr],
+        _deadline: Instant,
+        _depth: usize,
+    ) -> Result<Value> {
+        if !args.is_empty() {
+            bail!("current_dir expects no arguments");
+        }
+
+        match std::env::current_dir() {
+            Ok(path) => Ok(Value::String(path.to_string_lossy().to_string())),
+            Err(e) => bail!("Failed to get current directory: {}", e),
+        }
+    }
+
+    /// Evaluate `env` function
+    fn evaluate_env(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("env expects exactly 1 argument (variable name)");
+        }
+
+        let var_name_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let Value::String(var_name) = var_name_val else {
+            bail!("env expects a string variable name")
+        };
+
+        match std::env::var(&var_name) {
+            Ok(value) => Ok(Value::String(value)),
+            Err(_) => Ok(Value::String(String::new())), // Return empty string for non-existent vars
+        }
+    }
+
+    /// Evaluate `set_env` function
+    fn evaluate_set_env(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 2 {
+            bail!("set_env expects exactly 2 arguments (variable name, value)");
+        }
+
+        let var_name_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let Value::String(var_name) = var_name_val else {
+            bail!("set_env expects a string variable name")
+        };
+
+        let value_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let value = if let Value::String(s) = value_val {
+            s
+        } else {
+            value_val.to_string()
+        };
+
+        std::env::set_var(var_name, value);
+        Ok(Value::Unit)
+    }
+
+    /// Evaluate `args` function
+    fn evaluate_args(
+        &mut self,
+        args: &[Expr],
+        _deadline: Instant,
+        _depth: usize,
+    ) -> Result<Value> {
+        if !args.is_empty() {
+            bail!("args expects no arguments");
+        }
+
+        let args_vec = std::env::args().collect::<Vec<String>>();
+        let values: Vec<Value> = args_vec.into_iter().map(Value::String).collect();
+        Ok(Value::List(values))
+    }
+
+    /// Evaluate `Some` constructor
+    fn evaluate_some(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("Some expects exactly 1 argument");
+        }
+
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        Ok(Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![value]),
+        })
+    }
+
+    /// Evaluate `None` constructor
+    fn evaluate_none(
+        &mut self,
+        args: &[Expr],
+        _deadline: Instant,
+        _depth: usize,
+    ) -> Result<Value> {
+        if !args.is_empty() {
+            bail!("None expects no arguments");
+        }
+
+        Ok(Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        })
+    }
+
+    /// Update history variables (_ and _n)
+    fn update_history_variables(&mut self) {
+        let len = self.result_history.len();
+        if len == 0 {
+            return;
+        }
+
+        // Set _ to the most recent result
+        let last_result = self.result_history[len - 1].clone();
+        self.bindings.insert("_".to_string(), last_result);
+
+        // Set _n variables for indexed access
+        for (i, result) in self.result_history.iter().enumerate() {
+            let var_name = format!("_{}", i + 1);
+            self.bindings.insert(var_name, result.clone());
+        }
+    }
+
+    /// Handle REPL magic commands
+    fn handle_magic_command(&mut self, command: &str) -> Result<String> {
+        let parts: Vec<&str> = command.splitn(2, ' ').collect();
+        let magic_cmd = parts[0];
+        let args = if parts.len() > 1 { parts[1] } else { "" };
+
+        match magic_cmd {
+            "%time" => {
+                if args.is_empty() {
+                    return Ok("Usage: %time <expression>".to_string());
+                }
+                
+                let start = std::time::Instant::now();
+                let result = self.eval(args)?;
+                let elapsed = start.elapsed();
+                
+                Ok(format!("{}\nExecuted in: {:?}", result, elapsed))
+            }
+            
+            "%timeit" => {
+                if args.is_empty() {
+                    return Ok("Usage: %timeit <expression>".to_string());
+                }
+                
+                const ITERATIONS: usize = 1000;
+                let mut total_time = std::time::Duration::new(0, 0);
+                let mut last_result = String::new();
+                
+                for _ in 0..ITERATIONS {
+                    let start = std::time::Instant::now();
+                    last_result = self.eval(args)?;
+                    total_time += start.elapsed();
+                }
+                
+                let avg_time = total_time / ITERATIONS as u32;
+                Ok(format!(
+                    "{}\n{} loops, average: {:?} per loop", 
+                    last_result, ITERATIONS, avg_time
+                ))
+            }
+            
+            "%run" => {
+                if args.is_empty() {
+                    return Ok("Usage: %run <script.ruchy>".to_string());
+                }
+                
+                match std::fs::read_to_string(args) {
+                    Ok(content) => {
+                        let lines: Vec<&str> = content.lines().collect();
+                        let mut results = Vec::new();
+                        
+                        for line in lines {
+                            let trimmed = line.trim();
+                            if !trimmed.is_empty() && !trimmed.starts_with("//") {
+                                match self.eval(trimmed) {
+                                    Ok(result) => results.push(result),
+                                    Err(e) => return Err(e.context(format!("Error executing: {}", trimmed))),
+                                }
+                            }
+                        }
+                        
+                        Ok(results.join("\n"))
+                    }
+                    Err(e) => Ok(format!("Failed to read file '{}': {}", args, e))
+                }
+            }
+            
+            "%debug" => {
+                Ok("Debug mode not yet implemented".to_string())
+            }
+            
+            "%profile" => {
+                Ok("Profiling not yet implemented".to_string())
+            }
+            
+            "%help" => {
+                Ok(r#"Available magic commands:
+%time <expr>     - Time a single execution
+%timeit <expr>   - Time multiple executions (benchmark)
+%run <file>      - Execute a .ruchy script file
+%debug           - Enable post-mortem debugging (TODO)
+%profile <expr>  - Generate execution profile (TODO)
+%help            - Show this help message"#.to_string())
+            }
+            
+            _ => {
+                Ok(format!("Unknown magic command: {}. Type %help for available commands.", magic_cmd))
+            }
         }
     }
 
