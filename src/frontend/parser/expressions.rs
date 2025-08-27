@@ -829,6 +829,12 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     if let Some(expr) = parse_identifier_prefix(state, token_clone.clone(), span_clone)? {
         return Ok(expr);
     }
+    
+    // Handle underscore token as identifier
+    if matches!(token_clone, Token::Underscore) {
+        state.tokens.advance();
+        return Ok(Expr::new(ExprKind::Identifier("_".to_string()), span_clone));
+    }
 
     // Try control flow/declaration parsing
     if let Some(expr) = parse_control_flow_prefix(state, token_clone.clone(), span_clone)? {
