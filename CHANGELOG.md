@@ -23,7 +23,10 @@ All notable changes to the Ruchy programming language will be documented in this
   - substring(start, end) extracts character ranges
   - Proper Unicode handling with char boundaries
   - Already existed, verified working in both modes
-- **[STDLIB-005] PENDING**: HashSet operations (union, intersection, difference)
+- **[STDLIB-005] ✅ COMPLETED**: HashSet operations (union, intersection, difference)
+  - Set theory operations: union(), intersection(), difference()
+  - Transpiler maps to Rust std HashSet iterator methods with collection
+  - REPL and transpiler modes both working
 - **[STDLIB-006] PENDING**: File I/O operations (append, exists, delete)
 - **[STDLIB-007] PENDING**: Process/Environment functions
 

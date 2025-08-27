@@ -1623,6 +1623,42 @@ impl Repl {
                 set.clear();
                 Ok(Value::HashSet(set))
             }
+            "union" => {
+                if args.len() != 1 {
+                    bail!("union requires exactly 1 argument (other set)");
+                }
+                let other_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                if let Value::HashSet(other_set) = other_val {
+                    let union_set = set.union(&other_set).cloned().collect();
+                    Ok(Value::HashSet(union_set))
+                } else {
+                    bail!("union argument must be a HashSet");
+                }
+            }
+            "intersection" => {
+                if args.len() != 1 {
+                    bail!("intersection requires exactly 1 argument (other set)");
+                }
+                let other_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                if let Value::HashSet(other_set) = other_val {
+                    let intersection_set = set.intersection(&other_set).cloned().collect();
+                    Ok(Value::HashSet(intersection_set))
+                } else {
+                    bail!("intersection argument must be a HashSet");
+                }
+            }
+            "difference" => {
+                if args.len() != 1 {
+                    bail!("difference requires exactly 1 argument (other set)");
+                }
+                let other_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                if let Value::HashSet(other_set) = other_val {
+                    let difference_set = set.difference(&other_set).cloned().collect();
+                    Ok(Value::HashSet(difference_set))
+                } else {
+                    bail!("difference argument must be a HashSet");
+                }
+            }
             _ => bail!("Unknown HashSet method: {}", method),
         }
     }

@@ -156,8 +156,8 @@ fn apply(f: impl Fn(i32) -> i32, x: String) { f(x) }  // Works perfectly!
   - Custom transpiler implementations working
 - [x] **STDLIB-004**: ✅ String substring() Method - Impact: Text processing - COMPLETED
   - Added substring(start, end) with UTF-8 support
-- [ ] **STDLIB-005**: HashSet Operations - Impact: Set theory examples
-  - Add union(), intersection(), difference()
+- [x] **STDLIB-005**: ✅ HashSet Operations - Impact: Set theory examples - COMPLETED
+  - Added union(), intersection(), difference()
 - [ ] **STDLIB-006**: File I/O Operations - Impact: Real-world scripts
   - Implement append_file(), file_exists(), delete_file()
 - [ ] **STDLIB-007**: Process/Environment Functions - Impact: System scripts
