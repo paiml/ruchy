@@ -1,0 +1,56 @@
+// Test file for VS Code extension
+fn main() {
+    // Variables and types
+    let name = "Ruchy"
+    let version = 1.20
+    let features = ["quality", "testing", "linting", "proving"]
+    
+    // String interpolation
+    println(f"Welcome to {name} v{version}!")
+    
+    // Control flow
+    if version >= 1.20 {
+        println("Quality tools enabled!")
+    }
+    
+    // Iteration
+    for feature in features {
+        println(f"Feature: {feature}")
+    }
+    
+    // Pattern matching
+    match features[0] {
+        "quality" => println("Quality-first development"),
+        _ => println("Unknown feature")
+    }
+    
+    // Function call
+    let result = calculate(10, 20)
+    println(f"Result: {result}")
+}
+
+fn calculate(a: i32, b: i32) -> i32 {
+    a + b * 2
+}
+
+// Struct definition
+struct QualityReport {
+    score: f64,
+    grade: String,
+    issues: Vec<String>
+}
+
+impl QualityReport {
+    fn new(score: f64) -> Self {
+        let grade = if score >= 0.9 { "A" } else { "B" }
+        QualityReport {
+            score: score,
+            grade: grade,
+            issues: vec![]
+        }
+    }
+    
+    fn is_passing(&self) -> bool {
+        self.score >= 0.7
+    }
+}
