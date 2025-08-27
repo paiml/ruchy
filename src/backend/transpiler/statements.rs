@@ -442,6 +442,10 @@ impl Transpiler {
                 return Ok(result);
             }
             
+            if let Some(result) = self.try_transpile_math_functions(base_name, args)? {
+                return Ok(result);
+            }
+            
             if let Some(result) = self.try_transpile_collection_constructor(base_name, args)? {
                 return Ok(result);
             }
@@ -1258,6 +1262,66 @@ impl Transpiler {
                         Ok(Some(quote! { (#value != 0) }))
                     }
                 }
+            }
+            _ => Ok(None)
+        }
+    }
+    
+    /// Try to transpile advanced math functions (sin, cos, tan, log, log10, random)
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// # use ruchy::backend::transpiler::Transpiler;
+    /// let transpiler = Transpiler::new();
+    /// // sin(x) -> x.sin()
+    /// // cos(x) -> x.cos()
+    /// // log(x) -> x.ln()
+    /// // random() -> rand::random::<f64>()
+    /// ```
+    fn try_transpile_math_functions(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+        match base_name {
+            "sin" | "cos" | "tan" => {
+                if args.len() != 1 {
+                    bail!("{}() expects exactly 1 argument", base_name);
+                }
+                let value = self.transpile_expr(&args[0])?;
+                let method = proc_macro2::Ident::new(base_name, proc_macro2::Span::call_site());
+                Ok(Some(quote! { ((#value as f64).#method()) }))
+            }
+            "log" => {
+                if args.len() != 1 {
+                    bail!("log() expects exactly 1 argument");
+                }
+                let value = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! { ((#value as f64).ln()) }))
+            }
+            "log10" => {
+                if args.len() != 1 {
+                    bail!("log10() expects exactly 1 argument");
+                }
+                let value = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! { ((#value as f64).log10()) }))
+            }
+            "random" => {
+                if !args.is_empty() {
+                    bail!("random() expects no arguments");
+                }
+                // Use a simple pseudo-random generator
+                Ok(Some(quote! {
+                    {
+                        use std::time::{SystemTime, UNIX_EPOCH};
+                        let seed = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_nanos() as u64;
+                        // Use a safe LCG that won't overflow
+                        let a = 1664525u64;
+                        let c = 1013904223u64;
+                        let m = 1u64 << 32;
+                        ((seed.wrapping_mul(a).wrapping_add(c)) % m) as f64 / m as f64
+                    }
+                }))
             }
             _ => Ok(None)
         }

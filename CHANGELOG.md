@@ -11,7 +11,10 @@ All notable changes to the Ruchy programming language will be documented in this
   - int() converts strings/floats/bools to integers
   - float() converts strings/integers to floating point
   - bool() converts values to boolean (0/empty = false, rest = true)
-- **[STDLIB-002] PENDING**: Advanced math functions (sin, cos, tan, log)
+- **[STDLIB-002] ✅ COMPLETED**: Advanced math functions (sin, cos, tan, log)
+  - Trigonometric functions: sin(), cos(), tan()  
+  - Logarithmic functions: log() (natural), log10() (base-10)
+  - random() function returning 0.0-1.0 values
 - **[STDLIB-003] PENDING**: Collection methods (slice, concat, flatten, unique)
 - **[STDLIB-004] PENDING**: String.substring() custom method
 - **[STDLIB-005] PENDING**: HashSet operations (union, intersection, difference)
