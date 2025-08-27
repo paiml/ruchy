@@ -3909,6 +3909,11 @@ impl Repl {
                 "uncurry" => self.evaluate_uncurry(args, deadline, depth),
                 "read_file" => self.evaluate_read_file(args, deadline, depth),
                 "write_file" => self.evaluate_write_file(args, deadline, depth),
+                // Type conversion functions
+                "str" => self.evaluate_str_conversion(args, deadline, depth),
+                "int" => self.evaluate_int_conversion(args, deadline, depth),
+                "float" => self.evaluate_float_conversion(args, deadline, depth),
+                "bool" => self.evaluate_bool_conversion(args, deadline, depth),
                 "HashMap" => {
                     if !args.is_empty() {
                         bail!("HashMap() constructor expects no arguments, got {}", args.len());
@@ -4354,6 +4359,97 @@ impl Repl {
                 Ok(Value::Unit)
             }
             Err(e) => bail!("Failed to write file '{}': {}", filename, e),
+        }
+    }
+
+    /// Evaluate `str` type conversion function
+    fn evaluate_str_conversion(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("str() expects exactly 1 argument");
+        }
+
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        Ok(Value::String(value.to_string()))
+    }
+
+    /// Evaluate `int` type conversion function
+    fn evaluate_int_conversion(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("int() expects exactly 1 argument");
+        }
+
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Int(n) => Ok(Value::Int(n)),
+            Value::Float(f) => Ok(Value::Int(f as i64)),
+            Value::Bool(b) => Ok(Value::Int(if b { 1 } else { 0 })),
+            Value::String(s) => {
+                match s.trim().parse::<i64>() {
+                    Ok(n) => Ok(Value::Int(n)),
+                    Err(_) => bail!("Cannot convert '{}' to integer", s),
+                }
+            }
+            _ => bail!("Cannot convert value to integer"),
+        }
+    }
+
+    /// Evaluate `float` type conversion function
+    fn evaluate_float_conversion(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("float() expects exactly 1 argument");
+        }
+
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Float(f) => Ok(Value::Float(f)),
+            Value::Int(n) => Ok(Value::Float(n as f64)),
+            Value::Bool(b) => Ok(Value::Float(if b { 1.0 } else { 0.0 })),
+            Value::String(s) => {
+                match s.trim().parse::<f64>() {
+                    Ok(f) => Ok(Value::Float(f)),
+                    Err(_) => bail!("Cannot convert '{}' to float", s),
+                }
+            }
+            _ => bail!("Cannot convert value to float"),
+        }
+    }
+
+    /// Evaluate `bool` type conversion function
+    fn evaluate_bool_conversion(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("bool() expects exactly 1 argument");
+        }
+
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Bool(b) => Ok(Value::Bool(b)),
+            Value::Int(n) => Ok(Value::Bool(n != 0)),
+            Value::Float(f) => Ok(Value::Bool(f != 0.0 && !f.is_nan())),
+            Value::String(s) => Ok(Value::Bool(!s.is_empty())),
+            Value::Unit => Ok(Value::Bool(false)),
+            Value::List(l) => Ok(Value::Bool(!l.is_empty())),
+            Value::Object(o) => Ok(Value::Bool(!o.is_empty())),
+            _ => Ok(Value::Bool(true)), // Most other values are truthy
         }
     }
 
