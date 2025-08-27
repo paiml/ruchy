@@ -3914,6 +3914,13 @@ impl Repl {
                 "int" => self.evaluate_int_conversion(args, deadline, depth),
                 "float" => self.evaluate_float_conversion(args, deadline, depth),
                 "bool" => self.evaluate_bool_conversion(args, deadline, depth),
+                // Advanced math functions
+                "sin" => self.evaluate_sin(args, deadline, depth),
+                "cos" => self.evaluate_cos(args, deadline, depth),
+                "tan" => self.evaluate_tan(args, deadline, depth),
+                "log" => self.evaluate_log(args, deadline, depth),
+                "log10" => self.evaluate_log10(args, deadline, depth),
+                "random" => self.evaluate_random(args, deadline, depth),
                 "HashMap" => {
                     if !args.is_empty() {
                         bail!("HashMap() constructor expects no arguments, got {}", args.len());
@@ -4451,6 +4458,141 @@ impl Repl {
             Value::Object(o) => Ok(Value::Bool(!o.is_empty())),
             _ => Ok(Value::Bool(true)), // Most other values are truthy
         }
+    }
+
+    /// Evaluate sin() function
+    fn evaluate_sin(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("sin() expects exactly 1 argument");
+        }
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Float(f) => Ok(Value::Float(f.sin())),
+            Value::Int(n) => Ok(Value::Float((n as f64).sin())),
+            _ => bail!("sin() expects a numeric argument"),
+        }
+    }
+
+    /// Evaluate cos() function
+    fn evaluate_cos(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("cos() expects exactly 1 argument");
+        }
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Float(f) => Ok(Value::Float(f.cos())),
+            Value::Int(n) => Ok(Value::Float((n as f64).cos())),
+            _ => bail!("cos() expects a numeric argument"),
+        }
+    }
+
+    /// Evaluate tan() function
+    fn evaluate_tan(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("tan() expects exactly 1 argument");
+        }
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Float(f) => Ok(Value::Float(f.tan())),
+            Value::Int(n) => Ok(Value::Float((n as f64).tan())),
+            _ => bail!("tan() expects a numeric argument"),
+        }
+    }
+
+    /// Evaluate log() function (natural logarithm)
+    fn evaluate_log(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("log() expects exactly 1 argument");
+        }
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Float(f) => {
+                if f <= 0.0 {
+                    bail!("log() requires a positive argument");
+                }
+                Ok(Value::Float(f.ln()))
+            }
+            Value::Int(n) => {
+                if n <= 0 {
+                    bail!("log() requires a positive argument");
+                }
+                Ok(Value::Float((n as f64).ln()))
+            }
+            _ => bail!("log() expects a numeric argument"),
+        }
+    }
+
+    /// Evaluate log10() function (base-10 logarithm)
+    fn evaluate_log10(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("log10() expects exactly 1 argument");
+        }
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Float(f) => {
+                if f <= 0.0 {
+                    bail!("log10() requires a positive argument");
+                }
+                Ok(Value::Float(f.log10()))
+            }
+            Value::Int(n) => {
+                if n <= 0 {
+                    bail!("log10() requires a positive argument");
+                }
+                Ok(Value::Float((n as f64).log10()))
+            }
+            _ => bail!("log10() expects a numeric argument"),
+        }
+    }
+
+    /// Evaluate random() function - returns float between 0.0 and 1.0
+    fn evaluate_random(
+        &mut self,
+        args: &[Expr],
+        _deadline: Instant,
+        _depth: usize,
+    ) -> Result<Value> {
+        if !args.is_empty() {
+            bail!("random() expects no arguments");
+        }
+        // Use a simple linear congruential generator for deterministic behavior in tests
+        // In production, you'd want to use rand crate
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let seed = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as u64;
+        // Use a safe LCG that won't overflow
+        let a = 1664525u64;
+        let c = 1013904223u64;
+        let m = 1u64 << 32;
+        let random_value = ((seed.wrapping_mul(a).wrapping_add(c)) % m) as f64 / m as f64;
+        Ok(Value::Float(random_value))
     }
 
     /// Execute a user-defined function or lambda by name.

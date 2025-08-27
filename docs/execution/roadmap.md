@@ -148,9 +148,9 @@ fn apply(f: impl Fn(i32) -> i32, x: String) { f(x) }  // Works perfectly!
 - [x] **STDLIB-001**: ✅ Type Conversion Functions - Impact: ~50+ book examples - COMPLETED
   - Implemented str(), int(), float(), bool() for transpiler
   - Dual-mode implementation: REPL + transpiler support
-- [ ] **STDLIB-002**: Advanced Math Functions - Impact: Data science examples
-  - Add sin(), cos(), tan(), log(), log10(), random()
-  - Map to Rust std math library
+- [x] **STDLIB-002**: ✅ Advanced Math Functions - Impact: Data science examples - COMPLETED
+  - Added sin(), cos(), tan(), log(), log10(), random()
+  - Mapped to Rust std math library
 - [ ] **STDLIB-003**: Collection Methods - Impact: ~30+ examples
   - Implement slice(), concat(), flatten(), unique(), join()
   - Custom transpiler implementations needed
