@@ -15,8 +15,14 @@ All notable changes to the Ruchy programming language will be documented in this
   - Trigonometric functions: sin(), cos(), tan()  
   - Logarithmic functions: log() (natural), log10() (base-10)
   - random() function returning 0.0-1.0 values
-- **[STDLIB-003] PENDING**: Collection methods (slice, concat, flatten, unique)
-- **[STDLIB-004] PENDING**: String.substring() custom method
+- **[STDLIB-003] ✅ COMPLETED**: Collection methods (slice, concat, flatten, unique)
+  - Array methods: slice(start,end), concat(other), flatten(), unique()
+  - String array method: join(separator) for Vec<String>
+  - All methods work in both REPL and transpiled modes
+- **[STDLIB-004] ✅ COMPLETED**: String.substring() custom method
+  - substring(start, end) extracts character ranges
+  - Proper Unicode handling with char boundaries
+  - Already existed, verified working in both modes
 - **[STDLIB-005] PENDING**: HashSet operations (union, intersection, difference)
 - **[STDLIB-006] PENDING**: File I/O operations (append, exists, delete)
 - **[STDLIB-007] PENDING**: Process/Environment functions
