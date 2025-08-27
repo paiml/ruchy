@@ -1,301 +1,262 @@
-//! Enhanced error diagnostics with helpful messages
-//!
-//! This module provides user-friendly error messages with context,
-//! suggestions, and code snippets similar to Rust and Elm compilers.
+//! Enhanced error diagnostics with source code display and suggestions
 
+use crate::frontend::error_recovery::{ParseError, ErrorSeverity};
 use crate::frontend::ast::Span;
-use colored::Colorize;
 use std::fmt;
 
-/// Error severity levels
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Severity {
-    Error,
-    Warning,
-    Info,
-    Hint,
-}
-
-impl fmt::Display for Severity {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Severity::Error => write!(f, "{}", "error".red().bold()),
-            Severity::Warning => write!(f, "{}", "warning".yellow().bold()),
-            Severity::Info => write!(f, "{}", "info".blue().bold()),
-            Severity::Hint => write!(f, "{}", "hint".green()),
-        }
-    }
-}
-
-/// A diagnostic message with context
+/// Enhanced diagnostic information with source context
+#[derive(Debug, Clone)]
 pub struct Diagnostic {
-    /// Severity of the diagnostic
-    pub severity: Severity,
-    /// Primary error message
+    pub error: ParseError,
+    pub source_code: String,
+    pub filename: Option<String>,
+    pub suggestions: Vec<Suggestion>,
+}
+
+/// A suggestion for fixing an error
+#[derive(Debug, Clone)]
+pub struct Suggestion {
     pub message: String,
-    /// Source code that caused the error
-    pub source: String,
-    /// Span in the source where error occurred
+    pub replacement: Option<String>,
     pub span: Span,
-    /// Optional error code (e.g., E0001)
-    pub code: Option<String>,
-    /// Helpful suggestion to fix the error
-    pub suggestion: Option<String>,
-    /// Additional notes
-    pub notes: Vec<String>,
 }
 
 impl Diagnostic {
-    /// Create a new error diagnostic
-    pub fn error(message: impl Into<String>) -> Self {
-        Diagnostic {
-            severity: Severity::Error,
-            message: message.into(),
-            source: String::new(),
-            span: Span { start: 0, end: 0 },
-            code: None,
-            suggestion: None,
-            notes: Vec::new(),
+    pub fn new(error: ParseError, source_code: String) -> Self {
+        Self {
+            error,
+            source_code,
+            filename: None,
+            suggestions: Vec::new(),
         }
     }
 
-    /// Create a new warning diagnostic
-    pub fn warning(message: impl Into<String>) -> Self {
-        Diagnostic {
-            severity: Severity::Warning,
-            message: message.into(),
-            source: String::new(),
-            span: Span { start: 0, end: 0 },
-            code: None,
-            suggestion: None,
-            notes: Vec::new(),
-        }
-    }
-
-    /// Set the source code
-    #[must_use]
-    pub fn with_source(mut self, source: impl Into<String>) -> Self {
-        self.source = source.into();
+    pub fn with_filename(mut self, filename: String) -> Self {
+        self.filename = Some(filename);
         self
     }
 
-    /// Set the span
-    #[must_use]
-    pub fn with_span(mut self, span: Span) -> Self {
-        self.span = span;
-        self
+    pub fn add_suggestion(&mut self, suggestion: Suggestion) {
+        self.suggestions.push(suggestion);
     }
 
-    /// Add an error code
-    #[must_use]
-    pub fn with_code(mut self, code: impl Into<String>) -> Self {
-        self.code = Some(code.into());
-        self
-    }
-
-    /// Add a suggestion
-    #[must_use]
-    pub fn with_suggestion(mut self, suggestion: impl Into<String>) -> Self {
-        self.suggestion = Some(suggestion.into());
-        self
-    }
-
-    /// Add a note
-    #[must_use]
-    pub fn add_note(mut self, note: impl Into<String>) -> Self {
-        self.notes.push(note.into());
-        self
-    }
-
-    /// Render the diagnostic as a formatted string
-    pub fn render(&self) -> String {
-        use std::fmt::Write;
-        let mut output = String::new();
-
-        // Error code and message
-        if let Some(code) = &self.code {
-            let _ = writeln!(output, "{} [{}]: {}", self.severity, code, self.message);
-        } else {
-            let _ = writeln!(output, "{}: {}", self.severity, self.message);
-        }
-
-        // Source context with line numbers
-        if !self.source.is_empty() && self.span.end > self.span.start {
-            output.push_str(&self.render_source_context());
-        }
-
-        // Suggestion
-        if let Some(suggestion) = &self.suggestion {
-            let _ = writeln!(output, "\n{}: {}", "help".green().bold(), suggestion);
-        }
-
-        // Notes
-        for note in &self.notes {
-            let _ = writeln!(output, "{}: {}", "note".blue(), note);
-        }
-
-        output
-    }
-
-    /// Render the source code context with error highlighting
-    fn render_source_context(&self) -> String {
-        use std::fmt::Write;
-        let mut output = String::new();
-
-        // Find the line containing the error
-        let lines: Vec<&str> = self.source.lines().collect();
+    /// Extract the relevant source lines with context
+    fn get_source_context(&self) -> (Vec<String>, usize, usize, usize) {
+        let lines: Vec<String> = self.source_code.lines().map(|s| s.to_string()).collect();
+        
+        // Find line and column from byte offset
         let mut current_pos = 0;
-        let mut error_line = 0;
-        let mut error_col = 0;
-
+        let mut line_num = 0;
+        let mut col_start = 0;
+        
         for (i, line) in lines.iter().enumerate() {
-            let line_start = current_pos;
-            let line_end = current_pos + line.len();
-
-            if self.span.start >= line_start && self.span.start <= line_end {
-                error_line = i;
-                error_col = self.span.start - line_start;
+            let line_len = line.len() + 1; // +1 for newline
+            if current_pos + line_len > self.error.span.start {
+                line_num = i;
+                col_start = self.error.span.start - current_pos;
                 break;
             }
-
-            current_pos = line_end + 1; // +1 for newline
+            current_pos += line_len;
         }
+        
+        // Calculate error span width
+        let col_end = col_start + (self.error.span.end - self.error.span.start);
+        
+        // Get context lines (2 before, 2 after)
+        let context_start = line_num.saturating_sub(2);
+        let context_end = (line_num + 3).min(lines.len());
+        let context_lines = lines[context_start..context_end].to_vec();
+        
+        (context_lines, line_num - context_start, col_start, col_end)
+    }
 
-        // Show context (line before, error line, line after)
-        let start_line = error_line.saturating_sub(1);
-        let end_line = (error_line + 2).min(lines.len());
-
-        let _ = writeln!(output, "\n{}:", " --> source".blue());
-
-        for (i, line) in lines
-            .iter()
-            .enumerate()
-            .skip(start_line)
-            .take(end_line - start_line)
-        {
-            let line_num = i + 1;
-
+    /// Generate colored output for terminal display
+    pub fn format_colored(&self) -> String {
+        let mut output = String::new();
+        
+        // Header with severity and location
+        let severity_color = match self.error.severity {
+            ErrorSeverity::Error => "\x1b[31m",   // Red
+            ErrorSeverity::Warning => "\x1b[33m", // Yellow
+            ErrorSeverity::Info => "\x1b[34m",    // Blue
+            ErrorSeverity::Hint => "\x1b[36m",    // Cyan
+        };
+        let reset = "\x1b[0m";
+        let bold = "\x1b[1m";
+        
+        // File and location header
+        if let Some(ref filename) = self.filename {
+            output.push_str(&format!(
+                "{bold}{severity_color}error[{:?}]{reset}: {}\n",
+                self.error.error_code,
+                self.error.message
+            ));
+            output.push_str(&format!(
+                "  {bold}-->{reset} {}:{}:{}\n",
+                filename,
+                self.error.span.start / 100 + 1, // Rough line estimate
+                self.error.span.start % 100 + 1  // Rough column estimate
+            ));
+        } else {
+            output.push_str(&format!(
+                "{bold}{severity_color}error[{:?}]{reset}: {}\n",
+                self.error.error_code,
+                self.error.message
+            ));
+        }
+        
+        // Source code context with error highlighting
+        let (context_lines, error_line_idx, col_start, col_end) = self.get_source_context();
+        let line_num_start = (self.error.span.start / 100 + 1).saturating_sub(error_line_idx);
+        
+        for (i, line) in context_lines.iter().enumerate() {
+            let line_num = line_num_start + i;
+            let is_error_line = i == error_line_idx;
+            
             // Line number and content
-            let _ = writeln!(output, "{line_num:4} | {line}");
-
-            // Error underline
-            if i == error_line {
-                let underline_start = error_col;
-                let underline_end = (error_col + (self.span.end - self.span.start)).min(line.len());
-                let padding = " ".repeat(6 + underline_start);
-                let underline = "^".repeat(underline_end - underline_start).red().bold();
-                let _ = writeln!(output, "{padding}{underline}");
+            if is_error_line {
+                output.push_str(&format!(
+                    "{bold}{:4} |{reset} {}\n",
+                    line_num, line
+                ));
+                
+                // Error underline
+                output.push_str(&format!(
+                    "     {} {}{}{}\n",
+                    "|",
+                    " ".repeat(col_start),
+                    severity_color,
+                    "^".repeat((col_end - col_start).max(1))
+                ));
+                
+                // Error message under the line
+                if let Some(ref hint) = self.error.recovery_hint {
+                    output.push_str(&format!(
+                        "     {} {}{}{reset} {}\n",
+                        "|",
+                        " ".repeat(col_start),
+                        severity_color,
+                        hint
+                    ));
+                }
+            } else {
+                output.push_str(&format!("{:4} | {}\n", line_num, line));
             }
         }
-
+        
+        // Suggestions
+        if !self.suggestions.is_empty() {
+            output.push_str(&format!("\n{bold}help{reset}: "));
+            for suggestion in &self.suggestions {
+                output.push_str(&format!("{}\n", suggestion.message));
+                if let Some(ref replacement) = suggestion.replacement {
+                    output.push_str(&format!("      suggested fix: `{}`\n", replacement));
+                }
+            }
+        }
+        
+        output.push_str(reset);
         output
     }
 }
 
 impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.render())
+        write!(f, "{}", self.format_colored())
     }
 }
 
-/// Common error messages with helpful suggestions
-pub struct DiagnosticBuilder;
-
-impl DiagnosticBuilder {
-    /// Unexpected token error
-    pub fn unexpected_token(token: &str, expected: &str, source: &str, span: Span) -> Diagnostic {
-        Diagnostic::error(format!("unexpected token `{token}`"))
-            .with_source(source)
-            .with_span(span)
-            .with_code("E0001")
-            .with_suggestion(format!("expected {expected}"))
+/// Common error patterns and their suggestions
+pub fn suggest_for_error(error: &ParseError) -> Vec<Suggestion> {
+    let mut suggestions = Vec::new();
+    
+    // Common typo suggestions
+    if error.message.contains("unexpected") {
+        if let Some(ref _found) = error.found {
+            // Token-specific suggestions would go here
+            suggestions.push(Suggestion {
+                message: "Check for typos or missing operators".to_string(),
+                replacement: None,
+                span: error.span.clone(),
+            });
+        }
     }
-
-    /// Unknown variable error
-    pub fn unknown_variable(name: &str, source: &str, span: Span) -> Diagnostic {
-        Diagnostic::error(format!("unknown variable `{name}`"))
-            .with_source(source)
-            .with_span(span)
-            .with_code("E0002")
-            .with_suggestion(format!(
-                "did you mean to define it with `let {name} = ...`?"
-            ))
-            .add_note("variables must be defined before use")
+    
+    // Missing semicolon suggestion
+    if error.message.contains("expected") && error.message.contains("semicolon") {
+        suggestions.push(Suggestion {
+            message: "Add a semicolon at the end of the statement".to_string(),
+            replacement: Some(";".to_string()),
+            span: Span {
+                start: error.span.end,
+                end: error.span.end,
+            },
+        });
     }
-
-    /// Type mismatch error
-    pub fn type_mismatch(expected: &str, found: &str, source: &str, span: Span) -> Diagnostic {
-        Diagnostic::error(format!(
-            "type mismatch: expected `{expected}`, found `{found}`"
-        ))
-        .with_source(source)
-        .with_span(span)
-        .with_code("E0003")
-        .add_note("types must match exactly")
+    
+    // Unclosed delimiter suggestions
+    if error.message.contains("unclosed") || error.message.contains("unmatched") {
+        if error.message.contains("paren") {
+            suggestions.push(Suggestion {
+                message: "Add closing parenthesis ')'".to_string(),
+                replacement: Some(")".to_string()),
+                span: Span {
+                    start: error.span.end,
+                    end: error.span.end,
+                },
+            });
+        } else if error.message.contains("brace") {
+            suggestions.push(Suggestion {
+                message: "Add closing brace '}'".to_string(),
+                replacement: Some("}".to_string()),
+                span: Span {
+                    start: error.span.end,
+                    end: error.span.end,
+                },
+            });
+        } else if error.message.contains("bracket") {
+            suggestions.push(Suggestion {
+                message: "Add closing bracket ']'".to_string(),
+                replacement: Some("]".to_string()),
+                span: Span {
+                    start: error.span.end,
+                    end: error.span.end,
+                },
+            });
+        }
     }
-
-    /// Function not found error
-    pub fn function_not_found(name: &str, source: &str, span: Span) -> Diagnostic {
-        Diagnostic::error(format!("function `{name}` not found"))
-            .with_source(source)
-            .with_span(span)
-            .with_code("E0004")
-            .with_suggestion(format!(
-                "define the function with `fn {name}(...) {{ ... }}`"
-            ))
-    }
-
-    /// Syntax error
-    pub fn syntax_error(message: &str, source: &str, span: Span) -> Diagnostic {
-        Diagnostic::error(message)
-            .with_source(source)
-            .with_span(span)
-            .with_code("E0005")
-    }
+    
+    suggestions
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::frontend::error_recovery::ErrorCode;
 
     #[test]
-    fn test_basic_diagnostic() {
-        let diag = Diagnostic::error("test error")
-            .with_code("E0001")
-            .with_suggestion("try this instead");
-
-        let rendered = diag.render();
-        assert!(rendered.contains("error"));
-        assert!(rendered.contains("E0001"));
-        assert!(rendered.contains("try this instead"));
-    }
-
-    #[test]
-    fn test_source_context() {
-        let source = "let x = 42\nlet y = unknown\nlet z = 10";
-        let diag = Diagnostic::error("unknown variable")
-            .with_source(source)
-            .with_span(Span { start: 19, end: 26 }) // "unknown"
-            .with_suggestion("define the variable first");
-
-        let rendered = diag.render();
-        assert!(rendered.contains("let y = unknown"));
-        assert!(rendered.contains("^^^^^^^")); // Error underline
-    }
-
-    #[test]
-    fn test_diagnostic_builder() {
-        let source = "let x = 42 + \"hello\"";
-        let diag = DiagnosticBuilder::type_mismatch(
-            "Integer",
-            "String",
-            source,
-            Span { start: 13, end: 20 },
+    fn test_diagnostic_display() {
+        let error = ParseError::new(
+            "Unexpected token".to_string(),
+            Span { start: 10, end: 15 },
         );
+        
+        let source = "let x = 10\nlet y = @invalid\nlet z = 30".to_string();
+        let diag = Diagnostic::new(error, source);
+        
+        let output = format!("{}", diag);
+        assert!(output.contains("Unexpected token"));
+    }
 
-        let rendered = diag.render();
-        assert!(rendered.contains("type mismatch"));
-        assert!(rendered.contains("Integer"));
-        assert!(rendered.contains("String"));
+    #[test]
+    fn test_suggestions() {
+        let mut error = ParseError::new(
+            "unexpected '='".to_string(),
+            Span { start: 5, end: 6 },
+        );
+        error.found = Some(crate::frontend::lexer::Token::Assign);
+        
+        let suggestions = suggest_for_error(&error);
+        assert!(!suggestions.is_empty());
     }
 }
