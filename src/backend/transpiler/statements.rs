@@ -438,6 +438,10 @@ impl Transpiler {
                 return Ok(result);
             }
             
+            if let Some(result) = self.try_transpile_type_conversion(base_name, args)? {
+                return Ok(result);
+            }
+            
             if let Some(result) = self.try_transpile_collection_constructor(base_name, args)? {
                 return Ok(result);
             }
@@ -1135,6 +1139,127 @@ impl Transpiler {
                 }
                 input
             }
+        }
+    }
+    
+    /// Try to transpile type conversion functions (str, int, float, bool)
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust
+    /// # use ruchy::backend::transpiler::Transpiler;
+    /// let transpiler = Transpiler::new();
+    /// // str(42) -> 42.to_string()
+    /// // int("42") -> "42".parse::<i64>().unwrap()
+    /// // float(42) -> 42 as f64
+    /// // bool(1) -> 1 != 0
+    /// ```
+    fn try_transpile_type_conversion(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+        match base_name {
+            "str" => {
+                if args.len() != 1 {
+                    bail!("str() expects exactly 1 argument");
+                }
+                let value = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! { format!("{}", #value) }))
+            }
+            "int" => {
+                if args.len() != 1 {
+                    bail!("int() expects exactly 1 argument");
+                }
+                
+                // Check if the argument is a literal
+                match &args[0].kind {
+                    ExprKind::Literal(Literal::String(_)) => {
+                        let value = self.transpile_expr(&args[0])?;
+                        return Ok(Some(quote! { #value.parse::<i64>().expect("Failed to parse integer") }));
+                    }
+                    ExprKind::StringInterpolation { parts } if parts.len() == 1 => {
+                        if let crate::frontend::ast::StringPart::Text(_) = &parts[0] {
+                            let value = self.transpile_expr(&args[0])?;
+                            return Ok(Some(quote! { #value.parse::<i64>().expect("Failed to parse integer") }));
+                        }
+                    }
+                    ExprKind::Literal(Literal::Float(_)) => {
+                        let value = self.transpile_expr(&args[0])?;
+                        return Ok(Some(quote! { (#value as i64) }));
+                    }
+                    ExprKind::Literal(Literal::Bool(_)) => {
+                        let value = self.transpile_expr(&args[0])?;
+                        return Ok(Some(quote! { if #value { 1i64 } else { 0i64 } }));
+                    }
+                    _ => {}
+                }
+                
+                // For other expressions, use runtime conversion
+                let value = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! { (#value as i64) }))
+            }
+            "float" => {
+                if args.len() != 1 {
+                    bail!("float() expects exactly 1 argument");
+                }
+                
+                // Check if the argument is a literal
+                match &args[0].kind {
+                    ExprKind::Literal(Literal::String(_)) => {
+                        let value = self.transpile_expr(&args[0])?;
+                        return Ok(Some(quote! { #value.parse::<f64>().expect("Failed to parse float") }));
+                    }
+                    ExprKind::StringInterpolation { parts } if parts.len() == 1 => {
+                        if let crate::frontend::ast::StringPart::Text(_) = &parts[0] {
+                            let value = self.transpile_expr(&args[0])?;
+                            return Ok(Some(quote! { #value.parse::<f64>().expect("Failed to parse float") }));
+                        }
+                    }
+                    ExprKind::Literal(Literal::Integer(_)) => {
+                        let value = self.transpile_expr(&args[0])?;
+                        return Ok(Some(quote! { (#value as f64) }));
+                    }
+                    _ => {}
+                }
+                
+                // For other expressions
+                let value = self.transpile_expr(&args[0])?;
+                Ok(Some(quote! { (#value as f64) }))
+            }
+            "bool" => {
+                if args.len() != 1 {
+                    bail!("bool() expects exactly 1 argument");
+                }
+                
+                // Check the type of the argument to generate appropriate conversion
+                match &args[0].kind {
+                    ExprKind::Literal(Literal::Integer(_)) => {
+                        let value = self.transpile_expr(&args[0])?;
+                        Ok(Some(quote! { (#value != 0) }))
+                    }
+                    ExprKind::Literal(Literal::String(_)) => {
+                        let value = self.transpile_expr(&args[0])?;
+                        Ok(Some(quote! { !#value.is_empty() }))
+                    }
+                    ExprKind::StringInterpolation { parts } if parts.len() == 1 => {
+                        if let crate::frontend::ast::StringPart::Text(_) = &parts[0] {
+                            let value = self.transpile_expr(&args[0])?;
+                            Ok(Some(quote! { !#value.is_empty() }))
+                        } else {
+                            let value = self.transpile_expr(&args[0])?;
+                            Ok(Some(quote! { !#value.is_empty() }))
+                        }
+                    }
+                    ExprKind::Literal(Literal::Bool(_)) => {
+                        // Boolean already, just pass through
+                        let value = self.transpile_expr(&args[0])?;
+                        Ok(Some(value))
+                    }
+                    _ => {
+                        // Generic case - for numbers check != 0
+                        let value = self.transpile_expr(&args[0])?;
+                        Ok(Some(quote! { (#value != 0) }))
+                    }
+                }
+            }
+            _ => Ok(None)
         }
     }
     

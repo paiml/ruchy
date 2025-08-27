@@ -4,6 +4,20 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Standard Library Completion Sprint
+- **[STDLIB-001] ✅ COMPLETED**: Type conversion functions (str, int, float, bool)
+  - Dual-mode implementation: REPL interpreter + transpiler support
+  - str() converts any value to string representation
+  - int() converts strings/floats/bools to integers
+  - float() converts strings/integers to floating point
+  - bool() converts values to boolean (0/empty = false, rest = true)
+- **[STDLIB-002] PENDING**: Advanced math functions (sin, cos, tan, log)
+- **[STDLIB-003] PENDING**: Collection methods (slice, concat, flatten, unique)
+- **[STDLIB-004] PENDING**: String.substring() custom method
+- **[STDLIB-005] PENDING**: HashSet operations (union, intersection, difference)
+- **[STDLIB-006] PENDING**: File I/O operations (append, exists, delete)
+- **[STDLIB-007] PENDING**: Process/Environment functions
+
 ### Next Phase - Production Readiness
 - Module system implementation
 - Package manager development
