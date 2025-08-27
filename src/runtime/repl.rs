@@ -780,6 +780,48 @@ impl Repl {
             return self.handle_magic_command(trimmed);
         }
 
+        // Check for REPL commands
+        if trimmed.starts_with(':') {
+            // Handle command and return result as string
+            let (should_quit, output) = self.handle_command_with_output(trimmed)?;
+            if should_quit {
+                return Ok("Exiting REPL...".to_string());
+            }
+            return Ok(output);
+        }
+        
+        // Check for shell commands
+        if trimmed.starts_with('!') {
+            return self.execute_shell_command(&trimmed[1..]);
+        }
+
+        // Handle shell substitution in let bindings (let x = !command)
+        if trimmed.starts_with("let ") {
+            if let Some(bang_pos) = trimmed.find(" = !") {
+                // Extract the variable name and command
+                let var_part = &trimmed[4..bang_pos];
+                let command_part = &trimmed[bang_pos + 4..];
+                
+                // Execute the shell command
+                let result = self.execute_shell_command(command_part)?;
+                
+                // Create a let binding with the result
+                let modified_input = format!("let {} = \"{}\"", var_part, result.replace('"', "\\\""));
+                
+                // Parse and evaluate the modified input
+                let deadline = Instant::now() + self.config.timeout;
+                let mut parser = Parser::new(&modified_input);
+                let ast = parser.parse().context("Failed to parse shell substitution")?;
+                self.memory.try_alloc(std::mem::size_of_val(&ast))?;
+                let value = self.evaluate_expr(&ast, deadline, 0)?;
+                self.history.push(input.to_string());
+                self.result_history.push(value.clone());
+                self.update_history_variables();
+                // Let bindings return empty string in REPL
+                return Ok(String::new());
+            }
+        }
+        
         // Set evaluation deadline
         let deadline = Instant::now() + self.config.timeout;
 
@@ -3324,7 +3366,11 @@ impl Repl {
 
                     // Handle commands (only when not in multiline mode)
                     if !in_multiline && line.starts_with(':') {
-                        if self.handle_command(&line)? {
+                        let (should_quit, output) = self.handle_command_with_output(&line)?;
+                        if !output.is_empty() {
+                            println!("{}", output);
+                        }
+                        if should_quit {
                             break; // :quit command
                         }
                         continue;
@@ -3393,6 +3439,120 @@ impl Repl {
         // Save history
         let _ = rl.save_history(&history_path);
         Ok(())
+    }
+
+    /// Handle REPL commands and return output as string (for testing)
+    fn handle_command_with_output(&mut self, command: &str) -> Result<(bool, String)> {
+        let mut output = String::new();
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        
+        let should_quit = match parts.first().copied() {
+            Some(":quit" | ":q") => true,
+            Some(":help" | ":h") => {
+                output = Self::get_help_text();
+                false
+            }
+            Some(":history") => {
+                if self.history.is_empty() {
+                    output = "No history".to_string();
+                } else {
+                    for (i, item) in self.history.iter().enumerate() {
+                        output.push_str(&format!("{}: {}\n", i + 1, item));
+                    }
+                }
+                false
+            }
+            Some(":clear") => {
+                self.history.clear();
+                self.definitions.clear();
+                self.bindings.clear();
+                self.result_history.clear();
+                output = "Session cleared".to_string();
+                false
+            }
+            Some(":bindings" | ":env") => {
+                if self.bindings.is_empty() {
+                    output = "No bindings".to_string();
+                } else {
+                    for (name, value) in &self.bindings {
+                        output.push_str(&format!("{}: {}\n", name, value));
+                    }
+                }
+                false
+            }
+            Some(":compile") => {
+                match self.compile_session() {
+                    Ok(()) => output = "Session compiled successfully".to_string(),
+                    Err(e) => output = format!("Compilation failed: {}", e),
+                }
+                false
+            }
+            Some(":load") if parts.len() == 2 => {
+                match self.load_file(parts[1]) {
+                    Ok(()) => output = format!("Loaded file: {}", parts[1]),
+                    Err(e) => output = format!("Failed to load file: {}", e),
+                }
+                false
+            }
+            Some(":load") => {
+                output = "Usage: :load <filename>".to_string();
+                false
+            }
+            Some(":save") if parts.len() >= 2 => {
+                let filename = command.strip_prefix(":save").unwrap_or("").trim();
+                match self.save_session(filename) {
+                    Ok(()) => output = format!("Session saved to {}", filename),
+                    Err(e) => output = format!("Failed to save session: {}", e),
+                }
+                false
+            }
+            Some(":save") => {
+                output = "Usage: :save <filename>".to_string();
+                false
+            }
+            Some(":type") => {
+                let expr = command.strip_prefix(":type").unwrap_or("").trim();
+                if expr.is_empty() {
+                    output = "Usage: :type <expression>".to_string();
+                } else {
+                    output = self.get_type_info_with_bindings(expr);
+                }
+                false
+            }
+            Some(":ast") => {
+                let expr = command.strip_prefix(":ast").unwrap_or("").trim();
+                if expr.is_empty() {
+                    output = "Usage: :ast <expression>".to_string();
+                } else {
+                    output = Self::get_ast_info(expr);
+                }
+                false
+            }
+            Some(":reset") => {
+                self.history.clear();
+                self.definitions.clear();
+                self.bindings.clear();
+                self.result_history.clear();
+                self.memory.reset();
+                output = "REPL reset to initial state".to_string();
+                false
+            }
+            Some(":search") => {
+                let query = command.strip_prefix(":search").unwrap_or("").trim();
+                if query.is_empty() {
+                    output = "Usage: :search <query>\nSearch through command history with fuzzy matching".to_string();
+                } else {
+                    output = self.get_search_results(query);
+                }
+                false
+            }
+            _ => {
+                output = format!("Unknown command: {}\nType :help for available commands", command);
+                false
+            }
+        };
+        
+        Ok((should_quit, output))
     }
 
     /// Handle REPL commands (public for testing)
@@ -3499,27 +3659,133 @@ impl Repl {
         }
     }
 
+    /// Get help text as string
+    fn get_help_text() -> String {
+        let mut help = String::new();
+        help.push_str("Available commands:\n");
+        help.push_str("  :help, :h       - Show this help message\n");
+        help.push_str("  :quit, :q       - Exit the REPL\n");
+        help.push_str("  :history        - Show evaluation history\n");
+        help.push_str("  :search <query> - Search history with fuzzy matching\n");
+        help.push_str("  :clear          - Clear definitions and history\n");
+        help.push_str("  :reset          - Full reset to initial state\n");
+        help.push_str("  :bindings, :env - Show current variable bindings\n");
+        help.push_str("  :type <expr>    - Show type of expression\n");
+        help.push_str("  :ast <expr>     - Show AST of expression\n");
+        help.push_str("  :compile        - Compile and run the session\n");
+        help.push_str("  :load <file>    - Load and evaluate a file\n");
+        help.push_str("  :save <file>    - Save session to file\n");
+        help
+    }
+    
     /// Print help message
     fn print_help() {
-        println!("{}", "Available commands:".bright_cyan());
-        println!("  :help, :h       - Show this help message");
-        println!("  :quit, :q       - Exit the REPL");
-        println!("  :history        - Show evaluation history");
-        println!("  :search <query> - Search history with fuzzy matching");
-        println!("  :clear          - Clear definitions and history");
-        println!("  :reset          - Full reset to initial state");
-        println!("  :bindings, :env - Show current variable bindings");
-        println!("  :type <expr>    - Show type of expression");
-        println!("  :ast <expr>     - Show AST of expression");
-        println!("  :compile        - Compile and run the session");
-        println!("  :load <file>    - Load and evaluate a file");
-        println!("  :save <file>    - Save session to file");
-        println!();
-        println!("{}", "Examples:".bright_cyan());
-        println!("  2 + 2           - Evaluate expression");
-        println!("  let x = 10      - Define variable");
-        println!("  :type x * 2     - Show type of expression");
-        println!("  :ast if true {{ 1 }} else {{ 2 }}");
+        println!("{}", Self::get_help_text());
+    }
+    
+    /// Get type information as string  
+    fn get_type_info(expr: &str) -> String {
+        match Parser::new(expr).parse() {
+            Ok(ast) => {
+                // Create an inference context for type checking
+                let mut ctx = crate::middleend::InferenceContext::new();
+                
+                // Infer the type
+                match ctx.infer(&ast) {
+                    Ok(ty) => format!("Type: {}", ty),
+                    Err(e) => format!("Type inference error: {}", e),
+                }
+            }
+            Err(e) => format!("Parse error: {}", e),
+        }
+    }
+    
+    /// Get type information with REPL bindings context
+    fn get_type_info_with_bindings(&self, expr: &str) -> String {
+        // If the expression is a simple identifier, check bindings first
+        if let Ok(_) = Parser::new(expr).parse() {
+            if let Some(value) = self.bindings.get(expr) {
+                // Infer type from the value
+                let type_name = match value {
+                    Value::Int(_) => "Integer",
+                    Value::Float(_) => "Float",  
+                    Value::String(_) => "String",
+                    Value::Bool(_) => "Bool",
+                    Value::List(_) => "List",
+                    Value::Function { .. } => "Function",
+                    Value::Lambda { .. } => "Lambda",
+                    Value::Object(_) => "Object",
+                    Value::Tuple(_) => "Tuple",
+                    Value::Char(_) => "Char",
+                    Value::DataFrame { .. } => "DataFrame",
+                    Value::HashMap(_) => "HashMap",
+                    Value::HashSet(_) => "HashSet",
+                    Value::Range { .. } => "Range",
+                    Value::EnumVariant { enum_name, variant_name, .. } => {
+                        &format!("{}::{}", enum_name, variant_name)
+                    }
+                    Value::Unit => "Unit"
+                };
+                return format!("Type: {}", type_name);
+            }
+        }
+        
+        // Fall back to regular type inference
+        Self::get_type_info(expr)
+    }
+    
+    /// Get AST information as string
+    fn get_ast_info(expr: &str) -> String {
+        match Parser::new(expr).parse() {
+            Ok(ast) => format!("{:#?}", ast),
+            Err(e) => format!("Parse error: {}", e),
+        }
+    }
+    
+    /// Get search results as string
+    fn get_search_results(&self, query: &str) -> String {
+        let mut results = Vec::new();
+        let query_lower = query.to_lowercase();
+        
+        for (i, item) in self.history.iter().enumerate() {
+            if item.to_lowercase().contains(&query_lower) {
+                results.push(format!("{}: {}", i + 1, item));
+            }
+        }
+        
+        if results.is_empty() {
+            format!("No matches found for '{}'", query)
+        } else {
+            results.join("\n")
+        }
+    }
+    
+    /// Execute a shell command and return its output
+    fn execute_shell_command(&self, command: &str) -> Result<String> {
+        use std::process::Command;
+        
+        // Execute command through shell
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(command)
+            .output()
+            .context(format!("Failed to execute shell command: {}", command))?;
+        
+        // Combine stdout and stderr
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        
+        if !output.status.success() {
+            // If command failed, return error with stderr
+            if !stderr.is_empty() {
+                bail!("Shell command failed: {}", stderr);
+            } else {
+                bail!("Shell command failed with exit code: {:?}", output.status.code());
+            }
+        }
+        
+        // Return stdout (stderr is usually empty for successful commands)
+        Ok(stdout.trim_end().to_string())
     }
 
     /// Show the type of an expression

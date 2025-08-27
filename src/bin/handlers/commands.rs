@@ -509,7 +509,7 @@ fn calculate_provability_score(ast: &ruchy::frontend::ast::Expr) -> f64 {
 }
 
 fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f64 {
-    use ruchy::frontend::ast::{ExprKind, Literal};
+    
     
     // Calculate various quality metrics
     let complexity = calculate_complexity(ast);
@@ -552,7 +552,7 @@ fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f6
     let doc_score = if metrics.function_count == 0 {
         50.0
     } else {
-        (metrics.documented_functions as f64 / metrics.function_count as f64 * 100.0)
+        metrics.documented_functions as f64 / metrics.function_count as f64 * 100.0
     };
     scores.push(doc_score);
     
@@ -560,7 +560,7 @@ fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f6
     let naming_score = if metrics.total_identifiers == 0 {
         50.0
     } else {
-        (metrics.good_names as f64 / metrics.total_identifiers as f64 * 100.0)
+        metrics.good_names as f64 / metrics.total_identifiers as f64 * 100.0
     };
     scores.push(naming_score);
     
@@ -576,7 +576,7 @@ fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f6
 }
 
 fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
-    use ruchy::frontend::ast::ExprKind;
+    
     
     // Calculate cyclomatic complexity
     let mut complexity = 1; // Base complexity
@@ -655,7 +655,7 @@ struct QualityMetrics {
 }
 
 fn analyze_ast_quality(expr: &ruchy::frontend::ast::Expr, metrics: &mut QualityMetrics) {
-    use ruchy::frontend::ast::{ExprKind, Literal};
+    use ruchy::frontend::ast::ExprKind;
     
     match &expr.kind {
         ExprKind::Function { name, type_params: _, params: _, body, return_type: _, is_async: _, is_pub: _ } => {
@@ -729,7 +729,7 @@ fn count_lines_in_expr(expr: &ruchy::frontend::ast::Expr) -> usize {
 }
 
 fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
-    use ruchy::frontend::ast::ExprKind;
+    
     
     fn nesting_helper(expr: &ruchy::frontend::ast::Expr, current_depth: usize) -> usize {
         use ruchy::frontend::ast::ExprKind;

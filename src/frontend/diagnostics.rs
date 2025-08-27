@@ -254,7 +254,7 @@ mod tests {
             "unexpected '='".to_string(),
             Span { start: 5, end: 6 },
         );
-        error.found = Some(crate::frontend::lexer::Token::Assign);
+        error.found = Some(crate::frontend::lexer::Token::Equal);
         
         let suggestions = suggest_for_error(&error);
         assert!(!suggestions.is_empty());
