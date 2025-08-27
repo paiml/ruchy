@@ -40,11 +40,11 @@ impl E2ETestHarness {
 fn test_single_file_hello_world() {
     let harness = E2ETestHarness::new();
     
-    let source = r"
+    let source = r#"
         fun main() {
             println("Hello, World!")
         }
-    ";
+    "#;
 
     let result = harness.compile_program(source)
         .expect("Should compile simple hello world program");
@@ -61,7 +61,7 @@ fn test_single_file_hello_world() {
 fn test_single_file_with_functions() {
     let harness = E2ETestHarness::new();
     
-    let source = r"
+    let source = r#"
         fun add(a: i32, b: i32) -> i32 {
             a + b
         }
@@ -70,7 +70,7 @@ fn test_single_file_with_functions() {
             let result = add(2, 3)
             println(result)
         }
-    ";
+    "#;
 
     let result = harness.compile_program(source)
         .expect("Should compile program with functions");
@@ -86,7 +86,7 @@ fn test_single_file_with_functions() {
 fn test_single_file_with_match_expressions() {
     let harness = E2ETestHarness::new();
     
-    let source = r"
+    let source = r#"
         fun classify(x: i32) -> str {
             match x {
                 0 => "zero",
@@ -98,7 +98,7 @@ fn test_single_file_with_match_expressions() {
         fun main() {
             println(classify(1))
         }
-    ";
+    "#;
 
     let result = harness.compile_program(source)
         .expect("Should compile program with match expressions");
@@ -114,7 +114,7 @@ fn test_single_file_with_match_expressions() {
 fn test_single_file_with_loops() {
     let harness = E2ETestHarness::new();
     
-    let source = r"
+    let source = r#"
         fun main() {
             let mut i = 0
             while i < 5 {
@@ -126,7 +126,7 @@ fn test_single_file_with_loops() {
                 println(x)
             }
         }
-    ";
+    "#;
 
     let result = harness.compile_program(source)
         .expect("Should compile program with loops");
@@ -142,7 +142,7 @@ fn test_single_file_with_loops() {
 fn test_single_file_with_data_structures() {
     let harness = E2ETestHarness::new();
     
-    let source = r"
+    let source = r#"
         fun main() {
             let tuple = (1, "hello", true)
             let array = [1, 2, 3, 4, 5]
@@ -152,7 +152,7 @@ fn test_single_file_with_data_structures() {
             println(array)
             println(obj)
         }
-    ";
+    "#;
 
     let result = harness.compile_program(source)
         .expect("Should compile program with data structures");
@@ -169,7 +169,7 @@ fn test_pattern_destructuring_integration() {
     let harness = E2ETestHarness::new();
     
     // Test the newly implemented pattern destructuring from QUALITY-007
-    let source = r"
+    let source = r#"
         fun main() {
             let (a, b) = (1, 2)
             let [first, ..rest] = [1, 2, 3, 4, 5]
@@ -179,7 +179,7 @@ fn test_pattern_destructuring_integration() {
                 _ => println("no match")
             }
         }
-    ";
+    "#;
 
     let result = harness.compile_program(source)
         .expect("Should compile program with pattern destructuring");
@@ -195,7 +195,7 @@ fn test_pattern_destructuring_integration() {
 fn test_error_handling_compilation() {
     let harness = E2ETestHarness::new();
     
-    let source = r"
+    let source = r#"
         fun divide(a: i32, b: i32) -> i32 {
             if b == 0 {
                 0
@@ -208,7 +208,7 @@ fn test_error_handling_compilation() {
             let result = divide(10, 2)
             println(result)
         }
-    ";
+    "#;
 
     let result = harness.compile_program(source)
         .expect("Should compile program with error handling");
@@ -224,13 +224,13 @@ fn test_error_handling_compilation() {
 fn test_string_interpolation_compilation() {
     let harness = E2ETestHarness::new();
     
-    let source = r"
+    let source = r#"
         fun main() {
             let name = "World"
             let count = 42
             println(f"Hello, {name}! Count: {count}")
         }
-    ";
+    "#;
 
     let result = harness.compile_program(source)
         .expect("Should compile program with string interpolation");
@@ -247,7 +247,7 @@ fn test_comprehensive_language_features() {
     let harness = E2ETestHarness::new();
     
     // Comprehensive test combining multiple language features
-    let source = r"
+    let source = r#"
         fun fibonacci(n: i32) -> i32 {
             match n {
                 0 => 0,
@@ -269,7 +269,7 @@ fn test_comprehensive_language_features() {
             let first = results[0]
             println(f"First: {first}")
         }
-    ";
+    "#;
 
     let result = harness.compile_program(source)
         .expect("Should compile comprehensive program");

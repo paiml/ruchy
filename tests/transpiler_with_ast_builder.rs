@@ -1,7 +1,10 @@
 //! Transpiler tests using AST builder to bypass parser limitations
 //! This demonstrates how to test transpiler features the parser doesn't support
+//! 
+//! Run with: cargo test --features testing --test transpiler_with_ast_builder
 
 #![allow(clippy::unwrap_used)]
+#![cfg(feature = "testing")]
 
 // Use AstBuilder from testing module directly
 use ruchy::Transpiler;

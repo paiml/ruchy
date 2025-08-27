@@ -106,9 +106,9 @@ fn expr_to_assertion_string(expr: &Expr) -> String {
         ExprKind::Literal(lit) => match lit {
             crate::frontend::ast::Literal::Integer(n) => n.to_string(),
             crate::frontend::ast::Literal::Float(f) => f.to_string(),
-            crate::frontend::ast::Literal::String(s) => format!("\"{}\"", s),
+            crate::frontend::ast::Literal::String(s) => format!("\"{s}\""),
             crate::frontend::ast::Literal::Bool(b) => b.to_string(),
-            _ => format!("{:?}", lit),
+            _ => format!("{lit:?}"),
         },
         ExprKind::Identifier(name) => name.clone(),
         ExprKind::Binary { op, left, right } => {
@@ -137,7 +137,7 @@ fn expr_to_assertion_string(expr: &Expr) -> String {
                 .map(expr_to_assertion_string)
                 .collect::<Vec<_>>()
                 .join(", ");
-            format!("{}({})", func_str, args_str)
+            format!("{func_str}({args_str})")
         }
         ExprKind::MethodCall { receiver, method, args } => {
             let receiver_str = expr_to_assertion_string(receiver);
@@ -146,9 +146,9 @@ fn expr_to_assertion_string(expr: &Expr) -> String {
                 .collect::<Vec<_>>()
                 .join(", ");
             if args.is_empty() {
-                format!("{}.{}()", receiver_str, method)
+                format!("{receiver_str}.{method}()")
             } else {
-                format!("{}.{}({})", receiver_str, method, args_str)
+                format!("{receiver_str}.{method}({args_str})")
             }
         }
         _ => format!("UNKNOWN_EXPR({:?})", expr.kind),

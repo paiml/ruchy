@@ -26,15 +26,24 @@ cargo llvm-cov clean --workspace
 
 # Run coverage with all features and generate reports
 echo "Running tests and generating coverage..."
+# Generate HTML report
+cargo llvm-cov \
+    --all-features \
+    --workspace \
+    --html \
+    --output-dir target/coverage/html \
+    --ignore-filename-regex "tests/|benches/|examples/" \
+    --no-fail-fast
+
+# Generate LCOV report separately
 cargo llvm-cov \
     --all-features \
     --workspace \
     --lcov \
     --output-path target/coverage/lcov.info \
-    --html \
-    --output-dir target/coverage/html \
     --ignore-filename-regex "tests/|benches/|examples/" \
-    --no-fail-fast
+    --no-fail-fast \
+    --no-run
 
 # Get coverage summary
 COVERAGE_OUTPUT=$(cargo llvm-cov --summary-only --all-features --workspace 2>&1)

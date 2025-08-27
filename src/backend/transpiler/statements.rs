@@ -534,8 +534,14 @@ impl Transpiler {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
             "items" => {
-                // HashMap.items() -> HashMap.iter() for iterating key-value pairs
-                Ok(quote! { #obj_tokens.iter() })
+                // HashMap.items() -> iterator of (K, V) tuples (not references)
+                // 
+                // # Example
+                // ```
+                // let obj = {"key": "value"};
+                // for k, v in obj.items() { println(k + "=" + v) }
+                // ```
+                Ok(quote! { #obj_tokens.iter().map(|(k, v)| (k.clone(), v.clone())) })
             }
             "contains" => {
                 // HashSet contains method
