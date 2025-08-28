@@ -3200,7 +3200,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "1.21.0"
+version = "1.22.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -3226,6 +3226,7 @@ dependencies = [
  "quickcheck",
  "quickcheck_macros",
  "quote",
+ "regex",
  "rustyline",
  "serde",
  "serde_json",

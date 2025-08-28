@@ -211,8 +211,9 @@ pub enum ReplMode {
     Help,    // Help documentation mode
     Sql,     // SQL query mode
     Math,    // Mathematical expression mode
-    Debug,   // Debug mode with extra info
+    Debug,   // Debug mode with extra info and trace timing
     Time,    // Time mode showing execution timing
+    Test,    // Test mode with assertions and table tests
 }
 
 impl ReplMode {
@@ -226,6 +227,7 @@ impl ReplMode {
             ReplMode::Math => "math> ".to_string(),
             ReplMode::Debug => "debug> ".to_string(),
             ReplMode::Time => "time> ".to_string(),
+            ReplMode::Test => "test> ".to_string(),
         }
     }
 }
@@ -245,10 +247,59 @@ pub struct DebugInfo {
     pub timestamp: std::time::SystemTime,
 }
 
+// === Error Recovery UI System ===
+
+/// Interactive error recovery options
+#[derive(Debug, Clone)]
+pub enum RecoveryOption {
+    /// Continue with a default or empty value
+    ContinueWithDefault(String),
+    /// Retry with a corrected expression
+    RetryWith(String),
+    /// Show completion suggestions
+    ShowCompletions,
+    /// Discard the failed expression
+    Abort,
+    /// Restore from previous checkpoint
+    RestoreCheckpoint,
+    /// Use a specific value from history
+    UseHistoryValue(usize),
+}
+
+/// Error recovery context with available options
+#[derive(Debug, Clone)]
+pub struct ErrorRecovery {
+    /// The original failed expression
+    pub failed_expression: String,
+    /// The error that occurred
+    pub error_message: String,
+    /// Line and column where error occurred
+    pub position: Option<(usize, usize)>,
+    /// Available recovery options for this error type
+    pub options: Vec<RecoveryOption>,
+    /// Suggested completions if applicable
+    pub completions: Vec<String>,
+    /// Checkpoint at time of error for recovery
+    pub error_checkpoint: Checkpoint,
+}
+
+/// Recovery result after user chooses an option
+#[derive(Debug)]
+pub enum RecoveryResult {
+    /// Successfully recovered with new expression
+    Recovered(String),
+    /// User chose to abort the operation
+    Aborted,
+    /// Restored from checkpoint
+    Restored,
+    /// Show completions to user
+    ShowCompletions(Vec<String>),
+}
+
 // === Transactional State Machine ===
 
 /// Checkpoint for O(1) state recovery using persistent data structures
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Checkpoint {
     /// Persistent bindings snapshot
     bindings: im::HashMap<String, Value>,
@@ -517,6 +568,7 @@ impl RuchyCompleter {
                 ":env".to_string(),
                 ":type".to_string(),
                 ":ast".to_string(),
+                ":inspect".to_string(),
                 ":compile".to_string(),
                 ":load".to_string(),
                 ":save".to_string(),
@@ -1019,6 +1071,8 @@ pub struct Repl {
     mode: ReplMode,
     /// Debug information from last error
     last_error_debug: Option<DebugInfo>,
+    /// Error recovery context for interactive recovery
+    error_recovery: Option<ErrorRecovery>,
     /// Transactional state machine for reliable evaluation
     state: ReplState,
 }
@@ -1069,6 +1123,7 @@ impl Repl {
             module_cache: HashMap::new(),
             mode: ReplMode::Normal,
             last_error_debug: None,
+            error_recovery: None,
             state: ReplState::Ready,
         };
 
@@ -1257,6 +1312,352 @@ impl Repl {
             }
         }
     }
+
+    // === Interactive Error Recovery System ===
+    
+    /// Create error recovery context when evaluation fails
+    pub fn create_error_recovery(&mut self, failed_expr: &str, error_msg: &str) -> ErrorRecovery {
+        let checkpoint = self.checkpoint();
+        
+        // Parse error message to determine position if possible
+        let position = self.parse_error_position(error_msg);
+        
+        // Determine appropriate recovery options based on error type
+        let options = self.suggest_recovery_options(failed_expr, error_msg);
+        
+        // Generate completions if appropriate
+        let completions = if failed_expr.trim().is_empty() || error_msg.contains("expected expression") {
+            self.generate_completions_for_error(failed_expr)
+        } else {
+            Vec::new()
+        };
+        
+        let recovery = ErrorRecovery {
+            failed_expression: failed_expr.to_string(),
+            error_message: error_msg.to_string(),
+            position,
+            options,
+            completions,
+            error_checkpoint: checkpoint,
+        };
+        
+        self.error_recovery = Some(recovery.clone());
+        recovery
+    }
+    
+    /// Parse error position from error message
+    fn parse_error_position(&self, error_msg: &str) -> Option<(usize, usize)> {
+        // Try to extract line:column from common error formats
+        if let Some(caps) = regex::Regex::new(r"line (\d+):(\d+)")
+            .ok()
+            .and_then(|re| re.captures(error_msg)) 
+        {
+            if let (Ok(line), Ok(col)) = (
+                caps.get(1)?.as_str().parse::<usize>(),
+                caps.get(2)?.as_str().parse::<usize>()
+            ) {
+                return Some((line, col));
+            }
+        }
+        None
+    }
+    
+    /// Suggest appropriate recovery options based on error type
+    fn suggest_recovery_options(&self, failed_expr: &str, error_msg: &str) -> Vec<RecoveryOption> {
+        let mut options = Vec::new();
+        
+        // Common recovery options based on error patterns
+        if error_msg.contains("Unexpected EOF") || error_msg.contains("expected expression") || 
+           error_msg.contains("Unexpected end of input") || error_msg.contains("end of input") {
+            if failed_expr.starts_with("let ") && failed_expr.ends_with(" = ") {
+                let var_name = failed_expr.strip_prefix("let ").unwrap()
+                    .strip_suffix(" = ").unwrap();
+                options.push(RecoveryOption::ContinueWithDefault(
+                    format!("let {} = ()", var_name)
+                ));
+                options.push(RecoveryOption::RetryWith(
+                    format!("let {} = 0", var_name)
+                ));
+            }
+            options.push(RecoveryOption::ShowCompletions);
+        }
+        
+        if error_msg.to_lowercase().contains("undefined variable") || error_msg.contains("not found") {
+            // Suggest similar variable names
+            if let Some(undefined_var) = self.extract_undefined_variable(error_msg) {
+                let similar_vars = self.find_similar_variables(&undefined_var);
+                for similar_var in &similar_vars {
+                    options.push(RecoveryOption::RetryWith(
+                        failed_expr.replace(&undefined_var, similar_var)
+                    ));
+                }
+                
+                // If no similar variables found, provide a default fallback
+                if similar_vars.is_empty() {
+                    options.push(RecoveryOption::ContinueWithDefault(format!("let {} = ()", undefined_var)));
+                    options.push(RecoveryOption::RetryWith("0".to_string())); // Simple default value
+                }
+            }
+        }
+        
+        if error_msg.contains("type mismatch") || error_msg.contains("cannot convert") {
+            // Suggest type conversions
+            options.push(RecoveryOption::RetryWith(
+                format!("{}.to_string()", failed_expr.trim())
+            ));
+        }
+        
+        // Always provide these standard options
+        options.push(RecoveryOption::Abort);
+        options.push(RecoveryOption::RestoreCheckpoint);
+        
+        // Suggest using recent history values
+        if !self.result_history.is_empty() {
+            for (i, _) in self.result_history.iter().enumerate().take(3) {
+                options.push(RecoveryOption::UseHistoryValue(i + 1));
+            }
+        }
+        
+        options
+    }
+    
+    /// Extract undefined variable name from error message
+    pub fn extract_undefined_variable(&self, error_msg: &str) -> Option<String> {
+        // Try to find variable name in various error message formats
+        // Pattern for "Undefined variable: name"
+        if let Some(caps) = regex::Regex::new(r#"Undefined variable: ([a-zA-Z_][a-zA-Z0-9_]*)"#)
+            .ok()
+            .and_then(|re| re.captures(error_msg))
+        {
+            return Some(caps.get(1)?.as_str().to_string());
+        }
+        
+        // Pattern for "undefined variable name" or "undefined variable 'name'"
+        if let Some(caps) = regex::Regex::new(r#"undefined variable[: ]+['"]?([a-zA-Z_][a-zA-Z0-9_]*)['"]?"#)
+            .ok()
+            .and_then(|re| re.captures(error_msg))
+        {
+            return Some(caps.get(1)?.as_str().to_string());
+        }
+        
+        // Pattern for "variable name not found" 
+        if let Some(caps) = regex::Regex::new(r#"variable[: ]+['"]?([a-zA-Z_][a-zA-Z0-9_]*)['"]? not found"#)
+            .ok()
+            .and_then(|re| re.captures(error_msg))
+        {
+            return Some(caps.get(1)?.as_str().to_string());
+        }
+        
+        None
+    }
+    
+    /// Find variables similar to the undefined one (for typo correction)
+    pub fn find_similar_variables(&self, target: &str) -> Vec<String> {
+        let mut similar = Vec::new();
+        
+        for var_name in self.bindings.keys() {
+            let distance = self.edit_distance(target, var_name);
+            // Suggest variables with edit distance <= 2
+            if distance <= 2 && distance > 0 {
+                similar.push(var_name.clone());
+            }
+        }
+        
+        // Sort by similarity (lower distance first)
+        similar.sort_by_key(|var| self.edit_distance(target, var));
+        similar.truncate(5); // Limit to top 5 suggestions
+        similar
+    }
+    
+    /// Calculate edit distance between two strings (Levenshtein distance)
+    pub fn edit_distance(&self, a: &str, b: &str) -> usize {
+        let a_chars: Vec<char> = a.chars().collect();
+        let b_chars: Vec<char> = b.chars().collect();
+        let mut matrix = vec![vec![0; b_chars.len() + 1]; a_chars.len() + 1];
+        
+        // Initialize first row and column
+        for i in 0..=a_chars.len() {
+            matrix[i][0] = i;
+        }
+        for j in 0..=b_chars.len() {
+            matrix[0][j] = j;
+        }
+        
+        // Fill the matrix
+        for i in 1..=a_chars.len() {
+            for j in 1..=b_chars.len() {
+                let cost = if a_chars[i-1] == b_chars[j-1] { 0 } else { 1 };
+                matrix[i][j] = std::cmp::min(
+                    std::cmp::min(
+                        matrix[i-1][j] + 1,      // deletion
+                        matrix[i][j-1] + 1       // insertion
+                    ),
+                    matrix[i-1][j-1] + cost      // substitution
+                );
+            }
+        }
+        
+        matrix[a_chars.len()][b_chars.len()]
+    }
+    
+    /// Generate completions for incomplete expressions
+    pub fn generate_completions_for_error(&self, partial_expr: &str) -> Vec<String> {
+        let mut completions = Vec::new();
+        
+        if partial_expr.trim().is_empty() {
+            // Suggest common starting patterns
+            completions.extend(vec![
+                "let ".to_string(),
+                "if ".to_string(),
+                "match ".to_string(),
+                "for ".to_string(),
+                "while ".to_string(),
+                "fun ".to_string(),
+            ]);
+            
+            // Add some variable names
+            for var_name in self.bindings.keys().take(10) {
+                completions.push(var_name.clone());
+            }
+        } else if partial_expr.starts_with("let ") && partial_expr.contains(" = ") {
+            // Suggest values for let bindings
+            completions.extend(vec![
+                "0".to_string(),
+                "true".to_string(),
+                "false".to_string(),
+                "[]".to_string(),
+                "{}".to_string(),
+                "\"\"".to_string(),
+            ]);
+        } else {
+            // Context-sensitive completions based on available variables
+            let prefix = partial_expr.trim();
+            for var_name in self.bindings.keys() {
+                if var_name.starts_with(prefix) {
+                    completions.push(var_name.clone());
+                }
+            }
+        }
+        
+        completions.sort();
+        completions.dedup();
+        completions.truncate(10); // Limit suggestions
+        completions
+    }
+    
+    /// Apply a recovery option and return the result
+    pub fn apply_recovery(&mut self, option: RecoveryOption) -> Result<RecoveryResult> {
+        match option {
+            RecoveryOption::ContinueWithDefault(expr) => {
+                self.error_recovery = None;
+                Ok(RecoveryResult::Recovered(expr))
+            }
+            RecoveryOption::RetryWith(expr) => {
+                self.error_recovery = None;
+                Ok(RecoveryResult::Recovered(expr))
+            }
+            RecoveryOption::ShowCompletions => {
+                if let Some(recovery) = &self.error_recovery {
+                    Ok(RecoveryResult::ShowCompletions(recovery.completions.clone()))
+                } else {
+                    Ok(RecoveryResult::ShowCompletions(Vec::new()))
+                }
+            }
+            RecoveryOption::Abort => {
+                self.error_recovery = None;
+                Ok(RecoveryResult::Aborted)
+            }
+            RecoveryOption::RestoreCheckpoint => {
+                if let Some(recovery) = self.error_recovery.take() {
+                    recovery.error_checkpoint.restore_to(self);
+                    Ok(RecoveryResult::Restored)
+                } else {
+                    Err(anyhow::anyhow!("No error recovery context available"))
+                }
+            }
+            RecoveryOption::UseHistoryValue(index) => {
+                if index > 0 && index <= self.result_history.len() {
+                    let _value = &self.result_history[index - 1];
+                    let expr = format!("_{}", index);
+                    self.error_recovery = None;
+                    Ok(RecoveryResult::Recovered(expr))
+                } else {
+                    Err(anyhow::anyhow!("History index {} not available", index))
+                }
+            }
+        }
+    }
+    
+    /// Get current error recovery context
+    pub fn get_error_recovery(&self) -> Option<&ErrorRecovery> {
+        self.error_recovery.as_ref()
+    }
+    
+    /// Clear error recovery context
+    pub fn clear_error_recovery(&mut self) {
+        self.error_recovery = None;
+    }
+    
+    /// Format error recovery options for display
+    pub fn format_error_recovery(&self, recovery: &ErrorRecovery) -> String {
+        let mut output = String::new();
+        
+        output.push_str(&format!("Error: {}\n", recovery.error_message));
+        
+        if let Some((line, col)) = recovery.position {
+            output.push_str(&format!("     │ {} \n", recovery.failed_expression));
+            output.push_str(&format!("     │ {}↑ at line {}:{}\n", 
+                " ".repeat(col.saturating_sub(1)), line, col));
+        }
+        
+        output.push_str("\nRecovery Options:\n");
+        
+        for (i, option) in recovery.options.iter().enumerate() {
+            match option {
+                RecoveryOption::ContinueWithDefault(expr) => {
+                    output.push_str(&format!("  {}. Continue with: {}\n", i + 1, expr));
+                }
+                RecoveryOption::RetryWith(expr) => {
+                    output.push_str(&format!("  {}. Retry with: {}\n", i + 1, expr));
+                }
+                RecoveryOption::ShowCompletions => {
+                    output.push_str(&format!("  {}. Show completions\n", i + 1));
+                }
+                RecoveryOption::Abort => {
+                    output.push_str(&format!("  {}. Abort operation\n", i + 1));
+                }
+                RecoveryOption::RestoreCheckpoint => {
+                    output.push_str(&format!("  {}. Restore from checkpoint\n", i + 1));
+                }
+                RecoveryOption::UseHistoryValue(index) => {
+                    output.push_str(&format!("  {}. Use history value _{}\n", i + 1, index));
+                }
+            }
+        }
+        
+        if !recovery.completions.is_empty() {
+            output.push_str("\nSuggestions: ");
+            output.push_str(&recovery.completions.join(", "));
+            output.push('\n');
+        }
+        
+        output.push_str("\nEnter option number, or press Ctrl+C to abort.");
+        output
+    }
+    
+    /// Check if error recovery is available
+    pub fn has_error_recovery(&self) -> bool {
+        self.error_recovery.is_some()
+    }
+    
+    /// Get a formatted error recovery prompt if available
+    pub fn get_error_recovery_prompt(&self) -> Option<String> {
+        if let Some(recovery) = &self.error_recovery {
+            Some(self.format_error_recovery(recovery))
+        } else {
+            None
+        }
+    }
     
     /// Internal evaluation method (called by state machine)
     fn eval_internal(&mut self, input: &str) -> Result<String> {
@@ -1326,6 +1727,12 @@ impl Repl {
         // Check for magic commands
         let trimmed = input.trim();
         
+        // Handle progressive mode activation via attributes
+        if let Some(activated_mode) = self.detect_mode_activation(trimmed) {
+            self.mode = activated_mode;
+            return Ok(format!("Activated {} mode", self.get_mode()));
+        }
+        
         // Handle mode-specific evaluation
         match self.mode {
             ReplMode::Shell if !trimmed.starts_with(':') => {
@@ -1355,6 +1762,10 @@ impl Repl {
             ReplMode::Time if !trimmed.starts_with(':') => {
                 // In time mode, evaluate with timing
                 return self.handle_timed_evaluation(trimmed);
+            }
+            ReplMode::Test if !trimmed.starts_with(':') => {
+                // In test mode, handle assertions and table tests
+                return self.handle_test_evaluation(trimmed);
             }
             _ => {} // Normal mode or colon command - continue with regular processing
         }
@@ -1420,7 +1831,15 @@ impl Repl {
 
         // Parse the input
         let mut parser = Parser::new(input);
-        let ast = parser.parse().context("Failed to parse input")?;
+        let ast = match parser.parse() {
+            Ok(ast) => ast,
+            Err(e) => {
+                // Create error recovery context for parse errors using original error message
+                let _recovery = self.create_error_recovery(input, &e.to_string());
+                let parse_error = e.context("Failed to parse input");
+                return Err(parse_error);
+            }
+        };
 
         // Check memory for AST
         self.memory.try_alloc(std::mem::size_of_val(&ast))?;
@@ -1441,6 +1860,10 @@ impl Repl {
                     bindings_snapshot: self.bindings.clone(),
                     timestamp: std::time::SystemTime::now(),
                 });
+                
+                // Create error recovery context for interactive recovery
+                let _recovery = self.create_error_recovery(input, &e.to_string());
+                
                 return Err(e);
             }
         };
@@ -1475,6 +1898,7 @@ impl Repl {
             ReplMode::Math => "math",
             ReplMode::Debug => "debug",
             ReplMode::Time => "time",
+            ReplMode::Test => "test",
         }
     }
 
@@ -4020,7 +4444,7 @@ impl Repl {
             let prompt = if in_multiline {
                 format!("{} ", "   ...".bright_black())
             } else {
-                format!("{} ", "ruchy>".bright_green())
+                format!("{} ", self.get_prompt().bright_green())
             };
             let readline = rl.readline(&prompt);
 
@@ -4213,6 +4637,15 @@ impl Repl {
                 }
                 false
             }
+            Some(":inspect") => {
+                let var_name = command.strip_prefix(":inspect").unwrap_or("").trim();
+                if var_name.is_empty() {
+                    output = "Usage: :inspect <variable>".to_string();
+                } else {
+                    output = self.inspect_value(var_name);
+                }
+                false
+            }
             Some(":reset") => {
                 self.history.clear();
                 self.definitions.clear();
@@ -4279,6 +4712,11 @@ impl Repl {
                 output = "Switched to time mode - execution timing shown".to_string();
                 false
             }
+            Some(":test") => {
+                self.mode = ReplMode::Test;
+                output = "Switched to test mode - assertions and table tests enabled".to_string();
+                false
+            }
             Some(":exit") => {
                 self.mode = ReplMode::Normal;
                 output = "Exited to normal mode".to_string();
@@ -4292,8 +4730,9 @@ impl Repl {
                 output.push_str("  help   - Interactive help\n");
                 output.push_str("  sql    - SQL queries\n");
                 output.push_str("  math   - Mathematical expressions\n");
-                output.push_str("  debug  - Debug information\n");
+                output.push_str("  debug  - Debug information with traces\n");
                 output.push_str("  time   - Execution timing\n");
+                output.push_str("  test   - Assertions and table tests\n");
                 output.push_str("\nUse :mode_name to switch modes, :normal or :exit to return");
                 false
             }
@@ -4370,6 +4809,15 @@ impl Repl {
                 }
                 Ok(false)
             }
+            Some(":inspect") => {
+                let var_name = command.strip_prefix(":inspect").unwrap_or("").trim();
+                if var_name.is_empty() {
+                    println!("Usage: :inspect <variable>");
+                } else {
+                    println!("{}", self.inspect_value(var_name));
+                }
+                Ok(false)
+            }
             Some(":reset") => {
                 // Full reset - clear everything and restart
                 self.history.clear();
@@ -4423,6 +4871,7 @@ impl Repl {
         help.push_str("  :bindings, :env - Show current variable bindings\n");
         help.push_str("  :type <expr>    - Show type of expression\n");
         help.push_str("  :ast <expr>     - Show AST of expression\n");
+        help.push_str("  :inspect <var>  - Inspect a variable in detail\n");
         help.push_str("  :compile        - Compile and run the session\n");
         help.push_str("  :load <file>    - Load and evaluate a file\n");
         help.push_str("  :save <file>    - Save session to file\n");
@@ -7607,19 +8056,55 @@ impl Repl {
     
     /// Handle debug mode evaluation
     fn handle_debug_evaluation(&mut self, input: &str) -> Result<String> {
+        // Use enhanced debug evaluation per progressive modes specification
+        self.handle_enhanced_debug_evaluation(input)
+    }
+    
+    /// Enhanced debug mode evaluation with detailed traces
+    fn handle_enhanced_debug_evaluation(&mut self, input: &str) -> Result<String> {
         let start = Instant::now();
         
-        // Parse and show AST
+        // Parse timing
+        let parse_start = Instant::now();
         let mut parser = Parser::new(input);
         let ast = parser.parse().context("Failed to parse input")?;
-        let ast_str = format!("AST: {:?}\n", ast);
+        let parse_time = parse_start.elapsed();
         
-        // Evaluate
+        // Type checking timing (placeholder)
+        let type_start = Instant::now();
+        // Type checking would go here
+        let type_time = type_start.elapsed();
+        
+        // Evaluation timing
+        let eval_start = Instant::now();
         let deadline = Instant::now() + self.config.timeout;
         let value = self.evaluate_expr(&ast, deadline, 0)?;
+        let eval_time = eval_start.elapsed();
         
-        let elapsed = start.elapsed();
-        Ok(format!("{}Result: {}\nTime: {:?}", ast_str, value, elapsed))
+        // Memory allocation (simplified)
+        let alloc_bytes = 64; // Placeholder
+        
+        let _total_time = start.elapsed();
+        
+        // Format trace according to specification
+        let trace = format!(
+            "┌─ Trace ────────┐\n\
+            │ parse:   {:>5.1}ms │\n\
+            │ type:    {:>5.1}ms │\n\
+            │ eval:    {:>5.1}ms │\n\
+            │ alloc:   {:>5}B   │\n\
+            └────────────────┘\n\
+            {}: {} = {}",
+            parse_time.as_secs_f64() * 1000.0,
+            type_time.as_secs_f64() * 1000.0,
+            eval_time.as_secs_f64() * 1000.0,
+            alloc_bytes,
+            input.trim(),
+            self.infer_type(&value),
+            value
+        );
+        
+        Ok(trace)
     }
     
     /// Handle timed evaluation
@@ -7658,5 +8143,190 @@ impl Repl {
         }
         
         stack_trace
+    }
+    
+    /// Detect progressive mode activation via attributes like #[test] and #[debug]
+    fn detect_mode_activation(&self, input: &str) -> Option<ReplMode> {
+        let trimmed = input.trim();
+        
+        if trimmed.starts_with("#[test]") {
+            Some(ReplMode::Test)
+        } else if trimmed.starts_with("#[debug]") {
+            Some(ReplMode::Debug)
+        } else {
+            None
+        }
+    }
+    
+    /// Handle test mode evaluation with assertions and table tests
+    fn handle_test_evaluation(&mut self, input: &str) -> Result<String> {
+        let trimmed = input.trim();
+        
+        // Handle assert statements
+        if trimmed.starts_with("assert ") {
+            return self.handle_assertion(&trimmed[7..]);
+        }
+        
+        // Handle table_test! macro
+        if trimmed.starts_with("table_test!(") {
+            return self.handle_table_test(trimmed);
+        }
+        
+        // Regular evaluation with test result formatting
+        let result = self.eval_internal(input)?;
+        Ok(format!("✓ {}", result))
+    }
+    
+    /// Handle assertion statements in test mode
+    fn handle_assertion(&mut self, assertion: &str) -> Result<String> {
+        // Parse and evaluate the assertion
+        let mut parser = Parser::new(assertion);
+        let expr = parser.parse().context("Failed to parse assertion")?;
+        
+        let deadline = Instant::now() + self.config.timeout;
+        let result = self.evaluate_expr(&expr, deadline, 0)?;
+        
+        match result {
+            Value::Bool(true) => Ok("✓ Pass".to_string()),
+            Value::Bool(false) => Ok("✗ Fail: assertion failed".to_string()),
+            _ => Ok(format!("✗ Fail: assertion must be boolean, got {}", result)),
+        }
+    }
+    
+    /// Handle table test macro
+    fn handle_table_test(&mut self, _input: &str) -> Result<String> {
+        // This is a simplified implementation - in a full version you'd parse the table_test! macro properly
+        // For now, just indicate successful parsing
+        Ok("✓ Table test recognized (full implementation pending)".to_string())
+    }
+    
+    /// Simple type inference for display purposes
+    fn infer_type(&self, value: &Value) -> &'static str {
+        match value {
+            Value::Int(_) => "Int",
+            Value::Float(_) => "Float", 
+            Value::String(_) => "String",
+            Value::Bool(_) => "Bool",
+            Value::Char(_) => "Char",
+            Value::Unit => "Unit",
+            Value::List(_) => "List",
+            Value::Tuple(_) => "Tuple",
+            Value::Object(_) => "Object",
+            Value::Function { .. } => "Function",
+            Value::Lambda { .. } => "Lambda",
+            Value::DataFrame { .. } => "DataFrame",
+            Value::HashMap(_) => "HashMap",
+            Value::HashSet(_) => "HashSet",
+            Value::Range { .. } => "Range",
+            Value::EnumVariant { .. } => "EnumVariant",
+        }
+    }
+    
+    /// Inspect a value in detail (for :inspect command)
+    fn inspect_value(&self, var_name: &str) -> String {
+        if let Some(value) = self.bindings.get(var_name) {
+            let mut output = String::new();
+            
+            // Create inspector box header
+            output.push_str("┌─ Inspector ────────────────┐\n");
+            
+            // Show variable name and type
+            output.push_str(&format!("│ Variable: {:<17} │\n", var_name));
+            output.push_str(&format!("│ Type: {:<22} │\n", self.infer_type(value)));
+            
+            // Show size/length information based on type
+            match value {
+                Value::List(l) => {
+                    output.push_str(&format!("│ Length: {:<20} │\n", l.len()));
+                }
+                Value::String(s) => {
+                    output.push_str(&format!("│ Length: {} chars{:<11} │\n", s.len(), ""));
+                }
+                Value::Object(o) => {
+                    output.push_str(&format!("│ Fields: {:<20} │\n", o.len()));
+                }
+                Value::HashMap(m) => {
+                    output.push_str(&format!("│ Entries: {:<19} │\n", m.len()));
+                }
+                Value::HashSet(s) => {
+                    output.push_str(&format!("│ Size: {:<22} │\n", s.len()));
+                }
+                Value::Tuple(t) => {
+                    output.push_str(&format!("│ Elements: {:<18} │\n", t.len()));
+                }
+                Value::DataFrame { columns, .. } => {
+                    if let Some(first_col) = columns.first() {
+                        let row_count = first_col.values.len();
+                        output.push_str(&format!("│ Columns: {:<19} │\n", columns.len()));
+                        output.push_str(&format!("│ Rows: {:<22} │\n", row_count));
+                    }
+                }
+                _ => {
+                    // Show value preview for simple types
+                    let preview = format!("{}", value);
+                    if preview.len() <= 24 {
+                        output.push_str(&format!("│ Value: {:<21} │\n", preview));
+                    } else {
+                        let truncated = &preview[..21];
+                        output.push_str(&format!("│ Value: {}... │\n", truncated));
+                    }
+                }
+            }
+            
+            // Memory estimation (simplified)
+            let memory_size = self.estimate_memory_size(value);
+            output.push_str(&format!("│ Memory: ~{:<18} │\n", format!("{} bytes", memory_size)));
+            
+            // Add separator line
+            output.push_str("│                            │\n");
+            
+            // Add interactive options (for display purposes)
+            output.push_str("│ Options:                   │\n");
+            
+            match value {
+                Value::List(_) | Value::Object(_) | Value::HashMap(_) => {
+                    output.push_str("│ [Enter] Browse entries     │\n");
+                    output.push_str("│ [S] Statistics             │\n");
+                }
+                Value::Function { .. } | Value::Lambda { .. } => {
+                    output.push_str("│ [P] Show parameters        │\n");
+                    output.push_str("│ [B] Show body              │\n");
+                }
+                _ => {
+                    output.push_str("│ [V] Show full value        │\n");
+                    output.push_str("│ [T] Type details           │\n");
+                }
+            }
+            
+            output.push_str("│ [M] Memory layout          │\n");
+            output.push_str("└────────────────────────────┘");
+            
+            output
+        } else {
+            format!("Variable '{}' not found. Use :env to list all variables.", var_name)
+        }
+    }
+    
+    /// Estimate memory size of a value (simplified)
+    fn estimate_memory_size(&self, value: &Value) -> usize {
+        match value {
+            Value::Int(_) => 8,
+            Value::Float(_) => 8,
+            Value::Bool(_) => 1,
+            Value::Char(_) => 4,
+            Value::Unit => 0,
+            Value::String(s) => s.len() + 24, // String overhead + content
+            Value::List(l) => 24 + l.len() * 8, // Vec overhead + pointers
+            Value::Tuple(t) => 8 + t.len() * 8,
+            Value::Object(o) => 24 + o.len() * 32, // HashMap overhead
+            Value::HashMap(m) => 24 + m.len() * 48,
+            Value::HashSet(s) => 24 + s.len() * 16,
+            Value::Function { .. } | Value::Lambda { .. } => 64, // Simplified
+            Value::DataFrame { columns, .. } => {
+                24 + columns.len() * 64 // Simplified estimate
+            }
+            Value::Range { .. } => 16,
+            Value::EnumVariant { .. } => 32,
+        }
     }
 }

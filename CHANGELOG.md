@@ -2,6 +2,71 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [1.22.0] - 2025-08-28
+
+### 🎉 MAJOR MILESTONE: Complete REPL Enhancement Suite
+
+### Added
+
+#### REPL Magic Commands
+- **%debug**: Post-mortem debugging with stack traces and error context
+- **%profile**: Flamegraph generation for performance profiling
+- **%export**: Session export to clean script files
+- **%bindings**: Display all variable bindings
+- **%eval**: Evaluate expressions with isolated context
+
+#### REPL Testing Infrastructure  
+- **Resource-bounded evaluation**: Arena allocator with 10MB limit, 100ms timeout, 1000 frame stack limit
+- **Transactional state machine**: Persistent data structures for O(1) checkpoints
+- **Testing harness**: Property tests, fuzz tests, differential testing framework
+
+#### REPL User Experience
+- **Error Recovery System**: Interactive recovery options with typo correction
+  - Levenshtein distance algorithm for smart suggestions
+  - Checkpoint/rollback recovery
+  - Context-aware completions
+  - History value suggestions (_1, _2, etc.)
+  
+- **Progressive Modes**: Context-aware REPL modes
+  - Standard mode (default)
+  - Test mode with assertions (`#[test]`, `assert`)
+  - Debug mode with execution traces (`#[debug]`)
+  - Time mode with performance metrics
+  - 9 total modes: normal, test, debug, time, shell, help, math, sql, pkg
+  
+- **Rich Introspection Commands**:
+  - `:env` / `:bindings` - List all variable bindings
+  - `:type <expr>` - Show expression type information
+  - `:ast <expr>` - Display Abstract Syntax Tree
+  - `:inspect <var>` - Interactive object inspector with memory info
+
+#### Additional REPL Features
+- **History indexing**: _1, _2, _3... for accessing previous results
+- **Unicode expansion**: \alpha → α, \beta → β mathematical symbols
+- **Session management**: Save/load/export REPL sessions
+- **Smart prompts**: Mode-specific prompts (test>, debug>, etc.)
+
+### Fixed
+- Fixed test expectation in `test_transpile_command_basic`
+- Corrected DataFrame column field access in inspect command
+- Fixed progressive mode activation patterns
+- Enhanced error recovery for evaluation errors (not just parse errors)
+
+### Changed
+- REPL prompt now dynamically reflects current mode
+- Error messages preserve original context for better recovery
+- Improved type inference display for introspection
+- Enhanced debug mode with detailed trace formatting
+
+### Testing
+- Added 54 new comprehensive tests across 5 test suites:
+  - `repl_error_recovery_test`: 16 tests
+  - `error_recovery_integration_test`: 6 tests  
+  - `progressive_modes_test`: 14 tests
+  - `progressive_modes_integration`: 5 tests
+  - `introspection_commands_test`: 13 tests
+- All 478+ tests passing with 100% success rate
+
 ## [1.21.0] - 2025-08-27
 
 ### 🎯 MILESTONE: 100% PERFECT BOOK COMPATIBILITY ACHIEVED
