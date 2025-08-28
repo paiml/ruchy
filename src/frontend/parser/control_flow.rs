@@ -80,12 +80,12 @@ pub fn parse_if(state: &mut ParserState) -> Result<Expr> {
 pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume let
 
-    // Check for mut keyword
+    // Check for mut keyword (kept for compatibility but discouraged)
     let is_mutable = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
         state.tokens.advance(); // consume mut
         true
     } else {
-        true  // Variables are mutable by default in Ruchy
+        false  // Variables are immutable by default with 'let'
     };
 
     // Check if this is a pattern or simple identifier
@@ -174,6 +174,117 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
     } else {
         // REPL-style let statement without 'in' - create a unit body
         // This allows statements like "let x = 5" to work in REPL
+        use crate::frontend::ast::{ExprKind, Literal, Span};
+        Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })
+    };
+
+    Ok(Expr::new(
+        ExprKind::Let {
+            name,
+            type_annotation,
+            value: Box::new(value),
+            body: Box::new(body),
+            is_mutable,
+        },
+        start_span,
+    ))
+}
+
+/// Parse var statement (mutable variable declaration)
+///
+/// # Errors
+///
+/// Returns an error if the operation fails
+pub fn parse_var(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume var
+
+    // var is always mutable
+    let is_mutable = true;
+
+    // Check if this is a pattern or simple identifier
+    let is_pattern = matches!(
+        state.tokens.peek(),
+        Some((Token::LeftParen | Token::LeftBracket, _))
+    ) || {
+        // Check for struct patterns like Point { x, y }
+        match state.tokens.peek() {
+            Some((Token::Identifier(name), _)) => {
+                name.chars().next().is_some_and(char::is_uppercase) 
+                && matches!(state.tokens.peek_nth(1), Some((Token::LeftBrace, _)))
+            }
+            _ => false
+        }
+    };
+
+    if is_pattern {
+        // Parse as pattern destructuring
+        let pattern = parse_pattern(state);
+
+        // Optional type annotation
+        let type_annotation = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+            state.tokens.advance(); // consume :
+            Some(utils::parse_type(state)?)
+        } else {
+            None
+        };
+
+        // Expect =
+        state.tokens.expect(&Token::Equal)?;
+
+        // Parse value
+        let value = super::parse_expr_recursive(state)?;
+
+        // Check if 'in' keyword is present (optional for REPL-style var statements)
+        let body = if matches!(state.tokens.peek(), Some((Token::In, _))) {
+            state.tokens.advance(); // consume 'in'
+            super::parse_expr_recursive(state)?
+        } else {
+            // REPL-style var statement without 'in' - create a unit body
+            use crate::frontend::ast::{ExprKind, Literal, Span};
+            Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })
+        };
+
+        return Ok(Expr::new(
+            ExprKind::LetPattern {
+                pattern,
+                type_annotation,
+                value: Box::new(value),
+                body: Box::new(body),
+                is_mutable,
+            },
+            start_span,
+        ));
+    }
+
+    // Parse as simple identifier (existing behavior)
+    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected identifier or pattern after 'var'");
+    };
+
+    // Optional type annotation
+    let type_annotation = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance(); // consume :
+        Some(utils::parse_type(state)?)
+    } else {
+        None
+    };
+
+    // Expect =
+    state.tokens.expect(&Token::Equal)?;
+
+    // Parse value
+    let value = super::parse_expr_recursive(state)?;
+
+    // Check if 'in' keyword is present (optional for REPL-style var statements)
+    let body = if matches!(state.tokens.peek(), Some((Token::In, _))) {
+        state.tokens.advance(); // consume 'in'
+        super::parse_expr_recursive(state)?
+    } else {
+        // REPL-style var statement without 'in' - create a unit body
         use crate::frontend::ast::{ExprKind, Literal, Span};
         Expr::new(ExprKind::Literal(Literal::Unit), Span { start: 0, end: 0 })
     };

@@ -690,6 +690,8 @@ pub struct Repl {
     definitions: Vec<String>,
     /// Bindings and their types/values
     bindings: HashMap<String, Value>,
+    /// Mutability tracking for bindings
+    binding_mutability: HashMap<String, bool>,
     /// Impl methods: `Type::method` -> (params, body)
     impl_methods: HashMap<String, (Vec<String>, Box<Expr>)>,
     /// Enum definitions: `EnumName` -> list of variant names
@@ -746,6 +748,7 @@ impl Repl {
             result_history: Vec::new(),
             definitions: Vec::new(),
             bindings: HashMap::new(),
+            binding_mutability: HashMap::new(),
             impl_methods: HashMap::new(),
             enum_definitions: HashMap::new(),
             transpiler: Transpiler::new(),
@@ -811,9 +814,9 @@ impl Repl {
         // Evaluate the expression
         let value = self.evaluate_expr(&ast, deadline, 0)?;
 
-        // Handle let bindings specially
-        if let ExprKind::Let { name, type_annotation: _, .. } = &ast.kind {
-            self.bindings.insert(name.clone(), value.clone());
+        // Handle let bindings specially (for backward compatibility)
+        if let ExprKind::Let { name, type_annotation: _, is_mutable, .. } = &ast.kind {
+            self.create_binding(name.clone(), value.clone(), *is_mutable);
         }
 
         Ok(value)
@@ -977,6 +980,37 @@ impl Repl {
     pub fn get_prompt(&self) -> String {
         self.mode.prompt()
     }
+    
+    /// Create a new binding (for let/var) - handles shadowing
+    fn create_binding(&mut self, name: String, value: Value, is_mutable: bool) {
+        self.bindings.insert(name.clone(), value);
+        self.binding_mutability.insert(name, is_mutable);
+    }
+    
+    /// Try to update an existing binding (for assignment)
+    fn update_binding(&mut self, name: &str, value: Value) -> Result<()> {
+        if !self.bindings.contains_key(name) {
+            bail!("Cannot assign to undefined variable '{}'. Declare it first with 'let' or 'var'", name)
+        }
+        
+        let is_mutable = self.binding_mutability.get(name).copied().unwrap_or(false);
+        if !is_mutable {
+            bail!("Cannot assign to immutable binding '{}'. Use 'var' for mutable bindings or shadow with 'let'", name)
+        }
+        
+        self.bindings.insert(name.to_string(), value);
+        Ok(())
+    }
+    
+    /// Get the value of a binding
+    fn get_binding(&self, name: &str) -> Option<Value> {
+        self.bindings.get(name).cloned()
+    }
+    
+    /// Check if a binding exists
+    fn has_binding(&self, name: &str) -> bool {
+        self.bindings.contains_key(name)
+    }
 
     /// Evaluate an expression to a value
     #[allow(clippy::too_many_lines)]
@@ -1135,8 +1169,8 @@ impl Repl {
             ExprKind::Module { name: _name, body } => {
                 self.evaluate_expr(body, deadline, depth + 1)
             }
-            ExprKind::Let { name, type_annotation: _, value, body, .. } => {
-                self.evaluate_let_binding(name, value, body, deadline, depth)
+            ExprKind::Let { name, type_annotation: _, value, body, is_mutable } => {
+                self.evaluate_let_binding(name, value, body, *is_mutable, deadline, depth)
             }
             ExprKind::Block(exprs) => self.evaluate_block(exprs, deadline, depth),
             ExprKind::Assign { target, value } => {
@@ -2224,7 +2258,8 @@ impl Repl {
 
         // For now, only support simple variable assignment
         if let ExprKind::Identifier(name) = &target.kind {
-            self.bindings.insert(name.clone(), val.clone());
+            // Use update_binding which checks mutability
+            self.update_binding(name, val.clone())?;
             Ok(val)
         } else {
             bail!(
@@ -2240,11 +2275,12 @@ impl Repl {
         name: &str,
         value: &Expr,
         body: &Expr,
+        is_mutable: bool,
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
         let val = self.evaluate_expr(value, deadline, depth + 1)?;
-        self.bindings.insert(name.to_string(), val.clone());
+        self.create_binding(name.to_string(), val.clone(), is_mutable);
 
         // If there's a body, evaluate it; otherwise return the value
         match &body.kind {
@@ -3048,9 +3084,7 @@ impl Repl {
 
     /// Evaluate identifier (complexity: 2)
     fn evaluate_identifier(&self, name: &str) -> Result<Value> {
-        self.bindings
-            .get(name)
-            .cloned()
+        self.get_binding(name)
             .ok_or_else(|| anyhow::anyhow!("Undefined variable: {}", name))
     }
 

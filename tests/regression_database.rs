@@ -17,16 +17,16 @@ fn regression_while_loop_off_by_one() {
     
     let mut repl = Repl::new().unwrap();
     
-    // Test 1: Exact original failing case
-    let result = repl.eval("let i = 0; let count = 0; while i < 3 { count = count + 1; i = i + 1 }; count").unwrap();
+    // Test 1: Exact original failing case (now using var for mutable bindings)
+    let result = repl.eval("var i = 0; var count = 0; while i < 3 { count = count + 1; i = i + 1 }; count").unwrap();
     assert_eq!(result.to_string(), "3", "While loop should execute exactly 3 times");
     
     // Test 2: While loop should return Unit, not body value
-    let result = repl.eval("let i = 0; while i < 1 { i = i + 1; 42 }").unwrap(); 
+    let result = repl.eval("var i = 0; while i < 1 { i = i + 1; 42 }").unwrap(); 
     assert_eq!(result.to_string(), "()", "While loop should return Unit, not 42");
     
     // Test 3: Multiple iterations with different body values
-    let result = repl.eval("let i = 0; while i < 2 { i = i + 1; i * 10 }").unwrap();
+    let result = repl.eval("var i = 0; while i < 2 { i = i + 1; i * 10 }").unwrap();
     assert_eq!(result.to_string(), "()", "While loop should return Unit, not last body value");
 }
 

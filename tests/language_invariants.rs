@@ -8,7 +8,7 @@ fn test_while_loop_iteration_invariant() {
     // Property: while i < N should execute exactly N iterations
     for n in 1..=10 {
         let code = format!(
-            "let count = 0; let i = 0; while i < {} {{ count = count + 1; i = i + 1 }}; count",
+            "var count = 0; var i = 0; while i < {} {{ count = count + 1; i = i + 1 }}; count",
             n
         );
         
@@ -24,9 +24,9 @@ fn test_while_loop_iteration_invariant() {
 fn test_while_loop_never_returns_body_value() {
     // Property: while loops always return Unit, never body values
     let test_cases = vec![
-        "let i = 0; while i < 1 { i = i + 1; 42 }",      // Body returns 42
-        "let i = 0; while i < 2 { i = i + 1; \"hello\" }", // Body returns string
-        "let i = 0; while i < 1 { i = i + 1; [1, 2, 3] }", // Body returns array
+        "var i = 0; while i < 1 { i = i + 1; 42 }",      // Body returns 42
+        "var i = 0; while i < 2 { i = i + 1; \"hello\" }", // Body returns string
+        "var i = 0; while i < 1 { i = i + 1; [1, 2, 3] }", // Body returns array
     ];
     
     for code in test_cases {
@@ -69,8 +69,8 @@ fn test_for_loop_tuple_destructuring_consistency() {
     
     // Test that tuple destructuring works correctly
     repl.eval(r#"let obj = {"x": 1, "y": 2}"#).unwrap();
-    repl.eval(r#"let keys = []"#).unwrap();
-    repl.eval(r#"let values = []"#).unwrap();
+    repl.eval(r#"var keys = []"#).unwrap();
+    repl.eval(r#"var values = []"#).unwrap();
     repl.eval(r#"for key, value in obj.items() { keys = keys.push(key); values = values.push(value) }"#).unwrap();
     let result = repl.eval(r#"[keys, values]"#).unwrap();
     
