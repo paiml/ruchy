@@ -5912,7 +5912,76 @@ impl Repl {
             }
             
             "%profile" => {
-                Ok("Profiling not yet implemented".to_string())
+                if args.is_empty() {
+                    return Ok("Usage: %profile <expression>".to_string());
+                }
+                
+                // Profile the expression
+                let start = std::time::Instant::now();
+                let mut parse_time = std::time::Duration::ZERO;
+                let mut eval_time = std::time::Duration::ZERO;
+                let mut alloc_size = 0;
+                
+                // Measure parsing
+                let parse_start = std::time::Instant::now();
+                let mut parser = Parser::new(args);
+                let ast = match parser.parse() {
+                    Ok(ast) => ast,
+                    Err(e) => return Ok(format!("Parse error: {}", e)),
+                };
+                parse_time = parse_start.elapsed();
+                alloc_size += std::mem::size_of_val(&ast);
+                
+                // Measure evaluation
+                let eval_start = std::time::Instant::now();
+                let deadline = std::time::Instant::now() + self.config.timeout;
+                let result = match self.evaluate_expr(&ast, deadline, 0) {
+                    Ok(value) => value,
+                    Err(e) => return Ok(format!("Evaluation error: {}", e)),
+                };
+                eval_time = eval_start.elapsed();
+                
+                let total_time = start.elapsed();
+                
+                // Generate profile report
+                let mut output = String::new();
+                output.push_str("=== Performance Profile ===\n");
+                output.push_str(&format!("Expression: {}\n", args));
+                output.push_str(&format!("Result: {}\n\n", result));
+                
+                output.push_str("--- Timing Breakdown ---\n");
+                output.push_str(&format!("Parse:     {:>8.3}ms ({:>5.1}%)\n", 
+                    parse_time.as_secs_f64() * 1000.0,
+                    (parse_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0));
+                output.push_str(&format!("Evaluate:  {:>8.3}ms ({:>5.1}%)\n", 
+                    eval_time.as_secs_f64() * 1000.0,
+                    (eval_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0));
+                output.push_str(&format!("Total:     {:>8.3}ms\n\n", 
+                    total_time.as_secs_f64() * 1000.0));
+                
+                output.push_str("--- Memory Usage ---\n");
+                output.push_str(&format!("AST size:  {:>8} bytes\n", alloc_size));
+                output.push_str(&format!("Memory:    {:>8} bytes used\n", self.memory.current));
+                
+                // Performance analysis
+                output.push_str("\n--- Analysis ---\n");
+                if total_time.as_millis() > 50 {
+                    output.push_str("⚠️  Slow execution (>50ms)\n");
+                } else if total_time.as_millis() > 10 {
+                    output.push_str("⚡ Moderate performance (>10ms)\n");
+                } else {
+                    output.push_str("🚀 Fast execution (<10ms)\n");
+                }
+                
+                if parse_time.as_secs_f64() / total_time.as_secs_f64() > 0.3 {
+                    output.push_str("📝 Parse-heavy (consider simpler syntax)\n");
+                }
+                
+                if eval_time.as_secs_f64() / total_time.as_secs_f64() > 0.7 {
+                    output.push_str("🧮 Compute-heavy (consider optimization)\n");
+                }
+                
+                Ok(output)
             }
             
             "%help" => {
@@ -5921,7 +5990,7 @@ impl Repl {
 %timeit <expr>   - Time multiple executions (benchmark)
 %run <file>      - Execute a .ruchy script file
 %debug           - Show debug info from last error
-%profile <expr>  - Generate execution profile (TODO)
+%profile <expr>  - Generate execution profile
 %help            - Show this help message"#.to_string())
             }
             
