@@ -239,41 +239,38 @@ impl ReplayValidator {
         report.total_events = recorded.timeline.len();
         
         for event in &recorded.timeline {
-            match &event.event {
-                Event::Input { text, .. } => {
-                    let result = implementation.execute_with_seed(text, recorded.environment.seed);
-                    
-                    // Find corresponding output event
-                    if let Some(expected_output) = self.find_next_output(recorded, event.id) {
-                        if !self.outputs_equivalent(&result, expected_output) {
-                            report.add_divergence(
-                                event.id,
-                                Divergence::Output {
-                                    expected: format!("{:?}", expected_output),
-                                    actual: format!("{:?}", result.output),
-                                }
-                            );
-                        } else {
-                            report.successful_events += 1;
-                        }
-                    }
-                    
-                    // Validate resource bounds
-                    if !self.tolerance_accepts(&result.resource_usage) {
+            if let Event::Input { text, .. } = &event.event {
+                let result = implementation.execute_with_seed(text, recorded.environment.seed);
+                
+                // Find corresponding output event
+                if let Some(expected_output) = self.find_next_output(recorded, event.id) {
+                    if self.outputs_equivalent(&result, expected_output) {
+                        report.successful_events += 1;
+                    } else {
                         report.add_divergence(
                             event.id,
-                            Divergence::Resources {
-                                expected: ResourceUsage {
-                                    heap_bytes: 0,
-                                    stack_depth: 0,
-                                    cpu_ns: 0,
-                                },
-                                actual: result.resource_usage.clone(),
+                            Divergence::Output {
+                                expected: format!("{expected_output:?}"),
+                                actual: format!("{:?}", result.output),
                             }
                         );
                     }
                 }
-                _ => {}
+                
+                // Validate resource bounds
+                if !self.tolerance_accepts(&result.resource_usage) {
+                    report.add_divergence(
+                        event.id,
+                        Divergence::Resources {
+                            expected: ResourceUsage {
+                                heap_bytes: 0,
+                                stack_depth: 0,
+                                cpu_ns: 0,
+                            },
+                            actual: result.resource_usage.clone(),
+                        }
+                    );
+                }
             }
         }
         
@@ -296,7 +293,7 @@ impl ReplayValidator {
             Event::Output { result: expected_result, .. } => {
                 match (&result.output, expected_result) {
                     (Ok(value), EvalResult::Success { value: expected }) => {
-                        format!("{:?}", value) == *expected
+                        format!("{value:?}") == *expected
                     }
                     (Err(e), EvalResult::Error { message }) => {
                         e.to_string().contains(message)
@@ -370,7 +367,7 @@ impl SessionRecorder {
         let eval_result = match result {
             Ok(Value::Unit) => EvalResult::Unit,
             Ok(value) => EvalResult::Success { 
-                value: format!("{:?}", value) 
+                value: format!("{value:?}") 
             },
             Err(e) => EvalResult::Error { 
                 message: e.to_string() 

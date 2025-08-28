@@ -187,6 +187,12 @@ pub struct GradingEngine {
     pub secure_sandbox: SecureSandbox,
 }
 
+impl Default for GradingEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GradingEngine {
     pub fn new() -> Self {
         Self {
@@ -214,14 +220,14 @@ impl GradingEngine {
         let mut repl = match self.secure_sandbox.create_isolated_repl() {
             Ok(r) => r,
             Err(e) => {
-                report.mark_invalid(&format!("Failed to create sandbox: {}", e));
+                report.mark_invalid(&format!("Failed to create sandbox: {e}"));
                 return report;
             }
         };
         
         // Load assignment setup
         if let Err(e) = self.load_setup(&mut repl, &assignment.setup) {
-            report.mark_invalid(&format!("Failed to load setup: {}", e));
+            report.mark_invalid(&format!("Failed to load setup: {e}"));
             return report;
         }
         
@@ -271,7 +277,7 @@ impl GradingEngine {
         
         // Load provided functions
         for (name, code) in &setup.provided_functions {
-            repl.eval(&format!("let {} = {}", name, code))?;
+            repl.eval(&format!("let {name} = {code}"))?;
         }
         
         Ok(())
@@ -300,7 +306,7 @@ impl GradingEngine {
         // Check requirements
         for req in &task.requirements {
             if self.check_requirement(repl, req) {
-                grade.requirements_met.insert(format!("{:?}", req));
+                grade.requirements_met.insert(format!("{req:?}"));
             }
         }
         
@@ -317,7 +323,7 @@ impl GradingEngine {
                 return TestResult {
                     passed: false,
                     points_earned: 0,
-                    feedback: format!("Error: {}", e),
+                    feedback: format!("Error: {e}"),
                     execution_time_ms: start.elapsed().as_millis() as u64,
                 };
             }
@@ -342,7 +348,7 @@ impl GradingEngine {
                 let feedback = if passed {
                     "Correct output".to_string()
                 } else {
-                    format!("Expected '{}', got '{}'", expected, output)
+                    format!("Expected '{expected}', got '{output}'")
                 };
                 (passed, feedback)
             }
@@ -352,7 +358,7 @@ impl GradingEngine {
                 let feedback = if passed {
                     "Output matches pattern".to_string()
                 } else {
-                    format!("Output doesn't match pattern: {}", pattern)
+                    format!("Output doesn't match pattern: {pattern}")
                 };
                 (passed, feedback)
             }
@@ -362,7 +368,7 @@ impl GradingEngine {
                 let feedback = if passed {
                     "Type signature correct".to_string()
                 } else {
-                    format!("Expected type {}", expected_type)
+                    format!("Expected type {expected_type}")
                 };
                 (passed, feedback)
             }
@@ -506,6 +512,12 @@ pub struct AstFingerprint {
     pub complexity: usize,
 }
 
+impl Default for PlagiarismDetector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PlagiarismDetector {
     pub fn new() -> Self {
         Self {
@@ -604,6 +616,12 @@ pub struct ResourceLimits {
     pub max_cpu_ms: u64,
 }
 
+impl Default for SecureSandbox {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SecureSandbox {
     pub fn new() -> Self {
         Self {
@@ -674,7 +692,9 @@ impl GradeReport {
         }
         
         // Calculate task score
-        let task_score: f32 = if !self.task_grades.is_empty() {
+        let task_score: f32 = if self.task_grades.is_empty() {
+            0.0
+        } else {
             let earned: u32 = self.task_grades.iter().map(|g| g.points_earned).sum();
             let possible: u32 = self.task_grades.iter().map(|g| g.points_possible).sum();
             if possible > 0 {
@@ -682,8 +702,6 @@ impl GradeReport {
             } else {
                 0.0
             }
-        } else {
-            0.0
         };
         
         // Weighted average: 60% tasks, 20% rubric, 10% performance, 10% originality

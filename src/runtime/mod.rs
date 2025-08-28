@@ -16,6 +16,7 @@ pub mod repl;
 pub mod replay;
 pub mod deterministic;
 pub mod assessment;
+pub mod magic;
 #[cfg(test)]
 mod repl_function_tests;
 
@@ -48,6 +49,11 @@ pub use assessment::{
     Assignment, AssignmentSetup, Task, TestCase, ExpectedBehavior,
     GradingEngine, GradeReport, TaskGrade, GradingRubric,
     PlagiarismDetector, SecureSandbox,
+};
+
+// Export magic commands
+pub use magic::{
+    MagicRegistry, MagicResult, MagicCommand, UnicodeExpander, ProfileData,
 };
 
 pub use observatory_ui::{DashboardConfig, DisplayMode, ObservatoryDashboard};
