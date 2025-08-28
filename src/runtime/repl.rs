@@ -794,6 +794,17 @@ impl Repl {
         if trimmed.starts_with('!') {
             return self.execute_shell_command(&trimmed[1..]);
         }
+        
+        // Check for introspection commands
+        if trimmed.starts_with("??") {
+            // Double question mark - detailed introspection
+            let target = trimmed[2..].trim();
+            return self.detailed_introspection(target);
+        } else if trimmed.starts_with('?') && !trimmed.starts_with("?:") {
+            // Single question mark - basic introspection (but not ternary operator)
+            let target = trimmed[1..].trim();
+            return self.basic_introspection(target);
+        }
 
         // Handle shell substitution in let bindings (let x = !command)
         if trimmed.starts_with("let ") {
@@ -3787,6 +3798,294 @@ impl Repl {
         // Return stdout (stderr is usually empty for successful commands)
         Ok(stdout.trim_end().to_string())
     }
+    
+    /// Basic introspection with single ?
+    fn basic_introspection(&self, target: &str) -> Result<String> {
+        // Check if target exists in bindings
+        if let Some(value) = self.bindings.get(target) {
+            let type_name = self.get_value_type_name(value);
+            let value_str = self.format_value_brief(value);
+            return Ok(format!("Type: {}\nValue: {}", type_name, value_str));
+        }
+        
+        // Check if it's a builtin function
+        if self.is_builtin_function(target) {
+            return Ok(format!("Type: Builtin Function\nName: {}", target));
+        }
+        
+        // Try to evaluate the expression and introspect result
+        if let Ok(ast) = Parser::new(target).parse() {
+            // Try to get type information
+            let mut ctx = crate::middleend::InferenceContext::new();
+            if let Ok(ty) = ctx.infer(&ast) {
+                return Ok(format!("Type: {}", ty));
+            }
+        }
+        
+        bail!("'{}' is not defined or cannot be introspected", target)
+    }
+    
+    /// Detailed introspection with double ??
+    fn detailed_introspection(&self, target: &str) -> Result<String> {
+        // Check if target exists in bindings  
+        if let Some(value) = self.bindings.get(target) {
+            return Ok(self.format_detailed_introspection(target, value));
+        }
+        
+        // Check if it's a builtin function
+        if self.is_builtin_function(target) {
+            return Ok(self.format_builtin_help(target));
+        }
+        
+        bail!("'{}' is not defined or cannot be introspected", target)
+    }
+    
+    /// Check if a name is a builtin function
+    fn is_builtin_function(&self, name: &str) -> bool {
+        matches!(name, "println" | "print" | "len" | "push" | "pop" | "insert" | 
+                       "remove" | "clear" | "contains" | "index_of" | "slice" |
+                       "split" | "join" | "trim" | "to_upper" | "to_lower" |
+                       "replace" | "starts_with" | "ends_with" | "parse" |
+                       "type" | "str" | "int" | "float" | "bool" |
+                       "sqrt" | "pow" | "abs" | "min" | "max" | "floor" | "ceil" | "round")
+    }
+    
+    /// Get type name for a value
+    fn get_value_type_name(&self, value: &Value) -> &str {
+        match value {
+            Value::Int(_) => "Integer",
+            Value::Float(_) => "Float",
+            Value::String(_) => "String",
+            Value::Bool(_) => "Bool",
+            Value::Char(_) => "Char",
+            Value::List(_) => "List",
+            Value::Tuple(_) => "Tuple",
+            Value::Function { .. } => "Function",
+            Value::Lambda { .. } => "Lambda",
+            Value::Object(_) => "Object",
+            Value::HashMap(_) => "HashMap",
+            Value::HashSet(_) => "HashSet",
+            Value::Range { .. } => "Range",
+            Value::DataFrame { .. } => "DataFrame",
+            Value::EnumVariant { enum_name, variant_name, .. } => {
+                // Return a static str by leaking - safe for REPL lifetime
+                Box::leak(format!("{}::{}", enum_name, variant_name).into_boxed_str())
+            }
+            Value::Unit => "Unit",
+        }
+    }
+    
+    /// Format value briefly for introspection
+    fn format_value_brief(&self, value: &Value) -> String {
+        match value {
+            Value::List(items) => format!("[{} items]", items.len()),
+            Value::Object(fields) => {
+                let field_names: Vec<_> = fields.keys().cloned().collect();
+                format!("{{{}}}",field_names.join(", "))
+            }
+            Value::Function { name, params, .. } => {
+                format!("fn {}({})", name, params.join(", "))
+            }
+            Value::Lambda { params, .. } => {
+                format!("|{}| -> ...", params.join(", "))
+            }
+            _ => value.to_string(),
+        }
+    }
+    
+    /// Format detailed introspection output
+    fn format_detailed_introspection(&self, name: &str, value: &Value) -> String {
+        let mut output = String::new();
+        output.push_str(&format!("Name: {}\n", name));
+        output.push_str(&format!("Type: {}\n", self.get_value_type_name(value)));
+        
+        match value {
+            Value::Function { name: fn_name, params, body } => {
+                output.push_str(&format!("Source: fn {}({}) {{\n", fn_name, params.join(", ")));
+                output.push_str(&format!("  {}\n", self.format_expr_source(body)));
+                output.push_str("}\n");
+                output.push_str(&format!("Parameters: {}\n", params.join(", ")));
+            }
+            Value::Lambda { params, body } => {
+                output.push_str(&format!("Source: |{}| {{\n", params.join(", ")));
+                output.push_str(&format!("  {}\n", self.format_expr_source(body)));
+                output.push_str("}\n");
+                output.push_str(&format!("Parameters: {}\n", params.join(", ")));
+            }
+            Value::Object(fields) => {
+                output.push_str("Fields:\n");
+                for (key, val) in fields {
+                    output.push_str(&format!("  {}: {}\n", key, self.get_value_type_name(val)));
+                }
+            }
+            Value::List(items) => {
+                output.push_str(&format!("Length: {}\n", items.len()));
+                if !items.is_empty() {
+                    output.push_str(&format!("First: {}\n", items[0]));
+                    if items.len() > 1 {
+                        output.push_str(&format!("Last: {}\n", items[items.len() - 1]));
+                    }
+                }
+            }
+            _ => {
+                output.push_str(&format!("Value: {}\n", value));
+            }
+        }
+        
+        output
+    }
+    
+    /// Format expression source code
+    fn format_expr_source(&self, expr: &Expr) -> String {
+        // Format the expression in a more readable way
+        self.expr_to_source_string(expr, 0)
+    }
+    
+    /// Convert expression to source string
+    fn expr_to_source_string(&self, expr: &Expr, indent: usize) -> String {
+        use crate::frontend::ast::ExprKind;
+        let indent_str = "  ".repeat(indent);
+        
+        match &expr.kind {
+            ExprKind::Binary { left, op, right } => {
+                format!("{} {} {}", 
+                    self.expr_to_source_string(left, 0),
+                    op,
+                    self.expr_to_source_string(right, 0))
+            }
+            ExprKind::If { condition, then_branch, else_branch } => {
+                let mut s = format!("if {} {{\n{}{}\n{}}}", 
+                    self.expr_to_source_string(condition, 0),
+                    "  ".repeat(indent + 1),
+                    self.expr_to_source_string(then_branch, indent + 1),
+                    indent_str);
+                if let Some(else_b) = else_branch {
+                    s.push_str(&format!(" else {{\n{}{}\n{}}}",
+                        "  ".repeat(indent + 1),
+                        self.expr_to_source_string(else_b, indent + 1),
+                        indent_str));
+                }
+                s
+            }
+            ExprKind::Call { func, args } => {
+                if let ExprKind::Identifier(name) = &func.kind {
+                    format!("{}({})", name, 
+                        args.iter()
+                            .map(|a| self.expr_to_source_string(a, 0))
+                            .collect::<Vec<_>>()
+                            .join(", "))
+                } else {
+                    format!("(call ...)")
+                }
+            }
+            ExprKind::Identifier(name) => name.clone(),
+            ExprKind::Literal(lit) => format!("{:?}", lit),
+            ExprKind::Block(exprs) => {
+                if exprs.len() == 1 {
+                    self.expr_to_source_string(&exprs[0], indent)
+                } else {
+                    exprs.iter()
+                        .map(|e| self.expr_to_source_string(e, indent))
+                        .collect::<Vec<_>>()
+                        .join("; ")
+                }
+            }
+            _ => format!("{:?}", expr.kind).chars().take(50).collect()
+        }
+    }
+    
+    /// Format help for builtin functions
+    fn format_builtin_help(&self, name: &str) -> String {
+        match name {
+            "println" => "println(value)\n  Prints a value to stdout with newline\n  Parameters: value - Any value to print".to_string(),
+            "print" => "print(value)\n  Prints a value to stdout without newline\n  Parameters: value - Any value to print".to_string(),
+            "len" => "len(collection)\n  Returns the length of a collection\n  Parameters: collection - List, String, or other collection".to_string(),
+            "type" => "type(value)\n  Returns the type of a value\n  Parameters: value - Any value".to_string(),
+            "str" => "str(value)\n  Converts a value to string\n  Parameters: value - Any value to convert".to_string(),
+            _ => format!("{}\n  Builtin function\n  (documentation not available)", name),
+        }
+    }
+    
+    /// Evaluate type() function
+    fn evaluate_type_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("type() expects 1 argument, got {}", args.len());
+        }
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let type_name = self.get_value_type_name(&value);
+        Ok(Value::String(type_name.to_string()))
+    }
+    
+    /// Evaluate summary() function
+    fn evaluate_summary_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("summary() expects 1 argument, got {}", args.len());
+        }
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let summary = match &value {
+            Value::List(items) => format!("List with {} items", items.len()),
+            Value::Object(fields) => format!("Object with {} fields", fields.len()),
+            Value::String(s) => format!("String of length {}", s.len()),
+            Value::DataFrame { columns } => format!("DataFrame with {} columns", columns.len()),
+            _ => format!("{} value", self.get_value_type_name(&value)),
+        };
+        Ok(Value::String(summary))
+    }
+    
+    /// Evaluate dir() function
+    fn evaluate_dir_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("dir() expects 1 argument, got {}", args.len());
+        }
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let members = match value {
+            Value::Object(fields) => {
+                fields.keys().cloned().collect::<Vec<_>>()
+            }
+            _ => vec![],
+        };
+        
+        Ok(Value::String(members.join(", ")))
+    }
+    
+    /// Evaluate help() function
+    fn evaluate_help_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("help() expects 1 argument, got {}", args.len());
+        }
+        
+        // Check if it's a builtin function first
+        if let ExprKind::Identifier(name) = &args[0].kind {
+            if self.is_builtin_function(name) {
+                return Ok(Value::String(self.format_builtin_help(name)));
+            }
+        }
+        
+        // Try to evaluate the argument and get its type
+        match self.evaluate_expr(&args[0], deadline, depth + 1) {
+            Ok(value) => {
+                let help_text = match value {
+                    Value::Function { name, params, .. } => {
+                        format!("Function: {}\nParameters: {}", name, params.join(", "))
+                    }
+                    Value::Lambda { params, .. } => {
+                        format!("Lambda function\nParameters: {}", params.join(", "))
+                    }
+                    _ => {
+                        format!("Type: {}", self.get_value_type_name(&value))
+                    }
+                };
+                Ok(Value::String(help_text))
+            }
+            Err(_) => {
+                // If evaluation fails, just return a generic message
+                Ok(Value::String("No help available for this value".to_string()))
+            }
+        }
+    }
 
     /// Show the type of an expression
     fn show_type(expr: &str) {
@@ -4341,6 +4640,11 @@ impl Repl {
                 "int" => self.evaluate_int_conversion(args, deadline, depth),
                 "float" => self.evaluate_float_conversion(args, deadline, depth),
                 "bool" => self.evaluate_bool_conversion(args, deadline, depth),
+                // Introspection functions
+                "type" => self.evaluate_type_function(args, deadline, depth),
+                "summary" => self.evaluate_summary_function(args, deadline, depth),
+                "dir" => self.evaluate_dir_function(args, deadline, depth),
+                "help" => self.evaluate_help_function(args, deadline, depth),
                 // Advanced math functions
                 "sin" => self.evaluate_sin(args, deadline, depth),
                 "cos" => self.evaluate_cos(args, deadline, depth),
