@@ -33,7 +33,7 @@ fn parse_module_path_segments(state: &mut ParserState, first_segment: String) ->
             Some((Token::Some, _)) => {
                 "Some".to_string()
             }
-            Some((Token::None, _)) => {
+            Some((Token::None | Token::Null, _)) => {
                 "None".to_string()
             }
             _ => bail!("Expected identifier after '::'")
@@ -55,7 +55,7 @@ fn should_break_for_special_case(state: &mut ParserState, path_segments: &[Strin
     let is_result_ok_err = last_segment == "Result" 
         && matches!(state.tokens.peek_nth(1), Some((Token::Ok | Token::Err, _)));
     let is_option_some_none = last_segment == "Option"
-        && matches!(state.tokens.peek_nth(1), Some((Token::Some | Token::None, _)));
+        && matches!(state.tokens.peek_nth(1), Some((Token::Some | Token::None | Token::Null, _)));
         
     is_result_ok_err || is_option_some_none
 }
@@ -111,7 +111,7 @@ fn parse_option_constructor(state: &mut ParserState, span: Span) -> Result<Optio
                 span,
             )))
         }
-        Some((Token::None, _)) => {
+        Some((Token::None | Token::Null, _)) => {
             state.tokens.advance(); // consume None
             Ok(Some(Expr::new(
                 ExprKind::Call {
@@ -584,6 +584,7 @@ fn parse_control_flow_prefix(state: &mut ParserState, token: Token, _span: Span)
         Token::Break => Ok(Some(control_flow::parse_break(state))),
         Token::Continue => Ok(Some(control_flow::parse_continue(state))),
         Token::Return => Ok(Some(control_flow::parse_return(state)?)),
+        Token::Try => Ok(Some(control_flow::parse_try_catch(state)?)),
         Token::Command => Ok(Some(parse_command(state)?)),
         _ => Ok(None), // Not a control flow token
     }
@@ -604,6 +605,7 @@ fn parse_result_option_prefix(state: &mut ParserState, token: Token, span: Span)
         Token::Err => parse_err_token(state, span),
         Token::Some => parse_some_token(state, span),
         Token::None => parse_none_token(state, span),
+        Token::Null => parse_none_token(state, span), // null is alias for None
         Token::Throw => parse_throw_token(state, span),
         Token::Await => parse_await_token(state, span),
         _ => Ok(None), // Not a Result/Option token
@@ -658,7 +660,7 @@ fn parse_option_token(state: &mut ParserState, span: Span) -> Result<Option<Expr
                 
                 Ok(Some(Expr::new(ExprKind::Some { value }, span)))
             }
-            Some((Token::None, _)) => {
+            Some((Token::None | Token::Null, _)) => {
                 state.tokens.advance(); // consume None
                 Ok(Some(Expr::new(ExprKind::None, span)))
             }
@@ -882,6 +884,7 @@ pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {
         Token::GreaterEqual => Some(BinaryOp::GreaterEqual),
         Token::AndAnd => Some(BinaryOp::And),
         Token::OrOr => Some(BinaryOp::Or),
+        Token::NullCoalesce => Some(BinaryOp::NullCoalesce),
         Token::Ampersand => Some(BinaryOp::BitwiseAnd),
         Token::Pipe => Some(BinaryOp::BitwiseOr),
         Token::Caret => Some(BinaryOp::BitwiseXor),
@@ -893,16 +896,17 @@ pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {
 pub fn get_precedence(op: BinaryOp) -> i32 {
     match op {
         BinaryOp::Or => 1,
-        BinaryOp::And => 2,
-        BinaryOp::BitwiseOr => 3,
-        BinaryOp::BitwiseXor => 4,
-        BinaryOp::BitwiseAnd => 5,
-        BinaryOp::Equal | BinaryOp::NotEqual => 6,
-        BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => 7,
-        BinaryOp::LeftShift => 8,
-        BinaryOp::Add | BinaryOp::Subtract => 9,
-        BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 10,
-        BinaryOp::Power => 11,
+        BinaryOp::NullCoalesce => 2,
+        BinaryOp::And => 3,
+        BinaryOp::BitwiseOr => 4,
+        BinaryOp::BitwiseXor => 5,
+        BinaryOp::BitwiseAnd => 6,
+        BinaryOp::Equal | BinaryOp::NotEqual => 7,
+        BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => 8,
+        BinaryOp::LeftShift => 9,
+        BinaryOp::Add | BinaryOp::Subtract => 10,
+        BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 11,
+        BinaryOp::Power => 12,
     }
 }
 

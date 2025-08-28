@@ -211,6 +211,7 @@ pub enum BinOp {
     // Logical (short-circuiting is handled by control flow)
     And,
     Or,
+    NullCoalesce,
 }
 
 /// Unary operations

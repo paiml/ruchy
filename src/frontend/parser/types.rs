@@ -142,9 +142,17 @@ pub fn parse_struct_with_visibility(state: &mut ParserState, is_pub: bool) -> Re
             bail!("Expected field name");
         };
 
-        // Parse type annotation
-        state.tokens.expect(&Token::Colon)?;
-        let ty = utils::parse_type(state)?;
+        // Parse type annotation (optional for shorthand syntax)
+        let ty = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+            state.tokens.advance(); // consume :
+            utils::parse_type(state)?
+        } else {
+            // Default to Any type for shorthand syntax like { x, y }
+            Type {
+                kind: crate::frontend::ast::TypeKind::Named("Any".to_string()),
+                span: crate::frontend::ast::Span { start: 0, end: 0 },
+            }
+        };
 
         fields.push(StructField {
             name: field_name,

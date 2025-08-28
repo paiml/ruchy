@@ -220,6 +220,7 @@ impl MinimalCodeGen {
             BinaryOp::GreaterEqual => ">=",
             BinaryOp::And => "&&",
             BinaryOp::Or => "||",
+            BinaryOp::NullCoalesce => "??", // JavaScript-style null coalescing
             BinaryOp::BitwiseAnd => "&",
             BinaryOp::BitwiseOr => "|",
             BinaryOp::BitwiseXor => "^",

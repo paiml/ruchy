@@ -722,7 +722,7 @@ fn count_lines_in_expr(expr: &ruchy::frontend::ast::Expr) -> usize {
         ExprKind::If { condition, then_branch, else_branch } => {
             1 + count_lines_in_expr(condition) 
               + count_lines_in_expr(then_branch)
-              + else_branch.as_ref().map(|e| count_lines_in_expr(e)).unwrap_or(0)
+              + else_branch.as_ref().map_or(0, |e| count_lines_in_expr(e))
         }
         _ => 1
     }
@@ -751,8 +751,7 @@ fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
                 let then_depth = nesting_helper(then_branch, current_depth);
                 let else_depth = else_branch
                     .as_ref()
-                    .map(|e| nesting_helper(e, current_depth))
-                    .unwrap_or(current_depth);
+                    .map_or(current_depth, |e| nesting_helper(e, current_depth));
                 then_depth.max(else_depth)
             }
             _ => current_depth

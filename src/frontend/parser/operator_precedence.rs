@@ -102,6 +102,7 @@ pub fn is_postfix_operator(token: &Token) -> bool {
         | Token::Increment   // ++
         | Token::Decrement   // --
         | Token::Dot         // . (member access)
+        | Token::SafeNav     // ?. (optional chaining)
         | Token::LeftParen   // ( (function call)
         | Token::LeftBracket // [ (indexing)
     )
@@ -124,7 +125,7 @@ pub fn is_prefix_operator(token: &Token) -> bool {
 /// Get postfix operator precedence
 pub fn get_postfix_precedence(token: &Token) -> Precedence {
     match token {
-        Token::Dot => Precedence::MEMBER,
+        Token::Dot | Token::SafeNav => Precedence::MEMBER,
         Token::LeftParen | Token::LeftBracket => Precedence::CALL,
         Token::Question | Token::Increment | Token::Decrement => Precedence::POSTFIX,
         _ => Precedence(0),

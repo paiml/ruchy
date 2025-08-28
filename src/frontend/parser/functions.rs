@@ -301,14 +301,60 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
         });
     }
 
-    // Parse method name
-    let method = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        let name = name.clone();
-        state.tokens.advance();
-        name
-    } else {
-        bail!("Expected method name or 'await' after '.'");
-    };
+    // Parse method name or tuple index
+    match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            let method = name.clone();
+            state.tokens.advance();
+            parse_method_or_field_access(state, receiver, method)
+        }
+        Some((Token::Integer(index), _)) => {
+            // Handle tuple access like t.0, t.1, etc.
+            let index = *index;
+            state.tokens.advance();
+            Ok(Expr {
+                kind: ExprKind::FieldAccess {
+                    object: Box::new(receiver),
+                    field: index.to_string(),
+                },
+                span: Span { start: 0, end: 0 },
+                attributes: Vec::new(),
+            })
+        }
+        _ => {
+            bail!("Expected method name, tuple index, or 'await' after '.'");
+        }
+    }
+}
+
+pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr> {
+    // Parse method name or tuple index for optional chaining
+    match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            let method = name.clone();
+            state.tokens.advance();
+            parse_optional_method_or_field_access(state, receiver, method)
+        }
+        Some((Token::Integer(index), _)) => {
+            // Handle optional tuple access like t?.0, t?.1, etc.
+            let index = *index;
+            state.tokens.advance();
+            Ok(Expr {
+                kind: ExprKind::OptionalFieldAccess {
+                    object: Box::new(receiver),
+                    field: index.to_string(),
+                },
+                span: Span { start: 0, end: 0 },
+                attributes: Vec::new(),
+            })
+        }
+        _ => {
+            bail!("Expected method name or tuple index after '?.'");
+        }
+    }
+}
+
+fn parse_method_or_field_access(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
 
     // Check if this is a DataFrame-specific operation method
     // Note: filter, map, reduce are array methods, not DataFrame methods
@@ -429,6 +475,49 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
         // Field access
         Ok(Expr {
             kind: ExprKind::FieldAccess {
+                object: Box::new(receiver),
+                field: method,
+            },
+            span: Span { start: 0, end: 0 },
+            attributes: Vec::new(),
+        })
+    }
+}
+
+fn parse_optional_method_or_field_access(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
+    // Check if it's a method call (with parentheses) or field access
+    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        // Optional method call - convert to OptionalMethodCall AST node
+        // For now, we'll just parse as regular method call but with optional semantics
+        state.tokens.advance(); // consume (
+
+        let mut args = Vec::new();
+        while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+            args.push(super::parse_expr_recursive(state)?);
+
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance(); // consume comma
+            } else {
+                break;
+            }
+        }
+
+        state.tokens.expect(&Token::RightParen)?;
+
+        // Create an OptionalMethodCall expression
+        Ok(Expr {
+            kind: ExprKind::OptionalMethodCall {
+                receiver: Box::new(receiver),
+                method,
+                args,
+            },
+            span: Span { start: 0, end: 0 },
+            attributes: Vec::new(),
+        })
+    } else {
+        // Optional field access
+        Ok(Expr {
+            kind: ExprKind::OptionalFieldAccess {
                 object: Box::new(receiver),
                 field: method,
             },

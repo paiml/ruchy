@@ -305,8 +305,8 @@ pub fn parse_list(state: &mut ParserState) -> Result<Expr> {
         return Ok(Expr::new(ExprKind::List(Vec::new()), start_span));
     }
 
-    // Parse the first element
-    let first_element = super::parse_expr_recursive(state)?;
+    // Parse the first element (checking for spread syntax)
+    let first_element = parse_list_element(state)?;
 
     // Check if this is a list comprehension by looking for 'for'
     if matches!(state.tokens.peek(), Some((Token::For, _))) {
@@ -323,12 +323,29 @@ pub fn parse_list(state: &mut ParserState) -> Result<Expr> {
             break; // trailing comma
         }
 
-        elements.push(super::parse_expr_recursive(state)?);
+        elements.push(parse_list_element(state)?);
     }
 
     state.tokens.expect(&Token::RightBracket)?;
 
     Ok(Expr::new(ExprKind::List(elements), start_span))
+}
+
+/// Parse a single list element, handling both regular expressions and spread syntax
+fn parse_list_element(state: &mut ParserState) -> Result<Expr> {
+    // Check for spread syntax (...)
+    if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
+        let start_pos = state.tokens.advance().expect("checked above").1.start; // consume ...
+        let expr = super::parse_expr_recursive(state)?;
+        let span = Span { 
+            start: start_pos, 
+            end: expr.span.end 
+        };
+        Ok(Expr::new(ExprKind::Spread { expr: Box::new(expr) }, span))
+    } else {
+        // Regular element
+        super::parse_expr_recursive(state)
+    }
 }
 
 /// Parse a list comprehension after the element expression
