@@ -15,6 +15,7 @@ pub mod observatory_ui;
 pub mod repl;
 pub mod replay;
 pub mod deterministic;
+pub mod assessment;
 #[cfg(test)]
 mod repl_function_tests;
 
@@ -40,6 +41,13 @@ pub use actor::{
 pub use observatory::{
     ActorObservatory, ActorSnapshot, ActorState, DeadlockCycle, MessageFilter, MessageTrace,
     MessageStatus, ObservatoryConfig, SystemMetrics,
+};
+
+// Export assessment components
+pub use assessment::{
+    Assignment, AssignmentSetup, Task, TestCase, ExpectedBehavior,
+    GradingEngine, GradeReport, TaskGrade, GradingRubric,
+    PlagiarismDetector, SecureSandbox,
 };
 
 pub use observatory_ui::{DashboardConfig, DisplayMode, ObservatoryDashboard};
