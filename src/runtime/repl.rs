@@ -322,6 +322,8 @@ impl RuchyCompleter {
                 "last".to_string(),
                 "reverse".to_string(),
                 "sum".to_string(),
+                "push".to_string(),
+                "pop".to_string(),
             ],
             string_methods: vec![
                 "len".to_string(),
@@ -391,48 +393,76 @@ impl RuchyCompleter {
 
         // Complete method calls (after a dot)
         if let Some(dot_pos) = text_before_cursor.rfind('.') {
+            let object_name = &text_before_cursor[..dot_pos];
+            let object_part = &text_before_cursor[..=dot_pos];
             let method_partial = &text_before_cursor[dot_pos + 1..];
             // Use HashSet to avoid O(n²) duplicates check
             let mut seen = HashSet::new();
             let mut completions = Vec::new();
 
+            // Check if we have an object variable with fields
+            if let Some(value) = bindings.get(object_name) {
+                if let Value::Object(map) = value {
+                    // Add object fields
+                    for field_name in map.keys() {
+                        if field_name.starts_with(method_partial) {
+                            let full_completion = format!("{}{}", object_part, field_name);
+                            if seen.insert(full_completion.clone()) {
+                                completions.push(full_completion);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Add list methods
             for method in &self.list_methods {
-                if method.starts_with(method_partial) && seen.insert(method.clone()) {
-                    completions.push(method.clone());
+                if method.starts_with(method_partial) {
+                    let full_completion = format!("{}{}", object_part, method);
+                    if seen.insert(full_completion.clone()) {
+                        completions.push(full_completion);
+                    }
                 }
             }
+            // Add string methods
             for method in &self.string_methods {
-                if method.starts_with(method_partial) && seen.insert(method.clone()) {
-                    completions.push(method.clone());
+                if method.starts_with(method_partial) {
+                    let full_completion = format!("{}{}", object_part, method);
+                    if seen.insert(full_completion.clone()) {
+                        completions.push(full_completion);
+                    }
                 }
             }
+            completions.sort();
             return completions;
         }
 
         // Complete keywords, functions, and variables
         let mut completions = Vec::new();
+        let partial_lower = partial_word.to_lowercase();
 
         completions.extend(
             self.keywords
                 .iter()
-                .filter(|kw| kw.starts_with(partial_word))
+                .filter(|kw| kw.to_lowercase().starts_with(&partial_lower))
                 .cloned(),
         );
 
         completions.extend(
             self.builtin_functions
                 .iter()
-                .filter(|func| func.starts_with(partial_word))
+                .filter(|func| func.to_lowercase().starts_with(&partial_lower))
                 .cloned(),
         );
 
         completions.extend(
             bindings
                 .keys()
-                .filter(|var| var.starts_with(partial_word))
+                .filter(|var| var.to_lowercase().starts_with(&partial_lower))
                 .cloned(),
         );
 
+        completions.sort();
         completions
     }
 
@@ -856,6 +886,13 @@ impl Repl {
         // Let bindings are handled in evaluate_expr, no need to duplicate here
 
         Ok(value.to_string())
+    }
+
+    /// Get tab completions for the given input at the cursor position
+    pub fn complete(&self, input: &str) -> Vec<String> {
+        let pos = input.len();
+        let completer = RuchyCompleter::new();
+        completer.get_completions(input, pos, &self.bindings)
     }
 
     /// Evaluate an expression to a value
