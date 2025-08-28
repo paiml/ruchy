@@ -13,6 +13,8 @@ pub mod lazy;
 pub mod observatory;
 pub mod observatory_ui;
 pub mod repl;
+pub mod replay;
+pub mod deterministic;
 #[cfg(test)]
 mod repl_function_tests;
 
