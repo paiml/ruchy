@@ -97,6 +97,7 @@ pub enum Value {
         data: Option<Vec<Value>>,
     },
     Unit,
+    Nil,
 }
 
 /// `DataFrame` column representation for pretty printing
@@ -155,6 +156,7 @@ impl std::hash::Hash for Value {
                 }
             },
             Value::Unit => "unit".hash(state),
+            Value::Nil => "nil".hash(state),
         }
     }
 }
@@ -198,6 +200,23 @@ impl fmt::Display for Value {
                 data,
             } => Self::fmt_enum_variant(f, enum_name, variant_name, data.as_deref()),
             Value::Unit => write!(f, "()"),
+            Value::Nil => write!(f, "null"),
+        }
+    }
+}
+
+impl Value {
+    /// Check if the value is considered truthy in boolean contexts
+    fn is_truthy(&self) -> bool {
+        match self {
+            Value::Bool(b) => *b,
+            Value::Nil => false,
+            Value::Unit => false,
+            Value::Int(0) => false,
+            Value::Float(f) => *f != 0.0 && !f.is_nan(),
+            Value::String(s) => !s.is_empty(),
+            Value::List(items) => !items.is_empty(),
+            _ => true,
         }
     }
 }
@@ -312,13 +331,14 @@ pub struct Checkpoint {
     /// Timestamp of checkpoint creation
     timestamp: SystemTime,
     /// Program counter for recovery context
-    pc: usize,
+    _pc: usize,
 }
 
 /// REPL transaction state for reliable evaluation
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub enum ReplState {
     /// Ready to accept input
+    #[default]
     Ready,
     /// Currently evaluating (with checkpoint for rollback)
     Evaluating(Checkpoint),
@@ -349,7 +369,7 @@ impl Checkpoint {
             result_history,
             enum_definitions,
             timestamp: SystemTime::now(),
-            pc: repl.history.len(),
+            _pc: repl.history.len(),
         }
     }
 
@@ -381,11 +401,6 @@ impl Checkpoint {
     }
 }
 
-impl Default for ReplState {
-    fn default() -> Self {
-        ReplState::Ready
-    }
-}
 
 impl ReplState {
     /// Transition state machine for evaluation
@@ -624,15 +639,13 @@ impl RuchyCompleter {
             let mut completions = Vec::new();
 
             // Check if we have an object variable with fields
-            if let Some(value) = bindings.get(object_name) {
-                if let Value::Object(map) = value {
-                    // Add object fields
-                    for field_name in map.keys() {
-                        if field_name.starts_with(method_partial) {
-                            let full_completion = format!("{}{}", object_part, field_name);
-                            if seen.insert(full_completion.clone()) {
-                                completions.push(full_completion);
-                            }
+            if let Some(Value::Object(map)) = bindings.get(object_name) {
+                // Add object fields
+                for field_name in map.keys() {
+                    if field_name.starts_with(method_partial) {
+                        let full_completion = format!("{object_part}{field_name}");
+                        if seen.insert(full_completion.clone()) {
+                            completions.push(full_completion);
                         }
                     }
                 }
@@ -641,7 +654,7 @@ impl RuchyCompleter {
             // Add list methods
             for method in &self.list_methods {
                 if method.starts_with(method_partial) {
-                    let full_completion = format!("{}{}", object_part, method);
+                    let full_completion = format!("{object_part}{method}");
                     if seen.insert(full_completion.clone()) {
                         completions.push(full_completion);
                     }
@@ -650,7 +663,7 @@ impl RuchyCompleter {
             // Add string methods
             for method in &self.string_methods {
                 if method.starts_with(method_partial) {
-                    let full_completion = format!("{}{}", object_part, method);
+                    let full_completion = format!("{object_part}{method}");
                     if seen.insert(full_completion.clone()) {
                         completions.push(full_completion);
                     }
@@ -810,7 +823,7 @@ impl RuchyCompleter {
         unicode_mappings
             .iter()
             .filter(|(latex, _, _)| latex.starts_with(partial))
-            .map(|(_, unicode, desc)| (unicode.to_string(), desc.to_string()))
+            .map(|(_, unicode, desc)| ((*unicode).to_string(), (*desc).to_string()))
             .collect()
     }
 
@@ -1028,6 +1041,7 @@ impl MemoryTracker {
     }
 
     /// Get allocation count since last reset
+    #[allow(dead_code)]
     fn allocation_count(&self) -> usize {
         self.allocation_count
     }
@@ -1267,11 +1281,34 @@ impl Repl {
     }
     
     /// Create checkpoint of current state
+    ///
+    /// # Example
+    /// ```
+    /// use ruchy::runtime::Repl;
+    ///
+    /// let mut repl = Repl::new().unwrap();
+    /// repl.eval("let x = 42").unwrap();
+    /// let checkpoint = repl.checkpoint();
+    /// repl.eval("let x = 100").unwrap();
+    /// repl.restore_checkpoint(&checkpoint);
+    /// assert_eq!(repl.eval("x").unwrap(), "42");
+    /// ```
     pub fn checkpoint(&self) -> Checkpoint {
         Checkpoint::from_repl(self)
     }
     
     /// Restore from checkpoint
+    ///
+    /// # Example
+    /// ```
+    /// use ruchy::runtime::Repl;
+    ///
+    /// let mut repl = Repl::new().unwrap();
+    /// let checkpoint = repl.checkpoint();
+    /// repl.eval("let y = 100").unwrap();
+    /// repl.restore_checkpoint(&checkpoint);
+    /// // y is no longer defined after restore
+    /// ```
     pub fn restore_checkpoint(&mut self, checkpoint: &Checkpoint) {
         checkpoint.restore_to(self);
         self.state = ReplState::Ready;
@@ -1373,10 +1410,10 @@ impl Repl {
                 let var_name = failed_expr.strip_prefix("let ").unwrap()
                     .strip_suffix(" = ").unwrap();
                 options.push(RecoveryOption::ContinueWithDefault(
-                    format!("let {} = ()", var_name)
+                    format!("let {var_name} = ()")
                 ));
                 options.push(RecoveryOption::RetryWith(
-                    format!("let {} = 0", var_name)
+                    format!("let {var_name} = 0")
                 ));
             }
             options.push(RecoveryOption::ShowCompletions);
@@ -1394,7 +1431,7 @@ impl Repl {
                 
                 // If no similar variables found, provide a default fallback
                 if similar_vars.is_empty() {
-                    options.push(RecoveryOption::ContinueWithDefault(format!("let {} = ()", undefined_var)));
+                    options.push(RecoveryOption::ContinueWithDefault(format!("let {undefined_var} = ()")));
                     options.push(RecoveryOption::RetryWith("0".to_string())); // Simple default value
                 }
             }
@@ -1425,7 +1462,7 @@ impl Repl {
     pub fn extract_undefined_variable(&self, error_msg: &str) -> Option<String> {
         // Try to find variable name in various error message formats
         // Pattern for "Undefined variable: name"
-        if let Some(caps) = regex::Regex::new(r#"Undefined variable: ([a-zA-Z_][a-zA-Z0-9_]*)"#)
+        if let Some(caps) = regex::Regex::new(r"Undefined variable: ([a-zA-Z_][a-zA-Z0-9_]*)")
             .ok()
             .and_then(|re| re.captures(error_msg))
         {
@@ -1476,8 +1513,8 @@ impl Repl {
         let mut matrix = vec![vec![0; b_chars.len() + 1]; a_chars.len() + 1];
         
         // Initialize first row and column
-        for i in 0..=a_chars.len() {
-            matrix[i][0] = i;
+        for (i, row) in matrix.iter_mut().enumerate().take(a_chars.len() + 1) {
+            row[0] = i;
         }
         for j in 0..=b_chars.len() {
             matrix[0][j] = j;
@@ -1486,7 +1523,7 @@ impl Repl {
         // Fill the matrix
         for i in 1..=a_chars.len() {
             for j in 1..=b_chars.len() {
-                let cost = if a_chars[i-1] == b_chars[j-1] { 0 } else { 1 };
+                let cost = usize::from(a_chars[i-1] != b_chars[j-1]);
                 matrix[i][j] = std::cmp::min(
                     std::cmp::min(
                         matrix[i-1][j] + 1,      // deletion
@@ -1577,8 +1614,8 @@ impl Repl {
             }
             RecoveryOption::UseHistoryValue(index) => {
                 if index > 0 && index <= self.result_history.len() {
-                    let _value = &self.result_history[index - 1];
-                    let expr = format!("_{}", index);
+                    // Check that history value exists
+                    let expr = format!("_{index}");
                     self.error_recovery = None;
                     Ok(RecoveryResult::Recovered(expr))
                 } else {
@@ -1652,11 +1689,7 @@ impl Repl {
     
     /// Get a formatted error recovery prompt if available
     pub fn get_error_recovery_prompt(&self) -> Option<String> {
-        if let Some(recovery) = &self.error_recovery {
-            Some(self.format_error_recovery(recovery))
-        } else {
-            None
-        }
+        self.error_recovery.as_ref().map(|recovery| self.format_error_recovery(recovery))
     }
     
     /// Internal evaluation method (called by state machine)
@@ -1717,6 +1750,15 @@ impl Repl {
     /// - Timeout is reached
     /// - Stack depth limit is exceeded
     /// - Parse or evaluation fails
+    ///
+    /// # Example
+    /// ```
+    /// use ruchy::runtime::Repl;
+    ///
+    /// let mut repl = Repl::new().unwrap();
+    /// let result = repl.eval("1 + 1");
+    /// assert_eq!(result.unwrap(), "2");
+    /// ```
     pub fn eval(&mut self, input: &str) -> Result<String> {
         // Reset memory tracker for fresh evaluation
         self.memory.reset();
@@ -1749,7 +1791,7 @@ impl Repl {
             }
             ReplMode::Sql if !trimmed.starts_with(':') => {
                 // In SQL mode, execute SQL queries
-                return Ok(format!("SQL mode not yet implemented: {}", trimmed));
+                return Ok(format!("SQL mode not yet implemented: {trimmed}"));
             }
             ReplMode::Math if !trimmed.starts_with(':') => {
                 // In math mode, enhanced math evaluation
@@ -1783,15 +1825,24 @@ impl Repl {
             return Ok(output);
         }
         
-        // Check for shell commands
-        if trimmed.starts_with('!') {
-            return self.execute_shell_command(&trimmed[1..]);
+        // Check for shell commands vs unary expressions
+        if let Some(stripped) = trimmed.strip_prefix('!') {
+            // Allow unary expressions: !true, !false, !(expr), !identifier_starting_with_lowercase
+            let is_unary_expr = stripped.starts_with("true") || 
+                               stripped.starts_with("false") || 
+                               stripped.starts_with('(') ||
+                               (stripped.chars().next().is_some_and(char::is_lowercase) && 
+                                stripped.chars().all(|c| c.is_alphanumeric() || c == '_'));
+                                
+            if !is_unary_expr {
+                return self.execute_shell_command(stripped);
+            }
         }
         
         // Check for introspection commands
-        if trimmed.starts_with("??") {
+        if let Some(stripped) = trimmed.strip_prefix("??") {
             // Double question mark - detailed introspection
-            let target = trimmed[2..].trim();
+            let target = stripped.trim();
             return self.detailed_introspection(target);
         } else if trimmed.starts_with('?') && !trimmed.starts_with("?:") {
             // Single question mark - basic introspection (but not ternary operator)
@@ -1819,7 +1870,7 @@ impl Repl {
                 self.memory.try_alloc(std::mem::size_of_val(&ast))?;
                 let value = self.evaluate_expr(&ast, deadline, 0)?;
                 self.history.push(input.to_string());
-                self.result_history.push(value.clone());
+                self.result_history.push(value);
                 self.update_history_variables();
                 // Let bindings return empty string in REPL
                 return Ok(String::new());
@@ -1934,6 +1985,7 @@ impl Repl {
     }
     
     /// Check if a binding exists
+    #[allow(dead_code)]
     fn has_binding(&self, name: &str) -> bool {
         self.bindings.contains_key(name)
     }
@@ -1961,20 +2013,21 @@ impl Repl {
             // Control flow expressions
             ExprKind::If { .. } | ExprKind::Match { .. } | ExprKind::For { .. } 
             | ExprKind::While { .. } | ExprKind::IfLet { .. } | ExprKind::WhileLet { .. }
-            | ExprKind::Loop { .. } | ExprKind::Break { .. } | ExprKind::Continue { .. } => {
+            | ExprKind::Loop { .. } | ExprKind::Break { .. } | ExprKind::Continue { .. }
+            | ExprKind::TryCatch { .. } => {
                 self.evaluate_control_flow_expr(expr, deadline, depth)
             }
             
             // Data structure expressions
             ExprKind::List(_) | ExprKind::Tuple(_) | ExprKind::ObjectLiteral { .. }
-            | ExprKind::Range { .. } | ExprKind::FieldAccess { .. } | ExprKind::IndexAccess { .. } 
-            | ExprKind::Slice { .. } => {
+            | ExprKind::Range { .. } | ExprKind::FieldAccess { .. } | ExprKind::OptionalFieldAccess { .. }
+            | ExprKind::IndexAccess { .. } | ExprKind::Slice { .. } => {
                 self.evaluate_data_structure_expr(expr, deadline, depth)
             }
             
             // Function and call expressions
             ExprKind::Function { .. } | ExprKind::Lambda { .. } | ExprKind::Call { .. }
-            | ExprKind::MethodCall { .. } => {
+            | ExprKind::MethodCall { .. } | ExprKind::OptionalMethodCall { .. } => {
                 self.evaluate_function_expr(expr, deadline, depth)
             }
             
@@ -2025,6 +2078,9 @@ impl Repl {
             ExprKind::Loop { body } => self.evaluate_loop(body, deadline, depth),
             ExprKind::Break { .. } => Err(anyhow::anyhow!("break")),
             ExprKind::Continue { .. } => Err(anyhow::anyhow!("continue")),
+            ExprKind::TryCatch { try_expr, catch_expr } => {
+                self.evaluate_try_catch(try_expr, catch_expr, deadline, depth)
+            }
             _ => bail!("Non-control-flow expression in control flow dispatcher"),
         }
     }
@@ -2040,6 +2096,9 @@ impl Repl {
             }
             ExprKind::FieldAccess { object, field } => {
                 self.evaluate_field_access(object, field, deadline, depth)
+            }
+            ExprKind::OptionalFieldAccess { object, field } => {
+                self.evaluate_optional_field_access(object, field, deadline, depth)
             }
             ExprKind::IndexAccess { object, index } => {
                 self.evaluate_index_access(object, index, deadline, depth)
@@ -2085,6 +2144,9 @@ impl Repl {
                     _ => bail!("Method {} not supported on this type", method),
                 }
             }
+            ExprKind::OptionalMethodCall { receiver, method, args } => {
+                self.evaluate_optional_method_call(receiver, method, args, deadline, depth)
+            }
             _ => bail!("Non-function expression in function dispatcher"),
         }
     }
@@ -2097,6 +2159,9 @@ impl Repl {
             }
             ExprKind::Let { name, type_annotation: _, value, body, is_mutable } => {
                 self.evaluate_let_binding(name, value, body, *is_mutable, deadline, depth)
+            }
+            ExprKind::LetPattern { pattern, type_annotation: _, value, body, is_mutable } => {
+                self.evaluate_let_pattern(pattern, value, body, *is_mutable, deadline, depth)
             }
             ExprKind::Block(exprs) => self.evaluate_block(exprs, deadline, depth),
             ExprKind::Assign { target, value } => {
@@ -2154,6 +2219,9 @@ impl Repl {
             ExprKind::Export { items } => {
                 self.evaluate_export(items)
             }
+            ExprKind::Spread { .. } => {
+                bail!("Spread operator (...) can only be used inside array literals")
+            }
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
@@ -2173,6 +2241,7 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
+        use std::collections::HashSet;
         match method {
             "map" => self.evaluate_list_map(items, args, deadline, depth),
             "filter" => self.evaluate_list_filter(items, args, deadline, depth),
@@ -2332,13 +2401,12 @@ impl Repl {
                 if !args.is_empty() {
                     bail!("unique requires no arguments");
                 }
-                use std::collections::HashSet;
                 let mut seen = HashSet::new();
                 let mut result = Vec::new();
                 
                 for item in items {
                     // Use string representation for hashing since Value doesn't implement Hash
-                    let key = format!("{:?}", item);
+                    let key = format!("{item:?}");
                     if seen.insert(key) {
                         result.push(item);
                     }
@@ -2450,28 +2518,41 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         if args.len() != 2 {
-            bail!("reduce expects 2 arguments: initial value and lambda");
+            bail!("reduce expects 2 arguments: lambda and initial value");
         }
 
-        let mut accumulator = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        // Args are now: [lambda, initial_value] to match JS/Ruby style
+        let mut accumulator = self.evaluate_expr(&args[1], deadline, depth + 1)?;
 
-        if let ExprKind::Lambda { params, body } = &args[1].kind {
-            if params.len() != 2 {
-                bail!("reduce lambda must take exactly 2 parameters");
+        // Debug: Check what type of expression args[0] is
+        match &args[0].kind {
+            ExprKind::Lambda { params, body } => {
+                if params.len() != 2 {
+                    bail!("reduce lambda must take exactly 2 parameters");
+                }
+
+                let saved_bindings = self.bindings.clone();
+
+                for item in items {
+                    self.bindings.insert(params[0].name(), accumulator);
+                    self.bindings.insert(params[1].name(), item);
+                    accumulator = self.evaluate_expr(body, deadline, depth + 1)?;
+                }
+
+                self.bindings = saved_bindings;
+                Ok(accumulator)
             }
-
-            let saved_bindings = self.bindings.clone();
-
-            for item in items {
-                self.bindings.insert(params[0].name(), accumulator);
-                self.bindings.insert(params[1].name(), item);
-                accumulator = self.evaluate_expr(body, deadline, depth + 1)?;
+            other => {
+                // Debug: Check the actual expression kind
+                match other {
+                    ExprKind::Call { .. } => bail!("reduce first argument is a function call, not a lambda"),
+                    ExprKind::Identifier(..) => bail!("reduce first argument is an identifier, not a lambda"),
+                    ExprKind::Literal(..) => bail!("reduce first argument is a literal, not a lambda"),
+                    ExprKind::Binary { .. } => bail!("reduce first argument is a binary expression, not a lambda"),
+                    ExprKind::Unary { .. } => bail!("reduce first argument is a unary expression, not a lambda"),
+                    _ => bail!("reduce first argument is not a lambda expression (some other type)"),
+                }
             }
-
-            self.bindings = saved_bindings;
-            Ok(accumulator)
-        } else {
-            bail!("reduce currently only supports lambda expressions");
         }
     }
 
@@ -3129,10 +3210,56 @@ impl Repl {
     ) -> Result<Value> {
         let mut results = Vec::new();
         for elem in elements {
-            let val = self.evaluate_expr(elem, deadline, depth + 1)?;
-            results.push(val);
+            if let ExprKind::Spread { expr } = &elem.kind {
+                // Evaluate the spread expression and expand it into the array
+                let val = self.evaluate_expr(expr, deadline, depth + 1)?;
+                match val {
+                    Value::List(items) => {
+                        // Spread the items into the result
+                        results.extend(items);
+                    }
+                    Value::Tuple(items) => {
+                        // Also allow spreading tuples
+                        results.extend(items);
+                    }
+                    Value::Range { start, end, inclusive } => {
+                        // Spread range values into individual integers
+                        let range_values = self.expand_range_to_values(start, end, inclusive)?;
+                        results.extend(range_values);
+                    }
+                    _ => {
+                        bail!("Cannot spread non-iterable value: {}", self.get_value_type_name(&val));
+                    }
+                }
+            } else {
+                // Regular element
+                let val = self.evaluate_expr(elem, deadline, depth + 1)?;
+                results.push(val);
+            }
         }
         Ok(Value::List(results))
+    }
+
+    /// Expand a range into individual `Value::Int` items for spreading
+    fn expand_range_to_values(&self, start: i64, end: i64, inclusive: bool) -> Result<Vec<Value>> {
+        let actual_end = if inclusive { end } else { end - 1 };
+        
+        if start > actual_end {
+            return Ok(Vec::new()); // Empty range
+        }
+        
+        // Prevent excessive memory allocation for very large ranges
+        let range_size = (actual_end - start + 1) as usize;
+        if range_size > 10000 {
+            bail!("Range too large to expand: {} elements (limit: 10000)", range_size);
+        }
+        
+        let mut values = Vec::with_capacity(range_size);
+        for i in start..=actual_end {
+            values.push(Value::Int(i));
+        }
+        
+        Ok(values)
     }
 
     /// Evaluate tuple literal (complexity: 4)
@@ -3212,6 +3339,40 @@ impl Repl {
         match &body.kind {
             ExprKind::Literal(Literal::Unit) => Ok(val),
             _ => self.evaluate_expr(body, deadline, depth + 1),
+        }
+    }
+
+    /// Evaluate let pattern binding (destructuring assignment)
+    fn evaluate_let_pattern(
+        &mut self,
+        pattern: &crate::frontend::ast::Pattern,
+        value: &Expr,
+        body: &Expr,
+        is_mutable: bool,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let val = self.evaluate_expr(value, deadline, depth + 1)?;
+        
+        // Use existing pattern matching logic
+        if let Some(bindings) = Self::pattern_matches(&val, pattern)? {
+            let _saved_bindings = self.bindings.clone();
+            
+            // Apply all pattern bindings
+            for (name, binding_val) in bindings {
+                self.create_binding(name, binding_val, is_mutable);
+            }
+            
+            // Evaluate the body expression
+            
+            
+            // Pattern matching succeeded, keep the new bindings
+            match &body.kind {
+                ExprKind::Literal(Literal::Unit) => Ok(val),
+                _ => self.evaluate_expr(body, deadline, depth + 1),
+            }
+        } else {
+            bail!("Pattern does not match value in let binding");
         }
     }
 
@@ -3370,11 +3531,7 @@ impl Repl {
 
     /// Evaluate `Option::None` constructor (complexity: 1)
     fn evaluate_option_none() -> Value {
-        Value::EnumVariant {
-            enum_name: "Option".to_string(),
-            variant_name: "None".to_string(),
-            data: None,
-        }
+        Value::Nil
     }
     
     /// Evaluate try operator (?) - early return on Err or None
@@ -3750,7 +3907,116 @@ impl Repl {
                 .get(field)
                 .cloned()
                 .ok_or_else(|| anyhow::anyhow!("Field '{}' not found", field)),
+            Value::Tuple(values) => {
+                // Handle tuple access like t.0, t.1, etc.
+                if let Ok(index) = field.parse::<usize>() {
+                    values.get(index)
+                        .cloned()
+                        .ok_or_else(|| anyhow::anyhow!("Tuple index {} out of bounds (length: {})", index, values.len()))
+                } else {
+                    bail!("Invalid tuple index: '{}'", field)
+                }
+            }
             _ => bail!("Field access on non-object value"),
+        }
+    }
+
+    /// Evaluate optional field access (complexity: 5)
+    fn evaluate_optional_field_access(
+        &mut self,
+        object: &Expr,
+        field: &str,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
+        
+        // If the object is null, return null (short-circuit evaluation)
+        if matches!(obj_val, Value::Nil) {
+            return Ok(Value::Nil);
+        }
+        
+        match obj_val {
+            Value::Object(map) => Ok(map.get(field).cloned().unwrap_or(Value::Nil)),
+            Value::Tuple(values) => {
+                // Handle optional tuple access like t?.0, t?.1, etc.
+                if let Ok(index) = field.parse::<usize>() {
+                    Ok(values.get(index).cloned().unwrap_or(Value::Nil))
+                } else {
+                    Ok(Value::Nil) // Invalid tuple index returns nil instead of error
+                }
+            }
+            _ => Ok(Value::Nil), // Non-object/tuple values return nil instead of error
+        }
+    }
+
+    /// Evaluate optional method call (complexity: 8)
+    fn evaluate_optional_method_call(
+        &mut self,
+        receiver: &Expr,
+        method: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let receiver_val = self.evaluate_expr(receiver, deadline, depth + 1)?;
+        
+        // If the receiver is null, return null (short-circuit evaluation)
+        if matches!(receiver_val, Value::Nil) {
+            return Ok(Value::Nil);
+        }
+        
+        // Try to call the method, but return nil if it fails instead of erroring
+        match receiver_val {
+            Value::List(items) => {
+                match self.evaluate_list_methods(items, method, args, deadline, depth) {
+                    Ok(result) => Ok(result),
+                    Err(_) => Ok(Value::Nil),
+                }
+            }
+            Value::String(s) => {
+                match Self::evaluate_string_methods(&s, method, args, deadline, depth) {
+                    Ok(result) => Ok(result),
+                    Err(_) => Ok(Value::Nil),
+                }
+            }
+            Value::Int(n) => {
+                match Self::evaluate_int_methods(n, method) {
+                    Ok(result) => Ok(result),
+                    Err(_) => Ok(Value::Nil),
+                }
+            }
+            Value::Float(f) => {
+                match Self::evaluate_float_methods(f, method) {
+                    Ok(result) => Ok(result),
+                    Err(_) => Ok(Value::Nil),
+                }
+            }
+            Value::Object(obj) => {
+                match Self::evaluate_object_methods(obj, method, args, deadline, depth) {
+                    Ok(result) => Ok(result),
+                    Err(_) => Ok(Value::Nil),
+                }
+            }
+            Value::HashMap(map) => {
+                match self.evaluate_hashmap_methods(map, method, args, deadline, depth) {
+                    Ok(result) => Ok(result),
+                    Err(_) => Ok(Value::Nil),
+                }
+            }
+            Value::HashSet(set) => {
+                match self.evaluate_hashset_methods(set, method, args, deadline, depth) {
+                    Ok(result) => Ok(result),
+                    Err(_) => Ok(Value::Nil),
+                }
+            }
+            Value::EnumVariant { .. } => {
+                match self.evaluate_enum_methods(receiver_val, method, args, deadline, depth) {
+                    Ok(result) => Ok(result),
+                    Err(_) => Ok(Value::Nil),
+                }
+            }
+            _ => Ok(Value::Nil), // Unsupported types return nil instead of error
         }
     }
 
@@ -3991,9 +4257,38 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        let lhs = self.evaluate_expr(left, deadline, depth + 1)?;
-        let rhs = self.evaluate_expr(right, deadline, depth + 1)?;
-        Self::evaluate_binary(&lhs, op, &rhs)
+        // Handle short-circuit operators
+        match op {
+            BinaryOp::NullCoalesce => {
+                let lhs = self.evaluate_expr(left, deadline, depth + 1)?;
+                if matches!(lhs, Value::Nil) {
+                    self.evaluate_expr(right, deadline, depth + 1)
+                } else {
+                    Ok(lhs)
+                }
+            }
+            BinaryOp::And => {
+                let lhs = self.evaluate_expr(left, deadline, depth + 1)?;
+                if lhs.is_truthy() {
+                    self.evaluate_expr(right, deadline, depth + 1)
+                } else {
+                    Ok(lhs)
+                }
+            }
+            BinaryOp::Or => {
+                let lhs = self.evaluate_expr(left, deadline, depth + 1)?;
+                if lhs.is_truthy() {
+                    Ok(lhs)
+                } else {
+                    self.evaluate_expr(right, deadline, depth + 1)
+                }
+            }
+            _ => {
+                let lhs = self.evaluate_expr(left, deadline, depth + 1)?;
+                let rhs = self.evaluate_expr(right, deadline, depth + 1)?;
+                Self::evaluate_binary(&lhs, op, &rhs)
+            }
+        }
     }
 
     /// Evaluate unary expression (complexity: 2)
@@ -4107,6 +4402,20 @@ impl Repl {
 
             // Tuple patterns (treat as list for now)
             (Value::List(values), Pattern::Tuple(patterns)) => {
+                if values.len() != patterns.len() {
+                    return Ok(false);
+                }
+
+                for (value, pattern) in values.iter().zip(patterns.iter()) {
+                    if !Self::pattern_matches_recursive(value, pattern, bindings)? {
+                        return Ok(false);
+                    }
+                }
+                Ok(true)
+            }
+
+            // Tuple destructuring for actual tuple values
+            (Value::Tuple(values), Pattern::Tuple(patterns)) => {
                 if values.len() != patterns.len() {
                     return Ok(false);
                 }
@@ -4372,6 +4681,10 @@ impl Repl {
             (Bool(a), BinaryOp::And, Bool(b)) => Ok(Bool(*a && *b)),
             (Bool(a), BinaryOp::Or, Bool(b)) => Ok(Bool(*a || *b)),
 
+            // Null coalescing operator (fallback - should be short-circuited)
+            (Value::Nil, BinaryOp::NullCoalesce, rhs) => Ok(rhs.clone()),
+            (lhs, BinaryOp::NullCoalesce, _) => Ok(lhs.clone()),
+
             // Bitwise operations on integers
             (Int(a), BinaryOp::BitwiseAnd, Int(b)) => Ok(Int(a & b)),
             (Int(a), BinaryOp::BitwiseOr, Int(b)) => Ok(Int(a | b)),
@@ -4459,7 +4772,7 @@ impl Repl {
                     if !in_multiline && line.starts_with(':') {
                         let (should_quit, output) = self.handle_command_with_output(&line)?;
                         if !output.is_empty() {
-                            println!("{}", output);
+                            println!("{output}");
                         }
                         if should_quit {
                             break; // :quit command
@@ -4539,14 +4852,14 @@ impl Repl {
         
         let should_quit = match parts.first().copied() {
             Some(":quit" | ":q") => {
-                if self.mode != ReplMode::Normal {
+                if self.mode == ReplMode::Normal {
+                    // In normal mode, :quit exits REPL
+                    true
+                } else {
                     // In a special mode, :quit returns to normal
                     self.mode = ReplMode::Normal;
                     output = "Returned to normal mode".to_string();
                     false
-                } else {
-                    // In normal mode, :quit exits REPL
-                    true
                 }
             }
             Some(":history") => {
@@ -4572,7 +4885,7 @@ impl Repl {
                     output = "No bindings".to_string();
                 } else {
                     for (name, value) in &self.bindings {
-                        output.push_str(&format!("{}: {}\n", name, value));
+                        output.push_str(&format!("{name}: {value}\n"));
                     }
                 }
                 false
@@ -4580,14 +4893,14 @@ impl Repl {
             Some(":compile") => {
                 match self.compile_session() {
                     Ok(()) => output = "Session compiled successfully".to_string(),
-                    Err(e) => output = format!("Compilation failed: {}", e),
+                    Err(e) => output = format!("Compilation failed: {e}"),
                 }
                 false
             }
             Some(":load") if parts.len() == 2 => {
                 match self.load_file(parts[1]) {
                     Ok(()) => output = format!("Loaded file: {}", parts[1]),
-                    Err(e) => output = format!("Failed to load file: {}", e),
+                    Err(e) => output = format!("Failed to load file: {e}"),
                 }
                 false
             }
@@ -4598,8 +4911,8 @@ impl Repl {
             Some(":save") if parts.len() >= 2 => {
                 let filename = command.strip_prefix(":save").unwrap_or("").trim();
                 match self.save_session(filename) {
-                    Ok(()) => output = format!("Session saved to {}", filename),
-                    Err(e) => output = format!("Failed to save session: {}", e),
+                    Ok(()) => output = format!("Session saved to {filename}"),
+                    Err(e) => output = format!("Failed to save session: {e}"),
                 }
                 false
             }
@@ -4610,8 +4923,8 @@ impl Repl {
             Some(":export") if parts.len() >= 2 => {
                 let filename = command.strip_prefix(":export").unwrap_or("").trim();
                 match self.export_session(filename) {
-                    Ok(()) => output = format!("Session exported to clean script: {}", filename),
-                    Err(e) => output = format!("Failed to export session: {}", e),
+                    Ok(()) => output = format!("Session exported to clean script: {filename}"),
+                    Err(e) => output = format!("Failed to export session: {e}"),
                 }
                 false
             }
@@ -4681,9 +4994,9 @@ impl Repl {
                 false
             }
             Some(":help" | ":h") if parts.len() == 1 => {
-                // No argument - switch to help mode
+                // No argument - switch to help mode and show menu
                 self.mode = ReplMode::Help;
-                output = "Switched to help mode - type any keyword for documentation\nUse :normal to exit".to_string();
+                output = self.show_help_menu()?;
                 false
             }
             Some(":help") if parts.len() > 1 => {
@@ -4737,7 +5050,7 @@ impl Repl {
                 false
             }
             _ => {
-                output = format!("Unknown command: {}\nType :help for available commands", command);
+                output = format!("Unknown command: {command}\nType :help for available commands");
                 false
             }
         };
@@ -4893,11 +5206,11 @@ impl Repl {
                 
                 // Infer the type
                 match ctx.infer(&ast) {
-                    Ok(ty) => format!("Type: {}", ty),
-                    Err(e) => format!("Type inference error: {}", e),
+                    Ok(ty) => format!("Type: {ty}"),
+                    Err(e) => format!("Type inference error: {e}"),
                 }
             }
-            Err(e) => format!("Parse error: {}", e),
+            Err(e) => format!("Parse error: {e}"),
         }
     }
     
@@ -4923,11 +5236,12 @@ impl Repl {
                     Value::HashSet(_) => "HashSet",
                     Value::Range { .. } => "Range",
                     Value::EnumVariant { enum_name, variant_name, .. } => {
-                        &format!("{}::{}", enum_name, variant_name)
+                        &format!("{enum_name}::{variant_name}")
                     }
-                    Value::Unit => "Unit"
+                    Value::Unit => "Unit",
+                    Value::Nil => "Nil"
                 };
-                return format!("Type: {}", type_name);
+                return format!("Type: {type_name}");
             }
         }
         
@@ -4938,8 +5252,8 @@ impl Repl {
     /// Get AST information as string
     fn get_ast_info(expr: &str) -> String {
         match Parser::new(expr).parse() {
-            Ok(ast) => format!("{:#?}", ast),
-            Err(e) => format!("Parse error: {}", e),
+            Ok(ast) => format!("{ast:#?}"),
+            Err(e) => format!("Parse error: {e}"),
         }
     }
     
@@ -4955,7 +5269,7 @@ impl Repl {
         }
         
         if results.is_empty() {
-            format!("No matches found for '{}'", query)
+            format!("No matches found for '{query}'")
         } else {
             results.join("\n")
         }
@@ -4970,7 +5284,7 @@ impl Repl {
             .arg("-c")
             .arg(command)
             .output()
-            .context(format!("Failed to execute shell command: {}", command))?;
+            .context(format!("Failed to execute shell command: {command}"))?;
         
         // Combine stdout and stderr
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -4980,9 +5294,8 @@ impl Repl {
             // If command failed, return error with stderr
             if !stderr.is_empty() {
                 bail!("Shell command failed: {}", stderr);
-            } else {
-                bail!("Shell command failed with exit code: {:?}", output.status.code());
             }
+            bail!("Shell command failed with exit code: {:?}", output.status.code());
         }
         
         // Return stdout (stderr is usually empty for successful commands)
@@ -4995,12 +5308,12 @@ impl Repl {
         if let Some(value) = self.bindings.get(target) {
             let type_name = self.get_value_type_name(value);
             let value_str = self.format_value_brief(value);
-            return Ok(format!("Type: {}\nValue: {}", type_name, value_str));
+            return Ok(format!("Type: {type_name}\nValue: {value_str}"));
         }
         
         // Check if it's a builtin function
         if self.is_builtin_function(target) {
-            return Ok(format!("Type: Builtin Function\nName: {}", target));
+            return Ok(format!("Type: Builtin Function\nName: {target}"));
         }
         
         // Try to evaluate the expression and introspect result
@@ -5008,7 +5321,7 @@ impl Repl {
             // Try to get type information
             let mut ctx = crate::middleend::InferenceContext::new();
             if let Ok(ty) = ctx.infer(&ast) {
-                return Ok(format!("Type: {}", ty));
+                return Ok(format!("Type: {ty}"));
             }
         }
         
@@ -5059,9 +5372,10 @@ impl Repl {
             Value::DataFrame { .. } => "DataFrame",
             Value::EnumVariant { enum_name, variant_name, .. } => {
                 // Return a static str by leaking - safe for REPL lifetime
-                Box::leak(format!("{}::{}", enum_name, variant_name).into_boxed_str())
+                Box::leak(format!("{enum_name}::{variant_name}").into_boxed_str())
             }
             Value::Unit => "Unit",
+            Value::Nil => "Nil",
         }
     }
     
@@ -5086,7 +5400,7 @@ impl Repl {
     /// Format detailed introspection output
     fn format_detailed_introspection(&self, name: &str, value: &Value) -> String {
         let mut output = String::new();
-        output.push_str(&format!("Name: {}\n", name));
+        output.push_str(&format!("Name: {name}\n"));
         output.push_str(&format!("Type: {}\n", self.get_value_type_name(value)));
         
         match value {
@@ -5118,7 +5432,7 @@ impl Repl {
                 }
             }
             _ => {
-                output.push_str(&format!("Value: {}\n", value));
+                output.push_str(&format!("Value: {value}\n"));
             }
         }
         
@@ -5165,11 +5479,11 @@ impl Repl {
                             .collect::<Vec<_>>()
                             .join(", "))
                 } else {
-                    format!("(call ...)")
+                    "(call ...)".to_string()
                 }
             }
             ExprKind::Identifier(name) => name.clone(),
-            ExprKind::Literal(lit) => format!("{:?}", lit),
+            ExprKind::Literal(lit) => format!("{lit:?}"),
             ExprKind::Block(exprs) => {
                 if exprs.len() == 1 {
                     self.expr_to_source_string(&exprs[0], indent)
@@ -5192,11 +5506,11 @@ impl Repl {
             "len" => "len(collection)\n  Returns the length of a collection\n  Parameters: collection - List, String, or other collection".to_string(),
             "type" => "type(value)\n  Returns the type of a value\n  Parameters: value - Any value".to_string(),
             "str" => "str(value)\n  Converts a value to string\n  Parameters: value - Any value to convert".to_string(),
-            _ => format!("{}\n  Builtin function\n  (documentation not available)", name),
+            _ => format!("{name}\n  Builtin function\n  (documentation not available)"),
         }
     }
     
-    /// Evaluate type() function
+    /// Evaluate `type()` function
     fn evaluate_type_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("type() expects 1 argument, got {}", args.len());
@@ -5207,7 +5521,7 @@ impl Repl {
         Ok(Value::String(type_name.to_string()))
     }
     
-    /// Evaluate summary() function
+    /// Evaluate `summary()` function
     fn evaluate_summary_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("summary() expects 1 argument, got {}", args.len());
@@ -5224,7 +5538,7 @@ impl Repl {
         Ok(Value::String(summary))
     }
     
-    /// Evaluate dir() function
+    /// Evaluate `dir()` function
     fn evaluate_dir_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("dir() expects 1 argument, got {}", args.len());
@@ -5241,7 +5555,7 @@ impl Repl {
         Ok(Value::String(members.join(", ")))
     }
     
-    /// Evaluate help() function
+    /// Evaluate `help()` function
     fn evaluate_help_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("help() expects 1 argument, got {}", args.len());
@@ -5277,7 +5591,7 @@ impl Repl {
         }
     }
     
-    /// Evaluate whos() function - lists all variables with types
+    /// Evaluate `whos()` function - lists all variables with types
     fn evaluate_whos_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         let filter = if args.len() == 1 {
             // Get type filter
@@ -5299,13 +5613,13 @@ impl Repl {
                     continue;
                 }
             }
-            output.push(format!("{}: {}", name, type_name));
+            output.push(format!("{name}: {type_name}"));
         }
         
         Ok(Value::String(output.join("\n")))
     }
     
-    /// Evaluate who() function - simple list of variable names
+    /// Evaluate `who()` function - simple list of variable names
     fn evaluate_who_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         let names: Vec<_> = self.bindings.keys().cloned().collect();
         Ok(Value::String(names.join(", ")))
@@ -5317,7 +5631,7 @@ impl Repl {
             // Clear all bindings
             let count = self.bindings.len();
             self.bindings.clear();
-            Ok(Value::String(format!("Cleared {} variables", count)))
+            Ok(Value::String(format!("Cleared {count} variables")))
         } else {
             // Clear matching pattern
             let pattern = self.evaluate_expr(&args[0], deadline, depth + 1)?;
@@ -5325,21 +5639,21 @@ impl Repl {
                 let mut cleared = 0;
                 let pattern_prefix = pat.trim_end_matches('*');
                 let keys_to_remove: Vec<_> = self.bindings.keys()
-                    .filter(|k| k.starts_with(&pattern_prefix))
+                    .filter(|k| k.starts_with(pattern_prefix))
                     .cloned()
                     .collect();
                 for key in keys_to_remove {
                     self.bindings.remove(&key);
                     cleared += 1;
                 }
-                Ok(Value::String(format!("Cleared {} variables", cleared)))
+                Ok(Value::String(format!("Cleared {cleared} variables")))
             } else {
                 bail!("clear! pattern must be a string")
             }
         }
     }
     
-    /// Evaluate save_image() function
+    /// Evaluate `save_image()` function
     fn evaluate_save_image_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("save_image() expects 1 argument (filename), got {}", args.len());
@@ -5355,15 +5669,15 @@ impl Repl {
             // Save all bindings
             for (name, value) in &self.bindings {
                 match value {
-                    Value::Int(n) => content.push_str(&format!("let {} = {}\n", name, n)),
-                    Value::Float(f) => content.push_str(&format!("let {} = {}\n", name, f)),
+                    Value::Int(n) => content.push_str(&format!("let {name}= {n}\n")),
+                    Value::Float(f) => content.push_str(&format!("let {name}= {f}\n")),
                     Value::String(s) => content.push_str(&format!("let {} = \"{}\"\n", name, s.replace('"', "\\\""))),
-                    Value::Bool(b) => content.push_str(&format!("let {} = {}\n", name, b)),
+                    Value::Bool(b) => content.push_str(&format!("let {name}= {b}\n")),
                     Value::List(items) => {
-                        content.push_str(&format!("let {} = [", name));
+                        content.push_str(&format!("let {name} = ["));
                         for (i, item) in items.iter().enumerate() {
                             if i > 0 { content.push_str(", "); }
-                            content.push_str(&format!("{}", item));
+                            content.push_str(&format!("{item}"));
                         }
                         content.push_str("]\n");
                     }
@@ -5378,29 +5692,29 @@ impl Repl {
             
             // Write to file
             fs::write(&path, content)?;
-            Ok(Value::String(format!("Workspace saved to {}", path)))
+            Ok(Value::String(format!("Workspace saved to {path}")))
         } else {
             bail!("save_image() requires a string filename")
         }
     }
     
-    /// Evaluate workspace() function
+    /// Evaluate `workspace()` function
     fn evaluate_workspace_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         let var_count = self.bindings.len();
         let func_count = self.bindings.values()
             .filter(|v| matches!(v, Value::Function { .. } | Value::Lambda { .. }))
             .count();
         
-        Ok(Value::String(format!("{} variables, {} functions", var_count, func_count)))
+        Ok(Value::String(format!("{var_count}variables, {func_count} functions")))
     }
     
-    /// Evaluate locals() function
+    /// Evaluate `locals()` function
     fn evaluate_locals_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         // For now, same as globals since we don't have proper scoping
         self.evaluate_globals_function(&[], Instant::now(), 0)
     }
     
-    /// Evaluate globals() function
+    /// Evaluate `globals()` function
     fn evaluate_globals_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         let mut output = Vec::new();
         for (name, value) in &self.bindings {
@@ -5409,7 +5723,7 @@ impl Repl {
         Ok(Value::String(output.join("\n")))
     }
     
-    /// Evaluate reset() function
+    /// Evaluate `reset()` function
     fn evaluate_reset_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         self.bindings.clear();
         self.history.clear();
@@ -5419,7 +5733,7 @@ impl Repl {
         Ok(Value::String("Workspace reset".to_string()))
     }
     
-    /// Evaluate del() function
+    /// Evaluate `del()` function
     fn evaluate_del_function(&mut self, args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("del() expects 1 argument, got {}", args.len());
@@ -5437,7 +5751,7 @@ impl Repl {
         }
     }
     
-    /// Evaluate exists() function
+    /// Evaluate `exists()` function
     fn evaluate_exists_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("exists() expects 1 argument, got {}", args.len());
@@ -5451,15 +5765,15 @@ impl Repl {
         }
     }
     
-    /// Evaluate memory_info() function
+    /// Evaluate `memory_info()` function
     fn evaluate_memory_info_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         let current = self.memory.current;
         let max = self.memory.max_size;
         let kb = current / 1024;
-        Ok(Value::String(format!("Memory: {} bytes ({} KB) / {} max", current, kb, max)))
+        Ok(Value::String(format!("Memory: {current} bytes ({kb} KB) / {max} max")))
     }
     
-    /// Evaluate time_info() function
+    /// Evaluate `time_info()` function
     fn evaluate_time_info_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         // For simplicity, just return a placeholder
         Ok(Value::String("Session time: active".to_string()))
@@ -5814,7 +6128,7 @@ impl Repl {
 
     /// Export session as a clean production script
     ///
-    /// Unlike save_session which saves the raw REPL commands with comments,
+    /// Unlike `save_session` which saves the raw REPL commands with comments,
     /// this creates a clean, executable script with proper structure.
     ///
     /// # Arguments
@@ -5854,7 +6168,7 @@ impl Repl {
 
             // Skip display-only operations (those that just show values)
             if self.is_display_only_command(command) {
-                writeln!(&mut content, "    // {} (display only - removed)", command)?;
+                writeln!(&mut content, "    // {command} (display only - removed)")?;
                 continue;
             }
 
@@ -5866,19 +6180,19 @@ impl Repl {
         }
 
         // Wrap in main function if there are statements
-        if !clean_statements.is_empty() {
-            writeln!(&mut content, "fn main() -> Result<(), Box<dyn std::error::Error>> {{")?;
-            
-            for statement in clean_statements {
-                writeln!(&mut content, "    {}", statement)?;
-            }
-            
-            writeln!(&mut content, "    Ok(())")?;
-            writeln!(&mut content, "}}")?;
-        } else {
+        if clean_statements.is_empty() {
             writeln!(&mut content, "// No executable statements to export")?;
             writeln!(&mut content, "fn main() {{")?;
             writeln!(&mut content, "    println!(\"Hello, Ruchy!\");")?;
+            writeln!(&mut content, "}}")?;
+        } else {
+            writeln!(&mut content, "fn main() -> Result<(), Box<dyn std::error::Error>> {{")?;
+            
+            for statement in clean_statements {
+                writeln!(&mut content, "    {statement}")?;
+            }
+            
+            writeln!(&mut content, "    Ok(())")?;
             writeln!(&mut content, "}}")?;
         }
 
@@ -5934,7 +6248,7 @@ impl Repl {
             if trimmed.ends_with(';') {
                 trimmed.to_string()
             } else {
-                format!("{};", trimmed)
+                format!("{trimmed};")
             }
         }
     }
@@ -5999,6 +6313,24 @@ impl Repl {
                 }
             }
             _ => bail!("If condition must be boolean, got: {:?}", cond_val),
+        }
+    }
+
+    /// Evaluate try-catch expression (complexity: 4)
+    fn evaluate_try_catch(
+        &mut self,
+        try_expr: &Expr,
+        catch_expr: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        // Try to evaluate the try expression
+        match self.evaluate_expr(try_expr, deadline, depth + 1) {
+            Ok(value) => Ok(value),
+            Err(_) => {
+                // If the try expression fails, evaluate the catch expression
+                self.evaluate_expr(catch_expr, deadline, depth + 1)
+            }
         }
     }
 
@@ -6892,7 +7224,7 @@ impl Repl {
                 let result = self.eval(args)?;
                 let elapsed = start.elapsed();
                 
-                Ok(format!("{}\nExecuted in: {:?}", result, elapsed))
+                Ok(format!("{result}\nExecuted in: {elapsed:?}"))
             }
             
             "%timeit" => {
@@ -6912,8 +7244,7 @@ impl Repl {
                 
                 let avg_time = total_time / ITERATIONS as u32;
                 Ok(format!(
-                    "{}\n{} loops, average: {:?} per loop", 
-                    last_result, ITERATIONS, avg_time
+                    "{last_result}\n{ITERATIONS} loops, average: {avg_time:?} per loop"
                 ))
             }
             
@@ -6932,34 +7263,34 @@ impl Repl {
                             if !trimmed.is_empty() && !trimmed.starts_with("//") {
                                 match self.eval(trimmed) {
                                     Ok(result) => results.push(result),
-                                    Err(e) => return Err(e.context(format!("Error executing: {}", trimmed))),
+                                    Err(e) => return Err(e.context(format!("Error executing: {trimmed}"))),
                                 }
                             }
                         }
                         
                         Ok(results.join("\n"))
                     }
-                    Err(e) => Ok(format!("Failed to read file '{}': {}", args, e))
+                    Err(e) => Ok(format!("Failed to read file '{args}': {e}"))
                 }
             }
             
             "%debug" => {
                 if let Some(ref debug_info) = self.last_error_debug {
                     let mut output = String::new();
-                    output.push_str(&format!("=== Debug Information ===\n"));
+                    output.push_str(&"=== Debug Information ===\n".to_string());
                     output.push_str(&format!("Expression: {}\n", debug_info.expression));
                     output.push_str(&format!("Error: {}\n", debug_info.error_message));
                     output.push_str(&format!("Time: {:?}\n", debug_info.timestamp));
-                    output.push_str(&format!("\n--- Variable Bindings at Error ---\n"));
+                    output.push_str(&"\n--- Variable Bindings at Error ---\n".to_string());
                     
                     for (name, value) in &debug_info.bindings_snapshot {
-                        output.push_str(&format!("{}: {}\n", name, value));
+                        output.push_str(&format!("{name}: {value}\n"));
                     }
                     
                     if !debug_info.stack_trace.is_empty() {
-                        output.push_str(&format!("\n--- Stack Trace ---\n"));
+                        output.push_str(&"\n--- Stack Trace ---\n".to_string());
                         for frame in &debug_info.stack_trace {
-                            output.push_str(&format!("  {}\n", frame));
+                            output.push_str(&format!("  {frame}\n"));
                         }
                     }
                     
@@ -6976,8 +7307,8 @@ impl Repl {
                 
                 // Profile the expression
                 let start = std::time::Instant::now();
-                let mut parse_time = std::time::Duration::ZERO;
-                let mut eval_time = std::time::Duration::ZERO;
+                
+                
                 let mut alloc_size = 0;
                 
                 // Measure parsing
@@ -6985,9 +7316,9 @@ impl Repl {
                 let mut parser = Parser::new(args);
                 let ast = match parser.parse() {
                     Ok(ast) => ast,
-                    Err(e) => return Ok(format!("Parse error: {}", e)),
+                    Err(e) => return Ok(format!("Parse error: {e}")),
                 };
-                parse_time = parse_start.elapsed();
+                let parse_time = parse_start.elapsed();
                 alloc_size += std::mem::size_of_val(&ast);
                 
                 // Measure evaluation
@@ -6995,17 +7326,17 @@ impl Repl {
                 let deadline = std::time::Instant::now() + self.config.timeout;
                 let result = match self.evaluate_expr(&ast, deadline, 0) {
                     Ok(value) => value,
-                    Err(e) => return Ok(format!("Evaluation error: {}", e)),
+                    Err(e) => return Ok(format!("Evaluation error: {e}")),
                 };
-                eval_time = eval_start.elapsed();
+                let eval_time = eval_start.elapsed();
                 
                 let total_time = start.elapsed();
                 
                 // Generate profile report
                 let mut output = String::new();
                 output.push_str("=== Performance Profile ===\n");
-                output.push_str(&format!("Expression: {}\n", args));
-                output.push_str(&format!("Result: {}\n\n", result));
+                output.push_str(&format!("Expression: {args}\n"));
+                output.push_str(&format!("Result: {result}\n\n"));
                 
                 output.push_str("--- Timing Breakdown ---\n");
                 output.push_str(&format!("Parse:     {:>8.3}ms ({:>5.1}%)\n", 
@@ -7018,7 +7349,7 @@ impl Repl {
                     total_time.as_secs_f64() * 1000.0));
                 
                 output.push_str("--- Memory Usage ---\n");
-                output.push_str(&format!("AST size:  {:>8} bytes\n", alloc_size));
+                output.push_str(&format!("AST size:  {alloc_size:>8} bytes\n"));
                 output.push_str(&format!("Memory:    {:>8} bytes used\n", self.memory.current));
                 
                 // Performance analysis
@@ -7043,17 +7374,17 @@ impl Repl {
             }
             
             "%help" => {
-                Ok(r#"Available magic commands:
+                Ok(r"Available magic commands:
 %time <expr>     - Time a single execution
 %timeit <expr>   - Time multiple executions (benchmark)
 %run <file>      - Execute a .ruchy script file
 %debug           - Show debug info from last error
 %profile <expr>  - Generate execution profile
-%help            - Show this help message"#.to_string())
+%help            - Show this help message".to_string())
             }
             
             _ => {
-                Ok(format!("Unknown magic command: {}. Type %help for available commands.", magic_cmd))
+                Ok(format!("Unknown magic command: {magic_cmd}. Type %help for available commands."))
             }
         }
     }
@@ -7088,7 +7419,7 @@ impl Repl {
         match value {
             Value::Int(n) => Ok(Value::Int(n)),
             Value::Float(f) => Ok(Value::Int(f as i64)),
-            Value::Bool(b) => Ok(Value::Int(if b { 1 } else { 0 })),
+            Value::Bool(b) => Ok(Value::Int(i64::from(b))),
             Value::String(s) => {
                 match s.trim().parse::<i64>() {
                     Ok(n) => Ok(Value::Int(n)),
@@ -7114,7 +7445,7 @@ impl Repl {
         match value {
             Value::Float(f) => Ok(Value::Float(f)),
             Value::Int(n) => Ok(Value::Float(n as f64)),
-            Value::Bool(b) => Ok(Value::Float(if b { 1.0 } else { 0.0 })),
+            Value::Bool(b) => Ok(Value::Float(f64::from(b))),
             Value::String(s) => {
                 match s.trim().parse::<f64>() {
                     Ok(f) => Ok(Value::Float(f)),
@@ -7149,7 +7480,7 @@ impl Repl {
         }
     }
 
-    /// Evaluate sin() function
+    /// Evaluate `sin()` function
     fn evaluate_sin(
         &mut self,
         args: &[Expr],
@@ -7167,7 +7498,7 @@ impl Repl {
         }
     }
 
-    /// Evaluate cos() function
+    /// Evaluate `cos()` function
     fn evaluate_cos(
         &mut self,
         args: &[Expr],
@@ -7185,7 +7516,7 @@ impl Repl {
         }
     }
 
-    /// Evaluate tan() function
+    /// Evaluate `tan()` function
     fn evaluate_tan(
         &mut self,
         args: &[Expr],
@@ -7203,7 +7534,7 @@ impl Repl {
         }
     }
 
-    /// Evaluate log() function (natural logarithm)
+    /// Evaluate `log()` function (natural logarithm)
     fn evaluate_log(
         &mut self,
         args: &[Expr],
@@ -7231,7 +7562,7 @@ impl Repl {
         }
     }
 
-    /// Evaluate log10() function (base-10 logarithm)
+    /// Evaluate `log10()` function (base-10 logarithm)
     fn evaluate_log10(
         &mut self,
         args: &[Expr],
@@ -7259,26 +7590,27 @@ impl Repl {
         }
     }
 
-    /// Evaluate random() function - returns float between 0.0 and 1.0
+    /// Evaluate `random()` function - returns float between 0.0 and 1.0
     fn evaluate_random(
         &mut self,
         args: &[Expr],
         _deadline: Instant,
         _depth: usize,
     ) -> Result<Value> {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        
         if !args.is_empty() {
             bail!("random() expects no arguments");
         }
         // Use a simple linear congruential generator for deterministic behavior in tests
         // In production, you'd want to use rand crate
-        use std::time::{SystemTime, UNIX_EPOCH};
         let seed = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos() as u64;
         // Use a safe LCG that won't overflow
-        let a = 1664525u64;
-        let c = 1013904223u64;
+        let a = 1_664_525u64;
+        let c = 1_013_904_223u64;
         let m = 1u64 << 32;
         let random_value = ((seed.wrapping_mul(a).wrapping_add(c)) % m) as f64 / m as f64;
         Ok(Value::Float(random_value))
@@ -8031,17 +8363,71 @@ impl Repl {
         }
     }
     
+    /// Show comprehensive help menu
+    fn show_help_menu(&self) -> Result<String> {
+        Ok(r"🔧 Ruchy REPL Help Menu
+
+📋 COMMANDS:
+  :help [topic]  - Show help for specific topic or this menu
+  :quit, :q      - Exit the REPL
+  :clear         - Clear variables and history
+  :history       - Show command history  
+  :env           - Show environment variables
+  :type <expr>   - Show type of expression
+  :ast <expr>    - Show abstract syntax tree
+  :inspect <var> - Detailed variable inspection
+
+🎯 MODES:
+  :normal        - Standard evaluation mode
+  :help          - Help documentation mode (current)
+  :debug         - Debug mode with detailed output
+  :time          - Time mode showing execution duration
+  :test          - Test mode with assertions
+  :math          - Enhanced math mode
+  :sql           - SQL query mode (experimental)
+  :shell         - Shell command mode
+
+💡 LANGUAGE TOPICS (type topic name for details):
+  fn             - Function definitions
+  let            - Variable declarations  
+  if             - Conditional expressions
+  for            - Loop constructs
+  match          - Pattern matching
+  while          - While loops
+
+🚀 FEATURES:
+  • Arithmetic: +, -, *, /, %, **
+  • Comparisons: ==, !=, <, >, <=, >=
+  • Logical: &&, ||, !
+  • Arrays: [1, 2, 3], indexing with arr[0]
+  • Objects: {key: value}, access with obj.key
+  • String methods: .length(), .to_upper(), .to_lower()
+  • Math functions: sqrt(), pow(), abs(), sin(), cos(), etc.
+  • History: _1, _2, _3 (previous results)
+  • Shell commands: !ls, !pwd, !echo hello
+  • Introspection: ?variable, ??variable (detailed)
+
+Type :normal to exit help mode.
+".to_string())
+    }
+
     /// Handle help mode commands
     fn handle_help_command(&mut self, keyword: &str) -> Result<String> {
         let help_text = match keyword {
-            "fn" => "fn - Define a function\nSyntax: fn name(params) { body }\nExample: fn add(a, b) { a + b }",
-            "let" => "let - Bind a value to a variable\nSyntax: let name = value\nExample: let x = 42",
-            "if" => "if - Conditional execution\nSyntax: if condition { then } else { otherwise }\nExample: if x > 0 { \"positive\" } else { \"negative\" }",
-            "for" => "for - Loop over a collection\nSyntax: for item in collection { body }\nExample: for x in [1,2,3] { println(x) }",
-            "match" => "match - Pattern matching\nSyntax: match value { pattern => result, ... }\nExample: match x { 0 => \"zero\", _ => \"nonzero\" }",
-            _ => &format!("No help available for '{}'\nTry: fn, let, if, for, match, while", keyword),
+            "fn" | "function" => "fn - Define a function\nSyntax: fn name(params) { body }\nExample: fn add(a, b) { a + b }".to_string(),
+            "let" | "variable" | "var" => "let - Bind a value to a variable\nSyntax: let name = value\nExample: let x = 42\nMutable: let mut x = 42".to_string(),
+            "if" | "conditional" => "if - Conditional execution\nSyntax: if condition { then } else { otherwise }\nExample: if x > 0 { \"positive\" } else { \"negative\" }".to_string(),
+            "for" | "loop" => "for - Loop over a collection\nSyntax: for item in collection { body }\nExample: for x in [1,2,3] { println(x) }\nRange: for i in 1..5 { println(i) }".to_string(),
+            "while" => "while - Loop with condition\nSyntax: while condition { body }\nExample: while x < 10 { x = x + 1 }".to_string(),
+            "match" | "pattern" => "match - Pattern matching\nSyntax: match value { pattern => result, ... }\nExample: match x { 0 => \"zero\", _ => \"nonzero\" }\nGuards: match x { n if n > 0 => \"positive\", _ => \"other\" }".to_string(),
+            "array" | "list" => "Arrays - Collections of values\nSyntax: [item1, item2, ...]\nExample: let arr = [1, 2, 3]\nAccess: arr[0], arr.length(), arr.first(), arr.last()".to_string(),
+            "object" | "dict" => "Objects - Key-value pairs\nSyntax: {key: value, ...}\nExample: let obj = {name: \"Alice\", age: 30}\nAccess: obj.name, obj.age".to_string(),
+            "string" => "Strings - Text values\nSyntax: \"text\" or 'text'\nMethods: .length(), .to_upper(), .to_lower()\nConcatenation: \"hello\" + \" world\"".to_string(),
+            "math" => "Math Functions - Mathematical operations\nBasic: +, -, *, /, %, **\nFunctions: sqrt(x), pow(x,y), abs(x), min(x,y), max(x,y)\nTrig: sin(x), cos(x), tan(x)\nRounding: floor(x), ceil(x), round(x)".to_string(),
+            "commands" | ":" => self.show_help_menu()?,
+            _ => format!("No help available for '{keyword}'\n\nAvailable topics:\nfn, let, if, for, while, match, array, object, string, math\n\nType 'commands' or ':' for command help.\nType :normal to exit help mode."),
         };
-        Ok(help_text.to_string())
+        Ok(help_text)
     }
     
     /// Handle math mode commands
@@ -8051,7 +8437,7 @@ impl Repl {
         let mut parser = Parser::new(expr);
         let ast = parser.parse().context("Failed to parse math expression")?;
         let value = self.evaluate_expr(&ast, deadline, 0)?;
-        Ok(format!("= {}", value))
+        Ok(format!("= {value}"))
     }
     
     /// Handle debug mode evaluation
@@ -8120,7 +8506,7 @@ impl Repl {
         let value = self.evaluate_expr(&ast, deadline, 0)?;
         
         let elapsed = start.elapsed();
-        Ok(format!("{}\n⏱ Time: {:?}", value, elapsed))
+        Ok(format!("{value}\n⏱ Time: {elapsed:?}"))
     }
     
     /// Generate a stack trace from an error
@@ -8128,18 +8514,18 @@ impl Repl {
         let mut stack_trace = Vec::new();
         
         // Add the main error
-        stack_trace.push(format!("Error: {}", error));
+        stack_trace.push(format!("Error: {error}"));
         
         // Add error chain
         let mut current = error.source();
         while let Some(err) = current {
-            stack_trace.push(format!("Caused by: {}", err));
+            stack_trace.push(format!("Caused by: {err}"));
             current = err.source();
         }
         
         // Add current evaluation context if available
         if let Some(last_expr) = self.history.last() {
-            stack_trace.push(format!("Last successful expression: {}", last_expr));
+            stack_trace.push(format!("Last successful expression: {last_expr}"));
         }
         
         stack_trace
@@ -8163,8 +8549,8 @@ impl Repl {
         let trimmed = input.trim();
         
         // Handle assert statements
-        if trimmed.starts_with("assert ") {
-            return self.handle_assertion(&trimmed[7..]);
+        if let Some(stripped) = trimmed.strip_prefix("assert ") {
+            return self.handle_assertion(stripped);
         }
         
         // Handle table_test! macro
@@ -8174,7 +8560,7 @@ impl Repl {
         
         // Regular evaluation with test result formatting
         let result = self.eval_internal(input)?;
-        Ok(format!("✓ {}", result))
+        Ok(format!("✓ {result}"))
     }
     
     /// Handle assertion statements in test mode
@@ -8189,7 +8575,7 @@ impl Repl {
         match result {
             Value::Bool(true) => Ok("✓ Pass".to_string()),
             Value::Bool(false) => Ok("✗ Fail: assertion failed".to_string()),
-            _ => Ok(format!("✗ Fail: assertion must be boolean, got {}", result)),
+            _ => Ok(format!("✗ Fail: assertion must be boolean, got {result}")),
         }
     }
     
@@ -8219,6 +8605,7 @@ impl Repl {
             Value::HashSet(_) => "HashSet",
             Value::Range { .. } => "Range",
             Value::EnumVariant { .. } => "EnumVariant",
+            Value::Nil => "Nil",
         }
     }
     
@@ -8231,7 +8618,7 @@ impl Repl {
             output.push_str("┌─ Inspector ────────────────┐\n");
             
             // Show variable name and type
-            output.push_str(&format!("│ Variable: {:<17} │\n", var_name));
+            output.push_str(&format!("│ Variable: {var_name:<17} │\n"));
             output.push_str(&format!("│ Type: {:<22} │\n", self.infer_type(value)));
             
             // Show size/length information based on type
@@ -8258,24 +8645,24 @@ impl Repl {
                     if let Some(first_col) = columns.first() {
                         let row_count = first_col.values.len();
                         output.push_str(&format!("│ Columns: {:<19} │\n", columns.len()));
-                        output.push_str(&format!("│ Rows: {:<22} │\n", row_count));
+                        output.push_str(&format!("│ Rows: {row_count:<22} │\n"));
                     }
                 }
                 _ => {
                     // Show value preview for simple types
-                    let preview = format!("{}", value);
+                    let preview = format!("{value}");
                     if preview.len() <= 24 {
-                        output.push_str(&format!("│ Value: {:<21} │\n", preview));
+                        output.push_str(&format!("│ Value: {preview:<21} │\n"));
                     } else {
                         let truncated = &preview[..21];
-                        output.push_str(&format!("│ Value: {}... │\n", truncated));
+                        output.push_str(&format!("│ Value: {truncated}... │\n"));
                     }
                 }
             }
             
             // Memory estimation (simplified)
             let memory_size = self.estimate_memory_size(value);
-            output.push_str(&format!("│ Memory: ~{:<18} │\n", format!("{} bytes", memory_size)));
+            output.push_str(&format!("│ Memory: ~{:<18} │\n", format!("{memory_size} bytes")));
             
             // Add separator line
             output.push_str("│                            │\n");
@@ -8303,7 +8690,7 @@ impl Repl {
             
             output
         } else {
-            format!("Variable '{}' not found. Use :env to list all variables.", var_name)
+            format!("Variable '{var_name}' not found. Use :env to list all variables.")
         }
     }
     
@@ -8327,6 +8714,7 @@ impl Repl {
             }
             Value::Range { .. } => 16,
             Value::EnumVariant { .. } => 32,
+            Value::Nil => 0,
         }
     }
 }

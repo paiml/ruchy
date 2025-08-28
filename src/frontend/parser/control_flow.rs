@@ -91,7 +91,7 @@ pub fn parse_let(state: &mut ParserState) -> Result<Expr> {
     // Check if this is a pattern or simple identifier
     let is_pattern = matches!(
         state.tokens.peek(),
-        Some((Token::LeftParen | Token::LeftBracket, _))
+        Some((Token::LeftParen | Token::LeftBracket | Token::LeftBrace, _))
     ) || {
         // Check for struct patterns like Point { x, y }
         match state.tokens.peek() {
@@ -204,7 +204,7 @@ pub fn parse_var(state: &mut ParserState) -> Result<Expr> {
     // Check if this is a pattern or simple identifier
     let is_pattern = matches!(
         state.tokens.peek(),
-        Some((Token::LeftParen | Token::LeftBracket, _))
+        Some((Token::LeftParen | Token::LeftBracket | Token::LeftBrace, _))
     ) || {
         // Check for struct patterns like Point { x, y }
         match state.tokens.peek() {
@@ -416,7 +416,7 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
                         path.push("Some".to_string());
                         state.tokens.advance();
                     }
-                    Some((Token::None, _)) => {
+                    Some((Token::None | Token::Null, _)) => {
                         path.push("None".to_string());
                         state.tokens.advance();
                     }
@@ -578,6 +578,54 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
 
             Pattern::List(patterns)
         }
+        Some((Token::LeftBrace, _)) => {
+            // Object destructuring pattern { x, y } or { x: a, y: b }
+            state.tokens.advance(); // consume {
+            let mut fields = Vec::new();
+            let mut has_rest = false;
+
+            while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                // Check for rest pattern ..
+                if matches!(state.tokens.peek(), Some((Token::DotDot, _))) {
+                    state.tokens.advance(); // consume ..
+                    has_rest = true;
+                    break;
+                } else if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
+                    let field_name = field_name.clone();
+                    state.tokens.advance();
+
+                    let pattern = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+                        state.tokens.advance(); // consume :
+                        Some(parse_pattern_base(state))
+                    } else {
+                        None // Shorthand like { x } instead of { x: x }
+                    };
+
+                    fields.push(StructPatternField {
+                        name: field_name,
+                        pattern,
+                    });
+
+                    // Consume comma if present
+                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                        state.tokens.advance();
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                state.tokens.advance(); // consume }
+            }
+
+            // Return anonymous struct pattern (no name for object destructuring)
+            Pattern::Struct { 
+                name: String::new(), // Anonymous object pattern
+                fields, 
+                has_rest 
+            }
+        }
         Some((Token::Integer(i), _)) => {
             let i = *i;
             state.tokens.advance();
@@ -638,7 +686,7 @@ pub fn parse_pattern_base(state: &mut ParserState) -> Pattern {
                 Pattern::Identifier("Some".to_string())
             }
         }
-        Some((Token::None, _)) => {
+        Some((Token::None | Token::Null, _)) => {
             state.tokens.advance(); // consume None
             Pattern::None
         }
@@ -873,6 +921,28 @@ pub fn parse_return(state: &mut ParserState) -> Result<Expr> {
     
     Ok(Expr::new(
         ExprKind::Return { value },
+        start_span,
+    ))
+}
+
+/// Parse try-catch expressions
+/// # Errors
+///
+/// Returns an error if the operation fails
+pub fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume try
+    
+    // Parse the try block/expression
+    let try_expr = Box::new(super::parse_expr_recursive(state)?);
+    
+    // Expect 'catch' keyword
+    state.tokens.expect(&Token::Catch)?;
+    
+    // Parse the catch block/expression
+    let catch_expr = Box::new(super::parse_expr_recursive(state)?);
+    
+    Ok(Expr::new(
+        ExprKind::TryCatch { try_expr, catch_expr },
         start_span,
     ))
 }

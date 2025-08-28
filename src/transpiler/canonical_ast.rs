@@ -68,6 +68,7 @@ pub enum PrimOp {
     And,
     Or,
     Not,
+    NullCoalesce,
     // String
     Concat,
     // Array
@@ -170,6 +171,7 @@ impl AstNormalizer {
                     BinaryOp::GreaterEqual => PrimOp::Ge,
                     BinaryOp::And => PrimOp::And,
                     BinaryOp::Or => PrimOp::Or,
+                    BinaryOp::NullCoalesce => PrimOp::NullCoalesce,
                     // Bitwise operations not yet in core language
                     BinaryOp::BitwiseAnd
                     | BinaryOp::BitwiseOr

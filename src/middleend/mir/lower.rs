@@ -292,6 +292,7 @@ impl LoweringContext {
             AstBinOp::GreaterEqual => BinOp::Ge,
             AstBinOp::And => BinOp::And,
             AstBinOp::Or => BinOp::Or,
+            AstBinOp::NullCoalesce => BinOp::NullCoalesce,
             AstBinOp::BitwiseAnd => BinOp::BitAnd,
             AstBinOp::BitwiseOr => BinOp::BitOr,
             AstBinOp::BitwiseXor => BinOp::BitXor,
@@ -389,6 +390,7 @@ impl LoweringContext {
             | AstBinOp::GreaterEqual
             | AstBinOp::And
             | AstBinOp::Or => Type::Bool,
+            AstBinOp::NullCoalesce => Type::I32, // For now, assume Int (could be improved)
         }
     }
 

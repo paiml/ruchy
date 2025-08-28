@@ -158,6 +158,10 @@ pub enum Token {
     Await,
     #[token("throw")]
     Throw,
+    #[token("try")]
+    Try,
+    #[token("catch")]
+    Catch,
     #[token("return")]
     Return,
     #[token("command")]
@@ -170,6 +174,8 @@ pub enum Token {
     Some,
     #[token("None")]
     None,
+    #[token("null")]
+    Null,
     #[token("Result")]
     Result,
     #[token("Option")]
@@ -318,6 +324,8 @@ pub enum Token {
     DotDotEqual,
     #[token("...")]
     DotDotDot,
+    #[token("??")]
+    NullCoalesce,
     #[token("?")]
     Question,
     #[token("?.")]

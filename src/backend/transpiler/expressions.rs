@@ -4,7 +4,7 @@
 #![allow(clippy::needless_pass_by_value)] // TokenStream by value is intentional for quote! macro
 
 use super::Transpiler;
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, StringPart, UnaryOp};
+use crate::frontend::ast::{BinaryOp::{self, NullCoalesce}, Expr, ExprKind, Literal, StringPart, UnaryOp};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -156,7 +156,7 @@ impl Transpiler {
                 Self::transpile_comparison_op(left, op, right)
             }
             // Logical operations
-            And | Or => Self::transpile_logical_op(left, op, right),
+            And | Or | NullCoalesce => Self::transpile_logical_op(left, op, right),
             // Bitwise operations
             BitwiseAnd | BitwiseOr | BitwiseXor | LeftShift => {
                 Self::transpile_bitwise_op(left, op, right)
@@ -729,7 +729,7 @@ mod tests {
         
         for op in operators {
             let transpiler = create_transpiler();
-            let code = format!("5 {} 3", op);
+            let code = format!("5 {op} 3");
             let mut parser = Parser::new(&code);
             let ast = parser.parse().unwrap();
             
@@ -737,7 +737,7 @@ mod tests {
             let rust_str = result.to_string();
             
             assert!(rust_str.contains("5") && rust_str.contains("3"), 
-                   "Failed for operator {}: {}", op, rust_str);
+                   "Failed for operator {op}: {rust_str}");
         }
     }
 
@@ -747,7 +747,7 @@ mod tests {
         
         for op in operators {
             let transpiler = create_transpiler();
-            let code = format!("true {} false", op);
+            let code = format!("true {op} false");
             let mut parser = Parser::new(&code);
             let ast = parser.parse().unwrap();
             
@@ -755,7 +755,7 @@ mod tests {
             let rust_str = result.to_string();
             
             assert!(rust_str.contains("true") && rust_str.contains("false"),
-                   "Failed for operator {}: {}", op, rust_str);
+                   "Failed for operator {op}: {rust_str}");
         }
     }
 
@@ -775,7 +775,7 @@ mod tests {
             let rust_str = result.to_string();
             
             assert!(rust_str.contains(expected),
-                   "Failed for {}: {}", code, rust_str);
+                   "Failed for {code}: {rust_str}");
         }
     }
 

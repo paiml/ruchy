@@ -292,6 +292,11 @@ impl InferenceContext {
                 self.unifier.unify(&right_ty, &MonoType::Bool)?;
                 Ok(MonoType::Bool)
             }
+            // Null coalescing operator: return type is union of operand types
+            BinaryOp::NullCoalesce => {
+                // Type is the union of left and right, but return the more specific non-null type
+                Ok(right_ty) // For now, assume right type (could be improved with union types)
+            }
             // Bitwise operators
             BinaryOp::BitwiseAnd
             | BinaryOp::BitwiseOr
@@ -1071,6 +1076,11 @@ impl InferenceContext {
                 self.unifier.unify(left_ty, &MonoType::Bool)?;
                 self.unifier.unify(right_ty, &MonoType::Bool)?;
                 Ok(MonoType::Bool)
+            }
+            BinaryOp::NullCoalesce => {
+                // Null coalescing: return type should be the non-null operand type
+                // For now, return right_ty (could be improved with proper union types)
+                Ok(right_ty.clone())
             }
             BinaryOp::BitwiseAnd
             | BinaryOp::BitwiseOr

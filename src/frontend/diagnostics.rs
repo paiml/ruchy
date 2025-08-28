@@ -42,7 +42,7 @@ impl Diagnostic {
 
     /// Extract the relevant source lines with context
     fn get_source_context(&self) -> (Vec<String>, usize, usize, usize) {
-        let lines: Vec<String> = self.source_code.lines().map(|s| s.to_string()).collect();
+        let lines: Vec<String> = self.source_code.lines().map(std::string::ToString::to_string).collect();
         
         // Find line and column from byte offset
         let mut current_pos = 0;
@@ -116,17 +116,14 @@ impl Diagnostic {
             // Line number and content
             if is_error_line {
                 output.push_str(&format!(
-                    "{bold}{:4} |{reset} {}\n",
-                    line_num, line
+                    "{bold}{line_num:4} |{reset} {line}\n"
                 ));
                 
                 // Error underline
+                let spaces = " ".repeat(col_start);
+                let arrows = "^".repeat((col_end - col_start).max(1));
                 output.push_str(&format!(
-                    "     {} {}{}{}\n",
-                    "|",
-                    " ".repeat(col_start),
-                    severity_color,
-                    "^".repeat((col_end - col_start).max(1))
+                    "     | {spaces}{severity_color}{arrows}\n"
                 ));
                 
                 // Error message under the line
@@ -140,7 +137,7 @@ impl Diagnostic {
                     ));
                 }
             } else {
-                output.push_str(&format!("{:4} | {}\n", line_num, line));
+                output.push_str(&format!("{line_num:4} | {line}\n"));
             }
         }
         
@@ -150,7 +147,7 @@ impl Diagnostic {
             for suggestion in &self.suggestions {
                 output.push_str(&format!("{}\n", suggestion.message));
                 if let Some(ref replacement) = suggestion.replacement {
-                    output.push_str(&format!("      suggested fix: `{}`\n", replacement));
+                    output.push_str(&format!("      suggested fix: `{replacement}`\n"));
                 }
             }
         }
@@ -177,7 +174,7 @@ pub fn suggest_for_error(error: &ParseError) -> Vec<Suggestion> {
             suggestions.push(Suggestion {
                 message: "Check for typos or missing operators".to_string(),
                 replacement: None,
-                span: error.span.clone(),
+                span: error.span,
             });
         }
     }
@@ -232,7 +229,6 @@ pub fn suggest_for_error(error: &ParseError) -> Vec<Suggestion> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::error_recovery::ErrorCode;
 
     #[test]
     fn test_diagnostic_display() {
@@ -244,7 +240,7 @@ mod tests {
         let source = "let x = 10\nlet y = @invalid\nlet z = 30".to_string();
         let diag = Diagnostic::new(error, source);
         
-        let output = format!("{}", diag);
+        let output = format!("{diag}");
         assert!(output.contains("Unexpected token"));
     }
 

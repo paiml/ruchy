@@ -147,6 +147,11 @@ fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) -> Result<E
                 left = functions::parse_method_call(state, left)?;
                 handled_postfix = true;
             }
+            Some((Token::SafeNav, _)) => {
+                state.tokens.advance();
+                left = functions::parse_optional_method_call(state, left)?;
+                handled_postfix = true;
+            }
             Some((Token::LeftParen, _)) => {
                 left = functions::parse_call(state, left)?;
                 handled_postfix = true;

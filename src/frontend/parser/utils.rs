@@ -267,7 +267,7 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
                     Some((Token::Ok, _)) => "Ok".to_string(),
                     Some((Token::Err, _)) => "Err".to_string(),
                     Some((Token::Some, _)) => "Some".to_string(),
-                    Some((Token::None, _)) => "None".to_string(),
+                    Some((Token::None | Token::Null, _)) => "None".to_string(),
                     _ => bail!("Expected identifier after :: in type name"),
                 };
                 

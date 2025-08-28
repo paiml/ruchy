@@ -89,6 +89,10 @@ pub enum ExprKind {
     Try {
         expr: Box<Expr>,
     },
+    TryCatch {
+        try_expr: Box<Expr>,
+        catch_expr: Box<Expr>,
+    },
     Await {
         expr: Box<Expr>,
     },
@@ -153,6 +157,10 @@ pub enum ExprKind {
         fields: Vec<ObjectField>,
     },
     FieldAccess {
+        object: Box<Expr>,
+        field: String,
+    },
+    OptionalFieldAccess {
         object: Box<Expr>,
         field: String,
     },
@@ -221,6 +229,11 @@ pub enum ExprKind {
         method: String,
         args: Vec<Expr>,
     },
+    OptionalMethodCall {
+        receiver: Box<Expr>,
+        method: String,
+        args: Vec<Expr>,
+    },
     Block(Vec<Expr>),
     Pipeline {
         expr: Box<Expr>,
@@ -232,6 +245,9 @@ pub enum ExprKind {
     },
     List(Vec<Expr>),
     Tuple(Vec<Expr>),
+    Spread {
+        expr: Box<Expr>,
+    },
     ListComprehension {
         element: Box<Expr>,
         variable: String,
@@ -376,6 +392,7 @@ pub enum BinaryOp {
     // Logical
     And,
     Or,
+    NullCoalesce,
 
     // Bitwise
     BitwiseAnd,
@@ -654,6 +671,7 @@ impl fmt::Display for BinaryOp {
             Self::GreaterEqual => write!(f, ">="),
             Self::And => write!(f, "&&"),
             Self::Or => write!(f, "||"),
+            Self::NullCoalesce => write!(f, "??"),
             Self::BitwiseAnd => write!(f, "&"),
             Self::BitwiseOr => write!(f, "|"),
             Self::BitwiseXor => write!(f, "^"),

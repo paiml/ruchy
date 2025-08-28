@@ -25,6 +25,7 @@ pub enum Value {
     Bool(bool),
     Char(char),
     Unit,
+    Nil,
     /// Closure captures the body and environment at creation time
     Closure {
         body: Rc<CoreExpr>,
@@ -294,6 +295,17 @@ impl ReferenceInterpreter {
             PrimOp::Or => match (&values[0], &values[1]) {
                 (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(*a || *b)),
                 _ => Err("Type error in OR".to_string()),
+            },
+
+            PrimOp::NullCoalesce => {
+                if values.len() != 2 {
+                    return Err(format!("NullCoalesce expects 2 arguments, got {}", values.len()));
+                }
+                // Return left if not nil, otherwise right
+                match &values[0] {
+                    Value::Nil => Ok(values[1].clone()),
+                    _ => Ok(values[0].clone()),
+                }
             },
 
             PrimOp::Not => {

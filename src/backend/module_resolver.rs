@@ -317,7 +317,7 @@ mod tests {
                     ExprKind::Module { name, .. } => {
                         assert_eq!(name, "math");
                     }
-                    _ => panic!("Expected first element to be Module, got {:?}", exprs[0].kind),
+                    _ => unreachable!("Expected first element to be Module, got {:?}", exprs[0].kind),
                 }
                 // Second should be use statement
                 match &exprs[1].kind {
@@ -326,10 +326,10 @@ mod tests {
                         assert_eq!(items.len(), 1);
                         assert!(matches!(items[0], ImportItem::Wildcard));
                     }
-                    _ => panic!("Expected second element to be Import, got {:?}", exprs[1].kind),
+                    _ => unreachable!("Expected second element to be Import, got {:?}", exprs[1].kind),
                 }
             }
-            _ => panic!("Expected Block expression, got {:?}", resolved_expr.kind),
+            _ => unreachable!("Expected Block expression, got {:?}", resolved_expr.kind),
         }
         
         Ok(())
@@ -356,7 +356,7 @@ mod tests {
                 assert_eq!(path, "std::collections");
                 assert_eq!(items.len(), 1);
             }
-            _ => panic!("Expected Import expression to remain unchanged"),
+            _ => unreachable!("Expected Import expression to remain unchanged"),
         }
         
         Ok(())
@@ -407,7 +407,7 @@ mod tests {
                     assert!(matches!(inner_exprs[0].kind, ExprKind::Module { .. }));
                     assert!(matches!(inner_exprs[1].kind, ExprKind::Import { .. }));
                 }
-                _ => panic!("Expected first element to be Block, got {:?}", exprs[0].kind),
+                _ => unreachable!("Expected first element to be Block, got {:?}", exprs[0].kind),
             }
             
             // Second should remain as Import (std::io - not a file import)
@@ -416,7 +416,7 @@ mod tests {
             // Third should remain as Literal
             assert!(matches!(exprs[2].kind, ExprKind::Literal(Literal::Integer(42))));
         } else {
-            panic!("Expected Block expression");
+            unreachable!("Expected Block expression");
         }
         
         Ok(())

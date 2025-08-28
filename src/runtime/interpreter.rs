@@ -1993,15 +1993,44 @@ impl Interpreter {
         op: crate::frontend::ast::BinaryOp,
         right: &Expr,
     ) -> Result<Value, InterpreterError> {
-        let left_val = self.eval_expr(left)?;
-        let right_val = self.eval_expr(right)?;
-        let result = self.eval_binary_op(op, &left_val, &right_val)?;
-        
-        // Record type feedback for optimization
-        let site_id = left.span.start; // Use span start as site ID
-        self.record_binary_op_feedback(site_id, &left_val, &right_val, &result);
-        
-        Ok(result)
+        // Handle short-circuit operators
+        match op {
+            crate::frontend::ast::BinaryOp::NullCoalesce => {
+                let left_val = self.eval_expr(left)?;
+                if matches!(left_val, Value::Nil) {
+                    self.eval_expr(right)
+                } else {
+                    Ok(left_val)
+                }
+            }
+            crate::frontend::ast::BinaryOp::And => {
+                let left_val = self.eval_expr(left)?;
+                if left_val.is_truthy() {
+                    self.eval_expr(right)
+                } else {
+                    Ok(left_val)
+                }
+            }
+            crate::frontend::ast::BinaryOp::Or => {
+                let left_val = self.eval_expr(left)?;
+                if left_val.is_truthy() {
+                    Ok(left_val)
+                } else {
+                    self.eval_expr(right)
+                }
+            }
+            _ => {
+                let left_val = self.eval_expr(left)?;
+                let right_val = self.eval_expr(right)?;
+                let result = self.eval_binary_op(op, &left_val, &right_val)?;
+                
+                // Record type feedback for optimization
+                let site_id = left.span.start; // Use span start as site ID
+                self.record_binary_op_feedback(site_id, &left_val, &right_val, &result);
+                
+                Ok(result)
+            }
+        }
     }
 
     /// Evaluate unary expression
