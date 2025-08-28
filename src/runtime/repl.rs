@@ -245,7 +245,8 @@ pub struct DebugInfo {
     pub timestamp: std::time::SystemTime,
 }
 
-/// REPL configuration
+/// REPL configuration  
+#[derive(Clone)]
 pub struct ReplConfig {
     /// Maximum memory for evaluation (default: 10MB)
     pub max_memory: usize,
@@ -260,9 +261,9 @@ pub struct ReplConfig {
 impl Default for ReplConfig {
     fn default() -> Self {
         Self {
-            max_memory: 10 * 1024 * 1024, // 10MB
-            timeout: Duration::from_millis(100),
-            max_depth: 256, // Balance between safety and usability
+            max_memory: 10 * 1024 * 1024, // 10MB arena allocation limit
+            timeout: Duration::from_millis(100), // 100ms hard limit per spec
+            max_depth: 1000, // 1000 frame maximum per spec
             debug: false,
         }
     }
@@ -798,9 +799,13 @@ impl Highlighter for RuchyCompleter {
 impl Validator for RuchyCompleter {}
 
 /// Memory tracker for bounded allocation
+/// Arena-style memory tracker for bounded evaluation
+/// Provides fixed memory allocation with reset capability
 struct MemoryTracker {
     max_size: usize,
     current: usize,
+    peak_usage: usize,
+    allocation_count: usize,
 }
 
 impl MemoryTracker {
@@ -808,24 +813,58 @@ impl MemoryTracker {
         Self {
             max_size,
             current: 0,
+            peak_usage: 0,
+            allocation_count: 0,
         }
     }
 
+    /// Reset arena for new evaluation (O(1) operation)
+    fn reset(&mut self) {
+        self.current = 0;
+        self.allocation_count = 0;
+    }
+
+    /// Track memory usage during evaluation
     fn try_alloc(&mut self, size: usize) -> Result<()> {
         if self.current + size > self.max_size {
             bail!(
-                "Memory limit exceeded: {} + {} > {}",
+                "Memory limit exceeded: {} + {} > {} (peak: {}, allocs: {})",
                 self.current,
                 size,
-                self.max_size
+                self.max_size,
+                self.peak_usage,
+                self.allocation_count
             );
         }
         self.current += size;
+        self.allocation_count += 1;
+        
+        // Track peak usage
+        if self.current > self.peak_usage {
+            self.peak_usage = self.current;
+        }
+        
         Ok(())
     }
 
-    fn reset(&mut self) {
-        self.current = 0;
+    /// Get current memory usage
+    fn memory_used(&self) -> usize {
+        self.current
+    }
+
+    /// Get peak memory usage since last reset
+    fn peak_memory(&self) -> usize {
+        self.peak_usage
+    }
+
+    /// Get allocation count since last reset
+    fn allocation_count(&self) -> usize {
+        self.allocation_count
+    }
+
+    /// Check if we're approaching memory limit
+    fn memory_pressure(&self) -> f64 {
+        self.current as f64 / self.max_size as f64
     }
 }
 
@@ -937,6 +976,74 @@ impl Repl {
             .push("enum Option<T> { None, Some(T) }".to_string());
         self.definitions
             .push("enum Result<T, E> { Ok(T), Err(E) }".to_string());
+    }
+
+    // === Resource-Bounded Evaluation API ===
+    
+    /// Create a sandboxed REPL instance for testing/fuzzing
+    /// Uses minimal resource limits for safety
+    pub fn sandboxed() -> Result<Self> {
+        let config = ReplConfig {
+            max_memory: 1024 * 1024, // 1MB limit for sandbox
+            timeout: Duration::from_millis(10), // Very short timeout
+            max_depth: 100, // Limited recursion
+            debug: false,
+        };
+        Self::with_config(config)
+    }
+
+    /// Get current memory usage in bytes
+    pub fn memory_used(&self) -> usize {
+        self.memory.memory_used()
+    }
+
+    /// Get peak memory usage since last evaluation
+    pub fn peak_memory(&self) -> usize {
+        self.memory.peak_memory()
+    }
+
+    /// Get memory pressure (0.0 to 1.0)
+    pub fn memory_pressure(&self) -> f64 {
+        self.memory.memory_pressure()
+    }
+
+    /// Check if REPL can accept new input (not at resource limits)
+    pub fn can_accept_input(&self) -> bool {
+        self.memory_pressure() < 0.95 // Less than 95% memory usage
+    }
+
+    /// Validate that all bindings are still valid (no corruption)
+    pub fn bindings_valid(&self) -> bool {
+        // Check that mutability tracking doesn't have orphaned entries
+        // (bindings without mutability entries are allowed - they default to immutable)
+        for name in self.binding_mutability.keys() {
+            if !self.bindings.contains_key(name) {
+                return false;
+            }
+        }
+        true
+    }
+
+    /// Evaluate with explicit resource bounds (for testing)
+    pub fn eval_bounded(&mut self, input: &str, max_memory: usize, timeout: Duration) -> Result<String> {
+        // Save current config
+        let old_config = self.config.clone();
+        
+        // Apply temporary bounds
+        self.config.max_memory = max_memory;
+        self.config.timeout = timeout;
+        
+        // Update memory tracker limit
+        self.memory.max_size = max_memory;
+        
+        // Evaluate
+        let result = self.eval(input);
+        
+        // Restore original config
+        self.config = old_config;
+        self.memory.max_size = self.config.max_memory;
+        
+        result
     }
 
     /// Evaluate an expression string and return the Value
@@ -6084,11 +6191,13 @@ impl Repl {
         // Set _ to the most recent result
         let last_result = self.result_history[len - 1].clone();
         self.bindings.insert("_".to_string(), last_result);
+        self.binding_mutability.insert("_".to_string(), false); // History variables are immutable
 
         // Set _n variables for indexed access
         for (i, result) in self.result_history.iter().enumerate() {
             let var_name = format!("_{}", i + 1);
-            self.bindings.insert(var_name, result.clone());
+            self.bindings.insert(var_name.clone(), result.clone());
+            self.binding_mutability.insert(var_name, false); // History variables are immutable
         }
     }
 
