@@ -40,6 +40,7 @@
 use crate::frontend::ast::{
     BinaryOp, Expr, ExprKind, ImportItem, Literal, MatchArm, Pattern, PipelineStage, Span, UnaryOp,
 };
+use crate::runtime::magic::{MagicRegistry, UnicodeExpander};
 use crate::{Parser, Transpiler};
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
@@ -1089,6 +1090,10 @@ pub struct Repl {
     error_recovery: Option<ErrorRecovery>,
     /// Transactional state machine for reliable evaluation
     state: ReplState,
+    /// Magic command registry
+    magic_registry: MagicRegistry,
+    /// Unicode expander for LaTeX-style input
+    unicode_expander: UnicodeExpander,
 }
 
 impl Repl {
@@ -1139,6 +1144,8 @@ impl Repl {
             last_error_debug: None,
             error_recovery: None,
             state: ReplState::Ready,
+            magic_registry: MagicRegistry::new(),
+            unicode_expander: UnicodeExpander::new(),
         };
 
         // Initialize built-in types
@@ -1343,6 +1350,11 @@ impl Repl {
     pub fn clear_bindings(&mut self) {
         self.bindings.clear();
         self.binding_mutability.clear();
+    }
+    
+    /// Get last error (for magic commands)
+    pub fn get_last_error(&self) -> Option<&DebugInfo> {
+        self.last_error_debug.as_ref()
     }
     
     /// Check if REPL is in failed state 
@@ -7226,6 +7238,10 @@ impl Repl {
 
     /// Handle REPL magic commands
     fn handle_magic_command(&mut self, command: &str) -> Result<String> {
+        // For now, use legacy implementation to avoid borrow checker issues
+        // TODO: Refactor to use magic registry without self-borrowing
+        
+        // Fall back to legacy implementation for backward compatibility
         let parts: Vec<&str> = command.splitn(2, ' ').collect();
         let magic_cmd = parts[0];
         let args = if parts.len() > 1 { parts[1] } else { "" };

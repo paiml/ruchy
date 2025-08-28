@@ -1,6 +1,6 @@
 //! Deterministic execution support for REPL replay testing
 //!
-//! Implements the DeterministicRepl trait for the Ruchy REPL to enable
+//! Implements the `DeterministicRepl` trait for the Ruchy REPL to enable
 //! deterministic replay for testing and educational assessment.
 
 use anyhow::Result;
@@ -16,6 +16,12 @@ use crate::runtime::replay::{
 /// Mock time source for deterministic time operations
 pub struct MockTime {
     current_ns: u64,
+}
+
+impl Default for MockTime {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MockTime {
@@ -48,8 +54,8 @@ impl DeterministicRng {
     
     pub fn next(&mut self) -> u64 {
         // Simple LCG for deterministic pseudo-random numbers
-        self.state = self.state.wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
+        self.state = self.state.wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
         self.state
     }
     
@@ -114,7 +120,7 @@ impl DeterministicRepl for Repl {
         
         // Extract all variable bindings
         for (name, value) in self.get_bindings() {
-            bindings.insert(name.clone(), format!("{:?}", value));
+            bindings.insert(name.clone(), format!("{value:?}"));
         }
         
         // Extract type environment if available
@@ -169,13 +175,13 @@ impl DeterministicRepl for Repl {
                 }
                 Some(other_value) => {
                     divergences.push(Divergence::State {
-                        expected_hash: format!("{:?}", value),
-                        actual_hash: format!("{:?}", other_value),
+                        expected_hash: format!("{value:?}"),
+                        actual_hash: format!("{other_value:?}"),
                     });
                 }
                 None => {
                     divergences.push(Divergence::State {
-                        expected_hash: format!("{:?}", value),
+                        expected_hash: format!("{value:?}"),
                         actual_hash: "missing".to_string(),
                     });
                 }
@@ -187,7 +193,7 @@ impl DeterministicRepl for Repl {
             if !self.get_bindings().contains_key(name) {
                 divergences.push(Divergence::State {
                     expected_hash: "missing".to_string(),
-                    actual_hash: format!("variable: {}", name),
+                    actual_hash: format!("variable: {name}"),
                 });
             }
         }
@@ -206,7 +212,7 @@ impl Repl {
         // Rough estimate based on number of variables and their sizes
         let mut total = 0;
         
-        for (_name, value) in self.get_bindings() {
+        for value in self.get_bindings().values() {
             total += std::mem::size_of_val(value);
             total += match value {
                 Value::String(s) => s.capacity(),
@@ -238,7 +244,7 @@ impl Repl {
         for (name, value) in sorted_vars {
             hasher.update(name.as_bytes());
             hasher.update(b":");
-            hasher.update(format!("{:?}", value).as_bytes());
+            hasher.update(format!("{value:?}").as_bytes());
             hasher.update(b";");
         }
         
