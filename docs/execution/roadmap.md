@@ -7,17 +7,34 @@
 **NO DISTRACTIONS**: Transpiler, modules, and other features DEFERRED
 
 ### ✅ **Previously Completed REPL Features**
-1. **REPL Magic Spec (95% Complete)**
-   - ✅ Shell Integration, Introspection, Workspace Management
-   - ✅ Tab Completion, Mode System (8 modes)
-   - ✅ 82+ tests added with TDD methodology
+1. **REPL Magic Spec (85% Complete)**
+   - ✅ Shell Integration (!command, let x = !pwd)
+   - ✅ Introspection (?object, ??object, str(), summary())
+   - ✅ Workspace Management (whos(), clear!(), save_image())
+   - ✅ Tab Completion Engine (context-aware, fuzzy matching)
+   - ✅ Mode System (8 modes: normal, shell>, pkg>, help>, etc.)
+   - ✅ Magic Commands: %time, %timeit, %run (partial)
+   - ❌ TODO: %debug (post-mortem debugging)
+   - ❌ TODO: %profile (flamegraph generation)
+   - ❌ TODO: Session export to clean script
+   - ❌ TODO: History indexing (_1, _2, etc.)
+   - ❌ TODO: Unicode expansion (\alpha -> α)
    
 2. **REPL Mutability Spec (93% Complete)**
    - ✅ Immutable by default with 'let'
    - ✅ Mutable with 'var' keyword
    - ✅ Proper error messages and enforcement
 
-### 🚀 **Current Sprint: REPL Testing & UX Specification**
+### 🚀 **Current Sprint: Complete ALL REPL Specifications**
+
+#### Phase 0: Complete REPL Magic Spec (Priority 1)
+**REPL-MAGIC-COMPLETE**: Finish remaining 15% of magic spec
+- [ ] %debug - Post-mortem debugging with stack traces
+- [ ] %profile - Flamegraph generation for performance analysis
+- [ ] Session export - Clean script generation from REPL history
+- [ ] History indexing - Access previous results via _1, _2, etc.
+- [ ] Unicode expansion - \alpha expands to α on tab
+- **Success Criteria**: 100% REPL Magic spec compliance
 
 #### Phase 1: Resource-Bounded Evaluation (Week 1)
 **REPL-TEST-001**: Implement bounded evaluator with resource controls
