@@ -1329,6 +1329,22 @@ impl Repl {
         self.result_history.len()
     }
     
+    /// Get bindings (for replay testing)
+    pub fn get_bindings(&self) -> &HashMap<String, Value> {
+        &self.bindings
+    }
+    
+    /// Get mutable bindings (for replay testing)
+    pub fn get_bindings_mut(&mut self) -> &mut HashMap<String, Value> {
+        &mut self.bindings
+    }
+    
+    /// Clear bindings (for replay testing)
+    pub fn clear_bindings(&mut self) {
+        self.bindings.clear();
+        self.binding_mutability.clear();
+    }
+    
     /// Check if REPL is in failed state 
     pub fn is_failed(&self) -> bool {
         matches!(self.state, ReplState::Failed(_))
