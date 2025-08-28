@@ -17,7 +17,7 @@ pub mod repl;
 mod repl_function_tests;
 
 // Export the unified REPL
-pub use repl::{Repl, ReplConfig, Value};
+pub use repl::{Repl, ReplConfig, ReplState, Checkpoint, Value};
 
 // Export interpreter components
 pub use interpreter::{
