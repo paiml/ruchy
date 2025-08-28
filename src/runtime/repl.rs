@@ -202,6 +202,34 @@ impl fmt::Display for Value {
     }
 }
 
+/// REPL mode determines how input is processed
+#[derive(Debug, Clone, PartialEq)]
+pub enum ReplMode {
+    Normal,  // Standard Ruchy evaluation
+    Shell,   // Execute everything as shell commands
+    Pkg,     // Package management mode
+    Help,    // Help documentation mode
+    Sql,     // SQL query mode
+    Math,    // Mathematical expression mode
+    Debug,   // Debug mode with extra info
+    Time,    // Time mode showing execution timing
+}
+
+impl ReplMode {
+    fn prompt(&self) -> String {
+        match self {
+            ReplMode::Normal => "ruchy> ".to_string(),
+            ReplMode::Shell => "shell> ".to_string(),
+            ReplMode::Pkg => "pkg> ".to_string(),
+            ReplMode::Help => "help> ".to_string(),
+            ReplMode::Sql => "sql> ".to_string(),
+            ReplMode::Math => "math> ".to_string(),
+            ReplMode::Debug => "debug> ".to_string(),
+            ReplMode::Time => "time> ".to_string(),
+        }
+    }
+}
+
 /// REPL configuration
 pub struct ReplConfig {
     /// Maximum memory for evaluation (default: 10MB)
@@ -679,6 +707,8 @@ pub struct Repl {
     /// O(1) in-memory module cache: path -> parsed functions
     /// Guarantees O(1) performance regardless of storage backend (EFS, NFS, etc)
     module_cache: HashMap<String, HashMap<String, Value>>,
+    /// Current REPL mode
+    mode: ReplMode,
 }
 
 impl Repl {
@@ -724,6 +754,7 @@ impl Repl {
             config,
             memory,
             module_cache: HashMap::new(),
+            mode: ReplMode::Normal,
         };
 
         // Initialize built-in types
@@ -806,6 +837,39 @@ impl Repl {
 
         // Check for magic commands
         let trimmed = input.trim();
+        
+        // Handle mode-specific evaluation
+        match self.mode {
+            ReplMode::Shell if !trimmed.starts_with(':') => {
+                // In shell mode, execute everything as shell commands unless it's a colon command
+                return self.execute_shell_command(trimmed);
+            }
+            ReplMode::Pkg if !trimmed.starts_with(':') => {
+                // In pkg mode, handle package commands
+                return self.handle_pkg_command(trimmed);
+            }
+            ReplMode::Help if !trimmed.starts_with(':') => {
+                // In help mode, show help for keywords
+                return self.handle_help_command(trimmed);
+            }
+            ReplMode::Sql if !trimmed.starts_with(':') => {
+                // In SQL mode, execute SQL queries
+                return Ok(format!("SQL mode not yet implemented: {}", trimmed));
+            }
+            ReplMode::Math if !trimmed.starts_with(':') => {
+                // In math mode, enhanced math evaluation
+                return self.handle_math_command(trimmed);
+            }
+            ReplMode::Debug if !trimmed.starts_with(':') => {
+                // In debug mode, evaluate with extra info
+                return self.handle_debug_evaluation(trimmed);
+            }
+            ReplMode::Time if !trimmed.starts_with(':') => {
+                // In time mode, evaluate with timing
+                return self.handle_timed_evaluation(trimmed);
+            }
+            _ => {} // Normal mode or colon command - continue with regular processing
+        }
         if trimmed.starts_with('%') {
             return self.handle_magic_command(trimmed);
         }
@@ -893,6 +957,25 @@ impl Repl {
         let pos = input.len();
         let completer = RuchyCompleter::new();
         completer.get_completions(input, pos, &self.bindings)
+    }
+
+    /// Get the current REPL mode
+    pub fn get_mode(&self) -> &str {
+        match self.mode {
+            ReplMode::Normal => "normal",
+            ReplMode::Shell => "shell",
+            ReplMode::Pkg => "pkg",
+            ReplMode::Help => "help",
+            ReplMode::Sql => "sql",
+            ReplMode::Math => "math",
+            ReplMode::Debug => "debug",
+            ReplMode::Time => "time",
+        }
+    }
+
+    /// Get the current prompt
+    pub fn get_prompt(&self) -> String {
+        self.mode.prompt()
     }
 
     /// Evaluate an expression to a value
@@ -3495,10 +3578,16 @@ impl Repl {
         let parts: Vec<&str> = command.split_whitespace().collect();
         
         let should_quit = match parts.first().copied() {
-            Some(":quit" | ":q") => true,
-            Some(":help" | ":h") => {
-                output = Self::get_help_text();
-                false
+            Some(":quit" | ":q") => {
+                if self.mode != ReplMode::Normal {
+                    // In a special mode, :quit returns to normal
+                    self.mode = ReplMode::Normal;
+                    output = "Returned to normal mode".to_string();
+                    false
+                } else {
+                    // In normal mode, :quit exits REPL
+                    true
+                }
             }
             Some(":history") => {
                 if self.history.is_empty() {
@@ -3592,6 +3681,72 @@ impl Repl {
                 } else {
                     output = self.get_search_results(query);
                 }
+                false
+            }
+            // Mode switching commands
+            Some(":normal") => {
+                self.mode = ReplMode::Normal;
+                output = "Switched to normal mode".to_string();
+                false
+            }
+            Some(":shell") => {
+                self.mode = ReplMode::Shell;
+                output = "Switched to shell mode - all input will be executed as shell commands".to_string();
+                false
+            }
+            Some(":pkg") => {
+                self.mode = ReplMode::Pkg;
+                output = "Switched to package mode - use 'search', 'install', 'list' commands".to_string();
+                false
+            }
+            Some(":help" | ":h") if parts.len() == 1 => {
+                // No argument - switch to help mode
+                self.mode = ReplMode::Help;
+                output = "Switched to help mode - type any keyword for documentation\nUse :normal to exit".to_string();
+                false
+            }
+            Some(":help") if parts.len() > 1 => {
+                // :help with argument shows help for specific topic
+                let topic = parts[1];
+                output = self.handle_help_command(topic)?;
+                false
+            }
+            Some(":sql") => {
+                self.mode = ReplMode::Sql;
+                output = "Switched to SQL mode - execute SQL queries".to_string();
+                false
+            }
+            Some(":math") => {
+                self.mode = ReplMode::Math;
+                output = "Switched to math mode - enhanced mathematical expressions".to_string();
+                false
+            }
+            Some(":debug") => {
+                self.mode = ReplMode::Debug;
+                output = "Switched to debug mode - extra information shown".to_string();
+                false
+            }
+            Some(":time") => {
+                self.mode = ReplMode::Time;
+                output = "Switched to time mode - execution timing shown".to_string();
+                false
+            }
+            Some(":exit") => {
+                self.mode = ReplMode::Normal;
+                output = "Exited to normal mode".to_string();
+                false
+            }
+            Some(":modes") => {
+                output = "Available modes:\n".to_string();
+                output.push_str("  normal - Standard Ruchy evaluation\n");
+                output.push_str("  shell  - Execute shell commands\n");
+                output.push_str("  pkg    - Package management\n");
+                output.push_str("  help   - Interactive help\n");
+                output.push_str("  sql    - SQL queries\n");
+                output.push_str("  math   - Mathematical expressions\n");
+                output.push_str("  debug  - Debug information\n");
+                output.push_str("  time   - Execution timing\n");
+                output.push_str("\nUse :mode_name to switch modes, :normal or :exit to return");
                 false
             }
             _ => {
@@ -6637,5 +6792,80 @@ impl Repl {
         // Export handling
         
         Ok(Value::Unit)
+    }
+    
+    /// Handle package mode commands
+    fn handle_pkg_command(&mut self, input: &str) -> Result<String> {
+        let parts: Vec<&str> = input.split_whitespace().collect();
+        match parts.first().copied() {
+            Some("search") if parts.len() > 1 => {
+                Ok(format!("Searching for packages matching '{}'...", parts[1]))
+            }
+            Some("install") if parts.len() > 1 => {
+                Ok(format!("Installing package '{}'...", parts[1]))
+            }
+            Some("list") => {
+                Ok("Installed packages:\n(Package management not yet implemented)".to_string())
+            }
+            _ => {
+                Ok("Package commands: search <query>, install <package>, list".to_string())
+            }
+        }
+    }
+    
+    /// Handle help mode commands
+    fn handle_help_command(&mut self, keyword: &str) -> Result<String> {
+        let help_text = match keyword {
+            "fn" => "fn - Define a function\nSyntax: fn name(params) { body }\nExample: fn add(a, b) { a + b }",
+            "let" => "let - Bind a value to a variable\nSyntax: let name = value\nExample: let x = 42",
+            "if" => "if - Conditional execution\nSyntax: if condition { then } else { otherwise }\nExample: if x > 0 { \"positive\" } else { \"negative\" }",
+            "for" => "for - Loop over a collection\nSyntax: for item in collection { body }\nExample: for x in [1,2,3] { println(x) }",
+            "match" => "match - Pattern matching\nSyntax: match value { pattern => result, ... }\nExample: match x { 0 => \"zero\", _ => \"nonzero\" }",
+            _ => &format!("No help available for '{}'\nTry: fn, let, if, for, match, while", keyword),
+        };
+        Ok(help_text.to_string())
+    }
+    
+    /// Handle math mode commands
+    fn handle_math_command(&mut self, expr: &str) -> Result<String> {
+        // For now, just evaluate normally but could add special math functions
+        let deadline = Instant::now() + self.config.timeout;
+        let mut parser = Parser::new(expr);
+        let ast = parser.parse().context("Failed to parse math expression")?;
+        let value = self.evaluate_expr(&ast, deadline, 0)?;
+        Ok(format!("= {}", value))
+    }
+    
+    /// Handle debug mode evaluation
+    fn handle_debug_evaluation(&mut self, input: &str) -> Result<String> {
+        let start = Instant::now();
+        
+        // Parse and show AST
+        let mut parser = Parser::new(input);
+        let ast = parser.parse().context("Failed to parse input")?;
+        let ast_str = format!("AST: {:?}\n", ast);
+        
+        // Evaluate
+        let deadline = Instant::now() + self.config.timeout;
+        let value = self.evaluate_expr(&ast, deadline, 0)?;
+        
+        let elapsed = start.elapsed();
+        Ok(format!("{}Result: {}\nTime: {:?}", ast_str, value, elapsed))
+    }
+    
+    /// Handle timed evaluation
+    fn handle_timed_evaluation(&mut self, input: &str) -> Result<String> {
+        let start = Instant::now();
+        
+        // Parse
+        let mut parser = Parser::new(input);
+        let ast = parser.parse().context("Failed to parse input")?;
+        
+        // Evaluate
+        let deadline = Instant::now() + self.config.timeout;
+        let value = self.evaluate_expr(&ast, deadline, 0)?;
+        
+        let elapsed = start.elapsed();
+        Ok(format!("{}\n⏱ Time: {:?}", value, elapsed))
     }
 }
