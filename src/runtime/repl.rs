@@ -230,6 +230,21 @@ impl ReplMode {
     }
 }
 
+/// Debug information for post-mortem analysis
+#[derive(Debug, Clone)]
+pub struct DebugInfo {
+    /// The expression that caused the error
+    pub expression: String,
+    /// The error message
+    pub error_message: String,
+    /// Stack trace at time of error
+    pub stack_trace: Vec<String>,
+    /// Variable bindings at time of error
+    pub bindings_snapshot: HashMap<String, Value>,
+    /// Timestamp when error occurred
+    pub timestamp: std::time::SystemTime,
+}
+
 /// REPL configuration
 pub struct ReplConfig {
     /// Maximum memory for evaluation (default: 10MB)
@@ -711,6 +726,8 @@ pub struct Repl {
     module_cache: HashMap<String, HashMap<String, Value>>,
     /// Current REPL mode
     mode: ReplMode,
+    /// Debug information from last error
+    last_error_debug: Option<DebugInfo>,
 }
 
 impl Repl {
@@ -758,6 +775,7 @@ impl Repl {
             memory,
             module_cache: HashMap::new(),
             mode: ReplMode::Normal,
+            last_error_debug: None,
         };
 
         // Initialize built-in types
@@ -940,8 +958,25 @@ impl Repl {
         // Check memory for AST
         self.memory.try_alloc(std::mem::size_of_val(&ast))?;
 
-        // Evaluate the expression
-        let value = self.evaluate_expr(&ast, deadline, 0)?;
+        // Evaluate the expression with debug capture
+        let value = match self.evaluate_expr(&ast, deadline, 0) {
+            Ok(value) => {
+                // Clear debug info on successful evaluation
+                self.last_error_debug = None;
+                value
+            }
+            Err(e) => {
+                // Capture debug information
+                self.last_error_debug = Some(DebugInfo {
+                    expression: input.to_string(),
+                    error_message: e.to_string(),
+                    stack_trace: self.generate_stack_trace(&e),
+                    bindings_snapshot: self.bindings.clone(),
+                    timestamp: std::time::SystemTime::now(),
+                });
+                return Err(e);
+            }
+        };
 
         // Store successful evaluation
         self.history.push(input.to_string());
@@ -5851,7 +5886,29 @@ impl Repl {
             }
             
             "%debug" => {
-                Ok("Debug mode not yet implemented".to_string())
+                if let Some(ref debug_info) = self.last_error_debug {
+                    let mut output = String::new();
+                    output.push_str(&format!("=== Debug Information ===\n"));
+                    output.push_str(&format!("Expression: {}\n", debug_info.expression));
+                    output.push_str(&format!("Error: {}\n", debug_info.error_message));
+                    output.push_str(&format!("Time: {:?}\n", debug_info.timestamp));
+                    output.push_str(&format!("\n--- Variable Bindings at Error ---\n"));
+                    
+                    for (name, value) in &debug_info.bindings_snapshot {
+                        output.push_str(&format!("{}: {}\n", name, value));
+                    }
+                    
+                    if !debug_info.stack_trace.is_empty() {
+                        output.push_str(&format!("\n--- Stack Trace ---\n"));
+                        for frame in &debug_info.stack_trace {
+                            output.push_str(&format!("  {}\n", frame));
+                        }
+                    }
+                    
+                    Ok(output)
+                } else {
+                    Ok("No debug information available. Run an expression that fails first.".to_string())
+                }
             }
             
             "%profile" => {
@@ -5863,7 +5920,7 @@ impl Repl {
 %time <expr>     - Time a single execution
 %timeit <expr>   - Time multiple executions (benchmark)
 %run <file>      - Execute a .ruchy script file
-%debug           - Enable post-mortem debugging (TODO)
+%debug           - Show debug info from last error
 %profile <expr>  - Generate execution profile (TODO)
 %help            - Show this help message"#.to_string())
             }
@@ -6901,5 +6958,27 @@ impl Repl {
         
         let elapsed = start.elapsed();
         Ok(format!("{}\n⏱ Time: {:?}", value, elapsed))
+    }
+    
+    /// Generate a stack trace from an error
+    fn generate_stack_trace(&self, error: &anyhow::Error) -> Vec<String> {
+        let mut stack_trace = Vec::new();
+        
+        // Add the main error
+        stack_trace.push(format!("Error: {}", error));
+        
+        // Add error chain
+        let mut current = error.source();
+        while let Some(err) = current {
+            stack_trace.push(format!("Caused by: {}", err));
+            current = err.source();
+        }
+        
+        // Add current evaluation context if available
+        if let Some(last_expr) = self.history.last() {
+            stack_trace.push(format!("Last successful expression: {}", last_expr));
+        }
+        
+        stack_trace
     }
 }
