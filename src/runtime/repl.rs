@@ -435,6 +435,14 @@ impl RuchyCompleter {
                 .collect();
         }
 
+        // Complete Unicode expansions (starting with \)
+        if partial_word.starts_with('\\') {
+            return self.get_unicode_completions(partial_word)
+                .into_iter()
+                .map(|(symbol, _desc)| symbol)
+                .collect();
+        }
+
         // Complete method calls (after a dot)
         if let Some(dot_pos) = text_before_cursor.rfind('.') {
             let object_name = &text_before_cursor[..dot_pos];
@@ -508,6 +516,131 @@ impl RuchyCompleter {
 
         completions.sort();
         completions
+    }
+
+    /// Get Unicode symbol completions for LaTeX-style commands
+    pub fn get_unicode_completions(&self, partial: &str) -> Vec<(String, String)> {
+        // Common mathematical and Greek symbols with descriptions
+        let unicode_mappings = &[
+            // Greek letters (lowercase)
+            ("\\alpha", "α", "Greek letter alpha"),
+            ("\\beta", "β", "Greek letter beta"),
+            ("\\gamma", "γ", "Greek letter gamma"),
+            ("\\delta", "δ", "Greek letter delta"),
+            ("\\epsilon", "ε", "Greek letter epsilon"),
+            ("\\zeta", "ζ", "Greek letter zeta"),
+            ("\\eta", "η", "Greek letter eta"),
+            ("\\theta", "θ", "Greek letter theta"),
+            ("\\iota", "ι", "Greek letter iota"),
+            ("\\kappa", "κ", "Greek letter kappa"),
+            ("\\lambda", "λ", "Greek letter lambda"),
+            ("\\mu", "μ", "Greek letter mu"),
+            ("\\nu", "ν", "Greek letter nu"),
+            ("\\xi", "ξ", "Greek letter xi"),
+            ("\\omicron", "ο", "Greek letter omicron"),
+            ("\\pi", "π", "Greek letter pi"),
+            ("\\rho", "ρ", "Greek letter rho"),
+            ("\\sigma", "σ", "Greek letter sigma"),
+            ("\\tau", "τ", "Greek letter tau"),
+            ("\\upsilon", "υ", "Greek letter upsilon"),
+            ("\\phi", "φ", "Greek letter phi"),
+            ("\\chi", "χ", "Greek letter chi"),
+            ("\\psi", "ψ", "Greek letter psi"),
+            ("\\omega", "ω", "Greek letter omega"),
+            
+            // Greek letters (uppercase)
+            ("\\Alpha", "Α", "Greek letter Alpha"),
+            ("\\Beta", "Β", "Greek letter Beta"),
+            ("\\Gamma", "Γ", "Greek letter Gamma"),
+            ("\\Delta", "Δ", "Greek letter Delta"),
+            ("\\Epsilon", "Ε", "Greek letter Epsilon"),
+            ("\\Zeta", "Ζ", "Greek letter Zeta"),
+            ("\\Eta", "Η", "Greek letter Eta"),
+            ("\\Theta", "Θ", "Greek letter Theta"),
+            ("\\Iota", "Ι", "Greek letter Iota"),
+            ("\\Kappa", "Κ", "Greek letter Kappa"),
+            ("\\Lambda", "Λ", "Greek letter Lambda"),
+            ("\\Mu", "Μ", "Greek letter Mu"),
+            ("\\Nu", "Ν", "Greek letter Nu"),
+            ("\\Xi", "Ξ", "Greek letter Xi"),
+            ("\\Omicron", "Ο", "Greek letter Omicron"),
+            ("\\Pi", "Π", "Greek letter Pi"),
+            ("\\Rho", "Ρ", "Greek letter Rho"),
+            ("\\Sigma", "Σ", "Greek letter Sigma"),
+            ("\\Tau", "Τ", "Greek letter Tau"),
+            ("\\Upsilon", "Υ", "Greek letter Upsilon"),
+            ("\\Phi", "Φ", "Greek letter Phi"),
+            ("\\Chi", "Χ", "Greek letter Chi"),
+            ("\\Psi", "Ψ", "Greek letter Psi"),
+            ("\\Omega", "Ω", "Greek letter Omega"),
+            
+            // Mathematical symbols
+            ("\\sum", "∑", "Summation"),
+            ("\\prod", "∏", "Product"),
+            ("\\int", "∫", "Integral"),
+            ("\\partial", "∂", "Partial derivative"),
+            ("\\nabla", "∇", "Nabla operator"),
+            ("\\infty", "∞", "Infinity"),
+            ("\\infinity", "∞", "Infinity"),
+            ("\\sqrt", "√", "Square root"),
+            ("\\pm", "±", "Plus minus"),
+            ("\\mp", "∓", "Minus plus"),
+            ("\\times", "×", "Times"),
+            ("\\div", "÷", "Division"),
+            ("\\cdot", "⋅", "Center dot"),
+            ("\\bullet", "•", "Bullet"),
+            ("\\star", "⋆", "Star"),
+            ("\\circ", "∘", "Circle"),
+            ("\\oplus", "⊕", "Circle plus"),
+            ("\\otimes", "⊗", "Circle times"),
+            ("\\union", "∪", "Union"),
+            ("\\cap", "∩", "Intersection"),
+            ("\\subset", "⊂", "Subset"),
+            ("\\supset", "⊃", "Superset"),
+            ("\\subseteq", "⊆", "Subset or equal"),
+            ("\\supseteq", "⊇", "Superset or equal"),
+            ("\\in", "∈", "Element of"),
+            ("\\notin", "∉", "Not element of"),
+            ("\\forall", "∀", "For all"),
+            ("\\exists", "∃", "Exists"),
+            ("\\nexists", "∄", "Does not exist"),
+            ("\\emptyset", "∅", "Empty set"),
+            ("\\leq", "≤", "Less than or equal"),
+            ("\\geq", "≥", "Greater than or equal"),
+            ("\\neq", "≠", "Not equal"),
+            ("\\equiv", "≡", "Equivalent"),
+            ("\\approx", "≈", "Approximately equal"),
+            ("\\sim", "∼", "Similar"),
+            ("\\propto", "∝", "Proportional"),
+            ("\\therefore", "∴", "Therefore"),
+            ("\\because", "∵", "Because"),
+            ("\\rightarrow", "→", "Right arrow"),
+            ("\\leftarrow", "←", "Left arrow"),
+            ("\\leftrightarrow", "↔", "Left right arrow"),
+            ("\\Rightarrow", "⇒", "Double right arrow"),
+            ("\\Leftarrow", "⇐", "Double left arrow"),
+            ("\\Leftrightarrow", "⇔", "Double left right arrow"),
+            ("\\uparrow", "↑", "Up arrow"),
+            ("\\downarrow", "↓", "Down arrow"),
+            
+            // Other useful symbols
+            ("\\degree", "°", "Degree"),
+            ("\\celsius", "℃", "Celsius"),
+            ("\\fahrenheit", "℉", "Fahrenheit"),
+            ("\\euro", "€", "Euro"),
+            ("\\pound", "£", "Pound"),
+            ("\\yen", "¥", "Yen"),
+            ("\\copyright", "©", "Copyright"),
+            ("\\registered", "®", "Registered"),
+            ("\\trademark", "™", "Trademark"),
+        ];
+
+        // Find matching completions
+        unicode_mappings
+            .iter()
+            .filter(|(latex, _, _)| latex.starts_with(partial))
+            .map(|(_, unicode, desc)| (unicode.to_string(), desc.to_string()))
+            .collect()
     }
 
     /// Highlight Ruchy syntax with colors
