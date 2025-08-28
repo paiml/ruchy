@@ -573,6 +573,7 @@ fn parse_control_flow_prefix(state: &mut ParserState, token: Token, _span: Span)
         Token::Pub => parse_pub_construct(state),
         Token::If => Ok(Some(control_flow::parse_if(state)?)),
         Token::Let => Ok(Some(control_flow::parse_let(state)?)),
+        Token::Var => Ok(Some(control_flow::parse_var(state)?)),
         Token::Fun | Token::Fn => Ok(Some(functions::parse_function(state)?)),
         Token::Backslash | Token::Pipe => Ok(Some(functions::parse_lambda(state)?)),
         Token::Match => Ok(Some(control_flow::parse_match(state)?)),

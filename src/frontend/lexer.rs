@@ -134,6 +134,8 @@ pub enum Token {
     Fn,
     #[token("let")]
     Let,
+    #[token("var")]
+    Var,
     #[token("mod")]
     Mod,
     #[token("if")]
