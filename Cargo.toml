@@ -148,7 +148,7 @@ print_stdout = "warn"
 print_stderr = "warn"
 
 [workspace.package]
-version = "1.21.0"
+version = "1.22.0"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
@@ -231,6 +231,7 @@ rustyline = { workspace = true }
 colored = "2.1"
 walkdir = "2.4"
 clap = { version = "4.5", features = ["derive"] }
+regex = "1.10"
 # DataFrame support
 polars = { version = "0.35", features = ["lazy"], optional = true }
 # WebAssembly support

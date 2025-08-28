@@ -327,7 +327,7 @@ fn test_transpile_command_basic() {
         .arg(&file)
         .assert()
         .success()
-        .stdout(predicate::str::contains("let mut x"));
+        .stdout(predicate::str::contains("let x = 42"));
 }
 
 /// Test the `compile` command
