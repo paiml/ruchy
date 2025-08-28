@@ -25,6 +25,12 @@ pub struct SemVer {
     patch: u32,
 }
 
+impl SemVer {
+    pub fn new(major: u32, minor: u32, patch: u32) -> Self {
+        Self { major, minor, patch }
+    }
+}
+
 /// Complete REPL session recording
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReplSession {
@@ -323,7 +329,7 @@ impl SessionRecorder {
     pub fn new(metadata: SessionMetadata) -> Self {
         Self {
             session: ReplSession {
-                version: SemVer { major: 1, minor: 0, patch: 0 },
+                version: SemVer::new(1, 0, 0),
                 metadata,
                 environment: Environment {
                     seed: 0,
