@@ -1,95 +1,103 @@
 # Ruchy Development Roadmap
 
-## 🔥 **HIGHEST PRIORITY: REPL Magic Specification Implementation (v1.22.0)**
+## 🎯 **REPL-ONLY SPRINT FOCUS (v1.23.0) - IN PROGRESS**
 
-**TARGET**: Complete REPL Magic spec (85% remaining) + Fix all broken commands + Score bug
-**SPRINT**: December 2024 - January 2025
-**PRIORITY**: P0 - CRITICAL FOR USER EXPERIENCE
+**PRIORITY**: Complete ALL REPL specifications to production quality
+**SCOPE**: REPL Testing & UX Specification implementation
+**NO DISTRACTIONS**: Transpiler, modules, and other features DEFERRED
 
-### Sprint Goals
-1. **Fix Critical Bugs with TDD**
-   - [ ] **BUG-SCORE-001**: Fix hardcoded 0.85 score issue
-   - [ ] **BUG-REPL-001**: Fix broken :type command
-   - [ ] **BUG-REPL-002**: Fix other broken REPL commands
+### ✅ **Previously Completed REPL Features**
+1. **REPL Magic Spec (95% Complete)**
+   - ✅ Shell Integration, Introspection, Workspace Management
+   - ✅ Tab Completion, Mode System (8 modes)
+   - ✅ 82+ tests added with TDD methodology
    
-2. **Complete Phase 1 Core Mechanics**
-   - [ ] **REPL-001**: Shell Integration (!command, let x = !pwd)
-   - [ ] **REPL-002**: Introspection (?object, ??object, str(), summary())
-   - [ ] **REPL-003**: Workspace Management (whos(), clear!(), save_image())
-   - [ ] **REPL-004**: Extension Methods (DataFrame/Array extensions)
+2. **REPL Mutability Spec (93% Complete)**
+   - ✅ Immutable by default with 'let'
+   - ✅ Mutable with 'var' keyword
+   - ✅ Proper error messages and enforcement
 
-3. **Complete Phase 2 Advanced Features**
-   - [ ] **REPL-005**: Remaining Magic Commands (%debug, %profile)
-   - [ ] **REPL-006**: Mode System (pkg>, shell>, help>)
-   - [ ] **REPL-007**: Tab Completion Engine
-   - [ ] **REPL-008**: Session Export
+### 🚀 **Current Sprint: REPL Testing & UX Specification**
 
-4. **Comprehensive Testing**
-   - [ ] **TEST-001**: End-to-end REPL test suite
-   - [ ] **TEST-002**: TDD for all broken commands
-   - [ ] **TEST-003**: Integration tests for new features
+#### Phase 1: Resource-Bounded Evaluation (Week 1)
+**REPL-TEST-001**: Implement bounded evaluator with resource controls
+- [ ] Arena allocator with 10MB limit
+- [ ] 100ms timeout enforcement
+- [ ] Stack depth limit (1000 frames)
+- [ ] No I/O during evaluation
+- **Success Criteria**: No infinite loops, no memory exhaustion
 
-### Implementation Order (TDD Approach)
+#### Phase 2: Transactional State Machine (Week 1-2)
+**REPL-TEST-002**: Checkpoint and recovery system
+- [ ] Persistent data structures (im crate) for O(1) checkpointing
+- [ ] State transitions: Ready → Evaluating → Failed
+- [ ] Automatic rollback on failure
+- [ ] Recovery from any error state
+- **Success Criteria**: 99.9% recovery rate from induced failures
 
-#### Week 1: Critical Bug Fixes
-1. **Day 1-2**: Fix score bug (BUG-SCORE-001)
-   - Write failing test for dynamic scoring
-   - Implement proper quality calculation
-   - Verify with multiple test cases
+#### Phase 3: Testing Infrastructure (Week 2)
+**REPL-TEST-003**: Comprehensive testing harness
+- [ ] Property-based tests with quickcheck
+- [ ] Fuzz testing with cargo-fuzz
+- [ ] Differential testing against reference implementation
+- [ ] 24-hour stability test
+- **Success Criteria**: 1M random inputs without crash
 
-2. **Day 3-4**: Fix broken REPL commands
-   - Write tests for :type, :help, :clear, etc.
-   - Fix each command with TDD
-   - Add regression tests
+#### Phase 4: User Experience Features (Week 2-3)
+**REPL-UX-001**: Error Recovery UI
+- [ ] Display context-aware error messages with line/column
+- [ ] Offer recovery options (Continue, Complete, Discard)
+- [ ] Smart suggestions based on error type
+- **Success Criteria**: 90% of errors have actionable recovery options
 
-3. **Day 5**: Comprehensive REPL test suite
-   - Create end-to-end test coverage
-   - Document all commands
-   - Ensure no regressions
+**REPL-UX-002**: Progressive Modes
+- [ ] Test mode with #[test] directive
+- [ ] Debug mode with #[debug] and trace output
+- [ ] Performance feedback with timing warnings
+- [ ] Inline function tests with 'where tests' clause
+- **Success Criteria**: All modes working with proper isolation
 
-#### Week 2: Core Mechanics
-1. **Day 6-7**: Shell Integration (REPL-001)
-   - Implement !command execution
-   - Add output capture
-   - Test with various shell commands
+**REPL-UX-003**: Rich Introspection Commands
+- [ ] :env - List all bindings with types
+- [ ] :ast - Show parsed AST structure
+- [ ] :ir - Show intermediate representation
+- [ ] :inspect - Interactive object browser
+- **Success Criteria**: All introspection commands functional
 
-2. **Day 8-9**: Introspection (REPL-002)
-   - Implement ?object documentation
-   - Add ??object source display
-   - Create str() and summary() functions
+#### Phase 5: Advanced Features (Week 3)
+**REPL-ADV-001**: Condition/Restart System
+- [ ] Implement restarts for recoverable errors
+- [ ] User-selectable recovery strategies
+- [ ] Default value continuation
+- **Success Criteria**: Common Lisp-style condition handling
 
-3. **Day 10**: Workspace Management (REPL-003)
-   - Implement whos() listing
-   - Add clear!() with regex
-   - Create save_image() serialization
+**REPL-ADV-002**: Performance & Reliability
+- [ ] <1ms simple eval response time
+- [ ] <5ms with 1000 bindings
+- [ ] <100μs checkpoint creation
+- [ ] Zero memory leaks over 24h
+- **Success Criteria**: Meet all performance targets
 
-#### Week 3: Advanced Features
-1. **Day 11-12**: Tab Completion (REPL-007)
-   - Build trie-based lookup
-   - Add fuzzy matching
-   - Test with various scenarios
+### Success Metrics for REPL Testing & UX
+- [ ] 95% line coverage, 90% branch coverage
+- [ ] 1M random inputs without crash
+- [ ] 99.9% recovery rate from failures
+- [ ] <10ms response for standard operations
+- [ ] Zero memory growth over 24h operation
 
-2. **Day 13-14**: Mode System (REPL-006)
-   - Implement modal parser
-   - Add pkg>, shell>, help> modes
-   - Create mode switching logic
-
-3. **Day 15**: Final Integration
-   - Session export (REPL-008)
-   - Remaining magic commands
-   - Performance optimization
-
-### Success Metrics
-- ✅ 100% of REPL magic spec implemented
-- ✅ All REPL commands working (no broken features)
-- ✅ Dynamic scoring (not hardcoded 0.85)
-- ✅ 200+ comprehensive tests
-- ✅ <50ms response time for all commands
-- ✅ Full documentation coverage
+### Deferred Items (Post-REPL Completion)
+**NOT IN CURRENT SPRINT** - Focus remains on REPL only:
+- Transpiler bug fixes (RUCHY-100, etc.)
+- Module system enhancements
+- Complexity refactoring
+- Book compatibility improvements
+- Performance optimizations
 
 ---
 
-## ✅ **ECOSYSTEM QUALITY TOOLS COMPLETE (v1.20.0)** - MISSION ACCOMPLISHED
+## Previous Completed Work
+
+### ✅ **ECOSYSTEM QUALITY TOOLS COMPLETE (v1.20.0)** - MISSION ACCOMPLISHED
 
 **🎯 COMPLETE SUCCESS**: All quality tools implemented and ecosystem UNBLOCKED!
 
