@@ -401,6 +401,7 @@ impl RuchyCompleter {
                 ":compile".to_string(),
                 ":load".to_string(),
                 ":save".to_string(),
+                ":export".to_string(),
                 ":search".to_string(),
             ],
             keywords_set,
@@ -3716,6 +3717,18 @@ impl Repl {
                 output = "Usage: :save <filename>".to_string();
                 false
             }
+            Some(":export") if parts.len() >= 2 => {
+                let filename = command.strip_prefix(":export").unwrap_or("").trim();
+                match self.export_session(filename) {
+                    Ok(()) => output = format!("Session exported to clean script: {}", filename),
+                    Err(e) => output = format!("Failed to export session: {}", e),
+                }
+                false
+            }
+            Some(":export") => {
+                output = "Usage: :export <filename>".to_string();
+                false
+            }
             Some(":type") => {
                 let expr = command.strip_prefix(":type").unwrap_or("").trim();
                 if expr.is_empty() {
@@ -3947,6 +3960,7 @@ impl Repl {
         help.push_str("  :compile        - Compile and run the session\n");
         help.push_str("  :load <file>    - Load and evaluate a file\n");
         help.push_str("  :save <file>    - Save session to file\n");
+        help.push_str("  :export <file>  - Export session to clean script\n");
         help
     }
     
@@ -4881,6 +4895,133 @@ impl Repl {
             .with_context(|| format!("Failed to write to file: {filename}"))?;
 
         Ok(())
+    }
+
+    /// Export session as a clean production script
+    ///
+    /// Unlike save_session which saves the raw REPL commands with comments,
+    /// this creates a clean, executable script with proper structure.
+    ///
+    /// # Arguments
+    ///
+    /// * `filename` - The output filename for the exported script
+    ///
+    /// # Returns
+    ///
+    /// Returns an error if file writing fails
+    fn export_session(&self, filename: &str) -> Result<()> {
+        use chrono::Utc;
+        use std::io::Write;
+
+        let mut content = String::new();
+
+        // Add header comment
+        writeln!(&mut content, "// Ruchy Script - Exported from REPL Session")?;
+        writeln!(
+            &mut content,
+            "// Generated: {}",
+            Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+        )?;
+        writeln!(&mut content, "// Total commands: {}", self.history.len())?;
+        writeln!(&mut content)?;
+
+        // Filter and clean up commands for production
+        let mut clean_statements = Vec::new();
+        
+        for command in &self.history {
+            // Skip REPL commands, introspection, and display-only statements
+            if command.starts_with(':') ||
+               command.starts_with('?') ||
+               command.starts_with('%') ||
+               command.trim().is_empty() {
+                continue;
+            }
+
+            // Skip display-only operations (those that just show values)
+            if self.is_display_only_command(command) {
+                writeln!(&mut content, "    // {} (display only - removed)", command)?;
+                continue;
+            }
+
+            // Clean up the statement
+            let cleaned = self.clean_statement_for_export(command);
+            if !cleaned.trim().is_empty() {
+                clean_statements.push(cleaned);
+            }
+        }
+
+        // Wrap in main function if there are statements
+        if !clean_statements.is_empty() {
+            writeln!(&mut content, "fn main() -> Result<(), Box<dyn std::error::Error>> {{")?;
+            
+            for statement in clean_statements {
+                writeln!(&mut content, "    {}", statement)?;
+            }
+            
+            writeln!(&mut content, "    Ok(())")?;
+            writeln!(&mut content, "}}")?;
+        } else {
+            writeln!(&mut content, "// No executable statements to export")?;
+            writeln!(&mut content, "fn main() {{")?;
+            writeln!(&mut content, "    println!(\"Hello, Ruchy!\");")?;
+            writeln!(&mut content, "}}")?;
+        }
+
+        // Write to file
+        let mut file = std::fs::File::create(filename)
+            .with_context(|| format!("Failed to create file: {filename}"))?;
+        file.write_all(content.as_bytes())
+            .with_context(|| format!("Failed to write to file: {filename}"))?;
+
+        Ok(())
+    }
+
+    /// Check if a command is display-only (just shows a value)
+    fn is_display_only_command(&self, command: &str) -> bool {
+        let trimmed = command.trim();
+        
+        // Check if it's just a variable name or expression that displays a value
+        // without assignment or side effects
+        
+        // Simple identifier (just displays value)
+        if trimmed.chars().all(|c| c.is_alphanumeric() || c == '_') {
+            return true;
+        }
+        
+        // Method calls that are typically for display (head, tail, info, etc.)
+        if trimmed.contains(".head()") || 
+           trimmed.contains(".tail()") || 
+           trimmed.contains(".info()") ||
+           trimmed.contains(".summary()") ||
+           trimmed.contains(".describe()") {
+            return true;
+        }
+        
+        false
+    }
+
+    /// Clean up a statement for export (add proper error handling, etc.)
+    fn clean_statement_for_export(&self, command: &str) -> String {
+        let trimmed = command.trim();
+        
+        // Add error handling for operations that might fail
+        if trimmed.contains("read_csv") || 
+           trimmed.contains("read_file") ||
+           trimmed.contains("write_file") {
+            // If it's an assignment, keep as is but add ? for error propagation
+            if trimmed.contains(" = ") {
+                format!("{}?;", trimmed.trim_end_matches(';'))
+            } else {
+                format!("{}?;", trimmed.trim_end_matches(';'))
+            }
+        } else {
+            // Regular statements - ensure semicolon
+            if trimmed.ends_with(';') {
+                trimmed.to_string()
+            } else {
+                format!("{};", trimmed)
+            }
+        }
     }
 
     /// Load and evaluate a file
