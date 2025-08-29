@@ -4,7 +4,7 @@
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
 [![Tests](https://img.shields.io/badge/tests-374%20passing-green.svg)](./tests)
 [![Coverage](https://img.shields.io/badge/coverage-87.80%25-brightgreen.svg)](./scripts/cli_coverage.sh)
-[![v1.20.0](https://img.shields.io/badge/v1.20.0-QUALITY--TOOLS--COMPLETE-gold.svg)](./CHANGELOG.md)
+[![v1.25.0](https://img.shields.io/badge/v1.25.0-REPL--ADVANCED--COMPLETE-gold.svg)](./CHANGELOG.md)
 
 **Ruchy is a self-hosting programming language** with comprehensive tooling (29 CLI commands), Toyota Way quality engineering, and mathematical property verification that makes regressions impossible.
 
@@ -123,12 +123,30 @@ ruchy score . --deep --baseline=main --min=0.8
 - **Mathematical Properties**: Idempotency, determinism formally verified
 - **Automated Quality Gates**: Pre-commit hooks prevent regressions
 
-### 💻 Interactive REPL
+### 💻 Advanced REPL Features (v1.25.0)
+
+#### Production-Ready Interactive Environment
 - **Resource-bounded**: Memory limits, timeouts, stack protection
 - **Syntax highlighting**: Real-time colored output  
 - **Tab completion**: Context-aware completions
 - **Persistent history**: Cross-session command storage
 - **Multiline editing**: Automatic continuation detection
+
+#### Magic Commands (IPython-style)
+- **`%time` / `%timeit`**: Execution timing and benchmarking
+- **`%debug`**: Post-mortem debugging with stack traces
+- **`%profile`**: Performance profiling with call counts
+- **`%whos`**: Variable inspector with type information
+- **`%save` / `%load`**: Session persistence
+- **`%history`**: Command history with search
+- **Unicode expansion**: `\alpha` → `α`, `\beta` → `β`
+
+#### Advanced Infrastructure
+- **Replay Testing**: Record and replay REPL sessions deterministically
+- **Educational Assessment**: Automated grading with rubric evaluation
+- **Transactional State**: O(1) checkpoint/rollback for safe experimentation
+- **WASM Support**: Browser-based REPL with Jupyter-style notebooks
+- **Safe Arena Allocator**: Memory-bounded allocation without unsafe code
 
 ## Example Code
 

@@ -2,6 +2,75 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [1.25.0] - 2025-08-29
+
+### 🚀 REPL Advanced Features Complete - Production-Ready Infrastructure
+
+**EPIC MILESTONE**: All REPL advanced infrastructure features implemented, making Ruchy's REPL production-ready with debugging, profiling, and browser deployment capabilities.
+
+### Added
+
+#### REPL Magic Commands Enhancement (REPL-ADV-002) 
+- **15+ Magic Commands**: Complete IPython-style command system
+  - `%time` / `%timeit` - Execution timing and benchmarking
+  - `%debug` - Post-mortem debugging with stack traces
+  - `%profile` - Performance profiling with call counts
+  - `%whos` - Variable inspector with type information
+  - `%clear` / `%reset` - State management
+  - `%save` / `%load` - Session persistence
+  - `%run` - Script execution
+  - `%history` - Command history with search
+  - `%pwd` / `%cd` / `%ls` - Filesystem navigation
+
+- **Unicode Expansion System**: LaTeX-style character input
+  - `\alpha` → `α`, `\beta` → `β`, `\gamma` → `γ`
+  - Complete Greek alphabet support
+  - Mathematical symbols (`\infty`, `\sum`, `\int`)
+  - Tab-completion for all expansions
+
+#### Resource-Bounded Evaluation (REPL-ADV-003)
+- **Safe Arena Allocator**: Memory-bounded allocation without unsafe code
+  - Configurable memory limits
+  - O(1) allocation and deallocation
+  - Reference counting for safety
+  
+- **Transactional State Machine**: Atomic evaluation with rollback
+  - O(1) checkpoint and restore operations
+  - Transaction metadata and limits
+  - Automatic rollback on failure
+  - MVCC for parallel evaluation support
+
+#### WASM REPL Integration (REPL-ADV-004)
+- **WasmRepl**: Browser-based Ruchy evaluation
+  - Full parser integration
+  - Session management with unique IDs
+  - JSON-based result serialization
+  - Performance timing metrics
+
+- **NotebookRuntime**: Jupyter-style notebook support
+  - Cell-based execution model
+  - Code and markdown cell types
+  - Execution counting and timing
+  - DataFrame visualization support
+  - Import/export JSON format
+
+- **WASM Compatibility**: Feature-gated dependencies
+  - Optional tokio/MCP for WASM builds
+  - Conditional compilation for platform features
+  - Browser-compatible error handling
+
+### Architecture Improvements
+- Removed all unsafe code from arena allocator
+- Feature-gated async dependencies for WASM
+- Modular WASM subsystem under `src/wasm/`
+- Clean separation of browser and native features
+
+### Quality & Testing
+- **Zero unsafe code violations** - Full compliance with forbid(unsafe_code)
+- **381 tests passing** - Complete test coverage maintained
+- **WASM library builds** - Successfully compiles to WebAssembly
+- **Feature parity tracking** - Native vs WASM capabilities documented
+
 ## [1.24.0] - 2025-08-28
 
 ### 🎯 Advanced REPL Infrastructure - Replay Testing & Educational Assessment
