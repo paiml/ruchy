@@ -74,36 +74,36 @@ With the core language features complete, focus shifts to advanced REPL capabili
 
 ### 🏆 **Phase 4: REPL Advanced Features & Testing (Priority P0)**
 
-**REPL-ADV-001**: ❌ **REPL Replay Testing System** *(HIGHEST PRIORITY)*
-- [ ] Implement deterministic execution model with seeded RNG
-- [ ] Add session recording format with full state capture
-- [ ] Build replay validation engine for regression testing
-- [ ] Enable educational assessment through session analysis
+**REPL-ADV-001**: ✅ **REPL Replay Testing System** *(COMPLETED v1.24.0)*
+- [x] Implement deterministic execution model with seeded RNG
+- [x] Add session recording format with full state capture
+- [x] Build replay validation engine for regression testing
+- [x] Enable educational assessment through session analysis
 - **Impact**: Critical testing infrastructure for production reliability
 - **Effort**: High (comprehensive state management system)
 - **Spec**: [repl-replay-testing-spec.md](docs/specifications/repl-replay-testing-spec.md)
 
-**REPL-ADV-002**: ❌ **REPL Magic Commands Enhancement**  
-- [ ] Complete %debug implementation with post-mortem debugging
-- [ ] Add %profile with flamegraph generation
-- [ ] Implement Unicode expansion (\alpha → α) tab completion
-- [ ] Add %export session-to-script functionality
+**REPL-ADV-002**: ✅ **REPL Magic Commands Enhancement** *(COMPLETED v1.24.0)*  
+- [x] Complete %debug implementation with post-mortem debugging
+- [x] Add %profile with flamegraph generation
+- [x] Implement Unicode expansion (\alpha → α) tab completion
+- [x] Add %export session-to-script functionality
 - **Impact**: Enhanced developer productivity and debugging
 - **Effort**: Medium (extending existing magic command infrastructure)
 - **Progress**: 85% complete (from v1.22.0 foundation)
 
-**REPL-ADV-003**: ❌ **Resource-Bounded Evaluation**
-- [ ] Implement arena allocator with configurable limits
-- [ ] Add execution timeouts and stack depth limits  
-- [ ] Build transactional state machine with O(1) checkpoints
-- [ ] Create comprehensive testing harness
+**REPL-ADV-003**: ✅ **Resource-Bounded Evaluation** *(COMPLETED v1.24.0)*
+- [x] Implement arena allocator with configurable limits
+- [x] Add execution timeouts and stack depth limits  
+- [x] Build transactional state machine with O(1) checkpoints
+- [x] Create comprehensive testing harness
 - **Impact**: Production-ready safety and reliability
 - **Effort**: High (low-level runtime modifications)
 
-**REPL-ADV-004**: ❌ **WASM REPL Integration**
-- [ ] Implement WASM compilation target for browser execution
-- [ ] Add notebook-style interface (.ruchynb format)
-- [ ] Build web-based REPL with full feature parity
+**REPL-ADV-004**: ✅ **WASM REPL Integration** *(COMPLETED v1.24.0)*
+- [x] Implement WASM compilation target for browser execution
+- [x] Add notebook-style interface (.ruchynb format)
+- [x] Build web-based REPL with full feature parity
 - [ ] Enable distributed/cloud REPL execution
 - **Impact**: Web platform expansion
 - **Effort**: Very High (new runtime target)
