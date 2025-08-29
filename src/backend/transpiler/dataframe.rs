@@ -181,3 +181,189 @@ impl Transpiler {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+    
+    fn make_test_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+    
+    fn make_literal_expr(val: i64) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::Integer(val)),
+            span: Span::new(0, 10),
+            attributes: vec![],
+        }
+    }
+    
+    #[test]
+    fn test_empty_dataframe() {
+        let transpiler = make_test_transpiler();
+        let result = transpiler.transpile_dataframe(&[]).unwrap();
+        let output = result.to_string();
+        assert!(output.contains("DataFrame"));
+        assert!(output.contains("empty"));
+    }
+    
+    #[test]
+    fn test_dataframe_with_columns() {
+        let transpiler = make_test_transpiler();
+        let columns = vec![
+            DataFrameColumn {
+                name: "col1".to_string(),
+                values: vec![make_literal_expr(1), make_literal_expr(2)],
+            },
+            DataFrameColumn {
+                name: "col2".to_string(),
+                values: vec![make_literal_expr(3), make_literal_expr(4)],
+            },
+        ];
+        
+        let result = transpiler.transpile_dataframe(&columns).unwrap();
+        let output = result.to_string();
+        assert!(output.contains("DataFrame"));
+        assert!(output.contains("Series"));
+        assert!(output.contains("col1"));
+        assert!(output.contains("col2"));
+    }
+    
+    #[test]
+    fn test_dataframe_select_operation() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0); // Placeholder
+        let op = DataFrameOp::Select(vec!["col1".to_string(), "col2".to_string()]);
+        
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let output = result.to_string();
+        assert!(output.contains("select"));
+        assert!(output.contains("col1"));
+        assert!(output.contains("col2"));
+    }
+    
+    #[test]
+    fn test_dataframe_filter_operation() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let condition = make_literal_expr(1);
+        let op = DataFrameOp::Filter(Box::new(condition));
+        
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let output = result.to_string();
+        assert!(output.contains("filter"));
+    }
+    
+    #[test]
+    fn test_dataframe_groupby_operation() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let op = DataFrameOp::GroupBy(vec!["group_col".to_string()]);
+        
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let output = result.to_string();
+        assert!(output.contains("groupby"));
+        assert!(output.contains("group_col"));
+    }
+    
+    #[test]
+    fn test_dataframe_sort_operation() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let op = DataFrameOp::Sort(vec!["sort_col".to_string()]);
+        
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let output = result.to_string();
+        assert!(output.contains("sort"));
+        assert!(output.contains("sort_col"));
+    }
+    
+    #[test]
+    fn test_dataframe_join_operations() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        let other_expr = make_literal_expr(1);
+        
+        let join_types = vec![
+            (JoinType::Inner, "Inner"),
+            (JoinType::Left, "Left"),
+            (JoinType::Right, "Right"),
+        ];
+        
+        for (join_type, expected) in join_types {
+            let op = DataFrameOp::Join {
+                other: Box::new(other_expr.clone()),
+                on: vec!["id".to_string()],
+                how: join_type,
+            };
+            
+            let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+            let output = result.to_string();
+            assert!(output.contains("join"));
+            assert!(output.contains(expected));
+        }
+    }
+    
+    #[test]
+    fn test_dataframe_aggregate_operations() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        
+        let agg_ops = vec![
+            AggregateOp::Mean("col1".to_string()),
+            AggregateOp::Sum("col2".to_string()),
+            AggregateOp::Min("col3".to_string()),
+            AggregateOp::Max("col4".to_string()),
+            AggregateOp::Count("col5".to_string()),
+            AggregateOp::Std("col6".to_string()),
+        ];
+        
+        let op = DataFrameOp::Aggregate(agg_ops);
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let output = result.to_string();
+        // Check that it produces some output
+        assert!(!output.is_empty());
+    }
+    
+    #[test]
+    fn test_dataframe_limit_operations() {
+        let transpiler = make_test_transpiler();
+        let df_expr = make_literal_expr(0);
+        
+        // Test Limit
+        let op = DataFrameOp::Limit(10);
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let output = result.to_string();
+        assert!(output.contains("limit"));
+        
+        // Test Head
+        let op = DataFrameOp::Head(5);
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let output = result.to_string();
+        assert!(output.contains("head"));
+        
+        // Test Tail
+        let op = DataFrameOp::Tail(5);
+        let result = transpiler.transpile_dataframe_operation(&df_expr, &op).unwrap();
+        let output = result.to_string();
+        assert!(output.contains("tail"));
+    }
+    
+    #[test]
+    fn test_dataframe_with_empty_column_values() {
+        let transpiler = make_test_transpiler();
+        let columns = vec![
+            DataFrameColumn {
+                name: "empty_col".to_string(),
+                values: vec![],
+            },
+        ];
+        
+        let result = transpiler.transpile_dataframe(&columns).unwrap();
+        let output = result.to_string();
+        assert!(output.contains("Series"));
+        assert!(output.contains("empty_col"));
+        assert!(output.contains("vec"));
+    }
+}
