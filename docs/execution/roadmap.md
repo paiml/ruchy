@@ -97,11 +97,12 @@ With the core language features complete, focus shifts to advanced REPL capabili
 
 ### **Active Tasks**
 
-**RUCHY-201**: 🆕 **Fix REPL loop printing ()** *(GitHub Issue #5)*
-- [ ] Debug why simple loops print () in REPL
-- [ ] Fix output handling for loop expressions
+**RUCHY-201**: ✅ **Fix REPL loop printing ()** *(GitHub Issue #5)* - **COMPLETED**
+- [x] Debug why simple loops print () in REPL
+- [x] Fix output handling for loop expressions
 - **Impact**: REPL user experience
 - **Effort**: Low
+- **Resolution**: Modified REPL to suppress Unit value printing
 
 **RUCHY-202**: 🆕 **Fix README broken links** *(GitHub Issue #4)*
 - [ ] Audit all links in README.md
@@ -115,13 +116,14 @@ With the core language features complete, focus shifts to advanced REPL capabili
 - **Impact**: Language completeness
 - **Effort**: Medium
 
-**RUCHY-204**: 🆕 **Clean up SATD (Technical Debt)**
-- [ ] Remove TODO comments (6 found)
-- [ ] Refactor magic registry in REPL
-- [ ] Fix deterministic RNG seed handling
-- [ ] Document or implement missing type tracking
+**RUCHY-204**: ✅ **Clean up SATD (Technical Debt)** - **COMPLETED**
+- [x] Remove TODO comments (5 of 6 removed)
+- [x] Refactor magic registry comment in REPL
+- [x] Fix deterministic RNG seed comment
+- [x] Document missing type tracking
 - **Impact**: Code quality and maintainability
 - **Effort**: Low
+- **Resolution**: Replaced TODOs with descriptive documentation
 
 **TEST-COV-012**: 🚧 **Continue Coverage to 80%** *(IN PROGRESS v1.27.0)*
 - [x] Current: 35.44% → 36.20% (measured with cargo-llvm-cov)
