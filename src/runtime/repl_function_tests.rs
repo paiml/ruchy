@@ -12,7 +12,7 @@ mod tests {
     fn test_println_basic() -> Result<()> {
         let mut repl = Repl::new()?;
         let result = repl.eval(r#"println("Hello, World!")"#)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 
@@ -21,7 +21,7 @@ mod tests {
     fn test_println_multiple_args() -> Result<()> {
         let mut repl = Repl::new()?;
         let result = repl.eval(r#"println("Hello", "World", "!")"#)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 
@@ -31,7 +31,7 @@ mod tests {
         let mut repl = Repl::new()?;
         repl.eval("let x = 42")?;
         let result = repl.eval("println(x)")?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 
@@ -40,7 +40,7 @@ mod tests {
     fn test_println_with_expressions() -> Result<()> {
         let mut repl = Repl::new()?;
         let result = repl.eval("println(2 + 3)")?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 
@@ -51,19 +51,19 @@ mod tests {
 
         // Integer
         let result = repl.eval("println(42)")?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
 
         // Float
         let result = repl.eval("println(3.14)")?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
 
         // Boolean
         let result = repl.eval("println(true)")?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
 
         // String
         let result = repl.eval(r#"println("test")"#)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
 
         Ok(())
     }
@@ -73,7 +73,7 @@ mod tests {
     fn test_print_function() -> Result<()> {
         let mut repl = Repl::new()?;
         let result = repl.eval(r#"print("Hello")"#)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 
@@ -82,7 +82,7 @@ mod tests {
     fn test_print_multiple_args() -> Result<()> {
         let mut repl = Repl::new()?;
         let result = repl.eval(r#"print("A", "B", "C")"#)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 
@@ -107,7 +107,7 @@ mod tests {
         repl.eval("let x = 10")?;
         repl.eval("let y = 20")?;
         let result = repl.eval("println(x + y, x * y)")?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 
@@ -117,7 +117,7 @@ mod tests {
         let mut repl = Repl::new()?;
         repl.eval("let name = \"World\"")?;
         let result = repl.eval(r#"println("Hello,", name, "!")"#)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 
@@ -126,11 +126,11 @@ mod tests {
     fn test_function_calls_return_unit() -> Result<()> {
         let mut repl = Repl::new()?;
         let result = repl.eval(r#"println("test")"#)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
 
         // Test that we can assign function call results
         let result = repl.eval(r#"let result = println("assign test")"#)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 
@@ -141,7 +141,7 @@ mod tests {
         // Function calls in if expressions
         let result =
             repl.eval(r#"if true { println("true branch") } else { println("false branch") }"#)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 
@@ -160,7 +160,7 @@ mod tests {
 
         for call in builtin_calls {
             let result = repl.eval(call)?;
-            assert_eq!(result, "()", "Function call {call} should return unit");
+            assert_eq!(result, "", "Function call {call} should return unit");
         }
         Ok(())
     }
@@ -173,7 +173,7 @@ mod tests {
         let large_string = "x".repeat(1000);
         let call = format!(r#"println("{large_string}")"#);
         let result = repl.eval(&call)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
         Ok(())
     }
 }
@@ -202,7 +202,7 @@ mod property_tests {
 
         for call in test_cases {
             let result = repl.eval(call)?;
-            assert_eq!(result, "()", "Function call '{call}' should return unit");
+            assert_eq!(result, "", "Function call '{call}' should return unit (suppressed)");
         }
         Ok(())
     }
@@ -224,7 +224,7 @@ mod property_tests {
 
         for call in test_cases {
             let result = repl.eval(call)?;
-            assert_eq!(result, "()", "Expression call '{call}' should return unit");
+            assert_eq!(result, "", "Expression call '{call}' should return unit");
         }
         Ok(())
     }
@@ -236,20 +236,20 @@ mod property_tests {
 
         // Empty arguments
         let result = repl.eval("println()")?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
 
         // Single arguments of each type
         let result = repl.eval("println(42)")?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
 
         let result = repl.eval("println(3.14)")?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
 
         let result = repl.eval(r#"println("string")"#)?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
 
         let result = repl.eval("println(true)")?;
-        assert_eq!(result, "()");
+        assert_eq!(result, "");
 
         Ok(())
     }
@@ -268,8 +268,8 @@ mod property_tests {
             let print_result = repl.eval(&print_call)?;
             let println_result = repl.eval(&println_call)?;
 
-            assert_eq!(print_result, "()", "print({args}) should return unit");
-            assert_eq!(println_result, "()", "println({args}) should return unit");
+            assert_eq!(print_result, "", "print({args}) should return unit");
+            assert_eq!(println_result, "", "println({args}) should return unit");
             assert_eq!(
                 print_result, println_result,
                 "print and println should have same return type"
