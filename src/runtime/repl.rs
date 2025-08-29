@@ -3563,7 +3563,11 @@ impl Repl {
 
     /// Evaluate `Option::None` constructor (complexity: 1)
     fn evaluate_option_none() -> Value {
-        Value::Nil
+        Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        }
     }
     
     /// Evaluate try operator (?) - early return on Err or None
