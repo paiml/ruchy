@@ -4,11 +4,14 @@
 //! for exposing Ruchy compiler commands as MCP tools
 
 #![allow(warnings)]  // Allow all warnings for test files
+#![cfg(feature = "mcp")]
 
+#[cfg(feature = "mcp")]
 use ruchy::mcp::RuchyToolDiscovery;
 use serde_json::{json, Value};
 
 /// Test tool discovery service creation
+#[cfg(feature = "mcp")]
 #[test]
 fn test_tool_discovery_creation() {
     let discovery = RuchyToolDiscovery::new();
@@ -22,6 +25,7 @@ fn test_tool_discovery_creation() {
 }
 
 /// Test tool discovery with custom binary path
+#[cfg(feature = "mcp")]
 #[test]
 fn test_tool_discovery_custom_binary() {
     let discovery = RuchyToolDiscovery::with_binary_path("/custom/path/ruchy".to_string());
@@ -35,6 +39,7 @@ fn test_tool_discovery_custom_binary() {
 }
 
 /// Test that all expected core tools are registered
+#[cfg(feature = "mcp")]
 #[test]
 fn test_core_tools_registered() {
     let discovery = RuchyToolDiscovery::new();

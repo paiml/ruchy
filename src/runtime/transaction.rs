@@ -17,7 +17,7 @@ use crate::runtime::safe_arena::{TransactionalArena, SafeArena as Arena};
 
 /// Transaction ID for tracking evaluation transactions
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct TransactionId(u64);
+pub struct TransactionId(pub u64);
 
 /// Transactional wrapper for REPL state with O(1) checkpoint/rollback
 pub struct TransactionalState {
