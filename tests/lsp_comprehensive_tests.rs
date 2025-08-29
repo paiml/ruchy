@@ -3,13 +3,17 @@
 //! This test suite provides extensive coverage for the LSP implementation,
 //! targeting zero-coverage modules: lsp/analyzer.rs, lsp/capabilities.rs, lsp/server.rs
 
+#![cfg(feature = "mcp")]
 #![allow(warnings)]  // Allow all warnings for test files
 
+#[cfg(feature = "mcp")]
 use ruchy::lsp::{Formatter, SemanticAnalyzer};
+#[cfg(feature = "mcp")]
 use tower_lsp::lsp_types::Position;
 
 /// Test semantic analyzer creation
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_creation() {
     let analyzer = SemanticAnalyzer::new();
     // Should create without errors
@@ -18,6 +22,7 @@ fn test_semantic_analyzer_creation() {
 
 /// Test formatter creation
 #[test]
+#[cfg(feature = "mcp")]
 fn test_formatter_creation() {
     let formatter = Formatter::new();
     // Should create without errors
@@ -26,6 +31,7 @@ fn test_formatter_creation() {
 
 /// Test semantic analyzer completions
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_completions() -> anyhow::Result<()> {
     let analyzer = SemanticAnalyzer::new();
     let source = "let x = 42";
@@ -51,6 +57,7 @@ fn test_semantic_analyzer_completions() -> anyhow::Result<()> {
 
 /// Test semantic analyzer hover info
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_hover() -> anyhow::Result<()> {
     let analyzer = SemanticAnalyzer::new();
     let source = "let x = 42";
@@ -83,6 +90,7 @@ fn test_semantic_analyzer_definition() -> anyhow::Result<()> {
 
 /// Test semantic analyzer diagnostics with valid code
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_diagnostics_valid() -> anyhow::Result<()> {
     let mut analyzer = SemanticAnalyzer::new();
     let source = "let x = 42";
@@ -98,6 +106,7 @@ fn test_semantic_analyzer_diagnostics_valid() -> anyhow::Result<()> {
 
 /// Test semantic analyzer diagnostics with invalid code
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_diagnostics_invalid() -> anyhow::Result<()> {
     let mut analyzer = SemanticAnalyzer::new();
     let source = "let x ="; // Incomplete statement
@@ -113,6 +122,7 @@ fn test_semantic_analyzer_diagnostics_invalid() -> anyhow::Result<()> {
 
 /// Test formatter basic functionality
 #[test]
+#[cfg(feature = "mcp")]
 fn test_formatter_simple() -> anyhow::Result<()> {
     let formatter = Formatter::new();
     let source = "let x=42";
@@ -128,6 +138,7 @@ fn test_formatter_simple() -> anyhow::Result<()> {
 
 /// Test formatter with complex code
 #[test]
+#[cfg(feature = "mcp")]
 fn test_formatter_complex() -> anyhow::Result<()> {
     let formatter = Formatter::new();
     let source = "fun test(x:i32)->i32{if x>0{x*2}else{0}}";
@@ -143,6 +154,7 @@ fn test_formatter_complex() -> anyhow::Result<()> {
 
 /// Test formatter with proper indentation
 #[test]
+#[cfg(feature = "mcp")]
 fn test_formatter_indentation() -> anyhow::Result<()> {
     let formatter = Formatter::new();
     let source = "fun test() {\nlet x = 1\nif true {\nprint(x)\n}\n}";
@@ -157,6 +169,7 @@ fn test_formatter_indentation() -> anyhow::Result<()> {
 
 /// Test formatter preserves empty lines
 #[test]
+#[cfg(feature = "mcp")]
 fn test_formatter_empty_lines() -> anyhow::Result<()> {
     let formatter = Formatter::new();
     let source = "fun test() {\n\nlet x = 1\n\n}";
@@ -171,6 +184,7 @@ fn test_formatter_empty_lines() -> anyhow::Result<()> {
 
 /// Test semantic analyzer with function definitions
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_functions() -> anyhow::Result<()> {
     let mut analyzer = SemanticAnalyzer::new();
     let source = r#"
@@ -198,6 +212,7 @@ fn test_semantic_analyzer_functions() -> anyhow::Result<()> {
 
 /// Test semantic analyzer with struct definitions
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_structs() -> anyhow::Result<()> {
     let mut analyzer = SemanticAnalyzer::new();
     let source = r#"
@@ -219,6 +234,7 @@ fn test_semantic_analyzer_structs() -> anyhow::Result<()> {
 
 /// Test semantic analyzer completions include built-in types
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_builtin_types() -> anyhow::Result<()> {
     let analyzer = SemanticAnalyzer::new();
     let source = "let x: ";
@@ -240,6 +256,7 @@ fn test_semantic_analyzer_builtin_types() -> anyhow::Result<()> {
 
 /// Test formatter with invalid code
 #[test]
+#[cfg(feature = "mcp")]
 fn test_formatter_invalid_code() -> anyhow::Result<()> {
     let formatter = Formatter::new();
     let source = "invalid syntax !@#$%";
@@ -255,6 +272,7 @@ fn test_formatter_invalid_code() -> anyhow::Result<()> {
 
 /// Test semantic analyzer default implementation
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_default() {
     let analyzer = SemanticAnalyzer::default();
     
@@ -264,6 +282,7 @@ fn test_semantic_analyzer_default() {
 
 /// Test formatter default implementation  
 #[test]
+#[cfg(feature = "mcp")]
 fn test_formatter_default() {
     let formatter = Formatter::default();
     
@@ -273,6 +292,7 @@ fn test_formatter_default() {
 
 /// Test semantic analyzer with empty document
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_empty_document() -> anyhow::Result<()> {
     let analyzer = SemanticAnalyzer::new();
     let source = "";
@@ -293,6 +313,7 @@ fn test_semantic_analyzer_empty_document() -> anyhow::Result<()> {
 
 /// Test formatter with empty document
 #[test]
+#[cfg(feature = "mcp")]
 fn test_formatter_empty_document() -> anyhow::Result<()> {
     let formatter = Formatter::new();
     let source = "";
@@ -307,6 +328,7 @@ fn test_formatter_empty_document() -> anyhow::Result<()> {
 
 /// Test semantic analyzer memory management under load
 #[test]
+#[cfg(feature = "mcp")]
 fn test_semantic_analyzer_memory_management() -> anyhow::Result<()> {
     // Create many analyzers to test memory handling
     for _i in 0..50 {
@@ -323,6 +345,7 @@ fn test_semantic_analyzer_memory_management() -> anyhow::Result<()> {
 
 /// Test formatter memory management under load
 #[test]
+#[cfg(feature = "mcp")]
 fn test_formatter_memory_management() -> anyhow::Result<()> {
     // Create many formatters to test memory handling  
     for _i in 0..50 {

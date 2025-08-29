@@ -302,18 +302,21 @@ mod tests {
         // Simple value has depth 1
         assert_eq!(Value::Int(42).inspect_depth(), 1);
         
-        // Nested list has depth 2
+        // Nested list [[1]] has depth 3 (outer list + inner list + int)
         let nested = Value::List(vec![
             Value::List(vec![Value::Int(1)]),
         ]);
-        assert_eq!(nested.inspect_depth(), 2);
+        assert_eq!(nested.inspect_depth(), 3);
         
-        // Deeper nesting
+        // Deeper nesting [[[1]]] has depth 4
         let deep = Value::List(vec![
             Value::List(vec![
                 Value::List(vec![Value::Int(1)]),
             ]),
         ]);
-        assert_eq!(deep.inspect_depth(), 3);
+        assert_eq!(deep.inspect_depth(), 4);
+        
+        // Empty list has depth 1
+        assert_eq!(Value::List(vec![]).inspect_depth(), 1);
     }
 }

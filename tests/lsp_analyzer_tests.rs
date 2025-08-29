@@ -1,3 +1,4 @@
+#![cfg(feature = "mcp")]
 #![cfg(test)]
 #![allow(warnings)]
 #![allow(clippy::assertions_on_constants)]
