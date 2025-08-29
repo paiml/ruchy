@@ -97,14 +97,43 @@ With the core language features complete, focus shifts to advanced REPL capabili
 
 ### **Active Tasks**
 
-**TEST-COV-012**: 🚧 **Continue Coverage to 80%**
-- [ ] Current: ~40% → Target: 80%+
-- [ ] Add property-based tests for parser
+**RUCHY-201**: 🆕 **Fix REPL loop printing ()** *(GitHub Issue #5)*
+- [ ] Debug why simple loops print () in REPL
+- [ ] Fix output handling for loop expressions
+- **Impact**: REPL user experience
+- **Effort**: Low
+
+**RUCHY-202**: 🆕 **Fix README broken links** *(GitHub Issue #4)*
+- [ ] Audit all links in README.md
+- [ ] Update or remove 404 links
+- **Impact**: Documentation quality
+- **Effort**: Low
+
+**RUCHY-203**: 🆕 **Add enum variant construction** *(GitHub Issue #2)*
+- [ ] Implement enum variant construction syntax
+- [ ] Add pattern matching for enum variants
+- **Impact**: Language completeness
+- **Effort**: Medium
+
+**RUCHY-204**: 🆕 **Clean up SATD (Technical Debt)**
+- [ ] Remove TODO comments (6 found)
+- [ ] Refactor magic registry in REPL
+- [ ] Fix deterministic RNG seed handling
+- [ ] Document or implement missing type tracking
+- **Impact**: Code quality and maintainability
+- **Effort**: Low
+
+**TEST-COV-012**: 🚧 **Continue Coverage to 80%** *(IN PROGRESS v1.27.0)*
+- [x] Current: 35.44% → 36.20% (measured with cargo-llvm-cov)
+- [x] Add property-based tests for parser (19 tests added)
 - [ ] Add fuzz testing for interpreter
-- [ ] Increase transpiler coverage
-- [ ] Add integration tests for CLI commands
+- [x] Increase transpiler coverage (9 property tests)
+- [x] Add integration tests for CLI commands (15 tests added)
+- [x] Add sister project integration tests (24 tests from book/rosetta)
+- [ ] Target: 80%+ coverage (continue adding tests)
 - **Impact**: Production reliability
 - **Effort**: High
+- **Progress**: 55+ new tests added, property-based testing implemented
 
 ### 🏆 **Phase 4: REPL Advanced Features & Testing (Priority P0)**
 
