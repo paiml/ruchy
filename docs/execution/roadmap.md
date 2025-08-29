@@ -133,16 +133,18 @@ With the core language features complete, focus shifts to advanced REPL capabili
 - **Resolution**: All 388 library tests passing
 
 **TEST-COV-012**: 🚧 **Continue Coverage to 80%** *(IN PROGRESS v1.27.0)*
-- [x] Current: 35.44% → 36.16% (measured with cargo-llvm-cov)
+- [x] Current: 35.44% → 37.48% (measured with cargo-llvm-cov)
 - [x] Add property-based tests for parser (19 tests added)
 - [ ] Add fuzz testing for interpreter
-- [x] Increase transpiler coverage (9 property tests)
+- [x] Increase transpiler coverage (10 DataFrame tests added)
 - [x] Add integration tests for CLI commands (15 tests added)
 - [x] Add sister project integration tests (24 tests from book/rosetta)
+- [x] Add lints module tests (19 tests for complexity and debug print rules)
+- [x] Add optimization module tests (7 tests for hardware profiles)
 - [ ] Target: 80%+ coverage (continue adding tests)
 - **Impact**: Production reliability
 - **Effort**: High
-- **Progress**: 55+ new tests added, property-based testing implemented
+- **Progress**: 424 total tests (all passing), +2.04% coverage improvement
 
 ### 🏆 **Phase 4: REPL Advanced Features & Testing (Priority P0)**
 
