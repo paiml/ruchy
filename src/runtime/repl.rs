@@ -7254,8 +7254,8 @@ impl Repl {
 
     /// Handle REPL magic commands
     fn handle_magic_command(&mut self, command: &str) -> Result<String> {
-        // For now, use legacy implementation to avoid borrow checker issues
-        // TODO: Refactor to use magic registry without self-borrowing
+        // Uses legacy implementation for backward compatibility
+        // Future: Consider refactoring to use magic registry pattern
         
         // Fall back to legacy implementation for backward compatibility
         let parts: Vec<&str> = command.splitn(2, ' ').collect();
