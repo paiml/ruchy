@@ -17,6 +17,9 @@ pub mod replay;
 pub mod deterministic;
 pub mod assessment;
 pub mod magic;
+pub mod arena;
+pub mod transaction;
+pub mod resource_eval;
 #[cfg(test)]
 mod repl_function_tests;
 
@@ -54,6 +57,18 @@ pub use assessment::{
 // Export magic commands
 pub use magic::{
     MagicRegistry, MagicResult, MagicCommand, UnicodeExpander, ProfileData,
+};
+
+// Export resource-bounded evaluation
+pub use arena::{
+    Arena, ArenaBox, TransactionalArena, Pool, PoolBox, ArenaStats,
+};
+pub use transaction::{
+    TransactionalState, TransactionId, TransactionMetadata, SavePoint,
+    TransactionEvent, TransactionLog, MVCC, Version, VersionedValue,
+};
+pub use resource_eval::{
+    CheckpointHandle, ResourceLimits, Sandbox,
 };
 
 pub use observatory_ui::{DashboardConfig, DisplayMode, ObservatoryDashboard};
