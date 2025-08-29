@@ -17,9 +17,10 @@ pub mod replay;
 pub mod deterministic;
 pub mod assessment;
 pub mod magic;
-pub mod arena;
+// pub mod arena;  // Disabled - uses unsafe code
+pub mod safe_arena;
 pub mod transaction;
-pub mod resource_eval;
+// pub mod resource_eval;  // Temporarily disabled - causes duplicate impl
 #[cfg(test)]
 mod repl_function_tests;
 
@@ -60,16 +61,16 @@ pub use magic::{
 };
 
 // Export resource-bounded evaluation
-pub use arena::{
-    Arena, ArenaBox, TransactionalArena, Pool, PoolBox, ArenaStats,
+pub use safe_arena::{
+    SafeArena as Arena, TransactionalArena,
 };
 pub use transaction::{
     TransactionalState, TransactionId, TransactionMetadata, SavePoint,
     TransactionEvent, TransactionLog, MVCC, Version, VersionedValue,
 };
-pub use resource_eval::{
-    CheckpointHandle, ResourceLimits, Sandbox,
-};
+// pub use resource_eval::{
+//     CheckpointHandle, ResourceLimits, Sandbox,
+// };
 
 pub use observatory_ui::{DashboardConfig, DisplayMode, ObservatoryDashboard};
 

@@ -1140,7 +1140,6 @@ impl Repl {
             transpiler: Transpiler::new(),
             temp_dir,
             session_counter: 0,
-            config,
             memory,
             module_cache: HashMap::new(),
             mode: ReplMode::Normal,
@@ -1150,6 +1149,7 @@ impl Repl {
             magic_registry: MagicRegistry::new(),
             unicode_expander: UnicodeExpander::new(),
             tx_state: TransactionalState::new(config.max_memory),
+            config,
         };
 
         // Initialize built-in types

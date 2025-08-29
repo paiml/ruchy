@@ -35,11 +35,14 @@
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::if_same_then_else)]
 
+#[cfg(feature = "mcp")]
 pub mod actors;
 pub mod backend;
 pub mod frontend;
 pub mod lints;
+#[cfg(feature = "mcp")]
 pub mod lsp;
+#[cfg(feature = "mcp")]
 pub mod mcp;
 pub mod middleend;
 pub mod optimization;
@@ -54,6 +57,7 @@ pub use testing::AstBuilder;
 pub mod transpiler;
 pub mod wasm;
 
+#[cfg(feature = "mcp")]
 pub use actors::{
     Actor, ActorHandle, McpActor, McpMessage, McpResponse, SupervisionStrategy, Supervisor,
 };
@@ -61,6 +65,7 @@ pub use backend::{ModuleResolver, Transpiler};
 pub use frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, UnaryOp};
 pub use frontend::lexer::{Token, TokenStream};
 pub use frontend::parser::Parser;
+#[cfg(feature = "mcp")]
 pub use lsp::{start_server, start_tcp_server, Formatter, RuchyLanguageServer, SemanticAnalyzer};
 pub use quality::{
     CiQualityEnforcer, CoverageCollector, CoverageReport, CoverageTool, FileCoverage,

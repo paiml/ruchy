@@ -7,8 +7,12 @@ pub mod component;
 pub mod wit;
 pub mod deployment;
 pub mod portability;
+pub mod repl;
+pub mod notebook;
 
 pub use component::{WasmComponent, ComponentBuilder, ComponentConfig};
 pub use wit::{WitInterface, WitGenerator, InterfaceDefinition};
 pub use deployment::{DeploymentTarget, Deployer, DeploymentConfig};
 pub use portability::{PortabilityScore, PortabilityAnalyzer, PortabilityReport};
+pub use repl::{WasmRepl, ReplOutput, TimingInfo};
+pub use notebook::{NotebookRuntime, NotebookCell, Notebook, CellType, CellOutput};
