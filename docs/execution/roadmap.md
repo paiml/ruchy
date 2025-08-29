@@ -97,7 +97,7 @@ With the core language features complete, focus shifts to advanced REPL capabili
 
 ### **Active Tasks**
 
-**RUCHY-201**: ✅ **Fix REPL loop printing ()** *(GitHub Issue #5)* - **COMPLETED**
+**RUCHY-201**: ✅ **Fix REPL loop printing ()** *(GitHub Issue #5)* - **COMPLETED v1.26.0**
 - [x] Debug why simple loops print () in REPL
 - [x] Fix output handling for loop expressions
 - **Impact**: REPL user experience
@@ -116,7 +116,7 @@ With the core language features complete, focus shifts to advanced REPL capabili
 - **Impact**: Language completeness
 - **Effort**: Medium
 
-**RUCHY-204**: ✅ **Clean up SATD (Technical Debt)** - **COMPLETED**
+**RUCHY-204**: ✅ **Clean up SATD (Technical Debt)** - **COMPLETED v1.26.0**
 - [x] Remove TODO comments (5 of 6 removed)
 - [x] Refactor magic registry comment in REPL
 - [x] Fix deterministic RNG seed comment
@@ -125,8 +125,15 @@ With the core language features complete, focus shifts to advanced REPL capabili
 - **Effort**: Low
 - **Resolution**: Replaced TODOs with descriptive documentation
 
+**RUCHY-205**: ✅ **Fix Unit value test assertions** - **COMPLETED v1.26.0**
+- [x] Update all test assertions for new Unit behavior
+- [x] Fixed 18 test assertions expecting "()" to expect ""
+- **Impact**: Test suite consistency
+- **Effort**: Low
+- **Resolution**: All 388 library tests passing
+
 **TEST-COV-012**: 🚧 **Continue Coverage to 80%** *(IN PROGRESS v1.27.0)*
-- [x] Current: 35.44% → 36.20% (measured with cargo-llvm-cov)
+- [x] Current: 35.44% → 36.16% (measured with cargo-llvm-cov)
 - [x] Add property-based tests for parser (19 tests added)
 - [ ] Add fuzz testing for interpreter
 - [x] Increase transpiler coverage (9 property tests)
