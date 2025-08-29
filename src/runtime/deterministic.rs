@@ -72,8 +72,8 @@ impl DeterministicRepl for Repl {
         let start_stack = self.estimate_stack_depth();
         let start_time = std::time::Instant::now();
         
-        // TODO: Set deterministic RNG seed when we add RNG support to REPL
-        // For now, we just execute normally since REPL doesn't use RNG yet
+        // Note: RNG seed will be set when random number support is added to REPL
+        // Currently executes normally as REPL doesn't use RNG yet
         
         // Execute the input
         let output = self.eval(input).map(|s| {
@@ -124,7 +124,7 @@ impl DeterministicRepl for Repl {
         }
         
         // Extract type environment if available
-        // TODO: Implement when type tracking is added to REPL state
+        // Type tracking will be implemented when static analysis is added
         
         StateCheckpoint {
             bindings,
