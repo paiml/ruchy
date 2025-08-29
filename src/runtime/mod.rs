@@ -20,6 +20,7 @@ pub mod magic;
 // pub mod arena;  // Disabled - uses unsafe code
 pub mod safe_arena;
 pub mod transaction;
+pub mod inspect;
 // pub mod resource_eval;  // Temporarily disabled - causes duplicate impl
 #[cfg(test)]
 mod repl_function_tests;
@@ -58,6 +59,11 @@ pub use assessment::{
 // Export magic commands
 pub use magic::{
     MagicRegistry, MagicResult, MagicCommand, UnicodeExpander, ProfileData,
+};
+
+// Export inspection protocol
+pub use inspect::{
+    Inspect, Inspector, InspectStyle, DisplayForm, CompositeForm, OpaqueHandle,
 };
 
 // Export resource-bounded evaluation

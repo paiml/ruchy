@@ -47,6 +47,7 @@ use anyhow::{bail, Context, Result};
 use colored::Colorize;
 
 mod display;
+mod inspect;
 use rustyline::completion::Completer;
 use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
