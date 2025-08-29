@@ -278,6 +278,7 @@ assert_cmd = "2.0"
 predicates = "3.0"
 tempfile = "3.8"
 quickcheck_macros = { workspace = true }
+walkdir = "2.4"
 
 [[bench]]
 name = "parser"
