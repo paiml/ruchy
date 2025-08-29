@@ -2,8 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org)
-[![Tests](https://img.shields.io/badge/tests-374%20passing-green.svg)](./tests)
-[![Coverage](https://img.shields.io/badge/coverage-87.80%25-brightgreen.svg)](./scripts/cli_coverage.sh)
+[![Tests](https://img.shields.io/badge/tests-429%20passing-green.svg)](./tests)
+[![Coverage](https://img.shields.io/badge/coverage-37.51%25-yellow.svg)](./scripts/cli_coverage.sh)
 [![v1.26.0](https://img.shields.io/badge/v1.26.0-OBJECT--INSPECTION--READY-blue.svg)](./CHANGELOG.md)
 
 **Ruchy is a self-hosting programming language** with comprehensive tooling (29 CLI commands), Toyota Way quality engineering, and mathematical property verification that makes regressions impossible.
