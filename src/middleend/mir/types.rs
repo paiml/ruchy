@@ -337,3 +337,76 @@ impl fmt::Display for Type {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_program_creation() {
+        let program = Program {
+            functions: HashMap::new(),
+            entry: "main".to_string(),
+        };
+        
+        assert_eq!(program.entry, "main");
+        assert_eq!(program.functions.len(), 0);
+    }
+    
+    
+    #[test]
+    fn test_block_id() {
+        let id1 = BlockId(0);
+        let id2 = BlockId(1);
+        let id3 = BlockId(0);
+        
+        assert_eq!(id1, id3);
+        assert_ne!(id1, id2);
+        assert_eq!(format!("{:?}", id1), "BlockId(0)");
+    }
+    
+    #[test]
+    fn test_local_variable() {
+        let local1 = Local(0);
+        let local2 = Local(1);
+        let local3 = Local(0);
+        
+        assert_eq!(local1, local3);
+        assert_ne!(local1, local2);
+        assert_eq!(format!("{:?}", local1), "Local(0)");
+    }
+    
+    #[test]
+    fn test_type_variants() {
+        let types = vec![
+            Type::Unit,
+            Type::Bool,
+            Type::I32,
+            Type::I64,
+            Type::F32,
+            Type::F64,
+            Type::String,
+            Type::Array(Box::new(Type::I32), 10),
+            Type::Vec(Box::new(Type::F64)),
+            Type::Tuple(vec![Type::I32, Type::Bool]),
+        ];
+        
+        for ty in types {
+            assert!(!format!("{:?}", ty).is_empty());
+        }
+    }
+    
+    #[test]
+    fn test_type_equality() {
+        assert_eq!(Type::I32, Type::I32);
+        assert_ne!(Type::I32, Type::I64);
+        assert_eq!(
+            Type::Array(Box::new(Type::U8), 5),
+            Type::Array(Box::new(Type::U8), 5)
+        );
+        assert_ne!(
+            Type::Array(Box::new(Type::U8), 5),
+            Type::Array(Box::new(Type::U8), 10)
+        );
+    }
+}
