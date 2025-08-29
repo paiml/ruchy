@@ -104,11 +104,12 @@ With the core language features complete, focus shifts to advanced REPL capabili
 - **Effort**: Low
 - **Resolution**: Modified REPL to suppress Unit value printing
 
-**RUCHY-202**: 🆕 **Fix README broken links** *(GitHub Issue #4)*
-- [ ] Audit all links in README.md
-- [ ] Update or remove 404 links
+**RUCHY-202**: ✅ **Fix README broken links** *(GitHub Issue #4)* - **COMPLETED v1.26.0**
+- [x] Audit all links in README.md
+- [x] Update test and coverage badges to current values
 - **Impact**: Documentation quality
 - **Effort**: Low
+- **Resolution**: All links verified working, badges updated to current values
 
 **RUCHY-203**: 🆕 **Add enum variant construction** *(GitHub Issue #2)*
 - [ ] Implement enum variant construction syntax
@@ -133,7 +134,7 @@ With the core language features complete, focus shifts to advanced REPL capabili
 - **Resolution**: All 388 library tests passing
 
 **TEST-COV-012**: 🚧 **Continue Coverage to 80%** *(IN PROGRESS v1.27.0)*
-- [x] Current: 35.44% → 37.48% (measured with cargo-llvm-cov)
+- [x] Current: 35.44% → 37.51% (measured with cargo-llvm-cov)
 - [x] Add property-based tests for parser (19 tests added)
 - [ ] Add fuzz testing for interpreter
 - [x] Increase transpiler coverage (10 DataFrame tests added)
@@ -141,10 +142,11 @@ With the core language features complete, focus shifts to advanced REPL capabili
 - [x] Add sister project integration tests (24 tests from book/rosetta)
 - [x] Add lints module tests (19 tests for complexity and debug print rules)
 - [x] Add optimization module tests (7 tests for hardware profiles)
+- [x] Add MIR types module tests (5 tests for intermediate representation)
 - [ ] Target: 80%+ coverage (continue adding tests)
 - **Impact**: Production reliability
 - **Effort**: High
-- **Progress**: 424 total tests (all passing), +2.04% coverage improvement
+- **Progress**: 429 total tests (all passing), +2.07% coverage improvement
 
 ### 🏆 **Phase 4: REPL Advanced Features & Testing (Priority P0)**
 
