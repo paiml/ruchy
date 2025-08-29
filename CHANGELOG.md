@@ -2,6 +2,57 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [1.26.0] - 2025-08-29
+
+### 🎯 Object Inspection & Test Coverage Enhancement
+
+**MILESTONE**: Production-quality object inspection protocol and comprehensive test coverage improvements, targeting 80% overall coverage.
+
+### Added
+
+#### Object Inspection Protocol (OBJ-INSPECT-001)
+- **Inspect Trait**: Consistent human-readable display for all types
+  - Cycle detection with optimized VisitSet
+  - Complexity budget to prevent resource exhaustion
+  - Depth limiting for nested structures
+  - Custom InspectStyle configuration
+
+- **Inspector Implementation**: Smart formatting with resource bounds
+  - Inline storage optimization for <8 visited objects
+  - Automatic overflow to HashSet for larger graphs
+  - Budget tracking for bounded execution time
+  - Display truncation for large collections
+
+- **Value Type Integration**: All Ruchy types support inspection
+  - Consistent Option/Result formatting (Option::None, Option::Some)
+  - Collection truncation with element counts
+  - Opaque type handling for functions/closures
+  - Deep inspection with recursive depth calculation
+
+#### Comprehensive Test Coverage (TEST-COV-011)
+- **REPL Demo Validation**: Sister project integration testing
+  - 15 demo categories fully validated
+  - One-liner compatibility tests
+  - Error recovery testing
+  
+- **Coverage Improvements**: From 35.44% → targeting 80%
+  - Added 300+ new test cases
+  - Property-based testing for invariants
+  - Integration tests for all major features
+  - Regression tests for fixed issues
+
+### Fixed
+- **Option::None Display**: Now correctly shows as `Option::None` instead of `null`
+- **TransactionId Access**: Made field public for test accessibility
+- **MCP Test Compilation**: Fixed feature gate issues
+- **Test Framework Issues**: Resolved import problems in ruchy-repl-demos
+
+### Technical Improvements
+- Added `src/runtime/inspect.rs` module for inspection protocol
+- Created `src/runtime/repl/inspect.rs` for Value inspection
+- Added `tests/repl_demos_validation.rs` for demo testing
+- Created `tests/comprehensive_coverage.rs` for coverage enhancement
+
 ## [1.25.0] - 2025-08-29
 
 ### 🚀 REPL Advanced Features Complete - Production-Ready Infrastructure
