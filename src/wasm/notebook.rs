@@ -165,7 +165,7 @@ impl NotebookRuntime {
                     #[cfg(target_arch = "wasm32")]
                     return e;
                     #[cfg(not(target_arch = "wasm32"))]
-                    return format!("Eval error: {:?}", e);
+                    return format!("Eval error: {e:?}");
                 })?;
                 
                 // Update execution count
@@ -189,7 +189,7 @@ impl NotebookRuntime {
             }
             CellType::Markdown => {
                 // Markdown cells don't execute
-                Ok("".to_string())
+                Ok(String::new())
             }
         }
     }
@@ -216,7 +216,7 @@ impl NotebookRuntime {
                 #[cfg(target_arch = "wasm32")]
                 return JsValue::from_str(&format!("Parse error: {}", e));
                 #[cfg(not(target_arch = "wasm32"))]
-                return format!("Parse error: {}", e);
+                return format!("Parse error: {e}");
             })?;
         self.notebook = notebook;
         Ok(())

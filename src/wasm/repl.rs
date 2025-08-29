@@ -84,7 +84,7 @@ impl WasmRepl {
                     display: None,
                     type_info: None,
                     rust_code: None,
-                    error: Some(format!("Parse error: {}", e)),
+                    error: Some(format!("Parse error: {e}")),
                     timing: TimingInfo {
                         parse_ms: get_timestamp() - parse_start,
                         typecheck_ms: 0.0,
@@ -104,7 +104,7 @@ impl WasmRepl {
         // Evaluation
         let eval_start = get_timestamp();
         // For now, just return the parsed AST as a string
-        let result = format!("{:?}", ast);
+        let result = format!("{ast:?}");
         let eval_time = get_timestamp() - eval_start;
         
         // Add to history
