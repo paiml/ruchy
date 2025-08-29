@@ -4,7 +4,6 @@
 
 use anyhow::{Result, anyhow};
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 // ============================================================================
@@ -40,14 +39,13 @@ impl SafeArena {
             return Err(anyhow!("Arena memory limit exceeded"));
         }
         
-        // Store value
-        let boxed = Box::new(value);
-        let ptr = &*boxed as *const T;
-        self.storage.borrow_mut().push(boxed as Box<dyn std::any::Any>);
+        // Store value in Rc
+        let rc_value = Rc::new(value);
+        self.storage.borrow_mut().push(Box::new(rc_value.clone()) as Box<dyn std::any::Any>);
         *self.used.borrow_mut() += size;
         
         Ok(ArenaRef {
-            ptr,
+            value: rc_value,
             _arena: self,
         })
     }
@@ -66,7 +64,7 @@ impl SafeArena {
 
 /// Reference to a value in the arena
 pub struct ArenaRef<'a, T> {
-    ptr: *const T,
+    value: Rc<T>,
     _arena: &'a SafeArena,
 }
 
@@ -74,8 +72,7 @@ impl<'a, T> std::ops::Deref for ArenaRef<'a, T> {
     type Target = T;
     
     fn deref(&self) -> &Self::Target {
-        // Safe because we hold a reference to the arena
-        unsafe { &*self.ptr }
+        &*self.value
     }
 }
 
