@@ -41,6 +41,7 @@ use crate::frontend::ast::{
     BinaryOp, Expr, ExprKind, ImportItem, Literal, MatchArm, Pattern, PipelineStage, Span, UnaryOp,
 };
 use crate::runtime::magic::{MagicRegistry, UnicodeExpander};
+use crate::runtime::transaction::TransactionalState;
 use crate::{Parser, Transpiler};
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
@@ -1094,6 +1095,8 @@ pub struct Repl {
     magic_registry: MagicRegistry,
     /// Unicode expander for LaTeX-style input
     unicode_expander: UnicodeExpander,
+    /// Transactional state for safe evaluation
+    tx_state: TransactionalState,
 }
 
 impl Repl {
@@ -1146,6 +1149,7 @@ impl Repl {
             state: ReplState::Ready,
             magic_registry: MagicRegistry::new(),
             unicode_expander: UnicodeExpander::new(),
+            tx_state: TransactionalState::new(config.max_memory),
         };
 
         // Initialize built-in types
