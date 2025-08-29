@@ -386,3 +386,127 @@ fn create_default_throughput_map() -> HashMap<String, f64> {
     throughput.insert("fma".to_string(), 2.0);
     throughput
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_hardware_profile_creation() {
+        let profile = HardwareProfile {
+            architecture: "x86_64".to_string(),
+            cores: 8,
+            l1_cache_size: 32 * 1024,
+            l2_cache_size: 256 * 1024,
+            l3_cache_size: Some(8 * 1024 * 1024),
+            cache_line_size: 64,
+            branch_predictor: BranchPredictorProfile {
+                bht_size: 4096,
+                pht_size: 2048,
+                regular_accuracy: 0.95,
+                irregular_accuracy: 0.60,
+            },
+            vector_units: VectorUnitProfile {
+                instruction_sets: vec!["SSE".to_string(), "AVX2".to_string()],
+                register_width: 256,
+                execution_units: 2,
+                throughput: HashMap::new(),
+            },
+        };
+        
+        assert_eq!(profile.architecture, "x86_64");
+        assert_eq!(profile.cores, 8);
+        assert_eq!(profile.cache_line_size, 64);
+    }
+    
+    #[test]
+    fn test_branch_predictor_profile() {
+        let predictor = BranchPredictorProfile {
+            bht_size: 2048,
+            pht_size: 1024,
+            regular_accuracy: 0.98,
+            irregular_accuracy: 0.55,
+        };
+        
+        assert_eq!(predictor.bht_size, 2048);
+        assert!(predictor.regular_accuracy > predictor.irregular_accuracy);
+    }
+    
+    #[test]
+    fn test_vector_unit_profile() {
+        let mut throughput = HashMap::new();
+        throughput.insert("add".to_string(), 4.0);
+        throughput.insert("mul".to_string(), 2.0);
+        
+        let vector_unit = VectorUnitProfile {
+            instruction_sets: vec!["AVX512".to_string()],
+            register_width: 512,
+            execution_units: 4,
+            throughput,
+        };
+        
+        assert_eq!(vector_unit.register_width, 512);
+        assert_eq!(vector_unit.execution_units, 4);
+        assert_eq!(vector_unit.throughput.get("add"), Some(&4.0));
+    }
+    
+    #[test]
+    fn test_optimization_type() {
+        let types = vec![
+            OptimizationType::CacheOptimization,
+            OptimizationType::BranchPrediction,
+            OptimizationType::Vectorization,
+            OptimizationType::MemoryLayout,
+            OptimizationType::AlgorithmicComplexity,
+            OptimizationType::ZeroCostAbstraction,
+        ];
+        
+        for opt_type in types {
+            assert!(!format!("{:?}", opt_type).is_empty());
+        }
+    }
+    
+    #[test]
+    fn test_priority_levels() {
+        let priorities = vec![
+            Priority::Critical,
+            Priority::High,
+            Priority::Medium,
+            Priority::Low,
+        ];
+        
+        for priority in priorities {
+            assert!(!format!("{:?}", priority).is_empty());
+        }
+    }
+    
+    #[test]
+    fn test_optimization_recommendation() {
+        let rec = OptimizationRecommendation {
+            optimization_type: OptimizationType::CacheOptimization,
+            priority: Priority::High,
+            description: "High cache miss rate detected".to_string(),
+            suggestion: "Consider data alignment".to_string(),
+            impact: 0.25,
+            location: None,
+        };
+        
+        assert_eq!(rec.priority, Priority::High);
+        assert_eq!(rec.impact, 0.25);
+        assert!(rec.location.is_none());
+    }
+    
+    #[test]
+    fn test_create_default_throughput_map() {
+        let throughput = create_default_throughput_map();
+        
+        // Should have basic operations
+        assert!(throughput.contains_key("add"));
+        assert!(throughput.contains_key("mul"));
+        assert!(throughput.contains_key("div"));
+        assert!(throughput.contains_key("fma"));
+        
+        // Division should be slower than multiplication
+        assert!(throughput["div"] < throughput["mul"]);
+    }
+}
