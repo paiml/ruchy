@@ -4,11 +4,9 @@
 
 use anyhow::{Result, anyhow};
 use std::collections::HashMap;
-use std::rc::Rc;
-use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
-use crate::runtime::repl::{Value, ReplState};
+use crate::runtime::repl::Value;
 use crate::runtime::safe_arena::{TransactionalArena, SafeArena as Arena};
 
 // ============================================================================
@@ -371,7 +369,7 @@ impl MVCC {
     
     /// Write a value at a specific version
     pub fn write(&mut self, name: String, value: Value, version: Version) {
-        let entry = self.bindings.entry(name).or_insert_with(Vec::new);
+        let entry = self.bindings.entry(name).or_default();
         
         // Add new version
         entry.push(VersionedValue { value, version });

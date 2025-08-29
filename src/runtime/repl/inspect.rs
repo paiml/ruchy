@@ -13,7 +13,7 @@ impl Inspect for Value {
             Value::Float(f) => f.inspect(inspector),
             Value::Bool(b) => b.inspect(inspector),
             Value::String(s) => s.inspect(inspector),
-            Value::Char(c) => write!(inspector, "'{}'", c),
+            Value::Char(c) => write!(inspector, "'{c}'"),
             
             Value::List(items) => {
                 if inspector.at_max_depth() {
@@ -90,7 +90,7 @@ impl Inspect for Value {
                     if i > 0 {
                         write!(inspector, ", ")?;
                     }
-                    write!(inspector, "\"{}\": ", key)?;
+                    write!(inspector, "\"{key}\": ")?;
                     value.inspect(inspector)?;
                     
                     if !inspector.has_budget() {
@@ -183,14 +183,14 @@ impl Inspect for Value {
             
             Value::Range { start, end, inclusive } => {
                 if *inclusive {
-                    write!(inspector, "{}..={}", start, end)
+                    write!(inspector, "{start}..={end}")
                 } else {
-                    write!(inspector, "{}..{}", start, end)
+                    write!(inspector, "{start}..{end}")
                 }
             }
             
             Value::EnumVariant { enum_name, variant_name, data } => {
-                write!(inspector, "{}::{}", enum_name, variant_name)?;
+                write!(inspector, "{enum_name}::{variant_name}")?;
                 if let Some(values) = data {
                     if !values.is_empty() {
                         write!(inspector, "(")?;
@@ -218,25 +218,25 @@ impl Inspect for Value {
     fn inspect_depth(&self) -> usize {
         match self {
             Value::List(items) => {
-                1 + items.iter().map(|v| v.inspect_depth()).max().unwrap_or(0)
+                1 + items.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
             }
             Value::Tuple(items) => {
-                1 + items.iter().map(|v| v.inspect_depth()).max().unwrap_or(0)
+                1 + items.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
             }
             Value::Object(map) => {
-                1 + map.values().map(|v| v.inspect_depth()).max().unwrap_or(0)
+                1 + map.values().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
             }
             Value::HashMap(map) => {
-                let key_depth = map.keys().map(|k| k.inspect_depth()).max().unwrap_or(0);
-                let val_depth = map.values().map(|v| v.inspect_depth()).max().unwrap_or(0);
+                let key_depth = map.keys().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0);
+                let val_depth = map.values().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0);
                 1 + key_depth.max(val_depth)
             }
             Value::HashSet(set) => {
-                1 + set.iter().map(|v| v.inspect_depth()).max().unwrap_or(0)
+                1 + set.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
             }
             Value::EnumVariant { data, .. } => {
                 if let Some(values) = data {
-                    1 + values.iter().map(|v| v.inspect_depth()).max().unwrap_or(0)
+                    1 + values.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
                 } else {
                     1
                 }

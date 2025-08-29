@@ -68,11 +68,11 @@ pub struct ArenaRef<'a, T> {
     _arena: &'a SafeArena,
 }
 
-impl<'a, T> std::ops::Deref for ArenaRef<'a, T> {
+impl<T> std::ops::Deref for ArenaRef<'_, T> {
     type Target = T;
     
     fn deref(&self) -> &Self::Target {
-        &*self.value
+        &self.value
     }
 }
 

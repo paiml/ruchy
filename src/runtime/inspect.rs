@@ -158,6 +158,12 @@ pub struct OpaqueHandle {
     pub id: Option<String>,
 }
 
+impl Default for Inspector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Inspector {
     /// Create a new inspector with default settings
     pub fn new() -> Self {
@@ -178,7 +184,7 @@ impl Inspector {
     
     /// Enter a new inspection context (cycle detection)
     pub fn enter<T>(&mut self, val: &T) -> bool {
-        let addr = val as *const T as usize;
+        let addr = std::ptr::from_ref::<T>(val) as usize;
         if self.visited.contains(addr) {
             false // Cycle detected
         } else {
@@ -226,32 +232,32 @@ impl fmt::Write for Inspector {
 
 impl Inspect for i32 {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
-        write!(inspector, "{}", self)
+        write!(inspector, "{self}")
     }
 }
 
 impl Inspect for i64 {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
-        write!(inspector, "{}", self)
+        write!(inspector, "{self}")
     }
 }
 
 impl Inspect for f64 {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
-        write!(inspector, "{}", self)
+        write!(inspector, "{self}")
     }
 }
 
 impl Inspect for bool {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
-        write!(inspector, "{}", self)
+        write!(inspector, "{self}")
     }
 }
 
 impl Inspect for String {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         if self.len() <= inspector.style.max_string_len {
-            write!(inspector, "\"{}\"", self)
+            write!(inspector, "\"{self}\"")
         } else {
             write!(inspector, "\"{}...\" ({} chars)", 
                 &self[..inspector.style.max_string_len], 
@@ -263,7 +269,7 @@ impl Inspect for String {
 impl Inspect for &str {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         if self.len() <= inspector.style.max_string_len {
-            write!(inspector, "\"{}\"", self)
+            write!(inspector, "\"{self}\"")
         } else {
             write!(inspector, "\"{}...\" ({} chars)", 
                 &self[..inspector.style.max_string_len], 

@@ -1770,8 +1770,11 @@ impl Repl {
         self.result_history.push(value.clone());
         self.update_history_variables();
 
-        // Return string representation
-        Ok(value.to_string())
+        // Return string representation (suppress Unit values from loops/statements)
+        match value {
+            Value::Unit => Ok(String::new()),
+            _ => Ok(value.to_string())
+        }
     }
 
     /// Evaluate an expression with resource bounds
@@ -1961,7 +1964,11 @@ impl Repl {
 
         // Let bindings are handled in evaluate_expr, no need to duplicate here
 
-        Ok(value.to_string())
+        // Return string representation (suppress Unit values from loops/statements)
+        match value {
+            Value::Unit => Ok(String::new()),
+            _ => Ok(value.to_string())
+        }
     }
 
     /// Get tab completions for the given input at the cursor position
