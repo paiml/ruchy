@@ -72,6 +72,27 @@
 
 With the core language features complete, focus shifts to advanced REPL capabilities, testing infrastructure, and production-readiness enhancements.
 
+## 📊 **Current Sprint: Testing & Quality Enhancement (v1.26.0)**
+
+### **Active Tasks**
+
+**TEST-COV-011**: 🚧 **Code Coverage Enhancement to 80%**
+- [ ] Baseline: 35.44% → Target: 80%+
+- [ ] Add unit tests for runtime modules
+- [ ] Add integration tests for sister projects
+- [ ] Implement property-based testing
+- **Impact**: Production quality assurance
+- **Effort**: High (comprehensive test coverage)
+
+**OBJ-INSPECT-001**: 📋 **Object Inspection Consistency**
+- [ ] Implement consistent object introspection API
+- [ ] Standardize display formats across all value types
+- [ ] Add deep inspection capabilities
+- [ ] Document inspection behavior
+- **Impact**: Improved debugging and development experience
+- **Effort**: Medium
+- **Spec**: [object-inspection-consistency.md](docs/specifications/object-inspection-consistency.md)
+
 ### 🏆 **Phase 4: REPL Advanced Features & Testing (Priority P0)**
 
 **REPL-ADV-001**: ✅ **REPL Replay Testing System** *(COMPLETED v1.24.0)*
