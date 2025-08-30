@@ -8,7 +8,7 @@ use std::path::Path;
 use std::fs;
 use std::process::Command;
 use serde::{Serialize, Deserialize};
-use crate::quality::instrumentation::{CoverageInstrumentation, instrument_source};
+use crate::quality::instrumentation::CoverageInstrumentation;
 
 /// Coverage data for a Ruchy file
 #[derive(Debug, Clone, Serialize, Deserialize)]

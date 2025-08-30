@@ -3,7 +3,7 @@
 //! [TEST-COV-012] Basic runtime test coverage
 
 use ruchy::runtime::Value;
-use ruchy::frontend::ast::{Expr, ExprKind};
+use ruchy::frontend::ast::{Expr, ExprKind, Literal};
 
 #[test]
 fn test_value_int() {
@@ -167,7 +167,7 @@ fn test_value_function() {
     let val = Value::Function {
         name: "test_func".to_string(),
         params: vec!["a".to_string(), "b".to_string()],
-        body: Box::new(Expr::literal(42)),
+        body: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default())),
     };
     
     assert_eq!(val.to_string(), "fn test_func(a, b)");
@@ -177,7 +177,7 @@ fn test_value_function() {
 fn test_value_lambda() {
     let val = Value::Lambda {
         params: vec!["x".to_string()],
-        body: Box::new(Expr::literal(10)),
+        body: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(10)), Default::default())),
     };
     
     assert_eq!(val.to_string(), "|x| <closure>");

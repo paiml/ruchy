@@ -150,6 +150,14 @@ pub fn instrument_source(source: &str, file_path: &str) -> Result<String> {
 fn is_executable_line(line: &str) -> bool {
     let trimmed = line.trim();
     
+    // First check if it's a control flow statement (these are executable even with {)
+    if trimmed.starts_with("if ") ||
+       trimmed.starts_with("while ") ||
+       trimmed.starts_with("for ") ||
+       trimmed.starts_with("match ") {
+        return true;
+    }
+    
     // Skip function signatures, struct definitions, etc.
     if trimmed.starts_with("fn ") || 
        trimmed.starts_with("fun ") ||
@@ -158,7 +166,7 @@ fn is_executable_line(line: &str) -> bool {
        trimmed.starts_with("use ") ||
        trimmed.starts_with("mod ") ||
        trimmed.starts_with("#[") ||
-       trimmed.ends_with("{") && !trimmed.contains("=") {
+       (trimmed.ends_with("{") && !trimmed.contains("=")) {
         return false;
     }
     
@@ -166,11 +174,7 @@ fn is_executable_line(line: &str) -> bool {
     trimmed.contains("=") ||
     trimmed.contains("println") ||
     trimmed.contains("assert") ||
-    trimmed.contains("return") ||
-    trimmed.starts_with("if ") ||
-    trimmed.starts_with("while ") ||
-    trimmed.starts_with("for ") ||
-    trimmed.starts_with("match ")
+    trimmed.contains("return")
 }
 
 /// Extract function name from function declaration
