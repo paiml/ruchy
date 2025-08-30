@@ -2281,201 +2281,26 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        use std::collections::HashSet;
         match method {
             "map" => self.evaluate_list_map(items, args, deadline, depth),
             "filter" => self.evaluate_list_filter(items, args, deadline, depth),
             "reduce" => self.evaluate_list_reduce(items, args, deadline, depth),
-            "len" | "length" => {
-                let len = items.len();
-                i64::try_from(len)
-                    .map(Value::Int)
-                    .map_err(|_| anyhow::anyhow!("List length too large to represent as i64"))
-            }
-            "head" | "first" => items
-                .first()
-                .cloned()
-                .ok_or_else(|| anyhow::anyhow!("Empty list")),
-            "last" => items
-                .last()
-                .cloned()
-                .ok_or_else(|| anyhow::anyhow!("Empty list")),
-            "tail" | "rest" => {
-                if items.is_empty() {
-                    Ok(Value::List(Vec::new()))
-                } else {
-                    Ok(Value::List(items[1..].to_vec()))
-                }
-            }
-            "reverse" => {
-                let mut reversed = items;
-                reversed.reverse();
-                Ok(Value::List(reversed))
-            }
-            "sum" => {
-                let mut sum = 0i64;
-                for item in &items {
-                    if let Value::Int(n) = item {
-                        sum += n;
-                    } else {
-                        bail!("sum requires all integers");
-                    }
-                }
-                Ok(Value::Int(sum))
-            }
-            "push" => {
-                if args.len() != 1 {
-                    bail!("push requires exactly 1 argument");
-                }
-                let mut new_items = items;
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                new_items.push(value);
-                Ok(Value::List(new_items))
-            }
-            "pop" => {
-                if !args.is_empty() {
-                    bail!("pop requires no arguments");
-                }
-                let mut new_items = items;
-                if let Some(popped) = new_items.pop() {
-                    Ok(popped)
-                } else {
-                    bail!("Cannot pop from empty list")
-                }
-            }
-            "append" => {
-                if args.len() != 1 {
-                    bail!("append requires exactly 1 argument");
-                }
-                let mut new_items = items;
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                if let Value::List(other_items) = value {
-                    new_items.extend(other_items);
-                    Ok(Value::List(new_items))
-                } else {
-                    bail!("append requires a list argument");
-                }
-            }
-            "insert" => {
-                if args.len() != 2 {
-                    bail!("insert requires exactly 2 arguments (index, value)");
-                }
-                let mut new_items = items;
-                let index = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                let value = self.evaluate_expr(&args[1], deadline, depth + 1)?;
-                if let Value::Int(idx) = index {
-                    if idx < 0 || idx as usize > new_items.len() {
-                        bail!("Insert index out of bounds");
-                    }
-                    new_items.insert(idx as usize, value);
-                    Ok(Value::List(new_items))
-                } else {
-                    bail!("Insert index must be an integer");
-                }
-            }
-            "remove" => {
-                if args.len() != 1 {
-                    bail!("remove requires exactly 1 argument (index)");
-                }
-                let mut new_items = items;
-                let index = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                if let Value::Int(idx) = index {
-                    if idx < 0 || idx as usize >= new_items.len() {
-                        bail!("Remove index out of bounds");
-                    }
-                    let removed = new_items.remove(idx as usize);
-                    Ok(removed)
-                } else {
-                    bail!("Remove index must be an integer");
-                }
-            }
-            "slice" => {
-                if args.len() != 2 {
-                    bail!("slice requires exactly 2 arguments (start, end)");
-                }
-                let start_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                let end_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
-                
-                if let (Value::Int(start), Value::Int(end)) = (start_val, end_val) {
-                    let start = start as usize;
-                    let end = end as usize;
-                    
-                    if start > items.len() || end > items.len() || start > end {
-                        Ok(Value::List(Vec::new())) // Return empty for out of bounds
-                    } else {
-                        Ok(Value::List(items[start..end].to_vec()))
-                    }
-                } else {
-                    bail!("slice arguments must be integers");
-                }
-            }
-            "concat" => {
-                if args.len() != 1 {
-                    bail!("concat requires exactly 1 argument");
-                }
-                let other_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                
-                if let Value::List(other_items) = other_val {
-                    let mut result = items;
-                    result.extend(other_items);
-                    Ok(Value::List(result))
-                } else {
-                    bail!("concat argument must be a list");
-                }
-            }
-            "flatten" => {
-                if !args.is_empty() {
-                    bail!("flatten requires no arguments");
-                }
-                let mut result = Vec::new();
-                for item in items {
-                    if let Value::List(inner_items) = item {
-                        result.extend(inner_items);
-                    } else {
-                        result.push(item);
-                    }
-                }
-                Ok(Value::List(result))
-            }
-            "unique" => {
-                if !args.is_empty() {
-                    bail!("unique requires no arguments");
-                }
-                let mut seen = HashSet::new();
-                let mut result = Vec::new();
-                
-                for item in items {
-                    // Use string representation for hashing since Value doesn't implement Hash
-                    let key = format!("{item:?}");
-                    if seen.insert(key) {
-                        result.push(item);
-                    }
-                }
-                Ok(Value::List(result))
-            }
-            "join" => {
-                if args.len() != 1 {
-                    bail!("join requires exactly 1 argument (separator)");
-                }
-                let sep_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                
-                if let Value::String(separator) = sep_val {
-                    let strings: Result<Vec<String>, _> = items.iter().map(|item| {
-                        if let Value::String(s) = item {
-                            Ok(s.clone())
-                        } else {
-                            bail!("join requires a list of strings");
-                        }
-                    }).collect();
-                    
-                    match strings {
-                        Ok(string_vec) => Ok(Value::String(string_vec.join(&separator))),
-                        Err(e) => Err(e),
-                    }
-                } else {
-                    bail!("join separator must be a string");
-                }
-            }
+            "len" | "length" => Self::evaluate_list_length(&items),
+            "head" | "first" => Self::evaluate_list_head(&items),
+            "last" => Self::evaluate_list_last(&items),
+            "tail" | "rest" => Self::evaluate_list_tail(items),
+            "reverse" => Self::evaluate_list_reverse(items),
+            "sum" => Self::evaluate_list_sum(&items),
+            "push" => self.evaluate_list_push(items, args, deadline, depth),
+            "pop" => Self::evaluate_list_pop(items, args),
+            "append" => self.evaluate_list_append(items, args, deadline, depth),
+            "insert" => self.evaluate_list_insert(items, args, deadline, depth),
+            "remove" => self.evaluate_list_remove(items, args, deadline, depth),
+            "slice" => self.evaluate_list_slice(items, args, deadline, depth),
+            "concat" => self.evaluate_list_concat(items, args, deadline, depth),
+            "flatten" => Self::evaluate_list_flatten(items, args),
+            "unique" => Self::evaluate_list_unique(items, args),
+            "join" => self.evaluate_list_join(items, args, deadline, depth),
             _ => bail!("Unknown list method: {}", method),
         }
     }
@@ -2593,6 +2418,268 @@ impl Repl {
                     _ => bail!("reduce first argument is not a lambda expression (some other type)"),
                 }
             }
+        }
+    }
+
+    /// Evaluate `list.len()` and `list.length()` operations (complexity: 3)
+    fn evaluate_list_length(items: &[Value]) -> Result<Value> {
+        let len = items.len();
+        i64::try_from(len)
+            .map(Value::Int)
+            .map_err(|_| anyhow::anyhow!("List length too large to represent as i64"))
+    }
+
+    /// Evaluate `list.head()` and `list.first()` operations (complexity: 2)
+    fn evaluate_list_head(items: &[Value]) -> Result<Value> {
+        items
+            .first()
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("Empty list"))
+    }
+
+    /// Evaluate `list.last()` operation (complexity: 2)
+    fn evaluate_list_last(items: &[Value]) -> Result<Value> {
+        items
+            .last()
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("Empty list"))
+    }
+
+    /// Evaluate `list.tail()` and `list.rest()` operations (complexity: 2)
+    fn evaluate_list_tail(items: Vec<Value>) -> Result<Value> {
+        if items.is_empty() {
+            Ok(Value::List(Vec::new()))
+        } else {
+            Ok(Value::List(items[1..].to_vec()))
+        }
+    }
+
+    /// Evaluate `list.reverse()` operation (complexity: 2)
+    fn evaluate_list_reverse(mut items: Vec<Value>) -> Result<Value> {
+        items.reverse();
+        Ok(Value::List(items))
+    }
+
+    /// Evaluate `list.sum()` operation (complexity: 4)
+    fn evaluate_list_sum(items: &[Value]) -> Result<Value> {
+        let mut sum = 0i64;
+        for item in items {
+            if let Value::Int(n) = item {
+                sum += n;
+            } else {
+                bail!("sum requires all integers");
+            }
+        }
+        Ok(Value::Int(sum))
+    }
+
+    /// Evaluate `list.push()` operation (complexity: 4)
+    fn evaluate_list_push(
+        &mut self,
+        mut items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("push requires exactly 1 argument");
+        }
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        items.push(value);
+        Ok(Value::List(items))
+    }
+
+    /// Evaluate `list.pop()` operation (complexity: 3)
+    fn evaluate_list_pop(mut items: Vec<Value>, args: &[Expr]) -> Result<Value> {
+        if !args.is_empty() {
+            bail!("pop requires no arguments");
+        }
+        if let Some(popped) = items.pop() {
+            Ok(popped)
+        } else {
+            bail!("Cannot pop from empty list")
+        }
+    }
+
+    /// Evaluate `list.append()` operation (complexity: 5)
+    fn evaluate_list_append(
+        &mut self,
+        mut items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("append requires exactly 1 argument");
+        }
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        if let Value::List(other_items) = value {
+            items.extend(other_items);
+            Ok(Value::List(items))
+        } else {
+            bail!("append requires a list argument");
+        }
+    }
+
+    /// Evaluate `list.insert()` operation (complexity: 6)
+    fn evaluate_list_insert(
+        &mut self,
+        mut items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 2 {
+            bail!("insert requires exactly 2 arguments (index, value)");
+        }
+        let index = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        if let Value::Int(idx) = index {
+            if idx < 0 || idx as usize > items.len() {
+                bail!("Insert index out of bounds");
+            }
+            items.insert(idx as usize, value);
+            Ok(Value::List(items))
+        } else {
+            bail!("Insert index must be an integer");
+        }
+    }
+
+    /// Evaluate `list.remove()` operation (complexity: 6)
+    fn evaluate_list_remove(
+        &mut self,
+        mut items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("remove requires exactly 1 argument (index)");
+        }
+        let index = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        if let Value::Int(idx) = index {
+            if idx < 0 || idx as usize >= items.len() {
+                bail!("Remove index out of bounds");
+            }
+            let removed = items.remove(idx as usize);
+            Ok(removed)
+        } else {
+            bail!("Remove index must be an integer");
+        }
+    }
+
+    /// Evaluate `list.slice()` operation (complexity: 7)
+    fn evaluate_list_slice(
+        &mut self,
+        items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 2 {
+            bail!("slice requires exactly 2 arguments (start, end)");
+        }
+        let start_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let end_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        
+        if let (Value::Int(start), Value::Int(end)) = (start_val, end_val) {
+            let start = start as usize;
+            let end = end as usize;
+            
+            if start > items.len() || end > items.len() || start > end {
+                Ok(Value::List(Vec::new())) // Return empty for out of bounds
+            } else {
+                Ok(Value::List(items[start..end].to_vec()))
+            }
+        } else {
+            bail!("slice arguments must be integers");
+        }
+    }
+
+    /// Evaluate `list.concat()` operation (complexity: 5)
+    fn evaluate_list_concat(
+        &mut self,
+        mut items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("concat requires exactly 1 argument");
+        }
+        let other_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        
+        if let Value::List(other_items) = other_val {
+            items.extend(other_items);
+            Ok(Value::List(items))
+        } else {
+            bail!("concat argument must be a list");
+        }
+    }
+
+    /// Evaluate `list.flatten()` operation (complexity: 4)
+    fn evaluate_list_flatten(items: Vec<Value>, args: &[Expr]) -> Result<Value> {
+        if !args.is_empty() {
+            bail!("flatten requires no arguments");
+        }
+        let mut result = Vec::new();
+        for item in items {
+            if let Value::List(inner_items) = item {
+                result.extend(inner_items);
+            } else {
+                result.push(item);
+            }
+        }
+        Ok(Value::List(result))
+    }
+
+    /// Evaluate `list.unique()` operation (complexity: 5)
+    fn evaluate_list_unique(items: Vec<Value>, args: &[Expr]) -> Result<Value> {
+        use std::collections::HashSet;
+        if !args.is_empty() {
+            bail!("unique requires no arguments");
+        }
+        let mut seen = HashSet::new();
+        let mut result = Vec::new();
+        
+        for item in items {
+            // Use string representation for hashing since Value doesn't implement Hash
+            let key = format!("{item:?}");
+            if seen.insert(key) {
+                result.push(item);
+            }
+        }
+        Ok(Value::List(result))
+    }
+
+    /// Evaluate `list.join()` operation (complexity: 7)
+    fn evaluate_list_join(
+        &mut self,
+        items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("join requires exactly 1 argument (separator)");
+        }
+        let sep_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        
+        if let Value::String(separator) = sep_val {
+            let strings: Result<Vec<String>, _> = items.iter().map(|item| {
+                if let Value::String(s) = item {
+                    Ok(s.clone())
+                } else {
+                    bail!("join requires a list of strings");
+                }
+            }).collect();
+            
+            match strings {
+                Ok(string_vec) => Ok(Value::String(string_vec.join(&separator))),
+                Err(e) => Err(e),
+            }
+        } else {
+            bail!("join separator must be a string");
         }
     }
 
