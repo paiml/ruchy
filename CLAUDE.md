@@ -78,11 +78,69 @@ Level 7: Performance Tests  - Non-functional requirements
 - **Pattern Test Results**: 2 passing → 4 passing (100% improvement achieved)
 - **Enforcement**: Automated coverage checking with clear error messages
 
-**Complexity Requirements** (PMAT Enforced):
-- **Maximum Cyclomatic Complexity**: 10 per function
-- **Maximum Cognitive Complexity**: 15 per function  
-- **Enforcement**: Pre-commit hook blocks commits exceeding limits
-- **Refactoring**: Functions exceeding limits MUST be decomposed immediately
+## PMAT Quality Enforcement (MANDATORY - BLOCKING)
+
+**CRITICAL**: PMAT quality gates are MANDATORY and BLOCKING. NO EXCEPTIONS.
+
+### PMAT Quality Requirements (Zero Tolerance):
+- **Maximum Cyclomatic Complexity**: 10 per function (HARD LIMIT)
+- **Maximum Cognitive Complexity**: 15 per function (HARD LIMIT)
+- **Maximum SATD Comments**: 0 (Zero technical debt tolerance)
+- **Maximum Dead Code**: 5% (Aggressive dead code elimination)
+- **Minimum Code Entropy**: 2.0 (Prevent copy-paste programming)
+- **Maximum Duplicate Code**: 10% (DRY principle enforcement)
+- **Security Vulnerabilities**: 0 (Zero security defects)
+
+### MANDATORY PMAT Commands (All Development):
+
+#### Before ANY Code Changes:
+```bash
+# MANDATORY: Check current quality baseline
+pmat quality-gate --fail-on-violation --checks=all --format=summary
+```
+
+#### During Development (After Each Change):
+```bash
+# MANDATORY: Verify complexity compliance
+pmat analyze complexity --max-cyclomatic 10 --max-cognitive 15 --fail-on-violation
+
+# MANDATORY: Check for technical debt
+pmat analyze satd --format=summary --fail-on-violation
+
+# MANDATORY: Dead code detection
+pmat analyze dead-code --max-dead-code 5.0 --fail-on-violation
+```
+
+#### End of Sprint (Before Commit):
+```bash
+# MANDATORY: Comprehensive quality check (BLOCKS commits)
+pmat quality-gate --fail-on-violation --checks=all \
+  --max-complexity-p99 10 \
+  --max-dead-code 5.0 \
+  --min-entropy 2.0
+
+# MANDATORY: Generate quality report
+pmat report --format=markdown --output=QUALITY_REPORT.md
+```
+
+### PMAT Integration Protocol (Toyota Way):
+1. **HALT DEVELOPMENT**: Stop on ANY PMAT violation
+2. **ROOT CAUSE**: Use PMAT analysis to identify complexity hotspots
+3. **REFACTOR IMMEDIATELY**: Functions >10 complexity MUST be decomposed
+4. **PREVENT RECURRENCE**: Update pre-commit hooks to catch similar issues
+5. **VERIFY FIX**: Re-run PMAT to prove quality improvement
+
+### Complexity Decomposition Strategy:
+```rust
+// BEFORE (Complexity: 72 - VIOLATION)
+fn giant_function() { /* 200 lines */ }
+
+// AFTER (Each <10 complexity - COMPLIANT)  
+fn orchestrator() { /* calls helpers */ }
+fn helper_one() { /* focused responsibility */ }
+fn helper_two() { /* focused responsibility */ }
+fn helper_three() { /* focused responsibility */ }
+```
 
 ## Toyota Way Success Stories
 
@@ -90,6 +148,15 @@ Level 7: Performance Tests  - Non-functional requirements
 - **545 systematic test cases**: 0 parser inconsistencies found
 - **ROOT CAUSE**: Manual testing methodology error, NOT code defect
 - **LESSON**: Property testing is objective - mathematically proves system behavior
+
+### PMAT Enforcement Success (2025-08-30)
+**DISCOVERY**: 3,557 quality violations found - explains repeated fix failures!
+- **CRITICAL FINDING**: Functions with 72x complexity limit (720 vs 10)
+- **SATD DEBT**: 1,280 technical debt comments accumulating
+- **DEAD CODE**: 6 violations indicating maintenance debt
+- **ROOT CAUSE**: PMAT quality gates not enforced during development
+- **SOLUTION**: Mandatory PMAT enforcement at every development step
+- **LESSON**: Quality must be built-in from start, not bolted-on later
 
 ### Language Completeness Achievement v1.9.1 (2025-08)
 **BREAKTHROUGH**: Discovered that many "failing" features actually work perfectly!
@@ -175,9 +242,10 @@ Navigation:
 4. **Traceability**: Every change must be traceable back to business requirements via ticket system
 5. **Sprint Planning**: Work is organized by sprint with clear task dependencies and priorities
 
-### Pre-Implementation Verification
+### Pre-Implementation Verification (PMAT-Enforced)
 ```rust
 // HALT. Before implementing ANY feature:
+□ Run PMAT baseline: `pmat quality-gate --fail-on-violation --checks=all`
 □ Check ../ruchy-book/INTEGRATION.md for latest compatibility report
 □ Check ../ruchy-book/docs/bugs/ruchy-runtime-bugs.md for known issues
 □ Locate specification section in SPECIFICATION.md
@@ -185,7 +253,9 @@ Navigation:
 □ Verify ticket dependencies completed via DAG
 □ Reference ticket number in all commits/PRs
 □ Check existing patterns in codebase
-□ Confirm complexity budget (<10 cognitive)
+□ PMAT complexity check: `pmat analyze complexity --max-cyclomatic 10`
+□ Confirm complexity budget (<10 cognitive) via PMAT verification
+□ Zero SATD: `pmat analyze satd --fail-on-violation`
 ```
 
 ### Commit Message Format (MANDATORY)
@@ -210,10 +280,28 @@ Extracted 8 helper functions following single responsibility principle:
 - parse_string_prefix (complexity: 4)
 - parse_identifier_prefix (complexity: 7)
 
+PMAT Verification:
+- Before: pmat analyze complexity shows 161 violations
+- After: pmat analyze complexity shows 0 violations
+- Quality Gate: pmat quality-gate --fail-on-violation PASSES
+
 Added comprehensive doctests and property tests for all helpers.
 Performance trade-off: ~100ms -> ~200ms acceptable for maintainability.
 
 Closes: QUALITY-001
+```
+
+### MANDATORY: PMAT Commit Verification Protocol
+**CRITICAL**: NO commits allowed without PMAT verification
+
+```bash
+# MANDATORY before every commit:
+pmat quality-gate --fail-on-violation --checks=all || {
+    echo "❌ COMMIT BLOCKED: PMAT quality gate failed"
+    echo "Run pmat analyze complexity --top-files 5 to see violations"
+    echo "ALL violations must be fixed before commit"
+    exit 1
+}
 ```
 
 ## Compiler Architecture Patterns
@@ -301,9 +389,14 @@ cargo test test_one_liners --test compatibility_suite --quiet || {
     exit 1
 }
 
-# GATE 3: Complexity enforcement
-pmat agent analyze --max-complexity 10 --auto-fix || {
-    echo "❌ BLOCKED: Complexity exceeds 10"
+# GATE 3: PMAT Quality Gates (MANDATORY - ZERO TOLERANCE)
+pmat quality-gate --fail-on-violation --checks=all \
+  --max-complexity-p99 10 \
+  --max-dead-code 5.0 \
+  --min-entropy 2.0 || {
+    echo "❌ BLOCKED: PMAT quality gate failed"
+    echo "Run: pmat analyze complexity --top-files 5 --format=summary"
+    echo "MANDATORY: Fix ALL violations before committing"
     exit 1
 }
 
@@ -365,16 +458,43 @@ tests/
 
 Language compatibility testing is **GATE 2** in our mandatory pre-commit hooks - more critical than complexity or linting because **language regressions break user code**.
 
-## The Development Flow
+## The Development Flow (PMAT-Enforced)
 
+### MANDATORY: PMAT Quality at Every Step
 ```
-1. LOCATE specification section
-2. IDENTIFY task in execution roadmap
-3. VERIFY dependencies complete
-4. IMPLEMENT with <10 complexity
-5. VALIDATE performance invariants
-6. COMMIT with task reference
+1. BASELINE CHECK: Run `pmat quality-gate --fail-on-violation --checks=all`
+2. LOCATE specification section in SPECIFICATION.md
+3. IDENTIFY task in execution roadmap with ticket number
+4. VERIFY dependencies complete via roadmap DAG
+5. IMPLEMENT with <10 complexity (verified by `pmat analyze complexity`)
+6. VALIDATE: Run `pmat quality-gate` before ANY commit
+7. COMMIT with task reference (only if PMAT passes)
 ```
+
+### MANDATORY PMAT Protocol (BLOCKING):
+```bash
+# STEP 1: Pre-development baseline (MANDATORY)
+pmat quality-gate --fail-on-violation --checks=all --format=summary
+
+# STEP 2: During development (after each function/module)
+pmat analyze complexity --max-cyclomatic 10 --max-cognitive 15 --fail-on-violation
+
+# STEP 3: Pre-commit verification (MANDATORY - BLOCKS COMMITS)
+pmat quality-gate --fail-on-violation --checks=all \
+  --max-complexity-p99 10 \
+  --max-dead-code 5.0 \
+  --min-entropy 2.0
+
+# STEP 4: Sprint completion report (MANDATORY)
+pmat report --format=markdown --output=QUALITY_REPORT_$(date +%Y%m%d).md
+```
+
+### PMAT Violation Response (IMMEDIATE):
+1. **HALT**: Stop ALL development when PMAT fails
+2. **ANALYZE**: Use `pmat analyze complexity --top-files 5` to identify hotspots
+3. **REFACTOR**: Decompose functions >10 complexity immediately
+4. **VERIFY**: Re-run PMAT to prove fix before continuing
+5. **PREVENT**: Update pre-commit hooks to catch similar issues
 
 ## Sprint Hygiene Protocol
 
@@ -392,7 +512,33 @@ find . -type f -size +100M -not -path "./target/*" -not -path "./.git/*"
 
 **Remember**: Compiler engineering is about systematic transformation, not clever hacks. Every abstraction must have zero runtime cost. Every error must be actionable. Every line of code must justify its complexity budget.
 
+## MANDATORY PMAT Rules (BLOCKING - NO EXCEPTIONS)
+
+**CRITICAL**: ALL development MUST pass PMAT quality gates before proceeding.
+
+### PMAT Enforcement Rules:
+- **BASELINE CHECK**: Run `pmat quality-gate --fail-on-violation --checks=all` before ANY code changes
+- **COMPLEXITY LIMIT**: Every function MUST be <10 cyclomatic complexity (verified by PMAT)
+- **ZERO SATD**: No TODO/FIXME/HACK comments allowed (verified by `pmat analyze satd`)
+- **DEAD CODE**: Maximum 5% dead code allowed (verified by `pmat analyze dead-code`)
+- **SPRINT COMPLETION**: Generate PMAT quality report before final commit
+- **COMMIT BLOCKING**: Pre-commit hooks MUST include PMAT quality gate checks
+
+### PMAT Violation Response (IMMEDIATE ACTION REQUIRED):
+```bash
+# When PMAT fails:
+1. HALT: Stop ALL development immediately
+2. ANALYZE: pmat analyze complexity --top-files 5 --format=detailed
+3. IDENTIFY: Find functions >10 complexity 
+4. REFACTOR: Extract functions to reduce complexity
+5. VERIFY: Re-run pmat quality-gate to confirm fix
+6. CONTINUE: Only proceed when ALL violations resolved
+```
+
 **Key Rules**:
+- **PMAT FIRST**: Always run PMAT quality gates before starting any task
+- **COMPLEXITY BUDGET**: Every function must justify its complexity via PMAT metrics
+- **NO BYPASS**: Quality gates cannot be bypassed or temporarily ignored
 - No "cruft" at root of repo - always clean up temp files before committing
 - If fixing documentation, always ensure a doctest exists
 - Language compatibility tests are MANDATORY quality gates - never bypass
@@ -402,5 +548,6 @@ find . -type f -size +100M -not -path "./target/*" -not -path "./.git/*"
 - Any time we fail more than once, add more testing - mandatory sign this code path needs more testing
 - Check ../ruchyruchy for integration reports at beginning of each sprint
 - all bugs MUST be solved with TDD.  we don't do manual "hacks".  We write the test, then prove it fixes.
-- This type of behavior is never tolerated. "The quality gate might be too strict. Let me try bypassing for now since our changes are good".  This means you need to practice Five Whys and the Toyota Way and fix root cause.
-- we use cargo-llvm not tarpualin for converage
+- **PMAT VIOLATION RESPONSE**: "The quality gate might be too strict. Let me try bypassing for now since our changes are good" is NEVER TOLERATED. Use Five Whys and Toyota Way to fix root cause.
+- we use cargo-llvm not tarpualin for coverage
+- **PMAT MANDATORY**: Every commit MUST pass PMAT quality gates - no exceptions
