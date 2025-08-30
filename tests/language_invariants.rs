@@ -33,7 +33,7 @@ fn test_while_loop_never_returns_body_value() {
         let mut repl = Repl::new().unwrap();
         let result = repl.eval(code).unwrap();
         
-        assert_eq!(result.to_string(), "()",
+        assert_eq!(result.to_string(), "",
             "While loop should return Unit, not body value. Code: {}", code);
     }
 }

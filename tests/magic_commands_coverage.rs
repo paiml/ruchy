@@ -11,20 +11,21 @@ fn test_magic_registry() {
     // Test registration
     struct TestCommand;
     impl MagicCommand for TestCommand {
-        fn name(&self) -> &str { "test" }
-        fn description(&self) -> &str { "Test command" }
-        fn execute(&self, _repl: &mut Repl, _args: &str) -> MagicResult {
-            Ok("Test executed".to_string())
+        fn execute_line(&self, _repl: &mut Repl, _args: &str) -> anyhow::Result<MagicResult> {
+            Ok(MagicResult::Text("Test executed".to_string()))
+        }
+        
+        fn help(&self) -> &str {
+            "Test command"
         }
     }
     
-    registry.register(Box::new(TestCommand));
-    assert!(registry.get("test").is_some());
-    assert!(registry.get("nonexistent").is_none());
-    
-    // Test listing
+    registry.register("test", Box::new(TestCommand));
+    // Note: get() method doesn't exist on MagicRegistry - just test list_commands
     let commands = registry.list_commands();
-    assert!(commands.iter().any(|(name, _)| name == "test"));
+    assert!(commands.contains(&"test".to_string()));
+    
+    // Commands already tested above
 }
 
 #[test]
@@ -32,44 +33,44 @@ fn test_unicode_expander() {
     let expander = UnicodeExpander::new();
     
     // Greek letters
-    assert_eq!(expander.expand("\\alpha"), Some("α"));
-    assert_eq!(expander.expand("\\beta"), Some("β"));
-    assert_eq!(expander.expand("\\gamma"), Some("γ"));
-    assert_eq!(expander.expand("\\delta"), Some("δ"));
-    assert_eq!(expander.expand("\\epsilon"), Some("ε"));
-    assert_eq!(expander.expand("\\lambda"), Some("λ"));
-    assert_eq!(expander.expand("\\pi"), Some("π"));
-    assert_eq!(expander.expand("\\sigma"), Some("σ"));
-    assert_eq!(expander.expand("\\omega"), Some("ω"));
+    assert_eq!(expander.expand("\\alpha"), Some("α".to_string()));
+    assert_eq!(expander.expand("\\beta"), Some("β".to_string()));
+    assert_eq!(expander.expand("\\gamma"), Some("γ".to_string()));
+    assert_eq!(expander.expand("\\delta"), Some("δ".to_string()));
+    assert_eq!(expander.expand("\\epsilon"), Some("ε".to_string()));
+    assert_eq!(expander.expand("\\lambda"), Some("λ".to_string()));
+    assert_eq!(expander.expand("\\pi"), Some("π".to_string()));
+    assert_eq!(expander.expand("\\sigma"), Some("σ".to_string()));
+    assert_eq!(expander.expand("\\omega"), Some("ω".to_string()));
     
     // Capital Greek
-    assert_eq!(expander.expand("\\Alpha"), Some("Α"));
-    assert_eq!(expander.expand("\\Beta"), Some("Β"));
-    assert_eq!(expander.expand("\\Gamma"), Some("Γ"));
-    assert_eq!(expander.expand("\\Delta"), Some("Δ"));
+    assert_eq!(expander.expand("\\Alpha"), Some("Α".to_string()));
+    assert_eq!(expander.expand("\\Beta"), Some("Β".to_string()));
+    assert_eq!(expander.expand("\\Gamma"), Some("Γ".to_string()));
+    assert_eq!(expander.expand("\\Delta"), Some("Δ".to_string()));
     
     // Mathematical symbols
-    assert_eq!(expander.expand("\\infty"), Some("∞"));
-    assert_eq!(expander.expand("\\sum"), Some("∑"));
-    assert_eq!(expander.expand("\\prod"), Some("∏"));
-    assert_eq!(expander.expand("\\int"), Some("∫"));
-    assert_eq!(expander.expand("\\sqrt"), Some("√"));
-    assert_eq!(expander.expand("\\partial"), Some("∂"));
-    assert_eq!(expander.expand("\\nabla"), Some("∇"));
+    assert_eq!(expander.expand("\\infty"), Some("∞".to_string()));
+    assert_eq!(expander.expand("\\sum"), Some("∑".to_string()));
+    assert_eq!(expander.expand("\\prod"), Some("∏".to_string()));
+    assert_eq!(expander.expand("\\int"), Some("∫".to_string()));
+    assert_eq!(expander.expand("\\sqrt"), Some("√".to_string()));
+    assert_eq!(expander.expand("\\partial"), Some("∂".to_string()));
+    assert_eq!(expander.expand("\\nabla"), Some("∇".to_string()));
     
     // Arrows
-    assert_eq!(expander.expand("\\rightarrow"), Some("→"));
-    assert_eq!(expander.expand("\\leftarrow"), Some("←"));
-    assert_eq!(expander.expand("\\Rightarrow"), Some("⇒"));
-    assert_eq!(expander.expand("\\Leftarrow"), Some("⇐"));
+    assert_eq!(expander.expand("\\rightarrow"), Some("→".to_string()));
+    assert_eq!(expander.expand("\\leftarrow"), Some("←".to_string()));
+    assert_eq!(expander.expand("\\Rightarrow"), Some("⇒".to_string()));
+    assert_eq!(expander.expand("\\Leftarrow"), Some("⇐".to_string()));
     
     // Operators
-    assert_eq!(expander.expand("\\pm"), Some("±"));
-    assert_eq!(expander.expand("\\times"), Some("×"));
-    assert_eq!(expander.expand("\\div"), Some("÷"));
-    assert_eq!(expander.expand("\\neq"), Some("≠"));
-    assert_eq!(expander.expand("\\leq"), Some("≤"));
-    assert_eq!(expander.expand("\\geq"), Some("≥"));
+    assert_eq!(expander.expand("\\pm"), Some("±".to_string()));
+    assert_eq!(expander.expand("\\times"), Some("×".to_string()));
+    assert_eq!(expander.expand("\\div"), Some("÷".to_string()));
+    assert_eq!(expander.expand("\\neq"), Some("≠".to_string()));
+    assert_eq!(expander.expand("\\leq"), Some("≤".to_string()));
+    assert_eq!(expander.expand("\\geq"), Some("≥".to_string()));
     
     // Non-existent
     assert_eq!(expander.expand("\\nonexistent"), None);
