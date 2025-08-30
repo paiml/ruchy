@@ -1,1 +1,28 @@
 2025-08-30T14:53:59+02:00 | src/runtime/repl.rs | 67.4339→67.63188 | CPlus→CPlus | .19798
+2025-08-30T16:55:25+02:00 | src/backend/compiler.rs | 100.0→100.0 | APLus→APLus | 0
+2025-08-30T16:55:25+02:00 | src/backend/transpiler/dispatcher.rs | 78.07037→78.07529 | B→B | .00492
+2025-08-30T16:55:25+02:00 | src/backend/transpiler/mod.rs | 71.98297→72.12297 | BMinus→BMinus | .14000
+2025-08-30T16:55:25+02:00 | src/backend/transpiler/statements.rs | 70.4386→70.47331 | BMinus→BMinus | .03471
+2025-08-30T16:55:25+02:00 | src/bin/handlers/commands.rs | 68.14098→67.705124 | CPlus→CPlus | -.435856
+2025-08-30T16:55:25+02:00 | src/bin/handlers/mod.rs | 67.75748→67.75347 | CPlus→CPlus | -.00401
+2025-08-30T16:55:25+02:00 | src/test_transpiler_method.rs | →100.0 | →APLus | 
+2025-08-30T16:55:25+02:00 | tests/quality_008_score_directory_support.rs | →100.0 | →APLus | 
+2025-08-30T16:55:25+02:00 | tests/test_attribute_regression.rs | →100.0 | →APLus | 
+2025-08-30T16:55:38+02:00 | src/backend/compiler.rs | 100.0→100.0 | APLus→APLus | 0
+2025-08-30T16:55:38+02:00 | src/backend/transpiler/dispatcher.rs | 78.07037→78.07529 | B→B | .00492
+2025-08-30T16:55:38+02:00 | src/backend/transpiler/mod.rs | 71.98297→72.12297 | BMinus→BMinus | .14000
+2025-08-30T16:55:38+02:00 | src/backend/transpiler/statements.rs | 70.4386→70.47331 | BMinus→BMinus | .03471
+2025-08-30T16:55:38+02:00 | src/bin/handlers/commands.rs | 68.14098→67.705124 | CPlus→CPlus | -.435856
+2025-08-30T16:55:38+02:00 | src/bin/handlers/mod.rs | 67.75748→67.75347 | CPlus→CPlus | -.00401
+2025-08-30T16:55:38+02:00 | src/test_transpiler_method.rs | →100.0 | →APLus | 
+2025-08-30T16:55:38+02:00 | tests/quality_008_score_directory_support.rs | →100.0 | →APLus | 
+2025-08-30T16:55:38+02:00 | tests/test_attribute_regression.rs | →100.0 | →APLus | 
+2025-08-30T16:55:52+02:00 | src/backend/compiler.rs | 100.0→100.0 | APLus→APLus | 0
+2025-08-30T16:55:52+02:00 | src/backend/transpiler/dispatcher.rs | 78.07529→78.07529 | B→B | 0
+2025-08-30T16:55:52+02:00 | src/backend/transpiler/mod.rs | 72.12297→72.12297 | BMinus→BMinus | 0
+2025-08-30T16:55:52+02:00 | src/backend/transpiler/statements.rs | 70.47331→70.47331 | BMinus→BMinus | 0
+2025-08-30T16:55:52+02:00 | src/bin/handlers/commands.rs | 67.705124→67.705124 | CPlus→CPlus | 0
+2025-08-30T16:55:52+02:00 | src/bin/handlers/mod.rs | 67.75347→67.75347 | CPlus→CPlus | 0
+2025-08-30T16:55:52+02:00 | src/test_transpiler_method.rs | 100.0→100.0 | APLus→APLus | 0
+2025-08-30T16:55:52+02:00 | tests/quality_008_score_directory_support.rs | 100.0→100.0 | APLus→APLus | 0
+2025-08-30T16:55:52+02:00 | tests/test_attribute_regression.rs | 100.0→100.0 | APLus→APLus | 0
