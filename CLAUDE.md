@@ -258,7 +258,7 @@ Navigation:
 □ Zero SATD: `pmat analyze satd --fail-on-violation`
 ```
 
-### Commit Message Format (MANDATORY)
+### Commit Message Format (MANDATORY with TDG Tracking)
 ```
 [TICKET-ID] Brief description
 
@@ -267,6 +267,11 @@ Detailed explanation of changes
 - Test coverage added
 - Performance impact
 - Breaking changes (if any)
+
+TDG Score Changes (MANDATORY):
+- src/file1.rs: 85.3→87.1 (B+→A-) [+1.8 improvement]
+- src/file2.rs: 72.5→72.5 (B-→B-) [stable]
+- File Hash: abc123def456...
 
 Closes: TICKET-ID
 ```
@@ -280,15 +285,71 @@ Extracted 8 helper functions following single responsibility principle:
 - parse_string_prefix (complexity: 4)
 - parse_identifier_prefix (complexity: 7)
 
+TDG Score Changes:
+- src/frontend/parser.rs: 68.2→82.5 (C+→B+) [+14.3 improvement]
+- tests/parser_test.rs: 91.0→92.1 (A→A) [+1.1 improvement]
+- File Hash: 7f3a9b2c4e8d1a5f6b9c2d4e8f1a3b5c7d9e1f3a
+
 PMAT Verification:
-- Before: pmat analyze complexity shows 161 violations
-- After: pmat analyze complexity shows 0 violations
-- Quality Gate: pmat quality-gate --fail-on-violation PASSES
+- Complexity: 161→8 (95% reduction)
+- SATD: 0 violations maintained
+- Dead Code: <5% threshold maintained
 
 Added comprehensive doctests and property tests for all helpers.
 Performance trade-off: ~100ms -> ~200ms acceptable for maintainability.
 
 Closes: QUALITY-001
+```
+
+## MANDATORY: TDG (Technical Debt Gradient) Transactional Tracking
+
+**CRITICAL**: Every commit MUST include TDG score tracking to prevent debt drift.
+
+### TDG Scoring System
+- **A+ (95-100)**: Excellent - No action needed
+- **A (90-94)**: Very Good - Maintain quality
+- **B (80-89)**: Good - Monitor for degradation  
+- **C (70-79)**: Fair - Requires improvement
+- **D (60-69)**: Poor - Priority refactoring needed
+- **F (<60)**: Critical - MUST fix immediately
+
+### TDG Pre-Commit Protocol (MANDATORY)
+```bash
+# Run before EVERY commit to track debt changes:
+./.tdg_tracking.sh || {
+    echo "❌ TDG degradation detected - commit blocked"
+    echo "Fix the code or add [TDG-OVERRIDE] with justification"
+    exit 1
+}
+```
+
+### TDG Components Tracked
+1. **Structural Complexity** (25%): Cyclomatic/cognitive complexity
+2. **Semantic Complexity** (20%): Type complexity, generics usage
+3. **Duplication** (20%): Code duplication percentage
+4. **Coupling** (15%): Module dependencies
+5. **Documentation** (10%): Doc coverage percentage
+6. **Consistency** (10%): Style/pattern adherence
+
+### File Hash Tracking
+- Each commit includes SHA256 hash of modified files
+- Enables detection of uncommitted changes
+- Prevents TDG score gaming by partial commits
+
+### TDG Override Protocol
+Only allowed with explicit justification:
+```
+[P0-EMERGENCY][TDG-OVERRIDE] Critical production fix
+
+TDG Score Changes:
+- src/runtime/repl.rs: 67.4→65.2 (C+→D+) [-2.2 degradation]
+
+Override Justification: 
+- Emergency fix for production outage
+- Debt payback ticket created: DEBT-XXX
+- Scheduled for next sprint
+
+File Hash: 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b
 ```
 
 ### MANDATORY: PMAT Commit Verification Protocol
