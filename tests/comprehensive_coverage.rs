@@ -2,11 +2,9 @@
 //!
 //! [TEST-COV-011] Increase test coverage to 80%+
 
-use ruchy::runtime::{Repl, Value, Inspector, Inspect, InspectStyle};
+use ruchy::runtime::{Repl, Value, Inspector, Inspect};
 use ruchy::runtime::{MagicRegistry, UnicodeExpander};
 use ruchy::runtime::{TransactionalState, TransactionMetadata};
-use std::time::Duration;
-use std::collections::HashMap;
 
 #[test]
 fn test_repl_basic_operations() {
@@ -185,9 +183,9 @@ fn test_value_inspection() {
     
     inspector.output.clear();
     Value::List(vec![Value::Int(1), Value::Int(2)]).inspect(&mut inspector).unwrap();
-    assert!(inspector.output.contains("["));
-    assert!(inspector.output.contains("1"));
-    assert!(inspector.output.contains("2"));
+    assert!(inspector.output.contains('['));
+    assert!(inspector.output.contains('1'));
+    assert!(inspector.output.contains('2'));
 }
 
 #[test]
@@ -204,7 +202,7 @@ fn test_inspect_depth_limiting() {
     
     nested.inspect(&mut inspector).unwrap();
     // Should show depth limit reached
-    assert!(inspector.output.contains("[") || inspector.output.contains("items"));
+    assert!(inspector.output.contains('[') || inspector.output.contains("items"));
 }
 
 #[test]
@@ -239,11 +237,11 @@ fn test_repl_error_recovery() {
 fn test_repl_multiline() {
     let mut repl = Repl::new().unwrap();
     
-    let multiline = r#"
+    let multiline = r"
         let x = 10;
         let y = 20;
         x + y
-    "#;
+    ";
     
     let result = repl.eval(multiline);
     assert!(result.is_ok());
@@ -305,13 +303,13 @@ fn test_destructuring() {
 fn test_pattern_matching() {
     let mut repl = Repl::new().unwrap();
     
-    let match_expr = r#"
+    let match_expr = r"
         let x = Some(42);
         match x {
             Some(n) => n * 2,
             None => 0
         }
-    "#;
+    ";
     
     assert!(repl.eval(match_expr).is_ok());
 }

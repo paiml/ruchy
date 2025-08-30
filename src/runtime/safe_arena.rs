@@ -31,7 +31,7 @@ impl SafeArena {
     }
     
     /// Allocate a value in the arena
-    pub fn alloc<T: 'static>(&self, value: T) -> Result<ArenaRef<T>> {
+    pub fn alloc<T: 'static>(&self, value: T) -> Result<ArenaRef<'_, T>> {
         let size = std::mem::size_of::<T>();
         
         // Check memory limit

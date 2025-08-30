@@ -1,6 +1,6 @@
 //! Integration tests for multi-file module system
 //! 
-//! Tests the complete workflow: ModuleResolver + Transpiler for multi-file programs
+//! Tests the complete workflow: `ModuleResolver` + Transpiler for multi-file programs
 
 use ruchy::{ModuleResolver, Parser, Transpiler};
 use tempfile::TempDir;
@@ -8,7 +8,7 @@ use std::fs;
 use anyhow::Result;
 
 fn create_test_module(temp_dir: &TempDir, name: &str, content: &str) -> Result<()> {
-    let file_path = temp_dir.path().join(format!("{}.ruchy", name));
+    let file_path = temp_dir.path().join(format!("{name}.ruchy"));
     fs::write(file_path, content)?;
     Ok(())
 }
@@ -18,7 +18,7 @@ fn test_basic_multi_file_program() -> Result<()> {
     let temp_dir = TempDir::new()?;
     
     // Create math.ruchy module
-    create_test_module(&temp_dir, "math", r#"
+    create_test_module(&temp_dir, "math", r"
         pub fun add(a: i32, b: i32) -> i32 {
             a + b
         }
@@ -26,10 +26,10 @@ fn test_basic_multi_file_program() -> Result<()> {
         pub fun multiply(x: i32, y: i32) -> i32 {
             x * y
         }
-    "#)?;
+    ")?;
     
     // Create main program that uses math module
-    let main_code = r#"
+    let main_code = r"
         use math;
         
         fun main() {
@@ -37,7 +37,7 @@ fn test_basic_multi_file_program() -> Result<()> {
             let doubled = math::multiply(result, 2);
             println(doubled);
         }
-    "#;
+    ";
     
     // Parse the main program
     let mut parser = Parser::new(main_code);
@@ -60,7 +60,7 @@ fn test_basic_multi_file_program() -> Result<()> {
     assert!(rust_string.contains("fn main"), "Should contain main function");
     assert!(rust_string.contains("math :: add"), "Should contain qualified function call");
     
-    println!("Generated Rust code:\n{}", rust_string);
+    println!("Generated Rust code:\n{rust_string}");
     
     Ok(())
 }
@@ -77,11 +77,11 @@ fn test_multiple_module_imports() -> Result<()> {
     "#)?;
     
     // Create math.ruchy
-    create_test_module(&temp_dir, "math", r#"
+    create_test_module(&temp_dir, "math", r"
         pub fun square(n: i32) -> i32 {
             n * n
         }
-    "#)?;
+    ")?;
     
     // Create main program that uses both modules
     let main_code = r#"
@@ -112,7 +112,7 @@ fn test_multiple_module_imports() -> Result<()> {
     assert!(rust_string.contains("pub fn greet"));
     assert!(rust_string.contains("pub fn square"));
     
-    println!("Generated Rust code for multiple modules:\n{}", rust_string);
+    println!("Generated Rust code for multiple modules:\n{rust_string}");
     
     Ok(())
 }
@@ -129,23 +129,23 @@ fn test_nested_module_imports() -> Result<()> {
     "#)?;
     
     // Create printer.ruchy (uses helper)
-    create_test_module(&temp_dir, "printer", r#"
+    create_test_module(&temp_dir, "printer", r"
         use helper;
         
         pub fun print_formatted(num: i32) {
             let formatted = helper::format_number(num);
             println(formatted);
         }
-    "#)?;
+    ")?;
     
     // Create main program that uses printer (which internally uses helper)
-    let main_code = r#"
+    let main_code = r"
         use printer;
         
         fun main() {
             printer::print_formatted(42);
         }
-    "#;
+    ";
     
     let mut parser = Parser::new(main_code);
     let ast = parser.parse()?;
@@ -164,7 +164,7 @@ fn test_nested_module_imports() -> Result<()> {
     assert!(rust_string.contains("pub fn print_formatted"));
     assert!(rust_string.contains("pub fn format_number"));
     
-    println!("Generated Rust code for nested imports:\n{}", rust_string);
+    println!("Generated Rust code for nested imports:\n{rust_string}");
     
     Ok(())
 }
@@ -174,14 +174,14 @@ fn test_mixed_imports_inline_and_file() -> Result<()> {
     let temp_dir = TempDir::new()?;
     
     // Create file module
-    create_test_module(&temp_dir, "file_math", r#"
+    create_test_module(&temp_dir, "file_math", r"
         pub fun add(a: i32, b: i32) -> i32 {
             a + b
         }
-    "#)?;
+    ")?;
     
     // Create main program with mixed imports
-    let main_code = r#"
+    let main_code = r"
         use std::collections::HashMap;
         use file_math;
         
@@ -196,7 +196,7 @@ fn test_mixed_imports_inline_and_file() -> Result<()> {
             let doubled = inline_utils::double(result);
             println(doubled);
         }
-    "#;
+    ";
     
     let mut parser = Parser::new(main_code);
     let ast = parser.parse()?;
@@ -220,7 +220,7 @@ fn test_mixed_imports_inline_and_file() -> Result<()> {
     assert!(rust_string.contains("mod inline_utils"));
     assert!(rust_string.contains("pub fn double"));
     
-    println!("Generated Rust code for mixed imports:\n{}", rust_string);
+    println!("Generated Rust code for mixed imports:\n{rust_string}");
     
     Ok(())
 }

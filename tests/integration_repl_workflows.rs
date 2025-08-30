@@ -26,22 +26,22 @@ impl ReplWorkflowHarness {
     fn execute_and_validate(&mut self, command: &str, expected: &str) -> Result<(), String> {
         match self.repl.eval(command) {
             Ok(result) => {
-                let output = result.to_string();
+                let output = result;
                 if output == expected {
                     Ok(())
                 } else {
-                    Err(format!("Expected '{}', got '{}'", expected, output))
+                    Err(format!("Expected '{expected}', got '{output}'"))
                 }
             }
-            Err(e) => Err(format!("Command failed: {}", e)),
+            Err(e) => Err(format!("Command failed: {e}")),
         }
     }
     
     /// Execute a command that should succeed but don't validate output
     fn execute_ok(&mut self, command: &str) -> Result<String, String> {
         match self.repl.eval(command) {
-            Ok(result) => Ok(result.to_string()),
-            Err(e) => Err(format!("Command failed: {}", e)),
+            Ok(result) => Ok(result),
+            Err(e) => Err(format!("Command failed: {e}")),
         }
     }
     

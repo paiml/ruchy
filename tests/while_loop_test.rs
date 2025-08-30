@@ -7,7 +7,7 @@ use ruchy::runtime::Repl;
 fn test_while_loop_condition_boundary() {
     // Expected: prints 0, 1, 2 (stops when i=3)
     // Actual bug: prints 0, 1, 2, 3
-    let code = r#"
+    let code = r"
         let i = 0
         let result = []
         while i < 3 {
@@ -15,19 +15,19 @@ fn test_while_loop_condition_boundary() {
             i = i + 1
         }
         result
-    "#;
+    ";
     
     let mut repl = Repl::new().expect("REPL creation should succeed");
     let result = repl.eval(code).expect("Should eval");
     
     // The result should be [0, 1, 2], NOT [0, 1, 2, 3]
-    assert_eq!(result.to_string(), "[0, 1, 2]", 
+    assert_eq!(result, "[0, 1, 2]", 
         "While loop should stop when condition becomes false");
 }
 
 #[test]
 fn test_while_loop_zero_iterations() {
-    let code = r#"
+    let code = r"
         let i = 5
         let result = []
         while i < 3 {
@@ -35,18 +35,18 @@ fn test_while_loop_zero_iterations() {
             i = i + 1
         }
         result
-    "#;
+    ";
     
     let mut repl = Repl::new().expect("REPL creation should succeed");
     let result = repl.eval(code).expect("Should eval");
     
-    assert_eq!(result.to_string(), "[]", 
+    assert_eq!(result, "[]", 
         "While loop should not execute when condition is initially false");
 }
 
 #[test]
 fn test_while_loop_exact_boundary() {
-    let code = r#"
+    let code = r"
         let i = 0
         let result = []
         while i <= 2 {
@@ -54,12 +54,12 @@ fn test_while_loop_exact_boundary() {
             i = i + 1
         }
         result
-    "#;
+    ";
     
     let mut repl = Repl::new().expect("REPL creation should succeed");
     let result = repl.eval(code).expect("Should eval");
     
-    assert_eq!(result.to_string(), "[0, 1, 2]", 
+    assert_eq!(result, "[0, 1, 2]", 
         "While loop with <= should include boundary value");
 }
 
@@ -75,7 +75,7 @@ fn test_object_items_method() {
     let result = repl.eval(code).expect("Should eval");
     
     // items() should return list of [key, value] tuples
-    assert_eq!(result.to_string(), r#"[["a", 1], ["b", 2]]"#,
+    assert_eq!(result, r#"[["a", 1], ["b", 2]]"#,
         "Object.items() should return key-value pairs as list of tuples");
 }
 
@@ -89,7 +89,7 @@ fn test_object_keys_method() {
     let mut repl = Repl::new().expect("REPL creation should succeed");
     let result = repl.eval(code).expect("Should eval");
     
-    assert_eq!(result.to_string(), r#"["a", "b"]"#,
+    assert_eq!(result, r#"["a", "b"]"#,
         "Object.keys() should return list of keys");
 }
 
@@ -103,6 +103,6 @@ fn test_object_values_method() {
     let mut repl = Repl::new().expect("REPL creation should succeed");
     let result = repl.eval(code).expect("Should eval");
     
-    assert_eq!(result.to_string(), "[1, 2]",
+    assert_eq!(result, "[1, 2]",
         "Object.values() should return list of values");
 }

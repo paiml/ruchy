@@ -15,10 +15,10 @@ fn main() {
     ];
     
     for (expr, desc) in tests {
-        println!("{}: > {}", desc, expr);
+        println!("{desc}: > {expr}");
         match repl.eval(expr) {
-            Ok(v) => println!("   OK: {}", v),
-            Err(e) => println!("   ERROR: {}", e),
+            Ok(v) => println!("   OK: {v}"),
+            Err(e) => println!("   ERROR: {e}"),
         }
         println!();
     }

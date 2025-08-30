@@ -78,7 +78,7 @@ fn test_test_mode_regular_evaluation() {
     // Regular expressions should get ✓ prefix in test mode
     let result = repl.eval("1 + 1").unwrap();
     assert!(result.starts_with("✓"));
-    assert!(result.contains("2"));
+    assert!(result.contains('2'));
     
     let result = repl.eval("\"hello\"").unwrap();
     assert!(result.starts_with("✓"));
@@ -114,11 +114,11 @@ fn test_debug_mode_timing_display() {
     
     // Should show timing in milliseconds
     assert!(result.contains("ms"));
-    assert!(result.contains("B"));  // bytes for allocation
+    assert!(result.contains('B'));  // bytes for allocation
     
     // Should show result with type
     assert!(result.contains("Int"));
-    assert!(result.contains("2"));
+    assert!(result.contains('2'));
 }
 
 #[test]

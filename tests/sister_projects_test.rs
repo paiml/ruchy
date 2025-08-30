@@ -2,15 +2,14 @@
 //!
 //! Tests all examples from the Ruchy book to ensure compatibility
 
-use std::fs;
 use std::path::Path;
 use std::process::Command;
 
 fn test_ruchy_file(path: &Path) -> Result<String, String> {
     let output = Command::new("cargo")
-        .args(&["run", "--bin", "ruchy", "--", "run", path.to_str().unwrap()])
+        .args(["run", "--bin", "ruchy", "--", "run", path.to_str().unwrap()])
         .output()
-        .map_err(|e| format!("Failed to execute: {}", e))?;
+        .map_err(|e| format!("Failed to execute: {e}"))?;
     
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
@@ -35,8 +34,8 @@ fn test_all_book_examples() {
     // Find all .ruchy files
     for entry in walkdir::WalkDir::new(book_dir)
         .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "ruchy"))
+        .filter_map(std::result::Result::ok)
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "ruchy"))
     {
         let path = entry.path();
         let relative_path = path.strip_prefix(book_dir).unwrap_or(path);
@@ -55,10 +54,10 @@ fn test_all_book_examples() {
     }
     
     println!("\n📊 Sister Project Test Results:");
-    println!("   Passed: {}", passed);
-    println!("   Failed: {}", failed);
+    println!("   Passed: {passed}");
+    println!("   Failed: {failed}");
     println!("   Total:  {}", passed + failed);
-    println!("   Success Rate: {:.1}%", (passed as f64 / (passed + failed) as f64) * 100.0);
+    println!("   Success Rate: {:.1}%", (f64::from(passed) / f64::from(passed + failed)) * 100.0);
     
     if !errors.is_empty() {
         println!("\n❌ Failed files:");

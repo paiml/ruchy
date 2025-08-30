@@ -8,11 +8,11 @@ use ruchy::{Parser, Transpiler};
 #[test]
 fn test_multiple_statements_in_main() {
     // Multiple let statements should work in main()
-    let code = r#"
+    let code = r"
         let x = 5;
         let y = 10;
         println(x + y);
-    "#;
+    ";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse multiple statements");
@@ -22,7 +22,7 @@ fn test_multiple_statements_in_main() {
         .expect("Should transpile to program");
     let rust_string = rust_code.to_string();
     
-    println!("Generated Rust code:\n{}", rust_string);
+    println!("Generated Rust code:\n{rust_string}");
     
     // Should generate a proper main function with statements
     assert!(rust_string.contains("fn main"));
@@ -36,11 +36,11 @@ fn test_multiple_statements_in_main() {
 
 #[test]
 fn test_mixed_statements_and_expressions() {
-    let code = r#"
+    let code = r"
         let x = 5;
         let y = x * 2;
         x + y  // Final expression value
-    "#;
+    ";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse mixed code");
@@ -50,7 +50,7 @@ fn test_mixed_statements_and_expressions() {
         .expect("Should transpile to program");
     let rust_string = rust_code.to_string();
     
-    println!("Mixed code Rust:\n{}", rust_string);
+    println!("Mixed code Rust:\n{rust_string}");
     
     // Statements should be statements
     assert!(rust_string.contains("let mut x = 5"));
@@ -62,13 +62,13 @@ fn test_mixed_statements_and_expressions() {
 
 #[test]
 fn test_function_with_statements() {
-    let code = r#"
+    let code = r"
         fn calculate(a: i32, b: i32) -> i32 {
             let sum = a + b;
             let product = a * b;
             sum + product
         }
-    "#;
+    ";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse function with statements");
@@ -78,7 +78,7 @@ fn test_function_with_statements() {
         .expect("Should transpile function");
     let rust_string = rust_code.to_string();
     
-    println!("Function Rust code:\n{}", rust_string);
+    println!("Function Rust code:\n{rust_string}");
     
     // Should generate proper function
     assert!(rust_string.contains("fn calculate"));

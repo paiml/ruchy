@@ -396,9 +396,9 @@ mod tests {
         let mut inspector = Inspector::new();
         
         vec.inspect(&mut inspector).unwrap();
-        assert!(inspector.output.contains("["));
-        assert!(inspector.output.contains("1"));
-        assert!(inspector.output.contains("5"));
+        assert!(inspector.output.contains('['));
+        assert!(inspector.output.contains('1'));
+        assert!(inspector.output.contains('5'));
     }
     
     #[test]

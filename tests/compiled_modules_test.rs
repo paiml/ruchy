@@ -16,13 +16,13 @@ fn test_compiled_multi_file_module_integration() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     
     // Create math.ruchy module
-    let math_content = r#"pub fn add(a: i32, b: i32) -> i32 {
+    let math_content = r"pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
 
 pub fn multiply(a: i32, b: i32) -> i32 {
     a * b
-}"#;
+}";
     fs::write(temp_dir.path().join("math.ruchy"), math_content)
         .expect("Failed to write math module");
     
@@ -56,11 +56,11 @@ println("Result:", result)"#;
         .expect("Failed to run rustc");
     
     // DEBUG: Print the generated Rust code for analysis
-    println!("Generated Rust code:\n{}", rust_code.to_string());
+    println!("Generated Rust code:\n{rust_code}");
     
     if !compile_output.status.success() {
         let stderr = String::from_utf8_lossy(&compile_output.stderr);
-        println!("Compilation errors:\n{}", stderr);
+        println!("Compilation errors:\n{stderr}");
         panic!("Rust compilation should succeed, but failed with errors");
     }
     
@@ -73,7 +73,7 @@ println("Result:", result)"#;
     
     let stdout = String::from_utf8(run_output.stdout).expect("Valid UTF-8 output");
     assert!(stdout.contains("Result: 8"), 
-            "Output should contain 'Result: 8', got: {:?}", stdout);
+            "Output should contain 'Result: 8', got: {stdout:?}");
 }
 
 #[test]
@@ -90,12 +90,12 @@ fn test_multiple_modules_compilation() {
         .expect("Failed to write utils module");
     
     // Create main program using both modules
-    let main_content = r#"use math;
+    let main_content = r"use math;
 use utils;
 
 let sum = add(10, 15);
 let message = format_result(sum);
-println(message)"#;
+println(message)";
     
     let main_path = temp_dir.path().join("main.ruchy");
     fs::write(&main_path, main_content).expect("Failed to write main file");
@@ -109,7 +109,7 @@ println(message)"#;
         .expect("Should transpile multiple modules");
     
     let rust_string = rust_code.to_string();
-    println!("Multiple modules Rust code:\n{}", rust_string);
+    println!("Multiple modules Rust code:\n{rust_string}");
     
     // Verify both modules are included
     assert!(rust_string.contains("mod math"), "Should contain math module");
@@ -155,7 +155,7 @@ println("Subtraction result:", result)"#;
     
     // For now, just ensure it doesn't panic - nested modules might not be fully implemented yet
     if let Ok(rust_code) = result {
-        println!("Nested module Rust code:\n{}", rust_code.to_string());
+        println!("Nested module Rust code:\n{rust_code}");
         // Test will evolve as nested module support is implemented
     }
 }

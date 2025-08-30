@@ -13,7 +13,7 @@ proptest! {
         pname in "[a-z][a-z0-9]{0,5}",
         num in 1..100i32,
     ) {
-        let code = format!("fun {}({}) {{ {} {} {} }}", fname, pname, pname, op, num);
+        let code = format!("fun {fname}({pname}) {{ {pname} {op} {num} }}");
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
@@ -22,9 +22,9 @@ proptest! {
         let rust_str = rust_code.to_string();
         
         // Parameter should be typed as i32 for numeric operations
-        assert!(rust_str.contains(&format!("{} : i32", pname)) || 
-                rust_str.contains(&format!("{}: i32", pname)),
-                "Expected {} to be typed as i32 in: {}", pname, rust_str);
+        assert!(rust_str.contains(&format!("{pname} : i32")) || 
+                rust_str.contains(&format!("{pname}: i32")),
+                "Expected {pname} to be typed as i32 in: {rust_str}");
     }
 }
 
@@ -37,8 +37,7 @@ proptest! {
         xparam in "[x][a-z0-9]{0,3}",  // Start with 'x' to differentiate
         arg_val in 1..100i32,
     ) {
-        let code = format!("fun {}({}, {}) {{ {}({}) }}", 
-                          fname, fparam, xparam, fparam, arg_val);
+        let code = format!("fun {fname}({fparam}, {xparam}) {{ {fparam}({arg_val}) }}");
         let mut parser = Parser::new(&code);
         
         // Skip if parsing fails (some generated code might be invalid)
@@ -49,7 +48,7 @@ proptest! {
                 
                 // Function parameter should have impl Fn type
                 assert!(rust_str.contains("impl Fn"),
-                        "Expected {} to have function type in: {}", fparam, rust_str);
+                        "Expected {fparam} to have function type in: {rust_str}");
             }
         }
     }
@@ -63,7 +62,7 @@ proptest! {
         pname in "[a-z][a-z0-9]{0,5}",
         str_val in "\"[a-zA-Z ]{1,10}\"",
     ) {
-        let code = format!("fun {}({}) {{ {} + {} }}", fname, pname, pname, str_val);
+        let code = format!("fun {fname}({pname}) {{ {pname} + {str_val} }}");
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
@@ -72,9 +71,9 @@ proptest! {
         let rust_str = rust_code.to_string();
         
         // String concatenation should keep String type
-        assert!(rust_str.contains(&format!("{} : String", pname)) || 
-                rust_str.contains(&format!("{}: String", pname)),
-                "Expected {} to be typed as String in: {}", pname, rust_str);
+        assert!(rust_str.contains(&format!("{pname} : String")) || 
+                rust_str.contains(&format!("{pname}: String")),
+                "Expected {pname} to be typed as String in: {rust_str}");
     }
 }
 
@@ -87,7 +86,7 @@ proptest! {
         pname in "[a-z][a-z0-9]{0,5}",
         num in 1..100i32,
     ) {
-        let code = format!("fun {}({}) {{ {} {} {} }}", fname, pname, pname, op, num);
+        let code = format!("fun {fname}({pname}) {{ {pname} {op} {num} }}");
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
@@ -111,8 +110,7 @@ proptest! {
         f2 in "[g][a-z0-9]{0,3}",
         x in "[x][a-z0-9]{0,3}",
     ) {
-        let code = format!("fun {}({}, {}, {}) {{ {}({}({})) }}", 
-                          fname, f1, f2, x, f1, f2, x);
+        let code = format!("fun {fname}({f1}, {f2}, {x}) {{ {f1}({f2}({x})) }}");
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
@@ -122,7 +120,7 @@ proptest! {
         
         // Both f1 and f2 should be typed as functions
         assert!(rust_str.contains("impl Fn"),
-                "Expected function types in nested calls: {}", rust_str);
+                "Expected function types in nested calls: {rust_str}");
     }
 }
 
@@ -135,8 +133,7 @@ proptest! {
         nparam in "[n][a-z0-9]{0,3}",
         num in 1..100i32,
     ) {
-        let code = format!("fun {}({}, {}) {{ {}({} * {}) }}", 
-                          fname, fparam, nparam, fparam, nparam, num);
+        let code = format!("fun {fname}({fparam}, {nparam}) {{ {fparam}({nparam} * {num}) }}");
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
@@ -146,10 +143,10 @@ proptest! {
         
         // fparam should be function type, nparam should be numeric
         assert!(rust_str.contains("impl Fn"),
-                "Expected {} to have function type", fparam);
-        assert!(rust_str.contains(&format!("{} : i32", nparam)) || 
-                rust_str.contains(&format!("{}: i32", nparam)),
-                "Expected {} to be typed as i32", nparam);
+                "Expected {fparam} to have function type");
+        assert!(rust_str.contains(&format!("{nparam} : i32")) || 
+                rust_str.contains(&format!("{nparam}: i32")),
+                "Expected {nparam} to be typed as i32");
     }
 }
 
@@ -160,7 +157,7 @@ proptest! {
         fname in "[a-z][a-z0-9]{0,5}",
         pname in "[a-z][a-z0-9]{0,5}",
     ) {
-        let code = format!("fun {}({}) {{ }}", fname, pname);
+        let code = format!("fun {fname}({pname}) {{ }}");
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
@@ -169,9 +166,9 @@ proptest! {
         let rust_str = rust_code.to_string();
         
         // Unused parameters should default to String
-        assert!(rust_str.contains(&format!("{} : String", pname)) || 
-                rust_str.contains(&format!("{}: String", pname)),
-                "Expected unused {} to default to String", pname);
+        assert!(rust_str.contains(&format!("{pname} : String")) || 
+                rust_str.contains(&format!("{pname}: String")),
+                "Expected unused {pname} to default to String");
     }
 }
 
@@ -183,7 +180,7 @@ proptest! {
         pname in "[a-z][a-z0-9]{0,5}",
         num in 1..100i32,
     ) {
-        let code = format!("fun {}({}) {{ {} * {} }}", fname, pname, pname, num);
+        let code = format!("fun {fname}({pname}) {{ {pname} * {num} }}");
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
@@ -193,7 +190,7 @@ proptest! {
         
         // Known numeric functions should have i32 return type
         assert!(rust_str.contains("-> i32"),
-                "Expected numeric function {} to return i32: {}", fname, rust_str);
+                "Expected numeric function {fname} to return i32: {rust_str}");
     }
 }
 
@@ -203,7 +200,7 @@ proptest! {
     fn test_main_never_gets_return_type(
         body in "[a-zA-Z0-9 ]{0,10}",  // Simpler bodies to avoid parse errors
     ) {
-        let code = format!("fun main() {{ {} }}", body);
+        let code = format!("fun main() {{ {body} }}");
         let mut parser = Parser::new(&code);
         
         // Skip if parsing fails
@@ -215,7 +212,7 @@ proptest! {
                 // main should never have explicit return type
                 assert!(!rust_str.contains("fn main() -> ") && 
                         !rust_str.contains("fn main () -> "),
-                        "main() should not have return type: {}", rust_str);
+                        "main() should not have return type: {rust_str}");
             }
         }
     }

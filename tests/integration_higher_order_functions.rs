@@ -138,7 +138,7 @@ fn test_arithmetic_operations_all_types() {
     let operations = vec!["+", "-", "*", "/", "%"];
     
     for op in operations {
-        let code = format!("fun test(x) {{ x {} 5 }}", op);
+        let code = format!("fun test(x) {{ x {op} 5 }}");
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
@@ -148,7 +148,7 @@ fn test_arithmetic_operations_all_types() {
         
         // x should be i32 for all arithmetic operations
         assert!(rust_str.contains("x : i32") || rust_str.contains("x: i32"),
-               "Expected i32 type for {} operation: {}", op, rust_str);
+               "Expected i32 type for {op} operation: {rust_str}");
     }
 }
 
@@ -213,11 +213,11 @@ fn test_lambda_parameter_detection() {
 #[test]
 fn test_complex_higher_order_scenario() {
     // This is the exact scenario that was broken in v1.17.0
-    let code = r#"
+    let code = r"
         fun apply(f, x) { f(x) }
         fun double(n) { n * 2 }
         fun main() { apply(double, 5) }
-    "#;
+    ";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
@@ -259,11 +259,9 @@ fn test_regression_prevention_property() {
         
         // REGRESSION TEST: Function parameters should NEVER be String
         assert!(!rust_str.contains("f : String"),
-               "REGRESSION: Function parameter f was typed as String in: {}\nGenerated: {}", 
-               code, rust_str);
+               "REGRESSION: Function parameter f was typed as String in: {code}\nGenerated: {rust_str}");
         assert!(!rust_str.contains("g : String"), 
-               "REGRESSION: Function parameter g was typed as String in: {}\nGenerated: {}",
-               code, rust_str);
+               "REGRESSION: Function parameter g was typed as String in: {code}\nGenerated: {rust_str}");
     }
 }
 
@@ -288,6 +286,6 @@ fn test_numeric_operations_property() {
         
         // Parameters in arithmetic should be i32
         assert!(rust_str.contains("n : i32") || rust_str.contains("n: i32"),
-               "Expected numeric parameter to be i32 in: {}\nGenerated: {}", code, rust_str);
+               "Expected numeric parameter to be i32 in: {code}\nGenerated: {rust_str}");
     }
 }

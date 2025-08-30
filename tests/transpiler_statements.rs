@@ -40,8 +40,7 @@ fn test_transpile_assignments() {
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Assignment '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Assignment '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -70,8 +69,7 @@ fn test_transpile_compound_assignments() {
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Compound assignment '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Compound assignment '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -106,8 +104,7 @@ fn test_transpile_return_statements() {
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Return statement '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Return statement '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -139,8 +136,7 @@ fn test_transpile_loop_control_statements() {
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Loop control '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Loop control '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -172,8 +168,7 @@ fn test_transpile_expression_statements() {
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Expression statement '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Expression statement '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -211,8 +206,7 @@ fn test_transpile_let_statements() {
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Let statement '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Let statement '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -244,8 +238,7 @@ fn test_transpile_statement_blocks() {
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Statement block '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Statement block '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -277,8 +270,7 @@ fn test_transpile_import_statements() {
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Import statement '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Import statement '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -307,8 +299,7 @@ fn test_transpile_export_statements() {
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Export statement '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Export statement '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -337,8 +328,7 @@ fn test_transpile_chained_statements() {
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Chained statement '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Chained statement '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }

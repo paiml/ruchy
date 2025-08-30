@@ -41,7 +41,7 @@ fn test_complete_progressive_modes_workflow() {
     assert!(result.contains("│ alloc:"));
     assert!(result.contains("└────────────────┘"));
     assert!(result.contains("Int"));
-    assert!(result.contains("5"));
+    assert!(result.contains('5'));
     
     // 7. Manual mode switching via command
     let result = repl.eval(":time").unwrap();
@@ -142,7 +142,7 @@ fn test_all_mode_types() {
     ];
     
     for (mode_name, expected_prompt) in modes {
-        let command = format!(":{}", mode_name);
+        let command = format!(":{mode_name}");
         let result = repl.eval(&command).unwrap();
         assert!(result.contains("mode") || result.contains("help"));
         assert_eq!(repl.get_mode(), mode_name);

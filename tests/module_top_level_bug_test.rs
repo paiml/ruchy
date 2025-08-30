@@ -1,6 +1,6 @@
 //! Module Top-Level Bug Test (TDD)
 //! 
-//! Documents the issue where module declarations are generated inside main() 
+//! Documents the issue where module declarations are generated inside `main()` 
 //! instead of at the top level of the Rust program.
 //!
 //! **Expected**: `mod math { ... }` at top level, then `fn main() { ... }`
@@ -16,9 +16,9 @@ fn test_modules_should_be_top_level_not_inside_main() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     
     // Create math.ruchy module
-    let math_content = r#"pub fn add(a: i32, b: i32) -> i32 {
+    let math_content = r"pub fn add(a: i32, b: i32) -> i32 {
     a + b
-}"#;
+}";
     fs::write(temp_dir.path().join("math.ruchy"), math_content)
         .expect("Failed to write math module");
     
@@ -36,7 +36,7 @@ println("Result:", result);"#;
         .expect("Should transpile with module context");
     let rust_string = rust_code.to_string();
     
-    println!("Generated Rust code:\n{}", rust_string);
+    println!("Generated Rust code:\n{rust_string}");
     
     // CRITICAL: Module should be at top level, NOT inside main()
     assert!(rust_string.contains("mod math {"), "Module declaration should exist");
@@ -51,7 +51,7 @@ println("Result:", result);"#;
     
     // Main function should NOT contain the module declaration
     let main_fn_start = main_pos;
-    let main_fn_end = rust_string[main_fn_start..].rfind("}").unwrap_or(rust_string.len() - main_fn_start) + main_fn_start + 1;
+    let main_fn_end = rust_string[main_fn_start..].rfind('}').unwrap_or(rust_string.len() - main_fn_start) + main_fn_start + 1;
     let main_fn_body = &rust_string[main_fn_start..main_fn_end];
     
     assert!(!main_fn_body.contains("mod math"), 
@@ -68,12 +68,12 @@ fn test_multiple_modules_all_top_level() {
     fs::write(temp_dir.path().join("utils.ruchy"), "pub fn format_result(n: i32) -> String { \"Result: \" + n.to_string() }")
         .expect("Failed to write utils module");
     
-    let main_content = r#"use math;
+    let main_content = r"use math;
 use utils;
 
 let sum = add(5, 10);
 let message = format_result(sum);
-println(message);"#;
+println(message);";
     
     let mut parser = Parser::new(main_content);
     let ast = parser.parse().expect("Should parse main with multiple imports");
@@ -83,7 +83,7 @@ println(message);"#;
         .expect("Should transpile multiple modules");
     let rust_string = rust_code.to_string();
     
-    println!("Multiple modules Rust code:\n{}", rust_string);
+    println!("Multiple modules Rust code:\n{rust_string}");
     
     // Both modules should be top-level
     assert!(rust_string.contains("mod math"), "Math module should exist");

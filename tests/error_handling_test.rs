@@ -6,10 +6,10 @@ use ruchy::runtime::repl::Repl;
 // Helper to test in REPL
 fn eval_in_repl(code: &str) -> Result<String, String> {
     let mut repl = Repl::new()
-        .map_err(|e| format!("Failed to create REPL: {:?}", e))?;
+        .map_err(|e| format!("Failed to create REPL: {e:?}"))?;
     
     let result = repl.eval(code)
-        .map_err(|e| format!("Eval error: {:?}", e))?;
+        .map_err(|e| format!("Eval error: {e:?}"))?;
     
     // Remove quotes if present (REPL string formatting)
     if result.starts_with('"') && result.ends_with('"') && result.len() >= 2 {
@@ -36,7 +36,7 @@ divide(10, 2)
     
     let result = eval_in_repl(code);
     if let Ok(res) = result {
-        assert!(res.contains("Ok") && res.contains("5"));
+        assert!(res.contains("Ok") && res.contains('5'));
     }
 }
 
@@ -82,10 +82,10 @@ safe_parse("invalid").unwrap_or(0)
 #[test]
 fn test_map_result() {
     // Test map on Result
-    let code = r#"
+    let code = r"
 let double_if_ok = Ok(21).map(|x| x * 2)
 double_if_ok
-"#;
+";
     
     let result = eval_in_repl(code);
     assert!(result.is_ok() || result.is_err(), "Result map should at least parse");
@@ -112,7 +112,7 @@ parse("10").and_then(double)
 #[test]
 fn test_try_operator() {
     // Test ? operator
-    let code = r#"
+    let code = r"
 fn process() -> Result<i32, String> {
     let x = Ok(10)?
     let y = Ok(20)?
@@ -120,7 +120,7 @@ fn process() -> Result<i32, String> {
 }
 
 process()
-"#;
+";
     
     let result = eval_in_repl(code);
     assert!(result.is_ok() || result.is_err(), "Try operator should at least parse");
@@ -146,7 +146,7 @@ let safe_op = || {
 #[test]
 fn test_option_question_mark() {
     // Test ? with Option
-    let code = r#"
+    let code = r"
 fn get_value() -> Option<i32> {
     let x = Some(10)?
     let y = Some(20)?
@@ -154,7 +154,7 @@ fn get_value() -> Option<i32> {
 }
 
 get_value()
-"#;
+";
     
     let result = eval_in_repl(code);
     assert!(result.is_ok() || result.is_err(), "Option ? should at least parse");
@@ -198,11 +198,11 @@ err
 #[test]
 fn test_result_collect() {
     // Test collecting Results
-    let code = r#"
+    let code = r"
 let results = [Ok(1), Ok(2), Ok(3)]
 let collected: Result<Vec<i32>, String> = results.into_iter().collect()
 collected
-"#;
+";
     
     let result = eval_in_repl(code);
     assert!(result.is_ok() || result.is_err(), "Result collect should at least parse");

@@ -12,7 +12,7 @@ fn test_ruchy_prove_command_basic_functionality() {
     
     // Create a simple Ruchy file with a property to prove
     let prove_file = NamedTempFile::with_suffix(".ruchy").expect("Create temp file");
-    fs::write(prove_file.path(), r#"
+    fs::write(prove_file.path(), r"
 // Simple property to prove: addition is commutative
 fun add_commutative(a: i32, b: i32) -> bool {
     a + b == b + a
@@ -21,7 +21,7 @@ fun add_commutative(a: i32, b: i32) -> bool {
 // Property assertion
 assert add_commutative(3, 5)
 assert add_commutative(10, 20)
-"#).expect("Write test file");
+").expect("Write test file");
     
     // TDD: Test the prove command with --check flag (non-interactive)
     let output = Command::new(env!("CARGO_BIN_EXE_ruchy"))
@@ -41,7 +41,7 @@ assert add_commutative(10, 20)
     
     let stdout = String::from_utf8(output.stdout).expect("Valid UTF-8 stdout");
     assert!(stdout.contains("✅") || stdout.contains("Proof successful") || stdout.contains("verified"), 
-            "Should indicate successful proof verification: {}", stdout);
+            "Should indicate successful proof verification: {stdout}");
 }
 
 #[test]
@@ -49,14 +49,14 @@ fn test_ruchy_prove_command_json_output() {
     // TDD: Test JSON output format for automation
     
     let prove_file = NamedTempFile::with_suffix(".ruchy").expect("Create temp file");
-    fs::write(prove_file.path(), r#"
+    fs::write(prove_file.path(), r"
 // Simple tautology
 fun always_true() -> bool {
     true
 }
 
 assert always_true()
-"#).expect("Write test file");
+").expect("Write test file");
     
     let output = Command::new(env!("CARGO_BIN_EXE_ruchy"))
         .arg("prove")
@@ -73,13 +73,13 @@ assert always_true()
     
     // Should output valid JSON
     let json_result: serde_json::Value = serde_json::from_str(&stdout)
-        .expect(&format!("Should output valid JSON: {}", stdout));
+        .unwrap_or_else(|_| panic!("Should output valid JSON: {stdout}"));
     
     // Should have proof results
     assert!(json_result.get("proofs").is_some() || 
             json_result.get("verified").is_some() ||
             json_result.get("status").is_some(),
-            "JSON should contain proof results: {}", stdout);
+            "JSON should contain proof results: {stdout}");
 }
 
 #[test] 
@@ -87,14 +87,14 @@ fn test_ruchy_prove_command_with_counterexample() {
     // TDD: Test counterexample generation for false properties
     
     let prove_file = NamedTempFile::with_suffix(".ruchy").expect("Create temp file");
-    fs::write(prove_file.path(), r#"
+    fs::write(prove_file.path(), r"
 // False property that should generate counterexample
 fun false_property(x: i32) -> bool {
     x > 0 && x < 0  // This is always false
 }
 
 assert false_property(5)  // This should fail
-"#).expect("Write test file");
+").expect("Write test file");
     
     let output = Command::new(env!("CARGO_BIN_EXE_ruchy"))
         .arg("prove") 
@@ -108,13 +108,13 @@ assert false_property(5)  // This should fail
     let stdout = String::from_utf8(output.stdout).expect("Valid UTF-8 stdout");
     let stderr = String::from_utf8(output.stderr).expect("Valid UTF-8 stderr");
     
-    println!("STDOUT: {}", stdout);
-    println!("STDERR: {}", stderr);
+    println!("STDOUT: {stdout}");
+    println!("STDERR: {stderr}");
     
     // Should indicate proof failure and provide counterexample
     assert!(stdout.contains("❌") || stdout.contains("Proof failed") || 
             stderr.contains("counterexample") || stdout.contains("counterexample"),
-            "Should indicate proof failure with counterexample: stdout={}, stderr={}", stdout, stderr);
+            "Should indicate proof failure with counterexample: stdout={stdout}, stderr={stderr}");
 }
 
 #[test]
@@ -122,7 +122,7 @@ fn test_ruchy_prove_command_timeout() {
     // TDD: Test timeout functionality
     
     let prove_file = NamedTempFile::with_suffix(".ruchy").expect("Create temp file");
-    fs::write(prove_file.path(), r#"
+    fs::write(prove_file.path(), r"
 // Complex property that might timeout
 fun complex_property(n: i32) -> bool {
     // Recursive fibonacci-like property that's hard to verify
@@ -130,7 +130,7 @@ fun complex_property(n: i32) -> bool {
 }
 
 assert complex_property(10)
-"#).expect("Write test file");
+").expect("Write test file");
     
     let output = Command::new(env!("CARGO_BIN_EXE_ruchy"))
         .arg("prove")
@@ -144,14 +144,14 @@ assert complex_property(10)
     let stdout = String::from_utf8(output.stdout).expect("Valid UTF-8 stdout");
     let stderr = String::from_utf8(output.stderr).expect("Valid UTF-8 stderr");
     
-    println!("STDOUT: {}", stdout);
-    println!("STDERR: {}", stderr);
+    println!("STDOUT: {stdout}");
+    println!("STDERR: {stderr}");
     
     // Should either succeed quickly or timeout gracefully
     assert!(output.status.success() || 
             stdout.contains("timeout") || stderr.contains("timeout") ||
             stdout.contains("⏰") || stderr.contains("⏰"),
-            "Should handle timeout gracefully: stdout={}, stderr={}", stdout, stderr);
+            "Should handle timeout gracefully: stdout={stdout}, stderr={stderr}");
 }
 
 #[test]

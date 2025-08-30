@@ -112,7 +112,7 @@ fn test_profile_command_percentage_breakdown() {
         .join("\n");
     
     // Should have percentage indicators
-    assert!(timing_section.contains("%"), "Should show percentages in timing breakdown");
+    assert!(timing_section.contains('%'), "Should show percentages in timing breakdown");
     
     // Parse and eval percentages should roughly add up to 100%
     // (allowing for small rounding errors)
@@ -123,8 +123,8 @@ fn test_profile_command_percentage_breakdown() {
         .find(|line| line.contains("Evaluate:"))
         .expect("Should have evaluate line");
     
-    assert!(parse_line.contains("(") && parse_line.contains("%)"), 
+    assert!(parse_line.contains('(') && parse_line.contains("%)"), 
             "Parse line should show percentage");
-    assert!(eval_line.contains("(") && eval_line.contains("%)"), 
+    assert!(eval_line.contains('(') && eval_line.contains("%)"), 
             "Evaluate line should show percentage");
 }

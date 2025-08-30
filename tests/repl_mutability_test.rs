@@ -115,7 +115,7 @@ fn test_error_message_for_immutable_assignment() {
     assert!(result.is_err());
     let error = result.unwrap_err().to_string();
     assert!(error.contains("immutable") || error.contains("cannot assign"),
-        "Error should mention immutability: {}", error);
+        "Error should mention immutability: {error}");
 }
 
 #[test]
@@ -127,7 +127,7 @@ fn test_error_message_for_undefined_variable() {
     assert!(result.is_err());
     let error = result.unwrap_err().to_string();
     assert!(error.contains("undefined") || error.contains("not found"),
-        "Error should mention undefined variable: {}", error);
+        "Error should mention undefined variable: {error}");
 }
 
 #[test]

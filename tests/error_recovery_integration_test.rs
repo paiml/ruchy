@@ -62,19 +62,19 @@ fn test_error_recovery_workflow_with_real_errors() {
     ];
     
     for (input, description) in error_cases {
-        println!("Testing: {}", description);
+        println!("Testing: {description}");
         
         // Evaluate the erroneous input
         let result = repl.eval(input);
-        assert!(result.is_err(), "Should fail for: {}", description);
+        assert!(result.is_err(), "Should fail for: {description}");
         
         // Should create error recovery context
         assert!(repl.has_error_recovery(), 
-            "Should have error recovery for: {}", description);
+            "Should have error recovery for: {description}");
         
         // Should be able to get formatted recovery prompt
         let prompt = repl.get_error_recovery_prompt();
-        assert!(prompt.is_some(), "Should have recovery prompt for: {}", description);
+        assert!(prompt.is_some(), "Should have recovery prompt for: {description}");
         
         // Clear error recovery for next test
         repl.clear_error_recovery();

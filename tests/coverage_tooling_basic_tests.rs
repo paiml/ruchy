@@ -106,7 +106,7 @@ fn another_function() -> String {
 #[test]
 fn test_ruchy_coverage_collector_execute_with_coverage() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
-    let test_content = r#"
+    let test_content = r"
 fn test_function() -> i32 {
     1 + 1
 }
@@ -115,7 +115,7 @@ fn test_function() -> i32 {
 fn test_addition() {
     assert_eq!(test_function(), 2);
 }
-"#;
+";
     
     let test_file = create_ruchy_test_file(temp_dir.path(), "with_test.ruchy", test_content);
     let mut collector = RuchyCoverageCollector::new();
@@ -129,7 +129,7 @@ fn test_addition() {
 
 #[test]
 fn test_ruchy_coverage_collector_html_report() {
-    let mut collector = RuchyCoverageCollector::new();
+    let collector = RuchyCoverageCollector::new();
     
     // Test HTML report generation
     let html_report = collector.generate_html_report();
@@ -151,11 +151,9 @@ fn test_coverage_from_multiple_files() {
     let file3 = create_ruchy_test_file(temp_dir.path(), "file3.ruchy", "fn test3() { 3 }");
     
     // Analyze all files
-    let results = vec![
-        collector.analyze_file(&file1),
+    let results = [collector.analyze_file(&file1),
         collector.analyze_file(&file2),
-        collector.analyze_file(&file3),
-    ];
+        collector.analyze_file(&file3)];
     
     // Should handle multiple file analysis
     for (i, result) in results.iter().enumerate() {

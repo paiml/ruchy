@@ -19,15 +19,15 @@ fn regression_while_loop_off_by_one() {
     
     // Test 1: Exact original failing case (now using var for mutable bindings)
     let result = repl.eval("var i = 0; var count = 0; while i < 3 { count = count + 1; i = i + 1 }; count").unwrap();
-    assert_eq!(result.to_string(), "3", "While loop should execute exactly 3 times");
+    assert_eq!(result, "3", "While loop should execute exactly 3 times");
     
     // Test 2: While loop should return Unit, not body value
     let result = repl.eval("var i = 0; while i < 1 { i = i + 1; 42 }").unwrap(); 
-    assert_eq!(result.to_string(), "()", "While loop should return Unit, not 42");
+    assert_eq!(result, "()", "While loop should return Unit, not 42");
     
     // Test 3: Multiple iterations with different body values
     let result = repl.eval("var i = 0; while i < 2 { i = i + 1; i * 10 }").unwrap();
-    assert_eq!(result.to_string(), "()", "While loop should return Unit, not last body value");
+    assert_eq!(result, "()", "While loop should return Unit, not last body value");
 }
 
 #[test] 
@@ -52,7 +52,7 @@ fn regression_object_items_transpilation() {
     
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("test"), 
-        "Should print object keys, got: {}", stdout);
+        "Should print object keys, got: {stdout}");
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn regression_test_compilation_errors() {
     
     let mut repl = Repl::new().unwrap();
     let result = repl.eval(test_code);
-    assert!(result.is_ok(), "Raw string test code should compile: {:?}", result);
+    assert!(result.is_ok(), "Raw string test code should compile: {result:?}");
 }
 
 #[test]
@@ -113,14 +113,14 @@ fn regression_coverage_script_flags() {
     let html_test = Command::new("timeout")
         .arg("30")
         .arg("cargo")
-        .args(&["llvm-cov", "--lib", "--html", "--output-dir", "/tmp/test_coverage"])
+        .args(["llvm-cov", "--lib", "--html", "--output-dir", "/tmp/test_coverage"])
         .output()
         .unwrap();
     
     // Should not fail with flag conflict error
     let stderr = String::from_utf8_lossy(&html_test.stderr);
     assert!(!stderr.contains("may not be used together"), 
-        "Coverage HTML generation should work: {}", stderr);
+        "Coverage HTML generation should work: {stderr}");
 }
 
 /// Future regression test template - copy this for new bugs

@@ -220,12 +220,12 @@ fn test_value_clone() {
 #[test]
 fn test_value_debug() {
     let val = Value::Int(42);
-    let debug = format!("{:?}", val);
+    let debug = format!("{val:?}");
     assert!(debug.contains("Int"));
     assert!(debug.contains("42"));
     
     let val2 = Value::String("hello".to_string());
-    let debug2 = format!("{:?}", val2);
+    let debug2 = format!("{val2:?}");
     assert!(debug2.contains("String"));
     assert!(debug2.contains("hello"));
 }

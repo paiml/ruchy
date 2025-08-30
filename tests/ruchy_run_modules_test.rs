@@ -15,13 +15,13 @@ fn test_ruchy_run_with_external_modules() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     
     // Create math.ruchy module in same directory
-    let math_content = r#"pub fn add(a: i32, b: i32) -> i32 {
+    let math_content = r"pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
 
 pub fn multiply(a: i32, b: i32) -> i32 {
     a * b
-}"#;
+}";
     fs::write(temp_dir.path().join("math.ruchy"), math_content)
         .expect("Failed to write math module");
     
@@ -54,18 +54,18 @@ println("Multiplication result:", product)"#;
     // Print output for debugging
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    println!("STDOUT:\n{}", stdout);
-    println!("STDERR:\n{}", stderr);
+    println!("STDOUT:\n{stdout}");
+    println!("STDERR:\n{stderr}");
     
     // Test should pass: ruchy run should successfully compile and execute
     assert!(output.status.success(), 
-            "ruchy run should succeed with multi-file modules, stderr: {}", stderr);
+            "ruchy run should succeed with multi-file modules, stderr: {stderr}");
     
     // Verify expected output
     assert!(stdout.contains("Addition result: 8"), 
-            "Should output 'Addition result: 8', got: {}", stdout);
+            "Should output 'Addition result: 8', got: {stdout}");
     assert!(stdout.contains("Multiplication result: 24"), 
-            "Should output 'Multiplication result: 24', got: {}", stdout);
+            "Should output 'Multiplication result: 24', got: {stdout}");
 }
 
 #[test] 
@@ -93,13 +93,13 @@ println("This should not run")"#;
     std::env::set_current_dir(original_dir).expect("Failed to restore directory");
     
     let stderr = String::from_utf8_lossy(&output.stderr);
-    println!("Error output: {}", stderr);
+    println!("Error output: {stderr}");
     
     // Should fail with clear error message
     assert!(!output.status.success(), "Should fail when module is missing");
     assert!(stderr.contains("nonexistent_module") || stderr.contains("not found") || 
             stderr.contains("module"), 
-            "Error should mention missing module, got: {}", stderr);
+            "Error should mention missing module, got: {stderr}");
 }
 
 #[test]
@@ -119,10 +119,10 @@ fn test_ruchy_run_nested_directory_modules() {
         .expect("Failed to write helpers module");
     
     // Create main.ruchy that imports nested module
-    let main_content = r#"use utils::helpers;
+    let main_content = r"use utils::helpers;
 
 let formatted = helpers::format_number(42);
-println(formatted)"#;
+println(formatted)";
     
     let main_path = temp_dir.path().join("main.ruchy");
     fs::write(&main_path, main_content).expect("Failed to write main file");
@@ -140,15 +140,15 @@ println(formatted)"#;
     
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    println!("Nested module STDOUT: {}", stdout);  
-    println!("Nested module STDERR: {}", stderr);
+    println!("Nested module STDOUT: {stdout}");  
+    println!("Nested module STDERR: {stderr}");
     
     // This test documents expected behavior - may not work initially
     if output.status.success() {
         assert!(stdout.contains("Number: 42"), 
-                "Should output 'Number: 42', got: {}", stdout);
+                "Should output 'Number: 42', got: {stdout}");
     } else {
         // Document the current limitation
-        println!("Nested modules not yet supported, error: {}", stderr);
+        println!("Nested modules not yet supported, error: {stderr}");
     }
 }

@@ -54,7 +54,7 @@ fn test_repl_file_consistency() {
     if !failures.is_empty() {
         let mut error_msg = String::from("REPL vs File execution differences detected:\n");
         for (name, error) in failures {
-            error_msg.push_str(&format!("  - {}: {}\n", name, error));
+            error_msg.push_str(&format!("  - {name}: {error}\n"));
         }
         panic!("{}", error_msg);
     }
@@ -64,21 +64,21 @@ fn run_differential_test(test: &DifferentialTest) -> Result<(), String> {
     // Test via REPL
     let repl_output = Command::new("bash")
         .arg("-c")
-        .arg(&format!("echo '{}' | timeout 10 ./target/release/ruchy repl", test.code))
+        .arg(format!("echo '{}' | timeout 10 ./target/release/ruchy repl", test.code))
         .output()
-        .map_err(|e| format!("Failed to run REPL: {}", e))?;
+        .map_err(|e| format!("Failed to run REPL: {e}"))?;
     
     // Test via file
     let test_file = format!("/tmp/diff_test_{}.ruchy", test.name);
     fs::write(&test_file, test.code)
-        .map_err(|e| format!("Failed to write test file: {}", e))?;
+        .map_err(|e| format!("Failed to write test file: {e}"))?;
     
     let file_output = Command::new("timeout")
         .arg("10")
         .arg("./target/release/ruchy")
         .arg(&test_file)
         .output()
-        .map_err(|e| format!("Failed to run file: {}", e))?;
+        .map_err(|e| format!("Failed to run file: {e}"))?;
     
     // Compare results
     let repl_stdout = extract_repl_output(&String::from_utf8_lossy(&repl_output.stdout));
@@ -103,8 +103,7 @@ fn run_differential_test(test: &DifferentialTest) -> Result<(), String> {
     
     if repl_normalized != file_normalized {
         return Err(format!(
-            "Output differs:\nREPL: {:?}\nFile: {:?}",
-            repl_normalized, file_normalized
+            "Output differs:\nREPL: {repl_normalized:?}\nFile: {file_normalized:?}"
         ));
     }
     
@@ -129,7 +128,7 @@ fn extract_repl_output(repl_full_output: &str) -> String {
 fn normalize_output(output: &str) -> String {
     output.trim()
         .lines()
-        .map(|line| line.trim())
+        .map(str::trim)
         .filter(|line| !line.is_empty())
         .collect::<Vec<_>>()
         .join("\n")
@@ -147,7 +146,7 @@ fn test_error_consistency() {
     for code in error_cases {
         let repl_result = Command::new("bash")
             .arg("-c")
-            .arg(&format!("echo '{}' | timeout 5 ./target/release/ruchy repl 2>&1", code))
+            .arg(format!("echo '{code}' | timeout 5 ./target/release/ruchy repl 2>&1"))
             .output()
             .unwrap();
             
@@ -165,8 +164,8 @@ fn test_error_consistency() {
         let file_output = String::from_utf8_lossy(&file_result.stderr);
         
         assert!(repl_output.contains("Error:") || repl_output.contains("error:"),
-            "REPL should show error for: {}", code);
+            "REPL should show error for: {code}");
         assert!(file_output.contains("Error:") || file_output.contains("error:"),
-            "File should show error for: {}", code);
+            "File should show error for: {code}");
     }
 }

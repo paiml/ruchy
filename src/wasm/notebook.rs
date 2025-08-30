@@ -234,7 +234,7 @@ impl Default for NotebookRuntime {
 // ============================================================================
 
 fn generate_cell_id() -> String {
-    format!("cell-{}", get_timestamp() as u64)
+    format!("cell-{}", get_timestamp().abs() as u64)
 }
 
 fn current_timestamp() -> String {

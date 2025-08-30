@@ -116,7 +116,7 @@ fn test_tab_complete_case_insensitive() {
     // Test case-insensitive matching
     let completions = repl.complete("myvar");
     assert!(completions.iter().any(|s| s == "MyVariable"), 
-        "Should match case-insensitively, got: {:?}", completions);
+        "Should match case-insensitively, got: {completions:?}");
 }
 
 #[test]

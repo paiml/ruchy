@@ -6,10 +6,10 @@ use ruchy::runtime::repl::Repl;
 // Helper to test in REPL
 fn eval_in_repl(code: &str) -> Result<String, String> {
     let mut repl = Repl::new()
-        .map_err(|e| format!("Failed to create REPL: {:?}", e))?;
+        .map_err(|e| format!("Failed to create REPL: {e:?}"))?;
     
     let result = repl.eval(code)
-        .map_err(|e| format!("Eval error: {:?}", e))?;
+        .map_err(|e| format!("Eval error: {e:?}"))?;
     
     // Remove quotes if present (REPL string formatting)
     if result.starts_with('"') && result.ends_with('"') && result.len() >= 2 {
@@ -22,11 +22,11 @@ fn eval_in_repl(code: &str) -> Result<String, String> {
 #[test]
 fn test_references() {
     // Test reference creation and dereferencing
-    let code = r#"
+    let code = r"
 let x = 42
 let y = &x
 *y
-"#;
+";
     
     let result = eval_in_repl(code);
     assert!(result.is_ok() || result.is_err(), "References should at least parse");
@@ -35,12 +35,12 @@ let y = &x
 #[test]
 fn test_mutable_references() {
     // Test mutable references
-    let code = r#"
+    let code = r"
 let mut x = 10
 let y = &mut x
 *y = 20
 x
-"#;
+";
     
     let result = eval_in_repl(code);
     assert!(result.is_ok() || result.is_err(), "Mutable references should at least parse");
@@ -113,11 +113,11 @@ let s2 = s1.clone()
 #[test]
 fn test_copy_trait() {
     // Test Copy trait for simple types
-    let code = r#"
+    let code = r"
 let x = 5
 let y = x  // Copy occurs here (i32 implements Copy)
 x + y
-"#;
+";
     
     let result = eval_in_repl(code);
     if let Ok(res) = result {
@@ -128,12 +128,12 @@ x + y
 #[test]
 fn test_borrow_checker() {
     // Test that would fail borrow checker
-    let code = r#"
+    let code = r"
 let mut x = 10
 let r1 = &x
 let r2 = &mut x  // This should fail - can't have mutable and immutable refs
 *r2
-"#;
+";
     
     let result = eval_in_repl(code);
     // This should either fail or handle the borrow checking

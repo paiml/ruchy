@@ -129,18 +129,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn run_section(repl: &mut Repl, expressions: Vec<(&str, &str)>) {
     for (expr, description) in expressions {
-        println!("\n  {}", description);
-        println!("  > {}", expr);
+        println!("\n  {description}");
+        println!("  > {expr}");
         match repl.eval(expr) {
             Ok(result) => {
                 // Limit output for readability
                 if result.len() > 100 {
                     println!("  {}...", &result[..100]);
                 } else {
-                    println!("  {}", result);
+                    println!("  {result}");
                 }
             }
-            Err(e) => println!("  ERROR: {}", e),
+            Err(e) => println!("  ERROR: {e}"),
         }
     }
 }

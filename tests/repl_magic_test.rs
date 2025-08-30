@@ -21,7 +21,7 @@ fn test_time_magic_command() {
     // Test %time command
     let result = repl.eval("%time 2 + 2").unwrap();
     assert!(result.contains("Executed in:"));
-    assert!(result.contains("4")); // Should show the result
+    assert!(result.contains('4')); // Should show the result
 }
 
 #[test]
@@ -32,7 +32,7 @@ fn test_timeit_magic_command() {
     let result = repl.eval("%timeit 2 + 2").unwrap();
     assert!(result.contains("loops"));
     assert!(result.contains("average:"));
-    assert!(result.contains("4")); // Should show result
+    assert!(result.contains('4')); // Should show result
 }
 
 #[test]
@@ -48,7 +48,7 @@ fn test_run_magic_command() {
     drop(file);
     
     // Test %run command - returns all evaluated expressions
-    let result = repl.eval(&format!("%run {}", script_path)).unwrap();
+    let result = repl.eval(&format!("%run {script_path}")).unwrap();
     // %run shows all outputs from the script
     assert!(result.contains("30"));
     
@@ -155,7 +155,7 @@ fn test_run_script_with_functions() {
     drop(file);
     
     // Run the script  
-    let result = repl.eval(&format!("%run {}", script_path)).unwrap();
+    let result = repl.eval(&format!("%run {script_path}")).unwrap();
     assert!(result.contains("30"));
     
     // Test that functions are available
@@ -199,7 +199,7 @@ fn test_timeit_with_iterations() {
     // Test that timeit runs multiple iterations
     let result = repl.eval("%timeit 1 + 1").unwrap();
     assert!(result.contains("1000 loops"));
-    assert!(result.contains("2")); // Result should still be shown
+    assert!(result.contains('2')); // Result should still be shown
 }
 
 #[test]

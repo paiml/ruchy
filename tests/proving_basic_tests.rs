@@ -19,7 +19,7 @@ fn test_smt_backend_variants() {
     
     for backend in backends {
         // Should be able to create and debug print
-        assert!(!format!("{:?}", backend).is_empty());
+        assert!(!format!("{backend:?}").is_empty());
         
         // Test equality and clone
         assert_eq!(backend.clone(), backend);
@@ -66,7 +66,7 @@ fn test_interactive_prover_script_loading() {
     
     for script in scripts {
         let result = prover.load_script(script);
-        assert!(result.is_ok(), "Should load script: {}", script);
+        assert!(result.is_ok(), "Should load script: {script}");
     }
 }
 

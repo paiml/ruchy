@@ -18,8 +18,8 @@ fn test_tuple_destructuring_in_for_loop() {
     let result = repl.eval(code).expect("Should eval");
     
     // Should produce something like ["a=1", "b=2"]
-    assert!(result.to_string().contains("a=1") && result.to_string().contains("b=2"),
-        "Expected key=value pairs, got: {:?}", result.to_string());
+    assert!(result.contains("a=1") && result.contains("b=2"),
+        "Expected key=value pairs, got: {result:?}");
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn test_tuple_destructuring_in_for_loop_simple() {
     let mut repl = Repl::new().expect("REPL should work");
     let result = repl.eval(code).expect("Should eval");
     
-    assert_eq!(result.to_string(), r#"["x=1", "y=2"]"#,
+    assert_eq!(result, r#"["x=1", "y=2"]"#,
         "Simple tuple destructuring should work");
 }
 
@@ -56,7 +56,7 @@ fn test_for_loop_without_destructuring_works() {
     let mut repl = Repl::new().expect("REPL should work");
     let result = repl.eval(code).expect("Should eval");
     
-    assert_eq!(result.to_string(), r#"["item", "item"]"#,
+    assert_eq!(result, r#"["item", "item"]"#,
         "Basic for loop should work");
 }
 
@@ -71,7 +71,7 @@ fn test_object_items_works() {
     let mut repl = Repl::new().expect("REPL should work");
     let result = repl.eval(code).expect("Should eval");
     
-    assert!(result.to_string().contains("(\"a\", 1)") && 
-            result.to_string().contains("(\"b\", 2)"),
+    assert!(result.contains("(\"a\", 1)") && 
+            result.contains("(\"b\", 2)"),
         "obj.items() should return tuples");
 }

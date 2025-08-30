@@ -36,7 +36,7 @@ fn compile_and_run(code: &str) -> bool {
 
 #[test]
 fn test_basic_inline_module() {
-    let code = r#"
+    let code = r"
         mod math {
             pub fun add(a: i32, b: i32) -> i32 {
                 a + b
@@ -47,7 +47,7 @@ fn test_basic_inline_module() {
             let result = math::add(5, 3);
             println(result);
         }
-    "#;
+    ";
     
     let transpiled = transpile(code);
     assert!(transpiled.contains("mod math"), "Should contain module declaration");
@@ -102,7 +102,7 @@ fn test_nested_modules() {
 
 #[test]
 fn test_module_with_private_function() {
-    let code = r#"
+    let code = r"
         mod privacy {
             fun private_helper() -> i32 {
                 42
@@ -117,7 +117,7 @@ fn test_module_with_private_function() {
             let result = privacy::public_interface();
             println(result);
         }
-    "#;
+    ";
     
     assert!(compile_and_run(code), "Module with private/public functions should work");
 }
@@ -128,14 +128,14 @@ fn test_module_with_private_function() {
 
 #[test]
 fn test_basic_use_statement() {
-    let code = r#"use std::collections;"#;
+    let code = r"use std::collections;";
     let transpiled = transpile(code);
     assert!(transpiled.contains("use std :: collections"), "Should transpile use statement");
 }
 
 #[test]
 fn test_use_with_specific_items() {
-    let code = r#"use std::collections::{HashMap, HashSet};"#;
+    let code = r"use std::collections::{HashMap, HashSet};";
     let transpiled = transpile(code);
     assert!(transpiled.contains("HashMap"), "Should include HashMap");
     assert!(transpiled.contains("HashSet"), "Should include HashSet");
@@ -143,7 +143,7 @@ fn test_use_with_specific_items() {
 
 #[test]
 fn test_use_with_alias() {
-    let code = r#"use std::collections::HashMap as Map;"#;
+    let code = r"use std::collections::HashMap as Map;";
     let transpiled = transpile(code);
     assert!(transpiled.contains("as Map"), "Should include alias");
 }
@@ -154,13 +154,13 @@ fn test_use_with_alias() {
 
 #[test]
 fn test_basic_export() {
-    let code = r#"export { add, subtract };"#;
+    let code = r"export { add, subtract };";
     assert!(compile_and_run(code), "Export statement should parse");
 }
 
 #[test]
 fn test_export_single_item() {
-    let code = r#"export multiply;"#;
+    let code = r"export multiply;";
     assert!(compile_and_run(code), "Single export should parse");
 }
 
@@ -170,7 +170,7 @@ fn test_export_single_item() {
 
 #[test]
 fn test_module_with_types() {
-    let code = r#"
+    let code = r"
         mod geometry {
             pub struct Point {
                 x: i32,
@@ -190,14 +190,14 @@ fn test_module_with_types() {
             let dist = geometry::distance(p1, p2);
             println(dist);
         }
-    "#;
+    ";
     
     assert!(compile_and_run(code), "Module with structs should work");
 }
 
 #[test]
 fn test_module_constants() {
-    let code = r#"
+    let code = r"
         mod constants {
             pub const PI: f64 = 3.14159;
             pub const E: f64 = 2.71828;
@@ -207,7 +207,7 @@ fn test_module_constants() {
             println(constants::PI);
             println(constants::E);
         }
-    "#;
+    ";
     
     // This might not work yet - constants aren't fully implemented
     // But we test if it parses without crashing
@@ -223,7 +223,7 @@ fn test_module_constants() {
 
 #[test]
 fn test_math_library_pattern() {
-    let code = r#"
+    let code = r"
         mod math {
             pub fun add(a: i32, b: i32) -> i32 { a + b }
             pub fun subtract(a: i32, b: i32) -> i32 { a - b }
@@ -238,7 +238,7 @@ fn test_math_library_pattern() {
             let result = math::divide(z, 5);
             println(result);
         }
-    "#;
+    ";
     
     assert!(compile_and_run(code), "Math library module pattern should work");
 }
@@ -325,7 +325,7 @@ fn test_module_name_variations() {
 
 #[test]
 fn test_documented_module() {
-    let code = r#"
+    let code = r"
         /// Math utilities module
         /// Provides basic arithmetic operations
         mod math_docs {
@@ -339,7 +339,7 @@ fn test_documented_module() {
             let result = math_docs::add(2, 3);
             println(result);
         }
-    "#;
+    ";
     
     // Documentation comments might not be fully supported yet
     // Test if it at least parses without crashing

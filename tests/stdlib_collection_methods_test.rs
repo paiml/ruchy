@@ -8,10 +8,10 @@ use std::fs;
 // Helper to test in REPL
 fn eval_in_repl(code: &str) -> Result<String, String> {
     let mut repl = Repl::new()
-        .map_err(|e| format!("Failed to create REPL: {:?}", e))?;
+        .map_err(|e| format!("Failed to create REPL: {e:?}"))?;
     
     let result = repl.eval(code)
-        .map_err(|e| format!("Eval error: {:?}", e))?;
+        .map_err(|e| format!("Eval error: {e:?}"))?;
     
     Ok(result)
 }
@@ -21,12 +21,12 @@ fn eval_transpiled(code: &str) -> Result<String, String> {
     let test_file = format!("/tmp/collection_test_{}.ruchy", 
         std::process::id());
     fs::write(&test_file, code)
-        .map_err(|e| format!("Failed to write test file: {}", e))?;
+        .map_err(|e| format!("Failed to write test file: {e}"))?;
     
     let output = Command::new("./target/release/ruchy")
         .arg(&test_file)
         .output()
-        .map_err(|e| format!("Failed to run file: {}", e))?;
+        .map_err(|e| format!("Failed to run file: {e}"))?;
     
     // Clean up
     let _ = fs::remove_file(&test_file);
@@ -99,16 +99,16 @@ fn test_array_unique() {
     // Test unique method: [1,2,1,3].unique() should return [1,2,3] (order may vary)
     let result = eval_in_repl("[1,2,1,3].unique()").unwrap();
     // Note: HashSet doesn't guarantee order, so we check length and contents
-    assert!(result.contains("1") && result.contains("2") && result.contains("3"));
+    assert!(result.contains('1') && result.contains('2') && result.contains('3'));
     assert!(result.starts_with('[') && result.ends_with(']'));
     
     let result = eval_transpiled("println([1,2,1,3].unique())").unwrap();
-    assert!(result.contains("1") && result.contains("2") && result.contains("3"));
+    assert!(result.contains('1') && result.contains('2') && result.contains('3'));
     assert!(result.starts_with('[') && result.ends_with(']'));
     
     // Test with all same elements
     let result = eval_in_repl("[5,5,5].unique()").unwrap();
-    assert!(result.contains("5"));
+    assert!(result.contains('5'));
     assert!(!result.contains("55")); // Make sure it's not double-counted
     
     // Test empty array

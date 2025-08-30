@@ -92,13 +92,13 @@ fn test_unicode_mathematical_operators_in_strings() {
     ];
     
     for (symbol, description) in operators {
-        let expr = format!(r#"let desc = "Symbol {} represents {}""#, symbol, description);
+        let expr = format!(r#"let desc = "Symbol {symbol} represents {description}""#);
         let result = repl.eval(&expr);
-        assert!(result.is_ok(), "Should handle {} ({}) in string", symbol, description);
+        assert!(result.is_ok(), "Should handle {symbol} ({description}) in string");
         
         let result = repl.eval("desc");
-        assert!(result.is_ok(), "Should be able to access string with {}", symbol);
-        assert!(result.unwrap().contains(symbol), "String should contain symbol {}", symbol);
+        assert!(result.is_ok(), "Should be able to access string with {symbol}");
+        assert!(result.unwrap().contains(symbol), "String should contain symbol {symbol}");
     }
 }
 

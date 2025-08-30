@@ -4,13 +4,13 @@ use ruchy::runtime::Repl;
 #[test]
 fn test_while_prints_values() {
     // Simplest test: while loop should print values
-    let code = r#"
+    let code = r"
         let i = 0
         while i < 3 {
             println(i)
             i = i + 1
         }
-    "#;
+    ";
     
     // This should print 0, 1, 2 (not 0, 1, 2, 3)
     // Currently prints 0, 1, 2, 3 - off by one error
@@ -22,38 +22,38 @@ fn test_while_prints_values() {
 
 #[test] 
 fn test_while_modifies_variable() {
-    let code = r#"
+    let code = r"
         let i = 0
         while i < 3 {
             i = i + 1
         }
         i
-    "#;
+    ";
     
     let mut repl = Repl::new().expect("REPL should work");
     let result = repl.eval(code).expect("Should eval");
-    assert_eq!(result.to_string(), "3", "i should be 3 after loop");
+    assert_eq!(result, "3", "i should be 3 after loop");
 }
 
 #[test]
 fn test_list_push_works() {
     // Test that list.push works outside of while loop
-    let code = r#"
+    let code = r"
         let result = []
         result.push(1)
         result.push(2)
         result
-    "#;
+    ";
     
     let mut repl = Repl::new().expect("REPL should work");
     let result = repl.eval(code).expect("Should eval");
-    assert_eq!(result.to_string(), "[1, 2]", "List push should work");
+    assert_eq!(result, "[1, 2]", "List push should work");
 }
 
 #[test]
 fn test_while_with_list_push() {
     // Combine while loop with list push
-    let code = r#"
+    let code = r"
         let i = 0
         let result = []
         while i < 3 {
@@ -61,10 +61,10 @@ fn test_while_with_list_push() {
             i = i + 1
         }
         result
-    "#;
+    ";
     
     let mut repl = Repl::new().expect("REPL should work");
     let result = repl.eval(code).expect("Should eval");
-    assert_eq!(result.to_string(), "[0, 1, 2]", 
+    assert_eq!(result, "[0, 1, 2]", 
         "While loop should push 0, 1, 2 to list");
 }

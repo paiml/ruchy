@@ -362,7 +362,7 @@ mod tests {
         
         assert_eq!(id1, id3);
         assert_ne!(id1, id2);
-        assert_eq!(format!("{:?}", id1), "BlockId(0)");
+        assert_eq!(format!("{id1:?}"), "BlockId(0)");
     }
     
     #[test]
@@ -373,7 +373,7 @@ mod tests {
         
         assert_eq!(local1, local3);
         assert_ne!(local1, local2);
-        assert_eq!(format!("{:?}", local1), "Local(0)");
+        assert_eq!(format!("{local1:?}"), "Local(0)");
     }
     
     #[test]
@@ -392,7 +392,7 @@ mod tests {
         ];
         
         for ty in types {
-            assert!(!format!("{:?}", ty).is_empty());
+            assert!(!format!("{ty:?}").is_empty());
         }
     }
     

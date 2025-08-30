@@ -9,10 +9,10 @@ use std::env;
 // Helper to test in REPL
 fn eval_in_repl(code: &str) -> Result<String, String> {
     let mut repl = Repl::new()
-        .map_err(|e| format!("Failed to create REPL: {:?}", e))?;
+        .map_err(|e| format!("Failed to create REPL: {e:?}"))?;
     
     let result = repl.eval(code)
-        .map_err(|e| format!("Eval error: {:?}", e))?;
+        .map_err(|e| format!("Eval error: {e:?}"))?;
     
     // Remove quotes if present (REPL string formatting)
     if result.starts_with('"') && result.ends_with('"') && result.len() >= 2 {
@@ -27,12 +27,12 @@ fn eval_transpiled(code: &str) -> Result<String, String> {
     let test_file = format!("/tmp/process_env_test_{}.ruchy", 
         std::process::id());
     fs::write(&test_file, code)
-        .map_err(|e| format!("Failed to write test file: {}", e))?;
+        .map_err(|e| format!("Failed to write test file: {e}"))?;
     
     let output = Command::new("./target/release/ruchy")
         .arg(&test_file)
         .output()
-        .map_err(|e| format!("Failed to run file: {}", e))?;
+        .map_err(|e| format!("Failed to run file: {e}"))?;
     
     // Clean up
     let _ = fs::remove_file(&test_file);
@@ -49,19 +49,19 @@ fn eval_transpiled(code: &str) -> Result<String, String> {
 fn test_current_dir() {
     // Test current_dir returns a string path
     let result = eval_in_repl("current_dir()");
-    assert!(result.is_ok(), "current_dir should work in REPL: {:?}", result);
+    assert!(result.is_ok(), "current_dir should work in REPL: {result:?}");
     
     let path = result.unwrap();
-    assert!(path.starts_with('/'), "current_dir should return absolute path: {}", path);
-    assert!(path.contains("ruchy"), "Should be in ruchy project directory: {}", path);
+    assert!(path.starts_with('/'), "current_dir should return absolute path: {path}");
+    assert!(path.contains("ruchy"), "Should be in ruchy project directory: {path}");
     
     // Test transpiled version
     let code = "println(current_dir())";
     let result = eval_transpiled(code);
-    assert!(result.is_ok(), "current_dir should work in transpiler: {:?}", result);
+    assert!(result.is_ok(), "current_dir should work in transpiler: {result:?}");
     
     let path = result.unwrap();
-    assert!(path.contains("ruchy"), "Should be in ruchy project directory: {}", path);
+    assert!(path.contains("ruchy"), "Should be in ruchy project directory: {path}");
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn test_env() {
     let code = r#"env("RUCHY_NON_EXISTENT_VAR_12345")"#;
     let result = eval_in_repl(code);
     // Should return empty string or None - depending on implementation
-    assert!(result.is_ok(), "env should handle non-existent vars gracefully: {:?}", result);
+    assert!(result.is_ok(), "env should handle non-existent vars gracefully: {result:?}");
     
     // Clean up
     env::remove_var("RUCHY_TEST_VAR");
@@ -94,7 +94,7 @@ fn test_set_env() {
     // Test setting environment variable
     let code = r#"set_env("RUCHY_SET_TEST", "new_value_456")"#;
     let result = eval_in_repl(code);
-    assert!(result.is_ok(), "set_env should work in REPL: {:?}", result);
+    assert!(result.is_ok(), "set_env should work in REPL: {result:?}");
     
     // Verify it was set
     let value = env::var("RUCHY_SET_TEST");
@@ -104,7 +104,7 @@ fn test_set_env() {
     // Test transpiled version
     let code = r#"set_env("RUCHY_SET_TEST_2", "transpiled_value")"#;
     let result = eval_transpiled(code);
-    assert!(result.is_ok(), "set_env should work in transpiler: {:?}", result);
+    assert!(result.is_ok(), "set_env should work in transpiler: {result:?}");
     
     // Clean up
     env::remove_var("RUCHY_SET_TEST");
@@ -115,21 +115,21 @@ fn test_set_env() {
 fn test_args() {
     // Test args function - should return command line arguments
     let result = eval_in_repl("args()");
-    assert!(result.is_ok(), "args should work in REPL: {:?}", result);
+    assert!(result.is_ok(), "args should work in REPL: {result:?}");
     
     // In REPL, args might be empty or contain repl-specific args
     let args_str = result.unwrap();
     assert!(args_str.starts_with('[') && args_str.ends_with(']'), 
-        "args should return array format: {}", args_str);
+        "args should return array format: {args_str}");
     
     // Test transpiled version with a script
     let code = "println(args())";
     let result = eval_transpiled(code);
-    assert!(result.is_ok(), "args should work in transpiler: {:?}", result);
+    assert!(result.is_ok(), "args should work in transpiler: {result:?}");
     
     let args_str = result.unwrap();
     assert!(args_str.starts_with('[') && args_str.ends_with(']'), 
-        "args should return array format: {}", args_str);
+        "args should return array format: {args_str}");
 }
 
 #[test]
@@ -159,6 +159,6 @@ fn test_process_functions_exist() {
     
     for func in &functions {
         let result = eval_in_repl(func);
-        assert!(result.is_ok(), "Function {} should exist and not error: {:?}", func, result);
+        assert!(result.is_ok(), "Function {func} should exist and not error: {result:?}");
     }
 }

@@ -37,13 +37,13 @@ fn test_ruchy_run_exact_manual_scenario() {
     // Print output for analysis
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    println!("STDOUT: {}", stdout);
-    println!("STDERR: {}", stderr);
+    println!("STDOUT: {stdout}");
+    println!("STDERR: {stderr}");
     
     // This test should reveal what's different between manual and automated scenarios
     if output.status.success() {
         println!("✅ SUCCESS: Manual scenario works in TDD test!");
-        assert!(stdout.contains("Result: 8"), "Should output 'Result: 8', got: {}", stdout);
+        assert!(stdout.contains("Result: 8"), "Should output 'Result: 8', got: {stdout}");
     } else {
         println!("❌ FAILURE: Manual scenario reproduces the error in TDD test");
         println!("This confirms there's a real bug to fix");

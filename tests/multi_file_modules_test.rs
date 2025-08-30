@@ -16,13 +16,13 @@ fn test_multi_file_module_import_in_repl() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     
     // Create math.ruchy module
-    let math_content = r#"pub fn add(a: i32, b: i32) -> i32 {
+    let math_content = r"pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
 
 pub fn multiply(a: i32, b: i32) -> i32 {
     a * b  
-}"#;
+}";
     fs::write(temp_dir.path().join("math.ruchy"), math_content)
         .expect("Failed to write math module");
     
@@ -32,14 +32,14 @@ pub fn multiply(a: i32, b: i32) -> i32 {
     
     // Test input: Import external module and use its functions
     let import_result = repl.evaluate_expr_str("use math", None);
-    assert!(import_result.is_ok(), "Module import should succeed, got: {:?}", import_result);
+    assert!(import_result.is_ok(), "Module import should succeed, got: {import_result:?}");
     
     // Test that we can now call functions from the imported module
     let add_result = repl.evaluate_expr_str("add(5, 3)", None);
     assert!(add_result.is_ok(), "Should be able to call add() from imported math module");
     
     if let Ok(value) = add_result {
-        assert_eq!(format!("{:?}", value), "Int(8)", "add(5, 3) should return 8");
+        assert_eq!(format!("{value:?}"), "Int(8)", "add(5, 3) should return 8");
     }
     
     // Test second function from same module
@@ -47,7 +47,7 @@ pub fn multiply(a: i32, b: i32) -> i32 {
     assert!(multiply_result.is_ok(), "Should be able to call multiply() from imported math module");
     
     if let Ok(value) = multiply_result {
-        assert_eq!(format!("{:?}", value), "Int(24)", "multiply(4, 6) should return 24");
+        assert_eq!(format!("{value:?}"), "Int(24)", "multiply(4, 6) should return 24");
     }
 }
 
@@ -99,8 +99,8 @@ fn test_nested_module_directories() {
     fs::create_dir(&math_dir).expect("Failed to create math directory");
     
     // Create math/operations.ruchy  
-    let operations_content = r#"pub fn add(x: i32, y: i32) -> i32 { x + y }
-pub fn subtract(x: i32, y: i32) -> i32 { x - y }"#;
+    let operations_content = r"pub fn add(x: i32, y: i32) -> i32 { x + y }
+pub fn subtract(x: i32, y: i32) -> i32 { x - y }";
     fs::write(math_dir.join("operations.ruchy"), operations_content)
         .expect("Failed to write operations module");
     
@@ -115,7 +115,7 @@ pub fn subtract(x: i32, y: i32) -> i32 { x - y }"#;
     assert!(result.is_ok(), "Should be able to call nested module function");
     
     if let Ok(value) = result {
-        assert_eq!(format!("{:?}", value), "Integer(15)", "operations::add(10, 5) should return 15");
+        assert_eq!(format!("{value:?}"), "Integer(15)", "operations::add(10, 5) should return 15");
     }
 }
 
@@ -130,8 +130,8 @@ fn test_module_not_found_error() {
     let result = repl.evaluate_expr_str("use nonexistent", None);
     assert!(result.is_err(), "Should error when trying to import non-existent module");
     
-    let error_msg = format!("{:?}", result);
+    let error_msg = format!("{result:?}");
     assert!(error_msg.contains("nonexistent") || error_msg.contains("not found") || 
             error_msg.contains("module"), 
-            "Error should mention the missing module, got: {}", error_msg);
+            "Error should mention the missing module, got: {error_msg}");
 }

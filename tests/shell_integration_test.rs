@@ -3,7 +3,6 @@
 
 use ruchy::runtime::repl::Repl;
 use std::fs;
-use std::io::Write;
 
 #[test]
 fn test_shell_command_basic() {
@@ -12,7 +11,7 @@ fn test_shell_command_basic() {
     // Test basic shell command
     let result = repl.eval("!echo hello world").unwrap();
     assert!(result.contains("hello world"),
-        "Shell command should execute echo, got: {}", result);
+        "Shell command should execute echo, got: {result}");
 }
 
 #[test]
@@ -21,8 +20,8 @@ fn test_shell_command_pwd() {
     
     // Test pwd command
     let result = repl.eval("!pwd").unwrap();
-    assert!(result.contains("/"),
-        "pwd should return a path, got: {}", result);
+    assert!(result.contains('/'),
+        "pwd should return a path, got: {result}");
 }
 
 #[test]
@@ -36,7 +35,7 @@ fn test_shell_command_ls() {
     // Test ls command in /tmp
     let result = repl.eval("!ls /tmp | grep test_shell_ls").unwrap();
     assert!(result.contains("test_shell_ls"),
-        "ls should show our test file, got: {}", result);
+        "ls should show our test file, got: {result}");
     
     // Clean up
     let _ = fs::remove_file(test_file);
@@ -52,8 +51,8 @@ fn test_shell_substitution() {
     
     // Check that the variable was set
     let dir_val = repl.eval("current_dir").unwrap();
-    assert!(dir_val.contains("/"),
-        "current_dir should contain a path, got: {}", dir_val);
+    assert!(dir_val.contains('/'),
+        "current_dir should contain a path, got: {dir_val}");
 }
 
 #[test]
@@ -73,7 +72,7 @@ fn test_shell_command_piping() {
     // Test shell command with pipes
     let result = repl.eval("!echo 'line1\nline2\nline3' | head -n 1").unwrap();
     assert!(result.contains("line1") && !result.contains("line2"),
-        "Pipe should work, got: {}", result);
+        "Pipe should work, got: {result}");
 }
 
 #[test]
@@ -109,7 +108,7 @@ fn test_shell_command_multiline_output() {
     // Test command with multiline output
     let result = repl.eval("!echo -e 'line1\\nline2\\nline3'").unwrap();
     assert!(result.contains("line1") && result.contains("line2") && result.contains("line3"),
-        "Should preserve multiline output, got: {}", result);
+        "Should preserve multiline output, got: {result}");
 }
 
 #[test]
@@ -118,8 +117,8 @@ fn test_shell_command_environment() {
     
     // Test accessing environment variables
     let result = repl.eval("!echo $HOME").unwrap();
-    assert!(result.contains("/"),
-        "Should expand $HOME variable, got: {}", result);
+    assert!(result.contains('/'),
+        "Should expand $HOME variable, got: {result}");
 }
 
 #[test]
@@ -131,12 +130,12 @@ fn test_shell_command_cd() {
     // Test that we can run cd and pwd in the same command
     let result = repl.eval("!cd /tmp && pwd").unwrap();
     assert!(result.contains("/tmp"),
-        "Combined cd && pwd should show /tmp, got: {}", result);
+        "Combined cd && pwd should show /tmp, got: {result}");
     
     // Verify that directory change doesn't persist
     let pwd = repl.eval("!pwd").unwrap();
     assert!(!pwd.contains("/tmp"),
-        "Directory change should not persist, got: {}", pwd);
+        "Directory change should not persist, got: {pwd}");
 }
 
 #[test]
@@ -150,7 +149,7 @@ fn test_shell_command_output_capture() {
     // Should be a number (as string, potentially in quotes)
     let cleaned = count_val.trim().trim_matches('"');
     assert!(cleaned.chars().all(|c| c.is_ascii_digit()),
-        "Should capture numeric output, got: {}", count_val);
+        "Should capture numeric output, got: {count_val}");
 }
 
 #[test]

@@ -12,7 +12,7 @@ fn test_ruchy_program_line_coverage() {
     let temp_dir = TempDir::new().unwrap();
     let program_file = temp_dir.path().join("program.ruchy");
     
-    fs::write(&program_file, r#"
+    fs::write(&program_file, r"
 fn covered_function(x: i32) -> i32 {
     x + 1  // This line should be covered
 }
@@ -32,19 +32,19 @@ fn test_coverage() {
     assert_eq!(covered_function(3), 4);
     // Note: uncovered_function is not tested
 }
-"#).unwrap();
+").unwrap();
     
     // Run coverage on the program
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", program_file.to_str().unwrap()])
+        .args(["run", "--quiet", "--", "test", "--coverage", program_file.to_str().unwrap()])
         .output()
         .expect("Failed to run coverage");
     
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
     
-    println!("STDOUT:\n{}", stdout);
-    println!("STDERR:\n{}", stderr);
+    println!("STDOUT:\n{stdout}");
+    println!("STDERR:\n{stderr}");
     
     // Coverage should show:
     // - covered_function: 100% (called by test)
@@ -82,7 +82,7 @@ fn test_positive_only() {
 "#).unwrap();
     
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", program_file.to_str().unwrap()])
+        .args(["run", "--quiet", "--", "test", "--coverage", program_file.to_str().unwrap()])
         .output()
         .expect("Failed to run coverage");
     
@@ -100,7 +100,7 @@ fn test_ruchy_coverage_threshold_failure() {
     let temp_dir = TempDir::new().unwrap();
     let program_file = temp_dir.path().join("partial.ruchy");
     
-    fs::write(&program_file, r#"
+    fs::write(&program_file, r"
 fn tested() -> i32 {
     42  // Covered
 }
@@ -113,11 +113,11 @@ fn untested() -> i32 {
 fn test_partial() {
     assert_eq!(tested(), 42);
 }
-"#).unwrap();
+").unwrap();
     
     // Set high threshold that should fail
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", "--threshold", "90", program_file.to_str().unwrap()])
+        .args(["run", "--quiet", "--", "test", "--coverage", "--threshold", "90", program_file.to_str().unwrap()])
         .output()
         .expect("Failed to run coverage");
     
@@ -139,17 +139,17 @@ fn test_ruchy_coverage_json_output() {
     let temp_dir = TempDir::new().unwrap();
     let program_file = temp_dir.path().join("json_test.ruchy");
     
-    fs::write(&program_file, r#"
+    fs::write(&program_file, r"
 fn simple() -> i32 { 1 }
 
 #[test]
 fn test_simple() {
     assert_eq!(simple(), 1);
 }
-"#).unwrap();
+").unwrap();
     
     let output = Command::new("cargo")
-        .args(&[
+        .args([
             "run", "--quiet", "--", "test", 
             "--coverage", "--coverage-format", "json",
             program_file.to_str().unwrap()
@@ -163,7 +163,7 @@ fn test_simple() {
     if !stdout.contains("not yet implemented") {
         // If implemented, should be valid JSON with coverage data
         assert!(
-            stdout.contains("{") || stdout.contains("coverage"),
+            stdout.contains('{') || stdout.contains("coverage"),
             "JSON format should produce structured output"
         );
     }
@@ -191,7 +191,7 @@ fn test_coverage() {  // Line 11
 "#).unwrap();
     
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", program_file.to_str().unwrap()])
+        .args(["run", "--quiet", "--", "test", "--coverage", program_file.to_str().unwrap()])
         .output()
         .expect("Failed to run coverage");
     

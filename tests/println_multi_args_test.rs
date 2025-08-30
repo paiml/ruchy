@@ -17,7 +17,7 @@ fn test_multi_arg_println_transpilation() {
     let result = transpiler.transpile_to_program(&ast).expect("Should transpile");
     let rust_code = result.to_string();
     
-    println!("Generated Rust code: {}", rust_code);
+    println!("Generated Rust code: {rust_code}");
     
     // The bug: current code generates println!("Hello", "World", "from", "Ruchy") 
     // which treats "Hello" as format string, causing compilation errors
@@ -87,7 +87,7 @@ fn test_multi_arg_println_output() {
         // Expected: "Hello World from Ruchy" (space-separated)
         // Current bug: "Hello\n" (only first arg, others ignored/dumped)
         assert!(stdout.contains("Hello World from Ruchy") || stdout.contains("Hello\nWorld\nfrom\nRuchy"),
-                "Should print all arguments. Got: '{}'", stdout);
+                "Should print all arguments. Got: '{stdout}'");
     } else {
         panic!("Code should compile. Rustc error: {}", String::from_utf8_lossy(&compile_output.stderr));
     }
@@ -128,6 +128,6 @@ fn test_two_arg_println() {
             
         let stdout = String::from_utf8_lossy(&run_output.stdout);
         assert!(stdout.contains("Hello World") || stdout.contains("Hello\nWorld"),
-                "Should print both arguments. Got: '{}'", stdout);
+                "Should print both arguments. Got: '{stdout}'");
     }
 }

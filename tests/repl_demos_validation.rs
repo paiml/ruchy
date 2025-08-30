@@ -180,11 +180,11 @@ fn test_function_definition_demo() {
     let mut repl = Repl::new().unwrap();
     
     // Test factorial function
-    let factorial_def = r#"
+    let factorial_def = r"
         fun factorial(n) {
             if n <= 1 { 1 } else { n * factorial(n - 1) }
         }
-    "#;
+    ";
     let result = repl.eval(factorial_def);
     assert!(result.is_ok());
     
@@ -193,11 +193,11 @@ fn test_function_definition_demo() {
     assert_eq!(result.unwrap().trim(), "120");
     
     // Test fibonacci function
-    let fib_def = r#"
+    let fib_def = r"
         fun fib(n) {
             if n <= 1 { n } else { fib(n - 1) + fib(n - 2) }
         }
-    "#;
+    ";
     let result = repl.eval(fib_def);
     assert!(result.is_ok());
     
@@ -211,19 +211,19 @@ fn test_loop_operations_demo() {
     let mut repl = Repl::new().unwrap();
     
     // Test for loop with range
-    let loop_code = r#"
+    let loop_code = r"
         let mut sum = 0;
         for i in 1..6 {
             sum = sum + i
         };
         sum
-    "#;
+    ";
     let result = repl.eval(loop_code);
     assert!(result.is_ok());
     assert_eq!(result.unwrap().trim(), "15");
     
     // Test while loop
-    let while_code = r#"
+    let while_code = r"
         let mut count = 0;
         let mut val = 1;
         while val < 100 {
@@ -231,7 +231,7 @@ fn test_loop_operations_demo() {
             count = count + 1
         };
         count
-    "#;
+    ";
     let result = repl.eval(while_code);
     assert!(result.is_ok());
     assert_eq!(result.unwrap().trim(), "7"); // 2^7 = 128 > 100
@@ -296,7 +296,7 @@ fn test_oneliner_string_manipulation() {
     let result = repl.eval("\"a,b,c\".split(\",\")");
     assert!(result.is_ok());
     let output = result.unwrap();
-    assert!(output.contains("[") && output.contains("]"));
+    assert!(output.contains('[') && output.contains(']'));
     assert!(output.contains("\"a\"") && output.contains("\"b\"") && output.contains("\"c\""));
 }
 
@@ -372,13 +372,13 @@ fn test_repl_feature_coverage() {
     assert_eq!(result.unwrap().trim(), "25");
     
     // Test multi-line support
-    let multiline = r#"
+    let multiline = r"
         let result = {
             let a = 10;
             let b = 20;
             a + b
         }
-    "#;
+    ";
     let result = repl.eval(multiline);
     assert!(result.is_ok());
     

@@ -761,12 +761,12 @@ mod tests {
     #[test]
     fn test_magic_result_display() {
         let result = MagicResult::Text("Hello".to_string());
-        assert_eq!(format!("{}", result), "Hello");
+        assert_eq!(format!("{result}"), "Hello");
         
         let result = MagicResult::Timed {
             output: "42".to_string(),
             duration: Duration::from_millis(123),
         };
-        assert!(format!("{}", result).contains("0.123s"));
+        assert!(format!("{result}").contains("0.123s"));
     }
 }

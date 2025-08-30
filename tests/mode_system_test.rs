@@ -53,7 +53,7 @@ fn test_pkg_mode() {
     // search, install, list, etc.
     let result = repl.eval("search json").unwrap();
     assert!(result.contains("json") || result.contains("No packages") || result.contains("search"), 
-        "Should handle package search, got: {}", result);
+        "Should handle package search, got: {result}");
 }
 
 #[test]
@@ -71,7 +71,7 @@ fn test_help_mode() {
     // In help mode, keywords trigger help documentation
     let result = repl.eval("fn").unwrap();
     assert!(result.contains("function") || result.contains("def") || result.contains("syntax"),
-        "Should show help for 'fn', got: {}", result);
+        "Should show help for 'fn', got: {result}");
 }
 
 #[test]
@@ -88,8 +88,8 @@ fn test_sql_mode() {
     
     // In SQL mode, execute SQL queries
     let result = repl.eval("SELECT 1 + 1").unwrap_or_else(|e| e.to_string());
-    assert!(result.contains("2") || result.contains("SQL") || result.contains("not supported"),
-        "Should handle SQL query or indicate not supported, got: {}", result);
+    assert!(result.contains('2') || result.contains("SQL") || result.contains("not supported"),
+        "Should handle SQL query or indicate not supported, got: {result}");
 }
 
 #[test]
@@ -106,9 +106,9 @@ fn test_math_mode() {
     
     // In math mode, expressions are evaluated with math focus
     let result = repl.eval("sin(pi/2)").unwrap_or_else(|e| e.to_string());
-    eprintln!("Math mode result: {}", result);
-    assert!(result.contains("1") || result.contains("sin") || result.contains("not defined") || result.contains("Undefined"),
-        "Should evaluate math expression, got: {}", result);
+    eprintln!("Math mode result: {result}");
+    assert!(result.contains('1') || result.contains("sin") || result.contains("not defined") || result.contains("Undefined"),
+        "Should evaluate math expression, got: {result}");
 }
 
 #[test]
@@ -194,7 +194,7 @@ fn test_time_mode() {
     
     // In time mode, show timing for each expression
     let result = repl.eval("1 + 1").unwrap();
-    assert!(result.contains("2"), "Should evaluate expression");
+    assert!(result.contains('2'), "Should evaluate expression");
     // Could also check for timing info like "ms" or "μs"
 }
 

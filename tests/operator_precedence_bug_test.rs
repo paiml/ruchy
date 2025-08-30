@@ -15,7 +15,7 @@ fn test_parentheses_parsing_bug() {
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_string = rust_code.to_string();
     
-    println!("Generated Rust code: {}", rust_string);
+    println!("Generated Rust code: {rust_string}");
     
     // The bug: parentheses are being ignored during parsing
     // This should generate ((1 + 2) * 3) but likely generates (1 + (2 * 3))
@@ -40,7 +40,7 @@ fn test_basic_precedence_works() {
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_string = rust_code.to_string();
     
-    println!("Basic precedence Rust code: {}", rust_string);
+    println!("Basic precedence Rust code: {rust_string}");
     
     // Should generate 1 + (2 * 3) due to operator precedence
     // Runtime result should be 7 (which is correct)
@@ -56,7 +56,7 @@ fn test_complex_parentheses_bug() {
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");  
     let rust_string = rust_code.to_string();
     
-    println!("Complex parentheses Rust code: {}", rust_string);
+    println!("Complex parentheses Rust code: {rust_string}");
     
     // Should generate (2 + 3) * (4 + 5) = 5 * 9 = 45
     // But likely generates something else due to precedence bug

@@ -7,7 +7,7 @@ use ruchy::{Parser, Transpiler};
 
 #[test]
 fn test_simple_higher_order_function() {
-    let code = r#"
+    let code = r"
 fun apply(f, x) {
     f(x)
 }
@@ -17,7 +17,7 @@ fun double(n) {
 }
 
 apply(double, 5)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -32,7 +32,7 @@ apply(double, 5)
 
 #[test]
 fn test_higher_order_with_multiple_params() {
-    let code = r#"
+    let code = r"
 fun compose(f, g, x) {
     f(g(x))
 }
@@ -46,7 +46,7 @@ fun double(n) {
 }
 
 compose(double, add_one, 5)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -61,13 +61,13 @@ compose(double, add_one, 5)
 
 #[test]
 fn test_lambda_as_argument() {
-    let code = r#"
+    let code = r"
 fun apply(f, x) {
     f(x)
 }
 
 apply(|n| { n * 3 }, 7)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -80,14 +80,14 @@ apply(|n| { n * 3 }, 7)
 
 #[test]
 fn test_function_returning_function() {
-    let code = r#"
+    let code = r"
 fun make_adder(n) {
     |x| { x + n }
 }
 
 let add_five = make_adder(5)
 add_five(10)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -100,7 +100,7 @@ add_five(10)
 
 #[test]
 fn test_map_with_function() {
-    let code = r#"
+    let code = r"
 fun map(f, list) {
     f(list)
 }
@@ -110,7 +110,7 @@ fun square(n) {
 }
 
 map(square, 4)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -124,7 +124,7 @@ map(square, 4)
 
 #[test]
 fn test_filter_with_predicate() {
-    let code = r#"
+    let code = r"
 fun filter(pred, value) {
     if pred(value) {
         value
@@ -138,7 +138,7 @@ fun is_even(n) {
 }
 
 filter(is_even, 4)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -151,7 +151,7 @@ filter(is_even, 4)
 
 #[test]
 fn test_reduce_with_function() {
-    let code = r#"
+    let code = r"
 fun reduce(f, initial, value) {
     f(initial, value)
 }
@@ -161,7 +161,7 @@ fun add(a, b) {
 }
 
 reduce(add, 0, 10)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -174,7 +174,7 @@ reduce(add, 0, 10)
 
 #[test]
 fn test_curry_function() {
-    let code = r#"
+    let code = r"
 fun curry(f) {
     |x| { |y| { f(x, y) } }
 }
@@ -186,7 +186,7 @@ fun multiply(x, y) {
 let curried = curry(multiply)
 let times_two = curried(2)
 times_two(5)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -197,7 +197,7 @@ times_two(5)
 
 #[test]
 fn test_function_composition() {
-    let code = r#"
+    let code = r"
 fun pipe(f, g) {
     |x| { g(f(x)) }
 }
@@ -212,7 +212,7 @@ fun double(n) {
 
 let inc_then_double = pipe(inc, double)
 inc_then_double(5)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -226,7 +226,7 @@ inc_then_double(5)
 
 #[test]
 fn test_recursive_higher_order() {
-    let code = r#"
+    let code = r"
 fun until(pred, f, x) {
     if pred(x) {
         x
@@ -244,7 +244,7 @@ fun inc(n) {
 }
 
 until(is_ten, inc, 0)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
@@ -269,16 +269,16 @@ fn property_test_no_string_function_params() {
     
     for code in test_cases {
         let mut parser = Parser::new(code);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", code));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {code}"));
         let transpiler = Transpiler::new();
-        let rust_code = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", code));
+        let rust_code = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {code}"));
         
         let rust_str = rust_code.to_string();
         // Check that function parameters are not typed as String
-        assert!(!rust_str.contains("g : String"), "Function parameter 'g' should not be String in: {}", code);
-        assert!(!rust_str.contains("mapper : String"), "Function parameter 'mapper' should not be String in: {}", code);
-        assert!(!rust_str.contains("func : String"), "Function parameter 'func' should not be String in: {}", code);
-        assert!(!rust_str.contains("f : String"), "Function parameter 'f' should not be String in: {}", code);
-        assert!(!rust_str.contains("pred : String"), "Function parameter 'pred' should not be String in: {}", code);
+        assert!(!rust_str.contains("g : String"), "Function parameter 'g' should not be String in: {code}");
+        assert!(!rust_str.contains("mapper : String"), "Function parameter 'mapper' should not be String in: {code}");
+        assert!(!rust_str.contains("func : String"), "Function parameter 'func' should not be String in: {code}");
+        assert!(!rust_str.contains("f : String"), "Function parameter 'f' should not be String in: {code}");
+        assert!(!rust_str.contains("pred : String"), "Function parameter 'pred' should not be String in: {code}");
     }
 }
