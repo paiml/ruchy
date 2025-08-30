@@ -1,0 +1,31 @@
+min_score = 0.7
+min_grade = "BMinus"
+
+[component_thresholds]
+correctness = 0.8
+performance = 0.6
+maintainability = 0.7
+safety = 0.8
+idiomaticity = 0.5
+
+[anti_gaming]
+min_confidence = 0.6
+max_cache_hit_rate = 0.8
+require_deep_analysis = [
+    "src/main.rs",
+    "src/lib.rs",
+]
+min_file_size_bytes = 100
+max_test_ratio = 2.0
+
+[ci_integration]
+fail_on_violation = true
+junit_xml = true
+json_output = true
+block_merge = true
+
+[ci_integration.notifications]
+slack = false
+email = false
+
+[project_overrides]
