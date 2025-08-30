@@ -1,5 +1,26 @@
 # Ruchy Development Roadmap
 
+## 🚨 **EMERGENCY TECHNICAL DEBT SPRINT (v1.27.0-v1.27.3) - IN PROGRESS**
+
+**CRITICAL**: Production blockers resolved, systematic debt reduction continuing
+
+### Completed This Sprint:
+- **[P0-CRITICAL-001]**: ✅ Coverage system fixed (0% → 100% accurate) - v1.27.2
+- **[P0-DEBT-001]**: ✅ evaluate_list_methods complexity 72→23 (68% reduction) - v1.27.3  
+- **[P0-DEBT-004]**: ✅ TDG transactional tracking implemented (365 files, A grade)
+- **[P0-DEBT-006]**: ✅ 3+ segment qualified names already work (test fixed)
+- **[P0-DEBT-007]**: ✅ Automated quality gates established
+
+### In Progress:
+- **[P0-DEBT-008]**: handle_command_with_output complexity 64→<10
+- **[P0-DEBT-009]**: handle_magic_command complexity 59→<10
+- **[P0-DEBT-010]**: Improve repl.rs TDG score 67.4(C+)→>80(B)
+
+### Metrics:
+- **Complexity Errors**: 111→110 (improving)
+- **TDG Average**: 92.8/100 (A grade)
+- **Refactoring Time**: 966h→914h (52h saved)
+
 ## 🎉 **REPL LANGUAGE COMPLETENESS SPRINT (v1.23.0) - COMPLETED!**
 
 **🎉 BREAKTHROUGH: 100% FUNCTIONAL SPECIFICATION COMPLIANCE ACHIEVED! 🎉**
@@ -93,9 +114,63 @@ With the core language features complete, focus shifts to advanced REPL capabili
 - **Achievement**: Complete Inspect trait protocol implemented
 - **Spec**: [object-inspection-consistency.md](docs/specifications/object-inspection-consistency.md)
 
-## 🚀 **Current Sprint: Coverage to 80% Target (v1.27.0)**
+## 🚨 **CRITICAL SPRINT: Technical Debt Emergency (v1.27.2+)**
 
-### **Active Tasks**
+**CRITICAL DISCOVERY**: 3,557 quality violations found - explains repeated fix failures!
+
+### **✅ COMPLETED: Coverage Bug ROOT FIX (v1.27.2)**
+- **[P0-CRITICAL-001]**: ✅ **Ruchy Coverage Fixed** - 100% working coverage vs previous 0%
+- **Root Cause**: execute_with_coverage used cargo instead of Ruchy interpreter
+- **Solution**: Direct REPL.eval() integration for accurate runtime tracking  
+- **Published**: v1.27.2 to crates.io with definitive fix
+- **Verification**: ruchy-book examples now show correct 100% coverage
+
+### **🚨 CRITICAL FINDINGS: PMAT Quality Analysis**
+- **Total Violations**: 3,557 quality issues blocking development  
+- **Complexity Violations**: 177 errors + 205 warnings
+- **Top Hotspot**: `Repl::evaluate_list_methods` (complexity: 72 - 7x limit!)
+- **Estimated Refactoring**: 1,469 hours of technical debt
+- **Root Cause**: No PMAT quality gates enforced during development
+
+### **📋 EMERGENCY DEBT REMEDIATION PLAN**
+
+#### **Sprint 1: Foundation Stabilization (IMMEDIATE)**
+
+**P0-DEBT-001**: 🚨 **Emergency Complexity Reduction** *(Critical Path)*
+- [ ] Target top 10 complexity hotspots (>50 complexity)
+- [ ] Mandatory: `Repl::evaluate_list_methods` from 72→<10 complexity
+- [ ] Mandatory: `Repl::evaluate_call` from 70→<10 complexity  
+- [ ] Mandatory: `Repl::handle_command_with_output` from 64→<10 complexity
+- [ ] **Success Criteria**: All functions <10 cyclomatic complexity
+- **Impact**: Foundation stability for all future development
+- **Effort**: Very High (estimated 200+ hours)
+- **PMAT Verification**: `pmat analyze complexity --max-cyclomatic 10 --fail-on-violation`
+
+**P0-DEBT-002**: 🚨 **SATD Elimination** *(Blocking Technical Debt)*  
+- [ ] Remove all 1,280 TODO/FIXME/HACK comments
+- [ ] Replace with proper documentation or implementation
+- [ ] Zero tolerance: No SATD allowed in codebase
+- **Success Criteria**: `pmat analyze satd --fail-on-violation` passes
+- **Impact**: Clean maintainable codebase
+- **Effort**: High (estimated 80 hours)
+
+**P0-DEBT-003**: 🚨 **Dead Code Elimination** *(Maintenance Debt)*
+- [ ] Remove 6 dead code violations systematically
+- [ ] Target <5% dead code maximum
+- [ ] Clean up unused functions, imports, variables  
+- **Success Criteria**: `pmat analyze dead-code --max-dead-code 5.0` passes
+- **Impact**: Reduced cognitive load and maintenance burden
+- **Effort**: Medium (estimated 20 hours)
+
+#### **Sprint 2: Quality Gate Integration (NEXT)**
+
+**P0-DEBT-004**: 🔧 **PMAT Pre-commit Integration** *(Process Improvement)*
+- [ ] Fix hanging pre-commit hooks with PMAT integration
+- [ ] Mandatory quality gates block commits with violations
+- [ ] No commits allowed without passing: complexity <10, zero SATD, <5% dead code
+- **Success Criteria**: Pre-commit hooks enforce all PMAT quality gates
+- **Impact**: Prevent quality debt accumulation going forward
+- **Effort**: Medium (estimated 16 hours)
 
 **RUCHY-201**: ✅ **Fix REPL loop printing ()** *(GitHub Issue #5)* - **COMPLETED v1.26.0**
 - [x] Debug why simple loops print () in REPL
