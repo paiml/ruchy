@@ -1,5 +1,103 @@
 # Ruchy Development Roadmap
 
+## 🚨 **CURRENT: P0 RUCHY-BOOK INTEGRATION SPRINT (v1.27.5+) - ACTIVE**
+
+**MISSION**: Fix critical compilation failures blocking ruchy-book examples
+**STATUS**: Investigation complete, implementation in progress
+**SCOPE**: Address P0 issues identified in ../ruchy-book/INTEGRATION.md
+
+### 🔥 Active P0 Issues:
+
+**[P0-BOOK-001]**: ✅ **#[test] Attribute Compilation Failure** *(COMPLETED)*
+- **Problem**: Test functions failed to compile due to debug panic in transpiler
+- **Impact**: Blocked all ruchy-book testing examples (0% pass rate)  
+- **Root Cause**: Debug panic in `generate_return_type_tokens` for any function name containing "test"
+- **Solution**: Removed debug panic from `src/backend/transpiler/statements.rs:248`
+- **Status**: ✅ FIXED - #[test] attributes now compile and execute correctly
+- **Verification**: Regression tests added, ruchy-book test examples now working
+- **Next**: Address remaining P0-BOOK issues (file operations, systems programming)
+
+**[P0-BOOK-002]**: 🔧 **File Operations (0% pass rate)** *(Pending)*
+- **Problem**: Basic file I/O operations not working
+- **Impact**: Blocks file handling examples in ruchy-book
+- **Status**: Queued after #[test] issue resolution
+
+**[P0-BOOK-003]**: 🔧 **Systems Programming (0% pass rate)** *(Pending)*
+- **Problem**: System programming features not implemented
+- **Impact**: Blocks system examples in ruchy-book  
+- **Status**: Queued after file operations
+
+**[P0-BOOK-004]**: 🔧 **Network Programming (0% pass rate)** *(Pending)*
+- **Problem**: Network programming features not implemented
+- **Impact**: Blocks network examples in ruchy-book
+- **Status**: Queued after systems programming
+
+**[P0-BOOK-005]**: 🔧 **Performance Optimization (0% pass rate)** *(Pending)*
+- **Problem**: Performance optimization features not working
+- **Impact**: Blocks performance examples in ruchy-book
+- **Status**: Queued after network programming
+
+**[P0-BOOK-006]**: 🔧 **Advanced Patterns (0% pass rate)** *(Pending)*
+- **Problem**: Advanced pattern features not implemented
+- **Impact**: Blocks advanced pattern examples in ruchy-book
+- **Status**: Queued after performance optimization
+
+### Sprint Goals:
+- **Primary**: ✅ Fix #[test] attribute compilation (P0-BOOK-001 COMPLETED)
+- **Secondary**: Systematically address remaining 0% pass rate categories
+- **Success Criteria**: ruchy-book examples compile and run successfully
+- **Quality**: TDD approach with comprehensive regression testing
+
+---
+
+## 🚨 **CRITICAL QUALITY TOOLS SPRINT (IMMEDIATE)**
+
+**MISSION**: Fix critical gaps in quality ecosystem tools blocking production usage
+**STATUS**: Investigation complete - 3/5 tools broken for production use
+**SCOPE**: Address actionability, directory support, and functionality gaps
+
+### 🔥 Active Quality Issues:
+
+**[QUALITY-008]**: ✅ **Score Tool Directory Support Failure** *(COMPLETED)*
+- **Problem**: `ruchy score directory/` failed with "Is a directory" error
+- **Impact**: Blocked project-wide quality assessment, limited to single files
+- **Root Cause**: Score handler only supported single file input via `fs::read_to_string(path)`
+- **Solution**: Implemented comprehensive directory support with recursive traversal
+- **Status**: ✅ FIXED - Directory scoring with aggregated metrics working
+- **TDD Results**: All tests passing (Red→Green→Refactor cycle completed)
+- **Verification**: Successfully processes 19 files in examples/ with 0.86/1.0 average score
+
+**[QUALITY-009]**: 🚨 **Score Tool Poor Actionability** *(Critical)*
+- **Problem**: Score tool gives 0.84/1.0 to terrible code (26 params, 8-level nesting)
+- **Impact**: Only 0.11 difference between excellent (0.95) and terrible (0.84) code
+- **Root Cause**: Quality metrics are too forgiving, poor weight distribution
+- **Status**: ❌ BLOCKING - Cannot distinguish good from bad code
+- **Technical**: Recalibrate scoring algorithm with harsher complexity penalties
+- **TDD Required**: Create test suite with known good/bad code examples
+
+**[QUALITY-010]**: 🚨 **Lint Tool Variable Tracking Broken** *(Critical)*
+- **Problem**: Lint completely broken with variable tracking failures
+- **Impact**: Cannot provide code quality feedback, lint analysis unusable
+- **Root Cause**: Variable scope tracking logic fails on real code
+- **Status**: ❌ BLOCKING - Basic linting functionality non-functional
+- **Technical**: Fix variable binding and scope resolution in linter
+- **TDD Required**: Comprehensive lint test cases covering variable patterns
+
+**[QUALITY-011]**: ✅ **Provability Tool Infinite Loop** *(FIXED)*
+- **Problem**: `ruchy prove file.ruchy` caused infinite interactive loop
+- **Impact**: Provability tool completely unusable
+- **Root Cause**: Prove handler defaulted to interactive mode instead of check mode
+- **Solution**: Fixed to default to check mode when file provided
+- **Status**: ✅ FIXED - Now returns proper verification results
+
+### Quality Sprint Goals:
+- **Primary**: Fix QUALITY-008, QUALITY-009, QUALITY-010 via TDD methodology
+- **Secondary**: Achieve 5/5 quality tools production-ready status
+- **Success Criteria**: All quality tools support directory operations and provide actionable feedback
+- **Quality**: TDD approach with comprehensive test coverage for all fixes
+
+---
+
 ## 🚨 **EMERGENCY TECHNICAL DEBT SPRINT (v1.27.0-v1.27.4) - COMPLETED!**
 
 **✅ MISSION ACCOMPLISHED**: All P0 production blockers resolved, lint issues fixed, systematic complexity reduction complete

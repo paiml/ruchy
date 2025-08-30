@@ -108,9 +108,11 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
         .context("Failed to parse Ruchy source")?;
     
     // Transpile to Rust
+    eprintln!("DEBUG: About to call transpile_to_program");
     let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program(&ast)
         .context("Failed to transpile to Rust")?;
+    eprintln!("DEBUG: transpile_to_program completed");
     
     // Create temporary directory for compilation
     let temp_dir = TempDir::new()
@@ -118,7 +120,13 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
     
     // Write Rust code to temporary file
     let rust_file = temp_dir.path().join("main.rs");
-    fs::write(&rust_file, rust_code.to_string())
+    let rust_code_str = rust_code.to_string();
+    
+    // Debug: Also write to /tmp/debug_rust_output.rs for inspection
+    fs::write("/tmp/debug_rust_output.rs", &rust_code_str)
+        .context("Failed to write debug Rust code")?;
+    
+    fs::write(&rust_file, rust_code_str)
         .context("Failed to write Rust code to temporary file")?;
     
     // Build rustc command

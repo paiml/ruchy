@@ -352,11 +352,9 @@ pub fn handle_prove_command(
             println!("📋 Extracted proof goals from source");
         }
         
-        // In check mode, verify proofs from AST
-        if check {
-            println!("✓ Checking proofs in {}...", file_path.display());
-            return verify_proofs_from_ast(&ast, file_path, format, counterexample, verbose);
-        }
+        // When a file is provided, always run in check mode
+        println!("✓ Checking proofs in {}...", file_path.display());
+        return verify_proofs_from_ast(&ast, file_path, format, counterexample, verbose);
     }
     
     // Load proof script if provided
@@ -371,8 +369,9 @@ pub fn handle_prove_command(
         prover.load_script(&script_content)?;
     }
     
-    // Start interactive session if not in check mode
-    if !check {
+    // Start interactive session if not in check mode AND no file provided
+    // If file is provided but check mode is false, default to check mode
+    if !check && file.is_none() {
         println!("🚀 Starting Ruchy Interactive Prover");
         println!("Type 'help' for available commands\n");
         
