@@ -56,15 +56,17 @@ fn test_repl_e2e_qualified_function_call() {
 
 #[test]
 fn test_repl_e2e_two_segment_vs_three_segment() {
-    // TOYOTA WAY: Test the exact boundary where failure occurs
+    // TOYOTA WAY: Verify that 3+ segment qualified names parse correctly
+    // These all parse correctly as QualifiedName with module containing "::"
     let test_cases = vec![
-        ("Result::Ok(42)", true),           // 1 segment - should work
-        ("fs::read_file(\"test\")", true),   // 2 segments - should work  
-        ("std::fs::read_file(\"test\")", false), // 3 segments - currently fails
-        ("a::b::c::function()", false),     // 4 segments - currently fails
+        ("Result::Ok(42)", true),                      // 2 segments - works
+        ("fs::read_file(\"test\")", true),            // 2 segments - works  
+        ("std::fs::read_file(\"test\")", true),       // 3 segments - PARSES correctly
+        ("a::b::c::function()", true),                // 4 segments - PARSES correctly
+        ("std::collections::HashMap::new()", true),   // 4 segments - PARSES correctly
     ];
     
-    for (input, should_succeed) in test_cases {
+    for (input, should_parse_successfully) in test_cases {
         println!("Testing: {}", input);
         
         let mut child = Command::new("cargo")
@@ -81,16 +83,22 @@ fn test_repl_e2e_two_segment_vs_three_segment() {
         
         let output = child.wait_with_output().expect("Failed to read output");
         let stderr = String::from_utf8_lossy(&output.stderr);
-        let parsing_failed = stderr.contains("Failed to parse input");
+        let stdout = String::from_utf8_lossy(&output.stdout);
         
-        if should_succeed {
-            assert!(!parsing_failed, "Input '{}' should parse successfully but failed", input);
-        } else {
-            // Document the current failure for Toyota Way tracking
-            if parsing_failed {
-                println!("EXPECTED FAILURE: '{}' fails to parse as expected", input);
+        // Check for parsing errors (not runtime errors)
+        let parsing_failed = stderr.contains("Failed to parse input") || 
+                           stderr.contains("Unexpected token") ||
+                           stderr.contains("Expected");
+        
+        if should_parse_successfully {
+            assert!(!parsing_failed, 
+                "Input '{}' should parse successfully but failed with: {}", 
+                input, stderr);
+            
+            // Note: Runtime errors are expected for non-existent functions
+            if stdout.contains("Error") || stderr.contains("Unknown") {
+                println!("✓ '{}' parsed correctly (runtime error expected)", input);
             }
-            // TODO: Once defect is fixed, change this to assert success
         }
     }
 }
@@ -122,13 +130,12 @@ fn test_repl_binary_vs_unit_test_parity() {
     drop(stdin);
     
     let output = child.wait_with_output().expect("Failed to read output");
-    let repl_failed = String::from_utf8_lossy(&output.stderr).contains("Failed to parse input");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let repl_parsing_failed = stderr.contains("Failed to parse input") ||
+                             stderr.contains("Unexpected token");
     
-    // This assertion documents the current defect
-    // TODO: Once fixed, this should pass
-    if repl_failed {
-        println!("DOCUMENTED DEFECT: REPL fails where unit test succeeds");
-        println!("This violates Toyota Way principle: one version of truth");
-        // Don't fail the test yet - just document the defect
+    // Both should parse successfully - the parser works correctly!
+    if repl_parsing_failed {
+        panic!("REPL parsing failed for '{}': {}", input, stderr);
     }
 }
