@@ -1,0 +1,36 @@
+✗ Compilation failed: Compilation failed:
+warning: unused import: `std :: collections :: HashMap`
+ --> /tmp/.tmpf0aUpH/main.rs:1:5
+  |
+1 | use std :: collections :: HashMap ; fn test_simple () -> i32 { { assert_eq ! (2i32 , 2i32) } } fn main () { }
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unnecessary braces around block return value
+ --> /tmp/.tmpf0aUpH/main.rs:1:64
+  |
+1 | use std :: collections :: HashMap ; fn test_simple () -> i32 { { assert_eq ! (2i32 , 2i32) } } fn main () { }
+  |                                                                ^^                         ^^
+  |
+  = note: `#[warn(unused_braces)]` on by default
+help: remove these braces
+  |
+1 - use std :: collections :: HashMap ; fn test_simple () -> i32 { { assert_eq ! (2i32 , 2i32) } } fn main () { }
+1 + use std :: collections :: HashMap ; fn test_simple () -> i32 { assert_eq ! (2i32 , 2i32) } fn main () { }
+  |
+
+error[E0317]: `if` may be missing an `else` clause
+ --> /tmp/.tmpf0aUpH/main.rs:1:66
+  |
+1 | use std :: collections :: HashMap ; fn test_simple () -> i32 { { assert_eq ! (2i32 , 2i32) } } fn main () { }
+  |                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^ expected `i32`, found `()`
+  |
+  = note: `if` expressions without `else` evaluate to `()`
+  = help: consider adding an `else` block that evaluates to the expected type
+  = note: this error originates in the macro `assert_eq` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: aborting due to 1 previous error; 2 warnings emitted
+
+For more information about this error, try `rustc --explain E0317`.
+

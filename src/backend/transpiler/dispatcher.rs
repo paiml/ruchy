@@ -124,6 +124,7 @@ impl Transpiler {
                 *is_async,
                 return_type.as_ref(),
                 *is_pub,
+                &expr.attributes,
             ),
             ExprKind::Lambda { params, body } => self.transpile_lambda(params, body),
             ExprKind::Call { func, args } => self.transpile_call(func, args),

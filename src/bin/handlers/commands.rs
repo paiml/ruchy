@@ -349,7 +349,7 @@ pub fn handle_runtime_command(
     Ok(())
 }
 
-/// Handle score command - quality scoring
+/// Handle score command - quality scoring with directory support
 pub fn handle_score_command(
     path: &Path,
     depth: &str,
@@ -362,6 +362,25 @@ pub fn handle_score_command(
     _config: Option<&Path>,
     format: &str,
     _verbose: bool,
+    output: Option<&Path>,
+) -> Result<()> {
+    if path.is_file() {
+        // Handle single file (original behavior)
+        handle_single_file_score(path, depth, min, format, output)
+    } else if path.is_dir() {
+        // Handle directory (new functionality)
+        handle_directory_score(path, depth, min, format, output)
+    } else {
+        anyhow::bail!("Path {} does not exist", path.display());
+    }
+}
+
+/// Handle scoring for a single file
+fn handle_single_file_score(
+    path: &Path,
+    depth: &str,
+    min: Option<f64>,
+    format: &str,
     output: Option<&Path>,
 ) -> Result<()> {
     let source = fs::read_to_string(path)
@@ -408,6 +427,148 @@ pub fn handle_score_command(
     }
     
     Ok(())
+}
+
+/// Handle scoring for a directory (recursive traversal)
+fn handle_directory_score(
+    path: &Path,
+    depth: &str,
+    min: Option<f64>,
+    format: &str,
+    output: Option<&Path>,
+) -> Result<()> {
+    use std::collections::HashMap;
+    
+    // Find all .ruchy files recursively
+    let mut ruchy_files = Vec::new();
+    collect_ruchy_files(path, &mut ruchy_files)?;
+    
+    if ruchy_files.is_empty() {
+        let output_content = if format == "json" {
+            serde_json::to_string_pretty(&serde_json::json!({
+                "directory": path.display().to_string(),
+                "files": 0,
+                "average_score": 0.0,
+                "depth": depth,
+                "passed": true
+            }))?
+        } else {
+            format!(
+                "=== Quality Score ===\n\
+                 Directory: {}\n\
+                 Files: 0\n\
+                 Average Score: N/A\n\
+                 Analysis Depth: {}\n",
+                path.display(),
+                depth
+            )
+        };
+        
+        if let Some(output_path) = output {
+            fs::write(output_path, &output_content)?;
+            println!("✅ Score report written to: {}", output_path.display());
+        } else {
+            print!("{}", output_content);
+        }
+        return Ok(());
+    }
+    
+    // Calculate scores for all files
+    let mut file_scores = HashMap::new();
+    let mut total_score = 0.0;
+    
+    for file_path in &ruchy_files {
+        match calculate_file_score(file_path) {
+            Ok(score) => {
+                file_scores.insert(file_path.clone(), score);
+                total_score += score;
+            }
+            Err(e) => {
+                eprintln!("⚠️  Failed to score {}: {}", file_path.display(), e);
+                // Continue with other files
+            }
+        }
+    }
+    
+    if file_scores.is_empty() {
+        anyhow::bail!("No .ruchy files could be successfully analyzed");
+    }
+    
+    let average_score = total_score / file_scores.len() as f64;
+    
+    let output_content = if format == "json" {
+        serde_json::to_string_pretty(&serde_json::json!({
+            "directory": path.display().to_string(),
+            "files": file_scores.len(),
+            "average_score": average_score,
+            "depth": depth,
+            "passed": min.is_none_or(|m| average_score >= m),
+            "file_scores": file_scores.iter().map(|(path, score)| {
+                (path.display().to_string(), *score)
+            }).collect::<HashMap<String, f64>>()
+        }))?
+    } else {
+        format!(
+            "=== Quality Score ===\n\
+             Directory: {}\n\
+             Files: {}\n\
+             Average Score: {:.2}/1.0\n\
+             Analysis Depth: {}\n",
+            path.display(),
+            file_scores.len(),
+            average_score,
+            depth
+        )
+    };
+    
+    if let Some(output_path) = output {
+        fs::write(output_path, &output_content)?;
+        println!("✅ Score report written to: {}", output_path.display());
+    } else {
+        print!("{}", output_content);
+    }
+    
+    // Check threshold
+    if let Some(min_score) = min {
+        if average_score < min_score {
+            eprintln!("❌ Average score {} is below threshold {}", average_score, min_score);
+            std::process::exit(1);
+        }
+    }
+    
+    Ok(())
+}
+
+/// Recursively collect all .ruchy files in a directory
+fn collect_ruchy_files(dir: &Path, files: &mut Vec<std::path::PathBuf>) -> Result<()> {
+    if !dir.is_dir() {
+        return Ok(());
+    }
+    
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        
+        if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
+            files.push(path);
+        } else if path.is_dir() {
+            collect_ruchy_files(&path, files)?;
+        }
+    }
+    
+    Ok(())
+}
+
+/// Calculate quality score for a single file
+fn calculate_file_score(file_path: &Path) -> Result<f64> {
+    let source = fs::read_to_string(file_path)
+        .with_context(|| format!("Failed to read file: {}", file_path.display()))?;
+    
+    let mut parser = RuchyParser::new(&source);
+    let ast = parser.parse()
+        .with_context(|| format!("Failed to parse file: {}", file_path.display()))?;
+    
+    Ok(calculate_quality_score(&ast, &source))
 }
 
 /// Handle quality-gate command

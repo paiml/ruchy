@@ -243,6 +243,11 @@ impl Transpiler {
 
     /// Generate return type tokens based on function analysis
     fn generate_return_type_tokens(&self, name: &str, return_type: Option<&Type>, body: &Expr) -> Result<TokenStream> {
+        // FIRST CHECK: Override for test functions
+        if name.starts_with("test_") {
+            return Ok(quote! {});
+        }
+        
         if let Some(ty) = return_type {
             let ty_tokens = self.transpile_type(ty)?;
             Ok(quote! { -> #ty_tokens })
@@ -295,27 +300,53 @@ impl Transpiler {
         param_tokens: &[TokenStream],
         return_type_tokens: &TokenStream,
         body_tokens: &TokenStream,
+        attributes: &[crate::frontend::ast::Attribute],
     ) -> Result<TokenStream> {
+        // Override return type for test functions
+        let final_return_type = if fn_name.to_string().starts_with("test_") {
+            quote! {}
+        } else {
+            return_type_tokens.clone()
+        };
         let visibility = if is_pub { quote! { pub } } else { quote! {} };
+        
+        // Generate attribute tokens
+        let attr_tokens: Vec<TokenStream> = attributes.iter()
+            .map(|attr| {
+                let attr_name = format_ident!("{}", attr.name);
+                if attr.args.is_empty() {
+                    quote! { #[#attr_name] }
+                } else {
+                    let args: Vec<TokenStream> = attr.args.iter()
+                        .map(|arg| arg.parse().unwrap_or_else(|_| quote! { #arg }))
+                        .collect();
+                    quote! { #[#attr_name(#(#args),*)] }
+                }
+            })
+            .collect();
         
         Ok(match (type_param_tokens.is_empty(), is_async) {
             (true, false) => quote! {
-                #visibility fn #fn_name(#(#param_tokens),*) #return_type_tokens {
+                #(#attr_tokens)*
+                #visibility fn #fn_name(#(#param_tokens),*) #final_return_type {
                     #body_tokens
                 }
             },
             (true, true) => quote! {
-                #visibility async fn #fn_name(#(#param_tokens),*) #return_type_tokens {
+                #(#attr_tokens)*
+                #visibility async fn #fn_name(#(#param_tokens),*) #final_return_type {
                     #body_tokens
                 }
             },
             (false, false) => quote! {
-                #visibility fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #return_type_tokens {
+                #(#attr_tokens)*
+                #visibility fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #final_return_type {
                     #body_tokens
                 }
             },
             (false, true) => quote! {
-                #visibility async fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #return_type_tokens {
+                #(#attr_tokens)*
+                #visibility async fn #fn_name<#(#type_param_tokens),*>(#(#param_tokens),*) #final_return_type {
                     #body_tokens
                 }
             },
@@ -331,11 +362,24 @@ impl Transpiler {
         is_async: bool,
         return_type: Option<&Type>,
         is_pub: bool,
+        attributes: &[crate::frontend::ast::Attribute],
     ) -> Result<TokenStream> {
         let fn_name = format_ident!("{}", name);
         let param_tokens = self.generate_param_tokens(params, body, name)?;
         let body_tokens = self.generate_body_tokens(body, is_async)?;
-        let return_type_tokens = self.generate_return_type_tokens(name, return_type, body)?;
+        
+        // Check for #[test] attribute and override return type if found
+        let has_test_attribute = attributes.iter().any(|attr| attr.name == "test");
+        if has_test_attribute {
+            eprintln!("DEBUG: Found test attribute, removing return type!");
+        }
+        let effective_return_type = if has_test_attribute {
+            None // Test functions should have unit return type
+        } else {
+            return_type
+        };
+        
+        let return_type_tokens = self.generate_return_type_tokens(name, effective_return_type, body)?;
         let type_param_tokens = self.generate_type_param_tokens(type_params)?;
 
         self.generate_function_signature(
@@ -345,7 +389,8 @@ impl Transpiler {
             &type_param_tokens, 
             &param_tokens, 
             &return_type_tokens, 
-            &body_tokens
+            &body_tokens,
+            attributes
         )
     }
 

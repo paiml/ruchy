@@ -132,7 +132,14 @@ impl Transpiler {
     ///
     /// Returns an error if the AST cannot be transpiled to a valid Rust program.
     pub fn transpile_to_program(&self, expr: &Expr) -> Result<TokenStream> {
-        self.transpile_to_program_with_context(expr, None)
+        eprintln!("DEBUG: transpile_to_program called with expr: {:?}", expr.kind);
+        let result = self.transpile_to_program_with_context(expr, None);
+        if let Ok(ref token_stream) = result {
+            // Debug: Write the generated Rust code to a debug file
+            let rust_code = token_stream.to_string();
+            std::fs::write("/tmp/debug_transpiler_output.rs", &rust_code).ok();
+        }
+        result
     }
 
     /// Transpile with file context for module resolution
@@ -143,19 +150,26 @@ impl Transpiler {
         
         match &resolved_expr.kind {
             ExprKind::Function { name, .. } => {
+                eprintln!("DEBUG: Using transpile_single_function for {}", name);
                 self.transpile_single_function(&resolved_expr, name, needs_polars)
             }
             ExprKind::Block(exprs) => {
+                eprintln!("DEBUG: Using transpile_program_block");
                 self.transpile_program_block(exprs, needs_polars)
             }
             _ => {
+                eprintln!("DEBUG: Using transpile_expression_program");
                 self.transpile_expression_program(&resolved_expr, needs_polars)
             }
         }
     }
     
     fn transpile_single_function(&self, expr: &Expr, name: &str, needs_polars: bool) -> Result<TokenStream> {
-        let func = self.transpile_expr(expr)?;
+        // Use the proper function expression transpiler to handle attributes correctly
+        let func = match &expr.kind {
+            crate::frontend::ast::ExprKind::Function { .. } => self.transpile_function_expr(expr)?,
+            _ => self.transpile_expr(expr)?,
+        };
         let needs_main = name != "main";
         
         match (needs_polars, needs_main) {
@@ -183,6 +197,7 @@ impl Transpiler {
     }
     
     fn transpile_program_block(&self, exprs: &[Expr], needs_polars: bool) -> Result<TokenStream> {
+        eprintln!("DEBUG: transpile_program_block called with {} expressions", exprs.len());
         let (functions, statements, modules, has_main, main_expr) = self.categorize_block_expressions(exprs)?;
         
         if functions.is_empty() && !has_main && modules.is_empty() {
@@ -201,6 +216,14 @@ impl Transpiler {
         let mut has_main_function = false;
         let mut main_function_expr = None;
         
+        eprintln!("DEBUG: Block has {} expressions", exprs.len());
+        for (i, expr) in exprs.iter().enumerate() {
+            eprintln!("DEBUG: Expr {}: {:?} with {} attributes", i, std::mem::discriminant(&expr.kind), expr.attributes.len());
+            for attr in &expr.attributes {
+                eprintln!("DEBUG: Attribute: {}", attr.name);
+            }
+        }
+        
         for expr in exprs {
             match &expr.kind {
                 ExprKind::Function { name, .. } => {
@@ -208,7 +231,8 @@ impl Transpiler {
                         has_main_function = true;
                         main_function_expr = Some(expr);
                     } else {
-                        functions.push(self.transpile_expr(expr)?);
+                        // Use proper function transpiler to handle attributes correctly
+                        functions.push(self.transpile_function_expr(expr)?);
                     }
                 },
                 ExprKind::Module { name, body } => {
