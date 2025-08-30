@@ -371,7 +371,6 @@ impl Transpiler {
         // Check for #[test] attribute and override return type if found
         let has_test_attribute = attributes.iter().any(|attr| attr.name == "test");
         if has_test_attribute {
-            eprintln!("DEBUG: Found test attribute, removing return type!");
         }
         let effective_return_type = if has_test_attribute {
             None // Test functions should have unit return type
@@ -914,12 +913,188 @@ impl Transpiler {
     
     /// Static method for transpiling inline imports (backward compatibility)
     pub fn transpile_import(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
-        Self::transpile_import_inline(path, items)
+        let import_tokens = Self::transpile_import_inline(path, items);
+        
+        // For std::fs imports, we need the functions to be available at module level
+        // Don't wrap in a block if this generates functions
+        if path.starts_with("std::fs") {
+            import_tokens
+        } else {
+            // For other imports, wrap in block that returns unit value
+            // since they'll be wrapped in let result = ... for expression programs
+            quote! {
+                {
+                    #import_tokens
+                    ()
+                }
+            }
+        }
+    }
+    
+    /// Handle std::fs imports and generate file operation functions
+    fn transpile_std_fs_import(items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        use crate::frontend::ast::ImportItem;
+        
+        let mut tokens = TokenStream::new();
+        
+        // Always include std::fs for file operations
+        tokens.extend(quote! { use std::fs; });
+        
+        if items.is_empty() || items.iter().any(|i| matches!(i, ImportItem::Wildcard)) {
+            // Import all file operations
+            tokens.extend(Self::generate_all_file_operations());
+        } else {
+            // Import specific operations
+            for item in items {
+                match item {
+                    ImportItem::Named(name) => {
+                        match name.as_str() {
+                            "read_file" => tokens.extend(Self::generate_read_file_function()),
+                            "write_file" => tokens.extend(Self::generate_write_file_function()),
+                            _ => {
+                                // Unknown std::fs function, generate stub or error
+                                let func_name = format_ident!("{}", name);
+                                tokens.extend(quote! {
+                                    fn #func_name() -> ! {
+                                        panic!("std::fs::{} not yet implemented", #name);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    ImportItem::Aliased { name, alias } => {
+                        let alias_ident = format_ident!("{}", alias);
+                        match name.as_str() {
+                            "read_file" => {
+                                tokens.extend(quote! {
+                                    fn #alias_ident(filename: String) -> String {
+                                        fs::read_to_string(filename).unwrap_or_else(|e| panic!("Failed to read file: {}", e))
+                                    }
+                                });
+                            }
+                            "write_file" => {
+                                tokens.extend(quote! {
+                                    fn #alias_ident(filename: String, content: String) {
+                                        fs::write(filename, content).unwrap_or_else(|e| panic!("Failed to write file: {}", e));
+                                    }
+                                });
+                            }
+                            _ => {
+                                tokens.extend(quote! {
+                                    fn #alias_ident() -> ! {
+                                        panic!("std::fs::{} not yet implemented", #name);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    ImportItem::Wildcard => {
+                        tokens.extend(Self::generate_all_file_operations());
+                    }
+                }
+            }
+        }
+        
+        tokens
+    }
+    
+    /// Generate read_file function
+    fn generate_read_file_function() -> TokenStream {
+        quote! {
+            fn read_file(filename: String) -> String {
+                fs::read_to_string(filename).unwrap_or_else(|e| panic!("Failed to read file: {}", e))
+            }
+        }
+    }
+    
+    /// Generate write_file function  
+    fn generate_write_file_function() -> TokenStream {
+        quote! {
+            fn write_file(filename: String, content: String) {
+                fs::write(filename, content).unwrap_or_else(|e| panic!("Failed to write file: {}", e));
+            }
+        }
+    }
+    
+    /// Generate all file operation functions
+    fn generate_all_file_operations() -> TokenStream {
+        let read_func = Self::generate_read_file_function();
+        let write_func = Self::generate_write_file_function();
+        
+        quote! {
+            #read_func
+            #write_func
+        }
+    }
+    
+    /// Handle std::fs imports with path-based syntax (import std::fs::read_file)
+    fn transpile_std_fs_import_with_path(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        use crate::frontend::ast::ImportItem;
+        
+        
+        let mut tokens = TokenStream::new();
+        
+        // Always include std::fs for file operations
+        tokens.extend(quote! { use std::fs; });
+        
+        if path == "std::fs" {
+            // Wildcard import or specific items from std::fs
+            // Special case: if path is "std::fs" and items contain Named("fs"), treat as wildcard
+            let is_wildcard_import = items.is_empty() 
+                || items.iter().any(|i| matches!(i, ImportItem::Wildcard))
+                || (items.len() == 1 && matches!(&items[0], ImportItem::Named(name) if name == "fs"));
+                
+            if is_wildcard_import {
+                // Import all file operations for wildcard or empty imports
+                tokens.extend(Self::generate_all_file_operations());
+            } else {
+                // Import specific operations
+                for item in items {
+                    match item {
+                        ImportItem::Named(name) => {
+                            match name.as_str() {
+                                "read_file" => tokens.extend(Self::generate_read_file_function()),
+                                "write_file" => tokens.extend(Self::generate_write_file_function()),
+                                _ => {} // Ignore unknown functions
+                            }
+                        }
+                        ImportItem::Wildcard => {
+                            tokens.extend(Self::generate_all_file_operations());
+                            break;
+                        }
+                        ImportItem::Aliased { name, alias: _ } => {
+                            // Handle aliased imports like "read_file as rf"
+                            match name.as_str() {
+                                "read_file" => tokens.extend(Self::generate_read_file_function()),
+                                "write_file" => tokens.extend(Self::generate_write_file_function()),
+                                _ => {} // Ignore unknown functions
+                            }
+                        }
+                    }
+                }
+            }
+        } else if path.starts_with("std::fs::") {
+            // Path-based import like std::fs::read_file
+            let function_name = path.strip_prefix("std::fs::").unwrap_or("");
+            match function_name {
+                "read_file" => tokens.extend(Self::generate_read_file_function()),
+                "write_file" => tokens.extend(Self::generate_write_file_function()),
+                _ => {} // Ignore unknown functions
+            }
+        }
+        
+        tokens
     }
     
     /// Core inline import transpilation logic
     fn transpile_import_inline(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
         use crate::frontend::ast::ImportItem;
+        
+
+        // Special handling for std::fs imports
+        if path == "std::fs" || path.starts_with("std::fs::") {
+            return Self::transpile_std_fs_import_with_path(path, items);
+        }
 
         // Build the path as a TokenStream
         let mut path_tokens = TokenStream::new();
@@ -927,6 +1102,10 @@ impl Transpiler {
         for (i, segment) in segments.iter().enumerate() {
             if i > 0 {
                 path_tokens.extend(quote! { :: });
+            }
+            // Skip empty segments to prevent format_ident panic
+            if segment.is_empty() {
+                continue;
             }
             let seg_ident = format_ident!("{}", segment);
             path_tokens.extend(quote! { #seg_ident });
