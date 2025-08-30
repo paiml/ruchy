@@ -79,3 +79,15 @@
 2025-08-30T22:19:44+02:00 | src/backend/transpiler/mod.rs | 72.12297→72.04057 | BMinus→BMinus | -.08240
 2025-08-30T22:19:44+02:00 | src/backend/transpiler/statements.rs | 70.47331→70.46338 | BMinus→BMinus | -.00993
 2025-08-30T22:19:44+02:00 | tests/p0_book_002_file_operations.rs | →93.064514 | →A | 
+2025-08-30T22:40:38+02:00 | src/backend/transpiler/statements.rs | 70.47331→70.48096 | BMinus→BMinus | .00765
+2025-08-30T22:40:38+02:00 | src/quality/linter.rs | 75.0→72.818184 | B→BMinus | -2.181816
+2025-08-30T22:40:38+02:00 | tests/p0_book_003_systems_programming.rs | →94.35294 | →A | 
+2025-08-30T22:40:38+02:00 | tests/p0_lint_false_positives.rs | →93.085106 | →A | 
+2025-08-30T22:40:54+02:00 | src/backend/transpiler/statements.rs | 70.47331→70.48096 | BMinus→BMinus | .00765
+2025-08-30T22:40:54+02:00 | src/quality/linter.rs | 75.0→72.818184 | B→BMinus | -2.181816
+2025-08-30T22:40:54+02:00 | tests/p0_book_003_systems_programming.rs | →94.35294 | →A | 
+2025-08-30T22:40:54+02:00 | tests/p0_lint_false_positives.rs | →93.085106 | →A | 
+2025-08-30T22:41:16+02:00 | src/backend/transpiler/statements.rs | 70.48096→70.48096 | BMinus→BMinus | 0
+2025-08-30T22:41:16+02:00 | src/quality/linter.rs | 72.818184→72.818184 | BMinus→BMinus | 0
+2025-08-30T22:41:16+02:00 | tests/p0_book_003_systems_programming.rs | 94.35294→94.35294 | A→A | 0
+2025-08-30T22:41:16+02:00 | tests/p0_lint_false_positives.rs | 93.085106→93.085106 | A→A | 0
