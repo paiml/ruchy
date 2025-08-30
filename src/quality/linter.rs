@@ -235,7 +235,10 @@ impl Linter {
                 }
             }
             
-            ExprKind::Function { params, body, .. } => {
+            ExprKind::Function { name, params, body, .. } => {
+                // Define the function name in the current scope
+                scope.define(name.clone(), 1, 1, VarType::Local);
+                
                 // Create new scope for function body
                 let mut func_scope = Scope::with_parent(scope.clone());
                 
@@ -247,8 +250,22 @@ impl Linter {
                 // Analyze function body
                 self.analyze_expr(body, &mut func_scope, issues);
                 
-                // Check for unused parameters
-                self.check_unused_in_scope(&func_scope, issues);
+                // Check for unused variables in function body (but not parameters for now)
+                // Parameters might be part of public API
+                for (name, info) in &func_scope.variables {
+                    if !info.used && matches!(info.var_type, VarType::Local) {
+                        issues.push(LintIssue {
+                            line: info.defined_at.0,
+                            column: info.defined_at.1,
+                            severity: "warning".to_string(),
+                            rule: "unused_variable".to_string(),
+                            message: format!("unused variable: {}", name),
+                            suggestion: format!("Remove unused variable '{}'", name),
+                            issue_type: "unused_variable".to_string(),
+                            name: name.clone(),
+                        });
+                    }
+                }
             }
             
             ExprKind::For { var, pattern, iter, body, .. } => {
@@ -338,6 +355,70 @@ impl Linter {
                 for arg in args {
                     self.analyze_expr(arg, scope, issues);
                 }
+            }
+            
+            ExprKind::StringInterpolation { parts } => {
+                // Analyze expressions within f-string interpolations
+                for part in parts {
+                    match part {
+                        crate::frontend::ast::StringPart::Expr(expr) => {
+                            self.analyze_expr(expr, scope, issues);
+                        }
+                        crate::frontend::ast::StringPart::ExprWithFormat { expr, .. } => {
+                            self.analyze_expr(expr, scope, issues);
+                        }
+                        crate::frontend::ast::StringPart::Text(_) => {
+                            // Literal text, nothing to analyze
+                        }
+                    }
+                }
+            }
+            
+            ExprKind::Lambda { params, body, .. } => {
+                // Create new scope for lambda body
+                let mut lambda_scope = Scope::with_parent(scope.clone());
+                
+                // Add parameters to scope
+                for param in params {
+                    self.extract_param_bindings(&param.pattern, &mut lambda_scope);
+                }
+                
+                // Analyze lambda body
+                self.analyze_expr(body, &mut lambda_scope, issues);
+                
+                // Check for unused parameters
+                self.check_unused_in_scope(&lambda_scope, issues);
+            }
+            
+            ExprKind::Return { value } => {
+                if let Some(expr) = value {
+                    self.analyze_expr(expr, scope, issues);
+                }
+            }
+            
+            ExprKind::List(exprs) | ExprKind::Tuple(exprs) => {
+                for expr in exprs {
+                    self.analyze_expr(expr, scope, issues);
+                }
+            }
+            
+            ExprKind::FieldAccess { object, .. } => {
+                self.analyze_expr(object, scope, issues);
+            }
+            
+            ExprKind::IndexAccess { object, index } => {
+                self.analyze_expr(object, scope, issues);
+                self.analyze_expr(index, scope, issues);
+            }
+            
+            ExprKind::While { condition, body, .. } => {
+                self.analyze_expr(condition, scope, issues);
+                self.analyze_expr(body, scope, issues);
+            }
+            
+            ExprKind::Assign { target, value, .. } => {
+                self.analyze_expr(target, scope, issues);
+                self.analyze_expr(value, scope, issues);
             }
             
             _ => {

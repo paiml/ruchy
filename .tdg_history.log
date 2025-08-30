@@ -26,3 +26,56 @@
 2025-08-30T16:55:52+02:00 | src/test_transpiler_method.rs | 100.0→100.0 | APLus→APLus | 0
 2025-08-30T16:55:52+02:00 | tests/quality_008_score_directory_support.rs | 100.0→100.0 | APLus→APLus | 0
 2025-08-30T16:55:52+02:00 | tests/test_attribute_regression.rs | 100.0→100.0 | APLus→APLus | 0
+2025-08-30T19:48:01+02:00 | examples/lint_demo.rs | →100.0 | →APLus | 
+2025-08-30T19:48:01+02:00 | examples/score_examples.rs | →94.4 | →A | 
+2025-08-30T19:48:01+02:00 | src/bin/handlers/commands.rs | 67.705124→68.072105 | CPlus→CPlus | .366981
+2025-08-30T19:48:01+02:00 | src/quality/linter.rs | 91.7→75.0 | A→B | -16.7
+2025-08-30T19:48:01+02:00 | tests/lint_cli_integration.rs | →95.79618 | →APLus | 
+2025-08-30T19:48:01+02:00 | tests/quality_009_score_actionability.rs | →98.0 | →APLus | 
+2025-08-30T19:48:01+02:00 | tests/quality_009_scoring_math.rs | →95.85106 | →APLus | 
+2025-08-30T19:48:01+02:00 | tests/quality_009_spec_validation.rs | →92.93704 | →A | 
+2025-08-30T19:48:01+02:00 | tests/quality_010_lint_variable_tracking.rs | →93.13132 | →A | 
+2025-08-30T19:48:01+02:00 | tests/score_cli_integration.rs | →96.83398 | →APLus | 
+2025-08-30T19:48:12+02:00 | examples/lint_demo.rs | →100.0 | →APLus | 
+2025-08-30T19:48:12+02:00 | examples/score_examples.rs | →94.4 | →A | 
+2025-08-30T19:48:13+02:00 | src/bin/handlers/commands.rs | 67.705124→68.072105 | CPlus→CPlus | .366981
+2025-08-30T19:48:13+02:00 | src/quality/linter.rs | 91.7→75.0 | A→B | -16.7
+2025-08-30T19:48:13+02:00 | tests/lint_cli_integration.rs | →95.79618 | →APLus | 
+2025-08-30T19:48:13+02:00 | tests/quality_009_score_actionability.rs | →98.0 | →APLus | 
+2025-08-30T19:48:13+02:00 | tests/quality_009_scoring_math.rs | →95.85106 | →APLus | 
+2025-08-30T19:48:13+02:00 | tests/quality_009_spec_validation.rs | →92.93704 | →A | 
+2025-08-30T19:48:13+02:00 | tests/quality_010_lint_variable_tracking.rs | →93.13132 | →A | 
+2025-08-30T19:48:13+02:00 | tests/score_cli_integration.rs | →96.83398 | →APLus | 
+2025-08-30T19:48:28+02:00 | examples/lint_demo.rs | 100.0→100.0 | APLus→APLus | 0
+2025-08-30T19:48:28+02:00 | examples/score_examples.rs | 94.4→94.4 | A→A | 0
+2025-08-30T19:48:28+02:00 | src/bin/handlers/commands.rs | 68.072105→68.072105 | CPlus→CPlus | 0
+2025-08-30T19:48:28+02:00 | src/quality/linter.rs | 75.0→75.0 | B→B | 0
+2025-08-30T19:48:28+02:00 | tests/lint_cli_integration.rs | 95.79618→95.79618 | APLus→APLus | 0
+2025-08-30T19:48:28+02:00 | tests/quality_009_score_actionability.rs | 98.0→98.0 | APLus→APLus | 0
+2025-08-30T19:48:28+02:00 | tests/quality_009_scoring_math.rs | 95.85106→95.85106 | APLus→APLus | 0
+2025-08-30T19:48:28+02:00 | tests/quality_009_spec_validation.rs | 92.93704→92.93704 | A→A | 0
+2025-08-30T19:48:28+02:00 | tests/quality_010_lint_variable_tracking.rs | 93.13132→93.13132 | A→A | 0
+2025-08-30T19:48:28+02:00 | tests/score_cli_integration.rs | 96.83398→96.83398 | APLus→APLus | 0
+2025-08-30T19:50:03+02:00 | examples/lint_demo.rs | 100.0→100.0 | APLus→APLus | 0
+2025-08-30T19:50:03+02:00 | examples/score_examples.rs | 94.4→94.4 | A→A | 0
+2025-08-30T19:50:03+02:00 | src/bin/handlers/commands.rs | 68.072105→68.072105 | CPlus→CPlus | 0
+2025-08-30T19:50:03+02:00 | src/quality/linter.rs | 75.0→75.0 | B→B | 0
+2025-08-30T19:50:03+02:00 | tests/lint_cli_integration.rs | 95.79618→95.79618 | APLus→APLus | 0
+2025-08-30T19:50:03+02:00 | tests/quality_009_score_actionability.rs | 98.0→98.0 | APLus→APLus | 0
+2025-08-30T19:50:03+02:00 | tests/quality_009_scoring_math.rs | 95.85106→95.85106 | APLus→APLus | 0
+2025-08-30T19:50:03+02:00 | tests/quality_009_spec_validation.rs | 92.93704→92.93704 | A→A | 0
+2025-08-30T19:50:03+02:00 | tests/quality_010_lint_variable_tracking.rs | 93.13132→93.13132 | A→A | 0
+2025-08-30T19:50:03+02:00 | tests/score_cli_integration.rs | 96.83398→96.83398 | APLus→APLus | 0
+2025-08-30T19:50:55+02:00 | examples/lint_demo.rs | 100.0→100.0 | APLus→APLus | 0
+2025-08-30T19:50:56+02:00 | examples/score_examples.rs | 94.4→94.4 | A→A | 0
+2025-08-30T19:50:56+02:00 | src/bin/handlers/commands.rs | 68.072105→68.072105 | CPlus→CPlus | 0
+2025-08-30T19:50:56+02:00 | src/quality/linter.rs | 75.0→75.0 | B→B | 0
+2025-08-30T19:50:56+02:00 | tests/lint_cli_integration.rs | 95.79618→95.79618 | APLus→APLus | 0
+2025-08-30T19:50:56+02:00 | tests/quality_009_score_actionability.rs | 98.0→98.0 | APLus→APLus | 0
+2025-08-30T19:50:56+02:00 | tests/quality_009_scoring_math.rs | 95.85106→95.85106 | APLus→APLus | 0
+2025-08-30T19:50:56+02:00 | tests/quality_009_spec_validation.rs | 92.93704→92.93704 | A→A | 0
+2025-08-30T19:50:56+02:00 | tests/quality_010_lint_variable_tracking.rs | 93.13132→93.13132 | A→A | 0
+2025-08-30T19:50:56+02:00 | tests/score_cli_integration.rs | 96.83398→96.83398 | APLus→APLus | 0
+2025-08-30T22:19:44+02:00 | src/backend/transpiler/mod.rs | 72.12297→72.04057 | BMinus→BMinus | -.08240
+2025-08-30T22:19:44+02:00 | src/backend/transpiler/statements.rs | 70.47331→70.46338 | BMinus→BMinus | -.00993
+2025-08-30T22:19:44+02:00 | tests/p0_book_002_file_operations.rs | →93.064514 | →A | 
