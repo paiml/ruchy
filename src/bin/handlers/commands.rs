@@ -174,25 +174,46 @@ pub fn handle_lint_command(
     let issues = linter.lint(&ast, &source)?;
     
     if json {
-        // JSON output
-        let json_output = serde_json::to_string_pretty(&issues)?;
-        println!("{}", json_output);
+        // JSON output with proper structure
+        let json_output = serde_json::json!({
+            "issues": issues
+        });
+        println!("{}", serde_json::to_string_pretty(&json_output)?);
     } else {
         // Text output
         if issues.is_empty() {
             println!("{} No issues found in {}", "✓".green(), path.display());
         } else {
+            // Count errors and warnings
+            let errors = issues.iter().filter(|i| i.severity == "error").count();
+            let warnings = issues.iter().filter(|i| i.severity == "warning").count();
+            
             println!("{} Found {} issues in {}", "⚠".yellow(), issues.len(), path.display());
+            
             for issue in &issues {
+                let severity_str = if issue.severity == "error" { 
+                    "Error".red().to_string() 
+                } else { 
+                    "Warning".yellow().to_string() 
+                };
+                
                 println!("  {}:{}: {} - {}", 
                     path.display(), 
                     issue.line, 
-                    issue.severity, 
+                    severity_str, 
                     issue.message
                 );
                 if verbose && !issue.suggestion.is_empty() {
                     println!("    Suggestion: {}", issue.suggestion);
                 }
+            }
+            
+            // Summary if there are issues
+            if errors > 0 || warnings > 0 {
+                println!("\nSummary: {} Error{}, {} Warning{}",
+                    errors, if errors == 1 { "" } else { "s" },
+                    warnings, if warnings == 1 { "" } else { "s" }
+                );
             }
             
             if auto_fix {
@@ -671,7 +692,6 @@ fn calculate_provability_score(ast: &ruchy::frontend::ast::Expr) -> f64 {
 
 fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f64 {
     
-    
     // Calculate various quality metrics
     let complexity = calculate_complexity(ast);
     let mut metrics = QualityMetrics::default();
@@ -689,106 +709,142 @@ fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f6
     
     analyze_ast_quality(ast, &mut metrics);
     
-    // Score components (each out of 100, then averaged)
-    let mut scores = Vec::new();
+    // ACTIONABLE SCORING ALGORITHM - Harsh penalties for bad code
+    // Start with perfect score and apply multiplicative penalties
+    let mut score = 1.0;
     
-    // 1. Complexity score (lower is better)
-    let complexity_score = if complexity == 0 {
-        100.0
-    } else {
-        (100.0 / (1.0 + complexity as f64 / 5.0)).max(0.0)
+    // 1. COMPLEXITY PENALTY - Progressive penalty for cyclomatic complexity
+    let complexity_penalty = match complexity {
+        0..=5 => 1.0,                                    // Excellent: No penalty
+        6..=10 => 0.95,                                  // Good: Very small penalty  
+        11..=15 => 0.85,                                 // Fair: Small penalty
+        16..=20 => 0.70,                                 // Moderate: Noticeable penalty
+        21..=30 => 0.45,                                 // Poor: Significant penalty
+        31..=40 => 0.25,                                 // Very Poor: Major penalty
+        41..=50 => 0.15,                                 // Terrible: Severe penalty
+        _ => 0.05,                                       // Catastrophic: Near-zero score
     };
-    scores.push(complexity_score);
+    score *= complexity_penalty;
     
-    // 2. Function length score
+    // 2. PARAMETER COUNT PENALTY - Severe penalty for too many parameters
+    let param_penalty = match metrics.max_parameters {
+        0..=3 => 1.0,                                      // Excellent
+        4..=5 => 0.90,                                    // Good  
+        6..=7 => 0.75,                                    // Fair
+        8..=10 => 0.50,                                   // Poor
+        11..=15 => 0.25,                                  // Very Poor
+        16..=25 => 0.10,                                  // Terrible
+        _ => 0.05,                                        // Catastrophic (26+ params)
+    };
+    score *= param_penalty;
+    
+    // 3. NESTING DEPTH PENALTY - Exponential penalty for deep nesting
+    // Debug: Print the nesting depth being evaluated
+    let nesting_penalty = match metrics.max_nesting_depth {
+        0..=2 => 1.0,                                     // Excellent
+        3 => 0.90,                                        // Good
+        4 => 0.75,                                        // Fair  
+        5 => 0.50,                                        // Poor
+        6 => 0.30,                                        // Very Poor
+        7 => 0.15,                                        // Terrible
+        _ => 0.05,                                        // Catastrophic (8+ levels)
+    };
+    score *= nesting_penalty;
+    
+    // 4. FUNCTION LENGTH PENALTY - Penalty for long functions
     let avg_function_length = if metrics.function_count == 0 {
         0.0
     } else {
         metrics.total_function_lines as f64 / metrics.function_count as f64
     };
-    let length_score = (100.0 / (1.0 + avg_function_length / 20.0)).max(0.0);
-    scores.push(length_score);
+    if avg_function_length > 20.0 {
+        let length_penalty = (30.0 / avg_function_length).min(1.0).max(0.3);
+        score *= length_penalty;
+    }
     
-    // 3. Documentation score (functions with names > 1 char are considered documented for now)
-    let doc_score = if metrics.function_count == 0 {
-        50.0
-    } else {
-        metrics.documented_functions as f64 / metrics.function_count as f64 * 100.0
-    };
-    scores.push(doc_score);
+    // 5. SATD PENALTY - Immediate penalty for technical debt
+    if metrics.has_satd {
+        score *= 0.70; // 30% penalty for SATD
+    }
     
-    // 4. Naming quality score
-    let naming_score = if metrics.total_identifiers == 0 {
-        50.0
-    } else {
-        metrics.good_names as f64 / metrics.total_identifiers as f64 * 100.0
-    };
-    scores.push(naming_score);
-    
-    // 5. No SATD bonus
-    let satd_score = if metrics.has_satd { 60.0 } else { 100.0 };
-    scores.push(satd_score);
-    
-    // Calculate weighted average
-    let total_score = scores.iter().sum::<f64>() / scores.len() as f64;
-    
-    // Convert to 0-1 scale
-    total_score / 100.0
-}
-
-fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
-    
-    
-    // Calculate cyclomatic complexity
-    let mut complexity = 1; // Base complexity
-    
-    fn count_branches(expr: &ruchy::frontend::ast::Expr, complexity: &mut usize) {
-        use ruchy::frontend::ast::ExprKind;
-        
-        match &expr.kind {
-            ExprKind::If { condition: _, then_branch, else_branch } => {
-                *complexity += 1; // Each if adds a branch
-                count_branches(then_branch, complexity);
-                if let Some(else_expr) = else_branch {
-                    count_branches(else_expr, complexity);
-                }
-            }
-            ExprKind::Match { expr: _, arms } => {
-                *complexity += arms.len().saturating_sub(1); // Each arm is a branch
-                for arm in arms {
-                    count_branches(&arm.body, complexity);
-                }
-            }
-            ExprKind::While { condition: _, body } => {
-                *complexity += 1; // Loops add complexity
-                count_branches(body, complexity);
-            }
-            ExprKind::For { var: _, pattern: _, iter: _, body } => {
-                *complexity += 1; // Loops add complexity
-                count_branches(body, complexity);
-            }
-            ExprKind::Binary { op: _, left, right } => {
-                count_branches(left, complexity);
-                count_branches(right, complexity);
-            }
-            ExprKind::Block(exprs) => {
-                for expr in exprs {
-                    count_branches(expr, complexity);
-                }
-            }
-            ExprKind::Function { name: _, type_params: _, params: _, body, return_type: _, is_async: _, is_pub: _ } => {
-                count_branches(body, complexity);
-            }
-            ExprKind::Let { name: _, type_annotation: _, value, body, is_mutable: _ } => {
-                count_branches(value, complexity);
-                count_branches(body, complexity);
-            }
-            _ => {}
+    // 6. DOCUMENTATION BONUS/PENALTY
+    if metrics.function_count > 0 {
+        let doc_ratio = metrics.documented_functions as f64 / metrics.function_count as f64;
+        if doc_ratio < 0.5 {
+            score *= 0.85; // Penalty for poor documentation
+        } else if doc_ratio > 0.8 {
+            score *= 1.05; // Small bonus for good documentation
         }
     }
     
-    count_branches(ast, &mut complexity);
-    complexity
+    // Ensure score stays within bounds
+    score.max(0.0).min(1.0)
+}
+
+fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
+    // Calculate cyclomatic complexity for the entire AST
+    // Functions themselves don't add complexity, only their control flow does
+    
+    fn count_branches(expr: &ruchy::frontend::ast::Expr) -> usize {
+        use ruchy::frontend::ast::ExprKind;
+        
+        match &expr.kind {
+            ExprKind::If { condition, then_branch, else_branch } => {
+                // Each if adds 1 to complexity
+                let mut complexity = 1;
+                complexity += count_branches(condition);
+                complexity += count_branches(then_branch);
+                if let Some(else_expr) = else_branch {
+                    complexity += count_branches(else_expr);
+                }
+                complexity
+            }
+            ExprKind::Match { expr, arms } => {
+                // Each match arm beyond the first adds complexity
+                let mut complexity = arms.len().saturating_sub(1);
+                complexity += count_branches(expr);
+                for arm in arms {
+                    complexity += count_branches(&arm.body);
+                }
+                complexity
+            }
+            ExprKind::While { condition, body } => {
+                // Loops add 1 to complexity
+                1 + count_branches(condition) + count_branches(body)
+            }
+            ExprKind::For { var: _, pattern: _, iter, body } => {
+                // Loops add 1 to complexity
+                1 + count_branches(iter) + count_branches(body)
+            }
+            ExprKind::Binary { op, left, right } => {
+                use ruchy::frontend::ast::BinaryOp;
+                // Logical operators add complexity (branching)
+                let mut complexity = match op {
+                    BinaryOp::And | BinaryOp::Or => 1,
+                    _ => 0,
+                };
+                complexity += count_branches(left);
+                complexity += count_branches(right);
+                complexity
+            }
+            ExprKind::Block(exprs) => {
+                exprs.iter().map(|e| count_branches(e)).sum()
+            }
+            ExprKind::Function { name: _, type_params: _, params: _, body, return_type: _, is_async: _, is_pub: _ } => {
+                // Function itself has base complexity of 1, plus its body
+                1 + count_branches(body)
+            }
+            ExprKind::Let { name: _, type_annotation: _, value, body, is_mutable: _ } => {
+                count_branches(value) + count_branches(body)
+            }
+            _ => 0, // Other expressions don't add complexity
+        }
+    }
+    
+    // Start with the entire AST
+    let complexity = count_branches(ast);
+    // Minimum complexity is 1
+    complexity.max(1)
 }
 
 fn analyze_complexity(ast: &ruchy::frontend::ast::Expr) -> String {
@@ -813,14 +869,20 @@ struct QualityMetrics {
     total_identifiers: usize,
     good_names: usize,
     has_satd: bool,
+    max_parameters: usize,
+    max_nesting_depth: usize,
 }
 
 fn analyze_ast_quality(expr: &ruchy::frontend::ast::Expr, metrics: &mut QualityMetrics) {
     use ruchy::frontend::ast::ExprKind;
     
+    
     match &expr.kind {
-        ExprKind::Function { name, type_params: _, params: _, body, return_type: _, is_async: _, is_pub: _ } => {
+        ExprKind::Function { name, type_params: _, params, body, return_type: _, is_async: _, is_pub: _ } => {
             metrics.function_count += 1;
+            
+            // Track maximum parameter count 
+            metrics.max_parameters = metrics.max_parameters.max(params.len());
             
             // Check if function is "documented" (has descriptive name)
             if name.len() > 1 && !name.chars().all(|c| c == '_') {
@@ -833,6 +895,10 @@ fn analyze_ast_quality(expr: &ruchy::frontend::ast::Expr, metrics: &mut QualityM
             // Count lines in function (simplified)
             let function_lines = count_lines_in_expr(body);
             metrics.total_function_lines += function_lines;
+            
+            // Track nesting depth in function body
+            let nesting_depth = calculate_max_nesting(body);
+            metrics.max_nesting_depth = metrics.max_nesting_depth.max(nesting_depth);
             
             analyze_ast_quality(body, metrics);
         }
@@ -890,30 +956,55 @@ fn count_lines_in_expr(expr: &ruchy::frontend::ast::Expr) -> usize {
 }
 
 fn calculate_max_nesting(expr: &ruchy::frontend::ast::Expr) -> usize {
-    
+    // Calculate maximum nesting depth of control structures
     
     fn nesting_helper(expr: &ruchy::frontend::ast::Expr, current_depth: usize) -> usize {
         use ruchy::frontend::ast::ExprKind;
         
         match &expr.kind {
             ExprKind::For { var: _, pattern: _, iter: _, body } => {
+                // For loop increases nesting by 1
                 nesting_helper(body, current_depth + 1)
             }
             ExprKind::While { condition: _, body } => {
+                // While loop increases nesting by 1
                 nesting_helper(body, current_depth + 1)
             }
+            ExprKind::If { condition: _, then_branch, else_branch } => {
+                // If statement increases nesting by 1
+                let then_depth = nesting_helper(then_branch, current_depth + 1);
+                let else_depth = else_branch
+                    .as_ref()
+                    .map_or(current_depth, |e| nesting_helper(e, current_depth + 1));
+                then_depth.max(else_depth)
+            }
             ExprKind::Block(exprs) => {
+                // Block doesn't increase nesting, just pass through
                 exprs.iter()
                     .map(|e| nesting_helper(e, current_depth))
                     .max()
                     .unwrap_or(current_depth)
             }
-            ExprKind::If { condition: _, then_branch, else_branch } => {
-                let then_depth = nesting_helper(then_branch, current_depth);
-                let else_depth = else_branch
-                    .as_ref()
-                    .map_or(current_depth, |e| nesting_helper(e, current_depth));
-                then_depth.max(else_depth)
+            ExprKind::Function { name: _, type_params: _, params: _, body, return_type: _, is_async: _, is_pub: _ } => {
+                // Function body starts fresh (functions are separate scopes)
+                nesting_helper(body, 0)
+            }
+            ExprKind::Let { name: _, type_annotation: _, value, body, is_mutable: _ } => {
+                let val_depth = nesting_helper(value, current_depth);
+                let body_depth = nesting_helper(body, current_depth);
+                val_depth.max(body_depth)
+            }
+            ExprKind::Binary { op: _, left, right } => {
+                let left_depth = nesting_helper(left, current_depth);
+                let right_depth = nesting_helper(right, current_depth);
+                left_depth.max(right_depth)
+            }
+            ExprKind::Match { expr: _, arms } => {
+                // Match increases nesting by 1 for each arm
+                arms.iter()
+                    .map(|arm| nesting_helper(&arm.body, current_depth + 1))
+                    .max()
+                    .unwrap_or(current_depth)
             }
             _ => current_depth
         }
