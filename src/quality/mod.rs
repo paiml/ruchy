@@ -3,6 +3,7 @@
 //! Based on SPECIFICATION.md section 20 requirements
 
 pub mod coverage;
+pub mod ruchy_coverage;
 pub mod scoring;
 pub mod gates;
 pub mod enforcement;
