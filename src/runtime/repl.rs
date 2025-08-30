@@ -38,7 +38,7 @@
 #![allow(clippy::expect_used)] // REPL can panic on initialization failure
 
 use crate::frontend::ast::{
-    BinaryOp, Expr, ExprKind, ImportItem, Literal, MatchArm, Pattern, PipelineStage, Span, UnaryOp,
+    BinaryOp, Expr, ExprKind, ImportItem, Literal, MatchArm, Pattern, PipelineStage, Span, StructPatternField, UnaryOp,
 };
 use crate::runtime::magic::{MagicRegistry, UnicodeExpander};
 use crate::runtime::transaction::TransactionalState;
@@ -4494,122 +4494,181 @@ impl Repl {
     }
 
     /// Recursive pattern matching helper
+    /// Match literal patterns (complexity: 4)
+    fn match_literal_pattern(value: &Value, literal: &Literal) -> bool {
+        match (value, literal) {
+            (Value::Unit, Literal::Unit) => true,
+            (Value::Int(v), Literal::Integer(p)) => v == p,
+            (Value::Float(v), Literal::Float(p)) => (v - p).abs() < f64::EPSILON,
+            (Value::String(v), Literal::String(p)) => v == p,
+            (Value::Bool(v), Literal::Bool(p)) => v == p,
+            _ => false,
+        }
+    }
+
+    /// Match sequence patterns (list or tuple) (complexity: 4)
+    fn match_sequence_pattern(
+        values: &[Value],
+        patterns: &[Pattern],
+        bindings: &mut HashMap<String, Value>,
+    ) -> Result<bool> {
+        if values.len() != patterns.len() {
+            return Ok(false);
+        }
+
+        for (value, pattern) in values.iter().zip(patterns.iter()) {
+            if !Self::pattern_matches_recursive(value, pattern, bindings)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+    /// Match OR patterns (complexity: 5)
+    fn match_or_pattern(
+        value: &Value,
+        patterns: &[Pattern],
+        bindings: &mut HashMap<String, Value>,
+    ) -> Result<bool> {
+        for pattern in patterns {
+            let mut temp_bindings = HashMap::new();
+            if Self::pattern_matches_recursive(value, pattern, &mut temp_bindings)? {
+                // Merge bindings
+                for (name, val) in temp_bindings {
+                    bindings.insert(name, val);
+                }
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// Match range patterns (complexity: 5)
+    fn match_range_pattern(
+        value: i64,
+        start: &Pattern,
+        end: &Pattern,
+        inclusive: bool,
+    ) -> Result<bool> {
+        // For simplicity, only handle integer literal patterns in ranges
+        if let (
+            Pattern::Literal(Literal::Integer(start_val)),
+            Pattern::Literal(Literal::Integer(end_val)),
+        ) = (start, end)
+        {
+            if inclusive {
+                Ok(*start_val <= value && value <= *end_val)
+            } else {
+                Ok(*start_val <= value && value < *end_val)
+            }
+        } else {
+            bail!("Complex range patterns not yet supported");
+        }
+    }
+
+    /// Match struct patterns (complexity: 7)
+    fn match_struct_pattern(
+        obj_fields: &HashMap<String, Value>,
+        pattern_fields: &[StructPatternField],
+        bindings: &mut HashMap<String, Value>,
+    ) -> Result<bool> {
+        for pattern_field in pattern_fields {
+            let field_name = &pattern_field.name;
+            
+            // Find the corresponding field in the object
+            if let Some(field_value) = obj_fields.get(field_name) {
+                // Check if pattern matches (if specified)
+                if let Some(pattern) = &pattern_field.pattern {
+                    if !Self::pattern_matches_recursive(field_value, pattern, bindings)? {
+                        return Ok(false);
+                    }
+                } else {
+                    // Shorthand pattern ({ x } instead of { x: x })
+                    // This creates a binding: x => field_value
+                    bindings.insert(field_name.clone(), field_value.clone());
+                }
+            } else {
+                // Required field not found in struct
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+    /// Match qualified name patterns (complexity: 4)
+    fn match_qualified_name_pattern(
+        value: &Value,
+        path: &[String],
+    ) -> bool {
+        match value {
+            Value::EnumVariant { enum_name, variant_name, data: _ } => {
+                // Match if qualified name matches enum variant
+                if path.len() >= 2 {
+                    let pattern_enum = &path[path.len() - 2];
+                    let pattern_variant = &path[path.len() - 1];
+                    enum_name == pattern_enum && variant_name == pattern_variant
+                } else {
+                    false
+                }
+            }
+            _ => {
+                // Convert value to string and compare with pattern path
+                let value_str = format!("{value}");
+                let pattern_str = path.join("::");
+                value_str == pattern_str
+            }
+        }
+    }
+
     fn pattern_matches_recursive(
         value: &Value,
         pattern: &Pattern,
         bindings: &mut HashMap<String, Value>,
     ) -> Result<bool> {
-        match (value, pattern) {
-            // Wildcard matches everything and literal Unit
-            (_, Pattern::Wildcard) | (Value::Unit, Pattern::Literal(Literal::Unit)) => Ok(true),
+        match pattern {
+            // Wildcard matches everything
+            Pattern::Wildcard => Ok(true),
 
             // Literal patterns
-            (Value::Int(v), Pattern::Literal(Literal::Integer(p))) => Ok(v == p),
-            (Value::Float(v), Pattern::Literal(Literal::Float(p))) => {
-                Ok((v - p).abs() < f64::EPSILON)
-            }
-            (Value::String(v), Pattern::Literal(Literal::String(p))) => Ok(v == p),
-            (Value::Bool(v), Pattern::Literal(Literal::Bool(p))) => Ok(v == p),
+            Pattern::Literal(literal) => Ok(Self::match_literal_pattern(value, literal)),
 
             // Identifier patterns (bind to variable)
-            (value, Pattern::Identifier(name)) => {
+            Pattern::Identifier(name) => {
                 bindings.insert(name.clone(), value.clone());
                 Ok(true)
             }
 
             // List patterns
-            (Value::List(values), Pattern::List(patterns)) => {
-                if values.len() != patterns.len() {
-                    return Ok(false);
-                }
+            Pattern::List(patterns) => match value {
+                Value::List(values) => Self::match_sequence_pattern(values, patterns, bindings),
+                _ => Ok(false),
+            },
 
-                for (value, pattern) in values.iter().zip(patterns.iter()) {
-                    if !Self::pattern_matches_recursive(value, pattern, bindings)? {
-                        return Ok(false);
-                    }
-                }
-                Ok(true)
-            }
-
-            // Tuple patterns (treat as list for now)
-            (Value::List(values), Pattern::Tuple(patterns)) => {
-                if values.len() != patterns.len() {
-                    return Ok(false);
-                }
-
-                for (value, pattern) in values.iter().zip(patterns.iter()) {
-                    if !Self::pattern_matches_recursive(value, pattern, bindings)? {
-                        return Ok(false);
-                    }
-                }
-                Ok(true)
-            }
-
-            // Tuple destructuring for actual tuple values
-            (Value::Tuple(values), Pattern::Tuple(patterns)) => {
-                if values.len() != patterns.len() {
-                    return Ok(false);
-                }
-
-                for (value, pattern) in values.iter().zip(patterns.iter()) {
-                    if !Self::pattern_matches_recursive(value, pattern, bindings)? {
-                        return Ok(false);
-                    }
-                }
-                Ok(true)
-            }
+            // Tuple patterns
+            Pattern::Tuple(patterns) => match value {
+                Value::Tuple(values) => Self::match_sequence_pattern(values, patterns, bindings),
+                Value::List(values) => Self::match_sequence_pattern(values, patterns, bindings),
+                _ => Ok(false),
+            },
 
             // OR patterns - try each alternative
-            (value, Pattern::Or(patterns)) => {
-                for pattern in patterns {
-                    let mut temp_bindings = HashMap::new();
-                    if Self::pattern_matches_recursive(value, pattern, &mut temp_bindings)? {
-                        // Merge bindings
-                        for (name, val) in temp_bindings {
-                            bindings.insert(name, val);
-                        }
-                        return Ok(true);
-                    }
-                }
-                Ok(false)
-            }
+            Pattern::Or(patterns) => Self::match_or_pattern(value, patterns, bindings),
 
-            // Range patterns (simplified implementation)
-            (
-                Value::Int(v),
-                Pattern::Range {
-                    start,
-                    end,
-                    inclusive,
-                },
-            ) => {
-                // For simplicity, only handle integer literal patterns in ranges
-                if let (
-                    Pattern::Literal(Literal::Integer(start_val)),
-                    Pattern::Literal(Literal::Integer(end_val)),
-                ) = (start.as_ref(), end.as_ref())
-                {
-                    if *inclusive {
-                        Ok(*start_val <= *v && *v <= *end_val)
-                    } else {
-                        Ok(*start_val <= *v && *v < *end_val)
-                    }
-                } else {
-                    bail!("Complex range patterns not yet supported");
-                }
-            }
+            // Range patterns
+            Pattern::Range { start, end, inclusive } => match value {
+                Value::Int(v) => Self::match_range_pattern(*v, start, end, *inclusive),
+                _ => Ok(false),
+            },
 
             // Result patterns (Ok/Err)
-            (value, Pattern::Ok(inner_pattern)) => {
-                // Check if value is a Result::Ok variant
+            Pattern::Ok(inner_pattern) => {
                 if let Some(ok_value) = Self::extract_result_ok(value) {
                     Self::pattern_matches_recursive(&ok_value, inner_pattern, bindings)
                 } else {
                     Ok(false)
                 }
             }
-            (value, Pattern::Err(inner_pattern)) => {
-                // Check if value is a Result::Err variant
+            Pattern::Err(inner_pattern) => {
                 if let Some(err_value) = Self::extract_result_err(value) {
                     Self::pattern_matches_recursive(&err_value, inner_pattern, bindings)
                 } else {
@@ -4618,68 +4677,34 @@ impl Repl {
             }
 
             // Option patterns (Some/None)
-            (value, Pattern::Some(inner_pattern)) => {
-                // Check if value is an Option::Some variant
+            Pattern::Some(inner_pattern) => {
                 if let Some(some_value) = Self::extract_option_some(value) {
                     Self::pattern_matches_recursive(&some_value, inner_pattern, bindings)
                 } else {
                     Ok(false)
                 }
             }
-            (value, Pattern::None) => {
-                // Check if value is an Option::None variant
-                Ok(Self::is_option_none(value))
-            }
+            Pattern::None => Ok(Self::is_option_none(value)),
 
             // Struct patterns
-            (Value::Object(obj_fields), Pattern::Struct { name: _struct_name, fields: pattern_fields, has_rest: _ }) => {
-                // For now, we don't check struct name since objects are generic
-                // Check all pattern fields match
-                for pattern_field in pattern_fields {
-                    let field_name = &pattern_field.name;
-                    
-                    // Find the corresponding field in the object
-                    if let Some(field_value) = obj_fields.get(field_name) {
-                        // Check if pattern matches (if specified)
-                        if let Some(pattern) = &pattern_field.pattern {
-                            if !Self::pattern_matches_recursive(field_value, pattern, bindings)? {
-                                return Ok(false);
-                            }
-                        } else {
-                            // Shorthand pattern ({ x } instead of { x: x })
-                            // This creates a binding: x => field_value
-                            bindings.insert(field_name.clone(), field_value.clone());
-                        }
-                    } else {
-                        // Required field not found in struct
-                        return Ok(false);
+            Pattern::Struct { name: _struct_name, fields: pattern_fields, has_rest: _ } => {
+                match value {
+                    Value::Object(obj_fields) => {
+                        Self::match_struct_pattern(obj_fields, pattern_fields, bindings)
                     }
+                    _ => Ok(false),
                 }
-                Ok(true)
             }
 
-            // Qualified name patterns (like Status::Ok, Ordering::Less)
-            (Value::EnumVariant { enum_name, variant_name, data: _ }, Pattern::QualifiedName(path)) => {
-                // Match if qualified name matches enum variant  
-                if path.len() >= 2 {
-                    let pattern_enum = &path[path.len() - 2];
-                    let pattern_variant = &path[path.len() - 1];
-                    Ok(enum_name == pattern_enum && variant_name == pattern_variant)
-                } else {
-                    Ok(false)
-                }
+            // Qualified name patterns
+            Pattern::QualifiedName(path) => {
+                Ok(Self::match_qualified_name_pattern(value, path))
             }
             
-            // Qualified name patterns should also match qualified name expressions
-            (value, Pattern::QualifiedName(path)) => {
-                // Convert value to string and compare with pattern path
-                let value_str = format!("{value}");
-                let pattern_str = path.join("::");
-                Ok(value_str == pattern_str)
+            // Rest patterns - these are only valid inside struct/tuple patterns
+            Pattern::Rest | Pattern::RestNamed(_) => {
+                bail!("Rest patterns are only valid inside struct or tuple patterns")
             }
-
-            // Type mismatches
-            _ => Ok(false),
         }
     }
 
@@ -4736,91 +4761,142 @@ impl Repl {
     }
 
     /// Evaluate binary operations
-    fn evaluate_binary(lhs: &Value, op: BinaryOp, rhs: &Value) -> Result<Value> {
-        use Value::{Bool, Float, Int};
-
-        match (lhs, op, rhs) {
-            // Integer arithmetic with overflow checking
-            (Int(a), BinaryOp::Add, Int(b)) => a
-                .checked_add(*b)
-                .map(Int)
+    /// Evaluate integer arithmetic operations (complexity: 7)
+    fn evaluate_integer_arithmetic(a: i64, op: BinaryOp, b: i64) -> Result<Value> {
+        match op {
+            BinaryOp::Add => a
+                .checked_add(b)
+                .map(Value::Int)
                 .ok_or_else(|| anyhow::anyhow!("Integer overflow in addition: {} + {}", a, b)),
-            (Int(a), BinaryOp::Subtract, Int(b)) => a
-                .checked_sub(*b)
-                .map(Int)
+            BinaryOp::Subtract => a
+                .checked_sub(b)
+                .map(Value::Int)
                 .ok_or_else(|| anyhow::anyhow!("Integer overflow in subtraction: {} - {}", a, b)),
-            (Int(a), BinaryOp::Multiply, Int(b)) => a.checked_mul(*b).map(Int).ok_or_else(|| {
-                anyhow::anyhow!("Integer overflow in multiplication: {} * {}", a, b)
-            }),
-            (Int(a), BinaryOp::Divide, Int(b)) => {
-                if *b == 0 {
+            BinaryOp::Multiply => a
+                .checked_mul(b)
+                .map(Value::Int)
+                .ok_or_else(|| anyhow::anyhow!("Integer overflow in multiplication: {} * {}", a, b)),
+            BinaryOp::Divide => {
+                if b == 0 {
                     bail!("Division by zero");
                 }
-                Ok(Int(a / b))
+                Ok(Value::Int(a / b))
             }
-            (Int(a), BinaryOp::Modulo, Int(b)) => {
-                if *b == 0 {
+            BinaryOp::Modulo => {
+                if b == 0 {
                     bail!("Modulo by zero");
                 }
-                Ok(Int(a % b))
+                Ok(Value::Int(a % b))
             }
-            (Int(a), BinaryOp::Power, Int(b)) => {
-                if *b < 0 {
+            BinaryOp::Power => {
+                if b < 0 {
                     bail!("Negative integer powers not supported in integer context");
                 }
-                let exp =
-                    u32::try_from(*b).map_err(|_| anyhow::anyhow!("Power exponent too large"))?;
+                let exp = u32::try_from(b).map_err(|_| anyhow::anyhow!("Power exponent too large"))?;
                 a.checked_pow(exp)
-                    .map(Int)
+                    .map(Value::Int)
                     .ok_or_else(|| anyhow::anyhow!("Integer overflow in power: {} ^ {}", a, b))
+            }
+            _ => bail!("Invalid integer arithmetic operation: {:?}", op),
+        }
+    }
+
+    /// Evaluate float arithmetic operations (complexity: 5)
+    fn evaluate_float_arithmetic(a: f64, op: BinaryOp, b: f64) -> Result<Value> {
+        match op {
+            BinaryOp::Add => Ok(Value::Float(a + b)),
+            BinaryOp::Subtract => Ok(Value::Float(a - b)),
+            BinaryOp::Multiply => Ok(Value::Float(a * b)),
+            BinaryOp::Divide => {
+                if b == 0.0 {
+                    bail!("Division by zero");
+                }
+                Ok(Value::Float(a / b))
+            }
+            BinaryOp::Power => Ok(Value::Float(a.powf(b))),
+            _ => bail!("Invalid float arithmetic operation: {:?}", op),
+        }
+    }
+
+    /// Evaluate comparison operations (complexity: 6)
+    fn evaluate_comparison(lhs: &Value, op: BinaryOp, rhs: &Value) -> Result<Value> {
+        match (lhs, rhs) {
+            (Value::Int(a), Value::Int(b)) => match op {
+                BinaryOp::Less => Ok(Value::Bool(a < b)),
+                BinaryOp::LessEqual => Ok(Value::Bool(a <= b)),
+                BinaryOp::Greater => Ok(Value::Bool(a > b)),
+                BinaryOp::GreaterEqual => Ok(Value::Bool(a >= b)),
+                BinaryOp::Equal => Ok(Value::Bool(a == b)),
+                BinaryOp::NotEqual => Ok(Value::Bool(a != b)),
+                _ => bail!("Invalid integer comparison: {:?}", op),
+            },
+            (Value::String(a), Value::String(b)) => match op {
+                BinaryOp::Equal => Ok(Value::Bool(a == b)),
+                BinaryOp::NotEqual => Ok(Value::Bool(a != b)),
+                _ => bail!("Invalid string comparison: {:?}", op),
+            },
+            (Value::Bool(a), Value::Bool(b)) => match op {
+                BinaryOp::Equal => Ok(Value::Bool(a == b)),
+                BinaryOp::NotEqual => Ok(Value::Bool(a != b)),
+                _ => bail!("Invalid boolean comparison: {:?}", op),
+            },
+            _ => bail!("Type mismatch in comparison: {:?} vs {:?}", lhs, rhs),
+        }
+    }
+
+    /// Evaluate bitwise operations (complexity: 4)
+    fn evaluate_bitwise(a: i64, op: BinaryOp, b: i64) -> Result<Value> {
+        match op {
+            BinaryOp::BitwiseAnd => Ok(Value::Int(a & b)),
+            BinaryOp::BitwiseOr => Ok(Value::Int(a | b)),
+            BinaryOp::BitwiseXor => Ok(Value::Int(a ^ b)),
+            BinaryOp::LeftShift => Ok(Value::Int(a << b)),
+            _ => bail!("Invalid bitwise operation: {:?}", op),
+        }
+    }
+
+    fn evaluate_binary(lhs: &Value, op: BinaryOp, rhs: &Value) -> Result<Value> {
+        match (lhs, op, rhs) {
+            // Integer arithmetic
+            (Value::Int(a), op, Value::Int(b)) if matches!(op, 
+                BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply | 
+                BinaryOp::Divide | BinaryOp::Modulo | BinaryOp::Power) => {
+                Self::evaluate_integer_arithmetic(*a, op, *b)
             }
 
             // Float arithmetic
-            (Float(a), BinaryOp::Add, Float(b)) => Ok(Float(a + b)),
-            (Float(a), BinaryOp::Subtract, Float(b)) => Ok(Float(a - b)),
-            (Float(a), BinaryOp::Multiply, Float(b)) => Ok(Float(a * b)),
-            (Float(a), BinaryOp::Divide, Float(b)) => {
-                if *b == 0.0 {
-                    bail!("Division by zero");
-                }
-                Ok(Float(a / b))
+            (Value::Float(a), op, Value::Float(b)) if matches!(op,
+                BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply |
+                BinaryOp::Divide | BinaryOp::Power) => {
+                Self::evaluate_float_arithmetic(*a, op, *b)
             }
-            (Float(a), BinaryOp::Power, Float(b)) => Ok(Float(a.powf(*b))),
 
-            // String operations
+            // String concatenation
             (Value::String(a), BinaryOp::Add, Value::String(b)) => {
                 Ok(Value::String(format!("{a}{b}")))
             }
 
-            // Comparisons - Integers
-            (Int(a), BinaryOp::Less, Int(b)) => Ok(Bool(a < b)),
-            (Int(a), BinaryOp::LessEqual, Int(b)) => Ok(Bool(a <= b)),
-            (Int(a), BinaryOp::Greater, Int(b)) => Ok(Bool(a > b)),
-            (Int(a), BinaryOp::GreaterEqual, Int(b)) => Ok(Bool(a >= b)),
-            (Int(a), BinaryOp::Equal, Int(b)) => Ok(Bool(a == b)),
-            (Int(a), BinaryOp::NotEqual, Int(b)) => Ok(Bool(a != b)),
-
-            // Comparisons - Strings
-            (Value::String(a), BinaryOp::Equal, Value::String(b)) => Ok(Bool(a == b)),
-            (Value::String(a), BinaryOp::NotEqual, Value::String(b)) => Ok(Bool(a != b)),
-
-            // Comparisons - Booleans
-            (Bool(a), BinaryOp::Equal, Bool(b)) => Ok(Bool(a == b)),
-            (Bool(a), BinaryOp::NotEqual, Bool(b)) => Ok(Bool(a != b)),
+            // Comparisons
+            (lhs, op, rhs) if matches!(op,
+                BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater |
+                BinaryOp::GreaterEqual | BinaryOp::Equal | BinaryOp::NotEqual) => {
+                Self::evaluate_comparison(lhs, op, rhs)
+            }
 
             // Boolean logic
-            (Bool(a), BinaryOp::And, Bool(b)) => Ok(Bool(*a && *b)),
-            (Bool(a), BinaryOp::Or, Bool(b)) => Ok(Bool(*a || *b)),
+            (Value::Bool(a), BinaryOp::And, Value::Bool(b)) => Ok(Value::Bool(*a && *b)),
+            (Value::Bool(a), BinaryOp::Or, Value::Bool(b)) => Ok(Value::Bool(*a || *b)),
 
-            // Null coalescing operator (fallback - should be short-circuited)
+            // Null coalescing
             (Value::Nil, BinaryOp::NullCoalesce, rhs) => Ok(rhs.clone()),
             (lhs, BinaryOp::NullCoalesce, _) => Ok(lhs.clone()),
 
-            // Bitwise operations on integers
-            (Int(a), BinaryOp::BitwiseAnd, Int(b)) => Ok(Int(a & b)),
-            (Int(a), BinaryOp::BitwiseOr, Int(b)) => Ok(Int(a | b)),
-            (Int(a), BinaryOp::BitwiseXor, Int(b)) => Ok(Int(a ^ b)),
-            (Int(a), BinaryOp::LeftShift, Int(b)) => Ok(Int(a << b)),
+            // Bitwise operations
+            (Value::Int(a), op, Value::Int(b)) if matches!(op,
+                BinaryOp::BitwiseAnd | BinaryOp::BitwiseOr |
+                BinaryOp::BitwiseXor | BinaryOp::LeftShift) => {
+                Self::evaluate_bitwise(*a, op, *b)
+            }
 
             _ => bail!(
                 "Type mismatch in binary operation: {:?} {:?} {:?}",
@@ -7335,6 +7411,202 @@ impl Repl {
     }
 
     /// Handle REPL magic commands
+    /// Handle %time magic command (complexity: 3)
+    fn handle_time_magic(&mut self, args: &str) -> Result<String> {
+        if args.is_empty() {
+            return Ok("Usage: %time <expression>".to_string());
+        }
+        
+        let start = std::time::Instant::now();
+        let result = self.eval(args)?;
+        let elapsed = start.elapsed();
+        
+        Ok(format!("{result}\nExecuted in: {elapsed:?}"))
+    }
+
+    /// Handle %timeit magic command (complexity: 4)
+    fn handle_timeit_magic(&mut self, args: &str) -> Result<String> {
+        if args.is_empty() {
+            return Ok("Usage: %timeit <expression>".to_string());
+        }
+        
+        const ITERATIONS: usize = 1000;
+        let mut total_time = std::time::Duration::new(0, 0);
+        let mut last_result = String::new();
+        
+        for _ in 0..ITERATIONS {
+            let start = std::time::Instant::now();
+            last_result = self.eval(args)?;
+            total_time += start.elapsed();
+        }
+        
+        let avg_time = total_time / ITERATIONS as u32;
+        Ok(format!(
+            "{last_result}\n{ITERATIONS} loops, average: {avg_time:?} per loop"
+        ))
+    }
+
+    /// Handle %run magic command (complexity: 6)
+    fn handle_run_magic(&mut self, args: &str) -> Result<String> {
+        if args.is_empty() {
+            return Ok("Usage: %run <script.ruchy>".to_string());
+        }
+        
+        match std::fs::read_to_string(args) {
+            Ok(content) => {
+                let lines: Vec<&str> = content.lines().collect();
+                let mut results = Vec::new();
+                
+                for line in lines {
+                    let trimmed = line.trim();
+                    if !trimmed.is_empty() && !trimmed.starts_with("//") {
+                        match self.eval(trimmed) {
+                            Ok(result) => results.push(result),
+                            Err(e) => return Err(e.context(format!("Error executing: {trimmed}"))),
+                        }
+                    }
+                }
+                
+                Ok(results.join("\n"))
+            }
+            Err(e) => Ok(format!("Failed to read file '{args}': {e}"))
+        }
+    }
+
+    /// Handle %debug magic command (complexity: 7)
+    fn handle_debug_magic(&self) -> Result<String> {
+        if let Some(ref debug_info) = self.last_error_debug {
+            let mut output = String::new();
+            output.push_str("=== Debug Information ===\n");
+            output.push_str(&format!("Expression: {}\n", debug_info.expression));
+            output.push_str(&format!("Error: {}\n", debug_info.error_message));
+            output.push_str(&format!("Time: {:?}\n", debug_info.timestamp));
+            output.push_str("\n--- Variable Bindings at Error ---\n");
+            
+            for (name, value) in &debug_info.bindings_snapshot {
+                output.push_str(&format!("{name}: {value}\n"));
+            }
+            
+            if !debug_info.stack_trace.is_empty() {
+                output.push_str("\n--- Stack Trace ---\n");
+                for frame in &debug_info.stack_trace {
+                    output.push_str(&format!("  {frame}\n"));
+                }
+            }
+            
+            Ok(output)
+        } else {
+            Ok("No debug information available. Run an expression that fails first.".to_string())
+        }
+    }
+
+    /// Handle %profile magic command - parsing phase (complexity: 5)
+    fn profile_parse_phase(&self, args: &str) -> Result<(Expr, std::time::Duration, usize)> {
+        let parse_start = std::time::Instant::now();
+        let mut parser = Parser::new(args);
+        let ast = match parser.parse() {
+            Ok(ast) => ast,
+            Err(e) => return Err(anyhow::anyhow!("Parse error: {e}")),
+        };
+        let parse_time = parse_start.elapsed();
+        let alloc_size = std::mem::size_of_val(&ast);
+        Ok((ast, parse_time, alloc_size))
+    }
+
+    /// Handle %profile magic command - evaluation phase (complexity: 4)
+    fn profile_eval_phase(&mut self, ast: &Expr) -> Result<(Value, std::time::Duration)> {
+        let eval_start = std::time::Instant::now();
+        let deadline = std::time::Instant::now() + self.config.timeout;
+        let result = match self.evaluate_expr(ast, deadline, 0) {
+            Ok(value) => value,
+            Err(e) => return Err(anyhow::anyhow!("Evaluation error: {e}")),
+        };
+        let eval_time = eval_start.elapsed();
+        Ok((result, eval_time))
+    }
+
+    /// Format profile analysis output (complexity: 6)
+    fn format_profile_analysis(
+        &self,
+        total_time: std::time::Duration,
+        parse_time: std::time::Duration,
+        eval_time: std::time::Duration,
+    ) -> String {
+        let mut output = String::new();
+        output.push_str("\n--- Analysis ---\n");
+        
+        if total_time.as_millis() > 50 {
+            output.push_str("⚠️  Slow execution (>50ms)\n");
+        } else if total_time.as_millis() > 10 {
+            output.push_str("⚡ Moderate performance (>10ms)\n");
+        } else {
+            output.push_str("🚀 Fast execution (<10ms)\n");
+        }
+        
+        if parse_time.as_secs_f64() / total_time.as_secs_f64() > 0.3 {
+            output.push_str("📝 Parse-heavy (consider simpler syntax)\n");
+        }
+        
+        if eval_time.as_secs_f64() / total_time.as_secs_f64() > 0.7 {
+            output.push_str("🧮 Compute-heavy (consider optimization)\n");
+        }
+        
+        output
+    }
+
+    /// Handle %profile magic command (complexity: 8)
+    fn handle_profile_magic(&mut self, args: &str) -> Result<String> {
+        if args.is_empty() {
+            return Ok("Usage: %profile <expression>".to_string());
+        }
+        
+        let start = std::time::Instant::now();
+        
+        // Parse phase
+        let (ast, parse_time, alloc_size) = self.profile_parse_phase(args)?;
+        
+        // Evaluation phase  
+        let (result, eval_time) = self.profile_eval_phase(&ast)?;
+        
+        let total_time = start.elapsed();
+        
+        // Generate profile report
+        let mut output = String::new();
+        output.push_str("=== Performance Profile ===\n");
+        output.push_str(&format!("Expression: {args}\n"));
+        output.push_str(&format!("Result: {result}\n\n"));
+        
+        output.push_str("--- Timing Breakdown ---\n");
+        output.push_str(&format!("Parse:     {:>8.3}ms ({:>5.1}%)\n", 
+            parse_time.as_secs_f64() * 1000.0,
+            (parse_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0));
+        output.push_str(&format!("Evaluate:  {:>8.3}ms ({:>5.1}%)\n", 
+            eval_time.as_secs_f64() * 1000.0,
+            (eval_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0));
+        output.push_str(&format!("Total:     {:>8.3}ms\n\n", 
+            total_time.as_secs_f64() * 1000.0));
+        
+        output.push_str("--- Memory Usage ---\n");
+        output.push_str(&format!("AST size:  {alloc_size:>8} bytes\n"));
+        output.push_str(&format!("Memory:    {:>8} bytes used\n", self.memory.current));
+        
+        // Add performance analysis
+        output.push_str(&self.format_profile_analysis(total_time, parse_time, eval_time));
+        
+        Ok(output)
+    }
+
+    /// Handle %help magic command (complexity: 1)
+    fn handle_help_magic(&self) -> Result<String> {
+        Ok(r"Available magic commands:
+%time <expr>     - Time a single execution
+%timeit <expr>   - Time multiple executions (benchmark)
+%run <file>      - Execute a .ruchy script file
+%debug           - Show debug info from last error
+%profile <expr>  - Generate execution profile
+%help            - Show this help message".to_string())
+    }
+
     fn handle_magic_command(&mut self, command: &str) -> Result<String> {
         // Uses legacy implementation for backward compatibility
         // Future: Consider refactoring to use magic registry pattern
@@ -7345,177 +7617,13 @@ impl Repl {
         let args = if parts.len() > 1 { parts[1] } else { "" };
 
         match magic_cmd {
-            "%time" => {
-                if args.is_empty() {
-                    return Ok("Usage: %time <expression>".to_string());
-                }
-                
-                let start = std::time::Instant::now();
-                let result = self.eval(args)?;
-                let elapsed = start.elapsed();
-                
-                Ok(format!("{result}\nExecuted in: {elapsed:?}"))
-            }
-            
-            "%timeit" => {
-                if args.is_empty() {
-                    return Ok("Usage: %timeit <expression>".to_string());
-                }
-                
-                const ITERATIONS: usize = 1000;
-                let mut total_time = std::time::Duration::new(0, 0);
-                let mut last_result = String::new();
-                
-                for _ in 0..ITERATIONS {
-                    let start = std::time::Instant::now();
-                    last_result = self.eval(args)?;
-                    total_time += start.elapsed();
-                }
-                
-                let avg_time = total_time / ITERATIONS as u32;
-                Ok(format!(
-                    "{last_result}\n{ITERATIONS} loops, average: {avg_time:?} per loop"
-                ))
-            }
-            
-            "%run" => {
-                if args.is_empty() {
-                    return Ok("Usage: %run <script.ruchy>".to_string());
-                }
-                
-                match std::fs::read_to_string(args) {
-                    Ok(content) => {
-                        let lines: Vec<&str> = content.lines().collect();
-                        let mut results = Vec::new();
-                        
-                        for line in lines {
-                            let trimmed = line.trim();
-                            if !trimmed.is_empty() && !trimmed.starts_with("//") {
-                                match self.eval(trimmed) {
-                                    Ok(result) => results.push(result),
-                                    Err(e) => return Err(e.context(format!("Error executing: {trimmed}"))),
-                                }
-                            }
-                        }
-                        
-                        Ok(results.join("\n"))
-                    }
-                    Err(e) => Ok(format!("Failed to read file '{args}': {e}"))
-                }
-            }
-            
-            "%debug" => {
-                if let Some(ref debug_info) = self.last_error_debug {
-                    let mut output = String::new();
-                    output.push_str(&"=== Debug Information ===\n".to_string());
-                    output.push_str(&format!("Expression: {}\n", debug_info.expression));
-                    output.push_str(&format!("Error: {}\n", debug_info.error_message));
-                    output.push_str(&format!("Time: {:?}\n", debug_info.timestamp));
-                    output.push_str(&"\n--- Variable Bindings at Error ---\n".to_string());
-                    
-                    for (name, value) in &debug_info.bindings_snapshot {
-                        output.push_str(&format!("{name}: {value}\n"));
-                    }
-                    
-                    if !debug_info.stack_trace.is_empty() {
-                        output.push_str(&"\n--- Stack Trace ---\n".to_string());
-                        for frame in &debug_info.stack_trace {
-                            output.push_str(&format!("  {frame}\n"));
-                        }
-                    }
-                    
-                    Ok(output)
-                } else {
-                    Ok("No debug information available. Run an expression that fails first.".to_string())
-                }
-            }
-            
-            "%profile" => {
-                if args.is_empty() {
-                    return Ok("Usage: %profile <expression>".to_string());
-                }
-                
-                // Profile the expression
-                let start = std::time::Instant::now();
-                
-                
-                let mut alloc_size = 0;
-                
-                // Measure parsing
-                let parse_start = std::time::Instant::now();
-                let mut parser = Parser::new(args);
-                let ast = match parser.parse() {
-                    Ok(ast) => ast,
-                    Err(e) => return Ok(format!("Parse error: {e}")),
-                };
-                let parse_time = parse_start.elapsed();
-                alloc_size += std::mem::size_of_val(&ast);
-                
-                // Measure evaluation
-                let eval_start = std::time::Instant::now();
-                let deadline = std::time::Instant::now() + self.config.timeout;
-                let result = match self.evaluate_expr(&ast, deadline, 0) {
-                    Ok(value) => value,
-                    Err(e) => return Ok(format!("Evaluation error: {e}")),
-                };
-                let eval_time = eval_start.elapsed();
-                
-                let total_time = start.elapsed();
-                
-                // Generate profile report
-                let mut output = String::new();
-                output.push_str("=== Performance Profile ===\n");
-                output.push_str(&format!("Expression: {args}\n"));
-                output.push_str(&format!("Result: {result}\n\n"));
-                
-                output.push_str("--- Timing Breakdown ---\n");
-                output.push_str(&format!("Parse:     {:>8.3}ms ({:>5.1}%)\n", 
-                    parse_time.as_secs_f64() * 1000.0,
-                    (parse_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0));
-                output.push_str(&format!("Evaluate:  {:>8.3}ms ({:>5.1}%)\n", 
-                    eval_time.as_secs_f64() * 1000.0,
-                    (eval_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0));
-                output.push_str(&format!("Total:     {:>8.3}ms\n\n", 
-                    total_time.as_secs_f64() * 1000.0));
-                
-                output.push_str("--- Memory Usage ---\n");
-                output.push_str(&format!("AST size:  {alloc_size:>8} bytes\n"));
-                output.push_str(&format!("Memory:    {:>8} bytes used\n", self.memory.current));
-                
-                // Performance analysis
-                output.push_str("\n--- Analysis ---\n");
-                if total_time.as_millis() > 50 {
-                    output.push_str("⚠️  Slow execution (>50ms)\n");
-                } else if total_time.as_millis() > 10 {
-                    output.push_str("⚡ Moderate performance (>10ms)\n");
-                } else {
-                    output.push_str("🚀 Fast execution (<10ms)\n");
-                }
-                
-                if parse_time.as_secs_f64() / total_time.as_secs_f64() > 0.3 {
-                    output.push_str("📝 Parse-heavy (consider simpler syntax)\n");
-                }
-                
-                if eval_time.as_secs_f64() / total_time.as_secs_f64() > 0.7 {
-                    output.push_str("🧮 Compute-heavy (consider optimization)\n");
-                }
-                
-                Ok(output)
-            }
-            
-            "%help" => {
-                Ok(r"Available magic commands:
-%time <expr>     - Time a single execution
-%timeit <expr>   - Time multiple executions (benchmark)
-%run <file>      - Execute a .ruchy script file
-%debug           - Show debug info from last error
-%profile <expr>  - Generate execution profile
-%help            - Show this help message".to_string())
-            }
-            
-            _ => {
-                Ok(format!("Unknown magic command: {magic_cmd}. Type %help for available commands."))
-            }
+            "%time" => self.handle_time_magic(args),
+            "%timeit" => self.handle_timeit_magic(args),
+            "%run" => self.handle_run_magic(args),
+            "%debug" => self.handle_debug_magic(),
+            "%profile" => self.handle_profile_magic(args),
+            "%help" => self.handle_help_magic(),
+            _ => Ok(format!("Unknown magic command: {magic_cmd}. Type %help for available commands.")),
         }
     }
 
