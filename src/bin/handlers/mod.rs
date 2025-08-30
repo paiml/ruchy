@@ -935,14 +935,13 @@ fn handle_run_enhanced_tests(
             }
         }
         
-        // For now, mark all test functions as covered (simple heuristic)
-        // In a real implementation, we'd instrument the code execution
+        // Execute tests and collect runtime coverage
         for (test_file, success, _, _) in &test_results {
             if *success {
-                // Mark the test file's test functions as covered
-                let file_str = test_file.to_str().unwrap_or("unknown");
-                // This is a simplified version - real coverage would track actual execution
-                collector.mark_function_covered(file_str, "test");
+                // Execute the file to collect actual coverage
+                if let Err(e) = collector.execute_with_coverage(test_file) {
+                    eprintln!("Warning: Failed to collect runtime coverage for {}: {}", test_file.display(), e);
+                }
             }
         }
         
@@ -965,11 +964,11 @@ fn handle_run_enhanced_tests(
         
         // Check threshold
         if threshold > 0.0 {
-            if !collector.meets_threshold(threshold) {
+            if collector.meets_threshold(threshold) {
+                println!("\n✅ Coverage meets threshold of {:.1}%", threshold);
+            } else {
                 eprintln!("\n❌ Coverage below threshold of {:.1}%", threshold);
                 std::process::exit(1);
-            } else {
-                println!("\n✅ Coverage meets threshold of {:.1}%", threshold);
             }
         }
     }

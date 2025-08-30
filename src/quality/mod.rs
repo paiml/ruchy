@@ -4,6 +4,7 @@
 
 pub mod coverage;
 pub mod ruchy_coverage;
+pub mod instrumentation;
 pub mod scoring;
 pub mod gates;
 pub mod enforcement;
