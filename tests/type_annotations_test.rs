@@ -141,7 +141,7 @@ fn test_parse_type_complexity_under_10() {
 // Book example tests
 #[test]
 fn test_book_example_typed_add() {
-    let code = r#"
+    let code = r"
         fun add(x: i32, y: i32) -> i32 {
             x + y
         }
@@ -150,7 +150,7 @@ fn test_book_example_typed_add() {
             let result = add(5, 3);
             println(result);
         }
-    "#;
+    ";
     let mut parser = Parser::new(code);
     let ast = parser.parse();
     assert!(ast.is_ok(), "Book example should parse");
@@ -175,7 +175,7 @@ fn test_book_example_string_processing() {
 
 #[test]
 fn test_book_example_array_operations() {
-    let code = r#"
+    let code = r"
         fun sum_array(nums: [i32]) -> i32 {
             let mut total = 0;
             for n in nums {
@@ -183,7 +183,7 @@ fn test_book_example_array_operations() {
             }
             total
         }
-    "#;
+    ";
     let mut parser = Parser::new(code);
     let ast = parser.parse();
     assert!(ast.is_ok(), "Book array example should parse");

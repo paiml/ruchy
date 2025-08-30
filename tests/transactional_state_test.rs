@@ -72,7 +72,7 @@ fn test_checkpoint_performance() {
     
     // Should be very fast - less than 1ms for 100 bindings
     assert!(checkpoint_time < Duration::from_millis(10), 
-            "Checkpoint took too long: {:?}", checkpoint_time);
+            "Checkpoint took too long: {checkpoint_time:?}");
     
     // Restoration should also be fast
     let _result = repl.eval("let additional = 999").unwrap();
@@ -82,12 +82,12 @@ fn test_checkpoint_performance() {
     let restore_time = start.elapsed();
     
     assert!(restore_time < Duration::from_millis(10),
-            "Restore took too long: {:?}", restore_time);
+            "Restore took too long: {restore_time:?}");
     
     // Verify all original bindings are restored
     for i in 0..10 { // Test a few
-        let result = repl.eval(&format!("var_{}", i));
-        assert!(result.is_ok(), "var_{} should exist after restore", i);
+        let result = repl.eval(&format!("var_{i}"));
+        assert!(result.is_ok(), "var_{i} should exist after restore");
         assert_eq!(result.unwrap().trim(), &format!("{}", i * 2));
     }
     
@@ -134,21 +134,18 @@ fn test_transactional_evaluation_failure() {
     let result = strict_repl.eval_transactional("let big_data = [1,2,3,4,5,6,7,8,9,10]");
     
     // Either succeeds or fails, both are valid depending on timing
-    match result {
-        Ok(_) => {
-            // If it succeeds, state should be Ready
-            assert!(matches!(strict_repl.get_state(), ReplState::Ready));
-        }
-        Err(_) => {
-            // If it fails, should be in Failed state
-            assert!(strict_repl.is_failed());
-            
-            // Should be able to recover
-            let recovery = strict_repl.recover();
-            assert!(recovery.is_ok());
-            assert!(!strict_repl.is_failed());
-            assert!(matches!(strict_repl.get_state(), ReplState::Ready));
-        }
+    if let Ok(_) = result {
+        // If it succeeds, state should be Ready
+        assert!(matches!(strict_repl.get_state(), ReplState::Ready));
+    } else {
+        // If it fails, should be in Failed state
+        assert!(strict_repl.is_failed());
+        
+        // Should be able to recover
+        let recovery = strict_repl.recover();
+        assert!(recovery.is_ok());
+        assert!(!strict_repl.is_failed());
+        assert!(matches!(strict_repl.get_state(), ReplState::Ready));
     }
 }
 

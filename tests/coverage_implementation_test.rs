@@ -12,7 +12,7 @@ fn test_coverage_generates_report() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("coverage_test.ruchy");
     
-    fs::write(&test_file, r#"
+    fs::write(&test_file, r"
 fn add(a: i32, b: i32) -> i32 {
     a + b
 }
@@ -31,11 +31,11 @@ fn test_math() {
     assert_eq!(add(2, 3), 5);
     assert_eq!(subtract(5, 3), 2);
 }
-"#).unwrap();
+").unwrap();
     
     // Run coverage command
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", test_file.to_str().unwrap()])
+        .args(["run", "--quiet", "--", "test", "--coverage", test_file.to_str().unwrap()])
         .output()
         .expect("Failed to run coverage command");
     
@@ -47,8 +47,7 @@ fn test_math() {
         stdout.contains("Coverage") || 
         stdout.contains("coverage") ||
         stderr.contains("not yet implemented"),
-        "Coverage output should mention coverage or indicate it's not implemented\nstdout: {}\nstderr: {}", 
-        stdout, stderr
+        "Coverage output should mention coverage or indicate it's not implemented\nstdout: {stdout}\nstderr: {stderr}"
     );
 }
 
@@ -64,7 +63,7 @@ fn main() {
 "#).unwrap();
     
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", "--coverage-format", "text", test_file.to_str().unwrap()])
+        .args(["run", "--quiet", "--", "test", "--coverage", "--coverage-format", "text", test_file.to_str().unwrap()])
         .output()
         .expect("Failed to run coverage command");
     
@@ -101,7 +100,7 @@ fn test_partial() {
     
     // Run with high threshold that should fail
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", "--threshold", "90", test_file.to_str().unwrap()])
+        .args(["run", "--quiet", "--", "test", "--coverage", "--threshold", "90", test_file.to_str().unwrap()])
         .output()
         .expect("Failed to run coverage command");
     
@@ -128,7 +127,7 @@ fn main() {
 "#).unwrap();
     
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", "--coverage-format", "json", test_file.to_str().unwrap()])
+        .args(["run", "--quiet", "--", "test", "--coverage", "--coverage-format", "json", test_file.to_str().unwrap()])
         .output()
         .expect("Failed to run coverage command");
     
@@ -138,7 +137,7 @@ fn main() {
     if !stdout.contains("not yet implemented") {
         // If implemented, should be valid JSON
         assert!(
-            stdout.contains("{") || stdout.contains("Coverage"),
+            stdout.contains('{') || stdout.contains("Coverage"),
             "JSON format should produce JSON output or coverage info"
         );
     }
@@ -157,7 +156,7 @@ fn main() {
 "#).unwrap();
     
     let output = Command::new("cargo")
-        .args(&[
+        .args([
             "run", "--quiet", "--", "test", 
             "--coverage", "--coverage-format", "html",
             test_file.to_str().unwrap()

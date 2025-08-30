@@ -20,11 +20,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ];
     
     for (expr, description) in expressions {
-        println!("{}:", description);
-        println!("  > {}", expr);
+        println!("{description}:");
+        println!("  > {expr}");
         match repl.eval(expr) {
-            Ok(result) => println!("  {}\n", result),
-            Err(e) => println!("  ERROR: {}\n", e),
+            Ok(result) => println!("  {result}\n"),
+            Err(e) => println!("  ERROR: {e}\n"),
         }
     }
     

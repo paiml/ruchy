@@ -10,7 +10,7 @@ use tempfile::TempDir;
 fn test_coverage_command_exists() {
     // Test that ruchy test --coverage is available
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--help"])
+        .args(["run", "--quiet", "--", "test", "--help"])
         .output()
         .expect("Failed to run ruchy test --help");
     
@@ -25,7 +25,7 @@ fn test_coverage_command_with_simple_file() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("simple_test.ruchy");
     
-    fs::write(&test_file, r#"
+    fs::write(&test_file, r"
 // Simple test file
 fn add(a: i32, b: i32) -> i32 {
     a + b
@@ -35,11 +35,11 @@ fn add(a: i32, b: i32) -> i32 {
 fn test_add() {
     assert_eq!(add(2, 3), 5);
 }
-"#).unwrap();
+").unwrap();
     
     // Run coverage command
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", test_file.to_str().unwrap()])
+        .args(["run", "--quiet", "--", "test", "--coverage", test_file.to_str().unwrap()])
         .output()
         .expect("Failed to run coverage command");
     
@@ -66,7 +66,7 @@ fn test_coverage_output_formats() {
     
     for format in formats {
         let output = Command::new("cargo")
-            .args(&["run", "--quiet", "--", "test", "--coverage", "--coverage-format", format])
+            .args(["run", "--quiet", "--", "test", "--coverage", "--coverage-format", format])
             .output()
             .expect("Failed to run coverage command");
         
@@ -74,7 +74,7 @@ fn test_coverage_output_formats() {
         assert!(
             output.status.success() || 
             !String::from_utf8_lossy(&output.stderr).contains("unexpected argument"),
-            "Coverage format {} should be recognized", format
+            "Coverage format {format} should be recognized"
         );
     }
 }
@@ -83,7 +83,7 @@ fn test_coverage_output_formats() {
 fn test_coverage_threshold() {
     // Test coverage threshold functionality
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", "--threshold", "80"])
+        .args(["run", "--quiet", "--", "test", "--coverage", "--threshold", "80"])
         .output()
         .expect("Failed to run coverage command");
     
@@ -99,7 +99,7 @@ fn test_coverage_threshold() {
 fn test_coverage_parallel_flag() {
     // Test that coverage works with parallel flag
     let output = Command::new("cargo")
-        .args(&["run", "--quiet", "--", "test", "--coverage", "--parallel"])
+        .args(["run", "--quiet", "--", "test", "--coverage", "--parallel"])
         .output()
         .expect("Failed to run coverage command");
     

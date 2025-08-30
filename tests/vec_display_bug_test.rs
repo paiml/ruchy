@@ -17,7 +17,7 @@ fn test_vec_display_bug() {
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_string = rust_code.to_string();
     
-    println!("Generated Rust code: {}", rust_string);
+    println!("Generated Rust code: {rust_string}");
     
     // The bug: println generates Display requirement for Vec
     // Should generate {:?} debug format for complex types like Vec
@@ -42,7 +42,7 @@ fn test_simple_println_works() {
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_string = rust_code.to_string();
     
-    println!("Simple println Rust code: {}", rust_string);
+    println!("Simple println Rust code: {rust_string}");
     
     // This should generate working code
     assert!(rust_string.contains("println !"));

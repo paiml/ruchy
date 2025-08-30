@@ -42,8 +42,8 @@ fn test_complete_programs() {
         
         // Should generate valid Rust program structure
         assert!(code.contains("fn main"), "Program should contain main function: {program}");
-        assert!(code.contains("{"), "Program should have block structure: {program}");
-        assert!(code.contains("}"), "Program should have closing braces: {program}");
+        assert!(code.contains('{'), "Program should have block structure: {program}");
+        assert!(code.contains('}'), "Program should have closing braces: {program}");
     }
 }
 
@@ -63,14 +63,14 @@ fn test_expression_programs() {
     
     for expr in expressions {
         let mut parser = Parser::new(expr);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", expr));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {expr}"));
         
         let result = transpiler.transpile_to_program(&ast)
-            .expect(&format!("Failed to transpile expression: {}", expr));
+            .unwrap_or_else(|_| panic!("Failed to transpile expression: {expr}"));
         let code = result.to_string();
         
         // Expression programs should be wrapped in main
-        assert!(code.contains("fn main"), "Expression '{}' should be wrapped in main", expr);
+        assert!(code.contains("fn main"), "Expression '{expr}' should be wrapped in main");
     }
 }
 
@@ -104,14 +104,14 @@ fn test_all_statements() {
     
     for stmt in statements {
         let mut parser = Parser::new(stmt);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", stmt));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {stmt}"));
         
         let result = transpiler.transpile(&ast)
-            .expect(&format!("Failed to transpile statement: {}", stmt));
+            .unwrap_or_else(|_| panic!("Failed to transpile statement: {stmt}"));
         let code = result.to_string();
         
         // Statements should transpile to valid Rust
-        assert!(!code.is_empty(), "Statement '{}' should produce output", stmt);
+        assert!(!code.is_empty(), "Statement '{stmt}' should produce output");
     }
 }
 
@@ -159,13 +159,13 @@ fn test_all_expressions() {
     
     for expr in expressions {
         let mut parser = Parser::new(expr);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", expr));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {expr}"));
         
         let result = transpiler.transpile(&ast)
-            .expect(&format!("Failed to transpile expression: {}", expr));
+            .unwrap_or_else(|_| panic!("Failed to transpile expression: {expr}"));
         let code = result.to_string();
         
-        assert!(!code.is_empty(), "Expression '{}' should produce output", expr);
+        assert!(!code.is_empty(), "Expression '{expr}' should produce output");
     }
 }
 
@@ -194,13 +194,13 @@ fn test_function_definitions() {
     
     for func in functions {
         let mut parser = Parser::new(func);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", func));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {func}"));
         
         let result = transpiler.transpile(&ast)
-            .expect(&format!("Failed to transpile function: {}", func));
+            .unwrap_or_else(|_| panic!("Failed to transpile function: {func}"));
         let code = result.to_string();
         
-        assert!(code.contains("fn"), "Function '{}' should contain 'fn' keyword", func);
+        assert!(code.contains("fn"), "Function '{func}' should contain 'fn' keyword");
     }
 }
 
@@ -230,13 +230,13 @@ fn test_control_flow() {
     
     for flow in control_flows {
         let mut parser = Parser::new(flow);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", flow));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {flow}"));
         
         let result = transpiler.transpile(&ast)
-            .expect(&format!("Failed to transpile control flow: {}", flow));
+            .unwrap_or_else(|_| panic!("Failed to transpile control flow: {flow}"));
         let code = result.to_string();
         
-        assert!(!code.is_empty(), "Control flow '{}' should produce output", flow);
+        assert!(!code.is_empty(), "Control flow '{flow}' should produce output");
     }
 }
 
@@ -267,13 +267,13 @@ fn test_type_features() {
     
     for feature in type_features {
         let mut parser = Parser::new(feature);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", feature));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {feature}"));
         
         let result = transpiler.transpile(&ast)
-            .expect(&format!("Failed to transpile type feature: {}", feature));
+            .unwrap_or_else(|_| panic!("Failed to transpile type feature: {feature}"));
         let code = result.to_string();
         
-        assert!(!code.is_empty(), "Type feature '{}' should produce output", feature);
+        assert!(!code.is_empty(), "Type feature '{feature}' should produce output");
     }
 }
 
@@ -300,13 +300,13 @@ fn test_error_handling() {
     
     for handling in error_handling {
         let mut parser = Parser::new(handling);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", handling));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {handling}"));
         
         let result = transpiler.transpile(&ast)
-            .expect(&format!("Failed to transpile error handling: {}", handling));
+            .unwrap_or_else(|_| panic!("Failed to transpile error handling: {handling}"));
         let code = result.to_string();
         
-        assert!(!code.is_empty(), "Error handling '{}' should produce output", handling);
+        assert!(!code.is_empty(), "Error handling '{handling}' should produce output");
     }
 }
 
@@ -343,13 +343,13 @@ fn test_operators() {
     
     for op in operators {
         let mut parser = Parser::new(op);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", op));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {op}"));
         
         let result = transpiler.transpile(&ast)
-            .expect(&format!("Failed to transpile operator: {}", op));
+            .unwrap_or_else(|_| panic!("Failed to transpile operator: {op}"));
         let code = result.to_string();
         
-        assert!(!code.is_empty(), "Operator '{}' should produce output", op);
+        assert!(!code.is_empty(), "Operator '{op}' should produce output");
     }
 }
 
@@ -378,12 +378,12 @@ fn test_string_features() {
     
     for feature in string_features {
         let mut parser = Parser::new(feature);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", feature));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {feature}"));
         
         let result = transpiler.transpile(&ast)
-            .expect(&format!("Failed to transpile string feature: {}", feature));
+            .unwrap_or_else(|_| panic!("Failed to transpile string feature: {feature}"));
         let code = result.to_string();
         
-        assert!(!code.is_empty(), "String feature '{}' should produce output", feature);
+        assert!(!code.is_empty(), "String feature '{feature}' should produce output");
     }
 }

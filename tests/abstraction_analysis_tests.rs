@@ -65,7 +65,7 @@ fn test_abstraction_types() {
     ];
     
     for abs_type in types {
-        assert!(!format!("{:?}", abs_type).is_empty());
+        assert!(!format!("{abs_type:?}").is_empty());
         // Test PartialEq
         assert_eq!(abs_type.clone(), abs_type);
     }

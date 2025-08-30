@@ -4,10 +4,10 @@ use ruchy::runtime::repl::Repl;
 
 fn eval_in_repl(code: &str) -> Result<String, String> {
     let mut repl = Repl::new()
-        .map_err(|e| format!("Failed to create REPL: {:?}", e))?;
+        .map_err(|e| format!("Failed to create REPL: {e:?}"))?;
     
     let result = repl.eval(code)
-        .map_err(|e| format!("Eval error: {:?}", e))?;
+        .map_err(|e| format!("Eval error: {e:?}"))?;
     
     Ok(result)
 }
@@ -18,15 +18,15 @@ fn test_hashset_operations_exist() {
     
     // Test union
     let result = eval_in_repl("let s1 = HashSet(); let s2 = HashSet(); s1.union(s2)");
-    assert!(result.is_ok(), "Union should not error: {:?}", result);
+    assert!(result.is_ok(), "Union should not error: {result:?}");
     
     // Test intersection  
     let result = eval_in_repl("let s1 = HashSet(); let s2 = HashSet(); s1.intersection(s2)");
-    assert!(result.is_ok(), "Intersection should not error: {:?}", result);
+    assert!(result.is_ok(), "Intersection should not error: {result:?}");
     
     // Test difference
     let result = eval_in_repl("let s1 = HashSet(); let s2 = HashSet(); s1.difference(s2)");
-    assert!(result.is_ok(), "Difference should not error: {:?}", result);
+    assert!(result.is_ok(), "Difference should not error: {result:?}");
     
     // Test that methods return HashSet
     let result = eval_in_repl("let s1 = HashSet(); let s2 = HashSet(); s1.union(s2)").unwrap();

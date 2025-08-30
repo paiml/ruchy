@@ -19,7 +19,7 @@ fn test_while_loop_off_by_one() {
     // EXPECTED: "0\n1\n2\n"
     // ACTUAL BUG: "0\n1\n2\n3\n"
     assert_eq!(stdout, "0\n1\n2\n", 
-        "while i < 3 should print 0,1,2 only, got: {:?}", stdout);
+        "while i < 3 should print 0,1,2 only, got: {stdout:?}");
 }
 
 #[test]
@@ -33,14 +33,12 @@ obj.items()"#;
         .output()
         .expect("Failed to run ruchy");
     
-    if !output.status.success() {
-        panic!("obj.items() should work, got error: {}", 
+    assert!(output.status.success(), "obj.items() should work, got error: {}", 
             String::from_utf8_lossy(&output.stderr));
-    }
     
     let stdout = String::from_utf8_lossy(&output.stdout);
     
     // items() should return list of (key, value) tuples
     assert!(stdout.contains("(\"a\", 1)") && stdout.contains("(\"b\", 2)"),
-        "obj.items() should return key-value pairs, got: {:?}", stdout);
+        "obj.items() should return key-value pairs, got: {stdout:?}");
 }

@@ -4,7 +4,7 @@
 
 use ruchy::runtime::{
     TransactionalState, TransactionMetadata, TransactionId,
-    TransactionEvent, TransactionLog, MVCC, Version,
+    TransactionEvent, TransactionLog, MVCC,
     Value,
 };
 use std::time::Duration;
@@ -123,7 +123,7 @@ fn test_transaction_limits() {
     
     // Allocate memory
     for i in 0..10 {
-        state.insert_binding(format!("var{}", i), Value::Int(i), false);
+        state.insert_binding(format!("var{i}"), Value::Int(i), false);
     }
     
     // May exceed memory limit

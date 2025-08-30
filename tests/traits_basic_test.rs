@@ -8,10 +8,10 @@ use std::fs;
 // Helper to test in REPL
 fn eval_in_repl(code: &str) -> Result<String, String> {
     let mut repl = Repl::new()
-        .map_err(|e| format!("Failed to create REPL: {:?}", e))?;
+        .map_err(|e| format!("Failed to create REPL: {e:?}"))?;
     
     let result = repl.eval(code)
-        .map_err(|e| format!("Eval error: {:?}", e))?;
+        .map_err(|e| format!("Eval error: {e:?}"))?;
     
     // Remove quotes if present (REPL string formatting)
     if result.starts_with('"') && result.ends_with('"') && result.len() >= 2 {
@@ -26,12 +26,12 @@ fn eval_transpiled(code: &str) -> Result<String, String> {
     let test_file = format!("/tmp/traits_test_{}.ruchy", 
         std::process::id());
     fs::write(&test_file, code)
-        .map_err(|e| format!("Failed to write test file: {}", e))?;
+        .map_err(|e| format!("Failed to write test file: {e}"))?;
     
     let output = Command::new("./target/release/ruchy")
         .arg(&test_file)
         .output()
-        .map_err(|e| format!("Failed to run file: {}", e))?;
+        .map_err(|e| format!("Failed to run file: {e}"))?;
     
     // Clean up
     let _ = fs::remove_file(&test_file);
@@ -47,11 +47,11 @@ fn eval_transpiled(code: &str) -> Result<String, String> {
 #[test]
 fn test_trait_definition() {
     // Test basic trait definition
-    let code = r#"
+    let code = r"
 trait Display {
     fn display(self) -> String
 }
-"#;
+";
     
     let result = eval_in_repl(code);
     // For now, trait definitions might not return anything or return a placeholder
@@ -134,7 +134,7 @@ impl Greet for Person {
 #[test]
 fn test_trait_bounds() {
     // Test generic functions with trait bounds
-    let code = r#"
+    let code = r"
 trait Display {
     fn display(self) -> String
 }
@@ -142,7 +142,7 @@ trait Display {
 fn print_it<T: Display>(value: T) -> String {
     value.display()
 }
-"#;
+";
     
     let result = eval_in_repl(code);
     assert!(result.is_ok() || result.is_err(), "Trait bounds should at least parse");
@@ -182,10 +182,10 @@ impl Debug for Point {
 #[test]
 fn test_derive_traits() {
     // Test deriving common traits
-    let code = r#"
+    let code = r"
 #[derive(Debug, Clone, PartialEq)]
 struct Point { x: i32, y: i32 }
-"#;
+";
     
     let result = eval_in_repl(code);
     assert!(result.is_ok() || result.is_err(), "Derive syntax should at least parse");
@@ -194,12 +194,12 @@ struct Point { x: i32, y: i32 }
 #[test]
 fn test_associated_types() {
     // Test traits with associated types
-    let code = r#"
+    let code = r"
 trait Iterator {
     type Item
     fn next(self) -> Option<Self::Item>
 }
-"#;
+";
     
     let result = eval_in_repl(code);
     assert!(result.is_ok() || result.is_err(), "Associated types should at least parse");

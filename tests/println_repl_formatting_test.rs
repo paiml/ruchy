@@ -3,7 +3,7 @@
 //! Documents the issue where println("Hello", "World") in REPL prints on separate lines
 //! instead of space-separated on one line like the compiled version.
 //!
-//! **Expected**: `Hello World` on one line  
+//! **Expected**: `Hello World` on one line\
 //! **Actual**: `Hello` on line 1, ` "World"` on line 2 (currently broken in interactive mode)
 
 use ruchy::runtime::repl::Repl;
@@ -63,7 +63,7 @@ fn test_println_multi_args_should_be_space_separated_on_one_line() {
     // The key assertion: We need to capture stdout to verify the format
     // For now, let's test that it doesn't panic and returns Unit
     let value = result.unwrap();
-    assert_eq!(format!("{:?}", value), "Unit", "println should return unit value");
+    assert_eq!(format!("{value:?}"), "Unit", "println should return unit value");
     
     // TODO: Add proper stdout capture to verify "Hello World" on one line
     // This test documents the expected behavior for implementation
@@ -82,7 +82,7 @@ fn test_println_single_arg_works_correctly() {
     assert!(result.is_ok(), "Single arg println should work");
     
     let value = result.unwrap();
-    assert_eq!(format!("{:?}", value), "Unit", "println should return unit value");
+    assert_eq!(format!("{value:?}"), "Unit", "println should return unit value");
 }
 
 #[test]
@@ -106,7 +106,7 @@ fn test_compiled_println_works_correctly() {
         .expect("Should transpile println");
     
     // Write to temporary Rust file
-    let mut rust_file = NamedTempFile::with_suffix(".rs").expect("Create temp file");
+    let rust_file = NamedTempFile::with_suffix(".rs").expect("Create temp file");
     fs::write(rust_file.path(), rust_code.to_string()).expect("Write Rust code");
     
     // Compile and run
@@ -129,5 +129,5 @@ fn test_compiled_println_works_correctly() {
     
     // CRITICAL: Compiled version should print "Hello World" on one line
     assert!(stdout.contains("Hello World"), 
-        "Compiled println should output 'Hello World' on one line, got: {:?}", stdout);
+        "Compiled println should output 'Hello World' on one line, got: {stdout:?}");
 }

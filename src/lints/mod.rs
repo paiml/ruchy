@@ -193,7 +193,7 @@ mod tests {
     fn test_add_custom_rule() {
         struct TestRule;
         impl LintRule for TestRule {
-            fn name(&self) -> &str {
+            fn name(&self) -> &'static str {
                 "test"
             }
             fn check_expression(&self, _expr: &Expr) -> Vec<LintViolation> {

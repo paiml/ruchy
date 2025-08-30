@@ -28,15 +28,15 @@ fn test_obj_items_transpilation_compiles() {
     
     // Should not have compilation errors
     assert!(!stderr.contains("error:"), 
-        "Should compile without errors, got stderr: {}", stderr);
+        "Should compile without errors, got stderr: {stderr}");
     
     // Should execute successfully  
     assert!(output.status.success(),
-        "Should execute successfully, got stderr: {}", stderr);
+        "Should execute successfully, got stderr: {stderr}");
     
     // Should produce output
-    assert!(stdout.contains("a") && (stdout.contains("1") || stdout.contains("2")),
-        "Should print keys and values, got stdout: {}", stdout);
+    assert!(stdout.contains('a') && (stdout.contains('1') || stdout.contains('2')),
+        "Should print keys and values, got stdout: {stdout}");
 }
 
 #[test]
@@ -46,13 +46,13 @@ fn test_obj_items_method_exists() {
     
     let output = Command::new("bash")
         .arg("-c")
-        .arg(&format!("echo '{}' | ./target/release/ruchy repl", code))
+        .arg(format!("echo '{code}' | ./target/release/ruchy repl"))
         .output()
         .expect("Failed to run ruchy");
     
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("(\"a\", 1)"),
-        "obj.items() should work in REPL, got: {}", stdout);
+        "obj.items() should work in REPL, got: {stdout}");
 }
 
 #[test]
@@ -63,7 +63,7 @@ fn test_transpiled_items_vs_repl() {
     // REPL version
     let repl_output = Command::new("bash")
         .arg("-c")
-        .arg(&format!("echo '{}' | ./target/release/ruchy repl", code))
+        .arg(format!("echo '{code}' | ./target/release/ruchy repl"))
         .output()
         .expect("Failed to run ruchy repl");
     let repl_stdout = String::from_utf8_lossy(&repl_output.stdout);
@@ -78,7 +78,7 @@ fn test_transpiled_items_vs_repl() {
     
     // Both should work and produce similar results
     assert!(repl_stdout.contains("(\"test\", 42)"),
-        "REPL should work: {}", repl_stdout);
+        "REPL should work: {repl_stdout}");
     assert!(file_output.status.success(),
         "File execution should work: {}", String::from_utf8_lossy(&file_output.stderr));
 }

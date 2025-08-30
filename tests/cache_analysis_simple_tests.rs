@@ -79,7 +79,7 @@ fn test_access_pattern_types() {
     ];
 
     for pattern_type in patterns {
-        assert!(!format!("{:?}", pattern_type).is_empty());
+        assert!(!format!("{pattern_type:?}").is_empty());
         assert_eq!(pattern_type.clone(), pattern_type);
     }
 }
@@ -116,7 +116,7 @@ fn test_branch_pattern_types() {
     ];
 
     for pattern_type in patterns {
-        assert!(!format!("{:?}", pattern_type).is_empty());
+        assert!(!format!("{pattern_type:?}").is_empty());
         assert_eq!(pattern_type.clone(), pattern_type);
     }
 }

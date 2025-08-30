@@ -38,7 +38,7 @@ fn test_compilation_performance_baseline() {
         ),
         (
             "fibonacci",
-            r#"
+            r"
             fun fibonacci(n: i32) -> i32 {
                 if n <= 1 {
                     n
@@ -47,7 +47,7 @@ fn test_compilation_performance_baseline() {
                 }
             }
             fibonacci(10)
-            "#,
+            ",
             100,
         ),
         (
@@ -63,10 +63,10 @@ fn test_compilation_performance_baseline() {
         ),
         (
             "list_operations",
-            r#"
+            r"
             let numbers = [1, 2, 3, 4, 5]
             numbers.map(|x| x * 2).filter(|x| x > 5)
-            "#,
+            ",
             100,
         ),
     ];
@@ -108,13 +108,13 @@ fn test_compilation_performance_baseline() {
             parse_ms,
             transpile_ms,
             total_ms,
-            if total_ms < target_ms as f64 { "✓" } else { "✗ SLOW" }
+            if total_ms < f64::from(target_ms) { "✓" } else { "✗ SLOW" }
         );
 
         total_parse_time += parse_ms;
         total_transpile_time += transpile_ms;
         
-        if total_ms >= target_ms as f64 {
+        if total_ms >= f64::from(target_ms) {
             all_under_target = false;
         }
     }
@@ -165,8 +165,7 @@ fn test_parsing_throughput() {
         let mb_per_sec = (bytes as f64 / 1_000_000.0) / duration.as_secs_f64();
         
         println!(
-            "{:<15} {:>15.3} {:>15.0} {:>15.2}",
-            size, ms, throughput, mb_per_sec
+            "{size:<15} {ms:>15.3} {throughput:>15.0} {mb_per_sec:>15.2}"
         );
     }
 }
@@ -177,10 +176,10 @@ fn test_nested_expression_performance() {
     println!("{:<15} {:>15} {:>15}", "Depth", "Parse (ms)", "Status");
     println!("{:-<45}", "");
 
-    for depth in vec![5, 10, 20, 50] {
+    for depth in [5, 10, 20, 50] {
         let mut expr = "42".to_string();
         for _ in 0..depth {
-            expr = format!("({} + 1)", expr);
+            expr = format!("({expr} + 1)");
         }
         
         // Warm up
@@ -209,7 +208,7 @@ fn test_nested_expression_performance() {
 fn test_complex_program_performance() {
     println!("\n=== Complex Program Performance ===\n");
     
-    let complex_program = r#"
+    let complex_program = r"
         fun quicksort(arr: [i32]) -> [i32] {
             if arr.len() <= 1 {
                 arr
@@ -225,7 +224,7 @@ fn test_complex_program_performance() {
         let numbers = [5, 2, 8, 1, 9, 3, 7, 4, 6]
         let sorted = quicksort(numbers)
         println(sorted)
-    "#;
+    ";
     
     // Warm up
     for _ in 0..3 {

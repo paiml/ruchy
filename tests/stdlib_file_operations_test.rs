@@ -9,10 +9,10 @@ use std::path::Path;
 // Helper to test in REPL
 fn eval_in_repl(code: &str) -> Result<String, String> {
     let mut repl = Repl::new()
-        .map_err(|e| format!("Failed to create REPL: {:?}", e))?;
+        .map_err(|e| format!("Failed to create REPL: {e:?}"))?;
     
     let result = repl.eval(code)
-        .map_err(|e| format!("Eval error: {:?}", e))?;
+        .map_err(|e| format!("Eval error: {e:?}"))?;
     
     Ok(result)
 }
@@ -22,12 +22,12 @@ fn eval_transpiled(code: &str) -> Result<String, String> {
     let test_file = format!("/tmp/file_ops_test_{}.ruchy", 
         std::process::id());
     fs::write(&test_file, code)
-        .map_err(|e| format!("Failed to write test file: {}", e))?;
+        .map_err(|e| format!("Failed to write test file: {e}"))?;
     
     let output = Command::new("./target/release/ruchy")
         .arg(&test_file)
         .output()
-        .map_err(|e| format!("Failed to run file: {}", e))?;
+        .map_err(|e| format!("Failed to run file: {e}"))?;
     
     // Clean up
     let _ = fs::remove_file(&test_file);
@@ -48,7 +48,7 @@ fn test_file_exists() {
     let _ = fs::remove_file(test_file);
     
     // Test file doesn't exist
-    let code = format!(r#"file_exists("{}")"#, test_file);
+    let code = format!(r#"file_exists("{test_file}")"#);
     let result = eval_in_repl(&code).unwrap();
     assert_eq!(result, "false");
     
@@ -60,7 +60,7 @@ fn test_file_exists() {
     assert_eq!(result, "true");
     
     // Test transpiled version
-    let code = format!(r#"println(file_exists("{}"))"#, test_file);
+    let code = format!(r#"println(file_exists("{test_file}"))"#);
     let result = eval_transpiled(&code).unwrap();
     assert_eq!(result, "true");
     
@@ -79,9 +79,9 @@ fn test_append_file() {
     fs::write(test_file, "Initial content\n").unwrap();
     
     // Test append in REPL
-    let code = format!(r#"append_file("{}", "Appended line\n")"#, test_file);
+    let code = format!(r#"append_file("{test_file}", "Appended line\n")"#);
     let result = eval_in_repl(&code);
-    assert!(result.is_ok(), "append_file should work in REPL: {:?}", result);
+    assert!(result.is_ok(), "append_file should work in REPL: {result:?}");
     
     // Verify content
     let content = fs::read_to_string(test_file).unwrap();
@@ -89,9 +89,9 @@ fn test_append_file() {
     assert!(content.contains("Appended line"));
     
     // Test transpiled version
-    let code = format!(r#"append_file("{}", "Another line\n")"#, test_file);
+    let code = format!(r#"append_file("{test_file}", "Another line\n")"#);
     let result = eval_transpiled(&code);
-    assert!(result.is_ok(), "append_file should work in transpiler: {:?}", result);
+    assert!(result.is_ok(), "append_file should work in transpiler: {result:?}");
     
     // Verify final content
     let content = fs::read_to_string(test_file).unwrap();
@@ -112,9 +112,9 @@ fn test_delete_file() {
     assert!(Path::new(test_file).exists());
     
     // Test delete in REPL
-    let code = format!(r#"delete_file("{}")"#, test_file);
+    let code = format!(r#"delete_file("{test_file}")"#);
     let result = eval_in_repl(&code);
-    assert!(result.is_ok(), "delete_file should work in REPL: {:?}", result);
+    assert!(result.is_ok(), "delete_file should work in REPL: {result:?}");
     
     // Verify file is deleted
     assert!(!Path::new(test_file).exists());
@@ -123,9 +123,9 @@ fn test_delete_file() {
     fs::write(test_file, "content to be deleted again").unwrap();
     assert!(Path::new(test_file).exists());
     
-    let code = format!(r#"delete_file("{}")"#, test_file);
+    let code = format!(r#"delete_file("{test_file}")"#);
     let result = eval_transpiled(&code);
-    assert!(result.is_ok(), "delete_file should work in transpiler: {:?}", result);
+    assert!(result.is_ok(), "delete_file should work in transpiler: {result:?}");
     
     // Verify file is deleted
     assert!(!Path::new(test_file).exists());
@@ -139,21 +139,21 @@ fn test_file_operations_with_existing_functions() {
     let _ = fs::remove_file(test_file);
     
     // Test combined operations in sequence
-    let code = format!(r#"file_exists("{}")"#, test_file);
+    let code = format!(r#"file_exists("{test_file}")"#);
     let result = eval_in_repl(&code).unwrap();
     assert_eq!(result, "false");
     
-    let code = format!(r#"write_file("{}", "Hello World\n")"#, test_file);
+    let code = format!(r#"write_file("{test_file}", "Hello World\n")"#);
     let result = eval_in_repl(&code);
-    assert!(result.is_ok(), "write_file should work: {:?}", result);
+    assert!(result.is_ok(), "write_file should work: {result:?}");
     
-    let code = format!(r#"file_exists("{}")"#, test_file);
+    let code = format!(r#"file_exists("{test_file}")"#);
     let result = eval_in_repl(&code).unwrap();
     assert_eq!(result, "true");
     
-    let code = format!(r#"append_file("{}", "Additional line\n")"#, test_file);
+    let code = format!(r#"append_file("{test_file}", "Additional line\n")"#);
     let result = eval_in_repl(&code);
-    assert!(result.is_ok(), "append_file should work: {:?}", result);
+    assert!(result.is_ok(), "append_file should work: {result:?}");
     
     // Verify final state
     assert!(Path::new(test_file).exists());
@@ -183,7 +183,7 @@ fn test_error_handling() {
     let test_file = "/tmp/test_append_nonexistent.txt";
     let _ = fs::remove_file(test_file); // Make sure it doesn't exist
     
-    let result = eval_in_repl(&format!(r#"append_file("{}", "test")"#, test_file));
+    let result = eval_in_repl(&format!(r#"append_file("{test_file}", "test")"#));
     // This behavior depends on implementation - might create file or error
     let _ = result;
     

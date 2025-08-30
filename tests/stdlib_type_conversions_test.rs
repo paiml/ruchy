@@ -8,10 +8,10 @@ use std::fs;
 // Helper to test in REPL
 fn eval_in_repl(code: &str) -> Result<String, String> {
     let mut repl = Repl::new()
-        .map_err(|e| format!("Failed to create REPL: {:?}", e))?;
+        .map_err(|e| format!("Failed to create REPL: {e:?}"))?;
     
     let result = repl.eval(code)
-        .map_err(|e| format!("Eval error: {:?}", e))?;
+        .map_err(|e| format!("Eval error: {e:?}"))?;
     
     // The REPL returns string values with quotes, so we need to handle that
     if result.starts_with('"') && result.ends_with('"') && result.len() >= 2 {
@@ -27,12 +27,12 @@ fn eval_transpiled(code: &str) -> Result<String, String> {
     let test_file = format!("/tmp/type_conv_test_{}.ruchy", 
         std::process::id());
     fs::write(&test_file, code)
-        .map_err(|e| format!("Failed to write test file: {}", e))?;
+        .map_err(|e| format!("Failed to write test file: {e}"))?;
     
     let output = Command::new("./target/release/ruchy")
         .arg(&test_file)
         .output()
-        .map_err(|e| format!("Failed to run file: {}", e))?;
+        .map_err(|e| format!("Failed to run file: {e}"))?;
     
     // Clean up test file
     let _ = fs::remove_file(&test_file);

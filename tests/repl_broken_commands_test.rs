@@ -11,15 +11,15 @@ fn test_type_command_basic() {
     // Test :type command with basic expressions
     let result = repl.eval(":type 42").unwrap();
     assert!(result.contains("Integer") || result.contains("i32") || result.contains("Int"),
-        "Expected type information for integer, got: {}", result);
+        "Expected type information for integer, got: {result}");
     
     let result = repl.eval(":type \"hello\"").unwrap();
     assert!(result.contains("String") || result.contains("str"),
-        "Expected type information for string, got: {}", result);
+        "Expected type information for string, got: {result}");
     
     let result = repl.eval(":type true").unwrap();
     assert!(result.contains("Bool") || result.contains("bool") || result.contains("boolean"),
-        "Expected type information for boolean, got: {}", result);
+        "Expected type information for boolean, got: {result}");
 }
 
 #[test]
@@ -32,7 +32,7 @@ fn test_type_command_with_variables() {
     // Test :type on variables
     let result = repl.eval(":type x").unwrap();
     assert!(result.contains("Integer") || result.contains("i32") || result.contains("Int"),
-        "Expected type information for variable x, got: {}", result);
+        "Expected type information for variable x, got: {result}");
 }
 
 #[test]
@@ -45,7 +45,7 @@ fn test_type_command_with_functions() {
     // Test :type on functions  
     let result = repl.eval(":type add").unwrap();
     assert!(result.contains("Function") || result.contains("fn") || result.contains("->"),
-        "Expected type information for function, got: {}", result);
+        "Expected type information for function, got: {result}");
 }
 
 #[test]
@@ -54,13 +54,13 @@ fn test_ast_command() {
     
     // Test :ast command
     let result = repl.eval(":ast 2 + 2").unwrap();
-    assert!(result.contains("Binary") || result.contains("Add") || result.contains("+"),
-        "Expected AST representation, got: {}", result);
+    assert!(result.contains("Binary") || result.contains("Add") || result.contains('+'),
+        "Expected AST representation, got: {result}");
     
     // Test with more complex expression
     let result = repl.eval(":ast if true { 1 } else { 0 }").unwrap();
     assert!(result.contains("If") || result.contains("Conditional"),
-        "Expected AST with If node, got: {}", result);
+        "Expected AST with If node, got: {result}");
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn test_compile_command() {
     // Test :compile command
     let result = repl.eval(":compile").unwrap();
     assert!(!result.contains("Error") && !result.contains("failed"),
-        "Compile command should work, got: {}", result);
+        "Compile command should work, got: {result}");
 }
 
 #[test]
@@ -88,18 +88,18 @@ fn test_save_load_commands() {
     repl.eval("x + y").unwrap();
     
     // Save session
-    let save_result = repl.eval(&format!(":save {}", test_file)).unwrap();
+    let save_result = repl.eval(&format!(":save {test_file}")).unwrap();
     assert!(!save_result.contains("Error") && !save_result.contains("failed"),
-        "Save command should work, got: {}", save_result);
+        "Save command should work, got: {save_result}");
     
     // Check file exists
     assert!(fs::metadata(test_file).is_ok(), "Save should create file");
     
     // Create new REPL and load
     let mut new_repl = Repl::new().unwrap();
-    let load_result = new_repl.eval(&format!(":load {}", test_file)).unwrap();
+    let load_result = new_repl.eval(&format!(":load {test_file}")).unwrap();
     assert!(!load_result.contains("Error") && !load_result.contains("failed"),
-        "Load command should work, got: {}", load_result);
+        "Load command should work, got: {load_result}");
     
     // Variables should be available
     let x_val = new_repl.eval("x").unwrap();
@@ -123,17 +123,17 @@ fn test_bindings_env_commands() {
     
     // Test :bindings command
     let result = repl.eval(":bindings").unwrap();
-    assert!(result.contains("x") && result.contains("10"),
-        ":bindings should show x = 10, got: {}", result);
+    assert!(result.contains('x') && result.contains("10"),
+        ":bindings should show x = 10, got: {result}");
     assert!(result.contains("name") && result.contains("Ruchy"),
-        ":bindings should show name = Ruchy, got: {}", result);
+        ":bindings should show name = Ruchy, got: {result}");
     assert!(result.contains("greet"),
-        ":bindings should show greet function, got: {}", result);
+        ":bindings should show greet function, got: {result}");
     
     // Test :env command (alias for :bindings)
     let env_result = repl.eval(":env").unwrap();
-    assert!(env_result.contains("x") && env_result.contains("10"),
-        ":env should show x = 10, got: {}", env_result);
+    assert!(env_result.contains('x') && env_result.contains("10"),
+        ":env should show x = 10, got: {env_result}");
 }
 
 #[test]
@@ -147,12 +147,12 @@ fn test_history_command() {
     
     // Test :history command
     let result = repl.eval(":history").unwrap();
-    assert!(result.contains("1 + 1") || result.contains("2"),
-        ":history should show first command, got: {}", result);
+    assert!(result.contains("1 + 1") || result.contains('2'),
+        ":history should show first command, got: {result}");
     assert!(result.contains("hello"),
-        ":history should show second command, got: {}", result);
+        ":history should show second command, got: {result}");
     assert!(result.contains("[1, 2, 3]") || result.contains("1, 2, 3"),
-        ":history should show third command, got: {}", result);
+        ":history should show third command, got: {result}");
 }
 
 #[test]
@@ -168,11 +168,11 @@ fn test_search_command() {
     // Test :search command
     let result = repl.eval(":search calculate").unwrap();
     assert!(result.contains("calculate"),
-        ":search should find 'calculate' entries, got: {}", result);
+        ":search should find 'calculate' entries, got: {result}");
     
     let result = repl.eval(":search 42").unwrap();
     assert!(result.contains("42"),
-        ":search should find entries with '42', got: {}", result);
+        ":search should find entries with '42', got: {result}");
 }
 
 #[test]
@@ -190,7 +190,7 @@ fn test_reset_command() {
     // Test :reset command
     let result = repl.eval(":reset").unwrap();
     assert!(!result.contains("Error"),
-        ":reset should work, got: {}", result);
+        ":reset should work, got: {result}");
     
     // State should be cleared
     let x_result = repl.eval("x");
@@ -235,7 +235,7 @@ fn test_clear_command() {
     // Test :clear command
     let result = repl.eval(":clear").unwrap();
     assert!(!result.contains("Error"),
-        ":clear should work, got: {}", result);
+        ":clear should work, got: {result}");
     
     // Definitions should be cleared
     let x_result = repl.eval("x");
@@ -249,7 +249,7 @@ fn test_clear_command() {
     let history_result = repl.eval(":history").unwrap();
     assert!(history_result.contains("empty") || history_result.contains("No history") || 
             history_result.len() < 50,  // Short response indicates empty
-        "History should be empty after clear, got: {}", history_result);
+        "History should be empty after clear, got: {history_result}");
 }
 
 #[test]
@@ -260,23 +260,23 @@ fn test_command_error_handling() {
     let result = repl.eval(":unknown").unwrap();
     assert!(result.contains("Unknown") || result.contains("Invalid") || 
             result.contains("not recognized"),
-        "Should handle unknown command gracefully, got: {}", result);
+        "Should handle unknown command gracefully, got: {result}");
     
     // Test commands with missing arguments
     let result = repl.eval(":load").unwrap();
     assert!(result.contains("Usage") || result.contains("filename") || 
             result.contains("argument"),
-        "Should show usage for :load without args, got: {}", result);
+        "Should show usage for :load without args, got: {result}");
     
     let result = repl.eval(":save").unwrap();
     assert!(result.contains("Usage") || result.contains("filename") || 
             result.contains("argument"),
-        "Should show usage for :save without args, got: {}", result);
+        "Should show usage for :save without args, got: {result}");
     
     // Test empty :type
     let result = repl.eval(":type").unwrap();
     assert!(result.contains("Usage") || result.contains("expression"),
-        "Should show usage for :type without expression, got: {}", result);
+        "Should show usage for :type without expression, got: {result}");
 }
 
 #[test]
@@ -289,10 +289,10 @@ fn test_multiline_command_support() {
     // Now test that commands work after definitions
     let result = repl.eval(":type test").unwrap();
     assert!(result.contains("Function") || result.contains("fn"),
-        "Commands should work after function definition, got: {}", result);
+        "Commands should work after function definition, got: {result}");
     
     // Test other commands still work
     let bindings_result = repl.eval(":bindings").unwrap();
     assert!(bindings_result.contains("test"),
-        "Should show test function in bindings, got: {}", bindings_result);
+        "Should show test function in bindings, got: {bindings_result}");
 }

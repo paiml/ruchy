@@ -64,8 +64,7 @@ impl ReferenceRepl {
         }
         
         // Handle let statements
-        if input.starts_with("let ") {
-            let rest = &input[4..];
+        if let Some(rest) = input.strip_prefix("let ") {
             if let Some(eq_pos) = rest.find(" = ") {
                 let var_name = rest[..eq_pos].trim();
                 let value = rest[eq_pos + 3..].trim();
@@ -73,7 +72,7 @@ impl ReferenceRepl {
                 // Try to evaluate the value
                 match self.eval(value) {
                     Ok(val) => {
-                        self.bindings.insert(var_name.to_string(), val.clone());
+                        self.bindings.insert(var_name.to_string(), val);
                         self.results.push("()".to_string()); // Unit type for let bindings
                         Ok("()".to_string())
                     }
@@ -105,7 +104,7 @@ impl ReferenceRepl {
             Ok(result)
         }
         else {
-            Err(format!("Unknown expression: {}", input))
+            Err(format!("Unknown expression: {input}"))
         }
     }
 }
@@ -143,7 +142,7 @@ mod tests {
                     // For basic cases, values should match
                     if case != "2 + 3 * 4" { // Skip precedence test
                         assert_eq!(prod_val.trim(), ref_val.trim(),
-                            "Value mismatch for: {}", case);
+                            "Value mismatch for: {case}");
                     }
                 }
                 (Err(_), Err(_)) => {
@@ -152,8 +151,7 @@ mod tests {
                 _ => {
                     // One succeeds, one fails - this is a divergence
                     // For now, we'll allow this but log it
-                    println!("Divergence on: {} - prod_ok: {}, ref_ok: {}", 
-                        case, prod_is_ok, ref_is_ok);
+                    println!("Divergence on: {case} - prod_ok: {prod_is_ok}, ref_ok: {ref_is_ok}");
                 }
             }
         }
@@ -184,18 +182,17 @@ mod tests {
             assert_eq!(
                 prod_is_ok, 
                 ref_is_ok,
-                "Success/failure divergence on: {}", case
+                "Success/failure divergence on: {case}"
             );
             
             if let (Ok(prod_val), Ok(ref_val)) = (prod_result, ref_result) {
                 if case.starts_with("let ") {
                     // Let statements might return different representations
                     continue;
-                } else {
-                    // Variable lookups should match
-                    assert_eq!(prod_val.trim(), ref_val.trim(),
-                        "Variable value mismatch for: {}", case);
                 }
+                // Variable lookups should match
+                assert_eq!(prod_val.trim(), ref_val.trim(),
+                    "Variable value mismatch for: {case}");
             }
         }
     }
@@ -220,11 +217,11 @@ mod tests {
             match (prod_result, ref_result) {
                 (Ok(prod_val), Ok(ref_val)) => {
                     assert_eq!(prod_val.trim(), ref_val.trim(),
-                        "Boolean value mismatch for: {}", case);
+                        "Boolean value mismatch for: {case}");
                 }
                 _ => {
                     assert_eq!(prod_is_ok, ref_is_ok,
-                        "Boolean evaluation divergence for: {}", case);
+                        "Boolean evaluation divergence for: {case}");
                 }
             }
         }
@@ -250,7 +247,7 @@ mod tests {
             
             // Both should handle string literals
             assert_eq!(prod_is_ok, ref_is_ok,
-                "String literal handling divergence for: {}", case);
+                "String literal handling divergence for: {case}");
         }
     }
     
@@ -277,7 +274,7 @@ mod tests {
             // Both should fail for clearly invalid inputs
             if case == "undefined_variable" || (case.starts_with("let") && case.len() < 10) {
                 assert!(prod_is_err && ref_is_err,
-                    "Both should error for: {}", case);
+                    "Both should error for: {case}");
             }
             
             // At minimum, neither should panic or crash
@@ -305,12 +302,12 @@ mod tests {
             // Check that both produce expected result or both fail
             if let Ok(prod_val) = prod_result {
                 assert_eq!(prod_val.trim(), expected,
-                    "Production REPL wrong result for: {}", expr);
+                    "Production REPL wrong result for: {expr}");
             }
             
             if let Ok(ref_val) = ref_result {
                 assert_eq!(ref_val.trim(), expected, 
-                    "Reference REPL wrong result for: {}", expr);
+                    "Reference REPL wrong result for: {expr}");
             }
         }
     }
@@ -371,8 +368,7 @@ mod tests {
             
             // Log any divergences for analysis
             if prod_is_ok != ref_is_ok {
-                println!("DIVERGENCE: {} - prod_ok: {}, ref_ok: {}", 
-                    case, prod_is_ok, ref_is_ok);
+                println!("DIVERGENCE: {case} - prod_ok: {prod_is_ok}, ref_ok: {ref_is_ok}");
             }
             
             // Test passes if no panics occur
@@ -422,13 +418,12 @@ mod tests {
             
             if prod_is_ok != ref_is_ok {
                 divergences += 1;
-                println!("Divergence #{}: {} - prod_ok: {}, ref_ok: {}", 
-                    divergences, case, prod_is_ok, ref_is_ok);
+                println!("Divergence #{divergences}: {case} - prod_ok: {prod_is_ok}, ref_ok: {ref_is_ok}");
             }
         }
         
         // Report divergence rate
-        let divergence_rate = divergences as f64 / total_cases as f64;
+        let divergence_rate = f64::from(divergences) / f64::from(total_cases);
         println!("Differential testing: {}/{} divergences ({:.1}%)", 
             divergences, total_cases, divergence_rate * 100.0);
         

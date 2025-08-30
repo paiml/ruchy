@@ -255,52 +255,46 @@ impl RuchyCoverageCollector {
         
         // Parse the Ruchy source code
         let mut parser = Parser::new(&content);
-        match parser.parse() {
-            Ok(_ast) => {
-                // Execute using the Ruchy interpreter
-                let mut repl = match Repl::new() {
-                    Ok(repl) => repl,
-                    Err(_) => {
-                        return Ok(()); // Can't create REPL, skip coverage
+        if let Ok(_ast) = parser.parse() {
+            // Execute using the Ruchy interpreter
+            let mut repl = match Repl::new() {
+                Ok(repl) => repl,
+                Err(_) => {
+                    return Ok(()); // Can't create REPL, skip coverage
+                }
+            };
+            
+            // Track execution through AST evaluation
+            if let Ok(_) = repl.eval(&content) {
+                // Execution successful - mark lines and functions as covered
+                if let Some(coverage) = self.coverage_data.get_mut(file_str) {
+                    // Mark all executable lines as covered
+                    let lines: Vec<&str> = content.lines().collect();
+                    for (line_num, line) in lines.iter().enumerate() {
+                        let trimmed = line.trim();
+                        if !trimmed.is_empty() && !trimmed.starts_with("//") {
+                            let line_number = line_num + 1;
+                            coverage.covered_lines.insert(line_number);
+                            self.runtime_instrumentation.mark_line_executed(file_str, line_number);
+                        }
                     }
-                };
-                
-                // Track execution through AST evaluation
-                match repl.eval(&content) {
-                    Ok(_) => {
-                        // Execution successful - mark lines and functions as covered
-                        if let Some(coverage) = self.coverage_data.get_mut(file_str) {
-                            // Mark all executable lines as covered
-                            let lines: Vec<&str> = content.lines().collect();
-                            for (line_num, line) in lines.iter().enumerate() {
-                                let trimmed = line.trim();
-                                if !trimmed.is_empty() && !trimmed.starts_with("//") {
-                                    let line_number = line_num + 1;
-                                    coverage.covered_lines.insert(line_number);
-                                    self.runtime_instrumentation.mark_line_executed(file_str, line_number);
-                                }
-                            }
-                            
-                            // Mark functions as covered based on successful execution
-                            for (_line_num, line) in lines.iter().enumerate() {
-                                let trimmed = line.trim();
-                                if trimmed.starts_with("fn ") || trimmed.starts_with("fun ") {
-                                    if let Some(func_name) = extract_function_name(trimmed) {
-                                        coverage.covered_functions.insert(func_name.clone());
-                                        self.runtime_instrumentation.mark_function_executed(file_str, &func_name);
-                                    }
-                                }
+                    
+                    // Mark functions as covered based on successful execution
+                    for line in &lines {
+                        let trimmed = line.trim();
+                        if trimmed.starts_with("fn ") || trimmed.starts_with("fun ") {
+                            if let Some(func_name) = extract_function_name(trimmed) {
+                                coverage.covered_functions.insert(func_name.clone());
+                                self.runtime_instrumentation.mark_function_executed(file_str, &func_name);
                             }
                         }
                     }
-                    Err(_) => {
-                        // Execution failed - no coverage data collected
-                    }
                 }
+            } else {
+                // Execution failed - no coverage data collected
             }
-            Err(_) => {
-                // Parse failed - no coverage possible
-            }
+        } else {
+            // Parse failed - no coverage possible
         }
         
         Ok(())

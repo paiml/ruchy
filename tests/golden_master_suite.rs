@@ -71,7 +71,7 @@ const GOLDEN_TESTS: &[GoldenTest] = &[
     // Arrays
     GoldenTest {
         name: "array_methods",
-        code: r#"let arr = [1, 2, 3]; println(arr.map(|x| x * 2))"#,
+        code: r"let arr = [1, 2, 3]; println(arr.map(|x| x * 2))",
         expected_stdout: "[2, 4, 6]\n",
         expected_stderr: "",
         should_succeed: true,
@@ -92,7 +92,7 @@ fn test_all_golden_masters() {
     if !failures.is_empty() {
         let mut error_msg = String::from("Golden master tests failed:\n");
         for (name, error) in failures {
-            error_msg.push_str(&format!("  - {}: {}\n", name, error));
+            error_msg.push_str(&format!("  - {name}: {error}\n"));
         }
         panic!("{}", error_msg);
     }

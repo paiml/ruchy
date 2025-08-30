@@ -15,7 +15,7 @@ fn arb_function_code() -> impl Strategy<Value = String> {
         "[a-zA-Z0-9(){}+*/ -]{0,50}",             // body
     ).prop_map(|(name, params, body)| {
         let param_list = params.join(", ");
-        format!("fun {}({}) {{ {} }}", name, param_list, body)
+        format!("fun {name}({param_list}) {{ {body} }}")
     })
 }
 
@@ -39,7 +39,7 @@ fn arb_binary_op_code() -> impl Strategy<Value = String> {
         prop::sample::select(vec!["+", "-", "*", "/", "%", "<", ">", "<=", ">=", "==", "!="]),
         "[a-z0-9]{1,5}",       // right operand
     ).prop_map(|(left, op, right)| {
-        format!("{} {} {}", left, op, right)
+        format!("{left} {op} {right}")
     })
 }
 
@@ -60,7 +60,7 @@ proptest! {
     // Fuzz test: type inference should handle random expressions
     #[test] 
     fn fuzz_type_inference_expressions(expr in arb_expression_code()) {
-        let code = format!("fun test(p) {{ {} }}", expr);
+        let code = format!("fun test(p) {{ {expr} }}");
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
             let transpiler = Transpiler::new();
@@ -73,7 +73,7 @@ proptest! {
     // Fuzz test: binary operations should be handled robustly
     #[test]
     fn fuzz_binary_operations(op_expr in arb_binary_op_code()) {
-        let code = format!("fun test(x, y, z) {{ {} }}", op_expr);
+        let code = format!("fun test(x, y, z) {{ {op_expr} }}");
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
             let transpiler = Transpiler::new();
@@ -99,8 +99,7 @@ proptest! {
             .replace("p1", &param1)
             .replace("p2", &param2) 
             .replace("p3", &param3);
-        let code = format!("fun {}({}, {}, {}) {{ {} }}", 
-                          func_name, param1, param2, param3, body);
+        let code = format!("fun {func_name}({param1}, {param2}, {param3}) {{ {body} }}");
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
@@ -117,7 +116,7 @@ proptest! {
         func_name in "[a-z][a-z0-9]{0,5}",
         body in "[a-zA-Z0-9 ]{0,20}",
     ) {
-        let code = format!("fun {}() {{ {} }}", func_name, body);
+        let code = format!("fun {func_name}() {{ {body} }}");
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
             let transpiler = Transpiler::new();
@@ -141,7 +140,7 @@ proptest! {
         }
         
         let param_list = func_names.join(", ");
-        let code = format!("fun test({}) {{ {} }}", param_list, call_chain);
+        let code = format!("fun test({param_list}) {{ {call_chain} }}");
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
@@ -163,9 +162,8 @@ proptest! {
             "n + f(5)", "f(f(n))"
         ])
     ) {
-        let body = operation.replace("f", &f_param).replace("n", &n_param);
-        let code = format!("fun {}({}, {}) {{ {} }}", 
-                          func_name, f_param, n_param, body);
+        let body = operation.replace('f', &f_param).replace('n', &n_param);
+        let code = format!("fun {func_name}({f_param}, {n_param}) {{ {body} }}");
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
@@ -193,7 +191,7 @@ proptest! {
         }
         let body = operations.join("; ");
         
-        let code = format!("fun test({}) {{ {} }}", param_list, body);
+        let code = format!("fun test({param_list}) {{ {body} }}");
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
@@ -242,7 +240,7 @@ mod determinism_tests {
             let result2 = transpiler.transpile(&ast).unwrap().to_string();
             
             assert_eq!(result1, result2, 
-                      "Type inference should be deterministic for: {}", code);
+                      "Type inference should be deterministic for: {code}");
         }
     }
 }

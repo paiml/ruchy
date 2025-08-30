@@ -15,12 +15,12 @@ fn test_whos_command_basic() {
     
     // Test whos() command
     let result = repl.eval("whos()").unwrap();
-    assert!(result.contains("x") && result.contains("Integer"),
-        "whos() should list x with type, got: {}", result);
+    assert!(result.contains('x') && result.contains("Integer"),
+        "whos() should list x with type, got: {result}");
     assert!(result.contains("name") && result.contains("String"),
-        "whos() should list name with type, got: {}", result);
+        "whos() should list name with type, got: {result}");
     assert!(result.contains("greet") && result.contains("Function"),
-        "whos() should list greet function, got: {}", result);
+        "whos() should list greet function, got: {result}");
 }
 
 #[test]
@@ -36,9 +36,9 @@ fn test_whos_with_filter() {
     // Test whos() with type filter
     let result = repl.eval("whos(\"Integer\")").unwrap();
     assert!(result.contains("num1") && result.contains("num2"),
-        "whos(\"Integer\") should show only integers, got: {}", result);
+        "whos(\"Integer\") should show only integers, got: {result}");
     assert!(!result.contains("str1"),
-        "whos(\"Integer\") should not show strings, got: {}", result);
+        "whos(\"Integer\") should not show strings, got: {result}");
 }
 
 #[test]
@@ -56,7 +56,7 @@ fn test_clear_bang_command() {
     // Test clear_all() command - clears all user-defined variables
     let result = repl.eval("clear_all()").unwrap();
     assert!(result.contains("cleared") || result.contains("Cleared") || result.is_empty(),
-        "clear_all() should indicate workspace cleared, got: {}", result);
+        "clear_all() should indicate workspace cleared, got: {result}");
     
     // Variables should be gone
     let x_result = repl.eval("x");
@@ -75,8 +75,8 @@ fn test_clear_bang_selective() {
     
     // Test selective clear with pattern
     let result = repl.eval("clear_all(\"delete*\")").unwrap();
-    assert!(result.contains("2") || result.contains("cleared"),
-        "clear_all(pattern) should clear matching vars, got: {}", result);
+    assert!(result.contains('2') || result.contains("cleared"),
+        "clear_all(pattern) should clear matching vars, got: {result}");
     
     // Check what remains
     assert_eq!(repl.eval("keep_me").unwrap(), "42", "keep_me should remain");
@@ -97,9 +97,9 @@ fn test_save_image_command() {
     repl.eval("fn square(x) { x * x }").unwrap();
     
     // Save workspace image
-    let result = repl.eval(&format!("save_image(\"{}\")", image_file)).unwrap();
+    let result = repl.eval(&format!("save_image(\"{image_file}\")")).unwrap();
     assert!(!result.contains("Error") && !result.contains("failed"),
-        "save_image() should succeed, got: {}", result);
+        "save_image() should succeed, got: {result}");
     
     // Check file exists
     assert!(fs::metadata(image_file).is_ok(),
@@ -107,12 +107,12 @@ fn test_save_image_command() {
     
     // Load in new REPL
     let mut new_repl = Repl::new().unwrap();
-    new_repl.eval(&format!(":load {}", image_file)).unwrap();
+    new_repl.eval(&format!(":load {image_file}")).unwrap();
     
     // Verify workspace restored
     assert_eq!(new_repl.eval("pi").unwrap(), "3.14159");
-    assert!(new_repl.eval("data").unwrap().contains("1") && 
-            new_repl.eval("data").unwrap().contains("5"));
+    assert!(new_repl.eval("data").unwrap().contains('1') && 
+            new_repl.eval("data").unwrap().contains('5'));
     assert_eq!(new_repl.eval("square(3)").unwrap(), "9");
     
     // Clean up
@@ -129,8 +129,8 @@ fn test_who_command() {
     repl.eval("let c = 3").unwrap();
     
     let result = repl.eval("who()").unwrap();
-    assert!(result.contains("a") && result.contains("b") && result.contains("c"),
-        "who() should list all variables, got: {}", result);
+    assert!(result.contains('a') && result.contains('b') && result.contains('c'),
+        "who() should list all variables, got: {result}");
 }
 
 #[test]
@@ -143,9 +143,9 @@ fn test_workspace_command() {
     repl.eval("fn test() { 42 }").unwrap();
     
     let result = repl.eval("workspace()").unwrap();
-    assert!(result.contains("3") || result.contains("variables") || 
+    assert!(result.contains('3') || result.contains("variables") || 
             result.contains("bindings"),
-        "workspace() should show count, got: {}", result);
+        "workspace() should show count, got: {result}");
 }
 
 #[test]
@@ -159,7 +159,7 @@ fn test_locals_command() {
     // In global scope
     let result = repl.eval("locals()").unwrap();
     assert!(result.contains("global"),
-        "locals() should show global var, got: {}", result);
+        "locals() should show global var, got: {result}");
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn test_globals_command() {
     
     let result = repl.eval("globals()").unwrap();
     assert!(result.contains("global1") && result.contains("global2"),
-        "globals() should show all globals, got: {}", result);
+        "globals() should show all globals, got: {result}");
 }
 
 #[test]
@@ -187,7 +187,7 @@ fn test_reset_command() {
     let result = repl.eval("reset()").unwrap();
     assert!(result.contains("reset") || result.contains("Reset") || 
             result.contains("cleared"),
-        "reset() should indicate reset, got: {}", result);
+        "reset() should indicate reset, got: {result}");
     
     // Everything should be gone
     assert!(repl.eval("x").is_err() || 
@@ -205,7 +205,7 @@ fn test_del_command() {
     // Delete specific variable
     let result = repl.eval("del(x)").unwrap();
     assert!(!result.contains("Error"),
-        "del(x) should succeed, got: {}", result);
+        "del(x) should succeed, got: {result}");
     
     // x should be gone, y should remain
     assert!(repl.eval("x").is_err() || 
@@ -223,11 +223,11 @@ fn test_exists_command() {
     // Test exists() function
     let result = repl.eval("exists(\"defined\")").unwrap();
     assert!(result.contains("true") || result.contains("True"),
-        "exists(\"defined\") should be true, got: {}", result);
+        "exists(\"defined\") should be true, got: {result}");
     
     let result = repl.eval("exists(\"undefined\")").unwrap();
     assert!(result.contains("false") || result.contains("False"),
-        "exists(\"undefined\") should be false, got: {}", result);
+        "exists(\"undefined\") should be false, got: {result}");
 }
 
 #[test]
@@ -241,7 +241,7 @@ fn test_memory_info() {
     let result = repl.eval("memory_info()").unwrap();
     assert!(result.contains("memory") || result.contains("Memory") ||
             result.contains("bytes") || result.contains("KB"),
-        "memory_info() should show memory usage, got: {}", result);
+        "memory_info() should show memory usage, got: {result}");
 }
 
 #[test]
@@ -252,5 +252,5 @@ fn test_time_info() {
     let result = repl.eval("time_info()").unwrap();
     assert!(result.contains("session") || result.contains("Session") ||
             result.contains("time") || result.contains("seconds"),
-        "time_info() should show session info, got: {}", result);
+        "time_info() should show session info, got: {result}");
 }

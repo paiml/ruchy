@@ -45,16 +45,15 @@ fn test_match_all_pattern_types() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Pattern match '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Pattern match '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -83,16 +82,15 @@ fn test_nested_patterns() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Nested pattern '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Nested pattern '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -123,16 +121,15 @@ fn test_pattern_guards() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Pattern guard '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Pattern guard '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -158,16 +155,15 @@ fn test_or_patterns() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Or pattern '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Or pattern '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -194,16 +190,15 @@ fn test_range_patterns() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Range pattern '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Range pattern '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -229,16 +224,15 @@ fn test_rest_patterns() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Rest pattern '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Rest pattern '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -315,16 +309,15 @@ fn test_let_pattern_destructuring() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Let destructuring '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Let destructuring '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -354,16 +347,15 @@ fn test_for_loop_patterns() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "For loop pattern '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "For loop pattern '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -392,16 +384,15 @@ fn test_function_parameter_patterns() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Function parameter pattern '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Function parameter pattern '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }

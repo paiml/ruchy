@@ -45,7 +45,7 @@ fn test_type_command() {
     
     // Test type of list
     let result = repl.eval(":type [1, 2, 3]").unwrap();
-    assert!(result.contains("[") || result.contains("List") || result.contains("Array"));
+    assert!(result.contains('[') || result.contains("List") || result.contains("Array"));
     
     // Test type of boolean
     let result = repl.eval(":type true").unwrap();
@@ -93,8 +93,8 @@ fn test_ast_command_complex() {
     let result = repl.eval(":ast if true { 1 } else { 2 }").unwrap();
     assert!(result.contains("If"));
     assert!(result.contains("true"));
-    assert!(result.contains("1"));
-    assert!(result.contains("2"));
+    assert!(result.contains('1'));
+    assert!(result.contains('2'));
 }
 
 #[test]
@@ -215,8 +215,8 @@ fn test_all_introspection_commands_workflow() {
     // 3. Check AST
     let ast_result = repl.eval(":ast x + y").unwrap();
     assert!(ast_result.contains("Ident"));
-    assert!(ast_result.contains("x"));
-    assert!(ast_result.contains("y"));
+    assert!(ast_result.contains('x'));
+    assert!(ast_result.contains('y'));
     
     // 4. Inspect values
     let inspect_result = repl.eval(":inspect data").unwrap();

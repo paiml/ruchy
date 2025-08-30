@@ -30,16 +30,15 @@ fn test_transpile_result_types() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Result type '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Result type '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -66,16 +65,15 @@ fn test_transpile_option_types() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Option type '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Option type '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -99,16 +97,15 @@ fn test_transpile_type_inference_edge_cases() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Type inference case '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Type inference case '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -132,16 +129,15 @@ fn test_transpile_dataframe_operations() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "DataFrame operation '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "DataFrame operation '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -165,16 +161,15 @@ fn test_transpile_actors() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Actor '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Actor '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -198,16 +193,15 @@ fn test_transpile_complex_nested() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Complex nested '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Complex nested '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -237,16 +231,15 @@ fn test_transpile_edge_cases() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Edge case '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Edge case '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -279,16 +272,15 @@ fn test_transpile_all_unary_ops() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Unary op '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Unary op '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -312,16 +304,15 @@ fn test_transpile_try_operator() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Try operator '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Try operator '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }
@@ -345,16 +336,15 @@ fn test_transpile_macros() {
     
     for (input, expected_parts) in test_cases {
         let mut parser = Parser::new(input);
-        let ast = parser.parse().expect(&format!("Failed to parse: {}", input));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {input}"));
         
-        let result = transpiler.transpile(&ast).expect(&format!("Failed to transpile: {}", input));
+        let result = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {input}"));
         let transpiled = result.to_string();
         
         for part in expected_parts {
             assert!(
                 transpiled.contains(part),
-                "Macro '{}' should contain '{}', got: '{}'",
-                input, part, transpiled
+                "Macro '{input}' should contain '{part}', got: '{transpiled}'"
             );
         }
     }

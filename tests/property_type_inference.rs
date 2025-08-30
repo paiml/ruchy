@@ -1,7 +1,7 @@
 //! Property tests for type inference invariants
 //!
 //! These tests ensure mathematical properties hold for all type inference:
-//! 1. main() function NEVER has a return type
+//! 1. `main()` function NEVER has a return type
 //! 2. Function parameters used as functions get Fn types
 //! 3. Type inference is deterministic
 //! 4. No function gets wrong default types
@@ -31,7 +31,7 @@ proptest! {
     /// Property: main() function NEVER generates with a return type annotation
     #[test]
     fn test_main_never_has_return_type(body in "[a-z0-9+* ]+") {
-        let code = format!("fun main() {{ {} }}", body);
+        let code = format!("fun main() {{ {body} }}");
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
@@ -55,7 +55,7 @@ proptest! {
             .prop_filter("Different params", |(f, x)| f != x),
     ) {
         // Generate code where fparam is used as a function
-        let code = format!("fun {}({}, {}) {{ {}({}) }}", fname, fparam, xparam, fparam, xparam);
+        let code = format!("fun {fname}({fparam}, {xparam}) {{ {fparam}({xparam}) }}");
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
@@ -63,7 +63,7 @@ proptest! {
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 // Function parameter should NOT be typed as String
-                prop_assert!(!rust_str.contains(&format!("{} : String", fparam)),
+                prop_assert!(!rust_str.contains(&format!("{fparam} : String")),
                     "Function parameter {} should not be typed as String when used as function. Got: {}", 
                     fparam, rust_str);
             }
@@ -77,7 +77,7 @@ proptest! {
         param in param_name(),
         n in 0i32..100i32
     ) {
-        let code = format!("fun {}({}) {{ {} + {} }}", fname, param, param, n);
+        let code = format!("fun {fname}({param}) {{ {param} + {n} }}");
         
         // Parse and transpile twice
         let mut parser1 = Parser::new(&code);
@@ -107,7 +107,7 @@ mod regression_properties {
                 .prop_filter("Different params", |(f, x)| f != x)
         ) {
             // The apply(f, x) pattern
-            let code = format!("fun apply({}, {}) {{ {}({}) }}", f, x, f, x);
+            let code = format!("fun apply({f}, {x}) {{ {f}({x}) }}");
             
             let mut parser = Parser::new(&code);
             prop_assume!(parser.parse().is_ok());
@@ -122,7 +122,7 @@ mod regression_properties {
             
             let rust_str = result.unwrap().to_string();
             // f should NOT be String
-            prop_assert!(!rust_str.contains(&format!("{} : String", f)),
+            prop_assert!(!rust_str.contains(&format!("{f} : String")),
                 "Function parameter should not be String in apply pattern");
         }
         
@@ -133,7 +133,7 @@ mod regression_properties {
             param in param_name(),
         ) {
             // Function that uses parameter as string
-            let code = format!(r#"fun {}({}) {{ println({}) }}"#, fname, param, param);
+            let code = format!(r"fun {fname}({param}) {{ println({param}) }}");
             
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {

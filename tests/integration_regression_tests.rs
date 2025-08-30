@@ -12,7 +12,7 @@ use tempfile::NamedTempFile;
 /// Helper to compile and run Ruchy code
 fn run_ruchy_code(code: &str) -> Result<String, String> {
     // Write code to temporary file
-    let mut temp_file = NamedTempFile::new().map_err(|e| e.to_string())?;
+    let temp_file = NamedTempFile::new().map_err(|e| e.to_string())?;
     fs::write(temp_file.path(), code).map_err(|e| e.to_string())?;
     
     // Run with ruchy
@@ -20,7 +20,7 @@ fn run_ruchy_code(code: &str) -> Result<String, String> {
         .arg("run")
         .arg(temp_file.path())
         .output()
-        .map_err(|e| format!("Failed to run ruchy: {}", e))?;
+        .map_err(|e| format!("Failed to run ruchy: {e}"))?;
     
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())

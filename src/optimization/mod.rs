@@ -462,7 +462,7 @@ mod tests {
         ];
         
         for opt_type in types {
-            assert!(!format!("{:?}", opt_type).is_empty());
+            assert!(!format!("{opt_type:?}").is_empty());
         }
     }
     
@@ -476,7 +476,7 @@ mod tests {
         ];
         
         for priority in priorities {
-            assert!(!format!("{:?}", priority).is_empty());
+            assert!(!format!("{priority:?}").is_empty());
         }
     }
     

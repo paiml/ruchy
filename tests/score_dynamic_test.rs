@@ -1,7 +1,6 @@
 // TDD Test Suite for Dynamic Score Calculation
 // Ensures score is not hardcoded but calculated based on code quality
 
-use std::fs;
 use std::process::Command;
 use tempfile::NamedTempFile;
 use std::io::Write;
@@ -11,7 +10,7 @@ fn test_score_varies_with_quality() {
     // Test that different quality code gets different scores
     
     // High quality code - should score high
-    let high_quality = r#"
+    let high_quality = r"
 fn calculate_sum(numbers: Vec<i32>) -> i32 {
     numbers.iter().sum()
 }
@@ -23,10 +22,10 @@ fn calculate_average(numbers: Vec<i32>) -> f64 {
     let sum = numbers.iter().sum()
     sum / numbers.len()
 }
-"#;
+";
     
     // Low quality code - should score lower
-    let low_quality = r#"
+    let low_quality = r"
 fn f(x: Vec<i32>) -> i32 {
     let mut s = 0;
     for i in 0..x.len() {
@@ -49,7 +48,7 @@ fn g(a: i32, b: i32, c: i32, d: i32, e: i32) -> i32 {
         } else { 0 }
     } else { 0 }
 }
-"#;
+";
     
     // Get scores for both
     let high_score = get_score(high_quality);
@@ -60,8 +59,7 @@ fn g(a: i32, b: i32, c: i32, d: i32, e: i32) -> i32 {
     
     // High quality should score better than low quality
     assert!(high_score > low_score, 
-        "High quality code ({}) should score better than low quality ({})", 
-        high_score, low_score);
+        "High quality code ({high_score}) should score better than low quality ({low_score})");
     
     // Neither should be exactly 0.85 (the hardcoded value)
     assert_ne!(high_score, 0.85, "High quality score should not be hardcoded 0.85");
@@ -71,40 +69,39 @@ fn g(a: i32, b: i32, c: i32, d: i32, e: i32) -> i32 {
 #[test]
 fn test_score_detects_satd_comments() {
     // Code with SATD should score lower
-    let with_satd = r#"
+    let with_satd = r"
 fn process_data(data: Vec<i32>) -> i32 {
     // TODO: This is a hack, fix later
     // FIXME: This doesn't handle edge cases
     data.iter().sum()
 }
-"#;
+";
     
-    let without_satd = r#"
+    let without_satd = r"
 fn process_data(data: Vec<i32>) -> i32 {
     // Calculate the sum of all elements
     data.iter().sum()
 }
-"#;
+";
     
     let score_with_satd = get_score(with_satd);
     let score_without_satd = get_score(without_satd);
     
     assert!(score_without_satd > score_with_satd,
-        "Code without SATD ({}) should score higher than with SATD ({})",
-        score_without_satd, score_with_satd);
+        "Code without SATD ({score_without_satd}) should score higher than with SATD ({score_with_satd})");
 }
 
 #[test]
 fn test_score_considers_complexity() {
     // Simple function - low complexity
-    let simple = r#"
+    let simple = r"
 fn add(a: i32, b: i32) -> i32 {
     a + b
 }
-"#;
+";
     
     // Complex function - high complexity
-    let complex = r#"
+    let complex = r"
 fn complex_logic(x: i32) -> i32 {
     if x > 10 {
         if x > 20 {
@@ -128,14 +125,13 @@ fn complex_logic(x: i32) -> i32 {
         }
     }
 }
-"#;
+";
     
     let simple_score = get_score(simple);
     let complex_score = get_score(complex);
     
     assert!(simple_score > complex_score,
-        "Simple code ({}) should score higher than complex code ({})",
-        simple_score, complex_score);
+        "Simple code ({simple_score}) should score higher than complex code ({complex_score})");
 }
 
 #[test]
@@ -147,7 +143,7 @@ fn test_score_json_output() {
     temp_file.flush().unwrap();
     
     let output = Command::new("./target/release/ruchy")
-        .args(&["score", temp_file.path().to_str().unwrap(), "--format", "json"])
+        .args(["score", temp_file.path().to_str().unwrap(), "--format", "json"])
         .output()
         .expect("Failed to run ruchy score");
     
@@ -160,7 +156,7 @@ fn test_score_json_output() {
     
     assert!(json["score"].is_number(), "Score should be a number");
     let score = json["score"].as_f64().unwrap();
-    assert!(score >= 0.0 && score <= 1.0, "Score should be between 0 and 1");
+    assert!((0.0..=1.0).contains(&score), "Score should be between 0 and 1");
 }
 
 #[test]
@@ -173,7 +169,7 @@ fn test_score_threshold_enforcement() {
     
     // Test with threshold that should pass (very low)
     let output = Command::new("./target/release/ruchy")
-        .args(&["score", temp_file.path().to_str().unwrap(), "--min", "0.1"])
+        .args(["score", temp_file.path().to_str().unwrap(), "--min", "0.1"])
         .output()
         .expect("Failed to run ruchy score");
     
@@ -181,7 +177,7 @@ fn test_score_threshold_enforcement() {
     
     // Test with threshold that should fail (impossibly high)
     let output = Command::new("./target/release/ruchy")
-        .args(&["score", temp_file.path().to_str().unwrap(), "--min", "0.99"])
+        .args(["score", temp_file.path().to_str().unwrap(), "--min", "0.99"])
         .output()
         .expect("Failed to run ruchy score");
     
@@ -195,7 +191,7 @@ fn get_score(code: &str) -> f64 {
     temp_file.flush().unwrap();
     
     let output = Command::new("./target/release/ruchy")
-        .args(&["score", temp_file.path().to_str().unwrap()])
+        .args(["score", temp_file.path().to_str().unwrap()])
         .output()
         .expect("Failed to run ruchy score");
     

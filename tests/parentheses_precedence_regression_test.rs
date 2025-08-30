@@ -21,7 +21,7 @@ fn test_parentheses_preserved_in_multiplication() {
         .expect("Should transpile variable math");
     
     let rust_string = rust_code.to_string();
-    println!("Generated Rust code: {}", rust_string);
+    println!("Generated Rust code: {rust_string}");
     
     // Critical assertion: The parentheses must be preserved in transpiled code
     // Should NOT generate: price * 1f64 + tax  (wrong precedence)
@@ -29,11 +29,11 @@ fn test_parentheses_preserved_in_multiplication() {
     
     assert!(!rust_string.contains("price * 1f64 + tax") && 
             !rust_string.contains("price * 1.0f64 + tax"),
-            "Should not generate wrong precedence: {}", rust_string);
+            "Should not generate wrong precedence: {rust_string}");
     
     // Should contain proper parentheses grouping
-    assert!(rust_string.contains("(") && rust_string.contains(")"),
-            "Should preserve parentheses for correct precedence: {}", rust_string);
+    assert!(rust_string.contains('(') && rust_string.contains(')'),
+            "Should preserve parentheses for correct precedence: {rust_string}");
 }
 
 #[test]
@@ -48,23 +48,23 @@ fn test_complex_parentheses_expressions() {
     ];
     
     for (expression, description) in test_cases {
-        println!("\nTesting: {} - {}", expression, description);
+        println!("\nTesting: {expression} - {description}");
         
-        let full_source = format!("let a = 1; let b = 2; let c = 3; let d = 4; let x = 5; let y = 6; let z = 7; let w = 8; {}", expression);
+        let full_source = format!("let a = 1; let b = 2; let c = 3; let d = 4; let x = 5; let y = 6; let z = 7; let w = 8; {expression}");
         
         let mut parser = Parser::new(&full_source);
-        let ast = parser.parse().expect(&format!("Should parse: {}", expression));
+        let ast = parser.parse().unwrap_or_else(|_| panic!("Should parse: {expression}"));
         
         let transpiler = Transpiler::new();
         let rust_code = transpiler.transpile_to_program(&ast)
-            .expect(&format!("Should transpile: {}", expression));
+            .unwrap_or_else(|_| panic!("Should transpile: {expression}"));
         
         let rust_string = rust_code.to_string();
-        println!("Generated: {}", rust_string);
+        println!("Generated: {rust_string}");
         
         // Should preserve parentheses structure
-        assert!(rust_string.contains("(") && rust_string.contains(")"),
-                "Should preserve parentheses in '{}': {}", expression, rust_string);
+        assert!(rust_string.contains('(') && rust_string.contains(')'),
+                "Should preserve parentheses in '{expression}': {rust_string}");
     }
 }
 
@@ -97,8 +97,8 @@ fn test_variable_math_end_to_end() {
     
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        println!("Rust compilation error: {}", stderr);
-        println!("Generated Rust code: {}", rust_code.to_string());
+        println!("Rust compilation error: {stderr}");
+        println!("Generated Rust code: {rust_code}");
     }
     assert!(output.status.success(), "Rust compilation should succeed");
     
@@ -112,9 +112,9 @@ fn test_variable_math_end_to_end() {
     
     // The correct answer: 99.99 * (1.0 + 0.08) = 99.99 * 1.08 = 107.9892
     assert!(stdout.contains("107.9892"), 
-            "Should output correct calculation 107.9892, got: {}", stdout);
+            "Should output correct calculation 107.9892, got: {stdout}");
     
     // Should NOT output wrong calculation: 99.99 * 1.0 + 0.08 = 100.07
     assert!(!stdout.contains("100.07"),
-            "Should NOT output incorrect calculation 100.07, got: {}", stdout);
+            "Should NOT output incorrect calculation 100.07, got: {stdout}");
 }

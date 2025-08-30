@@ -19,14 +19,14 @@ fun main() {
     
     // CRITICAL: main() must never have a return type annotation
     assert!(!rust_str.contains("fn main() ->"), 
-        "main() should not have return type, got: {}", rust_str);
+        "main() should not have return type, got: {rust_str}");
     assert!(!rust_str.contains("fn main () ->"),
-        "main() should not have return type, got: {}", rust_str);
+        "main() should not have return type, got: {rust_str}");
 }
 
 #[test] 
 fn test_higher_order_function_types_correctly() {
-    let code = r#"
+    let code = r"
 fun apply(f, x) {
     f(x)
 }
@@ -36,7 +36,7 @@ fun double(n) {
 }
 
 apply(double, 5)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
@@ -46,14 +46,14 @@ apply(double, 5)
     
     // Function parameter should NOT be String
     assert!(!rust_str.contains("f : String"), 
-        "Function parameter f should not be String, got: {}", rust_str);
+        "Function parameter f should not be String, got: {rust_str}");
     
     // Should have some function type (impl Fn, dyn Fn, or generic)
     assert!(rust_str.contains("impl Fn") || 
             rust_str.contains("dyn Fn") ||
             rust_str.contains("F:") || 
             rust_str.contains("f :"),  // At least typed somehow
-        "Function parameter f should have function type, got: {}", rust_str);
+        "Function parameter f should have function type, got: {rust_str}");
 }
 
 #[test]
@@ -77,13 +77,13 @@ greet("World")
 
 #[test]
 fn test_numeric_functions_get_numeric_types() {
-    let code = r#"
+    let code = r"
 fun add(a, b) {
     a + b
 }
 
 add(3, 4)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
@@ -97,18 +97,18 @@ add(3, 4)
             rust_str.contains("a : f32") ||
             rust_str.contains("a : f64") ||
             !rust_str.contains("a : String"),
-        "Numeric function should have numeric params, got: {}", rust_str);
+        "Numeric function should have numeric params, got: {rust_str}");
 }
 
 #[test]
 fn test_double_function_gets_correct_types() {
-    let code = r#"
+    let code = r"
 fun double(n) {
     n * 2
 }
 
 double(5)
-"#;
+";
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
@@ -118,12 +118,12 @@ double(5)
     
     // Function with multiplication should have numeric parameter
     assert!(!rust_str.contains("n : String"),
-        "Parameter n in double() should not be String, got: {}", rust_str);
+        "Parameter n in double() should not be String, got: {rust_str}");
     assert!(rust_str.contains("n : i32") || 
             rust_str.contains("n : i64") ||
             rust_str.contains("n : f32") ||
             rust_str.contains("n : f64"),
-        "Parameter n in double() should be numeric, got: {}", rust_str);
+        "Parameter n in double() should be numeric, got: {rust_str}");
 }
 
 #[test]
@@ -145,6 +145,6 @@ log_message("test")
     // Functions that don't return values shouldn't have i32 return type
     if rust_str.contains("fn log_message") && rust_str.contains("->") {
         assert!(!rust_str.contains("-> i32"),
-            "Void function should not return i32, got: {}", rust_str);
+            "Void function should not return i32, got: {rust_str}");
     }
 }

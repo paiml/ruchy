@@ -4,8 +4,7 @@
 //! and verifies them using mathematical reasoning
 
 use ruchy::{
-    Parser as RuchyParser, 
-    frontend::ast::{Expr, ExprKind},
+    Parser as RuchyParser,
     proving::{ProofVerificationResult, extract_assertions_from_ast, verify_single_assertion, verify_assertions_batch}
 };
 
@@ -76,8 +75,8 @@ fn test_verify_arithmetic_falsehood() {
     assert!(result.counterexample.is_some(), "False arithmetic should have counterexample");
     
     let counterexample = result.counterexample.unwrap();
-    assert!(counterexample.contains("2") || counterexample.contains("4"), 
-            "Counterexample should show actual values: {}", counterexample);
+    assert!(counterexample.contains('2') || counterexample.contains('4'), 
+            "Counterexample should show actual values: {counterexample}");
 }
 
 #[test]

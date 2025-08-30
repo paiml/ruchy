@@ -17,10 +17,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ];
     
     for expr in if_exprs {
-        println!("  > {}", expr);
+        println!("  > {expr}");
         match repl.eval(expr) {
-            Ok(result) => println!("  {}", result),
-            Err(e) => println!("  ERROR: {}", e),
+            Ok(result) => println!("  {result}"),
+            Err(e) => println!("  ERROR: {e}"),
         }
     }
     
@@ -35,10 +35,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ];
     
     for expr in loop_exprs {
-        println!("  > {}", expr);
+        println!("  > {expr}");
         match repl.eval(expr) {
-            Ok(result) => println!("  {}", result),
-            Err(e) => println!("  ERROR: {}", e),
+            Ok(result) => println!("  {result}"),
+            Err(e) => println!("  ERROR: {e}"),
         }
     }
     
@@ -51,10 +51,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ];
     
     for expr in match_exprs {
-        println!("  > {}", expr);
+        println!("  > {expr}");
         match repl.eval(expr) {
-            Ok(result) => println!("  {}", result),
-            Err(e) => println!("  ERROR: {}", e),
+            Ok(result) => println!("  {result}"),
+            Err(e) => println!("  ERROR: {e}"),
         }
     }
     

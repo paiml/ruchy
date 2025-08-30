@@ -183,7 +183,7 @@ fn test_colon_commands() {
     
     // Test :env command
     assert!(repl.eval("let y = 100").is_ok());
-    assert!(repl.eval(":env").unwrap().contains("y"));
+    assert!(repl.eval(":env").unwrap().contains('y'));
 }
 
 #[test]

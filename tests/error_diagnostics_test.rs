@@ -15,7 +15,7 @@ fn test_basic_diagnostic_display() {
     let source = "let x = 10\nlet y = @@ invalid\nlet z = 30".to_string();
     let diag = Diagnostic::new(error, source).with_filename("test.ruchy".to_string());
     
-    let output = format!("{}", diag);
+    let output = format!("{diag}");
     assert!(output.contains("Unexpected token"));
     assert!(output.contains("test.ruchy"));
 }
@@ -97,7 +97,7 @@ fn test_error_severity_colors() {
     
     // Info severity (blue)
     error.severity = ErrorSeverity::Info;
-    let diag = Diagnostic::new(error.clone(), source.clone());
+    let diag = Diagnostic::new(error, source);
     let output = diag.format_colored();
     assert!(output.contains("\x1b[34m")); // Blue color code
 }
@@ -113,7 +113,7 @@ fn test_error_code_display() {
     let source = "let x: i32 = \"string\"".to_string();
     let diag = Diagnostic::new(error, source);
     
-    let output = format!("{}", diag);
+    let output = format!("{diag}");
     assert!(output.contains("TypeMismatch"));
 }
 
@@ -124,13 +124,13 @@ fn test_multiline_source_context() {
         Span { start: 40, end: 45 }, // Somewhere in middle of source
     );
     
-    let source = r#"fn main() {
+    let source = r"fn main() {
     let x = 10
     let y = 20
     let z = @invalid@
     let w = 30
     println(x + y + z + w)
-}"#.to_string();
+}".to_string();
     
     let diag = Diagnostic::new(error, source);
     let output = diag.format_colored();
@@ -175,7 +175,7 @@ fn test_multiple_suggestions() {
         span: Span { start: 0, end: 5 },
     });
     
-    let output = format!("{}", diag);
+    let output = format!("{diag}");
     assert!(output.contains("First suggestion"));
     assert!(output.contains("Second suggestion"));
     assert!(output.contains("fix1"));

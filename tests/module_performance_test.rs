@@ -16,7 +16,7 @@ fn test_module_caching_performance() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     
     // Create math.ruchy with multiple functions (simulate larger module)
-    let math_content = r#"
+    let math_content = r"
 pub fn add(a: i32, b: i32) -> i32 { a + b }
 pub fn subtract(a: i32, b: i32) -> i32 { a - b }
 pub fn multiply(a: i32, b: i32) -> i32 { a * b }
@@ -37,7 +37,7 @@ pub fn fibonacci(n: i32) -> i32 {
         fibonacci(n - 1) + fibonacci(n - 2)
     }
 }
-"#;
+";
     fs::write(temp_dir.path().join("math.ruchy"), math_content)
         .expect("Failed to write math module");
     
@@ -61,7 +61,7 @@ pub fn fibonacci(n: i32) -> i32 {
     
     // Performance assertion: Second import should be at least 2x faster
     // (In reality, should be 10x+ faster with proper O(1) caching)
-    println!("First import: {:?}, Second import: {:?}", duration1, duration2);
+    println!("First import: {duration1:?}, Second import: {duration2:?}");
     
     // For now, just ensure both work - proper caching implementation needed
     assert!(result1.is_ok() && result2.is_ok(), "Both imports should succeed");
@@ -101,7 +101,7 @@ fn test_duplicate_imports_same_repl_session() {
     let result3 = repl.evaluate_expr_str("use utils", None);
     let duration3 = start3.elapsed();
     
-    println!("Import durations: {:?}, {:?}, {:?}", duration1, duration2, duration3);
+    println!("Import durations: {duration1:?}, {duration2:?}, {duration3:?}");
     
     assert!(result1.is_ok() && result2.is_ok() && result3.is_ok(), 
             "All imports should succeed");
