@@ -225,7 +225,7 @@ impl Value {
 }
 
 /// REPL mode determines how input is processed
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ReplMode {
     Normal,  // Standard Ruchy evaluation
     Shell,   // Execute everything as shell commands
@@ -4977,213 +4977,208 @@ impl Repl {
     }
 
     /// Handle REPL commands and return output as string (for testing)
+    // Helper functions for command handling (complexity < 10 each)
+    // ========================================================================
+    
+    /// Handle :quit command (complexity: 3)
+    fn handle_quit_command(&mut self) -> (bool, String) {
+        if self.mode == ReplMode::Normal {
+            // In normal mode, :quit exits REPL
+            (true, String::new())
+        } else {
+            // In a special mode, :quit returns to normal
+            self.mode = ReplMode::Normal;
+            (false, "Returned to normal mode".to_string())
+        }
+    }
+    
+    /// Handle :history command (complexity: 3)
+    fn handle_history_command(&self) -> String {
+        if self.history.is_empty() {
+            "No history".to_string()
+        } else {
+            let mut output = String::new();
+            for (i, item) in self.history.iter().enumerate() {
+                output.push_str(&format!("{}: {}\n", i + 1, item));
+            }
+            output
+        }
+    }
+    
+    /// Handle :clear command (complexity: 2)
+    fn handle_clear_command(&mut self) -> String {
+        self.history.clear();
+        self.definitions.clear();
+        self.bindings.clear();
+        self.result_history.clear();
+        "Session cleared".to_string()
+    }
+    
+    /// Handle :bindings/:env command (complexity: 3)
+    fn handle_bindings_command(&self) -> String {
+        if self.bindings.is_empty() {
+            "No bindings".to_string()
+        } else {
+            let mut output = String::new();
+            for (name, value) in &self.bindings {
+                output.push_str(&format!("{name}: {value}\n"));
+            }
+            output
+        }
+    }
+    
+    /// Handle :compile command (complexity: 2)
+    fn handle_compile_command(&mut self) -> String {
+        match self.compile_session() {
+            Ok(()) => "Session compiled successfully".to_string(),
+            Err(e) => format!("Compilation failed: {e}"),
+        }
+    }
+    
+    /// Handle :load command (complexity: 3)
+    fn handle_load_command(&mut self, parts: &[&str]) -> String {
+        if parts.len() == 2 {
+            match self.load_file(parts[1]) {
+                Ok(()) => format!("Loaded file: {}", parts[1]),
+                Err(e) => format!("Failed to load file: {e}"),
+            }
+        } else {
+            "Usage: :load <filename>".to_string()
+        }
+    }
+    
+    /// Handle :save command (complexity: 3)
+    fn handle_save_command(&mut self, command: &str) -> String {
+        let filename = command.strip_prefix(":save").unwrap_or("").trim();
+        if filename.is_empty() {
+            "Usage: :save <filename>".to_string()
+        } else {
+            match self.save_session(filename) {
+                Ok(()) => format!("Session saved to {filename}"),
+                Err(e) => format!("Failed to save session: {e}"),
+            }
+        }
+    }
+    
+    /// Handle :export command (complexity: 3)
+    fn handle_export_command(&mut self, command: &str) -> String {
+        let filename = command.strip_prefix(":export").unwrap_or("").trim();
+        if filename.is_empty() {
+            "Usage: :export <filename>".to_string()
+        } else {
+            match self.export_session(filename) {
+                Ok(()) => format!("Session exported to clean script: {filename}"),
+                Err(e) => format!("Failed to export session: {e}"),
+            }
+        }
+    }
+    
+    /// Handle :type command (complexity: 3)
+    fn handle_type_command(&mut self, command: &str) -> String {
+        let expr = command.strip_prefix(":type").unwrap_or("").trim();
+        if expr.is_empty() {
+            "Usage: :type <expression>".to_string()
+        } else {
+            self.get_type_info_with_bindings(expr)
+        }
+    }
+    
+    /// Handle :ast command (complexity: 3)
+    fn handle_ast_command(command: &str) -> String {
+        let expr = command.strip_prefix(":ast").unwrap_or("").trim();
+        if expr.is_empty() {
+            "Usage: :ast <expression>".to_string()
+        } else {
+            Self::get_ast_info(expr)
+        }
+    }
+    
+    /// Handle :inspect command (complexity: 3)
+    fn handle_inspect_command(&self, command: &str) -> String {
+        let var_name = command.strip_prefix(":inspect").unwrap_or("").trim();
+        if var_name.is_empty() {
+            "Usage: :inspect <variable>".to_string()
+        } else {
+            self.inspect_value(var_name)
+        }
+    }
+    
+    /// Handle :reset command (complexity: 2)
+    fn handle_reset_command(&mut self) -> String {
+        self.history.clear();
+        self.definitions.clear();
+        self.bindings.clear();
+        self.result_history.clear();
+        self.memory.reset();
+        "REPL reset to initial state".to_string()
+    }
+    
+    /// Handle :search command (complexity: 3)
+    fn handle_search_command(&self, command: &str) -> String {
+        let query = command.strip_prefix(":search").unwrap_or("").trim();
+        if query.is_empty() {
+            "Usage: :search <query>\nSearch through command history with fuzzy matching".to_string()
+        } else {
+            self.get_search_results(query)
+        }
+    }
+    
+    /// Handle mode commands (complexity: 2)
+    fn handle_mode_command(&mut self, mode: ReplMode) -> String {
+        self.mode = mode;
+        format!("Switched to {} mode", mode.prompt())
+    }
+    
     fn handle_command_with_output(&mut self, command: &str) -> Result<(bool, String)> {
-        let mut output = String::new();
         let parts: Vec<&str> = command.split_whitespace().collect();
         
-        let should_quit = match parts.first().copied() {
-            Some(":quit" | ":q") => {
-                if self.mode == ReplMode::Normal {
-                    // In normal mode, :quit exits REPL
-                    true
-                } else {
-                    // In a special mode, :quit returns to normal
-                    self.mode = ReplMode::Normal;
-                    output = "Returned to normal mode".to_string();
-                    false
-                }
-            }
-            Some(":history") => {
-                if self.history.is_empty() {
-                    output = "No history".to_string();
-                } else {
-                    for (i, item) in self.history.iter().enumerate() {
-                        output.push_str(&format!("{}: {}\n", i + 1, item));
-                    }
-                }
-                false
-            }
-            Some(":clear") => {
-                self.history.clear();
-                self.definitions.clear();
-                self.bindings.clear();
-                self.result_history.clear();
-                output = "Session cleared".to_string();
-                false
-            }
-            Some(":bindings" | ":env") => {
-                if self.bindings.is_empty() {
-                    output = "No bindings".to_string();
-                } else {
-                    for (name, value) in &self.bindings {
-                        output.push_str(&format!("{name}: {value}\n"));
-                    }
-                }
-                false
-            }
-            Some(":compile") => {
-                match self.compile_session() {
-                    Ok(()) => output = "Session compiled successfully".to_string(),
-                    Err(e) => output = format!("Compilation failed: {e}"),
-                }
-                false
-            }
-            Some(":load") if parts.len() == 2 => {
-                match self.load_file(parts[1]) {
-                    Ok(()) => output = format!("Loaded file: {}", parts[1]),
-                    Err(e) => output = format!("Failed to load file: {e}"),
-                }
-                false
-            }
-            Some(":load") => {
-                output = "Usage: :load <filename>".to_string();
-                false
-            }
-            Some(":save") if parts.len() >= 2 => {
-                let filename = command.strip_prefix(":save").unwrap_or("").trim();
-                match self.save_session(filename) {
-                    Ok(()) => output = format!("Session saved to {filename}"),
-                    Err(e) => output = format!("Failed to save session: {e}"),
-                }
-                false
-            }
-            Some(":save") => {
-                output = "Usage: :save <filename>".to_string();
-                false
-            }
-            Some(":export") if parts.len() >= 2 => {
-                let filename = command.strip_prefix(":export").unwrap_or("").trim();
-                match self.export_session(filename) {
-                    Ok(()) => output = format!("Session exported to clean script: {filename}"),
-                    Err(e) => output = format!("Failed to export session: {e}"),
-                }
-                false
-            }
-            Some(":export") => {
-                output = "Usage: :export <filename>".to_string();
-                false
-            }
-            Some(":type") => {
-                let expr = command.strip_prefix(":type").unwrap_or("").trim();
-                if expr.is_empty() {
-                    output = "Usage: :type <expression>".to_string();
-                } else {
-                    output = self.get_type_info_with_bindings(expr);
-                }
-                false
-            }
-            Some(":ast") => {
-                let expr = command.strip_prefix(":ast").unwrap_or("").trim();
-                if expr.is_empty() {
-                    output = "Usage: :ast <expression>".to_string();
-                } else {
-                    output = Self::get_ast_info(expr);
-                }
-                false
-            }
-            Some(":inspect") => {
-                let var_name = command.strip_prefix(":inspect").unwrap_or("").trim();
-                if var_name.is_empty() {
-                    output = "Usage: :inspect <variable>".to_string();
-                } else {
-                    output = self.inspect_value(var_name);
-                }
-                false
-            }
-            Some(":reset") => {
-                self.history.clear();
-                self.definitions.clear();
-                self.bindings.clear();
-                self.result_history.clear();
-                self.memory.reset();
-                output = "REPL reset to initial state".to_string();
-                false
-            }
-            Some(":search") => {
-                let query = command.strip_prefix(":search").unwrap_or("").trim();
-                if query.is_empty() {
-                    output = "Usage: :search <query>\nSearch through command history with fuzzy matching".to_string();
-                } else {
-                    output = self.get_search_results(query);
-                }
-                false
-            }
+        let (should_quit, output) = match parts.first().copied() {
+            Some(":quit" | ":q") => self.handle_quit_command(),
+            Some(":history") => (false, self.handle_history_command()),
+            Some(":clear") => (false, self.handle_clear_command()),
+            Some(":bindings" | ":env") => (false, self.handle_bindings_command()),
+            Some(":compile") => (false, self.handle_compile_command()),
+            Some(":load") => (false, self.handle_load_command(&parts)),
+            Some(":save") => (false, self.handle_save_command(command)),
+            Some(":export") => (false, self.handle_export_command(command)),
+            Some(":type") => (false, self.handle_type_command(command)),
+            Some(":ast") => (false, Self::handle_ast_command(command)),
+            Some(":inspect") => (false, self.handle_inspect_command(command)),
+            Some(":reset") => (false, self.handle_reset_command()),
+            Some(":search") => (false, self.handle_search_command(command)),
             // Mode switching commands
-            Some(":normal") => {
-                self.mode = ReplMode::Normal;
-                output = "Switched to normal mode".to_string();
-                false
-            }
-            Some(":shell") => {
-                self.mode = ReplMode::Shell;
-                output = "Switched to shell mode - all input will be executed as shell commands".to_string();
-                false
-            }
-            Some(":pkg") => {
-                self.mode = ReplMode::Pkg;
-                output = "Switched to package mode - use 'search', 'install', 'list' commands".to_string();
-                false
-            }
+            Some(":normal") => (false, self.handle_mode_command(ReplMode::Normal)),
+            Some(":shell") => (false, self.handle_mode_command(ReplMode::Shell)),
+            Some(":pkg") => (false, self.handle_mode_command(ReplMode::Pkg)),
             Some(":help" | ":h") if parts.len() == 1 => {
-                // No argument - switch to help mode and show menu
                 self.mode = ReplMode::Help;
-                output = self.show_help_menu()?;
-                false
-            }
+                (false, self.show_help_menu()?)
+            },
             Some(":help") if parts.len() > 1 => {
-                // :help with argument shows help for specific topic
                 let topic = parts[1];
-                output = self.handle_help_command(topic)?;
-                false
-            }
-            Some(":sql") => {
-                self.mode = ReplMode::Sql;
-                output = "Switched to SQL mode - execute SQL queries".to_string();
-                false
-            }
-            Some(":math") => {
-                self.mode = ReplMode::Math;
-                output = "Switched to math mode - enhanced mathematical expressions".to_string();
-                false
-            }
-            Some(":debug") => {
-                self.mode = ReplMode::Debug;
-                output = "Switched to debug mode - extra information shown".to_string();
-                false
-            }
-            Some(":time") => {
-                self.mode = ReplMode::Time;
-                output = "Switched to time mode - execution timing shown".to_string();
-                false
-            }
-            Some(":test") => {
-                self.mode = ReplMode::Test;
-                output = "Switched to test mode - assertions and table tests enabled".to_string();
-                false
-            }
-            Some(":exit") => {
-                self.mode = ReplMode::Normal;
-                output = "Exited to normal mode".to_string();
-                false
-            }
+                (false, self.handle_help_command(topic)?)
+            },
+            Some(":sql") => (false, self.handle_mode_command(ReplMode::Sql)),
+            Some(":math") => (false, self.handle_mode_command(ReplMode::Math)),
+            Some(":debug") => (false, self.handle_mode_command(ReplMode::Debug)),
+            Some(":time") => (false, self.handle_mode_command(ReplMode::Time)),
+            Some(":test") => (false, self.handle_mode_command(ReplMode::Test)),
+            Some(":exit") => (false, self.handle_mode_command(ReplMode::Normal)),
             Some(":modes") => {
-                output = "Available modes:\n".to_string();
-                output.push_str("  normal - Standard Ruchy evaluation\n");
-                output.push_str("  shell  - Execute shell commands\n");
-                output.push_str("  pkg    - Package management\n");
-                output.push_str("  help   - Interactive help\n");
-                output.push_str("  sql    - SQL queries\n");
-                output.push_str("  math   - Mathematical expressions\n");
-                output.push_str("  debug  - Debug information with traces\n");
-                output.push_str("  time   - Execution timing\n");
-                output.push_str("  test   - Assertions and table tests\n");
-                output.push_str("\nUse :mode_name to switch modes, :normal or :exit to return");
-                false
+                let mut modes_output = "Available modes:\n".to_string();
+                modes_output.push_str("  normal - Standard Ruchy evaluation\n");
+                modes_output.push_str("  shell  - Execute shell commands\n");
+                modes_output.push_str("  pkg    - Package management\n");
+                modes_output.push_str("  help   - Interactive help\n");
+                modes_output.push_str("  sql    - SQL queries\n");
+                modes_output.push_str("  math   - Mathematical expressions\n");
+                modes_output.push_str("  debug  - Debug information with traces\n");
+                modes_output.push_str("  time   - Execution timing\n");
+                modes_output.push_str("  test   - Assertions and table tests\n");
+                modes_output.push_str("\nUse :mode_name to switch modes, :normal or :exit to return");
+                (false, modes_output)
             }
-            _ => {
-                output = format!("Unknown command: {command}\nType :help for available commands");
-                false
-            }
+            _ => (false, format!("Unknown command: {command}\nType :help for available commands"))
         };
         
         Ok((should_quit, output))
