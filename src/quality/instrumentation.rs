@@ -105,8 +105,7 @@ pub fn instrument_source(source: &str, file_path: &str) -> Result<String> {
     
     // Add coverage initialization at the top
     instrumented.push_str(&format!(
-        "// Coverage instrumentation for {}\n",
-        file_path
+        "// Coverage instrumentation for {file_path}\n"
     ));
     instrumented.push_str("let __coverage = CoverageInstrumentation::new();\n\n");
     
@@ -124,8 +123,7 @@ pub fn instrument_source(source: &str, file_path: &str) -> Result<String> {
         // Add line execution tracking before executable statements
         if is_executable_line(trimmed) {
             instrumented.push_str(&format!(
-                "__coverage.mark_line_executed(\"{}\", {});\n",
-                file_path, actual_line_num
+                "__coverage.mark_line_executed(\"{file_path}\", {actual_line_num});\n"
             ));
         }
         
@@ -133,8 +131,7 @@ pub fn instrument_source(source: &str, file_path: &str) -> Result<String> {
         if trimmed.starts_with("fn ") || trimmed.starts_with("fun ") {
             let function_name = extract_function_name(trimmed);
             instrumented.push_str(&format!(
-                "__coverage.mark_function_executed(\"{}\", \"{}\");\n",
-                file_path, function_name
+                "__coverage.mark_function_executed(\"{file_path}\", \"{function_name}\");\n"
             ));
         }
         
@@ -166,12 +163,12 @@ fn is_executable_line(line: &str) -> bool {
        trimmed.starts_with("use ") ||
        trimmed.starts_with("mod ") ||
        trimmed.starts_with("#[") ||
-       (trimmed.ends_with("{") && !trimmed.contains("=")) {
+       (trimmed.ends_with('{') && !trimmed.contains('=')) {
         return false;
     }
     
     // Consider lines with statements/expressions as executable
-    trimmed.contains("=") ||
+    trimmed.contains('=') ||
     trimmed.contains("println") ||
     trimmed.contains("assert") ||
     trimmed.contains("return")

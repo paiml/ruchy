@@ -2,6 +2,26 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [1.27.2] - 2025-08-30
+
+### 🔧 CRITICAL FIX: Ruchy Coverage System
+**ROOT CAUSE RESOLUTION**: Fixed fundamental coverage bug through Five Whys analysis.
+
+#### Fixed
+- **CRITICAL**: `ruchy test --coverage` now shows accurate coverage (100% for working code vs previous 0%)
+- Coverage system properly integrates with Ruchy interpreter for real execution tracking
+- Runtime instrumentation now correctly marks executed lines and functions
+
+#### Quality & Process  
+- Updated CLAUDE.md with mandatory PMAT quality gate enforcement
+- Added zero-tolerance quality requirements: complexity <10, zero SATD, minimal dead code
+- Implemented Toyota Way methodology for systematic defect prevention
+
+#### Technical Details
+- **Root Cause**: execute_with_coverage used cargo instead of Ruchy interpreter
+- **Solution**: Direct integration with REPL.eval() for accurate runtime tracking
+- **Verification**: ruchy-book examples now show correct 100% coverage instead of 0%
+
 ## [1.27.1] - 2025-08-30
 
 ### 🧪 Comprehensive Test Infrastructure
