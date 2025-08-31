@@ -1202,6 +1202,225 @@ impl Transpiler {
             }
         }
     }
+
+    fn transpile_std_mem_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // Generate memory management functions
+        quote! {
+            mod mem {
+                pub struct Array<T> {
+                    data: Vec<T>,
+                }
+                
+                impl<T: Clone> Array<T> {
+                    pub fn new(size: usize, default_value: T) -> Self {
+                        Array {
+                            data: vec![default_value; size],
+                        }
+                    }
+                }
+                
+                pub struct MemoryInfo {
+                    pub allocated: usize,
+                    pub peak: usize,
+                }
+                
+                impl std::fmt::Display for MemoryInfo {
+                    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                        write!(f, "allocated: {}KB, peak: {}KB", self.allocated / 1024, self.peak / 1024)
+                    }
+                }
+                
+                pub fn usage() -> MemoryInfo {
+                    MemoryInfo {
+                        allocated: 1024 * 100, // 100KB stub
+                        peak: 1024 * 150,      // 150KB stub
+                    }
+                }
+            }
+        }
+    }
+
+    fn transpile_std_parallel_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // Generate parallel processing functions
+        quote! {
+            mod parallel {
+                pub fn map<T, U, F>(data: Vec<T>, func: F) -> Vec<U>
+                where
+                    T: Send,
+                    U: Send,
+                    F: Fn(T) -> U + Send + Sync,
+                {
+                    // Simple sequential implementation for now (stub)
+                    data.into_iter().map(func).collect()
+                }
+                
+                pub fn filter<T, F>(data: Vec<T>, predicate: F) -> Vec<T>
+                where
+                    T: Send,
+                    F: Fn(&T) -> bool + Send + Sync,
+                {
+                    data.into_iter().filter(|x| predicate(x)).collect()
+                }
+                
+                pub fn reduce<T, F>(data: Vec<T>, func: F) -> Option<T>
+                where
+                    T: Send,
+                    F: Fn(T, T) -> T + Send + Sync,
+                {
+                    data.into_iter().reduce(func)
+                }
+            }
+        }
+    }
+
+    fn transpile_std_simd_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // Generate SIMD vectorization functions
+        quote! {
+            mod simd {
+                use std::ops::Add;
+                
+                pub struct SimdVec<T> {
+                    data: Vec<T>,
+                }
+                
+                impl<T> SimdVec<T> {
+                    pub fn from_slice(slice: &[T]) -> Self
+                    where
+                        T: Clone,
+                    {
+                        SimdVec {
+                            data: slice.to_vec(),
+                        }
+                    }
+                }
+                
+                impl<T> Add for SimdVec<T>
+                where
+                    T: Add<Output = T> + Copy,
+                {
+                    type Output = SimdVec<T>;
+                    
+                    fn add(self, other: SimdVec<T>) -> SimdVec<T> {
+                        let result: Vec<T> = self.data.iter()
+                            .zip(other.data.iter())
+                            .map(|(&a, &b)| a + b)
+                            .collect();
+                        SimdVec { data: result }
+                    }
+                }
+                
+                impl<T> std::fmt::Display for SimdVec<T>
+                where
+                    T: std::fmt::Display,
+                {
+                    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                        write!(f, "[{}]", self.data.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join(", "))
+                    }
+                }
+                
+                pub fn from_slice<T: Clone>(slice: &[T]) -> SimdVec<T> {
+                    SimdVec::from_slice(slice)
+                }
+            }
+        }
+    }
+
+    fn transpile_std_cache_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // Generate caching functions - placeholder for @memoize attribute support
+        quote! {
+            mod cache {
+                use std::collections::HashMap;
+                
+                pub struct Cache<K, V> {
+                    data: HashMap<K, V>,
+                }
+                
+                impl<K, V> Cache<K, V>
+                where
+                    K: std::hash::Hash + Eq,
+                {
+                    pub fn new() -> Self {
+                        Cache {
+                            data: HashMap::new(),
+                        }
+                    }
+                    
+                    pub fn get(&self, key: &K) -> Option<&V> {
+                        self.data.get(key)
+                    }
+                    
+                    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+                        self.data.insert(key, value)
+                    }
+                }
+            }
+        }
+    }
+
+    fn transpile_std_bench_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // Generate benchmarking functions
+        quote! {
+            mod bench {
+                use std::time::{Duration, Instant};
+                
+                pub struct BenchmarkResult {
+                    pub elapsed: u128,
+                }
+                
+                impl BenchmarkResult {
+                    pub fn new(elapsed: Duration) -> Self {
+                        BenchmarkResult {
+                            elapsed: elapsed.as_millis(),
+                        }
+                    }
+                }
+                
+                impl std::fmt::Display for BenchmarkResult {
+                    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                        write!(f, "{}ms", self.elapsed)
+                    }
+                }
+                
+                pub fn time<F, T>(mut func: F) -> BenchmarkResult
+                where
+                    F: FnMut() -> T,
+                {
+                    let start = Instant::now();
+                    let _ = func();
+                    let elapsed = start.elapsed();
+                    BenchmarkResult::new(elapsed)
+                }
+            }
+        }
+    }
+
+    fn transpile_std_profile_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // Generate profiling functions - placeholder for @hot_path attribute support
+        quote! {
+            mod profile {
+                pub struct ProfileInfo {
+                    pub function_name: String,
+                    pub call_count: usize,
+                    pub total_time: u128,
+                }
+                
+                impl std::fmt::Display for ProfileInfo {
+                    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                        write!(f, "{}: {} calls, {}ms total", 
+                               self.function_name, self.call_count, self.total_time)
+                    }
+                }
+                
+                pub fn get_stats(function_name: &str) -> ProfileInfo {
+                    ProfileInfo {
+                        function_name: function_name.to_string(),
+                        call_count: 42, // Stub values
+                        total_time: 100,
+                    }
+                }
+            }
+        }
+    }
     
     /// Handle `std::system` imports with system information functions
     /// Core inline import transpilation logic
@@ -1232,6 +1451,36 @@ impl Transpiler {
         // Handle std::net imports
         if path == "std::net" || path.starts_with("std::net::") {
             return Self::transpile_std_net_import(path, items);
+        }
+
+        // Handle std::mem imports
+        if path == "std::mem" || path.starts_with("std::mem::") {
+            return Self::transpile_std_mem_import(path, items);
+        }
+
+        // Handle std::parallel imports
+        if path == "std::parallel" || path.starts_with("std::parallel::") {
+            return Self::transpile_std_parallel_import(path, items);
+        }
+
+        // Handle std::simd imports
+        if path == "std::simd" || path.starts_with("std::simd::") {
+            return Self::transpile_std_simd_import(path, items);
+        }
+
+        // Handle std::cache imports
+        if path == "std::cache" || path.starts_with("std::cache::") {
+            return Self::transpile_std_cache_import(path, items);
+        }
+
+        // Handle std::bench imports
+        if path == "std::bench" || path.starts_with("std::bench::") {
+            return Self::transpile_std_bench_import(path, items);
+        }
+
+        // Handle std::profile imports
+        if path == "std::profile" || path.starts_with("std::profile::") {
+            return Self::transpile_std_profile_import(path, items);
         }
 
         // Build the path as a TokenStream
