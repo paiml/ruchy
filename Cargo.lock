@@ -3210,7 +3210,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "1.27.8"
+version = "1.27.9"
 dependencies = [
  "anyhow",
  "assert_cmd",

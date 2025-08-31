@@ -40,9 +40,26 @@ impl Transpiler {
     }
 
     fn transpile_qualified_name(module: &str, name: &str) -> TokenStream {
-        let module_ident = format_ident!("{}", module);
+        // Handle nested qualified names like "net::TcpListener"
+        let module_parts: Vec<&str> = module.split("::").collect();
         let name_ident = format_ident!("{}", name);
-        quote! { #module_ident::#name_ident }
+        
+        if module_parts.len() == 1 {
+            // Simple case: single module name
+            let module_ident = format_ident!("{}", module_parts[0]);
+            quote! { #module_ident::#name_ident }
+        } else {
+            // Complex case: nested path like "net::TcpListener"
+            let mut tokens = TokenStream::new();
+            for (i, part) in module_parts.iter().enumerate() {
+                if i > 0 {
+                    tokens.extend(quote! { :: });
+                }
+                let part_ident = format_ident!("{}", part);
+                tokens.extend(quote! { #part_ident });
+            }
+            quote! { #tokens::#name_ident }
+        }
     }
 
     /// Transpile operator and control flow expressions (split for complexity)
