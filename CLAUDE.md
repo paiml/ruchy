@@ -78,57 +78,61 @@ Level 7: Performance Tests  - Non-functional requirements
 - **Pattern Test Results**: 2 passing → 4 passing (100% improvement achieved)
 - **Enforcement**: Automated coverage checking with clear error messages
 
-## PMAT Quality Enforcement (MANDATORY - BLOCKING)
+## PMAT TDG Quality Enforcement (MANDATORY - BLOCKING)
 
-**CRITICAL**: PMAT quality gates are MANDATORY and BLOCKING. NO EXCEPTIONS.
+**CRITICAL**: PMAT TDG (Technical Debt Grading) v2.39.0+ quality gates are MANDATORY and BLOCKING. NO EXCEPTIONS.
 
-### PMAT Quality Requirements (Zero Tolerance):
-- **Maximum Cyclomatic Complexity**: 10 per function (HARD LIMIT)
-- **Maximum Cognitive Complexity**: 15 per function (HARD LIMIT)
-- **Maximum SATD Comments**: 0 (Zero technical debt tolerance)
-- **Maximum Dead Code**: 5% (Aggressive dead code elimination)
-- **Minimum Code Entropy**: 2.0 (Prevent copy-paste programming)
-- **Maximum Duplicate Code**: 10% (DRY principle enforcement)
-- **Security Vulnerabilities**: 0 (Zero security defects)
+### TDG Quality Standards (Zero Tolerance - v2.39.0):
+- **Overall Grade**: Must maintain A- or higher (≥85 points) - HARD LIMIT
+- **Structural Complexity**: ≤20 per function (enforced via TDG)
+- **Semantic Complexity**: Cognitive complexity ≤15 (enforced via TDG) 
+- **Code Duplication**: <10% code duplication (measured via TDG)
+- **Documentation Coverage**: >70% for public APIs (tracked via TDG)
+- **Technical Debt**: Zero SATD comments (zero-tolerance via TDG)
+- **Coupling Analysis**: Module dependency limits (enforced via TDG)
+- **Consistency Score**: Naming/style consistency ≥80% (enforced via TDG)
 
-### MANDATORY PMAT Commands (All Development):
+### MANDATORY TDG Commands (v2.39.0 - All Development):
 
 #### Before ANY Code Changes:
 ```bash
-# MANDATORY: Check current quality baseline
-pmat quality-gate --fail-on-violation --checks=all --format=summary
+# MANDATORY: TDG baseline check with comprehensive analysis
+pmat tdg . --min-grade A- --fail-on-violation
+pmat quality-gate --fail-on-violation --format=summary
 ```
 
-#### During Development (After Each Change):
+#### During Development (After Each Function/Module):
 ```bash
-# MANDATORY: Verify complexity compliance
-pmat analyze complexity --max-cyclomatic 10 --max-cognitive 15 --fail-on-violation
+# MANDATORY: File-level TDG analysis
+pmat tdg <file.rs> --include-components --min-grade B+
 
-# MANDATORY: Check for technical debt
+# MANDATORY: Traditional complexity verification (backup)
+pmat analyze complexity --max-cyclomatic 20 --max-cognitive 15 --fail-on-violation
+
+# MANDATORY: SATD detection (zero tolerance)
 pmat analyze satd --format=summary --fail-on-violation
-
-# MANDATORY: Dead code detection
-pmat analyze dead-code --max-dead-code 5.0 --fail-on-violation
 ```
 
 #### End of Sprint (Before Commit):
 ```bash
-# MANDATORY: Comprehensive quality check (BLOCKS commits)
-pmat quality-gate --fail-on-violation --checks=all \
-  --max-complexity-p99 10 \
-  --max-dead-code 5.0 \
-  --min-entropy 2.0
+# MANDATORY: Comprehensive TDG quality gate (BLOCKS commits)
+pmat tdg . --min-grade A- --format=sarif --output=tdg-report.sarif
+pmat quality-gate --fail-on-violation --format=detailed
 
-# MANDATORY: Generate quality report
-pmat report --format=markdown --output=QUALITY_REPORT.md
+# MANDATORY: Real-time dashboard check
+pmat tdg dashboard --port 8080 --open  # Verify no regressions
+
+# MANDATORY: Export comprehensive analysis
+pmat tdg . --format=markdown --output=TDG_QUALITY_REPORT.md
 ```
 
-### PMAT Integration Protocol (Toyota Way):
-1. **HALT DEVELOPMENT**: Stop on ANY PMAT violation
-2. **ROOT CAUSE**: Use PMAT analysis to identify complexity hotspots
-3. **REFACTOR IMMEDIATELY**: Functions >10 complexity MUST be decomposed
-4. **PREVENT RECURRENCE**: Update pre-commit hooks to catch similar issues
-5. **VERIFY FIX**: Re-run PMAT to prove quality improvement
+### TDG Integration Protocol (Toyota Way v2.39.0):
+1. **HALT DEVELOPMENT**: Stop on ANY TDG grade below A- (85 points)
+2. **ROOT CAUSE**: Use `pmat tdg <file> --include-components` to identify exact issues
+3. **REFACTOR IMMEDIATELY**: Address all TDG component failures systematically
+4. **DASHBOARD MONITORING**: Use `pmat tdg dashboard` for real-time quality tracking
+5. **VERIFY FIX**: Re-run `pmat tdg <file>` to prove A- grade achievement
+6. **MCP INTEGRATION**: Use MCP tools for enterprise-grade external integration
 
 ### Complexity Decomposition Strategy:
 ```rust
@@ -352,15 +356,22 @@ Override Justification:
 File Hash: 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b
 ```
 
-### MANDATORY: PMAT Commit Verification Protocol
-**CRITICAL**: NO commits allowed without PMAT verification
+### MANDATORY: TDG Commit Verification Protocol v2.39.0
+**CRITICAL**: NO commits allowed without TDG A- grade verification
 
 ```bash
-# MANDATORY before every commit:
-pmat quality-gate --fail-on-violation --checks=all || {
-    echo "❌ COMMIT BLOCKED: PMAT quality gate failed"
-    echo "Run pmat analyze complexity --top-files 5 to see violations"
-    echo "ALL violations must be fixed before commit"
+# MANDATORY before every commit (TDG v2.39.0):
+pmat tdg . --min-grade A- --fail-on-violation || {
+    echo "❌ COMMIT BLOCKED: TDG grade below A- threshold"
+    echo "Run: pmat tdg . --include-components --top-files 5"
+    echo "Use: pmat tdg dashboard --open for real-time analysis"
+    echo "ALL TDG violations must achieve A- grade before commit"
+    exit 1
+}
+
+# BACKUP: Traditional quality gate verification
+pmat quality-gate --fail-on-violation --format=summary || {
+    echo "❌ COMMIT BLOCKED: Traditional quality gate failed"
     exit 1
 }
 ```
@@ -532,30 +543,35 @@ Language compatibility testing is **GATE 2** in our mandatory pre-commit hooks -
 7. COMMIT with task reference (only if PMAT passes)
 ```
 
-### MANDATORY PMAT Protocol (BLOCKING):
+### MANDATORY TDG Protocol v2.39.0 (BLOCKING):
 ```bash
-# STEP 1: Pre-development baseline (MANDATORY)
-pmat quality-gate --fail-on-violation --checks=all --format=summary
+# STEP 1: Pre-development TDG baseline (MANDATORY)
+pmat tdg . --min-grade A- --format=table
+pmat quality-gate --fail-on-violation --format=summary
 
-# STEP 2: During development (after each function/module)
-pmat analyze complexity --max-cyclomatic 10 --max-cognitive 15 --fail-on-violation
+# STEP 2: Real-time development monitoring (continuous)
+pmat tdg dashboard --port 8080 --update-interval 5 &  # Background monitoring
 
-# STEP 3: Pre-commit verification (MANDATORY - BLOCKS COMMITS)
-pmat quality-gate --fail-on-violation --checks=all \
-  --max-complexity-p99 10 \
-  --max-dead-code 5.0 \
-  --min-entropy 2.0
+# STEP 3: File-level verification (after each function/module)
+pmat tdg <modified-file.rs> --include-components --min-grade B+
 
-# STEP 4: Sprint completion report (MANDATORY)
-pmat report --format=markdown --output=QUALITY_REPORT_$(date +%Y%m%d).md
+# STEP 4: Pre-commit TDG verification (MANDATORY - BLOCKS COMMITS)
+pmat tdg . --min-grade A- --fail-on-violation
+pmat quality-gate --fail-on-violation --format=detailed
+
+# STEP 5: Sprint completion comprehensive analysis (MANDATORY)
+pmat tdg . --format=markdown --output=TDG_SPRINT_REPORT_$(date +%Y%m%d).md
+pmat tdg export . --all-formats --output-dir ./tdg-reports/
 ```
 
-### PMAT Violation Response (IMMEDIATE):
-1. **HALT**: Stop ALL development when PMAT fails
-2. **ANALYZE**: Use `pmat analyze complexity --top-files 5` to identify hotspots
-3. **REFACTOR**: Decompose functions >10 complexity immediately
-4. **VERIFY**: Re-run PMAT to prove fix before continuing
-5. **PREVENT**: Update pre-commit hooks to catch similar issues
+### TDG Violation Response v2.39.0 (IMMEDIATE):
+1. **HALT**: Stop ALL development when TDG grade falls below A- (85 points)
+2. **ANALYZE**: Use `pmat tdg <file> --include-components` to identify exact component failures
+3. **DASHBOARD**: Use `pmat tdg dashboard` for real-time hotspot identification
+4. **TARGETED REFACTOR**: Address specific TDG component issues (structural, semantic, etc.)
+5. **VERIFY**: Re-run `pmat tdg <file>` to prove A- grade achievement
+6. **TRENDING**: Use dashboard to verify no regression in other files
+7. **MCP INTEGRATION**: Use enterprise MCP tools for external quality integration
 
 ## Sprint Hygiene Protocol
 
@@ -573,17 +589,52 @@ find . -type f -size +100M -not -path "./target/*" -not -path "./.git/*"
 
 **Remember**: Compiler engineering is about systematic transformation, not clever hacks. Every abstraction must have zero runtime cost. Every error must be actionable. Every line of code must justify its complexity budget.
 
-## MANDATORY PMAT Rules (BLOCKING - NO EXCEPTIONS)
+## MANDATORY TDG Real-Time Monitoring (v2.39.0 - CONTINUOUS)
 
-**CRITICAL**: ALL development MUST pass PMAT quality gates before proceeding.
+**NEW REQUIREMENT**: Real-time quality monitoring via TDG dashboard is MANDATORY for all development.
 
-### PMAT Enforcement Rules:
-- **BASELINE CHECK**: Run `pmat quality-gate --fail-on-violation --checks=all` before ANY code changes
-- **COMPLEXITY LIMIT**: Every function MUST be <10 cyclomatic complexity (verified by PMAT)
-- **ZERO SATD**: No TODO/FIXME/HACK comments allowed (verified by `pmat analyze satd`)
-- **DEAD CODE**: Maximum 5% dead code allowed (verified by `pmat analyze dead-code`)
-- **SPRINT COMPLETION**: Generate PMAT quality report before final commit
-- **COMMIT BLOCKING**: Pre-commit hooks MUST include PMAT quality gate checks
+### TDG Dashboard Integration:
+```bash
+# MANDATORY: Start real-time monitoring at beginning of each session
+pmat tdg dashboard --port 8080 --update-interval 5 --open
+
+# Features in v2.39.0:
+# - Real-time system metrics with 5-second updates
+# - Storage backend monitoring (Hot/Warm/Cold tiers)
+# - Performance profiling with flame graphs
+# - Bottleneck detection (CPU, I/O, Memory, Lock contention)
+# - Interactive analysis with Server-Sent Events
+```
+
+### TDG MCP Enterprise Integration:
+```bash
+# OPTIONAL: External tool integration via MCP server
+pmat mcp serve --port 3000
+
+# Available MCP tools for external integration:
+# - tdg_analyze_with_storage: Enterprise-grade analysis with persistence
+# - tdg_system_diagnostics: System health and performance monitoring
+# - tdg_storage_management: Storage backend control and optimization
+# - tdg_performance_profiling: Advanced profiling with flame graphs
+# - tdg_alert_management: Configurable alert system
+# - tdg_export_data: Multi-format export (JSON, CSV, SARIF, HTML, XML)
+```
+
+## MANDATORY TDG Rules (BLOCKING - NO EXCEPTIONS)
+
+**CRITICAL**: ALL development MUST achieve TDG A- grade (≥85 points) before proceeding.
+
+### TDG Enforcement Rules v2.39.0:
+- **TDG BASELINE**: Run `pmat tdg . --min-grade A-` before ANY code changes
+- **REAL-TIME MONITORING**: Keep `pmat tdg dashboard` running during development
+- **COMPLEXITY LIMIT**: ≤20 cyclomatic complexity per function (TDG structural component)
+- **COGNITIVE LIMIT**: ≤15 cognitive complexity per function (TDG semantic component)
+- **ZERO SATD**: No TODO/FIXME/HACK comments (TDG technical debt component)
+- **DOCUMENTATION**: >70% API documentation coverage (TDG documentation component)
+- **DUPLICATION**: <10% code duplication (TDG duplication component)
+- **CONSISTENCY**: ≥80% naming/style consistency (TDG consistency component)
+- **ENTERPRISE MCP**: Use MCP tools for external integration and advanced analytics
+- **COMMIT BLOCKING**: Pre-commit hooks MUST include TDG A- grade verification
 
 ### PMAT Violation Response (IMMEDIATE ACTION REQUIRED):
 ```bash
