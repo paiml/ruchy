@@ -4374,6 +4374,53 @@ impl Repl {
         Ok(idx)
     }
 
+    /// Evaluate slice index expression (complexity: 4)
+    fn evaluate_slice_index(&mut self, expr: Option<&Expr>, deadline: Instant, depth: usize) -> Result<Option<usize>> {
+        if let Some(index_expr) = expr {
+            match self.evaluate_expr(index_expr, deadline, depth + 1)? {
+                Value::Int(idx) => {
+                    Ok(Some(usize::try_from(idx)
+                        .map_err(|_| anyhow::anyhow!("Invalid slice index: {}", idx))?))
+                }
+                _ => Err(anyhow::anyhow!("Slice indices must be integers"))
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Validate slice bounds (complexity: 3)
+    fn validate_slice_bounds(start: usize, end: usize, len: usize) -> Result<()> {
+        if start > len || end > len {
+            return Err(anyhow::anyhow!("Slice indices out of bounds"));
+        }
+        if start > end {
+            return Err(anyhow::anyhow!("Invalid slice range: start > end"));
+        }
+        Ok(())
+    }
+
+    /// Slice a list value (complexity: 4)
+    fn slice_list(list: Vec<Value>, start_idx: Option<usize>, end_idx: Option<usize>) -> Result<Value> {
+        let start = start_idx.unwrap_or(0);
+        let end = end_idx.unwrap_or(list.len());
+        
+        Self::validate_slice_bounds(start, end, list.len())?;
+        Ok(Value::List(list[start..end].to_vec()))
+    }
+
+    /// Slice a string value (complexity: 5)
+    fn slice_string(s: String, start_idx: Option<usize>, end_idx: Option<usize>) -> Result<Value> {
+        let chars: Vec<char> = s.chars().collect();
+        let start = start_idx.unwrap_or(0);
+        let end = end_idx.unwrap_or(chars.len());
+        
+        Self::validate_slice_bounds(start, end, chars.len())?;
+        let sliced: String = chars[start..end].iter().collect();
+        Ok(Value::String(sliced))
+    }
+
+    /// Main slice evaluation function (complexity: 6)
     fn evaluate_slice(
         &mut self,
         object: &Expr,
@@ -4384,56 +4431,14 @@ impl Repl {
     ) -> Result<Value> {
         let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
         
-        // Evaluate start and end indices if provided
-        let start_idx = if let Some(start_expr) = start {
-            match self.evaluate_expr(start_expr, deadline, depth + 1)? {
-                Value::Int(idx) => Some(usize::try_from(idx)
-                    .map_err(|_| anyhow::anyhow!("Invalid start index: {}", idx))?),
-                _ => return Err(anyhow::anyhow!("Slice indices must be integers")),
-            }
-        } else {
-            None
-        };
+        // Evaluate start and end indices
+        let start_idx = self.evaluate_slice_index(start, deadline, depth)?;
+        let end_idx = self.evaluate_slice_index(end, deadline, depth)?;
         
-        let end_idx = if let Some(end_expr) = end {
-            match self.evaluate_expr(end_expr, deadline, depth + 1)? {
-                Value::Int(idx) => Some(usize::try_from(idx)
-                    .map_err(|_| anyhow::anyhow!("Invalid end index: {}", idx))?),
-                _ => return Err(anyhow::anyhow!("Slice indices must be integers")),
-            }
-        } else {
-            None
-        };
-        
+        // Perform slicing based on value type
         match obj_val {
-            Value::List(list) => {
-                let start = start_idx.unwrap_or(0);
-                let end = end_idx.unwrap_or(list.len());
-                
-                if start > list.len() || end > list.len() {
-                    return Err(anyhow::anyhow!("Slice indices out of bounds"));
-                }
-                if start > end {
-                    return Err(anyhow::anyhow!("Invalid slice range: start > end"));
-                }
-                
-                Ok(Value::List(list[start..end].to_vec()))
-            }
-            Value::String(s) => {
-                let chars: Vec<char> = s.chars().collect();
-                let start = start_idx.unwrap_or(0);
-                let end = end_idx.unwrap_or(chars.len());
-                
-                if start > chars.len() || end > chars.len() {
-                    return Err(anyhow::anyhow!("Slice indices out of bounds"));
-                }
-                if start > end {
-                    return Err(anyhow::anyhow!("Invalid slice range: start > end"));
-                }
-                
-                let sliced: String = chars[start..end].iter().collect();
-                Ok(Value::String(sliced))
-            }
+            Value::List(list) => Self::slice_list(list, start_idx, end_idx),
+            Value::String(s) => Self::slice_string(s, start_idx, end_idx),
             _ => Err(anyhow::anyhow!("Cannot slice value of type {:?}", obj_val)),
         }
     }
@@ -4719,92 +4724,134 @@ impl Repl {
         }
     }
 
+    /// Match simple patterns (complexity: 4)
+    fn match_simple_patterns(
+        value: &Value,
+        pattern: &Pattern,
+        bindings: &mut HashMap<String, Value>,
+    ) -> Option<Result<bool>> {
+        match pattern {
+            Pattern::Wildcard => Some(Ok(true)),
+            Pattern::Literal(literal) => Some(Ok(Self::match_literal_pattern(value, literal))),
+            Pattern::Identifier(name) => {
+                bindings.insert(name.clone(), value.clone());
+                Some(Ok(true))
+            }
+            _ => None,
+        }
+    }
+
+    /// Match collection patterns (complexity: 5)
+    fn match_collection_patterns(
+        value: &Value,
+        pattern: &Pattern,
+        bindings: &mut HashMap<String, Value>,
+    ) -> Option<Result<bool>> {
+        match pattern {
+            Pattern::List(patterns) => match value {
+                Value::List(values) => Some(Self::match_sequence_pattern(values, patterns, bindings)),
+                _ => Some(Ok(false)),
+            },
+            Pattern::Tuple(patterns) => match value {
+                Value::Tuple(values) => Some(Self::match_sequence_pattern(values, patterns, bindings)),
+                Value::List(values) => Some(Self::match_sequence_pattern(values, patterns, bindings)),
+                _ => Some(Ok(false)),
+            },
+            Pattern::Or(patterns) => Some(Self::match_or_pattern(value, patterns, bindings)),
+            _ => None,
+        }
+    }
+
+    /// Match Result/Option patterns (complexity: 6)
+    fn match_result_option_patterns(
+        value: &Value,
+        pattern: &Pattern,
+        bindings: &mut HashMap<String, Value>,
+    ) -> Option<Result<bool>> {
+        match pattern {
+            Pattern::Ok(inner_pattern) => {
+                if let Some(ok_value) = Self::extract_result_ok(value) {
+                    Some(Self::pattern_matches_recursive(&ok_value, inner_pattern, bindings))
+                } else {
+                    Some(Ok(false))
+                }
+            }
+            Pattern::Err(inner_pattern) => {
+                if let Some(err_value) = Self::extract_result_err(value) {
+                    Some(Self::pattern_matches_recursive(&err_value, inner_pattern, bindings))
+                } else {
+                    Some(Ok(false))
+                }
+            }
+            Pattern::Some(inner_pattern) => {
+                if let Some(some_value) = Self::extract_option_some(value) {
+                    Some(Self::pattern_matches_recursive(&some_value, inner_pattern, bindings))
+                } else {
+                    Some(Ok(false))
+                }
+            }
+            Pattern::None => Some(Ok(Self::is_option_none(value))),
+            _ => None,
+        }
+    }
+
+    /// Match complex patterns (complexity: 5)
+    fn match_complex_patterns(
+        value: &Value,
+        pattern: &Pattern,
+        bindings: &mut HashMap<String, Value>,
+    ) -> Option<Result<bool>> {
+        match pattern {
+            Pattern::Range { start, end, inclusive } => match value {
+                Value::Int(v) => Some(Self::match_range_pattern(*v, start, end, *inclusive)),
+                _ => Some(Ok(false)),
+            },
+            Pattern::Struct { name: _struct_name, fields: pattern_fields, has_rest: _ } => {
+                match value {
+                    Value::Object(obj_fields) => {
+                        Some(Self::match_struct_pattern(obj_fields, pattern_fields, bindings))
+                    }
+                    _ => Some(Ok(false)),
+                }
+            }
+            Pattern::QualifiedName(path) => {
+                Some(Ok(Self::match_qualified_name_pattern(value, path)))
+            }
+            Pattern::Rest | Pattern::RestNamed(_) => {
+                Some(Err(anyhow::anyhow!("Rest patterns are only valid inside struct or tuple patterns")))
+            }
+            _ => None,
+        }
+    }
+
+    /// Main pattern matching function (complexity: 6)
     fn pattern_matches_recursive(
         value: &Value,
         pattern: &Pattern,
         bindings: &mut HashMap<String, Value>,
     ) -> Result<bool> {
-        match pattern {
-            // Wildcard matches everything
-            Pattern::Wildcard => Ok(true),
-
-            // Literal patterns
-            Pattern::Literal(literal) => Ok(Self::match_literal_pattern(value, literal)),
-
-            // Identifier patterns (bind to variable)
-            Pattern::Identifier(name) => {
-                bindings.insert(name.clone(), value.clone());
-                Ok(true)
-            }
-
-            // List patterns
-            Pattern::List(patterns) => match value {
-                Value::List(values) => Self::match_sequence_pattern(values, patterns, bindings),
-                _ => Ok(false),
-            },
-
-            // Tuple patterns
-            Pattern::Tuple(patterns) => match value {
-                Value::Tuple(values) => Self::match_sequence_pattern(values, patterns, bindings),
-                Value::List(values) => Self::match_sequence_pattern(values, patterns, bindings),
-                _ => Ok(false),
-            },
-
-            // OR patterns - try each alternative
-            Pattern::Or(patterns) => Self::match_or_pattern(value, patterns, bindings),
-
-            // Range patterns
-            Pattern::Range { start, end, inclusive } => match value {
-                Value::Int(v) => Self::match_range_pattern(*v, start, end, *inclusive),
-                _ => Ok(false),
-            },
-
-            // Result patterns (Ok/Err)
-            Pattern::Ok(inner_pattern) => {
-                if let Some(ok_value) = Self::extract_result_ok(value) {
-                    Self::pattern_matches_recursive(&ok_value, inner_pattern, bindings)
-                } else {
-                    Ok(false)
-                }
-            }
-            Pattern::Err(inner_pattern) => {
-                if let Some(err_value) = Self::extract_result_err(value) {
-                    Self::pattern_matches_recursive(&err_value, inner_pattern, bindings)
-                } else {
-                    Ok(false)
-                }
-            }
-
-            // Option patterns (Some/None)
-            Pattern::Some(inner_pattern) => {
-                if let Some(some_value) = Self::extract_option_some(value) {
-                    Self::pattern_matches_recursive(&some_value, inner_pattern, bindings)
-                } else {
-                    Ok(false)
-                }
-            }
-            Pattern::None => Ok(Self::is_option_none(value)),
-
-            // Struct patterns
-            Pattern::Struct { name: _struct_name, fields: pattern_fields, has_rest: _ } => {
-                match value {
-                    Value::Object(obj_fields) => {
-                        Self::match_struct_pattern(obj_fields, pattern_fields, bindings)
-                    }
-                    _ => Ok(false),
-                }
-            }
-
-            // Qualified name patterns
-            Pattern::QualifiedName(path) => {
-                Ok(Self::match_qualified_name_pattern(value, path))
-            }
-            
-            // Rest patterns - these are only valid inside struct/tuple patterns
-            Pattern::Rest | Pattern::RestNamed(_) => {
-                bail!("Rest patterns are only valid inside struct or tuple patterns")
-            }
+        // Try simple patterns first
+        if let Some(result) = Self::match_simple_patterns(value, pattern, bindings) {
+            return result;
         }
+
+        // Try collection patterns
+        if let Some(result) = Self::match_collection_patterns(value, pattern, bindings) {
+            return result;
+        }
+
+        // Try Result/Option patterns
+        if let Some(result) = Self::match_result_option_patterns(value, pattern, bindings) {
+            return result;
+        }
+
+        // Try complex patterns
+        if let Some(result) = Self::match_complex_patterns(value, pattern, bindings) {
+            return result;
+        }
+
+        // Should never reach here as all pattern types are covered
+        bail!("Unhandled pattern type: {:?}", pattern)
     }
 
     /// Extract value from `Result::Ok` variant (complexity: 4)
@@ -5359,117 +5406,144 @@ impl Repl {
         Ok((should_quit, output))
     }
 
-    /// Handle REPL commands (public for testing)
+    /// Handle session management commands (complexity: 5)
+    fn handle_session_commands(&mut self, cmd: &str) -> Option<Result<bool>> {
+        match cmd {
+            ":history" => {
+                for (i, item) in self.history.iter().enumerate() {
+                    println!("{}: {}", i + 1, item);
+                }
+                Some(Ok(false))
+            }
+            ":clear" => {
+                self.history.clear();
+                self.definitions.clear();
+                self.bindings.clear();
+                println!("Session cleared");
+                Some(Ok(false))
+            }
+            ":reset" => {
+                self.history.clear();
+                self.definitions.clear();
+                self.bindings.clear();
+                self.memory.reset();
+                println!("REPL reset to initial state");
+                Some(Ok(false))
+            }
+            ":compile" => Some(self.compile_session().map(|_| false)),
+            _ => None,
+        }
+    }
+
+    /// Handle inspection commands (complexity: 4)
+    fn handle_inspection_commands(&mut self, command: &str) -> Option<Result<bool>> {
+        if command.starts_with(":type") {
+            let expr = command.strip_prefix(":type").unwrap_or("").trim();
+            if expr.is_empty() {
+                println!("Usage: :type <expression>");
+            } else {
+                Self::show_type(expr);
+            }
+            Some(Ok(false))
+        } else if command.starts_with(":ast") {
+            let expr = command.strip_prefix(":ast").unwrap_or("").trim();
+            if expr.is_empty() {
+                println!("Usage: :ast <expression>");
+            } else {
+                Self::show_ast(expr);
+            }
+            Some(Ok(false))
+        } else if command.starts_with(":inspect") {
+            let var_name = command.strip_prefix(":inspect").unwrap_or("").trim();
+            if var_name.is_empty() {
+                println!("Usage: :inspect <variable>");
+            } else {
+                println!("{}", self.inspect_value(var_name));
+            }
+            Some(Ok(false))
+        } else if command == ":bindings" || command == ":env" {
+            if self.bindings.is_empty() {
+                println!("No bindings");
+            } else {
+                for (name, value) in &self.bindings {
+                    println!("{name}: {value}");
+                }
+            }
+            Some(Ok(false))
+        } else {
+            None
+        }
+    }
+
+    /// Handle file operations (complexity: 4)
+    fn handle_file_operations(&mut self, command: &str, parts: &[&str]) -> Option<Result<bool>> {
+        if command.starts_with(":load") && parts.len() == 2 {
+            Some(self.load_file(parts[1]).map(|_| false))
+        } else if command.starts_with(":save") {
+            let filename = command.strip_prefix(":save").unwrap_or("").trim();
+            if filename.is_empty() {
+                println!("Usage: :save <filename>");
+                println!("Save current session to a file");
+            } else {
+                match self.save_session(filename) {
+                    Ok(()) => println!("Session saved to {}", filename.bright_green()),
+                    Err(e) => eprintln!("Failed to save session: {e}"),
+                }
+            }
+            Some(Ok(false))
+        } else if command.starts_with(":search") {
+            let query = command.strip_prefix(":search").unwrap_or("").trim();
+            if query.is_empty() {
+                println!("Usage: :search <query>");
+                println!("Search through command history with fuzzy matching");
+            } else {
+                self.search_history(query);
+            }
+            Some(Ok(false))
+        } else {
+            None
+        }
+    }
+
+    /// Handle REPL commands (public for testing) (complexity: 7)
     ///
     /// # Errors
     ///
     /// Returns an error if command execution fails
     pub fn handle_command(&mut self, command: &str) -> Result<bool> {
         let parts: Vec<&str> = command.split_whitespace().collect();
-        match parts.first().copied() {
-            Some(":quit" | ":q") => Ok(true),
-            Some(":help" | ":h") => {
-                Self::print_help();
-                Ok(false)
-            }
-            Some(":history") => {
-                for (i, item) in self.history.iter().enumerate() {
-                    println!("{}: {}", i + 1, item);
-                }
-                Ok(false)
-            }
-            Some(":clear") => {
-                self.history.clear();
-                self.definitions.clear();
-                self.bindings.clear();
-                println!("Session cleared");
-                Ok(false)
-            }
-            Some(":bindings" | ":env") => {
-                if self.bindings.is_empty() {
-                    println!("No bindings");
-                } else {
-                    for (name, value) in &self.bindings {
-                        println!("{name}: {value}");
-                    }
-                }
-                Ok(false)
-            }
-            Some(":compile") => {
-                self.compile_session()?;
-                Ok(false)
-            }
-            Some(":load") if parts.len() == 2 => {
-                self.load_file(parts[1])?;
-                Ok(false)
-            }
-            Some(":type") => {
-                // Get the rest of the line after :type
-                let expr = command.strip_prefix(":type").unwrap_or("").trim();
-                if expr.is_empty() {
-                    println!("Usage: :type <expression>");
-                } else {
-                    Self::show_type(expr);
-                }
-                Ok(false)
-            }
-            Some(":ast") => {
-                // Get the rest of the line after :ast
-                let expr = command.strip_prefix(":ast").unwrap_or("").trim();
-                if expr.is_empty() {
-                    println!("Usage: :ast <expression>");
-                } else {
-                    Self::show_ast(expr);
-                }
-                Ok(false)
-            }
-            Some(":inspect") => {
-                let var_name = command.strip_prefix(":inspect").unwrap_or("").trim();
-                if var_name.is_empty() {
-                    println!("Usage: :inspect <variable>");
-                } else {
-                    println!("{}", self.inspect_value(var_name));
-                }
-                Ok(false)
-            }
-            Some(":reset") => {
-                // Full reset - clear everything and restart
-                self.history.clear();
-                self.definitions.clear();
-                self.bindings.clear();
-                self.memory.reset();
-                println!("REPL reset to initial state");
-                Ok(false)
-            }
-            Some(cmd) if cmd.starts_with(":search") => {
-                let query = cmd.strip_prefix(":search").unwrap_or("").trim();
-                if query.is_empty() {
-                    println!("Usage: :search <query>");
-                    println!("Search through command history with fuzzy matching");
-                } else {
-                    self.search_history(query);
-                }
-                Ok(false)
-            }
-            Some(cmd) if cmd.starts_with(":save") => {
-                let filename = cmd.strip_prefix(":save").unwrap_or("").trim();
-                if filename.is_empty() {
-                    println!("Usage: :save <filename>");
-                    println!("Save current session to a file");
-                } else {
-                    match self.save_session(filename) {
-                        Ok(()) => println!("Session saved to {}", filename.bright_green()),
-                        Err(e) => eprintln!("Failed to save session: {e}"),
-                    }
-                }
-                Ok(false)
-            }
-            _ => {
-                eprintln!("Unknown command: {command}");
-                Self::print_help();
-                Ok(false)
-            }
+        let first_cmd = parts.first().copied().unwrap_or("");
+        
+        // Check for quit command
+        if first_cmd == ":quit" || first_cmd == ":q" {
+            return Ok(true);
         }
+        
+        // Check for help command
+        if first_cmd == ":help" || first_cmd == ":h" {
+            Self::print_help();
+            return Ok(false);
+        }
+        
+        // Try session management commands
+        if let Some(result) = self.handle_session_commands(first_cmd) {
+            return result;
+        }
+        
+        // Try inspection commands
+        if let Some(result) = self.handle_inspection_commands(command) {
+            return result;
+        }
+        
+        // Try file operations
+        if let Some(result) = self.handle_file_operations(command, &parts) {
+            return result;
+        }
+        
+        // Unknown command
+        eprintln!("Unknown command: {command}");
+        Self::print_help();
+        Ok(false)
     }
 
     /// Get help text as string
@@ -9277,83 +9351,91 @@ Type :normal to exit help mode.
         }
     }
     
-    /// Inspect a value in detail (for :inspect command)
+    /// Format size/length information for value (complexity: 8)
+    fn format_value_size(&self, value: &Value) -> String {
+        match value {
+            Value::List(l) => format!("│ Length: {:<20} │\n", l.len()),
+            Value::String(s) => format!("│ Length: {} chars{:<11} │\n", s.len(), ""),
+            Value::Object(o) => format!("│ Fields: {:<20} │\n", o.len()),
+            Value::HashMap(m) => format!("│ Entries: {:<19} │\n", m.len()),
+            Value::HashSet(s) => format!("│ Size: {:<22} │\n", s.len()),
+            Value::Tuple(t) => format!("│ Elements: {:<18} │\n", t.len()),
+            Value::DataFrame { columns, .. } => {
+                if let Some(first_col) = columns.first() {
+                    let row_count = first_col.values.len();
+                    format!("│ Columns: {:<19} │\n│ Rows: {row_count:<22} │\n", columns.len())
+                } else {
+                    String::new()
+                }
+            }
+            _ => {
+                // Show value preview for simple types
+                let preview = format!("{value}");
+                if preview.len() <= 24 {
+                    format!("│ Value: {preview:<21} │\n")
+                } else {
+                    let truncated = &preview[..21];
+                    format!("│ Value: {truncated}... │\n")
+                }
+            }
+        }
+    }
+
+    /// Format interactive options for value (complexity: 3)
+    fn format_value_options(&self, value: &Value) -> String {
+        let mut output = String::new();
+        output.push_str("│ Options:                   │\n");
+        
+        match value {
+            Value::List(_) | Value::Object(_) | Value::HashMap(_) => {
+                output.push_str("│ [Enter] Browse entries     │\n");
+                output.push_str("│ [S] Statistics             │\n");
+            }
+            Value::Function { .. } | Value::Lambda { .. } => {
+                output.push_str("│ [P] Show parameters        │\n");
+                output.push_str("│ [B] Show body              │\n");
+            }
+            _ => {
+                output.push_str("│ [V] Show full value        │\n");
+                output.push_str("│ [T] Type details           │\n");
+            }
+        }
+        
+        output.push_str("│ [M] Memory layout          │\n");
+        output
+    }
+
+    /// Create inspector header (complexity: 2)
+    fn create_inspector_header(&self, var_name: &str, value: &Value) -> String {
+        let mut output = String::new();
+        output.push_str("┌─ Inspector ────────────────┐\n");
+        output.push_str(&format!("│ Variable: {var_name:<17} │\n"));
+        output.push_str(&format!("│ Type: {:<22} │\n", self.infer_type(value)));
+        output
+    }
+
+    /// Inspect a value in detail (for :inspect command) (complexity: 4)
     fn inspect_value(&self, var_name: &str) -> String {
         if let Some(value) = self.bindings.get(var_name) {
             let mut output = String::new();
             
-            // Create inspector box header
-            output.push_str("┌─ Inspector ────────────────┐\n");
+            // Header with variable name and type
+            output.push_str(&self.create_inspector_header(var_name, value));
             
-            // Show variable name and type
-            output.push_str(&format!("│ Variable: {var_name:<17} │\n"));
-            output.push_str(&format!("│ Type: {:<22} │\n", self.infer_type(value)));
+            // Size/length information
+            output.push_str(&self.format_value_size(value));
             
-            // Show size/length information based on type
-            match value {
-                Value::List(l) => {
-                    output.push_str(&format!("│ Length: {:<20} │\n", l.len()));
-                }
-                Value::String(s) => {
-                    output.push_str(&format!("│ Length: {} chars{:<11} │\n", s.len(), ""));
-                }
-                Value::Object(o) => {
-                    output.push_str(&format!("│ Fields: {:<20} │\n", o.len()));
-                }
-                Value::HashMap(m) => {
-                    output.push_str(&format!("│ Entries: {:<19} │\n", m.len()));
-                }
-                Value::HashSet(s) => {
-                    output.push_str(&format!("│ Size: {:<22} │\n", s.len()));
-                }
-                Value::Tuple(t) => {
-                    output.push_str(&format!("│ Elements: {:<18} │\n", t.len()));
-                }
-                Value::DataFrame { columns, .. } => {
-                    if let Some(first_col) = columns.first() {
-                        let row_count = first_col.values.len();
-                        output.push_str(&format!("│ Columns: {:<19} │\n", columns.len()));
-                        output.push_str(&format!("│ Rows: {row_count:<22} │\n"));
-                    }
-                }
-                _ => {
-                    // Show value preview for simple types
-                    let preview = format!("{value}");
-                    if preview.len() <= 24 {
-                        output.push_str(&format!("│ Value: {preview:<21} │\n"));
-                    } else {
-                        let truncated = &preview[..21];
-                        output.push_str(&format!("│ Value: {truncated}... │\n"));
-                    }
-                }
-            }
-            
-            // Memory estimation (simplified)
+            // Memory estimation
             let memory_size = self.estimate_memory_size(value);
             output.push_str(&format!("│ Memory: ~{:<18} │\n", format!("{memory_size} bytes")));
             
-            // Add separator line
+            // Separator line
             output.push_str("│                            │\n");
             
-            // Add interactive options (for display purposes)
-            output.push_str("│ Options:                   │\n");
+            // Interactive options
+            output.push_str(&self.format_value_options(value));
             
-            match value {
-                Value::List(_) | Value::Object(_) | Value::HashMap(_) => {
-                    output.push_str("│ [Enter] Browse entries     │\n");
-                    output.push_str("│ [S] Statistics             │\n");
-                }
-                Value::Function { .. } | Value::Lambda { .. } => {
-                    output.push_str("│ [P] Show parameters        │\n");
-                    output.push_str("│ [B] Show body              │\n");
-                }
-                _ => {
-                    output.push_str("│ [V] Show full value        │\n");
-                    output.push_str("│ [T] Type details           │\n");
-                }
-            }
-            
-            output.push_str("│ [M] Memory layout          │\n");
+            // Footer
             output.push_str("└────────────────────────────┘");
             
             output
