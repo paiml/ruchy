@@ -16,7 +16,7 @@ fuzz_target!(|data: &[u8]| {
         return;
     }
     
-    // Create a temporary file
+    // Create a working file
     let mut temp_file = match NamedTempFile::new() {
         Ok(f) => f,
         Err(_) => return,

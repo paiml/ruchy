@@ -147,7 +147,7 @@ impl LoweringContext {
                 let right_op = self.lower_expr_to_operand(right)?;
                 let mir_op = Self::lower_binary_op(*op);
 
-                // Create a temporary for the result
+                // Create a variable for the result
                 let result_ty = Self::infer_binary_result_type(*op);
                 let temp = self.builder.alloc_local(result_ty, false, None);
 
@@ -212,7 +212,7 @@ impl LoweringContext {
                 };
                 self.builder.goto(else_block, merge_block);
 
-                // Create a temporary for the result
+                // Create a variable for the result
                 let result_ty = Type::I32; // Type inference would determine this
                 let result_temp = self.builder.alloc_local(result_ty, false, None);
 
@@ -234,7 +234,7 @@ impl LoweringContext {
                     arg_ops.push(self.lower_expr_to_operand(arg)?);
                 }
 
-                // Create a temporary for the result
+                // Create a variable for the result
                 let result_ty = Type::I32; // Type inference would determine this
                 let result_temp = self.builder.alloc_local(result_ty, false, None);
 

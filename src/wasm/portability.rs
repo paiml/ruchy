@@ -42,7 +42,7 @@ pub struct PortabilityScore {
     /// Performance portability score
     pub performance_portability: f64,
     
-    /// Security compliance score
+    /// Safety compliance score
     pub security_compliance: f64,
 }
 
@@ -86,7 +86,7 @@ pub struct AnalysisConfig {
     /// Check performance characteristics
     pub check_performance: bool,
     
-    /// Check security requirements
+    /// Check safety requirements
     pub check_security: bool,
     
     /// Strict mode (fail on any incompatibility)
@@ -143,7 +143,7 @@ pub enum IssueSeverity {
     Warning,
     /// Error (blocks deployment)
     Error,
-    /// Critical (security or major functionality issue)
+    /// Critical (safety or major functionality issue)
     Critical,
 }
 
@@ -156,9 +156,9 @@ pub enum IssueCategory {
     FeatureNotSupported,
     /// Size constraint violation
     SizeConstraint,
-    /// Performance issue
+    /// Performance concern
     Performance,
-    /// Security concern
+    /// Safety concern
     Security,
     /// Configuration issue
     Configuration,
@@ -515,7 +515,7 @@ impl PortabilityAnalyzer {
     }
     
     fn calculate_security_compliance(&self, _info: &ComponentInfo) -> Result<f64> {
-        // Check security requirements
+        // Check safety requirements
         // Simplified implementation
         Ok(0.95)
     }

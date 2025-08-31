@@ -99,7 +99,7 @@ pub fn compile_to_binary(source_path: &Path, options: &CompileOptions) -> Result
 /// Returns an error if:
 /// - The source code fails to parse
 /// - The transpilation fails
-/// - The temporary directory cannot be created
+/// - The working directory cannot be created
 /// - The rustc compilation fails
 pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Result<PathBuf> {
     // Parse the Ruchy source
@@ -114,11 +114,11 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
         .context("Failed to transpile to Rust")?;
     eprintln!("DEBUG: transpile_to_program completed");
     
-    // Create temporary directory for compilation
+    // Create working directory for compilation
     let temp_dir = TempDir::new()
         .context("Failed to create temporary directory")?;
     
-    // Write Rust code to temporary file
+    // Write Rust code to working file
     let rust_file = temp_dir.path().join("main.rs");
     let rust_code_str = rust_code.to_string();
     

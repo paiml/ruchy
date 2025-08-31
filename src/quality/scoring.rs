@@ -291,7 +291,7 @@ impl ScoreEngine {
 
         self.dependency_tracker.update_file_time(file_path);
 
-        // Optimize cache if scoring took too long or cache is getting large
+        // Maintain cache if scoring took too long or cache is getting large
         if elapsed > Duration::from_millis(100) || self.cache.len() > 1000 {
             self.optimize_cache();
         }

@@ -762,7 +762,7 @@ fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f6
         score *= length_penalty;
     }
     
-    // 5. SATD PENALTY - Immediate penalty for technical debt
+    // 5. Code quality penalty - Immediate penalty for code quality issues
     if metrics.has_satd {
         score *= 0.70; // 30% penalty for SATD
     }

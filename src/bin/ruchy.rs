@@ -484,7 +484,7 @@ enum Commands {
         #[arg(long, default_value = "text")]
         format: String,
 
-        /// Specific rule categories to check (comma-separated: unused,style,complexity,security,performance)
+        /// Specific rule categories to check (comma-separated: unused,style,complexity,safety,performance)
         #[arg(long)]
         rules: Option<String>,
 
@@ -676,7 +676,7 @@ enum Commands {
         #[arg(long)]
         filter_failed: bool,
 
-        /// Add message filter for slow messages (minimum microseconds)
+        /// Add message filter for delayed messages (minimum microseconds)
         #[arg(long)]
         filter_slow: Option<u64>,
     },

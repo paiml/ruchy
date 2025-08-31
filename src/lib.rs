@@ -8,7 +8,7 @@
 // #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]
-// Temporary allows for RUCHY-0801 commit - will be addressed in quality sprint
+// Clippy allows for RUCHY-0801 commit - will be addressed in quality sprint
 #![allow(clippy::case_sensitive_file_extension_comparisons)]
 #![allow(clippy::match_same_arms)]
 #![allow(clippy::struct_excessive_bools)]
@@ -18,7 +18,7 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::missing_panics_doc)]
-// Additional temporary allows for P0 lint fixes  
+// Additional clippy allows for P0 lint fixes  
 #![allow(clippy::empty_line_after_doc_comments)]
 #![allow(clippy::manual_let_else)]
 #![allow(clippy::redundant_pattern_matching)]

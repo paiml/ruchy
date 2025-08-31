@@ -232,7 +232,7 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
         .map(|tokens| tokens.to_string())
         .with_context(|| "Failed to transpile to Rust")?;
 
-    // Write to unique temporary file to avoid race conditions
+    // Write to unique working file to avoid race conditions
     let temp_source = tempfile::NamedTempFile::new()
         .with_context(|| "Failed to create temporary file")?;
     fs::write(temp_source.path(), &rust_code)
@@ -275,7 +275,7 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
         eprint!("{}", String::from_utf8_lossy(&run_output.stderr));
     }
 
-    // Temporary files will be automatically cleaned up when NamedTempFile goes out of scope
+    // Working files will be automatically cleaned up when NamedTempFile goes out of scope
 
     if !run_output.status.success() {
         std::process::exit(run_output.status.code().unwrap_or(1));

@@ -2579,7 +2579,7 @@ impl Interpreter {
         Ok(result)
     }
 
-    /// Compute field access result (slow path)
+    /// Compute field access result (detailed path)
     fn compute_field_access(
         &self,
         obj: &Value,

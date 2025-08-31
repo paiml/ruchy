@@ -180,7 +180,7 @@ fn nightmare(
         println!("📝 Example: {} (Expected: {})", name, expected_score);
         println!("{}", "─".repeat(50));
         
-        // Write the code to a temporary file
+        // Write the code to a working file
         let file_path = temp_dir.path().join(format!("{}.ruchy", name));
         fs::write(&file_path, code).unwrap();
         
