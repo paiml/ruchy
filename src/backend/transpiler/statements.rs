@@ -916,11 +916,11 @@ impl Transpiler {
     
     /// Static method for transpiling inline imports (backward compatibility)
     pub fn transpile_import(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
-        let import_tokens = Self::transpile_import_inline(path, items);
+        
         
         // All imports should have module-level scope, not be wrapped in blocks
         // This includes both std library imports and local module imports
-        import_tokens
+        Self::transpile_import_inline(path, items)
     }
     
     /// Handle `std::fs` imports and generate file operation functions
@@ -1152,6 +1152,57 @@ impl Transpiler {
         }
     }
     
+    /// Handle `std::net` imports with networking functions
+    fn transpile_std_net_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // Generate networking functions and re-export std types
+        quote! {
+            mod net {
+                pub use std::net::*;
+                
+                pub struct TcpListener;
+                
+                impl TcpListener {
+                    pub fn bind(addr: String) -> Result<Self, String> {
+                        println!("Would bind TCP listener to: {}", addr);
+                        Ok(TcpListener)
+                    }
+                    
+                    pub fn accept(&self) -> Result<TcpStream, String> {
+                        println!("Would accept connection");
+                        Ok(TcpStream)
+                    }
+                }
+                
+                pub struct TcpStream;
+                
+                impl TcpStream {
+                    pub fn connect(addr: String) -> Result<Self, String> {
+                        println!("Would connect to: {}", addr);
+                        Ok(TcpStream)
+                    }
+                }
+            }
+            
+            // Also make available as module for http submodules
+            mod http {
+                pub struct Server {
+                    addr: String,
+                }
+                
+                impl Server {
+                    pub fn new(addr: String) -> Self {
+                        println!("Creating HTTP server on: {}", addr);
+                        Server { addr }
+                    }
+                    
+                    pub fn listen(&self) {
+                        println!("HTTP server listening on: {}", self.addr);
+                    }
+                }
+            }
+        }
+    }
+    
     /// Handle `std::system` imports with system information functions
     /// Core inline import transpilation logic
     fn transpile_import_inline(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
@@ -1176,6 +1227,11 @@ impl Transpiler {
         // Handle std::signal imports
         if path == "std::signal" || path.starts_with("std::signal::") {
             return Self::transpile_std_signal_import(path, items);
+        }
+        
+        // Handle std::net imports
+        if path == "std::net" || path.starts_with("std::net::") {
+            return Self::transpile_std_net_import(path, items);
         }
 
         // Build the path as a TokenStream

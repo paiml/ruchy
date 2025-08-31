@@ -293,7 +293,7 @@ impl Transpiler {
         
         let obj_tokens = self.transpile_expr(object)?;
         
-        // Check if the object is an ObjectLiteral (HashMap)
+        // Check if the object is an ObjectLiteral (HashMap) or module path
         match &object.kind {
             ExprKind::ObjectLiteral { .. } => {
                 // Direct object literal access - use get()
@@ -303,9 +303,18 @@ impl Transpiler {
                         .unwrap_or_else(|| panic!("Field '{}' not found", #field))
                 })
             }
+            ExprKind::FieldAccess { .. } => {
+                // Nested field access like net::TcpListener - use :: syntax
+                let field_ident = format_ident!("{}", field);
+                Ok(quote! { #obj_tokens::#field_ident })
+            }
+            ExprKind::Identifier(name) if name.contains("::") => {
+                // Module path identifier - use :: syntax
+                let field_ident = format_ident!("{}", field);
+                Ok(quote! { #obj_tokens::#field_ident })
+            }
             _ => {
-                // For now, assume identifiers that look like object accesses use HashMap.get()
-                // This is a simplification - real implementation would need type tracking
+                // For other cases, assume HashMap access
                 Ok(quote! { 
                     #obj_tokens.get(#field)
                         .cloned()
