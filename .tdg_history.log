@@ -91,3 +91,13 @@
 2025-08-30T22:41:16+02:00 | src/quality/linter.rs | 72.818184→72.818184 | BMinus→BMinus | 0
 2025-08-30T22:41:16+02:00 | tests/p0_book_003_systems_programming.rs | 94.35294→94.35294 | A→A | 0
 2025-08-30T22:41:16+02:00 | tests/p0_lint_false_positives.rs | 93.085106→93.085106 | A→A | 0
+2025-08-31T08:48:12+02:00 | src/backend/transpiler/expressions.rs | 71.278946→70.96129 | BMinus→BMinus | -.317656
+2025-08-31T08:48:12+02:00 | src/backend/transpiler/statements.rs | 70.48096→70.48387 | BMinus→BMinus | .00291
+2025-08-31T08:48:12+02:00 | src/bin/handlers/commands.rs | 68.072105→68.072105 | CPlus→CPlus | 0
+2025-08-31T08:48:12+02:00 | src/frontend/parser/collections.rs | 72.12794→71.534836 | BMinus→BMinus | -.593104
+2025-08-31T08:48:12+02:00 | src/quality/linter.rs | 72.818184→72.80488 | BMinus→BMinus | -.013304
+2025-08-31T08:48:40+02:00 | src/backend/transpiler/expressions.rs | 70.96129→70.96129 | BMinus→BMinus | 0
+2025-08-31T08:48:40+02:00 | src/backend/transpiler/statements.rs | 70.48387→70.48387 | BMinus→BMinus | 0
+2025-08-31T08:48:40+02:00 | src/bin/handlers/commands.rs | 68.072105→68.072105 | CPlus→CPlus | 0
+2025-08-31T08:48:40+02:00 | src/frontend/parser/collections.rs | 71.534836→71.534836 | BMinus→BMinus | 0
+2025-08-31T08:48:40+02:00 | src/quality/linter.rs | 72.80488→72.80488 | BMinus→BMinus | 0

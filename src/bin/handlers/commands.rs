@@ -758,7 +758,7 @@ fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f6
         metrics.total_function_lines as f64 / metrics.function_count as f64
     };
     if avg_function_length > 20.0 {
-        let length_penalty = (30.0 / avg_function_length).min(1.0).max(0.3);
+        let length_penalty = (30.0 / avg_function_length).clamp(0.3, 1.0);
         score *= length_penalty;
     }
     
@@ -778,7 +778,7 @@ fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f6
     }
     
     // Ensure score stays within bounds
-    score.max(0.0).min(1.0)
+    score.clamp(0.0, 1.0)
 }
 
 fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
