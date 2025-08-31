@@ -40,6 +40,7 @@
 use crate::frontend::ast::{
     BinaryOp, Expr, ExprKind, ImportItem, Literal, MatchArm, Pattern, PipelineStage, Span, StructPatternField, UnaryOp,
 };
+use crate::runtime::completion::RuchyCompleter;
 use crate::runtime::magic::{MagicRegistry, UnicodeExpander};
 use crate::runtime::transaction::TransactionalState;
 use crate::{Parser, Transpiler};
@@ -48,13 +49,10 @@ use colored::Colorize;
 
 mod display;
 mod inspect;
-use rustyline::completion::Completer;
 use rustyline::error::ReadlineError;
-use rustyline::highlight::Highlighter;
-use rustyline::hint::Hinter;
 use rustyline::history::DefaultHistory;
 use rustyline::validate::Validator;
-use rustyline::{CompletionType, Config, EditMode, Helper};
+use rustyline::{CompletionType, Config, EditMode};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 #[allow(unused_imports)]
@@ -456,524 +454,24 @@ impl Default for ReplConfig {
     }
 }
 
-/// Tab completion helper for Ruchy REPL
-#[derive(Default)]
-struct RuchyCompleter {
-    keywords: Vec<String>,
-    builtin_functions: Vec<String>,
-    list_methods: Vec<String>,
-    string_methods: Vec<String>,
-    commands: Vec<String>,
-    // HashSets for O(1) lookups in highlighting
-    keywords_set: HashSet<String>,
-    builtin_functions_set: HashSet<String>,
-}
+// RuchyCompleter is now imported from crate::runtime::completion
 
-impl RuchyCompleter {
-    fn new() -> Self {
-        let keywords = vec![
-            "let".to_string(),
-            "fn".to_string(),
-            "if".to_string(),
-            "else".to_string(),
-            "match".to_string(),
-            "for".to_string(),
-            "while".to_string(),
-            "loop".to_string(),
-            "break".to_string(),
-            "continue".to_string(),
-            "return".to_string(),
-            "true".to_string(),
-            "false".to_string(),
-            "struct".to_string(),
-            "enum".to_string(),
-            "trait".to_string(),
-            "impl".to_string(),
-            "mod".to_string(),
-            "use".to_string(),
-            "pub".to_string(),
-            "mut".to_string(),
-            "actor".to_string(),
-            "receive".to_string(),
-            "spawn".to_string(),
-            "send".to_string(),
-            "ask".to_string(),
-            "df".to_string(),
-            "Ok".to_string(),
-            "Err".to_string(),
-            "Some".to_string(),
-            "None".to_string(),
-        ];
-        let builtin_functions = vec![
-            "println".to_string(),
-            "print".to_string(),
-            "input".to_string(),
-            "readline".to_string(),
-            "assert".to_string(),
-            "assert_eq".to_string(),
-            "assert_ne".to_string(),
-            "curry".to_string(),
-            "uncurry".to_string(),
-            "read_file".to_string(),
-            "write_file".to_string(),
-            "append_file".to_string(),
-            "file_exists".to_string(),
-            "delete_file".to_string(),
-            "current_dir".to_string(),
-            "env".to_string(),
-            "set_env".to_string(),
-            "args".to_string(),
-            "HashMap".to_string(),
-            "HashSet".to_string(),
-            "Some".to_string(),
-            "None".to_string(),
-            "Option".to_string(),
-            "Ok".to_string(),
-            "Err".to_string(),
-            "Result".to_string(),
-        ];
+// Old RuchyCompleter implementation removed - now using advanced completion from runtime::completion module
 
-        // Create HashSets for O(1) lookups
-        let keywords_set = keywords.iter().cloned().collect();
-        let builtin_functions_set = builtin_functions.iter().cloned().collect();
+// Keep only the trait implementations that rustyline needs
+// The Completer trait is already implemented in the completion module
 
-        Self {
-            keywords,
-            builtin_functions,
-            list_methods: vec![
-                "map".to_string(),
-                "filter".to_string(),
-                "reduce".to_string(),
-                "len".to_string(),
-                "length".to_string(),
-                "head".to_string(),
-                "first".to_string(),
-                "tail".to_string(),
-                "rest".to_string(),
-                "last".to_string(),
-                "reverse".to_string(),
-                "sum".to_string(),
-                "push".to_string(),
-                "pop".to_string(),
-            ],
-            string_methods: vec![
-                "len".to_string(),
-                "length".to_string(),
-                "upper".to_string(),
-                "to_upper".to_string(),
-                "lower".to_string(),
-                "to_lower".to_string(),
-                "trim".to_string(),
-                "split".to_string(),
-                "contains".to_string(),
-                "starts_with".to_string(),
-                "ends_with".to_string(),
-                "replace".to_string(),
-                "substring".to_string(),
-                "repeat".to_string(),
-                "chars".to_string(),
-                "reverse".to_string(),
-            ],
-            commands: vec![
-                ":help".to_string(),
-                ":h".to_string(),
-                ":quit".to_string(),
-                ":q".to_string(),
-                ":history".to_string(),
-                ":clear".to_string(),
-                ":reset".to_string(),
-                ":bindings".to_string(),
-                ":env".to_string(),
-                ":type".to_string(),
-                ":ast".to_string(),
-                ":inspect".to_string(),
-                ":compile".to_string(),
-                ":load".to_string(),
-                ":save".to_string(),
-                ":export".to_string(),
-                ":search".to_string(),
-            ],
-            keywords_set,
-            builtin_functions_set,
-        }
-    }
-
-    fn get_completions(
-        &self,
-        line: &str,
-        pos: usize,
-        bindings: &HashMap<String, Value>,
-    ) -> Vec<String> {
-        use std::collections::HashSet;
-
-        let text_before_cursor = &line[..pos];
-
-        // Extract the word being completed
-        let word_start = text_before_cursor
-            .rfind(|c: char| c.is_whitespace() || "()[]{},.;".contains(c))
-            .map_or(0, |i| i + 1);
-        let partial_word = &text_before_cursor[word_start..];
-
-        // Complete commands (starting with :)
-        if partial_word.starts_with(':') {
-            return self
-                .commands
-                .iter()
-                .filter(|cmd| cmd.starts_with(partial_word))
-                .cloned()
-                .collect();
-        }
-
-        // Complete Unicode expansions (starting with \)
-        if partial_word.starts_with('\\') {
-            return self.get_unicode_completions(partial_word)
-                .into_iter()
-                .map(|(symbol, _desc)| symbol)
-                .collect();
-        }
-
-        // Complete method calls (after a dot)
-        if let Some(dot_pos) = text_before_cursor.rfind('.') {
-            let object_name = &text_before_cursor[..dot_pos];
-            let object_part = &text_before_cursor[..=dot_pos];
-            let method_partial = &text_before_cursor[dot_pos + 1..];
-            // Use HashSet to avoid O(n²) duplicates check
-            let mut seen = HashSet::new();
-            let mut completions = Vec::new();
-
-            // Check if we have an object variable with fields
-            if let Some(Value::Object(map)) = bindings.get(object_name) {
-                // Add object fields
-                for field_name in map.keys() {
-                    if field_name.starts_with(method_partial) {
-                        let full_completion = format!("{object_part}{field_name}");
-                        if seen.insert(full_completion.clone()) {
-                            completions.push(full_completion);
-                        }
-                    }
-                }
-            }
-
-            // Add list methods
-            for method in &self.list_methods {
-                if method.starts_with(method_partial) {
-                    let full_completion = format!("{object_part}{method}");
-                    if seen.insert(full_completion.clone()) {
-                        completions.push(full_completion);
-                    }
-                }
-            }
-            // Add string methods
-            for method in &self.string_methods {
-                if method.starts_with(method_partial) {
-                    let full_completion = format!("{object_part}{method}");
-                    if seen.insert(full_completion.clone()) {
-                        completions.push(full_completion);
-                    }
-                }
-            }
-            completions.sort();
-            return completions;
-        }
-
-        // Complete keywords, functions, and variables
-        let mut completions = Vec::new();
-        let partial_lower = partial_word.to_lowercase();
-
-        completions.extend(
-            self.keywords
-                .iter()
-                .filter(|kw| kw.to_lowercase().starts_with(&partial_lower))
-                .cloned(),
-        );
-
-        completions.extend(
-            self.builtin_functions
-                .iter()
-                .filter(|func| func.to_lowercase().starts_with(&partial_lower))
-                .cloned(),
-        );
-
-        completions.extend(
-            bindings
-                .keys()
-                .filter(|var| var.to_lowercase().starts_with(&partial_lower))
-                .cloned(),
-        );
-
-        completions.sort();
-        completions
-    }
-
-    /// Get Unicode symbol completions for LaTeX-style commands
-    pub fn get_unicode_completions(&self, partial: &str) -> Vec<(String, String)> {
-        // Common mathematical and Greek symbols with descriptions
-        let unicode_mappings = &[
-            // Greek letters (lowercase)
-            ("\\alpha", "α", "Greek letter alpha"),
-            ("\\beta", "β", "Greek letter beta"),
-            ("\\gamma", "γ", "Greek letter gamma"),
-            ("\\delta", "δ", "Greek letter delta"),
-            ("\\epsilon", "ε", "Greek letter epsilon"),
-            ("\\zeta", "ζ", "Greek letter zeta"),
-            ("\\eta", "η", "Greek letter eta"),
-            ("\\theta", "θ", "Greek letter theta"),
-            ("\\iota", "ι", "Greek letter iota"),
-            ("\\kappa", "κ", "Greek letter kappa"),
-            ("\\lambda", "λ", "Greek letter lambda"),
-            ("\\mu", "μ", "Greek letter mu"),
-            ("\\nu", "ν", "Greek letter nu"),
-            ("\\xi", "ξ", "Greek letter xi"),
-            ("\\omicron", "ο", "Greek letter omicron"),
-            ("\\pi", "π", "Greek letter pi"),
-            ("\\rho", "ρ", "Greek letter rho"),
-            ("\\sigma", "σ", "Greek letter sigma"),
-            ("\\tau", "τ", "Greek letter tau"),
-            ("\\upsilon", "υ", "Greek letter upsilon"),
-            ("\\phi", "φ", "Greek letter phi"),
-            ("\\chi", "χ", "Greek letter chi"),
-            ("\\psi", "ψ", "Greek letter psi"),
-            ("\\omega", "ω", "Greek letter omega"),
-            
-            // Greek letters (uppercase)
-            ("\\Alpha", "Α", "Greek letter Alpha"),
-            ("\\Beta", "Β", "Greek letter Beta"),
-            ("\\Gamma", "Γ", "Greek letter Gamma"),
-            ("\\Delta", "Δ", "Greek letter Delta"),
-            ("\\Epsilon", "Ε", "Greek letter Epsilon"),
-            ("\\Zeta", "Ζ", "Greek letter Zeta"),
-            ("\\Eta", "Η", "Greek letter Eta"),
-            ("\\Theta", "Θ", "Greek letter Theta"),
-            ("\\Iota", "Ι", "Greek letter Iota"),
-            ("\\Kappa", "Κ", "Greek letter Kappa"),
-            ("\\Lambda", "Λ", "Greek letter Lambda"),
-            ("\\Mu", "Μ", "Greek letter Mu"),
-            ("\\Nu", "Ν", "Greek letter Nu"),
-            ("\\Xi", "Ξ", "Greek letter Xi"),
-            ("\\Omicron", "Ο", "Greek letter Omicron"),
-            ("\\Pi", "Π", "Greek letter Pi"),
-            ("\\Rho", "Ρ", "Greek letter Rho"),
-            ("\\Sigma", "Σ", "Greek letter Sigma"),
-            ("\\Tau", "Τ", "Greek letter Tau"),
-            ("\\Upsilon", "Υ", "Greek letter Upsilon"),
-            ("\\Phi", "Φ", "Greek letter Phi"),
-            ("\\Chi", "Χ", "Greek letter Chi"),
-            ("\\Psi", "Ψ", "Greek letter Psi"),
-            ("\\Omega", "Ω", "Greek letter Omega"),
-            
-            // Mathematical symbols
-            ("\\sum", "∑", "Summation"),
-            ("\\prod", "∏", "Product"),
-            ("\\int", "∫", "Integral"),
-            ("\\partial", "∂", "Partial derivative"),
-            ("\\nabla", "∇", "Nabla operator"),
-            ("\\infty", "∞", "Infinity"),
-            ("\\infinity", "∞", "Infinity"),
-            ("\\sqrt", "√", "Square root"),
-            ("\\pm", "±", "Plus minus"),
-            ("\\mp", "∓", "Minus plus"),
-            ("\\times", "×", "Times"),
-            ("\\div", "÷", "Division"),
-            ("\\cdot", "⋅", "Center dot"),
-            ("\\bullet", "•", "Bullet"),
-            ("\\star", "⋆", "Star"),
-            ("\\circ", "∘", "Circle"),
-            ("\\oplus", "⊕", "Circle plus"),
-            ("\\otimes", "⊗", "Circle times"),
-            ("\\union", "∪", "Union"),
-            ("\\cap", "∩", "Intersection"),
-            ("\\subset", "⊂", "Subset"),
-            ("\\supset", "⊃", "Superset"),
-            ("\\subseteq", "⊆", "Subset or equal"),
-            ("\\supseteq", "⊇", "Superset or equal"),
-            ("\\in", "∈", "Element of"),
-            ("\\notin", "∉", "Not element of"),
-            ("\\forall", "∀", "For all"),
-            ("\\exists", "∃", "Exists"),
-            ("\\nexists", "∄", "Does not exist"),
-            ("\\emptyset", "∅", "Empty set"),
-            ("\\leq", "≤", "Less than or equal"),
-            ("\\geq", "≥", "Greater than or equal"),
-            ("\\neq", "≠", "Not equal"),
-            ("\\equiv", "≡", "Equivalent"),
-            ("\\approx", "≈", "Approximately equal"),
-            ("\\sim", "∼", "Similar"),
-            ("\\propto", "∝", "Proportional"),
-            ("\\therefore", "∴", "Therefore"),
-            ("\\because", "∵", "Because"),
-            ("\\rightarrow", "→", "Right arrow"),
-            ("\\leftarrow", "←", "Left arrow"),
-            ("\\leftrightarrow", "↔", "Left right arrow"),
-            ("\\Rightarrow", "⇒", "Double right arrow"),
-            ("\\Leftarrow", "⇐", "Double left arrow"),
-            ("\\Leftrightarrow", "⇔", "Double left right arrow"),
-            ("\\uparrow", "↑", "Up arrow"),
-            ("\\downarrow", "↓", "Down arrow"),
-            
-            // Other useful symbols
-            ("\\degree", "°", "Degree"),
-            ("\\celsius", "℃", "Celsius"),
-            ("\\fahrenheit", "℉", "Fahrenheit"),
-            ("\\euro", "€", "Euro"),
-            ("\\pound", "£", "Pound"),
-            ("\\yen", "¥", "Yen"),
-            ("\\copyright", "©", "Copyright"),
-            ("\\registered", "®", "Registered"),
-            ("\\trademark", "™", "Trademark"),
-        ];
-
-        // Find matching completions
-        unicode_mappings
-            .iter()
-            .filter(|(latex, _, _)| latex.starts_with(partial))
-            .map(|(_, unicode, desc)| ((*unicode).to_string(), (*desc).to_string()))
-            .collect()
-    }
-
-    /// Highlight Ruchy syntax with colors
-    fn highlight_ruchy_syntax(&self, line: &str) -> String {
-        let mut result = String::new();
-        let mut chars = line.chars().peekable();
-
-        while let Some(ch) = chars.next() {
-            match ch {
-                '"' => self.highlight_string(&mut result, &mut chars),
-                '\'' => self.highlight_char(&mut result, &mut chars),
-                '0'..='9' => self.highlight_number(&mut result, &mut chars, ch),
-                'a'..='z' | 'A'..='Z' | '_' => self.highlight_identifier(&mut result, &mut chars, ch),
-                '/' if chars.peek() == Some(&'/') => {
-                    self.highlight_comment(&mut result, &mut chars);
-                    break;
-                }
-                '+' | '-' | '*' | '/' | '%' | '=' | '!' | '<' | '>' | '&' | '|' | '^' | '~' => {
-                    result.push_str(&ch.to_string().bright_red().to_string());
-                }
-                '(' | ')' | '[' | ']' | '{' | '}' => {
-                    result.push_str(&ch.to_string().bright_white().bold().to_string());
-                }
-                ',' | ';' | ':' | '.' => {
-                    result.push_str(&ch.to_string().bright_black().to_string());
-                }
-                _ => result.push(ch),
-            }
-        }
-
-        result
-    }
-
-    fn highlight_string(&self, result: &mut String, chars: &mut std::iter::Peekable<std::str::Chars>) {
-        result.push_str(&"\"".bright_green().to_string());
-        while let Some(string_ch) = chars.next() {
-            if string_ch == '"' {
-                result.push_str(&"\"".bright_green().to_string());
-                break;
-            } else if string_ch == '\\' {
-                result.push_str(&"\\".bright_green().to_string());
-                if let Some(escaped) = chars.next() {
-                    result.push_str(&escaped.to_string().bright_green().to_string());
-                }
-            } else {
-                result.push_str(&string_ch.to_string().bright_green().to_string());
-            }
-        }
-    }
-
-    fn highlight_char(&self, result: &mut String, chars: &mut std::iter::Peekable<std::str::Chars>) {
-        result.push_str(&"'".bright_yellow().to_string());
-        if let Some(char_ch) = chars.next() {
-            result.push_str(&char_ch.to_string().bright_yellow().to_string());
-            if let Some(quote) = chars.next() {
-                if quote == '\'' {
-                    result.push_str(&"'".bright_yellow().to_string());
-                } else {
-                    result.push(quote);
-                }
-            }
-        }
-    }
-
-    fn highlight_number(&self, result: &mut String, chars: &mut std::iter::Peekable<std::str::Chars>, first_char: char) {
-        let mut number = String::new();
-        number.push(first_char);
-
-        while let Some(&next_ch) = chars.peek() {
-            if next_ch.is_ascii_digit() || next_ch == '.' || next_ch == '_' {
-                number.push(chars.next().expect("Digit continuation expected"));
-            } else {
-                break;
-            }
-        }
-        result.push_str(&number.bright_blue().to_string());
-    }
-
-    fn highlight_identifier(&self, result: &mut String, chars: &mut std::iter::Peekable<std::str::Chars>, first_char: char) {
-        let mut identifier = String::new();
-        identifier.push(first_char);
-
-        while let Some(&next_ch) = chars.peek() {
-            if next_ch.is_alphanumeric() || next_ch == '_' {
-                identifier.push(chars.next().expect("Identifier continuation expected"));
-            } else {
-                break;
-            }
-        }
-
-        let highlighted = if self.keywords_set.contains(&identifier) {
-            identifier.bright_magenta().bold().to_string()
-        } else if self.builtin_functions_set.contains(&identifier) {
-            identifier.bright_cyan().to_string()
-        } else {
-            identifier
-        };
-
-        result.push_str(&highlighted);
-    }
-
-    fn highlight_comment(&self, result: &mut String, chars: &mut std::iter::Peekable<std::str::Chars>) {
-        result.push_str(&"//".bright_black().to_string());
-        chars.next(); // consume second '/'
-        
-        for comment_ch in chars.by_ref() {
-            result.push_str(&comment_ch.to_string().bright_black().to_string());
-        }
-    }
-}
-
-impl Completer for RuchyCompleter {
-    type Candidate = String;
-
-    fn complete(
-        &self,
-        line: &str,
-        pos: usize,
-        _ctx: &rustyline::Context,
-    ) -> Result<(usize, Vec<Self::Candidate>), ReadlineError> {
-        // For now, complete without variable bindings (basic completion only)
-        let empty_bindings = HashMap::new();
-        let completions = self.get_completions(line, pos, &empty_bindings);
-
-        // Find the start position of the word being completed
-        let text_before_cursor = &line[..pos];
-        let word_start = text_before_cursor
-            .rfind(|c: char| c.is_whitespace() || "()[]{},.;".contains(c))
-            .map_or(0, |i| i + 1);
-
-        Ok((word_start, completions))
-    }
-}
-
-impl Helper for RuchyCompleter {}
-impl Hinter for RuchyCompleter {
+impl rustyline::Helper for RuchyCompleter {}
+impl rustyline::hint::Hinter for RuchyCompleter {
     type Hint = String;
 }
 
-impl Highlighter for RuchyCompleter {
+impl rustyline::highlight::Highlighter for RuchyCompleter {
     fn highlight<'l>(&self, line: &'l str, _pos: usize) -> std::borrow::Cow<'l, str> {
         use std::borrow::Cow;
-
-        // Simple syntax highlighting for Ruchy
-        let highlighted = self.highlight_ruchy_syntax(line);
-        Cow::Owned(highlighted)
+        // For now, return the line as-is without highlighting
+        // TODO: Implement syntax highlighting in the completion module
+        Cow::Borrowed(line)
     }
 
     fn highlight_char(&self, _line: &str, _pos: usize, _forced: bool) -> bool {
@@ -1984,7 +1482,7 @@ impl Repl {
     /// Get tab completions for the given input at the cursor position
     pub fn complete(&self, input: &str) -> Vec<String> {
         let pos = input.len();
-        let completer = RuchyCompleter::new();
+        let mut completer = RuchyCompleter::new();
         completer.get_completions(input, pos, &self.bindings)
     }
 
@@ -2185,8 +1683,7 @@ impl Repl {
                             let default_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
                             
                             // Return a stub Array representation
-                            return Ok(Value::String(format!("Array(size: {}, default: {})", 
-                                                           size_val, default_val)));
+                            return Ok(Value::String(format!("Array(size: {size_val}, default: {default_val})")));
                         }
                         Self::evaluate_string_methods(&s, method, args, deadline, depth)
                     }
@@ -3075,7 +2572,7 @@ impl Repl {
         }
     }
 
-    /// Handle basic HashSet methods (complexity: 6)
+    /// Handle basic `HashSet` methods (complexity: 6)
     fn handle_basic_hashset_methods(
         &mut self,
         mut set: HashSet<Value>,
@@ -5511,7 +5008,7 @@ impl Repl {
                 println!("REPL reset to initial state");
                 Some(Ok(false))
             }
-            ":compile" => Some(self.compile_session().map(|_| false)),
+            ":compile" => Some(self.compile_session().map(|()| false)),
             _ => None,
         }
     }
@@ -5559,7 +5056,7 @@ impl Repl {
     /// Handle file operations (complexity: 4)
     fn handle_file_operations(&mut self, command: &str, parts: &[&str]) -> Option<Result<bool>> {
         if command.starts_with(":load") && parts.len() == 2 {
-            Some(self.load_file(parts[1]).map(|_| false))
+            Some(self.load_file(parts[1]).map(|()| false))
         } else if command.starts_with(":save") {
             let filename = command.strip_prefix(":save").unwrap_or("").trim();
             if filename.is_empty() {
@@ -7113,17 +6610,17 @@ impl Repl {
     ) -> Option<Result<Value>> {
         match func_name {
             "HashMap" => {
-                if !args.is_empty() {
-                    Some(Err(anyhow::anyhow!("HashMap() constructor expects no arguments, got {}", args.len())))
-                } else {
+                if args.is_empty() {
                     Some(Ok(Value::HashMap(HashMap::new())))
+                } else {
+                    Some(Err(anyhow::anyhow!("HashMap() constructor expects no arguments, got {}", args.len())))
                 }
             }
             "HashSet" => {
-                if !args.is_empty() {
-                    Some(Err(anyhow::anyhow!("HashSet() constructor expects no arguments, got {}", args.len())))
-                } else {
+                if args.is_empty() {
                     Some(Ok(Value::HashSet(HashSet::new())))
+                } else {
+                    Some(Err(anyhow::anyhow!("HashSet() constructor expects no arguments, got {}", args.len())))
                 }
             }
             _ => None,
@@ -7141,17 +6638,17 @@ impl Repl {
     ) -> Option<Result<Value>> {
         match (module, name) {
             ("HashMap", "new") => {
-                if !args.is_empty() {
-                    Some(Err(anyhow::anyhow!("HashMap::new() expects no arguments, got {}", args.len())))
-                } else {
+                if args.is_empty() {
                     Some(Ok(Value::HashMap(HashMap::new())))
+                } else {
+                    Some(Err(anyhow::anyhow!("HashMap::new() expects no arguments, got {}", args.len())))
                 }
             }
             ("HashSet", "new") => {
-                if !args.is_empty() {
-                    Some(Err(anyhow::anyhow!("HashSet::new() expects no arguments, got {}", args.len())))
-                } else {
+                if args.is_empty() {
                     Some(Ok(Value::HashSet(HashSet::new())))
+                } else {
+                    Some(Err(anyhow::anyhow!("HashSet::new() expects no arguments, got {}", args.len())))
                 }
             }
             _ => None,
@@ -7169,48 +6666,48 @@ impl Repl {
     ) -> Option<Result<Value>> {
         match (module, name) {
             ("mem", "usage") => {
-                if !args.is_empty() {
-                    Some(Err(anyhow::anyhow!("mem::usage() expects no arguments, got {}", args.len())))
-                } else {
+                if args.is_empty() {
                     Some(Ok(Value::String("allocated: 100KB, peak: 150KB".to_string())))
+                } else {
+                    Some(Err(anyhow::anyhow!("mem::usage() expects no arguments, got {}", args.len())))
                 }
             }
             ("parallel", "map") => {
-                if args.len() != 2 {
-                    Some(Err(anyhow::anyhow!("parallel::map() expects 2 arguments (data, func), got {}", args.len())))
-                } else {
+                if args.len() == 2 {
                     Some(Ok(Value::String("[2, 4, 6, 8, 10]".to_string())))
+                } else {
+                    Some(Err(anyhow::anyhow!("parallel::map() expects 2 arguments (data, func), got {}", args.len())))
                 }
             }
             ("simd", "from_slice") => {
-                if args.len() != 1 {
-                    Some(Err(anyhow::anyhow!("simd::from_slice() expects 1 argument (slice), got {}", args.len())))
-                } else {
+                if args.len() == 1 {
                     Some(Ok(Value::String("[6.0, 8.0, 10.0, 12.0]".to_string())))
+                } else {
+                    Some(Err(anyhow::anyhow!("simd::from_slice() expects 1 argument (slice), got {}", args.len())))
                 }
             }
             ("bench", "time") => {
-                if args.len() != 1 {
-                    Some(Err(anyhow::anyhow!("bench::time() expects 1 argument (block), got {}", args.len())))
-                } else {
+                if args.len() == 1 {
                     match self.evaluate_expr(&args[0], deadline, depth + 1) {
                         Ok(_) => Some(Ok(Value::String("42ms".to_string()))),
                         Err(e) => Some(Err(e)),
                     }
+                } else {
+                    Some(Err(anyhow::anyhow!("bench::time() expects 1 argument (block), got {}", args.len())))
                 }
             }
             ("cache", "Cache") => {
-                if !args.is_empty() {
-                    Some(Err(anyhow::anyhow!("cache::Cache() expects no arguments, got {}", args.len())))
-                } else {
+                if args.is_empty() {
                     Some(Ok(Value::String("Cache constructor".to_string())))
+                } else {
+                    Some(Err(anyhow::anyhow!("cache::Cache() expects no arguments, got {}", args.len())))
                 }
             }
             ("profile", "get_stats") => {
-                if args.len() != 1 {
-                    Some(Err(anyhow::anyhow!("profile::get_stats() expects 1 argument (function_name), got {}", args.len())))
-                } else {
+                if args.len() == 1 {
                     Some(Ok(Value::String("function: 42 calls, 100ms total".to_string())))
+                } else {
+                    Some(Err(anyhow::anyhow!("profile::get_stats() expects 1 argument (function_name), got {}", args.len())))
                 }
             }
             _ => None,
@@ -7226,17 +6723,17 @@ impl Repl {
     ) -> Option<Result<Value>> {
         match (module, name) {
             ("HashMap", "new") => {
-                if !args.is_empty() {
-                    Some(Err(anyhow::anyhow!("HashMap::new() expects no arguments, got {}", args.len())))
-                } else {
+                if args.is_empty() {
                     Some(Ok(Value::HashMap(HashMap::new())))
+                } else {
+                    Some(Err(anyhow::anyhow!("HashMap::new() expects no arguments, got {}", args.len())))
                 }
             }
             ("HashSet", "new") => {
-                if !args.is_empty() {
-                    Some(Err(anyhow::anyhow!("HashSet::new() expects no arguments, got {}", args.len())))
-                } else {
+                if args.is_empty() {
                     Some(Ok(Value::HashSet(HashSet::new())))
+                } else {
+                    Some(Err(anyhow::anyhow!("HashSet::new() expects no arguments, got {}", args.len())))
                 }
             }
             _ => None,
