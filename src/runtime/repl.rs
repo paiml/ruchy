@@ -3075,83 +3075,118 @@ impl Repl {
         }
     }
 
-    /// Handle method calls on `HashSet` values (complexity < 10)
-    fn evaluate_hashset_methods(
+    /// Handle basic HashSet methods (complexity: 6)
+    fn handle_basic_hashset_methods(
         &mut self,
         mut set: HashSet<Value>,
         method: &str,
         args: &[Expr],
         deadline: Instant,
         depth: usize,
-    ) -> Result<Value> {
+    ) -> Option<Result<Value>> {
         match method {
             "insert" => {
                 if args.len() != 1 {
-                    bail!("insert requires exactly 1 argument (value)");
+                    return Some(Err(anyhow::anyhow!("insert requires exactly 1 argument (value)")));
                 }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let value = match self.evaluate_expr(&args[0], deadline, depth + 1) {
+                    Ok(v) => v,
+                    Err(e) => return Some(Err(e)),
+                };
                 let was_new = set.insert(value);
-                Ok(Value::Tuple(vec![Value::HashSet(set), Value::Bool(was_new)]))
+                Some(Ok(Value::Tuple(vec![Value::HashSet(set), Value::Bool(was_new)])))
             }
             "contains" => {
                 if args.len() != 1 {
-                    bail!("contains requires exactly 1 argument (value)");
+                    return Some(Err(anyhow::anyhow!("contains requires exactly 1 argument (value)")));
                 }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                Ok(Value::Bool(set.contains(&value)))
+                let value = match self.evaluate_expr(&args[0], deadline, depth + 1) {
+                    Ok(v) => v,
+                    Err(e) => return Some(Err(e)),
+                };
+                Some(Ok(Value::Bool(set.contains(&value))))
             }
             "remove" => {
                 if args.len() != 1 {
-                    bail!("remove requires exactly 1 argument (value)");
+                    return Some(Err(anyhow::anyhow!("remove requires exactly 1 argument (value)")));
                 }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let value = match self.evaluate_expr(&args[0], deadline, depth + 1) {
+                    Ok(v) => v,
+                    Err(e) => return Some(Err(e)),
+                };
                 let was_present = set.remove(&value);
-                Ok(Value::Tuple(vec![Value::HashSet(set), Value::Bool(was_present)]))
+                Some(Ok(Value::Tuple(vec![Value::HashSet(set), Value::Bool(was_present)])))
             }
-            "len" => Ok(Value::Int(set.len() as i64)),
-            "is_empty" => Ok(Value::Bool(set.is_empty())),
+            "len" => Some(Ok(Value::Int(set.len() as i64))),
+            "is_empty" => Some(Ok(Value::Bool(set.is_empty()))),
             "clear" => {
                 set.clear();
-                Ok(Value::HashSet(set))
+                Some(Ok(Value::HashSet(set)))
             }
-            "union" => {
-                if args.len() != 1 {
-                    bail!("union requires exactly 1 argument (other set)");
-                }
-                let other_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                if let Value::HashSet(other_set) = other_val {
-                    let union_set = set.union(&other_set).cloned().collect();
-                    Ok(Value::HashSet(union_set))
-                } else {
-                    bail!("union argument must be a HashSet");
-                }
-            }
-            "intersection" => {
-                if args.len() != 1 {
-                    bail!("intersection requires exactly 1 argument (other set)");
-                }
-                let other_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                if let Value::HashSet(other_set) = other_val {
-                    let intersection_set = set.intersection(&other_set).cloned().collect();
-                    Ok(Value::HashSet(intersection_set))
-                } else {
-                    bail!("intersection argument must be a HashSet");
-                }
-            }
-            "difference" => {
-                if args.len() != 1 {
-                    bail!("difference requires exactly 1 argument (other set)");
-                }
-                let other_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                if let Value::HashSet(other_set) = other_val {
-                    let difference_set = set.difference(&other_set).cloned().collect();
-                    Ok(Value::HashSet(difference_set))
-                } else {
-                    bail!("difference argument must be a HashSet");
-                }
-            }
-            _ => bail!("Unknown HashSet method: {}", method),
+            _ => None,
         }
+    }
+
+    /// Handle set operation methods (complexity: 8)
+    fn handle_set_operation_methods(
+        &mut self,
+        set: HashSet<Value>,
+        method: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        if args.len() != 1 {
+            return Some(Err(anyhow::anyhow!("{} requires exactly 1 argument (other set)", method)));
+        }
+        
+        let other_val = match self.evaluate_expr(&args[0], deadline, depth + 1) {
+            Ok(v) => v,
+            Err(e) => return Some(Err(e)),
+        };
+        
+        if let Value::HashSet(other_set) = other_val {
+            match method {
+                "union" => {
+                    let union_set = set.union(&other_set).cloned().collect();
+                    Some(Ok(Value::HashSet(union_set)))
+                }
+                "intersection" => {
+                    let intersection_set = set.intersection(&other_set).cloned().collect();
+                    Some(Ok(Value::HashSet(intersection_set)))
+                }
+                "difference" => {
+                    let difference_set = set.difference(&other_set).cloned().collect();
+                    Some(Ok(Value::HashSet(difference_set)))
+                }
+                _ => None,
+            }
+        } else {
+            Some(Err(anyhow::anyhow!("{} argument must be a HashSet", method)))
+        }
+    }
+
+    /// Handle method calls on `HashSet` values (complexity: 5)
+    fn evaluate_hashset_methods(
+        &mut self,
+        set: HashSet<Value>,
+        method: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        // Try basic methods first
+        if let Some(result) = self.handle_basic_hashset_methods(set.clone(), method, args, deadline, depth) {
+            return result;
+        }
+        
+        // Try set operation methods
+        if let Some(result) = self.handle_set_operation_methods(set, method, args, deadline, depth) {
+            return result;
+        }
+        
+        // Unknown method
+        bail!("Unknown HashSet method: {}", method)
     }
 
     // ========================================================================
@@ -5351,59 +5386,105 @@ impl Repl {
         format!("Switched to {} mode", mode.prompt())
     }
     
+    /// Dispatch basic REPL commands (complexity: 8)
+    fn dispatch_basic_commands(&mut self, cmd: &str, parts: &[&str]) -> Option<Result<(bool, String)>> {
+        match cmd {
+            ":quit" | ":q" => Some(Ok(self.handle_quit_command())),
+            ":history" => Some(Ok((false, self.handle_history_command()))),
+            ":clear" => Some(Ok((false, self.handle_clear_command()))),
+            ":bindings" | ":env" => Some(Ok((false, self.handle_bindings_command()))),
+            ":compile" => Some(Ok((false, self.handle_compile_command()))),
+            ":load" => Some(Ok((false, self.handle_load_command(parts)))),
+            ":reset" => Some(Ok((false, self.handle_reset_command()))),
+            _ => None,
+        }
+    }
+
+    /// Dispatch analysis commands (complexity: 6)
+    fn dispatch_analysis_commands(&mut self, cmd: &str, command: &str) -> Option<Result<(bool, String)>> {
+        if cmd.starts_with(":save") {
+            Some(Ok((false, self.handle_save_command(command))))
+        } else if cmd.starts_with(":export") {
+            Some(Ok((false, self.handle_export_command(command))))
+        } else if cmd.starts_with(":type") {
+            Some(Ok((false, self.handle_type_command(command))))
+        } else if cmd.starts_with(":ast") {
+            Some(Ok((false, Self::handle_ast_command(command))))
+        } else if cmd.starts_with(":inspect") {
+            Some(Ok((false, self.handle_inspect_command(command))))
+        } else if cmd.starts_with(":search") {
+            Some(Ok((false, self.handle_search_command(command))))
+        } else {
+            None
+        }
+    }
+
+    /// Dispatch mode switching commands (complexity: 8)
+    fn dispatch_mode_commands(&mut self, cmd: &str, parts: &[&str]) -> Option<Result<(bool, String)>> {
+        match cmd {
+            ":normal" => Some(Ok((false, self.handle_mode_command(ReplMode::Normal)))),
+            ":shell" => Some(Ok((false, self.handle_mode_command(ReplMode::Shell)))),
+            ":pkg" => Some(Ok((false, self.handle_mode_command(ReplMode::Pkg)))),
+            ":sql" => Some(Ok((false, self.handle_mode_command(ReplMode::Sql)))),
+            ":math" => Some(Ok((false, self.handle_mode_command(ReplMode::Math)))),
+            ":debug" => Some(Ok((false, self.handle_mode_command(ReplMode::Debug)))),
+            ":time" => Some(Ok((false, self.handle_mode_command(ReplMode::Time)))),
+            ":test" => Some(Ok((false, self.handle_mode_command(ReplMode::Test)))),
+            ":exit" => Some(Ok((false, self.handle_mode_command(ReplMode::Normal)))),
+            ":help" | ":h" if parts.len() == 1 => {
+                self.mode = ReplMode::Help;
+                Some(self.show_help_menu().map(|output| (false, output)))
+            },
+            ":help" if parts.len() > 1 => {
+                let topic = parts[1];
+                Some(self.handle_help_command(topic).map(|output| (false, output)))
+            },
+            ":modes" => {
+                let output = Self::get_modes_list();
+                Some(Ok((false, output)))
+            },
+            _ => None,
+        }
+    }
+
+    /// Get list of available modes (complexity: 1)
+    fn get_modes_list() -> String {
+        let mut output = "Available modes:\n".to_string();
+        output.push_str("  normal - Standard Ruchy evaluation\n");
+        output.push_str("  shell  - Execute shell commands\n");
+        output.push_str("  pkg    - Package management\n");
+        output.push_str("  help   - Interactive help\n");
+        output.push_str("  sql    - SQL queries\n");
+        output.push_str("  math   - Mathematical expressions\n");
+        output.push_str("  debug  - Debug information with traces\n");
+        output.push_str("  time   - Execution timing\n");
+        output.push_str("  test   - Assertions and table tests\n");
+        output.push_str("\nUse :mode_name to switch modes, :normal or :exit to return");
+        output
+    }
+
+    /// Main command handler with output (complexity: 6)
     fn handle_command_with_output(&mut self, command: &str) -> Result<(bool, String)> {
         let parts: Vec<&str> = command.split_whitespace().collect();
+        let first_cmd = parts.first().copied().unwrap_or("");
         
-        let (should_quit, output) = match parts.first().copied() {
-            Some(":quit" | ":q") => self.handle_quit_command(),
-            Some(":history") => (false, self.handle_history_command()),
-            Some(":clear") => (false, self.handle_clear_command()),
-            Some(":bindings" | ":env") => (false, self.handle_bindings_command()),
-            Some(":compile") => (false, self.handle_compile_command()),
-            Some(":load") => (false, self.handle_load_command(&parts)),
-            Some(":save") => (false, self.handle_save_command(command)),
-            Some(":export") => (false, self.handle_export_command(command)),
-            Some(":type") => (false, self.handle_type_command(command)),
-            Some(":ast") => (false, Self::handle_ast_command(command)),
-            Some(":inspect") => (false, self.handle_inspect_command(command)),
-            Some(":reset") => (false, self.handle_reset_command()),
-            Some(":search") => (false, self.handle_search_command(command)),
-            // Mode switching commands
-            Some(":normal") => (false, self.handle_mode_command(ReplMode::Normal)),
-            Some(":shell") => (false, self.handle_mode_command(ReplMode::Shell)),
-            Some(":pkg") => (false, self.handle_mode_command(ReplMode::Pkg)),
-            Some(":help" | ":h") if parts.len() == 1 => {
-                self.mode = ReplMode::Help;
-                (false, self.show_help_menu()?)
-            },
-            Some(":help") if parts.len() > 1 => {
-                let topic = parts[1];
-                (false, self.handle_help_command(topic)?)
-            },
-            Some(":sql") => (false, self.handle_mode_command(ReplMode::Sql)),
-            Some(":math") => (false, self.handle_mode_command(ReplMode::Math)),
-            Some(":debug") => (false, self.handle_mode_command(ReplMode::Debug)),
-            Some(":time") => (false, self.handle_mode_command(ReplMode::Time)),
-            Some(":test") => (false, self.handle_mode_command(ReplMode::Test)),
-            Some(":exit") => (false, self.handle_mode_command(ReplMode::Normal)),
-            Some(":modes") => {
-                let mut modes_output = "Available modes:\n".to_string();
-                modes_output.push_str("  normal - Standard Ruchy evaluation\n");
-                modes_output.push_str("  shell  - Execute shell commands\n");
-                modes_output.push_str("  pkg    - Package management\n");
-                modes_output.push_str("  help   - Interactive help\n");
-                modes_output.push_str("  sql    - SQL queries\n");
-                modes_output.push_str("  math   - Mathematical expressions\n");
-                modes_output.push_str("  debug  - Debug information with traces\n");
-                modes_output.push_str("  time   - Execution timing\n");
-                modes_output.push_str("  test   - Assertions and table tests\n");
-                modes_output.push_str("\nUse :mode_name to switch modes, :normal or :exit to return");
-                (false, modes_output)
-            }
-            _ => (false, format!("Unknown command: {command}\nType :help for available commands"))
-        };
+        // Try basic commands
+        if let Some(result) = self.dispatch_basic_commands(first_cmd, &parts) {
+            return result;
+        }
         
-        Ok((should_quit, output))
+        // Try analysis commands
+        if let Some(result) = self.dispatch_analysis_commands(first_cmd, command) {
+            return result;
+        }
+        
+        // Try mode commands
+        if let Some(result) = self.dispatch_mode_commands(first_cmd, &parts) {
+            return result;
+        }
+        
+        // Unknown command
+        Ok((false, format!("Unknown command: {command}\nType :help for available commands")))
     }
 
     /// Handle session management commands (complexity: 5)
