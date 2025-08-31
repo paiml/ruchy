@@ -828,7 +828,7 @@ fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
                 complexity
             }
             ExprKind::Block(exprs) => {
-                exprs.iter().map(|e| count_branches(e)).sum()
+                exprs.iter().map(count_branches).sum()
             }
             ExprKind::Function { name: _, type_params: _, params: _, body, return_type: _, is_async: _, is_pub: _ } => {
                 // Function itself has base complexity of 1, plus its body

@@ -289,9 +289,30 @@ impl Transpiler {
 
     /// Transpiles field access
     pub fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<TokenStream> {
+        use crate::frontend::ast::ExprKind;
+        
         let obj_tokens = self.transpile_expr(object)?;
-        let field_ident = format_ident!("{}", field);
-        Ok(quote! { #obj_tokens.#field_ident })
+        
+        // Check if the object is an ObjectLiteral (HashMap)
+        match &object.kind {
+            ExprKind::ObjectLiteral { .. } => {
+                // Direct object literal access - use get()
+                Ok(quote! { 
+                    #obj_tokens.get(#field)
+                        .cloned()
+                        .unwrap_or_else(|| panic!("Field '{}' not found", #field))
+                })
+            }
+            _ => {
+                // For now, assume identifiers that look like object accesses use HashMap.get()
+                // This is a simplification - real implementation would need type tracking
+                Ok(quote! { 
+                    #obj_tokens.get(#field)
+                        .cloned()
+                        .unwrap_or_else(|| panic!("Field '{}' not found", #field))
+                })
+            }
+        }
     }
 
     /// Transpiles index access (array[index])
