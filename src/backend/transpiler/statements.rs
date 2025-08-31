@@ -918,23 +918,9 @@ impl Transpiler {
     pub fn transpile_import(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
         let import_tokens = Self::transpile_import_inline(path, items);
         
-        // For std module imports, we need the functions to be available at module level
-        // Don't wrap in a block if this generates functions
-        if path.starts_with("std::fs") || 
-           path.starts_with("std::process") ||
-           path.starts_with("std::system") ||
-           path.starts_with("std::signal") {
-            import_tokens
-        } else {
-            // For other imports, wrap in block that returns unit value
-            // since they'll be wrapped in let result = ... for expression programs
-            quote! {
-                {
-                    #import_tokens
-                    ()
-                }
-            }
-        }
+        // All imports should have module-level scope, not be wrapped in blocks
+        // This includes both std library imports and local module imports
+        import_tokens
     }
     
     /// Handle `std::fs` imports and generate file operation functions
