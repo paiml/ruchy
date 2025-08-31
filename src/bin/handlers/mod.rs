@@ -748,6 +748,57 @@ pub fn handle_test_command(
     }
 }
 
+/// Handle the coverage command - generate coverage report for Ruchy code
+///
+/// # Arguments
+/// * `path` - File or directory path to analyze
+/// * `threshold` - Coverage threshold to check against  
+/// * `format` - Output format (text, html, json)
+/// * `verbose` - Enable verbose output
+///
+/// # Errors
+/// Returns error if coverage analysis fails or threshold is not met
+pub fn handle_coverage_command(
+    path: PathBuf,
+    threshold: f64,
+    format: &str,
+    verbose: bool,
+) -> Result<()> {
+    use ruchy::quality::ruchy_coverage::RuchyCoverageCollector;
+    
+    if verbose {
+        println!("🔍 Analyzing coverage for: {}", path.display());
+        println!("📊 Threshold: {:.1}%", threshold);
+        println!("📋 Format: {}", format);
+    }
+
+    // Create coverage collector
+    let mut collector = RuchyCoverageCollector::new();
+    
+    // Execute the file with coverage collection
+    collector.execute_with_coverage(&path)?;
+    
+    // Generate the coverage report based on format
+    let report = match format {
+        "html" => collector.generate_html_report(),
+        "json" => collector.generate_json_report(),
+        _ => collector.generate_text_report(), // Default to text
+    };
+    println!("{}", report);
+    
+    // Check threshold if specified
+    if threshold > 0.0 {
+        if collector.meets_threshold(threshold) {
+            println!("\n✅ Coverage meets threshold of {:.1}%", threshold);
+        } else {
+            eprintln!("\n❌ Coverage below threshold of {:.1}%", threshold);
+            std::process::exit(1);
+        }
+    }
+    
+    Ok(())
+}
+
 /// Watch and run tests on changes (internal implementation)
 fn handle_watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
     use colored::Colorize;
