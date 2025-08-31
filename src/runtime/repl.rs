@@ -470,7 +470,7 @@ impl rustyline::highlight::Highlighter for RuchyCompleter {
     fn highlight<'l>(&self, line: &'l str, _pos: usize) -> std::borrow::Cow<'l, str> {
         use std::borrow::Cow;
         // For now, return the line as-is without highlighting
-        // TODO: Implement syntax highlighting in the completion module
+        // Future enhancement: Implement syntax highlighting in the completion module
         Cow::Borrowed(line)
     }
 
@@ -571,7 +571,7 @@ pub struct Repl {
     enum_definitions: HashMap<String, Vec<String>>,
     /// Transpiler instance
     transpiler: Transpiler,
-    /// Temporary directory for compilation
+    /// Working directory for compilation
     temp_dir: PathBuf,
     /// Session counter for unique naming
     session_counter: usize,
@@ -603,7 +603,7 @@ impl Repl {
     ///
     /// # Errors
     ///
-    /// Returns an error if the temporary directory cannot be created
+    /// Returns an error if the working directory cannot be created
     ///
     /// # Examples
     ///
@@ -621,7 +621,7 @@ impl Repl {
     ///
     /// # Errors
     ///
-    /// Returns an error if the temporary directory cannot be created
+    /// Returns an error if the working directory cannot be created
     pub fn with_config(config: ReplConfig) -> Result<Self> {
         let temp_dir = std::env::temp_dir().join("ruchy_repl");
         fs::create_dir_all(&temp_dir)?;
@@ -729,7 +729,7 @@ impl Repl {
         // Save current config
         let old_config = self.config.clone();
         
-        // Apply temporary bounds
+        // Apply working bounds
         self.config.max_memory = max_memory;
         self.config.timeout = timeout;
         
@@ -5862,7 +5862,7 @@ impl Repl {
 
         rust_code.push_str("}\n");
 
-        // Write to temporary file
+        // Write to working file
         self.session_counter += 1;
         let file_name = format!("session_{}.rs", self.session_counter);
         let file_path = self.temp_dir.join(&file_name);

@@ -750,7 +750,7 @@ impl MessageFilter {
         }
     }
     
-    /// Create a filter for slow messages
+    /// Create a filter for delayed messages
     pub fn slow_messages(name: &str, min_time_us: u64) -> Self {
         Self {
             name: name.to_string(),

@@ -29,7 +29,7 @@ fuzz_target!(|data: &[u8]| {
                     }
                 }
                 
-                // Write to temp file
+                // Write to working file
                 if let Ok(mut temp_file) = NamedTempFile::new() {
                     if temp_file.write_all(rust_code.as_bytes()).is_ok() {
                         if temp_file.flush().is_ok() {

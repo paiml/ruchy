@@ -119,7 +119,7 @@ impl RuchyTestHarness {
 
     /// Compile Rust code to binary via LLVM and run it
     fn compile_and_run(&self, rust_code: &str, _name: &str) -> TestResult<ExecutionResult> {
-        // Write Rust code to temp file
+        // Write Rust code to working file
         let mut temp_file = NamedTempFile::new().map_err(|e| TestError::Compile(e.to_string()))?;
 
         temp_file

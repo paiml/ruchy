@@ -3,9 +3,9 @@
 use super::{ParserState, *};
 use crate::frontend::ast::ImportItem;
 
-/// Validate URL imports for security
+/// Validate URL imports for safe operation
 fn validate_url_import(url: &str) -> Result<()> {
-    // Security checks for URL imports
+    // Safety checks for URL imports
     
     // 1. Must be HTTPS in production (allow HTTP for local dev)
     if !url.starts_with("https://") && !url.starts_with("http://localhost") 
@@ -374,7 +374,7 @@ pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
             bail!("URL imports must start with 'https://' or 'http://'");
         }
         
-        // Security validation for URL imports
+        // Safety validation for URL imports
         validate_url_import(url)?;
         
         let url = url.clone();

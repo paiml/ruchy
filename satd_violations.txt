@@ -1,0 +1,24 @@
+# SATD Analysis Summary
+
+Found 36 SATD violations in 17 files
+
+Total violations: 36
+
+## Severity Distribution
+- Critical: 9
+- High: 0
+- Medium: 2
+- Low: 25
+
+## Top Violations
+1. ./examples/score_examples.rs:183 - Design (Low)
+2. ./fuzz/fuzz_targets/fuzz_cli.rs:19 - Design (Low)
+3. ./fuzz/fuzz_targets/full_pipeline.rs:32 - Design (Low)
+4. ./fuzz/fuzz_targets/fuzz_fmt.rs:24 - Design (Low)
+5. ./src/backend/compiler.rs:102 - Design (Low)
+6. ./src/backend/compiler.rs:117 - Design (Low)
+7. ./src/backend/compiler.rs:121 - Design (Low)
+8. ./src/testing/harness.rs:122 - Design (Low)
+9. ./src/wasm/portability.rs:45 - Security (Critical)
+10. ./src/wasm/portability.rs:89 - Security (Critical)
+
