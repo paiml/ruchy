@@ -2215,61 +2215,123 @@ impl Repl {
     }
 
     // COMPLEXITY REDUCTION: Advanced expressions dispatcher
-    fn evaluate_advanced_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
+    /// Dispatch binding and assignment expressions (complexity: 6)
+    fn dispatch_binding_exprs(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Option<Result<Value>> {
         match &expr.kind {
-            ExprKind::Module { name: _name, body } => {
-                self.evaluate_expr(body, deadline, depth + 1)
-            }
             ExprKind::Let { name, type_annotation: _, value, body, is_mutable } => {
-                self.evaluate_let_binding(name, value, body, *is_mutable, deadline, depth)
+                Some(self.evaluate_let_binding(name, value, body, *is_mutable, deadline, depth))
             }
             ExprKind::LetPattern { pattern, type_annotation: _, value, body, is_mutable } => {
-                self.evaluate_let_pattern(pattern, value, body, *is_mutable, deadline, depth)
+                Some(self.evaluate_let_pattern(pattern, value, body, *is_mutable, deadline, depth))
             }
-            ExprKind::Block(exprs) => self.evaluate_block(exprs, deadline, depth),
             ExprKind::Assign { target, value } => {
-                self.evaluate_assignment(target, value, deadline, depth)
+                Some(self.evaluate_assignment(target, value, deadline, depth))
             }
+            ExprKind::Block(exprs) => Some(self.evaluate_block(exprs, deadline, depth)),
+            ExprKind::Module { name: _name, body } => {
+                Some(self.evaluate_expr(body, deadline, depth + 1))
+            }
+            _ => None,
+        }
+    }
+
+    /// Dispatch data structure expressions (complexity: 5)
+    fn dispatch_data_exprs(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Option<Result<Value>> {
+        match &expr.kind {
             ExprKind::DataFrame { columns } => {
-                self.evaluate_dataframe_literal(columns, deadline, depth)
+                Some(self.evaluate_dataframe_literal(columns, deadline, depth))
             }
-            ExprKind::DataFrameOperation { .. } => Self::evaluate_dataframe_operation(),
+            ExprKind::DataFrameOperation { .. } => Some(Self::evaluate_dataframe_operation()),
+            ExprKind::StructLiteral { name: _, fields } => {
+                Some(self.evaluate_struct_literal(fields, deadline, depth))
+            }
             ExprKind::Pipeline { expr, stages } => {
-                self.evaluate_pipeline(expr, stages, deadline, depth)
+                Some(self.evaluate_pipeline(expr, stages, deadline, depth))
             }
             ExprKind::StringInterpolation { parts } => {
-                self.evaluate_string_interpolation(parts, deadline, depth)
+                Some(self.evaluate_string_interpolation(parts, deadline, depth))
             }
-            ExprKind::Ok { value } => self.evaluate_result_ok(value, deadline, depth),
-            ExprKind::Err { error } => self.evaluate_result_err(error, deadline, depth),
-            ExprKind::Some { value } => self.evaluate_option_some(value, deadline, depth),
-            ExprKind::None => Ok(Self::evaluate_option_none()),
-            ExprKind::Try { expr } => self.evaluate_try_operator(expr, deadline, depth),
-            ExprKind::Await { expr } => self.evaluate_await_expr(expr, deadline, depth),
-            ExprKind::AsyncBlock { body } => self.evaluate_async_block(body, deadline, depth),
+            _ => None,
+        }
+    }
+
+    /// Dispatch type definition expressions (complexity: 5)
+    fn dispatch_type_definitions(&mut self, expr: &Expr) -> Option<Result<Value>> {
+        match &expr.kind {
             ExprKind::Enum { name, variants, .. } => {
-                Ok(self.evaluate_enum_definition(name, variants))
+                Some(Ok(self.evaluate_enum_definition(name, variants)))
             }
             ExprKind::Struct { name, fields, .. } => {
-                Ok(Self::evaluate_struct_definition(name, fields))
-            }
-            ExprKind::StructLiteral { name: _, fields } => {
-                self.evaluate_struct_literal(fields, deadline, depth)
+                Some(Ok(Self::evaluate_struct_definition(name, fields)))
             }
             ExprKind::Trait { name, methods, .. } => {
-                Ok(Self::evaluate_trait_definition(name, methods))
+                Some(Ok(Self::evaluate_trait_definition(name, methods)))
             }
             ExprKind::Impl { for_type, methods, .. } => {
-                Ok(self.evaluate_impl_block(for_type, methods))
+                Some(Ok(self.evaluate_impl_block(for_type, methods)))
             }
+            _ => None,
+        }
+    }
+
+    /// Dispatch Result/Option expressions (complexity: 5)
+    fn dispatch_result_option_exprs(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Option<Result<Value>> {
+        match &expr.kind {
+            ExprKind::Ok { value } => Some(self.evaluate_result_ok(value, deadline, depth)),
+            ExprKind::Err { error } => Some(self.evaluate_result_err(error, deadline, depth)),
+            ExprKind::Some { value } => Some(self.evaluate_option_some(value, deadline, depth)),
+            ExprKind::None => Some(Ok(Self::evaluate_option_none())),
+            ExprKind::Try { expr } => Some(self.evaluate_try_operator(expr, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Dispatch control flow expressions (complexity: 4)
+    fn dispatch_control_flow_exprs(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Option<Result<Value>> {
+        match &expr.kind {
             ExprKind::Return { value } => {
                 if let Some(val) = value {
-                    let result = self.evaluate_expr(val, deadline, depth + 1)?;
-                    Err(anyhow::anyhow!("return:{}", result))
+                    let result = self.evaluate_expr(val, deadline, depth + 1);
+                    Some(result.and_then(|v| Err(anyhow::anyhow!("return:{}", v))))
                 } else {
-                    Err(anyhow::anyhow!("return:()"))
+                    Some(Err(anyhow::anyhow!("return:()")))
                 }
             }
+            ExprKind::Await { expr } => Some(self.evaluate_await_expr(expr, deadline, depth)),
+            ExprKind::AsyncBlock { body } => Some(self.evaluate_async_block(body, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Main advanced expression dispatcher (complexity: 8)
+    fn evaluate_advanced_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
+        // Try binding and assignment expressions
+        if let Some(result) = self.dispatch_binding_exprs(expr, deadline, depth) {
+            return result;
+        }
+
+        // Try data structure expressions
+        if let Some(result) = self.dispatch_data_exprs(expr, deadline, depth) {
+            return result;
+        }
+
+        // Try type definitions
+        if let Some(result) = self.dispatch_type_definitions(expr) {
+            return result;
+        }
+
+        // Try Result/Option expressions
+        if let Some(result) = self.dispatch_result_option_exprs(expr, deadline, depth) {
+            return result;
+        }
+
+        // Try control flow expressions
+        if let Some(result) = self.dispatch_control_flow_exprs(expr, deadline, depth) {
+            return result;
+        }
+
+        // Handle remaining cases
+        match &expr.kind {
             ExprKind::Command { program, args, env: _, working_dir: _ } => {
                 Self::evaluate_command(program, args, deadline, depth)
             }
@@ -2707,6 +2769,144 @@ impl Repl {
     }
 
     /// Handle method calls on string values (complexity < 10)
+    /// Handle simple string transformation methods (complexity: 5)
+    fn handle_string_transforms(s: &str, method: &str) -> Option<Result<Value>> {
+        match method {
+            "len" | "length" => {
+                let len = s.len();
+                Some(i64::try_from(len)
+                    .map(Value::Int)
+                    .map_err(|_| anyhow::anyhow!("String length too large to represent as i64")))
+            }
+            "upper" | "to_upper" | "to_uppercase" => Some(Ok(Value::String(s.to_uppercase()))),
+            "lower" | "to_lower" | "to_lowercase" => Some(Ok(Value::String(s.to_lowercase()))),
+            "trim" => Some(Ok(Value::String(s.trim().to_string()))),
+            "chars" => {
+                let chars: Vec<Value> = s.chars()
+                    .map(|c| Value::String(c.to_string()))
+                    .collect();
+                Some(Ok(Value::List(chars)))
+            }
+            "reverse" => {
+                let reversed: String = s.chars().rev().collect();
+                Some(Ok(Value::String(reversed)))
+            }
+            _ => None,
+        }
+    }
+
+    /// Handle string search methods (complexity: 6)
+    fn handle_string_search(s: &str, method: &str, args: &[Expr]) -> Option<Result<Value>> {
+        match method {
+            "contains" => {
+                if args.len() != 1 {
+                    return Some(Err(anyhow::anyhow!("contains expects 1 argument")));
+                }
+                if let ExprKind::Literal(Literal::String(needle)) = &args[0].kind {
+                    Some(Ok(Value::Bool(s.contains(needle))))
+                } else {
+                    Some(Err(anyhow::anyhow!("contains argument must be a string literal")))
+                }
+            }
+            "starts_with" => {
+                if args.len() != 1 {
+                    return Some(Err(anyhow::anyhow!("starts_with expects 1 argument")));
+                }
+                if let ExprKind::Literal(Literal::String(prefix)) = &args[0].kind {
+                    Some(Ok(Value::Bool(s.starts_with(prefix))))
+                } else {
+                    Some(Err(anyhow::anyhow!("starts_with argument must be a string literal")))
+                }
+            }
+            "ends_with" => {
+                if args.len() != 1 {
+                    return Some(Err(anyhow::anyhow!("ends_with expects 1 argument")));
+                }
+                if let ExprKind::Literal(Literal::String(suffix)) = &args[0].kind {
+                    Some(Ok(Value::Bool(s.ends_with(suffix))))
+                } else {
+                    Some(Err(anyhow::anyhow!("ends_with argument must be a string literal")))
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Handle string manipulation methods (complexity: 8)
+    fn handle_string_manipulation(s: &str, method: &str, args: &[Expr]) -> Option<Result<Value>> {
+        match method {
+            "split" => {
+                if args.len() != 1 {
+                    return Some(Err(anyhow::anyhow!("split expects 1 argument")));
+                }
+                if let ExprKind::Literal(Literal::String(sep)) = &args[0].kind {
+                    let parts: Vec<Value> = s.split(sep)
+                        .map(|p| Value::String(p.to_string()))
+                        .collect();
+                    Some(Ok(Value::List(parts)))
+                } else {
+                    Some(Err(anyhow::anyhow!("split separator must be a string literal")))
+                }
+            }
+            "replace" => {
+                if args.len() != 2 {
+                    return Some(Err(anyhow::anyhow!("replace expects 2 arguments (from, to)")));
+                }
+                if let (ExprKind::Literal(Literal::String(from)), ExprKind::Literal(Literal::String(to))) = 
+                    (&args[0].kind, &args[1].kind) {
+                    Some(Ok(Value::String(s.replace(from, to))))
+                } else {
+                    Some(Err(anyhow::anyhow!("replace arguments must be string literals")))
+                }
+            }
+            "repeat" => {
+                if args.len() != 1 {
+                    return Some(Err(anyhow::anyhow!("repeat expects 1 argument")));
+                }
+                if let ExprKind::Literal(Literal::Integer(count)) = &args[0].kind {
+                    if *count < 0 {
+                        Some(Err(anyhow::anyhow!("repeat count cannot be negative")))
+                    } else {
+                        Some(Ok(Value::String(s.repeat(*count as usize))))
+                    }
+                } else {
+                    Some(Err(anyhow::anyhow!("repeat argument must be an integer")))
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Handle substring extraction (complexity: 7)
+    fn handle_substring(s: &str, args: &[Expr]) -> Result<Value> {
+        if args.len() == 2 {
+            // substring(start, end)
+            if let (ExprKind::Literal(Literal::Integer(start)), ExprKind::Literal(Literal::Integer(end))) =
+                (&args[0].kind, &args[1].kind) {
+                let start_idx = (*start as usize).min(s.len());
+                let end_idx = (*end as usize).min(s.len());
+                if start_idx <= end_idx {
+                    Ok(Value::String(s[start_idx..end_idx].to_string()))
+                } else {
+                    Ok(Value::String(String::new()))
+                }
+            } else {
+                bail!("substring arguments must be integers");
+            }
+        } else if args.len() == 1 {
+            // substring(start) - to end of string
+            if let ExprKind::Literal(Literal::Integer(start)) = &args[0].kind {
+                let start_idx = (*start as usize).min(s.len());
+                Ok(Value::String(s[start_idx..].to_string()))
+            } else {
+                bail!("substring argument must be an integer");
+            }
+        } else {
+            bail!("substring expects 1 or 2 arguments");
+        }
+    }
+
+    /// Main string methods dispatcher (complexity: 6)
     fn evaluate_string_methods(
         s: &str,
         method: &str,
@@ -2714,126 +2914,27 @@ impl Repl {
         _deadline: Instant,
         _depth: usize,
     ) -> Result<Value> {
-        match method {
-            "len" | "length" => {
-                let len = s.len();
-                i64::try_from(len)
-                    .map(Value::Int)
-                    .map_err(|_| anyhow::anyhow!("String length too large to represent as i64"))
-            }
-            "upper" | "to_upper" | "to_uppercase" => Ok(Value::String(s.to_uppercase())),
-            "lower" | "to_lower" | "to_lowercase" => Ok(Value::String(s.to_lowercase())),
-            "trim" => Ok(Value::String(s.trim().to_string())),
-            "split" => {
-                if args.len() != 1 {
-                    bail!("split expects 1 argument");
-                }
-                // For now, handle simple string literal separators
-                if let ExprKind::Literal(Literal::String(sep)) = &args[0].kind {
-                    let parts: Vec<Value> = s
-                        .split(sep)
-                        .map(|p| Value::String(p.to_string()))
-                        .collect();
-                    Ok(Value::List(parts))
-                } else {
-                    bail!("split separator must be a string literal");
-                }
-            }
-            "contains" => {
-                if args.len() != 1 {
-                    bail!("contains expects 1 argument");
-                }
-                if let ExprKind::Literal(Literal::String(needle)) = &args[0].kind {
-                    Ok(Value::Bool(s.contains(needle)))
-                } else {
-                    bail!("contains argument must be a string literal");
-                }
-            }
-            "starts_with" => {
-                if args.len() != 1 {
-                    bail!("starts_with expects 1 argument");
-                }
-                if let ExprKind::Literal(Literal::String(prefix)) = &args[0].kind {
-                    Ok(Value::Bool(s.starts_with(prefix)))
-                } else {
-                    bail!("starts_with argument must be a string literal");
-                }
-            }
-            "ends_with" => {
-                if args.len() != 1 {
-                    bail!("ends_with expects 1 argument");
-                }
-                if let ExprKind::Literal(Literal::String(suffix)) = &args[0].kind {
-                    Ok(Value::Bool(s.ends_with(suffix)))
-                } else {
-                    bail!("ends_with argument must be a string literal");
-                }
-            }
-            "replace" => {
-                if args.len() != 2 {
-                    bail!("replace expects 2 arguments (from, to)");
-                }
-                if let (ExprKind::Literal(Literal::String(from)), ExprKind::Literal(Literal::String(to))) = 
-                    (&args[0].kind, &args[1].kind) {
-                    Ok(Value::String(s.replace(from, to)))
-                } else {
-                    bail!("replace arguments must be string literals");
-                }
-            }
-            "substring" | "substr" => {
-                if args.len() == 2 {
-                    // substring(start, end)
-                    if let (ExprKind::Literal(Literal::Integer(start)), ExprKind::Literal(Literal::Integer(end))) =
-                        (&args[0].kind, &args[1].kind) {
-                        let start_idx = (*start as usize).min(s.len());
-                        let end_idx = (*end as usize).min(s.len());
-                        if start_idx <= end_idx {
-                            Ok(Value::String(s[start_idx..end_idx].to_string()))
-                        } else {
-                            Ok(Value::String(String::new()))
-                        }
-                    } else {
-                        bail!("substring arguments must be integers");
-                    }
-                } else if args.len() == 1 {
-                    // substring(start) - to end of string
-                    if let ExprKind::Literal(Literal::Integer(start)) = &args[0].kind {
-                        let start_idx = (*start as usize).min(s.len());
-                        Ok(Value::String(s[start_idx..].to_string()))
-                    } else {
-                        bail!("substring argument must be an integer");
-                    }
-                } else {
-                    bail!("substring expects 1 or 2 arguments");
-                }
-            }
-            "repeat" => {
-                if args.len() != 1 {
-                    bail!("repeat expects 1 argument");
-                }
-                if let ExprKind::Literal(Literal::Integer(count)) = &args[0].kind {
-                    if *count < 0 {
-                        bail!("repeat count cannot be negative");
-                    }
-                    Ok(Value::String(s.repeat(*count as usize)))
-                } else {
-                    bail!("repeat argument must be an integer");
-                }
-            }
-            "chars" => {
-                // Return array of single-character strings
-                let chars: Vec<Value> = s
-                    .chars()
-                    .map(|c| Value::String(c.to_string()))
-                    .collect();
-                Ok(Value::List(chars))
-            }
-            "reverse" => {
-                let reversed: String = s.chars().rev().collect();
-                Ok(Value::String(reversed))
-            }
-            _ => bail!("Unknown string method: {}", method),
+        // Try simple transforms first
+        if let Some(result) = Self::handle_string_transforms(s, method) {
+            return result;
         }
+        
+        // Try search methods
+        if let Some(result) = Self::handle_string_search(s, method, args) {
+            return result;
+        }
+        
+        // Try manipulation methods
+        if let Some(result) = Self::handle_string_manipulation(s, method, args) {
+            return result;
+        }
+        
+        // Handle substring specially
+        if method == "substring" || method == "substr" {
+            return Self::handle_substring(s, args);
+        }
+        
+        bail!("Unknown string method: {}", method)
     }
 
     /// Handle method calls on integer values (complexity < 10)
