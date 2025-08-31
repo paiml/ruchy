@@ -1795,14 +1795,90 @@ impl Repl {
     /// let result = repl.eval("1 + 1");
     /// assert_eq!(result.unwrap(), "2");
     /// ```
+    /// Handle mode-specific evaluation (complexity: 9)
+    fn handle_mode_evaluation(&mut self, trimmed: &str) -> Option<Result<String>> {
+        if trimmed.starts_with(':') {
+            return None; // Colon commands are handled normally
+        }
+        
+        match self.mode {
+            ReplMode::Shell => Some(self.execute_shell_command(trimmed)),
+            ReplMode::Pkg => Some(self.handle_pkg_command(trimmed)),
+            ReplMode::Help => Some(self.handle_help_command(trimmed)),
+            ReplMode::Sql => Some(Ok(format!("SQL mode not yet implemented: {trimmed}"))),
+            ReplMode::Math => Some(self.handle_math_command(trimmed)),
+            ReplMode::Debug => Some(self.handle_debug_evaluation(trimmed)),
+            ReplMode::Time => Some(self.handle_timed_evaluation(trimmed)),
+            ReplMode::Test => Some(self.handle_test_evaluation(trimmed)),
+            ReplMode::Normal => None,
+        }
+    }
+
+    /// Check if input is a shell command (complexity: 5)
+    fn is_shell_command(&self, trimmed: &str) -> bool {
+        if let Some(stripped) = trimmed.strip_prefix('!') {
+            // Not a shell command if it's a unary expression
+            !(stripped.starts_with("true") || 
+              stripped.starts_with("false") || 
+              stripped.starts_with('(') ||
+              (stripped.chars().next().is_some_and(char::is_lowercase) && 
+               stripped.chars().all(|c| c.is_alphanumeric() || c == '_')))
+        } else {
+            false
+        }
+    }
+
+    /// Handle shell substitution in let bindings (complexity: 6)
+    fn handle_shell_substitution(&mut self, input: &str, trimmed: &str) -> Option<Result<String>> {
+        if !trimmed.starts_with("let ") {
+            return None;
+        }
+        
+        if let Some(bang_pos) = trimmed.find(" = !") {
+            let var_part = &trimmed[4..bang_pos];
+            let command_part = &trimmed[bang_pos + 4..];
+            
+            // Execute the shell command
+            let result = match self.execute_shell_command(command_part) {
+                Ok(r) => r,
+                Err(e) => return Some(Err(e)),
+            };
+            
+            // Create a let binding with the result
+            let modified_input = format!("let {} = \"{}\"", var_part, result.replace('"', "\\\""));
+            
+            // Parse and evaluate the modified input
+            let deadline = Instant::now() + self.config.timeout;
+            let mut parser = Parser::new(&modified_input);
+            let ast = match parser.parse() {
+                Ok(a) => a,
+                Err(e) => return Some(Err(e.context("Failed to parse shell substitution"))),
+            };
+            
+            if let Err(e) = self.memory.try_alloc(std::mem::size_of_val(&ast)) {
+                return Some(Err(e));
+            }
+            
+            match self.evaluate_expr(&ast, deadline, 0) {
+                Ok(value) => {
+                    self.history.push(input.to_string());
+                    self.result_history.push(value);
+                    self.update_history_variables();
+                    Some(Ok(String::new()))
+                }
+                Err(e) => Some(Err(e)),
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Main eval function with reduced complexity (complexity: 10)
     pub fn eval(&mut self, input: &str) -> Result<String> {
         // Reset memory tracker for fresh evaluation
         self.memory.reset();
-
-        // Track input memory
         self.memory.try_alloc(input.len())?;
 
-        // Check for magic commands
         let trimmed = input.trim();
         
         // Handle progressive mode activation via attributes
@@ -1812,48 +1888,16 @@ impl Repl {
         }
         
         // Handle mode-specific evaluation
-        match self.mode {
-            ReplMode::Shell if !trimmed.starts_with(':') => {
-                // In shell mode, execute everything as shell commands unless it's a colon command
-                return self.execute_shell_command(trimmed);
-            }
-            ReplMode::Pkg if !trimmed.starts_with(':') => {
-                // In pkg mode, handle package commands
-                return self.handle_pkg_command(trimmed);
-            }
-            ReplMode::Help if !trimmed.starts_with(':') => {
-                // In help mode, show help for keywords
-                return self.handle_help_command(trimmed);
-            }
-            ReplMode::Sql if !trimmed.starts_with(':') => {
-                // In SQL mode, execute SQL queries
-                return Ok(format!("SQL mode not yet implemented: {trimmed}"));
-            }
-            ReplMode::Math if !trimmed.starts_with(':') => {
-                // In math mode, enhanced math evaluation
-                return self.handle_math_command(trimmed);
-            }
-            ReplMode::Debug if !trimmed.starts_with(':') => {
-                // In debug mode, evaluate with extra info
-                return self.handle_debug_evaluation(trimmed);
-            }
-            ReplMode::Time if !trimmed.starts_with(':') => {
-                // In time mode, evaluate with timing
-                return self.handle_timed_evaluation(trimmed);
-            }
-            ReplMode::Test if !trimmed.starts_with(':') => {
-                // In test mode, handle assertions and table tests
-                return self.handle_test_evaluation(trimmed);
-            }
-            _ => {} // Normal mode or colon command - continue with regular processing
+        if let Some(result) = self.handle_mode_evaluation(trimmed) {
+            return result;
         }
+        // Handle magic commands
         if trimmed.starts_with('%') {
             return self.handle_magic_command(trimmed);
         }
 
         // Check for REPL commands
         if trimmed.starts_with(':') {
-            // Handle command and return result as string
             let (should_quit, output) = self.handle_command_with_output(trimmed)?;
             if should_quit {
                 return Ok("Exiting REPL...".to_string());
@@ -1861,56 +1905,22 @@ impl Repl {
             return Ok(output);
         }
         
-        // Check for shell commands vs unary expressions
-        if let Some(stripped) = trimmed.strip_prefix('!') {
-            // Allow unary expressions: !true, !false, !(expr), !identifier_starting_with_lowercase
-            let is_unary_expr = stripped.starts_with("true") || 
-                               stripped.starts_with("false") || 
-                               stripped.starts_with('(') ||
-                               (stripped.chars().next().is_some_and(char::is_lowercase) && 
-                                stripped.chars().all(|c| c.is_alphanumeric() || c == '_'));
-                                
-            if !is_unary_expr {
-                return self.execute_shell_command(stripped);
-            }
+        // Check for shell commands
+        if self.is_shell_command(trimmed) {
+            let stripped = trimmed.strip_prefix('!').unwrap();
+            return self.execute_shell_command(stripped);
         }
         
         // Check for introspection commands
         if let Some(stripped) = trimmed.strip_prefix("??") {
-            // Double question mark - detailed introspection
-            let target = stripped.trim();
-            return self.detailed_introspection(target);
+            return self.detailed_introspection(stripped.trim());
         } else if trimmed.starts_with('?') && !trimmed.starts_with("?:") {
-            // Single question mark - basic introspection (but not ternary operator)
-            let target = trimmed[1..].trim();
-            return self.basic_introspection(target);
+            return self.basic_introspection(trimmed[1..].trim());
         }
 
-        // Handle shell substitution in let bindings (let x = !command)
-        if trimmed.starts_with("let ") {
-            if let Some(bang_pos) = trimmed.find(" = !") {
-                // Extract the variable name and command
-                let var_part = &trimmed[4..bang_pos];
-                let command_part = &trimmed[bang_pos + 4..];
-                
-                // Execute the shell command
-                let result = self.execute_shell_command(command_part)?;
-                
-                // Create a let binding with the result
-                let modified_input = format!("let {} = \"{}\"", var_part, result.replace('"', "\\\""));
-                
-                // Parse and evaluate the modified input
-                let deadline = Instant::now() + self.config.timeout;
-                let mut parser = Parser::new(&modified_input);
-                let ast = parser.parse().context("Failed to parse shell substitution")?;
-                self.memory.try_alloc(std::mem::size_of_val(&ast))?;
-                let value = self.evaluate_expr(&ast, deadline, 0)?;
-                self.history.push(input.to_string());
-                self.result_history.push(value);
-                self.update_history_variables();
-                // Let bindings return empty string in REPL
-                return Ok(String::new());
-            }
+        // Handle shell substitution in let bindings
+        if let Some(result) = self.handle_shell_substitution(input, trimmed) {
+            return result;
         }
         
         // Set evaluation deadline
@@ -6653,6 +6663,308 @@ impl Repl {
     }
 
     /// Evaluate function calls
+    /// Dispatcher for I/O functions (complexity: 8)
+    fn dispatch_io_functions(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        match func_name {
+            "println" => Some(self.evaluate_println(args, deadline, depth)),
+            "print" => Some(self.evaluate_print(args, deadline, depth)),
+            "input" => Some(self.evaluate_input(args, deadline, depth)),
+            "readline" => Some(self.evaluate_readline(args, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for assertion functions (complexity: 4)
+    fn dispatch_assertion_functions(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        match func_name {
+            "assert" => Some(self.evaluate_assert(args, deadline, depth)),
+            "assert_eq" => Some(self.evaluate_assert_eq(args, deadline, depth)),
+            "assert_ne" => Some(self.evaluate_assert_ne(args, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for file operations (complexity: 6)
+    fn dispatch_file_functions(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        match func_name {
+            "read_file" => Some(self.evaluate_read_file(args, deadline, depth)),
+            "write_file" => Some(self.evaluate_write_file(args, deadline, depth)),
+            "append_file" => Some(self.evaluate_append_file(args, deadline, depth)),
+            "file_exists" => Some(self.evaluate_file_exists(args, deadline, depth)),
+            "delete_file" => Some(self.evaluate_delete_file(args, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for type conversion functions (complexity: 5)
+    fn dispatch_type_conversion(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        match func_name {
+            "str" => Some(self.evaluate_str_conversion(args, deadline, depth)),
+            "int" => Some(self.evaluate_int_conversion(args, deadline, depth)),
+            "float" => Some(self.evaluate_float_conversion(args, deadline, depth)),
+            "bool" => Some(self.evaluate_bool_conversion(args, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for introspection functions (complexity: 5)
+    fn dispatch_introspection_functions(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        match func_name {
+            "type" => Some(self.evaluate_type_function(args, deadline, depth)),
+            "summary" => Some(self.evaluate_summary_function(args, deadline, depth)),
+            "dir" => Some(self.evaluate_dir_function(args, deadline, depth)),
+            "help" => Some(self.evaluate_help_function(args, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for math functions (complexity: 7)
+    fn dispatch_math_functions(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        match func_name {
+            "sin" => Some(self.evaluate_sin(args, deadline, depth)),
+            "cos" => Some(self.evaluate_cos(args, deadline, depth)),
+            "tan" => Some(self.evaluate_tan(args, deadline, depth)),
+            "log" => Some(self.evaluate_log(args, deadline, depth)),
+            "log10" => Some(self.evaluate_log10(args, deadline, depth)),
+            "random" => Some(self.evaluate_random(args, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for workspace functions (complexity: 10)
+    fn dispatch_workspace_functions(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        match func_name {
+            "whos" => Some(self.evaluate_whos_function(args, deadline, depth)),
+            "who" => Some(self.evaluate_who_function(args, deadline, depth)),
+            "clear_all" => Some(self.evaluate_clear_bang_function(args, deadline, depth)),
+            "save_image" => Some(self.evaluate_save_image_function(args, deadline, depth)),
+            "workspace" => Some(self.evaluate_workspace_function(args, deadline, depth)),
+            "locals" => Some(self.evaluate_locals_function(args, deadline, depth)),
+            "globals" => Some(self.evaluate_globals_function(args, deadline, depth)),
+            "reset" => Some(self.evaluate_reset_function(args, deadline, depth)),
+            "del" => Some(self.evaluate_del_function(args, deadline, depth)),
+            "exists" => Some(self.evaluate_exists_function(args, deadline, depth)),
+            "memory_info" => Some(self.evaluate_memory_info_function(args, deadline, depth)),
+            "time_info" => Some(self.evaluate_time_info_function(args, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for environment and system functions (complexity: 4)
+    fn dispatch_system_functions(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        match func_name {
+            "current_dir" => Some(self.evaluate_current_dir(args, deadline, depth)),
+            "env" => Some(self.evaluate_env(args, deadline, depth)),
+            "set_env" => Some(self.evaluate_set_env(args, deadline, depth)),
+            "args" => Some(self.evaluate_args(args, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for Result/Option constructors (complexity: 5) 
+    fn dispatch_result_option_constructors(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        match func_name {
+            "Some" => Some(self.evaluate_some(args, deadline, depth)),
+            "None" => Some(self.evaluate_none(args, deadline, depth)),
+            "Ok" => Some(self.evaluate_ok(args, deadline, depth)),
+            "Err" => Some(self.evaluate_err(args, deadline, depth)),
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for collection constructors (complexity: 3)
+    fn dispatch_collection_constructors(
+        &mut self,
+        func_name: &str,
+        args: &[Expr],
+    ) -> Option<Result<Value>> {
+        match func_name {
+            "HashMap" => {
+                if !args.is_empty() {
+                    Some(Err(anyhow::anyhow!("HashMap() constructor expects no arguments, got {}", args.len())))
+                } else {
+                    Some(Ok(Value::HashMap(HashMap::new())))
+                }
+            }
+            "HashSet" => {
+                if !args.is_empty() {
+                    Some(Err(anyhow::anyhow!("HashSet() constructor expects no arguments, got {}", args.len())))
+                } else {
+                    Some(Ok(Value::HashSet(HashSet::new())))
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for static method calls (complexity: 9)
+    fn dispatch_static_methods(
+        &mut self,
+        module: &str,
+        name: &str,
+        args: &[Expr],
+        _deadline: Instant,
+        _depth: usize,
+    ) -> Option<Result<Value>> {
+        match (module, name) {
+            ("HashMap", "new") => {
+                if !args.is_empty() {
+                    Some(Err(anyhow::anyhow!("HashMap::new() expects no arguments, got {}", args.len())))
+                } else {
+                    Some(Ok(Value::HashMap(HashMap::new())))
+                }
+            }
+            ("HashSet", "new") => {
+                if !args.is_empty() {
+                    Some(Err(anyhow::anyhow!("HashSet::new() expects no arguments, got {}", args.len())))
+                } else {
+                    Some(Ok(Value::HashSet(HashSet::new())))
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for performance module methods (complexity: 8)
+    fn dispatch_performance_methods(
+        &mut self,
+        module: &str,
+        name: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Option<Result<Value>> {
+        match (module, name) {
+            ("mem", "usage") => {
+                if !args.is_empty() {
+                    Some(Err(anyhow::anyhow!("mem::usage() expects no arguments, got {}", args.len())))
+                } else {
+                    Some(Ok(Value::String("allocated: 100KB, peak: 150KB".to_string())))
+                }
+            }
+            ("parallel", "map") => {
+                if args.len() != 2 {
+                    Some(Err(anyhow::anyhow!("parallel::map() expects 2 arguments (data, func), got {}", args.len())))
+                } else {
+                    Some(Ok(Value::String("[2, 4, 6, 8, 10]".to_string())))
+                }
+            }
+            ("simd", "from_slice") => {
+                if args.len() != 1 {
+                    Some(Err(anyhow::anyhow!("simd::from_slice() expects 1 argument (slice), got {}", args.len())))
+                } else {
+                    Some(Ok(Value::String("[6.0, 8.0, 10.0, 12.0]".to_string())))
+                }
+            }
+            ("bench", "time") => {
+                if args.len() != 1 {
+                    Some(Err(anyhow::anyhow!("bench::time() expects 1 argument (block), got {}", args.len())))
+                } else {
+                    match self.evaluate_expr(&args[0], deadline, depth + 1) {
+                        Ok(_) => Some(Ok(Value::String("42ms".to_string()))),
+                        Err(e) => Some(Err(e)),
+                    }
+                }
+            }
+            ("cache", "Cache") => {
+                if !args.is_empty() {
+                    Some(Err(anyhow::anyhow!("cache::Cache() expects no arguments, got {}", args.len())))
+                } else {
+                    Some(Ok(Value::String("Cache constructor".to_string())))
+                }
+            }
+            ("profile", "get_stats") => {
+                if args.len() != 1 {
+                    Some(Err(anyhow::anyhow!("profile::get_stats() expects 1 argument (function_name), got {}", args.len())))
+                } else {
+                    Some(Ok(Value::String("function: 42 calls, 100ms total".to_string())))
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Dispatcher for static collection methods (complexity: 4)
+    fn dispatch_static_collection_methods(
+        &mut self,
+        module: &str,
+        name: &str,
+        args: &[Expr],
+    ) -> Option<Result<Value>> {
+        match (module, name) {
+            ("HashMap", "new") => {
+                if !args.is_empty() {
+                    Some(Err(anyhow::anyhow!("HashMap::new() expects no arguments, got {}", args.len())))
+                } else {
+                    Some(Ok(Value::HashMap(HashMap::new())))
+                }
+            }
+            ("HashSet", "new") => {
+                if !args.is_empty() {
+                    Some(Err(anyhow::anyhow!("HashSet::new() expects no arguments, got {}", args.len())))
+                } else {
+                    Some(Ok(Value::HashSet(HashSet::new())))
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Main call dispatcher with reduced complexity (complexity: 8)
     fn evaluate_call(
         &mut self,
         func: &Expr,
@@ -6661,133 +6973,58 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         if let ExprKind::Identifier(func_name) = &func.kind {
-            match func_name.as_str() {
-                "println" => self.evaluate_println(args, deadline, depth),
-                "print" => self.evaluate_print(args, deadline, depth),
-                "input" => self.evaluate_input(args, deadline, depth),
-                "readline" => self.evaluate_readline(args, deadline, depth),
-                "assert" => self.evaluate_assert(args, deadline, depth),
-                "assert_eq" => self.evaluate_assert_eq(args, deadline, depth), 
-                "assert_ne" => self.evaluate_assert_ne(args, deadline, depth),
+            let func_str = func_name.as_str();
+            
+            // Try dispatchers in order of likelihood
+            if let Some(result) = self.dispatch_io_functions(func_str, args, deadline, depth) {
+                return result;
+            }
+            if let Some(result) = self.dispatch_file_functions(func_str, args, deadline, depth) {
+                return result;
+            }
+            if let Some(result) = self.dispatch_type_conversion(func_str, args, deadline, depth) {
+                return result;
+            }
+            if let Some(result) = self.dispatch_assertion_functions(func_str, args, deadline, depth) {
+                return result;
+            }
+            if let Some(result) = self.dispatch_introspection_functions(func_str, args, deadline, depth) {
+                return result;
+            }
+            if let Some(result) = self.dispatch_workspace_functions(func_str, args, deadline, depth) {
+                return result;
+            }
+            if let Some(result) = self.dispatch_math_functions(func_str, args, deadline, depth) {
+                return result;
+            }
+            if let Some(result) = self.dispatch_system_functions(func_str, args, deadline, depth) {
+                return result;
+            }
+            if let Some(result) = self.dispatch_result_option_constructors(func_str, args, deadline, depth) {
+                return result;
+            }
+            if let Some(result) = self.dispatch_collection_constructors(func_str, args) {
+                return result;
+            }
+            
+            // Handle remaining special cases (complexity: 3)
+            match func_str {
                 "curry" => self.evaluate_curry(args, deadline, depth),
                 "uncurry" => self.evaluate_uncurry(args, deadline, depth),
-                "read_file" => self.evaluate_read_file(args, deadline, depth),
-                "write_file" => self.evaluate_write_file(args, deadline, depth),
-                "append_file" => self.evaluate_append_file(args, deadline, depth),
-                "file_exists" => self.evaluate_file_exists(args, deadline, depth),
-                "delete_file" => self.evaluate_delete_file(args, deadline, depth),
-                "current_dir" => self.evaluate_current_dir(args, deadline, depth),
-                "env" => self.evaluate_env(args, deadline, depth),
-                "set_env" => self.evaluate_set_env(args, deadline, depth),
-                "args" => self.evaluate_args(args, deadline, depth),
-                "Some" => self.evaluate_some(args, deadline, depth),
-                "None" => self.evaluate_none(args, deadline, depth),
-                "Ok" => self.evaluate_ok(args, deadline, depth),
-                "Err" => self.evaluate_err(args, deadline, depth),
-                // Type conversion functions
-                "str" => self.evaluate_str_conversion(args, deadline, depth),
-                "int" => self.evaluate_int_conversion(args, deadline, depth),
-                "float" => self.evaluate_float_conversion(args, deadline, depth),
-                "bool" => self.evaluate_bool_conversion(args, deadline, depth),
-                // Introspection functions
-                "type" => self.evaluate_type_function(args, deadline, depth),
-                "summary" => self.evaluate_summary_function(args, deadline, depth),
-                "dir" => self.evaluate_dir_function(args, deadline, depth),
-                "help" => self.evaluate_help_function(args, deadline, depth),
-                // Workspace management functions
-                "whos" => self.evaluate_whos_function(args, deadline, depth),
-                "who" => self.evaluate_who_function(args, deadline, depth),
-                "clear_all" => self.evaluate_clear_bang_function(args, deadline, depth),
-                "save_image" => self.evaluate_save_image_function(args, deadline, depth),
-                "workspace" => self.evaluate_workspace_function(args, deadline, depth),
-                "locals" => self.evaluate_locals_function(args, deadline, depth),
-                "globals" => self.evaluate_globals_function(args, deadline, depth),
-                "reset" => self.evaluate_reset_function(args, deadline, depth),
-                "del" => self.evaluate_del_function(args, deadline, depth),
-                "exists" => self.evaluate_exists_function(args, deadline, depth),
-                "memory_info" => self.evaluate_memory_info_function(args, deadline, depth),
-                "time_info" => self.evaluate_time_info_function(args, deadline, depth),
-                // Advanced math functions
-                "sin" => self.evaluate_sin(args, deadline, depth),
-                "cos" => self.evaluate_cos(args, deadline, depth),
-                "tan" => self.evaluate_tan(args, deadline, depth),
-                "log" => self.evaluate_log(args, deadline, depth),
-                "log10" => self.evaluate_log10(args, deadline, depth),
-                "random" => self.evaluate_random(args, deadline, depth),
-                "HashMap" => {
-                    if !args.is_empty() {
-                        bail!("HashMap() constructor expects no arguments, got {}", args.len());
-                    }
-                    Ok(Value::HashMap(HashMap::new()))
-                }
-                "HashSet" => {
-                    if !args.is_empty() {
-                        bail!("HashSet() constructor expects no arguments, got {}", args.len());
-                    }
-                    Ok(Value::HashSet(HashSet::new()))
-                }
                 _ => self.evaluate_user_function(func_name, args, deadline, depth),
             }
         } else if let ExprKind::QualifiedName { module, name } = &func.kind {
-            // Handle built-in static constructors
-            match (module.as_str(), name.as_str()) {
-                ("HashMap", "new") => {
-                    if !args.is_empty() {
-                        bail!("HashMap::new() expects no arguments, got {}", args.len());
-                    }
-                    return Ok(Value::HashMap(HashMap::new()));
-                }
-                ("HashSet", "new") => {
-                    if !args.is_empty() {
-                        bail!("HashSet::new() expects no arguments, got {}", args.len());
-                    }
-                    return Ok(Value::HashSet(HashSet::new()));
-                }
-                // Performance module static methods
-                ("mem", "usage") => {
-                    if !args.is_empty() {
-                        bail!("mem::usage() expects no arguments, got {}", args.len());
-                    }
-                    return Ok(Value::String("allocated: 100KB, peak: 150KB".to_string()));
-                }
-                ("parallel", "map") => {
-                    if args.len() != 2 {
-                        bail!("parallel::map() expects 2 arguments (data, func), got {}", args.len());
-                    }
-                    // Stub implementation - return example result for [1,2,3,4,5] doubled
-                    return Ok(Value::String("[2, 4, 6, 8, 10]".to_string()));
-                }
-                ("simd", "from_slice") => {
-                    if args.len() != 1 {
-                        bail!("simd::from_slice() expects 1 argument (slice), got {}", args.len());
-                    }
-                    // Stub implementation - return example SIMD vector
-                    return Ok(Value::String("[6.0, 8.0, 10.0, 12.0]".to_string()));
-                }
-                ("bench", "time") => {
-                    if args.len() != 1 {
-                        bail!("bench::time() expects 1 argument (block), got {}", args.len());
-                    }
-                    // Evaluate the block and return timing info
-                    let _result = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                    return Ok(Value::String("42ms".to_string()));
-                }
-                ("cache", "Cache") => {
-                    if !args.is_empty() {
-                        bail!("cache::Cache() expects no arguments, got {}", args.len());
-                    }
-                    return Ok(Value::String("Cache constructor".to_string()));
-                }
-                ("profile", "get_stats") => {
-                    if args.len() != 1 {
-                        bail!("profile::get_stats() expects 1 argument (function_name), got {}", args.len());
-                    }
-                    return Ok(Value::String("function: 42 calls, 100ms total".to_string()));
-                }
-                _ => {}
+            // Try static collection methods dispatcher
+            if let Some(result) = self.dispatch_static_collection_methods(module, name, args) {
+                return result;
             }
             
-            // Handle static method calls (Type::method)
+            // Try performance module dispatcher
+            if let Some(result) = self.dispatch_performance_methods(module, name, args, deadline, depth) {
+                return result;
+            }
+            
+            // Handle user-defined static method calls (Type::method)
             let qualified_name = format!("{module}::{name}");
             if let Some((param_names, body)) = self.impl_methods.get(&qualified_name).cloned() {
                 // Evaluate arguments
@@ -8480,123 +8717,116 @@ impl Repl {
     }
 
     /// Evaluate import statements (complexity < 10)
-    fn evaluate_import(&mut self, path: &str, items: &[ImportItem]) -> Result<Value> {
-        // For now, just track the import in bindings
-        // Real implementation would:
-        // 1. Resolve the module path
-        // 2. Load the module
-        // 3. Import specified items into current scope
-        
-        // Import handling
-        
-        // Add basic standard library support
+    /// Import standard library filesystem module (complexity: 6)
+    fn import_std_fs(&mut self, items: &[ImportItem]) -> Result<()> {
+        for item in items {
+            match item {
+                ImportItem::Named(name) if name == "read_file" => {
+                    // This function is already built-in
+                }
+                ImportItem::Named(name) if name == "write_file" => {
+                    // This function is already built-in
+                }
+                ImportItem::Named(name) if name == "fs" => {
+                    println!("  ✓ Imported fs module");
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    /// Import standard library collections module (complexity: 3)
+    fn import_std_collections(&mut self, items: &[ImportItem]) -> Result<()> {
+        for item in items {
+            if let ImportItem::Named(_name) = item {
+                // Successfully imported
+            }
+        }
+        Ok(())
+    }
+
+    /// Import performance-related modules (complexity: 2)
+    fn import_performance_module(&mut self, path: &str) -> Result<()> {
         match path {
-            "std::fs" | "std::fs::read_file" => {
-                // Register file system functions
-                for item in items {
-                    match item {
-                        ImportItem::Named(name) if name == "read_file" => {
-                            // This function is already built-in
-                            // Successfully imported
-                        }
-                        ImportItem::Named(name) if name == "write_file" => {
-                            // This function is already built-in
-                            // Successfully imported
-                        }
-                        ImportItem::Named(name) if name == "fs" => {
-                            // Import entire fs module
-                            println!("  ✓ Imported fs module");
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            "std::collections" => {
-                // Handle collections imports
-                for item in items {
-                    if let ImportItem::Named(_name) = item {
-                        // Successfully imported
-                    }
-                }
-            }
             "std::mem" => {
-                // Register memory management functions as namespace
-                // Also add Array to global namespace for convenience
                 self.bindings.insert("Array".to_string(), Value::String("Array constructor".to_string()));
             }
-            "std::parallel" => {
-                // Register parallel processing functions as namespace
-                // Module functions will be accessible via parallel::map(), etc.
+            "std::parallel" | "std::simd" | "std::cache" | "std::bench" | "std::profile" => {
+                // Module functions will be accessible via namespace
             }
-            "std::simd" => {
-                // Register SIMD vectorization functions as namespace
-                // Module functions will be accessible via simd::from_slice(), etc.
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Check if item should be imported (complexity: 4)
+    fn should_import_item(items: &[ImportItem], func_name: &str) -> bool {
+        items.is_empty() || items.iter().any(|item| match item {
+            ImportItem::Wildcard => true,
+            ImportItem::Named(item_name) => item_name == func_name,
+            ImportItem::Aliased { name: item_name, .. } => item_name == func_name,
+        })
+    }
+
+    /// Import functions from cache (complexity: 3)
+    fn import_from_cache(&mut self, cached_functions: &HashMap<String, Value>, items: &[ImportItem]) {
+        for (func_name, func_value) in cached_functions {
+            if Self::should_import_item(items, func_name) {
+                self.bindings.insert(func_name.clone(), func_value.clone());
             }
-            "std::cache" => {
-                // Register caching functions as namespace
-                // Module functions will be accessible via cache::Cache(), etc.
+        }
+    }
+
+    /// Load and cache a module from file (complexity: 7)
+    fn load_and_cache_module(&mut self, path: &str, items: &[ImportItem]) -> Result<()> {
+        let module_path = format!("{path}.ruchy");
+        
+        if !std::path::Path::new(&module_path).exists() {
+            bail!("Module not found: {}", path);
+        }
+
+        // Read and parse the module file
+        let module_content = std::fs::read_to_string(&module_path)
+            .with_context(|| format!("Failed to read module file: {module_path}"))?;
+        
+        let mut parser = crate::frontend::Parser::new(&module_content);
+        let module_ast = parser.parse()
+            .with_context(|| format!("Failed to parse module: {module_path}"))?;
+        
+        // Extract and cache all functions from the module
+        let mut module_functions = HashMap::new();
+        self.extract_module_functions(&module_ast, &mut module_functions)?;
+        
+        // Store in cache for future imports
+        self.module_cache.insert(path.to_string(), module_functions.clone());
+        
+        // Import requested functions into current scope
+        self.import_from_cache(&module_functions, items);
+        
+        Ok(())
+    }
+
+    /// Main import dispatcher (complexity: 8)
+    fn evaluate_import(&mut self, path: &str, items: &[ImportItem]) -> Result<Value> {
+        // Handle standard library imports
+        match path {
+            "std::fs" | "std::fs::read_file" => {
+                self.import_std_fs(items)?;
             }
-            "std::bench" => {
-                // Register benchmarking functions as namespace
-                // Module functions will be accessible via bench::time(), etc.
+            "std::collections" => {
+                self.import_std_collections(items)?;
             }
-            "std::profile" => {
-                // Register profiling functions as namespace
-                // Module functions will be accessible via profile::get_stats(), etc.
+            "std::mem" | "std::parallel" | "std::simd" | "std::cache" | "std::bench" | "std::profile" => {
+                self.import_performance_module(path)?;
             }
             _ => {
-                // O(1) cache lookup first - NO filesystem access if cached
-                if let Some(cached_functions) = self.module_cache.get(path) {
-                    // CACHE HIT: O(1) performance - import functions from cache
-                    for (func_name, func_value) in cached_functions {
-                        let should_import = items.is_empty() || 
-                            items.iter().any(|item| match item {
-                                ImportItem::Wildcard => true,
-                                ImportItem::Named(item_name) => item_name == func_name,
-                                ImportItem::Aliased { name: item_name, .. } => item_name == func_name,
-                            });
-                        
-                        if should_import {
-                            self.bindings.insert(func_name.clone(), func_value.clone());
-                        }
-                    }
+                // Check cache first
+                if let Some(cached_functions) = self.module_cache.get(path).cloned() {
+                    self.import_from_cache(&cached_functions, items);
                 } else {
-                    // CACHE MISS: Load once and cache forever
-                    let module_path = format!("{path}.ruchy");
-                    
-                    if std::path::Path::new(&module_path).exists() {
-                        // Read and parse the module file (only once!)
-                        let module_content = std::fs::read_to_string(&module_path)
-                            .with_context(|| format!("Failed to read module file: {module_path}"))?;
-                        
-                        // Parse the module (only once!)
-                        let mut parser = crate::frontend::Parser::new(&module_content);
-                        let module_ast = parser.parse()
-                            .with_context(|| format!("Failed to parse module: {module_path}"))?;
-                        
-                        // Extract and cache all functions from the module
-                        let mut module_functions = HashMap::new();
-                        self.extract_module_functions(&module_ast, &mut module_functions)?;
-                        
-                        // Store in O(1) cache for future imports
-                        self.module_cache.insert(path.to_string(), module_functions.clone());
-                        
-                        // Import requested functions into current scope
-                        for (func_name, func_value) in &module_functions {
-                            let should_import = items.is_empty() ||
-                                items.iter().any(|item| match item {
-                                    ImportItem::Wildcard => true,
-                                    ImportItem::Named(item_name) => item_name == func_name,
-                                    ImportItem::Aliased { name: item_name, .. } => item_name == func_name,
-                                });
-                            
-                            if should_import {
-                                self.bindings.insert(func_name.clone(), func_value.clone());
-                            }
-                        }
-                    } else {
-                        bail!("Module not found: {}", path);
-                    }
+                    // Load from file and cache
+                    self.load_and_cache_module(path, items)?;
                 }
             }
         }
