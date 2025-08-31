@@ -4104,7 +4104,7 @@ impl Repl {
         }
     }
 
-    /// Evaluate optional method call (complexity: 8)
+    /// Evaluate optional method call with null-safe chaining (complexity: 10)
     fn evaluate_optional_method_call(
         &mut self,
         receiver: &Expr,
@@ -4121,57 +4121,35 @@ impl Repl {
         }
         
         // Try to call the method, but return nil if it fails instead of erroring
-        match receiver_val {
+        let result = match receiver_val {
             Value::List(items) => {
-                match self.evaluate_list_methods(items, method, args, deadline, depth) {
-                    Ok(result) => Ok(result),
-                    Err(_) => Ok(Value::Nil),
-                }
+                self.evaluate_list_methods(items, method, args, deadline, depth).unwrap_or(Value::Nil)
             }
             Value::String(s) => {
-                match Self::evaluate_string_methods(&s, method, args, deadline, depth) {
-                    Ok(result) => Ok(result),
-                    Err(_) => Ok(Value::Nil),
-                }
+                Self::evaluate_string_methods(&s, method, args, deadline, depth).unwrap_or(Value::Nil)
             }
             Value::Int(n) => {
-                match Self::evaluate_int_methods(n, method) {
-                    Ok(result) => Ok(result),
-                    Err(_) => Ok(Value::Nil),
-                }
+                Self::evaluate_int_methods(n, method).unwrap_or(Value::Nil)
             }
             Value::Float(f) => {
-                match Self::evaluate_float_methods(f, method) {
-                    Ok(result) => Ok(result),
-                    Err(_) => Ok(Value::Nil),
-                }
+                Self::evaluate_float_methods(f, method).unwrap_or(Value::Nil)
             }
             Value::Object(obj) => {
-                match Self::evaluate_object_methods(obj, method, args, deadline, depth) {
-                    Ok(result) => Ok(result),
-                    Err(_) => Ok(Value::Nil),
-                }
+                Self::evaluate_object_methods(obj, method, args, deadline, depth).unwrap_or(Value::Nil)
             }
             Value::HashMap(map) => {
-                match self.evaluate_hashmap_methods(map, method, args, deadline, depth) {
-                    Ok(result) => Ok(result),
-                    Err(_) => Ok(Value::Nil),
-                }
+                self.evaluate_hashmap_methods(map, method, args, deadline, depth).unwrap_or(Value::Nil)
             }
             Value::HashSet(set) => {
-                match self.evaluate_hashset_methods(set, method, args, deadline, depth) {
-                    Ok(result) => Ok(result),
-                    Err(_) => Ok(Value::Nil),
-                }
+                self.evaluate_hashset_methods(set, method, args, deadline, depth).unwrap_or(Value::Nil)
             }
             Value::EnumVariant { .. } => {
-                match self.evaluate_enum_methods(receiver_val, method, args, deadline, depth) {
-                    Ok(result) => Ok(result),
-                    Err(_) => Ok(Value::Nil),
-                }
+                self.evaluate_enum_methods(receiver_val, method, args, deadline, depth).unwrap_or(Value::Nil)
             }
-            _ => Ok(Value::Nil), // Unsupported types return nil instead of error
-        }
+            _ => Value::Nil, // Unsupported types return nil
+        };
+        
+        Ok(result)
     }
 
     /// Evaluate index access (complexity: 5)
@@ -6274,44 +6252,51 @@ impl Repl {
     /// # Errors
     ///
     /// Returns an error if file writing fails
-    fn save_session(&self, filename: &str) -> Result<()> {
+    /// Generate session header with metadata (complexity: 3)
+    fn generate_session_header(&self, content: &mut String) -> Result<()> {
         use chrono::Utc;
-        use std::io::Write;
-
-        let mut content = String::new();
-
-        // Add header with timestamp
-        writeln!(&mut content, "// Ruchy REPL Session")?;
+        use std::fmt::Write;
+        
+        writeln!(content, "// Ruchy REPL Session")?;
         writeln!(
-            &mut content,
+            content,
             "// Generated: {}",
             Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
         )?;
-        writeln!(&mut content, "// Commands: {}", self.history.len())?;
-        writeln!(&mut content, "// Variables: {}", self.bindings.len())?;
-        writeln!(&mut content)?;
+        writeln!(content, "// Commands: {}", self.history.len())?;
+        writeln!(content, "// Variables: {}", self.bindings.len())?;
+        writeln!(content)?;
+        Ok(())
+    }
 
-        // Add variable bindings as comments
+    /// Add variable bindings as comments (complexity: 3)
+    fn add_bindings_to_content(&self, content: &mut String) -> Result<()> {
+        use std::fmt::Write;
+        
         if !self.bindings.is_empty() {
-            writeln!(&mut content, "// Current variable bindings:")?;
+            writeln!(content, "// Current variable bindings:")?;
             for (name, value) in &self.bindings {
-                writeln!(&mut content, "// {name}: {value}")?;
+                writeln!(content, "// {name}: {value}")?;
             }
-            writeln!(&mut content)?;
+            writeln!(content)?;
         }
+        Ok(())
+    }
 
-        // Add all commands from history
+    /// Add command history to content (complexity: 5)
+    fn add_history_to_content(&self, content: &mut String) -> Result<()> {
+        use std::fmt::Write;
+        
         writeln!(
-            &mut content,
+            content,
             "// Session history (paste into REPL or run as script):"
         )?;
-        writeln!(&mut content)?;
+        writeln!(content)?;
 
         for (i, command) in self.history.iter().enumerate() {
-            // Skip commands that start with : (REPL commands)
             if command.starts_with(':') {
                 writeln!(
-                    &mut content,
+                    content,
                     "// Command {}: {} (REPL command, skipped)",
                     i + 1,
                     command
@@ -6319,25 +6304,44 @@ impl Repl {
                 continue;
             }
 
-            writeln!(&mut content, "// Command {}:", i + 1)?;
-            writeln!(&mut content, "{command}")?;
-            writeln!(&mut content)?;
+            writeln!(content, "// Command {}:", i + 1)?;
+            writeln!(content, "{command}")?;
+            writeln!(content)?;
         }
+        Ok(())
+    }
 
-        // Add a section for recreating the session
-        writeln!(&mut content, "// To recreate this session, you can:")?;
+    /// Add usage instructions to content (complexity: 2)
+    fn add_usage_instructions(&self, content: &mut String, filename: &str) -> Result<()> {
+        use std::fmt::Write;
+        
+        writeln!(content, "// To recreate this session, you can:")?;
         writeln!(
-            &mut content,
+            content,
             "// 1. Copy and paste commands individually into the REPL"
         )?;
         writeln!(
-            &mut content,
+            content,
             "// 2. Use :load {filename} to execute all commands"
         )?;
         writeln!(
-            &mut content,
+            content,
             "// 3. Remove comments and run as a script: ruchy {filename}"
         )?;
+        Ok(())
+    }
+
+    /// Save REPL session to file (complexity: 7)
+    fn save_session(&self, filename: &str) -> Result<()> {
+        use std::io::Write;
+
+        let mut content = String::new();
+
+        // Generate all content sections
+        self.generate_session_header(&mut content)?;
+        self.add_bindings_to_content(&mut content)?;
+        self.add_history_to_content(&mut content)?;
+        self.add_usage_instructions(&mut content, filename)?;
 
         // Write to file
         let mut file = std::fs::File::create(filename)
@@ -6360,23 +6364,24 @@ impl Repl {
     /// # Returns
     ///
     /// Returns an error if file writing fails
-    fn export_session(&self, filename: &str) -> Result<()> {
+    /// Generate export header (complexity: 2)
+    fn generate_export_header(&self, content: &mut String) -> Result<()> {
         use chrono::Utc;
-        use std::io::Write;
-
-        let mut content = String::new();
-
-        // Add header comment
-        writeln!(&mut content, "// Ruchy Script - Exported from REPL Session")?;
+        use std::fmt::Write;
+        
+        writeln!(content, "// Ruchy Script - Exported from REPL Session")?;
         writeln!(
-            &mut content,
+            content,
             "// Generated: {}",
             Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
         )?;
-        writeln!(&mut content, "// Total commands: {}", self.history.len())?;
-        writeln!(&mut content)?;
+        writeln!(content, "// Total commands: {}", self.history.len())?;
+        writeln!(content)?;
+        Ok(())
+    }
 
-        // Filter and clean up commands for production
+    /// Filter and clean commands for export (complexity: 6)
+    fn filter_commands_for_export(&self) -> Vec<String> {
         let mut clean_statements = Vec::new();
         
         for command in &self.history {
@@ -6384,13 +6389,8 @@ impl Repl {
             if command.starts_with(':') ||
                command.starts_with('?') ||
                command.starts_with('%') ||
-               command.trim().is_empty() {
-                continue;
-            }
-
-            // Skip display-only operations (those that just show values)
-            if self.is_display_only_command(command) {
-                writeln!(&mut content, "    // {command} (display only - removed)")?;
+               command.trim().is_empty() ||
+               self.is_display_only_command(command) {
                 continue;
             }
 
@@ -6400,23 +6400,46 @@ impl Repl {
                 clean_statements.push(cleaned);
             }
         }
+        
+        clean_statements
+    }
 
-        // Wrap in main function if there are statements
-        if clean_statements.is_empty() {
-            writeln!(&mut content, "// No executable statements to export")?;
-            writeln!(&mut content, "fn main() {{")?;
-            writeln!(&mut content, "    println!(\"Hello, Ruchy!\");")?;
-            writeln!(&mut content, "}}")?;
+    /// Generate main function wrapper (complexity: 4)
+    fn generate_main_function(&self, content: &mut String, statements: &[String]) -> Result<()> {
+        use std::fmt::Write;
+        
+        if statements.is_empty() {
+            writeln!(content, "// No executable statements to export")?;
+            writeln!(content, "fn main() {{")?;
+            writeln!(content, "    println!(\"Hello, Ruchy!\");")?;
+            writeln!(content, "}}")?;
         } else {
-            writeln!(&mut content, "fn main() -> Result<(), Box<dyn std::error::Error>> {{")?;
+            writeln!(content, "fn main() -> Result<(), Box<dyn std::error::Error>> {{")?;
             
-            for statement in clean_statements {
-                writeln!(&mut content, "    {statement}")?;
+            for statement in statements {
+                writeln!(content, "    {statement}")?;
             }
             
-            writeln!(&mut content, "    Ok(())")?;
-            writeln!(&mut content, "}}")?;
+            writeln!(content, "    Ok(())")?;
+            writeln!(content, "}}")?;
         }
+        Ok(())
+    }
+
+    /// Export session as a clean production script (complexity: 6)
+    fn export_session(&self, filename: &str) -> Result<()> {
+        use std::io::Write;
+
+        let mut content = String::new();
+
+        // Generate header
+        self.generate_export_header(&mut content)?;
+
+        // Filter and clean commands
+        let clean_statements = self.filter_commands_for_export();
+
+        // Generate main function
+        self.generate_main_function(&mut content, &clean_statements)?;
 
         // Write to file
         let mut file = std::fs::File::create(filename)
