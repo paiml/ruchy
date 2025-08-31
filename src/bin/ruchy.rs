@@ -29,7 +29,7 @@ mod handlers;
 use handlers::{
     handle_parse_command, handle_transpile_command, handle_run_command,
     handle_eval_command, handle_file_execution, handle_stdin_input, handle_repl_command,
-    handle_compile_command, handle_check_command, handle_test_command, handle_complex_command
+    handle_compile_command, handle_check_command, handle_test_command, handle_coverage_command, handle_complex_command
 };
 
 /// Configuration for code formatting
@@ -177,6 +177,24 @@ enum Commands {
         /// Output format for test results (text, json, junit)
         #[arg(long, default_value = "text")]
         format: String,
+    },
+
+    /// Generate coverage report for Ruchy code
+    Coverage {
+        /// The file or directory to analyze  
+        path: PathBuf,
+
+        /// Minimum coverage threshold (fail if below)
+        #[arg(long)]
+        threshold: Option<f64>,
+
+        /// Output format for coverage report (text, html, json)
+        #[arg(long, default_value = "text")]
+        format: String,
+
+        /// Show verbose coverage output
+        #[arg(long)]
+        verbose: bool,
     },
 
     /// Show AST for a file (Enhanced for v0.9.12)
@@ -922,6 +940,9 @@ fn main() -> Result<()> {
                 threshold.unwrap_or(70.0),
                 &format,
             )?;
+        }
+        Some(Commands::Coverage { path, threshold, format, verbose }) => {
+            handle_coverage_command(path, threshold.unwrap_or(80.0), &format, verbose)?;
         }
         Some(command) => {
             handle_advanced_command(command)?;
