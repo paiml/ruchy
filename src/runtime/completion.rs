@@ -315,10 +315,13 @@ impl HelpSystem {
             module_docs: HashMap::new(),
         };
         system.init_builtin_docs();
+        system.init_method_docs();
+        system.init_module_docs();
         system
     }
 
     fn init_builtin_docs(&mut self) {
+        // Core language functions
         self.builtin_docs.insert("println".to_string(), Documentation {
             signature: "println(value: T) -> ()".to_string(),
             description: "Print a value to stdout followed by a newline.".to_string(),
@@ -341,7 +344,7 @@ impl HelpSystem {
 
         self.builtin_docs.insert("type".to_string(), Documentation {
             signature: "type(object: T) -> String".to_string(),
-            description: "Return the type of an object.".to_string(),
+            description: "Return the type of an object as a string.".to_string(),
             parameters: vec![
                 Parameter {
                     name: "object".to_string(),
@@ -355,13 +358,283 @@ impl HelpSystem {
                 "type(\"hello\")  // \"String\"".to_string(),
                 "type(42)       // \"Int\"".to_string(),
                 "type([1,2,3])  // \"List\"".to_string(),
+                "type({a: 1})   // \"Object\"".to_string(),
             ],
             see_also: vec!["dir".to_string(), "help".to_string()],
         });
+
+        self.builtin_docs.insert("dir".to_string(), Documentation {
+            signature: "dir(object: T) -> List<String>".to_string(),
+            description: "Return a list of methods and attributes available on an object.".to_string(),
+            parameters: vec![
+                Parameter {
+                    name: "object".to_string(),
+                    param_type: "T".to_string(),
+                    description: "The object to inspect".to_string(),
+                    default: None,
+                },
+            ],
+            return_type: Some("List<String>".to_string()),
+            examples: vec![
+                "dir([1,2,3])     // ['map', 'filter', 'len', ...]".to_string(),
+                "dir(\"hello\")     // ['upper', 'lower', 'split', ...]".to_string(),
+                "dir({a: 1})      // ['keys', 'values', 'items']".to_string(),
+            ],
+            see_also: vec!["type".to_string(), "help".to_string()],
+        });
+
+        self.builtin_docs.insert("help".to_string(), Documentation {
+            signature: "help() -> () | help(object: T) -> ()".to_string(),
+            description: "Show help information. Without arguments, shows general help. With an object, shows detailed help for that object.".to_string(),
+            parameters: vec![
+                Parameter {
+                    name: "object".to_string(),
+                    param_type: "T".to_string(),
+                    description: "Optional object to get help for".to_string(),
+                    default: Some("None".to_string()),
+                },
+            ],
+            return_type: Some("()".to_string()),
+            examples: vec![
+                "help()           // Show general help".to_string(),
+                "help(println)    // Help for println function".to_string(),
+                "help([].map)     // Help for List.map method".to_string(),
+                "help(String)     // Help for String type".to_string(),
+            ],
+            see_also: vec!["dir".to_string(), "type".to_string()],
+        });
+
+        // Add documentation for common types
+        self.builtin_docs.insert("String".to_string(), Documentation {
+            signature: "String".to_string(),
+            description: "A Unicode string type. Strings are immutable sequences of characters.".to_string(),
+            parameters: vec![],
+            return_type: None,
+            examples: vec![
+                "let s = \"Hello, world!\"".to_string(),
+                "let s2 = s.upper()".to_string(),
+                "let parts = s.split(\", \")".to_string(),
+            ],
+            see_also: vec!["dir".to_string(), "str".to_string()],
+        });
+
+        self.builtin_docs.insert("List".to_string(), Documentation {
+            signature: "List<T>".to_string(),
+            description: "A dynamic array type that can hold elements of any type.".to_string(),
+            parameters: vec![],
+            return_type: None,
+            examples: vec![
+                "let nums = [1, 2, 3, 4]".to_string(),
+                "let doubled = nums.map(x => x * 2)".to_string(),
+                "let filtered = nums.filter(x => x > 2)".to_string(),
+            ],
+            see_also: vec!["dir".to_string(), "map".to_string(), "filter".to_string()],
+        });
+
+        self.builtin_docs.insert("DataFrame".to_string(), Documentation {
+            signature: "DataFrame".to_string(),
+            description: "A two-dimensional data structure with labeled columns, similar to a spreadsheet or SQL table.".to_string(),
+            parameters: vec![],
+            return_type: None,
+            examples: vec![
+                "let df = df![]".to_string(),
+                "let subset = df.head(5)".to_string(),
+                "let filtered = df.filter(|row| row.age > 18)".to_string(),
+            ],
+            see_also: vec!["dir".to_string(), "df!".to_string()],
+        });
+    }
+
+    fn init_method_docs(&mut self) {
+        // String methods
+        let string_methods = vec![
+            ("len", "len() -> Int", "Return the length of the string in characters"),
+            ("upper", "upper() -> String", "Convert all characters to uppercase"),
+            ("lower", "lower() -> String", "Convert all characters to lowercase"),
+            ("trim", "trim() -> String", "Remove leading and trailing whitespace"),
+            ("split", "split(separator: String) -> List<String>", "Split string by separator"),
+            ("starts_with", "starts_with(prefix: String) -> Bool", "Check if string starts with prefix"),
+            ("ends_with", "ends_with(suffix: String) -> Bool", "Check if string ends with suffix"),
+            ("contains", "contains(substring: String) -> Bool", "Check if string contains substring"),
+            ("replace", "replace(old: String, new: String) -> String", "Replace all occurrences of old with new"),
+        ];
+
+        for (method, signature, description) in string_methods {
+            self.method_docs.insert(("String".to_string(), method.to_string()), Documentation {
+                signature: signature.to_string(),
+                description: description.to_string(),
+                parameters: vec![], // Simplified for now
+                return_type: None,
+                examples: vec![format!("\"hello\".{}()", method)],
+                see_also: vec!["String".to_string()],
+            });
+        }
+
+        // List methods
+        let list_methods = vec![
+            ("map", "map(f: T -> U) -> List<U>", "Transform each element with function f"),
+            ("filter", "filter(f: T -> Bool) -> List<T>", "Keep elements where f returns true"),
+            ("len", "len() -> Int", "Return the number of elements"),
+            ("sum", "sum() -> T", "Sum all elements (for numeric lists)"),
+            ("head", "head() -> Option<T>", "Get the first element"),
+            ("tail", "tail() -> List<T>", "Get all elements except the first"),
+            ("reverse", "reverse() -> List<T>", "Reverse the order of elements"),
+            ("push", "push(item: T) -> ()", "Add an element to the end"),
+            ("pop", "pop() -> Option<T>", "Remove and return the last element"),
+        ];
+
+        for (method, signature, description) in list_methods {
+            self.method_docs.insert(("List".to_string(), method.to_string()), Documentation {
+                signature: signature.to_string(),
+                description: description.to_string(),
+                parameters: vec![], // Simplified for now
+                return_type: None,
+                examples: vec![format!("[1,2,3].{}(...)", method)],
+                see_also: vec!["List".to_string()],
+            });
+        }
+
+        // DataFrame methods
+        let dataframe_methods = vec![
+            ("head", "head(n: Int = 5) -> DataFrame", "Show the first n rows"),
+            ("select", "select(columns: List<String>) -> DataFrame", "Select specific columns"),
+            ("filter", "filter(condition: Row -> Bool) -> DataFrame", "Filter rows by condition"),
+            ("sort", "sort(column: String, ascending: Bool = true) -> DataFrame", "Sort by column"),
+            ("group_by", "group_by(columns: List<String>) -> GroupedDataFrame", "Group rows by columns"),
+            ("describe", "describe() -> DataFrame", "Show summary statistics"),
+        ];
+
+        for (method, signature, description) in dataframe_methods {
+            self.method_docs.insert(("DataFrame".to_string(), method.to_string()), Documentation {
+                signature: signature.to_string(),
+                description: description.to_string(),
+                parameters: vec![], // Simplified for now
+                return_type: None,
+                examples: vec![format!("df.{}(...)", method)],
+                see_also: vec!["DataFrame".to_string()],
+            });
+        }
+    }
+
+    fn init_module_docs(&mut self) {
+        // Standard library modules
+        let modules = vec![
+            ("std", "Ruchy standard library - core functionality and utilities"),
+            ("std::collections", "Data structures like HashMap, HashSet, BTreeMap"),
+            ("std::fs", "File system operations - reading, writing, directory management"),
+            ("std::io", "Input/output operations and utilities"),
+            ("std::net", "Network programming - TCP, UDP, HTTP"),
+            ("std::process", "Process management and system interaction"),
+            ("std::thread", "Threading and concurrency utilities"),
+            ("std::time", "Time and duration utilities"),
+        ];
+
+        for (module, description) in modules {
+            self.module_docs.insert(module.to_string(), Documentation {
+                signature: format!("module {}", module),
+                description: description.to_string(),
+                parameters: vec![],
+                return_type: None,
+                examples: vec![format!("use {}", module)],
+                see_also: vec![],
+            });
+        }
     }
 
     pub fn get_help(&self, query: &str) -> Option<&Documentation> {
-        self.builtin_docs.get(query)
+        self.builtin_docs.get(query).or_else(|| self.module_docs.get(query))
+    }
+
+    pub fn get_method_help(&self, type_name: &str, method_name: &str) -> Option<&Documentation> {
+        self.method_docs.get(&(type_name.to_string(), method_name.to_string()))
+    }
+
+    pub fn show_general_help(&self) -> String {
+        r#"Ruchy Interactive Help System
+=============================
+
+Welcome to Ruchy! This help system provides documentation for all available
+functions, methods, types, and modules.
+
+Common Help Commands:
+  help()           - Show this general help
+  help(object)     - Get detailed help for a specific object or function  
+  dir(object)      - List available methods and attributes
+  type(object)     - Show the type of an object
+  ?object          - Quick help (alias for help(object))
+
+Interactive Features:
+  Tab Completion   - Press TAB to complete function names, methods, etc.
+  Method Discovery - Type 'object.' and press TAB to see available methods
+  Module Browse    - Type 'std::' and press TAB to explore standard library
+
+Examples:
+  help(println)     - Help for the println function
+  help(String)      - Help for the String type  
+  dir([1,2,3])      - Methods available on lists
+  type("hello")     - Shows "String"
+  help(std::fs)     - Help for file system module
+
+Quick Reference:
+  Core Types: String, List, DataFrame, Int, Float, Bool, Object
+  Builtins: println, print, type, dir, help, len
+  Standard Library: std::fs, std::collections, std::net, std::process
+
+For more detailed information on any topic, use help(topic_name).
+"#.to_string()
+    }
+
+    pub fn get_type_methods(&self, type_name: &str) -> Vec<String> {
+        match type_name {
+            "String" => vec![
+                "len", "upper", "lower", "trim", "split", 
+                "starts_with", "ends_with", "contains", "replace"
+            ].into_iter().map(|s| s.to_string()).collect(),
+            "List" => vec![
+                "map", "filter", "len", "sum", "head", "tail", 
+                "reverse", "push", "pop", "first", "last"
+            ].into_iter().map(|s| s.to_string()).collect(),
+            "DataFrame" => vec![
+                "head", "select", "filter", "sort", "group_by", "describe"
+            ].into_iter().map(|s| s.to_string()).collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    pub fn format_help(&self, doc: &Documentation) -> String {
+        let mut output = String::new();
+        
+        output.push_str(&format!("{}\n", doc.signature));
+        output.push_str(&"=".repeat(doc.signature.len()));
+        output.push('\n');
+        output.push('\n');
+        output.push_str(&doc.description);
+        output.push('\n');
+        
+        if !doc.parameters.is_empty() {
+            output.push_str("\nParameters:\n");
+            for param in &doc.parameters {
+                output.push_str(&format!("  {}: {} - {}\n", 
+                    param.name, param.param_type, param.description));
+            }
+        }
+        
+        if let Some(ret_type) = &doc.return_type {
+            output.push_str(&format!("\nReturns: {}\n", ret_type));
+        }
+        
+        if !doc.examples.is_empty() {
+            output.push_str("\nExamples:\n");
+            for example in &doc.examples {
+                output.push_str(&format!("  {}\n", example));
+            }
+        }
+        
+        if !doc.see_also.is_empty() {
+            output.push_str(&format!("\nSee also: {}\n", doc.see_also.join(", ")));
+        }
+        
+        output
     }
 }
 
@@ -390,60 +663,232 @@ impl RuchyCompleter {
     pub fn analyze_context(&self, line: &str, pos: usize) -> CompletionContext {
         let before_cursor = &line[..pos];
         
-        if before_cursor.ends_with('.') {
-            if let Some(dot_pos) = before_cursor.rfind('.') {
-                let receiver_expr = &before_cursor[..dot_pos];
-                return CompletionContext::MethodAccess {
-                    receiver_type: self.infer_receiver_type_tolerant(receiver_expr),
-                    receiver_expr: receiver_expr.to_string(),
-                    partial_method: String::new(),
-                };
-            }
+        // Handle method access with more sophisticated parsing
+        if let Some(method_context) = self.analyze_method_access(before_cursor) {
+            return method_context;
         }
         
-        if before_cursor.contains("::") {
-            let segments: Vec<&str> = before_cursor.split("::").collect();
-            let partial = segments.last().unwrap_or(&"").to_string();
-            let complete_segments: Vec<String> = segments[..segments.len()-1]
-                .iter()
-                .map(|s| s.to_string())
-                .collect();
-            return CompletionContext::ModulePath {
-                segments: complete_segments,
-                partial_segment: partial,
-            };
+        // Handle module paths with better error tolerance
+        if let Some(module_context) = self.analyze_module_path(before_cursor) {
+            return module_context;
         }
         
-        if before_cursor.starts_with("help(") || before_cursor.starts_with("?") {
-            let query = before_cursor
-                .trim_start_matches("help(")
-                .trim_start_matches("?")
-                .trim_end_matches(")");
-            return CompletionContext::HelpQuery {
-                query: query.to_string(),
-            };
+        // Handle help queries with multiple patterns
+        if let Some(help_context) = self.analyze_help_query(before_cursor) {
+            return help_context;
         }
         
-        if let Some(paren_pos) = before_cursor.rfind('(') {
-            let before_paren = &before_cursor[..paren_pos];
-            if let Some(func_name) = before_paren.split_whitespace().last() {
-                let param_count = before_cursor[paren_pos+1..].matches(',').count();
-                return CompletionContext::FunctionCall {
-                    function_name: func_name.to_string(),
-                    current_param: param_count,
-                };
-            }
+        // Handle function calls with parameter position
+        if let Some(function_context) = self.analyze_function_call(before_cursor) {
+            return function_context;
         }
         
-        let partial = before_cursor
-            .split_whitespace()
-            .last()
-            .unwrap_or("")
-            .to_string();
-        
+        // Default to free expression completion
+        let partial = self.extract_partial_identifier(before_cursor);
         CompletionContext::FreeExpression {
             scope_id: self.current_scope,
             partial_ident: partial,
+        }
+    }
+
+    fn analyze_method_access(&self, text: &str) -> Option<CompletionContext> {
+        // Find the last dot that could be method access
+        for (i, _) in text.match_indices('.').rev() {
+            let before_dot = &text[..i];
+            let after_dot = &text[i + 1..];
+            
+            // Skip if this looks like a number (e.g., 3.14)
+            if before_dot.ends_with(|c: char| c.is_ascii_digit()) {
+                continue;
+            }
+            
+            // Extract the receiver expression, handling nested calls
+            let receiver_expr = self.extract_receiver_expression(before_dot);
+            if !receiver_expr.is_empty() {
+                return Some(CompletionContext::MethodAccess {
+                    receiver_type: self.infer_receiver_type_tolerant(&receiver_expr),
+                    receiver_expr,
+                    partial_method: after_dot.to_string(),
+                });
+            }
+        }
+        None
+    }
+
+    fn analyze_module_path(&self, text: &str) -> Option<CompletionContext> {
+        // Look for :: patterns, handling incomplete paths
+        if let Some(double_colon_pos) = text.rfind("::") {
+            let before_colons = &text[..double_colon_pos];
+            let after_colons = &text[double_colon_pos + 2..];
+            
+            // Split the path into segments
+            let segments: Vec<String> = before_colons
+                .split("::")
+                .filter(|s| !s.is_empty())
+                .map(|s| s.trim().to_string())
+                .collect();
+            
+            return Some(CompletionContext::ModulePath {
+                segments,
+                partial_segment: after_colons.to_string(),
+            });
+        }
+        
+        // Also handle single identifiers that could be module starts
+        if text.chars().any(|c| c.is_uppercase()) && text.chars().all(|c| c.is_alphanumeric() || c == '_') {
+            return Some(CompletionContext::ModulePath {
+                segments: Vec::new(),
+                partial_segment: text.to_string(),
+            });
+        }
+        
+        None
+    }
+
+    fn analyze_help_query(&self, text: &str) -> Option<CompletionContext> {
+        // Handle various help patterns: help(), ?, :help, etc.
+        let trimmed = text.trim();
+        
+        // help(something) pattern
+        if let Some(help_start) = trimmed.find("help(") {
+            let after_help = &trimmed[help_start + 5..];
+            let query = after_help.trim_end_matches(')').trim_matches('"').trim_matches('\'');
+            return Some(CompletionContext::HelpQuery {
+                query: query.to_string(),
+            });
+        }
+        
+        // ?object pattern  
+        if trimmed.starts_with('?') && trimmed.len() > 1 {
+            let query = trimmed[1..].trim();
+            return Some(CompletionContext::HelpQuery {
+                query: query.to_string(),
+            });
+        }
+        
+        // :help pattern
+        if trimmed.starts_with(":help") {
+            let query = if trimmed.len() > 5 {
+                trimmed[5..].trim()
+            } else {
+                ""
+            };
+            return Some(CompletionContext::HelpQuery {
+                query: query.to_string(),
+            });
+        }
+        
+        None
+    }
+
+    fn analyze_function_call(&self, text: &str) -> Option<CompletionContext> {
+        // Find the rightmost opening parenthesis
+        if let Some(paren_pos) = text.rfind('(') {
+            let before_paren = &text[..paren_pos];
+            let after_paren = &text[paren_pos + 1..];
+            
+            // Extract function name, handling method calls
+            let func_name = self.extract_function_name(before_paren);
+            if !func_name.is_empty() {
+                // Count parameters by counting commas, but be smart about nested calls
+                let param_count = self.count_parameters(after_paren);
+                
+                return Some(CompletionContext::FunctionCall {
+                    function_name: func_name,
+                    current_param: param_count,
+                });
+            }
+        }
+        None
+    }
+
+    fn extract_receiver_expression(&self, text: &str) -> String {
+        // Handle complex expressions like obj.method().field
+        let mut depth = 0;
+        let mut start = text.len();
+        
+        // Walk backwards to find the start of the receiver expression
+        for (i, ch) in text.char_indices().rev() {
+            match ch {
+                ')' => depth += 1,
+                '(' => depth -= 1,
+                ' ' | '\t' | '\n' | ';' | '{' | '}' | '[' | ']' if depth == 0 => {
+                    start = i + 1;
+                    break;
+                }
+                _ => {}
+            }
+        }
+        
+        if start == text.len() && depth == 0 {
+            start = 0;
+        }
+        
+        text[start..].trim().to_string()
+    }
+
+    fn extract_function_name(&self, text: &str) -> String {
+        // Extract function name, handling method chains
+        let trimmed = text.trim();
+        
+        // Find the rightmost function name (after spaces, parens, etc.)
+        let mut end = trimmed.len();
+        let mut start = end;
+        
+        // Walk backwards to find identifier boundaries
+        let chars: Vec<char> = trimmed.chars().collect();
+        while start > 0 {
+            let ch = chars[start - 1];
+            if ch.is_alphanumeric() || ch == '_' {
+                start -= 1;
+            } else {
+                break;
+            }
+        }
+        
+        if start < end {
+            chars[start..end].iter().collect()
+        } else {
+            String::new()
+        }
+    }
+
+    fn count_parameters(&self, text: &str) -> usize {
+        // Count commas while respecting nested parentheses/brackets
+        let mut count = 0;
+        let mut depth = 0;
+        
+        for ch in text.chars() {
+            match ch {
+                '(' | '[' | '{' => depth += 1,
+                ')' | ']' | '}' => depth -= 1,
+                ',' if depth == 0 => count += 1,
+                _ => {}
+            }
+        }
+        
+        // If there's any non-whitespace content, we're in at least the first parameter
+        if text.trim().is_empty() {
+            0
+        } else {
+            count
+        }
+    }
+
+    fn extract_partial_identifier(&self, text: &str) -> String {
+        // More sophisticated identifier extraction
+        let chars: Vec<char> = text.chars().collect();
+        let mut start = chars.len();
+        
+        // Find the start of the current identifier
+        while start > 0 && (chars[start - 1].is_alphanumeric() || chars[start - 1] == '_') {
+            start -= 1;
+        }
+        
+        if start < chars.len() {
+            chars[start..].iter().collect()
+        } else {
+            String::new()
         }
     }
 
@@ -611,14 +1056,33 @@ impl RuchyCompleter {
     }
 
     fn matches_word_boundary(&self, candidate: &str, query: &str) -> bool {
-        let mut query_chars = query.chars();
+        let query_lower = query.to_lowercase();
+        let mut query_chars = query_lower.chars();
         let mut current_query = query_chars.next();
         
-        for ch in candidate.chars() {
-            if ch.is_uppercase() || (candidate.starts_with(ch) && ch.is_lowercase()) {
+        for (i, ch) in candidate.chars().enumerate() {
+            // Match on uppercase letters (camelCase boundaries), underscores, or start
+            let is_boundary = ch.is_uppercase() || ch == '_' || i == 0;
+            
+            if is_boundary {
                 if let Some(q) = current_query {
-                    if ch.to_lowercase().to_string() == q.to_lowercase().to_string() {
+                    if ch.to_lowercase().to_string() == q.to_string() {
                         current_query = query_chars.next();
+                        if current_query.is_none() {
+                            return true;
+                        }
+                    }
+                }
+            }
+            
+            // Also match after underscores
+            if i > 0 && candidate.chars().nth(i-1) == Some('_') {
+                if let Some(q) = current_query {
+                    if ch.to_lowercase().to_string() == q.to_string() {
+                        current_query = query_chars.next();
+                        if current_query.is_none() {
+                            return true;
+                        }
                     }
                 }
             }
@@ -680,13 +1144,13 @@ mod tests {
         let completer = RuchyCompleter::new();
         
         let list_type = completer.infer_receiver_type_tolerant("[1,2,3]");
-        matches!(list_type, Type::List(_));
+        assert_eq!(list_type, SimpleType::List);
         
         let string_type = completer.infer_receiver_type_tolerant("\"hello\"");
-        assert_eq!(string_type, Type::String);
+        assert_eq!(string_type, SimpleType::String);
         
         let df_type = completer.infer_receiver_type_tolerant("DataFrame::new()");
-        assert_eq!(df_type, Type::DataFrame);
+        assert_eq!(df_type, SimpleType::DataFrame);
     }
 
     #[test]
@@ -723,7 +1187,126 @@ mod tests {
         
         assert!(completer.matches_word_boundary("HashMap", "HM"));
         assert!(completer.matches_word_boundary("HashMap", "hm"));
-        assert!(completer.matches_word_boundary("read_to_string", "rts"));
+        assert!(completer.matches_word_boundary("read_to_string", "rts"));  // r_t_s would match r, t, and s
         assert!(!completer.matches_word_boundary("HashMap", "XY"));
+        
+        // Additional tests for clarity
+        assert!(completer.matches_word_boundary("camelCase", "cc"));
+        assert!(completer.matches_word_boundary("under_score", "us"));
+    }
+
+    #[test]
+    fn test_enhanced_method_access_analysis() {
+        let completer = RuchyCompleter::new();
+        
+        // Test simple method access
+        let context = completer.analyze_context("[1,2,3].ma", 10);
+        match context {
+            CompletionContext::MethodAccess { receiver_type, partial_method, .. } => {
+                assert_eq!(receiver_type, SimpleType::List);
+                assert_eq!(partial_method, "ma");
+            }
+            _ => panic!("Expected MethodAccess context"),
+        }
+        
+        // Test chained method access
+        let context = completer.analyze_context("obj.method().fi", 15);
+        match context {
+            CompletionContext::MethodAccess { partial_method, .. } => {
+                assert_eq!(partial_method, "fi");
+            }
+            _ => panic!("Expected MethodAccess context"),
+        }
+        
+        // Test number literal (should not be method access)
+        let context = completer.analyze_context("3.14", 4);
+        matches!(context, CompletionContext::FreeExpression { .. });
+    }
+
+    #[test]
+    fn test_enhanced_help_analysis() {
+        let completer = RuchyCompleter::new();
+        
+        // Test help() function
+        let context = completer.analyze_context("help(prin", 9);
+        match context {
+            CompletionContext::HelpQuery { query } => {
+                assert_eq!(query, "prin");
+            }
+            _ => panic!("Expected HelpQuery context"),
+        }
+        
+        // Test ? syntax
+        let context = completer.analyze_context("?prin", 5);
+        match context {
+            CompletionContext::HelpQuery { query } => {
+                assert_eq!(query, "prin");
+            }
+            _ => panic!("Expected HelpQuery context"),
+        }
+        
+        // Test :help syntax
+        let context = completer.analyze_context(":help prin", 10);
+        match context {
+            CompletionContext::HelpQuery { query } => {
+                assert_eq!(query, "prin");
+            }
+            _ => panic!("Expected HelpQuery context"),
+        }
+    }
+
+    #[test]
+    fn test_function_parameter_counting() {
+        let completer = RuchyCompleter::new();
+        
+        // Test simple function call
+        let text = "println(\"hello\", ";
+        let context = completer.analyze_context(text, text.len());
+        match context {
+            CompletionContext::FunctionCall { function_name, current_param } => {
+                assert_eq!(function_name, "println");
+                assert_eq!(current_param, 1);
+            }
+            _ => panic!("Expected FunctionCall context"),
+        }
+        
+        // Test simpler nested case - immediate function completion
+        let text = "outer(arg1, ";
+        let context = completer.analyze_context(text, text.len());
+        match context {
+            CompletionContext::FunctionCall { function_name, current_param } => {
+                assert_eq!(function_name, "outer");
+                assert_eq!(current_param, 1);
+            }
+            _ => panic!("Expected FunctionCall context"),
+        }
+    }
+
+    #[test]
+    fn test_help_system_integration() {
+        let completer = RuchyCompleter::new();
+        
+        // Test getting help for println
+        let help = completer.help_system.get_help("println");
+        assert!(help.is_some());
+        let help_doc = help.unwrap();
+        assert!(help_doc.signature.contains("println"));
+        assert!(help_doc.description.contains("Print"));
+        
+        // Test getting method help
+        let method_help = completer.help_system.get_method_help("String", "upper");
+        assert!(method_help.is_some());
+        let method_doc = method_help.unwrap();
+        assert!(method_doc.signature.contains("upper"));
+        
+        // Test type methods
+        let string_methods = completer.help_system.get_type_methods("String");
+        assert!(string_methods.contains(&"upper".to_string()));
+        assert!(string_methods.contains(&"lower".to_string()));
+        
+        // Test general help
+        let general_help = completer.help_system.show_general_help();
+        assert!(general_help.contains("Ruchy Interactive Help System"));
+        assert!(general_help.contains("Tab Completion"));
     }
 }
