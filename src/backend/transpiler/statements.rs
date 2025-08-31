@@ -918,9 +918,12 @@ impl Transpiler {
     pub fn transpile_import(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
         let import_tokens = Self::transpile_import_inline(path, items);
         
-        // For std::fs imports, we need the functions to be available at module level
+        // For std module imports, we need the functions to be available at module level
         // Don't wrap in a block if this generates functions
-        if path.starts_with("std::fs") {
+        if path.starts_with("std::fs") || 
+           path.starts_with("std::process") ||
+           path.starts_with("std::system") ||
+           path.starts_with("std::signal") {
             import_tokens
         } else {
             // For other imports, wrap in block that returns unit value
@@ -1089,6 +1092,80 @@ impl Transpiler {
         tokens
     }
 
+    /// Handle `std::process` imports with process management functions
+    fn transpile_std_process_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // Generate process functions
+        quote! {
+            mod process {
+                pub fn current_pid() -> i32 {
+                    std::process::id() as i32
+                }
+                
+                pub fn exit(code: i32) {
+                    std::process::exit(code);
+                }
+                
+                pub fn spawn(command: &str) -> Result<i32, String> {
+                    match std::process::Command::new(command).spawn() {
+                        Ok(child) => Ok(child.id() as i32),
+                        Err(e) => Err(e.to_string()),
+                    }
+                }
+            }
+        }
+    }
+    
+    /// Handle `std::system` imports with system information functions
+    fn transpile_std_system_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // Generate system functions
+        quote! {
+            mod system {
+                pub fn get_env(key: &str) -> Option<String> {
+                    std::env::var(key).ok()
+                }
+                
+                pub fn set_env(key: &str, value: &str) {
+                    std::env::set_var(key, value);
+                }
+                
+                pub fn os_name() -> String {
+                    std::env::consts::OS.to_string()
+                }
+                
+                pub fn arch() -> String {
+                    std::env::consts::ARCH.to_string()
+                }
+            }
+        }
+    }
+    
+    /// Handle `std::signal` imports with signal handling functions
+    fn transpile_std_signal_import(_path: &str, _items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // For now, just provide stubs as signal handling is complex and platform-specific
+        quote! {
+            // Import signal constants at top level
+            const SIGINT: i32 = 2;
+            const SIGTERM: i32 = 15;
+            const SIGKILL: i32 = 9;
+            
+            // Also import exit function for signal handlers
+            fn exit(code: i32) {
+                std::process::exit(code);
+            }
+            
+            mod signal {
+                pub const SIGINT: i32 = 2;
+                pub const SIGTERM: i32 = 15;
+                pub const SIGKILL: i32 = 9;
+                
+                pub fn on(_signal: i32, _handler: impl Fn()) {
+                    // Signal handling would require unsafe code and platform-specific logic
+                    // For now, this is a stub
+                }
+            }
+        }
+    }
+    
     /// Handle `std::system` imports with system information functions
     /// Core inline import transpilation logic
     fn transpile_import_inline(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
@@ -1100,14 +1177,19 @@ impl Transpiler {
             return Self::transpile_std_fs_import_with_path(path, items);
         }
 
-        // TODO: Implement std::system, std::process, and std::signal modules
-        // For now, generate empty imports to avoid compilation errors
-        if path == "std::system" || path.starts_with("std::system::") ||
-           path == "std::process" || path.starts_with("std::process::") ||
-           path == "std::signal" || path.starts_with("std::signal::") {
-            return quote! {
-                // Module not yet implemented
-            };
+        // Handle std::process imports
+        if path == "std::process" || path.starts_with("std::process::") {
+            return Self::transpile_std_process_import(path, items);
+        }
+        
+        // Handle std::system imports
+        if path == "std::system" || path.starts_with("std::system::") {
+            return Self::transpile_std_system_import(path, items);
+        }
+        
+        // Handle std::signal imports
+        if path == "std::signal" || path.starts_with("std::signal::") {
+            return Self::transpile_std_signal_import(path, items);
         }
 
         // Build the path as a TokenStream
