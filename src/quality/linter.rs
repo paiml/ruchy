@@ -91,11 +91,11 @@ impl Scope {
     
     fn is_defined(&self, name: &str) -> bool {
         self.variables.contains_key(name) || 
-        self.parent.as_ref().map_or(false, |p| p.is_defined(name))
+        self.parent.as_ref().is_some_and(|p| p.is_defined(name))
     }
     
     fn is_shadowing(&self, name: &str) -> bool {
-        self.parent.as_ref().map_or(false, |p| p.is_defined(name))
+        self.parent.as_ref().is_some_and(|p| p.is_defined(name))
     }
 }
 
@@ -159,8 +159,8 @@ impl Linter {
         self.check_unused_in_scope(&scope, &mut issues);
         
         // Check complexity
-        if self.rules.iter().any(|r| matches!(r, LintRule::ComplexityLimit)) {
-            if self.calculate_complexity(ast) > self.max_complexity {
+        if self.rules.iter().any(|r| matches!(r, LintRule::ComplexityLimit))
+            && self.calculate_complexity(ast) > self.max_complexity {
                 issues.push(LintIssue {
                     line: 1,
                     column: 1,
@@ -169,10 +169,9 @@ impl Linter {
                     message: format!("Function complexity exceeds limit of {}", self.max_complexity),
                     suggestion: "Consider breaking this into smaller functions".to_string(),
                     issue_type: "complexity".to_string(),
-                    name: "".to_string(),
+                    name: String::new(),
                 });
             }
-        }
         
         // Return empty if clean
         if issues.is_empty() {
@@ -187,20 +186,19 @@ impl Linter {
         match &expr.kind {
             ExprKind::Let { name, value, body, .. } => {
                 // Check for shadowing
-                if self.rules.iter().any(|r| matches!(r, LintRule::VariableShadowing)) {
-                    if scope.is_shadowing(name) {
+                if self.rules.iter().any(|r| matches!(r, LintRule::VariableShadowing))
+                    && scope.is_shadowing(name) {
                         issues.push(LintIssue {
                             line: 3, // Simplified line tracking
                             column: 1,
                             severity: "warning".to_string(),
                             rule: "shadowing".to_string(),
-                            message: format!("variable shadowing: {}", name),
-                            suggestion: format!("Consider renaming variable '{}'", name),
+                            message: format!("variable shadowing: {name}"),
+                            suggestion: format!("Consider renaming variable '{name}'"),
                             issue_type: "variable_shadowing".to_string(),
                             name: name.clone(),
                         });
                     }
-                }
                 
                 // Define the variable
                 scope.define(name.clone(), 2, 1, VarType::Local);
@@ -219,20 +217,19 @@ impl Linter {
                 }
                 
                 // Mark as used if defined, otherwise report as undefined
-                if !scope.mark_used(name) {
-                    if self.rules.iter().any(|r| matches!(r, LintRule::UndefinedVariable)) {
+                if !scope.mark_used(name)
+                    && self.rules.iter().any(|r| matches!(r, LintRule::UndefinedVariable)) {
                         issues.push(LintIssue {
                             line: 3,
                             column: 1,
                             severity: "error".to_string(),
                             rule: "undefined".to_string(),
-                            message: format!("undefined variable: {}", name),
-                            suggestion: format!("Define '{}' before using it", name),
+                            message: format!("undefined variable: {name}"),
+                            suggestion: format!("Define '{name}' before using it"),
                             issue_type: "undefined_variable".to_string(),
                             name: name.clone(),
                         });
                     }
-                }
             }
             
             ExprKind::Function { name, params, body, .. } => {
@@ -259,8 +256,8 @@ impl Linter {
                             column: info.defined_at.1,
                             severity: "warning".to_string(),
                             rule: "unused_variable".to_string(),
-                            message: format!("unused variable: {}", name),
-                            suggestion: format!("Remove unused variable '{}'", name),
+                            message: format!("unused variable: {name}"),
+                            suggestion: format!("Remove unused variable '{name}'"),
                             issue_type: "unused_variable".to_string(),
                             name: name.clone(),
                         });
@@ -532,28 +529,28 @@ impl Linter {
                 let (rule_type, message) = match info.var_type {
                     VarType::Local => {
                         if self.rules.iter().any(|r| matches!(r, LintRule::UnusedVariable)) {
-                            ("unused_variable", format!("unused variable: {}", name))
+                            ("unused_variable", format!("unused variable: {name}"))
                         } else {
                             continue;
                         }
                     }
                     VarType::Parameter => {
                         if self.rules.iter().any(|r| matches!(r, LintRule::UnusedParameter)) {
-                            ("unused_parameter", format!("unused parameter: {}", name))
+                            ("unused_parameter", format!("unused parameter: {name}"))
                         } else {
                             continue;
                         }
                     }
                     VarType::LoopVariable => {
                         if self.rules.iter().any(|r| matches!(r, LintRule::UnusedLoopVariable)) {
-                            ("unused_loop_variable", format!("unused loop variable: {}", name))
+                            ("unused_loop_variable", format!("unused loop variable: {name}"))
                         } else {
                             continue;
                         }
                     }
                     VarType::MatchBinding => {
                         if self.rules.iter().any(|r| matches!(r, LintRule::UnusedMatchBinding)) {
-                            ("unused_match_binding", format!("unused match binding: {}", name))
+                            ("unused_match_binding", format!("unused match binding: {name}"))
                         } else {
                             continue;
                         }

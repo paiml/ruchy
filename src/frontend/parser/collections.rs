@@ -232,18 +232,168 @@ fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Resul
             fields.push(ObjectField::Spread { expr });
         } else {
             // Parse key-value pair
-            let key = match state.tokens.peek() {
-                Some((Token::Identifier(name), _)) => {
-                    let key = name.clone();
-                    state.tokens.advance();
-                    key
+            // Allow reserved words as keys in object literals
+            let key = if let Some((token, _)) = state.tokens.peek() {
+                match token {
+                    Token::Identifier(name) => {
+                        let key = name.clone();
+                        state.tokens.advance();
+                        key
+                    }
+                    Token::String(s) | Token::RawString(s) => {
+                        let key = s.clone();
+                        state.tokens.advance();
+                        key
+                    }
+                    // Allow reserved words as object keys
+                    Token::Command => {
+                        state.tokens.advance();
+                        "command".to_string()
+                    }
+                    Token::Type => {
+                        state.tokens.advance();
+                        "type".to_string()
+                    }
+                    Token::Module => {
+                        state.tokens.advance();
+                        "module".to_string()
+                    }
+                    Token::Import => {
+                        state.tokens.advance();
+                        "import".to_string()
+                    }
+                    Token::Export => {
+                        state.tokens.advance();
+                        "export".to_string()
+                    }
+                    Token::Fun => {
+                        state.tokens.advance();
+                        "fun".to_string()
+                    }
+                    Token::Fn => {
+                        state.tokens.advance();
+                        "fn".to_string()
+                    }
+                    Token::Return => {
+                        state.tokens.advance();
+                        "return".to_string()
+                    }
+                    Token::If => {
+                        state.tokens.advance();
+                        "if".to_string()
+                    }
+                    Token::Else => {
+                        state.tokens.advance();
+                        "else".to_string()
+                    }
+                    Token::For => {
+                        state.tokens.advance();
+                        "for".to_string()
+                    }
+                    Token::While => {
+                        state.tokens.advance();
+                        "while".to_string()
+                    }
+                    Token::Loop => {
+                        state.tokens.advance();
+                        "loop".to_string()
+                    }
+                    Token::Match => {
+                        state.tokens.advance();
+                        "match".to_string()
+                    }
+                    Token::Let => {
+                        state.tokens.advance();
+                        "let".to_string()
+                    }
+                    Token::Var => {
+                        state.tokens.advance();
+                        "var".to_string()
+                    }
+                    Token::Const => {
+                        state.tokens.advance();
+                        "const".to_string()
+                    }
+                    Token::Static => {
+                        state.tokens.advance();
+                        "static".to_string()
+                    }
+                    Token::Pub => {
+                        state.tokens.advance();
+                        "pub".to_string()
+                    }
+                    Token::Mut => {
+                        state.tokens.advance();
+                        "mut".to_string()
+                    }
+                    Token::Struct => {
+                        state.tokens.advance();
+                        "struct".to_string()
+                    }
+                    Token::Enum => {
+                        state.tokens.advance();
+                        "enum".to_string()
+                    }
+                    Token::Impl => {
+                        state.tokens.advance();
+                        "impl".to_string()
+                    }
+                    Token::Trait => {
+                        state.tokens.advance();
+                        "trait".to_string()
+                    }
+                    Token::Use => {
+                        state.tokens.advance();
+                        "use".to_string()
+                    }
+                    Token::As => {
+                        state.tokens.advance();
+                        "as".to_string()
+                    }
+                    Token::In => {
+                        state.tokens.advance();
+                        "in".to_string()
+                    }
+                    Token::Where => {
+                        state.tokens.advance();
+                        "where".to_string()
+                    }
+                    Token::Async => {
+                        state.tokens.advance();
+                        "async".to_string()
+                    }
+                    Token::Await => {
+                        state.tokens.advance();
+                        "await".to_string()
+                    }
+                    Token::Try => {
+                        state.tokens.advance();
+                        "try".to_string()
+                    }
+                    Token::Catch => {
+                        state.tokens.advance();
+                        "catch".to_string()
+                    }
+                    Token::Throw => {
+                        state.tokens.advance();
+                        "throw".to_string()
+                    }
+                    Token::Break => {
+                        state.tokens.advance();
+                        "break".to_string()
+                    }
+                    Token::Continue => {
+                        state.tokens.advance();
+                        "continue".to_string()
+                    }
+                    Token::State => {
+                        state.tokens.advance();
+                        "state".to_string()
+                    }
+                    _ => bail!("Expected identifier or string key in object literal"),
                 }
-                Some((Token::String(s) | Token::RawString(s), _)) => {
-                    let key = s.clone();
-                    state.tokens.advance();
-                    key
-                }
-                _ => bail!("Expected identifier or string key in object literal"),
+            } else {
+                bail!("Expected key in object literal")
             };
 
             // Accept either : or => for object key-value pairs (book compatibility)

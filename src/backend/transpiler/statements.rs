@@ -370,8 +370,7 @@ impl Transpiler {
         
         // Check for #[test] attribute and override return type if found
         let has_test_attribute = attributes.iter().any(|attr| attr.name == "test");
-        if has_test_attribute {
-        }
+        
         let effective_return_type = if has_test_attribute {
             None // Test functions should have unit return type
         } else {
@@ -627,6 +626,10 @@ impl Transpiler {
             }
             
             // String method name mappings (Ruchy -> Rust)
+            "to_s" | "to_string" => {
+                // Convert any value to string - already a String stays String
+                Ok(quote! { #obj_tokens })
+            }
             "to_upper" => {
                 let rust_method = format_ident!("to_uppercase");
                 Ok(quote! { #obj_tokens.#rust_method(#(#arg_tokens),*) })
@@ -931,7 +934,7 @@ impl Transpiler {
         }
     }
     
-    /// Handle std::fs imports and generate file operation functions
+    /// Handle `std::fs` imports and generate file operation functions
     fn transpile_std_fs_import(items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
         use crate::frontend::ast::ImportItem;
         
@@ -998,7 +1001,7 @@ impl Transpiler {
         tokens
     }
     
-    /// Generate read_file function
+    /// Generate `read_file` function
     fn generate_read_file_function() -> TokenStream {
         quote! {
             fn read_file(filename: String) -> String {
@@ -1007,7 +1010,7 @@ impl Transpiler {
         }
     }
     
-    /// Generate write_file function  
+    /// Generate `write_file` function  
     fn generate_write_file_function() -> TokenStream {
         quote! {
             fn write_file(filename: String, content: String) {
@@ -1027,7 +1030,7 @@ impl Transpiler {
         }
     }
     
-    /// Handle std::fs imports with path-based syntax (import std::fs::read_file)
+    /// Handle `std::fs` imports with path-based syntax (import `std::fs::read_file`)
     fn transpile_std_fs_import_with_path(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
         use crate::frontend::ast::ImportItem;
         
@@ -1086,7 +1089,7 @@ impl Transpiler {
         tokens
     }
 
-    /// Handle std::system imports with system information functions
+    /// Handle `std::system` imports with system information functions
     /// Core inline import transpilation logic
     fn transpile_import_inline(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
         use crate::frontend::ast::ImportItem;
