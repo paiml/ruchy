@@ -575,6 +575,20 @@ mod tests {
     proptest! {
         #[test]
         fn test_tokenize_identifiers(s in "[a-zA-Z_][a-zA-Z0-9_]{0,100}") {
+            // Skip reserved keywords that should tokenize as their respective tokens
+            let reserved_keywords = [
+                "true", "false", "fun", "fn", "let", "var", "mod", "if", "else", "match",
+                "for", "in", "while", "loop", "async", "await", "throw", "try", "catch",
+                "return", "command", "Ok", "Err", "Some", "None", "null", "Result", "Option",
+                "break", "continue", "struct", "enum", "impl", "trait", "extend", "actor",
+                "state", "receive", "send", "ask", "type", "where", "const", "static",
+                "mut", "pub", "import", "use", "as", "module", "export", "df"
+            ];
+            
+            if reserved_keywords.contains(&s.as_str()) {
+                return Ok(()); // Skip test for reserved keywords
+            }
+            
             let mut stream = TokenStream::new(&s);
             match stream.advance() {
                 Some((Token::Identifier(id), _)) => prop_assert_eq!(id, s),
