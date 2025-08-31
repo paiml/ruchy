@@ -5,6 +5,7 @@
 
 pub mod actor;
 pub mod cache;
+pub mod completion;
 pub mod dataflow_debugger;
 pub mod dataflow_ui;
 pub mod grammar_coverage;

@@ -1,36 +1,69 @@
 # Ruchy Development Roadmap
 
-## 🚨 **CURRENT: COMPLEXITY DEBT SPRINT (v1.27.11+) - IN PROGRESS**
+## 🎯 **CURRENT FOCUS: Quality Consolidation Sprint (v1.28.0+)**
 
-**MISSION**: Eliminate high complexity functions blocking enterprise adoption
-**TRIGGER**: TDG quality gates detected max complexity violations (83 cyclomatic, 185 cognitive)
-**GOAL**: Achieve <10 cyclomatic complexity for all functions (Toyota Way quality standard)
-**STATUS**: Major progress - 46% complexity reduction achieved!
+**MISSION**: Consolidate gains from emergency sprint and eliminate remaining technical debt
+**CONTEXT**: Foundation stability achieved (v1.28.0) - now focusing on sustainable quality
+**GOAL**: Zero technical debt tolerance with automated quality enforcement
+**STATUS**: Ready to tackle SATD elimination and dead code cleanup
 
-### 🔥 Complexity Violations - SIGNIFICANT PROGRESS:
+## 🚀 **IMMEDIATE PRIORITIES (Post-Foundation Sprint)**
 
-**[DEBT-001]**: ✅ **Max Cyclomatic Complexity: 83→45** *(46% REDUCTION)*
-- **Problem**: Function exceeded 8.3x the acceptable limit (10)  
-- **Impact**: Blocks TDG quality gate, reduces maintainability
-- **Location**: REPL evaluation functions (evaluate_call, evaluate_import, eval)
-- **Progress**: 
-  - evaluate_call: 83→26 (69% reduction)
-  - evaluate_import: 41→11 (73% reduction)
-  - eval: 46→24 (48% reduction)
-- **Status**: 🔄 Partial success - further decomposition needed for <10 target
+### 📋 **Sprint 0: REPL Tab Completion System (REPL-COMPLETION-001) - P0 ACTIVE**
 
-**[DEBT-002]**: ✅ **Max Cognitive Complexity: 185→71** *(62% REDUCTION)*
-- **Problem**: Function exceeded 18.5x the acceptable limit (10)
-- **Impact**: Extreme mental overhead, error-prone maintenance
-- **Location**: Complex nested control structures in REPL
-- **Progress**: Systematic decomposition via dispatcher pattern
-- **Status**: 🔄 Significant improvement - continue refactoring
+**REPL-COMPLETION-001**: 🎯 **Intelligent Tab Completion & Help System** *(P0 - HIGHEST PRIORITY)*
+- **Problem**: No tab completion in REPL - critical usability gap
+- **Specification**: docs/specifications/ruchy-repl-tab-completion.md
+- **Impact**: Developer productivity, API discoverability, user experience
+- **Core Components**:
+  - Error-tolerant context analysis for partial/broken expressions
+  - Type-aware method completions (List, String, DataFrame)
+  - Python-style help(), dir(), type() functions
+  - <50ms latency with smart caching
+  - Rustyline integration with fuzzy matching
+- **Success Criteria**: 
+  - Tab completion working for all major contexts
+  - Help system fully functional
+  - Performance targets met (<50ms 99th percentile)
+- **Effort**: Very High (200 hours) - comprehensive system
+- **Status**: ACTIVE DEVELOPMENT
 
-### Sprint Goals (Following Toyota Way):
-- **Primary**: Identify functions >50 complexity and decompose systematically
-- **Secondary**: Ensure no function >10 complexity remains 
-- **Quality**: Maintain 100% test coverage during refactoring
-- **Verification**: All TDG quality gates must pass before sprint completion
+### 📋 **Sprint 1: Technical Debt Elimination (P0-DEBT-002/003)**
+
+**P0-DEBT-002**: 🔴 **SATD Elimination** *(1,280 violations - CRITICAL)*
+- **Problem**: 1,280 TODO/FIXME/HACK comments creating maintenance burden
+- **Impact**: Code clarity, maintenance overhead, quality perception
+- **Approach**: Systematic elimination with proper documentation/implementation
+- **Success Criteria**: `pmat analyze satd --fail-on-violation` passes
+- **Effort**: High (80 hours) - but critical for quality
+
+**P0-DEBT-003**: 🟡 **Dead Code Elimination** *(6 violations)*
+- **Problem**: Unused code creating cognitive overhead
+- **Impact**: Maintenance burden, compilation time, confusion
+- **Approach**: Systematic removal with regression testing
+- **Success Criteria**: `pmat analyze dead-code --max-dead-code 5.0` passes
+- **Effort**: Medium (20 hours)
+
+### 📋 **Sprint 2: Quality Gate Automation (P0-DEBT-004)**
+
+**P0-DEBT-004**: 🔧 **PMAT Pre-commit Integration**
+- **Problem**: Quality gates not automatically enforced
+- **Impact**: Risk of quality regression
+- **Solution**: Fix pre-commit hooks with proper PMAT integration
+- **Success Criteria**: All commits blocked if quality gates fail
+- **Effort**: Medium (16 hours)
+
+### 📋 **Sprint 3: Coverage Enhancement (TEST-COV-013)**
+
+**TEST-COV-013**: 📈 **Path to 80% Coverage**
+- **Current**: 37.51% → Target: 80%
+- **Gap**: 42.49% coverage needed
+- **Focus Areas**:
+  - Proving module tests
+  - Fuzz testing for interpreter
+  - Integration test repairs
+- **Impact**: Production reliability, regression prevention
+- **Effort**: High (100+ hours)
 
 ---
 
@@ -380,31 +413,28 @@ With the core language features complete, focus shifts to advanced REPL capabili
 - **Foundation stability**: ✅ ACHIEVED - enterprise-ready codebase
 - **Emergency status**: ✅ RESOLVED - no longer blocking development
 
-**P0-DEBT-002**: 🚨 **SATD Elimination** *(Blocking Technical Debt)*  
-- [ ] Remove all 1,280 TODO/FIXME/HACK comments
-- [ ] Replace with proper documentation or implementation
-- [ ] Zero tolerance: No SATD allowed in codebase
-- **Success Criteria**: `pmat analyze satd --fail-on-violation` passes
-- **Impact**: Clean maintainable codebase
-- **Effort**: High (estimated 80 hours)
+### 📋 **Sprint 4: Feature Completeness (RUCHY-203)**
 
-**P0-DEBT-003**: 🚨 **Dead Code Elimination** *(Maintenance Debt)*
-- [ ] Remove 6 dead code violations systematically
-- [ ] Target <5% dead code maximum
-- [ ] Clean up unused functions, imports, variables  
-- **Success Criteria**: `pmat analyze dead-code --max-dead-code 5.0` passes
-- **Impact**: Reduced cognitive load and maintenance burden
-- **Effort**: Medium (estimated 20 hours)
+**RUCHY-203**: 🆕 **Enum Variant Construction** *(Language Completeness)*
+- **Problem**: Cannot construct enum variants directly
+- **Impact**: Language feature gap affecting usability
+- **Solution**: Implement enum variant syntax and pattern matching
+- **Effort**: Medium (40 hours)
 
-#### **Sprint 2: Quality Gate Integration (NEXT)**
+### 📋 **Sprint 5: Performance Optimization**
 
-**P0-DEBT-004**: 🔧 **PMAT Pre-commit Integration** *(Process Improvement)*
-- [ ] Fix hanging pre-commit hooks with PMAT integration
-- [ ] Mandatory quality gates block commits with violations
-- [ ] No commits allowed without passing: complexity <10, zero SATD, <5% dead code
-- **Success Criteria**: Pre-commit hooks enforce all PMAT quality gates
-- **Impact**: Prevent quality debt accumulation going forward
-- **Effort**: Medium (estimated 16 hours)
+**PERF-001**: ⚡ **Remaining Complexity Reduction**
+- **Target Functions** (still >20 complexity):
+  - Repl::run (29)
+  - Repl::evaluate_println (24)
+  - Repl::evaluate_save_image_function (25)
+  - Repl::get_type_info_with_bindings (23)
+  - Repl::evaluate_function_expr (27)
+  - Repl::evaluate_call (26)
+  - Repl::evaluate_comparison (26)
+  - Repl::needs_continuation (28)
+- **Goal**: All functions <10 complexity
+- **Effort**: Medium (40 hours) - lower priority after foundation work
 
 **RUCHY-201**: ✅ **Fix REPL loop printing ()** *(GitHub Issue #5)* - **COMPLETED v1.26.0**
 - [x] Debug why simple loops print () in REPL
