@@ -217,25 +217,20 @@
       "file_path": "./tests/chaos_engineering.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 30"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-=======
-          "source_metric": "Duplication",
-          "amount": 2.7102804,
->>>>>>> Stashed changes
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 13.6%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -246,25 +241,12 @@
           "issue": "High cognitive complexity: 65"
         },
         {
-<<<<<<< Updated upstream
           "source_metric": "Duplication",
           "amount": 2.7102804,
-=======
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
           "applied_to": [
-            "StructuralComplexity"
+            "Duplication"
           ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
->>>>>>> Stashed changes
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 30"
+          "issue": "Code duplication: 13.6%"
         }
       ]
     },
@@ -314,28 +296,6 @@
         },
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-          "amount": 5.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 21"
-        },
-        {
-<<<<<<< HEAD
-          "source_metric": "Duplication",
-          "amount": 7.3636365,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 36.8%"
-        },
-        {
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
           "amount": 4.5,
           "applied_to": [
             "StructuralComplexity"
@@ -389,20 +349,20 @@
       "file_path": "./tests/repl_error_recovery_test.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 6.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 23"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 3.4262948,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 17.1%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 6.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 23"
         }
       ]
     },
@@ -596,19 +556,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 0.90000004,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 18"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 15"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 0.90000004,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 18"
         },
         {
           "source_metric": "Duplication",
@@ -883,19 +843,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 8.700001,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 44"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 13.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 37"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 8.700001,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 44"
         }
       ]
     },
@@ -936,12 +896,12 @@
       "file_path": "./tests/transpiler_patterns.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 7.1590905,
+          "source_metric": "StructuralComplexity",
+          "amount": 2.7,
           "applied_to": [
-            "Duplication"
+            "StructuralComplexity"
           ],
-          "issue": "Code duplication: 35.8%"
+          "issue": "High cognitive complexity: 24"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -952,12 +912,12 @@
           "issue": "High cyclomatic complexity: 17"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 2.7,
+          "source_metric": "Duplication",
+          "amount": 7.1590905,
           "applied_to": [
-            "StructuralComplexity"
+            "Duplication"
           ],
-          "issue": "High cognitive complexity: 24"
+          "issue": "Code duplication: 35.8%"
         }
       ]
     },
@@ -1045,19 +1005,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 0.90000004,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 18"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 14"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 0.90000004,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 18"
         }
       ]
     },
@@ -1190,20 +1150,20 @@
       "file_path": "./tests/type_inference_comprehensive_tests.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 4.470588,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 22.4%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 4.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 18"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 4.470588,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 22.4%"
         }
       ]
     },
@@ -1244,6 +1204,14 @@
       "file_path": "./tests/edge_case_tests.rs",
       "penalties_applied": [
         {
+          "source_metric": "StructuralComplexity",
+          "amount": 0.90000004,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 18"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 3.4640524,
           "applied_to": [
@@ -1254,44 +1222,10 @@
         {
           "source_metric": "StructuralComplexity",
           "amount": 10.5,
-<<<<<<< Updated upstream
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 31"
-<<<<<<< HEAD
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 0.90000004,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 18"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.4640524,
-=======
->>>>>>> Stashed changes
-          "applied_to": [
-            "Duplication"
-          ],
-<<<<<<< Updated upstream
-          "issue": "Code duplication: 17.3%"
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-          "issue": "High cyclomatic complexity: 31"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 0.90000004,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 18"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -1470,14 +1404,6 @@
       "file_path": "./tests/transpiler_result_comprehensive.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 19"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 5.543071,
           "applied_to": [
@@ -1492,6 +1418,14 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 27"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 4.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 19"
         }
       ]
     },
@@ -1509,7 +1443,6 @@
       "file_path": "./tests/module_paths.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
           "source_metric": "StructuralComplexity",
           "amount": 0.90000004,
           "applied_to": [
@@ -1518,8 +1451,14 @@
           "issue": "High cognitive complexity: 18"
         },
         {
-=======
->>>>>>> Stashed changes
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 12"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 4.6031747,
           "applied_to": [
@@ -1534,25 +1473,6 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 12"
-<<<<<<< Updated upstream
-=======
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 0.90000004,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 18"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -1594,19 +1514,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 13"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 5 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 13"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -1784,23 +1704,12 @@
       "file_path": "./tests/differential_tests.rs",
       "penalties_applied": [
         {
-<<<<<<< HEAD
-=======
-          "source_metric": "Duplication",
-          "amount": 3.4862385,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 17.4%"
-        },
-        {
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
+          "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cyclomatic complexity: 42"
+          "issue": "High cognitive complexity: 71"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -1811,23 +1720,20 @@
           "issue": "Deep nesting: 5 levels"
         },
         {
-<<<<<<< HEAD
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 42"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 3.4862385,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 17.4%"
-        },
-        {
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 71"
         }
       ]
     },
@@ -1845,38 +1751,12 @@
       "file_path": "./tests/transpiler_patterns_comprehensive.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
           "source_metric": "StructuralComplexity",
           "amount": 3.6000001,
-<<<<<<< HEAD
-=======
-=======
-          "source_metric": "Duplication",
-          "amount": 5.5223885,
->>>>>>> Stashed changes
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 27.6%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.5,
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 27"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 3.6000001,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< Updated upstream
-          "issue": "Code duplication: 27.6%"
-<<<<<<< HEAD
         },
         {
           "source_metric": "StructuralComplexity",
@@ -1885,11 +1765,14 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 19"
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-          "issue": "High cognitive complexity: 27"
->>>>>>> Stashed changes
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 5.5223885,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 27.6%"
         }
       ]
     },
@@ -2083,15 +1966,6 @@
       "file_path": "./tests/error_recovery_integration_test.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 20"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 2.5925925,
           "applied_to": [
@@ -2101,29 +1975,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
+          "amount": 5.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 20"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 0.90000004,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 18"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.5925925,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 13.0%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 20"
         }
       ]
     },
@@ -2565,26 +2429,6 @@
       "file_path": "./tests/quality_009_spec_validation.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-          "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 14"
-=======
-          "source_metric": "Duplication",
-          "amount": 2.962963,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.8%"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-        },
-        {
-=======
->>>>>>> Stashed changes
           "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
@@ -2607,14 +2451,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 22"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.962963,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.8%"
         }
       ]
     },
@@ -2723,16 +2559,7 @@
       "file_path": "./tests/compatibility_suite.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 4.0703516,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 20.4%"
-        },
-        {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -2740,7 +2567,6 @@
           "issue": "High cognitive complexity: 49"
         },
         {
-<<<<<<< HEAD
           "source_metric": "Duplication",
           "amount": 4.0703516,
           "applied_to": [
@@ -2749,24 +2575,12 @@
           "issue": "Code duplication: 20.4%"
         },
         {
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 43"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 49"
         }
       ]
     },
@@ -3043,44 +2857,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 9 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 161"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 48"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 9 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -3094,8 +2870,14 @@
             "Duplication"
           ],
           "issue": "Code duplication: 17.0%"
-<<<<<<< Updated upstream
-=======
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 5.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 9 levels"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -3104,7 +2886,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 48"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -3215,11 +2996,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 11.5,
+          "amount": 9.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cyclomatic complexity: 33"
+          "issue": "High cognitive complexity: 45"
         },
         {
           "source_metric": "Duplication",
@@ -3231,11 +3012,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 9.0,
+          "amount": 11.5,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 45"
+          "issue": "High cyclomatic complexity: 33"
         }
       ]
     },
@@ -3350,6 +3131,14 @@
       "file_path": "./tests/parser_coverage_tests.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 3.9296188,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 19.6%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 11.5,
           "applied_to": [
@@ -3364,14 +3153,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 18"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.9296188,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 19.6%"
         }
       ]
     },
@@ -3982,17 +3763,14 @@
       "file_path": "./tests/transpiler_low_coverage.rs",
       "penalties_applied": [
         {
-<<<<<<< HEAD
-=======
           "source_metric": "StructuralComplexity",
-          "amount": 4.5,
+          "amount": 5.5,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 30"
+          "issue": "High cyclomatic complexity: 21"
         },
         {
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "source_metric": "Duplication",
           "amount": 7.288889,
           "applied_to": [
@@ -4002,26 +3780,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 5.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-          "issue": "High cyclomatic complexity: 21"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 4.5,
           "applied_to": [
             "StructuralComplexity"
           ],
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "issue": "High cognitive complexity: 30"
-=======
-          "issue": "High cyclomatic complexity: 21"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -4592,19 +4355,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 0.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 11"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 0.3,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 16"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 0.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 11"
         }
       ]
     },
@@ -5013,17 +4776,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-=======
-          "amount": 2.0,
+          "amount": 5.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "Deep nesting: 5 levels"
+          "issue": "High cyclomatic complexity: 20"
         },
         {
           "source_metric": "StructuralComplexity",
->>>>>>> Stashed changes
           "amount": 6.6000004,
           "applied_to": [
             "StructuralComplexity"
@@ -5032,22 +4792,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 5.0,
+          "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-<<<<<<< Updated upstream
           "issue": "Deep nesting: 5 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-=======
->>>>>>> Stashed changes
-          "issue": "High cyclomatic complexity: 20"
         }
       ]
     },
@@ -5148,20 +4897,20 @@
       "file_path": "./tests/repl_unit_coverage_tests.rs",
       "penalties_applied": [
         {
-          "source_metric": "Coupling",
-          "amount": 1.8000001,
-          "applied_to": [
-            "Coupling"
-          ],
-          "issue": "Too many imports: 29"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 4.723468,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 23.6%"
+        },
+        {
+          "source_metric": "Coupling",
+          "amount": 1.8000001,
+          "applied_to": [
+            "Coupling"
+          ],
+          "issue": "Too many imports: 29"
         }
       ]
     },
@@ -5263,33 +5012,12 @@
       "file_path": "./examples/dataframe.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
-          "source_metric": "StructuralComplexity",
-          "amount": 2.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 15"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 20"
-        },
-        {
-=======
->>>>>>> Stashed changes
           "source_metric": "Duplication",
           "amount": 2.970297,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 14.9%"
-<<<<<<< Updated upstream
-=======
         },
         {
           "source_metric": "StructuralComplexity",
@@ -5306,7 +5034,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 20"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -5339,26 +5066,7 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 2.1000001,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 22"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.0,
-<<<<<<< HEAD
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 2.1000001,
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "applied_to": [
             "StructuralComplexity"
           ],
@@ -5371,9 +5079,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 13"
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
         },
         {
           "source_metric": "StructuralComplexity",
@@ -5382,9 +5087,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 22"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
->>>>>>> Stashed changes
         }
       ]
     },
@@ -5403,29 +5105,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
-          "amount": 8.1,
-=======
-          "amount": 1.0,
->>>>>>> Stashed changes
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "amount": 10.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 31"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 8.1,
           "applied_to": [
             "StructuralComplexity"
@@ -5439,7 +5118,14 @@
             "Duplication"
           ],
           "issue": "Code duplication: 17.6%"
-<<<<<<< HEAD
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 31"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -5448,16 +5134,6 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 8.1,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 42"
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
         }
       ]
     },
@@ -5490,48 +5166,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 5 levels"
-=======
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 6.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 23"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-        },
-        {
-          "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-          "amount": 7.5000005,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 40"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
-          "amount": 6.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 23"
-=======
-=======
->>>>>>> Stashed changes
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-<<<<<<< Updated upstream
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
         },
         {
           "source_metric": "StructuralComplexity",
@@ -5540,7 +5187,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 40"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -5640,43 +5286,20 @@
       "file_path": "./examples/error_handling.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
-          "source_metric": "Duplication",
-          "amount": 2.8125,
-<<<<<<< HEAD
-=======
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.1%"
-        },
-        {
-=======
->>>>>>> Stashed changes
-          "source_metric": "StructuralComplexity",
-          "amount": 2.4,
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.1%"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.8125,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.1%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 4.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 19"
-<<<<<<< HEAD
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 2.8125,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 14.1%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -5685,8 +5308,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 23"
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
         }
       ]
     },
@@ -5704,9 +5325,15 @@
       "file_path": "./examples/imports.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 4.4444447,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 22.2%"
+        },
+        {
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
-=======
           "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
@@ -5715,39 +5342,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
+          "amount": 6.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 35"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 5.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 21"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 6.0,
-<<<<<<< HEAD
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 35"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 35"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 4.4444447,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 22.2%"
         }
       ]
     },
@@ -5765,6 +5372,14 @@
       "file_path": "./examples/async_await.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 2.8301885,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 14.2%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
@@ -5775,26 +5390,6 @@
         {
           "source_metric": "StructuralComplexity",
           "amount": 1.0,
-<<<<<<< HEAD
-=======
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.8301885,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.2%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-          "amount": 2.0,
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "applied_to": [
             "StructuralComplexity"
           ],
@@ -5802,32 +5397,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
           "amount": 0.90000004,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 18"
-<<<<<<< HEAD
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 14"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.8301885,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.2%"
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
         }
       ]
     },
@@ -6007,20 +5581,20 @@
       "file_path": "./examples/test_mutation.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 5.0,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 25.0%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 0.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 11"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 5.0,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 25.0%"
         }
       ]
     },
@@ -6271,8 +5845,14 @@
       "file_path": "./src/parser/error_recovery.rs",
       "penalties_applied": [
         {
-<<<<<<< HEAD
-=======
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 4 levels"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 3.0,
           "applied_to": [
@@ -6281,24 +5861,12 @@
           "issue": "High cognitive complexity: 25"
         },
         {
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "source_metric": "StructuralComplexity",
-          "amount": 1.0,
+          "amount": 8.5,
           "applied_to": [
             "StructuralComplexity"
           ],
-<<<<<<< HEAD
-          "issue": "High cognitive complexity: 25"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "issue": "Deep nesting: 4 levels"
+          "issue": "High cyclomatic complexity: 27"
         },
         {
           "source_metric": "Duplication",
@@ -6307,14 +5875,6 @@
             "Duplication"
           ],
           "issue": "Code duplication: 12.6%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 8.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 27"
         }
       ]
     },
@@ -6347,19 +5907,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 3.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 17"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 1.2,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 19"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 3.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 17"
         }
       ]
     },
@@ -6476,38 +6036,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 228"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 230"
-        },
-        {
-<<<<<<< HEAD
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 228"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.880435,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 19.4%"
-        },
-        {
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 228"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -6573,19 +6114,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 30"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 5 levels"
         }
       ]
     },
@@ -6640,14 +6181,6 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 50"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
@@ -6655,29 +6188,20 @@
           "issue": "High cyclomatic complexity: 52"
         },
         {
-<<<<<<< Updated upstream
-          "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-=======
-          "amount": 10.0,
-=======
           "source_metric": "Duplication",
           "amount": 2.9594274,
->>>>>>> Stashed changes
           "applied_to": [
             "Duplication"
           ],
-<<<<<<< Updated upstream
-          "issue": "High cognitive complexity: 50"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
           "issue": "Code duplication: 14.8%"
->>>>>>> Stashed changes
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 50"
         }
       ]
     },
@@ -6709,40 +6233,28 @@
       "file_path": "./src/backend/transpiler/types.rs",
       "penalties_applied": [
         {
+          "source_metric": "StructuralComplexity",
+          "amount": 6.3,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 36"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 43"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 5.8256884,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 29.1%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 43"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 6.3,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< Updated upstream
-          "issue": "Code duplication: 29.1%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 43"
-=======
-          "issue": "High cognitive complexity: 36"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -6761,9 +6273,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
@@ -6772,9 +6281,14 @@
         },
         {
           "source_metric": "StructuralComplexity",
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
->>>>>>> Stashed changes
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 135"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
@@ -6782,61 +6296,12 @@
           "issue": "High cyclomatic complexity: 94"
         },
         {
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 135"
-        },
-        {
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "source_metric": "Duplication",
           "amount": 6.0199003,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 30.1%"
-        },
-        {
-=======
->>>>>>> Stashed changes
-          "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-=======
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 135"
-<<<<<<< Updated upstream
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 6.0199003,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 30.1%"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -6855,27 +6320,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 108"
-=======
           "amount": 6.6000004,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 37"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 108"
->>>>>>> Stashed changes
         },
         {
           "source_metric": "Duplication",
@@ -6884,30 +6341,6 @@
             "Duplication"
           ],
           "issue": "Code duplication: 10.3%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-          "amount": 6.6000004,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 37"
-=======
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 108"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-          "amount": 6.6000004,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 37"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -6926,6 +6359,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 105"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 9.6,
           "applied_to": [
             "StructuralComplexity"
@@ -6939,14 +6380,6 @@
             "Duplication"
           ],
           "issue": "Code duplication: 22.2%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 105"
         }
       ]
     },
@@ -7178,14 +6611,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 31"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
@@ -7194,7 +6619,6 @@
         },
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
           "amount": 10.5,
           "applied_to": [
             "StructuralComplexity"
@@ -7203,8 +6627,6 @@
         },
         {
           "source_metric": "StructuralComplexity",
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -7310,55 +6732,27 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 3.9,
-<<<<<<< HEAD
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 28"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.6190476,
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 28"
-        },
-        {
-<<<<<<< Updated upstream
-          "source_metric": "StructuralComplexity",
           "amount": 14.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 39"
-<<<<<<< HEAD
-=======
         },
         {
-=======
->>>>>>> Stashed changes
+          "source_metric": "StructuralComplexity",
+          "amount": 3.9,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 28"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 2.6190476,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 13.1%"
-<<<<<<< Updated upstream
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 14.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 39"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -7399,6 +6793,14 @@
       "file_path": "./src/proving/verification.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 5.0,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 25.0%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
@@ -7413,14 +6815,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 40"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 5.0,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 25.0%"
         }
       ]
     },
@@ -7438,10 +6832,15 @@
       "file_path": "./src/proving/refinement.rs",
       "penalties_applied": [
         {
-<<<<<<< HEAD
-=======
+          "source_metric": "Duplication",
+          "amount": 2.2368422,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 11.2%"
+        },
+        {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
           "amount": 13.0,
           "applied_to": [
             "StructuralComplexity"
@@ -7449,42 +6848,12 @@
           "issue": "High cyclomatic complexity: 36"
         },
         {
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
           "amount": 2.4,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 23"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 13.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 36"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.2368422,
-<<<<<<< HEAD
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 11.2%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 13.0,
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 11.2%"
         }
       ]
     },
@@ -7503,9 +6872,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
           "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
@@ -7514,8 +6880,6 @@
         },
         {
           "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
@@ -7524,42 +6888,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
->>>>>>> Stashed changes
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 74"
-<<<<<<< HEAD
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 63"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
         }
       ]
     },
@@ -7592,8 +6925,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
-=======
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 30"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 1.8000001,
           "applied_to": [
             "StructuralComplexity"
@@ -7602,31 +6941,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< HEAD
-          "issue": "High cognitive complexity: 21"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "issue": "High cyclomatic complexity: 30"
         }
       ]
     },
@@ -7645,30 +6964,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-=======
-          "amount": 8.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 27"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
->>>>>>> Stashed changes
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 5.7000003,
           "applied_to": [
             "StructuralComplexity"
@@ -7677,27 +6972,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-          "amount": 8.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 27"
-=======
           "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 8.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 27"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -7739,19 +7026,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 79"
-=======
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 81"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
         },
         {
           "source_metric": "StructuralComplexity",
@@ -7763,19 +7042,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 81"
-=======
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 79"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
         }
       ]
     },
@@ -7793,23 +7064,20 @@
       "file_path": "./src/middleend/infer.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
+          "source_metric": "Duplication",
+          "amount": 3.2200885,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 16.1%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
-        },
-        {
-=======
->>>>>>> Stashed changes
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 255"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -7820,27 +7088,12 @@
           "issue": "High cognitive complexity: 159"
         },
         {
-          "source_metric": "Duplication",
-          "amount": 3.2200885,
-          "applied_to": [
-            "Duplication"
-          ],
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
->>>>>>> Stashed changes
-          "issue": "Code duplication: 16.1%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 255"
-=======
-          "issue": "Deep nesting: 4 levels"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
         }
       ]
     },
@@ -8031,9 +7284,7 @@
       "file_path": "./src/middleend/mir/optimize.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -8041,26 +7292,6 @@
           "issue": "High cognitive complexity: 83"
         },
         {
-          "source_metric": "StructuralComplexity",
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 99"
-        },
-        {
-=======
->>>>>>> Stashed changes
           "source_metric": "Duplication",
           "amount": 2.1698112,
           "applied_to": [
@@ -8083,14 +7314,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 99"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 83"
         }
       ]
     },
@@ -8132,6 +7355,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 58"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 5.7000003,
           "applied_to": [
             "StructuralComplexity"
@@ -8145,14 +7376,6 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 58"
         }
       ]
     },
@@ -8309,11 +7532,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 9.900001,
+          "amount": 12.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 48"
+          "issue": "High cyclomatic complexity: 34"
         },
         {
           "source_metric": "SemanticComplexity",
@@ -8325,11 +7548,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 12.0,
+          "amount": 9.900001,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cyclomatic complexity: 34"
+          "issue": "High cognitive complexity: 48"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -8355,64 +7578,28 @@
       "file_path": "./src/quality/scoring.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 205"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 10.0,
-=======
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 179"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 2.6618705,
->>>>>>> Stashed changes
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 13.3%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 205"
-        },
-        {
-<<<<<<< Updated upstream
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "source_metric": "Duplication",
-          "amount": 2.6618705,
-=======
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
->>>>>>> Stashed changes
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< Updated upstream
-          "issue": "Code duplication: 13.3%"
-<<<<<<< HEAD
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 205"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 179"
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-          "issue": "High cognitive complexity: 179"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -8431,19 +7618,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 20"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 6.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 23"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 20"
         }
       ]
     },
@@ -8461,20 +7648,20 @@
       "file_path": "./src/quality/coverage.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 2.9347825,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.7%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 3.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 17"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 2.9347825,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 14.7%"
         }
       ]
     },
@@ -8493,19 +7680,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.2,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 19"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 7.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 24"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.2,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 19"
         }
       ]
     },
@@ -8523,7 +7710,14 @@
       "file_path": "./src/quality/linter.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
+          "source_metric": "Duplication",
+          "amount": 2.195122,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 11.0%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 1.0,
           "applied_to": [
@@ -8538,14 +7732,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 112"
-=======
-          "source_metric": "Duplication",
-          "amount": 2.195122,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 11.0%"
->>>>>>> Stashed changes
         },
         {
           "source_metric": "StructuralComplexity",
@@ -8554,31 +7740,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 102"
-        },
-        {
-<<<<<<< Updated upstream
-          "source_metric": "Duplication",
-          "amount": 2.195122,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 11.0%"
-=======
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 112"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -8597,6 +7758,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
+          "amount": 11.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 33"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -8610,14 +7779,6 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 6 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 11.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 33"
         }
       ]
     },
@@ -8644,36 +7805,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 41"
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.047244,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 10.2%"
-=======
->>>>>>> Stashed changes
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 3.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 25"
-<<<<<<< Updated upstream
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
->>>>>>> Stashed changes
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 41"
         }
       ]
     },
@@ -8692,19 +7836,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.2,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 19"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 14"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.2,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 19"
         }
       ]
     },
@@ -8722,20 +7866,20 @@
       "file_path": "./src/mcp/tool_discovery.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 7.1243043,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 35.6%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 11.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 33"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 7.1243043,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 35.6%"
         }
       ]
     },
@@ -8753,12 +7897,12 @@
       "file_path": "./src/optimization/abstraction.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 5.4,
+          "source_metric": "Duplication",
+          "amount": 2.3768117,
           "applied_to": [
-            "StructuralComplexity"
+            "Duplication"
           ],
-          "issue": "High cognitive complexity: 33"
+          "issue": "Code duplication: 11.9%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -8769,12 +7913,12 @@
           "issue": "High cyclomatic complexity: 39"
         },
         {
-          "source_metric": "Duplication",
-          "amount": 2.3768117,
+          "source_metric": "StructuralComplexity",
+          "amount": 5.4,
           "applied_to": [
-            "Duplication"
+            "StructuralComplexity"
           ],
-          "issue": "Code duplication: 11.9%"
+          "issue": "High cognitive complexity: 33"
         }
       ]
     },
@@ -8846,36 +7990,6 @@
       "file_path": "./src/optimization/vectorization.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
-          "source_metric": "Duplication",
-          "amount": 3.112392,
-<<<<<<< HEAD
-=======
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 15.6%"
-        },
-        {
-=======
->>>>>>> Stashed changes
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 15.6%"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.112392,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 15.6%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
@@ -8890,7 +8004,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 41"
-<<<<<<< HEAD
         },
         {
           "source_metric": "StructuralComplexity",
@@ -8899,8 +8012,14 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 3.112392,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 15.6%"
         }
       ]
     },
@@ -8950,19 +8069,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 2.7,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 24"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 9.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 28"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.7,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 24"
         }
       ]
     },
@@ -9012,6 +8131,14 @@
         },
         {
           "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 107"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
@@ -9025,29 +8152,6 @@
             "Duplication"
           ],
           "issue": "Code duplication: 14.1%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< Updated upstream
-          "issue": "High cyclomatic complexity: 96"
-<<<<<<< HEAD
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-          "issue": "High cognitive complexity: 107"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -9096,6 +8200,22 @@
       "file_path": "./src/runtime/repl.rs",
       "penalties_applied": [
         {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 1249"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 5.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 8 levels"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 4.073279,
           "applied_to": [
@@ -9104,62 +8224,20 @@
           "issue": "Code duplication: 20.4%"
         },
         {
-          "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
-          "amount": 10.0,
-=======
-          "amount": 5.0,
->>>>>>> Stashed changes
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 8 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 1505"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 1249"
-        },
-        {
           "source_metric": "Coupling",
           "amount": 4.2000003,
           "applied_to": [
             "Coupling"
           ],
           "issue": "Too many imports: 41"
-<<<<<<< HEAD
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
+          "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 1249"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 8 levels"
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
+          "issue": "High cyclomatic complexity: 1505"
         }
       ]
     },
@@ -9192,10 +8270,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
->>>>>>> Stashed changes
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 50"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
@@ -9204,38 +8286,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
->>>>>>> Stashed changes
           "amount": 13.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 36"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-<<<<<<< HEAD
-=======
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 50"
-<<<<<<< Updated upstream
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 50"
-=======
->>>>>>> Stashed changes
         }
       ]
     },
@@ -9321,18 +8376,6 @@
       "file_path": "./src/runtime/observatory_ui.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-          "source_metric": "StructuralComplexity",
-          "amount": 8.700001,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 44"
-        },
-        {
-=======
->>>>>>> Stashed changes
           "source_metric": "Duplication",
           "amount": 2.5053997,
           "applied_to": [
@@ -9341,19 +8384,12 @@
           "issue": "Code duplication: 12.5%"
         },
         {
-<<<<<<< Updated upstream
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
->>>>>>> Stashed changes
           "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 71"
-<<<<<<< HEAD
-=======
         },
         {
           "source_metric": "StructuralComplexity",
@@ -9362,18 +8398,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 44"
-<<<<<<< Updated upstream
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.5053997,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 12.5%"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
->>>>>>> Stashed changes
         }
       ]
     },
@@ -9476,20 +8500,20 @@
           "issue": "High cyclomatic complexity: 29"
         },
         {
-          "source_metric": "Duplication",
-          "amount": 2.507837,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 12.5%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 5.4,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 33"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 2.507837,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 12.5%"
         }
       ]
     },
@@ -9521,6 +8545,14 @@
       "file_path": "./src/runtime/dataflow_ui.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 3.090379,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 15.5%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
@@ -9535,14 +8567,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 76"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.090379,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 15.5%"
         }
       ]
     },
@@ -9560,8 +8584,30 @@
       "file_path": "./src/runtime/interpreter.rs",
       "penalties_applied": [
         {
-<<<<<<< HEAD
-=======
+          "source_metric": "Coupling",
+          "amount": 2.4,
+          "applied_to": [
+            "Coupling"
+          ],
+          "issue": "Too many imports: 32"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 368"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 5 levels"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 4.37941,
           "applied_to": [
@@ -9571,75 +8617,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 368"
-        },
-        {
-<<<<<<< Updated upstream
-          "source_metric": "Coupling",
-          "amount": 2.4,
-          "applied_to": [
-            "Coupling"
-          ],
-          "issue": "Too many imports: 32"
-        },
-        {
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
->>>>>>> Stashed changes
-          "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-        },
-        {
-          "source_metric": "Coupling",
-          "amount": 2.4,
-          "applied_to": [
-            "Coupling"
-          ],
-          "issue": "Too many imports: 32"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< HEAD
-          "issue": "Code duplication: 21.9%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 484"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 368"
-        },
-        {
-          "source_metric": "Coupling",
-          "amount": 2.4,
-          "applied_to": [
-            "Coupling"
-          ],
-          "issue": "Too many imports: 32"
-=======
-          "issue": "High cyclomatic complexity: 484"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
         }
       ]
     },
@@ -9705,14 +8687,6 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
@@ -9726,6 +8700,14 @@
             "Duplication"
           ],
           "issue": "Code duplication: 18.0%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 5 levels"
         }
       ]
     },
@@ -9744,19 +8726,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 0.90000004,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 18"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 15"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 0.90000004,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 18"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -9783,28 +8765,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
->>>>>>> Stashed changes
-          "amount": 7.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 25"
-<<<<<<< Updated upstream
-=======
-=======
-        },
-        {
-          "source_metric": "StructuralComplexity",
->>>>>>> Stashed changes
           "amount": 7.8,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 41"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 7.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 25"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -9813,25 +8786,6 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 5 levels"
-<<<<<<< Updated upstream
-        },
-        {
-          "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
-          "amount": 7.8,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 41"
-=======
-          "amount": 7.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 25"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
->>>>>>> Stashed changes
         }
       ]
     },
@@ -9850,19 +8804,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 5.1000004,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 32"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 60"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 5.1000004,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 32"
         }
       ]
     },
@@ -9903,20 +8857,20 @@
       "file_path": "./src/bin/ruchy.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 7.548501,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 37.7%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 4.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 18"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 7.548501,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 37.7%"
         }
       ]
     },
@@ -9934,13 +8888,12 @@
       "file_path": "./src/bin/handlers/mod.rs",
       "penalties_applied": [
         {
-<<<<<<< HEAD
-          "source_metric": "SemanticComplexity",
-          "amount": 2.5,
+          "source_metric": "Coupling",
+          "amount": 2.2,
           "applied_to": [
-            "SemanticComplexity"
+            "Coupling"
           ],
-          "issue": "Too many parameters: 10"
+          "issue": "Too many imports: 31"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -9951,16 +8904,6 @@
           "issue": "Deep nesting: 7 levels"
         },
         {
-          "source_metric": "Coupling",
-          "amount": 2.2,
-          "applied_to": [
-            "Coupling"
-          ],
-          "issue": "Too many imports: 31"
-        },
-        {
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
@@ -9969,19 +8912,6 @@
           "issue": "High cyclomatic complexity: 158"
         },
         {
-<<<<<<< Updated upstream
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 273"
-        },
-        {
-<<<<<<< HEAD
-=======
-=======
->>>>>>> Stashed changes
           "source_metric": "SemanticComplexity",
           "amount": 2.5,
           "applied_to": [
@@ -9990,29 +8920,12 @@
           "issue": "Too many parameters: 10"
         },
         {
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "source_metric": "Duplication",
           "amount": 2.8815975,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 14.4%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 7 levels"
-        },
-        {
-          "source_metric": "Coupling",
-          "amount": 2.2,
-          "applied_to": [
-            "Coupling"
-          ],
-          "issue": "Too many imports: 31"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -10039,19 +8952,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 3.0,
+          "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "Deep nesting: 6 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 174"
+          "issue": "High cyclomatic complexity: 152"
         },
         {
           "source_metric": "SemanticComplexity",
@@ -10062,17 +8967,6 @@
           "issue": "Too many parameters: 12"
         },
         {
-<<<<<<< Updated upstream
-          "source_metric": "Duplication",
-          "amount": 3.427896,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 17.1%"
-<<<<<<< HEAD
-=======
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 3.0,
           "applied_to": [
@@ -10081,14 +8975,12 @@
           "issue": "Deep nesting: 6 levels"
         },
         {
-=======
->>>>>>> Stashed changes
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
+          "source_metric": "Duplication",
+          "amount": 3.427896,
           "applied_to": [
-            "StructuralComplexity"
+            "Duplication"
           ],
-          "issue": "High cyclomatic complexity: 152"
+          "issue": "Code duplication: 17.1%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -10097,26 +8989,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 174"
-<<<<<<< Updated upstream
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.427896,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 17.1%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 3.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 6 levels"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -10134,8 +9006,6 @@
       "file_path": "./src/frontend/parser/collections.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
-<<<<<<< HEAD
           "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
@@ -10146,18 +9016,12 @@
         {
           "source_metric": "StructuralComplexity",
           "amount": 10.0,
-=======
-          "source_metric": "Duplication",
-          "amount": 3.4651601,
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "applied_to": [
-            "Duplication"
+            "StructuralComplexity"
           ],
-          "issue": "Code duplication: 17.3%"
+          "issue": "High cognitive complexity: 140"
         },
         {
-=======
->>>>>>> Stashed changes
           "source_metric": "StructuralComplexity",
           "amount": 4.0,
           "applied_to": [
@@ -10172,26 +9036,6 @@
             "Duplication"
           ],
           "issue": "Code duplication: 17.3%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< HEAD
-          "issue": "Code duplication: 17.3%"
-=======
-          "issue": "High cognitive complexity: 140"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 101"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
         }
       ]
     },
@@ -10209,54 +9053,12 @@
       "file_path": "./src/frontend/parser/actors.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
-          "amount": 3.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 6 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 78"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 20"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 3.768116,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 18.8%"
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 20"
-=======
->>>>>>> Stashed changes
         },
         {
           "source_metric": "StructuralComplexity",
@@ -10265,10 +9067,14 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 6 levels"
-<<<<<<< Updated upstream
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 5.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 20"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -10277,7 +9083,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 78"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -10296,6 +9101,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 49"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 6.6000004,
           "applied_to": [
             "StructuralComplexity"
@@ -10309,14 +9122,6 @@
             "Duplication"
           ],
           "issue": "Code duplication: 26.2%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 49"
         }
       ]
     },
@@ -10348,28 +9153,20 @@
       "file_path": "./src/frontend/parser/types.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 60"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 5.0,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 25.0%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 60"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -10380,12 +9177,12 @@
           "issue": "High cyclomatic complexity: 41"
         },
         {
-          "source_metric": "Duplication",
-          "amount": 5.0,
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
           "applied_to": [
-            "Duplication"
+            "StructuralComplexity"
           ],
-          "issue": "Code duplication: 25.0%"
+          "issue": "Deep nesting: 4 levels"
         }
       ]
     },
@@ -10404,14 +9201,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 41"
-=======
           "amount": 4.0,
           "applied_to": [
             "StructuralComplexity"
@@ -10419,18 +9208,15 @@
           "issue": "Deep nesting: 7 levels"
         },
         {
-          "source_metric": "Duplication",
-          "amount": 5.15625,
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
           "applied_to": [
-            "Duplication"
+            "StructuralComplexity"
           ],
-          "issue": "Code duplication: 25.8%"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
+          "issue": "High cyclomatic complexity: 41"
         },
         {
           "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -10438,43 +9224,12 @@
           "issue": "High cognitive complexity: 68"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< HEAD
-          "issue": "Deep nesting: 7 levels"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 5.15625,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 25.8%"
-=======
-          "issue": "High cyclomatic complexity: 41"
-<<<<<<< Updated upstream
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 7 levels"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 5.15625,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 25.8%"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -10493,17 +9248,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-=======
-          "amount": 3.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 6 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
->>>>>>> Stashed changes
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -10511,9 +9255,15 @@
           "issue": "High cognitive complexity: 161"
         },
         {
-<<<<<<< Updated upstream
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
+          "amount": 3.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 6 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
@@ -10521,32 +9271,12 @@
           "issue": "High cyclomatic complexity: 97"
         },
         {
-=======
->>>>>>> Stashed changes
           "source_metric": "Duplication",
           "amount": 5.910448,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 29.6%"
-<<<<<<< Updated upstream
-=======
-          "amount": 3.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 6 levels"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 97"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -10564,15 +9294,24 @@
       "file_path": "./src/frontend/parser/utils.rs",
       "penalties_applied": [
         {
-<<<<<<< Updated upstream
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
-=======
           "amount": 3.0,
-=======
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 6 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 100"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 3.4285715,
->>>>>>> Stashed changes
           "applied_to": [
             "Duplication"
           ],
@@ -10580,39 +9319,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 207"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-<<<<<<< HEAD
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 100"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 3.0,
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 100"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 3.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 6 levels"
         }
       ]
     },
@@ -10630,12 +9341,12 @@
       "file_path": "./src/frontend/parser/expressions.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 2.0,
+          "source_metric": "Duplication",
+          "amount": 3.9172413,
           "applied_to": [
-            "StructuralComplexity"
+            "Duplication"
           ],
-          "issue": "Deep nesting: 5 levels"
+          "issue": "Code duplication: 19.6%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -10647,7 +9358,6 @@
         },
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
@@ -10656,28 +9366,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 118"
-<<<<<<< HEAD
-=======
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.9172413,
-          "applied_to": [
-            "Duplication"
-          ],
-<<<<<<< Updated upstream
-          "issue": "Deep nesting: 5 levels"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-          "issue": "Code duplication: 19.6%"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -10718,20 +9411,20 @@
       "file_path": "./src/frontend/ast.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 63"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 3.2424006,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 16.2%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 63"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -10757,15 +9450,6 @@
       "file_path": "./src/frontend/error_recovery.rs",
       "penalties_applied": [
         {
-<<<<<<< HEAD
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 65"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 2.2746186,
           "applied_to": [
@@ -10774,28 +9458,12 @@
           "issue": "Code duplication: 11.4%"
         },
         {
-=======
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
           "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-<<<<<<< Updated upstream
-          "issue": "High cyclomatic complexity: 98"
-<<<<<<< HEAD
-=======
-=======
           "issue": "High cognitive complexity: 65"
->>>>>>> Stashed changes
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.2746186,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 11.4%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -10803,12 +9471,7 @@
           "applied_to": [
             "StructuralComplexity"
           ],
-<<<<<<< Updated upstream
-          "issue": "High cognitive complexity: 65"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
           "issue": "High cyclomatic complexity: 98"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -10841,6 +9504,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
+          "amount": 4.2000003,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 29"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 6.5,
           "applied_to": [
             "StructuralComplexity"
@@ -10849,39 +9520,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< HEAD
-          "amount": 4.2000003,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 29"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 5 levels"
-=======
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.2000003,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< Updated upstream
-          "issue": "High cyclomatic complexity: 23"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-          "issue": "High cognitive complexity: 29"
->>>>>>> Stashed changes
         }
       ]
     },
@@ -10914,24 +9557,27 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-=======
-=======
-          "amount": 1.0,
+          "amount": 5.5,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "Deep nesting: 4 levels"
+          "issue": "High cyclomatic complexity: 21"
         },
         {
           "source_metric": "StructuralComplexity",
->>>>>>> Stashed changes
           "amount": 4.8,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 31"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 4 levels"
         },
         {
           "source_metric": "Duplication",
@@ -10940,46 +9586,6 @@
             "Duplication"
           ],
           "issue": "Code duplication: 10.8%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
-          "amount": 5.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-<<<<<<< HEAD
-          "issue": "Code duplication: 10.8%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 5.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 21"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.8,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 31"
-=======
-          "issue": "High cyclomatic complexity: 21"
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
         }
       ]
     },
@@ -11143,20 +9749,20 @@
       "file_path": "./ide/vscode-ruchy/out/extension.js",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 2.1875,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 10.9%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 4.8,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 31"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 2.1875,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 10.9%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -11182,53 +9788,28 @@
       "file_path": "./ide/vscode-ruchy/src/extension.ts",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-<<<<<<< Updated upstream
-          "amount": 3.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 25"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 8.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 26"
-        },
-        {
-<<<<<<< HEAD
-=======
-          "source_metric": "StructuralComplexity",
-=======
->>>>>>> Stashed changes
-          "amount": 3.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 25"
-        },
-        {
-<<<<<<< Updated upstream
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-          "source_metric": "StructuralComplexity",
-          "amount": 8.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 26"
-        },
-        {
->>>>>>> Stashed changes
           "source_metric": "Duplication",
           "amount": 2.75,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 13.8%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 8.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 26"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 3.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 25"
         }
       ]
     }
@@ -11237,20 +9818,8 @@
   "average_grade": "A",
   "total_files": 385,
   "language_distribution": {
-<<<<<<< Updated upstream
-<<<<<<< HEAD
     "Rust": 382,
-    "TypeScript": 1,
-    "JavaScript": 2
-=======
     "JavaScript": 2,
-    "TypeScript": 1,
-    "Rust": 382
->>>>>>> 57f5841 ([P0-DEBT-004] Complete PMAT pre-commit integration)
-=======
-    "TypeScript": 1,
-    "Rust": 382,
-    "JavaScript": 2
->>>>>>> Stashed changes
+    "TypeScript": 1
   }
 }
