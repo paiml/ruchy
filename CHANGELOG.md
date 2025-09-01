@@ -4,6 +4,25 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.29.1] - 2025-09-01
+
+### 🔧 Critical Bug Fixes
+
+#### Coverage Command Regression Fix (RUCHY-206)
+- **FIXED**: `ruchy coverage` command now properly accessible via CLI
+- **FIXED**: Coverage threshold reporting now shows correct values (was always 70%)
+- **ADDED**: Comprehensive TDD test suite for all CLI commands
+- **ADDED**: `ruchy coverage` subcommand with full functionality:
+  - Path-based coverage analysis
+  - Configurable thresholds with `--threshold`
+  - Multiple output formats: text, HTML, JSON
+  - Verbose output option
+
+#### Quality Improvements
+- **TDD Approach**: Created `tests/clap_commands_test.rs` ensuring all 23 commands are accessible
+- **Prevention**: Test suite prevents future CLI command registration failures
+- **Root Cause**: Coverage command wasn't registered in `handle_complex_command` catch-all
+
 ## [1.29.0] - 2025-08-31
 
 ### 🎯 INTELLIGENT TAB COMPLETION & HELP SYSTEM
