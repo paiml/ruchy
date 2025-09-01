@@ -308,9 +308,9 @@ impl CompletionCache {
 }
 
 pub struct HelpSystem {
-    builtin_docs: HashMap<String, Documentation>,
-    method_docs: HashMap<(String, String), Documentation>,
-    module_docs: HashMap<String, Documentation>,
+    builtins: HashMap<String, Documentation>,
+    methods: HashMap<(String, String), Documentation>,
+    modules: HashMap<String, Documentation>,
 }
 
 impl Default for HelpSystem {
@@ -322,19 +322,19 @@ impl Default for HelpSystem {
 impl HelpSystem {
     pub fn new() -> Self {
         let mut system = Self {
-            builtin_docs: HashMap::new(),
-            method_docs: HashMap::new(),
-            module_docs: HashMap::new(),
+            builtins: HashMap::new(),
+            methods: HashMap::new(),
+            modules: HashMap::new(),
         };
-        system.init_builtin_docs();
-        system.init_method_docs();
-        system.init_module_docs();
+        system.init_builtins();
+        system.init_methods();
+        system.init_modules();
         system
     }
 
-    fn init_builtin_docs(&mut self) {
+    fn init_builtins(&mut self) {
         // Core language functions
-        self.builtin_docs.insert("println".to_string(), Documentation {
+        self.builtins.insert("println".to_string(), Documentation {
             signature: "println(value: T) -> ()".to_string(),
             description: "Print a value to stdout followed by a newline.".to_string(),
             parameters: vec![
@@ -354,7 +354,7 @@ impl HelpSystem {
             see_also: vec!["print".to_string()],
         });
 
-        self.builtin_docs.insert("type".to_string(), Documentation {
+        self.builtins.insert("type".to_string(), Documentation {
             signature: "type(object: T) -> String".to_string(),
             description: "Return the type of an object as a string.".to_string(),
             parameters: vec![
@@ -375,7 +375,7 @@ impl HelpSystem {
             see_also: vec!["dir".to_string(), "help".to_string()],
         });
 
-        self.builtin_docs.insert("dir".to_string(), Documentation {
+        self.builtins.insert("dir".to_string(), Documentation {
             signature: "dir(object: T) -> List<String>".to_string(),
             description: "Return a list of methods and attributes available on an object.".to_string(),
             parameters: vec![
@@ -395,7 +395,7 @@ impl HelpSystem {
             see_also: vec!["type".to_string(), "help".to_string()],
         });
 
-        self.builtin_docs.insert("help".to_string(), Documentation {
+        self.builtins.insert("help".to_string(), Documentation {
             signature: "help() -> () | help(object: T) -> ()".to_string(),
             description: "Show help information. Without arguments, shows general help. With an object, shows detailed help for that object.".to_string(),
             parameters: vec![
@@ -417,7 +417,7 @@ impl HelpSystem {
         });
 
         // Add documentation for common types
-        self.builtin_docs.insert("String".to_string(), Documentation {
+        self.builtins.insert("String".to_string(), Documentation {
             signature: "String".to_string(),
             description: "A Unicode string type. Strings are immutable sequences of characters.".to_string(),
             parameters: vec![],
@@ -430,7 +430,7 @@ impl HelpSystem {
             see_also: vec!["dir".to_string(), "str".to_string()],
         });
 
-        self.builtin_docs.insert("List".to_string(), Documentation {
+        self.builtins.insert("List".to_string(), Documentation {
             signature: "List<T>".to_string(),
             description: "A dynamic array type that can hold elements of any type.".to_string(),
             parameters: vec![],
@@ -443,7 +443,7 @@ impl HelpSystem {
             see_also: vec!["dir".to_string(), "map".to_string(), "filter".to_string()],
         });
 
-        self.builtin_docs.insert("DataFrame".to_string(), Documentation {
+        self.builtins.insert("DataFrame".to_string(), Documentation {
             signature: "DataFrame".to_string(),
             description: "A two-dimensional data structure with labeled columns, similar to a spreadsheet or SQL table.".to_string(),
             parameters: vec![],
@@ -457,7 +457,7 @@ impl HelpSystem {
         });
     }
 
-    fn init_method_docs(&mut self) {
+    fn init_methods(&mut self) {
         // String methods
         let string_methods = vec![
             ("len", "len() -> Int", "Return the length of the string in characters"),
@@ -472,7 +472,7 @@ impl HelpSystem {
         ];
 
         for (method, signature, description) in string_methods {
-            self.method_docs.insert(("String".to_string(), method.to_string()), Documentation {
+            self.methods.insert(("String".to_string(), method.to_string()), Documentation {
                 signature: signature.to_string(),
                 description: description.to_string(),
                 parameters: vec![], // Simplified for now
@@ -496,7 +496,7 @@ impl HelpSystem {
         ];
 
         for (method, signature, description) in list_methods {
-            self.method_docs.insert(("List".to_string(), method.to_string()), Documentation {
+            self.methods.insert(("List".to_string(), method.to_string()), Documentation {
                 signature: signature.to_string(),
                 description: description.to_string(),
                 parameters: vec![], // Simplified for now
@@ -517,7 +517,7 @@ impl HelpSystem {
         ];
 
         for (method, signature, description) in dataframe_methods {
-            self.method_docs.insert(("DataFrame".to_string(), method.to_string()), Documentation {
+            self.methods.insert(("DataFrame".to_string(), method.to_string()), Documentation {
                 signature: signature.to_string(),
                 description: description.to_string(),
                 parameters: vec![], // Simplified for now
@@ -528,7 +528,7 @@ impl HelpSystem {
         }
     }
 
-    fn init_module_docs(&mut self) {
+    fn init_modules(&mut self) {
         // Standard library modules
         let modules = vec![
             ("std", "Ruchy standard library - core functionality and utilities"),
@@ -542,7 +542,7 @@ impl HelpSystem {
         ];
 
         for (module, description) in modules {
-            self.module_docs.insert(module.to_string(), Documentation {
+            self.modules.insert(module.to_string(), Documentation {
                 signature: format!("module {module}"),
                 description: description.to_string(),
                 parameters: vec![],
@@ -554,11 +554,11 @@ impl HelpSystem {
     }
 
     pub fn get_help(&self, query: &str) -> Option<&Documentation> {
-        self.builtin_docs.get(query).or_else(|| self.module_docs.get(query))
+        self.builtins.get(query).or_else(|| self.modules.get(query))
     }
 
     pub fn get_method_help(&self, type_name: &str, method_name: &str) -> Option<&Documentation> {
-        self.method_docs.get(&(type_name.to_string(), method_name.to_string()))
+        self.methods.get(&(type_name.to_string(), method_name.to_string()))
     }
 
     pub fn show_general_help(&self) -> String {
@@ -949,7 +949,7 @@ impl RuchyCompleter {
             SimpleType::String => "String",
             SimpleType::List => "List",
             SimpleType::DataFrame => "DataFrame",
-            _ => return Vec::new(),
+            SimpleType::Unknown => return Vec::new(),
         };
 
         let methods = self.completion_cache.get_type_methods(type_name);
@@ -1046,8 +1046,8 @@ impl RuchyCompleter {
         let len2 = s2.len();
         let mut matrix = vec![vec![0; len2 + 1]; len1 + 1];
 
-        for i in 0..=len1 {
-            matrix[i][0] = i;
+        for (i, row) in matrix.iter_mut().enumerate().take(len1 + 1) {
+            row[0] = i;
         }
         for j in 0..=len2 {
             matrix[0][j] = j;
@@ -1128,6 +1128,7 @@ impl Completer for RuchyCompleter {
 }
 
 #[cfg(test)]
+#[allow(clippy::panic)]
 mod tests {
     use super::*;
 
