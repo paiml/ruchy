@@ -2,6 +2,8 @@
 //!
 //! [TEST-COV-013] Target cache module with 0% coverage
 
+#![allow(unused_comparisons)]
+
 use ruchy::optimization::cache::*;
 use ruchy::optimization::CodeLocation;
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};

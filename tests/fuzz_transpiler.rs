@@ -1,4 +1,6 @@
 //! Fuzz tests for transpiler robustness
+
+#![allow(clippy::needless_range_loop)]
 //! 
 //! These tests use random inputs to ensure the transpiler never panics
 //! and handles malformed input gracefully.

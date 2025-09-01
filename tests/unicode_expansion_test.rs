@@ -136,5 +136,5 @@ fn test_unicode_expansion_tab_completion_integration() {
     // ruchy> \sum[TAB] → suggests ∑ (Summation)  
     // ruchy> \rightarrow[TAB] → suggests → (Right arrow)
     
-    assert!(true, "Unicode expansion feature is implemented and integrated");
+    // Unicode expansion feature is implemented and integrated
 }

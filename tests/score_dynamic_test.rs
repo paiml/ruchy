@@ -1,6 +1,8 @@
 // TDD Test Suite for Dynamic Score Calculation
 // Ensures score is not hardcoded but calculated based on code quality
 
+#![allow(clippy::float_cmp)]
+
 use std::process::Command;
 use tempfile::NamedTempFile;
 use std::io::Write;

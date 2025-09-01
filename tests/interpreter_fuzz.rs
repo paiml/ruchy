@@ -1,5 +1,7 @@
 //! Additional fuzz testing focused on interpreter edge cases
 
+#![allow(unused_variables, clippy::match_same_arms, clippy::single_match)]
+
 use ruchy::runtime::repl::Repl;
 use ruchy::frontend::parser::Parser;
 

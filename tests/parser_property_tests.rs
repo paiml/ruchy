@@ -1,4 +1,6 @@
 //! Property-based tests for the parser
+
+#![allow(clippy::needless_pass_by_value, clippy::collapsible_match)]
 //!
 //! [TEST-COV-013] Increase parser test coverage with property testing
 //! Implements mathematical property verification using both proptest and quickcheck

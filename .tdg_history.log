@@ -229,3 +229,12 @@
 2025-09-01T15:53:01+02:00 | src/runtime/mod.rs | 100.0→100 | APLus→New | 0
 2025-09-01T15:53:01+02:00 | src/runtime/replay_converter.rs | →100 | →New | 
 2025-09-01T15:53:01+02:00 | tests/generated_from_replays.rs | →100 | →New | 
+2025-09-01T15:54:10+02:00 | scripts/automated_recording.rs | →100 | →New | 
+2025-09-01T15:54:10+02:00 | src/bin/handlers/mod.rs | 67.418396→100 | CPlus→New | 32.581604
+2025-09-01T15:54:11+02:00 | src/bin/ruchy.rs | 88.4515→100 | AMinus→New | 11.5485
+2025-09-01T15:54:11+02:00 | src/runtime/mod.rs | 100.0→100 | APLus→New | 0
+2025-09-01T15:54:11+02:00 | src/runtime/replay.rs | 95.6→100 | APLus→New | 4.4
+2025-09-01T15:54:11+02:00 | src/runtime/replay_converter.rs | →100 | →New | 
+2025-09-01T15:54:11+02:00 | src/runtime/safe_arena.rs | 100.0→100 | APLus→New | 0
+2025-09-01T15:54:11+02:00 | tests/generated_from_replays.rs | →100 | →New | 
+2025-09-01T17:18:45+02:00 | src/runtime/replay_converter.rs | →100 | →New | 

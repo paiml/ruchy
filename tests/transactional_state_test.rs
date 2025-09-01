@@ -134,7 +134,7 @@ fn test_transactional_evaluation_failure() {
     let result = strict_repl.eval_transactional("let big_data = [1,2,3,4,5,6,7,8,9,10]");
     
     // Either succeeds or fails, both are valid depending on timing
-    if let Ok(_) = result {
+    if result.is_ok() {
         // If it succeeds, state should be Ready
         assert!(matches!(strict_repl.get_state(), ReplState::Ready));
     } else {

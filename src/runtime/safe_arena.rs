@@ -328,7 +328,7 @@ mod tests {
         assert_eq!(*int_val, 42);
         assert_eq!(*string_val, "hello");
         assert_eq!(*vec_val, vec![1, 2, 3]);
-        assert_eq!(*bool_val, true);
+        assert!(*bool_val);
     }
 
     #[test]

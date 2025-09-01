@@ -163,7 +163,7 @@ fn test_progressive_activation_edge_cases() {
     
     // Test that wrong patterns don't trigger activation
     // Since #[testing] is not a valid attribute, it won't activate test mode
-    let result = repl.eval("42"); // Use valid expression instead
+    let _result = repl.eval("42"); // Use valid expression instead
     assert_eq!(repl.get_mode(), "normal");
     
     // Test exact matches work

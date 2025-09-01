@@ -48,7 +48,7 @@ fn test_vector_unit_profile() {
 
 #[test]
 fn test_mechanical_sympathy_tuner_creation() {
-    let tuner = MechanicalSympathyTuner::new();
+    let _tuner = MechanicalSympathyTuner::new();
     // Just verify it can be created
     // Analysis methods require actual AST input
 }
@@ -59,8 +59,8 @@ fn test_hardware_profile_custom() {
         architecture: "aarch64".to_string(),
         cores: 4,
         l1_cache_size: 32768,
-        l2_cache_size: 262144,
-        l3_cache_size: Some(4194304),
+        l2_cache_size: 262_144,
+        l3_cache_size: Some(4_194_304),
         cache_line_size: 128,
         branch_predictor: BranchPredictorProfile {
             bht_size: 1024,

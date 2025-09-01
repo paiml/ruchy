@@ -3,6 +3,8 @@
 //! Tests the actual proof verification logic that extracts assertions from AST
 //! and verifies them using mathematical reasoning
 
+#![allow(clippy::expect_used, clippy::unwrap_used)]
+
 use ruchy::{
     Parser as RuchyParser,
     proving::{ProofVerificationResult, extract_assertions_from_ast, verify_single_assertion, verify_assertions_batch}
