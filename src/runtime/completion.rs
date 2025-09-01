@@ -944,6 +944,96 @@ impl RuchyCompleter {
         }
     }
 
+    // Immutable version for use with Completer trait
+    pub fn complete_context_immutable(&self, context: CompletionContext) -> Vec<Pair> {
+        match context {
+            CompletionContext::MethodAccess { receiver_type, .. } => {
+                self.complete_methods_immutable(receiver_type)
+            }
+            CompletionContext::ModulePath { segments, partial_segment } => {
+                self.complete_module_path_immutable(segments, partial_segment)
+            }
+            CompletionContext::FreeExpression { partial_ident, .. } => {
+                self.complete_free_expression_immutable(partial_ident)
+            }
+            CompletionContext::FunctionCall { function_name, current_param } => {
+                self.complete_function_params_immutable(function_name, current_param)
+            }
+            CompletionContext::HelpQuery { query } => {
+                self.complete_help_query_immutable(query)
+            }
+        }
+    }
+
+    // Immutable versions for Completer trait
+    fn complete_methods_immutable(&self, receiver_type: SimpleType) -> Vec<Pair> {
+        let type_name = match receiver_type {
+            SimpleType::String => "String",
+            SimpleType::List => "List", 
+            SimpleType::DataFrame => "DataFrame",
+            SimpleType::Unknown => return Vec::new(),
+        };
+        
+        // Create a temporary cache to avoid mutable access
+        let mut temp_cache = CompletionCache::new();
+        let methods = temp_cache.get_type_methods(type_name);
+        
+        methods.into_iter()
+            .map(|method| Pair {
+                display: format!("{}() -> {}", method.name, method.return_type),
+                replacement: method.name,
+            })
+            .collect()
+    }
+    
+    fn complete_module_path_immutable(&self, _segments: Vec<String>, partial_segment: String) -> Vec<Pair> {
+        // For now, return empty - module system not fully implemented
+        if partial_segment.is_empty() {
+            Vec::new()
+        } else {
+            Vec::new()
+        }
+    }
+    
+    fn complete_free_expression_immutable(&self, partial_ident: String) -> Vec<Pair> {
+        let mut completions = Vec::new();
+        
+        // Add builtin functions
+        let builtins = vec![
+            "println", "print", "len", "help", "type", "dir",
+            "map", "filter", "reduce", "sum", "min", "max",
+        ];
+        
+        for builtin in builtins {
+            if builtin.starts_with(&partial_ident) {
+                completions.push(Pair {
+                    display: builtin.to_string(),
+                    replacement: builtin.to_string(),
+                });
+            }
+        }
+        
+        completions
+    }
+    
+    fn complete_function_params_immutable(&self, _function_name: String, _current_param: usize) -> Vec<Pair> {
+        // For now, return empty - parameter completion not fully implemented
+        Vec::new()
+    }
+    
+    fn complete_help_query_immutable(&self, _query: String) -> Vec<Pair> {
+        let help_topics = vec![
+            "println", "type", "dir", "help", "List", "String", "DataFrame"
+        ];
+        
+        help_topics.into_iter()
+            .map(|topic| Pair {
+                display: format!("help({})", topic),
+                replacement: topic.to_string(),
+            })
+            .collect()
+    }
+
     fn complete_methods(&mut self, receiver_type: SimpleType) -> Vec<Pair> {
         let type_name = match receiver_type {
             SimpleType::String => "String",
@@ -1116,8 +1206,7 @@ impl Completer for RuchyCompleter {
         _ctx: &Context<'_>,
     ) -> rustyline::Result<(usize, Vec<Pair>)> {
         let context = self.analyze_context(line, pos);
-        let mut completer = RuchyCompleter::new();
-        let completions = completer.complete_context(context);
+        let completions = self.complete_context_immutable(context);
         
         let start = line[..pos]
             .rfind(|c: char| !c.is_alphanumeric() && c != '_' && c != '.')
