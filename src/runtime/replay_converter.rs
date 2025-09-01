@@ -150,12 +150,11 @@ impl ReplayConverter {
         
         let (expected_output, test_assertion) = match expected_result {
             EvalResult::Success { value } => {
-                let sanitized_value = value.replace('\"', "\\\"");
-                (format!("Ok(\"{sanitized_value}\")"), format!("assert_eq!(result, Ok(\"{sanitized_value}\".to_string()));"))
+                let sanitized_value = value.replace('\"', "\\\"").replace('\\', "\\\\");
+                (format!("Ok(\"{sanitized_value}\")"), format!("assert_eq!(result, Ok(r#\"{}\"#.to_string()));", value))
             }
             EvalResult::Error { message } => {
-                let sanitized_message = message.replace('\"', "\\\"");
-                (format!("Err(\"{sanitized_message}\")"), format!("assert!(result.is_err() && result.unwrap_err().to_string().contains(\"{sanitized_message}\"));"))
+                (format!("Err(r#\"{}\"#)", message), format!("assert!(result.is_err() && result.unwrap_err().to_string().contains(r#\"{}\"#));", message))
             }
             EvalResult::Unit => {
                 ("Ok(\"\")".to_string(), "assert_eq!(result, Ok(\"\".to_string()));".to_string())
@@ -214,12 +213,10 @@ fn test_{test_name}() -> Result<()> {{
                         
                         let assertion = match result {
                             EvalResult::Success { value } => {
-                                let sanitized_value = value.replace('\"', "\\\"");
-                                format!("    assert_eq!(result_{i}, Ok(\"{sanitized_value}\".to_string()));\n")
+                                format!("    assert_eq!(result_{i}, Ok(r#\"{}\"#.to_string()));\n", value)
                             }
                             EvalResult::Error { message } => {
-                                let sanitized_message = message.replace('\"', "\\\"");
-                                format!("    assert!(result_{i}.is_err() && result_{i}.unwrap_err().to_string().contains(\"{sanitized_message}\"));\n")
+                                format!("    assert!(result_{i}.is_err() && result_{i}.unwrap_err().to_string().contains(r#\"{}\"#));\n", message)
                             }
                             EvalResult::Unit => {
                                 format!("    assert_eq!(result_{i}, Ok(\"\".to_string()));\n")
