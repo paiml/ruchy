@@ -17,10 +17,13 @@ TDG_HISTORY=".tdg_history.log"
 
 # Generate current TDG scores
 echo "📊 Calculating current TDG scores..."
-pmat tdg . --format=json > "$TDG_CURRENT" 2>/dev/null || {
+if ! timeout 90s pmat tdg . --format=json > "$TDG_CURRENT" 2>/dev/null; then
     echo "⚠️ TDG analysis failed, falling back to quality-gate"
-    pmat quality-gate --format=json > "$TDG_CURRENT" 2>/dev/null
-}
+    if ! timeout 90s pmat quality-gate --format=json > "$TDG_CURRENT" 2>/dev/null; then
+        echo "❌ Both TDG and quality-gate failed, cannot proceed"
+        exit 1
+    fi
+fi
 
 # Check if baseline exists
 if [ ! -f "$TDG_BASELINE" ]; then
@@ -43,24 +46,34 @@ VIOLATIONS=0
 IMPROVEMENTS=0
 
 for file in $MODIFIED_FILES; do
-    # Get baseline score
-    BASELINE_SCORE=$(jq -r ".files[] | select(.file_path == \"./$file\") | .total" "$TDG_BASELINE" 2>/dev/null || echo "100")
-    BASELINE_GRADE=$(jq -r ".files[] | select(.file_path == \"./$file\") | .grade" "$TDG_BASELINE" 2>/dev/null || echo "New")
+    # Get baseline score (handle both TDG and quality-gate JSON formats)
+    BASELINE_SCORE=$(jq -r "if .files then (.files[] | select(.file_path == \"./$file\" or .path == \"$file\") | .total // .score // 100) else .overall_score // 100 end" "$TDG_BASELINE" 2>/dev/null || echo "100")
+    BASELINE_GRADE=$(jq -r "if .files then (.files[] | select(.file_path == \"./$file\" or .path == \"$file\") | .grade // \"New\") else \"New\" end" "$TDG_BASELINE" 2>/dev/null || echo "New")
     
-    # Get current score
-    CURRENT_SCORE=$(jq -r ".files[] | select(.file_path == \"./$file\") | .total" "$TDG_CURRENT" 2>/dev/null || echo "100")
-    CURRENT_GRADE=$(jq -r ".files[] | select(.file_path == \"./$file\") | .grade" "$TDG_CURRENT" 2>/dev/null || echo "New")
+    # Get current score (handle both TDG and quality-gate JSON formats)
+    CURRENT_SCORE=$(jq -r "if .files then (.files[] | select(.file_path == \"./$file\" or .path == \"$file\") | .total // .score // 100) else .overall_score // 100 end" "$TDG_CURRENT" 2>/dev/null || echo "100")
+    CURRENT_GRADE=$(jq -r "if .files then (.files[] | select(.file_path == \"./$file\" or .path == \"$file\") | .grade // \"New\") else \"New\" end" "$TDG_CURRENT" 2>/dev/null || echo "New")
+    
+    # Skip if no score found for file (likely means it wasn't analyzed)
+    if [ "$BASELINE_SCORE" = "null" ] || [ "$CURRENT_SCORE" = "null" ]; then
+        echo "➖ $file: No TDG data (may be new or skipped)"
+        continue
+    fi
     
     # Calculate delta
-    DELTA=$(echo "$CURRENT_SCORE - $BASELINE_SCORE" | bc -l)
+    if command -v bc >/dev/null 2>&1; then
+        DELTA=$(echo "$CURRENT_SCORE - $BASELINE_SCORE" | bc -l 2>/dev/null || echo "0")
+    else
+        DELTA=$(awk "BEGIN {printf \"%.2f\", $CURRENT_SCORE - $BASELINE_SCORE}")
+    fi
     
     # Format output
-    if (( $(echo "$DELTA < -0.1" | bc -l) )); then
+    if [ -n "$DELTA" ] && ([ "$DELTA" != "0" ] && [ "${DELTA%.*}" -lt "0" ]); then
         echo -e "${RED}❌ $file: TDG degraded${NC}"
         echo "   Baseline: $BASELINE_SCORE ($BASELINE_GRADE) → Current: $CURRENT_SCORE ($CURRENT_GRADE)"
         echo "   Delta: $DELTA"
         VIOLATIONS=$((VIOLATIONS + 1))
-    elif (( $(echo "$DELTA > 0.1" | bc -l) )); then
+    elif [ -n "$DELTA" ] && ([ "$DELTA" != "0" ] && [ "${DELTA%.*}" -gt "0" ]); then
         echo -e "${GREEN}✅ $file: TDG improved${NC}"
         echo "   Baseline: $BASELINE_SCORE ($BASELINE_GRADE) → Current: $CURRENT_SCORE ($CURRENT_GRADE)"
         echo "   Delta: +$DELTA"

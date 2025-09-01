@@ -264,3 +264,4 @@
 2025-09-01T18:00:34+02:00 | tests/traits_basic_test.rs | 96.05263→100 | APLus→New | 3.94737
 2025-09-01T18:00:34+02:00 | tests/transactional_state_test.rs | 94.4086→100 | A→New | 5.5914
 2025-09-01T18:00:34+02:00 | tests/unicode_expansion_test.rs | 100.0→100 | APLus→New | 0
+2025-09-01T18:22:11+02:00 | tests/generated_comprehensive.rs | →100 | →New | 
