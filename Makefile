@@ -1,4 +1,4 @@
-.PHONY: help all build test lint format clean coverage examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick
+.PHONY: help all build test lint format clean coverage examples bench install doc ci prepare-publish quality-gate test-examples test-fuzz test-fuzz-quick tdg-dashboard tdg-stop tdg-status tdg-restart
 
 # Default target
 help:
@@ -25,6 +25,12 @@ help:
 	@echo "  make coverage-open - Generate and open coverage report in browser"
 	@echo "  make quality-gate - Run PMAT quality checks"
 	@echo "  make ci          - Run full CI pipeline"
+	@echo ""
+	@echo "TDG Dashboard Commands:"
+	@echo "  make tdg-dashboard - Start real-time TDG quality dashboard"
+	@echo "  make tdg-stop    - Stop the TDG dashboard"
+	@echo "  make tdg-status  - Check TDG dashboard status"
+	@echo "  make tdg-restart - Restart the TDG dashboard"
 	@echo ""
 	@echo "Development Commands:"
 	@echo "  make examples    - Run all examples"
@@ -428,6 +434,23 @@ quality-gate:
 	@echo "Checking complexity..."
 	@~/.local/bin/pmat analyze --metrics complexity src/ || true
 	@echo "✓ Quality check complete"
+
+# TDG Dashboard Management
+tdg-dashboard:
+	@echo "🚀 Starting TDG Real-Time Dashboard..."
+	@./scripts/tdg_dashboard.sh start --open
+
+tdg-stop:
+	@echo "🛑 Stopping TDG Dashboard..."
+	@./scripts/tdg_dashboard.sh stop
+
+tdg-status:
+	@echo "📊 TDG Dashboard Status:"
+	@./scripts/tdg_dashboard.sh status
+
+tdg-restart:
+	@echo "🔄 Restarting TDG Dashboard..."
+	@./scripts/tdg_dashboard.sh restart
 
 # CI pipeline
 ci: format-check lint test-all coverage quality-gate

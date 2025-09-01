@@ -90,6 +90,12 @@ pub struct CompletionCache {
     last_access: HashMap<String, Instant>,
 }
 
+impl Default for CompletionCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CompletionCache {
     pub fn new() -> Self {
         let mut cache = Self {
@@ -278,9 +284,9 @@ impl CompletionCache {
         if total_lookups == 0 {
             self.avg_lookup_time = new_time;
         } else {
-            let old_total = self.avg_lookup_time.as_nanos() * (total_lookups - 1) as u128;
+            let old_total = self.avg_lookup_time.as_nanos() * u128::from(total_lookups - 1);
             let new_total = old_total + new_time.as_nanos();
-            self.avg_lookup_time = Duration::from_nanos((new_total / total_lookups as u128) as u64);
+            self.avg_lookup_time = Duration::from_nanos((new_total / u128::from(total_lookups)) as u64);
         }
     }
 
@@ -305,6 +311,12 @@ pub struct HelpSystem {
     builtin_docs: HashMap<String, Documentation>,
     method_docs: HashMap<(String, String), Documentation>,
     module_docs: HashMap<String, Documentation>,
+}
+
+impl Default for HelpSystem {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl HelpSystem {
@@ -531,7 +543,7 @@ impl HelpSystem {
 
         for (module, description) in modules {
             self.module_docs.insert(module.to_string(), Documentation {
-                signature: format!("module {}", module),
+                signature: format!("module {module}"),
                 description: description.to_string(),
                 parameters: vec![],
                 return_type: None,
@@ -589,14 +601,14 @@ For more detailed information on any topic, use help(topic_name).
             "String" => vec![
                 "len", "upper", "lower", "trim", "split", 
                 "starts_with", "ends_with", "contains", "replace"
-            ].into_iter().map(|s| s.to_string()).collect(),
+            ].into_iter().map(std::string::ToString::to_string).collect(),
             "List" => vec![
                 "map", "filter", "len", "sum", "head", "tail", 
                 "reverse", "push", "pop", "first", "last"
-            ].into_iter().map(|s| s.to_string()).collect(),
+            ].into_iter().map(std::string::ToString::to_string).collect(),
             "DataFrame" => vec![
                 "head", "select", "filter", "sort", "group_by", "describe"
-            ].into_iter().map(|s| s.to_string()).collect(),
+            ].into_iter().map(std::string::ToString::to_string).collect(),
             _ => Vec::new(),
         }
     }
@@ -620,13 +632,13 @@ For more detailed information on any topic, use help(topic_name).
         }
         
         if let Some(ret_type) = &doc.return_type {
-            output.push_str(&format!("\nReturns: {}\n", ret_type));
+            output.push_str(&format!("\nReturns: {ret_type}\n"));
         }
         
         if !doc.examples.is_empty() {
             output.push_str("\nExamples:\n");
             for example in &doc.examples {
-                output.push_str(&format!("  {}\n", example));
+                output.push_str(&format!("  {example}\n"));
             }
         }
         
@@ -642,6 +654,12 @@ pub struct RuchyCompleter {
     help_system: HelpSystem,
     completion_cache: CompletionCache,
     current_scope: usize,
+}
+
+impl Default for RuchyCompleter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RuchyCompleter {
@@ -735,7 +753,7 @@ impl RuchyCompleter {
         }
         
         // Also handle single identifiers that could be module starts
-        if text.chars().any(|c| c.is_uppercase()) && text.chars().all(|c| c.is_alphanumeric() || c == '_') {
+        if text.chars().any(char::is_uppercase) && text.chars().all(|c| c.is_alphanumeric() || c == '_') {
             return Some(CompletionContext::ModulePath {
                 segments: Vec::new(),
                 partial_segment: text.to_string(),
@@ -944,20 +962,18 @@ impl RuchyCompleter {
     }
 
     fn complete_module_path(&self, _segments: Vec<String>, partial: String) -> Vec<Pair> {
-        let std_modules = vec![
-            ("collections", "Data structures"),
+        let std_modules = [("collections", "Data structures"),
             ("fs", "File system operations"),
             ("io", "Input/output operations"),
             ("net", "Network operations"),
             ("process", "Process management"),
-            ("thread", "Threading utilities"),
-        ];
+            ("thread", "Threading utilities")];
 
         std_modules.iter()
             .filter(|(name, _)| name.starts_with(&partial))
             .map(|(name, desc)| Pair {
-                display: format!("{} - {}", name, desc),
-                replacement: name.to_string(),
+                display: format!("{name} - {desc}"),
+                replacement: (*name).to_string(),
             })
             .collect()
     }
@@ -978,8 +994,8 @@ impl RuchyCompleter {
         builtins.iter()
             .filter(|(name, _)| name.starts_with(&partial))
             .map(|(name, desc)| Pair {
-                display: format!("{} - {}", name, desc),
-                replacement: name.to_string(),
+                display: format!("{name} - {desc}"),
+                replacement: (*name).to_string(),
             })
             .collect()
     }
@@ -989,16 +1005,14 @@ impl RuchyCompleter {
     }
 
     fn complete_help_query(&self, partial: String) -> Vec<Pair> {
-        let topics = vec![
-            "println", "type", "dir", "help",
-            "List", "String", "DataFrame",
-        ];
+        let topics = ["println", "type", "dir", "help",
+            "List", "String", "DataFrame"];
 
         topics.iter()
             .filter(|topic| topic.starts_with(&partial))
             .map(|topic| Pair {
-                display: topic.to_string(),
-                replacement: topic.to_string(),
+                display: (*topic).to_string(),
+                replacement: (*topic).to_string(),
             })
             .collect()
     }
@@ -1041,7 +1055,7 @@ impl RuchyCompleter {
 
         for (i, c1) in s1.chars().enumerate() {
             for (j, c2) in s2.chars().enumerate() {
-                let cost = if c1 == c2 { 0 } else { 1 };
+                let cost = usize::from(c1 != c2);
                 matrix[i + 1][j + 1] = std::cmp::min(
                     std::cmp::min(
                         matrix[i][j + 1] + 1,
@@ -1107,8 +1121,7 @@ impl Completer for RuchyCompleter {
         
         let start = line[..pos]
             .rfind(|c: char| !c.is_alphanumeric() && c != '_' && c != '.')
-            .map(|i| i + 1)
-            .unwrap_or(0);
+            .map_or(0, |i| i + 1);
         
         Ok((start, completions))
     }
