@@ -77,7 +77,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Start the interactive REPL
-    Repl,
+    Repl {
+        /// Record REPL session to a .replay file
+        #[arg(long, value_name = "FILE")]
+        record: Option<PathBuf>,
+    },
 
     /// Parse a Ruchy file and show the AST
     Parse {
@@ -893,8 +897,11 @@ fn main() -> Result<()> {
 
     // Handle subcommands
     match cli.command {
-        Some(Commands::Repl) | None => {
-            handle_repl_command()?;
+        Some(Commands::Repl { record }) => {
+            handle_repl_command(record)?;
+        }
+        None => {
+            handle_repl_command(None)?;
         }
         Some(Commands::Parse { file }) => {
             handle_parse_command(&file, cli.verbose)?;

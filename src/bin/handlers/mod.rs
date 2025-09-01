@@ -3,6 +3,7 @@ use anyhow::{Context, Result};
 mod commands;
 use ruchy::{Parser as RuchyParser, Transpiler};
 use ruchy::runtime::Repl;
+// Replay functionality imports removed - not needed in handler, used directly in REPL
 use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -525,7 +526,7 @@ fn print_prover_help() {
 /// 
 /// # Errors
 /// Returns error if REPL fails to initialize or run
-pub fn handle_repl_command() -> Result<()> {
+pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
     use colored::Colorize;
     
     let version_msg = format!("Welcome to Ruchy REPL v{}", env!("CARGO_PKG_VERSION"));
@@ -537,7 +538,12 @@ pub fn handle_repl_command() -> Result<()> {
     );
 
     let mut repl = Repl::new()?;
-    repl.run()
+    
+    if let Some(record_path) = record_file {
+        repl.run_with_recording(&record_path)
+    } else {
+        repl.run()
+    }
 }
 
 /// Handle compile command - compile Ruchy file to native binary
