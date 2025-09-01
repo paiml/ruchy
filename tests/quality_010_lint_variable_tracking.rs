@@ -10,18 +10,18 @@ fn test_lint_detects_unused_variables() {
     let file_path = dir.path().join("test.ruchy");
     
     // Unused variable should be detected
-    let code = r#"
+    let code = r"
 fn test() {
     let unused = 42;  // Never used
     let used = 1;
     println(used);
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["lint", file_path.to_str().unwrap()])
+        .args(["lint", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -36,16 +36,16 @@ fn test_lint_detects_undefined_variables() {
     let file_path = dir.path().join("test.ruchy");
     
     // Using undefined variable
-    let code = r#"
+    let code = r"
 fn test() {
     println(undefined_var);  // Never defined
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["lint", file_path.to_str().unwrap()])
+        .args(["lint", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -59,19 +59,19 @@ fn test_lint_tracks_variable_scope() {
     let file_path = dir.path().join("test.ruchy");
     
     // Variable defined in inner scope, used in outer
-    let code = r#"
+    let code = r"
 fn test() {
     if true {
         let inner = 42;
     }
     println(inner);  // Should be undefined here
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["lint", file_path.to_str().unwrap()])
+        .args(["lint", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -85,18 +85,18 @@ fn test_lint_tracks_shadowed_variables() {
     let file_path = dir.path().join("test.ruchy");
     
     // Variable shadowing
-    let code = r#"
+    let code = r"
 fn test() {
     let x = 1;
     let x = 2;  // Shadows previous x
     println(x);
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["lint", file_path.to_str().unwrap()])
+        .args(["lint", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -110,16 +110,16 @@ fn test_lint_tracks_function_parameters() {
     let file_path = dir.path().join("test.ruchy");
     
     // Unused function parameter
-    let code = r#"
+    let code = r"
 fn add(a: i32, b: i32, unused: i32) -> i32 {
     a + b
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["lint", file_path.to_str().unwrap()])
+        .args(["lint", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -133,18 +133,18 @@ fn test_lint_tracks_loop_variables() {
     let file_path = dir.path().join("test.ruchy");
     
     // Loop variable usage
-    let code = r#"
+    let code = r"
 fn test() {
     for i in 0..10 {
         // i is never used in loop body
     }
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["lint", file_path.to_str().unwrap()])
+        .args(["lint", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -158,26 +158,26 @@ fn test_lint_tracks_match_bindings() {
     let file_path = dir.path().join("test.ruchy");
     
     // Match binding usage (simplified syntax for parser)
-    let code = r#"
+    let code = r"
 fn test(opt) {
     match opt {
         Some(value) => {},  // value not used
         None => {}
     }
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["lint", file_path.to_str().unwrap()])
+        .args(["lint", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    eprintln!("Match test stdout: {}", stdout);
-    eprintln!("Match test stderr: {}", stderr);
+    eprintln!("Match test stdout: {stdout}");
+    eprintln!("Match test stderr: {stderr}");
     assert!(stdout.contains("unused match binding: value"), "Should detect unused match binding");
 }
 
@@ -186,16 +186,16 @@ fn test_lint_json_output() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
     
-    let code = r#"
+    let code = r"
 fn test() {
     let unused = 42;
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["lint", file_path.to_str().unwrap(), "--format", "json"])
+        .args(["lint", file_path.to_str().unwrap(), "--format", "json"])
         .output()
         .unwrap();
     
@@ -218,16 +218,16 @@ fn test_lint_clean_code() {
     let file_path = dir.path().join("test.ruchy");
     
     // Clean code with no issues (simplified syntax)
-    let code = r#"
+    let code = r"
 fn add(a, b) {
     a + b
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["lint", file_path.to_str().unwrap()])
+        .args(["lint", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -241,17 +241,17 @@ fn test_lint_severity_levels() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
     
-    let code = r#"
+    let code = r"
 fn test() {
     let unused = 42;        // Warning
     println(undefined);     // Error
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["lint", file_path.to_str().unwrap()])
+        .args(["lint", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     

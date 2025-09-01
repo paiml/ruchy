@@ -37,7 +37,7 @@ fn fuzz_deep_recursion() {
     // Test parser with deeply nested expressions
     for depth in 1..=20 {
         let mut code = "(".repeat(depth);
-        code.push_str("1");
+        code.push('1');
         code.push_str(&")".repeat(depth));
         
         let mut parser = Parser::new(&code);
@@ -45,7 +45,7 @@ fn fuzz_deep_recursion() {
         
         // Test deeply nested blocks
         let mut block_code = "{".repeat(depth);
-        block_code.push_str("1");
+        block_code.push('1');
         block_code.push_str(&"}".repeat(depth));
         
         let mut block_parser = Parser::new(&block_code);
@@ -158,14 +158,12 @@ fn fuzz_function_calls() {
 /// Property-based fuzz test: Any valid parse should not crash interpreter
 #[test] 
 fn property_valid_parse_no_crash() {
-    use quickcheck_macros::quickcheck;
+    
     
     fn generate_simple_expr(seed: usize) -> String {
-        let exprs = vec![
-            "1", "true", "\"hello\"", "[]", "()",
+        let exprs = ["1", "true", "\"hello\"", "[]", "()",
             "1 + 2", "true && false", "\"a\" + \"b\"",
-            "[1, 2, 3]", "(1, 2)", "x", "f()",
-        ];
+            "[1, 2, 3]", "(1, 2)", "x", "f()"];
         exprs[seed % exprs.len()].to_string()
     }
     

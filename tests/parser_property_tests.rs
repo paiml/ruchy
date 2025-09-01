@@ -36,11 +36,11 @@ mod quickcheck_tests {
         
         let inputs = [
             n.to_string(),
-            format!(" {}", n),
-            format!("{} ", n),
-            format!(" {} ", n),
-            format!("  {}  ", n),
-            format!("\t{}\n", n),
+            format!(" {n}"),
+            format!("{n} "),
+            format!(" {n} "),
+            format!("  {n}  "),
+            format!("\t{n}\n"),
         ];
         
         let mut results = Vec::new();

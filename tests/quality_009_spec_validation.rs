@@ -30,8 +30,8 @@ fn test_score_spec_compliance_complexity_boundaries() {
         
         // Add nested if statements to increase complexity
         for i in 0..complexity {
-            code.push_str(&format!("    if x > {} {{\n", i));
-            code.push_str(&format!("        x = x + {};\n", i));
+            code.push_str(&format!("    if x > {i} {{\n"));
+            code.push_str(&format!("        x = x + {i};\n"));
         }
         
         // Close all the if statements
@@ -45,7 +45,7 @@ fn test_score_spec_compliance_complexity_boundaries() {
         file.write_all(code.as_bytes()).unwrap();
         
         let output = Command::new("./target/debug/ruchy")
-            .args(&["score", file_path.to_str().unwrap(), "--format", "json"])
+            .args(["score", file_path.to_str().unwrap(), "--format", "json"])
             .output()
             .unwrap();
         
@@ -56,8 +56,7 @@ fn test_score_spec_compliance_complexity_boundaries() {
             let score = json["score"].as_f64().unwrap();
             assert!(
                 score >= min_score && score <= max_score,
-                "Complexity {} should score between {} and {}, got {}",
-                complexity, min_score, max_score, score
+                "Complexity {complexity} should score between {min_score} and {max_score}, got {score}"
             );
         }
     }
@@ -83,7 +82,7 @@ fn test_score_spec_grade_boundaries() {
     for (target_score, expected_grade) in test_cases {
         // We can't directly test grades without parsing the output
         // but we can verify the scoring produces reasonable gradations
-        println!("Testing score {} should get grade {}", target_score, expected_grade);
+        println!("Testing score {target_score} should get grade {expected_grade}");
     }
 }
 
@@ -94,7 +93,7 @@ fn test_score_parameter_penalty() {
     let file_path = dir.path().join("test.ruchy");
     
     // Function with many parameters should score very low
-    let code = r#"
+    let code = r"
 fn many_params(
     a1: i32, a2: i32, a3: i32, a4: i32, a5: i32,
     b1: i32, b2: i32, b3: i32, b4: i32, b5: i32,
@@ -106,13 +105,13 @@ fn many_params(
     c1 + c2 + c3 + c4 + c5 +
     d1 + d2 + d3 + d4 + d5
 }
-"#;
+";
     
     let mut file = fs::File::create(&file_path).unwrap();
     file.write_all(code.as_bytes()).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", file_path.to_str().unwrap()])
+        .args(["score", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -127,8 +126,7 @@ fn many_params(
             if let Ok(score) = score_str.trim().split('/').next().unwrap().parse::<f64>() {
                 assert!(
                     score <= 0.50,
-                    "Function with 20 parameters should score <= 0.50, got {}",
-                    score
+                    "Function with 20 parameters should score <= 0.50, got {score}"
                 );
             }
         }
@@ -147,9 +145,9 @@ fn test_score_nesting_depth_penalty() {
     
     for i in 0..depth {
         code.push_str(&"    ".repeat(i + 1));
-        code.push_str(&format!("if true {{\n"));
+        code.push_str(&"if true {\n".to_string());
         code.push_str(&"    ".repeat(i + 2));
-        code.push_str(&format!("let x{} = {};\n", i, i));
+        code.push_str(&format!("let x{i} = {i};\n"));
     }
     
     for i in (0..depth).rev() {
@@ -163,7 +161,7 @@ fn test_score_nesting_depth_penalty() {
     file.write_all(code.as_bytes()).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", file_path.to_str().unwrap()])
+        .args(["score", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -175,8 +173,7 @@ fn test_score_nesting_depth_penalty() {
             if let Ok(score) = score_str.trim().split('/').next().unwrap().parse::<f64>() {
                 assert!(
                     score <= 0.70,
-                    "Function with nesting depth {} should score <= 0.70, got {}",
-                    depth, score
+                    "Function with nesting depth {depth} should score <= 0.70, got {score}"
                 );
             }
         }

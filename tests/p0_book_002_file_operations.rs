@@ -22,7 +22,7 @@ write_file("{}", "Hello, World!")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success();
     
@@ -52,7 +52,7 @@ println(content)
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Hello from file!"));
@@ -76,7 +76,7 @@ println(content)
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Chain test"));
@@ -100,7 +100,7 @@ println(content)
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Wildcard import works"));
@@ -120,7 +120,7 @@ let content = read_file("nonexistent.txt")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .failure()
         .stderr(predicate::str::contains("cannot find function `read_file`"));
@@ -132,16 +132,16 @@ fn test_import_parsing_does_not_panic() {
     let file_path = dir.path().join("test.ruchy");
     
     // This should not panic the transpiler (using supported syntax)
-    let code = r#"
+    let code = r"
 import std::fs::read_file
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     // Should not panic, even if compilation fails
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .code(predicate::in_iter(vec![0, 1])); // Success or failure, but not panic
 }
@@ -161,7 +161,7 @@ let content = read_file("nonexistent.txt")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .failure();
 }
