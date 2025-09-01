@@ -123,3 +123,4 @@
 2025-09-01T08:01:34+02:00 | src/bin/handlers/mod.rs | 67.75347→67.418396 | CPlus→CPlus | -.335074
 2025-09-01T08:01:34+02:00 | src/bin/ruchy.rs | 88.58064→88.4515 | AMinus→AMinus | -.12914
 2025-09-01T08:01:34+02:00 | tests/clap_commands_test.rs | →97.27273 | →APLus | 
+2025-09-01T09:12:13+02:00 | src/runtime/completion.rs | →72.17647 | →BMinus | 
