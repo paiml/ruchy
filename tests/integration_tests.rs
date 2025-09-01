@@ -272,7 +272,8 @@ fn test_compile_generated_rust_code() {
         .expect("Failed to transpile");
 
     // Write the generated Rust code wrapped in a function
-    let generated_code = format!("pub fn test_expr() -> i64 {{ {rust_code} }}");
+    // Convert i32 to i64 to match return type
+    let generated_code = format!("pub fn test_expr() -> i64 {{ ({rust_code}) as i64 }}");
     let lib_path = project_path.join("src/lib.rs");
     fs::write(&lib_path, &generated_code).expect("Failed to write Rust code");
 
@@ -323,8 +324,8 @@ fn test_incremental_compilation() {
 fn test_error_recovery() {
     let invalid_inputs = vec![
         "let x = ;", // Missing value
-        "fun () {}", // Missing function name
         "if { }",    // Missing condition
+        "match {",   // Incomplete match expression
     ];
 
     for input in invalid_inputs {
