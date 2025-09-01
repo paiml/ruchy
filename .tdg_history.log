@@ -238,3 +238,29 @@
 2025-09-01T15:54:11+02:00 | src/runtime/safe_arena.rs | 100.0→100 | APLus→New | 0
 2025-09-01T15:54:11+02:00 | tests/generated_from_replays.rs | →100 | →New | 
 2025-09-01T17:18:45+02:00 | src/runtime/replay_converter.rs | →100 | →New | 
+2025-09-01T18:00:33+02:00 | examples/score_examples.rs | 94.4→100 | A→New | 5.6
+2025-09-01T18:00:34+02:00 | src/lints/mod.rs | 98.0→100 | APLus→New | 2.0
+2025-09-01T18:00:34+02:00 | src/middleend/environment.rs | 97.26027→100 | APLus→New | 2.73973
+2025-09-01T18:00:34+02:00 | src/runtime/replay_converter.rs | →100 | →New | 
+2025-09-01T18:00:34+02:00 | src/runtime/safe_arena.rs | 100.0→100 | APLus→New | 0
+2025-09-01T18:00:34+02:00 | tests/abstraction_analysis_tests.rs | 100.0→100 | APLus→New | 0
+2025-09-01T18:00:34+02:00 | tests/cache_analysis_simple_tests.rs | 100.0→100 | APLus→New | 0
+2025-09-01T18:00:34+02:00 | tests/differential_repl_file.rs | 100.0→100 | APLus→New | 0
+2025-09-01T18:00:34+02:00 | tests/fuzz_transpiler.rs | 95.65657→100 | APLus→New | 4.34343
+2025-09-01T18:00:34+02:00 | tests/generated_from_replays.rs | →100 | →New | 
+2025-09-01T18:00:34+02:00 | tests/interpreter_fuzz.rs | 98.0→100 | APLus→New | 2.0
+2025-09-01T18:00:34+02:00 | tests/obj_items_transpilation_test.rs | 100.0→100 | APLus→New | 0
+2025-09-01T18:00:34+02:00 | tests/optimization_basic_tests.rs | 100.0→100 | APLus→New | 0
+2025-09-01T18:00:34+02:00 | tests/parser_property_tests.rs | 90.671425→100 | A→New | 9.328575
+2025-09-01T18:00:34+02:00 | tests/println_repl_formatting_test.rs | 100.0→100 | APLus→New | 0
+2025-09-01T18:00:34+02:00 | tests/progressive_modes_integration.rs | 96.666664→100 | APLus→New | 3.333336
+2025-09-01T18:00:34+02:00 | tests/proof_verification_tdd_test.rs | 100.0→100 | APLus→New | 0
+2025-09-01T18:00:34+02:00 | tests/quality_009_spec_validation.rs | 92.93704→100 | A→New | 7.06296
+2025-09-01T18:00:34+02:00 | tests/repl_comprehensive_tests.rs | 97.344635→100 | APLus→New | 2.655365
+2025-09-01T18:00:34+02:00 | tests/repl_unit_coverage_tests.rs | 93.47653→100 | A→New | 6.52347
+2025-09-01T18:00:34+02:00 | tests/resource_bounded_test.rs | 95.72519→100 | APLus→New | 4.27481
+2025-09-01T18:00:34+02:00 | tests/score_dynamic_test.rs | 97.402596→100 | APLus→New | 2.597404
+2025-09-01T18:00:34+02:00 | tests/sister_projects_test.rs | 100.0→100 | APLus→New | 0
+2025-09-01T18:00:34+02:00 | tests/traits_basic_test.rs | 96.05263→100 | APLus→New | 3.94737
+2025-09-01T18:00:34+02:00 | tests/transactional_state_test.rs | 94.4086→100 | A→New | 5.5914
+2025-09-01T18:00:34+02:00 | tests/unicode_expansion_test.rs | 100.0→100 | APLus→New | 0
