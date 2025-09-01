@@ -436,4 +436,105 @@ mod tests {
         let violations = rule.check_expression(&match_expr);
         assert!(violations.is_empty()); // Under complexity limit
     }
+
+    #[test]
+    fn test_complexity_rule_with_custom_max() {
+        let rule = ComplexityRule { max_complexity: 3 };
+        
+        // Simple literal should not trigger
+        let expr = make_test_expr(ExprKind::Literal(Literal::Integer(42)));
+        let violations = rule.check_expression(&expr);
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn test_no_debug_print_rule_non_call_expression() {
+        let rule = NoDebugPrintRule;
+        
+        // Test with non-call expression
+        let expr = make_test_expr(ExprKind::Literal(Literal::String("test".to_string())));
+        let violations = rule.check_expression(&expr);
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn test_no_debug_print_rule_non_identifier_function() {
+        let rule = NoDebugPrintRule;
+        
+        // Test with non-identifier function (e.g., lambda call)
+        let expr = make_test_expr(ExprKind::Call {
+            func: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+            args: vec![],
+        });
+        
+        let violations = rule.check_expression(&expr);
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn test_lint_violation_debug_formatting() {
+        let violation = LintViolation::Violation {
+            location: "test.ruchy:10:5".to_string(),
+            message: "Complex expression detected".to_string(),
+            severity: Severity::Info,
+            suggestion: None,
+        };
+        
+        let debug_str = format!("{:?}", violation);
+        assert!(debug_str.contains("Violation"));
+        assert!(debug_str.contains("test.ruchy:10:5"));
+    }
+
+    #[test]
+    fn test_severity_clone() {
+        let sev1 = Severity::Warning;
+        let sev2 = sev1;
+        assert_eq!(sev1, sev2);
+    }
+
+    #[test]
+    fn test_complexity_rule_if_with_else() {
+        let rule = ComplexityRule { max_complexity: 5 };
+        
+        let if_expr = make_test_expr(ExprKind::If {
+            condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(true)))),
+            then_branch: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1)))),
+            else_branch: Some(Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(2))))),
+        });
+        
+        let violations = rule.check_expression(&if_expr);
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn test_multiple_violations_from_linter() {
+        let mut linter = RuchyLinter::new();
+        
+        // Add another rule that always fails
+        struct AlwaysFailRule;
+        impl LintRule for AlwaysFailRule {
+            fn name(&self) -> &'static str {
+                "always_fail"
+            }
+            fn check_expression(&self, expr: &Expr) -> Vec<LintViolation> {
+                vec![LintViolation::Violation {
+                    location: format!("position {}", expr.span.start),
+                    message: "Always fails".to_string(),
+                    severity: Severity::Error,
+                    suggestion: None,
+                }]
+            }
+        }
+        
+        linter.add_rule(Box::new(AlwaysFailRule));
+        
+        // Create expression that also violates debug print rule
+        let expr = make_test_expr(ExprKind::Call {
+            func: Box::new(make_test_expr(ExprKind::Identifier("dbg".to_string()))),
+            args: vec![],
+        });
+        
+        let violations = linter.lint(&expr);
+        assert!(violations.len() >= 2); // At least 2 violations
+    }
 }

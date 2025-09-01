@@ -11,6 +11,7 @@ use std::rc::Rc;
 // ============================================================================
 
 /// Safe arena allocator using Rc for memory management
+#[derive(Debug)]
 pub struct SafeArena {
     /// Storage for allocated values
     storage: RefCell<Vec<Box<dyn std::any::Any>>>,
@@ -63,6 +64,7 @@ impl SafeArena {
 }
 
 /// Reference to a value in the arena
+#[derive(Debug)]
 pub struct ArenaRef<'a, T> {
     value: Rc<T>,
     _arena: &'a SafeArena,
@@ -81,6 +83,7 @@ impl<T> std::ops::Deref for ArenaRef<'_, T> {
 // ============================================================================
 
 /// Arena with checkpoint/rollback support
+#[derive(Debug)]
 pub struct TransactionalArena {
     /// Current values
     current: Rc<SafeArena>,
@@ -88,7 +91,7 @@ pub struct TransactionalArena {
     checkpoints: Vec<ArenaCheckpoint>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct ArenaCheckpoint {
     storage_size: usize,
     used: usize,
@@ -178,5 +181,199 @@ mod tests {
         let used_after = arena.arena().used();
         
         assert!(used_after < used_before);
+    }
+
+    #[test]
+    fn test_arena_memory_limit() {
+        let arena = SafeArena::new(16); // Very small limit
+        
+        // First allocation should succeed
+        let _val1 = arena.alloc([0u8; 8]).unwrap();
+        
+        // Second allocation should fail due to memory limit
+        let result = arena.alloc([0u8; 16]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("memory limit exceeded"));
+    }
+
+    #[test]
+    fn test_arena_used_tracking() {
+        let arena = SafeArena::new(1024);
+        assert_eq!(arena.used(), 0);
+        
+        let _val1 = arena.alloc(42i32).unwrap();
+        let used_after_int = arena.used();
+        assert!(used_after_int >= 4); // At least size of i32
+        
+        let _val2 = arena.alloc("test".to_string()).unwrap();
+        let used_after_string = arena.used();
+        assert!(used_after_string > used_after_int);
+    }
+
+    #[test]
+    fn test_arena_ref_deref() {
+        let arena = SafeArena::new(1024);
+        let val = arena.alloc(vec![1, 2, 3, 4]).unwrap();
+        
+        // Test Deref trait
+        assert_eq!(val.len(), 4);
+        assert_eq!(val[0], 1);
+        assert_eq!(val[3], 4);
+    }
+
+    #[test]
+    fn test_transactional_arena_new() {
+        let arena = TransactionalArena::new(2048);
+        assert_eq!(arena.arena().used(), 0);
+        assert!(arena.checkpoints.is_empty());
+    }
+
+    #[test]
+    fn test_transactional_arena_multiple_checkpoints() {
+        let mut arena = TransactionalArena::new(1024);
+        
+        // Initial allocation
+        arena.arena().alloc(100).unwrap();
+        
+        // First checkpoint
+        let cp1 = arena.checkpoint();
+        arena.arena().alloc(200).unwrap();
+        
+        // Second checkpoint
+        let cp2 = arena.checkpoint();
+        arena.arena().alloc(300).unwrap();
+        
+        // Rollback to first checkpoint
+        arena.rollback(cp1).unwrap();
+        
+        // Should only have allocations up to first checkpoint
+        let used = arena.arena().used();
+        assert!(used >= 4); // At least the first allocation
+    }
+
+    #[test]
+    fn test_transactional_arena_invalid_checkpoint() {
+        let mut arena = TransactionalArena::new(1024);
+        
+        // Try to rollback to invalid checkpoint
+        let result = arena.rollback(999);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid checkpoint"));
+    }
+
+    #[test]
+    fn test_transactional_arena_commit() {
+        let mut arena = TransactionalArena::new(1024);
+        
+        // Create checkpoint
+        let _cp = arena.checkpoint();
+        assert!(!arena.checkpoints.is_empty());
+        
+        // Commit should remove the checkpoint
+        arena.commit().unwrap();
+        assert!(arena.checkpoints.is_empty());
+    }
+
+    #[test]
+    fn test_transactional_arena_commit_without_checkpoint() {
+        let mut arena = TransactionalArena::new(1024);
+        
+        // Try to commit without checkpoint
+        let result = arena.commit();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("No checkpoint to commit"));
+    }
+
+    #[test]
+    fn test_transactional_arena_reset() {
+        let mut arena = TransactionalArena::new(1024);
+        
+        // Add some data and checkpoints
+        arena.arena().alloc(42).unwrap();
+        arena.checkpoint();
+        arena.arena().alloc(84).unwrap();
+        
+        assert!(arena.arena().used() > 0);
+        assert!(!arena.checkpoints.is_empty());
+        
+        // Reset should clear everything
+        arena.reset();
+        assert_eq!(arena.arena().used(), 0);
+        assert!(arena.checkpoints.is_empty());
+    }
+
+    #[test]
+    fn test_checkpoint_clone() {
+        let checkpoint1 = ArenaCheckpoint {
+            storage_size: 10,
+            used: 100,
+        };
+        let checkpoint2 = checkpoint1.clone();
+        
+        assert_eq!(checkpoint1.storage_size, checkpoint2.storage_size);
+        assert_eq!(checkpoint1.used, checkpoint2.used);
+    }
+
+    #[test]
+    fn test_arena_with_different_types() {
+        let arena = SafeArena::new(1024);
+        
+        // Allocate different types
+        let int_val = arena.alloc(42i32).unwrap();
+        let string_val = arena.alloc("hello".to_string()).unwrap();
+        let vec_val = arena.alloc(vec![1, 2, 3]).unwrap();
+        let bool_val = arena.alloc(true).unwrap();
+        
+        // Verify all values
+        assert_eq!(*int_val, 42);
+        assert_eq!(*string_val, "hello");
+        assert_eq!(*vec_val, vec![1, 2, 3]);
+        assert_eq!(*bool_val, true);
+    }
+
+    #[test]
+    fn test_transactional_arena_nested_operations() {
+        let mut arena = TransactionalArena::new(1024);
+        
+        // Initial state
+        arena.arena().alloc(1).unwrap();
+        let initial_used = arena.arena().used();
+        
+        // Start transaction
+        let cp = arena.checkpoint();
+        arena.arena().alloc(2).unwrap();
+        arena.arena().alloc(3).unwrap();
+        
+        let mid_used = arena.arena().used();
+        assert!(mid_used > initial_used);
+        
+        // Rollback
+        arena.rollback(cp).unwrap();
+        let final_used = arena.arena().used();
+        
+        assert_eq!(final_used, initial_used);
+    }
+
+    #[test]
+    fn test_arena_large_allocation() {
+        let arena = SafeArena::new(1024);
+        
+        // Try to allocate something larger than limit
+        let result = arena.alloc([0u8; 2048]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_transactional_checkpoint_return_value() {
+        let mut arena = TransactionalArena::new(1024);
+        
+        let cp1 = arena.checkpoint();
+        assert_eq!(cp1, 0);
+        
+        let cp2 = arena.checkpoint();
+        assert_eq!(cp2, 1);
+        
+        let cp3 = arena.checkpoint();
+        assert_eq!(cp3, 2);
     }
 }

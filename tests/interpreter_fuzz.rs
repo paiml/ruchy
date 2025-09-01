@@ -97,7 +97,7 @@ fn fuzz_error_propagation() {
         "undefined_variable",
         "x.undefined_method()",
         "1 / 0", // Division by zero
-        "[1][10]", // Index out of bounds  
+        "[1][10]", // Index out of bounds
         "null.method()", // Null pointer access
         "\"string\" + 42", // Type mismatch
         "if 42 { true }", // Non-boolean in if condition
@@ -193,5 +193,148 @@ fn fuzz_repl_state_consistency() {
         let mut repl = Repl::new().unwrap();
         let _ = repl.eval(setup); // Setup
         let _ = repl.eval(access); // Access - should work or fail gracefully
+    }
+}
+
+/// Fuzz test: Type coercion edge cases
+#[test]
+fn fuzz_type_coercion() {
+    let coercion_tests = vec![
+        "1 + 2.5", // Int + Float
+        "true + false", // Bool arithmetic (might be valid)
+        "\"5\" + \"10\"", // String concatenation
+        "42.to_string()", // Method on literal
+        "[1, 2, 3].to_string()", // Collection to string
+        "true.to_string()", // Bool to string
+    ];
+    
+    for input in coercion_tests {
+        let mut repl = Repl::new().unwrap();
+        let _ = repl.eval(input);
+    }
+}
+
+/// Fuzz test: Control flow edge cases
+#[test]
+fn fuzz_control_flow() {
+    let control_flow_tests = vec![
+        "if true { 1 } else { 2 }", // Basic if-else
+        "if false { 1 }", // If without else
+        "while false { 1 }", // While that never executes
+        "for x in [] { x }", // For over empty collection
+        "for i in 1..3 { i }", // For over range
+        "match 42 { x => x }", // Catch-all match
+        "match true { true => 1, false => 2 }", // Boolean match
+    ];
+    
+    for input in control_flow_tests {
+        let mut repl = Repl::new().unwrap();
+        let _ = repl.eval(input);
+    }
+}
+
+/// Fuzz test: Operator precedence edge cases
+#[test]
+fn fuzz_operator_precedence() {
+    let precedence_tests = vec![
+        "1 + 2 * 3", // Addition and multiplication
+        "1 * 2 + 3", // Multiplication and addition
+        "true && false || true", // Logical operators
+        "!true && false", // Unary and binary
+        "1 < 2 && 3 > 2", // Comparison and logical
+        "1 + 2 == 3", // Arithmetic and comparison
+        "(1 + 2) * 3", // Parentheses
+        "1 + (2 * 3)", // Nested parentheses
+    ];
+    
+    for input in precedence_tests {
+        let mut repl = Repl::new().unwrap();
+        let _ = repl.eval(input);
+    }
+}
+
+/// Fuzz test: String operations edge cases
+#[test]
+fn fuzz_string_operations() {
+    let string_tests = vec![
+        "\"\"", // Empty string
+        "\" \"", // Whitespace string
+        "\"\\n\"", // Newline
+        "\"\\t\"", // Tab
+        "\"\\\"\"", // Escaped quote
+        "\"hello\".len()", // String method
+        "\"hello\".upper()", // String transformation
+        "\"hello\".chars()", // String to chars
+        "\"hello\" + \"world\"", // String concatenation
+        "f\"Hello {1 + 2}\"", // String interpolation
+    ];
+    
+    for input in string_tests {
+        let mut repl = Repl::new().unwrap();
+        let _ = repl.eval(input);
+    }
+}
+
+/// Fuzz test: Numeric operations edge cases
+#[test]
+fn fuzz_numeric_operations() {
+    let numeric_tests = vec![
+        "0", // Zero
+        "-1", // Negative
+        "3.14", // Float
+        "1.0", // Integer as float
+        "1 + 1", // Basic addition
+        "10 - 5", // Subtraction
+        "2 * 3", // Multiplication
+        "10 / 2", // Division
+        "10 % 3", // Modulo
+        "2.5 + 1.5", // Float arithmetic
+        "abs(-5)", // Math function
+        "max(1, 2, 3)", // Variadic function
+        "min(1, 2)", // Binary function
+        "sqrt(9)", // Square root
+        "floor(3.7)", // Floor function
+        "ceil(3.2)", // Ceiling function
+        "round(3.6)", // Rounding
+    ];
+    
+    for input in numeric_tests {
+        let mut repl = Repl::new().unwrap();
+        let _ = repl.eval(input);
+    }
+}
+
+/// Fuzz test: Complex nested expressions
+#[test]
+fn fuzz_nested_expressions() {
+    let nested_tests = vec![
+        "[[1, 2], [3, 4]]", // Nested arrays
+        "{\"a\": {\"b\": 1}}", // Nested objects
+        "if true { if false { 1 } else { 2 } }", // Nested if
+        "fun outer() { fun inner() { 42 } }", // Nested functions
+        "[1, 2, 3].map(|x| x * 2).filter(|x| x > 2)", // Method chaining
+        "(1 + (2 * (3 + 4)))", // Deeply nested arithmetic
+        "match [1, 2] { [x, y] => x + y }", // Pattern matching
+    ];
+    
+    for input in nested_tests {
+        let mut repl = Repl::new().unwrap();
+        let _ = repl.eval(input);
+    }
+}
+
+/// Fuzz test: Memory and performance stress
+#[test]
+fn fuzz_stress_test() {
+    let stress_tests = vec![
+        "1..100", // Large range
+        "[1; 50]", // Array with repeated elements (if supported)
+        "\"a\" * 50", // String repetition (if supported)  
+        "let x = 1; let y = x; let z = y", // Variable chain
+    ];
+    
+    for input in stress_tests {
+        let mut repl = Repl::new().unwrap();
+        let _ = repl.eval(input);
     }
 }
