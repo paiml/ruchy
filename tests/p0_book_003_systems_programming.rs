@@ -26,7 +26,7 @@ println("Signal handler registered")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Signal handler registered"));
@@ -52,7 +52,7 @@ println("Port: " + service_config.port.to_s())
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Service: web_server"))
@@ -76,7 +76,7 @@ println("Should not reach here")
     // For now, test that it parses without panic (may fail at runtime)
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .code(predicate::in_iter(vec![0, 1])); // Success or controlled failure, but not panic
 }
@@ -98,7 +98,7 @@ for item in items {
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Item: apple"))
@@ -131,7 +131,7 @@ println("Size: " + size)
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Size: 2 KB"));
@@ -153,7 +153,7 @@ println("System modules imported successfully")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("System modules imported successfully"));
@@ -181,7 +181,7 @@ println("System functions accessible")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("System functions accessible"));
@@ -222,7 +222,7 @@ fn main() {
     // Should not panic, even if compilation fails
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .code(predicate::in_iter(vec![0, 1])); // Success or failure, but not panic
 }

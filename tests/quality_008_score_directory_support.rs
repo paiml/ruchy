@@ -19,7 +19,7 @@ fn test_score_directory_basic_failure_case() {
     
     // This should work but currently fails with "Is a directory" error
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", dir_path.to_str().unwrap()])
+        .args(["score", dir_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -42,7 +42,7 @@ fn test_score_single_file_still_works() {
     
     // Single file scoring should still work
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", file_path.to_str().unwrap()])
+        .args(["score", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     

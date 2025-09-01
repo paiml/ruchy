@@ -34,7 +34,7 @@ fn main() {
     fs::write(&file_path, excellent_code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", file_path.to_str().unwrap()])
+        .args(["score", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -47,8 +47,7 @@ fn main() {
     
     // Excellent code should score 0.90 or higher
     assert!(score >= 0.90, 
-        "Excellent code should score ≥0.90, got {:.2}. Output: {}", 
-        score, stdout);
+        "Excellent code should score ≥0.90, got {score:.2}. Output: {stdout}");
 }
 
 #[test]
@@ -97,7 +96,7 @@ fn main() {
     fs::write(&file_path, terrible_code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", file_path.to_str().unwrap()])
+        .args(["score", file_path.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -109,8 +108,7 @@ fn main() {
     // This test will initially fail because terrible code currently gets ~0.84
     // After fixing, terrible code should score 0.30 or lower
     assert!(score <= 0.30, 
-        "Terrible code (26 params, 8-level nesting) should score ≤0.30, got {:.2}. Output: {}", 
-        score, stdout);
+        "Terrible code (26 params, 8-level nesting) should score ≤0.30, got {score:.2}. Output: {stdout}");
 }
 
 #[test]
@@ -139,7 +137,7 @@ fn main() {
     
     // Terrible code
     let terrible_file = temp_dir.path().join("terrible.ruchy");
-    let terrible_code = r#"
+    let terrible_code = r"
 fn bad(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32, i: i32, j: i32) -> i32 {
     if a > 0 {
         if b > 0 {
@@ -156,17 +154,17 @@ fn bad(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32, i: i32, j
     }
     0
 }
-"#;
+";
     fs::write(&terrible_file, terrible_code).unwrap();
     
     // Score both
     let good_output = Command::new("./target/debug/ruchy")
-        .args(&["score", good_file.to_str().unwrap()])
+        .args(["score", good_file.to_str().unwrap()])
         .output()
         .unwrap();
     
     let terrible_output = Command::new("./target/debug/ruchy")
-        .args(&["score", terrible_file.to_str().unwrap()])
+        .args(["score", terrible_file.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -177,8 +175,7 @@ fn bad(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32, i: i32, j
     // Currently there's only ~0.11 difference, which is not actionable
     let difference = good_score - terrible_score;
     assert!(difference >= 0.40, 
-        "Good code ({:.2}) should score at least 0.40 points higher than terrible code ({:.2}). Current difference: {:.2}", 
-        good_score, terrible_score, difference);
+        "Good code ({good_score:.2}) should score at least 0.40 points higher than terrible code ({terrible_score:.2}). Current difference: {difference:.2}");
 }
 
 #[test]
@@ -190,7 +187,7 @@ fn test_score_complexity_penalty() {
     fs::write(&simple_file, "fn simple() -> i32 { 42 }").unwrap();
     
     let complex_file = temp_dir.path().join("complex.ruchy");
-    let complex_code = r#"
+    let complex_code = r"
 fn complex(x: i32) -> i32 {
     if x > 0 {
         if x > 10 {
@@ -210,16 +207,16 @@ fn complex(x: i32) -> i32 {
         return 0;
     }
 }
-"#;
+";
     fs::write(&complex_file, complex_code).unwrap();
     
     let simple_output = Command::new("./target/debug/ruchy")
-        .args(&["score", simple_file.to_str().unwrap()])
+        .args(["score", simple_file.to_str().unwrap()])
         .output()
         .unwrap();
     
     let complex_output = Command::new("./target/debug/ruchy")
-        .args(&["score", complex_file.to_str().unwrap()])
+        .args(["score", complex_file.to_str().unwrap()])
         .output()
         .unwrap();
     
@@ -228,8 +225,7 @@ fn complex(x: i32) -> i32 {
     
     // Complex nested code should score significantly lower
     assert!(simple_score > complex_score + 0.25,
-        "Simple code ({:.2}) should score at least 0.25 higher than complex nested code ({:.2})",
-        simple_score, complex_score);
+        "Simple code ({simple_score:.2}) should score at least 0.25 higher than complex nested code ({complex_score:.2})");
 }
 
 /// Helper function to extract score from ruchy score output
@@ -246,5 +242,5 @@ fn extract_score_from_output(output: &str) -> f64 {
             }
         }
     }
-    panic!("Could not extract score from output: {}", output);
+    panic!("Could not extract score from output: {output}");
 }

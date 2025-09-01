@@ -1,7 +1,6 @@
 /// TDD: Mathematical scoring tests for quality tool
 /// These tests define the EXACT scoring behavior we expect
 use std::fs;
-use std::io::Write;
 use std::process::Command;
 use tempfile::TempDir;
 
@@ -30,8 +29,8 @@ fn assert_score_for_complexity(complexity: usize, min_expected: f64, max_expecte
     
     // Each if statement adds 1 to cyclomatic complexity
     for i in 0..complexity.saturating_sub(1) {
-        code.push_str(&format!("    if x > {} {{\n", i));
-        code.push_str(&format!("        x = x + {};\n", i));
+        code.push_str(&format!("    if x > {i} {{\n"));
+        code.push_str(&format!("        x = x + {i};\n"));
         code.push_str("    }\n");
     }
     
@@ -40,7 +39,7 @@ fn assert_score_for_complexity(complexity: usize, min_expected: f64, max_expecte
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", file_path.to_str().unwrap(), "--format", "json"])
+        .args(["score", file_path.to_str().unwrap(), "--format", "json"])
         .output()
         .unwrap();
     
@@ -50,8 +49,7 @@ fn assert_score_for_complexity(complexity: usize, min_expected: f64, max_expecte
     
     assert!(
         score >= min_expected && score <= max_expected,
-        "Complexity {} should score between {:.2} and {:.2}, got {:.2}",
-        complexity, min_expected, max_expected, score
+        "Complexity {complexity} should score between {min_expected:.2} and {max_expected:.2}, got {score:.2}"
     );
 }
 
@@ -76,7 +74,7 @@ fn assert_score_for_params(param_count: usize, min_expected: f64, max_expected: 
         if i > 0 {
             code.push_str(", ");
         }
-        code.push_str(&format!("p{}: i32", i));
+        code.push_str(&format!("p{i}: i32"));
     }
     code.push_str(") -> i32 {\n");
     
@@ -84,9 +82,9 @@ fn assert_score_for_params(param_count: usize, min_expected: f64, max_expected: 
     if param_count > 0 {
         code.push_str("    p0");
         for i in 1..param_count {
-            code.push_str(&format!(" + p{}", i));
+            code.push_str(&format!(" + p{i}"));
         }
-        code.push_str("\n");
+        code.push('\n');
     } else {
         code.push_str("    0\n");
     }
@@ -95,7 +93,7 @@ fn assert_score_for_params(param_count: usize, min_expected: f64, max_expected: 
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", file_path.to_str().unwrap(), "--format", "json"])
+        .args(["score", file_path.to_str().unwrap(), "--format", "json"])
         .output()
         .unwrap();
     
@@ -105,8 +103,7 @@ fn assert_score_for_params(param_count: usize, min_expected: f64, max_expected: 
     
     assert!(
         score >= min_expected && score <= max_expected,
-        "Function with {} params should score between {:.2} and {:.2}, got {:.2}",
-        param_count, min_expected, max_expected, score
+        "Function with {param_count} params should score between {min_expected:.2} and {max_expected:.2}, got {score:.2}"
     );
 }
 
@@ -150,7 +147,7 @@ fn assert_score_for_nesting(depth: usize, min_expected: f64, max_expected: f64) 
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", file_path.to_str().unwrap(), "--format", "json"])
+        .args(["score", file_path.to_str().unwrap(), "--format", "json"])
         .output()
         .unwrap();
     
@@ -160,8 +157,7 @@ fn assert_score_for_nesting(depth: usize, min_expected: f64, max_expected: f64) 
     
     assert!(
         score >= min_expected && score <= max_expected,
-        "Nesting depth {} should score between {:.2} and {:.2}, got {:.2}",
-        depth, min_expected, max_expected, score
+        "Nesting depth {depth} should score between {min_expected:.2} and {max_expected:.2}, got {score:.2}"
     );
 }
 
@@ -173,7 +169,7 @@ fn test_combined_penalties_multiply() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
     
-    let code = r#"
+    let code = r"
 fn combined_bad(p0: i32, p1: i32, p2: i32, p3: i32, p4: i32,
                  p5: i32, p6: i32, p7: i32, p8: i32, p9: i32) -> i32 {
     let mut result = 0;
@@ -204,12 +200,12 @@ fn combined_bad(p0: i32, p1: i32, p2: i32, p3: i32, p4: i32,
     
     result
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", file_path.to_str().unwrap(), "--format", "json"])
+        .args(["score", file_path.to_str().unwrap(), "--format", "json"])
         .output()
         .unwrap();
     
@@ -220,9 +216,8 @@ fn combined_bad(p0: i32, p1: i32, p2: i32, p3: i32, p4: i32,
     // With 10 params (penalty ~0.5), complexity ~10 (penalty ~0.85), nesting 5 (penalty ~0.5)
     // Combined score should be approximately: 1.0 * 0.5 * 0.85 * 0.5 = 0.21
     assert!(
-        score >= 0.10 && score <= 0.35,
-        "Combined bad metrics should score between 0.10 and 0.35, got {:.2}",
-        score
+        (0.10..=0.35).contains(&score),
+        "Combined bad metrics should score between 0.10 and 0.35, got {score:.2}"
     );
 }
 
@@ -231,16 +226,16 @@ fn test_perfect_code_scores_high() {
     let dir = TempDir::new().unwrap();
     let file_path = dir.path().join("test.ruchy");
     
-    let code = r#"
+    let code = r"
 fn add(a: i32, b: i32) -> i32 {
     a + b
 }
-"#;
+";
     
     fs::write(&file_path, code).unwrap();
     
     let output = Command::new("./target/debug/ruchy")
-        .args(&["score", file_path.to_str().unwrap(), "--format", "json"])
+        .args(["score", file_path.to_str().unwrap(), "--format", "json"])
         .output()
         .unwrap();
     
@@ -250,7 +245,6 @@ fn add(a: i32, b: i32) -> i32 {
     
     assert!(
         score >= 0.95,
-        "Perfect simple code should score >= 0.95, got {:.2}",
-        score
+        "Perfect simple code should score >= 0.95, got {score:.2}"
     );
 }

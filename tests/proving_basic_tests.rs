@@ -409,10 +409,7 @@ fn test_prover_script_error_handling() {
     for script in problematic_scripts {
         let result = prover.load_script(script);
         // Should handle gracefully (either succeed or fail predictably)
-        match result {
-            Ok(_) => {},
-            Err(_) => {}, 
-        }
+        if let Ok(()) = result {}
     }
 }
 

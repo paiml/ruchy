@@ -6,7 +6,7 @@ use std::process::Command;
 #[test]
 fn test_help_shows_all_commands() {
     let output = Command::new("cargo")
-        .args(&["run", "--bin", "ruchy", "--", "--help"])
+        .args(["run", "--bin", "ruchy", "--", "--help"])
         .output()
         .expect("Failed to run ruchy --help");
     
@@ -24,9 +24,7 @@ fn test_help_shows_all_commands() {
     for cmd in &required_commands {
         assert!(
             help_text.contains(cmd),
-            "Command '{}' not found in help output. Help text:\n{}",
-            cmd,
-            help_text
+            "Command '{cmd}' not found in help output. Help text:\n{help_text}"
         );
     }
 }
@@ -35,7 +33,7 @@ fn test_help_shows_all_commands() {
 fn test_coverage_command_exists() {
     // Specific test for the Coverage command
     let output = Command::new("cargo")
-        .args(&["run", "--bin", "ruchy", "--", "coverage", "--help"])
+        .args(["run", "--bin", "ruchy", "--", "coverage", "--help"])
         .output()
         .expect("Failed to run ruchy coverage --help");
     
@@ -62,9 +60,9 @@ fn test_all_commands_have_help() {
     
     for cmd in &commands {
         let output = Command::new("cargo")
-            .args(&["run", "--bin", "ruchy", "--", cmd, "--help"])
+            .args(["run", "--bin", "ruchy", "--", cmd, "--help"])
             .output()
-            .expect(&format!("Failed to run ruchy {} --help", cmd));
+            .unwrap_or_else(|_| panic!("Failed to run ruchy {cmd} --help"));
         
         assert!(
             output.status.success(),
@@ -78,7 +76,7 @@ fn test_all_commands_have_help() {
 
 #[test]
 fn test_coverage_command_with_file() {
-    use std::fs;
+    
     use std::io::Write;
     use tempfile::NamedTempFile;
     
@@ -89,7 +87,7 @@ fn test_coverage_command_with_file() {
     
     // Run coverage command
     let output = Command::new("cargo")
-        .args(&["run", "--bin", "ruchy", "--", "coverage"])
+        .args(["run", "--bin", "ruchy", "--", "coverage"])
         .arg(temp_file.path())
         .output()
         .expect("Failed to run ruchy coverage");
@@ -104,8 +102,7 @@ fn test_coverage_command_with_file() {
     
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        stdout.contains("Coverage") || stdout.contains("%"),
-        "Coverage output should contain coverage information. Got: {}",
-        stdout
+        stdout.contains("Coverage") || stdout.contains('%'),
+        "Coverage output should contain coverage information. Got: {stdout}"
     );
 }

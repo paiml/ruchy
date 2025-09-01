@@ -23,7 +23,7 @@ println("Server listening on port 9000")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Server listening on port 9000"));
@@ -45,7 +45,7 @@ println("HTTP server created")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("HTTP server created"));
@@ -70,7 +70,7 @@ connect_to_server("127.0.0.1:9000")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Would connect to: 127.0.0.1:9000"));
@@ -95,7 +95,7 @@ fetch("https://api.example.com/data")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Fetching: https://api.example.com/data"));
@@ -120,7 +120,7 @@ println("Count: " + data.count.to_s())
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Status: success"))
@@ -144,7 +144,7 @@ println("Address: " + addr)
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Address: 127.0.0.1:8080"));
@@ -165,7 +165,7 @@ println("Network module imported successfully")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Network module imported successfully"));
@@ -186,7 +186,7 @@ println("HTTP module imported successfully")
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["run", file_path.to_str().unwrap()])
+        .args(["run", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("HTTP module imported successfully"));

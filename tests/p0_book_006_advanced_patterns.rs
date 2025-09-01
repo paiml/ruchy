@@ -19,7 +19,7 @@ println(f"a={a}, b={b}, c={c}")
     
     let mut repl = Repl::new().unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Tuple destructuring should work: {:?}", result);
+    assert!(result.is_ok(), "Tuple destructuring should work: {result:?}");
     // The println returns "()" but the actual output goes to stdout
 }
 
@@ -35,7 +35,7 @@ match arr {
     
     let mut repl = Repl::new().unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Array pattern matching should work: {:?}", result);
+    assert!(result.is_ok(), "Array pattern matching should work: {result:?}");
 }
 
 #[test]
@@ -48,7 +48,7 @@ println(f"Name: {name}, Age: {age}")
     
     let mut repl = Repl::new().unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Object destructuring should work: {:?}", result);
+    assert!(result.is_ok(), "Object destructuring should work: {result:?}");
 }
 
 #[test]
@@ -65,7 +65,7 @@ match data {
     
     let mut repl = Repl::new().unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Nested pattern matching should work: {:?}", result);
+    assert!(result.is_ok(), "Nested pattern matching should work: {result:?}");
 }
 
 #[test]
@@ -82,7 +82,7 @@ match value {
     
     let mut repl = Repl::new().unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Pattern guards should work: {:?}", result);
+    assert!(result.is_ok(), "Pattern guards should work: {result:?}");
 }
 
 #[test]
@@ -99,7 +99,7 @@ println(result)
     
     let mut repl = Repl::new().unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Advanced match expressions should work: {:?}", result);
+    assert!(result.is_ok(), "Advanced match expressions should work: {result:?}");
 }
 
 #[test]
@@ -118,7 +118,7 @@ println(f"Grade: {category}")
     
     let mut repl = Repl::new().unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Range patterns should work: {:?}", result);
+    assert!(result.is_ok(), "Range patterns should work: {result:?}");
 }
 
 #[test]
@@ -135,5 +135,5 @@ println(f"Day type: {day_type}")
     
     let mut repl = Repl::new().unwrap();
     let result = repl.eval(code);
-    assert!(result.is_ok(), "Or patterns should work: {:?}", result);
+    assert!(result.is_ok(), "Or patterns should work: {result:?}");
 }

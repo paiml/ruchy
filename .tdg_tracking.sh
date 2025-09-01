@@ -17,7 +17,10 @@ TDG_HISTORY=".tdg_history.log"
 
 # Generate current TDG scores
 echo "📊 Calculating current TDG scores..."
-pmat analyze tdg --format json > "$TDG_CURRENT" 2>/dev/null
+pmat tdg . --format=json > "$TDG_CURRENT" 2>/dev/null || {
+    echo "⚠️ TDG analysis failed, falling back to quality-gate"
+    pmat quality-gate --format=json > "$TDG_CURRENT" 2>/dev/null
+}
 
 # Check if baseline exists
 if [ ! -f "$TDG_BASELINE" ]; then

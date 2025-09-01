@@ -1,8 +1,7 @@
 /// Examples demonstrating different quality scores
-/// Run with: cargo run --example score_examples
+/// Run with: cargo run --example `score_examples`
 
 use std::fs;
-use std::path::Path;
 use std::process::Command;
 use tempfile::TempDir;
 
@@ -27,7 +26,7 @@ fn main() {
         ),
         (
             "good_code",
-            r#"
+            r"
 // Good code with minor complexity - Score ~0.8
 fn process_data(values: Vec<i32>) -> i32 {
     let mut sum = 0;
@@ -38,12 +37,12 @@ fn process_data(values: Vec<i32>) -> i32 {
     }
     sum
 }
-"#,
+",
             "0.80-0.90",
         ),
         (
             "moderate_complexity",
-            r#"
+            r"
 // Moderate complexity - Score ~0.5
 fn complex_logic(a: i32, b: i32, c: i32, d: i32, e: i32) -> i32 {
     let mut result = 0;
@@ -72,12 +71,12 @@ fn complex_logic(a: i32, b: i32, c: i32, d: i32, e: i32) -> i32 {
     
     result
 }
-"#,
+",
             "0.40-0.60",
         ),
         (
             "poor_quality",
-            r#"
+            r"
 // Poor quality - too many parameters, deep nesting - Score ~0.2
 fn terrible_function(
     param1: i32, param2: i32, param3: i32, param4: i32,
@@ -116,12 +115,12 @@ fn terrible_function(
     
     x
 }
-"#,
+",
             "0.10-0.30",
         ),
         (
             "catastrophic_quality",
-            r#"
+            r"
 // Catastrophic quality - Score ~0.05
 fn nightmare(
     a1: i32, a2: i32, a3: i32, a4: i32, a5: i32,
@@ -169,7 +168,7 @@ fn nightmare(
     
     result
 }
-"#,
+",
             "0.01-0.10",
         ),
     ];
@@ -177,16 +176,16 @@ fn nightmare(
     let temp_dir = TempDir::new().unwrap();
     
     for (name, code, expected_score) in examples {
-        println!("📝 Example: {} (Expected: {})", name, expected_score);
+        println!("📝 Example: {name} (Expected: {expected_score})");
         println!("{}", "─".repeat(50));
         
         // Write the code to a working file
-        let file_path = temp_dir.path().join(format!("{}.ruchy", name));
+        let file_path = temp_dir.path().join(format!("{name}.ruchy"));
         fs::write(&file_path, code).unwrap();
         
         // Run the score command
         let output = Command::new("./target/debug/ruchy")
-            .args(&["score", file_path.to_str().unwrap()])
+            .args(["score", file_path.to_str().unwrap()])
             .output()
             .expect("Failed to execute ruchy score");
         
@@ -194,14 +193,14 @@ fn nightmare(
         
         // Extract and display the score
         if let Some(score_line) = stdout.lines().find(|l| l.contains("Score:")) {
-            println!("{}", score_line);
+            println!("{score_line}");
         } else {
-            println!("Output: {}", stdout);
+            println!("Output: {stdout}");
         }
         
         // Also run with JSON format for detailed metrics
         let json_output = Command::new("./target/debug/ruchy")
-            .args(&["score", file_path.to_str().unwrap(), "--format", "json"])
+            .args(["score", file_path.to_str().unwrap(), "--format", "json"])
             .output()
             .expect("Failed to execute ruchy score");
         
@@ -209,22 +208,22 @@ fn nightmare(
             let json_str = String::from_utf8_lossy(&json_output.stdout);
             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&json_str) {
                 if let Some(score) = json["score"].as_f64() {
-                    println!("Actual Score: {:.2}", score);
+                    println!("Actual Score: {score:.2}");
                     
                     // Validate score is in expected range
                     let in_range = match expected_score {
                         "1.00" => score >= 0.95,
-                        "0.80-0.90" => score >= 0.80 && score <= 0.90,
-                        "0.40-0.60" => score >= 0.40 && score <= 0.60,
-                        "0.10-0.30" => score >= 0.10 && score <= 0.30,
-                        "0.01-0.10" => score >= 0.01 && score <= 0.10,
+                        "0.80-0.90" => (0.80..=0.90).contains(&score),
+                        "0.40-0.60" => (0.40..=0.60).contains(&score),
+                        "0.10-0.30" => (0.10..=0.30).contains(&score),
+                        "0.01-0.10" => (0.01..=0.10).contains(&score),
                         _ => true,
                     };
                     
                     if in_range {
                         println!("✅ Score is in expected range");
                     } else {
-                        println!("❌ Score {} is outside expected range {}", score, expected_score);
+                        println!("❌ Score {score} is outside expected range {expected_score}");
                     }
                 }
             }

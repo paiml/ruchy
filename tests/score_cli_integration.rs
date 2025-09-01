@@ -15,7 +15,7 @@ fn test_score_basic_file() {
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", file_path.to_str().unwrap()])
+        .args(["score", file_path.to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Score:"))
@@ -31,7 +31,7 @@ fn test_score_json_format() {
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", file_path.to_str().unwrap(), "--format", "json"])
+        .args(["score", file_path.to_str().unwrap(), "--format", "json"])
         .assert()
         .success()
         .stdout(predicate::str::contains("\"score\""))
@@ -49,7 +49,7 @@ fn test_score_min_threshold_pass() {
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", file_path.to_str().unwrap(), "--min", "0.5"])
+        .args(["score", file_path.to_str().unwrap(), "--min", "0.5"])
         .assert()
         .success();
 }
@@ -60,7 +60,7 @@ fn test_score_min_threshold_fail() {
     let file_path = dir.path().join("test.ruchy");
     
     // Very complex function should score low
-    let complex_code = r#"
+    let complex_code = r"
 fn terrible(a1: i32, a2: i32, a3: i32, a4: i32, a5: i32,
             b1: i32, b2: i32, b3: i32, b4: i32, b5: i32,
             c1: i32, c2: i32, c3: i32, c4: i32, c5: i32,
@@ -83,13 +83,13 @@ fn terrible(a1: i32, a2: i32, a3: i32, a4: i32, a5: i32,
     }
     x
 }
-"#;
+";
     
     fs::write(&file_path, complex_code).unwrap();
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", file_path.to_str().unwrap(), "--min", "0.9"])
+        .args(["score", file_path.to_str().unwrap(), "--min", "0.9"])
         .assert()
         .failure()
         .code(1)
@@ -110,7 +110,7 @@ fn test_score_directory() {
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", dir.path().to_str().unwrap()])
+        .args(["score", dir.path().to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("Project Quality Score"))
@@ -125,7 +125,7 @@ fn test_score_directory_json() {
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", dir.path().to_str().unwrap(), "--format", "json"])
+        .args(["score", dir.path().to_str().unwrap(), "--format", "json"])
         .assert()
         .success()
         .stdout(predicate::str::contains("\"files_analyzed\""))
@@ -142,7 +142,7 @@ fn test_score_output_to_file() {
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&[
+        .args([
             "score",
             input_file.to_str().unwrap(),
             "--output",
@@ -169,10 +169,10 @@ fn test_score_depth_options() {
     for depth in &["shallow", "standard", "deep"] {
         Command::cargo_bin("ruchy")
             .unwrap()
-            .args(&["score", file_path.to_str().unwrap(), "--depth", depth])
+            .args(["score", file_path.to_str().unwrap(), "--depth", depth])
             .assert()
             .success()
-            .stdout(predicate::str::contains(format!("Analysis Depth: {}", depth)));
+            .stdout(predicate::str::contains(format!("Analysis Depth: {depth}")));
     }
 }
 
@@ -182,7 +182,7 @@ fn test_score_empty_directory() {
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", dir.path().to_str().unwrap()])
+        .args(["score", dir.path().to_str().unwrap()])
         .assert()
         .success()
         .stdout(predicate::str::contains("No .ruchy files found"));
@@ -192,7 +192,7 @@ fn test_score_empty_directory() {
 fn test_score_nonexistent_file() {
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", "/nonexistent/file.ruchy"])
+        .args(["score", "/nonexistent/file.ruchy"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("Failed to read file"));
@@ -207,7 +207,7 @@ fn test_score_invalid_ruchy_syntax() {
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", file_path.to_str().unwrap()])
+        .args(["score", file_path.to_str().unwrap()])
         .assert()
         .failure()
         .stderr(predicate::str::contains("parse"));
@@ -217,7 +217,7 @@ fn test_score_invalid_ruchy_syntax() {
 fn test_score_help() {
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", "--help"])
+        .args(["score", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("--format"))
@@ -234,7 +234,7 @@ fn test_score_verbose_output() {
     
     Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", file_path.to_str().unwrap(), "--verbose"])
+        .args(["score", file_path.to_str().unwrap(), "--verbose"])
         .assert()
         .success();
 }
@@ -245,7 +245,7 @@ fn test_score_perfect_code() {
     let file_path = dir.path().join("perfect.ruchy");
     
     // Write perfect code
-    fs::write(&file_path, r#"
+    fs::write(&file_path, r"
 /// Adds two numbers together
 fn add(a: i32, b: i32) -> i32 {
     a + b
@@ -255,11 +255,11 @@ fn add(a: i32, b: i32) -> i32 {
 fn multiply(x: i32, y: i32) -> i32 {
     x * y
 }
-"#).unwrap();
+").unwrap();
     
     let output = Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", file_path.to_str().unwrap(), "--format", "json"])
+        .args(["score", file_path.to_str().unwrap(), "--format", "json"])
         .output()
         .unwrap();
     
@@ -267,7 +267,7 @@ fn multiply(x: i32, y: i32) -> i32 {
     let json: serde_json::Value = serde_json::from_str(&stdout).unwrap();
     let score = json["score"].as_f64().unwrap();
     
-    assert!(score >= 0.95, "Perfect code should score >= 0.95, got {}", score);
+    assert!(score >= 0.95, "Perfect code should score >= 0.95, got {score}");
 }
 
 #[test]
@@ -276,7 +276,7 @@ fn test_score_terrible_code() {
     let file_path = dir.path().join("terrible.ruchy");
     
     // Write terrible code
-    fs::write(&file_path, r#"
+    fs::write(&file_path, r"
 fn x(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32,
      i: i32, j: i32, k: i32, l: i32, m: i32, n: i32, o: i32, p: i32,
      q: i32, r: i32, s: i32, t: i32, u: i32, v: i32, w: i32, y: i32,
@@ -304,11 +304,11 @@ fn x(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32,
     }
     x
 }
-"#).unwrap();
+").unwrap();
     
     let output = Command::cargo_bin("ruchy")
         .unwrap()
-        .args(&["score", file_path.to_str().unwrap(), "--format", "json"])
+        .args(["score", file_path.to_str().unwrap(), "--format", "json"])
         .output()
         .unwrap();
     
@@ -316,5 +316,5 @@ fn x(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32,
     let json: serde_json::Value = serde_json::from_str(&stdout).unwrap();
     let score = json["score"].as_f64().unwrap();
     
-    assert!(score <= 0.20, "Terrible code should score <= 0.20, got {}", score);
+    assert!(score <= 0.20, "Terrible code should score <= 0.20, got {score}");
 }
