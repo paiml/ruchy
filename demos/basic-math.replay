@@ -1,0 +1,3 @@
+# This is a placeholder file - will be replaced with actual recorded session
+# Run: ruchy repl --record demos/basic-math.replay
+# Then execute: 2 + 2, 5 * 3, let x = 10, x + 5, :quit

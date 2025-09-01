@@ -43,6 +43,7 @@ use crate::frontend::ast::{
 use crate::runtime::completion::RuchyCompleter;
 use crate::runtime::magic::{MagicRegistry, UnicodeExpander};
 use crate::runtime::transaction::TransactionalState;
+use crate::runtime::replay::{SessionRecorder, SessionMetadata, InputMode};
 use crate::{Parser, Transpiler};
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
@@ -58,7 +59,7 @@ use std::fmt;
 #[allow(unused_imports)]
 use std::fmt::Write;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{Duration, Instant, SystemTime};
 
@@ -9044,5 +9045,169 @@ Type :normal to exit help mode.
             Value::EnumVariant { .. } => 32,
             Value::Nil => 0,
         }
+    }
+
+    /// Run the REPL with session recording enabled
+    ///
+    /// This method creates a session recorder that tracks all inputs, outputs,
+    /// and state changes during the REPL session. The recorded session can be
+    /// replayed later for testing or educational purposes.
+    ///
+    /// # Arguments
+    /// * `record_file` - Path to save the recorded session
+    ///
+    /// # Returns
+    /// Returns `Ok(())` on successful completion, or an error if recording fails
+    ///
+    /// # Errors
+    /// Returns error if recording initialization fails or I/O operations fail
+    pub fn run_with_recording(&mut self, record_file: &Path) -> Result<()> {
+        use colored::Colorize;
+        use std::time::SystemTime;
+
+        // Create session metadata
+        let metadata = SessionMetadata {
+            session_id: format!("ruchy-session-{}", SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)?
+                .as_secs()),
+            created_at: chrono::Utc::now().to_rfc3339(),
+            ruchy_version: env!("CARGO_PKG_VERSION").to_string(),
+            student_id: None,
+            assignment_id: None,
+            tags: vec!["interactive".to_string()],
+        };
+
+        let mut recorder = SessionRecorder::new(metadata);
+        println!("{}", format!("🎬 Recording session to: {}", record_file.display()).bright_yellow());
+        
+        // Configure rustyline with enhanced features
+        let config = Config::builder()
+            .history_ignore_space(true)
+            .history_ignore_dups(true)?
+            .completion_type(CompletionType::List)
+            .edit_mode(EditMode::Emacs)
+            .build();
+
+        let mut rl = rustyline::Editor::<RuchyCompleter, DefaultHistory>::with_config(config)?;
+
+        // Set up tab completion
+        let completer = RuchyCompleter::new();
+        rl.set_helper(Some(completer));
+
+        // Load history if it exists
+        let history_path = self.temp_dir.join("history.txt");
+        let _ = rl.load_history(&history_path);
+
+        let mut multiline_buffer = String::new();
+        let mut in_multiline = false;
+
+        loop {
+            let prompt = if in_multiline {
+                format!("{} ", "   ...".bright_black())
+            } else {
+                format!("{} ", self.get_prompt().bright_green())
+            };
+
+            match rl.readline(&prompt) {
+                Ok(line) => {
+                    let input = line.trim();
+                    
+                    // Record the input
+                    let _input_id = recorder.record_input(
+                        line.clone(), 
+                        if in_multiline { InputMode::Paste } else { InputMode::Interactive }
+                    );
+
+                    // Handle special REPL commands
+                    if input == ":quit" || input == ":exit" {
+                        break;
+                    }
+
+                    if in_multiline {
+                        if input.is_empty() {
+                            // Empty line ends multiline input
+                            let full_input = multiline_buffer.trim().to_string();
+                            if !full_input.is_empty() {
+                                rl.add_history_entry(&full_input)?;
+                                
+                                // Evaluate and record result
+                                let result = self.eval(&full_input);
+                                let result_for_recording = match &result {
+                                    Ok(s) => Ok(Value::String(s.clone())),
+                                    Err(e) => Err(anyhow::anyhow!("{}", e)),
+                                };
+                                recorder.record_output(result_for_recording);
+                                
+                                match result {
+                                    Ok(output) if !output.is_empty() => {
+                                        println!("{output}");
+                                    }
+                                    Err(e) => {
+                                        eprintln!("{}: {}", "Error".bright_red(), e);
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            multiline_buffer.clear();
+                            in_multiline = false;
+                        } else {
+                            multiline_buffer.push_str(&line);
+                            multiline_buffer.push('\n');
+                        }
+                    } else if Self::needs_continuation(input) {
+                        // Start multiline input
+                        multiline_buffer = format!("{line}\n");
+                        in_multiline = true;
+                    } else if !input.is_empty() {
+                        rl.add_history_entry(input)?;
+                        
+                        // Evaluate and record result
+                        let result = self.eval(input);
+                        let result_for_recording = match &result {
+                            Ok(s) => Ok(Value::String(s.clone())),
+                            Err(e) => Err(anyhow::anyhow!("{}", e)),
+                        };
+                        recorder.record_output(result_for_recording);
+                        
+                        match result {
+                            Ok(output) if !output.is_empty() => {
+                                println!("{output}");
+                            }
+                            Err(e) => {
+                                eprintln!("{}: {}", "Error".bright_red(), e);
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                Err(ReadlineError::Interrupted) => {
+                    println!("^C");
+                    multiline_buffer.clear();
+                    in_multiline = false;
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("^D");
+                    break;
+                }
+                Err(err) => {
+                    eprintln!("Error: {err:?}");
+                    break;
+                }
+            }
+        }
+
+        // Save history
+        let _ = rl.save_history(&history_path);
+
+        // Save the recorded session
+        let session = recorder.into_session();
+        let session_json = serde_json::to_string_pretty(&session)
+            .context("Failed to serialize session")?;
+        
+        std::fs::write(record_file, session_json)
+            .context("Failed to write session file")?;
+
+        println!("{}", format!("✅ Session recorded to: {}", record_file.display()).bright_green());
+        Ok(())
     }
 }

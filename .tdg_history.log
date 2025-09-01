@@ -207,3 +207,10 @@
 2025-09-01T13:32:05+02:00 | tests/quality_010_lint_variable_tracking.rs | 93.13132→100 | A→New | 6.86868
 2025-09-01T13:32:05+02:00 | tests/score_cli_integration.rs | 96.83398→100 | APLus→New | 3.16602
 2025-09-01T13:32:05+02:00 | tests/test_attribute_regression.rs | 100.0→100 | APLus→New | 0
+2025-09-01T15:11:55+02:00 | src/lints/mod.rs | 98.0→100 | APLus→New | 2.0
+2025-09-01T15:11:55+02:00 | src/middleend/environment.rs | 97.26027→100 | APLus→New | 2.73973
+2025-09-01T15:11:55+02:00 | src/runtime/safe_arena.rs | 100.0→100 | APLus→New | 0
+2025-09-01T15:11:55+02:00 | tests/interpreter_fuzz.rs | 98.0→100 | APLus→New | 2.0
+2025-09-01T15:34:03+02:00 | src/bin/handlers/mod.rs | 67.418396→100 | CPlus→New | 32.581604
+2025-09-01T15:34:03+02:00 | src/bin/ruchy.rs | 88.4515→100 | AMinus→New | 11.5485
+2025-09-01T15:34:03+02:00 | src/runtime/repl.rs | 66.726715→100 | CPlus→New | 33.273285
