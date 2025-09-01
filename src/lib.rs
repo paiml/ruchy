@@ -58,7 +58,6 @@ pub mod lsp;
 #[cfg(feature = "mcp")]
 pub mod mcp;
 pub mod middleend;
-pub mod optimization;
 pub mod parser;
 pub mod proving;
 pub mod quality;
