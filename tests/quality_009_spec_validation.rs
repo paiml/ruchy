@@ -1,3 +1,5 @@
+#![allow(clippy::format_push_string, clippy::unnecessary_to_owned)]
+
 use std::fs;
 use std::io::Write;
 use std::process::Command;

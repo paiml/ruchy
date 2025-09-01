@@ -1,6 +1,8 @@
 // Differential testing: REPL vs File execution must produce same results
 // This would have caught our obj.items() transpilation bug immediately
 
+#![allow(clippy::needless_continue)]
+
 use std::process::Command;
 use std::fs;
 

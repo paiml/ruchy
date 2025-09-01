@@ -222,7 +222,7 @@ fn test_multiline_mode() {
     
     // Multiline mode checking would go here
     // Currently not exposed in public API
-    assert!(true); // Placeholder
+    // Test placeholder - multiline mode not exposed in public API
 }
 
 #[test]

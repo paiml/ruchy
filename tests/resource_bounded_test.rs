@@ -1,6 +1,8 @@
 // Test for REPL-TEST-001: Resource-bounded evaluation
 // Tests bounded evaluation with arena allocator, timeouts, and stack limits
 
+#![allow(clippy::expect_used, clippy::unwrap_used, unused_comparisons)]
+
 use ruchy::runtime::{Repl, ReplConfig};
 use std::time::Duration;
 
@@ -40,7 +42,7 @@ fn test_memory_tracking_reset() {
     
     // First evaluation
     let _result1 = repl.eval("let x = 100").unwrap();
-    let memory_after_first = repl.memory_used();
+    let _memory_after_first = repl.memory_used();
     
     // Second evaluation should reset memory tracking
     let _result2 = repl.eval("let y = 200").unwrap();

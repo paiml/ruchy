@@ -6,6 +6,8 @@
 //! **Expected**: `Hello World` on one line\
 //! **Actual**: `Hello` on line 1, ` "World"` on line 2 (currently broken in interactive mode)
 
+#![allow(dead_code)]
+
 use ruchy::runtime::repl::Repl;
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex};

@@ -343,9 +343,9 @@ mod tests {
             MonoType::Function(arg1, rest) => {
                 assert!(matches!(**arg1, MonoType::Int));
                 match rest.as_ref() {
-                    MonoType::Function(arg2, ret) => {
+                    MonoType::Function(arg2, ret_type) => {
                         assert!(matches!(**arg2, MonoType::Int));
-                        assert!(matches!(**ret, MonoType::Int));
+                        assert!(matches!(**ret_type, MonoType::Int));
                     }
                     _ => panic!("Expected curried function type"),
                 }

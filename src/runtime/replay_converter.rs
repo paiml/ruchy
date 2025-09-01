@@ -124,7 +124,8 @@ impl ReplayConverter {
                 // Find the corresponding output
                 if let Some(output_event) = timeline.get(i + 1) {
                     if let Event::Output { result, .. } = &output_event.event {
-                        let test_name = format!("{name_prefix}_{test_counter:03}");
+                        let sanitized_prefix = name_prefix.replace('-', "_");
+        let test_name = format!("{sanitized_prefix}_{test_counter:03}");
                         let test = self.generate_single_unit_test(&test_name, text, mode, result)?;
                         tests.push(test);
                         test_counter += 1;
@@ -195,6 +196,7 @@ fn test_{test_name}() -> Result<()> {{
 
     /// Generate integration test for complete session
     fn generate_integration_test(&self, session: &ReplSession, name_prefix: &str) -> Result<GeneratedTest> {
+        let sanitized_prefix = name_prefix.replace('-', "_");
         let mut session_code = String::new();
         let mut assertions = Vec::new();
         let timeout = self.config.timeout_ms;
@@ -231,7 +233,7 @@ fn test_{test_name}() -> Result<()> {{
 
         let code = format!(r"
 #[test]
-fn test_{name_prefix}_session_integration() -> Result<()> {{
+fn test_{sanitized_prefix}_session_integration() -> Result<()> {{
     // Integration test for complete REPL session
     // Tests state persistence and interaction patterns
     let mut repl = Repl::new()?;
@@ -264,8 +266,9 @@ fn test_{name_prefix}_session_integration() -> Result<()> {{
         coverage_areas.sort();
         coverage_areas.dedup();
 
+        let sanitized_prefix = name_prefix.replace('-', "_");
         Ok(GeneratedTest {
-            name: format!("test_{name_prefix}_session_integration"),
+            name: format!("test_{sanitized_prefix}_session_integration"),
             code,
             category: TestCategory::Integration,
             coverage_areas,
@@ -277,11 +280,12 @@ fn test_{name_prefix}_session_integration() -> Result<()> {{
         let mut tests = Vec::new();
         
         // Property: REPL state should be deterministic
+        let sanitized_prefix = name_prefix.replace('-', "_");
         let determinism_test = GeneratedTest {
-            name: format!("test_{name_prefix}_determinism_property"),
+            name: format!("test_{sanitized_prefix}_determinism_property"),
             code: format!(r#"
 #[test]
-fn test_{name_prefix}_determinism_property() -> Result<()> {{
+fn test_{sanitized_prefix}_determinism_property() -> Result<()> {{
     // Property: Session should produce identical results on replay
     use crate::runtime::replay::*;
     
@@ -313,10 +317,10 @@ fn test_{name_prefix}_determinism_property() -> Result<()> {{
 
         // Property: Memory usage should be bounded
         let memory_test = GeneratedTest {
-            name: format!("test_{name_prefix}_memory_bounds"),
+            name: format!("test_{sanitized_prefix}_memory_bounds"),
             code: format!(r#"
 #[test] 
-fn test_{name_prefix}_memory_bounds() -> Result<()> {{
+fn test_{sanitized_prefix}_memory_bounds() -> Result<()> {{
     // Property: REPL should respect memory limits
     let mut repl = Repl::new()?;
     
@@ -347,7 +351,8 @@ fn test_{name_prefix}_memory_bounds() -> Result<()> {{
         // Find error cases in the session
         for (i, event) in session.timeline.iter().enumerate() {
             if let Event::Output { result: EvalResult::Error { message }, .. } = &event.event {
-                let test_name = format!("{name_prefix}_{i:03}_error_handling");
+                let sanitized_prefix = name_prefix.replace('-', "_");
+                let test_name = format!("{sanitized_prefix}_{i:03}_error_handling");
                 
                 // Find the input that caused this error
                 if i > 0 {
@@ -605,7 +610,7 @@ mod tests {
             let areas = converter.identify_coverage_areas(input);
             for expected in expected_areas {
                 assert!(areas.contains(&expected.to_string()), 
-                    "Expected coverage area '{}' not found for input: '{}'", expected, input);
+                    "Expected coverage area '{expected}' not found for input: '{input}'");
             }
         }
     }

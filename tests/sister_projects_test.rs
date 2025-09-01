@@ -19,7 +19,7 @@ fn test_ruchy_file(path: &Path) -> Result<String, String> {
 }
 
 #[test]
-#[ignore] // Run with --ignored flag
+#[ignore = "Requires sister projects setup"]
 fn test_all_book_examples() {
     let book_dir = Path::new("../ruchy-book");
     if !book_dir.exists() {

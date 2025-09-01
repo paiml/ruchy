@@ -1,6 +1,8 @@
 // Trait System Basic Test Suite
 // Testing trait definitions, implementations, and method resolution
 
+#![allow(dead_code)]
+
 use ruchy::runtime::repl::Repl;
 use std::process::Command;
 use std::fs;

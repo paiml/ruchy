@@ -74,7 +74,7 @@ fn test_transpiled_items_vs_repl() {
         .arg("/tmp/test_transpiled_items.ruchy")
         .output()
         .expect("Failed to run ruchy file");
-    let file_stdout = String::from_utf8_lossy(&file_output.stdout);
+    let _file_stdout = String::from_utf8_lossy(&file_output.stdout);
     
     // Both should work and produce similar results
     assert!(repl_stdout.contains("(\"test\", 42)"),

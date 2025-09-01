@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_lines)]
+
 /// Examples demonstrating different quality scores
 /// Run with: cargo run --example `score_examples`
 

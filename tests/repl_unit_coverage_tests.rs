@@ -1,4 +1,7 @@
 // Unit tests to increase REPL code coverage to 80%+
+
+#![allow(unused_comparisons, clippy::absurd_extreme_comparisons)]
+
 use ruchy::runtime::{Repl, ReplState};
 use std::time::Duration;
 

@@ -480,7 +480,7 @@ mod tests {
             suggestion: None,
         };
         
-        let debug_str = format!("{:?}", violation);
+        let debug_str = format!("{violation:?}");
         assert!(debug_str.contains("Violation"));
         assert!(debug_str.contains("test.ruchy:10:5"));
     }

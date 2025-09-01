@@ -2,6 +2,8 @@
 //!
 //! [TEST-COV-013] Target abstraction module with 0% coverage
 
+#![allow(unused_comparisons, clippy::absurd_extreme_comparisons)]
+
 use ruchy::optimization::abstraction::*;
 use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
 
