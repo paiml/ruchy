@@ -91,7 +91,6 @@ pub enum DisplayMode {
 }
 
 /// Color codes for terminal output
-#[allow(dead_code)]
 pub struct Colors {
     pub reset: &'static str,
     pub bold: &'static str,
