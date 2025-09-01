@@ -196,4 +196,171 @@ mod tests {
         assert!(env.lookup("add").is_some());
         assert!(env.lookup("eq").is_some());
     }
+
+    #[test]
+    fn test_default_env() {
+        let env = TypeEnv::default();
+        assert!(env.lookup("nonexistent").is_none());
+        assert_eq!(env.bindings.len(), 0);
+    }
+
+    #[test]
+    fn test_multiple_bindings() {
+        let mut env = TypeEnv::new();
+        env.bind("x", TypeScheme::mono(MonoType::Int));
+        env.bind("y", TypeScheme::mono(MonoType::Bool));
+        env.bind("z", TypeScheme::mono(MonoType::String));
+
+        assert!(env.lookup("x").is_some());
+        assert!(env.lookup("y").is_some());
+        assert!(env.lookup("z").is_some());
+        assert!(env.lookup("w").is_none());
+    }
+
+    #[test]
+    fn test_bind_overwrites() {
+        let mut env = TypeEnv::new();
+        env.bind("x", TypeScheme::mono(MonoType::Int));
+        env.bind("x", TypeScheme::mono(MonoType::Bool));
+
+        let scheme = env.lookup("x").unwrap();
+        match &scheme.ty {
+            MonoType::Bool => {}, // Expected
+            _ => panic!("Expected Bool type after overwrite"),
+        }
+    }
+
+    #[test]
+    fn test_env_clone() {
+        let mut env1 = TypeEnv::new();
+        env1.bind("x", TypeScheme::mono(MonoType::Int));
+
+        let env2 = env1.clone();
+        assert!(env2.lookup("x").is_some());
+    }
+
+    #[test]
+    fn test_free_vars_empty() {
+        let env = TypeEnv::new();
+        assert!(env.free_vars().is_empty());
+    }
+
+    #[test]
+    fn test_free_vars_with_schemes() {
+        let mut env = TypeEnv::new();
+        let var1 = TyVar(1);
+        let var2 = TyVar(2);
+
+        // Add a scheme with a free variable
+        let scheme1 = TypeScheme {
+            vars: vec![],
+            ty: MonoType::Var(var1.clone()),
+        };
+        env.bind("x", scheme1);
+
+        // Add a scheme with a bound variable
+        let scheme2 = TypeScheme {
+            vars: vec![var2.clone()],
+            ty: MonoType::Var(var2),
+        };
+        env.bind("y", scheme2);
+
+        let free_vars = env.free_vars();
+        assert!(free_vars.contains(&var1));
+        assert!(!free_vars.contains(&TyVar(2))); // var2 is bound
+    }
+
+    #[test]
+    fn test_generalize_empty_env() {
+        let env = TypeEnv::new();
+        let var = TyVar(5);
+        let ty = MonoType::Var(var.clone());
+
+        let scheme = env.generalize(ty);
+        assert_eq!(scheme.vars.len(), 1);
+        assert!(scheme.vars.contains(&var));
+    }
+
+    #[test]
+    fn test_generalize_complex_type() {
+        let env = TypeEnv::new();
+        let var1 = TyVar(10);
+        let var2 = TyVar(11);
+
+        let ty = MonoType::Function(
+            Box::new(MonoType::Var(var1.clone())),
+            Box::new(MonoType::Function(
+                Box::new(MonoType::Var(var2.clone())),
+                Box::new(MonoType::Int),
+            )),
+        );
+
+        let scheme = env.generalize(ty);
+        assert_eq!(scheme.vars.len(), 2);
+        assert!(scheme.vars.contains(&var1));
+        assert!(scheme.vars.contains(&var2));
+    }
+
+    #[test]
+    fn test_instantiate_scheme() {
+        let env = TypeEnv::new();
+        let mut gen = TyVarGenerator::new();
+
+        // Create a polymorphic scheme: forall a. a -> a
+        let var = TyVar(20);
+        let scheme = TypeScheme {
+            vars: vec![var.clone()],
+            ty: MonoType::Function(
+                Box::new(MonoType::Var(var.clone())),
+                Box::new(MonoType::Var(var)),
+            ),
+        };
+
+        let instance = env.instantiate(&scheme, &mut gen);
+        
+        // Should get fresh variables
+        match instance {
+            MonoType::Function(arg, ret) => {
+                match (*arg, *ret) {
+                    (MonoType::Var(v1), MonoType::Var(v2)) => {
+                        assert_eq!(v1, v2); // Same fresh variable
+                        assert_ne!(v1, TyVar(20)); // Different from original
+                    }
+                    _ => panic!("Expected function with variable types"),
+                }
+            }
+            _ => panic!("Expected function type"),
+        }
+    }
+
+    #[test]
+    fn test_standard_env_function_types() {
+        let env = TypeEnv::standard();
+        
+        // Test add function type
+        let add_scheme = env.lookup("add").unwrap();
+        match &add_scheme.ty {
+            MonoType::Function(arg1, rest) => {
+                assert!(matches!(**arg1, MonoType::Int));
+                match rest.as_ref() {
+                    MonoType::Function(arg2, ret) => {
+                        assert!(matches!(**arg2, MonoType::Int));
+                        assert!(matches!(**ret, MonoType::Int));
+                    }
+                    _ => panic!("Expected curried function type"),
+                }
+            }
+            _ => panic!("Expected function type for add"),
+        }
+
+        // Test print function type
+        let print_scheme = env.lookup("print").unwrap();
+        match &print_scheme.ty {
+            MonoType::Function(arg, ret) => {
+                assert!(matches!(**arg, MonoType::String));
+                assert!(matches!(**ret, MonoType::Unit));
+            }
+            _ => panic!("Expected function type for print"),
+        }
+    }
 }
