@@ -1,13 +1,25 @@
 # Ruchy Development Roadmap
 
-## 🎯 **CURRENT FOCUS: Runtime Characteristics Documentation (v1.29.0+)**
+## 🎯 **CURRENT FOCUS: Runtime Characteristics Documentation (v1.29.1+)**
 
 **MISSION**: Document comprehensive runtime behavior for developer understanding and optimization
-**CONTEXT**: SATD elimination completed (36→0 violations) - now focusing on runtime documentation
+**CONTEXT**: Coverage regression fixed (v1.29.1) - now focusing on runtime documentation
 **GOAL**: Complete runtime specification with examples and performance characteristics  
-**STATUS**: SATD sprint completed successfully - moving to runtime characteristics documentation
+**STATUS**: Coverage command fully functional - moving to runtime characteristics documentation
 
 ## 🚀 **IMMEDIATE PRIORITIES (Post-Foundation Sprint)**
+
+### 📋 **Sprint 0.5: Coverage Command Fix (RUCHY-206) - ✅ COMPLETED v1.29.1**
+
+**RUCHY-206**: 🎯 **Coverage Command Regression Fix** *(P0 - COMPLETED)*
+- **Problem**: ✅ SOLVED - Coverage command not accessible via CLI, threshold always 70%
+- **Root Cause**: Coverage not registered in handle_complex_command catch-all
+- **Solution**: Added Coverage to handle_complex_command, fixed threshold defaults
+- **TDD Approach**: Created comprehensive clap_commands_test.rs for all 23 commands
+- **Impact**: Coverage analysis now fully functional with configurable thresholds
+- **Test Coverage**: 100% of CLI commands tested for accessibility
+- **Prevention**: TDD test suite prevents future CLI registration failures
+- **Status**: ✅ **RELEASED** in v1.29.1
 
 ### 📋 **Sprint 0: REPL Tab Completion System (REPL-COMPLETION-001) - ✅ COMPLETED**
 
@@ -35,15 +47,23 @@
 
 **Next Enhancement Phase**: Optional fuzzy matching and background indexing
 
-### 📋 **Sprint 1: Runtime Characteristics Documentation (RUNTIME-CHAR-001)**
+### 📋 **Sprint 1: Runtime Characteristics Documentation (RUNTIME-CHAR-001) - 🔴 ACTIVE P0**
 
-**RUNTIME-CHAR-001**: 🎯 **Runtime Characteristics Specification** *(P0 - NEXT PRIORITY)*
+**RUNTIME-CHAR-001**: 🎯 **Runtime Characteristics Specification** *(P0 - ACTIVE DEVELOPMENT)*
 - **Problem**: Missing comprehensive runtime behavior documentation
 - **Specification**: docs/specifications/runtime-ruchy-characteristics.md
 - **Impact**: Developer understanding, debugging capabilities, performance optimization
 - **Scope**: Document all runtime behaviors, memory management, performance characteristics
+- **Tasks**:
+  - [ ] Document memory model and garbage collection
+  - [ ] Specify error handling and propagation
+  - [ ] Detail type system runtime behavior
+  - [ ] Define concurrency model and async execution
+  - [ ] Benchmark performance characteristics
+  - [ ] Create examples for each runtime feature
 - **Success Criteria**: Complete runtime specification with examples and benchmarks
 - **Effort**: Medium (24 hours) - critical for language maturity
+- **Status**: 🔴 **IN PROGRESS** - Top priority after v1.29.1 release
 
 ### 📋 **Sprint 2: Technical Debt Elimination (P0-DEBT-002/003) - PARTIALLY COMPLETE**
 
