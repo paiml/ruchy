@@ -240,7 +240,7 @@ mod tests {
         arena.arena().alloc(200).unwrap();
         
         // Second checkpoint
-        let cp2 = arena.checkpoint();
+        let _cp2 = arena.checkpoint();
         arena.arena().alloc(300).unwrap();
         
         // Rollback to first checkpoint

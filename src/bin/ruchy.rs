@@ -870,6 +870,28 @@ enum Commands {
         #[arg(long, default_value = "text")]
         format: String,
     },
+
+    /// Convert REPL replay files to regression tests
+    ReplayToTests {
+        /// Input replay file or directory containing .replay files
+        input: PathBuf,
+
+        /// Output test file (defaults to `tests/generated_from_replays.rs`)
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+
+        /// Include property tests for invariants
+        #[arg(long)]
+        property_tests: bool,
+
+        /// Include performance benchmarks
+        #[arg(long)]
+        benchmarks: bool,
+
+        /// Test timeout in milliseconds
+        #[arg(long, default_value = "5000")]
+        timeout: u64,
+    },
 }
 
 fn main() -> Result<()> {

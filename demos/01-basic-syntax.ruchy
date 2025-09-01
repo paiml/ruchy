@@ -1,0 +1,37 @@
+# Demo 1: Basic Syntax and Variables
+# This script demonstrates fundamental language features for REPL recording
+
+# Basic arithmetic
+2 + 2
+5 * 3 + 1
+10 / 2
+
+# Variables and assignment
+let x = 42
+let name = "Ruchy"
+let pi = 3.14159
+let is_active = true
+
+# Variable access
+x
+name
+pi
+is_active
+
+# String operations
+name + " is awesome!"
+"Hello, " + name + "!"
+
+# Boolean operations
+true && false
+!is_active
+x > 40
+
+# Character literals
+'a'
+'z'
+'🚀'
+
+# Unit value (should not print)
+let unit = ()
+unit

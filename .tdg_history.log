@@ -214,3 +214,18 @@
 2025-09-01T15:34:03+02:00 | src/bin/handlers/mod.rs | 67.418396→100 | CPlus→New | 32.581604
 2025-09-01T15:34:03+02:00 | src/bin/ruchy.rs | 88.4515→100 | AMinus→New | 11.5485
 2025-09-01T15:34:03+02:00 | src/runtime/repl.rs | 66.726715→100 | CPlus→New | 33.273285
+2025-09-01T15:35:31+02:00 | src/bin/handlers/mod.rs | 67.418396→100 | CPlus→New | 32.581604
+2025-09-01T15:35:31+02:00 | src/bin/ruchy.rs | 88.4515→100 | AMinus→New | 11.5485
+2025-09-01T15:35:31+02:00 | src/runtime/repl.rs | 66.726715→100 | CPlus→New | 33.273285
+2025-09-01T15:50:49+02:00 | scripts/automated_recording.rs | →100 | →New | 
+2025-09-01T15:50:49+02:00 | src/bin/handlers/mod.rs | 67.418396→100 | CPlus→New | 32.581604
+2025-09-01T15:50:49+02:00 | src/bin/ruchy.rs | 88.4515→100 | AMinus→New | 11.5485
+2025-09-01T15:50:49+02:00 | src/runtime/mod.rs | 100.0→100 | APLus→New | 0
+2025-09-01T15:50:49+02:00 | src/runtime/replay_converter.rs | →100 | →New | 
+2025-09-01T15:50:49+02:00 | tests/generated_from_replays.rs | →100 | →New | 
+2025-09-01T15:53:01+02:00 | scripts/automated_recording.rs | →100 | →New | 
+2025-09-01T15:53:01+02:00 | src/bin/handlers/mod.rs | 67.418396→100 | CPlus→New | 32.581604
+2025-09-01T15:53:01+02:00 | src/bin/ruchy.rs | 88.4515→100 | AMinus→New | 11.5485
+2025-09-01T15:53:01+02:00 | src/runtime/mod.rs | 100.0→100 | APLus→New | 0
+2025-09-01T15:53:01+02:00 | src/runtime/replay_converter.rs | →100 | →New | 
+2025-09-01T15:53:01+02:00 | tests/generated_from_replays.rs | →100 | →New | 
