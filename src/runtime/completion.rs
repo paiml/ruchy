@@ -832,7 +832,7 @@ impl RuchyCompleter {
         let trimmed = text.trim();
         
         // Find the rightmost function name (after spaces, parens, etc.)
-        let mut end = trimmed.len();
+        let end = trimmed.len();
         let mut start = end;
         
         // Walk backwards to find identifier boundaries
