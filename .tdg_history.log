@@ -135,3 +135,4 @@
 2025-09-01T12:12:26+02:00 | tests/integration_tests.rs | 94.2492→94.2492 | A→A | 0
 2025-09-01T12:12:26+02:00 | tests/parser_property_tests.rs | 90.671425→90.671425 | A→A | 0
 2025-09-01T12:12:26+02:00 | tests/proving_basic_tests.rs | 97.18655→97.18655 | APLus→APLus | 0
+2025-09-01T12:40:40+02:00 | src/runtime/completion.rs | 72.17647→72.13004 | BMinus→BMinus | -.04643

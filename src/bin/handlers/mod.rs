@@ -759,7 +759,7 @@ pub fn handle_test_command(
 /// # Errors
 /// Returns error if coverage analysis fails or threshold is not met
 pub fn handle_coverage_command(
-    path: PathBuf,
+    path: &Path,
     threshold: f64,
     format: &str,
     verbose: bool,
@@ -776,7 +776,7 @@ pub fn handle_coverage_command(
     let mut collector = RuchyCoverageCollector::new();
     
     // Execute the file with coverage collection
-    collector.execute_with_coverage(&path)?;
+    collector.execute_with_coverage(path)?;
     
     // Generate the coverage report based on format
     let report = match format {
@@ -1397,7 +1397,7 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             )
         }
         crate::Commands::Coverage { path, threshold, format, verbose } => {
-            handle_coverage_command(path, threshold.unwrap_or(80.0), &format, verbose)
+            handle_coverage_command(&path, threshold.unwrap_or(80.0), &format, verbose)
         }
         _ => {
             // Other commands not yet implemented
