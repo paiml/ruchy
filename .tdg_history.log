@@ -136,3 +136,5 @@
 2025-09-01T12:12:26+02:00 | tests/parser_property_tests.rs | 90.671425→90.671425 | A→A | 0
 2025-09-01T12:12:26+02:00 | tests/proving_basic_tests.rs | 97.18655→97.18655 | APLus→APLus | 0
 2025-09-01T12:40:40+02:00 | src/runtime/completion.rs | 72.17647→72.13004 | BMinus→BMinus | -.04643
+2025-09-01T12:52:53+02:00 | src/bin/handlers/mod.rs | 67.418396→67.40414 | CPlus→CPlus | -.014256
+2025-09-01T12:52:53+02:00 | src/runtime/completion.rs | 72.17647→72.132614 | BMinus→BMinus | -.043856

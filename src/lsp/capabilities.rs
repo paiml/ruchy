@@ -56,7 +56,6 @@ pub static SEMANTIC_TOKEN_LEGEND: LazyLock<SemanticTokensLegend> =
 /// let lsp_token = ruchy_token_to_lsp(token);
 /// assert_eq!(lsp_token, SemanticTokenType::CLASS);
 /// ```
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RuchyTokenType {
     Actor,
@@ -65,8 +64,6 @@ pub enum RuchyTokenType {
     Pattern,
 }
 
-/// Convert Ruchy-specific tokens to LSP semantic token types
-#[allow(dead_code)]
 /// Convert Ruchy-specific tokens to LSP semantic token types
 ///
 /// # Examples

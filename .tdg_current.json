@@ -225,20 +225,20 @@
           "issue": "High cognitive complexity: 65"
         },
         {
-          "source_metric": "Duplication",
-          "amount": 2.7102804,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 13.6%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 30"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 2.7102804,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 13.6%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -296,19 +296,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 4.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 30"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 5.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 21"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 4.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 30"
         }
       ]
     },
@@ -578,20 +578,20 @@
       "file_path": "./tests/stdlib_validation_test.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 2.586207,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 12.9%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 0.90000004,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 18"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 2.586207,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 12.9%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -866,19 +866,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 8.700001,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 44"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 13.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 37"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 8.700001,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 44"
         }
       ]
     },
@@ -919,6 +919,14 @@
       "file_path": "./tests/transpiler_patterns.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 7.1590905,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 35.8%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 3.5,
           "applied_to": [
@@ -933,14 +941,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 24"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 7.1590905,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 35.8%"
         }
       ]
     },
@@ -1028,19 +1028,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 14"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 0.90000004,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 18"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 14"
         }
       ]
     },
@@ -1173,20 +1173,20 @@
       "file_path": "./tests/type_inference_comprehensive_tests.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 4.470588,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 22.4%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 4.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 18"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 4.470588,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 22.4%"
         }
       ]
     },
@@ -1227,14 +1227,6 @@
       "file_path": "./tests/edge_case_tests.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 3.4640524,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 17.3%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 0.90000004,
           "applied_to": [
@@ -1249,6 +1241,14 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 31"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 3.4640524,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 17.3%"
         }
       ]
     },
@@ -1428,11 +1428,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 3.6000001,
+          "amount": 4.5,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 27"
+          "issue": "High cyclomatic complexity: 19"
         },
         {
           "source_metric": "Duplication",
@@ -1444,11 +1444,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 4.5,
+          "amount": 3.6000001,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cyclomatic complexity: 19"
+          "issue": "High cognitive complexity: 27"
         }
       ]
     },
@@ -1467,27 +1467,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 12"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 0.90000004,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 18"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 4.6031747,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 23.0%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -1496,6 +1480,22 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 12"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 4.6031747,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 23.0%"
         }
       ]
     },
@@ -1537,19 +1537,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 1.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 13"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 5 levels"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -1728,27 +1728,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 42"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 71"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 5 levels"
         },
         {
           "source_metric": "Duplication",
@@ -1757,6 +1749,14 @@
             "Duplication"
           ],
           "issue": "Code duplication: 17.4%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 42"
         }
       ]
     },
@@ -1774,20 +1774,20 @@
       "file_path": "./tests/transpiler_patterns_comprehensive.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 19"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 5.5223885,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 27.6%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 4.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 19"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -1998,19 +1998,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 20"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 0.90000004,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 18"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 5.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 20"
         }
       ]
     },
@@ -2460,20 +2460,20 @@
           "issue": "High cognitive complexity: 22"
         },
         {
-          "source_metric": "Duplication",
-          "amount": 2.962963,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.8%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 14"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 2.962963,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 14.8%"
         }
       ]
     },
@@ -2582,20 +2582,20 @@
       "file_path": "./tests/compatibility_suite.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 4.0703516,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 20.4%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 49"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 4.0703516,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 20.4%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -3154,14 +3154,6 @@
       "file_path": "./tests/parser_coverage_tests.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 11.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 33"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 3.9296188,
           "applied_to": [
@@ -3176,6 +3168,14 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 18"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 11.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 33"
         }
       ]
     },
@@ -3794,20 +3794,20 @@
           "issue": "High cyclomatic complexity: 21"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 30"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 7.288889,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 36.4%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 4.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 30"
         }
       ]
     },
@@ -3825,20 +3825,20 @@
       "file_path": "./tests/string_method_transpilation.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 12"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 3.5,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 17.5%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 12"
         }
       ]
     },
@@ -4606,6 +4606,14 @@
       "file_path": "./tests/parser_property_tests.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 7.4285717,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 37.1%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 0.90000004,
           "applied_to": [
@@ -4620,14 +4628,6 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 7.4285717,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 37.1%"
         }
       ]
     },
@@ -4737,20 +4737,20 @@
       "file_path": "./tests/interpreter_coverage_boost.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 12"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 2.9916897,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 15.0%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 12"
         }
       ]
     },
@@ -4815,19 +4815,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 20"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 5 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 5.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 20"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -5059,20 +5059,20 @@
           "issue": "High cyclomatic complexity: 15"
         },
         {
-          "source_metric": "Duplication",
-          "amount": 2.970297,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.9%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 1.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 20"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 2.970297,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 14.9%"
         }
       ]
     },
@@ -5105,19 +5105,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 1.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 13"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 5 levels"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -5144,19 +5144,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 8.1,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 42"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 3.5294118,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 17.6%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -5167,12 +5167,12 @@
           "issue": "High cyclomatic complexity: 31"
         },
         {
-          "source_metric": "Duplication",
-          "amount": 3.5294118,
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
           "applied_to": [
-            "Duplication"
+            "StructuralComplexity"
           ],
-          "issue": "Code duplication: 17.6%"
+          "issue": "Deep nesting: 4 levels"
         }
       ]
     },
@@ -5205,14 +5205,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 7.5000005,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 40"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 6.5,
           "applied_to": [
             "StructuralComplexity"
@@ -5226,6 +5218,14 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 5 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 7.5000005,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 40"
         }
       ]
     },
@@ -5326,14 +5326,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 2.4,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 23"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 4.5,
           "applied_to": [
             "StructuralComplexity"
@@ -5347,6 +5339,14 @@
             "Duplication"
           ],
           "issue": "Code duplication: 14.1%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.4,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 23"
         }
       ]
     },
@@ -5373,19 +5373,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 6.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 35"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 5.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 21"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 6.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 35"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -5412,22 +5412,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 0.90000004,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 18"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
@@ -5441,6 +5425,22 @@
             "Duplication"
           ],
           "issue": "Code duplication: 14.2%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 0.90000004,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 18"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 4 levels"
         }
       ]
     },
@@ -5620,20 +5620,20 @@
       "file_path": "./examples/test_mutation.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 0.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 11"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 5.0,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 25.0%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 0.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 11"
         }
       ]
     },
@@ -5885,11 +5885,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 8.5,
+          "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cyclomatic complexity: 27"
+          "issue": "Deep nesting: 4 levels"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -5900,20 +5900,20 @@
           "issue": "High cognitive complexity: 25"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 2.5128207,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 12.6%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 8.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 27"
         }
       ]
     },
@@ -5946,19 +5946,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 3.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 17"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 1.2,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 19"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 3.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 17"
         }
       ]
     },
@@ -5976,20 +5976,20 @@
       "file_path": "./src/backend/module_resolver.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 2.970297,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 14.9%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 5.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 20"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 2.970297,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 14.9%"
         }
       ]
     },
@@ -6066,22 +6066,6 @@
       "file_path": "./src/backend/transpiler/statements.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 230"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 2.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 5 levels"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 3.880435,
           "applied_to": [
@@ -6091,11 +6075,27 @@
         },
         {
           "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 230"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 228"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 5 levels"
         }
       ]
     },
@@ -6145,11 +6145,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 5.4,
+          "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 33"
+          "issue": "High cyclomatic complexity: 30"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -6161,11 +6161,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
+          "amount": 5.4,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cyclomatic complexity: 30"
+          "issue": "High cognitive complexity: 33"
         }
       ]
     },
@@ -6212,11 +6212,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
+          "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 50"
+          "issue": "Deep nesting: 4 levels"
         },
         {
           "source_metric": "Duplication",
@@ -6236,11 +6236,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.0,
+          "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "Deep nesting: 4 levels"
+          "issue": "High cognitive complexity: 50"
         }
       ]
     },
@@ -6272,20 +6272,20 @@
       "file_path": "./src/backend/transpiler/types.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 5.8256884,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 29.1%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 6.3,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 36"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 5.8256884,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 29.1%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -6311,14 +6311,6 @@
       "file_path": "./src/backend/transpiler/type_inference.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 6.0199003,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 30.1%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
@@ -6341,6 +6333,14 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 5 levels"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 6.0199003,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 30.1%"
         }
       ]
     },
@@ -6358,12 +6358,12 @@
       "file_path": "./src/backend/transpiler/dispatcher.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 2.0627804,
+          "source_metric": "StructuralComplexity",
+          "amount": 6.6000004,
           "applied_to": [
-            "Duplication"
+            "StructuralComplexity"
           ],
-          "issue": "Code duplication: 10.3%"
+          "issue": "High cognitive complexity: 37"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -6374,12 +6374,12 @@
           "issue": "High cyclomatic complexity: 108"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 6.6000004,
+          "source_metric": "Duplication",
+          "amount": 2.0627804,
           "applied_to": [
-            "StructuralComplexity"
+            "Duplication"
           ],
-          "issue": "High cognitive complexity: 37"
+          "issue": "Code duplication: 10.3%"
         }
       ]
     },
@@ -6398,6 +6398,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 105"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 9.6,
           "applied_to": [
             "StructuralComplexity"
@@ -6411,14 +6419,6 @@
             "Duplication"
           ],
           "issue": "Code duplication: 22.2%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 105"
         }
       ]
     },
@@ -6505,19 +6505,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 9.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 28"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 1.2,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 19"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 9.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 28"
         }
       ]
     },
@@ -6650,14 +6650,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 64"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 10.5,
           "applied_to": [
             "StructuralComplexity"
@@ -6671,6 +6663,14 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 64"
         }
       ]
     },
@@ -6688,20 +6688,20 @@
       "file_path": "./src/wasm/deployment.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 2.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 15"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 3.1099195,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 15.5%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 15"
         }
       ]
     },
@@ -6832,14 +6832,6 @@
       "file_path": "./src/proving/verification.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 7.5000005,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 40"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 5.0,
           "applied_to": [
@@ -6854,6 +6846,14 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 58"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 7.5000005,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 40"
         }
       ]
     },
@@ -6879,20 +6879,20 @@
           "issue": "High cyclomatic complexity: 36"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 2.4,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 23"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 2.2368422,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 11.2%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.4,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 23"
         }
       ]
     },
@@ -6911,14 +6911,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
@@ -6932,6 +6924,14 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 74"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 4 levels"
         }
       ]
     },
@@ -6964,14 +6964,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -6985,6 +6977,14 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 21"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 4 levels"
         }
       ]
     },
@@ -7065,14 +7065,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 81"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
@@ -7086,6 +7078,14 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 5 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 81"
         }
       ]
     },
@@ -7104,11 +7104,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
+          "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 159"
+          "issue": "Deep nesting: 4 levels"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -7119,20 +7119,20 @@
           "issue": "High cyclomatic complexity: 255"
         },
         {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 159"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 3.2200885,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 16.1%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
         }
       ]
     },
@@ -7202,19 +7202,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 47"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 3.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 25"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 47"
         }
       ]
     },
@@ -7270,19 +7270,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 80"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.7,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 24"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 80"
         }
       ]
     },
@@ -7323,20 +7323,20 @@
       "file_path": "./src/middleend/mir/optimize.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 99"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 2.1698112,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 10.8%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 83"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -7348,11 +7348,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
+          "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 83"
+          "issue": "High cyclomatic complexity: 99"
         }
       ]
     },
@@ -7394,19 +7394,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 5.7000003,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 34"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 5.7000003,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 34"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -7570,20 +7570,20 @@
       "file_path": "./src/quality/enforcement.rs",
       "penalties_applied": [
         {
-          "source_metric": "SemanticComplexity",
-          "amount": 1.5,
-          "applied_to": [
-            "SemanticComplexity"
-          ],
-          "issue": "Too many parameters: 8"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 12.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 34"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 9.900001,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 48"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -7594,12 +7594,12 @@
           "issue": "Deep nesting: 4 levels"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 9.900001,
+          "source_metric": "SemanticComplexity",
+          "amount": 1.5,
           "applied_to": [
-            "StructuralComplexity"
+            "SemanticComplexity"
           ],
-          "issue": "High cognitive complexity: 48"
+          "issue": "Too many parameters: 8"
         }
       ]
     },
@@ -7618,14 +7618,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 205"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -7639,6 +7631,14 @@
             "Duplication"
           ],
           "issue": "Code duplication: 13.3%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 205"
         }
       ]
     },
@@ -7657,19 +7657,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 20"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 6.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 23"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 20"
         }
       ]
     },
@@ -7687,20 +7687,20 @@
       "file_path": "./src/quality/coverage.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 3.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 17"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 2.9347825,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 14.7%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 3.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 17"
         }
       ]
     },
@@ -7750,11 +7750,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
+          "amount": 1.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cyclomatic complexity: 102"
+          "issue": "Deep nesting: 4 levels"
         },
         {
           "source_metric": "Duplication",
@@ -7766,11 +7766,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.0,
+          "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "Deep nesting: 4 levels"
+          "issue": "High cyclomatic complexity: 102"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -7797,14 +7797,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 3.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 6 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 11.5,
           "applied_to": [
             "StructuralComplexity"
@@ -7818,6 +7810,14 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 69"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 3.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 6 levels"
         }
       ]
     },
@@ -7835,6 +7835,14 @@
       "file_path": "./src/quality/gates.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 2.047244,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 10.2%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
@@ -7849,14 +7857,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 25"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.047244,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 10.2%"
         }
       ]
     },
@@ -7875,19 +7875,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.2,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 19"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 14"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.2,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 19"
         }
       ]
     },
@@ -7905,20 +7905,20 @@
       "file_path": "./src/mcp/tool_discovery.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 7.1243043,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 35.6%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 11.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 33"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 7.1243043,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 35.6%"
         }
       ]
     },
@@ -8077,19 +8077,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 14.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 39"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 8.1,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 42"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 14.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 39"
         }
       ]
     },
@@ -8150,11 +8150,11 @@
     {
       "structural_complexity": 0.0,
       "semantic_complexity": 20.0,
-      "duplication_ratio": 17.130045,
+      "duplication_ratio": 17.132616,
       "coupling_score": 15.0,
       "doc_coverage": 10.0,
       "consistency_score": 10.0,
-      "total": 72.13004,
+      "total": 72.132614,
       "grade": "BMinus",
       "confidence": 1.0,
       "language": "Rust",
@@ -8162,11 +8162,11 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 2.0,
+          "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "Deep nesting: 5 levels"
+          "issue": "High cyclomatic complexity: 95"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -8177,20 +8177,20 @@
           "issue": "High cognitive complexity: 104"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 95"
-        },
-        {
           "source_metric": "Duplication",
-          "amount": 2.8699553,
+          "amount": 2.8673837,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 14.3%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 2.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 5 levels"
         }
       ]
     },
@@ -8209,19 +8209,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 62"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 63"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 62"
         }
       ]
     },
@@ -8239,12 +8239,12 @@
       "file_path": "./src/runtime/repl.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
+          "source_metric": "Coupling",
+          "amount": 4.2000003,
           "applied_to": [
-            "StructuralComplexity"
+            "Coupling"
           ],
-          "issue": "High cognitive complexity: 1249"
+          "issue": "Too many imports: 41"
         },
         {
           "source_metric": "Duplication",
@@ -8253,6 +8253,14 @@
             "Duplication"
           ],
           "issue": "Code duplication: 20.4%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 1249"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -8269,14 +8277,6 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 8 levels"
-        },
-        {
-          "source_metric": "Coupling",
-          "amount": 4.2000003,
-          "applied_to": [
-            "Coupling"
-          ],
-          "issue": "Too many imports: 41"
         }
       ]
     },
@@ -8309,14 +8309,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 13.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 36"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -8330,6 +8322,14 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 4 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 13.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 36"
         }
       ]
     },
@@ -8348,19 +8348,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 54"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 7.2000003,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 39"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 54"
         }
       ]
     },
@@ -8423,20 +8423,20 @@
           "issue": "High cyclomatic complexity: 71"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 8.700001,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 44"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 2.5053997,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 12.5%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 8.700001,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 44"
         }
       ]
     },
@@ -8500,20 +8500,20 @@
       "file_path": "./src/runtime/lazy.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 6.5,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 23"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 2.3972602,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 12.0%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 6.5,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 23"
         }
       ]
     },
@@ -8531,14 +8531,6 @@
       "file_path": "./src/runtime/inspect.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 5.4,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 33"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 2.507837,
           "applied_to": [
@@ -8553,6 +8545,14 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 29"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 5.4,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 33"
         }
       ]
     },
@@ -8584,6 +8584,14 @@
       "file_path": "./src/runtime/dataflow_ui.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 3.090379,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 15.5%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
@@ -8598,14 +8606,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 80"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.090379,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 15.5%"
         }
       ]
     },
@@ -8623,28 +8623,12 @@
       "file_path": "./src/runtime/interpreter.rs",
       "penalties_applied": [
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 484"
-        },
-        {
           "source_metric": "Coupling",
           "amount": 2.4,
           "applied_to": [
             "Coupling"
           ],
           "issue": "Too many imports: 32"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 4.37941,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 21.9%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -8661,6 +8645,22 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 368"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 484"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 4.37941,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 21.9%"
         }
       ]
     },
@@ -8678,6 +8678,14 @@
       "file_path": "./src/runtime/repl/display.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 3.5748792,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 17.9%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 5.1000004,
           "applied_to": [
@@ -8692,14 +8700,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 28"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.5748792,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 17.9%"
         }
       ]
     },
@@ -8726,14 +8726,6 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 60"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -8747,6 +8739,14 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 5 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 60"
         }
       ]
     },
@@ -8812,19 +8812,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 7.8,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 41"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 7.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 25"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 7.8,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 41"
         }
       ]
     },
@@ -8916,40 +8916,16 @@
     {
       "structural_complexity": 0.0,
       "semantic_complexity": 17.5,
-      "duplication_ratio": 17.118402,
+      "duplication_ratio": 17.104137,
       "coupling_score": 12.8,
       "doc_coverage": 10.0,
       "consistency_score": 10.0,
-      "total": 67.418396,
+      "total": 67.40414,
       "grade": "CPlus",
       "confidence": 1.0,
       "language": "Rust",
       "file_path": "./src/bin/handlers/mod.rs",
       "penalties_applied": [
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 273"
-        },
-        {
-          "source_metric": "Coupling",
-          "amount": 2.2,
-          "applied_to": [
-            "Coupling"
-          ],
-          "issue": "Too many imports: 31"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 7 levels"
-        },
         {
           "source_metric": "StructuralComplexity",
           "amount": 15.0,
@@ -8968,11 +8944,35 @@
         },
         {
           "source_metric": "Duplication",
-          "amount": 2.8815975,
+          "amount": 2.895863,
           "applied_to": [
             "Duplication"
           ],
-          "issue": "Code duplication: 14.4%"
+          "issue": "Code duplication: 14.5%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 4.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 7 levels"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 273"
+        },
+        {
+          "source_metric": "Coupling",
+          "amount": 2.2,
+          "applied_to": [
+            "Coupling"
+          ],
+          "issue": "Too many imports: 31"
         }
       ]
     },
@@ -8991,6 +8991,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 152"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -8999,19 +9007,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
+          "amount": 3.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cyclomatic complexity: 152"
-        },
-        {
-          "source_metric": "SemanticComplexity",
-          "amount": 3.5,
-          "applied_to": [
-            "SemanticComplexity"
-          ],
-          "issue": "Too many parameters: 12"
+          "issue": "Deep nesting: 6 levels"
         },
         {
           "source_metric": "Duplication",
@@ -9022,12 +9022,12 @@
           "issue": "Code duplication: 17.1%"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 3.0,
+          "source_metric": "SemanticComplexity",
+          "amount": 3.5,
           "applied_to": [
-            "StructuralComplexity"
+            "SemanticComplexity"
           ],
-          "issue": "Deep nesting: 6 levels"
+          "issue": "Too many parameters: 12"
         }
       ]
     },
@@ -9053,6 +9053,14 @@
           "issue": "High cognitive complexity: 140"
         },
         {
+          "source_metric": "StructuralComplexity",
+          "amount": 4.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 7 levels"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 3.4651601,
           "applied_to": [
@@ -9067,14 +9075,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 101"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 4.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 7 levels"
         }
       ]
     },
@@ -9093,22 +9093,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 5.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 20"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.768116,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 18.8%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
@@ -9122,6 +9106,22 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 6 levels"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 3.768116,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 18.8%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 5.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 20"
         }
       ]
     },
@@ -9140,6 +9140,14 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 49"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 6.6000004,
           "applied_to": [
             "StructuralComplexity"
@@ -9153,14 +9161,6 @@
             "Duplication"
           ],
           "issue": "Code duplication: 26.2%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 49"
         }
       ]
     },
@@ -9208,20 +9208,20 @@
           "issue": "Deep nesting: 4 levels"
         },
         {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 60"
-        },
-        {
           "source_metric": "Duplication",
           "amount": 5.0,
           "applied_to": [
             "Duplication"
           ],
           "issue": "Code duplication: 25.0%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 60"
         }
       ]
     },
@@ -9240,11 +9240,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
+          "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cyclomatic complexity: 41"
+          "issue": "High cognitive complexity: 68"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 4.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 7 levels"
         },
         {
           "source_metric": "Duplication",
@@ -9256,19 +9264,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 4.0,
+          "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "Deep nesting: 7 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 68"
+          "issue": "High cyclomatic complexity: 41"
         }
       ]
     },
@@ -9286,6 +9286,14 @@
       "file_path": "./src/frontend/parser/control_flow.rs",
       "penalties_applied": [
         {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 161"
+        },
+        {
           "source_metric": "Duplication",
           "amount": 5.910448,
           "applied_to": [
@@ -9295,11 +9303,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
+          "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 161"
+          "issue": "High cyclomatic complexity: 97"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -9308,14 +9316,6 @@
             "StructuralComplexity"
           ],
           "issue": "Deep nesting: 6 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 97"
         }
       ]
     },
@@ -9333,12 +9333,20 @@
       "file_path": "./src/frontend/parser/utils.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 3.4285715,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 17.1%"
+        },
+        {
           "source_metric": "StructuralComplexity",
-          "amount": 10.0,
+          "amount": 15.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cognitive complexity: 207"
+          "issue": "High cyclomatic complexity: 100"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -9350,19 +9358,11 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 15.0,
+          "amount": 10.0,
           "applied_to": [
             "StructuralComplexity"
           ],
-          "issue": "High cyclomatic complexity: 100"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 3.4285715,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 17.1%"
+          "issue": "High cognitive complexity: 207"
         }
       ]
     },
@@ -9381,6 +9381,22 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
+          "amount": 15.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cyclomatic complexity: 180"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 10.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 118"
+        },
+        {
+          "source_metric": "StructuralComplexity",
           "amount": 2.0,
           "applied_to": [
             "StructuralComplexity"
@@ -9394,22 +9410,6 @@
             "Duplication"
           ],
           "issue": "Code duplication: 19.6%"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 10.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 118"
-        },
-        {
-          "source_metric": "StructuralComplexity",
-          "amount": 15.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cyclomatic complexity: 180"
         }
       ]
     },
@@ -9450,14 +9450,6 @@
       "file_path": "./src/frontend/ast.rs",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 3.2424006,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 16.2%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 15.0,
           "applied_to": [
@@ -9472,6 +9464,14 @@
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 63"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 3.2424006,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 16.2%"
         }
       ]
     },
@@ -9489,6 +9489,14 @@
       "file_path": "./src/frontend/error_recovery.rs",
       "penalties_applied": [
         {
+          "source_metric": "Duplication",
+          "amount": 2.2746186,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 11.4%"
+        },
+        {
           "source_metric": "StructuralComplexity",
           "amount": 10.0,
           "applied_to": [
@@ -9503,14 +9511,6 @@
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 98"
-        },
-        {
-          "source_metric": "Duplication",
-          "amount": 2.2746186,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 11.4%"
         }
       ]
     },
@@ -9543,19 +9543,19 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 4.2000003,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 29"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 6.5,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cyclomatic complexity: 23"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 4.2000003,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 29"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -9612,19 +9612,19 @@
         },
         {
           "source_metric": "StructuralComplexity",
-          "amount": 1.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "Deep nesting: 4 levels"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 4.8,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 31"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 1.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "Deep nesting: 4 levels"
         }
       ]
     },
@@ -9788,20 +9788,20 @@
       "file_path": "./ide/vscode-ruchy/out/extension.js",
       "penalties_applied": [
         {
-          "source_metric": "Duplication",
-          "amount": 2.1875,
-          "applied_to": [
-            "Duplication"
-          ],
-          "issue": "Code duplication: 10.9%"
-        },
-        {
           "source_metric": "StructuralComplexity",
           "amount": 4.8,
           "applied_to": [
             "StructuralComplexity"
           ],
           "issue": "High cognitive complexity: 31"
+        },
+        {
+          "source_metric": "Duplication",
+          "amount": 2.1875,
+          "applied_to": [
+            "Duplication"
+          ],
+          "issue": "Code duplication: 10.9%"
         },
         {
           "source_metric": "StructuralComplexity",
@@ -9828,14 +9828,6 @@
       "penalties_applied": [
         {
           "source_metric": "StructuralComplexity",
-          "amount": 3.0,
-          "applied_to": [
-            "StructuralComplexity"
-          ],
-          "issue": "High cognitive complexity: 25"
-        },
-        {
-          "source_metric": "StructuralComplexity",
           "amount": 8.0,
           "applied_to": [
             "StructuralComplexity"
@@ -9849,11 +9841,19 @@
             "Duplication"
           ],
           "issue": "Code duplication: 13.8%"
+        },
+        {
+          "source_metric": "StructuralComplexity",
+          "amount": 3.0,
+          "applied_to": [
+            "StructuralComplexity"
+          ],
+          "issue": "High cognitive complexity: 25"
         }
       ]
     }
   ],
-  "average_score": 92.916115,
+  "average_score": 92.91608,
   "average_grade": "A",
   "total_files": 386,
   "language_distribution": {

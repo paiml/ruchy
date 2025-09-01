@@ -86,37 +86,6 @@ pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
     }
 }
 
-/// Checks if an expression contains numeric operations
-#[allow(dead_code)]  // Used in tests but not in main code
-pub fn contains_numeric_operations(expr: &Expr) -> bool {
-    match &expr.kind {
-        ExprKind::Binary { op, left, right } => {
-            // Check for numeric operators
-            matches!(op, 
-                BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply | 
-                BinaryOp::Divide | BinaryOp::Modulo | BinaryOp::Less | 
-                BinaryOp::Greater | BinaryOp::LessEqual | BinaryOp::GreaterEqual
-            ) || contains_numeric_operations(left) || contains_numeric_operations(right)
-        }
-        ExprKind::Block(exprs) => {
-            exprs.iter().any(contains_numeric_operations)
-        }
-        ExprKind::If { then_branch, else_branch, .. } => {
-            contains_numeric_operations(then_branch) ||
-            else_branch.as_ref().is_some_and(|e| contains_numeric_operations(e))
-        }
-        ExprKind::Let { value, body, .. } => {
-            contains_numeric_operations(value) || contains_numeric_operations(body)
-        }
-        ExprKind::Call { args, .. } => {
-            args.iter().any(contains_numeric_operations)
-        }
-        ExprKind::Lambda { body, .. } => {
-            contains_numeric_operations(body)
-        }
-        _ => false
-    }
-}
 
 /// Checks if a parameter is used in numeric operations
 pub fn is_param_used_numerically(param_name: &str, expr: &Expr) -> bool {
@@ -192,6 +161,37 @@ fn is_string_literal(expr: &Expr) -> bool {
 mod tests {
     use super::*;
     use crate::Parser;
+
+    /// Checks if an expression contains numeric operations (test helper)
+    fn contains_numeric_operations(expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::Binary { op, left, right } => {
+                // Check for numeric operators
+                matches!(op, 
+                    BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply | 
+                    BinaryOp::Divide | BinaryOp::Modulo | BinaryOp::Less | 
+                    BinaryOp::Greater | BinaryOp::LessEqual | BinaryOp::GreaterEqual
+                ) || contains_numeric_operations(left) || contains_numeric_operations(right)
+            }
+            ExprKind::Block(exprs) => {
+                exprs.iter().any(contains_numeric_operations)
+            }
+            ExprKind::If { then_branch, else_branch, .. } => {
+                contains_numeric_operations(then_branch) ||
+                else_branch.as_ref().is_some_and(|e| contains_numeric_operations(e))
+            }
+            ExprKind::Let { value, body, .. } => {
+                contains_numeric_operations(value) || contains_numeric_operations(body)
+            }
+            ExprKind::Call { args, .. } => {
+                args.iter().any(contains_numeric_operations)
+            }
+            ExprKind::Lambda { body, .. } => {
+                contains_numeric_operations(body)
+            }
+            _ => false
+        }
+    }
 
     #[test]
     fn test_detects_function_parameter() {
