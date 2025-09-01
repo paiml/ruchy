@@ -1,0 +1,2134 @@
+{
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "patch": 0
+  },
+  "metadata": {
+    "session_id": "ruchy-session-1756743609",
+    "created_at": "2025-09-01T16:20:09.316858122+00:00",
+    "ruchy_version": "1.30.0",
+    "student_id": null,
+    "assignment_id": null,
+    "tags": [
+      "interactive"
+    ]
+  },
+  "environment": {
+    "seed": 0,
+    "feature_flags": [],
+    "resource_limits": {
+      "heap_mb": 100,
+      "stack_kb": 8192,
+      "cpu_ms": 5000
+    }
+  },
+  "timeline": [
+    {
+      "id": 1,
+      "timestamp_ns": 117471,
+      "event": {
+        "Input": {
+          "text": "# Demo 4: Advanced Language Features",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 2,
+      "timestamp_ns": 602750,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 3,
+      "timestamp_ns": 609286,
+      "event": {
+        "Input": {
+          "text": "# Optional chaining, error handling, async, advanced patterns",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 4,
+      "timestamp_ns": 817363,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 5,
+      "timestamp_ns": 819125,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 6,
+      "timestamp_ns": 820754,
+      "event": {
+        "Input": {
+          "text": "# Optional chaining",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 7,
+      "timestamp_ns": 943835,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 8,
+      "timestamp_ns": 945953,
+      "event": {
+        "Input": {
+          "text": "let user = { ",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 9,
+      "timestamp_ns": 947226,
+      "event": {
+        "Input": {
+          "text": "    profile: { ",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 10,
+      "timestamp_ns": 949837,
+      "event": {
+        "Input": {
+          "text": "        settings: { ",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 11,
+      "timestamp_ns": 950849,
+      "event": {
+        "Input": {
+          "text": "            theme: \"dark\" ",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 12,
+      "timestamp_ns": 951731,
+      "event": {
+        "Input": {
+          "text": "        } ",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 13,
+      "timestamp_ns": 952404,
+      "event": {
+        "Input": {
+          "text": "    } ",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 14,
+      "timestamp_ns": 952873,
+      "event": {
+        "Input": {
+          "text": "}",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 15,
+      "timestamp_ns": 953180,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 16,
+      "timestamp_ns": 993556,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"{\\\"profile\\\": {\\\"settings\\\": {\\\"theme\\\": \\\"dark\\\"}}}\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 17,
+      "timestamp_ns": 1001188,
+      "event": {
+        "Input": {
+          "text": "# Safe navigation",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 18,
+      "timestamp_ns": 1129576,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 19,
+      "timestamp_ns": 1132054,
+      "event": {
+        "Input": {
+          "text": "user?.profile?.settings?.theme",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 20,
+      "timestamp_ns": 1142164,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"dark\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 21,
+      "timestamp_ns": 1145957,
+      "event": {
+        "Input": {
+          "text": "user?.profile?.missing?.field",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 22,
+      "timestamp_ns": 1150650,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"null\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 23,
+      "timestamp_ns": 1152151,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 24,
+      "timestamp_ns": 1153048,
+      "event": {
+        "Input": {
+          "text": "let empty_user = null",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 25,
+      "timestamp_ns": 1159646,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"Option::None\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 26,
+      "timestamp_ns": 1162107,
+      "event": {
+        "Input": {
+          "text": "empty_user?.profile?.settings?.theme",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 27,
+      "timestamp_ns": 1167819,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"null\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 28,
+      "timestamp_ns": 1169530,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 29,
+      "timestamp_ns": 1170279,
+      "event": {
+        "Input": {
+          "text": "# Null coalescing",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 30,
+      "timestamp_ns": 1298695,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 31,
+      "timestamp_ns": 1301494,
+      "event": {
+        "Input": {
+          "text": "let theme = user?.profile?.settings?.theme ?? \"light\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 32,
+      "timestamp_ns": 1312369,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"dark\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 33,
+      "timestamp_ns": 1315195,
+      "event": {
+        "Input": {
+          "text": "theme",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 34,
+      "timestamp_ns": 1320838,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"dark\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 35,
+      "timestamp_ns": 1322329,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 36,
+      "timestamp_ns": 1324048,
+      "event": {
+        "Input": {
+          "text": "let missing = user?.profile?.missing?.field ?? \"default\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 37,
+      "timestamp_ns": 1332641,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"default\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 38,
+      "timestamp_ns": 1335292,
+      "event": {
+        "Input": {
+          "text": "missing",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 39,
+      "timestamp_ns": 1339946,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"default\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 40,
+      "timestamp_ns": 1341240,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 41,
+      "timestamp_ns": 1342235,
+      "event": {
+        "Input": {
+          "text": "# Try-catch error handling",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 42,
+      "timestamp_ns": 1491446,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 43,
+      "timestamp_ns": 1493888,
+      "event": {
+        "Input": {
+          "text": "try {",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 44,
+      "timestamp_ns": 1495433,
+      "event": {
+        "Input": {
+          "text": "    let result = 10 / 0",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 45,
+      "timestamp_ns": 1496264,
+      "event": {
+        "Input": {
+          "text": "    result",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 46,
+      "timestamp_ns": 1496867,
+      "event": {
+        "Input": {
+          "text": "} catch {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 47,
+      "timestamp_ns": 1497823,
+      "event": {
+        "Input": {
+          "text": "    \"Division by zero handled\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 48,
+      "timestamp_ns": 1498486,
+      "event": {
+        "Input": {
+          "text": "}",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 49,
+      "timestamp_ns": 1498810,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 50,
+      "timestamp_ns": 1520999,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Division by zero handled\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 51,
+      "timestamp_ns": 1526369,
+      "event": {
+        "Input": {
+          "text": "try {",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 52,
+      "timestamp_ns": 1527444,
+      "event": {
+        "Input": {
+          "text": "    let arr = [1, 2, 3]",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 53,
+      "timestamp_ns": 1528893,
+      "event": {
+        "Input": {
+          "text": "    arr[10]  # This might cause an error",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 54,
+      "timestamp_ns": 1529760,
+      "event": {
+        "Input": {
+          "text": "} catch {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 55,
+      "timestamp_ns": 1530750,
+      "event": {
+        "Input": {
+          "text": "    \"Array access error handled\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 56,
+      "timestamp_ns": 1531071,
+      "event": {
+        "Input": {
+          "text": "}",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 57,
+      "timestamp_ns": 1531307,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 58,
+      "timestamp_ns": 1677902,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 59,
+      "timestamp_ns": 1680381,
+      "event": {
+        "Input": {
+          "text": "# String interpolation",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 60,
+      "timestamp_ns": 1979408,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 61,
+      "timestamp_ns": 1981670,
+      "event": {
+        "Input": {
+          "text": "let name = \"Alice\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 62,
+      "timestamp_ns": 1990781,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Alice\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 63,
+      "timestamp_ns": 1994047,
+      "event": {
+        "Input": {
+          "text": "let age = 25",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 64,
+      "timestamp_ns": 2000114,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"25\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 65,
+      "timestamp_ns": 2002400,
+      "event": {
+        "Input": {
+          "text": "f\"Hello, {name}! You are {age} years old.\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 66,
+      "timestamp_ns": 2016693,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Hello, Alice! You are 25 years old.\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 67,
+      "timestamp_ns": 2018053,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 68,
+      "timestamp_ns": 2018677,
+      "event": {
+        "Input": {
+          "text": "let x = 5",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 69,
+      "timestamp_ns": 2023975,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"5\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 70,
+      "timestamp_ns": 2025681,
+      "event": {
+        "Input": {
+          "text": "let y = 3",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 71,
+      "timestamp_ns": 2030224,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"3\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 72,
+      "timestamp_ns": 2032537,
+      "event": {
+        "Input": {
+          "text": "f\"The sum of {x} and {y} is {x + y}\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 73,
+      "timestamp_ns": 2044696,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"The sum of 5 and 3 is 8\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 74,
+      "timestamp_ns": 2046115,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 75,
+      "timestamp_ns": 2046975,
+      "event": {
+        "Input": {
+          "text": "# Pipeline operator",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 76,
+      "timestamp_ns": 2193403,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 77,
+      "timestamp_ns": 2195773,
+      "event": {
+        "Input": {
+          "text": "let numbers = [1, 2, 3, 4, 5]",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 78,
+      "timestamp_ns": 2210461,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[1, 2, 3, 4, 5]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 79,
+      "timestamp_ns": 2212692,
+      "event": {
+        "Input": {
+          "text": "let result = numbers",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 80,
+      "timestamp_ns": 2223473,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[1, 2, 3, 4, 5]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 81,
+      "timestamp_ns": 2225544,
+      "event": {
+        "Input": {
+          "text": "    |> filter(x => x % 2 == 0)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 82,
+      "timestamp_ns": 2376983,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 83,
+      "timestamp_ns": 2379248,
+      "event": {
+        "Input": {
+          "text": "    |> map(x => x * 2)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 84,
+      "timestamp_ns": 2530428,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 85,
+      "timestamp_ns": 2533334,
+      "event": {
+        "Input": {
+          "text": "    |> reduce((acc, x) => acc + x, 0)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 86,
+      "timestamp_ns": 2680542,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 87,
+      "timestamp_ns": 2682685,
+      "event": {
+        "Input": {
+          "text": "result",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 88,
+      "timestamp_ns": 2691343,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[1, 2, 3, 4, 5]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 89,
+      "timestamp_ns": 2693652,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 90,
+      "timestamp_ns": 2695020,
+      "event": {
+        "Input": {
+          "text": "# Spread operator in arrays",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 91,
+      "timestamp_ns": 2847902,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 92,
+      "timestamp_ns": 2850354,
+      "event": {
+        "Input": {
+          "text": "let arr1 = [1, 2, 3]",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 93,
+      "timestamp_ns": 2863593,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[1, 2, 3]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 94,
+      "timestamp_ns": 2866472,
+      "event": {
+        "Input": {
+          "text": "let arr2 = [4, 5, 6]",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 95,
+      "timestamp_ns": 2874778,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[4, 5, 6]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 96,
+      "timestamp_ns": 2877156,
+      "event": {
+        "Input": {
+          "text": "let combined = [...arr1, ...arr2]",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 97,
+      "timestamp_ns": 2888460,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[1, 2, 3, 4, 5, 6]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 98,
+      "timestamp_ns": 2890224,
+      "event": {
+        "Input": {
+          "text": "combined",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 99,
+      "timestamp_ns": 2897758,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[1, 2, 3, 4, 5, 6]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 100,
+      "timestamp_ns": 2899079,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 101,
+      "timestamp_ns": 2900532,
+      "event": {
+        "Input": {
+          "text": "let with_extra = [0, ...arr1, 4, ...arr2, 7]",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 102,
+      "timestamp_ns": 2912327,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[0, 1, 2, 3, 4, 4, 5, 6, 7]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 103,
+      "timestamp_ns": 2913832,
+      "event": {
+        "Input": {
+          "text": "with_extra",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 104,
+      "timestamp_ns": 2921113,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[0, 1, 2, 3, 4, 4, 5, 6, 7]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 105,
+      "timestamp_ns": 2922315,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 106,
+      "timestamp_ns": 2923050,
+      "event": {
+        "Input": {
+          "text": "# Range expansion",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 107,
+      "timestamp_ns": 3085455,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 108,
+      "timestamp_ns": 3088094,
+      "event": {
+        "Input": {
+          "text": "let range_array = [...1..6]",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 109,
+      "timestamp_ns": 3103668,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[1, 2, 3, 4, 5]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 110,
+      "timestamp_ns": 3107133,
+      "event": {
+        "Input": {
+          "text": "range_array",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 111,
+      "timestamp_ns": 3115433,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"[1, 2, 3, 4, 5]\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 112,
+      "timestamp_ns": 3116685,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 113,
+      "timestamp_ns": 3117768,
+      "event": {
+        "Input": {
+          "text": "# Object spread (if supported)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 114,
+      "timestamp_ns": 3297415,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 115,
+      "timestamp_ns": 3300914,
+      "event": {
+        "Input": {
+          "text": "let base_config = { debug: true, timeout: 1000 }",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 116,
+      "timestamp_ns": 3319669,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"{\\\"debug\\\": true, \\\"timeout\\\": 1000}\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 117,
+      "timestamp_ns": 3324429,
+      "event": {
+        "Input": {
+          "text": "let extended_config = { ...base_config, version: \"1.0\" }",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 118,
+      "timestamp_ns": 3341308,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"{\\\"debug\\\": true, \\\"timeout\\\": 1000, \\\"version\\\": \\\"1.0\\\"}\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 119,
+      "timestamp_ns": 3343434,
+      "event": {
+        "Input": {
+          "text": "extended_config",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 120,
+      "timestamp_ns": 3353404,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"{\\\"debug\\\": true, \\\"timeout\\\": 1000, \\\"version\\\": \\\"1.0\\\"}\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 121,
+      "timestamp_ns": 3355161,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 122,
+      "timestamp_ns": 3355943,
+      "event": {
+        "Input": {
+          "text": "# Pattern guards",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 123,
+      "timestamp_ns": 3633300,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 124,
+      "timestamp_ns": 3637454,
+      "event": {
+        "Input": {
+          "text": "let classify_number = |n| => {",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 125,
+      "timestamp_ns": 3639378,
+      "event": {
+        "Input": {
+          "text": "    match n {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 126,
+      "timestamp_ns": 3640611,
+      "event": {
+        "Input": {
+          "text": "        x if x < 0 => \"negative\",",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 127,
+      "timestamp_ns": 3641630,
+      "event": {
+        "Input": {
+          "text": "        0 => \"zero\",",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 128,
+      "timestamp_ns": 3642826,
+      "event": {
+        "Input": {
+          "text": "        x if x < 10 => \"single digit\", ",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 129,
+      "timestamp_ns": 3644750,
+      "event": {
+        "Input": {
+          "text": "        x if x < 100 => \"double digit\",",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 130,
+      "timestamp_ns": 3650022,
+      "event": {
+        "Input": {
+          "text": "        _ => \"large number\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 131,
+      "timestamp_ns": 3650709,
+      "event": {
+        "Input": {
+          "text": "    }",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 132,
+      "timestamp_ns": 3651130,
+      "event": {
+        "Input": {
+          "text": "}",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 133,
+      "timestamp_ns": 3651428,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 134,
+      "timestamp_ns": 3822863,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 135,
+      "timestamp_ns": 3825578,
+      "event": {
+        "Input": {
+          "text": "classify_number(-5)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 136,
+      "timestamp_ns": 4012874,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Unknown function: classify_number"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 137,
+      "timestamp_ns": 4015229,
+      "event": {
+        "Input": {
+          "text": "classify_number(0)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 138,
+      "timestamp_ns": 4185276,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Unknown function: classify_number"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 139,
+      "timestamp_ns": 4187574,
+      "event": {
+        "Input": {
+          "text": "classify_number(7)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 140,
+      "timestamp_ns": 4358866,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Unknown function: classify_number"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 141,
+      "timestamp_ns": 4360981,
+      "event": {
+        "Input": {
+          "text": "classify_number(42)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 142,
+      "timestamp_ns": 4534669,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Unknown function: classify_number"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 143,
+      "timestamp_ns": 4536705,
+      "event": {
+        "Input": {
+          "text": "classify_number(123)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 144,
+      "timestamp_ns": 4706985,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Unknown function: classify_number"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 145,
+      "timestamp_ns": 4708608,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 146,
+      "timestamp_ns": 4709793,
+      "event": {
+        "Input": {
+          "text": "# Array pattern matching",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 147,
+      "timestamp_ns": 4863515,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 148,
+      "timestamp_ns": 4865884,
+      "event": {
+        "Input": {
+          "text": "let analyze_array = |arr| => {",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 149,
+      "timestamp_ns": 4867354,
+      "event": {
+        "Input": {
+          "text": "    match arr {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 150,
+      "timestamp_ns": 4868298,
+      "event": {
+        "Input": {
+          "text": "        [] => \"empty\",",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 151,
+      "timestamp_ns": 4869671,
+      "event": {
+        "Input": {
+          "text": "        [x] => f\"single element: {x}\",",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 152,
+      "timestamp_ns": 4870841,
+      "event": {
+        "Input": {
+          "text": "        [x, y] => f\"pair: {x}, {y}\",",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 153,
+      "timestamp_ns": 4873023,
+      "event": {
+        "Input": {
+          "text": "        [first, ...rest] => f\"starts with {first}, has {rest.length()} more\",",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 154,
+      "timestamp_ns": 4873575,
+      "event": {
+        "Input": {
+          "text": "    }",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 155,
+      "timestamp_ns": 4873969,
+      "event": {
+        "Input": {
+          "text": "}",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 156,
+      "timestamp_ns": 4874254,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 157,
+      "timestamp_ns": 5028835,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Failed to parse input"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 158,
+      "timestamp_ns": 5031119,
+      "event": {
+        "Input": {
+          "text": "analyze_array([])",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 159,
+      "timestamp_ns": 5197173,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Unknown function: analyze_array"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 160,
+      "timestamp_ns": 5199504,
+      "event": {
+        "Input": {
+          "text": "analyze_array([42])",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 161,
+      "timestamp_ns": 5361795,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Unknown function: analyze_array"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 162,
+      "timestamp_ns": 5363956,
+      "event": {
+        "Input": {
+          "text": "analyze_array([1, 2])",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 163,
+      "timestamp_ns": 5534840,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Unknown function: analyze_array"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 164,
+      "timestamp_ns": 5539849,
+      "event": {
+        "Input": {
+          "text": "analyze_array([1, 2, 3, 4, 5])",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 165,
+      "timestamp_ns": 5706853,
+      "event": {
+        "Output": {
+          "result": {
+            "Error": {
+              "message": "Unknown function: analyze_array"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    }
+  ],
+  "checkpoints": {}
+}
