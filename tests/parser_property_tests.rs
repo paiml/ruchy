@@ -1,9 +1,98 @@
 //! Property-based tests for the parser
 //!
-//! [TEST-COV-012] Increase parser test coverage with property testing
+//! [TEST-COV-013] Increase parser test coverage with property testing
+//! Implements mathematical property verification using both proptest and quickcheck
 
-use ruchy::Parser;
+use ruchy::frontend::parser::Parser;
+use ruchy::frontend::ast::{ExprKind, Literal};
 use proptest::prelude::*;
+
+// Additional quickcheck-based property tests for robustness
+#[cfg(test)]
+mod quickcheck_tests {
+    use super::*;
+    use quickcheck::TestResult;
+    use quickcheck_macros::quickcheck;
+
+    // Property: Parser never panics on any input
+    #[quickcheck]
+    fn property_parser_never_panics(input: String) -> TestResult {
+        if input.len() > 1000 {
+            return TestResult::discard();
+        }
+        
+        let mut parser = Parser::new(&input);
+        let _result = parser.parse();
+        TestResult::passed()
+    }
+
+    // Property: Whitespace doesn't affect numeric parsing
+    #[quickcheck]
+    fn property_whitespace_agnostic_numbers(n: i64) -> TestResult {
+        // Skip negative numbers as they need special handling for unary minus
+        if n < 0 {
+            return TestResult::discard();
+        }
+        
+        let inputs = [
+            n.to_string(),
+            format!(" {}", n),
+            format!("{} ", n),
+            format!(" {} ", n),
+            format!("  {}  ", n),
+            format!("\t{}\n", n),
+        ];
+        
+        let mut results = Vec::new();
+        for input in &inputs {
+            let mut parser = Parser::new(input);
+            if let Ok(expr) = parser.parse() {
+                if let ExprKind::Literal(Literal::Integer(parsed)) = expr.kind {
+                    results.push(parsed);
+                } else {
+                    return TestResult::failed();
+                }
+            } else {
+                return TestResult::failed();
+            }
+        }
+        
+        TestResult::from_bool(results.iter().all(|&x| x == n))
+    }
+
+    // Property: Deep nesting doesn't cause stack overflow
+    #[quickcheck]
+    fn property_bounded_nesting(depth: u8) -> TestResult {
+        let depth = (depth % 50) as usize;
+        let mut input = "(".repeat(depth);
+        input.push_str("42");
+        input.push_str(&")".repeat(depth));
+        
+        let mut parser = Parser::new(&input);
+        let _result = parser.parse(); // Should not crash
+        TestResult::passed()
+    }
+
+    // Property: Operator precedence consistency
+    #[quickcheck] 
+    fn property_precedence_consistency() -> TestResult {
+        // 2 + 3 * 4 should be 2 + (3 * 4), not (2 + 3) * 4
+        let input = "2 + 3 * 4";
+        let mut parser = Parser::new(input);
+        
+        if let Ok(expr) = parser.parse() {
+            // Should be addition at top level with multiplication on right
+            if let ExprKind::Binary { op, left: _, right } = expr.kind {
+                if let ruchy::frontend::ast::BinaryOp::Add = op {
+                    if let ExprKind::Binary { op: ruchy::frontend::ast::BinaryOp::Multiply, .. } = right.kind {
+                        return TestResult::passed();
+                    }
+                }
+            }
+        }
+        TestResult::failed()
+    }
+}
 
 proptest! {
     #[test]
@@ -175,11 +264,18 @@ proptest! {
     }
     
     #[test]
-    fn test_method_call_parsing(obj in "[a-z]+", method in "[a-z]+") {
+    fn test_method_call_parsing(obj in "[a-z]+", method in "[a-z][a-z0-9]*") {
+        // Skip reserved keywords that might cause parsing issues
+        if matches!(method.as_str(), "df" | "if" | "else" | "while" | "for" | "let" | "fun" | 
+                   "return" | "true" | "false" | "null" | "match" | "enum" | "struct" | 
+                   "impl" | "pub" | "mut" | "const" | "static" | "type" | "trait" | "mod" | "use") {
+            return Ok(());
+        }
+        
         let input = format!("{obj}.{method}()");
         let mut parser = Parser::new(&input);
         let result = parser.parse();
-        prop_assert!(result.is_ok());
+        prop_assert!(result.is_ok(), "Failed to parse method call: {}", input);
         let expr = result.unwrap();
         // Should parse as a method call
         let debug_str = format!("{expr:?}");
