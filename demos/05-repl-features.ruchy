@@ -1,0 +1,81 @@
+# Demo 5: REPL-Specific Features
+# Magic commands, introspection, help system, shell integration
+
+# Variable introspection
+let x = [1, 2, 3, 4, 5]
+let user = { name: "Alice", age: 30 }
+
+# Use magic commands to inspect variables
+# ?x
+# ??user
+# str(x)
+# summary(user)
+
+# Help system
+# help()
+# help("String")
+# help("Array")
+# dir()
+
+# Type information
+# type(x)
+# type(user)
+# type(42)
+# type("hello")
+
+# History and session management
+# :history
+# :bindings
+# :env
+
+# Math operations
+let numbers = [1, 2, 3, 4, 5]
+numbers.sum()
+numbers.mean()
+numbers.max()
+numbers.min()
+
+# String methods
+let text = "Hello World"
+text.length()
+text.upper()
+text.lower()
+text.split(" ")
+text.contains("World")
+text.starts_with("Hello")
+text.ends_with("World")
+
+# Advanced array operations
+let data = [1, 4, 2, 8, 3, 6]
+data.sort()
+data.reverse()
+data.unique()
+data.slice(1, 4)
+
+# Functional programming
+let transform = numbers
+    .filter(x => x > 2)
+    .map(x => x * 2)
+    .reduce((acc, x) => acc + x, 0)
+transform
+
+# Memory and performance tracking
+# %time 2 + 2
+# %timeit factorial(10)
+
+# Error demonstration for testing error handling
+# This will cause errors that should be handled gracefully:
+# undefined_variable
+# [1, 2, 3][10]
+# 10 / 0
+
+# File operations (if available)
+# :load example.ruchy
+# :save session.ruchy
+
+# DataFrame operations (if polars feature enabled)
+# df!{
+#     name: ["Alice", "Bob", "Charlie"],
+#     age: [25, 30, 35],
+#     city: ["NYC", "LA", "Chicago"]
+# }

@@ -15,7 +15,7 @@ use crate::runtime::repl::Value;
 
 /// Unique identifier for events in a session
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct EventId(u64);
+pub struct EventId(pub u64);
 
 /// Semantic version for compatibility checking
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

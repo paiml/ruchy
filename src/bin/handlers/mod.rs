@@ -1405,6 +1405,9 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
         crate::Commands::Coverage { path, threshold, format, verbose } => {
             handle_coverage_command(&path, threshold.unwrap_or(80.0), &format, verbose)
         }
+        crate::Commands::ReplayToTests { input, output, property_tests, benchmarks, timeout } => {
+            handle_replay_to_tests_command(&input, output.as_deref(), property_tests, benchmarks, timeout)
+        }
         _ => {
             // Other commands not yet implemented
             eprintln!("Command not yet implemented");
@@ -1762,4 +1765,175 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
         }
     }
     */
+}
+
+/// Handle replay-to-tests command - convert .replay files to regression tests
+/// 
+/// # Arguments
+/// * `input` - Input replay file or directory containing .replay files
+/// * `output` - Optional output test file path
+/// * `property_tests` - Whether to include property tests
+/// * `benchmarks` - Whether to include benchmarks
+/// * `timeout` - Test timeout in milliseconds
+/// 
+/// # Examples
+/// ```
+/// // Convert single replay file
+/// handle_replay_to_tests_command(Path::new("demo.replay"), None, true, false, 5000);
+/// 
+/// // Convert directory of replay files
+/// handle_replay_to_tests_command(Path::new("demos/"), Some(Path::new("tests/replays.rs")), true, true, 10000);
+/// ```
+/// 
+/// # Errors
+/// Returns error if replay files can't be read or test files can't be written
+pub fn handle_replay_to_tests_command(
+    input: &Path,
+    output: Option<&Path>,
+    property_tests: bool,
+    benchmarks: bool,
+    timeout: u64,
+) -> Result<()> {
+    use colored::Colorize;
+    use ruchy::runtime::replay_converter::{ReplayConverter, ConversionConfig};
+    use std::fs;
+    
+    println!("{}", "🔄 Converting REPL replay files to regression tests".bright_cyan().bold());
+    println!("Input: {}", input.display());
+    
+    // Setup conversion configuration
+    let config = ConversionConfig {
+        test_module_prefix: "replay_generated".to_string(),
+        include_property_tests: property_tests,
+        include_benchmarks: benchmarks,
+        timeout_ms: timeout,
+    };
+    
+    let converter = ReplayConverter::with_config(config);
+    let mut all_tests = Vec::new();
+    let mut processed_files = 0;
+    
+    // Determine output path
+    let default_output = Path::new("tests/generated_from_replays.rs");
+    let output_path = output.unwrap_or(default_output);
+    
+    // Process input (file or directory)
+    if input.is_file() {
+        if input.extension().and_then(|s| s.to_str()) == Some("replay") {
+            println!("📄 Processing replay file: {}", input.display());
+            
+            match converter.convert_file(input) {
+                Ok(tests) => {
+                    println!("  ✅ Generated {} tests", tests.len());
+                    all_tests.extend(tests);
+                    processed_files += 1;
+                }
+                Err(e) => {
+                    eprintln!("  ❌ Failed to process {}: {}", input.display(), e);
+                    return Err(e);
+                }
+            }
+        } else {
+            eprintln!("❌ Input file must have .replay extension");
+            return Err(anyhow::anyhow!("Invalid file extension"));
+        }
+    } else if input.is_dir() {
+        println!("📁 Processing replay directory: {}", input.display());
+        
+        // Find all .replay files in directory
+        let replay_files: Vec<_> = fs::read_dir(input)?
+            .filter_map(|entry| {
+                let entry = entry.ok()?;
+                let path = entry.path();
+                if path.is_file() && path.extension()? == "replay" {
+                    Some(path)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        
+        if replay_files.is_empty() {
+            println!("⚠️  No .replay files found in directory");
+            return Ok(());
+        }
+        
+        println!("🔍 Found {} replay files", replay_files.len());
+        
+        for replay_file in replay_files {
+            println!("📄 Processing: {}", replay_file.display());
+            
+            match converter.convert_file(&replay_file) {
+                Ok(tests) => {
+                    println!("  ✅ Generated {} tests", tests.len());
+                    all_tests.extend(tests);
+                    processed_files += 1;
+                }
+                Err(e) => {
+                    eprintln!("  ⚠️  Failed to process {}: {}", replay_file.display(), e);
+                    // Continue with other files instead of failing completely
+                }
+            }
+        }
+    } else {
+        eprintln!("❌ Input path must be a file or directory");
+        return Err(anyhow::anyhow!("Invalid input path"));
+    }
+    
+    if all_tests.is_empty() {
+        println!("⚠️  No tests generated");
+        return Ok(());
+    }
+    
+    // Create output directory if needed
+    if let Some(parent) = output_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    
+    // Write all tests to output file
+    println!("📝 Writing tests to: {}", output_path.display());
+    
+    converter.write_tests(&all_tests, output_path)
+        .context("Failed to write test file")?;
+    
+    // Summary report
+    println!("\n{}", "🎉 Conversion Summary".bright_green().bold());
+    println!("=====================================");
+    println!("📊 Files processed: {}", processed_files);
+    println!("✅ Tests generated: {}", all_tests.len());
+    
+    // Breakdown by test category
+    let mut category_counts = std::collections::HashMap::new();
+    let mut coverage_areas = std::collections::HashSet::new();
+    
+    for test in &all_tests {
+        *category_counts.entry(&test.category).or_insert(0) += 1;
+        coverage_areas.extend(test.coverage_areas.iter().cloned());
+    }
+    
+    println!("\n📋 Test Breakdown:");
+    for (category, count) in category_counts {
+        println!("   {:?}: {}", category, count);
+    }
+    
+    println!("\n🎯 Coverage Areas: {} unique areas", coverage_areas.len());
+    if !coverage_areas.is_empty() {
+        let mut areas: Vec<_> = coverage_areas.into_iter().collect();
+        areas.sort();
+        for area in areas.iter().take(10) {  // Show first 10
+            println!("   • {}", area);
+        }
+        if areas.len() > 10 {
+            println!("   ... and {} more", areas.len() - 10);
+        }
+    }
+    
+    println!("\n💡 Next Steps:");
+    println!("   1. Run tests: cargo test");
+    println!("   2. Measure coverage: cargo test -- --test-threads=1");
+    println!("   3. Validate replay determinism");
+    
+    println!("\n🚀 {}", "Replay-to-test conversion complete!".bright_green());
+    
+    Ok(())
 }

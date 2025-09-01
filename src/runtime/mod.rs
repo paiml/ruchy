@@ -15,6 +15,7 @@ pub mod observatory;
 pub mod observatory_ui;
 pub mod repl;
 pub mod replay;
+pub mod replay_converter;
 pub mod deterministic;
 pub mod assessment;
 pub mod magic;
@@ -89,3 +90,8 @@ pub use dataflow_debugger::{
 };
 
 pub use dataflow_ui::{DataflowUI, UIConfig};
+
+// Export replay-to-test converter
+pub use replay_converter::{
+    ReplayConverter, ConversionConfig, GeneratedTest, TestCategory,
+};
