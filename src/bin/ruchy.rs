@@ -29,7 +29,7 @@ mod handlers;
 use handlers::{
     handle_parse_command, handle_transpile_command, handle_run_command,
     handle_eval_command, handle_file_execution, handle_stdin_input, handle_repl_command,
-    handle_compile_command, handle_check_command, handle_test_command, handle_coverage_command, handle_complex_command
+    handle_compile_command, handle_check_command, handle_test_command, handle_complex_command
 };
 
 /// Configuration for code formatting
@@ -937,12 +937,9 @@ fn main() -> Result<()> {
                 coverage,
                 &coverage_format,
                 usize::from(parallel),
-                threshold.unwrap_or(70.0),
+                threshold.unwrap_or(0.0),
                 &format,
             )?;
-        }
-        Some(Commands::Coverage { path, threshold, format, verbose }) => {
-            handle_coverage_command(path, threshold.unwrap_or(80.0), &format, verbose)?;
         }
         Some(command) => {
             handle_advanced_command(command)?;

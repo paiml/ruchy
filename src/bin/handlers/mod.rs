@@ -1396,6 +1396,9 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
                 &format,
             )
         }
+        crate::Commands::Coverage { path, threshold, format, verbose } => {
+            handle_coverage_command(path, threshold.unwrap_or(80.0), &format, verbose)
+        }
         _ => {
             // Other commands not yet implemented
             eprintln!("Command not yet implemented");
