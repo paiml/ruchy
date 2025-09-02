@@ -7,7 +7,7 @@ fn test_function_call_no_args() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast);
     
     assert!(result.is_ok(), "Should transpile func_name() without args: {:?}", result.err());
@@ -22,7 +22,7 @@ fn test_function_call_with_args() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast);
     
     assert!(result.is_ok(), "Should transpile func_name with args: {:?}", result.err());
@@ -37,7 +37,7 @@ fn test_unknown_function_should_not_validate_args() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast);
     
     assert!(result.is_ok(), "Should not validate args for unknown functions: {:?}", result.err());
@@ -50,7 +50,7 @@ fn test_type_conversion_requires_one_arg() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast);
     
     assert!(result.is_err(), "int() with no args should fail");

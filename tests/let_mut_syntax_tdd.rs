@@ -11,7 +11,7 @@ println(x)
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse let mut syntax");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     
@@ -33,7 +33,7 @@ while count < 3 {
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse let mut in while loop");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     
@@ -53,7 +53,7 @@ println(y)
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse regular let");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     
@@ -74,7 +74,7 @@ total = total + 5
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse let mut with type");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     

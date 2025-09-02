@@ -31,7 +31,7 @@ println("Result:", result);"#;
     let mut parser = Parser::new(main_content);
     let ast = parser.parse().expect("Should parse main file with import");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program_with_context(&ast, Some(temp_dir.path().join("main.ruchy").as_path()))
         .expect("Should transpile with module context");
     let rust_string = rust_code.to_string();
@@ -78,7 +78,7 @@ println(message);";
     let mut parser = Parser::new(main_content);
     let ast = parser.parse().expect("Should parse main with multiple imports");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program_with_context(&ast, Some(temp_dir.path().join("main.ruchy").as_path()))
         .expect("Should transpile multiple modules");
     let rust_string = rust_code.to_string();

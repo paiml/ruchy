@@ -15,7 +15,7 @@ use ruchy::frontend::ast::{Pattern, BinaryOp, Literal};
 #[test]
 fn test_pattern_guards_with_builder() {
     let builder = AstBuilder::new();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create: match x { n if n > 0 => "positive", n if n < 0 => "negative", _ => "zero" }
     let ast = builder.match_expr(
@@ -65,7 +65,7 @@ fn test_pattern_guards_with_builder() {
 #[test]
 fn test_or_patterns_with_builder() {
     let builder = AstBuilder::new();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create: match x { 1 | 2 | 3 => "small", 4 | 5 | 6 => "medium", _ => "large" }
     let ast = builder.match_expr(
@@ -113,7 +113,7 @@ fn test_or_patterns_with_builder() {
 #[test]
 fn test_rest_patterns_with_builder() {
     let builder = AstBuilder::new();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create: match list { [first, ..rest] => first, [] => 0 }
     let ast = builder.match_expr(
@@ -148,7 +148,7 @@ fn test_rest_patterns_with_builder() {
 #[test]
 fn test_struct_patterns_with_builder() {
     let builder = AstBuilder::new();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create: match point { Point { x: 0, y: 0 } => "origin", Point { x, y } => format!("{},{}", x, y) }
     let ast = builder.match_expr(
@@ -199,7 +199,7 @@ fn test_struct_patterns_with_builder() {
 #[test]
 fn test_nested_patterns_with_guards() {
     let builder = AstBuilder::new();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create: match pair { (Some(x), Some(y)) if x > y => x, (Some(x), _) => x, _ => 0 }
     let ast = builder.match_expr(
@@ -247,7 +247,7 @@ fn test_nested_patterns_with_guards() {
 #[test]
 fn test_result_patterns_with_builder() {
     let builder = AstBuilder::new();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create: match result { Ok(val) if val > 0 => val, Err(msg) => panic!(msg), _ => 0 }
     let ast = builder.match_expr(

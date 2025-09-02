@@ -76,7 +76,7 @@ fn test_actor_compilation() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse actor");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast);
     
     assert!(result.is_ok(), "Should compile actor: {:?}", result.err());

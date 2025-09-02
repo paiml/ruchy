@@ -17,7 +17,7 @@ proptest! {
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap();
         let rust_str = rust_code.to_string();
         
@@ -42,7 +42,7 @@ proptest! {
         
         // Skip if parsing fails (some generated code might be invalid)
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 
@@ -66,7 +66,7 @@ proptest! {
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap();
         let rust_str = rust_code.to_string();
         
@@ -90,7 +90,7 @@ proptest! {
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap();
         let rust_str = rust_code.to_string();
         
@@ -114,7 +114,7 @@ proptest! {
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap();
         let rust_str = rust_code.to_string();
         
@@ -137,7 +137,7 @@ proptest! {
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap();
         let rust_str = rust_code.to_string();
         
@@ -161,7 +161,7 @@ proptest! {
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap();
         let rust_str = rust_code.to_string();
         
@@ -184,7 +184,7 @@ proptest! {
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap();
         let rust_str = rust_code.to_string();
         
@@ -205,7 +205,7 @@ proptest! {
         
         // Skip if parsing fails
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 
@@ -227,7 +227,7 @@ proptest! {
         // Try to parse and transpile random code
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             // Should not panic even with malformed AST
             let _ = transpiler.transpile(&ast);
         }

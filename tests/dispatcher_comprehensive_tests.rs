@@ -25,7 +25,7 @@ fn create_expr(kind: ExprKind) -> Expr {
 /// Test transpiling basic expressions (literals, identifiers)
 #[test]
 fn test_transpile_basic_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Integer literal
     let int_expr = create_expr(ExprKind::Literal(Literal::Integer(42)));
@@ -56,7 +56,7 @@ fn test_transpile_basic_expressions() {
 /// Test transpiling qualified names
 #[test]
 fn test_transpile_qualified_names() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let qualified_expr = create_expr(ExprKind::QualifiedName {
         module: "std".to_string(),
@@ -69,7 +69,7 @@ fn test_transpile_qualified_names() {
 /// Test transpiling binary operations
 #[test]
 fn test_transpile_binary_operations() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Addition
     let add_expr = create_expr(ExprKind::Binary {
@@ -93,7 +93,7 @@ fn test_transpile_binary_operations() {
 /// Test transpiling unary operations
 #[test]
 fn test_transpile_unary_operations() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Negation
     let neg_expr = create_expr(ExprKind::Unary {
@@ -115,7 +115,7 @@ fn test_transpile_unary_operations() {
 /// Test transpiling if expressions
 #[test]
 fn test_transpile_if_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let if_expr = create_expr(ExprKind::If {
         condition: Box::new(create_expr(ExprKind::Literal(Literal::Bool(true)))),
@@ -130,7 +130,7 @@ fn test_transpile_if_expressions() {
 /// Test transpiling match expressions
 #[test]
 fn test_transpile_match_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let match_expr = create_expr(ExprKind::Match {
         expr: Box::new(create_expr(ExprKind::Identifier("x".to_string()))),
@@ -156,7 +156,7 @@ fn test_transpile_match_expressions() {
 /// Test transpiling for loops
 #[test]
 fn test_transpile_for_loops() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let for_expr = create_expr(ExprKind::For {
         var: "i".to_string(),
@@ -175,7 +175,7 @@ fn test_transpile_for_loops() {
 /// Test transpiling while loops
 #[test]
 fn test_transpile_while_loops() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let while_expr = create_expr(ExprKind::While {
         condition: Box::new(create_expr(ExprKind::Literal(Literal::Bool(true)))),
@@ -188,7 +188,7 @@ fn test_transpile_while_loops() {
 /// Test transpiling function definitions
 #[test]
 fn test_transpile_function_definitions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let func_expr = create_expr(ExprKind::Function {
         name: "test_func".to_string(),
@@ -215,7 +215,7 @@ fn test_transpile_function_definitions() {
 /// Test transpiling lambda expressions
 #[test]
 fn test_transpile_lambda_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let lambda_expr = create_expr(ExprKind::Lambda {
         params: vec![
@@ -240,7 +240,7 @@ fn test_transpile_lambda_expressions() {
 /// Test transpiling function calls
 #[test]
 fn test_transpile_function_calls() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let call_expr = create_expr(ExprKind::Call {
         func: Box::new(create_expr(ExprKind::Identifier("println".to_string()))),
@@ -261,7 +261,7 @@ fn test_transpile_function_calls() {
 /// - Assertion macros: assert, assert_eq, assert_ne
 #[test]
 fn test_transpile_macro_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Test print macros category
     test_print_macros(&transpiler);
@@ -367,7 +367,7 @@ fn test_assertion_macros(transpiler: &Transpiler) {
 /// Test macro validation - assert_eq requires >= 2 arguments  
 #[test]
 fn test_macro_validation() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // assert_eq with insufficient arguments should fail
     let invalid_assert_eq = create_expr(ExprKind::Macro {
@@ -406,7 +406,7 @@ fn test_macro_validation() {
 /// Test transpiling struct literal expressions
 #[test]
 fn test_transpile_struct_literal() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let struct_literal = create_expr(ExprKind::StructLiteral {
         name: "TestStruct".to_string(),
@@ -422,7 +422,7 @@ fn test_transpile_struct_literal() {
 /// Test transpiling list expressions
 #[test]
 fn test_transpile_list_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let list_expr = create_expr(ExprKind::List(vec![
         create_expr(ExprKind::Literal(Literal::Integer(1))),
@@ -437,7 +437,7 @@ fn test_transpile_list_expressions() {
 /// Test transpiling tuple expressions
 #[test]
 fn test_transpile_tuple_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let tuple_expr = create_expr(ExprKind::Tuple(vec![
         create_expr(ExprKind::Literal(Literal::Integer(1))),
@@ -451,7 +451,7 @@ fn test_transpile_tuple_expressions() {
 /// Test transpiling range expressions
 #[test]
 fn test_transpile_range_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Exclusive range
     let range_expr = create_expr(ExprKind::Range {
@@ -467,7 +467,7 @@ fn test_transpile_range_expressions() {
 /// Test transpiling Result types
 #[test]
 fn test_transpile_result_types() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Ok variant
     let ok_expr = create_expr(ExprKind::Ok {
@@ -488,7 +488,7 @@ fn test_transpile_result_types() {
 /// Test transpiling Option types
 #[test]
 fn test_transpile_option_types() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Some variant
     let some_expr = create_expr(ExprKind::Some {
@@ -507,7 +507,7 @@ fn test_transpile_option_types() {
 /// Test transpiling let bindings
 #[test]
 fn test_transpile_let_bindings() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let let_expr = create_expr(ExprKind::Let {
         name: "x".to_string(),
@@ -523,7 +523,7 @@ fn test_transpile_let_bindings() {
 /// Test transpiling block expressions
 #[test]
 fn test_transpile_block_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let block_expr = create_expr(ExprKind::Block(vec![
         create_expr(ExprKind::Literal(Literal::Integer(1))),
@@ -537,7 +537,7 @@ fn test_transpile_block_expressions() {
 /// Test transpiling pipeline expressions
 #[test]
 fn test_transpile_pipeline_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let pipeline_expr = create_expr(ExprKind::Pipeline {
         expr: Box::new(create_expr(ExprKind::Literal(Literal::Integer(5)))),

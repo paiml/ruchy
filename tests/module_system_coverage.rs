@@ -11,7 +11,7 @@ fn transpile(code: &str) -> String {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast).expect("Should transpile");
     result.to_string()
 }
@@ -25,7 +25,7 @@ fn compile_and_run(code: &str) -> bool {
     
     // For now, just test that it parses and transpiles
     // In a full implementation, we'd actually compile and run
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let ast = parser.parse().expect("Already validated");
     transpiler.transpile(&ast).is_ok()
 }

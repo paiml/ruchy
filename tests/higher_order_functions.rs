@@ -21,7 +21,7 @@ apply(double, 5)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
     
     // Ensure function parameter is typed correctly
@@ -50,7 +50,7 @@ compose(double, add_one, 5)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
     
     let rust_str = rust_code.to_string();
@@ -71,7 +71,7 @@ apply(|n| { n * 3 }, 7)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
     
     let rust_str = rust_code.to_string();
@@ -91,7 +91,7 @@ add_five(10)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
     
     // Should transpile without errors
@@ -114,7 +114,7 @@ map(square, 4)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
     
     let rust_str = rust_code.to_string();
@@ -142,7 +142,7 @@ filter(is_even, 4)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
     
     let rust_str = rust_code.to_string();
@@ -165,7 +165,7 @@ reduce(add, 0, 10)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
     
     let rust_str = rust_code.to_string();
@@ -190,7 +190,7 @@ times_two(5)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     // Should transpile without panic
     let _ = transpiler.transpile(&ast);
 }
@@ -216,7 +216,7 @@ inc_then_double(5)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
     
     let rust_str = rust_code.to_string();
@@ -248,7 +248,7 @@ until(is_ten, inc, 0)
     
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Failed to transpile");
     
     let rust_str = rust_code.to_string();
@@ -270,7 +270,7 @@ fn property_test_no_string_function_params() {
     for code in test_cases {
         let mut parser = Parser::new(code);
         let ast = parser.parse().unwrap_or_else(|_| panic!("Failed to parse: {code}"));
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap_or_else(|_| panic!("Failed to transpile: {code}"));
         
         let rust_str = rust_code.to_string();

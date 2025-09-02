@@ -16,7 +16,7 @@ let final_result = step2 / divisor
     assert!(ast.is_ok(), "Parser should accept undefined variables");
     
     // But transpilation should handle this gracefully
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast.unwrap());
     
     // The transpiler will generate code with undefined variables
@@ -40,7 +40,7 @@ println(final_result)
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     

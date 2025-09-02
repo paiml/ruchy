@@ -51,7 +51,7 @@ fn test_type_checker_exhaustive_coverage() {
 /// Test that ensures all `ExprKind` variants can be processed by the transpiler
 #[test]
 fn test_transpiler_exhaustive_coverage() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = vec![
         create_literal_expr(),

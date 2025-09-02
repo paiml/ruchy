@@ -164,7 +164,7 @@ fn test_transpile_actor() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&expr);
 
     assert!(result.is_ok(), "Failed to transpile actor: {result:?}");
@@ -186,7 +186,7 @@ fn test_transpile_send() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&expr);
 
     assert!(result.is_ok(), "Failed to transpile send: {result:?}");
@@ -205,7 +205,7 @@ fn test_transpile_ask() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&expr);
 
     assert!(result.is_ok(), "Failed to transpile ask: {result:?}");

@@ -11,7 +11,7 @@ fn test_parentheses_parsing_bug() {
     let mut parser = Parser::new("(1 + 2) * 3");
     let ast = parser.parse().expect("Should parse parenthesized expression");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_string = rust_code.to_string();
     
@@ -36,7 +36,7 @@ fn test_basic_precedence_works() {
     let mut parser = Parser::new("1 + 2 * 3");
     let ast = parser.parse().expect("Should parse basic precedence");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_string = rust_code.to_string();
     
@@ -52,7 +52,7 @@ fn test_complex_parentheses_bug() {
     let mut parser = Parser::new("(2 + 3) * (4 + 5)");
     let ast = parser.parse().expect("Should parse complex parentheses");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");  
     let rust_string = rust_code.to_string();
     

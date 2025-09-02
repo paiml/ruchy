@@ -32,7 +32,7 @@ fn test_let_statement_compilation() {
     let mut parser = Parser::new("let x = 5");
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile successfully");
@@ -101,7 +101,7 @@ fn test_let_statement_end_to_end_compilation() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile without errors");
@@ -159,7 +159,7 @@ fn test_let_statement_generates_valid_rust() {
     let mut parser = Parser::new("let x = 5");
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile successfully");

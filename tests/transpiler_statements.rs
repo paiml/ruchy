@@ -11,7 +11,7 @@ use ruchy::{Transpiler, Parser};
 /// Test assignment statements
 #[test]
 fn test_transpile_assignments() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple assignment
@@ -49,7 +49,7 @@ fn test_transpile_assignments() {
 /// Test compound assignments
 #[test]
 fn test_transpile_compound_assignments() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("x += 1", vec!["x", "+=", "1"]),
@@ -78,7 +78,7 @@ fn test_transpile_compound_assignments() {
 /// Test return statements
 #[test]
 fn test_transpile_return_statements() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Return with value
@@ -113,7 +113,7 @@ fn test_transpile_return_statements() {
 /// Test break and continue statements
 #[test]
 fn test_transpile_loop_control_statements() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Break in while loop
@@ -145,7 +145,7 @@ fn test_transpile_loop_control_statements() {
 /// Test expression statements
 #[test]
 fn test_transpile_expression_statements() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Function call statement
@@ -177,7 +177,7 @@ fn test_transpile_expression_statements() {
 /// Test let statements with various patterns
 #[test]
 fn test_transpile_let_statements() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple let
@@ -215,7 +215,7 @@ fn test_transpile_let_statements() {
 /// Test multi-statement blocks
 #[test]
 fn test_transpile_statement_blocks() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Multiple statements
@@ -247,7 +247,7 @@ fn test_transpile_statement_blocks() {
 /// Test import statements
 #[test]
 fn test_transpile_import_statements() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple import
@@ -279,7 +279,7 @@ fn test_transpile_import_statements() {
 /// Test export statements
 #[test]
 fn test_transpile_export_statements() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Export function
@@ -308,7 +308,7 @@ fn test_transpile_export_statements() {
 /// Test chained statements
 #[test]
 fn test_transpile_chained_statements() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Chained assignments

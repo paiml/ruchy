@@ -95,7 +95,7 @@ fn test_compilation_performance_baseline() {
 
         // Measure transpilation
         let transpile_start = Instant::now();
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let _ = transpiler.transpile(&ast).expect("Should transpile successfully");
         let transpile_duration = transpile_start.elapsed();
         let transpile_ms = transpile_duration.as_secs_f64() * 1000.0;
@@ -230,7 +230,7 @@ fn test_complex_program_performance() {
     for _ in 0..3 {
         let mut parser = Parser::new(complex_program);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _ = transpiler.transpile(&ast);
         }
     }
@@ -242,7 +242,7 @@ fn test_complex_program_performance() {
     let parse_time = start.elapsed();
     
     let transpile_start = Instant::now();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let _ = transpiler.transpile(&ast).expect("Should transpile complex program");
     let transpile_time = transpile_start.elapsed();
     

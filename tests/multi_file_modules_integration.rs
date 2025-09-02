@@ -49,7 +49,7 @@ fn test_basic_multi_file_program() -> Result<()> {
     let resolved_ast = resolver.resolve_imports(ast)?;
     
     // Transpile to Rust
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&resolved_ast)?;
     let rust_string = rust_code.to_string();
     
@@ -103,7 +103,7 @@ fn test_multiple_module_imports() -> Result<()> {
     resolver.add_search_path(temp_dir.path());
     let resolved_ast = resolver.resolve_imports(ast)?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&resolved_ast)?;
     let rust_string = rust_code.to_string();
     
@@ -154,7 +154,7 @@ fn test_nested_module_imports() -> Result<()> {
     resolver.add_search_path(temp_dir.path());
     let resolved_ast = resolver.resolve_imports(ast)?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&resolved_ast)?;
     let rust_string = rust_code.to_string();
     
@@ -205,7 +205,7 @@ fn test_mixed_imports_inline_and_file() -> Result<()> {
     resolver.add_search_path(temp_dir.path());
     let resolved_ast = resolver.resolve_imports(ast)?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&resolved_ast)?;
     let rust_string = rust_code.to_string();
     

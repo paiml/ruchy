@@ -11,7 +11,7 @@ use ruchy::{Transpiler, Parser};
 /// Test Result type constructors
 #[test]
 fn test_result_constructors() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Ok constructor
@@ -49,7 +49,7 @@ fn test_result_constructors() {
 /// Test Result pattern matching
 #[test]
 fn test_result_pattern_matching() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Basic Result matching
@@ -88,7 +88,7 @@ fn test_result_pattern_matching() {
 /// Test ? operator (try operator)
 #[test]
 fn test_try_operator() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple try
@@ -127,7 +127,7 @@ fn test_try_operator() {
 /// Test Result combinators
 #[test]
 fn test_result_combinators() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // map
@@ -175,7 +175,7 @@ fn test_result_combinators() {
 /// Test Result type annotations
 #[test]
 fn test_result_type_annotations() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Basic Result types
@@ -214,7 +214,7 @@ fn test_result_type_annotations() {
 /// Test error propagation patterns
 #[test]
 fn test_error_propagation() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Early return with ?
     let code = r#"
@@ -260,7 +260,7 @@ fn test_error_propagation() {
 /// Test Result with custom error types
 #[test]
 fn test_custom_error_types() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Enum error types
@@ -296,7 +296,7 @@ fn test_custom_error_types() {
 /// Test Result conversion methods
 #[test]
 fn test_result_conversions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // ok() and err() methods
@@ -334,7 +334,7 @@ fn test_result_conversions() {
 /// Test Result in async contexts
 #[test]
 fn test_result_async() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Async function returning Result
@@ -367,7 +367,7 @@ fn test_result_async() {
 /// Test Result with collect
 #[test]
 fn test_result_collect() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Collecting into Result<Vec<_>, _>

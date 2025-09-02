@@ -12,7 +12,7 @@ fn transpile(code: &str) -> String {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast).expect("Should transpile");
     result.to_string()
 }

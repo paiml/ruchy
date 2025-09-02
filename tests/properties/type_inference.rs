@@ -58,7 +58,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 // main should never have -> return type annotation
@@ -80,7 +80,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 // Should not type numeric operations with String
@@ -101,7 +101,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 // Function parameter should have Fn type
@@ -147,7 +147,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 // String concatenation should use String types
@@ -173,7 +173,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 // Both params should have same type
@@ -210,7 +210,7 @@ mod return_types {
             
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 if let Ok(rust_code) = transpiler.transpile(&ast) {
                     let rust_str = rust_code.to_string();
                     // Numeric function should have numeric return or inferred
@@ -229,7 +229,7 @@ mod return_types {
             
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 if let Ok(rust_code) = transpiler.transpile(&ast) {
                     let rust_str = rust_code.to_string();
                     // println returns (), shouldn't add return type
@@ -263,7 +263,7 @@ mod higher_order {
             
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 if let Ok(rust_code) = transpiler.transpile(&ast) {
                     let rust_str = rust_code.to_string();
                     // f should be a function type
@@ -283,7 +283,7 @@ mod higher_order {
             
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 if let Ok(rust_code) = transpiler.transpile(&ast) {
                     let rust_str = rust_code.to_string();
                     // f should be a function type

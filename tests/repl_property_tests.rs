@@ -23,7 +23,7 @@ fn prop_let_statements_have_semicolons() {
         let mut parser = Parser::new(&input);
         let ast = parser.parse().expect("Should parse valid let statement");
 
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let tokens = transpiler.transpile(&ast).expect("Should transpile");
         let rust_code = tokens.to_string();
 
@@ -49,7 +49,7 @@ fn prop_variable_references_transpile_correctly() {
         let mut parser = Parser::new(&name);
         let ast = parser.parse().expect("Should parse identifier");
 
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let tokens = transpiler.transpile(&ast).expect("Should transpile");
         let rust_code = tokens.to_string();
 
@@ -73,7 +73,7 @@ fn prop_binary_ops_preserve_precedence() {
             let mut parser = Parser::new(&expr);
             let ast = parser.parse().expect("Should parse expression");
 
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let tokens = transpiler.transpile(&ast).expect("Should transpile");
             let rust_code = tokens.to_string();
 
@@ -104,7 +104,7 @@ fn prop_arrays_transpile_to_vecs() {
         let mut parser = Parser::new(&array_str);
         let ast = parser.parse().expect("Should parse array");
 
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let tokens = transpiler.transpile(&ast).expect("Should transpile");
         let rust_code = tokens.to_string();
 
@@ -129,7 +129,7 @@ fn prop_strings_properly_escaped() {
         let mut parser = Parser::new(&input);
         let ast = parser.parse().expect("Should parse string");
 
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let tokens = transpiler.transpile(&ast).expect("Should transpile");
         let rust_code = tokens.to_string();
 
@@ -157,7 +157,7 @@ fn prop_functions_transpile_correctly() {
         let mut parser = Parser::new(&input);
         let ast = parser.parse().expect("Should parse function");
 
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let tokens = transpiler.transpile(&ast).expect("Should transpile");
         let rust_code = tokens.to_string();
 
@@ -187,7 +187,7 @@ fn prop_transpiler_is_deterministic() {
             let mut parser2 = Parser::new(&input);
             let ast2 = parser2.parse().expect("Should parse");
 
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let tokens1 = transpiler.transpile(&ast1).expect("Should transpile");
             let tokens2 = transpiler.transpile(&ast2).expect("Should transpile");
 
@@ -216,7 +216,7 @@ mod debug_release_parity {
             let mut parser = Parser::new(input);
             let ast = parser.parse().expect("Should parse");
 
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let tokens = transpiler.transpile(&ast).expect("Should transpile");
             let rust_code = tokens.to_string();
 
@@ -256,7 +256,7 @@ fn prop_complex_expressions_valid() {
 
         match parser.parse() {
             Ok(ast) => {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 match transpiler.transpile(&ast) {
                     Ok(tokens) => {
                         let rust_code = tokens.to_string();

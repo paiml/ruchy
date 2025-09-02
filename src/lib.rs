@@ -106,7 +106,7 @@ use anyhow::Result;
 pub fn compile(source: &str) -> Result<String> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     // Use transpile_to_program to wrap in main() for standalone compilation
     let rust_code = transpiler.transpile_to_program(&ast)?;
     Ok(rust_code.to_string())

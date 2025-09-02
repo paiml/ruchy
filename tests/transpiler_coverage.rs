@@ -8,7 +8,7 @@ use ruchy::{Transpiler, Parser};
 /// Test transpilation of all literal types
 #[test]
 fn test_transpile_literals() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Integers - check they contain the number (suffix may be tokenized)
@@ -56,7 +56,7 @@ fn test_transpile_literals() {
 /// Test binary operators transpilation
 #[test]
 fn test_transpile_binary_operators() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Arithmetic
@@ -104,7 +104,7 @@ fn test_transpile_binary_operators() {
 /// Test unary operators transpilation
 #[test]
 fn test_transpile_unary_operators() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("-42", "-"),
@@ -130,7 +130,7 @@ fn test_transpile_unary_operators() {
 /// Test if-else expression transpilation
 #[test]
 fn test_transpile_if_else() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("if true { 1 } else { 0 }", vec!["if", "true", "1", "else", "0"]),
@@ -158,7 +158,7 @@ fn test_transpile_if_else() {
 /// Test block expression transpilation
 #[test]
 fn test_transpile_blocks() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("{ 42 }", vec!["42"]),
@@ -186,7 +186,7 @@ fn test_transpile_blocks() {
 /// Test function transpilation
 #[test]
 fn test_transpile_functions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("fun add(x: i32, y: i32) -> i32 { x + y }", vec!["fn", "add", "x", "i32", "y", "i32", ">", "i32"]),  // -> may be split
@@ -214,7 +214,7 @@ fn test_transpile_functions() {
 /// Test lambda expression transpilation
 #[test]
 fn test_transpile_lambdas() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("|x| x + 1", vec!["|", "x", "|", "x", "+", "1"]),
@@ -242,7 +242,7 @@ fn test_transpile_lambdas() {
 /// Test match expression transpilation
 #[test]
 fn test_transpile_match() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let code = r#"match x {
         0 => "zero",
@@ -268,7 +268,7 @@ fn test_transpile_match() {
 /// Test array and index transpilation
 #[test]
 fn test_transpile_arrays() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Test arrays - they transpile to vec! macro
     let array_tests = [
@@ -305,7 +305,7 @@ fn test_transpile_arrays() {
 /// Test struct/object transpilation
 #[test]
 fn test_transpile_structs() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let code = r#"{ name: "Alice", age: 30 }"#;
     
@@ -327,7 +327,7 @@ fn test_transpile_structs() {
 /// Test method call transpilation including string methods
 #[test]
 fn test_transpile_method_calls() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         (r#""hello".to_upper()"#, "to_uppercase"),
@@ -355,7 +355,7 @@ fn test_transpile_method_calls() {
 /// Test for loop transpilation
 #[test]
 fn test_transpile_for_loops() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("for i in 0..10 { println(i) }", vec!["for", "i", "in", "0", "..", "10", "println"]),
@@ -382,7 +382,7 @@ fn test_transpile_for_loops() {
 /// Test while loop transpilation
 #[test]
 fn test_transpile_while_loops() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("while x > 0 { x = x - 1 }", vec!["while", "x", ">", "0", "x", "=", "x", "-", "1"]),
@@ -409,7 +409,7 @@ fn test_transpile_while_loops() {
 /// Test transpile_to_program for complete programs
 #[test]
 fn test_transpile_to_program() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple expression should be wrapped in main
@@ -449,7 +449,7 @@ fn test_transpile_to_program() {
 /// Test string interpolation transpilation
 #[test]
 fn test_transpile_string_interpolation() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         (r#"f"Hello {name}""#, vec!["format", "Hello", "name"]),  // format! may be split
@@ -477,7 +477,7 @@ fn test_transpile_string_interpolation() {
 /// Test async/await transpilation  
 #[test]
 fn test_transpile_async_await() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("async { 42 }", vec!["async", "42"]),
@@ -505,7 +505,7 @@ fn test_transpile_async_await() {
 /// Test break and continue transpilation
 #[test]
 fn test_transpile_control_flow() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("break", "break"),
@@ -532,7 +532,7 @@ fn test_transpile_control_flow() {
 /// Test tuple transpilation
 #[test]
 fn test_transpile_tuples() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Test regular tuples
     let tuple_tests = [
@@ -571,7 +571,7 @@ fn test_transpile_tuples() {
 /// Test range expression transpilation
 #[test]
 fn test_transpile_ranges() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("0..10", vec!["0", ".", "10"]),  // .. may be tokenized as separate dots
@@ -600,7 +600,7 @@ fn test_transpile_ranges() {
 /// Test field access transpilation
 #[test]
 fn test_transpile_field_access() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("obj.field", vec!["obj", ".", "field"]),
@@ -628,7 +628,7 @@ fn test_transpile_field_access() {
 /// Test type annotation transpilation
 #[test]
 fn test_transpile_type_annotations() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("let x: i32 = 42", vec!["let", "x", "i32", "42"]),  // Colon may not appear

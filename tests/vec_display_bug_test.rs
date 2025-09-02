@@ -13,7 +13,7 @@ fn test_vec_display_bug() {
     "#);
     let ast = parser.parse().expect("Should parse array println");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_string = rust_code.to_string();
     
@@ -38,7 +38,7 @@ fn test_simple_println_works() {
     let mut parser = Parser::new(r#"println("Hello", 42)"#);
     let ast = parser.parse().expect("Should parse simple println");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_string = rust_code.to_string();
     

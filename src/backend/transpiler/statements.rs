@@ -11,6 +11,100 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl Transpiler {
+    /// Checks if a variable is mutated (reassigned or modified) in an expression tree
+    fn is_variable_mutated(name: &str, expr: &Expr) -> bool {
+        use crate::frontend::ast::ExprKind;
+        
+        match &expr.kind {
+            // Direct assignment to the variable
+            ExprKind::Assign { target, value: _ } => {
+                if let ExprKind::Identifier(var_name) = &target.kind {
+                    if var_name == name {
+                        return true;
+                    }
+                }
+                false
+            }
+            // Compound assignment (+=, -=, etc.)
+            ExprKind::CompoundAssign { target, value: _, .. } => {
+                if let ExprKind::Identifier(var_name) = &target.kind {
+                    if var_name == name {
+                        return true;
+                    }
+                }
+                false
+            }
+            // Pre/Post increment/decrement
+            ExprKind::PreIncrement { target } | 
+            ExprKind::PostIncrement { target } |
+            ExprKind::PreDecrement { target } |
+            ExprKind::PostDecrement { target } => {
+                if let ExprKind::Identifier(var_name) = &target.kind {
+                    if var_name == name {
+                        return true;
+                    }
+                }
+                false
+            }
+            // Check in blocks
+            ExprKind::Block(exprs) => {
+                exprs.iter().any(|e| Self::is_variable_mutated(name, e))
+            }
+            // Check in if branches
+            ExprKind::If { condition, then_branch, else_branch } => {
+                Self::is_variable_mutated(name, condition) ||
+                Self::is_variable_mutated(name, then_branch) ||
+                else_branch.as_ref().map_or(false, |e| Self::is_variable_mutated(name, &**e))
+            }
+            // Check in while loops
+            ExprKind::While { condition, body } => {
+                Self::is_variable_mutated(name, condition) ||
+                Self::is_variable_mutated(name, body)
+            }
+            // Check in for loops
+            ExprKind::For { body, .. } => {
+                Self::is_variable_mutated(name, body)
+            }
+            // Check in match expressions
+            ExprKind::Match { expr, arms } => {
+                Self::is_variable_mutated(name, expr) ||
+                arms.iter().any(|arm| Self::is_variable_mutated(name, &arm.body))
+            }
+            // Check in nested let expressions
+            ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
+                Self::is_variable_mutated(name, body)
+            }
+            // Check in function bodies
+            ExprKind::Function { body, .. } => {
+                Self::is_variable_mutated(name, body)
+            }
+            // Check in lambda bodies
+            ExprKind::Lambda { body, .. } => {
+                Self::is_variable_mutated(name, body)
+            }
+            // Check binary operations
+            ExprKind::Binary { left, right, .. } => {
+                Self::is_variable_mutated(name, left) ||
+                Self::is_variable_mutated(name, right)
+            }
+            // Check unary operations
+            ExprKind::Unary { operand, .. } => {
+                Self::is_variable_mutated(name, operand)
+            }
+            // Check function/method calls
+            ExprKind::Call { func, args } => {
+                Self::is_variable_mutated(name, func) ||
+                args.iter().any(|a| Self::is_variable_mutated(name, a))
+            }
+            ExprKind::MethodCall { receiver, args, .. } => {
+                Self::is_variable_mutated(name, receiver) ||
+                args.iter().any(|a| Self::is_variable_mutated(name, a))
+            }
+            // Other expressions don't contain mutations
+            _ => false,
+        }
+    }
+
     /// Transpiles if expressions
     pub fn transpile_if(
         &self,
@@ -55,6 +149,11 @@ impl Transpiler {
         };
         let name_ident = format_ident!("{}", safe_name);
         
+        // Auto-detect mutability: check if variable is in the mutable_vars set or is reassigned in body
+        let effective_mutability = is_mutable || 
+                                  self.mutable_vars.contains(name) || 
+                                  Self::is_variable_mutated(name, body);
+        
         // Convert string literals to String type at variable declaration time
         // This ensures string variables are String, not &str, making function calls work
         let value_tokens = match &value.kind {
@@ -66,7 +165,7 @@ impl Transpiler {
         
         // HOTFIX: If body is Unit, this is a top-level let statement without scoping
         if matches!(body.kind, crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Unit)) {
-            if is_mutable {
+            if effective_mutability {
                 Ok(quote! { let mut #name_ident = #value_tokens; })
             } else {
                 Ok(quote! { let #name_ident = #value_tokens; })
@@ -74,7 +173,7 @@ impl Transpiler {
         } else {
             // Traditional let-in expression with proper scoping
             let body_tokens = self.transpile_expr(body)?;
-            if is_mutable {
+            if effective_mutability {
                 Ok(quote! {
                     {
                         let mut #name_ident = #value_tokens;

@@ -51,7 +51,7 @@ proptest! {
     fn fuzz_transpiler_functions_never_panic(code in arb_function_code()) {
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             // Should not panic, regardless of output
             let _result = std::panic::catch_unwind(|| {
                 transpiler.transpile(&ast)
@@ -65,7 +65,7 @@ proptest! {
         let code = format!("fun test(p) {{ {expr} }}");
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _result = std::panic::catch_unwind(|| {
                 transpiler.transpile(&ast)
             });
@@ -78,7 +78,7 @@ proptest! {
         let code = format!("fun test(x, y, z) {{ {op_expr} }}");
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _result = std::panic::catch_unwind(|| {
                 transpiler.transpile(&ast)
             });
@@ -105,7 +105,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _result = std::panic::catch_unwind(|| {
                 transpiler.transpile(&ast)
             });
@@ -121,7 +121,7 @@ proptest! {
         let code = format!("fun {func_name}() {{ {body} }}");
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _result = std::panic::catch_unwind(|| {
                 transpiler.transpile(&ast)
             });
@@ -146,7 +146,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _result = std::panic::catch_unwind(|| {
                 transpiler.transpile(&ast)
             });
@@ -169,7 +169,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _result = std::panic::catch_unwind(|| {
                 transpiler.transpile(&ast)
             });
@@ -197,7 +197,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _result = std::panic::catch_unwind(|| {
                 transpiler.transpile(&ast)
             });
@@ -216,7 +216,7 @@ mod determinism_tests {
         let mut parser = Parser::new(code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let result1 = transpiler.transpile(&ast).unwrap();
         let result2 = transpiler.transpile(&ast).unwrap();
         
@@ -237,7 +237,7 @@ mod determinism_tests {
             let mut parser = Parser::new(code);
             let ast = parser.parse().unwrap();
             
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let result1 = transpiler.transpile(&ast).unwrap().to_string();
             let result2 = transpiler.transpile(&ast).unwrap().to_string();
             

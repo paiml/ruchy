@@ -147,7 +147,7 @@ proptest! {
         let mut parser = Parser::new(&input);
         
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _ = transpiler.transpile(&ast); // Should not panic
         }
     }
@@ -165,7 +165,7 @@ proptest! {
         let mut parser = Parser::new(&input);
         
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let code_str = rust_code.to_string();
                 
@@ -395,7 +395,7 @@ proptest! {
         let mut parser = Parser::new(&input);
         
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let code_str = rust_code.to_string();
                 

@@ -211,7 +211,7 @@ fn test_ruchy_book_transpilation_works() {
         let mut parser = Parser::new(example);
         let ast = parser.parse().expect(&format!("Should parse: {}", example));
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let transpile_result = transpiler.transpile_to_program(&ast);
         
         assert!(transpile_result.is_ok(), 

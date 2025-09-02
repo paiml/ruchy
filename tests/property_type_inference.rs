@@ -35,7 +35,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 // main should never have -> return type annotation
@@ -59,7 +59,7 @@ proptest! {
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 // Function parameter should NOT be typed as String
@@ -113,7 +113,7 @@ mod regression_properties {
             prop_assume!(parser.parse().is_ok());
             let ast = parser.parse().unwrap();
             
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let result = transpiler.transpile(&ast);
             
             // Should transpile successfully
@@ -137,7 +137,7 @@ mod regression_properties {
             
             let mut parser = Parser::new(&code);
             if let Ok(ast) = parser.parse() {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 let result = transpiler.transpile(&ast);
                 
                 // Should transpile successfully

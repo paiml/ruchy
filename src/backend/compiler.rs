@@ -109,7 +109,7 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
     
     // Transpile to Rust
     eprintln!("DEBUG: About to call transpile_to_program");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program(&ast)
         .context("Failed to transpile to Rust")?;
     eprintln!("DEBUG: transpile_to_program completed");

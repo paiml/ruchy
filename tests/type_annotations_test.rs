@@ -99,7 +99,7 @@ fn test_transpile_ignores_type_annotations() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast);
     assert!(rust_code.is_ok(), "Should transpile even with type annotations");
     

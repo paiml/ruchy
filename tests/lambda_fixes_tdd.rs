@@ -7,7 +7,7 @@ fn test_simple_lambda() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse lambda");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast);
     
     assert!(result.is_ok(), "Should transpile simple lambda: {:?}", result.err());
@@ -22,7 +22,7 @@ fn test_lambda_with_multiple_params() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse lambda with multiple params");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast);
     
     assert!(result.is_ok(), "Should transpile lambda with multiple params: {:?}", result.err());
@@ -38,7 +38,7 @@ fn test_lambda_no_params() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse lambda with no params");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast);
     
     assert!(result.is_ok(), "Should transpile lambda with no params: {:?}", result.err());
@@ -52,7 +52,7 @@ fn test_lambda_with_parentheses() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse lambda with parentheses");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast);
     
     assert!(result.is_ok(), "Should transpile (x) => x + 1: {:?}", result.err());
@@ -66,7 +66,7 @@ fn test_lambda_in_map() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse lambda in map");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast);
     
     assert!(result.is_ok(), "Should transpile lambda in map: {:?}", result.err());

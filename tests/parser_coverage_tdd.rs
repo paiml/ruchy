@@ -12,7 +12,7 @@ for i in 0..5 {
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse var in for loop");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     assert!(result.is_ok());
 }
@@ -28,7 +28,7 @@ println(x + y)
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse var with tuple destructuring");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     assert!(rust_code.contains("let mut"));

@@ -12,7 +12,7 @@ fn test_basic_higher_order_function() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -27,7 +27,7 @@ fn test_multiple_function_parameters() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -43,7 +43,7 @@ fn test_numeric_function_parameters() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -58,7 +58,7 @@ fn test_string_function_parameters() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -72,7 +72,7 @@ fn test_mixed_parameter_types() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -92,7 +92,7 @@ fn test_function_in_conditional() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -107,7 +107,7 @@ fn test_function_in_let_binding() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -122,7 +122,7 @@ fn test_nested_function_calls() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -142,7 +142,7 @@ fn test_arithmetic_operations_all_types() {
         let mut parser = Parser::new(&code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap();
         let rust_str = rust_code.to_string();
         
@@ -158,7 +158,7 @@ fn test_unused_parameters_default_to_string() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -172,7 +172,7 @@ fn test_main_function_never_gets_return_type() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -187,7 +187,7 @@ fn test_regular_functions_get_return_types() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -201,7 +201,7 @@ fn test_lambda_parameter_detection() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -222,7 +222,7 @@ fn test_complex_higher_order_scenario() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().unwrap();
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).unwrap();
     let rust_str = rust_code.to_string();
     
@@ -253,7 +253,7 @@ fn test_regression_prevention_property() {
         let mut parser = Parser::new(code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap();
         let rust_str = rust_code.to_string();
         
@@ -280,7 +280,7 @@ fn test_numeric_operations_property() {
         let mut parser = Parser::new(code);
         let ast = parser.parse().unwrap();
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile(&ast).unwrap();
         let rust_str = rust_code.to_string();
         

@@ -21,7 +21,7 @@ use tempfile::TempDir;
 /// Test the exact transpilation path used by `ruchy run`
 #[test]
 fn test_cli_execution_transpilation_path() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Test the exact same path that `ruchy run` uses
     let code = r#""hello".to_upper()"#;
@@ -52,7 +52,7 @@ fn test_cli_execution_transpilation_path() {
 /// Test that program transpilation creates valid main function wrapper
 #[test]  
 fn test_program_transpilation_structure() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let code = r#""hello".to_upper()"#;
     let mut parser = Parser::new(code);
@@ -79,7 +79,7 @@ fn test_program_transpilation_structure() {
 /// Test different expression types in CLI execution context
 #[test]
 fn test_various_expressions_cli_transpilation() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         (r#""hello".to_upper()"#, "to_uppercase"),
@@ -116,7 +116,7 @@ fn test_temp_file_compilation_cycle() {
     fs::write(&source_file, r#""hello".to_upper()"#).expect("Failed to write source");
     
     // Transpile to Rust using the CLI path
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let source_content = fs::read_to_string(&source_file).unwrap();
     let mut parser = Parser::new(&source_content);
     let ast = parser.parse().expect("Failed to parse");
