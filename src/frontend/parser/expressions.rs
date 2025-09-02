@@ -61,6 +61,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 operand: Box::new(expr) 
             }, span_clone))
         }
+        Token::Fun | Token::Fn => {
+            // Parse function definition - do NOT advance token, let function parser handle it
+            super::functions::parse_function(state)
+        }
         _ => bail!("Unexpected token: {:?}", token_clone),
     }
 }
