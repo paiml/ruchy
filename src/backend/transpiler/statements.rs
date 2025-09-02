@@ -689,13 +689,51 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let obj_tokens = self.transpile_expr(object)?;
         let method_ident = format_ident!("{}", method);
-
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
 
-        // Special handling for collection and DataFrame methods
+        // Dispatch to specialized handlers based on method category
         match method {
-            // Vec collection methods - transform to iterator operations
+            // Iterator operations (map, filter, reduce)
+            "map" | "filter" | "reduce" => {
+                self.transpile_iterator_methods(&obj_tokens, method, &arg_tokens)
+            }
+            // HashMap/HashSet methods (get, contains_key, items, etc.)
+            "get" | "contains_key" | "keys" | "values" | "entry" | "items" | "contains" => {
+                self.transpile_map_set_methods(&obj_tokens, &method_ident, method, &arg_tokens)
+            }
+            // Set operations (union, intersection, difference, symmetric_difference)
+            "union" | "intersection" | "difference" | "symmetric_difference" => {
+                self.transpile_set_operations(&obj_tokens, method, &arg_tokens)
+            }
+            // Common collection methods (insert, remove, clear, len, is_empty, iter)
+            "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
+                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+            }
+            // DataFrame operations
+            "select" | "groupby" | "agg" | "sort" | "mean" | "std" | "min"
+            | "max" | "sum" | "count" | "drop_nulls" | "fill_null" | "pivot"
+            | "melt" | "head" | "tail" | "sample" | "describe" => {
+                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+            }
+            // String methods (to_upper, to_lower, length, substring, etc.)
+            "to_s" | "to_string" | "to_upper" | "to_lower" | "length" | "substring" => {
+                self.transpile_string_methods(&obj_tokens, method, &arg_tokens)
+            }
+            // Advanced collection methods (slice, concat, flatten, unique, join)
+            "slice" | "concat" | "flatten" | "unique" | "join" => {
+                self.transpile_advanced_collection_methods(&obj_tokens, method, &arg_tokens)
+            }
+            _ => {
+                // Regular method call
+                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+            }
+        }
+    }
+    
+    /// Handle iterator operations: map, filter, reduce
+    fn transpile_iterator_methods(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
+        match method {
             "map" => {
                 // vec.map(f) -> vec.iter().map(f).collect::<Vec<_>>()
                 Ok(quote! { #obj_tokens.iter().map(#(#arg_tokens),*).collect::<Vec<_>>() })
@@ -708,57 +746,46 @@ impl Transpiler {
                 // vec.reduce(f) -> vec.into_iter().reduce(f)
                 Ok(quote! { #obj_tokens.into_iter().reduce(#(#arg_tokens),*) })
             }
-            
-            // HashMap/HashSet specific methods
+            _ => unreachable!("Non-iterator method passed to transpile_iterator_methods"),
+        }
+    }
+    
+    /// Handle HashMap/HashSet methods: get, contains_key, items, etc.
+    fn transpile_map_set_methods(&self, obj_tokens: &TokenStream, method_ident: &proc_macro2::Ident, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
+        match method {
             "get" => {
                 // HashMap.get() returns Option<&V>, but we want owned values
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*).cloned() })
             }
-            "contains_key" | "keys" | "values" | "entry" => {
+            "contains_key" | "keys" | "values" | "entry" | "contains" => {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
             "items" => {
                 // HashMap.items() -> iterator of (K, V) tuples (not references)
-                // 
-                // # Example
-                // ```
-                // let obj = {"key": "value"};
-                // for k, v in obj.items() { println(k + "=" + v) }
-                // ```
                 Ok(quote! { #obj_tokens.iter().map(|(k, v)| (k.clone(), v.clone())) })
             }
-            "contains" => {
-                // HashSet contains method
-                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+            _ => unreachable!("Non-map/set method passed to transpile_map_set_methods"),
+        }
+    }
+    
+    /// Handle HashSet set operations: union, intersection, difference, symmetric_difference
+    fn transpile_set_operations(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
+        if arg_tokens.len() != 1 {
+            bail!("{} requires exactly 1 argument", method);
+        }
+        let other = &arg_tokens[0];
+        let method_ident = format_ident!("{}", method);
+        Ok(quote! { 
+            {
+                use std::collections::HashSet;
+                #obj_tokens.#method_ident(&#other).cloned().collect::<HashSet<_>>()
             }
-            "union" | "intersection" | "difference" | "symmetric_difference" => {
-                // HashSet set operations - need to collect the iterator results
-                if arg_tokens.len() != 1 {
-                    bail!("{} requires exactly 1 argument", method);
-                }
-                let other = &arg_tokens[0];
-                let method_ident = format_ident!("{}", method);
-                Ok(quote! { 
-                    {
-                        use std::collections::HashSet;
-                        #obj_tokens.#method_ident(&#other).cloned().collect::<HashSet<_>>()
-                    }
-                })
-            }
-            
-            // Common collection methods (Vec, HashMap, HashSet)
-            "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
-                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
-            }
-            
-            // DataFrame operations that should be chained
-            "select" | "groupby" | "agg" | "sort" | "mean" | "std" | "min"
-            | "max" | "sum" | "count" | "drop_nulls" | "fill_null" | "pivot"
-            | "melt" | "head" | "tail" | "sample" | "describe" => {
-                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
-            }
-            
-            // String method name mappings (Ruchy -> Rust)
+        })
+    }
+    
+    /// Handle string methods: to_upper, to_lower, length, substring
+    fn transpile_string_methods(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
+        match method {
             "to_s" | "to_string" => {
                 // Convert any value to string - already a String stays String
                 Ok(quote! { #obj_tokens })
@@ -776,8 +803,27 @@ impl Transpiler {
                 let rust_method = format_ident!("len");
                 Ok(quote! { #obj_tokens.#rust_method(#(#arg_tokens),*) })
             }
-            
-            // New collection methods
+            "substring" => {
+                // string.substring(start, end) -> string.chars().skip(start).take(end-start).collect()
+                if arg_tokens.len() != 2 {
+                    bail!("substring requires exactly 2 arguments");
+                }
+                let start = &arg_tokens[0];
+                let end = &arg_tokens[1];
+                Ok(quote! { 
+                    #obj_tokens.chars()
+                        .skip(#start as usize)
+                        .take((#end as usize).saturating_sub(#start as usize))
+                        .collect::<String>()
+                })
+            }
+            _ => unreachable!("Non-string method passed to transpile_string_methods"),
+        }
+    }
+    
+    /// Handle advanced collection methods: slice, concat, flatten, unique, join
+    fn transpile_advanced_collection_methods(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
+        match method {
             "slice" => {
                 // vec.slice(start, end) -> vec[start..end].to_vec()
                 if arg_tokens.len() != 2 {
@@ -822,24 +868,7 @@ impl Transpiler {
                 let separator = &arg_tokens[0];
                 Ok(quote! { #obj_tokens.join(&#separator) })
             }
-            "substring" => {
-                // string.substring(start, end) -> string.chars().skip(start).take(end-start).collect()
-                if arg_tokens.len() != 2 {
-                    bail!("substring requires exactly 2 arguments");
-                }
-                let start = &arg_tokens[0];
-                let end = &arg_tokens[1];
-                Ok(quote! { 
-                    #obj_tokens.chars()
-                        .skip(#start as usize)
-                        .take((#end as usize).saturating_sub(#start as usize))
-                        .collect::<String>()
-                })
-            }
-            _ => {
-                // Regular method call
-                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
-            }
+            _ => unreachable!("Non-advanced-collection method passed to transpile_advanced_collection_methods"),
         }
     }
 
@@ -1556,127 +1585,139 @@ impl Transpiler {
     }
     
     /// Handle `std::system` imports with system information functions
-    /// Core inline import transpilation logic
-    fn transpile_import_inline(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
-        use crate::frontend::ast::ImportItem;
-        
-
-        // Special handling for std::fs imports
-        if path == "std::fs" || path.starts_with("std::fs::") {
-            return Self::transpile_std_fs_import_with_path(path, items);
-        }
-
-        // Handle std::process imports
-        if path == "std::process" || path.starts_with("std::process::") {
-            return Self::transpile_std_process_import(path, items);
+    /// Core inline import transpilation logic - REFACTORED FOR COMPLEXITY REDUCTION
+    /// Original: 48 cyclomatic complexity, Target: <20
+    pub fn transpile_import_inline(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
+        // Try std module handlers first (complexity: delegated)
+        if let Some(result) = Self::handle_std_module_import(path, items) {
+            return result;
         }
         
-        // Handle std::system imports
-        if path == "std::system" || path.starts_with("std::system::") {
-            return Self::transpile_std_system_import(path, items);
+        // Fall back to generic import handling (complexity: delegated)
+        Self::handle_generic_import(path, items)
+    }
+    
+    /// Extract std module dispatcher (complexity ~12)
+    fn handle_std_module_import(path: &str, items: &[crate::frontend::ast::ImportItem]) -> Option<TokenStream> {
+        if path.starts_with("std::fs") {
+            return Some(Self::transpile_std_fs_import_with_path(path, items));
         }
+        if path.starts_with("std::process") {
+            return Some(Self::transpile_std_process_import(path, items));
+        }
+        if path.starts_with("std::system") {
+            return Some(Self::transpile_std_system_import(path, items));
+        }
+        if path.starts_with("std::signal") {
+            return Some(Self::transpile_std_signal_import(path, items));
+        }
+        if path.starts_with("std::net") {
+            return Some(Self::transpile_std_net_import(path, items));
+        }
+        if path.starts_with("std::mem") {
+            return Some(Self::transpile_std_mem_import(path, items));
+        }
+        if path.starts_with("std::parallel") {
+            return Some(Self::transpile_std_parallel_import(path, items));
+        }
+        if path.starts_with("std::simd") {
+            return Some(Self::transpile_std_simd_import(path, items));
+        }
+        if path.starts_with("std::cache") {
+            return Some(Self::transpile_std_cache_import(path, items));
+        }
+        if path.starts_with("std::bench") {
+            return Some(Self::transpile_std_bench_import(path, items));
+        }
+        if path.starts_with("std::profile") {
+            return Some(Self::transpile_std_profile_import(path, items));
+        }
+        None
+    }
+    
+    /// Extract generic import handling (complexity ~8)
+    fn handle_generic_import(path: &str, items: &[crate::frontend::ast::ImportItem]) -> TokenStream {
         
-        // Handle std::signal imports
-        if path == "std::signal" || path.starts_with("std::signal::") {
-            return Self::transpile_std_signal_import(path, items);
-        }
+        let path_tokens = Self::path_to_tokens(path);
         
-        // Handle std::net imports
-        if path == "std::net" || path.starts_with("std::net::") {
-            return Self::transpile_std_net_import(path, items);
+        if items.is_empty() {
+            quote! { use #path_tokens::*; }
+        } else if items.len() == 1 {
+            Self::handle_single_import_item(&path_tokens, path, &items[0])
+        } else {
+            Self::handle_multiple_import_items(&path_tokens, items)
         }
-
-        // Handle std::mem imports
-        if path == "std::mem" || path.starts_with("std::mem::") {
-            return Self::transpile_std_mem_import(path, items);
-        }
-
-        // Handle std::parallel imports
-        if path == "std::parallel" || path.starts_with("std::parallel::") {
-            return Self::transpile_std_parallel_import(path, items);
-        }
-
-        // Handle std::simd imports
-        if path == "std::simd" || path.starts_with("std::simd::") {
-            return Self::transpile_std_simd_import(path, items);
-        }
-
-        // Handle std::cache imports
-        if path == "std::cache" || path.starts_with("std::cache::") {
-            return Self::transpile_std_cache_import(path, items);
-        }
-
-        // Handle std::bench imports
-        if path == "std::bench" || path.starts_with("std::bench::") {
-            return Self::transpile_std_bench_import(path, items);
-        }
-
-        // Handle std::profile imports
-        if path == "std::profile" || path.starts_with("std::profile::") {
-            return Self::transpile_std_profile_import(path, items);
-        }
-
-        // Build the path as a TokenStream
+    }
+    
+    /// Extract path tokenization (complexity ~4)
+    fn path_to_tokens(path: &str) -> TokenStream {
         let mut path_tokens = TokenStream::new();
         let segments: Vec<_> = path.split("::").collect();
+        
         for (i, segment) in segments.iter().enumerate() {
             if i > 0 {
                 path_tokens.extend(quote! { :: });
             }
-            // Skip empty segments to prevent format_ident panic
-            if segment.is_empty() {
-                continue;
+            if !segment.is_empty() {
+                let seg_ident = format_ident!("{}", segment);
+                path_tokens.extend(quote! { #seg_ident });
             }
-            let seg_ident = format_ident!("{}", segment);
-            path_tokens.extend(quote! { #seg_ident });
         }
-
-        if items.is_empty() {
-            // Simple import without specific items
-            quote! { use #path_tokens::*; }
-        } else if items.len() == 1 {
-            match &items[0] {
-                ImportItem::Named(name) => {
-                    // Check if the path already ends with the item name
-                    // This happens when parsing "use math::add"
-                    if path.ends_with(&format!("::{name}")) {
-                        // Path already includes the item, just use it directly
-                        quote! { use #path_tokens; }
-                    } else {
-                        // Path doesn't include item, append it
-                        let item_ident = format_ident!("{}", name);
-                        quote! { use #path_tokens::#item_ident; }
-                    }
-                }
-                ImportItem::Aliased { name, alias } => {
-                    let name_ident = format_ident!("{}", name);
-                    let alias_ident = format_ident!("{}", alias);
-                    quote! { use #path_tokens::#name_ident as #alias_ident; }
-                }
-                ImportItem::Wildcard => {
-                    quote! { use #path_tokens::*; }
+        
+        path_tokens
+    }
+    
+    /// Extract single item handling (complexity ~5)
+    fn handle_single_import_item(
+        path_tokens: &TokenStream, 
+        path: &str, 
+        item: &crate::frontend::ast::ImportItem
+    ) -> TokenStream {
+        use crate::frontend::ast::ImportItem;
+        
+        match item {
+            ImportItem::Named(name) => {
+                if path.ends_with(&format!("::{}", name)) {
+                    quote! { use #path_tokens; }
+                } else {
+                    let item_ident = format_ident!("{}", name);
+                    quote! { use #path_tokens::#item_ident; }
                 }
             }
-        } else {
-            // Multiple items
-            let item_tokens: Vec<TokenStream> = items
-                .iter()
-                .map(|item| match item {
-                    ImportItem::Named(name) => {
-                        let name_ident = format_ident!("{}", name);
-                        quote! { #name_ident }
-                    }
-                    ImportItem::Aliased { name, alias } => {
-                        let name_ident = format_ident!("{}", name);
-                        let alias_ident = format_ident!("{}", alias);
-                        quote! { #name_ident as #alias_ident }
-                    }
-                    ImportItem::Wildcard => quote! { * },
-                })
-                .collect();
-
-            quote! { use #path_tokens::{#(#item_tokens),*}; }
+            ImportItem::Aliased { name, alias } => {
+                let name_ident = format_ident!("{}", name);
+                let alias_ident = format_ident!("{}", alias);
+                quote! { use #path_tokens::#name_ident as #alias_ident; }
+            }
+            ImportItem::Wildcard => quote! { use #path_tokens::*; },
         }
+    }
+    
+    /// Extract multiple items handling (complexity ~3)
+    fn handle_multiple_import_items(
+        path_tokens: &TokenStream, 
+        items: &[crate::frontend::ast::ImportItem]
+    ) -> TokenStream {
+        let item_tokens = Self::process_import_items(items);
+        quote! { use #path_tokens::{#(#item_tokens),*}; }
+    }
+    
+    /// Extract import items processing (complexity ~3)
+    fn process_import_items(items: &[crate::frontend::ast::ImportItem]) -> Vec<TokenStream> {
+        use crate::frontend::ast::ImportItem;
+        
+        items.iter().map(|item| match item {
+            ImportItem::Named(name) => {
+                let name_ident = format_ident!("{}", name);
+                quote! { #name_ident }
+            }
+            ImportItem::Aliased { name, alias } => {
+                let name_ident = format_ident!("{}", name);
+                let alias_ident = format_ident!("{}", alias);
+                quote! { #name_ident as #alias_ident }
+            }
+            ImportItem::Wildcard => quote! { * },
+        }).collect()
     }
 
     /// Transpiles export statements
@@ -1969,112 +2010,127 @@ impl Transpiler {
     
     // Old implementation kept for reference (will be removed after verification)
     #[allow(dead_code)]
-    fn try_transpile_type_conversion_old(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+    pub fn try_transpile_type_conversion_old(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
         match base_name {
-            "str" => {
-                if args.len() != 1 {
-                    bail!("str() expects exactly 1 argument");
-                }
-                let value = self.transpile_expr(&args[0])?;
-                Ok(Some(quote! { format!("{}", #value) }))
-            }
-            "int" => {
-                if args.len() != 1 {
-                    bail!("int() expects exactly 1 argument");
-                }
-                
-                // Check if the argument is a literal
-                match &args[0].kind {
-                    ExprKind::Literal(Literal::String(_)) => {
-                        let value = self.transpile_expr(&args[0])?;
-                        return Ok(Some(quote! { #value.parse::<i64>().expect("Failed to parse integer") }));
-                    }
-                    ExprKind::StringInterpolation { parts } if parts.len() == 1 => {
-                        if let crate::frontend::ast::StringPart::Text(_) = &parts[0] {
-                            let value = self.transpile_expr(&args[0])?;
-                            return Ok(Some(quote! { #value.parse::<i64>().expect("Failed to parse integer") }));
-                        }
-                    }
-                    ExprKind::Literal(Literal::Float(_)) => {
-                        let value = self.transpile_expr(&args[0])?;
-                        return Ok(Some(quote! { (#value as i64) }));
-                    }
-                    ExprKind::Literal(Literal::Bool(_)) => {
-                        let value = self.transpile_expr(&args[0])?;
-                        return Ok(Some(quote! { if #value { 1i64 } else { 0i64 } }));
-                    }
-                    _ => {}
-                }
-                
-                // For other expressions, use runtime conversion
-                let value = self.transpile_expr(&args[0])?;
-                Ok(Some(quote! { (#value as i64) }))
-            }
-            "float" => {
-                if args.len() != 1 {
-                    bail!("float() expects exactly 1 argument");
-                }
-                
-                // Check if the argument is a literal
-                match &args[0].kind {
-                    ExprKind::Literal(Literal::String(_)) => {
-                        let value = self.transpile_expr(&args[0])?;
-                        return Ok(Some(quote! { #value.parse::<f64>().expect("Failed to parse float") }));
-                    }
-                    ExprKind::StringInterpolation { parts } if parts.len() == 1 => {
-                        if let crate::frontend::ast::StringPart::Text(_) = &parts[0] {
-                            let value = self.transpile_expr(&args[0])?;
-                            return Ok(Some(quote! { #value.parse::<f64>().expect("Failed to parse float") }));
-                        }
-                    }
-                    ExprKind::Literal(Literal::Integer(_)) => {
-                        let value = self.transpile_expr(&args[0])?;
-                        return Ok(Some(quote! { (#value as f64) }));
-                    }
-                    _ => {}
-                }
-                
-                // For other expressions
-                let value = self.transpile_expr(&args[0])?;
-                Ok(Some(quote! { (#value as f64) }))
-            }
-            "bool" => {
-                if args.len() != 1 {
-                    bail!("bool() expects exactly 1 argument");
-                }
-                
-                // Check the type of the argument to generate appropriate conversion
-                match &args[0].kind {
-                    ExprKind::Literal(Literal::Integer(_)) => {
-                        let value = self.transpile_expr(&args[0])?;
-                        Ok(Some(quote! { (#value != 0) }))
-                    }
-                    ExprKind::Literal(Literal::String(_)) => {
-                        let value = self.transpile_expr(&args[0])?;
-                        Ok(Some(quote! { !#value.is_empty() }))
-                    }
-                    ExprKind::StringInterpolation { parts } if parts.len() == 1 => {
-                        if let crate::frontend::ast::StringPart::Text(_) = &parts[0] {
-                            let value = self.transpile_expr(&args[0])?;
-                            Ok(Some(quote! { !#value.is_empty() }))
-                        } else {
-                            let value = self.transpile_expr(&args[0])?;
-                            Ok(Some(quote! { !#value.is_empty() }))
-                        }
-                    }
-                    ExprKind::Literal(Literal::Bool(_)) => {
-                        // Boolean already, just pass through
-                        let value = self.transpile_expr(&args[0])?;
-                        Ok(Some(value))
-                    }
-                    _ => {
-                        // Generic case - for numbers check != 0
-                        let value = self.transpile_expr(&args[0])?;
-                        Ok(Some(quote! { (#value != 0) }))
-                    }
-                }
-            }
+            "str" => self.transpile_str_conversion(args).map(Some),
+            "int" => self.transpile_int_conversion(args).map(Some), 
+            "float" => self.transpile_float_conversion(args).map(Some),
+            "bool" => self.transpile_bool_conversion(args).map(Some),
             _ => Ok(None)
+        }
+    }
+    
+    /// Handle str() type conversion - extract string representation
+    fn transpile_str_conversion(&self, args: &[Expr]) -> Result<TokenStream> {
+        if args.len() != 1 {
+            bail!("str() expects exactly 1 argument");
+        }
+        let value = self.transpile_expr(&args[0])?;
+        Ok(quote! { format!("{}", #value) })
+    }
+    
+    /// Handle int() type conversion with literal-specific optimizations
+    fn transpile_int_conversion(&self, args: &[Expr]) -> Result<TokenStream> {
+        if args.len() != 1 {
+            bail!("int() expects exactly 1 argument");
+        }
+        
+        // Check if the argument is a literal for compile-time optimizations
+        match &args[0].kind {
+            ExprKind::Literal(Literal::String(_)) => {
+                let value = self.transpile_expr(&args[0])?;
+                Ok(quote! { #value.parse::<i64>().expect("Failed to parse integer") })
+            }
+            ExprKind::StringInterpolation { parts } if parts.len() == 1 => {
+                if let crate::frontend::ast::StringPart::Text(_) = &parts[0] {
+                    let value = self.transpile_expr(&args[0])?;
+                    Ok(quote! { #value.parse::<i64>().expect("Failed to parse integer") })
+                } else {
+                    self.transpile_int_generic(&args[0])
+                }
+            }
+            ExprKind::Literal(Literal::Float(_)) => {
+                let value = self.transpile_expr(&args[0])?;
+                Ok(quote! { (#value as i64) })
+            }
+            ExprKind::Literal(Literal::Bool(_)) => {
+                let value = self.transpile_expr(&args[0])?;
+                Ok(quote! { if #value { 1i64 } else { 0i64 } })
+            }
+            _ => self.transpile_int_generic(&args[0])
+        }
+    }
+    
+    /// Generic int conversion for non-literal expressions
+    fn transpile_int_generic(&self, expr: &Expr) -> Result<TokenStream> {
+        let value = self.transpile_expr(expr)?;
+        Ok(quote! { (#value as i64) })
+    }
+    
+    /// Handle float() type conversion with literal-specific optimizations
+    fn transpile_float_conversion(&self, args: &[Expr]) -> Result<TokenStream> {
+        if args.len() != 1 {
+            bail!("float() expects exactly 1 argument");
+        }
+        
+        // Check if the argument is a literal for compile-time optimizations
+        match &args[0].kind {
+            ExprKind::Literal(Literal::String(_)) => {
+                let value = self.transpile_expr(&args[0])?;
+                Ok(quote! { #value.parse::<f64>().expect("Failed to parse float") })
+            }
+            ExprKind::StringInterpolation { parts } if parts.len() == 1 => {
+                if let crate::frontend::ast::StringPart::Text(_) = &parts[0] {
+                    let value = self.transpile_expr(&args[0])?;
+                    Ok(quote! { #value.parse::<f64>().expect("Failed to parse float") })
+                } else {
+                    self.transpile_float_generic(&args[0])
+                }
+            }
+            ExprKind::Literal(Literal::Integer(_)) => {
+                let value = self.transpile_expr(&args[0])?;
+                Ok(quote! { (#value as f64) })
+            }
+            _ => self.transpile_float_generic(&args[0])
+        }
+    }
+    
+    /// Generic float conversion for non-literal expressions
+    fn transpile_float_generic(&self, expr: &Expr) -> Result<TokenStream> {
+        let value = self.transpile_expr(expr)?;
+        Ok(quote! { (#value as f64) })
+    }
+    
+    /// Handle bool() type conversion with type-specific logic
+    fn transpile_bool_conversion(&self, args: &[Expr]) -> Result<TokenStream> {
+        if args.len() != 1 {
+            bail!("bool() expects exactly 1 argument");
+        }
+        
+        // Check the type of the argument to generate appropriate conversion
+        match &args[0].kind {
+            ExprKind::Literal(Literal::Integer(_)) => {
+                let value = self.transpile_expr(&args[0])?;
+                Ok(quote! { (#value != 0) })
+            }
+            ExprKind::Literal(Literal::String(_)) => {
+                let value = self.transpile_expr(&args[0])?;
+                Ok(quote! { !#value.is_empty() })
+            }
+            ExprKind::StringInterpolation { parts } if parts.len() == 1 => {
+                let value = self.transpile_expr(&args[0])?;
+                Ok(quote! { !#value.is_empty() })
+            }
+            ExprKind::Literal(Literal::Bool(_)) => {
+                // Boolean already, just pass through
+                let value = self.transpile_expr(&args[0])?;
+                Ok(value)
+            }
+            _ => {
+                // Generic case - for numbers check != 0
+                let value = self.transpile_expr(&args[0])?;
+                Ok(quote! { (#value != 0) })
+            }
         }
     }
     
