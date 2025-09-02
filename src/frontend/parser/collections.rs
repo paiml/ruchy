@@ -41,7 +41,10 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
     }
 
     let mut exprs = Vec::new();
-    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+    while let Some((token, _)) = state.tokens.peek() {
+        if matches!(token, Token::RightBrace) {
+            break;
+        }
         // Check if this is a let statement (let without 'in')
         if matches!(state.tokens.peek(), Some((Token::Let, _))) {
             // Peek ahead to see if this is a let-statement or let-expression
@@ -74,7 +77,10 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
 
                         // Parse the rest of the block as the body
                         let mut body_exprs = Vec::new();
-                        while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                        while let Some((token, _)) = state.tokens.peek() {
+                            if matches!(token, Token::RightBrace) {
+                                break;
+                            }
                             body_exprs.push(super::parse_expr_recursive(state)?);
 
                             if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {

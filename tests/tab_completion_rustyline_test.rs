@@ -19,7 +19,7 @@ fn test_completer_trait_basic_functionality() {
     let result = completer.complete(input, pos, &ctx);
     assert!(result.is_ok(), "Completer should not fail on basic input");
     
-    let (start, pairs) = result.unwrap();
+    let (_start, pairs) = result.unwrap();
     assert!(start <= pos, "Start position should be valid");
     assert!(!pairs.is_empty(), "Should return some completions for string methods");
     
@@ -45,7 +45,7 @@ fn test_completer_trait_list_methods() {
     let result = completer.complete(input, pos, &ctx);
     assert!(result.is_ok(), "Completer should not fail on list input");
     
-    let (start, pairs) = result.unwrap();
+    let (_start, pairs) = result.unwrap();
     let completions: Vec<String> = pairs.into_iter().map(|p| p.replacement).collect();
     
     assert!(
@@ -68,7 +68,7 @@ fn test_completer_trait_partial_input() {
     let result = completer.complete(input, pos, &ctx);
     assert!(result.is_ok(), "Completer should handle partial input");
     
-    let (start, pairs) = result.unwrap();
+    let (_start, pairs) = result.unwrap();
     let completions: Vec<String> = pairs.into_iter().map(|p| p.replacement).collect();
     
     // Should suggest "len" for partial "le"
@@ -92,7 +92,7 @@ fn test_completer_trait_help_queries() {
     let result = completer.complete(input, pos, &ctx);
     assert!(result.is_ok(), "Completer should handle help queries");
     
-    let (start, pairs) = result.unwrap();
+    let (_start, pairs) = result.unwrap();
     assert!(!pairs.is_empty(), "Should return help suggestions");
 }
 
@@ -117,7 +117,7 @@ fn test_cache_consistency_bug() {
     // This test reproduces the critical bug: creating new completer instances
     // loses cache state and causes inconsistent behavior
     
-    let mut completer1 = RuchyCompleter::new();
+    let completer1 = RuchyCompleter::new();
     let history = DefaultHistory::new();
     let ctx = Context::new(&history);
     

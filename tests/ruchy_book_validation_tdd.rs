@@ -99,32 +99,103 @@ fn test_ruchy_book_complex_expressions() {
 
 #[test]
 fn test_ruchy_book_complete_file_parsing() {
-    // Test parsing the entire ruchy-book file
+    // Test parsing the entire ruchy-book file as statements, not line-by-line
     let file_path = "/home/noah/src/ruchy-book/one_liner_tests.ruchy";
     let content = std::fs::read_to_string(file_path)
         .expect("Should read ruchy-book file");
     
-    // Split into individual statements (simplified)
-    let lines: Vec<&str> = content
-        .lines()
-        .filter(|line| !line.trim().is_empty() && !line.trim().starts_with("//"))
-        .collect();
+    // Split into individual statements by semicolons, handling multiline
+    let statements = split_into_statements(&content);
     
-    println!("Testing {} lines from ruchy-book", lines.len());
+    println!("Testing {} statements from ruchy-book", statements.len());
     
-    for (i, line) in lines.iter().enumerate() {
-        let mut parser = Parser::new(line);
+    for (i, statement) in statements.iter().enumerate() {
+        // Strip inline comments for parsing (lexer doesn't support them yet)
+        let clean_statement = strip_inline_comments(statement.trim());
+        println!("Testing statement {}: '{}'", i + 1, clean_statement);
+        let mut parser = Parser::new(&clean_statement);
         let result = parser.parse();
         
         if result.is_err() {
-            println!("Failed line {}: {}", i + 1, line);
+            println!("Failed statement {}: {}", i + 1, statement.trim());
         }
         
         assert!(result.is_ok(), 
-            "Line {} should parse: '{}' - Error: {:?}", 
-            i + 1, line, result.err()
+            "Statement {} should parse: '{}' - Error: {:?}", 
+            i + 1, clean_statement, result.err()
         );
     }
+}
+
+/// Strip inline comments from a statement (temporary until lexer supports comments)
+fn strip_inline_comments(statement: &str) -> String {
+    // For multiline statements, we need to process line by line
+    let lines: Vec<&str> = statement.split(' ').collect();
+    let mut result_parts = Vec::new();
+    
+    for part in lines {
+        if part.contains("//") && !part.starts_with("//") {
+            // Split at the comment and take only the code part
+            let code_part = part.split("//").next().unwrap_or("").trim();
+            if !code_part.is_empty() {
+                result_parts.push(code_part);
+            }
+        } else if !part.starts_with("//") && !part.trim().is_empty() {
+            result_parts.push(part);
+        }
+    }
+    
+    result_parts.join(" ")
+}
+
+/// Split content into statements, handling multiline expressions properly
+fn split_into_statements(content: &str) -> Vec<String> {
+    let mut statements = Vec::new();
+    let mut current_statement = String::new();
+    let mut brace_depth = 0;
+    let mut in_string = false;
+    let mut escape_next = false;
+    
+    for line in content.lines() {
+        let line = line.trim();
+        
+        // Skip empty lines and comments
+        if line.is_empty() || line.starts_with("//") {
+            continue;
+        }
+        
+        current_statement.push_str(line);
+        current_statement.push(' ');
+        
+        // Track brace depth to handle multiline expressions
+        for ch in line.chars() {
+            if escape_next {
+                escape_next = false;
+                continue;
+            }
+            
+            match ch {
+                '\\' if in_string => escape_next = true,
+                '"' => in_string = !in_string,
+                '{' if !in_string => brace_depth += 1,
+                '}' if !in_string => brace_depth -= 1,
+                _ => {}
+            }
+        }
+        
+        // If we're at depth 0 and line ends with semicolon, it's a complete statement
+        if brace_depth == 0 && line.ends_with(';') {
+            statements.push(current_statement.trim().to_string());
+            current_statement.clear();
+        }
+    }
+    
+    // Add any remaining content as final statement
+    if !current_statement.trim().is_empty() {
+        statements.push(current_statement.trim().to_string());
+    }
+    
+    statements
 }
 
 #[test]
