@@ -23,6 +23,7 @@ help:
 	@echo "  make coverage    - Generate comprehensive coverage report (Toyota Way)"
 	@echo "  make coverage-quick - Quick coverage check for development"
 	@echo "  make coverage-open - Generate and open coverage report in browser"
+	@echo "  make test-coverage-quality - Show coverage & TDG quality per component"
 	@echo "  make quality-gate - Run PMAT quality checks"
 	@echo "  make ci          - Run full CI pipeline"
 	@echo ""
@@ -221,6 +222,41 @@ coverage-quick:
 # Open coverage report in browser
 coverage-open:
 	@./scripts/coverage.sh --open
+
+# Test coverage and quality per component (parser, interpreter, repl)
+test-coverage-quality:
+	@echo "📊 Component Coverage & Quality Analysis"
+	@echo "========================================="
+	@echo ""
+	@echo "🔍 Parser Component:"
+	@echo "-------------------"
+	@cargo llvm-cov test --lib --no-report 2>/dev/null || true
+	@cargo llvm-cov report --ignore-filename-regex "(?!.*parser)" 2>/dev/null | grep -E "TOTAL|parser" | head -5 || echo "Coverage data collection in progress..."
+	@echo ""
+	@echo "TDG Quality Score:"
+	@pmat tdg src/frontend/parser --include-components 2>/dev/null | grep -E "Overall Score|Grade" | head -2 || echo "TDG analysis pending..."
+	@echo ""
+	@echo "🧠 Interpreter Component:"
+	@echo "------------------------"
+	@cargo llvm-cov report --ignore-filename-regex "(?!.*interpreter)" 2>/dev/null | grep -E "TOTAL|interpreter" | head -5 || echo "Coverage data collection in progress..."
+	@echo ""
+	@echo "TDG Quality Score:"
+	@pmat tdg src/runtime/interpreter.rs --include-components 2>/dev/null | grep -E "Overall Score|Grade" | head -2 || echo "TDG analysis pending..."
+	@echo ""
+	@echo "💻 REPL Component:"
+	@echo "-----------------"
+	@cargo llvm-cov report --ignore-filename-regex "(?!.*repl)" 2>/dev/null | grep -E "TOTAL|repl" | head -5 || echo "Coverage data collection in progress..."
+	@echo ""
+	@echo "TDG Quality Score:"
+	@pmat tdg src/runtime/repl.rs --include-components 2>/dev/null | grep -E "Overall Score|Grade" | head -2 || echo "TDG analysis pending..."
+	@echo ""
+	@echo "🎯 Target Goals:"
+	@echo "---------------"
+	@echo "• Parser: 80% coverage, TDG A grade (≥90)"
+	@echo "• Interpreter: 70% coverage, TDG B+ grade (≥85)"
+	@echo "• REPL: 60% coverage, TDG B grade (≥80)"
+	@echo ""
+	@echo "Run 'make coverage' for detailed report"
 
 # Legacy coverage for CI compatibility
 coverage-legacy:
