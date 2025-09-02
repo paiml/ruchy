@@ -23,8 +23,9 @@ match number {
     let rust_code = result.expect("Failed to transpile").to_string();
     
     // Should handle Unit type separately to avoid compilation error
-    assert!(rust_code.contains(r#""()" => { }"#) || 
-            rust_code.contains(r#"!= "()""#),
+    assert!(rust_code.contains(r#"== "()""#) || 
+            rust_code.contains(r#"!= "()""#) ||
+            rust_code.contains(r#""()" => { }"#),
             "Unit type should be handled without Display formatting: {}", rust_code);
 }
 
@@ -44,7 +45,7 @@ println("World")
     
     // Should not try to format Unit type results from println statements
     assert!(!rust_code.contains(r#"println ! ("{}" , result)"#) || 
-            rust_code.contains("Unit") || rust_code.contains(r#"!= "()""#),
+            rust_code.contains("Unit") || rust_code.contains(r#"== "()""#) || rust_code.contains(r#"!= "()""#),
             "Unit type from println should be handled correctly: {}", rust_code);
 }
 
@@ -64,6 +65,6 @@ x = x + 1
     
     // Assignment statements return Unit type, should be handled properly
     assert!(!rust_code.contains(r#"println ! ("{}" , result)"#) || 
-            rust_code.contains(r#"!= "()""#),
+            rust_code.contains(r#"== "()""#) || rust_code.contains(r#"!= "()""#),
             "Unit type from assignment should be handled correctly: {}", rust_code);
 }

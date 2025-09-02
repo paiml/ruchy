@@ -53,20 +53,23 @@ fn test_generated_code_uses_centralized_pattern() {
             "Generated code still uses old downcast_ref pattern: {}", rust_code);
     
     // REQUIREMENT: Should use new centralized pattern 
-    assert!(rust_code.contains("type_name_of_val") || rust_code.contains("match &result"),
+    assert!(rust_code.contains("type_name_of_val"),
             "Generated code should use centralized result printing pattern: {}", rust_code);
             
-    // Count how many result printing approaches are used - should be exactly 1
+    // Count how many result printing approaches are used - should be exactly 1 approach
     let printing_patterns = vec![
         rust_code.matches("downcast_ref").count(),
         rust_code.matches("type_name_of_val").count(),
-        rust_code.matches("match &result").count(),
     ];
     
-    let total_patterns: usize = printing_patterns.iter().sum();
-    assert!(total_patterns <= 2, // Match statement uses type_name_of_val twice but it's one pattern
-            "Should have at most one result printing approach, found {} patterns: {:?}", 
-            total_patterns, printing_patterns);
+    // We have 1 printing approach (if-chain), but type_name_of_val appears 3 times in that approach
+    let has_downcast = printing_patterns[0] > 0;
+    let has_centralized = printing_patterns[1] > 0;
+    let num_approaches = (if has_downcast { 1 } else { 0 }) + (if has_centralized { 1 } else { 0 });
+    
+    assert!(num_approaches == 1, 
+            "Should have exactly one result printing approach, found {} approaches: downcast={}, centralized={}", 
+            num_approaches, has_downcast, has_centralized);
 }
 
 #[test]

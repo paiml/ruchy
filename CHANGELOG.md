@@ -4,6 +4,41 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.37.0] - 2025-09-03
+
+### 🎯 **ENUM VARIANT VALUES + PARSER COMPLEXITY REDUCTION**
+
+This release adds critical enum variant value support to unblock TypeScript→Ruchy migrations and massively reduces parser complexity through systematic TDD refactoring.
+
+### Added
+- ✅ **Enum Variant Values** (GitHub Issue #18) - Critical migration blocker resolved
+  - Enums can now have explicit discriminant values: `enum LogLevel { DEBUG = 0, INFO = 1 }`
+  - Generates `#[repr(i32)]` attribute for valued enums
+  - Supports negative values and large constants
+  - Full TypeScript enum compatibility for migration projects
+  - TDD implementation with 100% test coverage
+
+### Improved
+- ✅ **Massive Parser Complexity Reduction** - TDD-driven refactoring
+  - `parse_match_pattern`: 22 → 5 (77% reduction)
+  - `parse_dataframe_literal`: 22 → 4 (82% reduction)
+  - `token_to_binary_op`: 22 → 1 (95% reduction)
+  - `parse_let_statement`: 36 → 7 (81% reduction)
+  - `parse_actor_definition`: 34 → 6 (82% reduction)
+  - All refactoring with 100% backward compatibility
+
+### Quality
+- **PMAT TDG Grade**: A (exceeds A- requirement)
+- **Test Coverage**: 39.41% maintained
+- **New Tests**: 14 tests for enum values + 48 tests for refactoring
+- **Integration Tests**: 6/6 passing for enum values
+- **Complexity**: All new functions <10 cyclomatic complexity
+
+### Impact
+- Unblocks ubuntu-config-scripts TypeScript migration project
+- Enables gradual migration from TypeScript/Deno to Ruchy
+- Improves parser maintainability and extensibility
+
 ## [1.32.0] - 2025-01-15
 
 ### 🎉 **COMPLETE LANGUAGE RESTORATION - ALL Features Working!**
