@@ -73,6 +73,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             // Parse let statement/expression
             parse_let_statement(state)
         }
+        Token::If => {
+            // Parse if expression
+            parse_if_expression(state)
+        }
         _ => bail!("Unexpected token: {:?}", token_clone),
     }
 }
@@ -124,6 +128,34 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
             is_mutable: false,
         },
         start_span.merge(end_span),
+    ))
+}
+
+/// Parse if expression: if condition { then_branch } [else { else_branch }]
+fn parse_if_expression(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.expect(&Token::If)?;
+    
+    // Parse condition
+    let condition = Box::new(super::parse_expr_recursive(state)?);
+    
+    // Parse then branch (expect block)
+    let then_branch = Box::new(super::parse_expr_recursive(state)?);
+    
+    // Parse optional else branch
+    let else_branch = if matches!(state.tokens.peek(), Some((Token::Else, _))) {
+        state.tokens.advance(); // consume 'else'
+        Some(Box::new(super::parse_expr_recursive(state)?))
+    } else {
+        None
+    };
+    
+    Ok(Expr::new(
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        },
+        start_span,
     ))
 }
 
