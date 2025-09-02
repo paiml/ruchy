@@ -54,7 +54,7 @@ impl Transpiler {
             ExprKind::If { condition, then_branch, else_branch } => {
                 Self::is_variable_mutated(name, condition) ||
                 Self::is_variable_mutated(name, then_branch) ||
-                else_branch.as_ref().map_or(false, |e| Self::is_variable_mutated(name, &**e))
+                else_branch.as_ref().is_some_and(|e| Self::is_variable_mutated(name, e))
             }
             // Check in while loops
             ExprKind::While { condition, body } => {
