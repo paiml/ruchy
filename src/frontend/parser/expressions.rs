@@ -52,9 +52,9 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                         kind: TypeKind::Named("_".to_string()),
                         span: span_clone,
                     },
-                    span: span_clone,
-                    is_mutable: false,
                     default_value: None,
+                    is_mutable: false,
+                    span: span_clone,
                 }];
                 Ok(Expr::new(ExprKind::Lambda {
                     params,
@@ -120,6 +120,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             // Parse lambda expression |x| x + 1
             parse_lambda_expression(state)
         }
+        Token::OrOr => {
+            // Parse lambda with no params: || expr
+            parse_lambda_no_params(state)
+        }
         Token::LeftParen => {
             state.tokens.advance();
             // Check for unit type ()
@@ -127,10 +131,16 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 state.tokens.advance();
                 Ok(Expr::new(ExprKind::Literal(Literal::Unit), span_clone))
             } else {
-                // Parse grouped expression
+                // Parse grouped expression or lambda with parentheses
                 let expr = super::parse_expr_recursive(state)?;
                 state.tokens.expect(&Token::RightParen)?;
-                Ok(expr)
+                
+                // Check if this is a lambda: (x) => expr
+                if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+                    parse_lambda_from_expr(state, expr, span_clone)
+                } else {
+                    Ok(expr)
+                }
             }
         }
         Token::Struct => {
@@ -176,13 +186,59 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             }
             Ok(expr)
         }
+        Token::Break => {
+            state.tokens.advance();
+            // Optional label
+            let label = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                let label = Some(name.clone());
+                state.tokens.advance();
+                label
+            } else {
+                None
+            };
+            Ok(Expr::new(ExprKind::Break { label }, span_clone))
+        }
+        Token::Continue => {
+            state.tokens.advance();
+            // Optional label
+            let label = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                let label = Some(name.clone());
+                state.tokens.advance();
+                label
+            } else {
+                None
+            };
+            Ok(Expr::new(ExprKind::Continue { label }, span_clone))
+        }
+        Token::Return => {
+            state.tokens.advance();
+            // Optional return value
+            let value = if matches!(state.tokens.peek(), Some((Token::Semicolon, _)) | None) {
+                None
+            } else {
+                Some(Box::new(super::parse_expr_recursive(state)?))
+            };
+            Ok(Expr::new(ExprKind::Return { value }, span_clone))
+        }
+        Token::Enum => {
+            // Parse enum definition
+            parse_enum_definition(state)
+        }
         _ => bail!("Unexpected token: {:?}", token_clone),
     }
 }
 
-/// Parse let statement: let name [: type] = value [in body]
+/// Parse let statement: let [mut] name [: type] = value [in body]
 fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Let)?;
+    
+    // Check for optional 'mut' keyword
+    let is_mutable = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance();
+        true
+    } else {
+        false
+    };
     
     // Parse variable name
     let name = match state.tokens.peek() {
@@ -191,7 +247,7 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
             state.tokens.advance();
             name
         }
-        _ => bail!("Expected identifier after 'let'")
+        _ => bail!("Expected identifier after 'let{}'", if is_mutable { " mut" } else { "" })
     };
     
     // Parse optional type annotation
@@ -224,7 +280,7 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
             type_annotation,
             value,
             body,
-            is_mutable: false,
+            is_mutable,
         },
         start_span.merge(end_span),
     ))
@@ -586,19 +642,25 @@ fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
 }
 
 fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
-    // Parse [ expr, expr, ... ]
+    // Parse [ expr, expr, ... ] or [expr for var in iter if cond]
     let start_span = state.tokens.expect(&Token::LeftBracket)?;
-    
-    let mut elements = Vec::new();
     
     // Handle empty list
     if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
         state.tokens.advance();
-        return Ok(Expr::new(ExprKind::List(elements), start_span));
+        return Ok(Expr::new(ExprKind::List(vec![]), start_span));
     }
     
-    // Parse first element
-    elements.push(super::parse_expr_recursive(state)?);
+    // Parse first element/expression
+    let first_expr = super::parse_expr_recursive(state)?;
+    
+    // Check if this is a list comprehension
+    if matches!(state.tokens.peek(), Some((Token::For, _))) {
+        return parse_list_comprehension_body(state, first_expr, start_span);
+    }
+    
+    // Regular list literal
+    let mut elements = vec![first_expr];
     
     // Parse remaining elements
     while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
@@ -616,6 +678,90 @@ fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
         .map_err(|_| anyhow::anyhow!("Expected ']' to close list literal"))?;
     
     Ok(Expr::new(ExprKind::List(elements), start_span))
+}
+
+fn parse_list_comprehension_body(
+    state: &mut ParserState,
+    expr: Expr,
+    start_span: Span,
+) -> Result<Expr> {
+    // Parse: for var in iter [if cond]
+    state.tokens.expect(&Token::For)?;
+    
+    // Parse variable
+    let var = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected variable name in list comprehension");
+    };
+    
+    state.tokens.expect(&Token::In)?;
+    
+    // Parse iterator
+    let iter = super::parse_expr_recursive(state)?;
+    
+    // Parse optional condition
+    let condition = if matches!(state.tokens.peek(), Some((Token::If, _))) {
+        state.tokens.advance();
+        Some(Box::new(super::parse_expr_recursive(state)?))
+    } else {
+        None
+    };
+    
+    state.tokens.expect(&Token::RightBracket)?;
+    
+    Ok(Expr::new(
+        ExprKind::ListComprehension {
+            element: Box::new(expr),
+            variable: var,
+            iterable: Box::new(iter),
+            condition,
+        },
+        start_span,
+    ))
+}
+
+fn parse_lambda_no_params(state: &mut ParserState) -> Result<Expr> {
+    // Parse || body
+    let start_span = state.tokens.expect(&Token::OrOr)?;
+    
+    // Parse the body
+    let body = Box::new(super::parse_expr_recursive(state)?);
+    
+    Ok(Expr::new(ExprKind::Lambda { 
+        params: vec![], 
+        body 
+    }, start_span))
+}
+
+fn parse_lambda_from_expr(state: &mut ParserState, expr: Expr, start_span: Span) -> Result<Expr> {
+    // Convert (x) => expr syntax
+    state.tokens.advance(); // consume =>
+    
+    // Convert the expression to a parameter
+    let param = match &expr.kind {
+        ExprKind::Identifier(name) => Param {
+            pattern: Pattern::Identifier(name.clone()),
+            ty: Type {
+                kind: TypeKind::Named("_".to_string()),
+                span: expr.span,
+            },
+            default_value: None,
+            is_mutable: false,
+            span: expr.span,
+        },
+        _ => bail!("Expected identifier in lambda parameter")
+    };
+    
+    // Parse the body
+    let body = Box::new(super::parse_expr_recursive(state)?);
+    
+    Ok(Expr::new(ExprKind::Lambda {
+        params: vec![param],
+        body,
+    }, start_span))
 }
 
 fn parse_lambda_expression(state: &mut ParserState) -> Result<Expr> {
@@ -661,7 +807,7 @@ fn parse_lambda_expression(state: &mut ParserState) -> Result<Expr> {
 }
 
 fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
-    // Parse struct Name { field: Type, ... }
+    // Parse struct Name<T> { field: Type, ... }
     let start_span = state.tokens.expect(&Token::Struct)?;
     
     // Get struct name
@@ -672,6 +818,9 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected struct name after 'struct'");
     };
+    
+    // Parse optional generic parameters
+    let type_params = parse_optional_generics(state)?;
     
     // Parse { fields }
     state.tokens.expect(&Token::LeftBrace)?;
@@ -712,7 +861,7 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
     
     Ok(Expr::new(ExprKind::Struct {
         name,
-        type_params: vec![],
+        type_params,
         fields: struct_fields,
         is_pub: false,
     }, start_span))
@@ -989,6 +1138,143 @@ fn parse_dataframe_literal(state: &mut ParserState) -> Result<Expr> {
     }).collect();
     
     Ok(Expr::new(ExprKind::DataFrame { columns: df_columns }, start_span))
+}
+
+fn parse_enum_definition(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.expect(&Token::Enum)?;
+    let name = parse_enum_name(state)?;
+    let type_params = parse_optional_generics(state)?;
+    let variants = parse_enum_variants(state)?;
+    
+    Ok(Expr::new(ExprKind::Enum {
+        name,
+        type_params,
+        variants,
+        is_pub: false,
+    }, start_span))
+}
+
+fn parse_enum_name(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            Ok(name)
+        }
+        Some((Token::Option, _)) => {
+            state.tokens.advance();
+            Ok("Option".to_string())
+        }
+        Some((Token::Result, _)) => {
+            state.tokens.advance();
+            Ok("Result".to_string())
+        }
+        _ => bail!("Expected enum name after 'enum'")
+    }
+}
+
+fn parse_optional_generics(state: &mut ParserState) -> Result<Vec<String>> {
+    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        parse_generic_params(state)
+    } else {
+        Ok(vec![])
+    }
+}
+
+fn parse_enum_variants(state: &mut ParserState) -> Result<Vec<EnumVariant>> {
+    state.tokens.expect(&Token::LeftBrace)?;
+    let mut variants = Vec::new();
+    
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        variants.push(parse_single_variant(state)?);
+        
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        }
+    }
+    
+    state.tokens.expect(&Token::RightBrace)?;
+    Ok(variants)
+}
+
+fn parse_single_variant(state: &mut ParserState) -> Result<EnumVariant> {
+    let variant_name = parse_variant_name(state)?;
+    let fields = parse_variant_fields(state)?;
+    
+    Ok(EnumVariant {
+        name: variant_name,
+        fields,
+    })
+}
+
+fn parse_variant_name(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            Ok(name)
+        }
+        Some((Token::Some, _)) => {
+            state.tokens.advance();
+            Ok("Some".to_string())
+        }
+        Some((Token::None, _)) => {
+            state.tokens.advance();
+            Ok("None".to_string())
+        }
+        Some((Token::Ok, _)) => {
+            state.tokens.advance();
+            Ok("Ok".to_string())
+        }
+        Some((Token::Err, _)) => {
+            state.tokens.advance();
+            Ok("Err".to_string())
+        }
+        _ => bail!("Expected variant name in enum")
+    }
+}
+
+fn parse_variant_fields(state: &mut ParserState) -> Result<Option<Vec<Type>>> {
+    if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        return Ok(None);
+    }
+    
+    state.tokens.advance();
+    let mut field_types = Vec::new();
+    
+    while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        field_types.push(super::utils::parse_type(state)?);
+        
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        }
+    }
+    
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(Some(field_types))
+}
+
+fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
+    // Parse <T, U, ...>
+    state.tokens.expect(&Token::Less)?;
+    let mut params = Vec::new();
+    
+    while !matches!(state.tokens.peek(), Some((Token::Greater, _))) {
+        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            params.push(name.clone());
+            state.tokens.advance();
+            
+            // Check for comma
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance();
+            }
+        } else {
+            bail!("Expected type parameter name");
+        }
+    }
+    
+    state.tokens.expect(&Token::Greater)?;
+    Ok(params)
 }
 
 fn parse_actor_definition(state: &mut ParserState) -> Result<Expr> {
