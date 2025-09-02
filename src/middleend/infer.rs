@@ -534,160 +534,206 @@ impl InferenceContext {
         }
     }
 
-    fn infer_method_call(
+    /// REFACTORED FOR COMPLEXITY REDUCTION
+    /// Original: 41 cyclomatic complexity, Target: <20
+    /// Strategy: Extract method-category specific handlers
+    pub fn infer_method_call(
         &mut self,
         receiver: &Expr,
         method: &str,
         args: &[Expr],
     ) -> Result<MonoType> {
         let receiver_ty = self.infer_expr(receiver)?;
+        self.add_method_constraint(&receiver_ty, method, args)?;
         
-        // Infer argument types
+        // Dispatch based on receiver type category (complexity: delegated)
+        match &receiver_ty {
+            MonoType::List(_) => self.infer_list_method(&receiver_ty, method, args),
+            MonoType::String => self.infer_string_method(&receiver_ty, method, args),
+            MonoType::DataFrame(_) | MonoType::Series(_) => {
+                self.infer_dataframe_method(&receiver_ty, method, args)
+            }
+            MonoType::Named(name) if name == "DataFrame" || name == "Series" => {
+                self.infer_dataframe_method(&receiver_ty, method, args)
+            }
+            _ => self.infer_generic_method(&receiver_ty, method, args),
+        }
+    }
+    
+    /// Extract method constraint addition (complexity ~3)
+    fn add_method_constraint(
+        &mut self, 
+        receiver_ty: &MonoType, 
+        method: &str, 
+        args: &[Expr]
+    ) -> Result<()> {
         let arg_types: Result<Vec<_>> = args.iter().map(|arg| self.infer_expr(arg)).collect();
         let arg_types = arg_types?;
         
-        // Add constraint for method call validation
         self.type_constraints.push(TypeConstraint::MethodCall(
             receiver_ty.clone(),
             method.to_string(),
             arg_types,
         ));
-
-        // For now, we'll handle some common methods
-        // In a complete implementation, we'd have a method resolution system
-        match (method, &receiver_ty) {
-            // List and String length methods
-            ("len" | "length", MonoType::List(_) | MonoType::String) => {
-                if !args.is_empty() {
-                    bail!("Method {} takes no arguments", method);
+        Ok(())
+    }
+    
+    /// Extract list method handling (complexity ~10)
+    fn infer_list_method(
+        &mut self, 
+        receiver_ty: &MonoType, 
+        method: &str, 
+        args: &[Expr]
+    ) -> Result<MonoType> {
+        if let MonoType::List(elem_ty) = receiver_ty {
+            match method {
+                "len" | "length" => {
+                    self.validate_no_args(method, args)?;
+                    Ok(MonoType::Int)
                 }
+                "push" => {
+                    self.validate_single_arg(method, args)?;
+                    let arg_ty = self.infer_expr(&args[0])?;
+                    self.unifier.unify(&arg_ty, elem_ty)?;
+                    Ok(MonoType::Unit)
+                }
+                "pop" => {
+                    self.validate_no_args(method, args)?;
+                    Ok(MonoType::Optional(elem_ty.clone()))
+                }
+                "sorted" | "reversed" | "unique" => {
+                    self.validate_no_args(method, args)?;
+                    Ok(MonoType::List(elem_ty.clone()))
+                }
+                "sum" => {
+                    self.validate_no_args(method, args)?;
+                    Ok(*elem_ty.clone())
+                }
+                "min" | "max" => {
+                    self.validate_no_args(method, args)?;
+                    Ok(MonoType::Optional(elem_ty.clone()))
+                }
+                _ => self.infer_generic_method(receiver_ty, method, args),
+            }
+        } else {
+            self.infer_generic_method(receiver_ty, method, args)
+        }
+    }
+    
+    /// Extract string method handling (complexity ~5)
+    fn infer_string_method(
+        &mut self, 
+        receiver_ty: &MonoType, 
+        method: &str, 
+        args: &[Expr]
+    ) -> Result<MonoType> {
+        match method {
+            "len" | "length" => {
+                self.validate_no_args(method, args)?;
                 Ok(MonoType::Int)
             }
-            ("push", MonoType::List(elem_ty)) => {
-                if args.len() != 1 {
-                    bail!("Method push takes exactly one argument");
-                }
-                let arg_ty = self.infer_expr(&args[0])?;
-                self.unifier.unify(&arg_ty, elem_ty)?;
-                Ok(MonoType::Unit)
+            "chars" => {
+                self.validate_no_args(method, args)?;
+                Ok(MonoType::List(Box::new(MonoType::String)))
             }
-            ("pop", MonoType::List(elem_ty)) => {
-                if !args.is_empty() {
-                    bail!("Method pop takes no arguments");
-                }
-                Ok(MonoType::Optional(elem_ty.clone()))
-            }
-            // Vec extension methods
-            ("sorted", MonoType::List(elem_ty)) => {
-                if !args.is_empty() {
-                    bail!("Method sorted takes no arguments");
-                }
-                Ok(MonoType::List(elem_ty.clone()))
-            }
-            ("sum", MonoType::List(elem_ty)) => {
-                if !args.is_empty() {
-                    bail!("Method sum takes no arguments");
-                }
-                // Sum returns the element type (assuming numeric)
-                Ok(*elem_ty.clone())
-            }
-            ("reversed", MonoType::List(elem_ty)) => {
-                if !args.is_empty() {
-                    bail!("Method reversed takes no arguments");
-                }
-                Ok(MonoType::List(elem_ty.clone()))
-            }
-            ("unique", MonoType::List(elem_ty)) => {
-                if !args.is_empty() {
-                    bail!("Method unique takes no arguments");
-                }
-                Ok(MonoType::List(elem_ty.clone()))
-            }
-            ("min", MonoType::List(elem_ty)) => {
-                if !args.is_empty() {
-                    bail!("Method min takes no arguments");
-                }
-                Ok(MonoType::Optional(elem_ty.clone()))
-            }
-            ("max", MonoType::List(elem_ty)) => {
-                if !args.is_empty() {
-                    bail!("Method max takes no arguments");
-                }
-                Ok(MonoType::Optional(elem_ty.clone()))
-            }
-            ("chars", MonoType::String) => {
-                if !args.is_empty() {
-                    bail!("Method chars takes no arguments");
-                }
-                Ok(MonoType::List(Box::new(MonoType::String))) // List of chars (as strings for now)
-            }
-            // DataFrame methods
-            ("filter" | "groupby" | "agg" | "select", MonoType::DataFrame(columns)) => {
-                // These methods return a DataFrame (preserve structure for now)
-                Ok(MonoType::DataFrame(columns.clone()))
-            }
-            ("filter" | "groupby" | "agg" | "select", MonoType::Named(name))
-                if name == "DataFrame" =>
-            {
-                // Fallback for untyped DataFrames
-                Ok(MonoType::Named("DataFrame".to_string()))
-            }
-            ("mean" | "std" | "sum" | "count", MonoType::DataFrame(_) | MonoType::Series(_)) => {
-                // These aggregation methods return numeric types
-                Ok(MonoType::Float)
-            }
-            ("mean" | "std" | "sum" | "count", MonoType::Named(name))
-                if name == "DataFrame" || name == "Series" =>
-            {
-                // Fallback for untyped DataFrames/Series
-                Ok(MonoType::Float)
-            }
-            ("col", MonoType::DataFrame(columns)) => {
-                // Column selection returns a Series with the column's type
-                if let Some(arg) = args.first() {
-                    if let ExprKind::Literal(Literal::String(col_name)) = &arg.kind {
-                        if let Some((_, col_type)) =
-                            columns.iter().find(|(name, _)| name == col_name)
-                        {
-                            return Ok(MonoType::Series(Box::new(col_type.clone())));
-                        }
-                    }
-                }
-                // Default to generic Series if column not found or not literal
-                Ok(MonoType::Series(Box::new(MonoType::Var(self.gen.fresh()))))
-            }
-            ("col", MonoType::Named(name)) if name == "DataFrame" => {
-                // Fallback for untyped DataFrames
-                Ok(MonoType::Series(Box::new(MonoType::Var(self.gen.fresh()))))
-            }
-            // Generic case - treat as a function call with receiver as first argument
-            _ => {
-                // Look up method in environment
-                if let Some(scheme) = self.env.lookup(method) {
-                    let method_ty = self.env.instantiate(scheme, &mut self.gen);
-
-                    // Create type for the method call (receiver is first argument)
-                    let result_ty = MonoType::Var(self.gen.fresh());
-                    let mut expected_func_ty = result_ty.clone();
-
-                    for arg in args.iter().rev() {
-                        let arg_ty = self.infer_expr(arg)?;
-                        expected_func_ty =
-                            MonoType::Function(Box::new(arg_ty), Box::new(expected_func_ty));
-                    }
-
-                    // Add receiver as first argument
-                    expected_func_ty =
-                        MonoType::Function(Box::new(receiver_ty), Box::new(expected_func_ty));
-
-                    self.unifier.unify(&method_ty, &expected_func_ty)?;
-                    Ok(self.unifier.apply(&result_ty))
-                } else {
-                    // Unknown method - for now just return a type variable
-                    Ok(MonoType::Var(self.gen.fresh()))
-                }
-            }
+            _ => self.infer_generic_method(receiver_ty, method, args),
         }
+    }
+    
+    /// Extract dataframe method handling (complexity ~8)
+    fn infer_dataframe_method(
+        &mut self, 
+        receiver_ty: &MonoType, 
+        method: &str, 
+        args: &[Expr]
+    ) -> Result<MonoType> {
+        match method {
+            "filter" | "groupby" | "agg" | "select" => {
+                match receiver_ty {
+                    MonoType::DataFrame(columns) => Ok(MonoType::DataFrame(columns.clone())),
+                    MonoType::Named(name) if name == "DataFrame" => {
+                        Ok(MonoType::Named("DataFrame".to_string()))
+                    }
+                    _ => Ok(MonoType::Named("DataFrame".to_string())),
+                }
+            }
+            "mean" | "std" | "sum" | "count" => Ok(MonoType::Float),
+            "col" => self.infer_column_selection(receiver_ty, args),
+            _ => self.infer_generic_method(receiver_ty, method, args),
+        }
+    }
+    
+    /// Extract column selection logic (complexity ~5)
+    fn infer_column_selection(
+        &mut self, 
+        receiver_ty: &MonoType, 
+        args: &[Expr]
+    ) -> Result<MonoType> {
+        if let MonoType::DataFrame(columns) = receiver_ty {
+            if let Some(arg) = args.first() {
+                if let ExprKind::Literal(Literal::String(col_name)) = &arg.kind {
+                    if let Some((_, col_type)) = columns.iter().find(|(name, _)| name == col_name) {
+                        return Ok(MonoType::Series(Box::new(col_type.clone())));
+                    }
+                }
+            }
+            Ok(MonoType::Series(Box::new(MonoType::Var(self.gen.fresh()))))
+        } else {
+            Ok(MonoType::Series(Box::new(MonoType::Var(self.gen.fresh()))))
+        }
+    }
+    
+    /// Extract generic method handling (complexity ~8)
+    fn infer_generic_method(
+        &mut self, 
+        receiver_ty: &MonoType, 
+        method: &str, 
+        args: &[Expr]
+    ) -> Result<MonoType> {
+        if let Some(scheme) = self.env.lookup(method) {
+            let method_ty = self.env.instantiate(scheme, &mut self.gen);
+            let result_ty = MonoType::Var(self.gen.fresh());
+            let expected_func_ty = self.build_method_function_type(receiver_ty, args, result_ty.clone())?;
+            
+            self.unifier.unify(&method_ty, &expected_func_ty)?;
+            Ok(self.unifier.apply(&result_ty))
+        } else {
+            Ok(MonoType::Var(self.gen.fresh()))
+        }
+    }
+    
+    /// Extract function type construction (complexity ~4)
+    fn build_method_function_type(
+        &mut self, 
+        receiver_ty: &MonoType, 
+        args: &[Expr], 
+        result_ty: MonoType
+    ) -> Result<MonoType> {
+        let mut expected_func_ty = result_ty;
+        
+        for arg in args.iter().rev() {
+            let arg_ty = self.infer_expr(arg)?;
+            expected_func_ty = MonoType::Function(Box::new(arg_ty), Box::new(expected_func_ty));
+        }
+        
+        // Add receiver as first argument
+        expected_func_ty = MonoType::Function(Box::new(receiver_ty.clone()), Box::new(expected_func_ty));
+        Ok(expected_func_ty)
+    }
+    
+    /// Helper methods for argument validation (complexity ~3 each)
+    fn validate_no_args(&self, method: &str, args: &[Expr]) -> Result<()> {
+        if !args.is_empty() {
+            bail!("Method {} takes no arguments", method);
+        }
+        Ok(())
+    }
+    
+    fn validate_single_arg(&self, method: &str, args: &[Expr]) -> Result<()> {
+        if args.len() != 1 {
+            bail!("Method {} takes exactly one argument", method);
+        }
+        Ok(())
     }
 
     fn infer_block(&mut self, exprs: &[Expr]) -> Result<MonoType> {
@@ -1271,55 +1317,86 @@ impl InferenceContext {
         }
     }
     
-    /// Infer types for all other expressions
-    fn infer_other_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+    /// REFACTORED FOR COMPLEXITY REDUCTION
+    /// Original: 38 cyclomatic complexity, Target: <20
+    /// Strategy: Group related expression types into category handlers
+    pub fn infer_other_expr(&mut self, expr: &Expr) -> Result<MonoType> {
         match &expr.kind {
+            // Special cases that need specific handling
             ExprKind::StringInterpolation { parts } => self.infer_string_interpolation(parts),
             ExprKind::Throw { expr } => self.infer_throw(expr),
             ExprKind::Ok { value } => self.infer_result_ok(value),
             ExprKind::Err { error } => self.infer_result_err(error),
-            ExprKind::Await { expr } => self.infer_await(expr),
-            ExprKind::Let { name, type_annotation: _, value, body, is_mutable } => {
-                self.infer_let(name, value, body, *is_mutable)
+            
+            // Control flow expressions (all return Unit)
+            ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } => {
+                self.infer_other_control_flow_expr(expr)
             }
-            ExprKind::Block(exprs) => self.infer_block(exprs),
-            ExprKind::Range { start, end, .. } => self.infer_range(start, end),
-            ExprKind::Pipeline { expr, stages } => self.infer_pipeline(expr, stages),
-            ExprKind::Import { .. } | ExprKind::Export { .. } => Ok(MonoType::Unit),
-            ExprKind::Module { body, .. } => self.infer_expr(body),
-            ExprKind::DataFrame { columns } => self.infer_dataframe(columns),
+            
+            // Definition expressions (all return Unit)
             ExprKind::Struct { .. } | ExprKind::Enum { .. } | ExprKind::Trait { .. } | 
-            ExprKind::Impl { .. } | ExprKind::Extension { .. } | ExprKind::Actor { .. } => {
-                Ok(MonoType::Unit)
+            ExprKind::Impl { .. } | ExprKind::Extension { .. } | ExprKind::Actor { .. } |
+            ExprKind::Import { .. } | ExprKind::Export { .. } => {
+                self.infer_other_definition_expr(expr)
             }
-            ExprKind::StructLiteral { name, fields: _ } => Ok(MonoType::Named(name.clone())),
+            
+            // Literal and access expressions
+            ExprKind::StructLiteral { .. } | ExprKind::ObjectLiteral { .. } | 
+            ExprKind::FieldAccess { .. } | ExprKind::IndexAccess { .. } | ExprKind::Slice { .. } => {
+                self.infer_other_literal_access_expr(expr)
+            }
+            
+            // Option expressions
+            ExprKind::Some { .. } | ExprKind::None => self.infer_other_option_expr(expr),
+            
+            // Async expressions
+            ExprKind::Await { .. } | ExprKind::AsyncBlock { .. } | ExprKind::Try { .. } => {
+                self.infer_other_async_expr(expr)
+            }
+            
+            // Actor expressions
+            ExprKind::Send { .. } | ExprKind::ActorSend { .. } | ExprKind::Ask { .. } | 
+            ExprKind::ActorQuery { .. } => {
+                self.infer_other_actor_expr(expr)
+            }
+            
+            // Assignment expressions
+            ExprKind::Assign { .. } | ExprKind::CompoundAssign { .. } |
+            ExprKind::PreIncrement { .. } | ExprKind::PostIncrement { .. } |
+            ExprKind::PreDecrement { .. } | ExprKind::PostDecrement { .. } => {
+                self.infer_other_assignment_expr(expr)
+            }
+            
+            // Remaining expressions
+            _ => self.infer_remaining_expr(expr),
+        }
+    }
+    
+    /// Extract control flow handling (complexity ~1)
+    fn infer_other_control_flow_expr(&mut self, _expr: &Expr) -> Result<MonoType> {
+        Ok(MonoType::Unit)  // All control flow returns Unit
+    }
+    
+    /// Extract definition handling (complexity ~1)  
+    fn infer_other_definition_expr(&mut self, _expr: &Expr) -> Result<MonoType> {
+        Ok(MonoType::Unit)  // All definitions return Unit
+    }
+    
+    /// Extract literal/access handling (complexity ~8)
+    fn infer_other_literal_access_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
+            ExprKind::StructLiteral { name, .. } => Ok(MonoType::Named(name.clone())),
             ExprKind::ObjectLiteral { fields } => self.infer_object_literal(fields),
-            ExprKind::FieldAccess { object, field: _ } => self.infer_field_access(object),
+            ExprKind::FieldAccess { object, .. } => self.infer_field_access(object),
             ExprKind::IndexAccess { object, index } => self.infer_index_access(object, index),
             ExprKind::Slice { object, .. } => self.infer_slice(object),
-            ExprKind::Send { actor, message } | ExprKind::ActorSend { actor, message } => {
-                self.infer_send(actor, message)
-            }
-            ExprKind::Ask { actor, message, timeout } => {
-                self.infer_ask(actor, message, timeout.as_deref())
-            }
-            ExprKind::ActorQuery { actor, message } => self.infer_ask(actor, message, None),
-            ExprKind::Command { .. } => Ok(MonoType::String),
-            ExprKind::Macro { name, args } => self.infer_macro(name, args),
-            ExprKind::Break { .. } | ExprKind::Continue { .. } | ExprKind::Return { .. } => {
-                Ok(MonoType::Unit)
-            }
-            ExprKind::Assign { target, value } => self.infer_assign(target, value),
-            ExprKind::CompoundAssign { target, op, value } => {
-                self.infer_compound_assign(target, *op, value)
-            }
-            ExprKind::PreIncrement { target } | ExprKind::PostIncrement { target } |
-            ExprKind::PreDecrement { target } | ExprKind::PostDecrement { target } => {
-                self.infer_increment_decrement(target)
-            }
-            ExprKind::DataFrameOperation { source, operation } => {
-                self.infer_dataframe_operation(source, operation)
-            }
+            _ => bail!("Unexpected literal/access expression"),
+        }
+    }
+    
+    /// Extract option handling (complexity ~5)
+    fn infer_other_option_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
             ExprKind::Some { value } => {
                 let inner_type = self.infer_expr(value)?;
                 Ok(MonoType::Optional(Box::new(inner_type)))
@@ -1328,10 +1405,67 @@ impl InferenceContext {
                 let type_var = MonoType::Var(self.gen.fresh());
                 Ok(MonoType::Optional(Box::new(type_var)))
             }
+            _ => bail!("Unexpected option expression"),
+        }
+    }
+    
+    /// Extract async handling (complexity ~5)
+    fn infer_other_async_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
+            ExprKind::Await { expr } => self.infer_await(expr),
             ExprKind::AsyncBlock { body } => self.infer_async_block(body),
             ExprKind::Try { expr } => {
                 let expr_type = self.infer(expr)?;
                 Ok(expr_type)
+            }
+            _ => bail!("Unexpected async expression"),
+        }
+    }
+    
+    /// Extract actor handling (complexity ~6)
+    fn infer_other_actor_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
+            ExprKind::Send { actor, message } | ExprKind::ActorSend { actor, message } => {
+                self.infer_send(actor, message)
+            }
+            ExprKind::Ask { actor, message, timeout } => {
+                self.infer_ask(actor, message, timeout.as_deref())
+            }
+            ExprKind::ActorQuery { actor, message } => self.infer_ask(actor, message, None),
+            _ => bail!("Unexpected actor expression"),
+        }
+    }
+    
+    /// Extract assignment handling (complexity ~6)
+    fn infer_other_assignment_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
+            ExprKind::Assign { target, value } => self.infer_assign(target, value),
+            ExprKind::CompoundAssign { target, op, value } => {
+                self.infer_compound_assign(target, *op, value)
+            }
+            ExprKind::PreIncrement { target } | ExprKind::PostIncrement { target } |
+            ExprKind::PreDecrement { target } | ExprKind::PostDecrement { target } => {
+                self.infer_increment_decrement(target)
+            }
+            _ => bail!("Unexpected assignment expression"),
+        }
+    }
+    
+    /// Extract remaining expressions (complexity ~8)
+    fn infer_remaining_expr(&mut self, expr: &Expr) -> Result<MonoType> {
+        match &expr.kind {
+            ExprKind::Let { name, value, body, is_mutable, .. } => {
+                self.infer_let(name, value, body, *is_mutable)
+            }
+            ExprKind::Block(exprs) => self.infer_block(exprs),
+            ExprKind::Range { start, end, .. } => self.infer_range(start, end),
+            ExprKind::Pipeline { expr, stages } => self.infer_pipeline(expr, stages),
+            ExprKind::Module { body, .. } => self.infer_expr(body),
+            ExprKind::DataFrame { columns } => self.infer_dataframe(columns),
+            ExprKind::Command { .. } => Ok(MonoType::String),
+            ExprKind::Macro { name, args } => self.infer_macro(name, args),
+            ExprKind::DataFrameOperation { source, operation } => {
+                self.infer_dataframe_operation(source, operation)
             }
             _ => bail!("Unknown expression type in inference"),
         }
