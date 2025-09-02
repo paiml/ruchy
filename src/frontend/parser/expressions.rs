@@ -96,6 +96,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             // Parse let statement/expression
             parse_let_statement(state)
         }
+        Token::Var => {
+            // Parse var statement (implicitly mutable)
+            parse_var_statement(state)
+        }
         Token::If => {
             // Parse if expression
             parse_if_expression(state)
@@ -409,6 +413,82 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
         },
         start_span.merge(end_span),
     ))
+}
+
+/// Parse var statement: var name [: type] = value
+/// var is implicitly mutable (like let mut)
+fn parse_var_statement(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.expect(&Token::Var)?;
+    
+    // var is always mutable
+    let is_mutable = true;
+    
+    // Parse variable name or destructuring pattern
+    let pattern = match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            let name = name.clone();
+            state.tokens.advance();
+            Pattern::Identifier(name)
+        }
+        Some((Token::LeftParen, _)) => {
+            // Parse tuple destructuring: (x, y) = (1, 2)
+            parse_tuple_pattern(state)?
+        }
+        Some((Token::LeftBracket, _)) => {
+            // Parse list destructuring: [a, b] = [1, 2]
+            parse_list_pattern(state)?
+        }
+        _ => bail!("Expected identifier or pattern after 'var'")
+    };
+    
+    // Parse optional type annotation
+    let type_annotation = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance();
+        Some(super::utils::parse_type(state)?)
+    } else {
+        None
+    };
+    
+    // Parse '=' token
+    state.tokens.expect(&Token::Equal)?;
+    
+    // Parse value expression
+    let value = Box::new(super::parse_expr_recursive(state)?);
+    
+    // var doesn't support 'in' syntax, just creates a mutable binding
+    let body = Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value.span));
+    
+    let end_span = value.span;
+    
+    // Handle different pattern types
+    match &pattern {
+        Pattern::Identifier(name) => {
+            // Simple identifier binding
+            Ok(Expr::new(
+                ExprKind::Let {
+                    name: name.clone(),
+                    type_annotation,
+                    value,
+                    body,
+                    is_mutable,
+                },
+                start_span.merge(end_span),
+            ))
+        }
+        _ => {
+            // For all other patterns (tuple, list, etc), use LetPattern variant
+            Ok(Expr::new(
+                ExprKind::LetPattern {
+                    pattern,
+                    type_annotation,
+                    value,
+                    body,
+                    is_mutable,
+                },
+                start_span.merge(end_span),
+            ))
+        }
+    }
 }
 
 fn parse_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
