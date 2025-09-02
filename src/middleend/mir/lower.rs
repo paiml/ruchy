@@ -366,6 +366,10 @@ impl LoweringContext {
                 let mir_types: Vec<_> = types.iter().map(|t| self.ast_to_mir_type(t)).collect();
                 Type::Tuple(mir_types)
             }
+            TypeKind::Reference { inner, .. } => {
+                // For MIR, treat references as the inner type for now
+                self.ast_to_mir_type(inner)
+            }
         }
     }
 

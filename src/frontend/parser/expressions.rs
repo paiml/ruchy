@@ -131,15 +131,37 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
                 state.tokens.advance();
                 Ok(Expr::new(ExprKind::Literal(Literal::Unit), span_clone))
             } else {
-                // Parse grouped expression or lambda with parentheses
-                let expr = super::parse_expr_recursive(state)?;
-                state.tokens.expect(&Token::RightParen)?;
+                // Parse first expression
+                let first_expr = super::parse_expr_recursive(state)?;
                 
-                // Check if this is a lambda: (x) => expr
-                if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
-                    parse_lambda_from_expr(state, expr, span_clone)
+                // Check if we have a comma (tuple) or just closing paren (grouped expr)
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    // This is a tuple, parse remaining elements
+                    let mut elements = vec![first_expr];
+                    
+                    while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                        state.tokens.advance(); // consume comma
+                        
+                        // Check for trailing comma before closing paren
+                        if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                            break;
+                        }
+                        
+                        elements.push(super::parse_expr_recursive(state)?);
+                    }
+                    
+                    state.tokens.expect(&Token::RightParen)?;
+                    Ok(Expr::new(ExprKind::Tuple(elements), span_clone))
                 } else {
-                    Ok(expr)
+                    // Just a grouped expression
+                    state.tokens.expect(&Token::RightParen)?;
+                    
+                    // Check if this is a lambda: (x) => expr
+                    if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+                        parse_lambda_from_expr(state, first_expr, span_clone)
+                    } else {
+                        Ok(first_expr)
+                    }
                 }
             }
         }
@@ -224,6 +246,36 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             // Parse enum definition
             parse_enum_definition(state)
         }
+        Token::Some => {
+            // Parse Some(..) constructor
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Identifier("Some".to_string()), span_clone))
+        }
+        Token::None => {
+            // Parse None constructor
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Identifier("None".to_string()), span_clone))
+        }
+        Token::Ok => {
+            // Parse Ok(..) constructor
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Identifier("Ok".to_string()), span_clone))
+        }
+        Token::Err => {
+            // Parse Err(..) constructor
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Identifier("Err".to_string()), span_clone))
+        }
+        Token::Result => {
+            // Parse Result type constructor
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Identifier("Result".to_string()), span_clone))
+        }
+        Token::Option => {
+            // Parse Option type constructor
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Identifier("Option".to_string()), span_clone))
+        }
         _ => bail!("Unexpected token: {:?}", token_clone),
     }
 }
@@ -240,14 +292,22 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
         false
     };
     
-    // Parse variable name
-    let name = match state.tokens.peek() {
+    // Parse variable name or destructuring pattern
+    let pattern = match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
-            name
+            Pattern::Identifier(name)
         }
-        _ => bail!("Expected identifier after 'let{}'", if is_mutable { " mut" } else { "" })
+        Some((Token::LeftParen, _)) => {
+            // Parse tuple destructuring: (x, y) = (1, 2)
+            parse_tuple_pattern(state)?
+        }
+        Some((Token::LeftBracket, _)) => {
+            // Parse list destructuring: [a, b] = [1, 2]
+            parse_list_pattern(state)?
+        }
+        _ => bail!("Expected identifier or pattern after 'let{}'", if is_mutable { " mut" } else { "" })
     };
     
     // Parse optional type annotation
@@ -273,10 +333,75 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
         Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value.span))
     };
     
+    // Convert pattern to name for simple cases
+    let _name = match &pattern {
+        Pattern::Identifier(name) => name.clone(),
+        Pattern::Tuple(patterns) => {
+            // For now, use the first identifier from tuple destructuring
+            patterns.first()
+                .and_then(|p| match p {
+                    Pattern::Identifier(name) => Some(name.clone()),
+                    _ => None,
+                })
+                .unwrap_or_else(|| "__destructured".to_string())
+        }
+        Pattern::List(patterns) => {
+            // For now, use the first identifier from list destructuring
+            patterns.first()
+                .and_then(|p| match p {
+                    Pattern::Identifier(name) => Some(name.clone()),
+                    _ => None,
+                })
+                .unwrap_or_else(|| "__destructured".to_string())
+        }
+        _ => "__destructured".to_string(), // Placeholder for complex patterns
+    };
+
     let end_span = body.span;
     Ok(Expr::new(
         ExprKind::Let {
-            name,
+            name: match &pattern {
+                Pattern::Identifier(name) => name.clone(),
+                Pattern::Tuple(_patterns) => {
+                    // For tuple destructuring, use LetPattern variant instead
+                    return Ok(Expr::new(
+                        ExprKind::LetPattern {
+                            pattern,
+                            type_annotation,
+                            value,
+                            body,
+                            is_mutable,
+                        },
+                        start_span.merge(end_span),
+                    ));
+                }
+                Pattern::List(_patterns) => {
+                    // For list destructuring, use LetPattern variant instead
+                    return Ok(Expr::new(
+                        ExprKind::LetPattern {
+                            pattern,
+                            type_annotation,
+                            value,
+                            body,
+                            is_mutable,
+                        },
+                        start_span.merge(end_span),
+                    ));
+                }
+                _ => {
+                    // For complex patterns, use LetPattern variant instead
+                    return Ok(Expr::new(
+                        ExprKind::LetPattern {
+                            pattern,
+                            type_annotation,
+                            value,
+                            body,
+                            is_mutable,
+                        },
+                        start_span.merge(end_span),
+                    ));
+                }
+            },
             type_annotation,
             value,
             body,
@@ -284,6 +409,55 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
         },
         start_span.merge(end_span),
     ))
+}
+
+fn parse_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
+    state.tokens.expect(&Token::LeftParen)?;
+    let mut patterns = Vec::new();
+    
+    while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            patterns.push(Pattern::Identifier(name.clone()));
+            state.tokens.advance();
+        } else {
+            bail!("Expected identifier in tuple pattern");
+        }
+        
+        // Only consume comma if not at end
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+            // If we hit RightParen after comma, break (trailing comma case)
+            if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                break;
+            }
+        } else if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+            bail!("Expected ',' or ')' in tuple pattern");
+        }
+    }
+    
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(Pattern::Tuple(patterns))
+}
+
+fn parse_list_pattern(state: &mut ParserState) -> Result<Pattern> {
+    state.tokens.expect(&Token::LeftBracket)?;
+    let mut patterns = Vec::new();
+    
+    while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            patterns.push(Pattern::Identifier(name.clone()));
+            state.tokens.advance();
+        } else {
+            bail!("Expected identifier in list pattern");
+        }
+        
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        }
+    }
+    
+    state.tokens.expect(&Token::RightBracket)?;
+    Ok(Pattern::List(patterns))
 }
 
 /// Parse if expression: if condition { `then_branch` } [else { `else_branch` }]
@@ -374,7 +548,7 @@ fn parse_match_arms(state: &mut ParserState) -> Result<Vec<MatchArm>> {
 /// Complexity: <5 (simple sequential parsing)
 fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
     let start_span = state.tokens.peek().map(|(_, s)| *s)
-        .unwrap_or(Span::default());
+        .unwrap_or_default();
     
     // Parse pattern
     let pattern = parse_match_pattern(state)?;
@@ -637,7 +811,15 @@ fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
             state.tokens.advance();
             Ok(Pattern::Wildcard)
         }
-        _ => bail!("Expected identifier or underscore in for pattern")
+        Token::LeftParen => {
+            // Parse tuple pattern: (x, y)
+            parse_tuple_pattern(state)
+        }
+        Token::LeftBracket => {
+            // Parse list pattern: [x, y]
+            parse_list_pattern(state)
+        }
+        _ => bail!("Expected identifier, underscore, or destructuring pattern in for loop")
     }
 }
 

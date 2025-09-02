@@ -488,6 +488,7 @@ pub enum TypeKind {
     Function { params: Vec<Type>, ret: Box<Type> },
     DataFrame { columns: Vec<(String, Type)> },
     Series { dtype: Box<Type> },
+    Reference { is_mut: bool, inner: Box<Type> },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1385,6 +1386,13 @@ mod tests {
                 TypeKind::Function { params, .. } => assert!(!params.is_empty()),
                 TypeKind::DataFrame { columns } => assert!(!columns.is_empty()),
                 TypeKind::Tuple(ref types) => assert!(!types.is_empty()),
+                TypeKind::Reference { is_mut: _, ref inner } => {
+                    // Reference types should have a valid inner type
+                    match inner.kind {
+                        TypeKind::Named(ref name) => assert!(!name.is_empty()),
+                        _ => {}
+                    }
+                }
             }
         }
     }

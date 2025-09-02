@@ -67,7 +67,7 @@ impl Transpiler {
                     "int" => quote! { i64 },
                     "float" => quote! { f64 },
                     "bool" => quote! { bool },
-                    "str" => quote! { &str },  // Fix: Ruchy str -> Rust &str
+                    "str" => quote! { str },  // Plain str type (will be used with & for references)
                     "string" | "String" => quote! { String },
                     "char" => quote! { char },
                     // PERFORMANCE OPTIMIZATION: Use Rust type inference instead of Any
@@ -116,6 +116,26 @@ impl Transpiler {
             TypeKind::Series { .. } => {
                 // Series maps to Polars Series type
                 Ok(quote! { polars::prelude::Series })
+            }
+            TypeKind::Reference { is_mut, inner } => {
+                // Special case: &str should not become &&str
+                if let TypeKind::Named(name) = &inner.kind {
+                    if name == "str" {
+                        // str is already a reference type in Rust
+                        return if *is_mut {
+                            Ok(quote! { &mut str })
+                        } else {
+                            Ok(quote! { &str })
+                        };
+                    }
+                }
+                
+                let inner_tokens = self.transpile_type(inner)?;
+                if *is_mut {
+                    Ok(quote! { &mut #inner_tokens })
+                } else {
+                    Ok(quote! { &#inner_tokens })
+                }
             }
         }
     }
