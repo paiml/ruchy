@@ -1,0 +1,569 @@
+{
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "patch": 0
+  },
+  "metadata": {
+    "session_id": "ruchy-session-1756789125",
+    "created_at": "2025-09-02T04:58:45.977815288+00:00",
+    "ruchy_version": "1.30.1",
+    "student_id": null,
+    "assignment_id": null,
+    "tags": [
+      "interactive"
+    ]
+  },
+  "environment": {
+    "seed": 0,
+    "feature_flags": [],
+    "resource_limits": {
+      "heap_mb": 100,
+      "stack_kb": 8192,
+      "cpu_ms": 5000
+    }
+  },
+  "timeline": [
+    {
+      "id": 1,
+      "timestamp_ns": 95450,
+      "event": {
+        "Input": {
+          "text": "let score = 85",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 2,
+      "timestamp_ns": 132962,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"85\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 3,
+      "timestamp_ns": 136446,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 4,
+      "timestamp_ns": 137701,
+      "event": {
+        "Input": {
+          "text": "if score >= 90 {",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 5,
+      "timestamp_ns": 138691,
+      "event": {
+        "Input": {
+          "text": "  \"A\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 6,
+      "timestamp_ns": 139828,
+      "event": {
+        "Input": {
+          "text": "} else if score >= 80 {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 7,
+      "timestamp_ns": 140604,
+      "event": {
+        "Input": {
+          "text": "  \"B\" ",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 8,
+      "timestamp_ns": 141537,
+      "event": {
+        "Input": {
+          "text": "} else if score >= 70 {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 9,
+      "timestamp_ns": 142000,
+      "event": {
+        "Input": {
+          "text": "  \"C\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 10,
+      "timestamp_ns": 142574,
+      "event": {
+        "Input": {
+          "text": "} else {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 11,
+      "timestamp_ns": 142933,
+      "event": {
+        "Input": {
+          "text": "  \"F\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 12,
+      "timestamp_ns": 143233,
+      "event": {
+        "Input": {
+          "text": "}",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 13,
+      "timestamp_ns": 143449,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 14,
+      "timestamp_ns": 187274,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"B\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 15,
+      "timestamp_ns": 189964,
+      "event": {
+        "Input": {
+          "text": "let weather = \"sunny\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 16,
+      "timestamp_ns": 195289,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"sunny\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 17,
+      "timestamp_ns": 197516,
+      "event": {
+        "Input": {
+          "text": "if weather == \"sunny\" {",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 18,
+      "timestamp_ns": 199293,
+      "event": {
+        "Input": {
+          "text": "  \"Go outside!\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 19,
+      "timestamp_ns": 199725,
+      "event": {
+        "Input": {
+          "text": "} else {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 20,
+      "timestamp_ns": 200389,
+      "event": {
+        "Input": {
+          "text": "  \"Stay inside\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 21,
+      "timestamp_ns": 200727,
+      "event": {
+        "Input": {
+          "text": "}",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 22,
+      "timestamp_ns": 200889,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 23,
+      "timestamp_ns": 210127,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Go outside!\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 24,
+      "timestamp_ns": 211830,
+      "event": {
+        "Input": {
+          "text": "let x = 0",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 25,
+      "timestamp_ns": 216522,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"0\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 26,
+      "timestamp_ns": 218285,
+      "event": {
+        "Input": {
+          "text": "if x == 0 {",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 27,
+      "timestamp_ns": 218987,
+      "event": {
+        "Input": {
+          "text": "  \"zero\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 28,
+      "timestamp_ns": 219647,
+      "event": {
+        "Input": {
+          "text": "} else if x > 0 {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 29,
+      "timestamp_ns": 220288,
+      "event": {
+        "Input": {
+          "text": "  \"positive\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 30,
+      "timestamp_ns": 220814,
+      "event": {
+        "Input": {
+          "text": "} else {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 31,
+      "timestamp_ns": 221416,
+      "event": {
+        "Input": {
+          "text": "  \"negative\" ",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 32,
+      "timestamp_ns": 221623,
+      "event": {
+        "Input": {
+          "text": "}",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 33,
+      "timestamp_ns": 221793,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 34,
+      "timestamp_ns": 233585,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"zero\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 35,
+      "timestamp_ns": 235213,
+      "event": {
+        "Input": {
+          "text": "let age = 25",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 36,
+      "timestamp_ns": 239090,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"25\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 37,
+      "timestamp_ns": 241061,
+      "event": {
+        "Input": {
+          "text": "if age >= 18 && age < 65 {",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 38,
+      "timestamp_ns": 241837,
+      "event": {
+        "Input": {
+          "text": "  \"adult\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 39,
+      "timestamp_ns": 242234,
+      "event": {
+        "Input": {
+          "text": "} else {",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 40,
+      "timestamp_ns": 242765,
+      "event": {
+        "Input": {
+          "text": "  \"not adult\"",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 41,
+      "timestamp_ns": 243108,
+      "event": {
+        "Input": {
+          "text": "}",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 42,
+      "timestamp_ns": 243257,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Paste"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 43,
+      "timestamp_ns": 254609,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"adult\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 44,
+      "timestamp_ns": 257019,
+      "event": {
+        "Input": {
+          "text": "true && false || true",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 45,
+      "timestamp_ns": 268662,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    }
+  ],
+  "checkpoints": {}
+}

@@ -1,0 +1,36 @@
+let score = 85
+
+if score >= 90 {
+  "A"
+} else if score >= 80 {
+  "B" 
+} else if score >= 70 {
+  "C"
+} else {
+  "F"
+}
+
+let weather = "sunny"
+if weather == "sunny" {
+  "Go outside!"
+} else {
+  "Stay inside"
+}
+
+let x = 0
+if x == 0 {
+  "zero"
+} else if x > 0 {
+  "positive"
+} else {
+  "negative" 
+}
+
+let age = 25
+if age >= 18 && age < 65 {
+  "adult"
+} else {
+  "not adult"
+}
+
+true && false || true

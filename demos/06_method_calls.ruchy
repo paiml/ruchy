@@ -1,0 +1,22 @@
+"hello".upper()
+"WORLD".lower()
+"  spaces  ".trim()
+
+[1, 2, 3].len()
+[1, 2, 3, 4, 5].head()
+
+let text = "Hello World"
+text.len()
+
+let arr = [10, 20, 30, 40]
+arr.len()
+
+"hello world".split(" ")
+
+let name = "alice"
+name.upper()
+
+"test string".replace("test", "demo")
+
+[5, 10, 15].map(fun(x) { x * 2 })
+[1, 2, 3, 4, 5].filter(fun(x) { x > 3 })

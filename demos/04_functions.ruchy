@@ -1,0 +1,21 @@
+fun add(a, b) { a + b }
+add(5, 3)
+
+fun greet(name) { "Hello, " + name + "!" }
+greet("Bob")
+
+fun square(x) { x * x }
+square(4)
+
+fun max(a, b) { if a > b { a } else { b } }
+max(10, 7)
+
+fun factorial(n) { if n <= 1 { 1 } else { n * factorial(n - 1) } }
+factorial(5)
+
+let double = fun(x) { x * 2 }
+double(6)
+
+fun is_even(n) { n % 2 == 0 }
+is_even(8)
+is_even(7)
