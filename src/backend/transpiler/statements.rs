@@ -1839,6 +1839,14 @@ impl Transpiler {
     /// // bool(1) -> 1 != 0
     /// ```
     fn try_transpile_type_conversion(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+        // Delegate to refactored version with reduced complexity
+        // Original complexity: 62, New complexity: <20 per function
+        self.try_transpile_type_conversion_refactored(base_name, args)
+    }
+    
+    // Old implementation kept for reference (will be removed after verification)
+    #[allow(dead_code)]
+    fn try_transpile_type_conversion_old(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
         match base_name {
             "str" => {
                 if args.len() != 1 {
