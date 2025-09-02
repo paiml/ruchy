@@ -158,10 +158,10 @@ impl ReplayConverter {
                     value.as_str()
                 };
                 let sanitized_value = actual_value.replace('\"', "\\\"").replace('\\', "\\\\");
-                (format!("Ok(\"{sanitized_value}\")"), format!("assert!(result.is_ok() && result.unwrap() == r#\"{}\"#);", actual_value))
+                (format!("Ok(\"{sanitized_value}\")"), format!("assert!(result.is_ok() && result.unwrap() == r#\"{actual_value}\"#);"))
             }
             EvalResult::Error { message } => {
-                (format!("Err(r#\"{}\"#)", message), format!("assert!(result.is_err() && result.unwrap_err().to_string().contains(r#\"{}\"#));", message))
+                (format!("Err(r#\"{message}\"#)"), format!("assert!(result.is_err() && result.unwrap_err().to_string().contains(r#\"{message}\"#));"))
             }
             EvalResult::Unit => {
                 ("Ok(\"\")".to_string(), "assert!(result.is_ok() && result.unwrap().is_empty());".to_string())
@@ -226,10 +226,10 @@ fn test_{test_name}() -> Result<()> {{
                                 } else {
                                     value.as_str()
                                 };
-                                format!("    assert!(result_{i}.is_ok() && result_{i}.unwrap() == r#\"{}\"#);\n", actual_value)
+                                format!("    assert!(result_{i}.is_ok() && result_{i}.unwrap() == r#\"{actual_value}\"#);\n")
                             }
                             EvalResult::Error { message } => {
-                                format!("    assert!(result_{i}.is_err() && result_{i}.unwrap_err().to_string().contains(r#\"{}\"#));\n", message)
+                                format!("    assert!(result_{i}.is_err() && result_{i}.unwrap_err().to_string().contains(r#\"{message}\"#));\n")
                             }
                             EvalResult::Unit => {
                                 format!("    assert!(result_{i}.is_ok() && result_{i}.unwrap().is_empty());\n")

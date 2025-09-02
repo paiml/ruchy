@@ -20,7 +20,7 @@ fn test_completer_trait_basic_functionality() {
     assert!(result.is_ok(), "Completer should not fail on basic input");
     
     let (_start, pairs) = result.unwrap();
-    assert!(start <= pos, "Start position should be valid");
+    assert!(_start <= pos, "Start position should be valid");
     assert!(!pairs.is_empty(), "Should return some completions for string methods");
     
     // Check that we get string method completions

@@ -103,7 +103,7 @@ impl Transpiler {
         self.transpile_expr(expr)
     }
 
-    /// Check if AST contains HashMap operations requiring std::collections::HashMap import
+    /// Check if AST contains `HashMap` operations requiring `std::collections::HashMap` import
     fn contains_hashmap(expr: &Expr) -> bool {
         use crate::frontend::ast::{ExprKind, Literal};
         
@@ -126,7 +126,7 @@ impl Transpiler {
             ExprKind::If { condition, then_branch, else_branch } => {
                 Self::contains_hashmap(condition) || 
                 Self::contains_hashmap(then_branch) ||
-                else_branch.as_ref().map_or(false, |e| Self::contains_hashmap(e))
+                else_branch.as_ref().is_some_and(|e| Self::contains_hashmap(e))
             }
             ExprKind::Binary { left, right, .. } => {
                 Self::contains_hashmap(left) || Self::contains_hashmap(right)

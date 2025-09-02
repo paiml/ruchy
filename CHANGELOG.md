@@ -4,6 +4,42 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.31.3] - 2025-01-15
+
+### 🚨 **CRITICAL EMERGENCY FIX - Match Expression Restoration**
+
+#### **MAJOR SUCCESS: Pattern Matching Fully Restored with TDG Compliance**
+- **ROOT CAUSE**: Match expressions (`Token::Match`) completely removed by dead code elimination
+- **IMPACT**: Pattern matching - fundamental Rust-style programming feature - completely broken  
+- **SOLUTION**: TDD + TDG restoration with low-complexity modular implementation
+- **RESULTS**: 0/10 failing → 10/10 passing tests (100% TDD success)
+
+#### **Implementation Excellence (TDG Compliance)**
+- **parse_match_expression**: Main function, complexity <10 ✅
+- **parse_match_arms**: Helper function, complexity <5 ✅
+- **parse_single_match_arm**: Helper function, complexity <5 ✅
+- **parse_match_pattern**: Pattern parser, complexity <5 ✅
+- **parse_constructor_pattern**: Some/None/Ok/Err patterns, complexity <5 ✅
+- **Total functions**: 7 small functions instead of 1 complex function
+- **TDG Score**: Maintains A- grade (≥85 points) ✅
+
+#### **Match Expression Features Restored**
+- Basic match: `match x { 1 => "one", _ => "other" }`
+- Pattern guards: `match x { n if n > 0 => "positive", _ => "zero" }`
+- Variable patterns: `match result { Some(x) => x + 1, None => 0 }`
+- Multiple patterns: `match x { 1 | 2 | 3 => "small", _ => "large" }`
+- Nested matches: `match x { Some(y) => match y { 0 => "none", _ => "some" } }`
+- Literal patterns: Integer, String, Bool, underscore wildcards
+- Constructor patterns: Some(x), None, Ok(value), Err(e)
+
+#### **Test Coverage**
+- 10 comprehensive TDD tests covering all pattern matching scenarios
+- Transpilation verified - generates valid Rust match expressions
+- Library test suite: `test_compile_match` passing
+- Full Some/None Option pattern support with Token::Some and Token::None
+
+**Emergency justified: Pattern matching is fundamental to idiomatic Rust-style programming**
+
 ## [1.31.2] - 2025-01-15
 
 ### 🚨 **CRITICAL EMERGENCY FIX - Parser Restoration**
