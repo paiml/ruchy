@@ -382,7 +382,7 @@ impl Transpiler {
                         if exprs.is_empty() {
                             Ok(quote! {})
                         } else {
-                            Ok(quote! { #(#statements;)* })
+                            Ok(quote! { #(#statements)* })
                         }
                     }
                 },
@@ -1768,18 +1768,8 @@ impl Transpiler {
                     // For identifiers, we can't know the type at compile time
                     // Use a runtime check to decide format
                     let arg = &all_args[0];
-                    Ok(Some(quote! {
-                        {
-                            let value = #arg;
-                            // Check if it's a String type at runtime
-                            if std::any::type_name_of_val(&value).contains("String") || 
-                               std::any::type_name_of_val(&value).contains("&str") {
-                                #func_tokens!("{}", value)
-                            } else {
-                                #func_tokens!("{:?}", value)
-                            }
-                        }
-                    }))
+                    let printing_logic = self.generate_value_printing_tokens(quote! { #arg }, quote! { #func_tokens });
+                    Ok(Some(printing_logic))
                 }
                 _ => {
                     // Other types - use Debug format for complex types
