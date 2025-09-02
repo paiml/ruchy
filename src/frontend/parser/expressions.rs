@@ -1095,13 +1095,19 @@ fn parse_dataframe_literal(state: &mut ParserState) -> Result<Expr> {
     
     // Parse column definitions: "name" => [values]
     while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-        // Parse column name (string literal)
-        let col_name = if let Some((Token::String(name), _)) = state.tokens.peek() {
-            let name = name.clone();
-            state.tokens.advance();
-            name
-        } else {
-            bail!("Expected column name as string literal in dataframe");
+        // Parse column name (string literal or identifier)
+        let col_name = match state.tokens.peek() {
+            Some((Token::String(name), _)) => {
+                let name = name.clone();
+                state.tokens.advance();
+                name
+            }
+            Some((Token::Identifier(name), _)) => {
+                let name = name.clone();
+                state.tokens.advance();
+                name
+            }
+            _ => bail!("Expected column name (string or identifier) in dataframe")
         };
         
         // Expect =>
@@ -1300,7 +1306,7 @@ fn parse_actor_definition(state: &mut ParserState) -> Result<Expr> {
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         match state.tokens.peek() {
             Some((Token::State, _)) => {
-                // Parse state field
+                // Parse state field with 'state' keyword
                 state.tokens.advance();
                 if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
                     let field = field_name.clone();
@@ -1322,50 +1328,49 @@ fn parse_actor_definition(state: &mut ParserState) -> Result<Expr> {
                 }
             }
             Some((Token::Receive, _)) => {
-                // Parse receive handler
+                // Parse receive block: receive { handler => value, ... }
                 state.tokens.advance();
-                if let Some((Token::Identifier(handler_name), _)) = state.tokens.peek() {
-                    handlers.push(handler_name.clone());
+                state.tokens.expect(&Token::LeftBrace)?;
+                
+                // Parse handler mappings
+                while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                    if let Some((Token::Identifier(handler_name), _)) = state.tokens.peek() {
+                        handlers.push(handler_name.clone());
+                        state.tokens.advance();
+                        
+                        // Skip => value for now
+                        state.tokens.expect(&Token::FatArrow)?;
+                        super::parse_expr_recursive(state)?; // Skip the value
+                        
+                        // Optional comma
+                        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                            state.tokens.advance();
+                        }
+                    } else {
+                        bail!("Expected handler name in receive block");
+                    }
+                }
+                
+                state.tokens.expect(&Token::RightBrace)?;
+            }
+            Some((Token::Identifier(_), _)) => {
+                // Parse bare field definition: field: Type,
+                if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
+                    let field = field_name.clone();
                     state.tokens.advance();
                     
-                    // Skip handler body for now
-                    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-                        // Skip parameters
-                        let mut depth = 0;
-                        while state.tokens.peek().is_some() {
-                            match state.tokens.peek() {
-                                Some((Token::LeftParen, _)) => depth += 1,
-                                Some((Token::RightParen, _)) => {
-                                    depth -= 1;
-                                    if depth == 0 {
-                                        state.tokens.advance();
-                                        break;
-                                    }
-                                }
-                                _ => {}
-                            }
-                            state.tokens.advance();
-                        }
+                    // Parse : Type
+                    state.tokens.expect(&Token::Colon)?;
+                    let field_type = super::utils::parse_type(state)?;
+                    
+                    // Optional comma
+                    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                        state.tokens.advance();
                     }
                     
-                    // Skip body
-                    if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
-                        let mut depth = 0;
-                        while state.tokens.peek().is_some() {
-                            match state.tokens.peek() {
-                                Some((Token::LeftBrace, _)) => depth += 1,
-                                Some((Token::RightBrace, _)) => {
-                                    depth -= 1;
-                                    if depth == 0 {
-                                        state.tokens.advance();
-                                        break;
-                                    }
-                                }
-                                _ => {}
-                            }
-                            state.tokens.advance();
-                        }
-                    }
+                    state_fields.push((field, field_type, None));
+                } else {
+                    bail!("Expected field name in actor");
                 }
             }
             _ => {
