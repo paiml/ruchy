@@ -76,11 +76,14 @@ impl Transpiler {
     /// This eliminates code duplication and ensures consistent Unit type handling
     fn generate_result_printing_tokens(&self) -> TokenStream {
         quote! {
-            match &result {
-                "()" => {}, // Don't print Unit type (check first)
-                s if std::any::type_name_of_val(&s).contains("String") || 
-                     std::any::type_name_of_val(&s).contains("&str") => println!("{}", s),
-                _ => println!("{:?}", result)
+            // Check the type name first to avoid Unit type Display error
+            if std::any::type_name_of_val(&result) == "()" {
+                // Don't print Unit type
+            } else if std::any::type_name_of_val(&result).contains("String") || 
+                      std::any::type_name_of_val(&result).contains("&str") {
+                println!("{}", result);
+            } else {
+                println!("{:?}", result);
             }
         }
     }

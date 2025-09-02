@@ -199,35 +199,52 @@ impl Transpiler {
         let type_param_tokens: Vec<_> =
             type_params.iter().map(|p| format_ident!("{}", p)).collect();
 
+        // Check if any variant has discriminant values
+        let has_discriminants = variants.iter().any(|v| v.discriminant.is_some());
+        
         let variant_tokens: Vec<TokenStream> = variants
             .iter()
             .map(|variant| {
                 let variant_name = format_ident!("{}", variant.name);
 
                 if let Some(fields) = &variant.fields {
-                    // Tuple variant
+                    // Tuple variant (can't have discriminant)
                     let field_types: Vec<TokenStream> = fields
                         .iter()
                         .map(|ty| self.transpile_type(ty).unwrap_or_else(|_| quote! { _ }))
                         .collect();
                     quote! { #variant_name(#(#field_types),*) }
+                } else if let Some(disc_value) = variant.discriminant {
+                    // Unit variant with explicit discriminant
+                    // Convert to i32 literal without suffix for cleaner output
+                    let disc_literal = proc_macro2::Literal::i32_unsuffixed(disc_value as i32);
+                    quote! { #variant_name = #disc_literal }
                 } else {
-                    // Unit variant
+                    // Unit variant without discriminant
                     quote! { #variant_name }
                 }
             })
             .collect();
 
         let visibility = if is_pub { quote! { pub } } else { quote! {} };
+        
+        // Add #[repr(i32)] attribute if enum has discriminant values
+        let repr_attr = if has_discriminants {
+            quote! { #[repr(i32)] }
+        } else {
+            quote! {}
+        };
 
         if type_params.is_empty() {
             Ok(quote! {
+                #repr_attr
                 #visibility enum #enum_name {
                     #(#variant_tokens,)*
                 }
             })
         } else {
             Ok(quote! {
+                #repr_attr
                 #visibility enum #enum_name<#(#type_param_tokens),*> {
                     #(#variant_tokens,)*
                 }

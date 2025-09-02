@@ -439,6 +439,7 @@ pub struct StructField {
 pub struct EnumVariant {
     pub name: String,
     pub fields: Option<Vec<Type>>, // None for unit variant, Some for tuple variant
+    pub discriminant: Option<i64>, // Explicit discriminant value for TypeScript compatibility
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
