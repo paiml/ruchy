@@ -103,7 +103,7 @@ impl Transpiler {
         }
     }
     
-    /// Handle HashSet methods (complexity: ~12)
+    /// Handle `HashSet` methods (complexity: ~12)
     fn transpile_hashset_method(
         &self,
         obj: &TokenStream,
@@ -202,7 +202,7 @@ impl Transpiler {
         }
     }
     
-    /// Handle DataFrame methods (complexity: ~5)
+    /// Handle `DataFrame` methods (complexity: ~5)
     fn transpile_dataframe_method_refactored(
         &self,
         obj: &TokenStream,

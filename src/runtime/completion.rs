@@ -1028,7 +1028,7 @@ impl RuchyCompleter {
         
         help_topics.into_iter()
             .map(|topic| Pair {
-                display: format!("help({})", topic),
+                display: format!("help({topic})"),
                 replacement: topic.to_string(),
             })
             .collect()
