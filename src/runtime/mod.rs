@@ -14,6 +14,7 @@ pub mod lazy;
 pub mod observatory;
 pub mod observatory_ui;
 pub mod repl;
+pub mod repl_recording;
 pub mod replay;
 pub mod replay_converter;
 pub mod deterministic;
