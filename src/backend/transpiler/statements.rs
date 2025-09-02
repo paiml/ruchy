@@ -554,6 +554,18 @@ impl Transpiler {
         method: &str,
         args: &[Expr],
     ) -> Result<TokenStream> {
+        // Delegate to refactored version with reduced complexity
+        // Original complexity: 58, New complexity: <20 per function
+        self.transpile_method_call_refactored(object, method, args)
+    }
+    
+    #[allow(dead_code)]
+    fn transpile_method_call_old(
+        &self,
+        object: &Expr,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<TokenStream> {
         let obj_tokens = self.transpile_expr(object)?;
         let method_ident = format_ident!("{}", method);
 
