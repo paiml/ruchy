@@ -7,6 +7,30 @@
 
 **Generate correct code that compiles on first attempt. Quality is built-in, not bolted-on.**
 
+## EXTREME TDD Protocol (CRITICAL RESPONSE TO PARSER FAILURES)
+
+**ANY PARSER OR TRANSPILER BUG REQUIRES IMMEDIATE EXTREME TDD RESPONSE:**
+
+### Critical Bug Response (MANDATORY):
+1. **HALT ALL OTHER WORK**: Stop everything when parser/transpiler bugs found
+2. **EXTREME TEST COVERAGE**: Create comprehensive test suites immediately:
+   - Unit tests for every parser rule
+   - Integration tests for complete programs  
+   - Property tests with random inputs (10,000+ iterations)
+   - Fuzz tests for edge cases
+   - Doctests in every public function
+   - `cargo run --examples` MUST pass 100%
+3. **REGRESSION PREVENTION**: Add failing test BEFORE fixing bug
+4. **COMPREHENSIVE VALIDATION**: Test all language features after any fix
+
+### Test Coverage Requirements (MANDATORY):
+- **Parser Tests**: Every token, every grammar rule, every edge case
+- **Transpiler Tests**: Every Ruchy construct → Rust construct mapping
+- **Integration Tests**: Full compile → execute → validate pipeline
+- **Property Tests**: Automated generation of valid/invalid programs
+- **Fuzz Tests**: Random input stress testing (AFL, cargo-fuzz)
+- **Examples Tests**: All examples/ must compile and run
+
 ## Scientific Method Protocol
 
 **WE DON'T GUESS, WE PROVE VIA QUANTITATIVE METHODS AND TESTING.**

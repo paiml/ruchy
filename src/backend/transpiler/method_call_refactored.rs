@@ -50,7 +50,7 @@ impl Transpiler {
             "select" | "groupby" | "agg" | "sort" | "mean" | "std" | "min" | "max" |
             "sum" | "count" | "drop_nulls" | "fill_null" | "pivot" | "melt" | 
             "head" | "tail" | "sample" | "describe" =>
-                self.transpile_dataframe_method(&obj_tokens, method, &arg_tokens),
+                self.transpile_dataframe_method_refactored(&obj_tokens, method, &arg_tokens),
             
             // Default: pass through
             _ => {
@@ -203,7 +203,7 @@ impl Transpiler {
     }
     
     /// Handle DataFrame methods (complexity: ~5)
-    fn transpile_dataframe_method(
+    fn transpile_dataframe_method_refactored(
         &self,
         obj: &TokenStream,
         method: &str,
