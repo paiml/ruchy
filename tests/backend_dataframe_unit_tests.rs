@@ -16,7 +16,7 @@ fn create_expr(kind: ExprKind) -> Expr {
 /// Test DataFrame literal transpilation
 #[test]
 fn test_dataframe_literal_basic() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let df_columns = vec![
         DataFrameColumn {
@@ -45,7 +45,7 @@ fn test_dataframe_literal_basic() {
 /// Test DataFrame filter operation
 #[test]
 fn test_dataframe_filter_operation() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let df_expr = create_expr(ExprKind::DataFrame {
         columns: vec![
@@ -79,7 +79,7 @@ fn test_dataframe_filter_operation() {
 /// Test DataFrame select operation
 #[test]
 fn test_dataframe_select_operation() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let df_expr = create_expr(ExprKind::DataFrame {
         columns: vec![
@@ -108,7 +108,7 @@ fn test_dataframe_select_operation() {
 /// Test DataFrame groupby operation
 #[test]
 fn test_dataframe_groupby_operation() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let df_expr = create_expr(ExprKind::DataFrame {
         columns: vec![
@@ -136,7 +136,7 @@ fn test_dataframe_groupby_operation() {
 /// Test DataFrame join operation
 #[test]
 fn test_dataframe_join_operation() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let left_df = create_expr(ExprKind::DataFrame {
         columns: vec![
@@ -174,7 +174,7 @@ fn test_dataframe_join_operation() {
 /// Test DataFrame sort operation
 #[test]
 fn test_dataframe_sort_operation() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let df_expr = create_expr(ExprKind::DataFrame {
         columns: vec![
@@ -202,7 +202,7 @@ fn test_dataframe_sort_operation() {
 /// Test DataFrame aggregate operation
 #[test]
 fn test_dataframe_aggregate_operation() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let df_expr = create_expr(ExprKind::DataFrame {
         columns: vec![
@@ -235,7 +235,7 @@ fn test_dataframe_aggregate_operation() {
 /// Test empty DataFrame
 #[test]
 fn test_empty_dataframe() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let empty_df = create_expr(ExprKind::DataFrame { columns: vec![] });
     let result = transpiler.transpile_expr(&empty_df);
@@ -247,7 +247,7 @@ fn test_empty_dataframe() {
 /// Test DataFrame with mixed column types
 #[test]
 fn test_mixed_column_types() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let df_columns = vec![
         DataFrameColumn {
@@ -278,7 +278,7 @@ fn test_mixed_column_types() {
 /// Test chained DataFrame operations
 #[test]
 fn test_chained_dataframe_operations() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let df_expr = create_expr(ExprKind::DataFrame {
         columns: vec![

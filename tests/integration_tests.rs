@@ -21,7 +21,7 @@ fn test_end_to_end_simple_expression() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -44,7 +44,7 @@ fn test_end_to_end_function_definition() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -68,7 +68,7 @@ fn test_end_to_end_pattern_matching() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -88,7 +88,7 @@ fn test_end_to_end_pipeline_operator() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -106,7 +106,7 @@ fn test_end_to_end_list_comprehension() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -138,7 +138,7 @@ fn test_end_to_end_actor_definition() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -161,7 +161,7 @@ fn test_end_to_end_async_await() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -186,7 +186,7 @@ fn test_end_to_end_error_handling() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -207,7 +207,7 @@ fn test_end_to_end_import_statement() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -228,7 +228,7 @@ fn test_end_to_end_type_inference() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -266,7 +266,7 @@ fn test_compile_generated_rust_code() {
     let mut parser = Parser::new(ruchy_code);
     let expr = parser.parse().expect("Failed to parse");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");
@@ -308,7 +308,7 @@ fn test_incremental_compilation() {
         "double(y)",
     ];
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
 
     for input in inputs {
         let mut parser = Parser::new(input);
@@ -356,7 +356,7 @@ fn test_large_file_handling() {
     assert!(result.is_ok(), "Failed to parse large input");
 
     if let Ok(expr) = result {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile_expr(&expr);
         assert!(rust_code.is_ok(), "Failed to transpile large input");
     }
@@ -394,7 +394,7 @@ fn test_nested_structures() {
     let mut parser = Parser::new(input);
     let expr = parser.parse().expect("Failed to parse nested structure");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_expr(&expr)
         .expect("Failed to transpile");

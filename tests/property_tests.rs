@@ -63,7 +63,7 @@ proptest! {
         let mut parser = Parser::new(&input);
 
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let result = transpiler.transpile(&ast);
             prop_assert!(result.is_ok(), "Failed to transpile: {}", input);
         }
@@ -97,7 +97,7 @@ proptest! {
         let mut parser = Parser::new(&input);
 
         if let Ok(ast) = parser.parse_expr() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             if let Ok(rust_code) = transpiler.transpile(&ast) {
                 let rust_str = rust_code.to_string();
                 // The multiplication should have higher precedence
@@ -123,7 +123,7 @@ proptest! {
         // Should handle any string content
         let result = parser.parse();
         if result.is_ok() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let ast = result.unwrap();
             let transpiled = transpiler.transpile(&ast);
             prop_assert!(transpiled.is_ok(), "Failed to transpile string: {:?}", s);

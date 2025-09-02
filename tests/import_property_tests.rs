@@ -194,7 +194,7 @@ proptest! {
         prop_assert!(ast.is_ok());
         let ast = ast.unwrap();
 
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let result = transpiler.transpile(&ast);
 
         prop_assert!(result.is_ok());

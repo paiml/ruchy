@@ -25,7 +25,7 @@ fn test_dataframe_literal_transpilation() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast)?;
     let rust_code = result.to_string();
     
@@ -46,7 +46,7 @@ fn test_dataframe_operations_transpilation() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast)?;
     let rust_code = result.to_string();
     
@@ -70,7 +70,7 @@ fn test_pattern_matching_transpilation() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast)?;
     let rust_code = result.to_string();
     
@@ -94,7 +94,7 @@ fn test_result_type_transpilation() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast)?;
     let rust_code = result.to_string();
     
@@ -118,7 +118,7 @@ fn test_async_await_transpilation() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast)?;
     let rust_code = result.to_string();
     
@@ -138,7 +138,7 @@ fn test_complex_expression_transpilation() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast)?;
     let rust_code = result.to_string();
     
@@ -160,7 +160,7 @@ fn test_string_interpolation_transpilation() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast)?;
     let rust_code = result.to_string();
     
@@ -184,7 +184,7 @@ fn test_array_methods_transpilation() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast)?;
     let rust_code = result.to_string();
     
@@ -205,7 +205,7 @@ fn test_lambda_transpilation() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast)?;
     let rust_code = result.to_string();
     
@@ -226,7 +226,7 @@ fn test_pipeline_operator_transpilation() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&ast)?;
     let rust_code = result.to_string();
     
@@ -248,7 +248,7 @@ fn test_minimal_transpilation_mode() -> Result<()> {
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_minimal(&ast)?;
     
     // Should generate minimal Rust code
@@ -264,7 +264,7 @@ fn test_transpiler_error_handling() {
     // Test with invalid AST structure
     use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create a minimal AST node
     let span = Span::new(0, 1);
@@ -285,7 +285,7 @@ fn test_transpiler_empty_input() -> Result<()> {
     
     // Empty input might be an error or empty AST, both should be handled gracefully
     if let Ok(ast) = result {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let _rust_code = transpiler.transpile(&ast)?;
     } else {
         // Parser error on empty input is acceptable

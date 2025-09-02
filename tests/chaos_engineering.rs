@@ -75,7 +75,7 @@ fn test_chaos_determinism_basic() {
             // Parse and transpile
             let mut parser = Parser::new(input);
             if let Ok(ast) = parser.parse() {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 if let Ok(tokens) = transpiler.transpile(&ast) {
                     outputs.push(tokens.to_string());
                 }
@@ -157,7 +157,7 @@ fn test_concurrent_transpilation() {
                 let result = parser
                     .parse()
                     .and_then(|ast| {
-                        let transpiler = Transpiler::new();
+                        let mut transpiler = Transpiler::new();
                         transpiler.transpile(&ast)
                     })
                     .map(|tokens| tokens.to_string());

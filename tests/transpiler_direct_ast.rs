@@ -11,7 +11,7 @@ use ruchy::frontend::ast::{
 /// Test simple match expression
 #[test]
 fn test_direct_match_construction() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create: match x { 1 => "one", _ => "other" }
     let match_expr = Expr {
@@ -59,7 +59,7 @@ fn test_direct_match_construction() {
 /// Test or-pattern construction
 #[test] 
 fn test_or_pattern_direct() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create: match x { 1 | 2 => "small", _ => "large" }
     let match_expr = Expr {
@@ -110,7 +110,7 @@ fn test_or_pattern_direct() {
 /// Test Result pattern construction
 #[test]
 fn test_result_pattern_direct() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create: match result { Ok(x) => x, Err(_) => 0 }
     let match_expr = Expr {

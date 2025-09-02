@@ -18,7 +18,7 @@ fn test_ubuntu_config_basic_if_expression() {
     
     // Test transpilation too
     let ast = result.unwrap();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let transpile_result = transpiler.transpile_to_program(&ast);
     
     assert!(transpile_result.is_ok(),

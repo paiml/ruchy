@@ -16,7 +16,7 @@ fn test_parentheses_preserved_in_multiplication() {
     let mut parser = Parser::new(source);
     let ast = parser.parse().expect("Should parse variable math expression");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program(&ast)
         .expect("Should transpile variable math");
     
@@ -55,7 +55,7 @@ fn test_complex_parentheses_expressions() {
         let mut parser = Parser::new(&full_source);
         let ast = parser.parse().unwrap_or_else(|_| panic!("Should parse: {expression}"));
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let rust_code = transpiler.transpile_to_program(&ast)
             .unwrap_or_else(|_| panic!("Should transpile: {expression}"));
         
@@ -80,7 +80,7 @@ fn test_variable_math_end_to_end() {
     let mut parser = Parser::new(source);
     let ast = parser.parse().expect("Should parse variable math");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program(&ast)
         .expect("Should transpile variable math");
     

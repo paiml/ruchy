@@ -128,7 +128,7 @@ fn test_transpiler_expression_coverage() -> Result<()> {
         "{ let x = 1; x + 1 }",
     ];
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     for expr in &expressions {
         let mut parser = Parser::new(expr);
@@ -156,7 +156,7 @@ fn test_transpiler_minimal_mode_coverage() -> Result<()> {
         "[1, 2, 3].map(|x| x * 2)",
     ];
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     for source in &test_cases {
         let mut parser = Parser::new(source);
@@ -369,7 +369,7 @@ fn test_comprehensive_parse_workflow() -> Result<()> {
     assert!(!matches!(ast.kind, ExprKind::Literal(_)));
     
     // Try to transpile it
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let _result = transpiler.transpile(&ast); // May succeed or fail, just exercise the code
     
     Ok(())

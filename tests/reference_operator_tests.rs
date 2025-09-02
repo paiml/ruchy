@@ -96,7 +96,7 @@ fn test_reference_operator_transpilation() {
     use ruchy::backend::transpiler::Transpiler;
     use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span, UnaryOp};
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
 
     // Create a reference expression manually
     let operand = Box::new(Expr::new(

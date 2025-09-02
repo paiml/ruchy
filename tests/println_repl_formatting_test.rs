@@ -103,7 +103,7 @@ fn test_compiled_println_works_correctly() {
     let mut parser = Parser::new(source);
     let ast = parser.parse().expect("Should parse println statement");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program(&ast)
         .expect("Should transpile println");
     

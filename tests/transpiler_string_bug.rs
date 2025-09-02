@@ -9,7 +9,7 @@ fn test_str_parameter_transpilation() {
     let mut parser = Parser::new("fun greet(name: str) { println(name) }");
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile successfully");
@@ -28,7 +28,7 @@ fn test_string_literal_no_unnecessary_to_string() {
     let mut parser = Parser::new("fun main() { greet(\"Hello\") }");
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile successfully");
@@ -44,7 +44,7 @@ fn test_println_format_correctness() {
     let mut parser = Parser::new("fun test() { println(\"Hello, {}!\", \"World\") }");
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile successfully");  
@@ -61,7 +61,7 @@ fn test_no_unnecessary_hashmap_import() {
     let mut parser = Parser::new("fun main() { println(\"Hello\") }");
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile successfully");
@@ -77,7 +77,7 @@ fn test_no_extra_braces() {
     let mut parser = Parser::new("fun test() { 42 }");
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile successfully");
@@ -104,7 +104,7 @@ fn test_complete_string_example_compiles() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile without errors");

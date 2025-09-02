@@ -133,7 +133,7 @@ fn test_match_transpilation() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse for transpilation");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), 

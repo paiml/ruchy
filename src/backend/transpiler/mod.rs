@@ -34,6 +34,8 @@ type BlockCategorization<'a> = (Vec<TokenStream>, Vec<TokenStream>, Vec<TokenStr
 pub struct Transpiler {
     /// Track whether we're in an async context
     pub in_async_context: bool,
+    /// Track variables that need to be mutable (for auto-mutability)
+    pub mutable_vars: std::collections::HashSet<String>,
 }
 
 impl Default for Transpiler {
@@ -56,9 +58,110 @@ impl Transpiler {
     pub fn new() -> Self {
         Self {
             in_async_context: false,
+            mutable_vars: std::collections::HashSet::new(),
         }
     }
 
+    /// Analyze expressions to determine which variables need to be mutable
+    pub fn analyze_mutability(&mut self, exprs: &[Expr]) {
+        for expr in exprs {
+            self.analyze_expr_mutability(expr);
+        }
+    }
+    
+    fn analyze_expr_mutability(&mut self, expr: &Expr) {
+        use crate::frontend::ast::ExprKind;
+        
+        match &expr.kind {
+            // Direct assignment marks the target as mutable
+            ExprKind::Assign { target, value } => {
+                if let ExprKind::Identifier(name) = &target.kind {
+                    self.mutable_vars.insert(name.clone());
+                }
+                self.analyze_expr_mutability(value);
+            }
+            // Compound assignment marks the target as mutable
+            ExprKind::CompoundAssign { target, value, .. } => {
+                if let ExprKind::Identifier(name) = &target.kind {
+                    self.mutable_vars.insert(name.clone());
+                }
+                self.analyze_expr_mutability(value);
+            }
+            // Pre/Post increment/decrement mark the target as mutable
+            ExprKind::PreIncrement { target } |
+            ExprKind::PostIncrement { target } |
+            ExprKind::PreDecrement { target } |
+            ExprKind::PostDecrement { target } => {
+                if let ExprKind::Identifier(name) = &target.kind {
+                    self.mutable_vars.insert(name.clone());
+                }
+            }
+            // Recursively analyze blocks
+            ExprKind::Block(exprs) => {
+                for e in exprs {
+                    self.analyze_expr_mutability(e);
+                }
+            }
+            // Analyze control flow
+            ExprKind::If { condition, then_branch, else_branch } => {
+                self.analyze_expr_mutability(condition);
+                self.analyze_expr_mutability(then_branch);
+                if let Some(else_expr) = else_branch {
+                    self.analyze_expr_mutability(else_expr);
+                }
+            }
+            ExprKind::While { condition, body } => {
+                self.analyze_expr_mutability(condition);
+                self.analyze_expr_mutability(body);
+            }
+            ExprKind::For { body, iter, .. } => {
+                self.analyze_expr_mutability(iter);
+                self.analyze_expr_mutability(body);
+            }
+            // Analyze match arms
+            ExprKind::Match { expr, arms } => {
+                self.analyze_expr_mutability(expr);
+                for arm in arms {
+                    self.analyze_expr_mutability(&arm.body);
+                }
+            }
+            // Analyze let bodies
+            ExprKind::Let { body, value, .. } | ExprKind::LetPattern { body, value, .. } => {
+                self.analyze_expr_mutability(value);
+                self.analyze_expr_mutability(body);
+            }
+            // Analyze function bodies
+            ExprKind::Function { body, .. } => {
+                self.analyze_expr_mutability(body);
+            }
+            ExprKind::Lambda { body, .. } => {
+                self.analyze_expr_mutability(body);
+            }
+            // Analyze binary/unary operations
+            ExprKind::Binary { left, right, .. } => {
+                self.analyze_expr_mutability(left);
+                self.analyze_expr_mutability(right);
+            }
+            ExprKind::Unary { operand, .. } => {
+                self.analyze_expr_mutability(operand);
+            }
+            // Analyze calls
+            ExprKind::Call { func, args } => {
+                self.analyze_expr_mutability(func);
+                for arg in args {
+                    self.analyze_expr_mutability(arg);
+                }
+            }
+            ExprKind::MethodCall { receiver, args, .. } => {
+                self.analyze_expr_mutability(receiver);
+                for arg in args {
+                    self.analyze_expr_mutability(arg);
+                }
+            }
+            _ => {}
+        }
+    }
+    
     /// Resolves file imports in the AST using `ModuleResolver`
     #[allow(dead_code)]
     fn resolve_imports(&self, expr: &Expr) -> Result<Expr> {
@@ -165,7 +268,14 @@ impl Transpiler {
     /// # Errors
     ///
     /// Returns an error if the AST cannot be transpiled to a valid Rust program.
-    pub fn transpile_to_program(&self, expr: &Expr) -> Result<TokenStream> {
+    pub fn transpile_to_program(&mut self, expr: &Expr) -> Result<TokenStream> {
+        // First analyze the entire program to detect mutable variables
+        if let ExprKind::Block(exprs) = &expr.kind {
+            self.analyze_mutability(exprs);
+        } else {
+            self.analyze_expr_mutability(expr);
+        }
+        
         let result = self.transpile_to_program_with_context(expr, None);
         if let Ok(ref token_stream) = result {
             // Debug: Write the generated Rust code to a debug file

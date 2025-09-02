@@ -39,7 +39,7 @@ println("Result:", result)"#;
     let mut parser = Parser::new(main_content);
     let ast = parser.parse().expect("Should parse main file with import");
     
-    let transpiler = Transpiler::new(); 
+    let mut transpiler = Transpiler::new(); 
     let rust_code = transpiler.transpile_to_program_with_context(&ast, Some(&main_path))
         .expect("Should transpile with module context");
     
@@ -104,7 +104,7 @@ println(message)";
     let mut parser = Parser::new(main_content);
     let ast = parser.parse().expect("Should parse main with multiple imports");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program_with_context(&ast, Some(&main_path))
         .expect("Should transpile multiple modules");
     
@@ -150,7 +150,7 @@ println("Subtraction result:", result)"#;
     let mut parser = Parser::new(main_content);
     let ast = parser.parse().expect("Should parse nested module import");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program_with_context(&ast, Some(&main_path));
     
     // For now, just ensure it doesn't panic - nested modules might not be fully implemented yet

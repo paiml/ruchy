@@ -65,7 +65,7 @@ fn fuzz_transpiler_valid_ast() {
         let code = generate_random_code(seed);
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
-            let transpiler = Transpiler::new();
+            let mut transpiler = Transpiler::new();
             let _ = transpiler.transpile(&ast); // Should not panic
         }
     }

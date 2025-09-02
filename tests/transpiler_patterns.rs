@@ -11,7 +11,7 @@ use ruchy::{Transpiler, Parser};
 /// Test pattern matching in match expressions
 #[test]
 fn test_transpile_match_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Literal patterns
@@ -55,7 +55,7 @@ fn test_transpile_match_patterns() {
 /// Test pattern guards
 #[test]
 fn test_transpile_pattern_guards() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         (r#"match x { n if n > 0 => "positive", _ => "other" }"#, vec!["match", "if", "n", ">", "0", "=>", "positive"]),
@@ -81,7 +81,7 @@ fn test_transpile_pattern_guards() {
 /// Test let patterns
 #[test]
 fn test_transpile_let_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple binding
@@ -119,7 +119,7 @@ fn test_transpile_let_patterns() {
 /// Test function parameter patterns
 #[test]
 fn test_transpile_function_param_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple parameters
@@ -151,7 +151,7 @@ fn test_transpile_function_param_patterns() {
 /// Test for loop patterns
 #[test]
 fn test_transpile_for_loop_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple iteration
@@ -183,7 +183,7 @@ fn test_transpile_for_loop_patterns() {
 /// Test nested patterns
 #[test]
 fn test_transpile_nested_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Nested tuples
@@ -215,7 +215,7 @@ fn test_transpile_nested_patterns() {
 /// Test range patterns
 #[test]
 fn test_transpile_range_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         (r#"match x { 1..10 => "small", _ => "large" }"#, vec!["match", "1", ".", "10", "=>", "small"]),
@@ -241,7 +241,7 @@ fn test_transpile_range_patterns() {
 /// Test type ascription in patterns
 #[test]
 fn test_transpile_pattern_type_ascription() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         ("let x: i32 = 42", vec!["let", "x", "i32", "42"]),

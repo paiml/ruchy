@@ -12,7 +12,7 @@ fn test_println_multi_args() {
     "#);
     let ast = parser.parse().expect("Should parse multi-arg println");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_string = rust_code.to_string();
     
@@ -32,7 +32,7 @@ fn test_println_single_arg_still_works() {
     let mut parser = Parser::new(r#"println("Just one string")"#);
     let ast = parser.parse().expect("Should parse single-arg println");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast).expect("Should transpile");
     let rust_string = rust_code.to_string();
     

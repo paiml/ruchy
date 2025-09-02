@@ -55,7 +55,7 @@ fn snapshot_transpile_println() {
     let input = r#"println("Hello, World!")"#;
     let mut parser = Parser::new(input);
     let ast = parser.parse().unwrap();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let output = transpiler.transpile(&ast).unwrap();
     assert_snapshot!(output);
 }
@@ -69,7 +69,7 @@ fn snapshot_transpile_function() {
     ";
     let mut parser = Parser::new(input);
     let ast = parser.parse().unwrap();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let output = transpiler.transpile(&ast).unwrap();
     assert_snapshot!(output);
 }
@@ -84,7 +84,7 @@ fn snapshot_transpile_struct() {
     ";
     let mut parser = Parser::new(input);
     let ast = parser.parse().unwrap();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let output = transpiler.transpile(&ast).unwrap();
     assert_snapshot!(output);
 }
@@ -103,7 +103,7 @@ fn snapshot_transpile_match() {
     "#;
     let mut parser = Parser::new(input);
     let ast = parser.parse().unwrap();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let output = transpiler.transpile(&ast).unwrap();
     assert_snapshot!(output);
 }
@@ -118,7 +118,7 @@ fn snapshot_transpile_pipeline() {
     ";
     let mut parser = Parser::new(input);
     let ast = parser.parse().unwrap();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let output = transpiler.transpile(&ast).unwrap();
     assert_snapshot!(output);
 }
@@ -140,7 +140,7 @@ fn snapshot_transpile_async_actor() {
     ";
     let mut parser = Parser::new(input);
     let ast = parser.parse().unwrap();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let output = transpiler.transpile(&ast).unwrap();
     assert_snapshot!(output);
 }
@@ -158,7 +158,7 @@ fn snapshot_transpile_result_type() {
     "#;
     let mut parser = Parser::new(input);
     let ast = parser.parse().unwrap();
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let output = transpiler.transpile(&ast).unwrap();
     assert_snapshot!(output);
 }

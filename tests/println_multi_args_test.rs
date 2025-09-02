@@ -13,7 +13,7 @@ fn test_multi_arg_println_transpilation() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast).expect("Should transpile");
     let rust_code = result.to_string();
     
@@ -32,7 +32,7 @@ fn test_multi_arg_println_execution() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast).expect("Should transpile");
     let rust_code = result.to_string();
     
@@ -60,7 +60,7 @@ fn test_multi_arg_println_output() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast).expect("Should transpile");
     let rust_code = result.to_string();
     
@@ -101,7 +101,7 @@ fn test_two_arg_println() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast).expect("Should transpile");
     let rust_code = result.to_string();
     

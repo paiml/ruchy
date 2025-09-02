@@ -7,7 +7,7 @@ fn test_string_literal_to_string_conversion() {
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_expr(&ast);
     let rust_code = result.expect("Failed to transpile").to_string();
     
@@ -23,7 +23,7 @@ fn test_string_literal_as_is() {
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_expr(&ast);
     let rust_code = result.expect("Failed to transpile").to_string();
     
@@ -39,7 +39,7 @@ fn test_string_from_conversion() {
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Failed to parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_expr(&ast);
     let rust_code = result.expect("Failed to transpile").to_string();
     

@@ -24,7 +24,7 @@ fn run_pipeline(source: &str) -> Result<String, String> {
         .map_err(|e| format!("Parse error: {:?}", e))?;
 
     // Transpile
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler
         .transpile_to_string(&ast)
         .map_err(|e| format!("Transpile error: {:?}", e))?;

@@ -97,7 +97,7 @@ fn test_if_expression_transpilation() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile if expression: {:?}", result.err());

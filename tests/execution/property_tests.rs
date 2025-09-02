@@ -132,7 +132,7 @@ mod roundtrip {
         fn parse_transpile_arithmetic(expr in arithmetic_expr()) {
             let parser = Parser::new(&expr);
             if let Ok(ast) = parser.parse() {
-                let transpiler = Transpiler::new();
+                let mut transpiler = Transpiler::new();
                 // Just ensure transpilation doesn't panic
                 let _ = transpiler.transpile(&ast);
             }

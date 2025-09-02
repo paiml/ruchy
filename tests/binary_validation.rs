@@ -45,7 +45,7 @@ fn validate_ruchy_file(path: &Path) {
         .expect(&format!("Failed to parse {}", path.display()));
 
     // Transpile to Rust
-    let transpiler = ruchy::Transpiler::new();
+    let mut transpiler = ruchy::Transpiler::new();
     let rust_code = transpiler
         .transpile_to_program(&ast)
         .expect(&format!("Failed to transpile {}", path.display()));
@@ -153,7 +153,7 @@ fn test_compilation_performance() {
             .expect(&format!("Failed to parse {}", ruchy_file.display()));
 
         // Transpile
-        let transpiler = ruchy::Transpiler::new();
+        let mut transpiler = ruchy::Transpiler::new();
         let _rust_code = transpiler
             .transpile(&ast)
             .expect(&format!("Failed to transpile {}", ruchy_file.display()));

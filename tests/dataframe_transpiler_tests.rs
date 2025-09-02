@@ -24,7 +24,7 @@ fn test_transpiler_dataframe_basic() {
 /// Test empty dataframe transpilation
 #[test]
 fn test_transpile_empty_dataframe() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Test empty columns
     let empty_columns = vec![];
@@ -40,7 +40,7 @@ fn test_transpile_empty_dataframe() -> Result<()> {
 /// Test single column dataframe transpilation
 #[test]
 fn test_transpile_single_column_dataframe() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Create a single column with integer values
     let span = Span::new(0, 1);
@@ -69,7 +69,7 @@ fn test_transpile_single_column_dataframe() -> Result<()> {
 /// Test multi-column dataframe transpilation
 #[test]
 fn test_transpile_multi_column_dataframe() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let span = Span::new(0, 1);
     
     // Create multiple columns
@@ -105,7 +105,7 @@ fn test_transpile_multi_column_dataframe() -> Result<()> {
 /// Test dataframe with empty column values
 #[test]
 fn test_transpile_dataframe_empty_column_values() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let empty_column = DataFrameColumn {
         name: "empty_col".to_string(),
@@ -128,7 +128,7 @@ fn test_transpile_dataframe_empty_column_values() -> Result<()> {
 /// Test dataframe select operation transpilation
 #[test]
 fn test_transpile_dataframe_select_operation() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let span = Span::new(0, 1);
     
     // Create a dummy dataframe expression
@@ -152,7 +152,7 @@ fn test_transpile_dataframe_select_operation() -> Result<()> {
 /// Test dataframe filter operation transpilation
 #[test]
 fn test_transpile_dataframe_filter_operation() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let span = Span::new(0, 1);
     
     let df_expr = Expr::new(ExprKind::Identifier("df".to_string()), span);
@@ -173,7 +173,7 @@ fn test_transpile_dataframe_filter_operation() -> Result<()> {
 /// Test dataframe groupby operation transpilation
 #[test]
 fn test_transpile_dataframe_groupby_operation() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let span = Span::new(0, 1);
     
     let df_expr = Expr::new(ExprKind::Identifier("df".to_string()), span);
@@ -194,7 +194,7 @@ fn test_transpile_dataframe_groupby_operation() -> Result<()> {
 /// Test dataframe sort operation transpilation
 #[test]
 fn test_transpile_dataframe_sort_operation() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let span = Span::new(0, 1);
     
     let df_expr = Expr::new(ExprKind::Identifier("df".to_string()), span);
@@ -215,7 +215,7 @@ fn test_transpile_dataframe_sort_operation() -> Result<()> {
 /// Test dataframe join operation transpilation - Left Join
 #[test]
 fn test_transpile_dataframe_left_join_operation() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let span = Span::new(0, 1);
     
     let df_expr = Expr::new(ExprKind::Identifier("df1".to_string()), span);
@@ -243,7 +243,7 @@ fn test_transpile_dataframe_left_join_operation() -> Result<()> {
 /// Test dataframe join operation transpilation - Right Join
 #[test]
 fn test_transpile_dataframe_right_join_operation() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let span = Span::new(0, 1);
     
     let df_expr = Expr::new(ExprKind::Identifier("df1".to_string()), span);
@@ -269,7 +269,7 @@ fn test_transpile_dataframe_right_join_operation() -> Result<()> {
 /// Test dataframe join operation transpilation - Inner Join
 #[test]
 fn test_transpile_dataframe_inner_join_operation() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let span = Span::new(0, 1);
     
     let df_expr = Expr::new(ExprKind::Identifier("users".to_string()), span);
@@ -297,7 +297,7 @@ fn test_transpile_dataframe_inner_join_operation() -> Result<()> {
 /// Test dataframe with mixed data types
 #[test]
 fn test_transpile_dataframe_mixed_types() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let span = Span::new(0, 1);
     
     // Create a column with mixed literal types
@@ -328,7 +328,7 @@ fn test_transpile_dataframe_mixed_types() -> Result<()> {
 /// Test comprehensive dataframe operation chaining
 #[test]
 fn test_transpile_complex_dataframe_operations() -> Result<()> {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let span = Span::new(0, 1);
     
     // Test multiple operations on the same dataframe

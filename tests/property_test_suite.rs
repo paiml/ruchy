@@ -35,7 +35,7 @@ proptest! {
             Just(BinaryOp::Multiply)
         ]
     ) {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let expr = Expr::new(ExprKind::Binary {
             left: Box::new(Expr::new(
                 ExprKind::Literal(Literal::Integer(a as i64)),
@@ -180,7 +180,7 @@ proptest! {
 proptest! {
     #[test]
     fn transpiler_deterministic(n in 0i32..1000) {
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let expr = create_int_expr(n as i64);
         
         let result1 = transpiler.transpile_expr(&expr);

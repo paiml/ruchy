@@ -11,7 +11,7 @@ use ruchy::{Transpiler, Parser};
 /// Test all pattern types in match expressions
 #[test]
 fn test_match_all_pattern_types() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Wildcard pattern
@@ -62,7 +62,7 @@ fn test_match_all_pattern_types() {
 /// Test nested patterns
 #[test]
 fn test_nested_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Nested tuples
@@ -99,7 +99,7 @@ fn test_nested_patterns() {
 /// Test pattern guards
 #[test]
 fn test_pattern_guards() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple guards
@@ -138,7 +138,7 @@ fn test_pattern_guards() {
 /// Test or patterns (pattern alternatives)
 #[test]
 fn test_or_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple or patterns
@@ -172,7 +172,7 @@ fn test_or_patterns() {
 /// Test range patterns
 #[test]
 fn test_range_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Inclusive ranges
@@ -207,7 +207,7 @@ fn test_range_patterns() {
 /// Test rest patterns (.. syntax)
 #[test]
 fn test_rest_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Rest in arrays
@@ -241,7 +241,7 @@ fn test_rest_patterns() {
 /// Test complex real-world pattern matching scenarios
 #[test]
 fn test_complex_pattern_scenarios() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     // Result pattern matching
     let code = r#"
@@ -288,7 +288,7 @@ fn test_complex_pattern_scenarios() {
 /// Test let pattern destructuring
 #[test]
 fn test_let_pattern_destructuring() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Tuple destructuring
@@ -326,7 +326,7 @@ fn test_let_pattern_destructuring() {
 /// Test for-loop pattern destructuring
 #[test]
 fn test_for_loop_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Simple iteration
@@ -364,7 +364,7 @@ fn test_for_loop_patterns() {
 /// Test function parameter patterns
 #[test]
 fn test_function_parameter_patterns() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let test_cases = [
         // Tuple parameters

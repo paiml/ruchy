@@ -76,7 +76,7 @@ println(greeting)"#;
     let mut parser = Parser::new(main_content);
     let ast = parser.parse().expect("Should parse main file with import");
     
-    let transpiler = Transpiler::new(); 
+    let mut transpiler = Transpiler::new(); 
     let rust_code = transpiler.transpile_to_program_with_context(&ast, Some(&main_path))
         .expect("Should transpile with module context");
     let rust_string = rust_code.to_string();

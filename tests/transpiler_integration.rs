@@ -10,7 +10,7 @@ use ruchy::{Transpiler, Parser};
 /// Test complete program transpilation
 #[test]
 fn test_complete_programs() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let programs = [
         // Simple function program
@@ -50,7 +50,7 @@ fn test_complete_programs() {
 /// Test expression-only programs (one-liners)
 #[test]
 fn test_expression_programs() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let expressions = [
         "42",
@@ -77,7 +77,7 @@ fn test_expression_programs() {
 /// Test all statement types
 #[test]
 fn test_all_statements() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let statements = [
         // Let statements
@@ -118,7 +118,7 @@ fn test_all_statements() {
 /// Test all expression types
 #[test]
 fn test_all_expressions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let expressions = [
         // Literals
@@ -172,7 +172,7 @@ fn test_all_expressions() {
 /// Test function definitions
 #[test]
 fn test_function_definitions() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let functions = [
         // Simple function
@@ -207,7 +207,7 @@ fn test_function_definitions() {
 /// Test control flow structures
 #[test]
 fn test_control_flow() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let control_flows = [
         // If-else
@@ -243,7 +243,7 @@ fn test_control_flow() {
 /// Test type system features
 #[test]
 fn test_type_features() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let type_features = [
         // Type annotations
@@ -280,7 +280,7 @@ fn test_type_features() {
 /// Test error handling
 #[test]
 fn test_error_handling() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let error_handling = [
         // Result types
@@ -313,7 +313,7 @@ fn test_error_handling() {
 /// Test operators
 #[test]
 fn test_operators() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let operators = [
         // Arithmetic
@@ -356,7 +356,7 @@ fn test_operators() {
 /// Test string features
 #[test]
 fn test_string_features() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     
     let string_features = [
         // String literals

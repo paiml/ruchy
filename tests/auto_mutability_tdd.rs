@@ -11,7 +11,7 @@ println(x)
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     
@@ -33,7 +33,7 @@ while i < 5 {
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     
@@ -53,7 +53,7 @@ println(y)
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     
@@ -76,7 +76,7 @@ println(total)
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     
@@ -95,7 +95,7 @@ println(x)
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     
@@ -114,7 +114,7 @@ println(x)
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse");
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     let rust_code = result.expect("Should transpile").to_string();
     

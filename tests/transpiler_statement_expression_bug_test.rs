@@ -17,7 +17,7 @@ fn test_multiple_statements_in_main() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse multiple statements");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program(&ast)
         .expect("Should transpile to program");
     let rust_string = rust_code.to_string();
@@ -45,7 +45,7 @@ fn test_mixed_statements_and_expressions() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse mixed code");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program(&ast)
         .expect("Should transpile to program");
     let rust_string = rust_code.to_string();
@@ -73,7 +73,7 @@ fn test_function_with_statements() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse function with statements");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)
         .expect("Should transpile function");
     let rust_string = rust_code.to_string();

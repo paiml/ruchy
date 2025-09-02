@@ -41,7 +41,7 @@ fn test_reference_operator_transpilation() {
         .parse()
         .expect("Failed to parse reference expression");
 
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile(&expr);
     assert!(result.is_ok(), "Reference expression should transpile");
 

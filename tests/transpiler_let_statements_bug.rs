@@ -10,7 +10,7 @@ fn test_simple_let_statement_transpilation() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse let statement");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile let statement: {:?}", result.err());
@@ -37,7 +37,7 @@ fn test_let_expression_vs_statement() {
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect(&format!("Should parse let {}", desc));
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let result = transpiler.transpile_to_program(&ast);
         
         assert!(result.is_ok(), "Should transpile let {}: {:?}", desc, result.err());
@@ -58,7 +58,7 @@ fn test_nested_let_expressions() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse nested let expressions");
     
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let result = transpiler.transpile_to_program(&ast);
     
     assert!(result.is_ok(), "Should transpile nested let expressions: {:?}", result.err());
@@ -88,7 +88,7 @@ fn test_github_issue_17_specific_case() {
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect(&format!("Should parse: {}", code));
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let result = transpiler.transpile_to_program(&ast);
         
         assert!(result.is_ok(), "Should transpile: {} - Error: {:?}", code, result.err());
@@ -122,7 +122,7 @@ fn test_statement_vs_expression_detection() {
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect(&format!("Should parse: {}", code));
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let result = transpiler.transpile_to_program(&ast);
         
         assert!(result.is_ok(), "Should transpile: {}", code);

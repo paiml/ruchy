@@ -8,7 +8,7 @@ use ruchy::{Parser, Transpiler};
 
 #[test]
 fn test_println_format_string_simple() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let mut parser = Parser::new(r#"println("Hello, {}", "world")"#);
     let ast = parser.parse().unwrap();
     let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -23,7 +23,7 @@ fn test_println_format_string_simple() {
 
 #[test]
 fn test_println_simple_string() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let mut parser = Parser::new(r#"println("Hello world")"#);
     let ast = parser.parse().unwrap();
     let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -34,7 +34,7 @@ fn test_println_simple_string() {
 
 #[test]
 fn test_regular_function_string_conversion() {
-    let transpiler = Transpiler::new();
+    let mut transpiler = Transpiler::new();
     let mut parser = Parser::new(r#"some_func("test")"#);
     let ast = parser.parse().unwrap();
     let result = transpiler.transpile(&ast).unwrap().to_string();
@@ -53,7 +53,7 @@ proptest! {
         let args = (0..arg_count).map(|i| format!("arg{}", i)).collect::<Vec<_>>().join(", ");
         let code = format!(r#"println("{}", {})"#, format_str, args);
         
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
             if let Ok(tokens) = transpiler.transpile(&ast) {
@@ -71,7 +71,7 @@ proptest! {
         arg in r#"[a-zA-Z0-9 ]+"#
     ) {
         let code = format!(r#"{}("{}")"#, name, arg);
-        let transpiler = Transpiler::new();
+        let mut transpiler = Transpiler::new();
         
         let mut parser = Parser::new(&code);
         if let Ok(ast) = parser.parse() {
