@@ -1,0 +1,229 @@
+{
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "patch": 0
+  },
+  "metadata": {
+    "session_id": "ruchy-session-1756788813",
+    "created_at": "2025-09-02T04:53:33.737965368+00:00",
+    "ruchy_version": "1.30.1",
+    "student_id": null,
+    "assignment_id": null,
+    "tags": [
+      "interactive"
+    ]
+  },
+  "environment": {
+    "seed": 0,
+    "feature_flags": [],
+    "resource_limits": {
+      "heap_mb": 100,
+      "stack_kb": 8192,
+      "cpu_ms": 5000
+    }
+  },
+  "timeline": [
+    {
+      "id": 1,
+      "timestamp_ns": 191252,
+      "event": {
+        "Input": {
+          "text": ":help",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 2,
+      "timestamp_ns": 224330,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"🔧 Ruchy REPL Help Menu\\n\\n📋 COMMANDS:\\n  :help [topic]  - Show help for specific topic or this menu\\n  :quit, :q      - Exit the REPL\\n  :clear         - Clear variables and history\\n  :history       - Show command history  \\n  :env           - Show environment variables\\n  :type <expr>   - Show type of expression\\n  :ast <expr>    - Show abstract syntax tree\\n  :inspect <var> - Detailed variable inspection\\n\\n🎯 MODES:\\n  :normal        - Standard evaluation mode\\n  :help          - Help documentation mode (current)\\n  :debug         - Debug mode with detailed output\\n  :time          - Time mode showing execution duration\\n  :test          - Test mode with assertions\\n  :math          - Enhanced math mode\\n  :sql           - SQL query mode (experimental)\\n  :shell         - Shell command mode\\n\\n💡 LANGUAGE TOPICS (type topic name for details):\\n  fn             - Function definitions\\n  let            - Variable declarations  \\n  if             - Conditional expressions\\n  for            - Loop constructs\\n  match          - Pattern matching\\n  while          - While loops\\n\\n🚀 FEATURES:\\n  • Arithmetic: +, -, *, /, %, **\\n  • Comparisons: ==, !=, <, >, <=, >=\\n  • Logical: &&, ||, !\\n  • Arrays: [1, 2, 3], indexing with arr[0]\\n  • Objects: {key: value}, access with obj.key\\n  • String methods: .length(), .to_upper(), .to_lower()\\n  • Math functions: sqrt(), pow(), abs(), sin(), cos(), etc.\\n  • History: _1, _2, _3 (previous results)\\n  • Shell commands: !ls, !pwd, !echo hello\\n  • Introspection: ?variable, ??variable (detailed)\\n\\nType :normal to exit help mode.\\n\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 3,
+      "timestamp_ns": 233584,
+      "event": {
+        "Input": {
+          "text": ":version",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 4,
+      "timestamp_ns": 236016,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"Unknown command: :version\\nType :help for available commands\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 5,
+      "timestamp_ns": 241012,
+      "event": {
+        "Input": {
+          "text": "println(\"Hello from println!\")",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 6,
+      "timestamp_ns": 244561,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"No help available for 'println(\\\"Hello from println!\\\")'\\n\\nAvailable topics:\\nfn, let, if, for, while, match, array, object, string, math\\n\\nType 'commands' or ':' for command help.\\nType :normal to exit help mode.\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 7,
+      "timestamp_ns": 248234,
+      "event": {
+        "Input": {
+          "text": "2 + 3",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 8,
+      "timestamp_ns": 250242,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"No help available for '2 + 3'\\n\\nAvailable topics:\\nfn, let, if, for, while, match, array, object, string, math\\n\\nType 'commands' or ':' for command help.\\nType :normal to exit help mode.\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 9,
+      "timestamp_ns": 254055,
+      "event": {
+        "Input": {
+          "text": "let x = 42",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 10,
+      "timestamp_ns": 256516,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"No help available for 'let x = 42'\\n\\nAvailable topics:\\nfn, let, if, for, while, match, array, object, string, math\\n\\nType 'commands' or ':' for command help.\\nType :normal to exit help mode.\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 11,
+      "timestamp_ns": 259356,
+      "event": {
+        "Input": {
+          "text": "x",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 12,
+      "timestamp_ns": 260671,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"No help available for 'x'\\n\\nAvailable topics:\\nfn, let, if, for, while, match, array, object, string, math\\n\\nType 'commands' or ':' for command help.\\nType :normal to exit help mode.\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 13,
+      "timestamp_ns": 263815,
+      "event": {
+        "Input": {
+          "text": ":vars",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 14,
+      "timestamp_ns": 265208,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"Unknown command: :vars\\nType :help for available commands\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 15,
+      "timestamp_ns": 268999,
+      "event": {
+        "Input": {
+          "text": ":quit",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    }
+  ],
+  "checkpoints": {}
+}

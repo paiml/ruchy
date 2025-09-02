@@ -1,0 +1,39 @@
+fun fibonacci(n) {
+  if n <= 1 {
+    n
+  } else {
+    fibonacci(n - 1) + fibonacci(n - 2)
+  }
+}
+
+fibonacci(6)
+
+fun power(base, exp) {
+  if exp == 0 {
+    1
+  } else {
+    base * power(base, exp - 1)
+  }
+}
+
+power(2, 5)
+
+fun countdown(n) {
+  if n > 0 {
+    n
+  } else {
+    "Done!"
+  }
+}
+
+countdown(3)
+countdown(0)
+
+let add_one = fun(x) { x + 1 }
+add_one(5)
+
+fun apply_twice(f, x) {
+  f(f(x))
+}
+
+apply_twice(add_one, 10)

@@ -1,0 +1,5 @@
+5 / 0
+"hello" + 42
+unknown_variable
+let result = if true { "success" } else { "failure" }
+result

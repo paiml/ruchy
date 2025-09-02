@@ -1,0 +1,619 @@
+{
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "patch": 0
+  },
+  "metadata": {
+    "session_id": "ruchy-session-1756788781",
+    "created_at": "2025-09-02T04:53:01.191460754+00:00",
+    "ruchy_version": "1.30.1",
+    "student_id": null,
+    "assignment_id": null,
+    "tags": [
+      "interactive"
+    ]
+  },
+  "environment": {
+    "seed": 0,
+    "feature_flags": [],
+    "resource_limits": {
+      "heap_mb": 100,
+      "stack_kb": 8192,
+      "cpu_ms": 5000
+    }
+  },
+  "timeline": [
+    {
+      "id": 1,
+      "timestamp_ns": 148333,
+      "event": {
+        "Input": {
+          "text": "true",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 2,
+      "timestamp_ns": 202932,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 3,
+      "timestamp_ns": 208291,
+      "event": {
+        "Input": {
+          "text": "false",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 4,
+      "timestamp_ns": 214274,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"false\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 5,
+      "timestamp_ns": 216747,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 6,
+      "timestamp_ns": 218197,
+      "event": {
+        "Input": {
+          "text": "5 > 3",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 7,
+      "timestamp_ns": 227759,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 8,
+      "timestamp_ns": 230798,
+      "event": {
+        "Input": {
+          "text": "10 < 7",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 9,
+      "timestamp_ns": 236032,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"false\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 10,
+      "timestamp_ns": 239258,
+      "event": {
+        "Input": {
+          "text": "8 == 8",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 11,
+      "timestamp_ns": 244915,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 12,
+      "timestamp_ns": 247320,
+      "event": {
+        "Input": {
+          "text": "6 != 9",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 13,
+      "timestamp_ns": 251594,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 14,
+      "timestamp_ns": 253803,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 15,
+      "timestamp_ns": 255099,
+      "event": {
+        "Input": {
+          "text": "true && false",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 16,
+      "timestamp_ns": 262303,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"false\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 17,
+      "timestamp_ns": 265098,
+      "event": {
+        "Input": {
+          "text": "true || false",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 18,
+      "timestamp_ns": 272090,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 19,
+      "timestamp_ns": 274582,
+      "event": {
+        "Input": {
+          "text": "!true",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 20,
+      "timestamp_ns": 288670,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"false\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 21,
+      "timestamp_ns": 291473,
+      "event": {
+        "Input": {
+          "text": "!false",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 22,
+      "timestamp_ns": 297166,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 23,
+      "timestamp_ns": 299188,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 24,
+      "timestamp_ns": 300235,
+      "event": {
+        "Input": {
+          "text": "let a = 5",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 25,
+      "timestamp_ns": 312886,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"5\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 26,
+      "timestamp_ns": 315961,
+      "event": {
+        "Input": {
+          "text": "let b = 10",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 27,
+      "timestamp_ns": 325858,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"10\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 28,
+      "timestamp_ns": 329198,
+      "event": {
+        "Input": {
+          "text": "a > 3 && b < 15",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 29,
+      "timestamp_ns": 343967,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 30,
+      "timestamp_ns": 346189,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 31,
+      "timestamp_ns": 347546,
+      "event": {
+        "Input": {
+          "text": "a == 5 || b == 20",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 32,
+      "timestamp_ns": 357721,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 33,
+      "timestamp_ns": 359905,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 34,
+      "timestamp_ns": 362005,
+      "event": {
+        "Input": {
+          "text": "!(a > b)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 35,
+      "timestamp_ns": 376581,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 36,
+      "timestamp_ns": 378776,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 37,
+      "timestamp_ns": 379786,
+      "event": {
+        "Input": {
+          "text": "true && true",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 38,
+      "timestamp_ns": 386987,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 39,
+      "timestamp_ns": 389746,
+      "event": {
+        "Input": {
+          "text": "false || false",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 40,
+      "timestamp_ns": 397871,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"false\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 41,
+      "timestamp_ns": 400184,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 42,
+      "timestamp_ns": 401049,
+      "event": {
+        "Input": {
+          "text": "5 >= 5",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 43,
+      "timestamp_ns": 408585,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 44,
+      "timestamp_ns": 411971,
+      "event": {
+        "Input": {
+          "text": "3 <= 7",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 45,
+      "timestamp_ns": 419443,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"true\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    }
+  ],
+  "checkpoints": {}
+}

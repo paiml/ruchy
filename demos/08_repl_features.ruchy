@@ -1,0 +1,8 @@
+:help
+:version
+println("Hello from println!")
+2 + 3
+let x = 42
+x
+:vars
+:quit

@@ -150,14 +150,21 @@ impl ReplayConverter {
         
         let (expected_output, test_assertion) = match expected_result {
             EvalResult::Success { value } => {
-                let sanitized_value = value.replace('\"', "\\\"").replace('\\', "\\\\");
-                (format!("Ok(\"{sanitized_value}\")"), format!("assert_eq!(result, Ok(r#\"{}\"#.to_string()));", value))
+                // Extract actual value from String("...") format if present
+                let actual_value = if value.starts_with("String(\"") && value.ends_with("\")") {
+                    // Extract content from String("value")
+                    &value[8..value.len()-2]
+                } else {
+                    value.as_str()
+                };
+                let sanitized_value = actual_value.replace('\"', "\\\"").replace('\\', "\\\\");
+                (format!("Ok(\"{sanitized_value}\")"), format!("assert!(result.is_ok() && result.unwrap() == r#\"{}\"#);", actual_value))
             }
             EvalResult::Error { message } => {
                 (format!("Err(r#\"{}\"#)", message), format!("assert!(result.is_err() && result.unwrap_err().to_string().contains(r#\"{}\"#));", message))
             }
             EvalResult::Unit => {
-                ("Ok(\"\")".to_string(), "assert_eq!(result, Ok(\"\".to_string()));".to_string())
+                ("Ok(\"\")".to_string(), "assert!(result.is_ok() && result.unwrap().is_empty());".to_string())
             }
         };
 
@@ -213,13 +220,19 @@ fn test_{test_name}() -> Result<()> {{
                         
                         let assertion = match result {
                             EvalResult::Success { value } => {
-                                format!("    assert_eq!(result_{i}, Ok(r#\"{}\"#.to_string()));\n", value)
+                                // Extract actual value from String("...") format if present
+                                let actual_value = if value.starts_with("String(\"") && value.ends_with("\")") {
+                                    &value[8..value.len()-2]
+                                } else {
+                                    value.as_str()
+                                };
+                                format!("    assert!(result_{i}.is_ok() && result_{i}.unwrap() == r#\"{}\"#);\n", actual_value)
                             }
                             EvalResult::Error { message } => {
                                 format!("    assert!(result_{i}.is_err() && result_{i}.unwrap_err().to_string().contains(r#\"{}\"#));\n", message)
                             }
                             EvalResult::Unit => {
-                                format!("    assert_eq!(result_{i}, Ok(\"\".to_string()));\n")
+                                format!("    assert!(result_{i}.is_ok() && result_{i}.unwrap().is_empty());\n")
                             }
                         };
                         assertions.push(assertion);

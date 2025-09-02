@@ -1,0 +1,673 @@
+{
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "patch": 0
+  },
+  "metadata": {
+    "session_id": "ruchy-session-1756788584",
+    "created_at": "2025-09-02T04:49:44.967082469+00:00",
+    "ruchy_version": "1.30.1",
+    "student_id": null,
+    "assignment_id": null,
+    "tags": [
+      "interactive"
+    ]
+  },
+  "environment": {
+    "seed": 0,
+    "feature_flags": [],
+    "resource_limits": {
+      "heap_mb": 100,
+      "stack_kb": 8192,
+      "cpu_ms": 5000
+    }
+  },
+  "timeline": [
+    {
+      "id": 1,
+      "timestamp_ns": 154310,
+      "event": {
+        "Input": {
+          "text": "let name = \"Alice\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 2,
+      "timestamp_ns": 212334,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Alice\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 3,
+      "timestamp_ns": 219406,
+      "event": {
+        "Input": {
+          "text": "let age = 30",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 4,
+      "timestamp_ns": 229913,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"30\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 5,
+      "timestamp_ns": 233936,
+      "event": {
+        "Input": {
+          "text": "let pi = 3.14159",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 6,
+      "timestamp_ns": 249721,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"3.14159\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 7,
+      "timestamp_ns": 253258,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 8,
+      "timestamp_ns": 254360,
+      "event": {
+        "Input": {
+          "text": "name",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 9,
+      "timestamp_ns": 263663,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Alice\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 10,
+      "timestamp_ns": 267346,
+      "event": {
+        "Input": {
+          "text": "age",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 11,
+      "timestamp_ns": 273863,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"30\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 12,
+      "timestamp_ns": 276315,
+      "event": {
+        "Input": {
+          "text": "pi",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 13,
+      "timestamp_ns": 281113,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"3.14159\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 14,
+      "timestamp_ns": 283914,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 15,
+      "timestamp_ns": 286002,
+      "event": {
+        "Input": {
+          "text": "let greeting = \"Hello, \" + name",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 16,
+      "timestamp_ns": 304300,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Hello, Alice\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 17,
+      "timestamp_ns": 306538,
+      "event": {
+        "Input": {
+          "text": "greeting",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 18,
+      "timestamp_ns": 310804,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Hello, Alice\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 19,
+      "timestamp_ns": 312252,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 20,
+      "timestamp_ns": 312929,
+      "event": {
+        "Input": {
+          "text": "let x = 10",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 21,
+      "timestamp_ns": 318720,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"10\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 22,
+      "timestamp_ns": 320310,
+      "event": {
+        "Input": {
+          "text": "let y = 20",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 23,
+      "timestamp_ns": 324155,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"20\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 24,
+      "timestamp_ns": 325814,
+      "event": {
+        "Input": {
+          "text": "let sum = x + y",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 25,
+      "timestamp_ns": 332066,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"30\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 26,
+      "timestamp_ns": 333613,
+      "event": {
+        "Input": {
+          "text": "sum",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 27,
+      "timestamp_ns": 337250,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"30\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 28,
+      "timestamp_ns": 338508,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 29,
+      "timestamp_ns": 339161,
+      "event": {
+        "Input": {
+          "text": "\"Hello World\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 30,
+      "timestamp_ns": 343608,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Hello World\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 31,
+      "timestamp_ns": 345137,
+      "event": {
+        "Input": {
+          "text": "'A'",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 32,
+      "timestamp_ns": 354485,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"'A'\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 33,
+      "timestamp_ns": 356588,
+      "event": {
+        "Input": {
+          "text": "\"String with \\\"quotes\\\"\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 34,
+      "timestamp_ns": 363256,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"String with \\\"quotes\\\"\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 35,
+      "timestamp_ns": 364653,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 36,
+      "timestamp_ns": 365878,
+      "event": {
+        "Input": {
+          "text": "let multiline = \"Line 1\\nLine 2\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 37,
+      "timestamp_ns": 372431,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Line 1\\nLine 2\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 38,
+      "timestamp_ns": 375356,
+      "event": {
+        "Input": {
+          "text": "multiline",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 39,
+      "timestamp_ns": 380842,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"Line 1\\nLine 2\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 40,
+      "timestamp_ns": 382799,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 41,
+      "timestamp_ns": 383504,
+      "event": {
+        "Input": {
+          "text": "let empty = \"\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 42,
+      "timestamp_ns": 389556,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 43,
+      "timestamp_ns": 391099,
+      "event": {
+        "Input": {
+          "text": "empty",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 44,
+      "timestamp_ns": 398764,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 45,
+      "timestamp_ns": 400054,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 46,
+      "timestamp_ns": 400919,
+      "event": {
+        "Input": {
+          "text": "let number_str = \"42\"",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 47,
+      "timestamp_ns": 407319,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"42\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 48,
+      "timestamp_ns": 409444,
+      "event": {
+        "Input": {
+          "text": "number_str",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 49,
+      "timestamp_ns": 415050,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"\\\"42\\\"\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    }
+  ],
+  "checkpoints": {}
+}

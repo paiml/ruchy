@@ -1,0 +1,564 @@
+{
+  "version": {
+    "major": 1,
+    "minor": 0,
+    "patch": 0
+  },
+  "metadata": {
+    "session_id": "ruchy-session-1756788997",
+    "created_at": "2025-09-02T04:56:37.058401620+00:00",
+    "ruchy_version": "1.30.1",
+    "student_id": null,
+    "assignment_id": null,
+    "tags": [
+      "interactive"
+    ]
+  },
+  "environment": {
+    "seed": 0,
+    "feature_flags": [],
+    "resource_limits": {
+      "heap_mb": 100,
+      "stack_kb": 8192,
+      "cpu_ms": 5000
+    }
+  },
+  "timeline": [
+    {
+      "id": 1,
+      "timestamp_ns": 68153,
+      "event": {
+        "Input": {
+          "text": "sqrt(25)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 2,
+      "timestamp_ns": 111361,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"5\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 3,
+      "timestamp_ns": 113457,
+      "event": {
+        "Input": {
+          "text": "sqrt(16.0)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 4,
+      "timestamp_ns": 117191,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"4\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 5,
+      "timestamp_ns": 118313,
+      "event": {
+        "Input": {
+          "text": "abs(-5)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 6,
+      "timestamp_ns": 125489,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"5\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 7,
+      "timestamp_ns": 126457,
+      "event": {
+        "Input": {
+          "text": "abs(3.14)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 8,
+      "timestamp_ns": 128685,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"3.14\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 9,
+      "timestamp_ns": 129716,
+      "event": {
+        "Input": {
+          "text": "min(10, 5)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 10,
+      "timestamp_ns": 133036,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"5\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 11,
+      "timestamp_ns": 134006,
+      "event": {
+        "Input": {
+          "text": "max(8, 12)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 12,
+      "timestamp_ns": 136240,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"12\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 13,
+      "timestamp_ns": 136962,
+      "event": {
+        "Input": {
+          "text": "pow(2, 3)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 14,
+      "timestamp_ns": 139659,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"8\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 15,
+      "timestamp_ns": 140881,
+      "event": {
+        "Input": {
+          "text": "pow(3.0, 2.0)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 16,
+      "timestamp_ns": 153185,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"9\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 17,
+      "timestamp_ns": 154349,
+      "event": {
+        "Input": {
+          "text": "floor(3.8)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 18,
+      "timestamp_ns": 157529,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"3\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 19,
+      "timestamp_ns": 158611,
+      "event": {
+        "Input": {
+          "text": "ceil(3.2)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 20,
+      "timestamp_ns": 161538,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"4\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 21,
+      "timestamp_ns": 162300,
+      "event": {
+        "Input": {
+          "text": "round(3.7)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 22,
+      "timestamp_ns": 165970,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"4\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 23,
+      "timestamp_ns": 167496,
+      "event": {
+        "Input": {
+          "text": "round(3.3)",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 24,
+      "timestamp_ns": 170062,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"3\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 25,
+      "timestamp_ns": 170744,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 26,
+      "timestamp_ns": 171586,
+      "event": {
+        "Input": {
+          "text": "2.5 + 1.5",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 27,
+      "timestamp_ns": 175384,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"4\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 28,
+      "timestamp_ns": 176566,
+      "event": {
+        "Input": {
+          "text": "10.5 - 3.2",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 29,
+      "timestamp_ns": 179822,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"7.3\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 30,
+      "timestamp_ns": 181057,
+      "event": {
+        "Input": {
+          "text": "3.14159 * 2.0",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 31,
+      "timestamp_ns": 183646,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"6.28318\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 32,
+      "timestamp_ns": 184532,
+      "event": {
+        "Input": {
+          "text": "22.0 / 7.0",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 33,
+      "timestamp_ns": 187436,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"3.142857142857143\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 34,
+      "timestamp_ns": 188495,
+      "event": {
+        "Input": {
+          "text": "",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 35,
+      "timestamp_ns": 188988,
+      "event": {
+        "Input": {
+          "text": "let radius = 5.0",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 36,
+      "timestamp_ns": 200265,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"5\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 37,
+      "timestamp_ns": 201460,
+      "event": {
+        "Input": {
+          "text": "let area = 3.14159 * radius * radius",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 38,
+      "timestamp_ns": 207105,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"78.53975\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 39,
+      "timestamp_ns": 208266,
+      "event": {
+        "Input": {
+          "text": "area",
+          "mode": "Interactive"
+        }
+      },
+      "causality": []
+    },
+    {
+      "id": 40,
+      "timestamp_ns": 210863,
+      "event": {
+        "Output": {
+          "result": {
+            "Success": {
+              "value": "String(\"78.53975\")"
+            }
+          },
+          "stdout": [],
+          "stderr": []
+        }
+      },
+      "causality": []
+    }
+  ],
+  "checkpoints": {}
+}
