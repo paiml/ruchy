@@ -1180,97 +1180,96 @@ impl DirectThreadedInterpreter {
     /// Compile single expression to instruction stream
     fn compile_expr(&mut self, expr: &Expr) -> Result<(), InterpreterError> {
         match &expr.kind {
-            ExprKind::Literal(lit) => {
-                if matches!(lit, Literal::Unit) {
-                    // Nil doesn't need to be stored in constants
-                    self.emit_instruction(op_load_nil, 0);
-                } else {
-                    let const_idx = self.add_constant(self.literal_to_value(lit));
-                    self.emit_instruction(op_load_const, const_idx);
-                }
-            }
-
-            ExprKind::Binary { left, op, right } => {
-                // Compile operands first
-                self.compile_expr(left)?;
-                self.compile_expr(right)?;
-
-                // Emit binary operation
-                let op_code = match op {
-                    crate::frontend::ast::BinaryOp::Add => op_add,
-                    crate::frontend::ast::BinaryOp::Subtract => op_sub,
-                    crate::frontend::ast::BinaryOp::Multiply => op_mul,
-                    crate::frontend::ast::BinaryOp::Divide => op_div,
-                    _ => {
-                        return Err(InterpreterError::RuntimeError(format!(
-                            "Unsupported binary operation: {:?}",
-                            op
-                        )));
-                    }
-                };
-                self.emit_instruction(op_code, 0);
-            }
-
-            ExprKind::Identifier(name) => {
-                let name_idx = self.add_constant(Value::String(Rc::new(name.clone())));
-                self.emit_instruction(op_load_var, name_idx);
-            }
-
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            } => {
-                // Compile condition
-                self.compile_expr(condition)?;
-
-                // Jump if false to else branch
-                let else_jump_addr = self.code.len();
-                self.emit_instruction(op_jump_if_false, 0); // Placeholder
-
-                // Compile then branch
-                self.compile_expr(then_branch)?;
-
-                if let Some(else_expr) = else_branch {
-                    // Jump over else branch
-                    let end_jump_addr = self.code.len();
-                    self.emit_instruction(op_jump, 0); // Placeholder
-
-                    // Fix else jump target
-                    let else_target = self.code.len();
-                    if let Some(instr) = self.code.get_mut(else_jump_addr) {
-                        instr.operand = else_target as u32;
-                    }
-
-                    // Compile else branch
-                    self.compile_expr(else_expr)?;
-
-                    // Fix end jump target
-                    let end_target = self.code.len();
-                    if let Some(instr) = self.code.get_mut(end_jump_addr) {
-                        instr.operand = end_target as u32;
-                    }
-                } else {
-                    // No else branch - jump to end
-                    let end_target = self.code.len();
-                    if let Some(instr) = self.code.get_mut(else_jump_addr) {
-                        instr.operand = end_target as u32;
-                    }
-
-                    // Push nil for missing else branch
-                    self.emit_instruction(op_load_nil, 0);
-                }
-            }
-
-            _ => {
-                // For other expression types, fall back to AST evaluation
-                // This is a hybrid approach during the transition
-                let value_idx =
-                    self.add_constant(Value::String(Rc::new("AST_FALLBACK".to_string())));
-                self.emit_instruction(op_ast_fallback, value_idx);
-            }
+            ExprKind::Literal(lit) => self.compile_literal(lit),
+            ExprKind::Binary { left, op, right } => self.compile_binary_expr(left, op, right),
+            ExprKind::Identifier(name) => self.compile_identifier(name),
+            ExprKind::If { condition, then_branch, else_branch } => 
+                self.compile_if_expr(condition, then_branch, else_branch.as_deref()),
+            _ => self.compile_fallback_expr(),
         }
-
+    }
+    
+    // Helper methods for DirectThreadedInterpreter compilation (complexity <10 each)
+    
+    fn compile_literal(&mut self, lit: &Literal) -> Result<(), InterpreterError> {
+        if matches!(lit, Literal::Unit) {
+            self.emit_instruction(op_load_nil, 0);
+        } else {
+            let const_idx = self.add_constant(self.literal_to_value(lit));
+            self.emit_instruction(op_load_const, const_idx);
+        }
+        Ok(())
+    }
+    
+    fn compile_binary_expr(&mut self, left: &Expr, op: &crate::frontend::ast::BinaryOp, right: &Expr) -> Result<(), InterpreterError> {
+        self.compile_expr(left)?;
+        self.compile_expr(right)?;
+        
+        let op_code = self.binary_op_to_opcode(op)?;
+        self.emit_instruction(op_code, 0);
+        Ok(())
+    }
+    
+    fn binary_op_to_opcode(&self, op: &crate::frontend::ast::BinaryOp) -> Result<fn(&mut InterpreterState, u32) -> InstructionResult, InterpreterError> {
+        match op {
+            crate::frontend::ast::BinaryOp::Add => Ok(op_add),
+            crate::frontend::ast::BinaryOp::Subtract => Ok(op_sub),
+            crate::frontend::ast::BinaryOp::Multiply => Ok(op_mul),
+            crate::frontend::ast::BinaryOp::Divide => Ok(op_div),
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Unsupported binary operation: {:?}",
+                op
+            ))),
+        }
+    }
+    
+    fn compile_identifier(&mut self, name: &str) -> Result<(), InterpreterError> {
+        let name_idx = self.add_constant(Value::String(Rc::new(name.to_string())));
+        self.emit_instruction(op_load_var, name_idx);
+        Ok(())
+    }
+    
+    fn compile_if_expr(&mut self, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> Result<(), InterpreterError> {
+        self.compile_expr(condition)?;
+        
+        let else_jump_addr = self.code.len();
+        self.emit_instruction(op_jump_if_false, 0);
+        
+        self.compile_expr(then_branch)?;
+        
+        if let Some(else_expr) = else_branch {
+            self.compile_if_with_else_branch(else_jump_addr, else_expr)
+        } else {
+            self.compile_if_without_else_branch(else_jump_addr)
+        }
+    }
+    
+    fn compile_if_with_else_branch(&mut self, else_jump_addr: usize, else_expr: &Expr) -> Result<(), InterpreterError> {
+        let end_jump_addr = self.code.len();
+        self.emit_instruction(op_jump, 0);
+        
+        self.patch_jump_target(else_jump_addr, self.code.len());
+        self.compile_expr(else_expr)?;
+        self.patch_jump_target(end_jump_addr, self.code.len());
+        
+        Ok(())
+    }
+    
+    fn compile_if_without_else_branch(&mut self, else_jump_addr: usize) -> Result<(), InterpreterError> {
+        self.patch_jump_target(else_jump_addr, self.code.len());
+        self.emit_instruction(op_load_nil, 0);
+        Ok(())
+    }
+    
+    fn patch_jump_target(&mut self, jump_addr: usize, target: usize) {
+        if let Some(instr) = self.code.get_mut(jump_addr) {
+            instr.operand = target as u32;
+        }
+    }
+    
+    fn compile_fallback_expr(&mut self) -> Result<(), InterpreterError> {
+        let value_idx = self.add_constant(Value::String(Rc::new("AST_FALLBACK".to_string())));
+        self.emit_instruction(op_ast_fallback, value_idx);
         Ok(())
     }
 
@@ -1732,44 +1731,105 @@ impl Interpreter {
             ExprKind::Function { name, params, body, .. } => self.eval_function(name, params, body),
             ExprKind::Lambda { params, body } => self.eval_lambda(params, body),
             
-            // Control flow
-            ExprKind::If { condition, then_branch, else_branch } => self.eval_if_expr(condition, then_branch, else_branch.as_deref()),
-            ExprKind::Let { name, value, body, .. } => self.eval_let_expr(name, value, body),
-            ExprKind::For { var, pattern, iter, body } => self.eval_for_loop(var, pattern.as_ref(), iter, body),
-            ExprKind::While { condition, body } => self.eval_while_loop(condition, body),
-            ExprKind::Match { expr, arms } => self.eval_match(expr, arms),
-            ExprKind::Break { label: _ } => Err(InterpreterError::RuntimeError("break".to_string())),
-            ExprKind::Continue { label: _ } => Err(InterpreterError::RuntimeError("continue".to_string())),
-            ExprKind::Return { value } => self.eval_return_expr(value.as_deref()),
+            // Control flow expressions
+            kind if Self::is_control_flow_expr(kind) => self.eval_control_flow_expr(kind),
             
-            // Data structures
+            // Data structure expressions
+            kind if Self::is_data_structure_expr(kind) => self.eval_data_structure_expr(kind),
+            
+            // Assignment expressions
+            kind if Self::is_assignment_expr(kind) => self.eval_assignment_expr(kind),
+            
+            // Other expressions
+            ExprKind::StringInterpolation { parts } => self.eval_string_interpolation(parts),
+            ExprKind::QualifiedName { module, name } => self.eval_qualified_name(module, name),
+            
+            // Unimplemented expressions
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Expression type not yet implemented: {expr_kind:?}"
+            ))),
+        }
+    }
+    
+    // Helper methods for expression type categorization and evaluation (complexity <10 each)
+    
+    fn is_control_flow_expr(expr_kind: &ExprKind) -> bool {
+        matches!(expr_kind, 
+            ExprKind::If { .. } | 
+            ExprKind::Let { .. } | 
+            ExprKind::For { .. } | 
+            ExprKind::While { .. } | 
+            ExprKind::Match { .. } | 
+            ExprKind::Break { .. } | 
+            ExprKind::Continue { .. } | 
+            ExprKind::Return { .. }
+        )
+    }
+    
+    fn is_data_structure_expr(expr_kind: &ExprKind) -> bool {
+        matches!(expr_kind,
+            ExprKind::List(_) |
+            ExprKind::Block(_) |
+            ExprKind::Tuple(_) |
+            ExprKind::Range { .. }
+        )
+    }
+    
+    fn is_assignment_expr(expr_kind: &ExprKind) -> bool {
+        matches!(expr_kind,
+            ExprKind::Assign { .. } |
+            ExprKind::CompoundAssign { .. }
+        )
+    }
+    
+    fn eval_control_flow_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        match expr_kind {
+            ExprKind::If { condition, then_branch, else_branch } => 
+                self.eval_if_expr(condition, then_branch, else_branch.as_deref()),
+            ExprKind::Let { name, value, body, .. } => 
+                self.eval_let_expr(name, value, body),
+            ExprKind::For { var, pattern, iter, body } => 
+                self.eval_for_loop(var, pattern.as_ref(), iter, body),
+            ExprKind::While { condition, body } => 
+                self.eval_while_loop(condition, body),
+            ExprKind::Match { expr, arms } => 
+                self.eval_match(expr, arms),
+            ExprKind::Break { label: _ } => 
+                Err(InterpreterError::RuntimeError("break".to_string())),
+            ExprKind::Continue { label: _ } => 
+                Err(InterpreterError::RuntimeError("continue".to_string())),
+            ExprKind::Return { value } => 
+                self.eval_return_expr(value.as_deref()),
+            _ => unreachable!("Non-control-flow expression passed to eval_control_flow_expr"),
+        }
+    }
+    
+    fn eval_data_structure_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        match expr_kind {
             ExprKind::List(elements) => self.eval_list_expr(elements),
             ExprKind::Block(statements) => self.eval_block_expr(statements),
             ExprKind::Tuple(elements) => self.eval_tuple_expr(elements),
             ExprKind::Range { start, end, inclusive } => self.eval_range_expr(start, end, *inclusive),
-            
-            // String and assignment
-            ExprKind::StringInterpolation { parts } => self.eval_string_interpolation(parts),
+            _ => unreachable!("Non-data-structure expression passed to eval_data_structure_expr"),
+        }
+    }
+    
+    fn eval_assignment_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+        match expr_kind {
             ExprKind::Assign { target, value } => self.eval_assign(target, value),
             ExprKind::CompoundAssign { target, op, value } => self.eval_compound_assign(target, *op, value),
-            
-            // Handle qualified names (like HashMap::new)
-            ExprKind::QualifiedName { module, name } => {
-                if module == "HashMap" && name == "new" {
-                    // Return the builtin HashMap marker
-                    Ok(Value::String(Rc::new("__builtin_hashmap__".to_string())))
-                } else {
-                    Err(InterpreterError::RuntimeError(format!(
-                        "Unknown qualified name: {}::{}",
-                        module, name
-                    )))
-                }
-            }
-            
-            // Placeholder implementations for other expression types
-            _ => Err(InterpreterError::RuntimeError(format!(
-                "Expression type not yet implemented: {expr_kind:?}"
-            ))),
+            _ => unreachable!("Non-assignment expression passed to eval_assignment_expr"),
+        }
+    }
+    
+    fn eval_qualified_name(&self, module: &str, name: &str) -> Result<Value, InterpreterError> {
+        if module == "HashMap" && name == "new" {
+            Ok(Value::String(Rc::new("__builtin_hashmap__".to_string())))
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
+                "Unknown qualified name: {}::{}",
+                module, name
+            )))
         }
     }
 
@@ -1921,11 +1981,51 @@ impl Interpreter {
         right: &Value,
     ) -> Result<Value, InterpreterError> {
         match op {
+            AstBinaryOp::Add | AstBinaryOp::Subtract | AstBinaryOp::Multiply | 
+            AstBinaryOp::Divide | AstBinaryOp::Modulo | AstBinaryOp::Power => {
+                self.eval_arithmetic_op(op, left, right)
+            }
+            AstBinaryOp::Equal | AstBinaryOp::NotEqual | AstBinaryOp::Less | 
+            AstBinaryOp::Greater | AstBinaryOp::LessEqual | AstBinaryOp::GreaterEqual => {
+                self.eval_comparison_op(op, left, right)
+            }
+            AstBinaryOp::And | AstBinaryOp::Or => {
+                self.eval_logical_op(op, left, right)
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Binary operator not yet implemented: {op:?}"
+            ))),
+        }
+    }
+    
+    /// Handle arithmetic operations (Add, Subtract, Multiply, Divide, Modulo, Power)
+    fn eval_arithmetic_op(
+        &self,
+        op: AstBinaryOp,
+        left: &Value,
+        right: &Value,
+    ) -> Result<Value, InterpreterError> {
+        match op {
             AstBinaryOp::Add => self.add_values(left, right),
             AstBinaryOp::Subtract => self.sub_values(left, right),
             AstBinaryOp::Multiply => self.mul_values(left, right),
             AstBinaryOp::Divide => self.div_values(left, right),
+            AstBinaryOp::Modulo => self.modulo_values(left, right),
+            AstBinaryOp::Power => self.power_values(left, right),
+            _ => unreachable!("Non-arithmetic operation passed to eval_arithmetic_op"),
+        }
+    }
+    
+    /// Handle comparison operations (Equal, NotEqual, Less, Greater, LessEqual, GreaterEqual)
+    fn eval_comparison_op(
+        &self,
+        op: AstBinaryOp,
+        left: &Value,
+        right: &Value,
+    ) -> Result<Value, InterpreterError> {
+        match op {
             AstBinaryOp::Equal => Ok(Value::from_bool(self.equal_values(left, right))),
+            AstBinaryOp::NotEqual => Ok(Value::from_bool(!self.equal_values(left, right))),
             AstBinaryOp::Less => Ok(Value::from_bool(self.less_than_values(left, right)?)),
             AstBinaryOp::Greater => Ok(Value::from_bool(self.greater_than_values(left, right)?)),
             AstBinaryOp::LessEqual => {
@@ -1938,7 +2038,18 @@ impl Interpreter {
                 let equal = self.equal_values(left, right);
                 Ok(Value::from_bool(greater || equal))
             }
-            AstBinaryOp::NotEqual => Ok(Value::from_bool(!self.equal_values(left, right))),
+            _ => unreachable!("Non-comparison operation passed to eval_comparison_op"),
+        }
+    }
+    
+    /// Handle logical operations (And, Or)
+    fn eval_logical_op(
+        &self,
+        op: AstBinaryOp,
+        left: &Value,
+        right: &Value,
+    ) -> Result<Value, InterpreterError> {
+        match op {
             AstBinaryOp::And => {
                 // Short-circuit evaluation for logical AND
                 if left.is_truthy() {
@@ -1955,11 +2066,7 @@ impl Interpreter {
                     Ok(right.clone())
                 }
             }
-            AstBinaryOp::Modulo => self.modulo_values(left, right),
-            AstBinaryOp::Power => self.power_values(left, right),
-            _ => Err(InterpreterError::RuntimeError(format!(
-                "Binary operator not yet implemented: {op:?}"
-            ))),
+            _ => unreachable!("Non-logical operation passed to eval_logical_op"),
         }
     }
 
@@ -2475,79 +2582,80 @@ impl Interpreter {
     fn pattern_matches(&self, pattern: &Pattern, value: &Value) -> Result<bool, InterpreterError> {
         match pattern {
             Pattern::Wildcard => Ok(true),
-            Pattern::Literal(lit) => {
-                let lit_value = self.eval_literal(lit);
-                Ok(lit_value == *value)
+            Pattern::Literal(lit) => self.match_literal_pattern(lit, value),
+            Pattern::Identifier(_name) => Ok(true), // Always matches, binding handled separately
+            Pattern::Tuple(patterns) => self.match_tuple_pattern(patterns, value),
+            Pattern::List(patterns) => self.match_list_pattern(patterns, value),
+            Pattern::Or(patterns) => self.match_or_pattern(patterns, value),
+            Pattern::Range { start, end, inclusive } => self.match_range_pattern(start, end, *inclusive, value),
+            _ => Ok(false), // Other patterns not yet implemented
+        }
+    }
+    
+    // Helper methods for pattern matching (complexity <10 each)
+    
+    fn match_literal_pattern(&self, lit: &Literal, value: &Value) -> Result<bool, InterpreterError> {
+        let lit_value = self.eval_literal(lit);
+        Ok(lit_value == *value)
+    }
+    
+    fn match_tuple_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
+        if let Value::Tuple(elements) = value {
+            self.match_sequence_patterns(patterns, elements)
+        } else {
+            Ok(false)
+        }
+    }
+    
+    fn match_list_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
+        if let Value::Array(elements) = value {
+            self.match_sequence_patterns(patterns, elements)
+        } else {
+            Ok(false)
+        }
+    }
+    
+    fn match_sequence_patterns(&self, patterns: &[Pattern], elements: &[Value]) -> Result<bool, InterpreterError> {
+        if patterns.len() != elements.len() {
+            return Ok(false);
+        }
+        for (pat, val) in patterns.iter().zip(elements.iter()) {
+            if !self.pattern_matches(pat, val)? {
+                return Ok(false);
             }
-            Pattern::Identifier(_name) => {
-                // Identifier patterns always match and bind the value
-                // Binding is handled separately
-                Ok(true)
+        }
+        Ok(true)
+    }
+    
+    fn match_or_pattern(&self, patterns: &[Pattern], value: &Value) -> Result<bool, InterpreterError> {
+        for pat in patterns {
+            if self.pattern_matches(pat, value)? {
+                return Ok(true);
             }
-            Pattern::Tuple(patterns) => {
-                if let Value::Tuple(elements) = value {
-                    if patterns.len() != elements.len() {
-                        return Ok(false);
-                    }
-                    for (pat, val) in patterns.iter().zip(elements.iter()) {
-                        if !self.pattern_matches(pat, val)? {
-                            return Ok(false);
-                        }
-                    }
-                    Ok(true)
-                } else {
-                    Ok(false)
-                }
+        }
+        Ok(false)
+    }
+    
+    fn match_range_pattern(&self, start: &Box<Pattern>, end: &Box<Pattern>, inclusive: bool, value: &Value) -> Result<bool, InterpreterError> {
+        if let Value::Integer(i) = value {
+            let start_val = self.extract_integer_from_pattern(start)?;
+            let end_val = self.extract_integer_from_pattern(end)?;
+            
+            if inclusive {
+                Ok(*i >= start_val && *i <= end_val)
+            } else {
+                Ok(*i >= start_val && *i < end_val)
             }
-            Pattern::List(patterns) => {
-                if let Value::Array(elements) = value {
-                    if patterns.len() != elements.len() {
-                        return Ok(false);
-                    }
-                    for (pat, val) in patterns.iter().zip(elements.iter()) {
-                        if !self.pattern_matches(pat, val)? {
-                            return Ok(false);
-                        }
-                    }
-                    Ok(true)
-                } else {
-                    Ok(false)
-                }
-            }
-            Pattern::Or(patterns) => {
-                for pat in patterns {
-                    if self.pattern_matches(pat, value)? {
-                        return Ok(true);
-                    }
-                }
-                Ok(false)
-            }
-            Pattern::Range { start, end, inclusive } => {
-                if let Value::Integer(i) = value {
-                    let start_val = if let Pattern::Literal(Literal::Integer(s)) = &**start {
-                        *s
-                    } else {
-                        return Ok(false);
-                    };
-                    let end_val = if let Pattern::Literal(Literal::Integer(e)) = &**end {
-                        *e
-                    } else {
-                        return Ok(false);
-                    };
-                    
-                    if *inclusive {
-                        Ok(*i >= start_val && *i <= end_val)
-                    } else {
-                        Ok(*i >= start_val && *i < end_val)
-                    }
-                } else {
-                    Ok(false)
-                }
-            }
-            _ => {
-                // Other patterns not yet implemented
-                Ok(false)
-            }
+        } else {
+            Ok(false)
+        }
+    }
+    
+    fn extract_integer_from_pattern(&self, pattern: &Pattern) -> Result<i64, InterpreterError> {
+        if let Pattern::Literal(Literal::Integer(val)) = pattern {
+            Ok(*val)
+        } else {
+            Err(InterpreterError::RuntimeError("Range pattern requires integer literals".to_string()))
         }
     }
     
@@ -2944,84 +3052,96 @@ impl Interpreter {
     #[allow(clippy::rc_buffer)]
     fn eval_array_higher_order_method(&mut self, arr: &Rc<Vec<Value>>, method: &str, args: &[Value]) -> Result<Value, InterpreterError> {
         match method {
-            "map" if args.len() == 1 => {
-                if let Value::Closure { .. } = &args[0] {
-                    let mut result = Vec::new();
-                    for item in arr.iter() {
-                        let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
-                        result.push(func_result);
-                    }
-                    Ok(Value::Array(Rc::new(result)))
-                } else {
-                    Err(InterpreterError::RuntimeError("map expects a function argument".to_string()))
-                }
-            }
-            "filter" if args.len() == 1 => {
-                if let Value::Closure { .. } = &args[0] {
-                    let mut result = Vec::new();
-                    for item in arr.iter() {
-                        let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
-                        if func_result.is_truthy() {
-                            result.push(item.clone());
-                        }
-                    }
-                    Ok(Value::Array(Rc::new(result)))
-                } else {
-                    Err(InterpreterError::RuntimeError("filter expects a function argument".to_string()))
-                }
-            }
-            "reduce" if args.len() == 2 => {
-                if let Value::Closure { .. } = &args[0] {
-                    let mut accumulator = args[1].clone();
-                    for item in arr.iter() {
-                        accumulator = self.eval_function_call_value(&args[0], &[accumulator, item.clone()])?;
-                    }
-                    Ok(accumulator)
-                } else {
-                    Err(InterpreterError::RuntimeError("reduce expects a function and initial value".to_string()))
-                }
-            }
-            "any" if args.len() == 1 => {
-                if let Value::Closure { .. } = &args[0] {
-                    for item in arr.iter() {
-                        let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
-                        if func_result.is_truthy() {
-                            return Ok(Value::Bool(true));
-                        }
-                    }
-                    Ok(Value::Bool(false))
-                } else {
-                    Err(InterpreterError::RuntimeError("any expects a function argument".to_string()))
-                }
-            }
-            "all" if args.len() == 1 => {
-                if let Value::Closure { .. } = &args[0] {
-                    for item in arr.iter() {
-                        let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
-                        if !func_result.is_truthy() {
-                            return Ok(Value::Bool(false));
-                        }
-                    }
-                    Ok(Value::Bool(true))
-                } else {
-                    Err(InterpreterError::RuntimeError("all expects a function argument".to_string()))
-                }
-            }
-            "find" if args.len() == 1 => {
-                if let Value::Closure { .. } = &args[0] {
-                    for item in arr.iter() {
-                        let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
-                        if func_result.is_truthy() {
-                            return Ok(item.clone());
-                        }
-                    }
-                    Ok(Value::Nil)
-                } else {
-                    Err(InterpreterError::RuntimeError("find expects a function argument".to_string()))
-                }
-            }
+            "map" => self.eval_array_map_method(arr, args),
+            "filter" => self.eval_array_filter_method(arr, args),
+            "reduce" => self.eval_array_reduce_method(arr, args),
+            "any" => self.eval_array_any_method(arr, args),
+            "all" => self.eval_array_all_method(arr, args),
+            "find" => self.eval_array_find_method(arr, args),
             _ => Err(InterpreterError::RuntimeError(format!("Unknown array method: {}", method))),
         }
+    }
+    
+    // Helper methods for array higher-order functions (complexity <10 each)
+    
+    fn eval_array_map_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
+        self.validate_single_closure_argument(args, "map")?;
+        let mut result = Vec::new();
+        for item in arr.iter() {
+            let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
+            result.push(func_result);
+        }
+        Ok(Value::Array(Rc::new(result)))
+    }
+    
+    fn eval_array_filter_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
+        self.validate_single_closure_argument(args, "filter")?;
+        let mut result = Vec::new();
+        for item in arr.iter() {
+            let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
+            if func_result.is_truthy() {
+                result.push(item.clone());
+            }
+        }
+        Ok(Value::Array(Rc::new(result)))
+    }
+    
+    fn eval_array_reduce_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
+        if args.len() != 2 {
+            return Err(InterpreterError::RuntimeError("reduce expects 2 arguments".to_string()));
+        }
+        if !matches!(&args[0], Value::Closure { .. }) {
+            return Err(InterpreterError::RuntimeError("reduce expects a function and initial value".to_string()));
+        }
+        
+        let mut accumulator = args[1].clone();
+        for item in arr.iter() {
+            accumulator = self.eval_function_call_value(&args[0], &[accumulator, item.clone()])?;
+        }
+        Ok(accumulator)
+    }
+    
+    fn eval_array_any_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
+        self.validate_single_closure_argument(args, "any")?;
+        for item in arr.iter() {
+            let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
+            if func_result.is_truthy() {
+                return Ok(Value::Bool(true));
+            }
+        }
+        Ok(Value::Bool(false))
+    }
+    
+    fn eval_array_all_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
+        self.validate_single_closure_argument(args, "all")?;
+        for item in arr.iter() {
+            let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
+            if !func_result.is_truthy() {
+                return Ok(Value::Bool(false));
+            }
+        }
+        Ok(Value::Bool(true))
+    }
+    
+    fn eval_array_find_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
+        self.validate_single_closure_argument(args, "find")?;
+        for item in arr.iter() {
+            let func_result = self.eval_function_call_value(&args[0], std::slice::from_ref(item))?;
+            if func_result.is_truthy() {
+                return Ok(item.clone());
+            }
+        }
+        Ok(Value::Nil)
+    }
+    
+    fn validate_single_closure_argument(&self, args: &[Value], method_name: &str) -> Result<(), InterpreterError> {
+        if args.len() != 1 {
+            return Err(InterpreterError::RuntimeError(format!("{} expects 1 argument", method_name)));
+        }
+        if !matches!(&args[0], Value::Closure { .. }) {
+            return Err(InterpreterError::RuntimeError(format!("{} expects a function argument", method_name)));
+        }
+        Ok(())
     }
 
     /// Evaluate a method call
@@ -3030,31 +3150,58 @@ impl Interpreter {
         let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| self.eval_expr(arg)).collect();
         let arg_values = arg_values?;
         
-        match &receiver_value {
-            Value::String(s) => self.eval_string_method(s, method, &arg_values),
-            Value::Array(arr) => self.eval_array_method(arr, method, &arg_values),
-            Value::Float(f) => match method {
-                "sqrt" if args.is_empty() => Ok(Value::Float(f.sqrt())),
-                "abs" if args.is_empty() => Ok(Value::Float(f.abs())),
-                "round" if args.is_empty() => Ok(Value::Float(f.round())),
-                "floor" if args.is_empty() => Ok(Value::Float(f.floor())),
-                "ceil" if args.is_empty() => Ok(Value::Float(f.ceil())),
-                "to_string" if args.is_empty() => Ok(Value::from_string(f.to_string())),
-                _ => Err(InterpreterError::RuntimeError(format!("Unknown float method: {}", method))),
-            },
-            Value::Integer(n) => match method {
-                "abs" if args.is_empty() => Ok(Value::Integer(n.abs())),
-                "to_string" if args.is_empty() => Ok(Value::from_string(n.to_string())),
-                _ => Err(InterpreterError::RuntimeError(format!("Unknown integer method: {}", method))),
-            },
-            _ if method == "to_string" && args.is_empty() => {
-                Ok(Value::from_string(receiver_value.to_string()))
-            }
-            _ => Err(InterpreterError::RuntimeError(format!(
+        self.dispatch_method_call(&receiver_value, method, &arg_values, args.is_empty())
+    }
+    
+    // Helper methods for method dispatch (complexity <10 each)
+    
+    fn dispatch_method_call(&mut self, receiver: &Value, method: &str, arg_values: &[Value], args_empty: bool) -> Result<Value, InterpreterError> {
+        match receiver {
+            Value::String(s) => self.eval_string_method(s, method, arg_values),
+            Value::Array(arr) => self.eval_array_method(arr, method, arg_values),
+            Value::Float(f) => self.eval_float_method(*f, method, args_empty),
+            Value::Integer(n) => self.eval_integer_method(*n, method, args_empty),
+            _ => self.eval_generic_method(receiver, method, args_empty),
+        }
+    }
+    
+    fn eval_float_method(&self, f: f64, method: &str, args_empty: bool) -> Result<Value, InterpreterError> {
+        if !args_empty {
+            return Err(InterpreterError::RuntimeError(format!("Float method '{}' takes no arguments", method)));
+        }
+        
+        match method {
+            "sqrt" => Ok(Value::Float(f.sqrt())),
+            "abs" => Ok(Value::Float(f.abs())),
+            "round" => Ok(Value::Float(f.round())),
+            "floor" => Ok(Value::Float(f.floor())),
+            "ceil" => Ok(Value::Float(f.ceil())),
+            "to_string" => Ok(Value::from_string(f.to_string())),
+            _ => Err(InterpreterError::RuntimeError(format!("Unknown float method: {}", method))),
+        }
+    }
+    
+    fn eval_integer_method(&self, n: i64, method: &str, args_empty: bool) -> Result<Value, InterpreterError> {
+        if !args_empty {
+            return Err(InterpreterError::RuntimeError(format!("Integer method '{}' takes no arguments", method)));
+        }
+        
+        match method {
+            "abs" => Ok(Value::Integer(n.abs())),
+            "to_string" => Ok(Value::from_string(n.to_string())),
+            _ => Err(InterpreterError::RuntimeError(format!("Unknown integer method: {}", method))),
+        }
+    }
+    
+    fn eval_generic_method(&self, receiver: &Value, method: &str, args_empty: bool) -> Result<Value, InterpreterError> {
+        if method == "to_string" && args_empty {
+            Ok(Value::from_string(receiver.to_string()))
+        } else {
+            Err(InterpreterError::RuntimeError(format!(
                 "Method '{}' not found for type {}",
                 method,
-                receiver_value.type_name()
-            ))),
+                receiver.type_name()
+            )))
         }
     }
     

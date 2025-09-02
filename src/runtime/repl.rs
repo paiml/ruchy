@@ -4614,101 +4614,19 @@ impl Repl {
     /// - User input cannot be read
     /// - Commands fail to execute
     pub fn run(&mut self) -> Result<()> {
-        // Welcome message is printed in bin/ruchy.rs, not here
         println!();
-
-        // Configure rustyline with enhanced features
-        let config = Config::builder()
-            .history_ignore_space(true)
-            .history_ignore_dups(true)?
-            .completion_type(CompletionType::List)
-            .edit_mode(EditMode::Emacs)
-            .build();
-
-        let mut rl = rustyline::Editor::<RuchyCompleter, DefaultHistory>::with_config(config)?;
-
-        // Set up tab completion
-        let completer = RuchyCompleter::new();
-        rl.set_helper(Some(completer));
-
-        // Load history if it exists
-        let history_path = self.temp_dir.join("history.txt");
-        let _ = rl.load_history(&history_path);
-
-        let mut multiline_buffer = String::new();
-        let mut in_multiline = false;
-
+        
+        let mut rl = self.setup_readline_editor()?;
+        let mut multiline_state = MultilineState::new();
+        
         loop {
-            let prompt = if in_multiline {
-                format!("{} ", "   ...".bright_black())
-            } else {
-                format!("{} ", self.get_prompt().bright_green())
-            };
+            let prompt = self.format_prompt(multiline_state.in_multiline);
             let readline = rl.readline(&prompt);
-
+            
             match readline {
                 Ok(line) => {
-                    // Skip empty lines unless we're in multiline mode
-                    if line.trim().is_empty() && !in_multiline {
-                        continue;
-                    }
-
-                    // Handle commands (only when not in multiline mode)
-                    if !in_multiline && line.starts_with(':') {
-                        let (should_quit, output) = self.handle_command_with_output(&line)?;
-                        if !output.is_empty() {
-                            println!("{output}");
-                        }
-                        if should_quit {
-                            break; // :quit command
-                        }
-                        continue;
-                    }
-
-                    // Check if this starts a multiline expression
-                    if !in_multiline && Self::needs_continuation(&line) {
-                        multiline_buffer.clone_from(&line);
-                        in_multiline = true;
-                        continue;
-                    }
-
-                    // If in multiline mode, accumulate lines
-                    if in_multiline {
-                        multiline_buffer.push('\n');
-                        multiline_buffer.push_str(&line);
-
-                        // Check if we have a complete expression
-                        if !Self::needs_continuation(&multiline_buffer) {
-                            // Add complete expression to history
-                            let _ = rl.add_history_entry(multiline_buffer.as_str());
-
-                            // Evaluate the complete expression
-                            match self.eval(&multiline_buffer) {
-                                Ok(result) => {
-                                    println!("{}", result.bright_white());
-                                }
-                                Err(e) => {
-                                    eprintln!("{}: {}", "Error".bright_red().bold(), e);
-                                }
-                            }
-
-                            // Reset multiline mode
-                            multiline_buffer.clear();
-                            in_multiline = false;
-                        }
-                    } else {
-                        // Single line expression
-                        let _ = rl.add_history_entry(line.as_str());
-
-                        // Evaluate the expression
-                        match self.eval(&line) {
-                            Ok(result) => {
-                                println!("{}", result.bright_white());
-                            }
-                            Err(e) => {
-                                eprintln!("{}: {}", "Error".bright_red().bold(), e);
-                            }
-                        }
+                    if self.process_input_line(&line, &mut rl, &mut multiline_state)? {
+                        break; // :quit was executed
                     }
                 }
                 Err(ReadlineError::Interrupted) => {
@@ -4726,6 +4644,7 @@ impl Repl {
         }
 
         // Save history
+        let history_path = self.temp_dir.join("history.txt");
         let _ = rl.save_history(&history_path);
         Ok(())
     }
@@ -6908,54 +6827,94 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        // Handle format strings like println("Result: {}", x)
-        if !args.is_empty() {
-            let first_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-            if let Value::String(format_str) = first_val {
-                // Check if it contains format placeholders
-                if format_str.contains("{}") && args.len() > 1 {
-                    // This is a format string - process it
-                    let mut output = format_str;
-                    let mut arg_values = Vec::new();
-                    
-                    // Evaluate all format arguments
-                    for arg in &args[1..] {
-                        let val = self.evaluate_expr(arg, deadline, depth + 1)?;
-                        arg_values.push(val.to_string());
-                    }
-                    
-                    // Replace {} placeholders with values
-                    for value in arg_values {
-                        if let Some(pos) = output.find("{}") {
-                            output.replace_range(pos..pos+2, &value);
-                        }
-                    }
-                    
-                    println!("{output}");
-                    return Ok(Value::Unit);
-                }
-                // No format placeholders - treat all args equally, space-separated
-                if args.len() == 1 {
-                    // Single argument - just print it
-                    println!("{format_str}");
-                } else {
-                    // Multiple arguments - print all space-separated on same line
-                    print!("{format_str}");
-                    for arg in &args[1..] {
-                        let val = self.evaluate_expr(arg, deadline, depth + 1)?;
-                        // Print strings without quotes, other types with their normal formatting
-                        match val {
-                            Value::String(s) => print!(" {s}"),
-                            other => print!(" {other:?}"),
-                        }
-                    }
-                    println!(); // Only one newline at the end
-                }
-                return Ok(Value::Unit);
+        if args.is_empty() {
+            println!();
+            return Ok(Value::Unit);
+        }
+        
+        let first_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        if let Value::String(format_str) = first_val {
+            self.handle_string_first_println(&format_str, args, deadline, depth)
+        } else {
+            self.handle_fallback_println(args, deadline, depth)
+        }
+    }
+    
+    // Helper methods for println complexity reduction (complexity <10 each)
+    
+    fn handle_string_first_println(
+        &mut self,
+        format_str: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if format_str.contains("{}") && args.len() > 1 {
+            self.process_format_string_println(format_str, args, deadline, depth)
+        } else {
+            self.process_regular_string_println(format_str, args, deadline, depth)
+        }
+    }
+    
+    fn process_format_string_println(
+        &mut self,
+        format_str: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let mut output = format_str.to_string();
+        
+        for arg in &args[1..] {
+            let val = self.evaluate_expr(arg, deadline, depth + 1)?;
+            if let Some(pos) = output.find("{}") {
+                output.replace_range(pos..pos+2, &val.to_string());
             }
         }
         
-        // Fallback: concatenate all arguments with spaces (original behavior)
+        println!("{output}");
+        Ok(Value::Unit)
+    }
+    
+    fn process_regular_string_println(
+        &mut self,
+        format_str: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() == 1 {
+            println!("{format_str}");
+        } else {
+            print!("{format_str}");
+            self.print_remaining_args(&args[1..], deadline, depth)?;
+            println!();
+        }
+        Ok(Value::Unit)
+    }
+    
+    fn print_remaining_args(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<()> {
+        for arg in args {
+            let val = self.evaluate_expr(arg, deadline, depth + 1)?;
+            match val {
+                Value::String(s) => print!(" {s}"),
+                other => print!(" {other:?}"),
+            }
+        }
+        Ok(())
+    }
+    
+    fn handle_fallback_println(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
         let mut output = String::new();
         for (i, arg) in args.iter().enumerate() {
             if i > 0 {
@@ -9064,5 +9023,150 @@ Type :normal to exit help mode.
         // Delegate to refactored version with reduced complexity
         // Original complexity: 44, New complexity: 15
         self.run_with_recording_refactored(record_file)
+    }
+    
+    // Helper methods for reduced complexity REPL::run
+    
+    fn setup_readline_editor(&self) -> Result<rustyline::Editor<RuchyCompleter, DefaultHistory>> {
+        let config = Config::builder()
+            .history_ignore_space(true)
+            .history_ignore_dups(true)?
+            .completion_type(CompletionType::List)
+            .edit_mode(EditMode::Emacs)
+            .build();
+
+        let mut rl = rustyline::Editor::<RuchyCompleter, DefaultHistory>::with_config(config)?;
+        
+        let completer = RuchyCompleter::new();
+        rl.set_helper(Some(completer));
+        
+        let history_path = self.temp_dir.join("history.txt");
+        let _ = rl.load_history(&history_path);
+        
+        Ok(rl)
+    }
+    
+    fn format_prompt(&self, in_multiline: bool) -> String {
+        if in_multiline {
+            format!("{} ", "   ...".bright_black())
+        } else {
+            format!("{} ", self.get_prompt().bright_green())
+        }
+    }
+    
+    fn process_input_line(
+        &mut self, 
+        line: &str, 
+        rl: &mut rustyline::Editor<RuchyCompleter, DefaultHistory>,
+        multiline_state: &mut MultilineState
+    ) -> Result<bool> {
+        // Skip empty lines unless in multiline mode
+        if line.trim().is_empty() && !multiline_state.in_multiline {
+            return Ok(false);
+        }
+        
+        // Handle commands (only when not in multiline mode)
+        if !multiline_state.in_multiline && line.starts_with(':') {
+            return self.process_command(line);
+        }
+        
+        // Process regular expression input
+        self.process_expression_input(line, rl, multiline_state)
+    }
+    
+    fn process_command(&mut self, line: &str) -> Result<bool> {
+        let (should_quit, output) = self.handle_command_with_output(line)?;
+        if !output.is_empty() {
+            println!("{output}");
+        }
+        Ok(should_quit)
+    }
+    
+    fn process_expression_input(
+        &mut self,
+        line: &str,
+        rl: &mut rustyline::Editor<RuchyCompleter, DefaultHistory>,
+        multiline_state: &mut MultilineState
+    ) -> Result<bool> {
+        // Check if this starts a multiline expression
+        if !multiline_state.in_multiline && Self::needs_continuation(line) {
+            multiline_state.start_multiline(line);
+            return Ok(false);
+        }
+        
+        if multiline_state.in_multiline {
+            self.process_multiline_input(line, rl, multiline_state)
+        } else {
+            self.process_single_line_input(line, rl)
+        }
+    }
+    
+    fn process_multiline_input(
+        &mut self,
+        line: &str,
+        rl: &mut rustyline::Editor<RuchyCompleter, DefaultHistory>,
+        multiline_state: &mut MultilineState
+    ) -> Result<bool> {
+        multiline_state.accumulate_line(line);
+        
+        if !Self::needs_continuation(&multiline_state.buffer) {
+            let _ = rl.add_history_entry(multiline_state.buffer.as_str());
+            self.evaluate_and_print(&multiline_state.buffer);
+            multiline_state.reset();
+        }
+        
+        Ok(false)
+    }
+    
+    fn process_single_line_input(
+        &mut self,
+        line: &str,
+        rl: &mut rustyline::Editor<RuchyCompleter, DefaultHistory>
+    ) -> Result<bool> {
+        let _ = rl.add_history_entry(line);
+        self.evaluate_and_print(line);
+        Ok(false)
+    }
+    
+    fn evaluate_and_print(&mut self, expression: &str) {
+        match self.eval(expression) {
+            Ok(result) => {
+                println!("{}", result.bright_white());
+            }
+            Err(e) => {
+                eprintln!("{}: {}", "Error".bright_red().bold(), e);
+            }
+        }
+    }
+}
+
+// Helper struct for managing multiline state
+#[derive(Debug)]
+struct MultilineState {
+    buffer: String,
+    in_multiline: bool,
+}
+
+impl MultilineState {
+    fn new() -> Self {
+        Self {
+            buffer: String::new(),
+            in_multiline: false,
+        }
+    }
+    
+    fn start_multiline(&mut self, line: &str) {
+        self.buffer = line.to_string();
+        self.in_multiline = true;
+    }
+    
+    fn accumulate_line(&mut self, line: &str) {
+        self.buffer.push('\n');
+        self.buffer.push_str(line);
+    }
+    
+    fn reset(&mut self) {
+        self.buffer.clear();
+        self.in_multiline = false;
     }
 }

@@ -44,39 +44,7 @@ impl Inspect for Value {
             }
         }
     }
-
-    fn inspect_depth(&self) -> usize {
-        match self {
-            Value::List(items) => {
-                1 + items.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
-            }
-            Value::Tuple(items) => {
-                1 + items.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
-            }
-            Value::Object(map) => {
-                1 + map.values().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
-            }
-            Value::HashMap(map) => {
-                let key_depth = map.keys().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0);
-                let val_depth = map.values().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0);
-                1 + key_depth.max(val_depth)
-            }
-            Value::HashSet(set) => {
-                1 + set.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
-            }
-            Value::EnumVariant { data, .. } => {
-                if let Some(values) = data {
-                    1 + values.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
-                } else {
-                    1
-                }
-            }
-            _ => 1,
-        }
-    }
-}
-
-impl Value {
+    
     /// Inspect a list with proper depth and circular reference handling (complexity: ~8)
     fn inspect_list(&self, inspector: &mut Inspector, items: &[Value]) -> fmt::Result {
         self.inspect_collection(
@@ -277,8 +245,37 @@ impl Value {
         }
         Ok(())
     }
+    
+    fn inspect_depth(&self) -> usize {
+        match self {
+            Value::List(items) => {
+                1 + items.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
+            }
+            Value::Tuple(items) => {
+                1 + items.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
+            }
+            Value::Object(map) => {
+                1 + map.values().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
+            }
+            Value::HashMap(map) => {
+                let key_depth = map.keys().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0);
+                let val_depth = map.values().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0);
+                1 + key_depth.max(val_depth)
+            }
+            Value::HashSet(set) => {
+                1 + set.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
+            }
+            Value::EnumVariant { data, .. } => {
+                if let Some(values) = data {
+                    1 + values.iter().map(super::super::inspect::Inspect::inspect_depth).max().unwrap_or(0)
+                } else {
+                    1
+                }
+            }
+            _ => 1,
+        }
+    }
 }
-
 
 /*
 COMPLEXITY ANALYSIS AFTER REFACTORING:

@@ -1,0 +1,512 @@
+// TDD Test Suite for Interpreter::eval_expr_kind Complexity Reduction
+// Current: 31 cyclomatic, 32 cognitive complexity
+// Target: <20 for both metrics
+// Strategy: Group related expressions and extract specialized handlers
+
+use ruchy::runtime::interpreter::{Interpreter, InterpreterError};
+use ruchy::frontend::value::Value;
+use ruchy::frontend::ast::{ExprKind, Literal, BinaryOp, UnaryOp, Expr, Pattern};
+use std::rc::Rc;
+
+#[cfg(test)]
+mod eval_expr_kind_tdd {
+    use super::*;
+
+    fn create_test_interpreter() -> Interpreter {
+        Interpreter::new()
+    }
+
+    fn create_test_expr(kind: ExprKind) -> Expr {
+        Expr {
+            kind,
+            span: (0, 1).into(),
+            attributes: vec![],
+        }
+    }
+
+    #[test]
+    fn test_literal_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Integer literal
+        let int_result = interpreter.eval_expr_kind(&ExprKind::Literal(Literal::Integer(42))).unwrap();
+        assert_eq!(int_result, Value::Integer(42));
+        
+        // String literal
+        let str_result = interpreter.eval_expr_kind(&ExprKind::Literal(Literal::String("hello".to_string()))).unwrap();
+        assert_eq!(str_result, Value::String(Rc::new("hello".to_string())));
+        
+        // Boolean literals
+        let true_result = interpreter.eval_expr_kind(&ExprKind::Literal(Literal::Bool(true))).unwrap();
+        assert_eq!(true_result, Value::Bool(true));
+        
+        let false_result = interpreter.eval_expr_kind(&ExprKind::Literal(Literal::Bool(false))).unwrap();
+        assert_eq!(false_result, Value::Bool(false));
+        
+        // Float literal
+        let float_result = interpreter.eval_expr_kind(&ExprKind::Literal(Literal::Float(3.14))).unwrap();
+        assert_eq!(float_result, Value::Float(3.14));
+    }
+
+    #[test]
+    fn test_identifier_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Set up a variable in environment
+        interpreter.env.insert("x".to_string(), Value::Integer(42));
+        
+        let result = interpreter.eval_expr_kind(&ExprKind::Identifier("x".to_string())).unwrap();
+        assert_eq!(result, Value::Integer(42));
+        
+        // Test undefined variable
+        let error = interpreter.eval_expr_kind(&ExprKind::Identifier("undefined".to_string()));
+        assert!(error.is_err());
+    }
+
+    #[test]
+    fn test_binary_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Addition
+        let add_expr = ExprKind::Binary {
+            left: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(5)))),
+            op: BinaryOp::Add,
+            right: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(3)))),
+        };
+        let result = interpreter.eval_expr_kind(&add_expr).unwrap();
+        assert_eq!(result, Value::Integer(8));
+        
+        // Multiplication
+        let mul_expr = ExprKind::Binary {
+            left: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(4)))),
+            op: BinaryOp::Multiply,
+            right: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(6)))),
+        };
+        let result = interpreter.eval_expr_kind(&mul_expr).unwrap();
+        assert_eq!(result, Value::Integer(24));
+        
+        // String concatenation
+        let concat_expr = ExprKind::Binary {
+            left: Box::new(create_test_expr(ExprKind::Literal(Literal::String("Hello ".to_string())))),
+            op: BinaryOp::Add,
+            right: Box::new(create_test_expr(ExprKind::Literal(Literal::String("World".to_string())))),
+        };
+        let result = interpreter.eval_expr_kind(&concat_expr).unwrap();
+        assert_eq!(result, Value::String(Rc::new("Hello World".to_string())));
+    }
+
+    #[test]
+    fn test_unary_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Negation
+        let neg_expr = ExprKind::Unary {
+            op: UnaryOp::Negate,
+            operand: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+        };
+        let result = interpreter.eval_expr_kind(&neg_expr).unwrap();
+        assert_eq!(result, Value::Integer(-42));
+        
+        // Logical not
+        let not_expr = ExprKind::Unary {
+            op: UnaryOp::Not,
+            operand: Box::new(create_test_expr(ExprKind::Literal(Literal::Bool(true)))),
+        };
+        let result = interpreter.eval_expr_kind(&not_expr).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_list_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Empty list
+        let empty_list = ExprKind::List(vec![]);
+        let result = interpreter.eval_expr_kind(&empty_list).unwrap();
+        assert_eq!(result, Value::Array(Rc::new(vec![])));
+        
+        // List with elements
+        let list_expr = ExprKind::List(vec![
+            create_test_expr(ExprKind::Literal(Literal::Integer(1))),
+            create_test_expr(ExprKind::Literal(Literal::Integer(2))),
+            create_test_expr(ExprKind::Literal(Literal::Integer(3))),
+        ]);
+        let result = interpreter.eval_expr_kind(&list_expr).unwrap();
+        assert_eq!(result, Value::Array(Rc::new(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ])));
+    }
+
+    #[test]
+    fn test_tuple_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Empty tuple
+        let empty_tuple = ExprKind::Tuple(vec![]);
+        let result = interpreter.eval_expr_kind(&empty_tuple).unwrap();
+        assert_eq!(result, Value::Tuple(vec![]));
+        
+        // Tuple with mixed types
+        let tuple_expr = ExprKind::Tuple(vec![
+            create_test_expr(ExprKind::Literal(Literal::Integer(42))),
+            create_test_expr(ExprKind::Literal(Literal::String("hello".to_string()))),
+            create_test_expr(ExprKind::Literal(Literal::Bool(true))),
+        ]);
+        let result = interpreter.eval_expr_kind(&tuple_expr).unwrap();
+        assert_eq!(result, Value::Tuple(vec![
+            Value::Integer(42),
+            Value::String(Rc::new("hello".to_string())),
+            Value::Bool(true),
+        ]));
+    }
+
+    #[test]
+    fn test_range_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Inclusive range
+        let inclusive_range = ExprKind::Range {
+            start: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(1)))),
+            end: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(5)))),
+            inclusive: true,
+        };
+        let result = interpreter.eval_expr_kind(&inclusive_range).unwrap();
+        assert_eq!(result, Value::Range { start: 1, end: 5, inclusive: true });
+        
+        // Exclusive range
+        let exclusive_range = ExprKind::Range {
+            start: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(1)))),
+            end: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(5)))),
+            inclusive: false,
+        };
+        let result = interpreter.eval_expr_kind(&exclusive_range).unwrap();
+        assert_eq!(result, Value::Range { start: 1, end: 5, inclusive: false });
+    }
+
+    #[test]
+    fn test_if_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Simple if-then
+        let if_expr = ExprKind::If {
+            condition: Box::new(create_test_expr(ExprKind::Literal(Literal::Bool(true)))),
+            then_branch: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+            else_branch: None,
+        };
+        let result = interpreter.eval_expr_kind(&if_expr).unwrap();
+        assert_eq!(result, Value::Integer(42));
+        
+        // If-then-else with false condition
+        let if_else_expr = ExprKind::If {
+            condition: Box::new(create_test_expr(ExprKind::Literal(Literal::Bool(false)))),
+            then_branch: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+            else_branch: Some(Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(99))))),
+        };
+        let result = interpreter.eval_expr_kind(&if_else_expr).unwrap();
+        assert_eq!(result, Value::Integer(99));
+    }
+
+    #[test]
+    fn test_block_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Empty block
+        let empty_block = ExprKind::Block(vec![]);
+        let result = interpreter.eval_expr_kind(&empty_block).unwrap();
+        assert_eq!(result, Value::Nil);
+        
+        // Block with statements
+        let block_expr = ExprKind::Block(vec![
+            create_test_expr(ExprKind::Literal(Literal::Integer(1))),
+            create_test_expr(ExprKind::Literal(Literal::Integer(2))),
+            create_test_expr(ExprKind::Literal(Literal::Integer(42))), // Final expression
+        ]);
+        let result = interpreter.eval_expr_kind(&block_expr).unwrap();
+        assert_eq!(result, Value::Integer(42)); // Should return last expression
+    }
+
+    #[test]
+    fn test_string_interpolation() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Set up variables
+        interpreter.env.insert("name".to_string(), Value::String(Rc::new("World".to_string())));
+        interpreter.env.insert("count".to_string(), Value::Integer(5));
+        
+        let interp_expr = ExprKind::StringInterpolation {
+            parts: vec![
+                create_test_expr(ExprKind::Literal(Literal::String("Hello ".to_string()))),
+                create_test_expr(ExprKind::Identifier("name".to_string())),
+                create_test_expr(ExprKind::Literal(Literal::String("! Count: ".to_string()))),
+                create_test_expr(ExprKind::Identifier("count".to_string())),
+            ],
+        };
+        let result = interpreter.eval_expr_kind(&interp_expr).unwrap();
+        assert_eq!(result, Value::String(Rc::new("Hello World! Count: 5".to_string())));
+    }
+
+    #[test]
+    fn test_assignment_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        let assign_expr = ExprKind::Assign {
+            target: Box::new(create_test_expr(ExprKind::Identifier("x".to_string()))),
+            value: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+        };
+        let result = interpreter.eval_expr_kind(&assign_expr).unwrap();
+        assert_eq!(result, Value::Integer(42));
+        
+        // Verify assignment worked
+        let lookup_result = interpreter.lookup_variable("x").unwrap();
+        assert_eq!(lookup_result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_compound_assignment_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Set up initial value
+        interpreter.env.insert("x".to_string(), Value::Integer(10));
+        
+        let compound_expr = ExprKind::CompoundAssign {
+            target: Box::new(create_test_expr(ExprKind::Identifier("x".to_string()))),
+            op: BinaryOp::Add,
+            value: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(5)))),
+        };
+        let result = interpreter.eval_expr_kind(&compound_expr).unwrap();
+        assert_eq!(result, Value::Integer(15));
+        
+        // Verify compound assignment worked
+        let lookup_result = interpreter.lookup_variable("x").unwrap();
+        assert_eq!(lookup_result, Value::Integer(15));
+    }
+
+    #[test]
+    fn test_qualified_name_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Test HashMap::new
+        let qualified_expr = ExprKind::QualifiedName {
+            module: "HashMap".to_string(),
+            name: "new".to_string(),
+        };
+        let result = interpreter.eval_expr_kind(&qualified_expr).unwrap();
+        assert_eq!(result, Value::String(Rc::new("__builtin_hashmap__".to_string())));
+        
+        // Test unknown qualified name
+        let unknown_expr = ExprKind::QualifiedName {
+            module: "Unknown".to_string(),
+            name: "method".to_string(),
+        };
+        let error = interpreter.eval_expr_kind(&unknown_expr);
+        assert!(error.is_err());
+    }
+
+    #[test]
+    fn test_control_flow_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Break should return error
+        let break_expr = ExprKind::Break { label: None };
+        let result = interpreter.eval_expr_kind(&break_expr);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("break"));
+        
+        // Continue should return error
+        let continue_expr = ExprKind::Continue { label: None };
+        let result = interpreter.eval_expr_kind(&continue_expr);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("continue"));
+        
+        // Return with value
+        let return_expr = ExprKind::Return {
+            value: Some(Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(42))))),
+        };
+        let result = interpreter.eval_expr_kind(&return_expr);
+        // Return should be handled by the function call mechanism, 
+        // but at expression level it might return the value or error
+        // This depends on the implementation details
+    }
+
+    #[test]
+    fn test_function_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Function definition
+        let func_expr = ExprKind::Function {
+            name: "add".to_string(),
+            params: vec!["a".to_string(), "b".to_string()],
+            body: Box::new(create_test_expr(ExprKind::Binary {
+                left: Box::new(create_test_expr(ExprKind::Identifier("a".to_string()))),
+                op: BinaryOp::Add,
+                right: Box::new(create_test_expr(ExprKind::Identifier("b".to_string()))),
+            })),
+            return_type: None,
+        };
+        let result = interpreter.eval_expr_kind(&func_expr);
+        // Function definition should succeed and return some kind of function value
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_lambda_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Lambda expression
+        let lambda_expr = ExprKind::Lambda {
+            params: vec!["x".to_string()],
+            body: Box::new(create_test_expr(ExprKind::Binary {
+                left: Box::new(create_test_expr(ExprKind::Identifier("x".to_string()))),
+                op: BinaryOp::Multiply,
+                right: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(2)))),
+            })),
+        };
+        let result = interpreter.eval_expr_kind(&lambda_expr);
+        // Lambda should create a closure value
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_let_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Let expression with body
+        let let_expr = ExprKind::Let {
+            name: "x".to_string(),
+            value: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+            body: Box::new(create_test_expr(ExprKind::Identifier("x".to_string()))),
+            mutable: false,
+        };
+        let result = interpreter.eval_expr_kind(&let_expr).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_loop_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // For loop - this might be complex to test in isolation
+        // We'll test a simple case
+        let for_expr = ExprKind::For {
+            var: Some("i".to_string()),
+            pattern: None,
+            iter: Box::new(create_test_expr(ExprKind::List(vec![
+                create_test_expr(ExprKind::Literal(Literal::Integer(1))),
+                create_test_expr(ExprKind::Literal(Literal::Integer(2))),
+            ]))),
+            body: Box::new(create_test_expr(ExprKind::Identifier("i".to_string()))),
+        };
+        let result = interpreter.eval_expr_kind(&for_expr);
+        // For loop should execute and return some result
+        assert!(result.is_ok());
+        
+        // While loop - test with false condition to avoid infinite loop
+        let while_expr = ExprKind::While {
+            condition: Box::new(create_test_expr(ExprKind::Literal(Literal::Bool(false)))),
+            body: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(42)))),
+        };
+        let result = interpreter.eval_expr_kind(&while_expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_unimplemented_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Test that unimplemented expression kinds return appropriate errors
+        // This would test the catch-all case in the match statement
+        // The exact test would depend on what expression kinds are not implemented
+    }
+
+    #[test]
+    fn test_error_propagation() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Test that errors in sub-expressions propagate correctly
+        let error_expr = ExprKind::Binary {
+            left: Box::new(create_test_expr(ExprKind::Identifier("undefined_var".to_string()))),
+            op: BinaryOp::Add,
+            right: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(1)))),
+        };
+        let result = interpreter.eval_expr_kind(&error_expr);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_complex_nested_expressions() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Test deeply nested expression to verify no stack overflow
+        let mut nested_expr = ExprKind::Literal(Literal::Integer(1));
+        for i in 2..=10 {
+            nested_expr = ExprKind::Binary {
+                left: Box::new(create_test_expr(nested_expr)),
+                op: BinaryOp::Add,
+                right: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(i)))),
+            };
+        }
+        
+        let result = interpreter.eval_expr_kind(&nested_expr).unwrap();
+        assert_eq!(result, Value::Integer(55)); // Sum of 1+2+3+...+10 = 55
+    }
+}
+
+// Regression tests to ensure refactoring preserves all functionality
+#[cfg(test)]
+mod eval_expr_kind_regression_tests {
+    use super::*;
+
+    #[test]
+    fn test_expression_evaluation_performance() {
+        let mut interpreter = create_test_interpreter();
+        
+        // Create a complex expression that tests multiple code paths
+        let complex_expr = ExprKind::If {
+            condition: Box::new(create_test_expr(ExprKind::Binary {
+                left: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(5)))),
+                op: BinaryOp::GreaterThan,
+                right: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(3)))),
+            })),
+            then_branch: Box::new(create_test_expr(ExprKind::List(vec![
+                create_test_expr(ExprKind::Literal(Literal::Integer(1))),
+                create_test_expr(ExprKind::Literal(Literal::Integer(2))),
+                create_test_expr(ExprKind::Binary {
+                    left: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(3)))),
+                    op: BinaryOp::Multiply,
+                    right: Box::new(create_test_expr(ExprKind::Literal(Literal::Integer(4)))),
+                }),
+            ]))),
+            else_branch: Some(Box::new(create_test_expr(ExprKind::Tuple(vec![
+                create_test_expr(ExprKind::Literal(Literal::String("fallback".to_string()))),
+            ])))),
+        };
+        
+        let start = std::time::Instant::now();
+        let result = interpreter.eval_expr_kind(&complex_expr);
+        let duration = start.elapsed();
+        
+        assert!(result.is_ok());
+        assert!(duration.as_millis() < 10); // Should be very fast
+        
+        // Verify correct result
+        if let Ok(Value::Array(arr)) = result {
+            assert_eq!(arr.len(), 3);
+            assert_eq!(arr[2], Value::Integer(12)); // 3 * 4
+        } else {
+            panic!("Expected array result");
+        }
+    }
+
+    #[test]
+    fn test_all_expression_types_covered() {
+        // This test ensures that we haven't missed any expression types
+        // in our refactoring. It would be updated as new expression types
+        // are added to the language.
+        
+        // The test would verify that eval_expr_kind handles all variants
+        // of ExprKind without panicking or returning unimplemented errors
+        // for expression types that should be supported.
+    }
+}

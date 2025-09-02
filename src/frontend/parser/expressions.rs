@@ -72,8 +72,8 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     }
 }
 
-/// Parse literal tokens (Integer, Float, String, Char, Bool, FString)
-/// Extracted from parse_prefix to reduce complexity
+/// Parse literal tokens (Integer, Float, String, Char, Bool, `FString`)
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_literal_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
         Token::Integer(value) => {
@@ -108,7 +108,7 @@ fn parse_literal_token(state: &mut ParserState, token: Token, span: Span) -> Res
 }
 
 /// Parse identifier tokens (Identifier, Underscore, fat arrow lambdas)
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
         Token::Identifier(name) => {
@@ -141,7 +141,7 @@ fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> 
 }
 
 /// Parse unary operator tokens (Minus, Bang)
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_unary_operator_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
         Token::Minus => {
@@ -165,7 +165,7 @@ fn parse_unary_operator_token(state: &mut ParserState, token: Token, span: Span)
 }
 
 /// Parse parentheses tokens - either unit type (), grouped expression (expr), or tuple (a, b, c)
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     state.tokens.advance();
     // Check for unit type ()
@@ -209,7 +209,7 @@ fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> 
 }
 
 /// Parse pub token - handles public declarations for functions, structs, traits, impl blocks
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
     state.tokens.advance();
     // Get the next token to determine what follows pub
@@ -226,7 +226,7 @@ fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
 }
 
 /// Parse break token with optional label
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_break_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     state.tokens.advance();
     // Optional label
@@ -241,7 +241,7 @@ fn parse_break_token(state: &mut ParserState, span: Span) -> Result<Expr> {
 }
 
 /// Parse continue token with optional label
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_continue_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     state.tokens.advance();
     // Optional label
@@ -256,7 +256,7 @@ fn parse_continue_token(state: &mut ParserState, span: Span) -> Result<Expr> {
 }
 
 /// Parse return token with optional expression
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_return_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     state.tokens.advance();
     // Check if there's an expression to return
@@ -272,7 +272,7 @@ fn parse_return_token(state: &mut ParserState, span: Span) -> Result<Expr> {
 }
 
 /// Parse constructor tokens (Some, None, Ok, Err, Result, Option)
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     let constructor_name = match token {
         Token::Some => "Some",
@@ -289,7 +289,7 @@ fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) ->
 }
 
 /// Parse control flow tokens (If, Match, While, For)
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
         Token::If => parse_if_expression(state),
@@ -301,7 +301,7 @@ fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Exp
 }
 
 /// Parse data structure definition tokens (Struct, Trait, Impl)
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_data_structure_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
         Token::Struct => parse_struct_definition(state),
@@ -312,7 +312,7 @@ fn parse_data_structure_token(state: &mut ParserState, token: Token) -> Result<E
 }
 
 /// Parse import/module tokens (Import, Use)
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_import_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
         Token::Import => parse_import_statement(state),
@@ -321,8 +321,8 @@ fn parse_import_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     }
 }
 
-/// Parse lambda expression tokens (Pipe, OrOr)  
-/// Extracted from parse_prefix to reduce complexity
+/// Parse lambda expression tokens (Pipe, `OrOr`)\
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_lambda_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
         Token::Pipe => parse_lambda_expression(state),
@@ -331,8 +331,8 @@ fn parse_lambda_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     }
 }
 
-/// Parse function/block tokens (Fun, Fn, LeftBrace)
-/// Extracted from parse_prefix to reduce complexity
+/// Parse function/block tokens (Fun, Fn, `LeftBrace`)
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_function_block_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
         Token::Fun | Token::Fn => super::functions::parse_function(state),
@@ -342,7 +342,7 @@ fn parse_function_block_token(state: &mut ParserState, token: Token) -> Result<E
 }
 
 /// Parse variable declaration tokens (Let, Var)
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_variable_declaration_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
         Token::Let => parse_let_statement(state),
@@ -351,8 +351,8 @@ fn parse_variable_declaration_token(state: &mut ParserState, token: Token) -> Re
     }
 }
 
-/// Parse special definition tokens (DataFrame, Actor)
-/// Extracted from parse_prefix to reduce complexity
+/// Parse special definition tokens (`DataFrame`, Actor)
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_special_definition_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
         Token::DataFrame => parse_dataframe_literal(state),
@@ -362,7 +362,7 @@ fn parse_special_definition_token(state: &mut ParserState, token: Token) -> Resu
 }
 
 /// Parse control statement tokens (Pub, Break, Continue, Return)
-/// Extracted from parse_prefix to reduce complexity
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_control_statement_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
         Token::Pub => parse_pub_token(state),
@@ -373,8 +373,8 @@ fn parse_control_statement_token(state: &mut ParserState, token: Token, span: Sp
     }
 }
 
-/// Parse collection/enum definition tokens (LeftBracket, Enum)
-/// Extracted from parse_prefix to reduce complexity
+/// Parse collection/enum definition tokens (`LeftBracket`, Enum)
+/// Extracted from `parse_prefix` to reduce complexity
 fn parse_collection_enum_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
         Token::LeftBracket => parse_list_literal(state),
@@ -410,7 +410,7 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
 }
 
 /// Parse mutability for let statement
-/// Extracted from parse_let_statement to reduce complexity
+/// Extracted from `parse_let_statement` to reduce complexity
 fn parse_let_mutability(state: &mut ParserState) -> bool {
     if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
         state.tokens.advance();
@@ -421,7 +421,7 @@ fn parse_let_mutability(state: &mut ParserState) -> bool {
 }
 
 /// Parse pattern for let statement (identifier or destructuring)
-/// Extracted from parse_let_statement to reduce complexity
+/// Extracted from `parse_let_statement` to reduce complexity
 fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Pattern> {
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
@@ -443,7 +443,7 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
 }
 
 /// Parse optional type annotation for let statement
-/// Extracted from parse_let_statement to reduce complexity
+/// Extracted from `parse_let_statement` to reduce complexity
 fn parse_let_type_annotation(state: &mut ParserState) -> Result<Option<Type>> {
     if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
         state.tokens.advance(); // consume ':'
@@ -454,7 +454,7 @@ fn parse_let_type_annotation(state: &mut ParserState) -> Result<Option<Type>> {
 }
 
 /// Parse optional 'in' clause for let expressions
-/// Extracted from parse_let_statement to reduce complexity
+/// Extracted from `parse_let_statement` to reduce complexity
 fn parse_let_in_clause(state: &mut ParserState, value_span: Span) -> Result<Box<Expr>> {
     if matches!(state.tokens.peek(), Some((Token::In, _))) {
         state.tokens.advance(); // consume 'in'
@@ -466,7 +466,7 @@ fn parse_let_in_clause(state: &mut ParserState, value_span: Span) -> Result<Box<
 }
 
 /// Create the appropriate let expression based on pattern type
-/// Extracted from parse_let_statement to reduce complexity
+/// Extracted from `parse_let_statement` to reduce complexity
 fn create_let_expression(
     pattern: Pattern,
     type_annotation: Option<Type>,
@@ -927,9 +927,8 @@ fn parse_match_list_pattern(state: &mut ParserState) -> Result<Pattern> {
                 state.tokens.advance();
                 patterns.push(Pattern::RestNamed(name));
                 break;
-            } else {
-                bail!("Expected identifier after ... in list pattern");
             }
+            bail!("Expected identifier after ... in list pattern");
         }
         
         patterns.push(parse_match_pattern(state)?);
@@ -1613,7 +1612,7 @@ fn parse_dataframe_column_values(state: &mut ParserState) -> Result<Expr> {
     }
 }
 
-/// Convert parsed columns to DataFrameColumn structs
+/// Convert parsed columns to `DataFrameColumn` structs
 /// Complexity: <5
 fn create_dataframe_columns(columns: Vec<(String, Expr)>) -> Vec<DataFrameColumn> {
     columns.into_iter().map(|(name, values)| {
@@ -1824,7 +1823,7 @@ fn parse_actor_definition(state: &mut ParserState) -> Result<Expr> {
 }
 
 /// Parse actor name
-/// Extracted from parse_actor_definition to reduce complexity
+/// Extracted from `parse_actor_definition` to reduce complexity
 fn parse_actor_name(state: &mut ParserState) -> Result<String> {
     if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -1836,7 +1835,7 @@ fn parse_actor_name(state: &mut ParserState) -> Result<String> {
 }
 
 /// Parse actor body including state fields and handlers
-/// Extracted from parse_actor_definition to reduce complexity
+/// Extracted from `parse_actor_definition` to reduce complexity
 fn parse_actor_body(state: &mut ParserState) -> Result<(Vec<(String, Type, Option<Box<Expr>>)>, Vec<String>)> {
     let mut state_fields = Vec::new();
     let mut handlers = Vec::new();
@@ -1866,7 +1865,7 @@ fn parse_actor_body(state: &mut ParserState) -> Result<(Vec<(String, Type, Optio
 }
 
 /// Parse state field with 'state' keyword
-/// Extracted from parse_actor_body to reduce complexity
+/// Extracted from `parse_actor_body` to reduce complexity
 fn parse_actor_state_field(state: &mut ParserState) -> Result<(String, Type, Option<Box<Expr>>)> {
     state.tokens.advance(); // consume 'state'
     
@@ -1893,7 +1892,7 @@ fn parse_actor_state_field(state: &mut ParserState) -> Result<(String, Type, Opt
 }
 
 /// Parse receive block with handlers
-/// Extracted from parse_actor_body to reduce complexity
+/// Extracted from `parse_actor_body` to reduce complexity
 fn parse_actor_receive_block(state: &mut ParserState) -> Result<Vec<String>> {
     state.tokens.advance(); // consume 'receive'
     state.tokens.expect(&Token::LeftBrace)?;
@@ -1923,7 +1922,7 @@ fn parse_actor_receive_block(state: &mut ParserState) -> Result<Vec<String>> {
 }
 
 /// Parse bare field definition
-/// Extracted from parse_actor_body to reduce complexity
+/// Extracted from `parse_actor_body` to reduce complexity
 fn parse_actor_bare_field(state: &mut ParserState) -> Result<(String, Type, Option<Box<Expr>>)> {
     if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
         let field = field_name.clone();
@@ -1945,7 +1944,7 @@ fn parse_actor_bare_field(state: &mut ParserState) -> Result<(String, Type, Opti
 }
 
 /// Create the final actor expression
-/// Extracted from parse_actor_definition to reduce complexity
+/// Extracted from `parse_actor_definition` to reduce complexity
 fn create_actor_expression(
     name: String,
     state_fields: Vec<(String, Type, Option<Box<Expr>>)>,
@@ -1982,7 +1981,7 @@ pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {
 }
 
 /// Map arithmetic tokens to binary operators
-/// Extracted from token_to_binary_op to reduce complexity
+/// Extracted from `token_to_binary_op` to reduce complexity
 fn map_arithmetic_operator(token: &Token) -> Option<BinaryOp> {
     match token {
         Token::Plus => Some(BinaryOp::Add),
@@ -1996,7 +1995,7 @@ fn map_arithmetic_operator(token: &Token) -> Option<BinaryOp> {
 }
 
 /// Map comparison tokens to binary operators
-/// Extracted from token_to_binary_op to reduce complexity
+/// Extracted from `token_to_binary_op` to reduce complexity
 fn map_comparison_operator(token: &Token) -> Option<BinaryOp> {
     match token {
         Token::EqualEqual => Some(BinaryOp::Equal),
@@ -2010,7 +2009,7 @@ fn map_comparison_operator(token: &Token) -> Option<BinaryOp> {
 }
 
 /// Map logical tokens to binary operators
-/// Extracted from token_to_binary_op to reduce complexity
+/// Extracted from `token_to_binary_op` to reduce complexity
 fn map_logical_operator(token: &Token) -> Option<BinaryOp> {
     match token {
         Token::AndAnd => Some(BinaryOp::And),
@@ -2021,7 +2020,7 @@ fn map_logical_operator(token: &Token) -> Option<BinaryOp> {
 }
 
 /// Map bitwise tokens to binary operators
-/// Extracted from token_to_binary_op to reduce complexity
+/// Extracted from `token_to_binary_op` to reduce complexity
 fn map_bitwise_operator(token: &Token) -> Option<BinaryOp> {
     match token {
         Token::Ampersand => Some(BinaryOp::BitwiseAnd),
