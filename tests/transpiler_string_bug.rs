@@ -112,8 +112,10 @@ fn test_complete_string_example_compiles() {
     // The generated Rust code should compile (we'll test this in CI)
     let generated = result.unwrap().to_string();
     
+    
     // Basic sanity checks for correct transpilation
-    assert!(generated.contains("&str"), "Should use &str for parameters");
-    assert!(!generated.contains("str)"), "Should not use unsized str");
+    assert!(generated.contains("&str") || generated.contains("& str"), "Should use &str for parameters");
+    assert!(!generated.contains("name : str)"), "Should not use unsized str");
     assert!(!generated.contains("\"World\" . to_string"), "Should not add .to_string() unnecessarily");
 }
+

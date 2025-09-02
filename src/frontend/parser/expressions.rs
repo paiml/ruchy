@@ -69,8 +69,62 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             // Parse block - do NOT advance token, let collections parser handle it
             super::collections::parse_block(state)
         }
+        Token::Let => {
+            // Parse let statement/expression
+            parse_let_statement(state)
+        }
         _ => bail!("Unexpected token: {:?}", token_clone),
     }
+}
+
+/// Parse let statement: let name [: type] = value [in body]
+fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.expect(&Token::Let)?;
+    
+    // Parse variable name
+    let name = match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            let name = name.clone();
+            state.tokens.advance();
+            name
+        }
+        _ => bail!("Expected identifier after 'let'")
+    };
+    
+    // Parse optional type annotation
+    let type_annotation = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance(); // consume ':'
+        Some(super::utils::parse_type(state)?)
+    } else {
+        None
+    };
+    
+    // Parse '=' token
+    state.tokens.expect(&Token::Equal)?;
+    
+    // Parse value expression
+    let value = Box::new(super::parse_expr_recursive(state)?);
+    
+    // Parse optional 'in' clause for let expressions
+    let body = if matches!(state.tokens.peek(), Some((Token::In, _))) {
+        state.tokens.advance(); // consume 'in'
+        Box::new(super::parse_expr_recursive(state)?)
+    } else {
+        // For let statements (no 'in'), body is unit
+        Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value.span))
+    };
+    
+    let end_span = body.span;
+    Ok(Expr::new(
+        ExprKind::Let {
+            name,
+            type_annotation,
+            value,
+            body,
+            is_mutable: false,
+        },
+        start_span.merge(end_span),
+    ))
 }
 
 pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {

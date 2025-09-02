@@ -269,7 +269,29 @@ impl Transpiler {
             async_transpiler.in_async_context = true;
             async_transpiler.transpile_expr(body)
         } else {
-            self.transpile_expr(body)
+            // Check if body is already a block to avoid double-wrapping
+            match &body.kind {
+                ExprKind::Block(exprs) => {
+                    // For function bodies that are blocks, transpile the contents directly
+                    if exprs.len() == 1 {
+                        // Single expression block - transpile the expression directly
+                        self.transpile_expr(&exprs[0])
+                    } else {
+                        // Multiple expressions - transpile as block but without outer braces
+                        let statements: Result<Vec<_>> = exprs.iter().map(|e| self.transpile_expr(e)).collect();
+                        let statements = statements?;
+                        if exprs.is_empty() {
+                            Ok(quote! {})
+                        } else {
+                            Ok(quote! { #(#statements;)* })
+                        }
+                    }
+                },
+                _ => {
+                    // Not a block - transpile normally
+                    self.transpile_expr(body)
+                }
+            }
         }
     }
 
@@ -2150,15 +2172,8 @@ impl Transpiler {
         func_tokens: &TokenStream,
         args: &[Expr]
     ) -> Result<TokenStream> {
-        // Convert string literals to String for regular function calls
-        let arg_tokens: Result<Vec<_>> = args.iter().map(|a| {
-            match &a.kind {
-                ExprKind::Literal(Literal::String(s)) => {
-                    Ok(quote! { #s.to_string() })
-                }
-                _ => self.transpile_expr(a)
-            }
-        }).collect();
+        // Transpile arguments as-is (string literals remain &str by default)
+        let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
         
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
