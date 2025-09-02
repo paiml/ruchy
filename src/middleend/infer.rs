@@ -1179,6 +1179,10 @@ impl InferenceContext {
                     .collect();
                 MonoType::Tuple(mono_types?)
             }
+            TypeKind::Reference { inner, .. } => {
+                // For type inference, treat references the same as the inner type
+                Self::ast_type_to_mono_static(inner)?
+            }
         })
     }
 

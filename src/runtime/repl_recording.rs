@@ -43,7 +43,7 @@ impl Repl {
         let completer = RuchyCompleter::new();
         rl.set_helper(Some(completer));
 
-        // Create a temporary directory for history
+        // Create a session-specific directory for history
         let temp_dir = std::env::temp_dir().join(format!("ruchy-{}", std::process::id()));
         std::fs::create_dir_all(&temp_dir)?;
         let history_path = temp_dir.join("history.txt");

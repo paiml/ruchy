@@ -172,6 +172,29 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
     let span = Span { start: 0, end: 0 }; // Simplified for now
 
     match state.tokens.peek() {
+        Some((Token::Ampersand, _)) => {
+            // Reference type: &T or &'a T or &mut T
+            state.tokens.advance(); // consume &
+            
+            // Check for 'mut' keyword
+            let is_mut = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+                state.tokens.advance(); // consume mut
+                true
+            } else {
+                false
+            };
+            
+            // Parse the inner type
+            let inner_type = parse_type(state)?;
+            
+            Ok(Type {
+                kind: TypeKind::Reference {
+                    is_mut,
+                    inner: Box::new(inner_type),
+                },
+                span,
+            })
+        }
         Some((Token::Fn, _)) => {
             // Function type with fn keyword: fn(T1, T2) -> T3
             state.tokens.advance(); // consume fn

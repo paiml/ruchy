@@ -974,7 +974,7 @@ impl RuchyCompleter {
             SimpleType::Unknown => return Vec::new(),
         };
         
-        // Create a temporary cache to avoid mutable access
+        // Create a new cache instance to avoid mutable access
         let mut temp_cache = CompletionCache::new();
         let methods = temp_cache.get_type_methods(type_name);
         
