@@ -26,7 +26,7 @@ pub use core::Parser;
 
 use crate::frontend::arena::{Arena, StringInterner};
 use crate::frontend::ast::{
-    ActorHandler, Attribute, BinaryOp, DataFrameColumn, Expr, ExprKind, ImportItem, Literal, MatchArm, Param,
+    ActorHandler, Attribute, BinaryOp, DataFrameColumn, EnumVariant, Expr, ExprKind, ImportItem, Literal, MatchArm, Param,
     Pattern, PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp,
 };
 use crate::frontend::lexer::{Token, TokenStream};

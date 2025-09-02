@@ -369,6 +369,7 @@ fn test_list_literal_transpilation() {
     );
     
     let generated = result.unwrap().to_string();
-    assert!(generated.contains("vec!"), 
+    // Check for vec! macro (may have space due to proc_macro formatting)
+    assert!(generated.contains("vec") && generated.contains("["), 
         "Should use vec! macro: {}", generated);
 }

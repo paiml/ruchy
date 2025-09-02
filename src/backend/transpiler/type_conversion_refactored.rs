@@ -14,9 +14,15 @@ impl Transpiler {
         base_name: &str, 
         args: &[Expr]
     ) -> Result<Option<TokenStream>> {
-        // Validate argument count first
-        if args.len() != 1 {
-            bail!("{base_name}() expects exactly 1 argument");
+        // Only check known type conversion functions
+        match base_name {
+            "str" | "int" | "float" | "bool" | "list" | "set" | "dict" => {
+                // These functions require exactly 1 argument
+                if args.len() != 1 {
+                    bail!("{base_name}() expects exactly 1 argument");
+                }
+            }
+            _ => return Ok(None), // Not a type conversion, don't validate
         }
         
         match base_name {
