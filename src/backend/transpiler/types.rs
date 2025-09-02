@@ -67,6 +67,7 @@ impl Transpiler {
                     "int" => quote! { i64 },
                     "float" => quote! { f64 },
                     "bool" => quote! { bool },
+                    "str" => quote! { &str },  // Fix: Ruchy str -> Rust &str
                     "string" | "String" => quote! { String },
                     "char" => quote! { char },
                     // PERFORMANCE OPTIMIZATION: Use Rust type inference instead of Any
