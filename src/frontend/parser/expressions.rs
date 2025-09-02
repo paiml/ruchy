@@ -65,6 +65,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             // Parse function definition - do NOT advance token, let function parser handle it
             super::functions::parse_function(state)
         }
+        Token::LeftBrace => {
+            // Parse block - do NOT advance token, let collections parser handle it
+            super::collections::parse_block(state)
+        }
         _ => bail!("Unexpected token: {:?}", token_clone),
     }
 }
