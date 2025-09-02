@@ -103,6 +103,38 @@ impl Transpiler {
         self.transpile_expr(expr)
     }
 
+    /// Check if AST contains HashMap operations requiring std::collections::HashMap import
+    fn contains_hashmap(expr: &Expr) -> bool {
+        use crate::frontend::ast::{ExprKind, Literal};
+        
+        match &expr.kind {
+            ExprKind::ObjectLiteral { .. } => true,
+            ExprKind::Call { func, .. } => {
+                // Check for HashMap methods like .get(), .insert(), etc.
+                if let ExprKind::FieldAccess { field, .. } = &func.kind {
+                    matches!(field.as_str(), "get" | "insert" | "remove" | "contains_key" | "keys" | "values")
+                } else {
+                    false
+                }
+            }
+            ExprKind::IndexAccess { object: _, index } => {
+                // String literal index access suggests HashMap
+                matches!(&index.kind, ExprKind::Literal(Literal::String(_)))
+            }
+            ExprKind::Block(exprs) => exprs.iter().any(Self::contains_hashmap),
+            ExprKind::Function { body, .. } => Self::contains_hashmap(body),
+            ExprKind::If { condition, then_branch, else_branch } => {
+                Self::contains_hashmap(condition) || 
+                Self::contains_hashmap(then_branch) ||
+                else_branch.as_ref().map_or(false, |e| Self::contains_hashmap(e))
+            }
+            ExprKind::Binary { left, right, .. } => {
+                Self::contains_hashmap(left) || Self::contains_hashmap(right)
+            }
+            _ => false,
+        }
+    }
+
     /// Checks if an expression contains `DataFrame` operations (simplified for complexity)
     fn contains_dataframe(expr: &Expr) -> bool {
         matches!(
@@ -148,21 +180,22 @@ impl Transpiler {
         // First, resolve any file imports using the module resolver
         let resolved_expr = self.resolve_imports_with_context(expr, file_path)?;
         let needs_polars = Self::contains_dataframe(&resolved_expr);
+        let needs_hashmap = Self::contains_hashmap(&resolved_expr);
         
         match &resolved_expr.kind {
             ExprKind::Function { name, .. } => {
-                self.transpile_single_function(&resolved_expr, name, needs_polars)
+                self.transpile_single_function(&resolved_expr, name, needs_polars, needs_hashmap)
             }
             ExprKind::Block(exprs) => {
-                self.transpile_program_block(exprs, needs_polars)
+                self.transpile_program_block(exprs, needs_polars, needs_hashmap)
             }
             _ => {
-                self.transpile_expression_program(&resolved_expr, needs_polars)
+                self.transpile_expression_program(&resolved_expr, needs_polars, needs_hashmap)
             }
         }
     }
     
-    fn transpile_single_function(&self, expr: &Expr, name: &str, needs_polars: bool) -> Result<TokenStream> {
+    fn transpile_single_function(&self, expr: &Expr, name: &str, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         // Use the proper function expression transpiler to handle attributes correctly
         let func = match &expr.kind {
             crate::frontend::ast::ExprKind::Function { .. } => self.transpile_function_expr(expr)?,
@@ -170,39 +203,55 @@ impl Transpiler {
         };
         let needs_main = name != "main";
         
-        match (needs_polars, needs_main) {
-            (true, true) => Ok(quote! {
+        match (needs_polars, needs_hashmap, needs_main) {
+            (true, true, true) => Ok(quote! {
                 use polars::prelude::*;
                 use std::collections::HashMap;
                 #func
                 fn main() { /* Function defined but not called */ }
             }),
-            (true, false) => Ok(quote! {
+            (true, true, false) => Ok(quote! {
                 use polars::prelude::*;
                 use std::collections::HashMap;
                 #func
             }),
-            (false, true) => Ok(quote! {
+            (true, false, true) => Ok(quote! {
+                use polars::prelude::*;
+                #func
+                fn main() { /* Function defined but not called */ }
+            }),
+            (true, false, false) => Ok(quote! {
+                use polars::prelude::*;
+                #func
+            }),
+            (false, true, true) => Ok(quote! {
                 use std::collections::HashMap;
                 #func
                 fn main() { /* Function defined but not called */ }
             }),
-            (false, false) => Ok(quote! { 
+            (false, true, false) => Ok(quote! {
                 use std::collections::HashMap;
+                #func
+            }),
+            (false, false, true) => Ok(quote! {
+                #func
+                fn main() { /* Function defined but not called */ }
+            }),
+            (false, false, false) => Ok(quote! { 
                 #func 
             })
         }
     }
     
-    fn transpile_program_block(&self, exprs: &[Expr], needs_polars: bool) -> Result<TokenStream> {
+    fn transpile_program_block(&self, exprs: &[Expr], needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         let (functions, statements, modules, has_main, main_expr) = self.categorize_block_expressions(exprs)?;
         
         if functions.is_empty() && !has_main && modules.is_empty() {
-            self.transpile_statement_only_block(exprs, needs_polars)
+            self.transpile_statement_only_block(exprs, needs_polars, needs_hashmap)
         } else if has_main || !modules.is_empty() {
-            self.transpile_block_with_main_function(&functions, &statements, &modules, main_expr, needs_polars)
+            self.transpile_block_with_main_function(&functions, &statements, &modules, main_expr, needs_polars, needs_hashmap)
         } else {
-            self.transpile_block_with_functions(&functions, &statements, needs_polars)
+            self.transpile_block_with_functions(&functions, &statements, needs_polars, needs_hashmap)
         }
     }
     
@@ -274,7 +323,7 @@ impl Transpiler {
         })
     }
     
-    fn transpile_statement_only_block(&self, exprs: &[Expr], needs_polars: bool) -> Result<TokenStream> {
+    fn transpile_statement_only_block(&self, exprs: &[Expr], needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         // Check if this is a statement sequence (contains let, assignments, etc.) or an expression sequence
         let has_statements = exprs.iter().any(|expr| self.is_statement_expr(expr));
         
@@ -310,17 +359,27 @@ impl Transpiler {
                 }
             };
             
-            if needs_polars {
-                Ok(quote! {
+            match (needs_polars, needs_hashmap) {
+                (true, true) => Ok(quote! {
                     use polars::prelude::*;
                     use std::collections::HashMap;
                     fn main() {
                         #main_body
                     }
-                })
-            } else {
-                Ok(quote! {
+                }),
+                (true, false) => Ok(quote! {
+                    use polars::prelude::*;
+                    fn main() {
+                        #main_body
+                    }
+                }),
+                (false, true) => Ok(quote! {
                     use std::collections::HashMap;
+                    fn main() {
+                        #main_body
+                    }
+                }),
+                (false, false) => Ok(quote! {
                     fn main() {
                         #main_body
                     }
@@ -330,7 +389,7 @@ impl Transpiler {
             // Pure expression sequence - use existing result printing approach
             let block_expr = Expr::new(ExprKind::Block(exprs.to_vec()), Span::new(0, 0));
             let body = self.transpile_expr(&block_expr)?;
-            self.wrap_in_main_with_result_printing(body, needs_polars)
+            self.wrap_in_main_with_result_printing(body, needs_polars, needs_hashmap)
         }
     }
     
@@ -357,7 +416,7 @@ impl Transpiler {
         }
     }
     
-    fn transpile_block_with_main_function(&self, functions: &[TokenStream], statements: &[TokenStream], modules: &[TokenStream], main_expr: Option<&Expr>, needs_polars: bool) -> Result<TokenStream> {
+    fn transpile_block_with_main_function(&self, functions: &[TokenStream], statements: &[TokenStream], modules: &[TokenStream], main_expr: Option<&Expr>, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         if statements.is_empty() && main_expr.is_some() {
             // Only functions, just emit them normally (includes user's main)
             let main_tokens = if let Some(main) = main_expr {
@@ -366,17 +425,27 @@ impl Transpiler {
                 return Err(anyhow::anyhow!("Expected main function expression"));
             };
             
-            if needs_polars {
-                Ok(quote! {
+            match (needs_polars, needs_hashmap) {
+                (true, true) => Ok(quote! {
                     use polars::prelude::*;
                     use std::collections::HashMap;
                     #(#modules)*
                     #(#functions)*
                     #main_tokens
-                })
-            } else {
-                Ok(quote! {
+                }),
+                (true, false) => Ok(quote! {
+                    use polars::prelude::*;
+                    #(#modules)*
+                    #(#functions)*
+                    #main_tokens
+                }),
+                (false, true) => Ok(quote! {
                     use std::collections::HashMap;
+                    #(#modules)*
+                    #(#functions)*
+                    #main_tokens
+                }),
+                (false, false) => Ok(quote! {
                     #(#modules)*
                     #(#functions)*
                     #main_tokens
@@ -391,8 +460,8 @@ impl Transpiler {
                 quote! {}
             };
             
-            if needs_polars {
-                Ok(quote! {
+            match (needs_polars, needs_hashmap) {
+                (true, true) => Ok(quote! {
                     use polars::prelude::*;
                     use std::collections::HashMap;
                     #(#modules)*
@@ -404,10 +473,32 @@ impl Transpiler {
                         // Then user's main function body  
                         #main_body
                     }
-                })
-            } else {
-                Ok(quote! {
+                }),
+                (true, false) => Ok(quote! {
+                    use polars::prelude::*;
+                    #(#modules)*
+                    #(#functions)*
+                    fn main() {
+                        // Top-level statements execute first
+                        #(#statements;)*
+                        
+                        // Then user's main function body  
+                        #main_body
+                    }
+                }),
+                (false, true) => Ok(quote! {
                     use std::collections::HashMap;
+                    #(#modules)*
+                    #(#functions)*
+                    fn main() {
+                        // Top-level statements execute first
+                        #(#statements;)*
+                        
+                        // Then user's main function body
+                        #main_body
+                    }
+                }),
+                (false, false) => Ok(quote! {
                     #(#modules)*
                     #(#functions)*
                     fn main() {
@@ -432,18 +523,26 @@ impl Transpiler {
         }
     }
     
-    fn transpile_block_with_functions(&self, functions: &[TokenStream], statements: &[TokenStream], needs_polars: bool) -> Result<TokenStream> {
+    fn transpile_block_with_functions(&self, functions: &[TokenStream], statements: &[TokenStream], needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         // No main function among extracted functions - create one for statements
-        if needs_polars {
-            Ok(quote! {
+        match (needs_polars, needs_hashmap) {
+            (true, true) => Ok(quote! {
                 use polars::prelude::*;
                 use std::collections::HashMap;
                 #(#functions)*
                 fn main() { #(#statements;)* }
-            })
-        } else {
-            Ok(quote! {
+            }),
+            (true, false) => Ok(quote! {
+                use polars::prelude::*;
+                #(#functions)*
+                fn main() { #(#statements;)* }
+            }),
+            (false, true) => Ok(quote! {
                 use std::collections::HashMap;
+                #(#functions)*
+                fn main() { #(#statements;)* }
+            }),
+            (false, false) => Ok(quote! {
                 #(#functions)*
                 fn main() { #(#statements;)* }
             })
@@ -451,14 +550,52 @@ impl Transpiler {
     }
     
     
-    fn transpile_expression_program(&self, expr: &Expr, needs_polars: bool) -> Result<TokenStream> {
+    fn transpile_expression_program(&self, expr: &Expr, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         let body = self.transpile_expr(expr)?;
-        self.wrap_in_main_with_result_printing(body, needs_polars)
+        
+        // Check if this is a statement vs expression
+        if self.is_statement_expr(expr) {
+            // For statements, execute directly without result wrapping
+            self.wrap_statement_in_main(body, needs_polars, needs_hashmap)
+        } else {
+            // For expressions, wrap with result printing
+            self.wrap_in_main_with_result_printing(body, needs_polars, needs_hashmap)
+        }
     }
     
-    fn wrap_in_main_with_result_printing(&self, body: TokenStream, needs_polars: bool) -> Result<TokenStream> {
-        if needs_polars {
-            Ok(quote! {
+    fn wrap_statement_in_main(&self, body: TokenStream, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
+        // For statements, execute directly without result capture
+        match (needs_polars, needs_hashmap) {
+            (true, true) => Ok(quote! {
+                use polars::prelude::*;
+                use std::collections::HashMap;
+                fn main() {
+                    #body;
+                }
+            }),
+            (true, false) => Ok(quote! {
+                use polars::prelude::*;
+                fn main() {
+                    #body;
+                }
+            }),
+            (false, true) => Ok(quote! {
+                use std::collections::HashMap;
+                fn main() {
+                    #body;
+                }
+            }),
+            (false, false) => Ok(quote! {
+                fn main() {
+                    #body;
+                }
+            })
+        }
+    }
+    
+    fn wrap_in_main_with_result_printing(&self, body: TokenStream, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
+        match (needs_polars, needs_hashmap) {
+            (true, true) => Ok(quote! {
                 use polars::prelude::*;
                 use std::collections::HashMap;
                 fn main() {
@@ -469,10 +606,32 @@ impl Transpiler {
                         _ => println!("{:?}", result)
                     }
                 }
-            })
-        } else {
-            Ok(quote! {
+            }),
+            (true, false) => Ok(quote! {
+                use polars::prelude::*;
+                fn main() {
+                    let result = #body;
+                    match &result {
+                        s if std::any::type_name_of_val(&s).contains("String") || 
+                             std::any::type_name_of_val(&s).contains("&str") => println!("{}", s),
+                        _ => println!("{:?}", result)
+                    }
+                }
+            }),
+            (false, true) => Ok(quote! {
                 use std::collections::HashMap;
+                fn main() {
+                    let result = #body;
+                    if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<String>() {
+                        println!("{}", s);
+                    } else if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<&str>() {
+                        println!("{}", s);
+                    } else {
+                        println!("{:?}", result);
+                    }
+                }
+            }),
+            (false, false) => Ok(quote! {
                 fn main() {
                     let result = #body;
                     if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<String>() {
