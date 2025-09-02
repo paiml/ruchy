@@ -72,6 +72,35 @@ impl Transpiler {
         }
     }
 
+    /// Centralized result printing logic - ONE PLACE FOR ALL RESULT PRINTING
+    /// This eliminates code duplication and ensures consistent Unit type handling
+    fn generate_result_printing_tokens(&self) -> TokenStream {
+        quote! {
+            match &result {
+                "()" => {}, // Don't print Unit type (check first)
+                s if std::any::type_name_of_val(&s).contains("String") || 
+                     std::any::type_name_of_val(&s).contains("&str") => println!("{}", s),
+                _ => println!("{:?}", result)
+            }
+        }
+    }
+    
+    /// Centralized value printing logic for functions like println
+    fn generate_value_printing_tokens(&self, value_expr: TokenStream, func_tokens: TokenStream) -> TokenStream {
+        quote! {
+            {
+                let value = #value_expr;
+                // Check if it's a String type at runtime
+                if std::any::type_name_of_val(&value).contains("String") || 
+                   std::any::type_name_of_val(&value).contains("&str") {
+                    #func_tokens!("{}", value)
+                } else {
+                    #func_tokens!("{:?}", value)
+                }
+            }
+        }
+    }
+
     /// Analyze expressions to determine which variables need to be mutable
     pub fn analyze_mutability(&mut self, exprs: &[Expr]) {
         for expr in exprs {
@@ -504,25 +533,32 @@ impl Transpiler {
                 (exprs, None)
             };
             
-            // Transpile all statements
-            let statement_tokens: Result<Vec<_>> = statements.iter().map(|expr| self.transpile_expr(expr)).collect();
-            let statement_tokens = statement_tokens?;
+            // Transpile all statements and add semicolons intelligently
+            let statement_results: Result<Vec<_>> = statements.iter().map(|expr| {
+                let tokens = self.transpile_expr(expr)?;
+                let tokens_str = tokens.to_string();
+                // If the statement already ends with a semicolon, don't add another
+                if tokens_str.trim().ends_with(';') {
+                    Ok(tokens)
+                } else {
+                    // Add semicolon for statements that need them
+                    Ok(quote! { #tokens; })
+                }
+            }).collect();
+            let statement_tokens = statement_results?;
             
             // Handle final expression if present
             let main_body = if let Some(final_expr) = final_expr {
                 let final_tokens = self.transpile_expr(final_expr)?;
+                let result_printing_logic = self.generate_result_printing_tokens();
                 quote! {
-                    #(#statement_tokens;)*
+                    #(#statement_tokens)*
                     let result = #final_tokens;
-                    // Use a match on type name to handle strings properly
-                    match std::any::type_name_of_val(&result) {
-                        name if name.contains("String") || name.contains("&str") => println!("{}", result),
-                        _ => println!("{:?}", result)
-                    }
+                    #result_printing_logic
                 }
             } else {
                 quote! {
-                    #(#statement_tokens;)*
+                    #(#statement_tokens)*
                 }
             };
             
@@ -635,7 +671,7 @@ impl Transpiler {
                     #(#functions)*
                     fn main() {
                         // Top-level statements execute first
-                        #(#statements;)*
+                        #(#statements)*
                         
                         // Then user's main function body  
                         #main_body
@@ -647,7 +683,7 @@ impl Transpiler {
                     #(#functions)*
                     fn main() {
                         // Top-level statements execute first
-                        #(#statements;)*
+                        #(#statements)*
                         
                         // Then user's main function body  
                         #main_body
@@ -659,7 +695,7 @@ impl Transpiler {
                     #(#functions)*
                     fn main() {
                         // Top-level statements execute first
-                        #(#statements;)*
+                        #(#statements)*
                         
                         // Then user's main function body
                         #main_body
@@ -670,7 +706,7 @@ impl Transpiler {
                     #(#functions)*
                     fn main() {
                         // Top-level statements execute first
-                        #(#statements;)*
+                        #(#statements)*
                         
                         // Then user's main function body
                         #main_body
@@ -697,21 +733,21 @@ impl Transpiler {
                 use polars::prelude::*;
                 use std::collections::HashMap;
                 #(#functions)*
-                fn main() { #(#statements;)* }
+                fn main() { #(#statements)* }
             }),
             (true, false) => Ok(quote! {
                 use polars::prelude::*;
                 #(#functions)*
-                fn main() { #(#statements;)* }
+                fn main() { #(#statements)* }
             }),
             (false, true) => Ok(quote! {
                 use std::collections::HashMap;
                 #(#functions)*
-                fn main() { #(#statements;)* }
+                fn main() { #(#statements)* }
             }),
             (false, false) => Ok(quote! {
                 #(#functions)*
-                fn main() { #(#statements;)* }
+                fn main() { #(#statements)* }
             })
         }
     }
@@ -761,55 +797,40 @@ impl Transpiler {
     }
     
     fn wrap_in_main_with_result_printing(&self, body: TokenStream, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
+        let result_printing_logic = self.generate_result_printing_tokens();
         match (needs_polars, needs_hashmap) {
             (true, true) => Ok(quote! {
                 use polars::prelude::*;
                 use std::collections::HashMap;
                 fn main() {
                     let result = #body;
-                    match &result {
-                        s if std::any::type_name_of_val(&s).contains("String") || 
-                             std::any::type_name_of_val(&s).contains("&str") => println!("{}", s),
-                        _ => println!("{:?}", result)
-                    }
+                    #result_printing_logic
                 }
             }),
             (true, false) => Ok(quote! {
                 use polars::prelude::*;
                 fn main() {
                     let result = #body;
-                    match &result {
-                        s if std::any::type_name_of_val(&s).contains("String") || 
-                             std::any::type_name_of_val(&s).contains("&str") => println!("{}", s),
-                        _ => println!("{:?}", result)
-                    }
+                    #result_printing_logic
                 }
             }),
-            (false, true) => Ok(quote! {
-                use std::collections::HashMap;
-                fn main() {
-                    let result = #body;
-                    if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<String>() {
-                        println!("{}", s);
-                    } else if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<&str>() {
-                        println!("{}", s);
-                    } else {
-                        println!("{:?}", result);
+            (false, true) => {
+                Ok(quote! {
+                    use std::collections::HashMap;
+                    fn main() {
+                        let result = #body;
+                        #result_printing_logic
                     }
-                }
-            }),
-            (false, false) => Ok(quote! {
-                fn main() {
-                    let result = #body;
-                    if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<String>() {
-                        println!("{}", s);
-                    } else if let Some(s) = (&result as &dyn std::any::Any).downcast_ref::<&str>() {
-                        println!("{}", s);
-                    } else {
-                        println!("{:?}", result);
+                })
+            },
+            (false, false) => {
+                Ok(quote! {
+                    fn main() {
+                        let result = #body;
+                        #result_printing_logic
                     }
-                }
-            })
+                })
+            }
         }
     }
 
