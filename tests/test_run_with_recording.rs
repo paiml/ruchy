@@ -3,8 +3,7 @@
 //! TDD approach: Write tests first, then refactor the complex function
 
 use ruchy::runtime::repl::Repl;
-use std::fs;
-use std::path::Path;
+// Removed unused imports - recording tests need refactoring
 use tempfile::TempDir;
 
 #[test]
@@ -38,7 +37,7 @@ fn test_recording_metadata_creation() -> anyhow::Result<()> {
         tags: vec!["test".to_string()],
     };
     
-    let recorder = SessionRecorder::new(metadata.clone());
+    let _recorder = SessionRecorder::new(metadata.clone());
     
     // Verify metadata is properly initialized
     // Note: We can't access private fields, but we can test behavior
@@ -62,12 +61,12 @@ fn test_needs_continuation_for_multiline() {
 // Property test for recording behavior
 #[cfg(test)]
 mod property_tests {
-    use super::*;
+    // Proptest setup for recording tests
     use proptest::prelude::*;
     
     proptest! {
         #[test]
-        fn prop_recording_preserves_input_order(inputs in prop::collection::vec("[a-z]+", 1..10)) {
+        fn prop_recording_preserves_input_order(_inputs in prop::collection::vec("[a-z]+", 1..10)) {
             // Property: Recording should preserve the order of inputs
             // This tests that the recording logic maintains temporal ordering
             

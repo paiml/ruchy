@@ -4,7 +4,7 @@ use super::{ParserState, *};
 
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
-        bail!("Unexpected end of input");
+        bail!("Unexpected end of input - expected expression");
     };
 
     let token_clone = token.clone();
@@ -135,16 +135,19 @@ fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
 fn parse_if_expression(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::If)?;
     
-    // Parse condition
-    let condition = Box::new(super::parse_expr_recursive(state)?);
+    // Parse condition with better error context
+    let condition = Box::new(super::parse_expr_recursive(state)
+        .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {}", e))?);
     
-    // Parse then branch (expect block)
-    let then_branch = Box::new(super::parse_expr_recursive(state)?);
+    // Parse then branch (expect block) with better error context
+    let then_branch = Box::new(super::parse_expr_recursive(state)
+        .map_err(|e| anyhow::anyhow!("Expected body after if condition, typically {{ ... }}: {}", e))?);
     
     // Parse optional else branch
     let else_branch = if matches!(state.tokens.peek(), Some((Token::Else, _))) {
         state.tokens.advance(); // consume 'else'
-        Some(Box::new(super::parse_expr_recursive(state)?))
+        Some(Box::new(super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {}", e))?))
     } else {
         None
     };
