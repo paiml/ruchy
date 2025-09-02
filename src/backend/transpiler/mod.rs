@@ -30,12 +30,21 @@ use quote::{format_ident, quote};
 /// Block categorization result: (functions, statements, modules, `has_main`, `main_expr`)
 type BlockCategorization<'a> = (Vec<TokenStream>, Vec<TokenStream>, Vec<TokenStream>, bool, Option<&'a Expr>);
 
+/// Function signature information for type coercion
+#[derive(Debug, Clone)]
+pub struct FunctionSignature {
+    pub name: String,
+    pub param_types: Vec<String>,  // Simplified: just the type name as string
+}
+
 /// The main transpiler struct
 pub struct Transpiler {
     /// Track whether we're in an async context
     pub in_async_context: bool,
     /// Track variables that need to be mutable (for auto-mutability)
     pub mutable_vars: std::collections::HashSet<String>,
+    /// Track function signatures for type coercion
+    pub function_signatures: std::collections::HashMap<String, FunctionSignature>,
 }
 
 impl Default for Transpiler {
@@ -59,6 +68,7 @@ impl Transpiler {
         Self {
             in_async_context: false,
             mutable_vars: std::collections::HashSet::new(),
+            function_signatures: std::collections::HashMap::new(),
         }
     }
 
@@ -66,6 +76,51 @@ impl Transpiler {
     pub fn analyze_mutability(&mut self, exprs: &[Expr]) {
         for expr in exprs {
             self.analyze_expr_mutability(expr);
+        }
+    }
+    
+    /// Collect function signatures for type coercion
+    pub fn collect_function_signatures(&mut self, exprs: &[Expr]) {
+        for expr in exprs {
+            self.collect_signatures_from_expr(expr);
+        }
+    }
+    
+    fn collect_signatures_from_expr(&mut self, expr: &Expr) {
+        use crate::frontend::ast::ExprKind;
+        
+        match &expr.kind {
+            ExprKind::Function { name, params, .. } => {
+                let param_types: Vec<String> = params.iter()
+                    .map(|param| self.type_to_string(&param.ty))
+                    .collect();
+                    
+                let signature = FunctionSignature {
+                    name: name.clone(),
+                    param_types,
+                };
+                
+                self.function_signatures.insert(name.clone(), signature);
+            }
+            ExprKind::Block(exprs) => {
+                for e in exprs {
+                    self.collect_signatures_from_expr(e);
+                }
+            }
+            ExprKind::Let { body, .. } => {
+                self.collect_signatures_from_expr(body);
+            }
+            _ => {}
+        }
+    }
+    
+    fn type_to_string(&self, ty: &crate::frontend::ast::Type) -> String {
+        use crate::frontend::ast::TypeKind;
+        
+        match &ty.kind {
+            TypeKind::Named(name) => name.clone(),
+            TypeKind::Reference { inner, .. } => format!("&{}", self.type_to_string(inner)),
+            _ => "Unknown".to_string(),
         }
     }
     
@@ -269,11 +324,13 @@ impl Transpiler {
     ///
     /// Returns an error if the AST cannot be transpiled to a valid Rust program.
     pub fn transpile_to_program(&mut self, expr: &Expr) -> Result<TokenStream> {
-        // First analyze the entire program to detect mutable variables
+        // First analyze the entire program to detect mutable variables and function signatures
         if let ExprKind::Block(exprs) = &expr.kind {
             self.analyze_mutability(exprs);
+            self.collect_function_signatures(exprs);
         } else {
             self.analyze_expr_mutability(expr);
+            self.collect_signatures_from_expr(expr);
         }
         
         let result = self.transpile_to_program_with_context(expr, None);

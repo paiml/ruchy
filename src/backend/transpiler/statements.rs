@@ -2271,11 +2271,57 @@ impl Transpiler {
         func_tokens: &TokenStream,
         args: &[Expr]
     ) -> Result<TokenStream> {
-        // Transpile arguments as-is (string literals remain &str by default)
-        let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
-        let arg_tokens = arg_tokens?;
+        // Get function name for signature lookup
+        let func_name = func_tokens.to_string().trim().to_string();
         
+        // Apply type coercion based on function signature
+        let arg_tokens: Result<Vec<_>> = if let Some(signature) = self.function_signatures.get(&func_name) {
+            args.iter().enumerate().map(|(i, arg)| {
+                let base_tokens = self.transpile_expr(arg)?;
+                
+                // Apply String/&str coercion if needed
+                if let Some(expected_type) = signature.param_types.get(i) {
+                    self.apply_string_coercion(arg, &base_tokens, expected_type)
+                } else {
+                    Ok(base_tokens)
+                }
+            }).collect()
+        } else {
+            // No signature info - transpile as-is
+            args.iter().map(|a| self.transpile_expr(a)).collect()
+        };
+        
+        let arg_tokens = arg_tokens?;
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
+    }
+    
+    /// Apply String/&str coercion based on expected type
+    fn apply_string_coercion(
+        &self,
+        arg: &Expr,
+        tokens: &TokenStream,
+        expected_type: &str
+    ) -> Result<TokenStream> {
+        use crate::frontend::ast::{ExprKind, Literal};
+        
+        match (&arg.kind, expected_type) {
+            // String literal to String parameter: add .to_string()
+            (ExprKind::Literal(Literal::String(_)), "String") => {
+                Ok(quote! { #tokens.to_string() })
+            }
+            // String literal to &str parameter: keep as-is
+            (ExprKind::Literal(Literal::String(_)), expected) if expected.starts_with('&') => {
+                Ok(tokens.clone())
+            }
+            // Variable that might be &str to String parameter
+            (ExprKind::Identifier(_), "String") => {
+                // For now, assume string variables are String type from auto-conversion
+                // This matches the existing behavior in transpile_let
+                Ok(tokens.clone())
+            }
+            // No coercion needed
+            _ => Ok(tokens.clone())
+        }
     }
 }
 
