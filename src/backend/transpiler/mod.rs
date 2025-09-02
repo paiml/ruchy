@@ -10,6 +10,7 @@ mod dataframe;
 mod dataframe_helpers;
 mod dispatcher;
 mod expressions;
+mod method_call_refactored;
 mod patterns;
 mod result_type;
 mod statements;
