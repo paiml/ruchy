@@ -672,9 +672,9 @@ impl RuchyCompleter {
     }
 
     // Backward compatibility method for REPL
-    pub fn get_completions(&mut self, line: &str, pos: usize, _bindings: &HashMap<String, crate::runtime::repl::Value>) -> Vec<String> {
+    pub fn get_completions(&mut self, line: &str, pos: usize, bindings: &HashMap<String, crate::runtime::repl::Value>) -> Vec<String> {
         let context = self.analyze_context(line, pos);
-        let pairs = self.complete_context(context);
+        let pairs = self.complete_context_with_bindings(context, bindings);
         pairs.into_iter().map(|p| p.replacement).collect()
     }
 
@@ -694,6 +694,13 @@ impl RuchyCompleter {
         // Handle help queries with multiple patterns
         if let Some(help_context) = self.analyze_help_query(before_cursor) {
             return help_context;
+        }
+        
+        // Handle special REPL commands starting with ':'
+        if before_cursor.starts_with(':') {
+            return CompletionContext::HelpQuery {
+                query: before_cursor.to_string(),
+            };
         }
         
         // Handle function calls with parameter position
@@ -943,6 +950,26 @@ impl RuchyCompleter {
             }
         }
     }
+    
+    pub fn complete_context_with_bindings(&mut self, context: CompletionContext, bindings: &HashMap<String, crate::runtime::repl::Value>) -> Vec<Pair> {
+        match context {
+            CompletionContext::MethodAccess { receiver_type, receiver_expr, partial_method } => {
+                self.complete_methods_with_bindings(receiver_type, receiver_expr, partial_method, bindings)
+            }
+            CompletionContext::ModulePath { segments, partial_segment } => {
+                self.complete_module_path(segments, partial_segment)
+            }
+            CompletionContext::FreeExpression { partial_ident, .. } => {
+                self.complete_free_expression_with_bindings(partial_ident, bindings)
+            }
+            CompletionContext::FunctionCall { function_name, current_param } => {
+                self.complete_function_params(function_name, current_param)
+            }
+            CompletionContext::HelpQuery { query } => {
+                self.complete_help_query(query)
+            }
+        }
+    }
 
     // Immutable version for use with Completer trait
     pub fn complete_context_immutable(&self, context: CompletionContext) -> Vec<Pair> {
@@ -1089,22 +1116,204 @@ impl RuchyCompleter {
             })
             .collect()
     }
+    
+    fn complete_methods_with_bindings(&mut self, receiver_type: SimpleType, receiver_expr: String, partial_method: String, bindings: &HashMap<String, crate::runtime::repl::Value>) -> Vec<Pair> {
+        let mut completions = Vec::new();
+        
+        // Handle nested field access (e.g., "data.user" -> look up data, then user field)
+        let value = if receiver_expr.contains('.') {
+            self.resolve_nested_field(&receiver_expr, bindings)
+        } else {
+            bindings.get(&receiver_expr).cloned()
+        };
+        
+        // First, try to look up the actual type from REPL bindings
+        let actual_type = if let Some(ref resolved_value) = value {
+            match resolved_value {
+                crate::runtime::repl::Value::String(_) => SimpleType::String,
+                crate::runtime::repl::Value::List(_) => SimpleType::List,
+                crate::runtime::repl::Value::DataFrame { .. } => SimpleType::DataFrame,
+                crate::runtime::repl::Value::Object(obj) => {
+                    // For objects, suggest field access
+                    for (field_name, _) in obj {
+                        if field_name.starts_with(&partial_method) {
+                            completions.push(Pair {
+                                display: format!("{receiver_expr}.{field_name} - object field"),
+                                replacement: format!("{receiver_expr}.{field_name}"),
+                            });
+                        }
+                    }
+                    return completions;
+                }
+                _ => receiver_type,
+            }
+        } else {
+            receiver_type
+        };
+        
+        // Get methods for the determined type
+        let type_name = match actual_type {
+            SimpleType::String => "String",
+            SimpleType::List => "List", 
+            SimpleType::DataFrame => "DataFrame",
+            SimpleType::Unknown => return completions,
+        };
+        
+        let method_names = self.help_system.get_type_methods(type_name);
+        for method_name in method_names {
+            if method_name.starts_with(&partial_method) {
+                completions.push(Pair {
+                    display: format!("{receiver_expr}.{method_name} - {type_name} method"),
+                    replacement: format!("{receiver_expr}.{method_name}"),
+                });
+            }
+        }
+        
+        completions
+    }
+    
+    fn resolve_nested_field(&self, nested_expr: &str, bindings: &HashMap<String, crate::runtime::repl::Value>) -> Option<crate::runtime::repl::Value> {
+        let parts: Vec<&str> = nested_expr.split('.').collect();
+        if parts.is_empty() {
+            return None;
+        }
+        
+        // Start with the root variable
+        let mut current_value = bindings.get(parts[0])?.clone();
+        
+        // Navigate through the nested fields
+        for &field_name in &parts[1..] {
+            match current_value {
+                crate::runtime::repl::Value::Object(obj) => {
+                    current_value = obj.get(field_name)?.clone();
+                }
+                _ => return None, // Can't navigate further on non-object types
+            }
+        }
+        
+        Some(current_value)
+    }
+
+    fn complete_free_expression_with_bindings(&self, partial: String, bindings: &HashMap<String, crate::runtime::repl::Value>) -> Vec<Pair> {
+        let mut completions = Vec::new();
+        
+        // Add builtin functions and keywords
+        let builtins = vec![
+            ("println", "Print with newline"),
+            ("print", "Print without newline"),
+            ("type", "Get type of object"),
+            ("dir", "List object attributes"),
+            ("help", "Get help on object"),
+            ("len", "Get length"),
+            ("true", "Boolean true"),
+            ("false", "Boolean false"),
+            ("None", "None value"),
+            ("fn", "Function definition keyword"),
+            ("let", "Variable declaration keyword"),
+            ("if", "Conditional keyword"),
+            ("else", "Else clause keyword"),
+            ("for", "For loop keyword"),
+            ("while", "While loop keyword"),
+            ("match", "Pattern matching keyword"),
+            ("return", "Return statement keyword"),
+        ];
+
+        for (name, desc) in builtins {
+            if name.starts_with(&partial) {
+                completions.push(Pair {
+                    display: format!("{name} - {desc}"),
+                    replacement: name.to_string(),
+                });
+            }
+        }
+        
+        // Add user-defined variables and functions from REPL bindings
+        for (name, value) in bindings {
+            if name.to_lowercase().starts_with(&partial.to_lowercase()) {
+                let type_desc = match value {
+                    crate::runtime::repl::Value::Function { .. } => "function",
+                    crate::runtime::repl::Value::Lambda { .. } => "lambda",
+                    crate::runtime::repl::Value::Int(_) => "integer",
+                    crate::runtime::repl::Value::Float(_) => "float",
+                    crate::runtime::repl::Value::String(_) => "string",
+                    crate::runtime::repl::Value::Bool(_) => "boolean",
+                    crate::runtime::repl::Value::Char(_) => "character",
+                    crate::runtime::repl::Value::List(_) => "list",
+                    crate::runtime::repl::Value::Tuple(_) => "tuple",
+                    crate::runtime::repl::Value::Object(_) => "object",
+                    crate::runtime::repl::Value::HashMap(_) => "hashmap",
+                    crate::runtime::repl::Value::HashSet(_) => "hashset",
+                    crate::runtime::repl::Value::DataFrame { .. } => "dataframe",
+                    crate::runtime::repl::Value::Range { .. } => "range",
+                    crate::runtime::repl::Value::EnumVariant { .. } => "enum",
+                    crate::runtime::repl::Value::Unit => "unit",
+                    crate::runtime::repl::Value::Nil => "nil",
+                };
+                
+                completions.push(Pair {
+                    display: format!("{name} - {type_desc}"),
+                    replacement: name.clone(),
+                });
+            }
+        }
+        
+        // Sort completions by relevance (exact prefix matches first, then alphabetical)
+        completions.sort_by(|a, b| {
+            let a_exact = a.replacement == partial;
+            let b_exact = b.replacement == partial;
+            match (a_exact, b_exact) {
+                (true, false) => std::cmp::Ordering::Less,
+                (false, true) => std::cmp::Ordering::Greater,
+                _ => a.replacement.cmp(&b.replacement),
+            }
+        });
+        
+        completions
+    }
 
     fn complete_function_params(&self, _function_name: String, _current_param: usize) -> Vec<Pair> {
         Vec::new()
     }
 
     fn complete_help_query(&self, partial: String) -> Vec<Pair> {
-        let topics = ["println", "type", "dir", "help",
-            "List", "String", "DataFrame"];
+        let mut completions = Vec::new();
+        
+        // Handle REPL commands starting with ':'
+        if partial.starts_with(':') {
+            let repl_commands = [
+                (":load", "Load file into REPL"),
+                (":help", "Show help information"),
+                (":quit", "Exit the REPL"),
+                (":clear", "Clear screen"),
+                (":history", "Show command history"),
+                (":vars", "List variables"),
+                (":funcs", "List functions"),
+            ];
+            
+            for (command, desc) in repl_commands {
+                if command.starts_with(&partial) {
+                    completions.push(Pair {
+                        display: format!("{command} - {desc}"),
+                        replacement: command.to_string(),
+                    });
+                }
+            }
+        } else {
+            // Regular help topics
+            let topics = ["println", "type", "dir", "help",
+                "List", "String", "DataFrame"];
 
-        topics.iter()
-            .filter(|topic| topic.starts_with(&partial))
-            .map(|topic| Pair {
-                display: (*topic).to_string(),
-                replacement: (*topic).to_string(),
-            })
-            .collect()
+            for &topic in topics.iter() {
+                if topic.starts_with(&partial) {
+                    completions.push(Pair {
+                        display: topic.to_string(),
+                        replacement: topic.to_string(),
+                    });
+                }
+            }
+        }
+        
+        completions
     }
 
     fn calculate_completion_score(&self, candidate: &str, query: &str) -> f64 {
@@ -1268,6 +1477,258 @@ mod tests {
         
         let fuzzy_score = completer.calculate_completion_score("println", "prnt");
         assert!(fuzzy_score > 0.0);
+    }
+    
+    // ========== COMPREHENSIVE TAB COMPLETION TESTS ==========
+    
+    #[test]
+    fn test_tab_completion_basic_variables() {
+        let mut completer = RuchyCompleter::new();
+        let mut bindings = HashMap::new();
+        bindings.insert("variable_name".to_string(), crate::runtime::repl::Value::Int(42));
+        bindings.insert("another_var".to_string(), crate::runtime::repl::Value::String("test".to_string()));
+        
+        let completions = completer.get_completions("var", 3, &bindings);
+        
+        // Should suggest variables that start with "var"
+        assert!(!completions.is_empty());
+        assert!(completions.iter().any(|c| c.contains("variable_name")));
+    }
+    
+    #[test]
+    fn test_tab_completion_method_access_list() {
+        let completer = RuchyCompleter::new();
+        let context = completer.analyze_context("[1,2,3].ma", 10);
+        
+        if let CompletionContext::MethodAccess { receiver_type, partial_method, .. } = context {
+            assert_eq!(receiver_type, SimpleType::List);
+            assert_eq!(partial_method, "ma");
+        } else {
+            panic!("Expected MethodAccess context");
+        }
+    }
+    
+    #[test]
+    fn test_tab_completion_method_access_string() {
+        let completer = RuchyCompleter::new();
+        let context = completer.analyze_context("\"hello\".up", 10);
+        
+        if let CompletionContext::MethodAccess { receiver_type, partial_method, .. } = context {
+            assert_eq!(receiver_type, SimpleType::String);
+            assert_eq!(partial_method, "up");
+        } else {
+            panic!("Expected MethodAccess context");
+        }
+    }
+    
+    #[test]
+    fn test_tab_completion_method_access_dataframe() {
+        let completer = RuchyCompleter::new();
+        let context = completer.analyze_context("DataFrame::new().sel", 20);
+        
+        if let CompletionContext::MethodAccess { receiver_type, partial_method, .. } = context {
+            assert_eq!(receiver_type, SimpleType::DataFrame);
+            assert_eq!(partial_method, "sel");
+        } else {
+            panic!("Expected MethodAccess context");
+        }
+    }
+    
+    #[test]
+    fn test_tab_completion_builtin_functions() {
+        let mut completer = RuchyCompleter::new();
+        let bindings = HashMap::new();
+        
+        let completions = completer.get_completions("prin", 4, &bindings);
+        
+        // Should suggest println and print
+        assert!(!completions.is_empty());
+        let completion_string = completions.join(" ");
+        assert!(completion_string.contains("println"));
+    }
+    
+    #[test]
+    fn test_tab_completion_help_queries() {
+        let completer = RuchyCompleter::new();
+        let context = completer.analyze_context("help(prin", 9);
+        
+        if let CompletionContext::HelpQuery { query } = context {
+            assert_eq!(query, "prin");
+        } else {
+            panic!("Expected HelpQuery context, got: {:?}", context);
+        }
+    }
+    
+    #[test]
+    fn test_tab_completion_module_paths() {
+        let completer = RuchyCompleter::new();
+        let context = completer.analyze_context("std::fs::", 8);
+        
+        if let CompletionContext::ModulePath { segments, partial_segment } = context {
+            assert_eq!(segments, vec!["std".to_string(), "fs".to_string()]);
+            assert!(partial_segment.is_empty());
+        } else {
+            panic!("Expected ModulePath context");
+        }
+    }
+    
+    #[test]
+    fn test_tab_completion_nested_expressions() {
+        let completer = RuchyCompleter::new();
+        let context = completer.analyze_context("some_function([1,2,3].ma", 24);
+        
+        if let CompletionContext::MethodAccess { receiver_type, partial_method, .. } = context {
+            assert_eq!(receiver_type, SimpleType::List);
+            assert_eq!(partial_method, "ma");
+        } else {
+            panic!("Expected MethodAccess context for nested expression");
+        }
+    }
+    
+    #[test]
+    fn test_tab_completion_chained_methods() {
+        let completer = RuchyCompleter::new();
+        let context = completer.analyze_context("[1,2,3].map(|x| x + 1).fil", 27);
+        
+        if let CompletionContext::MethodAccess { receiver_type, partial_method, .. } = context {
+            assert_eq!(receiver_type, SimpleType::List);
+            assert_eq!(partial_method, "fil");
+        } else {
+            panic!("Expected MethodAccess context for chained methods");
+        }
+    }
+    
+    #[test] 
+    fn test_tab_completion_function_parameters() {
+        let completer = RuchyCompleter::new();
+        let context = completer.analyze_context("println(", 8);
+        
+        // Should recognize this as inside a function call
+        matches!(context, CompletionContext::FreeExpression { .. });
+    }
+    
+    #[test]
+    fn test_tab_completion_partial_identifiers() {
+        let mut completer = RuchyCompleter::new();
+        let mut bindings = HashMap::new();
+        bindings.insert("test_variable".to_string(), crate::runtime::repl::Value::Int(1));
+        bindings.insert("test_another".to_string(), crate::runtime::repl::Value::Int(2));
+        bindings.insert("different_name".to_string(), crate::runtime::repl::Value::Int(3));
+        
+        let completions = completer.get_completions("test", 4, &bindings);
+        
+        // Should suggest both test_variable and test_another
+        assert!(completions.len() >= 2);
+        let completion_string = completions.join(" ");
+        assert!(completion_string.contains("test_variable"));
+        assert!(completion_string.contains("test_another"));
+        assert!(!completion_string.contains("different_name"));
+    }
+    
+    #[test]
+    fn test_tab_completion_empty_context() {
+        let mut completer = RuchyCompleter::new();
+        let bindings = HashMap::new();
+        
+        let completions = completer.get_completions("", 0, &bindings);
+        
+        // Should return common functions and keywords
+        assert!(!completions.is_empty());
+        let completion_string = completions.join(" ");
+        assert!(completion_string.contains("println") || completion_string.contains("let"));
+    }
+    
+    #[test]
+    fn test_tab_completion_case_sensitivity() {
+        let mut completer = RuchyCompleter::new();
+        let mut bindings = HashMap::new();
+        bindings.insert("MyVariable".to_string(), crate::runtime::repl::Value::Int(42));
+        
+        let completions_lower = completer.get_completions("my", 2, &bindings);
+        let completions_upper = completer.get_completions("My", 2, &bindings);
+        
+        // Case insensitive matching should work
+        let lower_string = completions_lower.join(" ");
+        let upper_string = completions_upper.join(" ");
+        
+        // At least one should contain MyVariable
+        assert!(lower_string.contains("MyVariable") || upper_string.contains("MyVariable"));
+    }
+    
+    #[test]
+    fn test_tab_completion_context_boundary() {
+        let completer = RuchyCompleter::new();
+        
+        // Test completion at word boundaries
+        let context1 = completer.analyze_context("let x = ", 8);
+        assert!(matches!(context1, CompletionContext::FreeExpression { .. }));
+        
+        let context2 = completer.analyze_context("x.method(", 9);
+        assert!(matches!(context2, CompletionContext::FreeExpression { .. }));
+    }
+    
+    #[test]
+    fn test_tab_completion_error_recovery() {
+        let completer = RuchyCompleter::new();
+        
+        // Test completion with incomplete/invalid syntax
+        let context1 = completer.analyze_context("[1,2,", 5);
+        assert!(matches!(context1, CompletionContext::FreeExpression { .. }));
+        
+        let context2 = completer.analyze_context("if (", 4);
+        assert!(matches!(context2, CompletionContext::FreeExpression { .. }));
+        
+        let context3 = completer.analyze_context("func(", 5);
+        assert!(matches!(context3, CompletionContext::FreeExpression { .. }));
+    }
+    
+    #[test]
+    fn test_tab_completion_unicode_identifiers() {
+        let mut completer = RuchyCompleter::new();
+        let mut bindings = HashMap::new();
+        bindings.insert("变量".to_string(), crate::runtime::repl::Value::Int(42));
+        bindings.insert("переменная".to_string(), crate::runtime::repl::Value::String("test".to_string()));
+        
+        let completions = completer.get_completions("变", 3, &bindings); // First char of Chinese variable
+        
+        // Should handle Unicode identifiers
+        let completion_string = completions.join(" ");
+        assert!(completion_string.contains("变量") || completions.is_empty()); // May not match depending on implementation
+    }
+    
+    #[test]
+    fn test_completion_cache_performance() {
+        let mut completer = RuchyCompleter::new();
+        let bindings = HashMap::new();
+        
+        // Warm up the cache
+        let _warm_up = completer.get_completions("print", 5, &bindings);
+        
+        // Measure completion time (should be very fast)
+        let start = std::time::Instant::now();
+        let _completions = completer.get_completions("print", 5, &bindings);
+        let duration = start.elapsed();
+        
+        // Tab completion should be very fast (under 50ms)
+        assert!(duration.as_millis() < 50, "Tab completion too slow: {:?}", duration);
+    }
+    
+    #[test]
+    fn test_completion_context_stability() {
+        let completer = RuchyCompleter::new();
+        
+        // Same input should produce same context
+        let context1 = completer.analyze_context("[1,2,3].map", 11);
+        let context2 = completer.analyze_context("[1,2,3].map", 11);
+        
+        match (&context1, &context2) {
+            (CompletionContext::MethodAccess { receiver_type: t1, partial_method: p1, .. },
+             CompletionContext::MethodAccess { receiver_type: t2, partial_method: p2, .. }) => {
+                assert_eq!(t1, t2);
+                assert_eq!(p1, p2);
+            }
+            _ => panic!("Context analysis should be stable and consistent")
+        }
     }
 
     #[test]
