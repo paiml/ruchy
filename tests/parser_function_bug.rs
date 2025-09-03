@@ -22,15 +22,14 @@ fn test_fun_with_parameters() {
 
 #[test]  
 fn test_multiple_functions() {
-    let code = r#"
+    let code = r"
         fun add(a: int, b: int) -> int {
             a + b
         }
         
         fun main() {
             println(add(1, 2))
-        }
-    "#;
+        }";
     
     let mut parser = Parser::new(code);
     let result = parser.parse();
@@ -40,15 +39,14 @@ fn test_multiple_functions() {
 
 #[test]
 fn test_function_with_body() {
-    let code = r#"
+    let code = r"
         fun factorial(n: int) -> int {
             if n <= 1 {
                 1
             } else {
                 n * factorial(n - 1)
             }
-        }
-    "#;
+        }";
     
     let mut parser = Parser::new(code);
     let result = parser.parse();

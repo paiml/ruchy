@@ -514,3 +514,176 @@ impl Ord for Grade {
 }
 
 // PartialEq and Eq are now derived in scoring.rs
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::quality::scoring::{QualityScore, Grade};
+    use tempfile::TempDir;
+
+    fn create_minimal_score() -> QualityScore {
+        use crate::quality::scoring::ScoreComponents;
+        QualityScore {
+            value: 0.5,
+            components: ScoreComponents {
+                correctness: 0.5,
+                performance: 0.5,
+                maintainability: 0.5,
+                safety: 0.5,
+                idiomaticity: 0.5,
+            },
+            grade: Grade::D,
+            confidence: 0.4,
+            cache_hit_rate: 0.3,
+        }
+    }
+
+    fn create_passing_score() -> QualityScore {
+        use crate::quality::scoring::ScoreComponents;
+        QualityScore {
+            value: 0.85,
+            components: ScoreComponents {
+                correctness: 0.9,
+                performance: 0.8,
+                maintainability: 0.8,
+                safety: 0.9,
+                idiomaticity: 0.7,
+            },
+            grade: Grade::APlus,
+            confidence: 0.9,
+            cache_hit_rate: 0.2,
+        }
+    }
+
+    // Test 1: Default Configuration Creation
+    #[test]
+    fn test_default_quality_gate_config() {
+        let config = QualityGateConfig::default();
+        
+        assert_eq!(config.min_score, 0.7);
+        assert_eq!(config.min_grade, Grade::BMinus);
+        assert_eq!(config.component_thresholds.correctness, 0.8);
+        assert_eq!(config.component_thresholds.safety, 0.8);
+        assert_eq!(config.anti_gaming.min_confidence, 0.6);
+        assert!(config.ci_integration.fail_on_violation);
+        assert!(config.project_overrides.is_empty());
+    }
+
+    // Test 2: Quality Gate Enforcer Creation
+    #[test]
+    fn test_quality_gate_enforcer_creation() {
+        let config = QualityGateConfig::default();
+        let enforcer = QualityGateEnforcer::new(config.clone());
+        
+        // Verify enforcer uses the provided config
+        let score = create_minimal_score();
+        let result = enforcer.enforce_gates(&score, None);
+        
+        // Should fail with default thresholds
+        assert!(!result.passed);
+        assert!(!result.violations.is_empty());
+    }
+
+    // Test 3: Passing Quality Gate - All Criteria Met
+    #[test]
+    fn test_quality_gate_passes_with_high_score() {
+        let config = QualityGateConfig::default();
+        let enforcer = QualityGateEnforcer::new(config);
+        let score = create_passing_score();
+        
+        let result = enforcer.enforce_gates(&score, None);
+        
+        assert!(result.passed, "High quality score should pass all gates");
+        assert_eq!(result.score, 0.85);
+        assert_eq!(result.grade, Grade::APlus);
+        assert!(result.violations.is_empty());
+        assert_eq!(result.confidence, 0.9);
+        assert!(result.gaming_warnings.is_empty());
+    }
+
+    // Test 4: Failing Overall Score Threshold
+    #[test]
+    fn test_quality_gate_fails_overall_score() {
+        let config = QualityGateConfig::default(); // min_score: 0.7
+        let enforcer = QualityGateEnforcer::new(config);
+        
+        let mut score = create_minimal_score();
+        score.value = 0.6; // Below 0.7 threshold
+        
+        let result = enforcer.enforce_gates(&score, None);
+        
+        assert!(!result.passed, "Score below threshold should fail");
+        
+        // Should have overall score violation
+        let overall_violations: Vec<_> = result.violations.iter()
+            .filter(|v| v.violation_type == ViolationType::OverallScore)
+            .collect();
+        assert_eq!(overall_violations.len(), 1);
+        
+        let violation = &overall_violations[0];
+        assert_eq!(violation.actual, 0.6);
+        assert_eq!(violation.required, 0.7);
+        assert_eq!(violation.severity, Severity::Critical);
+        assert!(violation.message.contains("60.0%"));
+        assert!(violation.message.contains("70.0%"));
+    }
+
+    // Test 5: Confidence Threshold Violation
+    #[test]
+    fn test_confidence_threshold_violation() {
+        let config = QualityGateConfig::default(); // min_confidence: 0.6
+        let enforcer = QualityGateEnforcer::new(config);
+        
+        let mut score = create_passing_score();
+        score.confidence = 0.4; // Below 0.6 threshold
+        
+        let result = enforcer.enforce_gates(&score, None);
+        
+        let confidence_violations: Vec<_> = result.violations.iter()
+            .filter(|v| v.violation_type == ViolationType::Confidence)
+            .collect();
+        assert_eq!(confidence_violations.len(), 1);
+        
+        let violation = &confidence_violations[0];
+        assert_eq!(violation.severity, Severity::High);
+        assert_eq!(violation.actual, 0.4);
+        assert_eq!(violation.required, 0.6);
+    }
+
+    // Test 6: Configuration File Loading (Success)
+    #[test]
+    fn test_load_config_creates_default() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_root = temp_dir.path();
+        
+        let config = QualityGateEnforcer::load_config(project_root).unwrap();
+        
+        // Should create default config
+        assert_eq!(config.min_score, 0.7);
+        assert_eq!(config.min_grade, Grade::BMinus);
+        
+        // Should create .ruchy/score.toml file
+        let config_path = project_root.join(".ruchy").join("score.toml");
+        assert!(config_path.exists(), "Config file should be created");
+        
+        // File should contain valid TOML
+        let content = std::fs::read_to_string(config_path).unwrap();
+        assert!(content.contains("min_score"));
+        assert!(content.contains("0.7"));
+    }
+
+    // Test 7: Serialization/Deserialization
+    #[test]
+    fn test_config_serialization() {
+        let original_config = QualityGateConfig::default();
+        
+        // Serialize to TOML
+        let toml_content = toml::to_string(&original_config).unwrap();
+        assert!(toml_content.contains("min_score"));
+        
+        // Deserialize back
+        let deserialized_config: QualityGateConfig = toml::from_str(&toml_content).unwrap();
+        assert_eq!(deserialized_config.min_score, original_config.min_score);
+        assert_eq!(deserialized_config.min_grade, original_config.min_grade);
+    }
+}

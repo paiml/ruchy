@@ -1389,9 +1389,8 @@ mod tests {
                 TypeKind::Tuple(ref types) => assert!(!types.is_empty()),
                 TypeKind::Reference { is_mut: _, ref inner } => {
                     // Reference types should have a valid inner type
-                    match inner.kind {
-                        TypeKind::Named(ref name) => assert!(!name.is_empty()),
-                        _ => {}
+                    if let TypeKind::Named(ref name) = inner.kind { 
+                        assert!(!name.is_empty());
                     }
                 }
             }

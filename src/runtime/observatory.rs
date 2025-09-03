@@ -3,6 +3,695 @@
 //! Provides comprehensive monitoring and debugging capabilities for the actor system,
 //! including message tracing, deadlock detection, and performance analysis.
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::runtime::actor::{ActorSystem, Message};
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    // Helper functions for consistent test setup
+    fn create_test_actor_system() -> Arc<Mutex<ActorSystem>> {
+        ActorSystem::new()
+    }
+
+    fn create_test_config() -> ObservatoryConfig {
+        ObservatoryConfig {
+            max_traces: 100,
+            trace_retention_seconds: 3600,
+            enable_deadlock_detection: true,
+            deadlock_check_interval_ms: 1000,
+            enable_metrics: true,
+            metrics_interval_ms: 5000,
+            max_snapshots: 50,
+        }
+    }
+
+    fn create_test_observatory() -> ActorObservatory {
+        let system = create_test_actor_system();
+        let config = create_test_config();
+        ActorObservatory::new(system, config)
+    }
+
+    fn create_test_message_trace() -> MessageTrace {
+        MessageTrace {
+            trace_id: 12345,
+            timestamp: current_timestamp(),
+            source: Some(ActorId(1)),
+            destination: ActorId(2),
+            message: Message::User("test_message".to_string(), vec![]),
+            status: MessageStatus::Queued,
+            processing_duration_us: None,
+            error: None,
+            stack_depth: 1,
+            correlation_id: Some("corr-123".to_string()),
+        }
+    }
+
+    fn create_test_actor_snapshot() -> ActorSnapshot {
+        ActorSnapshot {
+            actor_id: ActorId(1),
+            name: "test_actor".to_string(),
+            timestamp: current_timestamp(),
+            state: ActorState::Running,
+            mailbox_size: 5,
+            parent: Some(ActorId(0)),
+            children: vec![ActorId(2), ActorId(3)],
+            message_stats: MessageStats::default(),
+            memory_usage: Some(1024),
+        }
+    }
+
+    fn create_test_message_filter() -> MessageFilter {
+        MessageFilter {
+            name: "test_filter".to_string(),
+            actor_id: Some(ActorId(1)),
+            actor_name_pattern: Some("test_actor".to_string()),
+            message_type_pattern: Some(".*message.*".to_string()),
+            min_processing_time_us: None,
+            failed_only: false,
+            max_stack_depth: Some(10),
+        }
+    }
+
+    // ========== Observatory Configuration Tests ==========
+
+    #[test]
+    fn test_observatory_config_default() {
+        let config = ObservatoryConfig::default();
+        assert_eq!(config.max_traces, 10000);
+        assert_eq!(config.trace_retention_seconds, 3600);
+        assert!(config.enable_deadlock_detection);
+        assert_eq!(config.deadlock_check_interval_ms, 1000);
+        assert!(config.enable_metrics);
+        assert_eq!(config.metrics_interval_ms, 5000);
+        assert_eq!(config.max_snapshots, 1000);
+    }
+
+    #[test]
+    fn test_observatory_config_clone() {
+        let config1 = create_test_config();
+        let config2 = config1.clone();
+        assert_eq!(config1.max_traces, config2.max_traces);
+        assert_eq!(config1.enable_deadlock_detection, config2.enable_deadlock_detection);
+    }
+
+    #[test]
+    fn test_observatory_config_debug() {
+        let config = create_test_config();
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("ObservatoryConfig"));
+        assert!(debug_str.contains("max_traces"));
+        assert!(debug_str.contains("enable_deadlock_detection"));
+    }
+
+    #[test]
+    fn test_observatory_config_serialization() {
+        let config = create_test_config();
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: ObservatoryConfig = serde_json::from_str(&json).unwrap();
+        assert_eq!(config.max_traces, deserialized.max_traces);
+        assert_eq!(config.enable_metrics, deserialized.enable_metrics);
+    }
+
+    // ========== Observatory Creation and Setup Tests ==========
+
+    #[test]
+    fn test_observatory_creation() {
+        let system = create_test_actor_system();
+        let config = create_test_config();
+        let observatory = ActorObservatory::new(system, config.clone());
+        
+        assert_eq!(observatory.config.max_traces, config.max_traces);
+        assert!(observatory.filters.is_empty());
+        assert!(observatory.start_time.elapsed() < Duration::from_secs(1));
+    }
+
+    #[test]
+    fn test_observatory_with_default_config() {
+        let system = create_test_actor_system();
+        let config = ObservatoryConfig::default();
+        let observatory = ActorObservatory::new(system, config);
+        
+        assert_eq!(observatory.config.max_traces, 10000);
+        assert!(observatory.config.enable_deadlock_detection);
+    }
+
+    #[test]
+    fn test_observatory_initialization_state() {
+        let observatory = create_test_observatory();
+        
+        // Should start with empty state
+        assert!(observatory.get_filters().is_empty());
+        let metrics = observatory.metrics.lock().unwrap();
+        assert_eq!(metrics.active_actors, 0);
+        assert_eq!(metrics.total_messages_processed, 0);
+    }
+
+    // ========== Message Filter Management Tests ==========
+
+    #[test]
+    fn test_add_message_filter() {
+        let mut observatory = create_test_observatory();
+        let filter = create_test_message_filter();
+        
+        observatory.add_filter(filter.clone());
+        
+        assert_eq!(observatory.get_filters().len(), 1);
+        assert_eq!(observatory.get_filters()[0].name, filter.name);
+    }
+
+    #[test]
+    fn test_add_multiple_filters() {
+        let mut observatory = create_test_observatory();
+        
+        let filter1 = MessageFilter {
+            name: "filter1".to_string(),
+            actor_id: None,
+            actor_name_pattern: None,
+            message_type_pattern: Some("type1".to_string()),
+            min_processing_time_us: None,
+            failed_only: false,
+            max_stack_depth: None,
+        };
+        
+        let filter2 = MessageFilter {
+            name: "filter2".to_string(),
+            actor_id: Some(ActorId(2)),
+            actor_name_pattern: Some("actor2".to_string()),
+            message_type_pattern: None,
+            min_processing_time_us: Some(1000),
+            failed_only: true,
+            max_stack_depth: Some(5),
+        };
+        
+        observatory.add_filter(filter1);
+        observatory.add_filter(filter2);
+        
+        assert_eq!(observatory.get_filters().len(), 2);
+        assert_eq!(observatory.get_filters()[0].name, "filter1");
+        assert_eq!(observatory.get_filters()[1].name, "filter2");
+    }
+
+    #[test]
+    fn test_remove_message_filter() {
+        let mut observatory = create_test_observatory();
+        let filter = create_test_message_filter();
+        
+        observatory.add_filter(filter);
+        assert_eq!(observatory.get_filters().len(), 1);
+        
+        let removed = observatory.remove_filter("test_filter");
+        assert!(removed);
+        assert!(observatory.get_filters().is_empty());
+    }
+
+    #[test]
+    fn test_remove_nonexistent_filter() {
+        let mut observatory = create_test_observatory();
+        let removed = observatory.remove_filter("nonexistent");
+        assert!(!removed);
+    }
+
+    #[test]
+    fn test_get_filters_empty() {
+        let observatory = create_test_observatory();
+        assert!(observatory.get_filters().is_empty());
+    }
+
+    // ========== Message Tracing Tests ==========
+
+    #[test]
+    fn test_trace_message() {
+        let observatory = create_test_observatory();
+        let trace = create_test_message_trace();
+        
+        let result = observatory.trace_message(trace.clone());
+        assert!(result.is_ok());
+        
+        let traces = observatory.get_traces(None, None).unwrap();
+        assert_eq!(traces.len(), 1);
+        assert_eq!(traces[0].trace_id, trace.trace_id);
+    }
+
+    #[test]
+    fn test_trace_message_with_limit() {
+        let mut observatory = create_test_observatory();
+        observatory.config.max_traces = 2;
+        
+        // Add 3 traces, should only keep 2 most recent
+        for i in 0..3 {
+            let mut trace = create_test_message_trace();
+            trace.trace_id = i as u64;
+            observatory.trace_message(trace).unwrap();
+        }
+        
+        let traces = observatory.get_traces(None, None).unwrap();
+        assert_eq!(traces.len(), 2);
+        assert_eq!(traces[0].trace_id, 1); // First trace should be evicted
+        assert_eq!(traces[1].trace_id, 2);
+    }
+
+    #[test]
+    fn test_trace_message_age_retention() {
+        let mut observatory = create_test_observatory();
+        observatory.config.trace_retention_seconds = 1; // 1 second retention
+        
+        // Add an old trace
+        let mut old_trace = create_test_message_trace();
+        old_trace.timestamp = current_timestamp() - 3600; // 1 hour ago
+        observatory.trace_message(old_trace).unwrap();
+        
+        // Add a recent trace
+        let recent_trace = create_test_message_trace();
+        observatory.trace_message(recent_trace).unwrap();
+        
+        let traces = observatory.get_traces(None, None).unwrap();
+        // Only recent trace should remain
+        assert_eq!(traces.len(), 1);
+    }
+
+    #[test]
+    fn test_get_traces_with_limit() {
+        let observatory = create_test_observatory();
+        
+        // Add 5 traces
+        for i in 0..5 {
+            let mut trace = create_test_message_trace();
+            trace.trace_id = i as u64;
+            observatory.trace_message(trace).unwrap();
+        }
+        
+        let traces = observatory.get_traces(Some(3), None).unwrap();
+        assert_eq!(traces.len(), 3);
+    }
+
+    // ========== Message Status Tests ==========
+
+    #[test]
+    fn test_message_status_variants() {
+        let statuses = vec![
+            MessageStatus::Queued,
+            MessageStatus::Processing,
+            MessageStatus::Completed,
+            MessageStatus::Failed,
+            MessageStatus::Dropped,
+        ];
+        
+        assert_eq!(statuses.len(), 5);
+        assert_eq!(statuses[0], MessageStatus::Queued);
+        assert_ne!(statuses[0], MessageStatus::Processing);
+    }
+
+    #[test]
+    fn test_message_status_serialization() {
+        let status = MessageStatus::Processing;
+        let json = serde_json::to_string(&status).unwrap();
+        let deserialized: MessageStatus = serde_json::from_str(&json).unwrap();
+        assert_eq!(status, deserialized);
+    }
+
+    #[test]
+    fn test_message_status_debug() {
+        let status = MessageStatus::Failed;
+        let debug_str = format!("{:?}", status);
+        assert!(debug_str.contains("Failed"));
+    }
+
+    // ========== Actor State Tests ==========
+
+    #[test]
+    fn test_actor_state_variants() {
+        let states = vec![
+            ActorState::Starting,
+            ActorState::Running,
+            ActorState::Processing("test_message".to_string()),
+            ActorState::Restarting,
+            ActorState::Stopping,
+            ActorState::Stopped,
+            ActorState::Failed("test_error".to_string()),
+        ];
+        
+        assert_eq!(states.len(), 7);
+        assert_eq!(states[0], ActorState::Starting);
+        assert_ne!(states[0], ActorState::Running);
+    }
+
+    #[test]
+    fn test_actor_state_processing() {
+        let state = ActorState::Processing("handle_request".to_string());
+        if let ActorState::Processing(message_type) = state {
+            assert_eq!(message_type, "handle_request");
+        } else {
+            panic!("Expected Processing state");
+        }
+    }
+
+    #[test]
+    fn test_actor_state_failed() {
+        let state = ActorState::Failed("connection_timeout".to_string());
+        if let ActorState::Failed(reason) = state {
+            assert_eq!(reason, "connection_timeout");
+        } else {
+            panic!("Expected Failed state");
+        }
+    }
+
+    #[test]
+    fn test_actor_state_serialization() {
+        let state = ActorState::Processing("test".to_string());
+        let json = serde_json::to_string(&state).unwrap();
+        let deserialized: ActorState = serde_json::from_str(&json).unwrap();
+        assert_eq!(state, deserialized);
+    }
+
+    // ========== Message Statistics Tests ==========
+
+    #[test]
+    fn test_message_stats_default() {
+        let stats = MessageStats::default();
+        assert_eq!(stats.total_processed, 0);
+        assert_eq!(stats.messages_per_second, 0.0);
+        assert_eq!(stats.avg_processing_time_us, 0.0);
+        assert_eq!(stats.max_processing_time_us, 0);
+        assert_eq!(stats.failed_messages, 0);
+        assert!(stats.last_processed.is_none());
+    }
+
+    #[test]
+    fn test_message_stats_clone() {
+        let mut stats1 = MessageStats::default();
+        stats1.total_processed = 100;
+        stats1.messages_per_second = 10.5;
+        
+        let stats2 = stats1.clone();
+        assert_eq!(stats1.total_processed, stats2.total_processed);
+        assert_eq!(stats1.messages_per_second, stats2.messages_per_second);
+    }
+
+    #[test]
+    fn test_message_stats_serialization() {
+        let mut stats = MessageStats::default();
+        stats.total_processed = 500;
+        stats.avg_processing_time_us = 1500.0;
+        
+        let json = serde_json::to_string(&stats).unwrap();
+        let deserialized: MessageStats = serde_json::from_str(&json).unwrap();
+        assert_eq!(stats.total_processed, deserialized.total_processed);
+    }
+
+    // ========== System Metrics Tests ==========
+
+    #[test]
+    fn test_system_metrics_default() {
+        let metrics = SystemMetrics::default();
+        assert_eq!(metrics.active_actors, 0);
+        assert_eq!(metrics.total_messages_processed, 0);
+        assert_eq!(metrics.system_messages_per_second, 0.0);
+        assert_eq!(metrics.total_memory_usage, 0);
+        assert_eq!(metrics.total_queued_messages, 0);
+        assert_eq!(metrics.avg_mailbox_size, 0.0);
+        assert_eq!(metrics.recent_restarts, 0);
+        assert!(metrics.last_updated > 0); // Uses current timestamp
+    }
+
+    #[test]
+    fn test_system_metrics_update() {
+        let mut metrics = SystemMetrics::default();
+        metrics.active_actors = 10;
+        metrics.total_messages_processed = 1000;
+        metrics.system_messages_per_second = 50.5;
+        metrics.last_updated = current_timestamp();
+        
+        assert_eq!(metrics.active_actors, 10);
+        assert_eq!(metrics.total_messages_processed, 1000);
+        assert!(metrics.last_updated > 0);
+    }
+
+    #[test]
+    fn test_system_metrics_serialization() {
+        let mut metrics = SystemMetrics::default();
+        metrics.active_actors = 5;
+        metrics.total_memory_usage = 1024000;
+        
+        let json = serde_json::to_string(&metrics).unwrap();
+        let deserialized: SystemMetrics = serde_json::from_str(&json).unwrap();
+        assert_eq!(metrics.active_actors, deserialized.active_actors);
+        assert_eq!(metrics.total_memory_usage, deserialized.total_memory_usage);
+    }
+
+    // ========== Actor Snapshot Tests ==========
+
+    #[test]
+    fn test_actor_snapshot_creation() {
+        let snapshot = create_test_actor_snapshot();
+        
+        assert_eq!(snapshot.actor_id, ActorId(1));
+        assert_eq!(snapshot.name, "test_actor");
+        assert_eq!(snapshot.state, ActorState::Running);
+        assert_eq!(snapshot.mailbox_size, 5);
+        assert_eq!(snapshot.children.len(), 2);
+        assert!(snapshot.memory_usage.is_some());
+    }
+
+    #[test]
+    fn test_actor_snapshot_with_no_parent() {
+        let mut snapshot = create_test_actor_snapshot();
+        snapshot.parent = None;
+        
+        assert!(snapshot.parent.is_none());
+        assert_eq!(snapshot.children.len(), 2);
+    }
+
+    #[test]
+    fn test_actor_snapshot_serialization() {
+        let snapshot = create_test_actor_snapshot();
+        
+        let json = serde_json::to_string(&snapshot).unwrap();
+        let deserialized: ActorSnapshot = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(snapshot.actor_id, deserialized.actor_id);
+        assert_eq!(snapshot.name, deserialized.name);
+        assert_eq!(snapshot.state, deserialized.state);
+    }
+
+    // ========== Message Filter Tests ==========
+
+    #[test]
+    fn test_message_filter_creation() {
+        let filter = create_test_message_filter();
+        
+        assert_eq!(filter.name, "test_filter");
+        assert!(filter.actor_id.is_some());
+        assert!(filter.actor_name_pattern.is_some());
+        assert!(filter.message_type_pattern.is_some());
+        assert!(!filter.failed_only);
+    }
+
+    #[test]
+    fn test_message_filter_with_duration_limits() {
+        let filter = MessageFilter {
+            name: "duration_filter".to_string(),
+            actor_id: None,
+            actor_name_pattern: None,
+            message_type_pattern: None,
+            min_processing_time_us: Some(1000),
+            failed_only: false,
+            max_stack_depth: None,
+        };
+        
+        assert_eq!(filter.min_processing_time_us, Some(1000));
+    }
+
+    #[test]
+    fn test_message_filter_errors_only() {
+        let filter = MessageFilter {
+            name: "error_filter".to_string(),
+            actor_id: None,
+            actor_name_pattern: None,
+            message_type_pattern: None,
+            min_processing_time_us: None,
+            failed_only: true,
+            max_stack_depth: None,
+        };
+        
+        assert!(filter.failed_only);
+    }
+
+    // ========== Message Trace Tests ==========
+
+    #[test]
+    fn test_message_trace_creation() {
+        let trace = create_test_message_trace();
+        
+        assert_eq!(trace.trace_id, 12345);
+        assert!(trace.source.is_some());
+        assert_eq!(trace.destination, ActorId(2));
+        assert_eq!(trace.status, MessageStatus::Queued);
+        assert_eq!(trace.stack_depth, 1);
+        assert!(trace.correlation_id.is_some());
+    }
+
+    #[test]
+    fn test_message_trace_with_processing() {
+        let mut trace = create_test_message_trace();
+        trace.status = MessageStatus::Processing;
+        trace.processing_duration_us = Some(1500);
+        
+        assert_eq!(trace.status, MessageStatus::Processing);
+        assert_eq!(trace.processing_duration_us, Some(1500));
+    }
+
+    #[test]
+    fn test_message_trace_with_error() {
+        let mut trace = create_test_message_trace();
+        trace.status = MessageStatus::Failed;
+        trace.error = Some("timeout_error".to_string());
+        
+        assert_eq!(trace.status, MessageStatus::Failed);
+        assert_eq!(trace.error, Some("timeout_error".to_string()));
+    }
+
+    #[test]
+    fn test_message_trace_serialization() {
+        let trace = create_test_message_trace();
+        
+        let json = serde_json::to_string(&trace).unwrap();
+        let deserialized: MessageTrace = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(trace.trace_id, deserialized.trace_id);
+        assert_eq!(trace.status, deserialized.status);
+    }
+
+    // ========== Utility Function Tests ==========
+
+    #[test]
+    fn test_current_timestamp() {
+        let ts1 = current_timestamp();
+        std::thread::sleep(Duration::from_millis(10)); // Increase sleep time for more reliable test
+        let ts2 = current_timestamp();
+        
+        assert!(ts2 >= ts1); // May be equal due to precision
+    }
+
+    // ========== Integration Tests ==========
+
+    #[test]
+    fn test_observatory_full_workflow() {
+        let mut observatory = create_test_observatory();
+        
+        // Add filter that matches our test message
+        let filter = MessageFilter {
+            name: "permissive_filter".to_string(),
+            actor_id: None, // Allow all actors
+            actor_name_pattern: None,
+            message_type_pattern: None, // Allow all message types 
+            min_processing_time_us: None,
+            failed_only: false,
+            max_stack_depth: None,
+        };
+        observatory.add_filter(filter);
+        assert_eq!(observatory.get_filters().len(), 1);
+        
+        // Add trace
+        let trace = create_test_message_trace();
+        observatory.trace_message(trace.clone()).unwrap();
+        
+        // Verify trace was recorded 
+        let traces = observatory.get_traces(None, None).unwrap();
+        assert_eq!(traces.len(), 1);
+        assert_eq!(traces[0].trace_id, trace.trace_id);
+        
+        // Remove filter
+        let removed = observatory.remove_filter("permissive_filter");
+        assert!(removed);
+        assert!(observatory.get_filters().is_empty());
+    }
+
+    #[test]
+    fn test_observatory_multiple_traces() {
+        let observatory = create_test_observatory();
+        
+        // Add multiple traces with different statuses
+        let statuses = vec![
+            MessageStatus::Queued,
+            MessageStatus::Processing,
+            MessageStatus::Completed,
+            MessageStatus::Failed,
+        ];
+        
+        for (i, status) in statuses.iter().enumerate() {
+            let mut trace = create_test_message_trace();
+            trace.trace_id = i as u64;
+            trace.status = status.clone();
+            observatory.trace_message(trace).unwrap();
+        }
+        
+        let traces = observatory.get_traces(None, None).unwrap();
+        assert_eq!(traces.len(), 4);
+        
+        // Verify different statuses were recorded - count unique statuses differently
+        let mut status_counts = std::collections::HashMap::new();
+        for trace in &traces {
+            *status_counts.entry(&trace.status).or_insert(0) += 1;
+        }
+        assert_eq!(status_counts.len(), 4);
+    }
+
+    #[test]
+    fn test_observatory_config_variations() {
+        let configs = vec![
+            ObservatoryConfig {
+                max_traces: 50,
+                enable_deadlock_detection: false,
+                enable_metrics: false,
+                ..ObservatoryConfig::default()
+            },
+            ObservatoryConfig {
+                trace_retention_seconds: 7200,
+                deadlock_check_interval_ms: 500,
+                metrics_interval_ms: 2000,
+                ..ObservatoryConfig::default()
+            },
+        ];
+        
+        for config in configs {
+            let system = create_test_actor_system();
+            let observatory = ActorObservatory::new(system, config.clone());
+            assert_eq!(observatory.config.max_traces, config.max_traces);
+            assert_eq!(observatory.config.enable_deadlock_detection, config.enable_deadlock_detection);
+        }
+    }
+
+    #[test]
+    fn test_observatory_concurrent_access() {
+        use std::thread;
+        
+        let observatory = Arc::new(create_test_observatory());
+        let mut handles = vec![];
+        
+        // Spawn multiple threads to add traces concurrently
+        for i in 0..5 {
+            let obs = observatory.clone();
+            let handle = thread::spawn(move || {
+                let mut trace = create_test_message_trace();
+                trace.trace_id = i;
+                obs.trace_message(trace).unwrap();
+            });
+            handles.push(handle);
+        }
+        
+        // Wait for all threads to complete
+        for handle in handles {
+            handle.join().unwrap();
+        }
+        
+        // Verify all traces were recorded
+        let traces = observatory.get_traces(None, None).unwrap();
+        assert_eq!(traces.len(), 5);
+    }
+}
+
 use crate::runtime::actor::{ActorId, ActorSystem, Message};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -111,7 +800,7 @@ pub struct MessageTrace {
 }
 
 /// Status of a traced message
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MessageStatus {
     /// Message is queued for processing
     Queued,

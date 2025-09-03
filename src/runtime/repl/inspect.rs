@@ -156,7 +156,7 @@ impl Value {
         )
     }
     
-    /// Inspect a HashMap with proper depth and circular reference handling (complexity: ~8)
+    /// Inspect a `HashMap` with proper depth and circular reference handling (complexity: ~8)
     fn inspect_hashmap(&self, inspector: &mut Inspector, map: &std::collections::HashMap<Value, Value>) -> fmt::Result {
         self.inspect_collection(
             inspector,
@@ -184,7 +184,7 @@ impl Value {
         )
     }
     
-    /// Inspect a HashSet with proper depth and circular reference handling (complexity: ~8)
+    /// Inspect a `HashSet` with proper depth and circular reference handling (complexity: ~8)
     fn inspect_hashset(&self, inspector: &mut Inspector, set: &std::collections::HashSet<Value>) -> fmt::Result {
         self.inspect_collection(
             inspector,
@@ -235,10 +235,10 @@ impl Value {
         }
         
         if !inspector.enter(self) {
-            return write!(inspector, "{}", circular_msg);
+            return write!(inspector, "{circular_msg}");
         }
         
-        write!(inspector, "{}", open_bracket)?;
+        write!(inspector, "{open_bracket}")?;
         
         let display_count = len.min(inspector.style.max_elements);
         write_items(inspector, display_count)?;
@@ -248,21 +248,21 @@ impl Value {
         }
         
         inspector.exit();
-        write!(inspector, "{}", close_bracket)
+        write!(inspector, "{close_bracket}")
     }
     
     /// Inspect a range value (complexity: ~3)
     fn inspect_range(&self, inspector: &mut Inspector, start: i64, end: i64, inclusive: bool) -> fmt::Result {
         if inclusive {
-            write!(inspector, "{}..={}", start, end)
+            write!(inspector, "{start}..={end}")
         } else {
-            write!(inspector, "{}..{}", start, end)
+            write!(inspector, "{start}..{end}")
         }
     }
     
     /// Inspect an enum variant with optional data (complexity: ~5)
     fn inspect_enum_variant(&self, inspector: &mut Inspector, enum_name: &str, variant_name: &str, data: Option<&[Value]>) -> fmt::Result {
-        write!(inspector, "{}::{}", enum_name, variant_name)?;
+        write!(inspector, "{enum_name}::{variant_name}")?;
         if let Some(values) = data {
             if !values.is_empty() {
                 write!(inspector, "(")?;

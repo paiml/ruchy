@@ -750,7 +750,7 @@ impl Transpiler {
         }
     }
     
-    /// Handle HashMap/HashSet methods: get, contains_key, items, etc.
+    /// Handle HashMap/HashSet methods: get, `contains_key`, items, etc.
     fn transpile_map_set_methods(&self, obj_tokens: &TokenStream, method_ident: &proc_macro2::Ident, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
         match method {
             "get" => {
@@ -768,7 +768,7 @@ impl Transpiler {
         }
     }
     
-    /// Handle HashSet set operations: union, intersection, difference, symmetric_difference
+    /// Handle `HashSet` set operations: union, intersection, difference, `symmetric_difference`
     fn transpile_set_operations(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
         if arg_tokens.len() != 1 {
             bail!("{} requires exactly 1 argument", method);
@@ -783,7 +783,7 @@ impl Transpiler {
         })
     }
     
-    /// Handle string methods: to_upper, to_lower, length, substring
+    /// Handle string methods: `to_upper`, `to_lower`, length, substring
     fn transpile_string_methods(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
         match method {
             "to_s" | "to_string" => {
@@ -1677,7 +1677,7 @@ impl Transpiler {
         
         match item {
             ImportItem::Named(name) => {
-                if path.ends_with(&format!("::{}", name)) {
+                if path.ends_with(&format!("::{name}")) {
                     quote! { use #path_tokens; }
                 } else {
                     let item_ident = format_ident!("{}", name);
@@ -2020,7 +2020,7 @@ impl Transpiler {
         }
     }
     
-    /// Handle str() type conversion - extract string representation
+    /// Handle `str()` type conversion - extract string representation
     fn transpile_str_conversion(&self, args: &[Expr]) -> Result<TokenStream> {
         if args.len() != 1 {
             bail!("str() expects exactly 1 argument");
@@ -2029,7 +2029,7 @@ impl Transpiler {
         Ok(quote! { format!("{}", #value) })
     }
     
-    /// Handle int() type conversion with literal-specific optimizations
+    /// Handle `int()` type conversion with literal-specific optimizations
     fn transpile_int_conversion(&self, args: &[Expr]) -> Result<TokenStream> {
         if args.len() != 1 {
             bail!("int() expects exactly 1 argument");
@@ -2067,7 +2067,7 @@ impl Transpiler {
         Ok(quote! { (#value as i64) })
     }
     
-    /// Handle float() type conversion with literal-specific optimizations
+    /// Handle `float()` type conversion with literal-specific optimizations
     fn transpile_float_conversion(&self, args: &[Expr]) -> Result<TokenStream> {
         if args.len() != 1 {
             bail!("float() expects exactly 1 argument");
@@ -2101,7 +2101,7 @@ impl Transpiler {
         Ok(quote! { (#value as f64) })
     }
     
-    /// Handle bool() type conversion with type-specific logic
+    /// Handle `bool()` type conversion with type-specific logic
     fn transpile_bool_conversion(&self, args: &[Expr]) -> Result<TokenStream> {
         if args.len() != 1 {
             bail!("bool() expects exactly 1 argument");

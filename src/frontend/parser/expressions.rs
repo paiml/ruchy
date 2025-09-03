@@ -490,8 +490,23 @@ fn create_let_expression(
                 start_span.merge(end_span),
             ))
         }
-        Pattern::Tuple(_) | Pattern::List(_) | _ => {
+        Pattern::Tuple(_) | Pattern::List(_) => {
             // For destructuring patterns, use LetPattern variant
+            Ok(Expr::new(
+                ExprKind::LetPattern {
+                    pattern,
+                    type_annotation,
+                    value,
+                    body,
+                    is_mutable,
+                },
+                start_span.merge(end_span),
+            ))
+        }
+        Pattern::Wildcard | Pattern::Literal(_) | Pattern::QualifiedName(_) | Pattern::Struct { .. } 
+        | Pattern::Range { .. } | Pattern::Or(_) | Pattern::Rest | Pattern::RestNamed(_) 
+        | Pattern::Ok(_) | Pattern::Err(_) | Pattern::Some(_) | Pattern::None => {
+            // For other pattern types, use LetPattern variant
             Ok(Expr::new(
                 ExprKind::LetPattern {
                     pattern,

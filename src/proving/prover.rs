@@ -245,3 +245,349 @@ pub enum StepResult {
     /// Tactic failed
     Failed(String),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::proving::smt::SmtBackend;
+
+    fn create_test_prover() -> InteractiveProver {
+        let backend = SmtBackend::Z3;
+        InteractiveProver::new(backend)
+    }
+
+    fn create_test_session() -> ProverSession {
+        ProverSession::new()
+    }
+
+    // Test 1: Prover Creation and Basic Configuration
+    #[test]
+    fn test_prover_creation() {
+        let prover = create_test_prover();
+        assert_eq!(prover.timeout, 5000);
+        assert!(!prover.ml_suggestions);
+    }
+
+    #[test]
+    fn test_prover_timeout_setting() {
+        let mut prover = create_test_prover();
+        prover.set_timeout(10000);
+        assert_eq!(prover.timeout, 10000);
+    }
+
+    #[test]
+    fn test_prover_ml_suggestions_setting() {
+        let mut prover = create_test_prover();
+        prover.set_ml_suggestions(true);
+        assert!(prover.ml_suggestions);
+        
+        prover.set_ml_suggestions(false);
+        assert!(!prover.ml_suggestions);
+    }
+
+    #[test]
+    fn test_prover_load_script() {
+        let mut prover = create_test_prover();
+        let result = prover.load_script("example script");
+        assert!(result.is_ok());
+    }
+
+    // Test 2: Session Management
+    #[test]
+    fn test_session_creation() {
+        let session = create_test_session();
+        assert!(session.goals.is_empty());
+        assert!(session.history.is_empty());
+        assert!(session.is_complete());
+    }
+
+    #[test]
+    fn test_session_default() {
+        let session = ProverSession::default();
+        assert!(session.goals.is_empty());
+        assert!(session.is_complete());
+    }
+
+    #[test]
+    fn test_session_add_goal() {
+        let mut session = create_test_session();
+        session.add_goal("forall x, x = x".to_string());
+        
+        assert_eq!(session.goals.len(), 1);
+        assert!(!session.is_complete());
+        
+        let current_goal = session.current_goal().unwrap();
+        assert_eq!(current_goal.statement, "forall x, x = x");
+    }
+
+    #[test]
+    fn test_session_multiple_goals() {
+        let mut session = create_test_session();
+        session.add_goal("goal1".to_string());
+        session.add_goal("goal2".to_string());
+        
+        assert_eq!(session.goals.len(), 2);
+        let current = session.current_goal().unwrap();
+        assert_eq!(current.statement, "goal1");
+    }
+
+    #[test]
+    fn test_session_complete_goal() {
+        let mut session = create_test_session();
+        session.add_goal("test goal".to_string());
+        
+        assert!(!session.is_complete());
+        session.complete_goal();
+        assert!(session.is_complete());
+    }
+
+    #[test]
+    fn test_session_update_goal() {
+        let mut session = create_test_session();
+        session.add_goal("original goal".to_string());
+        
+        session.update_goal("updated goal".to_string());
+        let current = session.current_goal().unwrap();
+        assert_eq!(current.statement, "updated goal");
+    }
+
+    #[test]
+    fn test_session_replace_with_subgoals() {
+        let mut session = create_test_session();
+        session.add_goal("main goal".to_string());
+        
+        let subgoals = vec!["subgoal1".to_string(), "subgoal2".to_string()];
+        session.replace_with_subgoals(subgoals);
+        
+        assert_eq!(session.goals.len(), 2);
+        // Due to .rev() then inserting at position 0, order is preserved
+        assert_eq!(session.goals[0].statement, "subgoal1"); 
+        assert_eq!(session.goals[1].statement, "subgoal2");
+    }
+
+    // Test 3: Goal Operations
+    #[test]
+    fn test_get_goals() {
+        let mut session = create_test_session();
+        session.add_goal("goal1".to_string());
+        session.add_goal("goal2".to_string());
+        
+        let goals = session.get_goals();
+        assert_eq!(goals.len(), 2);
+        assert_eq!(goals[0].statement, "goal1");
+        assert_eq!(goals[1].statement, "goal2");
+    }
+
+    #[test]
+    fn test_session_completion_status() {
+        let mut session = create_test_session();
+        assert!(session.is_complete());
+        
+        session.add_goal("test".to_string());
+        assert!(!session.is_complete());
+        
+        session.complete_goal();
+        assert!(session.is_complete());
+    }
+
+    // Test 4: Text Export Features
+    #[test]
+    fn test_text_proof_export_empty() {
+        let session = create_test_session();
+        let text_proof = session.to_text_proof();
+        
+        assert!(text_proof.contains("Proof:"));
+        assert!(text_proof.contains("Qed."));
+    }
+
+    #[test]
+    fn test_text_proof_export_with_history() {
+        let mut session = create_test_session();
+        session.history.push("apply reflexivity".to_string());
+        session.history.push("exact H".to_string());
+        
+        let text_proof = session.to_text_proof();
+        assert!(text_proof.contains("apply reflexivity"));
+        assert!(text_proof.contains("exact H"));
+        assert!(text_proof.contains("Qed."));
+    }
+
+    #[test]
+    fn test_text_proof_export_incomplete() {
+        let mut session = create_test_session();
+        session.add_goal("incomplete goal".to_string());
+        session.history.push("started proof".to_string());
+        
+        let text_proof = session.to_text_proof();
+        assert!(text_proof.contains("started proof"));
+        assert!(!text_proof.contains("Qed.")); // Should not have Qed for incomplete proof
+    }
+
+    #[test]
+    fn test_coq_proof_export() {
+        let session = create_test_session();
+        let coq_proof = session.to_coq_proof();
+        
+        // Currently simplified to text proof
+        assert!(coq_proof.contains("Proof:"));
+        assert!(coq_proof.contains("Qed."));
+    }
+
+    #[test]
+    fn test_lean_proof_export() {
+        let session = create_test_session();
+        let lean_proof = session.to_lean_proof();
+        
+        // Currently simplified to text proof
+        assert!(lean_proof.contains("Proof:"));
+        assert!(lean_proof.contains("Qed."));
+    }
+
+    // Test 5: Input Processing
+    #[test]
+    fn test_process_prove_command() {
+        let mut prover = create_test_prover();
+        let mut session = create_test_session();
+        
+        let result = prover.process_input(&mut session, "prove forall x, x = x").unwrap();
+        
+        match result {
+            ProofResult::Progress => {
+                assert_eq!(session.goals.len(), 1);
+                assert_eq!(session.current_goal().unwrap().statement, "forall x, x = x");
+            }
+            _ => panic!("Expected Progress result"),
+        }
+    }
+
+    #[test]
+    fn test_process_empty_input() {
+        let mut prover = create_test_prover();
+        let mut session = create_test_session();
+        
+        let result = prover.process_input(&mut session, "").unwrap();
+        
+        match result {
+            ProofResult::Failed(msg) => {
+                assert!(msg.contains("Unknown command"));
+            }
+            _ => panic!("Expected Failed result"),
+        }
+    }
+
+    #[test]
+    fn test_process_unknown_command() {
+        let mut prover = create_test_prover();
+        let mut session = create_test_session();
+        
+        let result = prover.process_input(&mut session, "unknown_command arg1 arg2");
+        
+        // Should try to apply as tactic and fail with error
+        match result {
+            Err(e) => {
+                assert!(e.to_string().contains("Unknown tactic"));
+            }
+            Ok(ProofResult::Failed(_)) => {
+                // This is also acceptable
+            }
+            _ => panic!("Expected error or Failed result"),
+        }
+    }
+
+    // Test 6: Proof Context
+    #[test]
+    fn test_proof_context_creation() {
+        let context = ProofContext::new();
+        assert!(context.assumptions.is_empty());
+        assert!(context.definitions.is_empty());
+    }
+
+    #[test]
+    fn test_proof_context_default() {
+        let context = ProofContext::default();
+        assert!(context.assumptions.is_empty());
+        assert!(context.definitions.is_empty());
+    }
+
+    // Test 7: Proof Goal Structure
+    #[test]
+    fn test_proof_goal_creation() {
+        let goal = ProofGoal {
+            statement: "test statement".to_string(),
+        };
+        assert_eq!(goal.statement, "test statement");
+    }
+
+    // Test 8: Edge Cases
+    #[test]
+    fn test_complete_goal_empty_session() {
+        let mut session = create_test_session();
+        session.complete_goal(); // Should not panic
+        assert!(session.is_complete());
+    }
+
+    #[test]
+    fn test_update_goal_empty_session() {
+        let mut session = create_test_session();
+        session.update_goal("new goal".to_string()); // Should not panic
+        assert!(session.is_complete());
+    }
+
+    #[test]
+    fn test_replace_subgoals_empty_session() {
+        let mut session = create_test_session();
+        session.replace_with_subgoals(vec!["goal1".to_string()]); // Should not panic
+        assert!(session.is_complete());
+    }
+
+    #[test]
+    fn test_current_goal_empty_session() {
+        let session = create_test_session();
+        assert!(session.current_goal().is_none());
+    }
+
+    // Test 9: Serialization (Basic Structure Test)
+    #[test]
+    fn test_session_serialization_structure() {
+        let mut session = create_test_session();
+        session.add_goal("test goal".to_string());
+        session.context.assumptions.push("assumption1".to_string());
+        session.history.push("step1".to_string());
+        
+        // Test that all fields are accessible for serialization
+        assert_eq!(session.goals.len(), 1);
+        assert_eq!(session.context.assumptions.len(), 1);
+        assert_eq!(session.history.len(), 1);
+    }
+
+    // Test 10: Multiple Session Operations
+    #[test]
+    fn test_complex_session_workflow() {
+        let mut session = create_test_session();
+        
+        // Add initial goal
+        session.add_goal("main theorem".to_string());
+        assert_eq!(session.goals.len(), 1);
+        
+        // Replace with subgoals
+        session.replace_with_subgoals(vec![
+            "subgoal 1".to_string(),
+            "subgoal 2".to_string(),
+            "subgoal 3".to_string(),
+        ]);
+        assert_eq!(session.goals.len(), 3);
+        
+        // Complete first subgoal
+        session.complete_goal();
+        assert_eq!(session.goals.len(), 2);
+        
+        // Update current goal
+        session.update_goal("modified subgoal".to_string());
+        assert_eq!(session.current_goal().unwrap().statement, "modified subgoal");
+        
+        // Complete remaining goals
+        session.complete_goal();
+        session.complete_goal();
+        assert!(session.is_complete());
+    }
+}

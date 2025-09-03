@@ -37,7 +37,7 @@ match number {
 
 #[test]
 fn test_centralized_result_printing_simple_expression() {
-    let input = r#"5 + 3"#;
+    let input = r"5 + 3";
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Failed to parse");
@@ -79,8 +79,8 @@ println("World")
 fn test_result_printing_consistency() {
     // Test multiple different input types to ensure consistent result printing
     let test_cases = vec![
-        r#"let x = 5; x"#,
-        r#"[1, 2, 3]"#,
+        r"let x = 5; x",
+        r"[1, 2, 3]",
         r#""hello world""#,
         r#"if true { "yes" } else { "no" }"#,
     ];
