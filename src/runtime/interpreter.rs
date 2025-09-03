@@ -2016,7 +2016,7 @@ impl Interpreter {
         }
     }
     
-    /// Handle comparison operations (Equal, NotEqual, Less, Greater, LessEqual, GreaterEqual)
+    /// Handle comparison operations (Equal, `NotEqual`, Less, Greater, `LessEqual`, `GreaterEqual`)
     fn eval_comparison_op(
         &self,
         op: AstBinaryOp,
@@ -2636,7 +2636,7 @@ impl Interpreter {
         Ok(false)
     }
     
-    fn match_range_pattern(&self, start: &Box<Pattern>, end: &Box<Pattern>, inclusive: bool, value: &Value) -> Result<bool, InterpreterError> {
+    fn match_range_pattern(&self, start: &Pattern, end: &Pattern, inclusive: bool, value: &Value) -> Result<bool, InterpreterError> {
         if let Value::Integer(i) = value {
             let start_val = self.extract_integer_from_pattern(start)?;
             let end_val = self.extract_integer_from_pattern(end)?;
@@ -3064,6 +3064,7 @@ impl Interpreter {
     
     // Helper methods for array higher-order functions (complexity <10 each)
     
+    #[allow(clippy::rc_buffer)]
     fn eval_array_map_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
         self.validate_single_closure_argument(args, "map")?;
         let mut result = Vec::new();
@@ -3074,6 +3075,7 @@ impl Interpreter {
         Ok(Value::Array(Rc::new(result)))
     }
     
+    #[allow(clippy::rc_buffer)]
     fn eval_array_filter_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
         self.validate_single_closure_argument(args, "filter")?;
         let mut result = Vec::new();
@@ -3086,6 +3088,7 @@ impl Interpreter {
         Ok(Value::Array(Rc::new(result)))
     }
     
+    #[allow(clippy::rc_buffer)]
     fn eval_array_reduce_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
         if args.len() != 2 {
             return Err(InterpreterError::RuntimeError("reduce expects 2 arguments".to_string()));
@@ -3101,6 +3104,7 @@ impl Interpreter {
         Ok(accumulator)
     }
     
+    #[allow(clippy::rc_buffer)]
     fn eval_array_any_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
         self.validate_single_closure_argument(args, "any")?;
         for item in arr.iter() {
@@ -3112,6 +3116,7 @@ impl Interpreter {
         Ok(Value::Bool(false))
     }
     
+    #[allow(clippy::rc_buffer)]
     fn eval_array_all_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
         self.validate_single_closure_argument(args, "all")?;
         for item in arr.iter() {
@@ -3123,6 +3128,7 @@ impl Interpreter {
         Ok(Value::Bool(true))
     }
     
+    #[allow(clippy::rc_buffer)]
     fn eval_array_find_method(&mut self, arr: &Rc<Vec<Value>>, args: &[Value]) -> Result<Value, InterpreterError> {
         self.validate_single_closure_argument(args, "find")?;
         for item in arr.iter() {

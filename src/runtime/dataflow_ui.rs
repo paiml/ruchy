@@ -870,3 +870,639 @@ pub enum UIAction {
     /// Exit UI
     Exit,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::runtime::dataflow_debugger::{
+        DataflowDebugger, DataflowConfig
+    };
+    use std::sync::{Arc, Mutex};
+    use std::time::{Duration, Instant};
+
+    // Helper functions for consistent test setup
+    fn create_test_debugger() -> Arc<Mutex<DataflowDebugger>> {
+        let config = DataflowConfig::default();
+        Arc::new(Mutex::new(DataflowDebugger::new(config)))
+    }
+
+    fn create_test_ui_config() -> UIConfig {
+        UIConfig {
+            max_preview_rows: 5,
+            max_history_events: 10,
+            auto_refresh: false,
+            refresh_interval_ms: 500,
+            show_metrics: true,
+            enable_colors: false, // Disable for consistent testing
+            compact_mode: true,
+        }
+    }
+
+    fn create_test_ui_with_config(config: UIConfig) -> DataflowUI {
+        let debugger = create_test_debugger();
+        DataflowUI::new(debugger, config)
+    }
+
+    fn create_test_ui() -> DataflowUI {
+        create_test_ui_with_config(create_test_ui_config())
+    }
+
+    fn create_test_pipeline_stage() -> PipelineStage {
+        use crate::runtime::dataflow_debugger::{StageType, StageStatus};
+        
+        PipelineStage {
+            stage_id: "test_stage".to_string(),
+            stage_name: "Test Stage".to_string(),
+            stage_type: StageType::Filter,
+            status: StageStatus::Running,
+            input_schema: None,
+            output_schema: None,
+            execution_time: Some(Duration::from_millis(150)),
+            memory_usage: Some(1024 * 64), // 64KB
+            rows_processed: Some(500),
+            metadata: std::collections::HashMap::new(),
+        }
+    }
+
+    fn create_test_materialized_frame() -> MaterializedFrame {
+        use crate::runtime::dataflow_debugger::{DataSchema, ColumnDef, DataType, DataRow, DataValue};
+        use std::time::SystemTime;
+        
+        MaterializedFrame {
+            stage_id: "test_stage".to_string(),
+            schema: DataSchema {
+                columns: vec![
+                    ColumnDef {
+                        name: "id".to_string(),
+                        data_type: DataType::Integer,
+                        nullable: false,
+                    },
+                    ColumnDef {
+                        name: "name".to_string(),
+                        data_type: DataType::String,
+                        nullable: false,
+                    },
+                ],
+                schema_hash: 54321,
+            },
+            sample_data: vec![
+                DataRow {
+                    values: vec![
+                        DataValue::Integer(1),
+                        DataValue::String("Test User".to_string()),
+                    ],
+                },
+            ],
+            total_rows: 100,
+            timestamp: SystemTime::now(),
+            memory_size: 1024 * 8, // 8KB
+        }
+    }
+
+    // ========== UIConfig Tests ==========
+
+    #[test]
+    fn test_ui_config_default() {
+        let config = UIConfig::default();
+        assert_eq!(config.max_preview_rows, 20);
+        assert_eq!(config.max_history_events, 100);
+        assert!(config.auto_refresh);
+        assert_eq!(config.refresh_interval_ms, 1000);
+        assert!(config.show_metrics);
+        assert!(config.enable_colors);
+        assert!(!config.compact_mode);
+    }
+
+    #[test]
+    fn test_ui_config_clone() {
+        let config1 = UIConfig::default();
+        let config2 = config1.clone();
+        assert_eq!(config1.max_preview_rows, config2.max_preview_rows);
+        assert_eq!(config1.auto_refresh, config2.auto_refresh);
+    }
+
+    #[test]
+    fn test_ui_config_debug() {
+        let config = UIConfig::default();
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("UIConfig"));
+        assert!(debug_str.contains("max_preview_rows"));
+        assert!(debug_str.contains("auto_refresh"));
+    }
+
+    // ========== DisplayMode Tests ==========
+
+    #[test]
+    fn test_display_mode_variants() {
+        let modes = vec![
+            DisplayMode::Overview,
+            DisplayMode::StageDetail("test_stage".to_string()),
+            DisplayMode::Breakpoints,
+            DisplayMode::DataViewer("test_data".to_string()),
+            DisplayMode::Metrics,
+            DisplayMode::History,
+            DisplayMode::Diff("stage1".to_string(), "stage2".to_string()),
+            DisplayMode::Help,
+        ];
+        
+        assert_eq!(modes.len(), 8);
+        assert_eq!(modes[0], DisplayMode::Overview);
+    }
+
+    #[test]
+    fn test_display_mode_equality() {
+        let mode1 = DisplayMode::StageDetail("test".to_string());
+        let mode2 = DisplayMode::StageDetail("test".to_string());
+        let mode3 = DisplayMode::StageDetail("other".to_string());
+        
+        assert_eq!(mode1, mode2);
+        assert_ne!(mode1, mode3);
+        assert_ne!(mode1, DisplayMode::Overview);
+    }
+
+    #[test]
+    fn test_display_mode_clone() {
+        let mode1 = DisplayMode::Diff("a".to_string(), "b".to_string());
+        let mode2 = mode1.clone();
+        assert_eq!(mode1, mode2);
+    }
+
+    #[test]
+    fn test_display_mode_debug() {
+        let mode = DisplayMode::DataViewer("test_viewer".to_string());
+        let debug_str = format!("{:?}", mode);
+        assert!(debug_str.contains("DataViewer"));
+        assert!(debug_str.contains("test_viewer"));
+    }
+
+    // ========== UIAction Tests ==========
+
+    #[test]
+    fn test_ui_action_variants() {
+        let actions = vec![UIAction::Continue, UIAction::Exit];
+        assert_eq!(actions.len(), 2);
+        assert_eq!(actions[0], UIAction::Continue);
+        assert_eq!(actions[1], UIAction::Exit);
+    }
+
+    #[test]
+    fn test_ui_action_equality() {
+        assert_eq!(UIAction::Continue, UIAction::Continue);
+        assert_eq!(UIAction::Exit, UIAction::Exit);
+        assert_ne!(UIAction::Continue, UIAction::Exit);
+    }
+
+    #[test]
+    fn test_ui_action_clone_debug() {
+        let action = UIAction::Continue;
+        let cloned = action.clone();
+        assert_eq!(action, cloned);
+        
+        let debug_str = format!("{:?}", action);
+        assert!(debug_str.contains("Continue"));
+    }
+
+    // ========== DataflowUI Creation Tests ==========
+
+    #[test]
+    fn test_dataflow_ui_creation() {
+        let debugger = create_test_debugger();
+        let config = create_test_ui_config();
+        let ui = DataflowUI::new(debugger, config.clone());
+        
+        assert_eq!(ui.display_mode, DisplayMode::Overview);
+        assert_eq!(ui.config.max_preview_rows, config.max_preview_rows);
+        assert!(!ui.colors_enabled);
+    }
+
+    #[test]
+    fn test_dataflow_ui_with_default_config() {
+        let debugger = create_test_debugger();
+        let ui = DataflowUI::new(debugger, UIConfig::default());
+        
+        assert_eq!(ui.display_mode, DisplayMode::Overview);
+        assert_eq!(ui.config.max_preview_rows, 20);
+        assert!(ui.colors_enabled);
+    }
+
+    #[test]
+    fn test_dataflow_ui_terminal_size() {
+        let ui = create_test_ui();
+        // Terminal size should be initialized
+        assert!(ui.terminal_size.0 > 0);
+        assert!(ui.terminal_size.1 > 0);
+    }
+
+    #[test]
+    fn test_dataflow_ui_refresh_timing() {
+        let ui = create_test_ui();
+        let now = Instant::now();
+        // Last refresh should be recent
+        assert!(now.duration_since(ui.last_refresh) < Duration::from_secs(1));
+    }
+
+    // ========== Display Mode Management Tests ==========
+
+    #[test]
+    fn test_set_display_mode() {
+        let mut ui = create_test_ui();
+        assert_eq!(ui.display_mode, DisplayMode::Overview);
+        
+        ui.display_mode = DisplayMode::Metrics;
+        assert_eq!(ui.display_mode, DisplayMode::Metrics);
+        
+        ui.display_mode = DisplayMode::StageDetail("test".to_string());
+        assert_eq!(ui.display_mode, DisplayMode::StageDetail("test".to_string()));
+    }
+
+    #[test]
+    fn test_get_current_display_mode() {
+        let mut ui = create_test_ui();
+        assert_eq!(ui.display_mode, DisplayMode::Overview);
+        
+        ui.display_mode = DisplayMode::Help;
+        assert_eq!(ui.display_mode, DisplayMode::Help);
+    }
+
+    #[test]
+    fn test_toggle_colors() {
+        let mut ui = create_test_ui();
+        let initial_colors = ui.colors_enabled;
+        
+        ui.colors_enabled = !ui.colors_enabled;
+        assert_eq!(ui.colors_enabled, !initial_colors);
+        
+        ui.colors_enabled = !ui.colors_enabled;
+        assert_eq!(ui.colors_enabled, initial_colors);
+    }
+
+    // ========== Display Rendering Tests ==========
+
+    #[test]
+    fn test_render_overview() {
+        let ui = create_test_ui();
+        let result = ui.render_overview();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_render_stage_detail() {
+        let ui = create_test_ui();
+        let stage_id = "test_stage";
+        let result = ui.render_stage_detail(stage_id);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_render_breakpoints() {
+        let ui = create_test_ui();
+        let result = ui.render_breakpoints();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_render_data_viewer() {
+        let ui = create_test_ui();
+        let stage_id = "test_stage";
+        let result = ui.render_data_viewer(stage_id);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_render_metrics() {
+        let ui = create_test_ui();
+        let result = ui.render_metrics();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_render_history() {
+        let ui = create_test_ui();
+        let result = ui.render_history();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_render_diff() {
+        let ui = create_test_ui();
+        let stage1 = "stage_a";
+        let stage2 = "stage_b";
+        let result = ui.render_diff(stage1, stage2);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_render_help() {
+        let ui = create_test_ui();
+        let result = ui.render_help();
+        assert!(result.is_ok());
+    }
+
+    // ========== Input Handling Tests ==========
+
+    #[test]
+    fn test_handle_command_navigation() {
+        let mut ui = create_test_ui();
+        
+        // Test overview mode navigation
+        assert_eq!(ui.handle_command("overview").unwrap(), UIAction::Continue);
+        assert_eq!(ui.display_mode, DisplayMode::Overview);
+        
+        assert_eq!(ui.handle_command("metrics").unwrap(), UIAction::Continue);
+        assert_eq!(ui.display_mode, DisplayMode::Metrics);
+        
+        assert_eq!(ui.handle_command("history").unwrap(), UIAction::Continue);
+        assert_eq!(ui.display_mode, DisplayMode::History);
+        
+        assert_eq!(ui.handle_command("help").unwrap(), UIAction::Continue);
+        assert_eq!(ui.display_mode, DisplayMode::Help);
+    }
+
+    #[test]
+    fn test_handle_command_quit() {
+        let mut ui = create_test_ui();
+        assert_eq!(ui.handle_command("quit").unwrap(), UIAction::Exit);
+        assert_eq!(ui.handle_command("exit").unwrap(), UIAction::Exit);
+        assert_eq!(ui.handle_command("q").unwrap(), UIAction::Exit);
+    }
+
+    #[test]
+    fn test_handle_command_breakpoints() {
+        let mut ui = create_test_ui();
+        assert_eq!(ui.handle_command("breakpoints").unwrap(), UIAction::Continue);
+        assert_eq!(ui.display_mode, DisplayMode::Breakpoints);
+    }
+
+    #[test]
+    fn test_handle_command_colors() {
+        let mut ui = create_test_ui();
+        
+        ui.handle_command("colors on").unwrap();
+        assert!(ui.colors_enabled);
+        
+        ui.handle_command("colors off").unwrap();
+        assert!(!ui.colors_enabled);
+    }
+
+    #[test]
+    fn test_handle_command_refresh() {
+        let mut ui = create_test_ui();
+        
+        // Small delay to ensure time difference
+        std::thread::sleep(Duration::from_millis(1));
+        
+        assert_eq!(ui.handle_command("refresh").unwrap(), UIAction::Continue);
+        // The refresh command updates last_refresh to trigger a refresh
+    }
+
+    #[test]
+    fn test_handle_command_unknown() {
+        let mut ui = create_test_ui();
+        let initial_mode = ui.display_mode.clone();
+        
+        assert_eq!(ui.handle_command("xyz").unwrap(), UIAction::Continue);
+        assert_eq!(ui.display_mode, initial_mode); // Should not change
+    }
+
+    // ========== Refresh and Update Tests ==========
+
+    #[test]
+    fn test_refresh_timing() {
+        let ui = create_test_ui();
+        
+        // Check that refresh interval is properly set
+        assert_eq!(ui.refresh_interval, Duration::from_millis(500));
+        
+        // Check that last_refresh is recent
+        let now = Instant::now();
+        assert!(now.duration_since(ui.last_refresh) < Duration::from_secs(1));
+    }
+
+    #[test]
+    fn test_auto_refresh_config() {
+        let mut config = create_test_ui_config();
+        config.auto_refresh = true;
+        config.refresh_interval_ms = 2000;
+        
+        let ui = create_test_ui_with_config(config);
+        assert!(ui.config.auto_refresh);
+        assert_eq!(ui.refresh_interval, Duration::from_millis(2000));
+    }
+
+    #[test]
+    fn test_terminal_size_initialization() {
+        let ui = create_test_ui();
+        // Terminal size should be initialized to default values
+        assert!(ui.terminal_size.0 > 0);
+        assert!(ui.terminal_size.1 > 0);
+    }
+
+    // ========== Data Formatting Tests ==========
+
+    #[test]
+    fn test_format_bytes() {
+        let ui = create_test_ui();
+        
+        assert_eq!(ui.format_bytes(512), "512B");
+        assert_eq!(ui.format_bytes(1536), "1.50KB");  // 1.5 * 1024
+        assert_eq!(ui.format_bytes(1024 * 1024), "1.00MB");
+        assert_eq!(ui.format_bytes(1024 * 1024 * 1024), "1.00GB");
+    }
+
+    #[test]
+    fn test_format_timestamp() {
+        let ui = create_test_ui();
+        let timestamp = std::time::SystemTime::now();
+        let formatted = ui.format_timestamp(timestamp);
+        
+        // Should be a string representation of seconds since epoch
+        assert!(!formatted.is_empty());
+        // Should be numeric
+        assert!(formatted.parse::<u64>().is_ok());
+    }
+
+    #[test] 
+    fn test_sample_data_creation() {
+        let ui = create_test_ui();
+        let stages = ui.get_sample_stages();
+        
+        assert_eq!(stages.len(), 3);
+        assert_eq!(stages[0].stage_id, "load_data");
+        assert_eq!(stages[1].stage_id, "filter_age");
+        assert_eq!(stages[2].stage_id, "group_by_city");
+    }
+
+    #[test]
+    fn test_sample_stage_detail() {
+        let ui = create_test_ui();
+        let stage = ui.get_sample_stage("any_id");
+        
+        assert_eq!(stage.stage_id, "load_data");
+        assert_eq!(stage.stage_name, "Load CSV Data");
+        assert!(stage.execution_time.is_some());
+        assert!(stage.memory_usage.is_some());
+        assert!(stage.rows_processed.is_some());
+    }
+
+    #[test]
+    fn test_sample_materialized_data_creation() {
+        let ui = create_test_ui();
+        let frame = ui.get_sample_materialized_data("test_id");
+        
+        assert_eq!(frame.stage_id, "load_data");
+        assert_eq!(frame.schema.columns.len(), 3);
+        assert_eq!(frame.sample_data.len(), 3);
+        assert_eq!(frame.total_rows, 10000);
+    }
+
+    // ========== Color Support Tests ==========
+
+    #[test]
+    fn test_colors_enabled() {
+        let config_with_colors = UIConfig { enable_colors: true, ..create_test_ui_config() };
+        let ui_with_colors = create_test_ui_with_config(config_with_colors);
+        assert!(ui_with_colors.colors_enabled);
+        
+        let config_without_colors = UIConfig { enable_colors: false, ..create_test_ui_config() };
+        let ui_without_colors = create_test_ui_with_config(config_without_colors);
+        assert!(!ui_without_colors.colors_enabled);
+    }
+
+    #[test]
+    fn test_color_configuration() {
+        // Test that color setting from config is properly applied
+        let mut ui = create_test_ui();
+        assert!(!ui.colors_enabled); // Test config has colors disabled
+        
+        // Test that color setting can be changed
+        ui.colors_enabled = true;
+        assert!(ui.colors_enabled);
+    }
+
+    #[test]
+    fn test_color_impact_on_rendering() {
+        let mut ui = create_test_ui();
+        
+        // Test with colors disabled (should not crash)
+        ui.colors_enabled = false;
+        let result = ui.render_overview();
+        assert!(result.is_ok());
+        
+        // Test with colors enabled (should not crash)
+        ui.colors_enabled = true;
+        let result = ui.render_overview();
+        assert!(result.is_ok());
+    }
+
+    // ========== Configuration Tests ==========
+
+    #[test]
+    fn test_ui_configuration_settings() {
+        let config = UIConfig {
+            max_preview_rows: 10,
+            max_history_events: 50,
+            auto_refresh: false,
+            refresh_interval_ms: 2000,
+            show_metrics: false,
+            enable_colors: true,
+            compact_mode: true,
+        };
+        
+        let ui = create_test_ui_with_config(config.clone());
+        assert_eq!(ui.config.max_preview_rows, 10);
+        assert_eq!(ui.config.max_history_events, 50);
+        assert!(!ui.config.auto_refresh);
+        assert_eq!(ui.config.refresh_interval_ms, 2000);
+        assert!(!ui.config.show_metrics);
+        assert!(ui.config.enable_colors);
+        assert!(ui.config.compact_mode);
+    }
+
+    #[test]
+    fn test_display_mode_variations() {
+        // Test that all display modes can be created
+        let modes = vec![
+            DisplayMode::Overview,
+            DisplayMode::StageDetail("test".to_string()),
+            DisplayMode::Breakpoints,
+            DisplayMode::DataViewer("data_test".to_string()),
+            DisplayMode::Metrics,
+            DisplayMode::History,
+            DisplayMode::Diff("a".to_string(), "b".to_string()),
+            DisplayMode::Help,
+        ];
+        
+        for mode in modes {
+            // Each mode should be created without errors
+            assert_ne!(format!("{:?}", mode), "");
+        }
+    }
+
+    // ========== Integration Tests ==========
+
+    #[test]
+    fn test_refresh_display_all_modes() {
+        let mut ui = create_test_ui();
+        
+        // Test different display modes
+        ui.display_mode = DisplayMode::Overview;
+        assert!(ui.refresh_display().is_ok());
+        
+        ui.display_mode = DisplayMode::Metrics;
+        assert!(ui.refresh_display().is_ok());
+        
+        ui.display_mode = DisplayMode::Help;
+        assert!(ui.refresh_display().is_ok());
+        
+        ui.display_mode = DisplayMode::History;
+        assert!(ui.refresh_display().is_ok());
+    }
+
+    #[test]
+    fn test_interactive_command_sequence() {
+        let mut ui = create_test_ui();
+        
+        // Simulate user interaction sequence
+        assert_eq!(ui.handle_command("metrics").unwrap(), UIAction::Continue);
+        assert_eq!(ui.display_mode, DisplayMode::Metrics);
+        
+        assert_eq!(ui.handle_command("overview").unwrap(), UIAction::Continue);
+        assert_eq!(ui.display_mode, DisplayMode::Overview);
+        
+        assert_eq!(ui.handle_command("breakpoints").unwrap(), UIAction::Continue);
+        assert_eq!(ui.display_mode, DisplayMode::Breakpoints);
+        
+        assert_eq!(ui.handle_command("quit").unwrap(), UIAction::Exit);
+    }
+
+    #[test]
+    fn test_config_variations() {
+        let compact_config = UIConfig {
+            max_preview_rows: 2,
+            compact_mode: true,
+            enable_colors: false,
+            auto_refresh: false,
+            ..Default::default()
+        };
+        
+        let ui = create_test_ui_with_config(compact_config);
+        
+        // Should respect configuration settings
+        assert_eq!(ui.config.max_preview_rows, 2);
+        assert!(ui.config.compact_mode);
+        assert!(!ui.colors_enabled);
+        assert!(!ui.config.auto_refresh);
+    }
+
+    #[test]
+    fn test_error_handling_graceful() {
+        let ui = create_test_ui();
+        
+        // Test rendering with various stage IDs
+        assert!(ui.render_stage_detail("nonexistent_stage").is_ok());
+        assert!(ui.render_data_viewer("missing_data").is_ok());
+        assert!(ui.render_diff("stage1", "stage2").is_ok());
+        
+        // All should handle gracefully without panicking
+    }
+}

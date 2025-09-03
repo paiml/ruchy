@@ -73,7 +73,7 @@ fn test_function_with_statements() {
     let mut parser = Parser::new(code);
     let ast = parser.parse().expect("Should parse function with statements");
     
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let rust_code = transpiler.transpile(&ast)
         .expect("Should transpile function");
     let rust_string = rust_code.to_string();

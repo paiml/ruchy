@@ -2,13 +2,12 @@ use ruchy::{Parser, Transpiler};
 
 #[test]
 fn test_var_in_for_loop() {
-    let input = r#"
+    let input = r"
 for i in 0..5 {
     var sum = 0
     sum = sum + i
     println(sum)
-}
-"#;
+}";
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse var in for loop");
@@ -19,12 +18,11 @@ for i in 0..5 {
 
 #[test]
 fn test_var_destructuring_tuple() {
-    let input = r#"
+    let input = r"
 var (x, y) = (10, 20)
 x = x + 5
 y = y * 2
-println(x + y)
-"#;
+println(x + y)";
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse var with tuple destructuring");

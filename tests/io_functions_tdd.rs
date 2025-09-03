@@ -60,10 +60,9 @@ println("Hello, " + name)
 #[test]
 fn test_input_no_prompt() {
     // input() without prompt
-    let input = r#"
+    let input = r"
 let value = input()
-println(value)
-"#;
+println(value)";
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Should parse input without prompt");
