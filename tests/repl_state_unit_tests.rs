@@ -1,0 +1,477 @@
+//! Unit tests for the state module
+//! Target: 80% coverage of state management functionality
+
+#[cfg(test)]
+mod state_tests {
+    use ruchy::runtime::repl::state::{ReplState, ReplMode, ReplConfig, SessionMetadata, ReplStatistics};
+    use std::time::Duration;
+    use std::collections::HashMap;
+    
+    fn create_test_config() -> ReplConfig {
+        ReplConfig {
+            prompt: "> ".to_string(),
+            multiline_prompt: ".. ".to_string(),
+            history_file: None,
+            max_history: 1000,
+            auto_save: false,
+            timeout: Duration::from_secs(30),
+            max_recursion: 100,
+            enable_colors: true,
+            tab_width: 4,
+        }
+    }
+    
+    #[test]
+    fn test_state_creation() {
+        let config = create_test_config();
+        let state = ReplState::with_config(config.clone());
+        
+        assert_eq!(state.mode(), &ReplMode::Normal);
+        assert_eq!(state.config().prompt, "> ");
+        assert_eq!(state.config().timeout, Duration::from_secs(30));
+    }
+    
+    #[test]
+    fn test_default_state() {
+        let state = ReplState::default();
+        
+        assert_eq!(state.mode(), &ReplMode::Normal);
+        assert!(state.is_feature_enabled("auto_complete"));
+        assert!(state.is_feature_enabled("syntax_highlight"));
+    }
+    
+    #[test]
+    fn test_mode_transitions() {
+        let config = create_test_config();
+        let mut state = ReplState::with_config(config);
+        
+        // Normal -> Debug
+        state.set_mode(ReplMode::Debug);
+        assert_eq!(state.mode(), &ReplMode::Debug);
+        
+        // Debug -> Multiline
+        state.set_mode(ReplMode::Multiline);
+        assert_eq!(state.mode(), &ReplMode::Multiline);
+        
+        // Multiline -> Normal
+        state.set_mode(ReplMode::Normal);
+        assert_eq!(state.mode(), &ReplMode::Normal);
+    }
+    
+    #[test]
+    fn test_mode_from_string() {
+        assert_eq!(ReplMode::from_str("normal"), Some(ReplMode::Normal));
+        assert_eq!(ReplMode::from_str("debug"), Some(ReplMode::Debug));
+        assert_eq!(ReplMode::from_str("multiline"), Some(ReplMode::Multiline));
+        assert_eq!(ReplMode::from_str("invalid"), None);
+    }
+    
+    #[test]
+    fn test_mode_as_string() {
+        assert_eq!(ReplMode::Normal.as_str(), "normal");
+        assert_eq!(ReplMode::Debug.as_str(), "debug");
+        assert_eq!(ReplMode::Multiline.as_str(), "multiline");
+    }
+    
+    #[test]
+    fn test_feature_management() {
+        let config = create_test_config();
+        let mut state = ReplState::with_config(config);
+        
+        // Enable feature
+        state.set_feature("test_feature", true);
+        assert!(state.is_feature_enabled("test_feature"));
+        
+        // Disable feature
+        state.set_feature("test_feature", false);
+        assert!(!state.is_feature_enabled("test_feature"));
+        
+        // Toggle feature
+        state.toggle_feature("test_feature");
+        assert!(state.is_feature_enabled("test_feature"));
+        
+        state.toggle_feature("test_feature");
+        assert!(!state.is_feature_enabled("test_feature"));
+    }
+    
+    #[test]
+    fn test_default_features() {
+        let state = ReplState::default();
+        
+        assert!(state.is_feature_enabled("auto_complete"));
+        assert!(state.is_feature_enabled("syntax_highlight"));
+        assert!(state.is_feature_enabled("bracket_matching"));
+        assert!(!state.is_feature_enabled("debug_mode"));
+    }
+    
+    #[test]
+    fn test_evaluation_recording() {
+        let config = create_test_config();
+        let mut state = ReplState::with_config(config);
+        
+        // Record successful evaluation
+        state.record_evaluation(true, Duration::from_millis(100));
+        
+        let stats = state.stats();
+        assert_eq!(stats.total_evaluations, 1);
+        assert_eq!(stats.successful_evaluations, 1);
+        assert_eq!(stats.failed_evaluations, 0);
+        
+        // Record failed evaluation
+        state.record_evaluation(false, Duration::from_millis(50));
+        
+        let stats = state.stats();
+        assert_eq!(stats.total_evaluations, 2);
+        assert_eq!(stats.successful_evaluations, 1);
+        assert_eq!(stats.failed_evaluations, 1);
+    }
+    
+    #[test]
+    fn test_statistics_tracking() {
+        let config = create_test_config();
+        let mut state = ReplState::with_config(config);
+        
+        // Record multiple evaluations
+        state.record_evaluation(true, Duration::from_millis(100));
+        state.record_evaluation(true, Duration::from_millis(200));
+        state.record_evaluation(false, Duration::from_millis(50));
+        state.record_evaluation(true, Duration::from_millis(150));
+        
+        let stats = state.stats();
+        assert_eq!(stats.total_evaluations, 4);
+        assert_eq!(stats.successful_evaluations, 3);
+        assert_eq!(stats.failed_evaluations, 1);
+        assert_eq!(stats.average_eval_time, Duration::from_millis(125)); // (100+200+50+150)/4
+    }
+    
+    #[test]
+    fn test_reset_stats() {
+        let config = create_test_config();
+        let mut state = ReplState::with_config(config);
+        
+        // Add some stats
+        state.record_evaluation(true, Duration::from_millis(100));
+        state.record_evaluation(false, Duration::from_millis(50));
+        
+        // Reset
+        state.reset_stats();
+        
+        let stats = state.stats();
+        assert_eq!(stats.total_evaluations, 0);
+        assert_eq!(stats.successful_evaluations, 0);
+        assert_eq!(stats.failed_evaluations, 0);
+        assert_eq!(stats.total_eval_time, Duration::ZERO);
+    }
+    
+    #[test]
+    fn test_prompt_for_mode() {
+        let config = create_test_config();
+        let state = ReplState::with_config(config);
+        
+        assert_eq!(state.prompt_for_mode(&ReplMode::Normal), "> ");
+        assert_eq!(state.prompt_for_mode(&ReplMode::Multiline), ".. ");
+        assert_eq!(state.prompt_for_mode(&ReplMode::Debug), "[DEBUG]> ");
+    }
+    
+    #[test]
+    fn test_config_update() {
+        let mut config = create_test_config();
+        let mut state = ReplState::with_config(config.clone());
+        
+        // Update config
+        config.prompt = ">>> ".to_string();
+        config.max_recursion = 200;
+        config.enable_colors = false;
+        
+        state.update_config(config);
+        
+        assert_eq!(state.config().prompt, ">>> ");
+        assert_eq!(state.config().max_recursion, 200);
+        assert!(!state.config().enable_colors);
+    }
+    
+    #[test]
+    fn test_session_metadata() {
+        let config = create_test_config();
+        let state = ReplState::with_config(config);
+        
+        let metadata = state.metadata();
+        assert!(!metadata.session_id.is_empty());
+        assert!(metadata.start_time > 0);
+        assert_eq!(metadata.version, env!("CARGO_PKG_VERSION"));
+    }
+    
+    #[test]
+    fn test_multiline_buffer() {
+        let config = create_test_config();
+        let mut state = ReplState::with_config(config);
+        
+        // Add lines to buffer
+        state.add_to_multiline_buffer("line1");
+        state.add_to_multiline_buffer("line2");
+        state.add_to_multiline_buffer("line3");
+        
+        // Get complete buffer
+        let buffer = state.get_multiline_buffer();
+        assert_eq!(buffer, "line1\nline2\nline3");
+        
+        // Clear buffer
+        state.clear_multiline_buffer();
+        assert_eq!(state.get_multiline_buffer(), "");
+    }
+    
+    #[test]
+    fn test_is_multiline_complete() {
+        let config = create_test_config();
+        let state = ReplState::with_config(config);
+        
+        // Complete expressions
+        assert!(state.is_multiline_complete("let x = 10"));
+        assert!(state.is_multiline_complete("print(\"hello\")"));
+        
+        // Incomplete expressions
+        assert!(!state.is_multiline_complete("if x > 0 {"));
+        assert!(!state.is_multiline_complete("fn test("));
+        assert!(!state.is_multiline_complete("match x {"));
+    }
+    
+    #[test]
+    fn test_execution_context() {
+        let config = create_test_config();
+        let mut state = ReplState::with_config(config);
+        
+        // Set context values
+        state.set_context_value("current_file", "test.rs");
+        state.set_context_value("working_dir", "/home/user");
+        
+        // Get context values
+        assert_eq!(state.get_context_value("current_file"), Some("test.rs"));
+        assert_eq!(state.get_context_value("working_dir"), Some("/home/user"));
+        assert_eq!(state.get_context_value("non_existent"), None);
+        
+        // Clear context
+        state.clear_context();
+        assert_eq!(state.get_context_value("current_file"), None);
+    }
+    
+    #[test]
+    fn test_stats_display() {
+        let config = create_test_config();
+        let mut state = ReplState::with_config(config);
+        
+        state.record_evaluation(true, Duration::from_millis(100));
+        state.record_evaluation(false, Duration::from_millis(50));
+        
+        let stats = state.stats();
+        let display = stats.format_display();
+        
+        assert!(display.contains("Total evaluations: 2"));
+        assert!(display.contains("Successful: 1"));
+        assert!(display.contains("Failed: 1"));
+        assert!(display.contains("Success rate: 50.0%"));
+    }
+    
+    #[test]
+    fn test_max_recursion_check() {
+        let mut config = create_test_config();
+        config.max_recursion = 5;
+        let state = ReplState::with_config(config);
+        
+        assert!(state.check_recursion_depth(0).is_ok());
+        assert!(state.check_recursion_depth(4).is_ok());
+        assert!(state.check_recursion_depth(5).is_err());
+        assert!(state.check_recursion_depth(10).is_err());
+    }
+    
+    #[test]
+    fn test_timeout_check() {
+        let mut config = create_test_config();
+        config.timeout = Duration::from_millis(100);
+        let state = ReplState::with_config(config);
+        
+        let start = std::time::Instant::now();
+        assert!(state.check_timeout(start).is_ok());
+        
+        std::thread::sleep(Duration::from_millis(150));
+        assert!(state.check_timeout(start).is_err());
+    }
+    
+    #[test]
+    fn test_config_validation() {
+        let config = ReplConfig {
+            prompt: "".to_string(), // Empty prompt should be allowed
+            multiline_prompt: ".. ".to_string(),
+            history_file: None,
+            max_history: 0, // Zero history should be allowed
+            auto_save: false,
+            timeout: Duration::from_secs(0), // Zero timeout means no timeout
+            max_recursion: 0, // Zero means no limit
+            enable_colors: false,
+            tab_width: 0, // Zero tab width should default to spaces
+        };
+        
+        let state = ReplState::with_config(config);
+        assert_eq!(state.config().prompt, "");
+        assert_eq!(state.config().max_history, 0);
+    }
+    
+    #[test]
+    fn test_state_serialization() {
+        let config = create_test_config();
+        let mut state = ReplState::with_config(config);
+        
+        state.set_feature("test", true);
+        state.record_evaluation(true, Duration::from_millis(100));
+        
+        // Export state
+        let exported = state.export_state();
+        assert!(exported.is_ok());
+        
+        let json = exported.unwrap();
+        assert!(json.contains("\"mode\":\"normal\""));
+        assert!(json.contains("\"features\""));
+        assert!(json.contains("\"statistics\""));
+    }
+    
+    #[test]
+    fn test_state_import() {
+        let config = create_test_config();
+        let mut state = ReplState::with_config(config);
+        
+        let import_data = r#"{
+            "mode": "debug",
+            "features": {
+                "test_feature": true,
+                "auto_complete": false
+            }
+        }"#;
+        
+        let result = state.import_state(import_data);
+        assert!(result.is_ok());
+        
+        assert_eq!(state.mode(), &ReplMode::Debug);
+        assert!(state.is_feature_enabled("test_feature"));
+        assert!(!state.is_feature_enabled("auto_complete"));
+    }
+}
+
+#[cfg(test)]
+mod config_tests {
+    use ruchy::runtime::repl::state::ReplConfig;
+    use std::time::Duration;
+    use std::path::PathBuf;
+    
+    #[test]
+    fn test_default_config() {
+        let config = ReplConfig::default();
+        
+        assert_eq!(config.prompt, "ruchy> ");
+        assert_eq!(config.multiline_prompt, "... ");
+        assert!(config.history_file.is_some());
+        assert_eq!(config.max_history, 10000);
+        assert!(config.auto_save);
+        assert_eq!(config.timeout, Duration::from_secs(60));
+        assert_eq!(config.max_recursion, 1000);
+        assert!(config.enable_colors);
+        assert_eq!(config.tab_width, 4);
+    }
+    
+    #[test]
+    fn test_config_builder() {
+        let config = ReplConfig::builder()
+            .prompt(">>> ")
+            .multiline_prompt("... ")
+            .max_history(500)
+            .timeout(Duration::from_secs(10))
+            .max_recursion(50)
+            .enable_colors(false)
+            .tab_width(2)
+            .build();
+        
+        assert_eq!(config.prompt, ">>> ");
+        assert_eq!(config.multiline_prompt, "... ");
+        assert_eq!(config.max_history, 500);
+        assert_eq!(config.timeout, Duration::from_secs(10));
+        assert_eq!(config.max_recursion, 50);
+        assert!(!config.enable_colors);
+        assert_eq!(config.tab_width, 2);
+    }
+    
+    #[test]
+    fn test_config_from_env() {
+        // Set environment variables
+        std::env::set_var("RUCHY_REPL_PROMPT", "env> ");
+        std::env::set_var("RUCHY_REPL_MAX_HISTORY", "2000");
+        std::env::set_var("RUCHY_REPL_COLORS", "false");
+        
+        let config = ReplConfig::from_env();
+        
+        assert_eq!(config.prompt, "env> ");
+        assert_eq!(config.max_history, 2000);
+        assert!(!config.enable_colors);
+        
+        // Clean up
+        std::env::remove_var("RUCHY_REPL_PROMPT");
+        std::env::remove_var("RUCHY_REPL_MAX_HISTORY");
+        std::env::remove_var("RUCHY_REPL_COLORS");
+    }
+}
+
+#[cfg(test)]
+mod statistics_tests {
+    use ruchy::runtime::repl::state::ReplStatistics;
+    use std::time::Duration;
+    
+    #[test]
+    fn test_statistics_new() {
+        let stats = ReplStatistics::new();
+        
+        assert_eq!(stats.total_evaluations, 0);
+        assert_eq!(stats.successful_evaluations, 0);
+        assert_eq!(stats.failed_evaluations, 0);
+        assert_eq!(stats.total_eval_time, Duration::ZERO);
+        assert_eq!(stats.average_eval_time, Duration::ZERO);
+        assert_eq!(stats.min_eval_time, None);
+        assert_eq!(stats.max_eval_time, None);
+    }
+    
+    #[test]
+    fn test_statistics_update() {
+        let mut stats = ReplStatistics::new();
+        
+        stats.update(true, Duration::from_millis(100));
+        assert_eq!(stats.total_evaluations, 1);
+        assert_eq!(stats.successful_evaluations, 1);
+        assert_eq!(stats.min_eval_time, Some(Duration::from_millis(100)));
+        assert_eq!(stats.max_eval_time, Some(Duration::from_millis(100)));
+        
+        stats.update(false, Duration::from_millis(50));
+        assert_eq!(stats.total_evaluations, 2);
+        assert_eq!(stats.failed_evaluations, 1);
+        assert_eq!(stats.min_eval_time, Some(Duration::from_millis(50)));
+        assert_eq!(stats.max_eval_time, Some(Duration::from_millis(100)));
+        
+        stats.update(true, Duration::from_millis(200));
+        assert_eq!(stats.total_evaluations, 3);
+        assert_eq!(stats.successful_evaluations, 2);
+        assert_eq!(stats.max_eval_time, Some(Duration::from_millis(200)));
+        assert_eq!(stats.average_eval_time, Duration::from_millis(116)); // (100+50+200)/3 ≈ 116
+    }
+    
+    #[test]
+    fn test_success_rate() {
+        let mut stats = ReplStatistics::new();
+        
+        assert_eq!(stats.success_rate(), 0.0);
+        
+        stats.update(true, Duration::from_millis(10));
+        assert_eq!(stats.success_rate(), 100.0);
+        
+        stats.update(false, Duration::from_millis(10));
+        assert_eq!(stats.success_rate(), 50.0);
+        
+        stats.update(true, Duration::from_millis(10));
+        stats.update(true, Duration::from_millis(10));
+        assert_eq!(stats.success_rate(), 75.0);
+    }
+}

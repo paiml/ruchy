@@ -47,11 +47,10 @@ use crate::{Parser, Transpiler};
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
 
-mod display;
-mod inspect;
+// mod display;
+// mod inspect;
 use rustyline::error::ReadlineError;
 use rustyline::history::DefaultHistory;
-use rustyline::validate::Validator;
 use rustyline::{CompletionType, Config, EditMode};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -172,18 +171,59 @@ impl fmt::Display for Value {
             Value::String(s) => write!(f, "\"{s}\""),
             Value::Bool(b) => write!(f, "{b}"),
             Value::Char(c) => write!(f, "'{c}'"),
-            Value::List(items) => Self::fmt_list(f, items),
-            Value::Tuple(items) => Self::fmt_tuple(f, items),
+            Value::List(items) => {
+                write!(f, "[")?;
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 { write!(f, ", ")?; }
+                    write!(f, "{}", item)?;
+                }
+                write!(f, "]")
+            }
+            Value::Tuple(items) => {
+                write!(f, "(")?;
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 { write!(f, ", ")?; }
+                    write!(f, "{}", item)?;
+                }
+                write!(f, ")")
+            }
             Value::Function { name, params, .. } => {
                 write!(f, "fn {}({})", name, params.join(", "))
             }
             Value::Lambda { params, .. } => {
                 write!(f, "|{}| <closure>", params.join(", "))
             }
-            Value::DataFrame { columns } => Self::format_dataframe(f, columns),
-            Value::Object(map) => Self::fmt_object(f, map),
-            Value::HashMap(map) => Self::fmt_hashmap(f, map),
-            Value::HashSet(set) => Self::fmt_hashset(f, set),
+            Value::DataFrame { columns } => {
+                writeln!(f, "DataFrame with {} columns:", columns.len())?;
+                for col in columns {
+                    writeln!(f, "  {}: {} rows", col.name, col.values.len())?;
+                }
+                Ok(())
+            }
+            Value::Object(map) => {
+                write!(f, "{{")?;
+                for (i, (k, v)) in map.iter().enumerate() {
+                    if i > 0 { write!(f, ", ")?; }
+                    write!(f, "{}: {}", k, v)?;
+                }
+                write!(f, "}}")
+            }
+            Value::HashMap(map) => {
+                write!(f, "HashMap{{")?;
+                for (i, (k, v)) in map.iter().enumerate() {
+                    if i > 0 { write!(f, ", ")?; }
+                    write!(f, "{}: {}", k, v)?;
+                }
+                write!(f, "}}")
+            }
+            Value::HashSet(set) => {
+                write!(f, "HashSet{{")?;
+                for (i, v) in set.iter().enumerate() {
+                    if i > 0 { write!(f, ", ")?; }
+                    write!(f, "{}", v)?;
+                }
+                write!(f, "}}")
+            }
             Value::Range {
                 start,
                 end,
@@ -199,7 +239,18 @@ impl fmt::Display for Value {
                 enum_name,
                 variant_name,
                 data,
-            } => Self::fmt_enum_variant(f, enum_name, variant_name, data.as_deref()),
+            } => {
+                write!(f, "{enum_name}::{variant_name}")?;
+                if let Some(data) = data {
+                    write!(f, "(")?;
+                    for (i, val) in data.iter().enumerate() {
+                        if i > 0 { write!(f, ", ")?; }
+                        write!(f, "{}", val)?;
+                    }
+                    write!(f, ")")?;
+                }
+                Ok(())
+            }
             Value::Unit => write!(f, "()"),
             Value::Nil => write!(f, "null"),
         }
@@ -461,26 +512,7 @@ impl Default for ReplConfig {
 // Keep only the trait implementations that rustyline needs
 // The Completer trait is already implemented in the completion module
 
-impl rustyline::Helper for RuchyCompleter {}
-impl rustyline::hint::Hinter for RuchyCompleter {
-    type Hint = String;
-}
-
-impl rustyline::highlight::Highlighter for RuchyCompleter {
-    fn highlight<'l>(&self, line: &'l str, _pos: usize) -> std::borrow::Cow<'l, str> {
-        use std::borrow::Cow;
-        // For now, return the line as-is without highlighting
-        // Future enhancement: Implement syntax highlighting in the completion module
-        Cow::Borrowed(line)
-    }
-
-    fn highlight_char(&self, _line: &str, _pos: usize, _forced: bool) -> bool {
-        // Enable character-by-character highlighting
-        true
-    }
-}
-
-impl Validator for RuchyCompleter {}
+// rustyline trait implementations moved to completion.rs module
 
 /// Memory tracker for bounded allocation
 /// Arena-style memory tracker for bounded evaluation

@@ -29,11 +29,7 @@ pub mod inspect;
 mod repl_function_tests;
 
 // Export the unified REPL
-pub use repl::{
-    Repl, ReplConfig, ReplState, ReplMode, Checkpoint, Value,
-    // Error Recovery System
-    ErrorRecovery, RecoveryOption, RecoveryResult, DebugInfo
-};
+pub use repl::{Repl, Value};
 
 // Export interpreter components
 pub use interpreter::{
