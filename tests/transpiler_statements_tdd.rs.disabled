@@ -5,8 +5,8 @@
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::expect_used)]
 
-use ruchy::transpiler::{Transpiler, TranspilerError};
-use ruchy::parser::Parser;
+use ruchy::backend::transpiler::{Transpiler, TranspilerError};
+use ruchy::frontend::parser::Parser;
 use ruchy::frontend::ast::{Stmt, StmtKind};
 
 // ==================== VARIABLE DECLARATION TESTS ====================

@@ -1,7 +1,8 @@
 // Test for REPL-UX-001: Error recovery UI with interactive recovery options
 // Validates comprehensive error recovery system with user-friendly options
 
-use ruchy::runtime::{Repl, RecoveryOption, RecoveryResult};
+use ruchy::runtime::Repl;
+use ruchy::runtime::repl::{RecoveryOption, RecoveryResult};
 
 #[test]
 fn test_error_recovery_creation() {

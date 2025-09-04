@@ -64,8 +64,8 @@ mod repl_evaluation_coverage {
             (2, BinaryOp::Add, 3, 5),
             (10, BinaryOp::Sub, 4, 6),
             (3, BinaryOp::Mul, 7, 21),
-            (15, BinaryOp::Div, 3, 5),
-            (10, BinaryOp::Mod, 3, 1),
+            (15, BinaryOp::Divide, 3, 5),
+            (10, BinaryOp::Modulo, 3, 1),
         ];
 
         for (left_val, op, right_val, expected) in test_cases {
@@ -164,7 +164,7 @@ mod repl_evaluation_coverage {
         // Test division by zero
         let div_by_zero = create_binary_expr(
             create_literal_expr(10),
-            BinaryOp::Div,
+            BinaryOp::Divide,
             create_literal_expr(0)
         );
         let result = evaluate_expression(&div_by_zero, &mut context, deadline, 0);
