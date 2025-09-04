@@ -1231,7 +1231,7 @@ impl ObservatoryDashboard {
     /// Format duration in microseconds
     pub fn format_duration_us(&self, us: u64) -> String {
         if us < 1000 {
-            format!("{}μs", us)
+            format!("{us}μs")
         } else if us < 1_000_000 {
             format!("{:.1}ms", us as f64 / 1000.0)
         } else if us < 60_000_000 {
@@ -1265,7 +1265,7 @@ impl ObservatoryDashboard {
     
     /// Render header
     pub fn render_header(&self, title: &str) -> String {
-        format!("=== {} ===", title)
+        format!("=== {title} ===")
     }
     
     /// Render separator
@@ -1285,7 +1285,7 @@ impl ObservatoryDashboard {
         } else {
             0
         };
-        format!("[{}%]", percent)
+        format!("[{percent}%]")
     }
     
     /// Handle key press

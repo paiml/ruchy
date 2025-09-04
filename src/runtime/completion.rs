@@ -1135,7 +1135,7 @@ impl RuchyCompleter {
                 crate::runtime::repl::Value::DataFrame { .. } => SimpleType::DataFrame,
                 crate::runtime::repl::Value::Object(obj) => {
                     // For objects, suggest field access
-                    for (field_name, _) in obj {
+                    for field_name in obj.keys() {
                         if field_name.starts_with(&partial_method) {
                             completions.push(Pair {
                                 display: format!("{receiver_expr}.{field_name} - object field"),
@@ -1303,7 +1303,7 @@ impl RuchyCompleter {
             let topics = ["println", "type", "dir", "help",
                 "List", "String", "DataFrame"];
 
-            for &topic in topics.iter() {
+            for &topic in &topics {
                 if topic.starts_with(&partial) {
                     completions.push(Pair {
                         display: topic.to_string(),
