@@ -675,9 +675,9 @@ impl Transpiler {
         method: &str,
         args: &[Expr],
     ) -> Result<TokenStream> {
-        // Delegate to refactored version with reduced complexity
-        // Original complexity: 58, New complexity: <20 per function
-        self.transpile_method_call_refactored(object, method, args)
+        // Use the old implementation for now since refactored version is in separate file
+        // Integration with method_call_refactored.rs pending modularization
+        self.transpile_method_call_old(object, method, args)
     }
     
     #[allow(dead_code)]
@@ -699,7 +699,8 @@ impl Transpiler {
                 self.transpile_iterator_methods(&obj_tokens, method, &arg_tokens)
             }
             // HashMap/HashSet methods (get, contains_key, items, etc.)
-            "get" | "contains_key" | "keys" | "values" | "entry" | "items" | "contains" => {
+            "get" | "contains_key" | "keys" | "values" | "entry" | "items" |
+            "update" | "add" => {
                 self.transpile_map_set_methods(&obj_tokens, &method_ident, method, &arg_tokens)
             }
             // Set operations (union, intersection, difference, symmetric_difference)
@@ -716,9 +717,24 @@ impl Transpiler {
             | "melt" | "head" | "tail" | "sample" | "describe" => {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
-            // String methods (to_upper, to_lower, length, substring, etc.)
-            "to_s" | "to_string" | "to_upper" | "to_lower" | "length" | "substring" => {
+            // String methods (Python-style and Rust-style)
+            "to_s" | "to_string" | "to_upper" | "to_lower" | "upper" | "lower" | 
+            "length" | "substring" | "strip" | "lstrip" | "rstrip" | 
+            "startswith" | "endswith" | "split" | "replace" => {
                 self.transpile_string_methods(&obj_tokens, method, &arg_tokens)
+            }
+            // List/Vec methods (Python-style)
+            "append" => {
+                // Python's append() -> Rust's push()
+                Ok(quote! { #obj_tokens.push(#(#arg_tokens),*) })
+            }
+            "extend" => {
+                // Python's extend() -> Rust's extend()
+                Ok(quote! { #obj_tokens.extend(#(#arg_tokens),*) })
+            }
+            // Collection methods that work as-is
+            "push" | "pop" | "insert" | "remove" | "clear" | "len" | "is_empty" | "contains" => {
+                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
             // Advanced collection methods (slice, concat, flatten, unique, join)
             "slice" | "concat" | "flatten" | "unique" | "join" => {
@@ -764,7 +780,15 @@ impl Transpiler {
                 // HashMap.items() -> iterator of (K, V) tuples (not references)
                 Ok(quote! { #obj_tokens.iter().map(|(k, v)| (k.clone(), v.clone())) })
             }
-            _ => unreachable!("Non-map/set method passed to transpile_map_set_methods"),
+            "update" => {
+                // Python dict.update(other) -> Rust HashMap.extend(other)
+                Ok(quote! { #obj_tokens.extend(#(#arg_tokens),*) })
+            }
+            "add" => {
+                // Python set.add(item) -> Rust HashSet.insert(item)
+                Ok(quote! { #obj_tokens.insert(#(#arg_tokens),*) })
+            }
+            _ => unreachable!("Non-map/set method {} passed to transpile_map_set_methods", method),
         }
     }
     
@@ -783,20 +807,41 @@ impl Transpiler {
         })
     }
     
-    /// Handle string methods: `to_upper`, `to_lower`, length, substring
+    /// Handle string methods: Python-style and Rust-style
     fn transpile_string_methods(&self, obj_tokens: &TokenStream, method: &str, arg_tokens: &[TokenStream]) -> Result<TokenStream> {
         match method {
             "to_s" | "to_string" => {
                 // Convert any value to string - already a String stays String
                 Ok(quote! { #obj_tokens })
             }
-            "to_upper" => {
+            "to_upper" | "upper" => {
                 let rust_method = format_ident!("to_uppercase");
                 Ok(quote! { #obj_tokens.#rust_method(#(#arg_tokens),*) })
             }
-            "to_lower" => {
+            "to_lower" | "lower" => {
                 let rust_method = format_ident!("to_lowercase");
                 Ok(quote! { #obj_tokens.#rust_method(#(#arg_tokens),*) })
+            }
+            "strip" => {
+                Ok(quote! { #obj_tokens.trim().to_string() })
+            }
+            "lstrip" => {
+                Ok(quote! { #obj_tokens.trim_start() })
+            }
+            "rstrip" => {
+                Ok(quote! { #obj_tokens.trim_end() })
+            }
+            "startswith" => {
+                Ok(quote! { #obj_tokens.starts_with(#(#arg_tokens),*) })
+            }
+            "endswith" => {
+                Ok(quote! { #obj_tokens.ends_with(#(#arg_tokens),*) })
+            }
+            "split" => {
+                Ok(quote! { #obj_tokens.split(#(#arg_tokens),*) })
+            }
+            "replace" => {
+                Ok(quote! { #obj_tokens.replace(#(#arg_tokens),*) })
             }
             "length" => {
                 // Map Ruchy's length() to Rust's len()
@@ -817,7 +862,7 @@ impl Transpiler {
                         .collect::<String>()
                 })
             }
-            _ => unreachable!("Non-string method passed to transpile_string_methods"),
+            _ => unreachable!("Non-string method {} passed to transpile_string_methods", method),
         }
     }
     
