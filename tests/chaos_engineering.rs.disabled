@@ -20,8 +20,8 @@
     clippy::panic
 )]
 
-use ruchy::transpiler::{AstNormalizer, ReferenceInterpreter};
-use ruchy::{Parser, Transpiler};
+use ruchy::backend::transpiler::{AstNormalizer, ReferenceInterpreter, Transpiler};
+use ruchy::frontend::parser::Parser;
 use std::env;
 use std::thread;
 
@@ -225,7 +225,7 @@ fn test_reference_interpreter_determinism() {
             }
 
             // Also check the expected value
-            use ruchy::transpiler::Value;
+            use ruchy::backend::transpiler::Value;
             if let Ok(Ok(value)) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let mut parser = Parser::new(input);
                 let ast = parser.parse().unwrap();

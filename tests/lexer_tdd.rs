@@ -260,13 +260,13 @@ fn test_lex_operator_slash() {
 #[test]
 fn test_lex_operator_equals() {
     let mut lex = Token::lexer("=");
-    assert_eq!(lex.next(), Some(Ok(Token::Equals)));
+    assert_eq!(lex.next(), Some(Ok(Token::Equal)));
 }
 
 #[test]
 fn test_lex_operator_equals_equals() {
     let mut lex = Token::lexer("==");
-    assert_eq!(lex.next(), Some(Ok(Token::EqualsEquals)));
+    assert_eq!(lex.next(), Some(Ok(Token::EqualEqual)));
 }
 
 #[test]
@@ -450,7 +450,7 @@ fn test_lex_variable_declaration() {
     let mut lex = Token::lexer("let x = 42");
     assert_eq!(lex.next(), Some(Ok(Token::Let)));
     assert_eq!(lex.next(), Some(Ok(Token::Identifier("x".to_string()))));
-    assert_eq!(lex.next(), Some(Ok(Token::Equals)));
+    assert_eq!(lex.next(), Some(Ok(Token::Equal)));
     assert_eq!(lex.next(), Some(Ok(Token::Integer(42))));
 }
 
