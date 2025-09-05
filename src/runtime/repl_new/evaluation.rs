@@ -765,46 +765,68 @@ fn evaluate_match(
 /// Match a pattern against a value (complexity: 8)
 fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Value)>> {
     match pattern {
-        Pattern::Wildcard => Some(vec![]),
-        Pattern::Literal(lit) => {
-            let lit_val = evaluate_literal(lit).ok()?;
-            if values_equal(&lit_val, value) {
-                Some(vec![])
-            } else {
-                None
-            }
-        }
-        Pattern::Identifier(name) => Some(vec![(name.clone(), value.clone())]),
-        Pattern::List(patterns) => {
-            if let Value::List(values) = value {
-                if patterns.len() != values.len() {
-                    return None;
-                }
-                let mut bindings = Vec::new();
-                for (pat, val) in patterns.iter().zip(values) {
-                    bindings.extend(match_pattern(pat, val)?);
-                }
-                Some(bindings)
-            } else {
-                None
-            }
-        }
-        Pattern::Tuple(patterns) => {
-            if let Value::Tuple(values) = value {
-                if patterns.len() != values.len() {
-                    return None;
-                }
-                let mut bindings = Vec::new();
-                for (pat, val) in patterns.iter().zip(values) {
-                    bindings.extend(match_pattern(pat, val)?);
-                }
-                Some(bindings)
-            } else {
-                None
-            }
-        }
+        Pattern::Wildcard => match_wildcard(),
+        Pattern::Literal(lit) => match_literal_pattern(lit, value),
+        Pattern::Identifier(name) => match_identifier_pattern(name, value),
+        Pattern::List(patterns) => match_list_pattern(patterns, value),
+        Pattern::Tuple(patterns) => match_tuple_pattern(patterns, value),
         _ => None, // TODO: Implement other patterns
     }
+}
+
+/// Match wildcard pattern (complexity: 1)
+fn match_wildcard() -> Option<Vec<(String, Value)>> {
+    Some(vec![])
+}
+
+/// Match literal pattern (complexity: 3)
+fn match_literal_pattern(lit: &Literal, value: &Value) -> Option<Vec<(String, Value)>> {
+    let lit_val = evaluate_literal(lit).ok()?;
+    if values_equal(&lit_val, value) {
+        Some(vec![])
+    } else {
+        None
+    }
+}
+
+/// Match identifier pattern (complexity: 1)
+fn match_identifier_pattern(name: &str, value: &Value) -> Option<Vec<(String, Value)>> {
+    Some(vec![(name.to_string(), value.clone())])
+}
+
+/// Match list pattern (complexity: 4)
+fn match_list_pattern(patterns: &[Pattern], value: &Value) -> Option<Vec<(String, Value)>> {
+    let Value::List(values) = value else {
+        return None;
+    };
+    
+    if patterns.len() != values.len() {
+        return None;
+    }
+    
+    match_sequence_patterns(patterns, values)
+}
+
+/// Match tuple pattern (complexity: 4)
+fn match_tuple_pattern(patterns: &[Pattern], value: &Value) -> Option<Vec<(String, Value)>> {
+    let Value::Tuple(values) = value else {
+        return None;
+    };
+    
+    if patterns.len() != values.len() {
+        return None;
+    }
+    
+    match_sequence_patterns(patterns, values)
+}
+
+/// Match a sequence of patterns against values (complexity: 3)
+fn match_sequence_patterns(patterns: &[Pattern], values: &[Value]) -> Option<Vec<(String, Value)>> {
+    let mut bindings = Vec::new();
+    for (pat, val) in patterns.iter().zip(values) {
+        bindings.extend(match_pattern(pat, val)?);
+    }
+    Some(bindings)
 }
 
 // ==================== Utility Functions ====================

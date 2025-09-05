@@ -190,39 +190,90 @@ fn process_directory(
     fail_fast: bool,
     verbose: bool,
 ) -> Result<Vec<crate::quality::gates::GateResult>> {
-    use std::fs;
-    
     let mut results = Vec::new();
     
-    // Find all Ruchy files
-    for entry in fs::read_dir(dir_path)? {
+    for entry in std::fs::read_dir(dir_path)? {
         let entry = entry?;
         let path = entry.path();
         
-        if path.is_file() && path.extension().is_some_and(|ext| ext == "ruchy") {
-            match process_file(enforcer, &path, depth, verbose) {
-                Ok(result) => {
-                    if fail_fast && !result.passed {
-                        eprintln!("❌ Failed fast on {}", path.display());
-                        return Ok(vec![result]);
-                    }
-                    results.push(result);
-                }
-                Err(e) => {
-                    eprintln!("⚠️ Error processing {}: {}", path.display(), e);
-                    if fail_fast {
-                        return Err(e);
-                    }
-                }
-            }
-        } else if path.is_dir() && !path.file_name().unwrap_or_default().to_string_lossy().starts_with('.') {
-            // Recursively process subdirectories
-            let subdir_results = process_directory(enforcer, &path, depth, fail_fast, verbose)?;
-            results.extend(subdir_results);
+        let entry_results = process_directory_entry(
+            enforcer,
+            &path,
+            depth,
+            fail_fast,
+            verbose,
+        )?;
+        
+        // Handle fail-fast mode
+        if should_fail_fast(&entry_results, fail_fast) {
+            return Ok(entry_results);
         }
+        
+        results.extend(entry_results);
     }
     
     Ok(results)
+}
+
+/// Process a single directory entry (complexity: 6)
+fn process_directory_entry(
+    enforcer: &QualityGateEnforcer,
+    path: &Path,
+    depth: AnalysisDepth,
+    fail_fast: bool,
+    verbose: bool,
+) -> Result<Vec<crate::quality::gates::GateResult>> {
+    if is_ruchy_file(path) {
+        process_ruchy_file(enforcer, path, depth, fail_fast, verbose)
+    } else if is_processable_directory(path) {
+        process_directory(enforcer, path, depth, fail_fast, verbose)
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+/// Check if path is a Ruchy file (complexity: 2)
+fn is_ruchy_file(path: &Path) -> bool {
+    path.is_file() && path.extension().is_some_and(|ext| ext == "ruchy")
+}
+
+/// Check if directory should be processed (complexity: 3)
+fn is_processable_directory(path: &Path) -> bool {
+    path.is_dir() && !path.file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .starts_with('.')
+}
+
+/// Process a Ruchy file and handle errors (complexity: 5)
+fn process_ruchy_file(
+    enforcer: &QualityGateEnforcer,
+    path: &Path,
+    depth: AnalysisDepth,
+    fail_fast: bool,
+    verbose: bool,
+) -> Result<Vec<crate::quality::gates::GateResult>> {
+    match process_file(enforcer, path, depth, verbose) {
+        Ok(result) => {
+            if fail_fast && !result.passed {
+                eprintln!("❌ Failed fast on {}", path.display());
+            }
+            Ok(vec![result])
+        }
+        Err(e) => {
+            eprintln!("⚠️ Error processing {}: {}", path.display(), e);
+            if fail_fast {
+                Err(e)
+            } else {
+                Ok(Vec::new())
+            }
+        }
+    }
+}
+
+/// Check if we should fail fast (complexity: 2)
+fn should_fail_fast(results: &[crate::quality::gates::GateResult], fail_fast: bool) -> bool {
+    fail_fast && results.iter().any(|r| !r.passed)
 }
 
 fn print_console_results(results: &[crate::quality::gates::GateResult], verbose: bool) -> Result<()> {

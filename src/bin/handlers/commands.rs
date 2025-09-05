@@ -90,6 +90,38 @@ pub fn handle_fmt_command(
     stdout: bool,
     verbose: bool,
 ) -> Result<()> {
+    // Read and format the file
+    let (source, formatted_code) = read_and_format_file(path)?;
+    
+    // Determine output mode and handle accordingly
+    let mode = determine_fmt_mode(check, stdout, diff, write);
+    handle_fmt_output(mode, path, &source, &formatted_code, verbose)?;
+    
+    Ok(())
+}
+
+/// Output mode for formatting (complexity: 1)
+enum FmtMode {
+    Check,
+    Stdout,
+    Diff,
+    Write,
+    Default,
+}
+
+/// Determine formatting mode (complexity: 1)
+fn determine_fmt_mode(check: bool, stdout: bool, diff: bool, write: bool) -> FmtMode {
+    match (check, stdout, diff, write) {
+        (true, _, _, _) => FmtMode::Check,
+        (_, true, _, _) => FmtMode::Stdout,
+        (_, _, true, _) => FmtMode::Diff,
+        (_, _, _, true) => FmtMode::Write,
+        _ => FmtMode::Default,
+    }
+}
+
+/// Read and format a file (complexity: 2)
+fn read_and_format_file(path: &Path) -> Result<(String, String)> {
     use ruchy::quality::formatter::Formatter;
     
     let source = fs::read_to_string(path)
@@ -98,47 +130,77 @@ pub fn handle_fmt_command(
     let mut parser = RuchyParser::new(&source);
     let ast = parser.parse()?;
     
-    // Format the AST back to source code
     let formatter = Formatter::new();
     let formatted_code = formatter.format(&ast)?;
     
-    if check {
-        // Check mode - just report if formatting is needed
-        if source == formatted_code {
-            println!("{} {} is properly formatted", "✓".green(), path.display());
-        } else {
-            println!("{} {} needs formatting", "⚠".yellow(), path.display());
-            std::process::exit(1);
+    Ok((source, formatted_code))
+}
+
+/// Handle formatting output based on mode (complexity: 1)
+fn handle_fmt_output(
+    mode: FmtMode,
+    path: &Path,
+    source: &str,
+    formatted_code: &str,
+    verbose: bool,
+) -> Result<()> {
+    use FmtMode::*;
+    match mode {
+        Check => handle_check_mode(path, source, formatted_code),
+        Stdout => handle_stdout_mode(formatted_code),
+        Diff => handle_diff_mode(path, source, formatted_code),
+        Write => handle_write_mode(path, source, formatted_code, verbose),
+        Default => handle_default_mode(formatted_code),
+    }
+}
+
+/// Handle check mode output (complexity: 3)
+fn handle_check_mode(path: &Path, source: &str, formatted_code: &str) -> Result<()> {
+    if source == formatted_code {
+        println!("{} {} is properly formatted", "✓".green(), path.display());
+    } else {
+        println!("{} {} needs formatting", "⚠".yellow(), path.display());
+        std::process::exit(1);
+    }
+    Ok(())
+}
+
+/// Handle stdout mode output (complexity: 1)
+fn handle_stdout_mode(formatted_code: &str) -> Result<()> {
+    print!("{}", formatted_code);
+    Ok(())
+}
+
+/// Handle diff mode output (complexity: 4)
+fn handle_diff_mode(path: &Path, source: &str, formatted_code: &str) -> Result<()> {
+    println!("--- {}", path.display());
+    println!("+++ {} (formatted)", path.display());
+    
+    for (i, (orig, fmt)) in source.lines().zip(formatted_code.lines()).enumerate() {
+        if orig != fmt {
+            println!("-{}: {}", i + 1, orig);
+            println!("+{}: {}", i + 1, fmt);
         }
-    } else if stdout {
-        // Output to stdout
-        print!("{}", formatted_code);
-    } else if diff {
-        // Show diff
-        println!("--- {}", path.display());
-        println!("+++ {} (formatted)", path.display());
-        // Simple diff display
-        for (i, (orig, fmt)) in source.lines().zip(formatted_code.lines()).enumerate() {
-            if orig != fmt {
-                println!("-{}: {}", i + 1, orig);
-                println!("+{}: {}", i + 1, fmt);
-            }
-        }
-    } else if write {
-        // Write back to file
-        if source == formatted_code {
-            if verbose {
-                println!("{} {} already formatted", "→".blue(), path.display());
-            }
-        } else {
-            fs::write(path, formatted_code)?;
-            println!("{} Formatted {}", "✓".green(), path.display());
+    }
+    Ok(())
+}
+
+/// Handle write mode output (complexity: 4)
+fn handle_write_mode(path: &Path, source: &str, formatted_code: &str, verbose: bool) -> Result<()> {
+    if source == formatted_code {
+        if verbose {
+            println!("{} {} already formatted", "→".blue(), path.display());
         }
     } else {
-        // Default: output formatted code
-        print!("{}", formatted_code);
+        fs::write(path, formatted_code)?;
+        println!("{} Formatted {}", "✓".green(), path.display());
     }
-    
+    Ok(())
+}
+
+/// Handle default mode output (complexity: 1)
+fn handle_default_mode(formatted_code: &str) -> Result<()> {
+    print!("{}", formatted_code);
     Ok(())
 }
 
@@ -711,65 +773,111 @@ pub fn handle_quality_gate_command(
     output: Option<&Path>,
     _export: Option<&Path>,
 ) -> Result<()> {
+    // Parse source file
     let source = fs::read_to_string(path)
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
+    let ast = parse_source_file(&source)?;
     
-    let mut parser = RuchyParser::new(&source);
-    let ast = parser.parse()?;
+    // Run quality gates and collect results
+    let (passed, results) = run_quality_gates(&ast, &source);
     
-    // Run quality gates
-    let mut passed = true;
-    let mut results = vec![];
+    // Format and output results
+    let output_content = format_gate_results(passed, &results, json)?;
+    output_results(&output_content, quiet, output)?;
     
-    // Gate 1: Complexity
-    let complexity = calculate_complexity(&ast);
-    if complexity > 10 {
-        results.push(format!("❌ Complexity {} exceeds limit 10", complexity));
-        passed = false;
-    } else {
-        results.push(format!("✅ Complexity {} within limit", complexity));
-    }
-    
-    // Gate 2: No SATD
-    // Check for SATD patterns in comments (not in strings)
-    let has_satd = source.lines().any(|line| {
-        if let Some(comment_pos) = line.find("//") {
-            let comment = &line[comment_pos..];
-            comment.contains("TODO") || comment.contains("FIXME") || comment.contains("HACK")
-        } else {
-            false
-        }
-    });
-    
-    if has_satd {
-        results.push("❌ Contains SATD comments".to_string());
-        passed = false;
-    } else {
-        results.push("✅ No SATD comments".to_string());
-    }
-    
-    let output_content = if json {
-        serde_json::to_string_pretty(&serde_json::json!({
-            "passed": passed,
-            "gates": results
-        }))?
-    } else {
-        format!("{}\n", results.join("\n"))
-    };
-    
-    if !quiet {
-        print!("{}", output_content);
-    }
-    
-    if let Some(output_path) = output {
-        fs::write(output_path, output_content)?;
-    }
-    
-    if !passed && strict {
+    // Handle strict mode
+    if should_fail_strict(passed, strict) {
         std::process::exit(1);
     }
     
     Ok(())
+}
+
+/// Parse source file into AST (complexity: 2)
+fn parse_source_file(source: &str) -> Result<ruchy::frontend::ast::Expr> {
+    let mut parser = RuchyParser::new(source);
+    parser.parse().context("Failed to parse source file")
+}
+
+/// Run all quality gates (complexity: 4)
+fn run_quality_gates(ast: &ruchy::frontend::ast::Expr, source: &str) -> (bool, Vec<String>) {
+    let mut passed = true;
+    let mut results = vec![];
+    
+    // Gate 1: Complexity check
+    let (complexity_passed, complexity_result) = check_complexity_gate(ast);
+    results.push(complexity_result);
+    passed = passed && complexity_passed;
+    
+    // Gate 2: SATD check
+    let (satd_passed, satd_result) = check_satd_gate(source);
+    results.push(satd_result);
+    passed = passed && satd_passed;
+    
+    (passed, results)
+}
+
+/// Check complexity gate (complexity: 3)
+fn check_complexity_gate(ast: &ruchy::frontend::ast::Expr) -> (bool, String) {
+    let complexity = calculate_complexity(ast);
+    let limit = 10;
+    
+    if complexity > limit {
+        (false, format!("❌ Complexity {} exceeds limit {}", complexity, limit))
+    } else {
+        (true, format!("✅ Complexity {} within limit", complexity))
+    }
+}
+
+/// Check for SATD comments (complexity: 5)
+fn check_satd_gate(source: &str) -> (bool, String) {
+    let has_satd = source.lines().any(|line| contains_satd_comment(line));
+    
+    if has_satd {
+        (false, "❌ Contains SATD comments".to_string())
+    } else {
+        (true, "✅ No SATD comments".to_string())
+    }
+}
+
+/// Check if line contains SATD comment (complexity: 4)
+fn contains_satd_comment(line: &str) -> bool {
+    if let Some(comment_pos) = line.find("//") {
+        let comment = &line[comment_pos..];
+        comment.contains("TODO") || comment.contains("FIXME") || comment.contains("HACK")
+    } else {
+        false
+    }
+}
+
+/// Format gate results as JSON or text (complexity: 3)
+fn format_gate_results(passed: bool, results: &[String], json: bool) -> Result<String> {
+    if json {
+        serde_json::to_string_pretty(&serde_json::json!({
+            "passed": passed,
+            "gates": results
+        })).map_err(Into::into)
+    } else {
+        Ok(format!("{}\n", results.join("\n")))
+    }
+}
+
+/// Output results to console or file (complexity: 3)
+fn output_results(content: &str, quiet: bool, output: Option<&Path>) -> Result<()> {
+    if !quiet {
+        print!("{}", content);
+    }
+    
+    if let Some(output_path) = output {
+        fs::write(output_path, content)?;
+    }
+    
+    Ok(())
+}
+
+/// Check if should fail in strict mode (complexity: 1)
+fn should_fail_strict(passed: bool, strict: bool) -> bool {
+    !passed && strict
 }
 
 // Helper functions
@@ -799,94 +907,138 @@ fn calculate_provability_score(ast: &ruchy::frontend::ast::Expr) -> f64 {
 }
 
 fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f64 {
+    // Collect all quality metrics
+    let metrics = collect_quality_metrics(ast, source);
     
-    // Calculate various quality metrics
-    let complexity = calculate_complexity(ast);
+    // Calculate score with all penalties
+    calculate_score_with_penalties(&metrics)
+}
+
+/// Collect all quality metrics (complexity: 4)
+fn collect_quality_metrics(ast: &ruchy::frontend::ast::Expr, source: &str) -> QualityMetrics {
     let mut metrics = QualityMetrics::default();
     
-    // Check for SATD in comments
-    for line in source.lines() {
-        if let Some(comment_pos) = line.find("//") {
-            let comment = &line[comment_pos..];
-            if comment.contains("TODO") || comment.contains("FIXME") || comment.contains("HACK") {
-                metrics.has_satd = true;
-                break;
-            }
-        }
-    }
+    // Check for SATD
+    metrics.has_satd = detect_satd_in_source(source);
     
+    // Analyze AST for other metrics
     analyze_ast_quality(ast, &mut metrics);
     
-    // ACTIONABLE SCORING ALGORITHM - Harsh penalties for bad code
-    // Start with perfect score and apply multiplicative penalties
+    metrics
+}
+
+/// Detect SATD comments in source (complexity: 5)
+fn detect_satd_in_source(source: &str) -> bool {
+    source.lines().any(|line| {
+        if let Some(comment_pos) = line.find("//") {
+            let comment = &line[comment_pos..];
+            comment.contains("TODO") || comment.contains("FIXME") || comment.contains("HACK")
+        } else {
+            false
+        }
+    })
+}
+
+/// Calculate complexity from metrics (complexity: 2)
+fn calculate_complexity_from_metrics(metrics: &QualityMetrics) -> usize {
+    // Simple complexity estimation based on collected metrics
+    // Base complexity + branches + loops weighted
+    5 + metrics.max_nesting_depth * 2 + metrics.max_parameters
+}
+
+/// Calculate final score with all penalties (complexity: 6)
+fn calculate_score_with_penalties(metrics: &QualityMetrics) -> f64 {
     let mut score = 1.0;
     
-    // 1. COMPLEXITY PENALTY - Progressive penalty for cyclomatic complexity
-    let complexity_penalty = match complexity {
-        0..=5 => 1.0,                                    // Excellent: No penalty
-        6..=10 => 0.95,                                  // Good: Very small penalty  
-        11..=15 => 0.85,                                 // Fair: Small penalty
-        16..=20 => 0.70,                                 // Moderate: Noticeable penalty
-        21..=30 => 0.45,                                 // Poor: Significant penalty
-        31..=40 => 0.25,                                 // Very Poor: Major penalty
-        41..=50 => 0.15,                                 // Terrible: Severe penalty
-        _ => 0.05,                                       // Catastrophic: Near-zero score
-    };
-    score *= complexity_penalty;
+    // Apply all penalties
+    score *= get_complexity_penalty(calculate_complexity_from_metrics(metrics));
+    score *= get_parameter_penalty(metrics.max_parameters);
+    score *= get_nesting_penalty(metrics.max_nesting_depth);
+    score *= get_length_penalty(metrics);
+    score *= get_satd_penalty(metrics.has_satd);
+    score *= get_documentation_penalty(metrics);
     
-    // 2. PARAMETER COUNT PENALTY - Severe penalty for too many parameters
-    let param_penalty = match metrics.max_parameters {
-        0..=3 => 1.0,                                      // Excellent
-        4..=5 => 0.90,                                    // Good  
-        6..=7 => 0.75,                                    // Fair
-        8..=10 => 0.50,                                   // Poor
-        11..=15 => 0.25,                                  // Very Poor
-        16..=25 => 0.10,                                  // Terrible
-        _ => 0.05,                                        // Catastrophic (26+ params)
-    };
-    score *= param_penalty;
-    
-    // 3. NESTING DEPTH PENALTY - Exponential penalty for deep nesting
-    // Debug: Print the nesting depth being evaluated
-    let nesting_penalty = match metrics.max_nesting_depth {
-        0..=2 => 1.0,                                     // Excellent
-        3 => 0.90,                                        // Good
-        4 => 0.75,                                        // Fair  
-        5 => 0.50,                                        // Poor
-        6 => 0.30,                                        // Very Poor
-        7 => 0.15,                                        // Terrible
-        _ => 0.05,                                        // Catastrophic (8+ levels)
-    };
-    score *= nesting_penalty;
-    
-    // 4. FUNCTION LENGTH PENALTY - Penalty for long functions
-    let avg_function_length = if metrics.function_count == 0 {
+    score
+}
+
+/// Get complexity penalty (complexity: 8)
+fn get_complexity_penalty(complexity: usize) -> f64 {
+    match complexity {
+        0..=5 => 1.0,
+        6..=10 => 0.95,
+        11..=15 => 0.85,
+        16..=20 => 0.70,
+        21..=30 => 0.45,
+        31..=40 => 0.25,
+        41..=50 => 0.15,
+        _ => 0.05,
+    }
+}
+
+/// Get parameter count penalty (complexity: 7)
+fn get_parameter_penalty(params: usize) -> f64 {
+    match params {
+        0..=3 => 1.0,
+        4..=5 => 0.90,
+        6..=7 => 0.75,
+        8..=10 => 0.50,
+        11..=15 => 0.25,
+        16..=25 => 0.10,
+        _ => 0.05,
+    }
+}
+
+/// Get nesting depth penalty (complexity: 7)
+fn get_nesting_penalty(depth: usize) -> f64 {
+    match depth {
+        0..=2 => 1.0,
+        3 => 0.90,
+        4 => 0.75,
+        5 => 0.50,
+        6 => 0.30,
+        7 => 0.15,
+        _ => 0.05,
+    }
+}
+
+/// Get function length penalty (complexity: 4)
+fn get_length_penalty(metrics: &QualityMetrics) -> f64 {
+    let avg_length = calculate_average_function_length(metrics);
+    if avg_length > 20.0 {
+        (30.0 / avg_length).clamp(0.3, 1.0)
+    } else {
+        1.0
+    }
+}
+
+/// Calculate average function length (complexity: 3)
+fn calculate_average_function_length(metrics: &QualityMetrics) -> f64 {
+    if metrics.function_count == 0 {
         0.0
     } else {
         metrics.total_function_lines as f64 / metrics.function_count as f64
-    };
-    if avg_function_length > 20.0 {
-        let length_penalty = (30.0 / avg_function_length).clamp(0.3, 1.0);
-        score *= length_penalty;
+    }
+}
+
+/// Get SATD penalty (complexity: 1)
+fn get_satd_penalty(has_satd: bool) -> f64 {
+    if has_satd { 0.70 } else { 1.0 }
+}
+
+/// Get documentation penalty (complexity: 3)
+fn get_documentation_penalty(metrics: &QualityMetrics) -> f64 {
+    if metrics.function_count == 0 {
+        return 1.0;  // No penalty if no functions
     }
     
-    // 5. Code quality penalty - Immediate penalty for code quality issues
-    if metrics.has_satd {
-        score *= 0.70; // 30% penalty for SATD
+    let doc_ratio = metrics.documented_functions as f64 / metrics.function_count as f64;
+    if doc_ratio < 0.5 {
+        0.85  // Penalty for poor documentation
+    } else if doc_ratio > 0.8 {
+        1.05  // Small bonus for good documentation
+    } else {
+        1.0   // Neutral for average documentation
     }
-    
-    // 6. DOCUMENTATION BONUS/PENALTY
-    if metrics.function_count > 0 {
-        let doc_ratio = metrics.documented_functions as f64 / metrics.function_count as f64;
-        if doc_ratio < 0.5 {
-            score *= 0.85; // Penalty for poor documentation
-        } else if doc_ratio > 0.8 {
-            score *= 1.05; // Small bonus for good documentation
-        }
-    }
-    
-    // Ensure score stays within bounds
-    score.clamp(0.0, 1.0)
 }
 
 fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
