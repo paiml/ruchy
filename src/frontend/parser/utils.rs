@@ -48,88 +48,114 @@ pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
 
     let mut params = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-        // Check for mut keyword
-        let is_mutable = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
-            state.tokens.advance(); // consume mut
-            true
-        } else {
-            false
-        };
-
-        let pattern = match state.tokens.peek() {
-            Some((Token::Ampersand, _)) => {
-                // Handle &self or &mut self patterns
-                state.tokens.advance(); // consume &
-
-                if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
-                    state.tokens.advance(); // consume mut
-                    if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-                        if n == "self" {
-                            state.tokens.advance();
-                            Pattern::Identifier("&mut self".to_string())
-                        } else {
-                            bail!("Expected 'self' after '&mut'");
-                        }
-                    } else {
-                        bail!("Expected 'self' after '&mut'");
-                    }
-                } else if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-                    if n == "self" {
-                        state.tokens.advance();
-                        Pattern::Identifier("&self".to_string())
-                    } else {
-                        bail!("Expected 'self' after '&'");
-                    }
-                } else {
-                    bail!("Expected 'self' after '&'");
-                }
-            }
-            Some((Token::Identifier(name), _)) => {
-                // Only accept simple identifier patterns for parameters
-                let name = name.clone();
-                state.tokens.advance();
-                Pattern::Identifier(name)
-            }
-            _ => bail!("Function parameters must be simple identifiers (destructuring patterns not supported)"),
-        };
-
-        // Type annotation is optional for gradual typing
-        let ty = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-            state.tokens.advance(); // consume :
-            parse_type(state)?
-        } else {
-            // Default to 'Any' type for untyped parameters
-            Type {
-                kind: TypeKind::Named("Any".to_string()),
-                span: Span { start: 0, end: 0 },
-            }
-        };
-
-        // Parse optional default value (only on simple identifiers)
-        let default_value = if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
-            state.tokens.advance(); // consume =
-            Some(Box::new(super::parse_expr_recursive(state)?))
-        } else {
-            None
-        };
-
-        params.push(Param {
-            pattern,
-            ty,
-            span: Span { start: 0, end: 0 },
-            is_mutable,
-            default_value,
-        });
-
-        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-            state.tokens.advance(); // consume comma
-        } else {
+        let param = parse_single_param(state)?;
+        params.push(param);
+        
+        if !should_continue_param_list(state)? {
             break;
         }
     }
 
     state.tokens.expect(&Token::RightParen)?;
     Ok(params)
+}
+
+/// Parse a single parameter (complexity: 7)
+fn parse_single_param(state: &mut ParserState) -> Result<Param> {
+    let is_mutable = check_and_consume_mut(state);
+    let pattern = parse_param_pattern(state)?;
+    let ty = parse_optional_type_annotation(state)?;
+    let default_value = parse_optional_default_value(state)?;
+    
+    Ok(Param {
+        pattern,
+        ty,
+        span: Span { start: 0, end: 0 },
+        is_mutable,
+        default_value,
+    })
+}
+
+/// Check for and consume mut keyword (complexity: 2)
+fn check_and_consume_mut(state: &mut ParserState) -> bool {
+    if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance();
+        true
+    } else {
+        false
+    }
+}
+
+/// Parse parameter pattern (complexity: 6)
+fn parse_param_pattern(state: &mut ParserState) -> Result<Pattern> {
+    match state.tokens.peek() {
+        Some((Token::Ampersand, _)) => parse_reference_pattern(state),
+        Some((Token::Identifier(name), _)) => {
+            let name = name.clone();
+            state.tokens.advance();
+            Ok(Pattern::Identifier(name))
+        }
+        _ => bail!("Function parameters must be simple identifiers (destructuring patterns not supported)"),
+    }
+}
+
+/// Parse reference patterns (&self, &mut self) (complexity: 8)
+fn parse_reference_pattern(state: &mut ParserState) -> Result<Pattern> {
+    state.tokens.advance(); // consume &
+
+    let is_mut_ref = matches!(state.tokens.peek(), Some((Token::Mut, _)));
+    if is_mut_ref {
+        state.tokens.advance(); // consume mut
+    }
+
+    match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) if n == "self" => {
+            state.tokens.advance();
+            if is_mut_ref {
+                Ok(Pattern::Identifier("&mut self".to_string()))
+            } else {
+                Ok(Pattern::Identifier("&self".to_string()))
+            }
+        }
+        _ => {
+            let expected = if is_mut_ref { "'self' after '&mut'" } else { "'self' after '&'" };
+            bail!("Expected {}", expected)
+        }
+    }
+}
+
+/// Parse optional type annotation (complexity: 4)
+fn parse_optional_type_annotation(state: &mut ParserState) -> Result<Type> {
+    if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+        state.tokens.advance(); // consume :
+        parse_type(state)
+    } else {
+        // Default to 'Any' type for untyped parameters
+        Ok(Type {
+            kind: TypeKind::Named("Any".to_string()),
+            span: Span { start: 0, end: 0 },
+        })
+    }
+}
+
+/// Parse optional default value (complexity: 3)
+fn parse_optional_default_value(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
+    if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+        state.tokens.advance(); // consume =
+        Ok(Some(Box::new(super::parse_expr_recursive(state)?)))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Check if we should continue parsing parameters (complexity: 3)
+fn should_continue_param_list(state: &mut ParserState) -> Result<bool> {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance(); // consume comma
+        Ok(true)
+    } else {
+        Ok(false)
+    }
 }
 
 /// # Errors
@@ -731,43 +757,111 @@ fn extract_expression_text<T: Iterator<Item = char>>(chars: &mut T) -> String {
     let mut context = ExprContext::default();
 
     for expr_ch in chars {
-        match expr_ch {
-            '"' if !context.in_char && !context.escaped => {
-                context.in_string = !context.in_string;
-                expr_text.push(expr_ch);
-            }
-            '\'' if !context.in_string && !context.escaped => {
-                context.in_char = !context.in_char;
-                expr_text.push(expr_ch);
-            }
-            '{' if !context.in_string && !context.in_char => {
-                context.brace_count += 1;
-                expr_text.push(expr_ch);
-            }
-            '}' if !context.in_string && !context.in_char => {
-                context.brace_count -= 1;
-                if context.brace_count == 0 {
-                    break;
-                }
-                expr_text.push(expr_ch);
-            }
-            '\\' if (context.in_string || context.in_char) && !context.escaped => {
-                context.escaped = true;
-                expr_text.push(expr_ch);
-            }
-            _ => {
-                context.escaped = false;
-                expr_text.push(expr_ch);
-            }
-        }
-
-        // Reset escape flag for non-backslash characters
-        if expr_ch != '\\' {
-            context.escaped = false;
+        if process_character(expr_ch, &mut context, &mut expr_text) {
+            break;
         }
     }
 
     expr_text
+}
+
+/// Process a single character in expression extraction (complexity: 8)
+fn process_character(ch: char, context: &mut ExprContext, expr_text: &mut String) -> bool {
+    match ch {
+        '"' if should_process_string_quote(context) => {
+            handle_string_delimiter(context);
+            expr_text.push(ch);
+        }
+        '\'' if should_process_char_quote(context) => {
+            handle_char_delimiter(context);
+            expr_text.push(ch);
+        }
+        '{' if should_process_brace(context) => {
+            handle_open_brace(context);
+            expr_text.push(ch);
+        }
+        '}' if should_process_brace(context) => {
+            handle_close_brace(context);
+            if should_terminate(context) {
+                return true; // Signal to break the loop
+            }
+            expr_text.push(ch);
+        }
+        '\\' if should_escape(context) => {
+            handle_escape(context);
+            expr_text.push(ch);
+        }
+        _ => {
+            handle_regular_char(context, ch);
+            expr_text.push(ch);
+        }
+    }
+    
+    // Reset escape flag for non-backslash characters
+    reset_escape_flag(context, ch);
+    false // Continue processing
+}
+
+/// Check if string quote should be processed (complexity: 1)
+fn should_process_string_quote(context: &ExprContext) -> bool {
+    !context.in_char && !context.escaped
+}
+
+/// Check if char quote should be processed (complexity: 1)
+fn should_process_char_quote(context: &ExprContext) -> bool {
+    !context.in_string && !context.escaped
+}
+
+/// Check if brace should be processed (complexity: 1)
+fn should_process_brace(context: &ExprContext) -> bool {
+    !context.in_string && !context.in_char
+}
+
+/// Check if escape should be handled (complexity: 1)
+fn should_escape(context: &ExprContext) -> bool {
+    (context.in_string || context.in_char) && !context.escaped
+}
+
+/// Toggle string delimiter state (complexity: 1)
+fn handle_string_delimiter(context: &mut ExprContext) {
+    context.in_string = !context.in_string;
+}
+
+/// Toggle char delimiter state (complexity: 1)
+fn handle_char_delimiter(context: &mut ExprContext) {
+    context.in_char = !context.in_char;
+}
+
+/// Increment brace count (complexity: 1)
+fn handle_open_brace(context: &mut ExprContext) {
+    context.brace_count += 1;
+}
+
+/// Decrement brace count (complexity: 1)
+fn handle_close_brace(context: &mut ExprContext) {
+    context.brace_count -= 1;
+}
+
+/// Set escape flag (complexity: 1)
+fn handle_escape(context: &mut ExprContext) {
+    context.escaped = true;
+}
+
+/// Handle regular character (complexity: 1)
+fn handle_regular_char(context: &mut ExprContext, _ch: char) {
+    context.escaped = false;
+}
+
+/// Reset escape flag if needed (complexity: 2)
+fn reset_escape_flag(context: &mut ExprContext, ch: char) {
+    if ch != '\\' {
+        context.escaped = false;
+    }
+}
+
+/// Check if we should terminate extraction (complexity: 1)
+fn should_terminate(context: &ExprContext) -> bool {
+    context.brace_count == 0
 }
 
 // Helper: Parse interpolated expression with format specifier (complexity: 4)

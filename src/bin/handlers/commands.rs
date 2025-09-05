@@ -4,7 +4,8 @@
 use anyhow::{Context, Result};
 use ruchy::Parser as RuchyParser;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::collections::HashMap;
 use colored::Colorize;
 
 /// Handle AST command - show Abstract Syntax Tree for a file
@@ -514,51 +515,79 @@ fn handle_directory_score(
     format: &str,
     output: Option<&Path>,
 ) -> Result<()> {
-    use std::collections::HashMap;
-    
     // Find all .ruchy files recursively
     let mut ruchy_files = Vec::new();
     collect_ruchy_files(path, &mut ruchy_files)?;
     
+    // Handle empty directory case
     if ruchy_files.is_empty() {
-        let output_content = if format == "json" {
-            serde_json::to_string_pretty(&serde_json::json!({
-                "directory": path.display().to_string(),
-                "files": 0,
-                "average_score": 0.0,
-                "depth": depth,
-                "passed": true
-            }))?
-        } else {
-            format!(
-                "=== Quality Score ===\n\
-                 Directory: {}\n\
-                 Files: 0\n\
-                 Average Score: N/A\n\
-                 Analysis Depth: {}\n",
-                path.display(),
-                depth
-            )
-        };
-        
-        if let Some(output_path) = output {
-            fs::write(output_path, &output_content)?;
-            println!("✅ Score report written to: {}", output_path.display());
-        } else {
-            print!("{}", output_content);
-        }
-        return Ok(());
+        return handle_empty_directory(path, depth, format, output);
     }
     
     // Calculate scores for all files
-    let mut file_scores = HashMap::new();
-    let mut total_score = 0.0;
+    let file_scores = calculate_all_file_scores(&ruchy_files)?;
+    if file_scores.is_empty() {
+        anyhow::bail!("No .ruchy files could be successfully analyzed");
+    }
     
-    for file_path in &ruchy_files {
+    // Calculate average and generate output
+    let average_score = calculate_average(&file_scores);
+    let output_content = format_score_output(path, depth, &file_scores, average_score, min, format)?;
+    
+    // Write output
+    write_output(&output_content, output)?;
+    
+    // Check threshold
+    check_score_threshold(average_score, min)?;
+    
+    Ok(())
+}
+
+/// Handle empty directory case (complexity: 4)
+fn handle_empty_directory(
+    path: &Path,
+    depth: &str,
+    format: &str,
+    output: Option<&Path>,
+) -> Result<()> {
+    let output_content = format_empty_directory_output(path, depth, format)?;
+    write_output(&output_content, output)?;
+    Ok(())
+}
+
+/// Format output for empty directory (complexity: 2)
+fn format_empty_directory_output(path: &Path, depth: &str, format: &str) -> Result<String> {
+    if format == "json" {
+        serde_json::to_string_pretty(&serde_json::json!({
+            "directory": path.display().to_string(),
+            "files": 0,
+            "average_score": 0.0,
+            "depth": depth,
+            "passed": true
+        }))
+        .map_err(Into::into)
+    } else {
+        Ok(format!(
+            "=== Quality Score ===\n\
+             Directory: {}\n\
+             Files: 0\n\
+             Average Score: N/A\n\
+             Analysis Depth: {}\n",
+            path.display(),
+            depth
+        ))
+    }
+}
+
+/// Calculate scores for all files (complexity: 5)
+fn calculate_all_file_scores(ruchy_files: &[PathBuf]) -> Result<HashMap<PathBuf, f64>> {
+    use std::collections::HashMap;
+    let mut file_scores = HashMap::new();
+    
+    for file_path in ruchy_files {
         match calculate_file_score(file_path) {
             Ok(score) => {
                 file_scores.insert(file_path.clone(), score);
-                total_score += score;
             }
             Err(e) => {
                 eprintln!("⚠️  Failed to score {}: {}", file_path.display(), e);
@@ -567,13 +596,30 @@ fn handle_directory_score(
         }
     }
     
+    Ok(file_scores)
+}
+
+/// Calculate average score (complexity: 2)
+fn calculate_average(file_scores: &HashMap<PathBuf, f64>) -> f64 {
     if file_scores.is_empty() {
-        anyhow::bail!("No .ruchy files could be successfully analyzed");
+        return 0.0;
     }
+    let total: f64 = file_scores.values().sum();
+    total / file_scores.len() as f64
+}
+
+/// Format score output (complexity: 4)
+fn format_score_output(
+    path: &Path,
+    depth: &str,
+    file_scores: &HashMap<PathBuf, f64>,
+    average_score: f64,
+    min: Option<f64>,
+    format: &str,
+) -> Result<String> {
+    use std::collections::HashMap;
     
-    let average_score = total_score / file_scores.len() as f64;
-    
-    let output_content = if format == "json" {
+    if format == "json" {
         serde_json::to_string_pretty(&serde_json::json!({
             "directory": path.display().to_string(),
             "files": file_scores.len(),
@@ -583,9 +629,10 @@ fn handle_directory_score(
             "file_scores": file_scores.iter().map(|(path, score)| {
                 (path.display().to_string(), *score)
             }).collect::<HashMap<String, f64>>()
-        }))?
+        }))
+        .map_err(Into::into)
     } else {
-        format!(
+        Ok(format!(
             "=== Quality Score ===\n\
              Directory: {}\n\
              Files: {}\n\
@@ -595,24 +642,29 @@ fn handle_directory_score(
             file_scores.len(),
             average_score,
             depth
-        )
-    };
-    
+        ))
+    }
+}
+
+/// Write output to file or stdout (complexity: 3)
+fn write_output(content: &str, output: Option<&Path>) -> Result<()> {
     if let Some(output_path) = output {
-        fs::write(output_path, &output_content)?;
+        fs::write(output_path, content)?;
         println!("✅ Score report written to: {}", output_path.display());
     } else {
-        print!("{}", output_content);
+        print!("{}", content);
     }
-    
-    // Check threshold
+    Ok(())
+}
+
+/// Check if score meets threshold (complexity: 3)
+fn check_score_threshold(average_score: f64, min: Option<f64>) -> Result<()> {
     if let Some(min_score) = min {
         if average_score < min_score {
             eprintln!("❌ Average score {} is below threshold {}", average_score, min_score);
             std::process::exit(1);
         }
     }
-    
     Ok(())
 }
 
