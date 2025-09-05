@@ -1312,7 +1312,7 @@ fn process_single_file(
     all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
     processed_files: &mut usize
 ) -> Result<()> {
-    use colored::Colorize;
+    
     
     validate_replay_file(input)?;
     
@@ -1339,7 +1339,7 @@ fn process_directory(
     all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
     processed_files: &mut usize
 ) -> Result<()> {
-    use colored::Colorize;
+    
     use std::fs;
     
     println!("📁 Processing replay directory: {}", input.display());

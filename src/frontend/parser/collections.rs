@@ -741,7 +741,7 @@ pub fn parse_list_comprehension(
 /// # Errors
 ///
 /// Returns an error if the operation fails
-/// Parse DataFrame header: df![ (complexity: 3)
+/// Parse `DataFrame` header: df![ (complexity: 3)
 fn parse_dataframe_header(state: &mut ParserState) -> Result<Span> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume df
     state.tokens.expect(&Token::Bang)?;
@@ -831,12 +831,12 @@ fn parse_dataframe_column_definitions(state: &mut ParserState) -> Result<Vec<Dat
     Ok(columns)
 }
 
-/// Create final DataFrame expression (complexity: 3)
+/// Create final `DataFrame` expression (complexity: 3)
 fn create_dataframe_result(columns: Vec<DataFrameColumn>, start_span: Span) -> Result<Expr> {
     Ok(Expr::new(ExprKind::DataFrame { columns }, start_span))
 }
 
-/// Parse DataFrame literal: df![...] (complexity: 6)
+/// Parse `DataFrame` literal: df![...] (complexity: 6)
 pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
     let start_span = parse_dataframe_header(state)?;
     

@@ -355,132 +355,133 @@ pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Re
 }
 
 fn parse_method_or_field_access(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
-
-    // Check if this is a DataFrame-specific operation method
-    // Note: filter, map, reduce are array methods, not DataFrame methods
-    // Only include methods that are DataFrame-exclusive
-    let is_dataframe_method = matches!(
-        method.as_str(),
-        "select"
-            | "groupby"
-            | "group_by"
-            | "agg"
-            | "pivot"
-            | "melt"
-            | "join"
-            | "rolling"
-            | "shift"
-            | "diff"
-            | "pct_change"
-            | "corr"
-            | "cov"
-    );
-
     // Check if it's a method call (with parentheses) or field access
     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-        // Method call
-        state.tokens.advance(); // consume (
-
-        let mut args = Vec::new();
-        while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-            args.push(super::parse_expr_recursive(state)?);
-
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance(); // consume comma
-            } else {
-                break;
-            }
-        }
-
-        state.tokens.expect(&Token::RightParen)?;
-
-        // Check if this is a DataFrame operation
-        if is_dataframe_method {
-            // Convert to DataFrame operation based on method name
-            let operation = match method.as_str() {
-                "select" => {
-                    // Extract column names from arguments
-                    let mut columns = Vec::new();
-                    for arg in args {
-                        match arg.kind {
-                            // Handle bare identifiers: .select(age, name)
-                            ExprKind::Identifier(name) => {
-                                columns.push(name);
-                            }
-                            // Handle list literals: .select(["age", "name"])
-                            ExprKind::List(items) => {
-                                for item in items {
-                                    if let ExprKind::Literal(Literal::String(col_name)) = item.kind
-                                    {
-                                        columns.push(col_name);
-                                    }
-                                }
-                            }
-                            // Handle single string literals: .select("age")
-                            ExprKind::Literal(Literal::String(col_name)) => {
-                                columns.push(col_name);
-                            }
-                            _ => {}
-                        }
-                    }
-                    DataFrameOp::Select(columns)
-                }
-                "groupby" | "group_by" => {
-                    let columns = args
-                        .into_iter()
-                        .filter_map(|arg| {
-                            if let ExprKind::Identifier(name) = arg.kind {
-                                Some(name)
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-                    DataFrameOp::GroupBy(columns)
-                }
-                _ => {
-                    // For other methods, fall back to regular method call
-                    return Ok(Expr {
-                        kind: ExprKind::MethodCall {
-                            receiver: Box::new(receiver),
-                            method,
-                            args,
-                        },
-                        span: Span { start: 0, end: 0 },
-                        attributes: Vec::new(),
-                    });
-                }
-            };
-
-            Ok(Expr {
-                kind: ExprKind::DataFrameOperation {
-                    source: Box::new(receiver),
-                    operation,
-                },
-                span: Span { start: 0, end: 0 },
-                attributes: Vec::new(),
-            })
-        } else {
-            Ok(Expr {
-                kind: ExprKind::MethodCall {
-                    receiver: Box::new(receiver),
-                    method,
-                    args,
-                },
-                span: Span { start: 0, end: 0 },
-                attributes: Vec::new(),
-            })
-        }
+        parse_method_call_access(state, receiver, method)
     } else {
         // Field access
-        Ok(Expr {
-            kind: ExprKind::FieldAccess {
-                object: Box::new(receiver),
-                field: method,
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
+        Ok(create_field_access(receiver, method))
+    }
+}
+
+/// Parse method call with arguments (complexity: 6)
+fn parse_method_call_access(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
+    state.tokens.advance(); // consume (
+    let args = parse_method_arguments(state)?;
+    state.tokens.expect(&Token::RightParen)?;
+
+    // Check if this is a DataFrame operation
+    if is_dataframe_method(&method) {
+        handle_dataframe_method(receiver, method, args)
+    } else {
+        Ok(create_method_call(receiver, method, args))
+    }
+}
+
+/// Parse method arguments (complexity: 5)
+fn parse_method_arguments(state: &mut ParserState) -> Result<Vec<Expr>> {
+    let mut args = Vec::new();
+    while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        args.push(super::parse_expr_recursive(state)?);
+
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance(); // consume comma
+        } else {
+            break;
+        }
+    }
+    Ok(args)
+}
+
+/// Check if method is DataFrame-specific (complexity: 1)
+fn is_dataframe_method(method: &str) -> bool {
+    matches!(
+        method,
+        "select" | "groupby" | "group_by" | "agg" | "pivot" | "melt" | 
+        "join" | "rolling" | "shift" | "diff" | "pct_change" | "corr" | "cov"
+    )
+}
+
+/// Handle DataFrame-specific methods (complexity: 4)
+fn handle_dataframe_method(receiver: Expr, method: String, args: Vec<Expr>) -> Result<Expr> {
+    let operation = match method.as_str() {
+        "select" => DataFrameOp::Select(extract_select_columns(args)),
+        "groupby" | "group_by" => DataFrameOp::GroupBy(extract_groupby_columns(args)),
+        _ => return Ok(create_method_call(receiver, method, args)),
+    };
+
+    Ok(Expr {
+        kind: ExprKind::DataFrameOperation {
+            source: Box::new(receiver),
+            operation,
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
+    })
+}
+
+/// Extract column names from select arguments (complexity: 8)
+fn extract_select_columns(args: Vec<Expr>) -> Vec<String> {
+    let mut columns = Vec::new();
+    for arg in args {
+        match arg.kind {
+            // Handle bare identifiers: .select(age, name)
+            ExprKind::Identifier(name) => {
+                columns.push(name);
+            }
+            // Handle list literals: .select(["age", "name"])
+            ExprKind::List(items) => {
+                for item in items {
+                    if let ExprKind::Literal(Literal::String(col_name)) = item.kind {
+                        columns.push(col_name);
+                    }
+                }
+            }
+            // Handle single string literals: .select("age")
+            ExprKind::Literal(Literal::String(col_name)) => {
+                columns.push(col_name);
+            }
+            _ => {}
+        }
+    }
+    columns
+}
+
+/// Extract column names from groupby arguments (complexity: 3)
+fn extract_groupby_columns(args: Vec<Expr>) -> Vec<String> {
+    args.into_iter()
+        .filter_map(|arg| {
+            if let ExprKind::Identifier(name) = arg.kind {
+                Some(name)
+            } else {
+                None
+            }
         })
+        .collect()
+}
+
+/// Create a method call expression (complexity: 1)
+fn create_method_call(receiver: Expr, method: String, args: Vec<Expr>) -> Expr {
+    Expr {
+        kind: ExprKind::MethodCall {
+            receiver: Box::new(receiver),
+            method,
+            args,
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
+    }
+}
+
+/// Create a field access expression (complexity: 1)
+fn create_field_access(receiver: Expr, field: String) -> Expr {
+    Expr {
+        kind: ExprKind::FieldAccess {
+            object: Box::new(receiver),
+            field,
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
     }
 }
 

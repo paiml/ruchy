@@ -82,8 +82,6 @@ pub(crate) fn parse_expr_recursive(state: &mut ParserState) -> Result<Expr> {
     parse_expr_with_precedence_recursive(state, 0)
 }
 
-#[allow(clippy::too_many_lines)]
-#[allow(clippy::cognitive_complexity)]
 pub(crate) fn parse_expr_with_precedence_recursive(
     state: &mut ParserState,
     min_prec: i32,
@@ -94,45 +92,45 @@ pub(crate) fn parse_expr_with_precedence_recursive(
         // Handle postfix operators
         left = handle_postfix_operators(state, left)?;
 
-        // Get current token for infix processing
-        let Some((token, _)) = state.tokens.peek() else {
+        // Try to handle infix operators
+        if let Some(new_left) = try_handle_infix_operators(state, left.clone(), min_prec)? {
+            left = new_left;
+        } else {
             break;
-        };
-        let token_clone = token.clone();
-
-        // Try different infix operator types
-        if let Some(new_left) = try_new_actor_operators(state, left.clone(), &token_clone, min_prec)? {
-            left = new_left;
-            continue;
         }
-
-        if let Some(new_left) = try_binary_operators(state, left.clone(), &token_clone, min_prec)? {
-            left = new_left;
-            continue;
-        }
-
-        if let Some(new_left) =
-            try_assignment_operators(state, left.clone(), &token_clone, min_prec)?
-        {
-            left = new_left;
-            continue;
-        }
-
-        if let Some(new_left) = try_pipeline_operators(state, left.clone(), &token_clone, min_prec)?
-        {
-            left = new_left;
-            continue;
-        }
-
-        if let Some(new_left) = try_range_operators(state, left.clone(), &token_clone, min_prec)? {
-            left = new_left;
-            continue;
-        }
-
-        break;
     }
 
     Ok(left)
+}
+
+/// Try to handle any infix operator (complexity: 7)
+fn try_handle_infix_operators(
+    state: &mut ParserState,
+    left: Expr,
+    min_prec: i32,
+) -> Result<Option<Expr>> {
+    // Get current token for infix processing
+    let Some((token, _)) = state.tokens.peek() else {
+        return Ok(None);
+    };
+    let token_clone = token.clone();
+
+    // Try operators in order of priority
+    let handlers = [
+        try_new_actor_operators,
+        try_binary_operators,
+        try_assignment_operators,
+        try_pipeline_operators,
+        try_range_operators,
+    ];
+    
+    for handler in &handlers {
+        if let Some(new_left) = handler(state, left.clone(), &token_clone, min_prec)? {
+            return Ok(Some(new_left));
+        }
+    }
+    
+    Ok(None)
 }
 
 /// Handle all postfix operators in a loop

@@ -91,47 +91,79 @@ pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
 pub fn is_param_used_numerically(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::Binary { op, left, right } => {
-            // Check if this parameter is in a numeric operation
-            let is_potentially_numeric_op = matches!(op, 
-                BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply | 
-                BinaryOp::Divide | BinaryOp::Modulo
-            );
-            
-            if is_potentially_numeric_op {
-                let left_has_param = contains_param(param_name, left);
-                let right_has_param = contains_param(param_name, right);
-                
-                if left_has_param || right_has_param {
-                    // Special case: if it's addition and one side is a string literal,
-                    // this is string concatenation, not numeric addition
-                    if matches!(op, BinaryOp::Add) && (is_string_literal(left) || is_string_literal(right)) {
-                        return false; // String concatenation, not numeric
-                    }
-                    return true;
-                }
-            }
-            
-            // Recursively check
-            is_param_used_numerically(param_name, left) ||
-            is_param_used_numerically(param_name, right)
+            check_binary_numeric_usage(param_name, op, left, right)
         }
         ExprKind::Block(exprs) => {
-            exprs.iter().any(|e| is_param_used_numerically(param_name, e))
+            check_block_numeric_usage(param_name, exprs)
         }
         ExprKind::If { condition, then_branch, else_branch } => {
-            is_param_used_numerically(param_name, condition) ||
-            is_param_used_numerically(param_name, then_branch) ||
-            else_branch.as_ref().is_some_and(|e| is_param_used_numerically(param_name, e))
+            check_if_numeric_usage(param_name, condition, then_branch, else_branch.as_deref())
         }
         ExprKind::Let { value, body, .. } => {
-            is_param_used_numerically(param_name, value) ||
-            is_param_used_numerically(param_name, body)
+            check_let_numeric_usage(param_name, value, body)
         }
         ExprKind::Call { args, .. } => {
-            args.iter().any(|arg| is_param_used_numerically(param_name, arg))
+            check_call_numeric_usage(param_name, args)
         }
         _ => false
     }
+}
+
+/// Check numeric usage in binary expressions (complexity: 6)
+fn check_binary_numeric_usage(param_name: &str, op: &BinaryOp, left: &Expr, right: &Expr) -> bool {
+    if is_numeric_operator(op) && has_param_in_operation(param_name, left, right) {
+        // Special case: string concatenation
+        if is_string_concatenation(op, left, right) {
+            return false;
+        }
+        return true;
+    }
+    
+    // Recursively check both sides
+    is_param_used_numerically(param_name, left) ||
+    is_param_used_numerically(param_name, right)
+}
+
+/// Check if operator is numeric (complexity: 1)
+fn is_numeric_operator(op: &BinaryOp) -> bool {
+    matches!(op, 
+        BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply | 
+        BinaryOp::Divide | BinaryOp::Modulo
+    )
+}
+
+/// Check if param is in operation (complexity: 2)
+fn has_param_in_operation(param_name: &str, left: &Expr, right: &Expr) -> bool {
+    contains_param(param_name, left) || contains_param(param_name, right)
+}
+
+/// Check if operation is string concatenation (complexity: 3)
+fn is_string_concatenation(op: &BinaryOp, left: &Expr, right: &Expr) -> bool {
+    matches!(op, BinaryOp::Add) && 
+    (is_string_literal(left) || is_string_literal(right))
+}
+
+/// Check numeric usage in blocks (complexity: 1)
+fn check_block_numeric_usage(param_name: &str, exprs: &[Expr]) -> bool {
+    exprs.iter().any(|e| is_param_used_numerically(param_name, e))
+}
+
+/// Check numeric usage in if expressions (complexity: 3)
+fn check_if_numeric_usage(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> bool {
+    is_param_used_numerically(param_name, condition) ||
+    is_param_used_numerically(param_name, then_branch) ||
+    else_branch.is_some_and(|e| is_param_used_numerically(param_name, e))
+}
+
+/// Check numeric usage in let expressions (complexity: 2)
+fn check_let_numeric_usage(param_name: &str, value: &Expr, body: &Expr) -> bool {
+    is_param_used_numerically(param_name, value) ||
+    is_param_used_numerically(param_name, body)
+}
+
+/// Check numeric usage in call arguments (complexity: 1)
+fn check_call_numeric_usage(param_name: &str, args: &[Expr]) -> bool {
+    args.iter().any(|arg| is_param_used_numerically(param_name, arg))
 }
 
 /// Helper to check if an expression contains a specific parameter

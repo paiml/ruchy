@@ -277,7 +277,7 @@ pub fn handle_lint_command(
     let issues = run_linter_analysis(&linter, &ast, &source)?;
     
     if json {
-        format_json_output(&issues)?
+        format_json_output(&issues)?;
     } else {
         format_text_output(&issues, path, verbose)?;
         handle_auto_fix(&linter, &source, &issues, path, auto_fix)?;
