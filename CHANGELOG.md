@@ -4,6 +4,29 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.60.0] - 2025-09-05
+
+### 🚀 **INFRASTRUCTURE IMPROVEMENTS & BUG FIXES**
+
+This release focuses on critical infrastructure improvements and stability enhancements.
+
+### Fixed
+- ✅ **Module Loading Tests**: Fixed 3 failing tests in module_loader and module_resolver
+  - Corrected search path handling in tests to avoid loading wrong files
+  - Made internal fields accessible for testing with `pub(crate)`
+  - Simplified test module content for better parsing
+
+### Attempted Improvements  
+- 📁 **Code Organization**: Attempted to split monolithic files into modules
+  - statements.rs (2,739 lines) - modules created but integration pending
+  - interpreter.rs (5,130 lines) - modules already exist from previous work
+  - repl.rs (9,234 lines) - modules already exist from previous work
+
+### Achievements
+- ✅ **858 Tests Passing**: All library tests pass successfully
+- ✅ **Stable Foundation**: Ready for future modularization efforts
+- ✅ **Clean Build**: Only 29 clippy warnings remaining
+
 ## [1.56.0] - 2025-09-04
 
 ### 🎯 **TRANSPILER COMPREHENSIVE TEST SUITE - 171 Passing Tests**

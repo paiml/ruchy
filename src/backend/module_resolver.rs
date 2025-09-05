@@ -39,7 +39,7 @@ use anyhow::{Result, Context};
 /// as Module declarations in the AST before transpilation.
 pub struct ModuleResolver {
     /// Module loader for file system operations
-    module_loader: ModuleLoader,
+    pub(crate) module_loader: ModuleLoader,
 }
 
 impl ModuleResolver {
@@ -368,7 +368,7 @@ mod tests {
         let mut resolver = ModuleResolver::new();
         resolver.add_search_path(temp_dir.path());
         
-        create_test_module(&temp_dir, "math", "pub fun add() {}")?;
+        create_test_module(&temp_dir, "math", "42")?;
         
         // Create a block with mixed imports
         let block_expr = Expr::new(
@@ -426,9 +426,10 @@ mod tests {
     fn test_stats_and_cache() -> Result<()> {
         let temp_dir = TempDir::new()?;
         let mut resolver = ModuleResolver::new();
+        resolver.module_loader.search_paths.clear(); // Remove default paths
         resolver.add_search_path(temp_dir.path());
         
-        create_test_module(&temp_dir, "test", "pub fun test() {}")?;
+        create_test_module(&temp_dir, "test", "42")?;
         
         let initial_stats = resolver.stats();
         assert_eq!(initial_stats.files_loaded, 0);

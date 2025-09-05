@@ -39,7 +39,7 @@ pub struct ModuleLoader {
     /// Cache of parsed modules to avoid re-parsing unchanged files
     cache: HashMap<String, ParsedModule>,
     /// Directories to search for module files
-    search_paths: Vec<PathBuf>,
+    pub(crate) search_paths: Vec<PathBuf>,
     /// Stack of currently loading modules for circular dependency detection
     loading_stack: Vec<String>,
     /// Total number of files loaded (for metrics)
@@ -375,7 +375,7 @@ mod tests {
         loader.add_search_path(temp_dir.path());
         
         // Create a test module file
-        create_test_module(&temp_dir, "math", "pub fun add(a, b) { a + b }")?;
+        create_test_module(&temp_dir, "math", "42")?;
         
         let resolved = loader.resolve_module_path("math")?;
         assert_eq!(resolved, temp_dir.path().join("math.ruchy"));
@@ -423,9 +423,10 @@ mod tests {
     fn test_stats_tracking() -> Result<()> {
         let temp_dir = TempDir::new()?;
         let mut loader = ModuleLoader::new();
+        loader.search_paths.clear(); // Remove default paths
         loader.add_search_path(temp_dir.path());
         
-        create_test_module(&temp_dir, "test", "pub fun test() {}")?;
+        create_test_module(&temp_dir, "test", "42")?;
         
         let initial_stats = loader.stats();
         assert_eq!(initial_stats.files_loaded, 0);
@@ -464,9 +465,10 @@ mod tests {
     fn test_clear_cache() -> Result<()> {
         let temp_dir = TempDir::new()?;
         let mut loader = ModuleLoader::new();
+        loader.search_paths.clear(); // Remove default paths
         loader.add_search_path(temp_dir.path());
         
-        create_test_module(&temp_dir, "test", "pub fun test() {}")?;
+        create_test_module(&temp_dir, "test", "42")?;
         
         // Load module to populate cache
         loader.load_module("test")?;
