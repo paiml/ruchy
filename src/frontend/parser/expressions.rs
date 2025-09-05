@@ -128,6 +128,14 @@ fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> 
                     span,
                 }];
                 Ok(Expr::new(ExprKind::Lambda { params, body }, span))
+            // Check for macro syntax: println! etc.
+            } else if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
+                // This is a macro call like println!
+                state.tokens.advance(); // consume !
+                
+                // Convert macro syntax to regular function call
+                // println! -> println, assert! -> assert, etc.
+                Ok(Expr::new(ExprKind::Identifier(name), span))
             } else {
                 Ok(Expr::new(ExprKind::Identifier(name), span))
             }

@@ -795,8 +795,18 @@ impl Repl {
         // Use provided deadline or default timeout
         let deadline = deadline.unwrap_or_else(|| Instant::now() + self.config.timeout);
 
+        // Preprocess macro syntax: convert println! -> println, etc.
+        let preprocessed_input = input
+            .replace("println!", "println")
+            .replace("print!", "print")
+            .replace("assert!", "assert")
+            .replace("assert_eq!", "assert_eq")
+            .replace("panic!", "panic")
+            .replace("vec!", "vec")
+            .replace("format!", "format");
+        
         // Parse the input
-        let mut parser = Parser::new(input);
+        let mut parser = Parser::new(&preprocessed_input);
         let ast = parser.parse().context("Failed to parse input")?;
 
         // Check memory for AST
@@ -1285,8 +1295,18 @@ impl Repl {
         // Set evaluation deadline
         let deadline = Instant::now() + self.config.timeout;
 
+        // Preprocess macro syntax: convert println! -> println, etc.
+        let preprocessed = trimmed
+            .replace("println!", "println")
+            .replace("print!", "print")
+            .replace("assert!", "assert")
+            .replace("assert_eq!", "assert_eq")
+            .replace("panic!", "panic")
+            .replace("vec!", "vec")
+            .replace("format!", "format");
+        
         // Try to parse the input as an expression
-        let mut parser = Parser::new(trimmed);
+        let mut parser = Parser::new(&preprocessed);
         let ast = parser.parse().context("Failed to parse input")?;
 
         // Track AST memory
@@ -1456,8 +1476,18 @@ impl Repl {
         // Set evaluation deadline
         let deadline = Instant::now() + self.config.timeout;
 
+        // Preprocess macro syntax: convert println! -> println, etc.
+        let preprocessed_input = input
+            .replace("println!", "println")
+            .replace("print!", "print")
+            .replace("assert!", "assert")
+            .replace("assert_eq!", "assert_eq")
+            .replace("panic!", "panic")
+            .replace("vec!", "vec")
+            .replace("format!", "format");
+        
         // Parse the input
-        let mut parser = Parser::new(input);
+        let mut parser = Parser::new(&preprocessed_input);
         let ast = match parser.parse() {
             Ok(ast) => ast,
             Err(e) => {
