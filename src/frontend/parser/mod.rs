@@ -194,55 +194,76 @@ fn handle_array_indexing(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume [
     
     // Check for empty slice [:end] 
-    if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-        state.tokens.advance(); // consume :
-        let end = if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-            None
-        } else {
-            Some(Box::new(parse_expr_recursive(state)?))
-        };
-        state.tokens.expect(&Token::RightBracket)?;
-        return Ok(Expr {
-            kind: ExprKind::Slice {
-                object: Box::new(left),
-                start: None,
-                end,
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-        });
+    if is_colon_next(state) {
+        return parse_empty_start_slice(state, left);
     }
     
     let first_expr = parse_expr_recursive(state)?;
     
     // Check if this is a slice [start:end] or just indexing [index]
-    if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
-        state.tokens.advance(); // consume :
-        let end = if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-            None
-        } else {
-            Some(Box::new(parse_expr_recursive(state)?))
-        };
-        state.tokens.expect(&Token::RightBracket)?;
-        Ok(Expr {
-            kind: ExprKind::Slice {
-                object: Box::new(left),
-                start: Some(Box::new(first_expr)),
-                end,
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-        })
+    if is_colon_next(state) {
+        parse_slice_with_start(state, left, first_expr)
     } else {
-        state.tokens.expect(&Token::RightBracket)?;
-        Ok(Expr {
-            kind: ExprKind::IndexAccess {
-                object: Box::new(left),
-                index: Box::new(first_expr),
-            },
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-        })
+        parse_index_access(state, left, first_expr)
+    }
+}
+
+/// Check if next token is colon (complexity: 1)
+fn is_colon_next(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::Colon, _)))
+}
+
+/// Parse slice with empty start [:end] (complexity: 4)
+fn parse_empty_start_slice(state: &mut ParserState, left: Expr) -> Result<Expr> {
+    state.tokens.advance(); // consume :
+    let end = parse_optional_slice_end(state)?;
+    state.tokens.expect(&Token::RightBracket)?;
+    
+    Ok(create_slice_expr(left, None, end))
+}
+
+/// Parse slice with start [start:end] (complexity: 3)
+fn parse_slice_with_start(state: &mut ParserState, left: Expr, start: Expr) -> Result<Expr> {
+    state.tokens.advance(); // consume :
+    let end = parse_optional_slice_end(state)?;
+    state.tokens.expect(&Token::RightBracket)?;
+    
+    Ok(create_slice_expr(left, Some(Box::new(start)), end))
+}
+
+/// Parse optional slice end expression (complexity: 3)
+fn parse_optional_slice_end(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
+    if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+        Ok(None)
+    } else {
+        Ok(Some(Box::new(parse_expr_recursive(state)?)))
+    }
+}
+
+/// Parse index access [index] (complexity: 2)
+fn parse_index_access(state: &mut ParserState, left: Expr, index: Expr) -> Result<Expr> {
+    state.tokens.expect(&Token::RightBracket)?;
+    
+    Ok(Expr {
+        kind: ExprKind::IndexAccess {
+            object: Box::new(left),
+            index: Box::new(index),
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
+    })
+}
+
+/// Create slice expression (complexity: 1)
+fn create_slice_expr(object: Expr, start: Option<Box<Expr>>, end: Option<Box<Expr>>) -> Expr {
+    Expr {
+        kind: ExprKind::Slice {
+            object: Box::new(object),
+            start,
+            end,
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
     }
 }
 

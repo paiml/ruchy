@@ -859,55 +859,95 @@ fn parse_legacy_dataframe_rows(
     state: &mut ParserState,
     columns: &mut Vec<DataFrameColumn>,
 ) -> Result<()> {
-    let mut rows: Vec<Vec<Expr>> = Vec::new();
-
-    loop {
-        // Check for end bracket
-        if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-            break;
-        }
-
-        let mut row = Vec::new();
-
-        // Parse row values
-        loop {
-            if matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
-                || matches!(state.tokens.peek(), Some((Token::RightBracket, _)))
-            {
-                break;
-            }
-
-            row.push(super::parse_expr_recursive(state)?);
-
-            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance();
-            } else {
-                break;
-            }
-        }
-
-        if !row.is_empty() {
-            rows.push(row);
-        }
-
-        // Check for row separator
-        if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
-            state.tokens.advance();
-        } else {
-            break;
-        }
-    }
-
-    // Convert rows to column-based format
-    if !rows.is_empty() {
-        for (col_idx, column) in columns.iter_mut().enumerate() {
-            for row in &rows {
-                if col_idx < row.len() {
-                    column.values.push(row[col_idx].clone());
-                }
-            }
-        }
-    }
-
+    let rows = parse_all_dataframe_rows(state)?;
+    populate_dataframe_columns(columns, &rows);
     Ok(())
+}
+
+/// Parse all dataframe rows (complexity: 2)
+fn parse_all_dataframe_rows(state: &mut ParserState) -> Result<Vec<Vec<Expr>>> {
+    let mut rows = Vec::new();
+    
+    loop {
+        if is_end_bracket(state) {
+            break;
+        }
+        
+        let row = parse_single_dataframe_row(state)?;
+        add_non_empty_row(&mut rows, row);
+        
+        if !consume_row_separator(state) {
+            break;
+        }
+    }
+    
+    Ok(rows)
+}
+
+/// Check if current token is end bracket (complexity: 1)
+fn is_end_bracket(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::RightBracket, _)))
+}
+
+/// Parse a single dataframe row (complexity: 2)
+fn parse_single_dataframe_row(state: &mut ParserState) -> Result<Vec<Expr>> {
+    let mut row = Vec::new();
+    
+    loop {
+        if is_row_boundary(state) {
+            break;
+        }
+        
+        row.push(super::parse_expr_recursive(state)?);
+        
+        if !consume_value_separator(state) {
+            break;
+        }
+    }
+    
+    Ok(row)
+}
+
+/// Check if current token is a row boundary (complexity: 2)
+fn is_row_boundary(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
+        || matches!(state.tokens.peek(), Some((Token::RightBracket, _)))
+}
+
+/// Consume comma separator if present (complexity: 2)
+fn consume_value_separator(state: &mut ParserState) -> bool {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+        true
+    } else {
+        false
+    }
+}
+
+/// Consume semicolon row separator if present (complexity: 2)
+fn consume_row_separator(state: &mut ParserState) -> bool {
+    if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+        state.tokens.advance();
+        true
+    } else {
+        false
+    }
+}
+
+/// Add non-empty row to collection (complexity: 2)
+fn add_non_empty_row(rows: &mut Vec<Vec<Expr>>, row: Vec<Expr>) {
+    if !row.is_empty() {
+        rows.push(row);
+    }
+}
+
+/// Populate columns from row data (complexity: 3)
+fn populate_dataframe_columns(columns: &mut [DataFrameColumn], rows: &[Vec<Expr>]) {
+    for (col_idx, column) in columns.iter_mut().enumerate() {
+        for row in rows {
+            if col_idx < row.len() {
+                column.values.push(row[col_idx].clone());
+            }
+        }
+    }
 }

@@ -332,46 +332,78 @@ pub fn parse_use(state: &mut ParserState) -> Result<Expr> {
 fn parse_use_path(state: &mut ParserState) -> Result<Vec<String>> {
     let mut path = Vec::new();
     
-    // Handle crate:: or super:: or self::
-    if state.peek_matches(&Token::Crate) {
-        state.advance();
-        path.push("crate".to_string());
-        state.expect_token(Token::ColonColon)?;
-    } else if state.peek_matches(&Token::Super) {
-        state.advance();
-        path.push("super".to_string());
-        state.expect_token(Token::ColonColon)?;
-    } else if state.peek_matches(&Token::SelfType) {
-        state.advance();
-        path.push("self".to_string());
-        state.expect_token(Token::ColonColon)?;
+    // Handle path prefix if present
+    if let Some(prefix) = parse_path_prefix(state)? {
+        path.push(prefix);
     }
     
     // Parse path segments
-    loop {
-        if state.peek_matches(&Token::Star) {
-            state.advance();
-            path.push("*".to_string());
-            break;
-        } else if state.peek_matches(&Token::LeftBrace) {
-            // Nested imports
-            let nested = parse_nested_use(state)?;
-            path.push(format!("{{{}}}", nested.join(", ")));
-            break;
-        } else {
-            let (Token::Identifier(segment), _) = state.next_token()? else {
-                bail!("Expected path segment in use statement");
-            };
-            path.push(segment);
-            
-            if !state.peek_matches(&Token::ColonColon) {
-                break;
-            }
-            state.advance();
-        }
-    }
+    parse_path_segments(state, &mut path)?;
     
     Ok(path)
+}
+
+/// Parse path prefix (crate::, super::, self::) (complexity: 4)
+fn parse_path_prefix(state: &mut ParserState) -> Result<Option<String>> {
+    let prefix = if state.peek_matches(&Token::Crate) {
+        Some("crate")
+    } else if state.peek_matches(&Token::Super) {
+        Some("super")
+    } else if state.peek_matches(&Token::SelfType) {
+        Some("self")
+    } else {
+        None
+    };
+    
+    if let Some(prefix_str) = prefix {
+        state.advance();
+        state.expect_token(Token::ColonColon)?;
+        Ok(Some(prefix_str.to_string()))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Parse path segments (complexity: 5)
+fn parse_path_segments(state: &mut ParserState, path: &mut Vec<String>) -> Result<()> {
+    loop {
+        let segment = parse_single_segment(state)?;
+        path.push(segment.clone());
+        
+        // Check if this is a terminal segment
+        if is_terminal_segment(&segment) || !state.peek_matches(&Token::ColonColon) {
+            break;
+        }
+        
+        state.advance(); // consume ::
+    }
+    Ok(())
+}
+
+/// Parse a single path segment (complexity: 5)
+fn parse_single_segment(state: &mut ParserState) -> Result<String> {
+    if state.peek_matches(&Token::Star) {
+        state.advance();
+        Ok("*".to_string())
+    } else if state.peek_matches(&Token::LeftBrace) {
+        let nested = parse_nested_use(state)?;
+        Ok(format!("{{{}}}", nested.join(", ")))
+    } else {
+        parse_identifier_segment(state)
+    }
+}
+
+/// Parse identifier segment (complexity: 2)
+fn parse_identifier_segment(state: &mut ParserState) -> Result<String> {
+    let (Token::Identifier(segment), _) = state.next_token()? else {
+        bail!("Expected path segment in use statement");
+    };
+    Ok(segment)
+}
+
+/// Check if segment is terminal (complexity: 2)
+fn is_terminal_segment(segment: &str) -> bool {
+    segment == "*" || segment.starts_with('{')
 }
 
 /// Parse nested use items

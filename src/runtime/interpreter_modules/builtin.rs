@@ -204,38 +204,60 @@ fn builtin_sum(args: &[Value]) -> InterpreterResult<Value> {
 }
 
 fn builtin_range(args: &[Value]) -> InterpreterResult<Value> {
-    let (start, end, step) = match args.len() {
-        1 => {
-            // range(n) -> 0..n
-            let end = args[0].as_i64()
-                .ok_or_else(|| InterpreterError::type_mismatch("integer", args[0].type_name()))?;
-            (0, end, 1)
-        }
-        2 => {
-            // range(start, end) -> start..end
-            let start = args[0].as_i64()
-                .ok_or_else(|| InterpreterError::type_mismatch("integer", args[0].type_name()))?;
-            let end = args[1].as_i64()
-                .ok_or_else(|| InterpreterError::type_mismatch("integer", args[1].type_name()))?;
-            (start, end, 1)
-        }
-        3 => {
-            // range(start, end, step)
-            let start = args[0].as_i64()
-                .ok_or_else(|| InterpreterError::type_mismatch("integer", args[0].type_name()))?;
-            let end = args[1].as_i64()
-                .ok_or_else(|| InterpreterError::type_mismatch("integer", args[1].type_name()))?;
-            let step = args[2].as_i64()
-                .ok_or_else(|| InterpreterError::type_mismatch("integer", args[2].type_name()))?;
-            (start, end, step)
-        }
-        _ => return Err(InterpreterError::runtime("range() takes 1-3 arguments")),
-    };
+    let (start, end, step) = parse_range_args(args)?;
+    validate_range_step(step)?;
+    let values = generate_range_values(start, end, step);
+    Ok(Value::from_array(values))
+}
 
-    if step == 0 {
-        return Err(InterpreterError::runtime("range() step cannot be zero"));
+/// Parse range arguments (complexity: 4)
+fn parse_range_args(args: &[Value]) -> InterpreterResult<(i64, i64, i64)> {
+    match args.len() {
+        1 => parse_single_arg_range(&args[0]),
+        2 => parse_two_arg_range(&args[0], &args[1]),
+        3 => parse_three_arg_range(&args[0], &args[1], &args[2]),
+        _ => Err(InterpreterError::runtime("range() takes 1-3 arguments")),
     }
+}
 
+/// Parse single argument range: range(n) -> 0..n (complexity: 2)
+fn parse_single_arg_range(arg: &Value) -> InterpreterResult<(i64, i64, i64)> {
+    let end = arg.as_i64()
+        .ok_or_else(|| InterpreterError::type_mismatch("integer", arg.type_name()))?;
+    Ok((0, end, 1))
+}
+
+/// Parse two argument range: range(start, end) (complexity: 3)
+fn parse_two_arg_range(arg1: &Value, arg2: &Value) -> InterpreterResult<(i64, i64, i64)> {
+    let start = arg1.as_i64()
+        .ok_or_else(|| InterpreterError::type_mismatch("integer", arg1.type_name()))?;
+    let end = arg2.as_i64()
+        .ok_or_else(|| InterpreterError::type_mismatch("integer", arg2.type_name()))?;
+    Ok((start, end, 1))
+}
+
+/// Parse three argument range: range(start, end, step) (complexity: 4)
+fn parse_three_arg_range(arg1: &Value, arg2: &Value, arg3: &Value) -> InterpreterResult<(i64, i64, i64)> {
+    let start = arg1.as_i64()
+        .ok_or_else(|| InterpreterError::type_mismatch("integer", arg1.type_name()))?;
+    let end = arg2.as_i64()
+        .ok_or_else(|| InterpreterError::type_mismatch("integer", arg2.type_name()))?;
+    let step = arg3.as_i64()
+        .ok_or_else(|| InterpreterError::type_mismatch("integer", arg3.type_name()))?;
+    Ok((start, end, step))
+}
+
+/// Validate range step is not zero (complexity: 2)
+fn validate_range_step(step: i64) -> InterpreterResult<()> {
+    if step == 0 {
+        Err(InterpreterError::runtime("range() step cannot be zero"))
+    } else {
+        Ok(())
+    }
+}
+
+/// Generate range values (complexity: 3)
+fn generate_range_values(start: i64, end: i64, step: i64) -> Vec<Value> {
     let mut values = Vec::new();
     let mut current = start;
     
@@ -250,8 +272,8 @@ fn builtin_range(args: &[Value]) -> InterpreterResult<Value> {
             current += step;
         }
     }
-
-    Ok(Value::from_array(values))
+    
+    values
 }
 
 fn builtin_enumerate(args: &[Value]) -> InterpreterResult<Value> {
