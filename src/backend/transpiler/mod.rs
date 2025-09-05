@@ -17,7 +17,7 @@ mod statements;
 mod type_conversion_refactored;
 mod type_inference;
 mod types;
-mod codegen_minimal;
+pub mod codegen_minimal;
 
 use crate::frontend::ast::{Attribute, Expr, ExprKind, Span, Type};
 use crate::backend::module_resolver::ModuleResolver;

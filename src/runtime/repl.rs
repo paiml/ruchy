@@ -175,7 +175,7 @@ impl fmt::Display for Value {
                 write!(f, "[")?;
                 for (i, item) in items.iter().enumerate() {
                     if i > 0 { write!(f, ", ")?; }
-                    write!(f, "{}", item)?;
+                    write!(f, "{item}")?;
                 }
                 write!(f, "]")
             }
@@ -183,7 +183,7 @@ impl fmt::Display for Value {
                 write!(f, "(")?;
                 for (i, item) in items.iter().enumerate() {
                     if i > 0 { write!(f, ", ")?; }
-                    write!(f, "{}", item)?;
+                    write!(f, "{item}")?;
                 }
                 write!(f, ")")
             }
@@ -204,7 +204,7 @@ impl fmt::Display for Value {
                 write!(f, "{{")?;
                 for (i, (k, v)) in map.iter().enumerate() {
                     if i > 0 { write!(f, ", ")?; }
-                    write!(f, "{}: {}", k, v)?;
+                    write!(f, "{k}: {v}")?;
                 }
                 write!(f, "}}")
             }
@@ -212,7 +212,7 @@ impl fmt::Display for Value {
                 write!(f, "HashMap{{")?;
                 for (i, (k, v)) in map.iter().enumerate() {
                     if i > 0 { write!(f, ", ")?; }
-                    write!(f, "{}: {}", k, v)?;
+                    write!(f, "{k}: {v}")?;
                 }
                 write!(f, "}}")
             }
@@ -220,7 +220,7 @@ impl fmt::Display for Value {
                 write!(f, "HashSet{{")?;
                 for (i, v) in set.iter().enumerate() {
                     if i > 0 { write!(f, ", ")?; }
-                    write!(f, "{}", v)?;
+                    write!(f, "{v}")?;
                 }
                 write!(f, "}}")
             }
@@ -245,7 +245,7 @@ impl fmt::Display for Value {
                     write!(f, "(")?;
                     for (i, val) in data.iter().enumerate() {
                         if i > 0 { write!(f, ", ")?; }
-                        write!(f, "{}", val)?;
+                        write!(f, "{val}")?;
                     }
                     write!(f, ")")?;
                 }

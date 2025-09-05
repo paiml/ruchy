@@ -3,8 +3,8 @@
 
 #[cfg(test)]
 mod evaluation_unit_tests {
-    use ruchy::runtime::repl::evaluation::*;
-    use ruchy::runtime::repl::Value;
+    use ruchy::runtime::repl::Repl;
+    use ruchy::runtime::Value;
     use ruchy::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, UnaryOp, Pattern};
     use std::collections::HashMap;
     use std::time::{Duration, Instant};

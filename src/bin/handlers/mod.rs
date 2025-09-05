@@ -1,8 +1,10 @@
 use anyhow::{Context, Result};
 
 mod commands;
+mod handlers_modules;
 use ruchy::{Parser as RuchyParser, Transpiler};
 use ruchy::runtime::Repl;
+use ruchy::runtime::replay_converter::ConversionConfig;
 // Replay functionality imports removed - not needed in handler, used directly in REPL
 use std::fs;
 use std::io::{self, Read};
@@ -285,7 +287,7 @@ pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
     Ok(())
 }
 
-/// Handle interactive theorem prover (RUCHY-0820)
+/// Handle interactive theorem prover (RUCHY-0820) - delegated to refactored module
 pub fn handle_prove_command(
     file: Option<&std::path::Path>,
     backend: &str,
@@ -298,202 +300,22 @@ pub fn handle_prove_command(
     verbose: bool,
     format: &str,
 ) -> anyhow::Result<()> {
-    use ruchy::proving::{InteractiveProver, ProverSession, SmtBackend};
-    use std::fs;
-    use std::io::{self, Write};
-    use anyhow::Context;
-    use ruchy::Parser as RuchyParser;
-    
-    if verbose {
-        println!("🔍 Starting interactive prover with backend: {}", backend);
-    }
-    
-    // Parse SMT backend
-    let smt_backend = match backend.to_lowercase().as_str() {
-        "z3" => SmtBackend::Z3,
-        "cvc5" => SmtBackend::CVC5,
-        "yices2" => SmtBackend::Yices2,
-        _ => {
-            eprintln!("Warning: Unknown backend '{}', defaulting to Z3", backend);
-            SmtBackend::Z3
-        }
-    };
-    
-    // Create prover instance
-    let mut prover = InteractiveProver::new(smt_backend);
-    
-    // Configure prover
-    prover.set_timeout(timeout);
-    prover.set_ml_suggestions(ml_suggestions);
-    
-    if verbose {
-        println!("⚙️  Configuration:");
-        println!("  SMT Backend: {:?}", smt_backend);
-        println!("  Timeout: {}ms", timeout);
-        println!("  ML Suggestions: {}", ml_suggestions);
-        println!("  Counterexamples: {}", counterexample);
-    }
-    
-    // Load file if provided
-    if let Some(file_path) = file {
-        if verbose {
-            println!("📂 Loading file: {}", file_path.display());
-        }
-        
-        let source = fs::read_to_string(file_path)
-            .with_context(|| format!("Failed to read file: {}", file_path.display()))?;
-        
-        // Parse and extract proof goals from source
-        let mut parser = RuchyParser::new(&source);
-        let ast = parser.parse()
-            .with_context(|| format!("Failed to parse file: {}", file_path.display()))?;
-        
-        // Extract proof goals from AST (simplified for now)
-        if verbose {
-            println!("📋 Extracted proof goals from source");
-        }
-        
-        // When a file is provided, always run in check mode
-        println!("✓ Checking proofs in {}...", file_path.display());
-        return verify_proofs_from_ast(&ast, file_path, format, counterexample, verbose);
-    }
-    
-    // Load proof script if provided
-    if let Some(script_path) = script {
-        if verbose {
-            println!("📜 Loading proof script: {}", script_path.display());
-        }
-        
-        let script_content = fs::read_to_string(script_path)
-            .with_context(|| format!("Failed to read script: {}", script_path.display()))?;
-        
-        prover.load_script(&script_content)?;
-    }
-    
-    // Start interactive session if not in check mode AND no file provided
-    // If file is provided but check mode is false, default to check mode
-    if !check && file.is_none() {
-        println!("🚀 Starting Ruchy Interactive Prover");
-        println!("Type 'help' for available commands\n");
-        
-        let mut session = ProverSession::new();
-        
-        // Run interactive REPL
-        loop {
-            print!("prove> ");
-            io::stdout().flush()?;
-            
-            let mut input = String::new();
-            io::stdin().read_line(&mut input)?;
-            let input = input.trim();
-            
-            if input.is_empty() {
-                continue;
-            }
-            
-            // Handle commands
-            match input {
-                "quit" | "exit" => {
-                    println!("Goodbye!");
-                    break;
-                }
-                "help" => {
-                    print_prover_help();
-                }
-                "goals" => {
-                    let goals = session.get_goals();
-                    if goals.is_empty() {
-                        println!("No active goals");
-                    } else {
-                        for (i, goal) in goals.iter().enumerate() {
-                            println!("Goal {}: {}", i + 1, goal.statement);
-                        }
-                    }
-                }
-                "tactics" => {
-                    let tactics = prover.get_available_tactics();
-                    println!("Available tactics:");
-                    for tactic in tactics {
-                        println!("  {} - {}", tactic.name(), tactic.description());
-                    }
-                }
-                cmd if cmd.starts_with("apply ") => {
-                    let tactic_name = &cmd[6..];
-                    match prover.apply_tactic(&mut session, tactic_name, &[]) {
-                        Ok(result) => {
-                            println!("Result: {:?}", result);
-                        }
-                        Err(e) => {
-                            eprintln!("Error: {}", e);
-                        }
-                    }
-                }
-                cmd if cmd.starts_with("goal ") => {
-                    let goal_stmt = &cmd[5..];
-                    session.add_goal(goal_stmt.to_string());
-                    println!("Added goal: {}", goal_stmt);
-                }
-                _ => {
-                    // Try to parse as a proof goal or tactic application
-                    match prover.process_input(&mut session, input) {
-                        Ok(result) => {
-                            if verbose {
-                                println!("Processed: {:?}", result);
-                            }
-                        }
-                        Err(e) => {
-                            eprintln!("Error: {}", e);
-                        }
-                    }
-                }
-            }
-            
-            // Show current state
-            if session.is_complete() {
-                println!("✅ All goals proved!");
-            } else {
-                if let Some(current_goal) = session.current_goal() {
-                    println!("\nCurrent goal: {}", current_goal.statement);
-                    
-                    // Show ML-powered suggestions if enabled
-                    if ml_suggestions {
-                        if let Ok(suggestions) = prover.suggest_tactics(current_goal) {
-                            if !suggestions.is_empty() {
-                                println!("\nSuggested tactics:");
-                                for (i, sugg) in suggestions.iter().take(3).enumerate() {
-                                    println!("  {}. {} (confidence: {:.2})", 
-                                        i + 1, sugg.tactic_name, sugg.confidence);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Export proof if requested
-        if let Some(export_path) = export {
-            if verbose {
-                println!("📝 Exporting proof to: {}", export_path.display());
-            }
-            
-            let proof_content = match format {
-                "json" => serde_json::to_string_pretty(&session)?,
-                "coq" => session.to_coq_proof(),
-                "lean" => session.to_lean_proof(),
-                _ => session.to_text_proof(),
-            };
-            
-            fs::write(export_path, proof_content)
-                .with_context(|| format!("Failed to write proof: {}", export_path.display()))?;
-            
-            println!("✅ Proof exported successfully");
-        }
-    }
-    
-    Ok(())
+    // Delegate to refactored module with ≤10 complexity
+    handlers_modules::prove::handle_prove_command(
+        file,
+        backend,
+        ml_suggestions,
+        timeout,
+        script,
+        export,
+        check,
+        counterexample,
+        verbose,
+        format,
+    )
 }
 
+/// Print prover help - moved to separate function for clarity
 fn print_prover_help() {
     println!("\nInteractive Prover Commands:");
     println!("  help          - Show this help message");
@@ -704,7 +526,7 @@ fn handle_watch_and_check(file: &Path) -> Result<()> {
     }
 }
 
-/// Handle test command - run tests with various options
+/// Handle test command - run tests with various options (delegated to refactored module)
 /// 
 /// # Arguments
 /// * `path` - Optional path to test directory
@@ -736,22 +558,18 @@ pub fn handle_test_command(
     threshold: f64,
     format: &str,
 ) -> Result<()> {
-    if watch {
-        let test_path = path.unwrap_or_else(|| PathBuf::from("."));
-        handle_watch_and_test(&test_path, verbose, filter)
-    } else {
-        let test_path = path.unwrap_or_else(|| PathBuf::from("."));
-        handle_run_enhanced_tests(
-            &test_path,
-            verbose,
-            filter,
-            coverage,
-            coverage_format,
-            parallel,
-            threshold,
-            format,
-        )
-    }
+    // Delegate to refactored module with ≤10 complexity
+    handlers_modules::test::handle_test_command(
+        path,
+        watch,
+        verbose,
+        filter,
+        coverage,
+        coverage_format,
+        parallel,
+        threshold,
+        format,
+    )
 }
 
 /// Handle the coverage command - generate coverage report for Ruchy code
@@ -805,57 +623,22 @@ pub fn handle_coverage_command(
     Ok(())
 }
 
-/// Watch and run tests on changes (internal implementation)
+/// Watch and run tests on changes - delegated to refactored module
 fn handle_watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
-    use colored::Colorize;
-    use std::thread;
-    use std::time::Duration;
-    
-    println!(
-        "{} Watching {} for test changes...",
-        "👁".bright_cyan(),
-        path.display()
-    );
-    println!("Press Ctrl+C to stop watching\n");
-
-    // Initial test run
-    let _ = handle_run_enhanced_tests(path, verbose, filter, false, "text", 1, 0.0, "text");
-
-    // Simple directory watching using polling
-    let mut last_modified = fs::metadata(path).and_then(|m| m.modified()).unwrap_or_else(|_| {
-        std::time::SystemTime::now()
-    });
-
-    loop {
-        thread::sleep(Duration::from_millis(1000));
-
-        // Check if any .ruchy files have been modified
-        if let Ok(entries) = fs::read_dir(path) {
-            let mut current_modified = last_modified;
-            for entry in entries.flatten() {
-                if let Ok(path) = entry.path().canonicalize() {
-                    if path.extension().and_then(|ext| ext.to_str()) == Some("ruchy") {
-                        if let Ok(metadata) = fs::metadata(&path) {
-                            if let Ok(modified) = metadata.modified() {
-                                if modified > current_modified {
-                                    current_modified = modified;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if current_modified > last_modified {
-                last_modified = current_modified;
-                println!("\n{} Files changed, running tests...", "→".bright_cyan());
-                let _ = handle_run_enhanced_tests(path, verbose, filter, false, "text", 1, 0.0, "text");
-            }
-        }
-    }
+    handlers_modules::test::handle_test_command(
+        Some(path.to_path_buf()),
+        true, // watch mode
+        verbose,
+        filter,
+        false, // coverage
+        "text",
+        1,
+        0.0,
+        "text",
+    )
 }
 
-/// Run enhanced tests (internal implementation)
+/// Run enhanced tests - delegated to refactored module
 #[allow(clippy::unnecessary_wraps)]
 fn handle_run_enhanced_tests(
     path: &Path,
@@ -863,232 +646,29 @@ fn handle_run_enhanced_tests(
     filter: Option<&str>,
     coverage: bool,
     coverage_format: &str,
-    _parallel: usize,
+    parallel: usize,
     threshold: f64,
     format: &str,
 ) -> Result<()> {
-    use colored::Colorize;
-    use std::time::Instant;
-    use walkdir::WalkDir;
-    
-    if verbose {
-        println!("🔍 Discovering .ruchy test files in {}", path.display());
-    }
-    
-    // Discover .ruchy test files
-    let mut test_files = Vec::new();
-    
-    if path.is_file() {
-        if path.extension().is_some_and(|ext| ext == "ruchy") {
-            test_files.push(path.to_path_buf());
-        } else {
-            return Err(anyhow::anyhow!("File {} is not a .ruchy file", path.display()));
-        }
-    } else if path.is_dir() {
-        for entry in WalkDir::new(path) {
-            let entry = entry?;
-            if entry.path().extension().is_some_and(|ext| ext == "ruchy") {
-                // Apply filter if provided
-                if let Some(filter_pattern) = filter {
-                    let file_name = entry.path().file_stem()
-                        .and_then(|s| s.to_str())
-                        .unwrap_or("");
-                    if !file_name.contains(filter_pattern) {
-                        continue;
-                    }
-                }
-                test_files.push(entry.path().to_path_buf());
-            }
-        }
-    } else {
-        return Err(anyhow::anyhow!("Path {} does not exist", path.display()));
-    }
-    
-    if test_files.is_empty() {
-        println!("⚠️  No .ruchy test files found in {}", path.display());
-        return Ok(());
-    }
-    
-    let total_start = Instant::now();
-    let mut passed = 0;
-    let mut failed = 0;
-    let mut test_results = Vec::new();
-    
-    println!("🧪 Running {} .ruchy test files...\n", test_files.len());
-    
-    // Execute each test file
-    for test_file in &test_files {
-        if verbose {
-            println!("📄 Testing: {}", test_file.display());
-        }
-        
-        let test_start = Instant::now();
-        let result = run_ruchy_test_file(test_file, verbose);
-        let test_duration = test_start.elapsed();
-        
-        match result {
-            Ok(()) => {
-                passed += 1;
-                if verbose {
-                    println!("   ✅ {} ({:.2}ms)", test_file.file_name().unwrap().to_str().unwrap(), test_duration.as_secs_f64() * 1000.0);
-                } else {
-                    print!(".");
-                }
-                test_results.push((test_file.clone(), true, test_duration, None));
-            }
-            Err(e) => {
-                failed += 1;
-                let error_msg = format!("{}", e);
-                if verbose {
-                    println!("   ❌ {} ({:.2}ms): {}", test_file.file_name().unwrap().to_str().unwrap(), test_duration.as_secs_f64() * 1000.0, error_msg);
-                } else {
-                    print!("F");
-                }
-                test_results.push((test_file.clone(), false, test_duration, Some(error_msg)));
-            }
-        }
-        
-        if !verbose {
-            std::io::Write::flush(&mut std::io::stdout())?;
-        }
-    }
-    
-    let total_duration = total_start.elapsed();
-    
-    if !verbose {
-        println!(); // New line after dots/F's
-    }
-    
-    // Print summary
-    println!("\n📊 Test Results:");
-    println!("   Total: {}", test_files.len());
-    println!("   Passed: {}", passed.to_string().green());
-    if failed > 0 {
-        println!("   Failed: {}", failed.to_string().red());
-    }
-    println!("   Duration: {:.2}s", total_duration.as_secs_f64());
-    
-    // Show failures in detail if any
-    if failed > 0 && !verbose {
-        println!("\n❌ Failed Tests:");
-        for (test_file, success, _duration, error) in &test_results {
-            if !success {
-                println!("   {} - {}", test_file.display(), error.as_ref().unwrap_or(&"Unknown error".to_string()));
-            }
-        }
-    }
-    
-    // Coverage reporting
-    if coverage {
-        use ruchy::quality::ruchy_coverage::RuchyCoverageCollector;
-        
-        let mut collector = RuchyCoverageCollector::new();
-        
-        // Analyze all test files for coverage
-        for test_file in &test_files {
-            if let Err(e) = collector.analyze_file(test_file) {
-                eprintln!("Warning: Failed to analyze {}: {}", test_file.display(), e);
-            }
-        }
-        
-        // Execute tests and collect runtime coverage
-        for (test_file, success, _, _) in &test_results {
-            if *success {
-                // Execute the file to collect actual coverage
-                if let Err(e) = collector.execute_with_coverage(test_file) {
-                    eprintln!("Warning: Failed to collect runtime coverage for {}: {}", test_file.display(), e);
-                }
-            }
-        }
-        
-        // Generate report based on format
-        let report = match coverage_format {
-            "json" => collector.generate_json_report(),
-            "html" => {
-                let html_report = collector.generate_html_report();
-                // Write to file
-                let coverage_dir = std::path::Path::new("target/coverage");
-                fs::create_dir_all(coverage_dir)?;
-                let html_path = coverage_dir.join("index.html");
-                fs::write(&html_path, html_report)?;
-                format!("\n📈 HTML Coverage Report written to: {}", html_path.display())
-            }
-            _ => collector.generate_text_report(),
-        };
-        
-        println!("{}", report);
-        
-        // Check threshold
-        if threshold > 0.0 {
-            if collector.meets_threshold(threshold) {
-                println!("\n✅ Coverage meets threshold of {:.1}%", threshold);
-            } else {
-                eprintln!("\n❌ Coverage below threshold of {:.1}%", threshold);
-                std::process::exit(1);
-            }
-        }
-    }
-    
-    // Format output as JSON if requested
-    if format == "json" {
-        let json_output = serde_json::json!({
-            "total": test_files.len(),
-            "passed": passed,
-            "failed": failed,
-            "duration_seconds": total_duration.as_secs_f64(),
-            "results": test_results.iter().map(|(path, success, duration, error)| {
-                serde_json::json!({
-                    "file": path.display().to_string(),
-                    "success": success,
-                    "duration_ms": duration.as_secs_f64() * 1000.0,
-                    "error": error
-                })
-            }).collect::<Vec<_>>()
-        });
-        println!("\n{}", serde_json::to_string_pretty(&json_output)?);
-    }
-    
-    // Exit with non-zero status if tests failed
-    if failed > 0 {
-        std::process::exit(1);
-    }
-    
-    println!("\n✅ All tests passed!");
-    Ok(())
+    handlers_modules::test::handle_test_command(
+        Some(path.to_path_buf()),
+        false, // not watch mode
+        verbose,
+        filter,
+        coverage,
+        coverage_format,
+        parallel,
+        threshold,
+        format,
+    )
 }
 
-/// Run a single .ruchy test file using the Ruchy interpreter
+/// Run a single .ruchy test file - delegated to `test_helpers` module
 fn run_ruchy_test_file(test_file: &Path, verbose: bool) -> Result<()> {
-    use ruchy::runtime::repl::Repl;
-    use std::fs;
-    
-    // Read the test file
-    let test_content = fs::read_to_string(test_file)
-        .with_context(|| format!("Failed to read test file: {}", test_file.display()))?;
-    
-    if verbose {
-        println!("   📖 Parsing test file...");
-    }
-    
-    if verbose {
-        println!("   🏃 Executing test...");
-    }
-    
-    // Execute the test using the REPL's evaluation engine
-    let mut repl = Repl::new()?;
-    let result = repl.evaluate_expr_str(&test_content, None)
-        .with_context(|| format!("Test execution failed for: {}", test_file.display()))?;
-    
-    if verbose {
-        println!("   📤 Test result: {:?}", result);
-    }
-    
-    // For now, we consider any successful execution a pass
-    // In the future, we could have test-specific assertions
-    Ok(())
+    handlers_modules::test_helpers::run_test_file(test_file, verbose)
 }
 
-/// Verify proofs extracted from AST
+/// Verify proofs extracted from AST - delegated to `prove_helpers` module
 fn verify_proofs_from_ast(
     ast: &ruchy::frontend::ast::Expr, 
     file_path: &std::path::Path, 
@@ -1096,103 +676,14 @@ fn verify_proofs_from_ast(
     counterexample: bool, 
     verbose: bool
 ) -> Result<()> {
-    use ruchy::proving::{extract_assertions_from_ast, verify_assertions_batch};
-    
-    // Extract assertions from the AST
-    let assertions = extract_assertions_from_ast(ast);
-    
-    if assertions.is_empty() {
-        if verbose {
-            println!("No assertions found in {}", file_path.display());
-        }
-        if format == "json" {
-            let json_result = serde_json::json!({
-                "file": file_path.display().to_string(),
-                "status": "no_proofs",
-                "total": 0,
-                "passed": 0,
-                "failed": 0,
-                "proofs": []
-            });
-            println!("{}", serde_json::to_string_pretty(&json_result)?);
-        } else {
-            println!("✅ No proofs found (file valid)");
-        }
-        return Ok(());
-    }
-    
-    if verbose {
-        println!("Found {} assertions to verify", assertions.len());
-        for (i, assertion) in assertions.iter().enumerate() {
-            println!("  {}: {}", i + 1, assertion);
-        }
-    }
-    
-    // Verify all assertions
-    let results = verify_assertions_batch(&assertions, counterexample);
-    
-    let total = results.len();
-    let passed = results.iter().filter(|r| r.is_verified).count();
-    let failed = total - passed;
-    
-    if format == "json" {
-        let json_result = serde_json::json!({
-            "file": file_path.display().to_string(),
-            "status": if failed == 0 { "verified" } else { "failed" },
-            "total": total,
-            "passed": passed,
-            "failed": failed,
-            "proofs": results
-        });
-        println!("{}", serde_json::to_string_pretty(&json_result)?);
-    } else {
-        // Text output
-        if failed == 0 {
-            println!("✅ All {} proofs verified successfully", total);
-            if verbose {
-                for (i, result) in results.iter().enumerate() {
-                    println!("  ✅ Proof {}: {} ({:.1}ms)", 
-                        i + 1, result.assertion, result.verification_time_ms);
-                }
-            }
-        } else {
-            println!("❌ {} of {} proofs failed verification", failed, total);
-            for (i, result) in results.iter().enumerate() {
-                if !result.is_verified {
-                    println!("  ❌ Proof {}: {}", i + 1, result.assertion);
-                    if let Some(ref counterex) = result.counterexample {
-                        println!("     Counterexample: {}", counterex);
-                    }
-                    if let Some(ref error) = result.error {
-                        println!("     Error: {}", error);
-                    }
-                }
-            }
-            
-            if verbose {
-                println!("\nPassed proofs:");
-                for (i, result) in results.iter().enumerate() {
-                    if result.is_verified {
-                        println!("  ✅ Proof {}: {} ({:.1}ms)", 
-                            i + 1, result.assertion, result.verification_time_ms);
-                    }
-                }
-            }
-        }
-    }
-    
-    // Exit with non-zero status if proofs failed
-    if failed > 0 {
-        std::process::exit(1);
-    }
-    
-    Ok(())
+    handlers_modules::prove_helpers::verify_proofs_from_ast(
+        ast,
+        file_path,
+        format,
+        counterexample,
+        verbose,
+    )
 }
-
-/// Handle all remaining complex commands via delegation pattern
-/// 
-/// This function delegates to the original implementations to keep complexity low
-/// while maintaining a clean main function dispatcher
 /// 
 /// # Arguments
 /// * `command` - The command to execute
@@ -1787,126 +1278,151 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
 /// 
 /// # Errors
 /// Returns error if replay files can't be read or test files can't be written
-pub fn handle_replay_to_tests_command(
-    input: &Path,
-    output: Option<&Path>,
-    property_tests: bool,
-    benchmarks: bool,
-    timeout: u64,
-) -> Result<()> {
-    use colored::Colorize;
-    use ruchy::runtime::replay_converter::{ReplayConverter, ConversionConfig};
-    use std::fs;
-    
-    println!("{}", "🔄 Converting REPL replay files to regression tests".bright_cyan().bold());
-    println!("Input: {}", input.display());
-    
-    // Setup conversion configuration
-    let config = ConversionConfig {
+
+/// Setup conversion configuration for replay-to-test conversion (complexity: 4)
+fn setup_conversion_config(property_tests: bool, benchmarks: bool, timeout: u64) -> ConversionConfig {
+    ConversionConfig {
         test_module_prefix: "replay_generated".to_string(),
         include_property_tests: property_tests,
         include_benchmarks: benchmarks,
         timeout_ms: timeout,
-    };
-    
-    let converter = ReplayConverter::with_config(config);
-    let mut all_tests = Vec::new();
-    let mut processed_files = 0;
-    
-    // Determine output path
-    let default_output = Path::new("tests/generated_from_replays.rs");
-    let output_path = output.unwrap_or(default_output);
-    
-    // Process input (file or directory)
-    if input.is_file() {
-        if input.extension().and_then(|s| s.to_str()) == Some("replay") {
-            println!("📄 Processing replay file: {}", input.display());
-            
-            match converter.convert_file(input) {
-                Ok(tests) => {
-                    println!("  ✅ Generated {} tests", tests.len());
-                    all_tests.extend(tests);
-                    processed_files += 1;
-                }
-                Err(e) => {
-                    eprintln!("  ❌ Failed to process {}: {}", input.display(), e);
-                    return Err(e);
-                }
-            }
-        } else {
-            eprintln!("❌ Input file must have .replay extension");
-            return Err(anyhow::anyhow!("Invalid file extension"));
-        }
-    } else if input.is_dir() {
-        println!("📁 Processing replay directory: {}", input.display());
-        
-        // Find all .replay files in directory
-        let replay_files: Vec<_> = fs::read_dir(input)?
-            .filter_map(|entry| {
-                let entry = entry.ok()?;
-                let path = entry.path();
-                if path.is_file() && path.extension()? == "replay" {
-                    Some(path)
-                } else {
-                    None
-                }
-            })
-            .collect();
-        
-        if replay_files.is_empty() {
-            println!("⚠️  No .replay files found in directory");
-            return Ok(());
-        }
-        
-        println!("🔍 Found {} replay files", replay_files.len());
-        
-        for replay_file in replay_files {
-            println!("📄 Processing: {}", replay_file.display());
-            
-            match converter.convert_file(&replay_file) {
-                Ok(tests) => {
-                    println!("  ✅ Generated {} tests", tests.len());
-                    all_tests.extend(tests);
-                    processed_files += 1;
-                }
-                Err(e) => {
-                    eprintln!("  ⚠️  Failed to process {}: {}", replay_file.display(), e);
-                    // Continue with other files instead of failing completely
-                }
-            }
-        }
-    } else {
-        eprintln!("❌ Input path must be a file or directory");
-        return Err(anyhow::anyhow!("Invalid input path"));
     }
+}
+
+/// Determine output path, using default if none provided (complexity: 3)
+fn determine_output_path(output: Option<&Path>) -> &Path {
+    let default_output = Path::new("tests/generated_from_replays.rs");
+    output.unwrap_or(default_output)
+}
+
+/// Validate that file has .replay extension (complexity: 3)
+fn validate_replay_file(path: &Path) -> Result<()> {
+    if path.extension().and_then(|s| s.to_str()) == Some("replay") {
+        Ok(())
+    } else {
+        eprintln!("❌ Input file must have .replay extension");
+        Err(anyhow::anyhow!("Invalid file extension"))
+    }
+}
+
+/// Process a single .replay file (complexity: 8)
+fn process_single_file(
+    input: &Path, 
+    converter: &ruchy::runtime::replay_converter::ReplayConverter,
+    all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
+    processed_files: &mut usize
+) -> Result<()> {
+    use colored::Colorize;
     
-    if all_tests.is_empty() {
-        println!("⚠️  No tests generated");
+    validate_replay_file(input)?;
+    
+    println!("📄 Processing replay file: {}", input.display());
+    
+    match converter.convert_file(input) {
+        Ok(tests) => {
+            println!("  ✅ Generated {} tests", tests.len());
+            all_tests.extend(tests);
+            *processed_files += 1;
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("  ❌ Failed to process {}: {}", input.display(), e);
+            Err(e)
+        }
+    }
+}
+
+/// Process directory containing .replay files (complexity: 10)
+fn process_directory(
+    input: &Path,
+    converter: &ruchy::runtime::replay_converter::ReplayConverter, 
+    all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
+    processed_files: &mut usize
+) -> Result<()> {
+    use colored::Colorize;
+    use std::fs;
+    
+    println!("📁 Processing replay directory: {}", input.display());
+    
+    // Find all .replay files in directory
+    let replay_files: Vec<_> = fs::read_dir(input)?
+        .filter_map(|entry| {
+            let entry = entry.ok()?;
+            let path = entry.path();
+            if path.is_file() && path.extension()? == "replay" {
+                Some(path)
+            } else {
+                None
+            }
+        })
+        .collect();
+    
+    if replay_files.is_empty() {
+        println!("⚠️  No .replay files found in directory");
         return Ok(());
     }
+    
+    println!("🔍 Found {} replay files", replay_files.len());
+    
+    for replay_file in replay_files {
+        println!("📄 Processing: {}", replay_file.display());
+        
+        match converter.convert_file(&replay_file) {
+            Ok(tests) => {
+                println!("  ✅ Generated {} tests", tests.len());
+                all_tests.extend(tests);
+                *processed_files += 1;
+            }
+            Err(e) => {
+                eprintln!("  ⚠️  Failed to process {}: {}", replay_file.display(), e);
+                // Continue with other files instead of failing completely
+            }
+        }
+    }
+    
+    Ok(())
+}
+
+/// Write test output to file, creating directories if needed (complexity: 4)
+fn write_test_output(
+    converter: &ruchy::runtime::replay_converter::ReplayConverter,
+    all_tests: &[ruchy::runtime::replay_converter::GeneratedTest],
+    output_path: &Path
+) -> Result<()> {
+    use std::fs;
+    use anyhow::Context;
     
     // Create output directory if needed
     if let Some(parent) = output_path.parent() {
         fs::create_dir_all(parent)?;
     }
     
-    // Write all tests to output file
     println!("📝 Writing tests to: {}", output_path.display());
     
-    converter.write_tests(&all_tests, output_path)
+    converter.write_tests(all_tests, output_path)
         .context("Failed to write test file")?;
     
-    // Summary report
+    Ok(())
+}
+
+/// Generate comprehensive summary report of conversion results (complexity: 8)
+fn generate_summary_report(
+    all_tests: &[ruchy::runtime::replay_converter::GeneratedTest],
+    processed_files: usize
+) {
+    use colored::Colorize;
+    use std::collections::{HashMap, HashSet};
+    
     println!("\n{}", "🎉 Conversion Summary".bright_green().bold());
     println!("=====================================");
     println!("📊 Files processed: {}", processed_files);
     println!("✅ Tests generated: {}", all_tests.len());
     
     // Breakdown by test category
-    let mut category_counts = std::collections::HashMap::new();
-    let mut coverage_areas = std::collections::HashSet::new();
+    let mut category_counts = HashMap::new();
+    let mut coverage_areas = HashSet::new();
     
-    for test in &all_tests {
+    for test in all_tests {
         *category_counts.entry(&test.category).or_insert(0) += 1;
         coverage_areas.extend(test.coverage_areas.iter().cloned());
     }
@@ -1934,6 +1450,55 @@ pub fn handle_replay_to_tests_command(
     println!("   3. Validate replay determinism");
     
     println!("\n🚀 {}", "Replay-to-test conversion complete!".bright_green());
+}
+
+/// Process input path (file or directory) with replay files (complexity: 5)
+fn process_input_path(
+    input: &Path,
+    converter: &ruchy::runtime::replay_converter::ReplayConverter,
+    all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
+    processed_files: &mut usize
+) -> Result<()> {
+    if input.is_file() {
+        process_single_file(input, converter, all_tests, processed_files)
+    } else if input.is_dir() {
+        process_directory(input, converter, all_tests, processed_files)
+    } else {
+        eprintln!("❌ Input path must be a file or directory");
+        Err(anyhow::anyhow!("Invalid input path"))
+    }
+}
+
+/// Convert REPL replay files to regression tests (complexity: 7)
+pub fn handle_replay_to_tests_command(
+    input: &Path,
+    output: Option<&Path>,
+    property_tests: bool,
+    benchmarks: bool,
+    timeout: u64,
+) -> Result<()> {
+    use colored::Colorize;
+    use ruchy::runtime::replay_converter::ReplayConverter;
+    
+    println!("{}", "🔄 Converting REPL replay files to regression tests".bright_cyan().bold());
+    println!("Input: {}", input.display());
+    
+    let config = setup_conversion_config(property_tests, benchmarks, timeout);
+    let converter = ReplayConverter::with_config(config);
+    let mut all_tests = Vec::new();
+    let mut processed_files = 0;
+    
+    let output_path = determine_output_path(output);
+    
+    process_input_path(input, &converter, &mut all_tests, &mut processed_files)?;
+    
+    if all_tests.is_empty() {
+        println!("⚠️  No tests generated");
+        return Ok(());
+    }
+    
+    write_test_output(&converter, &all_tests, output_path)?;
+    generate_summary_report(&all_tests, processed_files);
     
     Ok(())
 }

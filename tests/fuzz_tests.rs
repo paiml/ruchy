@@ -7,7 +7,8 @@
 //! Fuzz tests for Ruchy compiler - find edge cases and crashes
 
 use ruchy::{Parser, Transpiler};
-use ruchy::runtime::{Repl, ReplConfig};
+use ruchy::runtime::Repl;
+use ruchy::runtime::repl::ReplConfig;
 use std::time::{Duration, Instant};
 
 /// Generate random valid Ruchy code
