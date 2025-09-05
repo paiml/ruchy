@@ -1,0 +1,379 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling ruchy v1.56.0 (/home/noah/src/ruchy)
+error[E0433]: failed to resolve: use of undeclared type `Span`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:293:27
+    |
+293 |                     span: Span::dummy(),
+    |                           ^^^^ use of undeclared type `Span`
+    |
+help: consider importing one of these items
+    |
+6   +     use crate::frontend::Span;
+    |
+6   +     use logos::Span;
+    |
+6   +     use pest::Span;
+    |
+6   +     use proc_macro2::Span;
+    |
+      and 1 other candidate
+
+error[E0433]: failed to resolve: use of undeclared type `Span`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:299:27
+    |
+299 |                     span: Span::dummy(),
+    |                           ^^^^ use of undeclared type `Span`
+    |
+help: consider importing one of these items
+    |
+6   +     use crate::frontend::Span;
+    |
+6   +     use logos::Span;
+    |
+6   +     use pest::Span;
+    |
+6   +     use proc_macro2::Span;
+    |
+      and 1 other candidate
+
+error[E0433]: failed to resolve: use of undeclared type `Span`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:302:19
+    |
+302 |             span: Span::dummy(),
+    |                   ^^^^ use of undeclared type `Span`
+    |
+help: consider importing one of these items
+    |
+6   +     use crate::frontend::Span;
+    |
+6   +     use logos::Span;
+    |
+6   +     use pest::Span;
+    |
+6   +     use proc_macro2::Span;
+    |
+      and 1 other candidate
+
+error[E0433]: failed to resolve: use of undeclared type `Span`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:322:27
+    |
+322 |                     span: Span::dummy(),
+    |                           ^^^^ use of undeclared type `Span`
+    |
+help: consider importing one of these items
+    |
+6   +     use crate::frontend::Span;
+    |
+6   +     use logos::Span;
+    |
+6   +     use pest::Span;
+    |
+6   +     use proc_macro2::Span;
+    |
+      and 1 other candidate
+
+error[E0433]: failed to resolve: use of undeclared type `Span`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:326:27
+    |
+326 |                     span: Span::dummy(),
+    |                           ^^^^ use of undeclared type `Span`
+    |
+help: consider importing one of these items
+    |
+6   +     use crate::frontend::Span;
+    |
+6   +     use logos::Span;
+    |
+6   +     use pest::Span;
+    |
+6   +     use proc_macro2::Span;
+    |
+      and 1 other candidate
+
+error[E0433]: failed to resolve: use of undeclared type `Span`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:329:19
+    |
+329 |             span: Span::dummy(),
+    |                   ^^^^ use of undeclared type `Span`
+    |
+help: consider importing one of these items
+    |
+6   +     use crate::frontend::Span;
+    |
+6   +     use logos::Span;
+    |
+6   +     use pest::Span;
+    |
+6   +     use proc_macro2::Span;
+    |
+      and 1 other candidate
+
+warning: unused import: `proc_macro2::TokenStream`
+ --> src/backend/transpiler/method_call_refactored_tests.rs:9:9
+  |
+9 |     use proc_macro2::TokenStream;
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `proc_macro2::TokenStream`
+ --> src/backend/transpiler/patterns_tests.rs:8:9
+  |
+8 |     use proc_macro2::TokenStream;
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `quote::quote`
+ --> src/backend/transpiler/patterns_tests.rs:9:9
+  |
+9 |     use quote::quote;
+  |         ^^^^^^^^^^^^
+
+warning: unused import: `Literal`
+ --> src/backend/transpiler/type_conversion_refactored_tests.rs:8:48
+  |
+8 |     use crate::frontend::ast::{Expr, ExprKind, Literal, StringPart};
+  |                                                ^^^^^^^
+
+warning: unused import: `proc_macro2::TokenStream`
+ --> src/backend/transpiler/type_conversion_refactored_tests.rs:9:9
+  |
+9 |     use proc_macro2::TokenStream;
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `quote::quote`
+  --> src/backend/transpiler/type_conversion_refactored_tests.rs:10:9
+   |
+10 |     use quote::quote;
+   |         ^^^^^^^^^^^^
+
+error[E0599]: no method named `parse_expression` found for struct `Parser` in the current scope
+  --> src/backend/transpiler/method_call_refactored_tests.rs:17:27
+   |
+17 |         let expr = parser.parse_expression().expect("Failed to parse");
+   |                           ^^^^^^^^^^^^^^^^
+   |
+  ::: src/frontend/parser/core.rs:5:1
+   |
+5  | pub struct Parser<'a> {
+   | --------------------- method `parse_expression` not found for this struct
+   |
+help: there is a method `parse_expr` with a similar name
+   |
+17 -         let expr = parser.parse_expression().expect("Failed to parse");
+17 +         let expr = parser.parse_expr().expect("Failed to parse");
+   |
+
+error[E0026]: variant `ast::ExprKind::MethodCall` does not have a field named `object`
+  --> src/backend/transpiler/method_call_refactored_tests.rs:19:39
+   |
+19 |         if let ExprKind::MethodCall { object, method, args } = expr.kind {
+   |                                       ^^^^^^
+   |                                       |
+   |                                       variant `ast::ExprKind::MethodCall` does not have this field
+   |                                       help: `ast::ExprKind::MethodCall` has a field named `receiver`
+
+error[E0027]: pattern does not mention field `receiver`
+  --> src/backend/transpiler/method_call_refactored_tests.rs:19:16
+   |
+19 |         if let ExprKind::MethodCall { object, method, args } = expr.kind {
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ missing field `receiver`
+   |
+help: include the missing field in the pattern
+   |
+19 |         if let ExprKind::MethodCall { object, method, args, receiver } = expr.kind {
+   |                                                           ++++++++++
+help: if you don't care about this missing field, you can explicitly ignore it
+   |
+19 |         if let ExprKind::MethodCall { object, method, args, receiver: _ } = expr.kind {
+   |                                                           +++++++++++++
+help: or always ignore missing fields here
+   |
+19 |         if let ExprKind::MethodCall { object, method, args, .. } = expr.kind {
+   |                                                           ++++
+
+error[E0308]: mismatched types
+   --> src/backend/transpiler/patterns_tests.rs:189:17
+    |
+189 |                 ("x".to_string(), Pattern::Identifier("x_val".to_string())),
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `StructPatternField`, found `(String, Pattern)`
+    |
+    = note: expected struct `ast::StructPatternField`
+                found tuple `(std::string::String, ast::Pattern)`
+
+error[E0308]: mismatched types
+   --> src/backend/transpiler/patterns_tests.rs:214:17
+    |
+214 |                 ("debug".to_string(), Pattern::Literal(Literal::Bool(true))),
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `StructPatternField`, found `(String, Pattern)`
+    |
+    = note: expected struct `ast::StructPatternField`
+                found tuple `(std::string::String, ast::Pattern)`
+
+error[E0599]: no variant named `Enum` found for enum `ast::Pattern`
+   --> src/backend/transpiler/patterns_tests.rs:232:32
+    |
+232 |         let pattern = Pattern::Enum {
+    |                                ^^^^ variant not found in `ast::Pattern`
+    |
+   ::: src/frontend/ast.rs:510:1
+    |
+510 | pub enum Pattern {
+    | ---------------- variant `Enum` not found here
+
+error[E0599]: no variant named `Enum` found for enum `ast::Pattern`
+   --> src/backend/transpiler/patterns_tests.rs:250:32
+    |
+250 |         let pattern = Pattern::Enum {
+    |                                ^^^^ variant not found in `ast::Pattern`
+    |
+   ::: src/frontend/ast.rs:510:1
+    |
+510 | pub enum Pattern {
+    | ---------------- variant `Enum` not found here
+
+error[E0308]: mismatched types
+   --> src/backend/transpiler/patterns_tests.rs:350:21
+    |
+350 |                     ("enabled".to_string(), Pattern::Literal(Literal::Bool(true))),
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `StructPatternField`, found `(String, Pattern)`
+    |
+    = note: expected struct `ast::StructPatternField`
+                found tuple `(std::string::String, ast::Pattern)`
+
+error[E0599]: no method named `parse_expression` found for struct `Parser` in the current scope
+  --> src/backend/transpiler/type_conversion_refactored_tests.rs:18:16
+   |
+18 |         parser.parse_expression().expect("Failed to parse expression")
+   |                ^^^^^^^^^^^^^^^^
+   |
+  ::: src/frontend/parser/core.rs:5:1
+   |
+5  | pub struct Parser<'a> {
+   | --------------------- method `parse_expression` not found for this struct
+   |
+help: there is a method `parse_expr` with a similar name
+   |
+18 -         parser.parse_expression().expect("Failed to parse expression")
+18 +         parser.parse_expr().expect("Failed to parse expression")
+   |
+
+error[E0063]: missing field `attributes` in initializer of `ast::Expr`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:291:32
+    |
+291 |                 func: Box::new(Expr {
+    |                                ^^^^ missing `attributes`
+
+error[E0063]: missing field `attributes` in initializer of `ast::Expr`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:295:28
+    |
+295 |                 args: vec![Expr {
+    |                            ^^^^ missing `attributes`
+
+error[E0063]: missing field `attributes` in initializer of `ast::Expr`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:289:20
+    |
+289 |         let expr = Expr {
+    |                    ^^^^ missing `attributes`
+
+error[E0063]: missing field `attributes` in initializer of `ast::Expr`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:320:32
+    |
+320 |                 func: Box::new(Expr {
+    |                                ^^^^ missing `attributes`
+
+error[E0063]: missing field `attributes` in initializer of `ast::Expr`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:324:28
+    |
+324 |                 args: vec![Expr {
+    |                            ^^^^ missing `attributes`
+
+error[E0063]: missing field `attributes` in initializer of `ast::Expr`
+   --> src/backend/transpiler/type_conversion_refactored_tests.rs:318:20
+    |
+318 |         let expr = Expr {
+    |                    ^^^^ missing `attributes`
+
+warning: unreachable pattern
+   --> src/backend/transpiler/statements.rs:736:30
+    |
+711 |             "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
+    |             -------- matches all the relevant values
+...
+736 |             "push" | "pop" | "insert" | "remove" | "clear" | "len" | "is_empty" | "contains" => {
+    |                              ^^^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: unreachable pattern
+   --> src/backend/transpiler/statements.rs:736:41
+    |
+711 |             "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
+    |                        -------- matches all the relevant values
+...
+736 |             "push" | "pop" | "insert" | "remove" | "clear" | "len" | "is_empty" | "contains" => {
+    |                                         ^^^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> src/backend/transpiler/statements.rs:736:52
+    |
+711 |             "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
+    |                                   ------- matches all the relevant values
+...
+736 |             "push" | "pop" | "insert" | "remove" | "clear" | "len" | "is_empty" | "contains" => {
+    |                                                    ^^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> src/backend/transpiler/statements.rs:736:62
+    |
+711 |             "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
+    |                                             ----- matches all the relevant values
+...
+736 |             "push" | "pop" | "insert" | "remove" | "clear" | "len" | "is_empty" | "contains" => {
+    |                                                              ^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> src/backend/transpiler/statements.rs:736:70
+    |
+711 |             "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
+    |                                                     ---------- matches all the relevant values
+...
+736 |             "push" | "pop" | "insert" | "remove" | "clear" | "len" | "is_empty" | "contains" => {
+    |                                                                      ^^^^^^^^^^ no value can reach this
+
+warning: unused variable: `completions`
+   --> src/runtime/completion.rs:568:13
+    |
+568 |         let completions = engine.get_completions("le", 2);
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_completions`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `ctx`
+   --> src/runtime/completion.rs:590:13
+    |
+590 |         let ctx = engine.analyze_context("str.", 4);
+    |             ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+
+warning: unused variable: `ctx`
+   --> src/runtime/completion.rs:594:13
+    |
+594 |         let ctx = engine.analyze_context("std::", 5);
+    |             ^^^ help: if this is intentional, prefix it with an underscore: `_ctx`
+
+warning: variable does not need to be mutable
+   --> src/runtime/observatory_ui.rs:545:17
+    |
+545 |             let mut obs = observatory.lock().unwrap();
+    |                 ----^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+Some errors have detailed explanations: E0026, E0027, E0063, E0308, E0433, E0599.
+For more information about an error, try `rustc --explain E0026`.
+warning: `ruchy` (lib test) generated 15 warnings (5 duplicates)
+error: could not compile `ruchy` (lib test) due to 21 previous errors; 15 warnings emitted
+warning: build failed, waiting for other jobs to finish...
+warning: `ruchy` (lib) generated 5 warnings
+error: process didn't exit successfully: `/home/noah/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo test --manifest-path /home/noah/src/ruchy/Cargo.toml --target-dir /home/noah/src/ruchy/target/llvm-cov-target --lib --tests` (exit status: 101)

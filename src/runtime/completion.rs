@@ -100,6 +100,12 @@ pub struct CompletionEngine {
     cache: CompletionCache,
 }
 
+impl Default for CompletionEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CompletionEngine {
     /// Create new completion engine (complexity: 3)
     pub fn new() -> Self {
@@ -192,7 +198,7 @@ impl CompletionEngine {
                     text: keyword.clone(),
                     display: keyword.clone(),
                     kind: CompletionKind::Keyword,
-                    doc: Some(format!("Keyword: {}", keyword)),
+                    doc: Some(format!("Keyword: {keyword}")),
                     priority: CompletionKind::Keyword.priority(),
                 });
             }
@@ -200,11 +206,11 @@ impl CompletionEngine {
         
         // Add commands
         for command in &self.commands {
-            let cmd_with_colon = format!(":{}", command);
+            let cmd_with_colon = format!(":{command}");
             if cmd_with_colon.starts_with(prefix) {
                 candidates.push(CompletionCandidate {
                     text: cmd_with_colon,
-                    display: format!(":{} - REPL command", command),
+                    display: format!(":{command} - REPL command"),
                     kind: CompletionKind::Command,
                     doc: Some(self.get_command_doc(command)),
                     priority: CompletionKind::Command.priority(),
@@ -227,9 +233,9 @@ impl CompletionEngine {
                 if method.starts_with(member_prefix) {
                     candidates.push(CompletionCandidate {
                         text: method.clone(),
-                        display: format!("{}()", method),
+                        display: format!("{method}()"),
                         kind: CompletionKind::Method,
-                        doc: Some(format!("Method on {}", object_type)),
+                        doc: Some(format!("Method on {object_type}")),
                         priority: CompletionKind::Method.priority(),
                     });
                 }
@@ -245,13 +251,13 @@ impl CompletionEngine {
         let item_prefix = prefix.rsplit("::").next().unwrap_or("");
         
         // Add module functions
-        for (name, _) in &self.functions {
+        for name in self.functions.keys() {
             if name.starts_with(item_prefix) {
                 candidates.push(CompletionCandidate {
                     text: name.clone(),
-                    display: format!("{}::{}", module, name),
+                    display: format!("{module}::{name}"),
                     kind: CompletionKind::Function,
-                    doc: Some(format!("Function in {}", module)),
+                    doc: Some(format!("Function in {module}")),
                     priority: CompletionKind::Function.priority(),
                 });
             }
@@ -268,8 +274,8 @@ impl CompletionEngine {
         for command in &self.commands {
             if command.starts_with(cmd_prefix) {
                 candidates.push(CompletionCandidate {
-                    text: format!(":{}", command),
-                    display: format!(":{}", command),
+                    text: format!(":{command}"),
+                    display: format!(":{command}"),
                     kind: CompletionKind::Command,
                     doc: Some(self.get_command_doc(command)),
                     priority: CompletionKind::Command.priority(),
@@ -441,7 +447,7 @@ impl CompletionEngine {
             "type" => "Show type of expression".to_string(),
             "time" => "Time expression evaluation".to_string(),
             "mode" => "Get/set REPL mode".to_string(),
-            _ => format!("Command: {}", command),
+            _ => format!("Command: {command}"),
         }
     }
 

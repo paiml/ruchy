@@ -5,7 +5,105 @@ use anyhow::Result;
 use crate::quality::gates::{QualityGateEnforcer, QualityGateConfig};
 use crate::quality::scoring::{ScoreEngine, AnalysisDepth};
 
-/// Enforce quality gates on a file or directory
+/// Load and configure quality gate enforcer (complexity: 6)
+fn load_gate_config(
+    path: &Path, 
+    config: Option<&Path>, 
+    ci: bool
+) -> Result<QualityGateEnforcer> {
+    // Load configuration
+    let project_root = find_project_root(path)?;
+    let mut gate_config = if let Some(config_path) = config {
+        QualityGateEnforcer::load_config(config_path.parent().unwrap_or(Path::new(".")))
+    } else {
+        QualityGateEnforcer::load_config(&project_root)
+    }?;
+    
+    // Apply CI mode overrides (stricter thresholds)
+    if ci {
+        gate_config = apply_ci_overrides(gate_config);
+    }
+    
+    Ok(QualityGateEnforcer::new(gate_config))
+}
+
+/// Parse analysis depth string parameter (complexity: 4)
+fn parse_analysis_depth(depth: &str) -> Result<AnalysisDepth> {
+    match depth {
+        "shallow" => Ok(AnalysisDepth::Shallow),
+        "standard" => Ok(AnalysisDepth::Standard),
+        "deep" => Ok(AnalysisDepth::Deep),
+        _ => Err(anyhow::anyhow!("Invalid depth: {}", depth)),
+    }
+}
+
+/// Process file or directory path (complexity: 5)
+fn process_path(
+    path: &Path,
+    enforcer: &QualityGateEnforcer,
+    analysis_depth: AnalysisDepth,
+    fail_fast: bool,
+    verbose: bool
+) -> Result<Vec<crate::quality::gates::GateResult>> {
+    let mut all_results = Vec::new();
+    
+    if path.is_file() {
+        let result = process_file(enforcer, path, analysis_depth, verbose)?;
+        all_results.push(result);
+    } else if path.is_dir() {
+        let results = process_directory(enforcer, path, analysis_depth, fail_fast, verbose)?;
+        all_results.extend(results);
+    } else {
+        return Err(anyhow::anyhow!("Invalid path: {}", path.display()));
+    }
+    
+    Ok(all_results)
+}
+
+/// Output results in specified format (complexity: 4)
+fn output_results(
+    results: &[crate::quality::gates::GateResult],
+    format: &str,
+    verbose: bool
+) -> Result<()> {
+    match format {
+        "console" => print_console_results(results, verbose)?,
+        "json" => print_json_results(results)?,
+        "junit" => print_junit_results(results)?,
+        _ => return Err(anyhow::anyhow!("Invalid format: {}", format)),
+    }
+    Ok(())
+}
+
+/// Handle CI export if requested (complexity: 3)
+fn handle_export(
+    enforcer: &QualityGateEnforcer,
+    results: &[crate::quality::gates::GateResult],
+    export: Option<&Path>
+) -> Result<()> {
+    if let Some(export_path) = export {
+        std::fs::create_dir_all(export_path)?;
+        enforcer.export_ci_results(results, export_path)?;
+        println!("📊 Results exported to {}", export_path.display());
+    }
+    Ok(())
+}
+
+/// Check gate results and exit appropriately (complexity: 4)
+fn check_gate_results(results: &[crate::quality::gates::GateResult]) -> Result<()> {
+    let failed_gates = results.iter().filter(|r| !r.passed).count();
+    
+    if failed_gates > 0 {
+        eprintln!("❌ {failed_gates} quality gate(s) failed");
+        std::process::exit(1);
+    } else {
+        println!("✅ All quality gates passed!");
+    }
+    
+    Ok(())
+}
+
+/// Enforce quality gates on a file or directory (complexity: 6)
 pub fn enforce_quality_gates(
     path: &Path,
     config: Option<&Path>,
@@ -16,66 +114,14 @@ pub fn enforce_quality_gates(
     ci: bool,
     verbose: bool,
 ) -> Result<()> {
-    // Load configuration
-    let project_root = find_project_root(path)?;
-    let mut gate_config = if let Some(config_path) = config {
-        QualityGateEnforcer::load_config(config_path.parent().unwrap_or(Path::new(".")))?
-    } else {
-        QualityGateEnforcer::load_config(&project_root)?
-    };
+    let enforcer = load_gate_config(path, config, ci)?;
+    let analysis_depth = parse_analysis_depth(depth)?;
     
-    // Apply CI mode overrides (stricter thresholds)
-    if ci {
-        gate_config = apply_ci_overrides(gate_config);
-    }
+    let all_results = process_path(path, &enforcer, analysis_depth, fail_fast, verbose)?;
     
-    let enforcer = QualityGateEnforcer::new(gate_config);
-    
-    // Parse analysis depth
-    let analysis_depth = match depth {
-        "shallow" => AnalysisDepth::Shallow,
-        "standard" => AnalysisDepth::Standard,
-        "deep" => AnalysisDepth::Deep,
-        _ => return Err(anyhow::anyhow!("Invalid depth: {}", depth)),
-    };
-    
-    // Process file or directory
-    let mut all_results = Vec::new();
-    
-    if path.is_file() {
-        let result = process_file(&enforcer, path, analysis_depth, verbose)?;
-        all_results.push(result);
-    } else if path.is_dir() {
-        let results = process_directory(&enforcer, path, analysis_depth, fail_fast, verbose)?;
-        all_results.extend(results);
-    } else {
-        return Err(anyhow::anyhow!("Invalid path: {}", path.display()));
-    }
-    
-    // Output results
-    match format {
-        "console" => print_console_results(&all_results, verbose)?,
-        "json" => print_json_results(&all_results)?,
-        "junit" => print_junit_results(&all_results)?,
-        _ => return Err(anyhow::anyhow!("Invalid format: {}", format)),
-    }
-    
-    // Export CI results if requested
-    if let Some(export_path) = export {
-        std::fs::create_dir_all(export_path)?;
-        enforcer.export_ci_results(&all_results, export_path)?;
-        println!("📊 Results exported to {}", export_path.display());
-    }
-    
-    // Check if any gates failed
-    let failed_gates = all_results.iter().filter(|r| !r.passed).count();
-    
-    if failed_gates > 0 {
-        eprintln!("❌ {failed_gates} quality gate(s) failed");
-        std::process::exit(1);
-    } else {
-        println!("✅ All quality gates passed!");
-    }
+    output_results(&all_results, format, verbose)?;
+    handle_export(&enforcer, &all_results, export)?;
+    check_gate_results(&all_results)?;
     
     Ok(())
 }

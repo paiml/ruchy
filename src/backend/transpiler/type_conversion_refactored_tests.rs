@@ -5,9 +5,8 @@
 mod tests {
     use super::super::*;
     use crate::frontend::parser::Parser;
-    use crate::frontend::ast::{Expr, ExprKind, Literal, StringPart};
-    use proc_macro2::TokenStream;
-    use quote::quote;
+    use crate::frontend::ast::{Expr, ExprKind, StringPart, Literal};
+    use crate::frontend::Span;
 
     fn create_transpiler() -> Transpiler {
         Transpiler::new()
@@ -15,7 +14,7 @@ mod tests {
 
     fn parse_expr(code: &str) -> Expr {
         let mut parser = Parser::new(code);
-        parser.parse_expression().expect("Failed to parse expression")
+        parser.parse_expr().expect("Failed to parse expression")
     }
 
     #[test]
@@ -290,16 +289,19 @@ mod tests {
             kind: ExprKind::Call {
                 func: Box::new(Expr {
                     kind: ExprKind::Identifier("bool".to_string()),
-                    span: Span::dummy(),
+                    span: Span::new(0, 0),
+                    attributes: vec![],
                 }),
                 args: vec![Expr {
                     kind: ExprKind::StringInterpolation {
                         parts: vec![StringPart::Text("test".to_string())],
                     },
-                    span: Span::dummy(),
+                    span: Span::new(0, 0),
+                    attributes: vec![],
                 }],
             },
-            span: Span::dummy(),
+            span: Span::new(0, 0),
+            attributes: vec![],
         };
         
         if let ExprKind::Call { func, args } = &expr.kind {
@@ -319,14 +321,17 @@ mod tests {
             kind: ExprKind::Call {
                 func: Box::new(Expr {
                     kind: ExprKind::Identifier("dict".to_string()),
-                    span: Span::dummy(),
+                    span: Span::new(0, 0),
+                    attributes: vec![],
                 }),
                 args: vec![Expr {
                     kind: ExprKind::List(vec![]),
-                    span: Span::dummy(),
+                    span: Span::new(0, 0),
+                    attributes: vec![],
                 }],
             },
-            span: Span::dummy(),
+            span: Span::new(0, 0),
+            attributes: vec![],
         };
         
         if let ExprKind::Call { func, args } = &expr.kind {

@@ -141,24 +141,20 @@ pub fn handle_fmt_command(
     Ok(())
 }
 
-/// Handle lint command - check for code issues
-pub fn handle_lint_command(
-    path: &Path,
-    auto_fix: bool,
-    strict: bool,
-    rules: Option<&str>,
-    json: bool,
-    verbose: bool,
-    _ignore: Option<&str>,
-    _config: Option<&Path>,
-) -> Result<()> {
-    use ruchy::quality::linter::Linter;
-    
+/// Read file and parse AST (complexity: 4)
+fn read_and_parse_source(path: &Path) -> Result<(String, ruchy::frontend::ast::Expr)> {
     let source = fs::read_to_string(path)
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
     
     let mut parser = RuchyParser::new(&source);
     let ast = parser.parse()?;
+    
+    Ok((source, ast))
+}
+
+/// Configure linter with rules and strict mode (complexity: 4)
+fn configure_linter(rules: Option<&str>, strict: bool) -> ruchy::quality::linter::Linter {
+    use ruchy::quality::linter::Linter;
     
     let mut linter = Linter::new();
     
@@ -171,63 +167,123 @@ pub fn handle_lint_command(
         linter.set_strict_mode(true);
     }
     
-    let issues = linter.lint(&ast, &source)?;
-    
-    if json {
-        // JSON output with proper structure
-        let json_output = serde_json::json!({
-            "issues": issues
-        });
-        println!("{}", serde_json::to_string_pretty(&json_output)?);
+    linter
+}
+
+/// Run linter analysis (complexity: 3)
+fn run_linter_analysis(
+    linter: &ruchy::quality::linter::Linter,
+    ast: &ruchy::frontend::ast::Expr,
+    source: &str
+) -> Result<Vec<ruchy::quality::linter::LintIssue>> {
+    linter.lint(ast, source)
+}
+
+/// Format issues as JSON output (complexity: 3)
+fn format_json_output(issues: &[ruchy::quality::linter::LintIssue]) -> Result<()> {
+    let json_output = serde_json::json!({
+        "issues": issues
+    });
+    println!("{}", serde_json::to_string_pretty(&json_output)?);
+    Ok(())
+}
+
+/// Count errors and warnings in issues (complexity: 4)
+fn count_issue_types(issues: &[ruchy::quality::linter::LintIssue]) -> (usize, usize) {
+    let errors = issues.iter().filter(|i| i.severity == "error").count();
+    let warnings = issues.iter().filter(|i| i.severity == "warning").count();
+    (errors, warnings)
+}
+
+/// Format issues as text output with details (complexity: 8)
+fn format_text_output(
+    issues: &[ruchy::quality::linter::LintIssue],
+    path: &Path,
+    verbose: bool
+) -> Result<()> {
+    if issues.is_empty() {
+        println!("{} No issues found in {}", "✓".green(), path.display());
     } else {
-        // Text output
-        if issues.is_empty() {
-            println!("{} No issues found in {}", "✓".green(), path.display());
-        } else {
-            // Count errors and warnings
-            let errors = issues.iter().filter(|i| i.severity == "error").count();
-            let warnings = issues.iter().filter(|i| i.severity == "warning").count();
+        let (errors, warnings) = count_issue_types(issues);
+        
+        println!("{} Found {} issues in {}", "⚠".yellow(), issues.len(), path.display());
+        
+        for issue in issues {
+            let severity_str = if issue.severity == "error" { 
+                "Error".red().to_string() 
+            } else { 
+                "Warning".yellow().to_string() 
+            };
             
-            println!("{} Found {} issues in {}", "⚠".yellow(), issues.len(), path.display());
-            
-            for issue in &issues {
-                let severity_str = if issue.severity == "error" { 
-                    "Error".red().to_string() 
-                } else { 
-                    "Warning".yellow().to_string() 
-                };
-                
-                println!("  {}:{}: {} - {}", 
-                    path.display(), 
-                    issue.line, 
-                    severity_str, 
-                    issue.message
-                );
-                if verbose && !issue.suggestion.is_empty() {
-                    println!("    Suggestion: {}", issue.suggestion);
-                }
-            }
-            
-            // Summary if there are issues
-            if errors > 0 || warnings > 0 {
-                println!("\nSummary: {} Error{}, {} Warning{}",
-                    errors, if errors == 1 { "" } else { "s" },
-                    warnings, if warnings == 1 { "" } else { "s" }
-                );
-            }
-            
-            if auto_fix {
-                println!("\n{} Attempting auto-fix...", "→".blue());
-                let fixed = linter.auto_fix(&source, &issues)?;
-                fs::write(path, fixed)?;
-                println!("{} Fixed {} issues", "✓".green(), issues.len());
+            println!("  {}:{}: {} - {}", 
+                path.display(), 
+                issue.line, 
+                severity_str, 
+                issue.message
+            );
+            if verbose && !issue.suggestion.is_empty() {
+                println!("    Suggestion: {}", issue.suggestion);
             }
         }
+        
+        // Summary if there are issues
+        if errors > 0 || warnings > 0 {
+            println!("\nSummary: {} Error{}, {} Warning{}",
+                errors, if errors == 1 { "" } else { "s" },
+                warnings, if warnings == 1 { "" } else { "s" }
+            );
+        }
     }
-    
+    Ok(())
+}
+
+/// Handle auto-fix if requested (complexity: 4)
+fn handle_auto_fix(
+    linter: &ruchy::quality::linter::Linter,
+    source: &str,
+    issues: &[ruchy::quality::linter::LintIssue],
+    path: &Path,
+    auto_fix: bool
+) -> Result<()> {
+    if auto_fix && !issues.is_empty() {
+        println!("\n{} Attempting auto-fix...", "→".blue());
+        let fixed = linter.auto_fix(source, issues)?;
+        fs::write(path, fixed)?;
+        println!("{} Fixed {} issues", "✓".green(), issues.len());
+    }
+    Ok(())
+}
+
+/// Handle strict mode exit if issues found (complexity: 3)
+fn handle_strict_mode(issues: &[ruchy::quality::linter::LintIssue], strict: bool) {
     if !issues.is_empty() && strict {
         std::process::exit(1);
     }
+}
+
+/// Handle lint command - check for code issues (complexity: 6)
+pub fn handle_lint_command(
+    path: &Path,
+    auto_fix: bool,
+    strict: bool,
+    rules: Option<&str>,
+    json: bool,
+    verbose: bool,
+    _ignore: Option<&str>,
+    _config: Option<&Path>,
+) -> Result<()> {
+    let (source, ast) = read_and_parse_source(path)?;
+    let linter = configure_linter(rules, strict);
+    let issues = run_linter_analysis(&linter, &ast, &source)?;
+    
+    if json {
+        format_json_output(&issues)?
+    } else {
+        format_text_output(&issues, path, verbose)?;
+        handle_auto_fix(&linter, &source, &issues, path, auto_fix)?;
+    }
+    
+    handle_strict_mode(&issues, strict);
     
     Ok(())
 }

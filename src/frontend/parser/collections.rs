@@ -30,122 +30,158 @@ use crate::frontend::ast::{DataFrameColumn, Literal, ObjectField};
 /// # Errors
 ///
 /// Returns an error if the operation fails
+/// Parse a block expression { ... } (complexity: 7)
+///
+/// Handles both regular blocks and let-statement conversion to let-expressions
 pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume {
 
     // Check if this might be an object literal
-    // Object literals have: identifier/string : expr, or ...expr patterns
-    // Blocks have statements and expressions
     if is_object_literal(state) {
         return parse_object_literal_body(state, start_span);
     }
 
+    let exprs = parse_block_expressions(state, start_span)?;
+    state.tokens.expect(&Token::RightBrace)?;
+    
+    Ok(create_block_result(exprs, start_span))
+}
+
+/// Parse all expressions within a block (complexity: 8)
+fn parse_block_expressions(state: &mut ParserState, start_span: Span) -> Result<Vec<Expr>> {
     let mut exprs = Vec::new();
-    while let Some((token, _)) = state.tokens.peek() {
-        if matches!(token, Token::RightBrace) {
-            break;
-        }
-        // Check if this is a let statement (let without 'in')
-        if matches!(state.tokens.peek(), Some((Token::Let, _))) {
-            // Peek ahead to see if this is a let-statement or let-expression
-            let saved_pos = state.tokens.position();
-            state.tokens.advance(); // consume let
-
-            // Parse variable name
-            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                let name = name.clone();
-                state.tokens.advance();
-
-                // Check for =
-                if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
-                    state.tokens.advance(); // consume =
-
-                    // Parse the value expression
-                    let value = super::parse_expr_recursive(state)?;
-
-                    // Check if followed by 'in' (let-expression) or semicolon/brace (let-statement)
-                    if matches!(state.tokens.peek(), Some((Token::In, _))) {
-                        // It's a let-expression, restore position and parse normally
-                        state.tokens.set_position(saved_pos);
-                        exprs.push(super::parse_expr_recursive(state)?);
-                    } else {
-                        // It's a let-statement, create a synthetic let-in that binds for the rest of the block
-                        // Consume optional semicolon
-                        if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
-                            state.tokens.advance();
-                        }
-
-                        // Parse the rest of the block as the body
-                        let mut body_exprs = Vec::new();
-                        while let Some((token, _)) = state.tokens.peek() {
-                            if matches!(token, Token::RightBrace) {
-                                break;
-                            }
-                            body_exprs.push(super::parse_expr_recursive(state)?);
-
-                            if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
-                                state.tokens.advance();
-                            }
-
-                            if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                                break;
-                            }
-                        }
-
-                        // Create the body expression
-                        let body = if body_exprs.is_empty() {
-                            Expr::new(ExprKind::Literal(Literal::Unit), start_span)
-                        } else if body_exprs.len() == 1 {
-                            body_exprs.into_iter().next().expect("checked: len == 1")
-                        } else {
-                            Expr::new(ExprKind::Block(body_exprs), start_span)
-                        };
-
-                        // Create let-in expression
-                        exprs.push(Expr::new(
-                            ExprKind::Let {
-                                name,
-                                type_annotation: None,
-                                value: Box::new(value),
-                                body: Box::new(body),
-                                is_mutable: false,
-                            },
-                            start_span,
-                        ));
-                        break; // The let consumed the rest of the block
-                    }
-                } else {
-                    // Not a valid let, restore and parse as expression
-                    state.tokens.set_position(saved_pos);
-                    exprs.push(super::parse_expr_recursive(state)?);
-                }
-            } else {
-                // Not a valid let, restore and parse as expression
-                state.tokens.set_position(saved_pos);
-                exprs.push(super::parse_expr_recursive(state)?);
-            }
-        } else {
-            exprs.push(super::parse_expr_recursive(state)?);
-        }
-
-        // Optional semicolon
-        if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
-            state.tokens.advance();
-        }
-
+    
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        let expr = parse_next_block_expression(state, start_span)?;
+        exprs.push(expr);
+        
+        consume_optional_semicolon(state);
+        
         if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
             break;
         }
     }
+    
+    Ok(exprs)
+}
 
-    state.tokens.expect(&Token::RightBrace)?;
-
-    // Empty blocks should be unit literals
-    if exprs.is_empty() {
-        Ok(Expr::new(ExprKind::Literal(Literal::Unit), start_span))
+/// Parse the next expression in a block, handling let statements (complexity: 9)
+fn parse_next_block_expression(state: &mut ParserState, start_span: Span) -> Result<Expr> {
+    if matches!(state.tokens.peek(), Some((Token::Let, _))) {
+        parse_potential_let_statement(state, start_span)
     } else {
-        Ok(Expr::new(ExprKind::Block(exprs), start_span))
+        super::parse_expr_recursive(state)
     }
+}
+
+/// Handle potential let statement with lookahead (complexity: 10)
+fn parse_potential_let_statement(state: &mut ParserState, start_span: Span) -> Result<Expr> {
+    let saved_pos = state.tokens.position();
+    state.tokens.advance(); // consume let
+    
+    if let Some(let_info) = try_parse_let_binding(state)? {
+        if is_let_expression(state) {
+            // Let expression - restore and parse normally
+            state.tokens.set_position(saved_pos);
+            super::parse_expr_recursive(state)
+        } else {
+            // Let statement - convert to let expression
+            create_let_statement_expression(state, let_info, start_span)
+        }
+    } else {
+        // Not a valid let - restore and parse as expression
+        state.tokens.set_position(saved_pos);
+        super::parse_expr_recursive(state)
+    }
+}
+
+/// Try to parse let binding info (complexity: 6)
+fn try_parse_let_binding(state: &mut ParserState) -> Result<Option<LetBindingInfo>> {
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        
+        if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+            state.tokens.advance(); // consume =
+            let value = super::parse_expr_recursive(state)?;
+            return Ok(Some(LetBindingInfo { name, value }));
+        }
+    }
+    Ok(None)
+}
+
+/// Check if this is a let expression (has 'in' keyword) (complexity: 2)
+fn is_let_expression(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::In, _)))
+}
+
+/// Create let statement expression from binding info (complexity: 8)
+fn create_let_statement_expression(state: &mut ParserState, let_info: LetBindingInfo, start_span: Span) -> Result<Expr> {
+    consume_optional_semicolon(state);
+    
+    let body = parse_remaining_block_body(state, start_span)?;
+    
+    Ok(Expr::new(
+        ExprKind::Let {
+            name: let_info.name,
+            type_annotation: None,
+            value: Box::new(let_info.value),
+            body: Box::new(body),
+            is_mutable: false,
+        },
+        start_span,
+    ))
+}
+
+/// Parse remaining expressions as block body (complexity: 8)
+fn parse_remaining_block_body(state: &mut ParserState, start_span: Span) -> Result<Expr> {
+    let mut body_exprs = Vec::new();
+    
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        body_exprs.push(super::parse_expr_recursive(state)?);
+        
+        consume_optional_semicolon(state);
+        
+        if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+            break;
+        }
+    }
+    
+    Ok(create_body_expression(body_exprs, start_span))
+}
+
+/// Create body expression from parsed expressions (complexity: 4)
+fn create_body_expression(body_exprs: Vec<Expr>, start_span: Span) -> Expr {
+    if body_exprs.is_empty() {
+        Expr::new(ExprKind::Literal(Literal::Unit), start_span)
+    } else if body_exprs.len() == 1 {
+        body_exprs.into_iter().next().expect("checked: len == 1")
+    } else {
+        Expr::new(ExprKind::Block(body_exprs), start_span)
+    }
+}
+
+/// Create final block result (complexity: 3)
+fn create_block_result(exprs: Vec<Expr>, start_span: Span) -> Expr {
+    if exprs.is_empty() {
+        Expr::new(ExprKind::Literal(Literal::Unit), start_span)
+    } else {
+        Expr::new(ExprKind::Block(exprs), start_span)
+    }
+}
+
+/// Consume optional semicolon (complexity: 2)
+fn consume_optional_semicolon(state: &mut ParserState) {
+    if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+        state.tokens.advance();
+    }
+}
+
+/// Information about a let binding (complexity: 1)
+#[derive(Debug, Clone)]
+struct LetBindingInfo {
+    name: String,
+    value: Expr,
 }
 
 /// Check if the current position looks like an object literal
@@ -705,87 +741,116 @@ pub fn parse_list_comprehension(
 /// # Errors
 ///
 /// Returns an error if the operation fails
-pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
+/// Parse DataFrame header: df![ (complexity: 3)
+fn parse_dataframe_header(state: &mut ParserState) -> Result<Span> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume df
-
-    // Expect ! after df
     state.tokens.expect(&Token::Bang)?;
     state.tokens.expect(&Token::LeftBracket)?;
+    Ok(start_span)
+}
 
-    let mut columns = Vec::new();
-
-    // Check for empty DataFrame df![]
-    if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+/// Parse column name identifier (complexity: 3)
+fn parse_dataframe_column_name(state: &mut ParserState) -> Result<String> {
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
         state.tokens.advance();
-        return Ok(Expr::new(ExprKind::DataFrame { columns }, start_span));
+        Ok(name)
+    } else {
+        bail!("Expected column name in DataFrame literal");
     }
+}
 
-    // Parse column definitions using the new syntax: df![col => values, ...]
+/// Parse column values after => (complexity: 4)
+fn parse_dataframe_column_values(state: &mut ParserState) -> Result<Vec<Expr>> {
+    state.tokens.expect(&Token::FatArrow)?; // consume =>
+    
+    let values = if matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
+        // Values are in a list
+        parse_list(state)?
+    } else {
+        // Parse individual expression
+        super::parse_expr_recursive(state)?
+    };
+    
+    // Convert to vector of expressions
+    let value_vec = match values.kind {
+        ExprKind::List(exprs) => exprs,
+        _ => vec![values],
+    };
+    
+    Ok(value_vec)
+}
+
+/// Handle legacy syntax column (complexity: 3)
+fn handle_dataframe_legacy_syntax_column(col_name: String) -> DataFrameColumn {
+    // Legacy syntax: just column names, then semicolon and rows
+    // For backward compatibility, create empty column for now
+    DataFrameColumn {
+        name: col_name,
+        values: Vec::new(),
+    }
+}
+
+/// Parse column definitions loop (complexity: 8)
+fn parse_dataframe_column_definitions(state: &mut ParserState) -> Result<Vec<DataFrameColumn>> {
+    let mut columns = Vec::new();
+    
     loop {
-        // Parse column name
-        let col_name = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            let name = name.clone();
-            state.tokens.advance();
-            name
-        } else {
-            bail!("Expected column name in DataFrame literal");
-        };
-
-        // Check for => or semicolon (legacy syntax support)
+        let col_name = parse_dataframe_column_name(state)?;
+        
+        // Check for => or legacy syntax
         if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
             // New syntax: col => [values]
-            state.tokens.advance(); // consume =>
-
-            // Parse values - could be a list or individual values
-            let values = if matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
-                // Values are in a list
-                parse_list(state)?
-            } else {
-                // Parse individual expression
-                super::parse_expr_recursive(state)?
-            };
-
-            // Convert to vector of expressions
-            let value_vec = match values.kind {
-                ExprKind::List(exprs) => exprs,
-                _ => vec![values],
-            };
-
+            let values = parse_dataframe_column_values(state)?;
             columns.push(DataFrameColumn {
                 name: col_name,
-                values: value_vec,
+                values,
             });
         } else if matches!(state.tokens.peek(), Some((Token::Comma, _)))
             || matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
             || matches!(state.tokens.peek(), Some((Token::RightBracket, _)))
         {
-            // Legacy syntax: just column names, then semicolon and rows
-            // For backward compatibility, create empty column for now
-            columns.push(DataFrameColumn {
-                name: col_name,
-                values: Vec::new(),
-            });
+            columns.push(handle_dataframe_legacy_syntax_column(col_name));
         } else {
             bail!("Expected '=>' or ',' after column name in DataFrame literal");
         }
-
+        
         // Check for continuation
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
         } else if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
             // Legacy row-based syntax
             state.tokens.advance();
-            // Parse legacy rows if present
             parse_legacy_dataframe_rows(state, &mut columns)?;
             break;
         } else {
             break;
         }
     }
+    
+    Ok(columns)
+}
 
-    state.tokens.expect(&Token::RightBracket)?;
-
+/// Create final DataFrame expression (complexity: 3)
+fn create_dataframe_result(columns: Vec<DataFrameColumn>, start_span: Span) -> Result<Expr> {
     Ok(Expr::new(ExprKind::DataFrame { columns }, start_span))
+}
+
+/// Parse DataFrame literal: df![...] (complexity: 6)
+pub fn parse_dataframe(state: &mut ParserState) -> Result<Expr> {
+    let start_span = parse_dataframe_header(state)?;
+    
+    // Check for empty DataFrame df![]
+    if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+        state.tokens.advance();
+        return create_dataframe_result(Vec::new(), start_span);
+    }
+    
+    // Parse column definitions
+    let columns = parse_dataframe_column_definitions(state)?;
+    
+    state.tokens.expect(&Token::RightBracket)?;
+    create_dataframe_result(columns, start_span)
 }
 
 /// Parse legacy row-based `DataFrame` syntax for backward compatibility

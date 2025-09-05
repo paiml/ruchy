@@ -162,57 +162,95 @@ pub fn parse_type_parameters(state: &mut ParserState) -> Result<Vec<String>> {
     Ok(type_params)
 }
 
+/// Parse type expressions with complexity ≤10
 /// # Errors
-///
-/// Returns an error if the operation fails
-/// # Errors
-///
 /// Returns an error if the operation fails
 pub fn parse_type(state: &mut ParserState) -> Result<Type> {
     let span = Span { start: 0, end: 0 }; // Simplified for now
 
     match state.tokens.peek() {
-        Some((Token::Ampersand, _)) => {
-            // Reference type: &T or &'a T or &mut T
-            state.tokens.advance(); // consume &
-            
-            // Check for 'mut' keyword
-            let is_mut = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
-                state.tokens.advance(); // consume mut
-                true
-            } else {
-                false
-            };
-            
-            // Parse the inner type
-            let inner_type = parse_type(state)?;
-            
-            Ok(Type {
-                kind: TypeKind::Reference {
-                    is_mut,
-                    inner: Box::new(inner_type),
-                },
-                span,
-            })
-        }
-        Some((Token::Fn, _)) => {
-            // Function type with fn keyword: fn(T1, T2) -> T3
-            state.tokens.advance(); // consume fn
-            state.tokens.expect(&Token::LeftParen)?;
-            
-            let mut param_types = Vec::new();
-            if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                param_types.push(parse_type(state)?);
-                while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance(); // consume comma
-                    param_types.push(parse_type(state)?);
-                }
-            }
-            
-            state.tokens.expect(&Token::RightParen)?;
-            state.tokens.expect(&Token::Arrow)?;
+        Some((Token::Ampersand, _)) => parse_reference_type(state, span),
+        Some((Token::Fn, _)) => parse_fn_type(state, span),
+        Some((Token::LeftBracket, _)) => parse_list_type(state, span),
+        Some((Token::LeftParen, _)) => parse_paren_type(state, span),
+        Some((Token::Identifier(_), _)) => parse_named_type(state, span),
+        _ => bail!("Expected type"),
+    }
+}
+
+// Helper: Parse reference type &T or &mut T (complexity: 4)
+fn parse_reference_type(state: &mut ParserState, span: Span) -> Result<Type> {
+    state.tokens.advance(); // consume &
+    
+    let is_mut = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
+        state.tokens.advance(); // consume mut
+        true
+    } else {
+        false
+    };
+    
+    let inner_type = parse_type(state)?;
+    
+    Ok(Type {
+        kind: TypeKind::Reference {
+            is_mut,
+            inner: Box::new(inner_type),
+        },
+        span,
+    })
+}
+
+// Helper: Parse function type fn(T1, T2) -> T3 (complexity: 5)
+fn parse_fn_type(state: &mut ParserState, span: Span) -> Result<Type> {
+    state.tokens.advance(); // consume fn
+    state.tokens.expect(&Token::LeftParen)?;
+    
+    let param_types = parse_type_list(state)?;
+    state.tokens.expect(&Token::RightParen)?;
+    state.tokens.expect(&Token::Arrow)?;
+    let ret_type = parse_type(state)?;
+    
+    Ok(Type {
+        kind: TypeKind::Function {
+            params: param_types,
+            ret: Box::new(ret_type),
+        },
+        span,
+    })
+}
+
+// Helper: Parse list type [T] (complexity: 3)
+fn parse_list_type(state: &mut ParserState, span: Span) -> Result<Type> {
+    state.tokens.advance(); // consume [
+    let inner = parse_type(state)?;
+    state.tokens.expect(&Token::RightBracket)?;
+    
+    Ok(Type {
+        kind: TypeKind::List(Box::new(inner)),
+        span,
+    })
+}
+
+// Helper: Parse parenthesized type (T1, T2) or (T1, T2) -> T3 (complexity: 6)
+fn parse_paren_type(state: &mut ParserState, span: Span) -> Result<Type> {
+    state.tokens.advance(); // consume (
+    
+    if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        // Unit type: ()
+        state.tokens.advance();
+        Ok(Type {
+            kind: TypeKind::Named("()".to_string()),
+            span,
+        })
+    } else {
+        let param_types = parse_type_list(state)?;
+        state.tokens.expect(&Token::RightParen)?;
+        
+        if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
+            // Function type: (T1, T2) -> T3
+            state.tokens.advance(); // consume ->
             let ret_type = parse_type(state)?;
-            
+
             Ok(Type {
                 kind: TypeKind::Function {
                     params: param_types,
@@ -220,116 +258,93 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
                 },
                 span,
             })
-        }
-        Some((Token::LeftBracket, _)) => {
-            state.tokens.advance(); // consume [
-            let inner = parse_type(state)?;
-            state.tokens.expect(&Token::RightBracket)?;
-            // List type: [T]
+        } else {
+            // Tuple type: (T1, T2)
             Ok(Type {
-                kind: TypeKind::List(Box::new(inner)),
+                kind: TypeKind::Tuple(param_types),
                 span,
             })
         }
-        Some((Token::LeftParen, _)) => {
-            state.tokens.advance(); // consume (
-            if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                // Unit type: ()
-                state.tokens.advance();
-                Ok(Type {
-                    kind: TypeKind::Named("()".to_string()),
-                    span,
-                })
-            } else {
-                // Could be tuple type (T1, T2) or function type (T1, T2) -> T3
-                let mut param_types = Vec::new();
-                param_types.push(parse_type(state)?);
-
-                while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance(); // consume comma
-                    param_types.push(parse_type(state)?);
-                }
-
-                state.tokens.expect(&Token::RightParen)?;
-                
-                // Check if this is a function type or tuple type
-                if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
-                    // Function type: (T1, T2) -> T3
-                    state.tokens.advance(); // consume ->
-                    let ret_type = parse_type(state)?;
-
-                    Ok(Type {
-                        kind: TypeKind::Function {
-                            params: param_types,
-                            ret: Box::new(ret_type),
-                        },
-                        span,
-                    })
-                } else {
-                    // Tuple type: (T1, T2)
-                    Ok(Type {
-                        kind: TypeKind::Tuple(param_types),
-                        span,
-                    })
-                }
-            }
-        }
-        Some((Token::Identifier(name), _)) => {
-            let mut name = name.clone();
-            state.tokens.advance();
-
-            // Check for qualified type names: std::string::String
-            while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                state.tokens.advance(); // consume ::
-                
-                let next_name = match state.tokens.peek() {
-                    Some((Token::Identifier(next), _)) => next.clone(),
-                    // Handle special tokens that can be type names
-                    Some((Token::Result, _)) => "Result".to_string(),
-                    Some((Token::Option, _)) => "Option".to_string(),
-                    Some((Token::Ok, _)) => "Ok".to_string(),
-                    Some((Token::Err, _)) => "Err".to_string(),
-                    Some((Token::Some, _)) => "Some".to_string(),
-                    Some((Token::None | Token::Null, _)) => "None".to_string(),
-                    _ => bail!("Expected identifier after :: in type name"),
-                };
-                
-                name.push_str("::");
-                name.push_str(&next_name);
-                state.tokens.advance();
-            }
-
-            // Check for generic types: Vec<T>, Result<T, E>
-            if matches!(state.tokens.peek(), Some((Token::Less, _))) {
-                state.tokens.advance(); // consume <
-
-                let mut type_params = Vec::new();
-                type_params.push(parse_type(state)?);
-
-                while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance(); // consume comma
-                    type_params.push(parse_type(state)?);
-                }
-
-                state.tokens.expect(&Token::Greater)?;
-
-                // Use Generic TypeKind for parameterized types
-                Ok(Type {
-                    kind: TypeKind::Generic {
-                        base: name,
-                        params: type_params,
-                    },
-                    span,
-                })
-            } else {
-                Ok(Type {
-                    kind: TypeKind::Named(name),
-                    span,
-                })
-            }
-        }
-        _ => bail!("Expected type"),
     }
+}
+
+// Helper: Parse named type with optional generics (complexity: 4)
+fn parse_named_type(state: &mut ParserState, span: Span) -> Result<Type> {
+    let name = parse_qualified_name(state)?;
+    
+    if matches!(state.tokens.peek(), Some((Token::Less, _))) {
+        parse_generic_type(state, name, span)
+    } else {
+        Ok(Type {
+            kind: TypeKind::Named(name),
+            span,
+        })
+    }
+}
+
+// Helper: Parse qualified name like std::collections::HashMap (complexity: 6)
+fn parse_qualified_name(state: &mut ParserState) -> Result<String> {
+    let mut name = match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            name
+        }
+        _ => bail!("Expected identifier"),
+    };
+
+    while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        state.tokens.advance(); // consume ::
+        
+        let next_name = match state.tokens.peek() {
+            Some((Token::Identifier(next), _)) => next.clone(),
+            // Handle special tokens that can be type names
+            Some((Token::Result, _)) => "Result".to_string(),
+            Some((Token::Option, _)) => "Option".to_string(),
+            Some((Token::Ok, _)) => "Ok".to_string(),
+            Some((Token::Err, _)) => "Err".to_string(),
+            Some((Token::Some, _)) => "Some".to_string(),
+            Some((Token::None | Token::Null, _)) => "None".to_string(),
+            _ => bail!("Expected identifier after :: in type name"),
+        };
+        
+        name.push_str("::");
+        name.push_str(&next_name);
+        state.tokens.advance();
+    }
+
+    Ok(name)
+}
+
+// Helper: Parse generic type Vec<T, U> (complexity: 4)
+fn parse_generic_type(state: &mut ParserState, base: String, span: Span) -> Result<Type> {
+    state.tokens.advance(); // consume <
+    let type_params = parse_type_list(state)?;
+    state.tokens.expect(&Token::Greater)?;
+
+    Ok(Type {
+        kind: TypeKind::Generic {
+            base,
+            params: type_params,
+        },
+        span,
+    })
+}
+
+// Helper: Parse comma-separated type list (complexity: 3)
+fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
+    let mut types = Vec::new();
+    
+    if !matches!(state.tokens.peek(), Some((Token::RightParen | Token::Greater, _))) {
+        types.push(parse_type(state)?);
+        
+        while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance(); // consume comma
+            types.push(parse_type(state)?);
+        }
+    }
+    
+    Ok(types)
 }
 
 /// Parse import statements in various forms
@@ -385,151 +400,219 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
 /// - No identifier follows the import keyword
 /// - Invalid syntax in import specification
 /// - Unexpected tokens in import list
+/// Parse import statement (complexity: 7)
+/// Orchestrates URL and regular import parsing
 pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume import/use
-
-    let mut path_parts = Vec::new();
-
-    // Check for URL import (e.g., import "https://example.com/module.ruchy")
+    let start_span = state.tokens.advance().expect("checked by parser logic").1;
+    
+    // Check for URL import first
     if let Some((Token::String(url), _)) = state.tokens.peek() {
-        // URL import - validate it starts with https://
-        if !url.starts_with("https://") && !url.starts_with("http://") {
-            bail!("URL imports must start with 'https://' or 'http://'");
-        }
-        
-        // Safety validation for URL imports
-        validate_url_import(url)?;
-        
         let url = url.clone();
-        state.tokens.advance();
-        
-        // URL imports are always single module imports (no wildcard or specific items)
-        let span = start_span; // simplified for now
-        return Ok(Expr::new(
-            ExprKind::Import {
-                path: url,
-                items: vec![ImportItem::Named("*".to_string())], // Import all from URL
-            },
-            span,
-        ));
+        return parse_url_import(state, &url, start_span);
     }
     
-    // Parse regular module path (e.g., std::io::prelude)
+    // Parse regular module import
+    let path_parts = parse_module_path(state)?;
+    let items = parse_import_items(state, &path_parts)?;
+    
+    create_import_expression(path_parts, items, start_span)
+}
+
+/// Parse URL import statement (complexity: 6)
+fn parse_url_import(state: &mut ParserState, url: &str, start_span: Span) -> Result<Expr> {
+    // Validate URL format
+    if !url.starts_with("https://") && !url.starts_with("http://") {
+        bail!("URL imports must start with 'https://' or 'http://'");
+    }
+    
+    // Safety validation for URL imports
+    validate_url_import(url)?;
+    
+    state.tokens.advance();
+    
+    Ok(Expr::new(
+        ExprKind::Import {
+            path: url.to_string(),
+            items: vec![ImportItem::Named("*".to_string())],
+        },
+        start_span,
+    ))
+}
+
+/// Parse module path components (complexity: 8)
+fn parse_module_path(state: &mut ParserState) -> Result<Vec<String>> {
+    let mut path_parts = Vec::new();
+    
+    // Get first identifier
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         path_parts.push(name.clone());
         state.tokens.advance();
-
+        
+        // Parse additional path segments
         while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-            // Check for ::
             state.tokens.advance(); // consume ::
-
-            // Check for wildcard or brace after ::
-            if matches!(
-                state.tokens.peek(),
-                Some((Token::Star | Token::LeftBrace, _))
-            ) {
-                // This is the start of import items, break out of path parsing
+            
+            // Check if this is the start of import items
+            if is_import_items_start(state) {
                 break;
             }
-
-            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                path_parts.push(name.clone());
-                state.tokens.advance();
-            } else {
-                bail!("Expected identifier, '*', or '{{' after '::'");
-            }
+            
+            path_parts.push(parse_path_segment(state)?);
         }
     }
+    
+    Ok(path_parts)
+}
 
-    // Check for specific imports like ::{Read, Write} or ::*
-    // Note: We may have already consumed the :: in the loop above
-    let items = if matches!(state.tokens.peek(), Some((Token::Star, _))) {
-        // Wildcard import: import path::*
-        state.tokens.advance(); // consume *
-        vec![ImportItem::Wildcard]
-    } else if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
-        // Specific imports: import path::{item1, item2, ...}
-        state.tokens.expect(&Token::LeftBrace)?; // consume {
+/// Check if current position is start of import items (complexity: 2)
+fn is_import_items_start(state: &mut ParserState) -> bool {
+    matches!(
+        state.tokens.peek(),
+        Some((Token::Star | Token::LeftBrace, _))
+    )
+}
 
-        let mut items = Vec::new();
-        while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                let name = name.clone();
-                state.tokens.advance();
-
-                // Check for alias: item as alias
-                if matches!(state.tokens.peek(), Some((Token::As, _))) {
-                    state.tokens.advance(); // consume as
-                    if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
-                        let alias = alias.clone();
-                        state.tokens.advance();
-                        items.push(ImportItem::Aliased { name, alias });
-                    } else {
-                        bail!("Expected alias name after 'as'");
-                    }
-                } else {
-                    items.push(ImportItem::Named(name));
-                }
-
-                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                    state.tokens.advance();
-                    // After comma, continue to parse next item
-                    // Don't break here - continue the loop
-                } else if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                    // If not comma and not right brace, error
-                    bail!("Expected ',' or '}}' in import list");
-                }
-            } else if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                bail!("Expected identifier or '}}' in import list");
-            }
-        }
-
-        state.tokens.expect(&Token::RightBrace)?;
-        items
+/// Parse single path segment after :: (complexity: 3)
+fn parse_path_segment(state: &mut ParserState) -> Result<String> {
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        Ok(name)
     } else {
-        // Simple import: import path or import path as alias
-        if matches!(state.tokens.peek(), Some((Token::As, _))) {
-            // import path as alias
-            state.tokens.advance(); // consume as
-            if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
-                let alias = alias.clone();
-                state.tokens.advance();
-                vec![ImportItem::Aliased {
-                    name: path_parts.last().unwrap_or(&String::new()).clone(),
-                    alias,
-                }]
-            } else {
-                bail!("Expected alias name after 'as'");
+        bail!("Expected identifier, '*', or '{{' after '::'");
+    }
+}
+
+/// Parse import items (wildcard, braced list, or simple) (complexity: 9)
+fn parse_import_items(state: &mut ParserState, path_parts: &[String]) -> Result<Vec<ImportItem>> {
+    if matches!(state.tokens.peek(), Some((Token::Star, _))) {
+        parse_wildcard_import(state)
+    } else if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+        parse_braced_import_list(state)
+    } else {
+        parse_simple_import(state, path_parts)
+    }
+}
+
+/// Parse wildcard import (* syntax) (complexity: 2)
+fn parse_wildcard_import(state: &mut ParserState) -> Result<Vec<ImportItem>> {
+    state.tokens.advance(); // consume *
+    Ok(vec![ImportItem::Wildcard])
+}
+
+/// Parse braced import list ({item1, item2, ...}) (complexity: 10)
+fn parse_braced_import_list(state: &mut ParserState) -> Result<Vec<ImportItem>> {
+    state.tokens.expect(&Token::LeftBrace)?;
+    
+    let mut items = Vec::new();
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            let name = name.clone();
+            state.tokens.advance();
+            
+            let item = parse_import_item_with_alias(state, name)?;
+            items.push(item);
+            
+            if !handle_item_separator(state)? {
+                break;
             }
         } else {
-            // Simple import without alias
-            if path_parts.is_empty() {
-                Vec::new()
-            } else if path_parts.len() == 1 {
-                // Single segment like "use math;" - treat as wildcard (use math::*)
-                Vec::new() // Empty items = wildcard import in transpiler
-            } else {
-                // Multi-segment like "use std::collections::HashMap;" - import the last part
-                vec![ImportItem::Named(
-                    path_parts
-                        .last()
-                        .expect("checked: !path_parts.is_empty()")
-                        .clone(),
-                )]
-            }
+            validate_braced_list_token(state)?;
         }
-    };
+    }
+    
+    state.tokens.expect(&Token::RightBrace)?;
+    Ok(items)
+}
 
+/// Parse import item with optional alias (complexity: 6)
+fn parse_import_item_with_alias(state: &mut ParserState, name: String) -> Result<ImportItem> {
+    if matches!(state.tokens.peek(), Some((Token::As, _))) {
+        state.tokens.advance(); // consume as
+        if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+            let alias = alias.clone();
+            state.tokens.advance();
+            Ok(ImportItem::Aliased { name, alias })
+        } else {
+            bail!("Expected alias name after 'as'");
+        }
+    } else {
+        Ok(ImportItem::Named(name))
+    }
+}
+
+/// Handle item separator in braced list (complexity: 4)
+fn handle_item_separator(state: &mut ParserState) -> Result<bool> {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+        Ok(true) // Continue parsing
+    } else if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        Ok(false) // End of list
+    } else {
+        bail!("Expected ',' or '}}' in import list");
+    }
+}
+
+/// Validate token in braced import list (complexity: 3)
+fn validate_braced_list_token(state: &mut ParserState) -> Result<()> {
+    if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        bail!("Expected identifier or '}}' in import list");
+    }
+    Ok(())
+}
+
+/// Parse simple import (path or path as alias) (complexity: 8)
+fn parse_simple_import(state: &mut ParserState, path_parts: &[String]) -> Result<Vec<ImportItem>> {
+    if matches!(state.tokens.peek(), Some((Token::As, _))) {
+        parse_simple_import_with_alias(state, path_parts)
+    } else {
+        parse_simple_import_without_alias(path_parts)
+    }
+}
+
+/// Parse simple import with alias (complexity: 5)
+fn parse_simple_import_with_alias(state: &mut ParserState, path_parts: &[String]) -> Result<Vec<ImportItem>> {
+    state.tokens.advance(); // consume as
+    if let Some((Token::Identifier(alias), _)) = state.tokens.peek() {
+        let alias = alias.clone();
+        state.tokens.advance();
+        Ok(vec![ImportItem::Aliased {
+            name: path_parts.last().unwrap_or(&String::new()).clone(),
+            alias,
+        }])
+    } else {
+        bail!("Expected alias name after 'as'");
+    }
+}
+
+/// Parse simple import without alias (complexity: 5)
+fn parse_simple_import_without_alias(path_parts: &[String]) -> Result<Vec<ImportItem>> {
+    if path_parts.is_empty() {
+        Ok(Vec::new())
+    } else if path_parts.len() == 1 {
+        // Single segment - treat as wildcard
+        Ok(Vec::new())
+    } else {
+        // Multi-segment - import the last part
+        Ok(vec![ImportItem::Named(
+            path_parts
+                .last()
+                .expect("checked: !path_parts.is_empty()")
+                .clone(),
+        )])
+    }
+}
+
+/// Create final import expression (complexity: 4)
+fn create_import_expression(path_parts: Vec<String>, items: Vec<ImportItem>, start_span: Span) -> Result<Expr> {
     let path = path_parts.join("::");
-
-    // Validate that we have either a path or items (or both)
+    
+    // Validate that we have either a path or items
     if path.is_empty() && items.is_empty() {
         bail!("Expected import path or items after 'import'");
     }
-
-    let span = start_span; // simplified for now
-
-    Ok(Expr::new(ExprKind::Import { path, items }, span))
+    
+    Ok(Expr::new(ExprKind::Import { path, items }, start_span))
 }
 
 /// # Errors
@@ -600,110 +683,155 @@ pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Vec<Stri
     while let Some(ch) = chars.next() {
         match ch {
             '{' if chars.peek() == Some(&'{') => {
-                // Escaped brace: {{
-                chars.next(); // consume second '{'
-                current_text.push('{');
+                handle_escaped_brace(&mut chars, &mut current_text, '{');
             }
             '}' if chars.peek() == Some(&'}') => {
-                // Escaped brace: }}
-                chars.next(); // consume second '}'
-                current_text.push('}');
+                handle_escaped_brace(&mut chars, &mut current_text, '}');
             }
             '{' => {
-                // Start of interpolation
-                if !current_text.is_empty() {
-                    parts.push(StringPart::Text(current_text.clone()));
-                    current_text.clear();
-                }
-
-                // Collect expression until closing '}' with proper string literal handling
-                let mut expr_text = String::new();
-                let mut brace_count = 1;
-                let mut in_string = false;
-                let mut in_char = false;
-                let mut escaped = false;
-
-                for expr_ch in chars.by_ref() {
-                    match expr_ch {
-                        '"' if !in_char && !escaped => {
-                            in_string = !in_string;
-                            expr_text.push(expr_ch);
-                        }
-                        '\'' if !in_string && !escaped => {
-                            in_char = !in_char;
-                            expr_text.push(expr_ch);
-                        }
-                        '{' if !in_string && !in_char => {
-                            brace_count += 1;
-                            expr_text.push(expr_ch);
-                        }
-                        '}' if !in_string && !in_char => {
-                            brace_count -= 1;
-                            if brace_count == 0 {
-                                break;
-                            }
-                            expr_text.push(expr_ch);
-                        }
-                        '\\' if (in_string || in_char) && !escaped => {
-                            escaped = true;
-                            expr_text.push(expr_ch);
-                        }
-                        _ => {
-                            escaped = false;
-                            expr_text.push(expr_ch);
-                        }
-                    }
-
-                    // Reset escape flag for non-backslash characters
-                    if expr_ch != '\\' {
-                        escaped = false;
-                    }
-                }
-
-                // Check if there's a format specifier (e.g., "score:.2" -> "score" and ":.2")
-                let (expr_part, format_spec) = if let Some(colon_pos) = expr_text.find(':') {
-                    // Check if the colon is not inside a string or character literal
-                    // Simple heuristic: if there are no quotes before the colon, it's likely a format spec
-                    let before_colon = &expr_text[..colon_pos];
-                    if !before_colon.contains('"') && !before_colon.contains('\'') {
-                        (&expr_text[..colon_pos], Some(&expr_text[colon_pos..]))
-                    } else {
-                        (expr_text.as_str(), None)
-                    }
-                } else {
-                    (expr_text.as_str(), None)
-                };
-                
-                // Parse the expression part (without format specifier)
-                let mut expr_parser = super::core::Parser::new(expr_part);
-                match expr_parser.parse() {
-                    Ok(expr) => {
-                        // Store the expression with or without format specifier
-                        if let Some(spec) = format_spec {
-                            parts.push(StringPart::ExprWithFormat {
-                                expr: Box::new(expr),
-                                format_spec: spec.to_string(),
-                            });
-                        } else {
-                            parts.push(StringPart::Expr(Box::new(expr)));
-                        }
-                    }
-                    Err(_) => {
-                        // Fallback to text if parsing fails
-                        parts.push(StringPart::Text(format!("{{{expr_text}}}")));
-                    }
-                }
+                handle_interpolation(&mut chars, &mut parts, &mut current_text);
             }
             _ => current_text.push(ch),
         }
     }
 
-    // Add remaining text
+    finalize_text_part(&mut parts, current_text);
+    parts
+}
+
+// Helper: Handle escaped braces (complexity: 2)
+fn handle_escaped_brace<T: Iterator<Item = char>>(
+    chars: &mut T,
+    current_text: &mut String,
+    brace_char: char,
+) {
+    chars.next(); // consume second brace
+    current_text.push(brace_char);
+}
+
+// Helper: Handle interpolation expressions (complexity: 4)
+fn handle_interpolation<T: Iterator<Item = char>>(
+    chars: &mut T,
+    parts: &mut Vec<StringPart>,
+    current_text: &mut String,
+) {
+    if !current_text.is_empty() {
+        parts.push(StringPart::Text(current_text.clone()));
+        current_text.clear();
+    }
+
+    let expr_text = extract_expression_text(chars);
+    let string_part = parse_interpolated_expr(&expr_text);
+    parts.push(string_part);
+}
+
+// Helper: Extract expression text from braces (complexity: 8)
+fn extract_expression_text<T: Iterator<Item = char>>(chars: &mut T) -> String {
+    let mut expr_text = String::new();
+    let mut context = ExprContext::default();
+
+    for expr_ch in chars {
+        match expr_ch {
+            '"' if !context.in_char && !context.escaped => {
+                context.in_string = !context.in_string;
+                expr_text.push(expr_ch);
+            }
+            '\'' if !context.in_string && !context.escaped => {
+                context.in_char = !context.in_char;
+                expr_text.push(expr_ch);
+            }
+            '{' if !context.in_string && !context.in_char => {
+                context.brace_count += 1;
+                expr_text.push(expr_ch);
+            }
+            '}' if !context.in_string && !context.in_char => {
+                context.brace_count -= 1;
+                if context.brace_count == 0 {
+                    break;
+                }
+                expr_text.push(expr_ch);
+            }
+            '\\' if (context.in_string || context.in_char) && !context.escaped => {
+                context.escaped = true;
+                expr_text.push(expr_ch);
+            }
+            _ => {
+                context.escaped = false;
+                expr_text.push(expr_ch);
+            }
+        }
+
+        // Reset escape flag for non-backslash characters
+        if expr_ch != '\\' {
+            context.escaped = false;
+        }
+    }
+
+    expr_text
+}
+
+// Helper: Parse interpolated expression with format specifier (complexity: 4)
+fn parse_interpolated_expr(expr_text: &str) -> StringPart {
+    let (expr_part, format_spec) = split_format_specifier(expr_text);
+    
+    let mut expr_parser = super::core::Parser::new(expr_part);
+    match expr_parser.parse() {
+        Ok(expr) => {
+            if let Some(spec) = format_spec {
+                StringPart::ExprWithFormat {
+                    expr: Box::new(expr),
+                    format_spec: spec.to_string(),
+                }
+            } else {
+                StringPart::Expr(Box::new(expr))
+            }
+        }
+        Err(_) => {
+            // Fallback to text if parsing fails
+            StringPart::Text(format!("{{{expr_text}}}"))
+        }
+    }
+}
+
+// Helper: Split format specifier from expression (complexity: 3)
+fn split_format_specifier(expr_text: &str) -> (&str, Option<&str>) {
+    if let Some(colon_pos) = expr_text.find(':') {
+        let before_colon = &expr_text[..colon_pos];
+        if !before_colon.contains('"') && !before_colon.contains('\'') {
+            (before_colon, Some(&expr_text[colon_pos..]))
+        } else {
+            (expr_text, None)
+        }
+    } else {
+        (expr_text, None)
+    }
+}
+
+// Helper: Finalize remaining text (complexity: 2)
+fn finalize_text_part(parts: &mut Vec<StringPart>, current_text: String) {
     if !current_text.is_empty() {
         parts.push(StringPart::Text(current_text));
     }
+}
 
-    parts
+// Helper struct to track expression parsing context (complexity: 0)
+#[derive(Default)]
+struct ExprContext {
+    brace_count: i32,
+    in_string: bool,
+    in_char: bool,
+    escaped: bool,
+}
+
+impl ExprContext {
+    fn default() -> Self {
+        Self {
+            brace_count: 1,
+            in_string: false,
+            in_char: false,
+            escaped: false,
+        }
+    }
 }
 
 /// Parse module declarations

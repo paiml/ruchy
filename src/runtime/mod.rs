@@ -10,10 +10,12 @@ pub mod dataflow_debugger;
 pub mod dataflow_ui;
 pub mod grammar_coverage;
 pub mod interpreter;
+// pub mod interpreter_modules;  // Temporarily disabled - compilation errors
 pub mod lazy;
 pub mod observatory;
 pub mod observatory_ui;
 pub mod repl;
+// pub mod repl_modules;  // Temporarily disabled - compilation errors
 pub mod repl_recording;
 pub mod replay;
 pub mod replay_converter;
