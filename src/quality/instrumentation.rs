@@ -147,27 +147,51 @@ pub fn instrument_source(source: &str, file_path: &str) -> Result<String> {
 fn is_executable_line(line: &str) -> bool {
     let trimmed = line.trim();
     
-    // First check if it's a control flow statement (these are executable even with {)
-    if trimmed.starts_with("if ") ||
-       trimmed.starts_with("while ") ||
-       trimmed.starts_with("for ") ||
-       trimmed.starts_with("match ") {
+    // Check control flow (complexity: 4)
+    if is_control_flow_statement(trimmed) {
         return true;
     }
     
-    // Skip function signatures, struct definitions, etc.
-    if trimmed.starts_with("fn ") || 
-       trimmed.starts_with("fun ") ||
-       trimmed.starts_with("struct ") ||
-       trimmed.starts_with("enum ") ||
-       trimmed.starts_with("use ") ||
-       trimmed.starts_with("mod ") ||
-       trimmed.starts_with("#[") ||
-       (trimmed.ends_with('{') && !trimmed.contains('=')) {
+    // Check declarations (complexity: 3)
+    if is_declaration_statement(trimmed) {
         return false;
     }
     
-    // Consider lines with statements/expressions as executable
+    // Check block starts (complexity: 2)
+    if is_block_start(trimmed) {
+        return false;
+    }
+    
+    // Check executable statements (complexity: 1)
+    is_executable_statement(trimmed)
+}
+
+/// Check if line is a control flow statement (complexity: 4)
+fn is_control_flow_statement(trimmed: &str) -> bool {
+    trimmed.starts_with("if ") ||
+    trimmed.starts_with("while ") ||
+    trimmed.starts_with("for ") ||
+    trimmed.starts_with("match ")
+}
+
+/// Check if line is a declaration (complexity: 7)
+fn is_declaration_statement(trimmed: &str) -> bool {
+    trimmed.starts_with("fn ") || 
+    trimmed.starts_with("fun ") ||
+    trimmed.starts_with("struct ") ||
+    trimmed.starts_with("enum ") ||
+    trimmed.starts_with("use ") ||
+    trimmed.starts_with("mod ") ||
+    trimmed.starts_with("#[")
+}
+
+/// Check if line starts a block (complexity: 2)
+fn is_block_start(trimmed: &str) -> bool {
+    trimmed.ends_with('{') && !trimmed.contains('=')
+}
+
+/// Check if line contains executable statement (complexity: 4)
+fn is_executable_statement(trimmed: &str) -> bool {
     trimmed.contains('=') ||
     trimmed.contains("println") ||
     trimmed.contains("assert") ||

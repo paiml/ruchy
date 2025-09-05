@@ -897,85 +897,94 @@ enum Commands {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    // Try to handle direct evaluation first
+    if let Some(result) = try_handle_direct_evaluation(&cli)? {
+        return result;
+    }
+
+    // Try to handle stdin input
+    if let Some(result) = try_handle_stdin(&cli.command)? {
+        return result;
+    }
+
+    // Handle subcommands
+    handle_command_dispatch(cli.command, cli.verbose)
+}
+
+/// Handle direct evaluation via -e flag or file argument (complexity: 4)
+fn try_handle_direct_evaluation(cli: &Cli) -> Result<Option<Result<()>>> {
     // Handle one-liner evaluation with -e flag
-    if let Some(expr) = cli.eval {
-        return handle_eval_command(&expr, cli.verbose, &cli.format);
+    if let Some(expr) = &cli.eval {
+        return Ok(Some(handle_eval_command(expr, cli.verbose, &cli.format)));
     }
 
     // Handle script file execution (without subcommand)
-    if let Some(file) = cli.file {
-        return handle_file_execution(&file);
+    if let Some(file) = &cli.file {
+        return Ok(Some(handle_file_execution(file)));
     }
 
-    // Check if stdin has input (piped mode) - but only when no command or file is specified
-    if !io::stdin().is_terminal() && cli.command.is_none() {
+    Ok(None)
+}
+
+/// Handle stdin input if present (complexity: 5)
+fn try_handle_stdin(command: &Option<Commands>) -> Result<Option<Result<()>>> {
+    // Check if stdin has input (piped mode) - but only when no command is specified
+    if !io::stdin().is_terminal() && command.is_none() {
         let mut input = String::new();
         io::stdin().read_to_string(&mut input)?;
 
         if !input.trim().is_empty() {
-            return handle_stdin_input(&input);
+            return Ok(Some(handle_stdin_input(&input)));
         }
     }
+    
+    Ok(None)
+}
 
-    // Handle subcommands
-    match cli.command {
-        Some(Commands::Repl { record }) => {
-            handle_repl_command(record)?;
-        }
-        None => {
-            handle_repl_command(None)?;
-        }
-        Some(Commands::Parse { file }) => {
-            handle_parse_command(&file, cli.verbose)?;
-        }
+/// Dispatch commands to appropriate handlers (complexity: 6)
+fn handle_command_dispatch(command: Option<Commands>, verbose: bool) -> Result<()> {
+    match command {
+        Some(Commands::Repl { record }) => handle_repl_command(record),
+        None => handle_repl_command(None),
+        Some(Commands::Parse { file }) => handle_parse_command(&file, verbose),
         Some(Commands::Transpile { file, output, minimal }) => {
-            handle_transpile_command(&file, output.as_deref(), minimal, cli.verbose)?;
+            handle_transpile_command(&file, output.as_deref(), minimal, verbose)
         }
-        Some(Commands::Run { file }) => {
-            handle_run_command(&file, cli.verbose)?;
+        Some(Commands::Run { file }) => handle_run_command(&file, verbose),
+        Some(Commands::Compile { file, output, opt_level, strip, static_link, target }) => {
+            handle_compile_command(&file, output, opt_level, strip, static_link, target)
         }
-        Some(Commands::Compile { 
-            file, 
-            output, 
-            opt_level, 
-            strip, 
-            static_link, 
-            target 
-        }) => {
-            handle_compile_command(&file, output, opt_level, strip, static_link, target)?;
+        Some(Commands::Check { file, watch }) => handle_check_command(&file, watch),
+        Some(Commands::Test { path, watch, verbose, filter, coverage, coverage_format, parallel, threshold, format }) => {
+            handle_test_dispatch(path, watch, verbose, filter, coverage, coverage_format, parallel, threshold, format)
         }
-        Some(Commands::Check { file, watch }) => {
-            handle_check_command(&file, watch)?;
-        }
-        Some(Commands::Test {
-            path,
-            watch,
-            verbose,
-            filter,
-            coverage,
-            coverage_format,
-            parallel,
-            threshold,
-            format,
-        }) => {
-            handle_test_command(
-                path,
-                watch,
-                verbose,
-                filter.as_deref(),
-                coverage,
-                &coverage_format,
-                usize::from(parallel),
-                threshold.unwrap_or(0.0),
-                &format,
-            )?;
-        }
-        Some(command) => {
-            handle_advanced_command(command)?;
-        }
-    } 
+        Some(command) => handle_advanced_command(command),
+    }
+}
 
-    Ok(())
+/// Handle test command with all its parameters (complexity: 3)
+fn handle_test_dispatch(
+    path: Option<PathBuf>,
+    watch: bool,
+    verbose: bool,
+    filter: Option<String>,
+    coverage: bool,
+    coverage_format: String,
+    parallel: bool,
+    threshold: Option<f64>,
+    format: String,
+) -> Result<()> {
+    handle_test_command(
+        path,
+        watch,
+        verbose,
+        filter.as_deref(),
+        coverage,
+        &coverage_format,
+        usize::from(parallel),
+        threshold.unwrap_or(0.0),
+        &format,
+    )
 }
 
 fn handle_advanced_command(command: Commands) -> Result<()> {
