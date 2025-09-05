@@ -245,7 +245,7 @@ fn parse_fn_type(state: &mut ParserState, span: Span) -> Result<Type> {
     })
 }
 
-// Helper: Parse list type [T] (complexity: 3)
+// Helper: Parse list type `[T]` (complexity: 3)
 fn parse_list_type(state: &mut ParserState, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume [
     let inner = parse_type(state)?;

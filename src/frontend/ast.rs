@@ -589,7 +589,7 @@ pub struct ErrorTypeDef {
     pub extends: Option<String>, // Parent error type
 }
 
-/// Attribute for annotating expressions (e.g., #[property])
+/// Attribute for annotating expressions (e.g., `#[property]`)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Attribute {
     pub name: String,

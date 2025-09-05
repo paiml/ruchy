@@ -484,10 +484,10 @@ impl Transpiler {
     /// Transpiles extension methods into trait + impl
     ///
     /// Generates both a trait definition and an implementation according to the specification:
-    /// ```rust
-    /// // Ruchy: extend String { fun is_palindrome(&self) -> bool { ... } }
-    /// // Rust:  trait StringExt { fn is_palindrome(&self) -> bool; }
-    /// //        impl StringExt for String { fn is_palindrome(&self) -> bool { ... } }
+    /// ```text
+    /// Ruchy: extend String { fun is_palindrome(&self) -> bool { ... } }
+    /// Rust:  trait StringExt { fn is_palindrome(&self) -> bool; }
+    ///        impl StringExt for String { fn is_palindrome(&self) -> bool { ... } }
     /// ```
     pub fn transpile_extend(
         &self,

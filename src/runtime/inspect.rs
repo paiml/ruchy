@@ -128,11 +128,11 @@ impl Default for InspectStyle {
 pub enum DisplayForm {
     /// Atomic values (42, true, "hello")
     Atomic(String),
-    /// Composite values ([1,2,3], {x: 10})
+    /// Composite values (`[1,2,3]`, `{x: 10}`)
     Composite(CompositeForm),
     /// Reference values (&value@0x7fff)
     Reference(usize, Box<DisplayForm>),
-    /// Opaque values (<fn>, <thread#42>)
+    /// Opaque values (`<fn>`, `<thread#42>`)
     Opaque(OpaqueHandle),
 }
 

@@ -189,7 +189,7 @@ fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) -> Result<E
     Ok(left)
 }
 
-/// Handle array indexing and slicing syntax [expr] or [start:end]
+/// Handle array indexing and slicing syntax `[expr]` or `[start:end]`
 fn handle_array_indexing(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume [
     
@@ -213,7 +213,7 @@ fn is_colon_next(state: &mut ParserState) -> bool {
     matches!(state.tokens.peek(), Some((Token::Colon, _)))
 }
 
-/// Parse slice with empty start [:end] (complexity: 4)
+/// Parse slice with empty start `[:end]` (complexity: 4)
 fn parse_empty_start_slice(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume :
     let end = parse_optional_slice_end(state)?;
@@ -222,7 +222,7 @@ fn parse_empty_start_slice(state: &mut ParserState, left: Expr) -> Result<Expr> 
     Ok(create_slice_expr(left, None, end))
 }
 
-/// Parse slice with start [start:end] (complexity: 3)
+/// Parse slice with start `[start:end]` (complexity: 3)
 fn parse_slice_with_start(state: &mut ParserState, left: Expr, start: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume :
     let end = parse_optional_slice_end(state)?;
@@ -240,7 +240,7 @@ fn parse_optional_slice_end(state: &mut ParserState) -> Result<Option<Box<Expr>>
     }
 }
 
-/// Parse index access [index] (complexity: 2)
+/// Parse index access `[index]` (complexity: 2)
 fn parse_index_access(state: &mut ParserState, left: Expr, index: Expr) -> Result<Expr> {
     state.tokens.expect(&Token::RightBracket)?;
     

@@ -32,7 +32,7 @@ pub enum MonoType {
     Unit,
     /// Function type: T1 -> T2
     Function(Box<MonoType>, Box<MonoType>),
-    /// List type: [T]
+    /// List type: `[T]`
     List(Box<MonoType>),
     /// Tuple type: (T1, T2, ...)
     Tuple(Vec<MonoType>),
