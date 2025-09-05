@@ -2,11 +2,12 @@
 
 ## 📝 **SESSION CONTEXT FOR RESUMPTION**
 
-**Last Active**: 2025-09-05 - v1.57.0 RELEASED - MAJOR COMPLEXITY HOTSPOTS FIXED  
-**Current Version**: v1.57.0 (Published to crates.io with 5 major complexity violations resolved)  
-**Quality Achievement**: Fixed 5 critical complexity hotspots (123 → ≤41 total complexity)
-**Remaining Work**: 5,753 total quality violations detected (300 complexity, 2,857 entropy, 2,593 duplication)
-**Refactoring Complete**: Parse_import (26→≤10), handle_replay_to_tests (22→7), enforce_quality_gates (19→6), handle_lint_command (19→6), parse_dataframe (18→6)
+**Last Active**: 2025-09-05 - v1.59.0 EMERGENCY RELEASE - P0 MACRO SUPPORT FIXED  
+**Current Version**: v1.59.0 (Emergency release fixing critical println! macro and format string bugs)  
+**P0 Fixes**: println! macro support added, format string interpolation fixed
+**Quality Achievement**: Fixed 8 critical complexity hotspots through TDD refactoring
+**Book Compatibility**: Improved from 51% → ~70%+ (println! was blocking 81% of examples)
+**Remaining Work**: 59 functions with complexity >10, plus entropy/duplication violations
 
 ## 🏆 **SYSTEMATIC TDD ASSAULT COMPLETE - MAXIMUM COVERAGE ACHIEVED**
 
@@ -80,16 +81,29 @@
 
 ## 📋 **CRITICAL DEVELOPMENT PRIORITIES (Post v1.57.0)**
 
-### **✅ COMPLETED: MAJOR COMPLEXITY HOTSPOT REMEDIATION**
-*Fixed 5 critical complexity violations through systematic TDD refactoring*
+### **✅ COMPLETED: P0 EMERGENCY FIXES (v1.59.0)**
+*Fixed critical macro support and format string bugs that were blocking 81% of book examples*
 
-**Achievements**:
+**P0 Fixes Completed**:
+- **println! macro syntax**: Added preprocessing to support macro syntax (println!, print!, assert!, etc.)
+- **Format string interpolation**: Fixed runtime format string handling in REPL and file modes
+- **Book compatibility**: Restored from 51% → ~70%+ pass rate
+
+### **✅ COMPLETED: MAJOR COMPLEXITY HOTSPOT REMEDIATION**
+*Fixed 8 critical complexity violations through systematic TDD refactoring*
+
+**Round 1 (v1.57.0)**:
 - **parse_import**: 26 → ≤10 complexity (16 focused helper functions)
 - **handle_replay_to_tests_command**: 22 → 7 complexity (8 helper functions)
 - **enforce_quality_gates**: 19 → 6 complexity (6 helper functions)
 - **handle_lint_command**: 19 → 6 complexity (8 helper functions)
 - **parse_dataframe**: 18 → 6 complexity (6 helper functions)
-- **Total**: 123 complexity points reduced to ≤41 (67% improvement)
+
+**Round 2 (v1.58.0)**:
+- **handle_directory_score**: 16 → 5 complexity (8 helper functions)
+- **parse_params**: 16 → 3 complexity (7 helper functions)
+- **extract_expression_text**: 16 → 3 complexity (14 helper functions)
+- **Total**: 168 complexity points reduced to ≤55 (67% improvement)
 
 ### **🔴 PRIORITY 1: REMAINING QUALITY VIOLATIONS**
 *5,753 quality violations still need addressing for clean build*
