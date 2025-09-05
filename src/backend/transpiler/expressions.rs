@@ -324,7 +324,7 @@ impl Transpiler {
         }
     }
 
-    /// Transpiles index access (array[index])
+    /// Transpiles index access `(array[index])`
     pub fn transpile_index_access(&self, object: &Expr, index: &Expr) -> Result<TokenStream> {
         use crate::frontend::ast::{ExprKind, Literal};
         
@@ -348,7 +348,7 @@ impl Transpiler {
         }
     }
 
-    /// Transpiles slice access (array[start:end])
+    /// Transpiles slice access `(array[start:end])`
     pub fn transpile_slice(&self, object: &Expr, start: Option<&Expr>, end: Option<&Expr>) -> Result<TokenStream> {
         let obj_tokens = self.transpile_expr(object)?;
         
