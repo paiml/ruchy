@@ -219,3 +219,7 @@ impl Transpiler {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "patterns_tests.rs"]
+mod tests;

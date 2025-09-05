@@ -213,3 +213,6 @@ impl Transpiler {
         Ok(quote! { #obj.#method_ident(#(#args),*) })
     }
 }
+#[cfg(test)]
+#[path = "method_call_refactored_tests.rs"]
+mod tests;
