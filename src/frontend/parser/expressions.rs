@@ -36,6 +36,10 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         Token::If | Token::Match | Token::While | Token::For => {
             parse_control_flow_token(state, token_clone)
         }
+        // Module declaration token
+        Token::Mod => {
+            parse_module_declaration(state)
+        }
         // Lambda expression tokens - delegated to focused helper
         Token::Pipe | Token::OrOr => {
             parse_lambda_token(state, token_clone)
@@ -112,8 +116,28 @@ fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> 
     match token {
         Token::Identifier(name) => {
             state.tokens.advance();
+            
+            // Check for module path: math::add
+            if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                let mut path = vec![name.clone()];
+                
+                while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+                    state.tokens.advance(); // consume ::
+                    
+                    if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
+                        path.push(segment.clone());
+                        state.tokens.advance();
+                    } else {
+                        bail!("Expected identifier after '::'");
+                    }
+                }
+                
+                // Create a qualified name expression
+                let qualified_name = path.join("::");
+                Ok(Expr::new(ExprKind::Identifier(qualified_name), span))
+            }
             // Check for fat arrow lambda: x => x * 2
-            if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+            else if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
                 state.tokens.advance(); // consume =>
                 let body = Box::new(super::parse_expr_recursive(state)?);
                 let params = vec![Param {
@@ -305,6 +329,67 @@ fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Exp
         Token::For => parse_for_loop(state),
         _ => bail!("Expected control flow token, got: {:?}", token),
     }
+}
+
+/// Parse module declaration: mod name { body }
+/// Complexity: <5 (simple structure)
+fn parse_module_declaration(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.expect(&Token::Mod)?;
+    
+    // Parse module name
+    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let n = n.clone();
+        state.tokens.advance();
+        n
+    } else {
+        bail!("Expected module name after 'mod'");
+    };
+    
+    // Parse module body with visibility support
+    state.tokens.expect(&Token::LeftBrace)?;
+    let body = Box::new(parse_module_body(state)?);
+    
+    Ok(Expr::new(
+        ExprKind::Module { name, body },
+        start_span,
+    ))
+}
+
+/// Parse module body with support for visibility modifiers (pub)
+fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
+    let start_span = state.tokens.peek().map(|t| t.1).unwrap_or(Span { start: 0, end: 0 });
+    let mut exprs = Vec::new();
+    
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        // Check for visibility modifier
+        let is_pub = if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
+            state.tokens.advance();
+            true
+        } else {
+            false
+        };
+        
+        // Parse the item with visibility
+        let expr = if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
+            super::functions::parse_function_with_visibility(state, is_pub)?
+        } else if is_pub {
+            bail!("'pub' can only be used with function declarations in modules");
+        } else {
+            // Regular expression without visibility
+            super::parse_expr_recursive(state)?
+        };
+        
+        exprs.push(expr);
+        
+        // Skip optional semicolons
+        if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+            state.tokens.advance();
+        }
+    }
+    
+    state.tokens.expect(&Token::RightBrace)?;
+    
+    Ok(Expr::new(ExprKind::Block(exprs), start_span))
 }
 
 /// Parse data structure definition tokens (Struct, Trait, Impl)

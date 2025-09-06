@@ -4,6 +4,32 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.65.0] - 2025-09-06
+
+### 🎯 **MODULE SYSTEM WITH VISIBILITY SUPPORT**
+
+Added comprehensive module system support with `pub` visibility modifiers, enabling modular code organization.
+
+### Added
+- Module declaration syntax: `mod name { ... }`
+- Module path access: `module::function` syntax
+- Visibility modifiers: `pub` keyword for public functions in modules
+- TDD test suite for module system (`module_system_tdd.rs`)
+- Proper transpilation of modules to Rust code with visibility preservation
+
+### Fixed
+- **Module Visibility**: `pub` keyword now correctly parsed and transpiled in module contexts
+- **Module Path Resolution**: Identifiers with `::` now properly transpiled to Rust module paths
+- **Module Function Calls**: Fixed transpiler to handle qualified function calls like `math::add`
+
+### Improved
+- Parser now has dedicated module body parsing with visibility support
+- Transpiler correctly generates Rust `mod` blocks with proper visibility
+
+### Book Compatibility
+- Module examples from the book now compile and run correctly
+- Module system fully functional in transpiler (interpreter support pending)
+
 ## [1.64.0] - 2025-09-06
 
 ### 🎯 **RANGE PATTERNS IN MATCH EXPRESSIONS**

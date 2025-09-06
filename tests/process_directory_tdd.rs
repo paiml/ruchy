@@ -70,7 +70,7 @@ mod process_directory_tests {
         assert_eq!(results[1].1, false);
     }
     
-    fn add_result(results: &mut Vec<(&str, bool)>, name: &str, passed: bool) {
+    fn add_result<'a>(results: &mut Vec<(&'a str, bool)>, name: &'a str, passed: bool) {
         results.push((name, passed));
     }
 }

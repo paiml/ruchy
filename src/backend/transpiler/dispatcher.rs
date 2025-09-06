@@ -24,19 +24,44 @@ impl Transpiler {
     }
 
     fn transpile_identifier(name: &str) -> TokenStream {
-        // Handle Rust reserved keywords by prefixing with r#
-        // Note: 'self', 'Self', 'super', and 'crate' cannot be raw identifiers
-        let safe_name = if matches!(name, "self" | "Self" | "super" | "crate") {
-            // These keywords cannot be raw identifiers, use them as-is
-            name.to_string()
-        } else if Self::is_rust_reserved_keyword(name) {
-            format!("r#{name}")
+        // Check if this is a module path like "math::add"
+        if name.contains("::") {
+            // Split into module path components
+            let parts: Vec<&str> = name.split("::").collect();
+            let mut tokens = Vec::new();
+            
+            for (i, part) in parts.iter().enumerate() {
+                let safe_part = if matches!(*part, "self" | "Self" | "super" | "crate") {
+                    part.to_string()
+                } else if Self::is_rust_reserved_keyword(part) {
+                    format!("r#{part}")
+                } else {
+                    part.to_string()
+                };
+                
+                let ident = format_ident!("{}", safe_part);
+                tokens.push(quote! { #ident });
+                
+                if i < parts.len() - 1 {
+                    tokens.push(quote! { :: });
+                }
+            }
+            
+            quote! { #(#tokens)* }
         } else {
-            name.to_string()
-        };
-        
-        let ident = format_ident!("{}", safe_name);
-        quote! { #ident }
+            // Handle single identifier with Rust reserved keywords
+            let safe_name = if matches!(name, "self" | "Self" | "super" | "crate") {
+                // These keywords cannot be raw identifiers, use them as-is
+                name.to_string()
+            } else if Self::is_rust_reserved_keyword(name) {
+                format!("r#{name}")
+            } else {
+                name.to_string()
+            };
+            
+            let ident = format_ident!("{}", safe_name);
+            quote! { #ident }
+        }
     }
 
     fn transpile_qualified_name(module: &str, name: &str) -> TokenStream {
