@@ -121,10 +121,37 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
             Some(vec![(name.clone(), value.clone())])
         }
         
-        Pattern::Range { .. } => {
-            // Range patterns need numeric comparison
-            // For now, just fail to match
-            None
+        Pattern::Range { start, end, inclusive } => {
+            // Range patterns for numeric values
+            if let Value::Int(val) = value {
+                // Extract start and end values from patterns
+                let start_val = if let Pattern::Literal(Literal::Integer(n)) = &**start {
+                    *n
+                } else {
+                    return None; // Start must be a literal integer
+                };
+                
+                let end_val = if let Pattern::Literal(Literal::Integer(n)) = &**end {
+                    *n
+                } else {
+                    return None; // End must be a literal integer
+                };
+                
+                let val = *val;
+                let in_range = if *inclusive {
+                    val >= start_val && val <= end_val
+                } else {
+                    val >= start_val && val < end_val
+                };
+                
+                if in_range {
+                    Some(Vec::new()) // No variable bindings for range patterns
+                } else {
+                    None
+                }
+            } else {
+                None // Range patterns only match integers
+            }
         }
         
         Pattern::QualifiedName(_) => {
