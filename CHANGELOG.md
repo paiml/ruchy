@@ -4,6 +4,29 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.64.0] - 2025-09-06
+
+### 🎯 **RANGE PATTERNS IN MATCH EXPRESSIONS**
+
+Added support for range patterns in match arms, improving book compatibility.
+
+### Added
+- Range pattern support in match expressions (`1..=17`, `1..10`)
+- TDD test suite for range pattern matching (`match_range_pattern_tdd.rs`)
+- Parser support for inclusive (`..=`) and exclusive (`..`) range patterns
+- Interpreter evaluation of range patterns with proper boundary checks
+
+### Fixed
+- **Range Pattern Parsing**: Match arms now support `1..=17` and `1..10` syntax
+- **Pattern Matching**: Interpreter correctly evaluates numeric ranges in match expressions
+- Book compatibility improved from 90.7% to 91.5% (107→108 passing tests)
+
+### Technical Details
+- Modified `parse_literal_pattern` to detect range operators after integers
+- Implemented `Pattern::Range` evaluation in pattern matching engine
+- Added support for both `Token::DotDot` and `Token::DotDotEqual` in parser
+- Range patterns work with integer values and proper inclusive/exclusive logic
+
 ## [1.63.0] - 2025-09-06
 
 ### 🔧 **TRANSPILER FIXES FOR BOOK COMPATIBILITY**

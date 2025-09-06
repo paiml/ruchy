@@ -826,7 +826,47 @@ fn parse_literal_pattern(state: &mut ParserState) -> Result<Pattern> {
         Token::Integer(val) => {
             let val = *val;
             state.tokens.advance();
-            Pattern::Literal(Literal::Integer(val))
+            
+            // Check for range patterns: 1..5 or 1..=5
+            match state.tokens.peek() {
+                Some((Token::DotDot, _)) => {
+                    state.tokens.advance(); // consume '..'
+                    
+                    // Parse end value
+                    if let Some((Token::Integer(end_val), _)) = state.tokens.peek() {
+                        let end_val = *end_val;
+                        state.tokens.advance();
+                        
+                        Pattern::Range {
+                            start: Box::new(Pattern::Literal(Literal::Integer(val))),
+                            end: Box::new(Pattern::Literal(Literal::Integer(end_val))),
+                            inclusive: false, // exclusive range
+                        }
+                    } else {
+                        bail!("Expected integer after range operator");
+                    }
+                }
+                Some((Token::DotDotEqual, _)) => {
+                    state.tokens.advance(); // consume '..='
+                    
+                    // Parse end value
+                    if let Some((Token::Integer(end_val), _)) = state.tokens.peek() {
+                        let end_val = *end_val;
+                        state.tokens.advance();
+                        
+                        Pattern::Range {
+                            start: Box::new(Pattern::Literal(Literal::Integer(val))),
+                            end: Box::new(Pattern::Literal(Literal::Integer(end_val))),
+                            inclusive: true, // inclusive range
+                        }
+                    } else {
+                        bail!("Expected integer after range operator");
+                    }
+                }
+                _ => {
+                    Pattern::Literal(Literal::Integer(val))
+                }
+            }
         }
         Token::Float(val) => {
             let val = *val;
