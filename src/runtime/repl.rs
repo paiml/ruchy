@@ -4611,9 +4611,12 @@ impl Repl {
                 Self::evaluate_float_arithmetic(*a, op, *b)
             }
 
-            // String concatenation
+            // String concatenation - optimized with pre-allocation
             (Value::String(a), BinaryOp::Add, Value::String(b)) => {
-                Ok(Value::String(format!("{a}{b}")))
+                let mut result = String::with_capacity(a.len() + b.len());
+                result.push_str(a);
+                result.push_str(b);
+                Ok(Value::String(result))
             }
 
             // Comparisons
