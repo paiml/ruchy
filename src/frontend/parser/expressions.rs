@@ -975,13 +975,22 @@ fn parse_match_list_pattern(state: &mut ParserState) -> Result<Pattern> {
 fn parse_constructor_pattern(state: &mut ParserState, name: String) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftParen)?;
     
-    // Check for empty tuple (e.g., None())
+    // Parse the pattern arguments
+    let patterns = parse_constructor_arguments(state)?;
+    
+    state.tokens.expect(&Token::RightParen)?;
+    
+    // Delegate pattern creation to helper
+    create_constructor_pattern(name, patterns)
+}
+
+/// Parse constructor arguments (complexity: 6)
+fn parse_constructor_arguments(state: &mut ParserState) -> Result<Vec<Pattern>> {
+    // Check for empty tuple
     if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-        state.tokens.advance();
-        return Ok(Pattern::Identifier(name));
+        return Ok(vec![]);
     }
     
-    // Parse inner patterns as tuple
     let mut patterns = vec![parse_match_pattern(state)?];
     
     // Parse additional patterns if comma-separated
@@ -993,24 +1002,32 @@ fn parse_constructor_pattern(state: &mut ParserState, name: String) -> Result<Pa
         patterns.push(parse_match_pattern(state)?);
     }
     
-    state.tokens.expect(&Token::RightParen)?;
-    
-    // Handle constructor patterns (Some(x), Ok(val), etc.)
-    // These should ideally use a proper constructor pattern type
-    // For now, we'll use the appropriate pattern based on the constructor name
-    
-    if name == "Some" && patterns.len() == 1 {
-        // Some(pattern) - use Ok variant to represent Option::Some
-        Ok(Pattern::Ok(Box::new(patterns.into_iter().next().unwrap())))
-    } else if name == "None" && patterns.is_empty() {
-        // None - just an identifier
-        Ok(Pattern::Identifier("None".to_string()))
-    } else if patterns.len() == 1 {
-        // Single argument constructor - for simplicity, use the inner pattern
-        Ok(patterns.into_iter().next().unwrap())
-    } else {
-        // Multiple arguments - use tuple pattern
-        Ok(Pattern::Tuple(patterns))
+    Ok(patterns)
+}
+
+/// Create appropriate pattern based on constructor name (complexity: 5)
+fn create_constructor_pattern(name: String, patterns: Vec<Pattern>) -> Result<Pattern> {
+    match (name.as_str(), patterns.len()) {
+        ("Some", 1) => {
+            // Some(pattern) - use Ok variant to represent Option::Some
+            Ok(Pattern::Ok(Box::new(patterns.into_iter().next().unwrap())))
+        }
+        ("None", 0) => {
+            // None - just an identifier
+            Ok(Pattern::Identifier("None".to_string()))
+        }
+        (_, 1) => {
+            // Single argument constructor - for simplicity, use the inner pattern
+            Ok(patterns.into_iter().next().unwrap())
+        }
+        (name, 0) => {
+            // Empty constructor - return as identifier
+            Ok(Pattern::Identifier(name.to_string()))
+        }
+        (_, _) => {
+            // Multiple arguments - use tuple pattern
+            Ok(Pattern::Tuple(patterns))
+        }
     }
 }
 
@@ -1409,39 +1426,67 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
 }
 
 fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
-    // Parse impl Trait for Type { ... } or impl Type { ... }
     let start_span = state.tokens.expect(&Token::Impl)?;
     
-    // Parse trait or type name
-    let trait_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+    // Parse impl header (trait and type names)
+    let (trait_name, type_name) = parse_impl_header(state)?;
+    
+    // Parse impl body (methods)
+    state.tokens.expect(&Token::LeftBrace)?;
+    skip_impl_body(state)?;
+    state.tokens.expect(&Token::RightBrace)?;
+    
+    Ok(Expr::new(ExprKind::Impl {
+        type_params: vec![],
+        trait_name,
+        for_type: type_name,
+        methods: vec![],
+        is_pub: false,
+    }, start_span))
+}
+
+/// Parse impl header to get trait and type names (complexity: 8)
+fn parse_impl_header(state: &mut ParserState) -> Result<(Option<String>, String)> {
+    // Parse first identifier (trait or type name)
+    let first_name = parse_optional_identifier(state);
+    
+    // Check for "for" keyword to determine if first was trait
+    if matches!(state.tokens.peek(), Some((Token::For, _))) {
+        state.tokens.advance();
+        let type_name = parse_required_identifier(state, "type name after 'for' in impl")?;
+        Ok((first_name, type_name))
+    } else if let Some(type_name) = first_name {
+        // impl Type { ... } case
+        Ok((None, type_name))
+    } else {
+        bail!("Expected type or trait name in impl");
+    }
+}
+
+/// Parse optional identifier (complexity: 3)
+fn parse_optional_identifier(state: &mut ParserState) -> Option<String> {
+    if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
         state.tokens.advance();
         Some(name)
     } else {
         None
-    };
-    
-    // Check for "for" keyword
-    let type_name = if matches!(state.tokens.peek(), Some((Token::For, _))) {
+    }
+}
+
+/// Parse required identifier with error message (complexity: 3)
+fn parse_required_identifier(state: &mut ParserState, context: &str) -> Result<String> {
+    if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
         state.tokens.advance();
-        if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-            let name = n.clone();
-            state.tokens.advance();
-            name
-        } else {
-            bail!("Expected type name after 'for' in impl");
-        }
-    } else if let Some(t) = trait_name {
-        // impl Type { ... } case
-        t
+        Ok(name)
     } else {
-        bail!("Expected type or trait name in impl");
-    };
-    
-    // Parse { methods }
-    state.tokens.expect(&Token::LeftBrace)?;
-    
-    // For now, parse until closing brace
+        bail!("Expected {}", context)
+    }
+}
+
+/// Skip impl body by tracking brace depth (complexity: 5)
+fn skip_impl_body(state: &mut ParserState) -> Result<()> {
     let mut depth = 1;
     while depth > 0 && state.tokens.peek().is_some() {
         match state.tokens.peek() {
@@ -1453,16 +1498,7 @@ fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
             state.tokens.advance();
         }
     }
-    
-    state.tokens.expect(&Token::RightBrace)?;
-    
-    Ok(Expr::new(ExprKind::Impl {
-        type_params: vec![],
-        trait_name: None, // Simplified implementation for now
-        for_type: type_name,
-        methods: vec![],
-        is_pub: false,
-    }, start_span))
+    Ok(())
 }
 
 fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {

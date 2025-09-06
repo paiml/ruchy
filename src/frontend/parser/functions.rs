@@ -150,93 +150,14 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
         .peek()
         .map_or(Span { start: 0, end: 0 }, |(_, s)| *s);
 
-    // Check if it's backslash syntax (\x -> ...) or pipe syntax (|x| ...)
-    if matches!(state.tokens.peek(), Some((Token::Backslash, _))) {
-        state.tokens.advance(); // consume \
+    // Check syntax type and parse accordingly
+    let params = if matches!(state.tokens.peek(), Some((Token::Backslash, _))) {
+        parse_backslash_lambda(state)?
+    } else {
+        parse_pipe_lambda(state)?
+    };
 
-        // Parse parameters (simple identifiers separated by commas)
-        let mut params = Vec::new();
-
-        // Parse first parameter
-        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            params.push(Param {
-                pattern: Pattern::Identifier(name.clone()),
-                ty: Type {
-                    kind: TypeKind::Named("Any".to_string()),
-                    span: Span { start: 0, end: 0 },
-                },
-                span: Span { start: 0, end: 0 },
-                is_mutable: false,
-                default_value: None,
-            });
-            state.tokens.advance();
-
-            // Parse additional parameters
-            while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                state.tokens.advance(); // consume comma
-                if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                    params.push(Param {
-                        pattern: Pattern::Identifier(name.clone()),
-                        ty: Type {
-                            kind: TypeKind::Named("Any".to_string()),
-                            span: Span { start: 0, end: 0 },
-                        },
-                        span: Span { start: 0, end: 0 },
-                        is_mutable: false,
-                        default_value: None,
-                    });
-                    state.tokens.advance();
-                }
-            }
-        }
-
-        // Expect arrow
-        state.tokens.expect(&Token::Arrow)?;
-
-        // Parse body
-        let body = super::parse_expr_recursive(state)?;
-
-        return Ok(Expr::new(
-            ExprKind::Lambda {
-                params,
-                body: Box::new(body),
-            },
-            start_span,
-        ));
-    }
-
-    // Otherwise, handle pipe syntax |x| ...
-    state.tokens.advance(); // consume |
-
-    // Handle || as a special case for empty parameter lambdas
-    if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
-        state.tokens.advance(); // consume second |
-
-        // Lambda syntax: || expr (no => allowed)
-
-        // Parse the body
-        let body = super::parse_expr_recursive(state)?;
-        return Ok(Expr::new(
-            ExprKind::Lambda {
-                params: Vec::new(),
-                body: Box::new(body),
-            },
-            start_span,
-        ));
-    }
-
-    // Parse parameters between pipes: |x, y|
-    let params = parse_lambda_params(state)?;
-
-    // Check for empty params with single |
-    if !matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
-        bail!("Expected '|' after lambda parameters");
-    }
-    state.tokens.advance(); // consume |
-
-    // Lambda syntax: |x| expr (no => allowed)
-
-    // Parse the body
+    // Parse body
     let body = super::parse_expr_recursive(state)?;
 
     Ok(Expr::new(
@@ -246,6 +167,76 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
         },
         start_span,
     ))
+}
+
+/// Parse backslash-style lambda: \x, y -> body (complexity: 6)
+fn parse_backslash_lambda(state: &mut ParserState) -> Result<Vec<Param>> {
+    state.tokens.advance(); // consume \
+    
+    let params = parse_simple_params(state)?;
+    
+    // Expect arrow
+    state.tokens.expect(&Token::Arrow)?;
+    
+    Ok(params)
+}
+
+/// Parse pipe-style lambda: |x, y| body (complexity: 5)
+fn parse_pipe_lambda(state: &mut ParserState) -> Result<Vec<Param>> {
+    state.tokens.advance(); // consume |
+    
+    // Handle || as empty params
+    if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
+        state.tokens.advance(); // consume second |
+        return Ok(Vec::new());
+    }
+    
+    // Parse parameters between pipes
+    let params = parse_lambda_params(state)?;
+    
+    // Expect closing pipe
+    if !matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
+        bail!("Expected '|' after lambda parameters");
+    }
+    state.tokens.advance(); // consume |
+    
+    Ok(params)
+}
+
+/// Parse simple comma-separated parameters (complexity: 6)
+fn parse_simple_params(state: &mut ParserState) -> Result<Vec<Param>> {
+    let mut params = Vec::new();
+    
+    // Parse first parameter if present
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        params.push(create_simple_param(name.clone()));
+        state.tokens.advance();
+        
+        // Parse additional parameters
+        while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance(); // consume comma
+            if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                params.push(create_simple_param(name.clone()));
+                state.tokens.advance();
+            }
+        }
+    }
+    
+    Ok(params)
+}
+
+/// Create a simple parameter with default type (complexity: 1)
+fn create_simple_param(name: String) -> Param {
+    Param {
+        pattern: Pattern::Identifier(name),
+        ty: Type {
+            kind: TypeKind::Named("Any".to_string()),
+            span: Span { start: 0, end: 0 },
+        },
+        span: Span { start: 0, end: 0 },
+        is_mutable: false,
+        default_value: None,
+    }
 }
 
 
