@@ -36,7 +36,7 @@ fn process_unicode_escape(chars: &mut std::str::Chars) -> String {
     }
     
     // Invalid code point or hex, keep as literal
-    format!("\\u{{{}}}", hex)
+    format!("\\u{{{hex}}}")
 }
 
 /// Process escape sequences in a string literal
