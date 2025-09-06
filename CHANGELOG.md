@@ -4,6 +4,28 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.66.0] - 2025-09-06
+
+### 🎯 **TRY-CATCH ERROR HANDLING (PARTIAL)**
+
+Added initial support for try-catch-finally blocks, enabling structured error handling.
+
+### Added
+- Try-catch-finally syntax parsing: `try { ... } catch (e) { ... } finally { ... }`
+- Finally token to lexer for optional cleanup blocks
+- TryCatch AST node with support for multiple catch clauses
+- Basic interpreter evaluation of try-catch blocks
+- TDD test suite for try-catch functionality (`try_catch_tdd.rs`)
+
+### Known Limitations
+- Pattern matching in catch clauses not yet fully implemented
+- Transpiler support for try-catch pending
+- Only simple identifier patterns supported in catch clauses
+
+### Internal Improvements
+- Parser now handles try as a control flow token
+- REPL can evaluate try-catch-finally constructs
+
 ## [1.65.0] - 2025-09-06
 
 ### 🎯 **MODULE SYSTEM WITH VISIBILITY SUPPORT**

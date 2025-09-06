@@ -1691,8 +1691,8 @@ impl Repl {
             ExprKind::Loop { body } => self.evaluate_loop(body, deadline, depth),
             ExprKind::Break { .. } => Err(anyhow::anyhow!("break")),
             ExprKind::Continue { .. } => Err(anyhow::anyhow!("continue")),
-            ExprKind::TryCatch { try_expr, catch_expr } => {
-                self.evaluate_try_catch(try_expr, catch_expr, deadline, depth)
+            ExprKind::TryCatch { try_block, catch_clauses, finally_block } => {
+                self.evaluate_try_catch_block(try_block, catch_clauses, finally_block, deadline, depth)
             }
             _ => bail!("Non-control-flow expression in control flow dispatcher"),
         }
@@ -6301,22 +6301,46 @@ impl Repl {
         }
     }
 
-    /// Evaluate try-catch expression (complexity: 4)
-    fn evaluate_try_catch(
+    /// Evaluate try-catch-finally block (complexity: <10)
+    fn evaluate_try_catch_block(
         &mut self,
-        try_expr: &Expr,
-        catch_expr: &Expr,
+        try_block: &Expr,
+        catch_clauses: &[crate::frontend::ast::CatchClause],
+        finally_block: &Option<Box<Expr>>,
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        // Try to evaluate the try expression
-        match self.evaluate_expr(try_expr, deadline, depth + 1) {
+        // Try to evaluate the try block
+        let result = match self.evaluate_expr(try_block, deadline, depth + 1) {
             Ok(value) => Ok(value),
-            Err(_) => {
-                // If the try expression fails, evaluate the catch expression
-                self.evaluate_expr(catch_expr, deadline, depth + 1)
+            Err(err) => {
+                // Try each catch clause
+                let mut caught = false;
+                let mut catch_result = Ok(Value::Unit);
+                
+                for catch_clause in catch_clauses {
+                    // For now, just use the first catch clause (simple implementation)
+                    // TODO: Implement pattern matching on error types
+                    caught = true;
+                    catch_result = self.evaluate_expr(&catch_clause.body, deadline, depth + 1);
+                    break;
+                }
+                
+                if caught {
+                    catch_result
+                } else {
+                    Err(err)
+                }
             }
+        };
+        
+        // Always execute finally block if present
+        if let Some(finally) = finally_block {
+            // Execute finally but don't override the result
+            let _ = self.evaluate_expr(finally, deadline, depth + 1);
         }
+        
+        result
     }
 
     /// Evaluate if-let expression (complexity: 6)

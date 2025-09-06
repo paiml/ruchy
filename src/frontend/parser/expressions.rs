@@ -33,7 +33,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             parse_variable_declaration_token(state, token_clone)
         }
         // Control flow tokens - delegated to focused helper
-        Token::If | Token::Match | Token::While | Token::For => {
+        Token::If | Token::Match | Token::While | Token::For | Token::Try => {
             parse_control_flow_token(state, token_clone)
         }
         // Module declaration token
@@ -319,7 +319,7 @@ fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) ->
     Ok(Expr::new(ExprKind::Identifier(constructor_name.to_string()), span))
 }
 
-/// Parse control flow tokens (If, Match, While, For)
+/// Parse control flow tokens (If, Match, While, For, Try)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
@@ -327,8 +327,68 @@ fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Exp
         Token::Match => parse_match_expression(state),
         Token::While => parse_while_loop(state),
         Token::For => parse_for_loop(state),
+        Token::Try => parse_try_catch(state),
         _ => bail!("Expected control flow token, got: {:?}", token),
     }
+}
+
+/// Parse try-catch-finally block
+/// Complexity: <10 (structured error handling)
+fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
+    use crate::frontend::ast::CatchClause;
+    
+    let start_span = state.tokens.expect(&Token::Try)?;
+    
+    // Parse try block
+    state.tokens.expect(&Token::LeftBrace)?;
+    let try_block = Box::new(super::collections::parse_block(state)?);
+    
+    // Parse catch clauses
+    let mut catch_clauses = Vec::new();
+    
+    while matches!(state.tokens.peek(), Some((Token::Catch, _))) {
+        state.tokens.advance(); // consume 'catch'
+        
+        // Parse catch pattern - for now just an identifier like (e)
+        state.tokens.expect(&Token::LeftParen)?;
+        let pattern = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            let name = name.clone();
+            state.tokens.advance();
+            Pattern::Identifier(name)
+        } else {
+            bail!("Expected identifier in catch clause");
+        };
+        state.tokens.expect(&Token::RightParen)?;
+        
+        // Parse catch body
+        state.tokens.expect(&Token::LeftBrace)?;
+        let body = Box::new(super::collections::parse_block(state)?);
+        
+        catch_clauses.push(CatchClause { pattern, body });
+    }
+    
+    // Parse optional finally block
+    let finally_block = if matches!(state.tokens.peek(), Some((Token::Finally, _))) {
+        state.tokens.advance(); // consume 'finally'
+        state.tokens.expect(&Token::LeftBrace)?;
+        Some(Box::new(super::collections::parse_block(state)?))
+    } else {
+        None
+    };
+    
+    // Must have at least one catch clause if no finally block
+    if catch_clauses.is_empty() && finally_block.is_none() {
+        bail!("Try block must have at least one catch clause or a finally block");
+    }
+    
+    Ok(Expr::new(
+        ExprKind::TryCatch {
+            try_block,
+            catch_clauses,
+            finally_block,
+        },
+        start_span,
+    ))
 }
 
 /// Parse module declaration: mod name { body }

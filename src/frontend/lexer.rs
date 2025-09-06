@@ -172,6 +172,8 @@ pub enum Token {
     Try,
     #[token("catch")]
     Catch,
+    #[token("finally")]
+    Finally,
     #[token("return")]
     Return,
     #[token("command")]

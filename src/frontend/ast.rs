@@ -25,6 +25,13 @@ impl Span {
     }
 }
 
+/// Catch clause in try-catch blocks
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CatchClause {
+    pub pattern: Pattern,  // The error pattern to match
+    pub body: Box<Expr>,    // The catch block body
+}
+
 /// The main AST node type for expressions
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Expr {
@@ -88,10 +95,6 @@ pub enum ExprKind {
     None,
     Try {
         expr: Box<Expr>,
-    },
-    TryCatch {
-        try_expr: Box<Expr>,
-        catch_expr: Box<Expr>,
     },
     Await {
         expr: Box<Expr>,
@@ -275,6 +278,11 @@ pub enum ExprKind {
         pattern: Pattern,
         expr: Box<Expr>,
         body: Box<Expr>,
+    },
+    TryCatch {
+        try_block: Box<Expr>,
+        catch_clauses: Vec<CatchClause>,
+        finally_block: Option<Box<Expr>>,
     },
     Loop {
         body: Box<Expr>,
