@@ -4,6 +4,7 @@
 //! and actor system with supervision trees.
 
 pub mod actor;
+pub mod binary_ops;
 pub mod cache;
 pub mod completion;
 pub mod dataflow_debugger;
@@ -12,6 +13,7 @@ pub mod grammar_coverage;
 pub mod interpreter;
 // pub mod interpreter_modules;  // Temporarily disabled - compilation errors
 pub mod lazy;
+pub mod pattern_matching;
 pub mod observatory;
 pub mod observatory_ui;
 pub mod repl;
