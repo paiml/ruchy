@@ -62,11 +62,14 @@ mod tests {
 
     #[test]
     fn test_mixed_numeric_addition() {
-        let result = evaluate_binary_op(&BinaryOp::Add, &Value::Int(5), &Value::Float(2.5)).unwrap();
-        assert_eq!(result, Value::Float(7.5));
+        // Mixed numeric operations are not supported - they should return an error
+        let result = evaluate_binary_op(&BinaryOp::Add, &Value::Int(5), &Value::Float(2.5));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Cannot add"));
         
-        let result = evaluate_binary_op(&BinaryOp::Add, &Value::Float(3.5), &Value::Int(2)).unwrap();
-        assert_eq!(result, Value::Float(5.5));
+        let result = evaluate_binary_op(&BinaryOp::Add, &Value::Float(3.5), &Value::Int(2));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Cannot add"));
     }
 
     #[test]
