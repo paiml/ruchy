@@ -326,36 +326,57 @@ fn parse_object_literal_body(state: &mut ParserState, start_span: Span) -> Resul
     let mut fields = Vec::new();
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        // Check for spread operator
-        if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
-            state.tokens.advance(); // consume ...
-            let expr = super::parse_expr_recursive(state)?;
-            fields.push(ObjectField::Spread { expr });
-        } else {
-            // Parse key-value pair
-            let key = parse_object_key(state)?;
-
-            // Accept either : or => for object key-value pairs (book compatibility)
-            if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
-                state.tokens.advance(); // consume =>
-            } else {
-                state.tokens.expect(&Token::Colon)?;
-            }
-            let value = super::parse_expr_recursive(state)?;
-            fields.push(ObjectField::KeyValue { key, value });
-        }
-
-        // Check for comma
-        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-            state.tokens.advance();
-        } else if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-            bail!("Expected comma or closing brace in object literal");
-        }
+        parse_single_object_field(state, &mut fields)?;
+        handle_object_field_separator(state)?;
     }
 
     state.tokens.expect(&Token::RightBrace)?;
-
     Ok(Expr::new(ExprKind::ObjectLiteral { fields }, start_span))
+}
+
+/// Parse a single object field (either spread or key-value) - complexity: 6
+fn parse_single_object_field(state: &mut ParserState, fields: &mut Vec<ObjectField>) -> Result<()> {
+    if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
+        parse_object_spread_field(state, fields)
+    } else {
+        parse_object_key_value_field(state, fields)
+    }
+}
+
+/// Parse object spread field (...expr) - complexity: 3
+fn parse_object_spread_field(state: &mut ParserState, fields: &mut Vec<ObjectField>) -> Result<()> {
+    state.tokens.advance(); // consume ...
+    let expr = super::parse_expr_recursive(state)?;
+    fields.push(ObjectField::Spread { expr });
+    Ok(())
+}
+
+/// Parse object key-value field (key: value or key => value) - complexity: 5
+fn parse_object_key_value_field(state: &mut ParserState, fields: &mut Vec<ObjectField>) -> Result<()> {
+    let key = parse_object_key(state)?;
+    
+    // Accept either : or => for object key-value pairs (book compatibility)
+    if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+        state.tokens.advance(); // consume =>
+    } else {
+        state.tokens.expect(&Token::Colon)?;
+    }
+    
+    let value = super::parse_expr_recursive(state)?;
+    fields.push(ObjectField::KeyValue { key, value });
+    Ok(())
+}
+
+/// Handle comma separator between object fields - complexity: 4
+fn handle_object_field_separator(state: &mut ParserState) -> Result<()> {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+        Ok(())
+    } else if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+        bail!("Expected comma or closing brace in object literal")
+    } else {
+        Ok(())
+    }
 }
 
 /// Parse a list expression or list comprehension
@@ -509,57 +530,79 @@ fn parse_condition_term(state: &mut ParserState) -> Result<Expr> {
 
     // Handle postfix operations like method calls and field access
     while let Some((token, _)) = state.tokens.peek() {
-        match token {
-            Token::Dot => {
-                state.tokens.advance(); // consume .
-                if let Some((Token::Identifier(method), _)) = state.tokens.peek() {
-                    let method = method.clone();
-                    state.tokens.advance();
-
-                    // Check for method call
-                    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-                        state.tokens.advance(); // consume (
-                        let mut args = Vec::new();
-
-                        while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                            args.push(super::parse_expr_recursive(state)?);
-                            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-                                state.tokens.advance();
-                            } else {
-                                break;
-                            }
-                        }
-
-                        state.tokens.expect(&Token::RightParen)?;
-                        expr = Expr::new(
-                            ExprKind::MethodCall {
-                                receiver: Box::new(expr),
-                                method,
-                                args,
-                            },
-                            Span { start: 0, end: 0 },
-                        );
-                    } else {
-                        // Field access
-                        expr = Expr::new(
-                            ExprKind::FieldAccess {
-                                object: Box::new(expr),
-                                field: method,
-                            },
-                            Span { start: 0, end: 0 },
-                        );
-                    }
-                }
-            }
-            Token::LeftParen => {
-                // Function call
-                expr = functions::parse_call(state, expr)?;
-            }
+        expr = match token {
+            Token::Dot => parse_dot_operation(state, expr)?,
+            Token::LeftParen => functions::parse_call(state, expr)?,
             _ => break, // Stop at other tokens
-        }
+        };
     }
 
     Ok(expr)
+}
+
+/// Parse dot operation (field access or method call) - complexity: 8
+fn parse_dot_operation(state: &mut ParserState, expr: Expr) -> Result<Expr> {
+    state.tokens.advance(); // consume .
+    
+    let Some((Token::Identifier(name), _)) = state.tokens.peek() else {
+        return Ok(expr); // No identifier after dot
+    };
+    
+    let name = name.clone();
+    state.tokens.advance();
+    
+    // Check if it's a method call or field access
+    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+        parse_method_call(state, expr, name)
+    } else {
+        Ok(create_field_access(expr, name))
+    }
+}
+
+/// Parse method call arguments (complexity: 5)
+fn parse_method_call(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
+    state.tokens.advance(); // consume (
+    
+    let args = parse_method_arguments(state)?;
+    
+    state.tokens.expect(&Token::RightParen)?;
+    
+    Ok(Expr::new(
+        ExprKind::MethodCall {
+            receiver: Box::new(receiver),
+            method,
+            args,
+        },
+        Span { start: 0, end: 0 },
+    ))
+}
+
+/// Parse method call arguments (complexity: 4)
+fn parse_method_arguments(state: &mut ParserState) -> Result<Vec<Expr>> {
+    let mut args = Vec::new();
+    
+    while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+        args.push(super::parse_expr_recursive(state)?);
+        
+        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+            state.tokens.advance();
+        } else {
+            break;
+        }
+    }
+    
+    Ok(args)
+}
+
+/// Create field access expression (complexity: 1)
+fn create_field_access(object: Expr, field: String) -> Expr {
+    Expr::new(
+        ExprKind::FieldAccess {
+            object: Box::new(object),
+            field,
+        },
+        Span { start: 0, end: 0 },
+    )
 }
 
 pub fn parse_list_comprehension(
@@ -688,44 +731,66 @@ fn handle_dataframe_legacy_syntax_column(col_name: String) -> DataFrameColumn {
     }
 }
 
-/// Parse column definitions loop (complexity: 8)
+/// Parse column definitions loop (complexity: 6)
 fn parse_dataframe_column_definitions(state: &mut ParserState) -> Result<Vec<DataFrameColumn>> {
     let mut columns = Vec::new();
     
     loop {
         let col_name = parse_dataframe_column_name(state)?;
+        parse_single_dataframe_column(state, col_name, &mut columns)?;
         
-        // Check for => or legacy syntax
-        if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
-            // New syntax: col => [values]
-            let values = parse_dataframe_column_values(state)?;
-            columns.push(DataFrameColumn {
-                name: col_name,
-                values,
-            });
-        } else if matches!(state.tokens.peek(), Some((Token::Comma, _)))
-            || matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
-            || matches!(state.tokens.peek(), Some((Token::RightBracket, _)))
-        {
-            columns.push(handle_dataframe_legacy_syntax_column(col_name));
-        } else {
-            bail!("Expected '=>' or ',' after column name in DataFrame literal");
-        }
-        
-        // Check for continuation
-        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-            state.tokens.advance();
-        } else if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
-            // Legacy row-based syntax
-            state.tokens.advance();
-            parse_legacy_dataframe_rows(state, &mut columns)?;
-            break;
-        } else {
+        if !handle_dataframe_column_continuation(state, &mut columns)? {
             break;
         }
     }
     
     Ok(columns)
+}
+
+/// Parse a single DataFrame column (either new or legacy syntax) - complexity: 5
+fn parse_single_dataframe_column(
+    state: &mut ParserState,
+    col_name: String,
+    columns: &mut Vec<DataFrameColumn>
+) -> Result<()> {
+    if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
+        // New syntax: col => [values]
+        let values = parse_dataframe_column_values(state)?;
+        columns.push(DataFrameColumn {
+            name: col_name,
+            values,
+        });
+    } else if is_dataframe_legacy_syntax_token(state) {
+        columns.push(handle_dataframe_legacy_syntax_column(col_name));
+    } else {
+        bail!("Expected '=>' or ',' after column name in DataFrame literal");
+    }
+    Ok(())
+}
+
+/// Check if current token indicates legacy DataFrame syntax - complexity: 4
+fn is_dataframe_legacy_syntax_token(state: &mut ParserState) -> bool {
+    matches!(state.tokens.peek(), Some((Token::Comma, _)))
+        || matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
+        || matches!(state.tokens.peek(), Some((Token::RightBracket, _)))
+}
+
+/// Handle DataFrame column continuation tokens - complexity: 5
+fn handle_dataframe_column_continuation(
+    state: &mut ParserState,
+    columns: &mut Vec<DataFrameColumn>
+) -> Result<bool> {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+        Ok(true)
+    } else if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+        // Legacy row-based syntax
+        state.tokens.advance();
+        parse_legacy_dataframe_rows(state, columns)?;
+        Ok(false)
+    } else {
+        Ok(false)
+    }
 }
 
 /// Create final `DataFrame` expression (complexity: 3)

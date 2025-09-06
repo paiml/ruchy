@@ -1305,42 +1305,38 @@ fn parse_lambda_expression(state: &mut ParserState) -> Result<Expr> {
 fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
     // Parse struct Name<T> { field: Type, ... }
     let start_span = state.tokens.expect(&Token::Struct)?;
+    let name = parse_struct_name(state)?;
+    let type_params = parse_optional_generics(state)?;
+    let struct_fields = parse_struct_fields(state)?;
     
-    // Get struct name
-    let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+    Ok(Expr::new(ExprKind::Struct {
+        name,
+        type_params,
+        fields: struct_fields,
+        is_pub: false,
+    }, start_span))
+}
+
+/// Parse struct name identifier - complexity: 4
+fn parse_struct_name(state: &mut ParserState) -> Result<String> {
+    if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
         state.tokens.advance();
-        name
+        Ok(name)
     } else {
         bail!("Expected struct name after 'struct'");
-    };
-    
-    // Parse optional generic parameters
-    let type_params = parse_optional_generics(state)?;
-    
-    // Parse { fields }
+    }
+}
+
+/// Parse struct field definitions - complexity: 6
+fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
     state.tokens.expect(&Token::LeftBrace)?;
-    
     let mut fields = Vec::new();
     
-    // Parse fields
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        // Parse field name
-        let field_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-            let name = n.clone();
-            state.tokens.advance();
-            name
-        } else {
-            bail!("Expected field name in struct");
-        };
-        
-        // Parse : Type
-        state.tokens.expect(&Token::Colon)?;
-        let field_type = super::utils::parse_type(state)?;
-        
+        let (field_name, field_type) = parse_single_struct_field(state)?;
         fields.push((field_name, field_type));
         
-        // Check for comma
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
         }
@@ -1349,18 +1345,27 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
     state.tokens.expect(&Token::RightBrace)?;
     
     // Convert to proper Struct variant with StructField
-    let struct_fields = fields.into_iter().map(|(name, ty)| StructField {
+    Ok(fields.into_iter().map(|(name, ty)| StructField {
         name,
         ty,
         is_pub: false,
-    }).collect();
+    }).collect())
+}
+
+/// Parse a single struct field (name: Type) - complexity: 5
+fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type)> {
+    let field_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
+        let name = n.clone();
+        state.tokens.advance();
+        name
+    } else {
+        bail!("Expected field name in struct");
+    };
     
-    Ok(Expr::new(ExprKind::Struct {
-        name,
-        type_params,
-        fields: struct_fields,
-        is_pub: false,
-    }, start_span))
+    state.tokens.expect(&Token::Colon)?;
+    let field_type = super::utils::parse_type(state)?;
+    
+    Ok((field_name, field_type))
 }
 
 fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
