@@ -43,11 +43,15 @@ fn evaluate_add(lhs: &Value, rhs: &Value) -> Result<Value> {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a + b)),
         (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a + b)),
         (Value::String(a), Value::String(b)) => {
-            Ok(Value::String(format!("{a}{b}")))
+            let mut result = String::with_capacity(a.len() + b.len());
+            result.push_str(a);
+            result.push_str(b);
+            Ok(Value::String(result))
         }
         (Value::List(a), Value::List(b)) => {
-            let mut result = a.clone();
-            result.extend(b.clone());
+            let mut result = Vec::with_capacity(a.len() + b.len());
+            result.extend(a.iter().cloned());
+            result.extend(b.iter().cloned());
             Ok(Value::List(result))
         }
         _ => bail!("Cannot add {:?} and {:?}", lhs, rhs),
