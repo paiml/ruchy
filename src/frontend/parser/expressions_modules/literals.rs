@@ -1,7 +1,7 @@
 //! Literal parsing module
 //! Extracted from expressions.rs for modularity (complexity: ≤10 per function)
 
-use crate::frontend::parser::{ParserState, Result, Token, Expr, ExprKind, Literal, Span};
+use crate::frontend::parser::{ParserState, Result, Token, Expr, ExprKind, Literal, Span, Parser};
 use anyhow::bail;
 
 /// Parse a literal expression
@@ -85,9 +85,12 @@ fn parse_fstring_parts(input: &str) -> Result<Vec<crate::frontend::ast::StringPa
                     current.clear();
                 }
                 
-                // Extract expression
+                // Extract expression string
                 let expr_str = extract_interpolation(&mut chars)?;
-                parts.push(StringPart::Interpolation(expr_str));
+                
+                // Parse the expression string into an actual Expr
+                let expr = parse_expression_from_string(&expr_str)?;
+                parts.push(StringPart::Expr(Box::new(expr)));
             }
         } else if ch == '}' {
             if chars.peek() == Some(&'}') {
@@ -107,6 +110,13 @@ fn parse_fstring_parts(input: &str) -> Result<Vec<crate::frontend::ast::StringPa
     }
     
     Ok(parts)
+}
+
+/// Parse expression from string (for f-string interpolations)
+fn parse_expression_from_string(expr_str: &str) -> Result<Expr> {
+    // Create a new parser with just the expression string
+    let mut parser = Parser::new(expr_str);
+    parser.parse_expr()
 }
 
 /// Extract interpolation expression from f-string

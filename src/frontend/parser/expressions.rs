@@ -90,9 +90,8 @@ fn parse_literal_token(state: &mut ParserState, token: Token, span: Span) -> Res
         }
         Token::FString(template) => {
             state.tokens.advance();
-            // Parse f-string template into parts
-            // For now, treat it as a simple string with placeholders
-            let parts = vec![StringPart::Text(template)];
+            // Parse f-string template into parts with proper interpolation
+            let parts = parse_fstring_into_parts(&template)?;
             Ok(Expr::new(ExprKind::StringInterpolation { parts }, span))
         }
         Token::Char(value) => {
@@ -2110,4 +2109,75 @@ pub fn get_precedence(op: BinaryOp) -> i32 {
         BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 11,
         BinaryOp::Power => 12,
     }
+}
+
+/// Parse f-string content into interpolation parts
+fn parse_fstring_into_parts(input: &str) -> Result<Vec<StringPart>> {
+    use crate::frontend::parser::Parser;
+    
+    let mut parts = Vec::new();
+    let mut current = String::new();
+    let mut chars = input.chars().peekable();
+    
+    while let Some(ch) = chars.next() {
+        if ch == '{' {
+            if chars.peek() == Some(&'{') {
+                // Escaped brace
+                chars.next();
+                current.push('{');
+            } else {
+                // Save text part if any
+                if !current.is_empty() {
+                    parts.push(StringPart::Text(current.clone()));
+                    current.clear();
+                }
+                
+                // Extract and parse expression
+                let expr_str = extract_fstring_expr(&mut chars)?;
+                let mut parser = Parser::new(&expr_str);
+                let expr = parser.parse_expr()?;
+                parts.push(StringPart::Expr(Box::new(expr)));
+            }
+        } else if ch == '}' {
+            if chars.peek() == Some(&'}') {
+                // Escaped brace
+                chars.next();
+                current.push('}');
+            } else {
+                bail!("Unmatched '}}' in f-string");
+            }
+        } else {
+            current.push(ch);
+        }
+    }
+    
+    // Add remaining text
+    if !current.is_empty() {
+        parts.push(StringPart::Text(current));
+    }
+    
+    Ok(parts)
+}
+
+/// Extract expression from f-string between braces
+fn extract_fstring_expr(chars: &mut std::iter::Peekable<std::str::Chars>) -> Result<String> {
+    let mut expr = String::new();
+    let mut depth = 1;
+    
+    while let Some(ch) = chars.next() {
+        if ch == '{' {
+            depth += 1;
+            expr.push(ch);
+        } else if ch == '}' {
+            depth -= 1;
+            if depth == 0 {
+                return Ok(expr);
+            }
+            expr.push(ch);
+        } else {
+            expr.push(ch);
+        }
+    }
+    
+    bail!("Unclosed interpolation in f-string")
 }
