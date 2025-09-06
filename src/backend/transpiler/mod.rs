@@ -504,12 +504,25 @@ impl Transpiler {
     fn transpile_module_declaration(&self, name: &str, body: &Expr) -> Result<TokenStream> {
         let module_name = format_ident!("{}", name);
         
-        // Handle module body - if it's a block, transpile its contents directly
+        // Handle module body - if it's a block, transpile its contents as module items
         let body_tokens = if let ExprKind::Block(exprs) = &body.kind {
-            // Transpile each expression in the block as individual items
-            let items: Result<Vec<_>> = exprs.iter().map(|expr| self.transpile_expr(expr)).collect();
-            let items = items?;
-            quote! { #(#items)* }
+            // Separate functions from other items in the module
+            let mut module_items = Vec::new();
+            
+            for expr in exprs {
+                match &expr.kind {
+                    ExprKind::Function { .. } => {
+                        // Transpile functions as module items
+                        module_items.push(self.transpile_function_expr(expr)?);
+                    }
+                    _ => {
+                        // Other items (constants, etc.)
+                        module_items.push(self.transpile_expr(expr)?);
+                    }
+                }
+            }
+            
+            quote! { #(#module_items)* }
         } else {
             // Single expression - transpile normally
             self.transpile_expr(body)?
