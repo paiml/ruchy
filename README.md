@@ -147,7 +147,7 @@ cargo install --path .
 
 ## Documentation
 
-- [Language Specification](./SPECIFICATION.md)
+- [Language Specification](./docs/SPECIFICATION.md)
 - [Development Roadmap](./docs/execution/roadmap.md)
 - [Change Log](./CHANGELOG.md)
 - [Contributing Guidelines](./CLAUDE.md)
