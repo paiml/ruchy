@@ -7,7 +7,7 @@
 use ruchy::backend::transpiler::Transpiler;
 use ruchy::frontend::parser::Parser;
 
-/// Helper: Parse and transpile DataFrame code
+/// Helper: Parse and transpile `DataFrame` code
 fn transpile_df(code: &str) -> anyhow::Result<String> {
     let mut parser = Parser::new(code);
     let ast = parser.parse()?;

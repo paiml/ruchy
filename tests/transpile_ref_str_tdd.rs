@@ -11,12 +11,12 @@ greet("Alice")
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Failed to parse");
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let result = transpiler.transpile_expr(&ast);
     let rust_code = result.expect("Failed to transpile").to_string();
     
     println!("Generated Rust code:");
-    println!("{}", rust_code);
+    println!("{rust_code}");
     
     // Check that &str type is correctly transpiled
     assert!(rust_code.contains("& str") || rust_code.contains("&str"), 
@@ -41,12 +41,12 @@ takes_ref_str("world")
     
     let mut parser = Parser::new(input);
     let ast = parser.parse().expect("Failed to parse");
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     let result = transpiler.transpile_expr(&ast);
     let rust_code = result.expect("Failed to transpile").to_string();
     
     println!("Generated Rust code:");
-    println!("{}", rust_code);
+    println!("{rust_code}");
     
     // Check the generated code
     assert!(rust_code.contains("fn takes_string (s : String)"), 

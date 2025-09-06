@@ -2,8 +2,7 @@
 //! Target: Transform REPL coverage from 11.05% → 80%+ through systematic path testing
 //! Toyota Way: Every code path must be tested to achieve comprehensive coverage
 
-use ruchy::runtime::repl::{Repl, Value};
-use std::time::Duration;
+use ruchy::runtime::repl::Repl;
 
 // ==================== SHELL COMMAND COVERAGE TESTS ====================
 

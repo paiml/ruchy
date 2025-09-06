@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod tests {
     use ruchy::runtime::repl::{Repl, Value};
-    use std::collections::HashMap;
+    
     use std::time::Duration;
     
     // Test 1: Create REPL instance (complexity: 2)

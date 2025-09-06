@@ -565,7 +565,7 @@ mod tests {
     #[test]
     fn test_keyword_completion() {
         let mut engine = CompletionEngine::new();
-        let completions = engine.get_completions("le", 2);
+        let _completions = engine.get_completions("le", 2);
         
         // Keyword completion might not work without initialization
         // assert!(completions.iter().any(|c| c.text == "let"));
@@ -587,11 +587,11 @@ mod tests {
         let ctx = engine.analyze_context(":help", 5);
         assert!(matches!(ctx, CompletionContext::Command));
         
-        let ctx = engine.analyze_context("str.", 4);
+        let _ctx = engine.analyze_context("str.", 4);
         // Member access might not be detected without proper parsing context
         // assert!(matches!(ctx, CompletionContext::MemberAccess { .. }));
         
-        let ctx = engine.analyze_context("std::", 5);
+        let _ctx = engine.analyze_context("std::", 5);
         // Module path detection might need more context
         // assert!(matches!(ctx, CompletionContext::ModulePath { .. }));
     }

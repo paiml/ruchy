@@ -99,7 +99,7 @@ mod tests {
     #[test]
     fn test_observatory_config_debug() {
         let config = create_test_config();
-        let debug_str = format!("{:?}", config);
+        let debug_str = format!("{config:?}");
         assert!(debug_str.contains("ObservatoryConfig"));
         assert!(debug_str.contains("max_traces"));
         assert!(debug_str.contains("enable_deadlock_detection"));
@@ -290,13 +290,11 @@ mod tests {
 
     #[test]
     fn test_message_status_variants() {
-        let statuses = vec![
-            MessageStatus::Queued,
+        let statuses = [MessageStatus::Queued,
             MessageStatus::Processing,
             MessageStatus::Completed,
             MessageStatus::Failed,
-            MessageStatus::Dropped,
-        ];
+            MessageStatus::Dropped];
         
         assert_eq!(statuses.len(), 5);
         assert_eq!(statuses[0], MessageStatus::Queued);
@@ -314,7 +312,7 @@ mod tests {
     #[test]
     fn test_message_status_debug() {
         let status = MessageStatus::Failed;
-        let debug_str = format!("{:?}", status);
+        let debug_str = format!("{status:?}");
         assert!(debug_str.contains("Failed"));
     }
 
@@ -613,12 +611,10 @@ mod tests {
         let observatory = create_test_observatory();
         
         // Add multiple traces with different statuses
-        let statuses = vec![
-            MessageStatus::Queued,
+        let statuses = [MessageStatus::Queued,
             MessageStatus::Processing,
             MessageStatus::Completed,
-            MessageStatus::Failed,
-        ];
+            MessageStatus::Failed];
         
         for (i, status) in statuses.iter().enumerate() {
             let mut trace = create_test_message_trace();

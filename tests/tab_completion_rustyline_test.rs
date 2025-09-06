@@ -27,8 +27,7 @@ fn test_completer_trait_basic_functionality() {
     let completions: Vec<String> = pairs.into_iter().map(|p| p.replacement).collect();
     assert!(
         completions.iter().any(|s| s.contains("len") || s.contains("split") || s.contains("trim")),
-        "Should suggest common string methods, got: {:?}",
-        completions
+        "Should suggest common string methods, got: {completions:?}"
     );
 }
 
@@ -50,8 +49,7 @@ fn test_completer_trait_list_methods() {
     
     assert!(
         completions.iter().any(|s| s.contains("len") || s.contains("push") || s.contains("filter")),
-        "Should suggest common list methods, got: {:?}",
-        completions
+        "Should suggest common list methods, got: {completions:?}"
     );
 }
 
@@ -74,8 +72,7 @@ fn test_completer_trait_partial_input() {
     // Should suggest "len" for partial "le"
     assert!(
         completions.iter().any(|s| s.contains("len")),
-        "Should suggest 'len' for partial input 'le', got: {:?}",
-        completions
+        "Should suggest 'len' for partial input 'le', got: {completions:?}"
     );
 }
 
@@ -147,7 +144,6 @@ fn test_integration_with_repl_complete_method() {
     
     assert!(
         completions.iter().any(|s| s.contains("len") || s.contains("split")),
-        "REPL should suggest string methods, got: {:?}",
-        completions
+        "REPL should suggest string methods, got: {completions:?}"
     );
 }

@@ -216,11 +216,9 @@ mod tests {
     
     #[test]
     fn test_compatibility_issue_severity_levels() {
-        let severities = vec![
-            IssueSeverity::Error,
+        let severities = [IssueSeverity::Error,
             IssueSeverity::Warning,
-            IssueSeverity::Info,
-        ];
+            IssueSeverity::Info];
         
         assert_eq!(severities.len(), 3);
         assert_ne!(severities[0], severities[1]);
@@ -228,14 +226,12 @@ mod tests {
     
     #[test]
     fn test_compatibility_issue_categories() {
-        let categories = vec![
-            IssueCategory::ApiIncompatibility,
+        let categories = [IssueCategory::ApiIncompatibility,
             IssueCategory::FeatureNotSupported,
             IssueCategory::Performance,
             IssueCategory::SizeConstraint,
             IssueCategory::Security,
-            IssueCategory::Configuration,
-        ];
+            IssueCategory::Configuration];
         
         assert_eq!(categories.len(), 6);
     }
@@ -260,11 +256,9 @@ mod tests {
     
     #[test]
     fn test_recommendation_priorities() {
-        let priorities = vec![
-            RecommendationPriority::Low,
+        let priorities = [RecommendationPriority::Low,
             RecommendationPriority::Medium,
-            RecommendationPriority::High,
-        ];
+            RecommendationPriority::High];
         
         assert_eq!(priorities.len(), 3);
     }
@@ -615,30 +609,24 @@ mod tests {
         }
         
         // Test all IssueCategory variants
-        let categories = vec![
-            IssueCategory::ApiIncompatibility,
+        let categories = [IssueCategory::ApiIncompatibility,
             IssueCategory::FeatureNotSupported,
             IssueCategory::SizeConstraint,
             IssueCategory::Performance,
             IssueCategory::Security,
-            IssueCategory::Configuration,
-        ];
+            IssueCategory::Configuration];
         assert_eq!(categories.len(), 6);
         
         // Test RecommendationPriority variants
-        let priorities = vec![
-            RecommendationPriority::Low,
+        let priorities = [RecommendationPriority::Low,
             RecommendationPriority::Medium,
-            RecommendationPriority::High,
-        ];
+            RecommendationPriority::High];
         assert_eq!(priorities.len(), 3);
         
         // Test SupportLevel variants
-        let levels = vec![
-            SupportLevel::Full,
+        let levels = [SupportLevel::Full,
             SupportLevel::Partial,
-            SupportLevel::None,
-        ];
+            SupportLevel::None];
         assert_eq!(levels.len(), 3);
     }
     
@@ -711,7 +699,7 @@ mod tests {
         // Test component with maximum values
         let mut max_features = HashSet::new();
         for i in 0..20 {
-            max_features.insert(format!("feature_{}", i));
+            max_features.insert(format!("feature_{i}"));
         }
         
         let large_component = ComponentInfo {

@@ -573,7 +573,7 @@ mod tests {
     #[test]
     fn test_quality_gate_enforcer_creation() {
         let config = QualityGateConfig::default();
-        let enforcer = QualityGateEnforcer::new(config.clone());
+        let enforcer = QualityGateEnforcer::new(config);
         
         // Verify enforcer uses the provided config
         let score = create_minimal_score();

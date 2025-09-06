@@ -10,9 +10,9 @@ use ruchy::{Parser, Transpiler};
 
 #[test]
 fn test_while_loop_parsing() {
-    let code = r#"while x < 10 {
+    let code = r"while x < 10 {
         x = x + 1
-    }"#;
+    }";
     
     let mut parser = Parser::new(code);
     let result = parser.parse();
@@ -141,10 +141,10 @@ fn test_lambda_with_fat_arrow() {
 
 #[test]
 fn test_struct_definition() {
-    let code = r#"struct Point {
+    let code = r"struct Point {
         x: i32,
         y: i32
-    }"#;
+    }";
     
     let mut parser = Parser::new(code);
     let result = parser.parse();
@@ -157,9 +157,9 @@ fn test_struct_definition() {
 
 #[test]
 fn test_trait_definition() {
-    let code = r#"trait Display {
+    let code = r"trait Display {
         fun show(self) -> str
-    }"#;
+    }";
     
     let mut parser = Parser::new(code);
     let result = parser.parse();
@@ -265,13 +265,13 @@ fn test_dataframe_literal() {
 
 #[test]
 fn test_actor_definition() {
-    let code = r#"actor Counter {
+    let code = r"actor Counter {
         state count: i32 = 0
         
         receive increment() {
             self.count += 1
         }
-    }"#;
+    }";
     
     let mut parser = Parser::new(code);
     let result = parser.parse();
@@ -332,7 +332,7 @@ fn test_while_loop_transpilation() {
     
     let generated = result.unwrap().to_string();
     assert!(generated.contains("while"), 
-        "Should contain while keyword: {}", generated);
+        "Should contain while keyword: {generated}");
 }
 
 #[test]
@@ -351,7 +351,7 @@ fn test_for_loop_transpilation() {
     
     let generated = result.unwrap().to_string();
     assert!(generated.contains("for"), 
-        "Should contain for keyword: {}", generated);
+        "Should contain for keyword: {generated}");
 }
 
 #[test]
@@ -370,6 +370,6 @@ fn test_list_literal_transpilation() {
     
     let generated = result.unwrap().to_string();
     // Check for vec! macro (may have space due to proc_macro formatting)
-    assert!(generated.contains("vec") && generated.contains("["), 
-        "Should use vec! macro: {}", generated);
+    assert!(generated.contains("vec") && generated.contains('['), 
+        "Should use vec! macro: {generated}");
 }
