@@ -2164,7 +2164,7 @@ fn extract_fstring_expr(chars: &mut std::iter::Peekable<std::str::Chars>) -> Res
     let mut expr = String::new();
     let mut depth = 1;
     
-    while let Some(ch) = chars.next() {
+    for ch in chars.by_ref() {
         if ch == '{' {
             depth += 1;
             expr.push(ch);

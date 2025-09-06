@@ -43,7 +43,7 @@ fn evaluate_add(lhs: &Value, rhs: &Value) -> Result<Value> {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a + b)),
         (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a + b)),
         (Value::String(a), Value::String(b)) => {
-            Ok(Value::String(format!("{}{}", a, b)))
+            Ok(Value::String(format!("{a}{b}")))
         }
         (Value::List(a), Value::List(b)) => {
             let mut result = a.clone();

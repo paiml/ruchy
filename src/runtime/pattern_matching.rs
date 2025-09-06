@@ -67,7 +67,7 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
         }
         
         Pattern::Struct { name, fields, .. } => {
-            if let Value::Object(obj_fields) = value {
+            if let Value::Object(_obj_fields) = value {
                 // Object doesn't store type name, so we can't match on it
                 // Just extract bindings from fields
                 let mut bindings = Vec::new();
@@ -137,7 +137,7 @@ pub fn values_equal(v1: &Value, v2: &Value) -> bool {
         }
         (Value::Object(f1), Value::Object(f2)) => {
             f1.len() == f2.len() && 
-            f1.iter().all(|(k, v)| f2.get(k).map_or(false, |v2| values_equal(v, v2)))
+            f1.iter().all(|(k, v)| f2.get(k).is_some_and(|v2| values_equal(v, v2)))
         }
         _ => false,
     }
