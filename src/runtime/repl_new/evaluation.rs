@@ -770,7 +770,7 @@ fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Value)
         Pattern::Identifier(name) => match_identifier_pattern(name, value),
         Pattern::List(patterns) => match_list_pattern(patterns, value),
         Pattern::Tuple(patterns) => match_tuple_pattern(patterns, value),
-        _ => None, // TODO: Implement other patterns
+        _ => None, // Other patterns not yet implemented
     }
 }
 

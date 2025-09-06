@@ -8,6 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::TempDir;
+use proc_macro2::TokenStream;
 
 use crate::{Parser, Transpiler};
 
@@ -102,23 +103,43 @@ pub fn compile_to_binary(source_path: &Path, options: &CompileOptions) -> Result
 /// - The working directory cannot be created
 /// - The rustc compilation fails
 pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Result<PathBuf> {
-    // Parse the Ruchy source
+    // Parse and transpile
+    let rust_code = parse_and_transpile(source)?;
+    
+    // Prepare compilation artifacts
+    let (temp_dir, rust_file) = prepare_rust_file(&rust_code)?;
+    
+    // Build and execute rustc
+    let cmd = build_rustc_command(&rust_file, options);
+    execute_compilation(cmd)?;
+    
+    // Verify output
+    verify_output_exists(&options.output)?;
+    
+    Ok(options.output.clone())
+}
+
+/// Parse Ruchy source and transpile to Rust (complexity: 4)
+fn parse_and_transpile(source: &str) -> Result<TokenStream> {
+    eprintln!("DEBUG: About to call transpile_to_program");
+    
     let mut parser = Parser::new(source);
     let ast = parser.parse()
         .context("Failed to parse Ruchy source")?;
     
-    // Transpile to Rust
-    eprintln!("DEBUG: About to call transpile_to_program");
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program(&ast)
         .context("Failed to transpile to Rust")?;
-    eprintln!("DEBUG: transpile_to_program completed");
     
-    // Create working directory for compilation
+    eprintln!("DEBUG: transpile_to_program completed");
+    Ok(rust_code)
+}
+
+/// Prepare temporary Rust file for compilation (complexity: 4)
+fn prepare_rust_file(rust_code: &TokenStream) -> Result<(TempDir, PathBuf)> {
     let temp_dir = TempDir::new()
         .context("Failed to create temporary directory")?;
     
-    // Write Rust code to working file
     let rust_file = temp_dir.path().join("main.rs");
     let rust_code_str = rust_code.to_string();
     
@@ -126,39 +147,49 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
     fs::write("/tmp/debug_rust_output.rs", &rust_code_str)
         .context("Failed to write debug Rust code")?;
     
-    fs::write(&rust_file, rust_code_str)
+    fs::write(&rust_file, &rust_code_str)
         .context("Failed to write Rust code to temporary file")?;
     
-    // Build rustc command
+    Ok((temp_dir, rust_file))
+}
+
+/// Build rustc command with options (complexity: 7)
+fn build_rustc_command(rust_file: &Path, options: &CompileOptions) -> Command {
     let mut cmd = Command::new("rustc");
-    cmd.arg(&rust_file)
+    cmd.arg(rust_file)
         .arg("-o")
         .arg(&options.output);
     
     // Add optimization level
     cmd.arg("-C").arg(format!("opt-level={}", options.opt_level));
     
-    // Add strip flag if requested
+    // Add optional flags
+    apply_optional_flags(&mut cmd, options);
+    
+    cmd
+}
+
+/// Apply optional compilation flags (complexity: 5)
+fn apply_optional_flags(cmd: &mut Command, options: &CompileOptions) {
     if options.strip {
         cmd.arg("-C").arg("strip=symbols");
     }
     
-    // Add static linking if requested
     if options.static_link {
         cmd.arg("-C").arg("target-feature=+crt-static");
     }
     
-    // Add target if specified
     if let Some(target) = &options.target {
         cmd.arg("--target").arg(target);
     }
     
-    // Add additional flags
     for flag in &options.rustc_flags {
         cmd.arg(flag);
     }
-    
-    // Execute rustc
+}
+
+/// Execute compilation command (complexity: 3)
+fn execute_compilation(mut cmd: Command) -> Result<()> {
     let output = cmd.output()
         .context("Failed to execute rustc")?;
     
@@ -167,12 +198,15 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
         bail!("Compilation failed:\n{}", stderr);
     }
     
-    // Ensure the output file exists
-    if !options.output.exists() {
-        bail!("Expected output file not created: {}", options.output.display());
+    Ok(())
+}
+
+/// Verify output file exists (complexity: 2)
+fn verify_output_exists(output_path: &Path) -> Result<()> {
+    if !output_path.exists() {
+        bail!("Expected output file not created: {}", output_path.display());
     }
-    
-    Ok(options.output.clone())
+    Ok(())
 }
 
 /// Check if rustc is available

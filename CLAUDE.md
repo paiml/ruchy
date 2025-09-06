@@ -108,8 +108,8 @@ Level 7: Performance Tests  - Non-functional requirements
 
 ### TDG Quality Standards (Zero Tolerance - v2.39.0):
 - **Overall Grade**: Must maintain A- or higher (≥85 points) - HARD LIMIT
-- **Structural Complexity**: ≤20 per function (enforced via TDG)
-- **Semantic Complexity**: Cognitive complexity ≤15 (enforced via TDG) 
+- **Structural Complexity**: ≤10 per function (enforced via TDG)
+- **Semantic Complexity**: Cognitive complexity ≤10 (enforced via TDG) 
 - **Code Duplication**: <10% code duplication (measured via TDG)
 - **Documentation Coverage**: >70% for public APIs (tracked via TDG)
 - **Technical Debt**: Zero SATD comments (zero-tolerance via TDG)
