@@ -426,6 +426,7 @@ fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
 /// - No identifier follows the import keyword
 /// - Invalid syntax in import specification
 /// - Unexpected tokens in import list
+///
 /// Parse import statement (complexity: 7)
 /// Orchestrates URL and regular import parsing
 pub fn parse_import(state: &mut ParserState) -> Result<Expr> {

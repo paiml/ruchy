@@ -732,8 +732,8 @@ impl Transpiler {
                 // Python's extend() -> Rust's extend()
                 Ok(quote! { #obj_tokens.extend(#(#arg_tokens),*) })
             }
-            // Collection methods that work as-is
-            "push" | "pop" | "insert" | "remove" | "clear" | "len" | "is_empty" | "contains" => {
+            // Collection methods that work as-is (not already handled above)
+            "push" | "pop" | "contains" => {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
             // Advanced collection methods (slice, concat, flatten, unique, join)

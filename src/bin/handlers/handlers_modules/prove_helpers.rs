@@ -368,7 +368,7 @@ fn output_json_results(
 fn output_text_results(
     results: &[ruchy::proving::ProofVerificationResult],
     total: usize,
-    passed: usize,
+    _passed: usize,
     failed: usize,
     verbose: bool,
 ) {
