@@ -4,6 +4,31 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.67.0] - 2025-09-06
+
+### 🎯 **COMPREHENSIVE LIST METHODS**
+
+Added 9 new list manipulation methods, significantly enhancing functional programming capabilities.
+
+### Added
+- `list.find(predicate)` - Find first element matching predicate, returns Option
+- `list.any(predicate)` - Check if any element matches predicate
+- `list.all(predicate)` - Check if all elements match predicate  
+- `list.product()` - Multiply all numeric elements
+- `list.min()` - Find minimum element, returns Option
+- `list.max()` - Find maximum element, returns Option
+- `list.take(n)` - Take first n elements
+- `list.drop(n)` - Drop first n elements
+- Improved `list.sum()` to handle both integers and floats
+
+### Fixed
+- Sum method now properly handles mixed integer/float lists
+- Option values correctly represented as `Option::Some` and `Option::None`
+
+### Testing
+- Comprehensive TDD test suite with 9 passing tests (`list_methods_tdd.rs`)
+- All new methods support lambda expressions as predicates
+
 ## [1.66.0] - 2025-09-06
 
 ### 🎯 **TRY-CATCH ERROR HANDLING (PARTIAL)**

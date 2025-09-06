@@ -1948,6 +1948,14 @@ impl Repl {
             "flatten" => Self::evaluate_list_flatten(items, args),
             "unique" => Self::evaluate_list_unique(items, args),
             "join" => self.evaluate_list_join(items, args, deadline, depth),
+            "find" => self.evaluate_list_find(items, args, deadline, depth),
+            "any" => self.evaluate_list_any(items, args, deadline, depth),
+            "all" => self.evaluate_list_all(items, args, deadline, depth),
+            "product" => Self::evaluate_list_product(&items),
+            "min" => Self::evaluate_list_min(&items),
+            "max" => Self::evaluate_list_max(&items),
+            "take" => self.evaluate_list_take(items, args, deadline, depth),
+            "drop" => self.evaluate_list_drop(items, args, deadline, depth),
             _ => bail!("Unknown list method: {}", method),
         }
     }
@@ -2109,15 +2117,34 @@ impl Repl {
 
     /// Evaluate `list.sum()` operation (complexity: 4)
     fn evaluate_list_sum(items: &[Value]) -> Result<Value> {
-        let mut sum = 0i64;
-        for item in items {
-            if let Value::Int(n) = item {
-                sum += n;
-            } else {
-                bail!("sum requires all integers");
-            }
+        if items.is_empty() {
+            return Ok(Value::Int(0));
         }
-        Ok(Value::Int(sum))
+        
+        // Check if we have any floats
+        let has_float = items.iter().any(|v| matches!(v, Value::Float(_)));
+        
+        if has_float {
+            let mut sum = 0.0;
+            for item in items {
+                match item {
+                    Value::Int(n) => sum += *n as f64,
+                    Value::Float(f) => sum += f,
+                    _ => bail!("sum can only be applied to numbers"),
+                }
+            }
+            Ok(Value::Float(sum))
+        } else {
+            let mut sum = 0i64;
+            for item in items {
+                if let Value::Int(n) = item {
+                    sum += n;
+                } else {
+                    bail!("sum can only be applied to numbers");
+                }
+            }
+            Ok(Value::Int(sum))
+        }
     }
 
     /// Evaluate `list.push()` operation (complexity: 4)
@@ -2327,6 +2354,259 @@ impl Repl {
             }
         } else {
             bail!("join separator must be a string");
+        }
+    }
+
+    /// Evaluate `list.find()` operation - find first element matching predicate
+    fn evaluate_list_find(
+        &mut self,
+        items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("find expects exactly one argument (predicate function)");
+        }
+        
+        // Handle lambda expression
+        if let ExprKind::Lambda { params, body } = &args[0].kind {
+            if params.len() != 1 {
+                bail!("find lambda must take exactly 1 parameter");
+            }
+            
+            let saved_bindings = self.bindings.clone();
+            
+            for item in items {
+                self.bindings.insert(params[0].name(), item.clone());
+                let result = self.evaluate_expr(body, deadline, depth + 1)?;
+                self.bindings = saved_bindings.clone();
+                
+                if let Value::Bool(true) = result {
+                return Ok(Value::EnumVariant {
+                    enum_name: "Option".to_string(),
+                    variant_name: "Some".to_string(),
+                    data: Some(vec![item]),
+                });
+                }
+            }
+            
+            self.bindings = saved_bindings;
+        } else {
+            bail!("find currently only supports lambda expressions");
+        }
+        
+        Ok(Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        })
+    }
+    
+    /// Evaluate `list.any()` operation - check if any element matches predicate
+    fn evaluate_list_any(
+        &mut self,
+        items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("any expects exactly one argument (predicate function)");
+        }
+        
+        if let ExprKind::Lambda { params, body } = &args[0].kind {
+            if params.len() != 1 {
+                bail!("any lambda must take exactly 1 parameter");
+            }
+            
+            let saved_bindings = self.bindings.clone();
+            
+            for item in items {
+                self.bindings.insert(params[0].name(), item);
+                let result = self.evaluate_expr(body, deadline, depth + 1)?;
+                
+                if let Value::Bool(true) = result {
+                    self.bindings = saved_bindings;
+                    return Ok(Value::Bool(true));
+                }
+            }
+            
+            self.bindings = saved_bindings;
+            Ok(Value::Bool(false))
+        } else {
+            bail!("any currently only supports lambda expressions");
+        }
+    }
+    
+    /// Evaluate `list.all()` operation - check if all elements match predicate
+    fn evaluate_list_all(
+        &mut self,
+        items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("all expects exactly one argument (predicate function)");
+        }
+        
+        if let ExprKind::Lambda { params, body } = &args[0].kind {
+            if params.len() != 1 {
+                bail!("all lambda must take exactly 1 parameter");
+            }
+            
+            let saved_bindings = self.bindings.clone();
+            
+            for item in items {
+                self.bindings.insert(params[0].name(), item);
+                let result = self.evaluate_expr(body, deadline, depth + 1)?;
+                
+                match result {
+                    Value::Bool(false) => {
+                        self.bindings = saved_bindings;
+                        return Ok(Value::Bool(false));
+                    }
+                    Value::Bool(true) => {}
+                    _ => {
+                        self.bindings = saved_bindings;
+                        bail!("Predicate must return boolean");
+                    }
+                }
+            }
+            
+            self.bindings = saved_bindings;
+            Ok(Value::Bool(true))
+        } else {
+            bail!("all currently only supports lambda expressions");
+        }
+    }
+    
+    /// Evaluate `list.product()` operation - multiply all elements
+    fn evaluate_list_product(items: &[Value]) -> Result<Value> {
+        if items.is_empty() {
+            return Ok(Value::Int(1));
+        }
+        
+        let mut product = Value::Int(1);
+        for item in items {
+            match (&product, item) {
+                (Value::Int(a), Value::Int(b)) => {
+                    product = Value::Int(a * b);
+                }
+                (Value::Float(a), Value::Int(b)) => {
+                    product = Value::Float(a * (*b as f64));
+                }
+                (Value::Int(a), Value::Float(b)) => {
+                    product = Value::Float((*a as f64) * b);
+                }
+                (Value::Float(a), Value::Float(b)) => {
+                    product = Value::Float(a * b);
+                }
+                _ => bail!("Product can only be applied to numbers"),
+            }
+        }
+        
+        Ok(product)
+    }
+    
+    /// Evaluate `list.min()` operation - find minimum element
+    fn evaluate_list_min(items: &[Value]) -> Result<Value> {
+        if items.is_empty() {
+            return Ok(Value::EnumVariant {
+                enum_name: "Option".to_string(),
+                variant_name: "None".to_string(),
+                data: None,
+            });
+        }
+        
+        let mut min = items[0].clone();
+        for item in &items[1..] {
+            match (&min, item) {
+                (Value::Int(a), Value::Int(b)) if b < a => min = item.clone(),
+                (Value::Float(a), Value::Float(b)) if b < a => min = item.clone(),
+                (Value::Int(a), Value::Float(b)) if b < &(*a as f64) => min = item.clone(),
+                (Value::Float(a), Value::Int(b)) if (*b as f64) < *a => min = item.clone(),
+                _ => {}
+            }
+        }
+        
+        Ok(Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![min]),
+        })
+    }
+    
+    /// Evaluate `list.max()` operation - find maximum element
+    fn evaluate_list_max(items: &[Value]) -> Result<Value> {
+        if items.is_empty() {
+            return Ok(Value::EnumVariant {
+                enum_name: "Option".to_string(),
+                variant_name: "None".to_string(),
+                data: None,
+            });
+        }
+        
+        let mut max = items[0].clone();
+        for item in &items[1..] {
+            match (&max, item) {
+                (Value::Int(a), Value::Int(b)) if b > a => max = item.clone(),
+                (Value::Float(a), Value::Float(b)) if b > a => max = item.clone(),
+                (Value::Int(a), Value::Float(b)) if b > &(*a as f64) => max = item.clone(),
+                (Value::Float(a), Value::Int(b)) if (*b as f64) > *a => max = item.clone(),
+                _ => {}
+            }
+        }
+        
+        Ok(Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![max]),
+        })
+    }
+    
+    /// Evaluate `list.take()` operation - take first n elements
+    fn evaluate_list_take(
+        &mut self,
+        items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("take expects exactly one argument (count)");
+        }
+        
+        let count_val = self.evaluate_expr(&args[0], deadline, depth)?;
+        if let Value::Int(n) = count_val {
+            let n = n.max(0) as usize;
+            let taken: Vec<Value> = items.into_iter().take(n).collect();
+            Ok(Value::List(taken))
+        } else {
+            bail!("take count must be an integer");
+        }
+    }
+    
+    /// Evaluate `list.drop()` operation - drop first n elements
+    fn evaluate_list_drop(
+        &mut self,
+        items: Vec<Value>,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("drop expects exactly one argument (count)");
+        }
+        
+        let count_val = self.evaluate_expr(&args[0], deadline, depth)?;
+        if let Value::Int(n) = count_val {
+            let n = n.max(0) as usize;
+            let dropped: Vec<Value> = items.into_iter().skip(n).collect();
+            Ok(Value::List(dropped))
+        } else {
+            bail!("drop count must be an integer");
         }
     }
 
