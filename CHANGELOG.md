@@ -4,6 +4,24 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.61.0] - 2025-09-06
+
+### 🐛 **CRITICAL F-STRING INTERPOLATION FIX**
+
+This release fixes a critical regression where f-string interpolation was completely broken.
+
+### Fixed
+- ✅ **F-String Interpolation**: Fixed parser to correctly recognize and parse `{expr}` patterns in f-strings
+  - `f"x={x}"` now correctly interpolates variables instead of printing literally
+  - Expressions like `f"Sum: {x + y}"` now work correctly
+  - Method calls like `f"Length: {arr.len()}"` now interpolate properly
+  - Added comprehensive TDD test suite with 12 tests to prevent regression
+
+### Technical Details
+- Parser was incorrectly treating entire f-string content as single Text part
+- Fixed by parsing expressions within `{}` brackets into AST nodes
+- Transpiler already had correct implementation, only parser needed fixing
+
 ## [1.60.0] - 2025-09-05
 
 ### 🚀 **INFRASTRUCTURE IMPROVEMENTS & BUG FIXES**
