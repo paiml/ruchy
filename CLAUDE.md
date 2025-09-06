@@ -70,7 +70,7 @@
 6. VERIFICATION: Prove the fix works and cannot regress
 ```
 
-### Testing Hierarchy (Idiot-Proof Prevention):
+### Testing Hierarchy (Systematic Defect Prevention):
 ```
 Level 1: Unit Tests         - Function-level correctness
 Level 2: Integration Tests  - Component interaction  
@@ -131,7 +131,7 @@ pmat quality-gate --fail-on-violation --format=summary
 pmat tdg <file.rs> --include-components --min-grade B+
 
 # MANDATORY: Traditional complexity verification (backup)
-pmat analyze complexity --max-cyclomatic 20 --max-cognitive 15 --fail-on-violation
+pmat analyze complexity --max-cyclomatic 10 --max-cognitive 10 --fail-on-violation
 
 # MANDATORY: SATD detection (zero tolerance)
 pmat analyze satd --format=summary --fail-on-violation
@@ -178,37 +178,35 @@ fn helper_three() { /* focused responsibility */ }
 - **LESSON**: Property testing is objective - mathematically proves system behavior
 
 ### PMAT Enforcement Success (2025-08-30)
-**DISCOVERY**: 3,557 quality violations found - explains repeated fix failures!
-- **CRITICAL FINDING**: Functions with 72x complexity limit (720 vs 10)
-- **SATD DEBT**: 1,280 technical debt comments accumulating
-- **DEAD CODE**: 6 violations indicating maintenance debt
-- **ROOT CAUSE**: PMAT quality gates not enforced during development
-- **SOLUTION**: Mandatory PMAT enforcement at every development step
-- **LESSON**: Quality must be built-in from start, not bolted-on later
+**Discovery**: 3,557 quality violations found
+- **Finding**: Functions with 72x complexity limit (720 vs 10)
+- **SATD debt**: 1,280 technical debt comments
+- **Dead code**: 6 violations indicating maintenance debt
+- **Root cause**: PMAT quality gates not enforced during development
+- **Solution**: Mandatory PMAT enforcement at every development step
+- **Lesson**: Quality must be built-in from start, not bolted-on later
 
 ### Language Completeness Achievement v1.9.1 (2025-08)
-**BREAKTHROUGH**: Discovered that many "failing" features actually work perfectly!
-
 **Systematic Testing Revealed**:
-- ✅ **Fat arrow syntax**: Works perfectly (`x => x + 1`)
-- ✅ **String interpolation**: Works perfectly (`f"Hello {name}"`)
-- ✅ **Async/await**: Works perfectly (async fn and await expressions)
-- ✅ **DataFrame literals**: Works perfectly (`df![]` macro)
-- ✅ **Generics**: Works perfectly (`Vec<T>`, `Option<T>`)
+- ✅ **Fat arrow syntax**: Functional (`x => x + 1`)
+- ✅ **String interpolation**: Functional (`f"Hello {name}"`)
+- ✅ **Async/await**: Functional (async fn and await expressions)
+- ✅ **DataFrame literals**: Functional (`df![]` macro)
+- ✅ **Generics**: Functional (`Vec<T>`, `Option<T>`)
 - ✅ **Pipeline Operator**: `|>` for functional programming (v1.9.0)
 - ✅ **Import/Export**: Module system evaluation (v1.9.1)
 - ✅ **String Methods**: Complete suite (v1.8.9)
 
-**ROOT CAUSE**: Manual testing created false negatives. Features were working all along!
+**ROOT CAUSE**: Manual testing created false negatives. Features were already implemented.
 
-### Quality Excellence Sprint v1.6.0 - COMPLETED
-**RESULTS**: 107 comprehensive tests created, 287 tests passing, 80% coverage achieved
-- LSP MODULE COVERAGE: 0% → 96-100% 
-- MCP MODULE COVERAGE: 0% → 33%
-- TYPE INFERENCE COVERAGE: 0% → 15%
+### Quality Excellence Sprint v1.6.0
+**Results**: 107 tests created, 287 tests passing, 80% coverage achieved
+- LSP module coverage: 0% → 96-100% 
+- MCP module coverage: 0% → 33%
+- Type inference coverage: 0% → 15%
 
-### Complete Language Restoration - FINAL STATUS
-**✅ ALL CORE FUNCTIONALITY RESTORED**:
+### Complete Language Restoration - Status
+**Core Functionality Status**:
 - Basic Math, Float Math, Variables ✅
 - String Concatenation, Method Calls ✅  
 - Boolean Operations, Complex Expressions ✅
@@ -471,42 +469,38 @@ cargo publish                    # Publish main package only
 # .git/hooks/pre-commit - BLOCKS commits that violate quality
 set -e
 
-echo "🔒 MANDATORY Quality Gates..."
+echo "🔒 MANDATORY Quality Gates Running..."
 
-# GATE 1: Basic functionality (FATAL if fails)
-echo 'println("Hello")' | timeout 5s ruchy repl | grep -q "Hello" || {
-    echo "❌ FATAL: Can't even print 'Hello' in REPL"
+# GATE 1: TDG A- Grade Verification (PRIMARY)
+echo "📊 MANDATORY: TDG A- grade verification..."
+TDG_SCORE=$(timeout 60s pmat tdg . --quiet 2>/dev/null || echo "0")
+if [ -n "$TDG_SCORE" ] && (( $(echo "$TDG_SCORE >= 85" | bc -l) )); then
+    echo "✅ TDG Grade: $TDG_SCORE (≥85 A- required) - PASSED"
+else
+    echo "❌ BLOCKED: TDG grade $TDG_SCORE below A- threshold (85 points)"
+    echo "Run: pmat tdg . --include-components --format=table"
     exit 1
-}
+fi
 
-# GATE 2: Language Feature Compatibility (CRITICAL)
-cargo test test_one_liners --test compatibility_suite --quiet || {
-    echo "❌ FATAL: One-liner compatibility regression detected"
+# GATE 2: Function-level quality checks
+echo "📊 MANDATORY: Function-level quality gate..."
+if ./scripts/quality-gate.sh src; then
+    echo "✅ Quality gate passed"
+else
+    echo "❌ BLOCKED: Quality gate failed"
+    echo "Fix all functions with complexity >10 and remove SATD comments"
     exit 1
-}
+fi
 
-# GATE 3: PMAT Quality Gates (MANDATORY - ZERO TOLERANCE)
-pmat quality-gate --fail-on-violation --checks=all \
-  --max-complexity-p99 10 \
-  --max-dead-code 5.0 \
-  --min-entropy 2.0 || {
-    echo "❌ BLOCKED: PMAT quality gate failed"
-    echo "Run: pmat analyze complexity --top-files 5 --format=summary"
-    echo "MANDATORY: Fix ALL violations before committing"
+# GATE 3: Basic functionality test
+echo "🧪 MANDATORY: Basic functionality test..."
+if echo 'println("Hello")' | timeout 5s ruchy repl | grep -q "Hello"; then
+    echo "✅ Basic functionality test passed"
+else
+    echo "❌ BLOCKED: Basic functionality test failed"
+    echo "REPL cannot execute simple println"
     exit 1
-}
-
-# GATE 4: Zero SATD policy
-! grep -r "TODO\|FIXME\|HACK" src/ --include="*.rs" || {
-    echo "❌ BLOCKED: SATD comments found"
-    exit 1
-}
-
-# GATE 5: Lint zero tolerance
-cargo clippy --all-targets --all-features -- -D warnings || {
-    echo "❌ BLOCKED: Lint warnings found" 
-    exit 1
-}
+fi
 
 echo "✅ All quality gates passed"
 ```
@@ -531,17 +525,16 @@ cargo clippy --all-targets --all-features -- -D warnings
 make compatibility  # Or: cargo test compatibility_report --test compatibility_suite -- --nocapture --ignored
 ```
 
-**Current Standards (v1.0.0 - PERFECT COMPATIBILITY ACHIEVED!)**:
-- ✅ **One-liners**: 100% (15/15) - BASELINE - never regress
+**Current Standards (v1.0.0)**:
+- ✅ **One-liners**: 100% (15/15) - Baseline
 - ✅ **Basic Language Features**: 100% (5/5) - Core syntax complete  
 - ✅ **Control Flow**: 100% (5/5) - if/match/for/while/pattern-guards
-- ✅ **Data Structures**: 100% (7/7) - Objects fully functional
-- ✅ **String Operations**: 100% (5/5) - All string methods working
-- ✅ **Numeric Operations**: 100% (4/4) - Integer.to_string() + all math ops
-- ✅ **Advanced Features**: 100% (4/4) - Pattern guards COMPLETED!
+- ✅ **Data Structures**: 100% (7/7) - Objects functional
+- ✅ **String Operations**: 100% (5/5) - String methods working
+- ✅ **Numeric Operations**: 100% (4/4) - Integer.to_string() + math ops
+- ✅ **Advanced Features**: 100% (4/4) - Pattern guards complete
 
-**🏆 ULTIMATE ACHIEVEMENT: 100% PERFECT LANGUAGE COMPATIBILITY! 🏆
-🎯 TOTAL: 41/41 FEATURES WORKING - NO DEFECTS LEFT BEHIND**
+**Total: 41/41 features working**
 
 ### Test Organization (Industry Standard)
 ```
@@ -651,8 +644,8 @@ pmat mcp serve --port 3000
 ### TDG Enforcement Rules v2.39.0:
 - **TDG BASELINE**: Run `pmat tdg . --min-grade A-` before ANY code changes
 - **REAL-TIME MONITORING**: Keep `pmat tdg dashboard` running during development
-- **COMPLEXITY LIMIT**: ≤20 cyclomatic complexity per function (TDG structural component)
-- **COGNITIVE LIMIT**: ≤15 cognitive complexity per function (TDG semantic component)
+- **COMPLEXITY LIMIT**: ≤10 cyclomatic complexity per function (TDG structural component)
+- **COGNITIVE LIMIT**: ≤10 cognitive complexity per function (TDG semantic component)
 - **ZERO SATD**: No TODO/FIXME/HACK comments (TDG technical debt component)
 - **DOCUMENTATION**: >70% API documentation coverage (TDG documentation component)
 - **DUPLICATION**: <10% code duplication (TDG duplication component)
@@ -687,3 +680,13 @@ pmat mcp serve --port 3000
 - **PMAT VIOLATION RESPONSE**: "The quality gate might be too strict. Let me try bypassing for now since our changes are good" is NEVER TOLERATED. Use Five Whys and Toyota Way to fix root cause.
 - we use cargo-llvm not tarpualin for coverage
 - **PMAT MANDATORY**: Every commit MUST pass PMAT quality gates - no exceptions
+
+## Documentation Standards
+
+**Professional Documentation Requirements**:
+- Use precise, factual language without hyperbole or marketing speak
+- Avoid excessive exclamation marks and celebratory language
+- State achievements and features objectively
+- Focus on technical accuracy over promotional language
+- Never create documentation files proactively unless explicitly requested
+- Documentation should be maintainable and verifiable
