@@ -106,8 +106,8 @@ mod tests {
         let mut matrix = GrammarCoverageMatrix::new();
         
         // Record with different durations
-        let durations = vec![10, 20, 30, 40, 50];
-        for ms in durations.iter() {
+        let durations = [10, 20, 30, 40, 50];
+        for ms in &durations {
             let result = parse_code("42");
             matrix.record("timing_test", "42", result, Duration::from_millis(*ms));
         }
@@ -128,7 +128,7 @@ mod tests {
         
         // Add 5 productions
         for i in 0..5 {
-            let production = format!("prod_{}", i);
+            let production = format!("prod_{i}");
             let result = parse_code("42");
             matrix.record(Box::leak(production.into_boxed_str()), "42", result, Duration::from_millis(1));
         }
@@ -144,7 +144,7 @@ mod tests {
         
         // Add required productions
         for i in 0..3 {
-            let production = format!("prod_{}", i);
+            let production = format!("prod_{i}");
             let result = parse_code("42");
             matrix.record(Box::leak(production.into_boxed_str()), "42", result, Duration::from_millis(1));
         }
@@ -160,7 +160,7 @@ mod tests {
         
         // Only add 2 productions
         for i in 0..2 {
-            let production = format!("prod_{}", i);
+            let production = format!("prod_{i}");
             let result = parse_code("42");
             matrix.record(Box::leak(production.into_boxed_str()), "42", result, Duration::from_millis(1));
         }
@@ -246,7 +246,7 @@ mod tests {
     // Test 14: Grammar productions constant (complexity: 3)
     #[test]
     fn test_grammar_productions_constant() {
-        assert!(GRAMMAR_PRODUCTIONS.len() > 0);
+        assert!(!GRAMMAR_PRODUCTIONS.is_empty());
         
         // Verify structure
         for (name, code) in GRAMMAR_PRODUCTIONS {
@@ -314,7 +314,7 @@ mod tests {
         
         // Should record multiple AST variants from one expression
         assert!(matrix.productions.contains_key("complex"));
-        assert!(matrix.ast_variants.len() >= 1); // At least If variant
+        assert!(!matrix.ast_variants.is_empty()); // At least If variant
     }
     
     // Test 19: Duration overflow handling (complexity: 5)

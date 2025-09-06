@@ -984,7 +984,7 @@ mod tests {
     #[test]
     fn test_ui_config_debug() {
         let config = UIConfig::default();
-        let debug_str = format!("{:?}", config);
+        let debug_str = format!("{config:?}");
         assert!(debug_str.contains("UIConfig"));
         assert!(debug_str.contains("max_preview_rows"));
         assert!(debug_str.contains("auto_refresh"));
@@ -1030,7 +1030,7 @@ mod tests {
     #[test]
     fn test_display_mode_debug() {
         let mode = DisplayMode::DataViewer("test_viewer".to_string());
-        let debug_str = format!("{:?}", mode);
+        let debug_str = format!("{mode:?}");
         assert!(debug_str.contains("DataViewer"));
         assert!(debug_str.contains("test_viewer"));
     }
@@ -1039,7 +1039,7 @@ mod tests {
 
     #[test]
     fn test_ui_action_variants() {
-        let actions = vec![UIAction::Continue, UIAction::Exit];
+        let actions = [UIAction::Continue, UIAction::Exit];
         assert_eq!(actions.len(), 2);
         assert_eq!(actions[0], UIAction::Continue);
         assert_eq!(actions[1], UIAction::Exit);
@@ -1058,7 +1058,7 @@ mod tests {
         let cloned = action.clone();
         assert_eq!(action, cloned);
         
-        let debug_str = format!("{:?}", action);
+        let debug_str = format!("{action:?}");
         assert!(debug_str.contains("Continue"));
     }
 
@@ -1408,7 +1408,7 @@ mod tests {
             compact_mode: true,
         };
         
-        let ui = create_test_ui_with_config(config.clone());
+        let ui = create_test_ui_with_config(config);
         assert_eq!(ui.config.max_preview_rows, 10);
         assert_eq!(ui.config.max_history_events, 50);
         assert!(!ui.config.auto_refresh);
@@ -1434,7 +1434,7 @@ mod tests {
         
         for mode in modes {
             // Each mode should be created without errors
-            assert_ne!(format!("{:?}", mode), "");
+            assert_ne!(format!("{mode:?}"), "");
         }
     }
 

@@ -509,13 +509,13 @@ mod tests {
                 // May fail on other quality issues, but not depth parsing
                 if let Err(e) = &result {
                     assert!(!e.to_string().contains("Invalid depth"), 
-                        "Should not fail on depth parsing for '{}'", depth_str);
+                        "Should not fail on depth parsing for '{depth_str}'");
                 }
             } else {
-                assert!(result.is_err(), "Should fail for invalid depth: '{}'", depth_str);
+                assert!(result.is_err(), "Should fail for invalid depth: '{depth_str}'");
                 if let Err(e) = result {
                     assert!(e.to_string().contains("Invalid depth"), 
-                        "Should fail with depth error for '{}'", depth_str);
+                        "Should fail with depth error for '{depth_str}'");
                 }
             }
         }
@@ -552,13 +552,13 @@ mod tests {
                 // Valid formats shouldn't fail on format parsing
                 if let Err(e) = &result {
                     assert!(!e.to_string().contains("Invalid format"), 
-                        "Should not fail on format parsing for '{}'", format);
+                        "Should not fail on format parsing for '{format}'");
                 }
             } else {
-                assert!(result.is_err(), "Should fail for invalid format: '{}'", format);
+                assert!(result.is_err(), "Should fail for invalid format: '{format}'");
                 if let Err(e) = result {
                     assert!(e.to_string().contains("Invalid format"), 
-                        "Should fail with format error for '{}'", format);
+                        "Should fail with format error for '{format}'");
                 }
             }
         }

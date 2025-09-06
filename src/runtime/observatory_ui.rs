@@ -99,7 +99,7 @@ mod tests {
     #[test]
     fn test_dashboard_config_debug() {
         let config = create_test_config();
-        let debug_str = format!("{:?}", config);
+        let debug_str = format!("{config:?}");
         assert!(debug_str.contains("DashboardConfig"));
         assert!(debug_str.contains("refresh_interval_ms"));
         assert!(debug_str.contains("enable_colors"));
@@ -127,14 +127,12 @@ mod tests {
 
     #[test]
     fn test_display_mode_variants() {
-        let modes = vec![
-            DisplayMode::Overview,
+        let modes = [DisplayMode::Overview,
             DisplayMode::ActorList,
             DisplayMode::MessageTraces,
             DisplayMode::Metrics,
             DisplayMode::Deadlocks,
-            DisplayMode::Help,
-        ];
+            DisplayMode::Help];
         
         assert_eq!(modes.len(), 6);
         assert_eq!(modes[0], DisplayMode::Overview);
@@ -150,7 +148,7 @@ mod tests {
     #[test]
     fn test_display_mode_clone() {
         let mode1 = DisplayMode::MessageTraces;
-        let mode2 = mode1.clone();
+        let mode2 = mode1;
         assert_eq!(mode1, mode2);
     }
 
@@ -175,7 +173,7 @@ mod tests {
     #[test]
     fn test_display_mode_debug() {
         let mode = DisplayMode::ActorList;
-        let debug_str = format!("{:?}", mode);
+        let debug_str = format!("{mode:?}");
         assert!(debug_str.contains("ActorList"));
     }
 
@@ -362,7 +360,7 @@ mod tests {
         let dashboard = create_test_dashboard();
         let colors = Colors::new(false); // No colors for testing
         
-        let text = dashboard.format_with_color("test", &colors.red);
+        let text = dashboard.format_with_color("test", colors.red);
         assert_eq!(text, "test"); // No color codes when disabled
     }
 
@@ -422,7 +420,7 @@ mod tests {
         
         // Should return a formatted string
         assert!(!formatted.is_empty());
-        assert!(formatted.contains(":")); // Should have time separator
+        assert!(formatted.contains(':')); // Should have time separator
     }
 
     #[test]
@@ -450,7 +448,7 @@ mod tests {
         let dashboard = create_test_dashboard();
         let separator = dashboard.render_separator();
         
-        assert!(separator.contains("-"));
+        assert!(separator.contains('-'));
         assert!(separator.len() >= 10);
     }
 
@@ -542,7 +540,7 @@ mod tests {
         
         // Add some test data - need to use an empty filter for trace to be accepted
         {
-            let mut obs = observatory.lock().unwrap();
+            let obs = observatory.lock().unwrap();
             // Clear any filters that might block the trace
             let trace = create_test_message_trace();
             obs.trace_message(trace).unwrap();
@@ -606,7 +604,7 @@ mod tests {
         
         let config = create_test_config();
         let dashboard = Arc::new(Mutex::new(ObservatoryDashboard::new(
-            observatory.clone(),
+            observatory,
             config
         )));
         

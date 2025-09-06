@@ -10,7 +10,7 @@ fn test_simple_comma_list() {
     let result = parser.parse();
     
     // This should fail with some reasonable error - let's see what happens
-    println!("Parse result for 'x, y': {:?}", result);
+    println!("Parse result for 'x, y': {result:?}");
     // Don't assert anything yet, just observe
 }
 
@@ -23,11 +23,11 @@ fn test_simple_tuple_without_let() {
     let result = parser.parse();
     
     // This should parse as a tuple expression
-    println!("Parse result for '(x, y)': {:?}", result);
+    println!("Parse result for '(x, y)': {result:?}");
     
     // Just check that it doesn't crash
     match result {
         Ok(_) => println!("Successfully parsed tuple"),
-        Err(e) => println!("Failed to parse tuple: {}", e),
+        Err(e) => println!("Failed to parse tuple: {e}"),
     }
 }

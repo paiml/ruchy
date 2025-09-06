@@ -46,7 +46,7 @@ mod tests {
             if result.is_ok() {
                 let output = result.unwrap();
                 // Should either be raw identifier or handled specially
-                assert!(output.contains(&format!("r#{}", keyword)) || output.contains(keyword));
+                assert!(output.contains(&format!("r#{keyword}")) || output.contains(keyword));
             }
         }
     }
@@ -60,7 +60,7 @@ mod tests {
             if result.is_ok() {
                 let output = result.unwrap();
                 // These should NOT be raw identifiers
-                assert!(!output.contains(&format!("r#{}", keyword)));
+                assert!(!output.contains(&format!("r#{keyword}")));
                 assert!(output.contains(keyword));
             }
         }
@@ -98,7 +98,7 @@ mod tests {
     fn test_transpile_operator_binary() {
         let result = transpile_str("1 + 2");
         assert!(result.is_ok());
-        assert!(result.unwrap().contains("+"));
+        assert!(result.unwrap().contains('+'));
     }
     
     #[test]
@@ -106,7 +106,7 @@ mod tests {
         let result = transpile_str("-42");
         assert!(result.is_ok());
         let output = result.unwrap();
-        assert!(output.contains("-") || output.contains("neg"));
+        assert!(output.contains('-') || output.contains("neg"));
     }
     
     #[test]
@@ -197,7 +197,7 @@ mod tests {
         let result = transpile_str("|x| x + 1");
         assert!(result.is_ok());
         let output = result.unwrap();
-        assert!(output.contains("|"));
+        assert!(output.contains('|'));
     }
     
     #[test]
@@ -300,7 +300,7 @@ mod tests {
         let result = transpile_str("func()?");
         assert!(result.is_ok());
         let output = result.unwrap();
-        assert!(output.contains("?"));
+        assert!(output.contains('?'));
     }
     
     // List and data structure tests (complexity: 3 each)
@@ -317,7 +317,7 @@ mod tests {
         let result = transpile_str("[1, 2, 3]");
         assert!(result.is_ok());
         let output = result.unwrap();
-        assert!(output.contains("1") && output.contains("2") && output.contains("3"));
+        assert!(output.contains('1') && output.contains('2') && output.contains('3'));
     }
     
     #[test]
@@ -325,7 +325,7 @@ mod tests {
         let result = transpile_str("(1, 2, 3)");
         assert!(result.is_ok());
         let output = result.unwrap();
-        assert!(output.contains("1") && output.contains("2") && output.contains("3"));
+        assert!(output.contains('1') && output.contains('2') && output.contains('3'));
     }
     
     // Range tests (complexity: 2 each)

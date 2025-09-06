@@ -163,12 +163,12 @@ fn test_wasm_loop_constructs() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_wasm_struct_definition() {
-    let code = r#"
+    let code = r"
     struct Person {
         name: String,
         age: i32
     }
-    "#;
+    ";
     let mut parser = Parser::new(code);
     let ast = parser.parse();
     assert!(ast.is_ok());
@@ -177,13 +177,13 @@ fn test_wasm_struct_definition() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_wasm_enum_definition() {
-    let code = r#"
+    let code = r"
     enum Color {
         Red,
         Green,
         Blue
     }
-    "#;
+    ";
     let mut parser = Parser::new(code);
     let ast = parser.parse();
     assert!(ast.is_ok());
@@ -223,13 +223,13 @@ fn test_wasm_json_handling() {
 #[test]
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_wasm_try_catch() {
-    let code = r#"
+    let code = r"
     try {
         risky_operation()
     } catch (e) {
         handle_error(e)
     }
-    "#;
+    ";
     let mut parser = Parser::new(code);
     let ast = parser.parse();
     // Try/catch might not be supported
@@ -296,7 +296,7 @@ fn test_wasm_empty_input() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
 fn test_wasm_very_long_identifier() {
     let long_name = "a".repeat(1000);
-    let code = format!("let {} = 1", long_name);
+    let code = format!("let {long_name} = 1");
     let mut parser = Parser::new(&code);
     let ast = parser.parse();
     assert!(ast.is_ok());
@@ -307,7 +307,7 @@ fn test_wasm_very_long_identifier() {
 fn test_wasm_deeply_nested_expression() {
     let mut code = String::from("1");
     for _ in 0..20 {
-        code = format!("({} + 1)", code);
+        code = format!("({code} + 1)");
     }
     let mut parser = Parser::new(&code);
     let ast = parser.parse();

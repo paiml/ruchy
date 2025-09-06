@@ -1024,7 +1024,7 @@ mod tests {
         );
         
         let issues = linter.lint(&outer_let, "let x = 1; let x = 2; x").unwrap();
-        eprintln!("Debug - Issues found: {:?}", issues);
+        eprintln!("Debug - Issues found: {issues:?}");
         assert!(issues.iter().any(|i| i.rule == "shadowing" && i.name == "x"));
     }
 

@@ -5,7 +5,7 @@
 mod repl_wave_2_high_complexity_functions {
     use ruchy::runtime::repl::Repl;
 
-    /// Test apply_binary_math_op - COMPLEXITY 23/31 (Function #14)
+    /// Test `apply_binary_math_op` - COMPLEXITY 23/31 (Function #14)
     #[test]
     fn test_apply_binary_math_op_comprehensive() {
         let mut repl = Repl::new().expect("REPL creation should work");
@@ -66,9 +66,9 @@ mod repl_wave_2_high_complexity_functions {
                 }
                 Err(_) => {
                     if expected == "error" {
-                        println!("Math test '{}': ERROR (expected) ✓", test);
+                        println!("Math test '{test}': ERROR (expected) ✓");
                     } else {
-                        println!("Math test '{}': ERROR (unexpected)", test);
+                        println!("Math test '{test}': ERROR (unexpected)");
                     }
                 }
             }
@@ -77,7 +77,7 @@ mod repl_wave_2_high_complexity_functions {
         println!("✅ COVERAGE: apply_binary_math_op comprehensive");
     }
 
-    /// Test format_error_recovery - COMPLEXITY 20/31 (Function #15)
+    /// Test `format_error_recovery` - COMPLEXITY 20/31 (Function #15)
     #[test]
     fn test_format_error_recovery_comprehensive() {
         let mut repl = Repl::new().expect("REPL creation should work");
@@ -107,16 +107,16 @@ mod repl_wave_2_high_complexity_functions {
         for error_input in error_scenarios {
             let result = repl.eval(error_input);
             // All should fail, but with formatted error recovery
-            assert!(result.is_err(), "Should fail for: {}", error_input);
+            assert!(result.is_err(), "Should fail for: {error_input}");
             
             // The error formatting is tested by ensuring we get an error
-            println!("Error recovery for '{}': ✓", error_input);
+            println!("Error recovery for '{error_input}': ✓");
         }
         
         println!("✅ COVERAGE: format_error_recovery comprehensive");
     }
 
-    /// Test format_detailed_introspection - COMPLEXITY 23/27 (Function #16)
+    /// Test `format_detailed_introspection` - COMPLEXITY 23/27 (Function #16)
     #[test]
     fn test_format_detailed_introspection_comprehensive() {
         let mut repl = Repl::new().expect("REPL creation should work");
@@ -167,7 +167,7 @@ mod repl_wave_2_high_complexity_functions {
         println!("✅ COVERAGE: format_detailed_introspection comprehensive");
     }
 
-    /// Test evaluate_pipeline_stage - COMPLEXITY 20/29 (Function #17) 
+    /// Test `evaluate_pipeline_stage` - COMPLEXITY 20/29 (Function #17) 
     #[test]
     fn test_evaluate_pipeline_stage_comprehensive() {
         let mut repl = Repl::new().expect("REPL creation should work");
@@ -272,7 +272,7 @@ mod repl_wave_2_high_complexity_functions {
         println!("✅ COVERAGE: eval core function comprehensive");
     }
 
-    /// Test handle_string_manipulation - COMPLEXITY 20/28 (Function #19)
+    /// Test `handle_string_manipulation` - COMPLEXITY 20/28 (Function #19)
     #[test]
     fn test_handle_string_manipulation_comprehensive() {
         let mut repl = Repl::new().expect("REPL creation should work");
@@ -340,7 +340,7 @@ mod repl_wave_2_high_complexity_functions {
         println!("✅ COVERAGE: handle_string_manipulation comprehensive");
     }
 
-    /// Test evaluate_function_body - COMPLEXITY 12/35 (Function #20)
+    /// Test `evaluate_function_body` - COMPLEXITY 12/35 (Function #20)
     #[test]
     fn test_evaluate_function_body_comprehensive() {
         let mut repl = Repl::new().expect("REPL creation should work");
@@ -396,7 +396,7 @@ mod repl_wave_2_high_complexity_functions {
 mod repl_wave_2_medium_complexity_functions {
     use ruchy::runtime::repl::Repl;
 
-    /// Test format_value_size - COMPLEXITY 22/24 (Function #21)
+    /// Test `format_value_size` - COMPLEXITY 22/24 (Function #21)
     #[test]
     fn test_format_value_size_comprehensive() {
         let mut repl = Repl::new().expect("REPL creation should work");
@@ -437,7 +437,7 @@ mod repl_wave_2_medium_complexity_functions {
         println!("✅ COVERAGE: format_value_size comprehensive");
     }
 
-    /// Test suggest_recovery_options - COMPLEXITY 20/26 (Function #22)  
+    /// Test `suggest_recovery_options` - COMPLEXITY 20/26 (Function #22)  
     #[test]
     fn test_suggest_recovery_options_comprehensive() {
         let mut repl = Repl::new().expect("REPL creation should work");
@@ -460,8 +460,8 @@ mod repl_wave_2_medium_complexity_functions {
         for (error_input, error_type) in recovery_scenarios {
             let result = repl.eval(error_input);
             // Should fail with recovery suggestions
-            assert!(result.is_err(), "Should fail for: {}", error_input);
-            println!("Recovery suggestions for '{}' ({}): ✓", error_input, error_type);
+            assert!(result.is_err(), "Should fail for: {error_input}");
+            println!("Recovery suggestions for '{error_input}' ({error_type}): ✓");
         }
         
         // Test recovery in interactive mode (simulated)
@@ -480,7 +480,7 @@ mod repl_wave_2_medium_complexity_functions {
         println!("✅ COVERAGE: suggest_recovery_options comprehensive");
     }
 
-    /// Test Value::hash - COMPLEXITY 23/23 (Function #23)
+    /// Test `Value::hash` - COMPLEXITY 23/23 (Function #23)
     #[test]
     fn test_value_hash_comprehensive() {
         let mut repl = Repl::new().expect("REPL creation should work");
@@ -533,7 +533,7 @@ mod repl_wave_2_medium_complexity_functions {
         println!("✅ COVERAGE: Value::hash comprehensive");
     }
 
-    /// Test evaluate_list_methods - COMPLEXITY 23/22 (Function #24)
+    /// Test `evaluate_list_methods` - COMPLEXITY 23/22 (Function #24)
     #[test]
     fn test_evaluate_list_methods_comprehensive() {
         let mut repl = Repl::new().expect("REPL creation should work");
@@ -644,14 +644,14 @@ mod repl_wave_2_summary {
         println!("   22. suggest_recovery_options (20/26) - Error recovery");
         println!("   23. Value::hash (23/23) - Value hashing");
         println!("   24. evaluate_list_methods (23/22) - List operations");
-        println!("");
+        println!();
         
         println!("📊 SYSTEMATIC TESTING APPROACH:");
         println!("   • Each function tested across ALL code branches");
         println!("   • Error paths and edge cases systematically covered");
         println!("   • Performance boundaries and limits tested");
         println!("   • Complex nested scenarios included");
-        println!("");
+        println!();
         
         println!("🎯 COVERAGE STRATEGY:");
         println!("   • Wave 1 (Functions 1-13): Achieved 24% coverage");

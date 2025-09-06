@@ -43,7 +43,7 @@ mod parse_method_access_tests {
     }
     
     fn extract_select_columns(identifiers: Vec<&str>) -> Vec<String> {
-        identifiers.into_iter().map(|s| s.to_string()).collect()
+        identifiers.into_iter().map(std::string::ToString::to_string).collect()
     }
     
     #[test]
@@ -55,7 +55,7 @@ mod parse_method_access_tests {
     }
     
     fn extract_groupby_columns(identifiers: Vec<&str>) -> Vec<String> {
-        identifiers.into_iter().map(|s| s.to_string()).collect()
+        identifiers.into_iter().map(std::string::ToString::to_string).collect()
     }
     
     #[test]

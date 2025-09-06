@@ -117,7 +117,7 @@ fn test_some_list_value() {
     let result = repl.eval("Some([1, 2, 3])");
     if result.is_ok() {
         let output = result.unwrap();
-        assert!(output.contains("Some") || output.contains("1") || !output.is_empty());
+        assert!(output.contains("Some") || output.contains('1') || !output.is_empty());
     }
 }
 
@@ -176,7 +176,7 @@ fn test_none_in_match() {
     let result = repl.eval("match None { Some(x) => x, None => 0 }");
     if result.is_ok() {
         let output = result.unwrap();
-        assert!(output.contains("0") || !output.is_empty());
+        assert!(output.contains('0') || !output.is_empty());
     }
 }
 

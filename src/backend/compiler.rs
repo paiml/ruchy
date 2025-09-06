@@ -107,7 +107,7 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
     let rust_code = parse_and_transpile(source)?;
     
     // Prepare compilation artifacts
-    let (temp_dir, rust_file) = prepare_rust_file(&rust_code)?;
+    let (_temp_dir, rust_file) = prepare_rust_file(&rust_code)?;
     
     // Build and execute rustc
     let cmd = build_rustc_command(&rust_file, options);

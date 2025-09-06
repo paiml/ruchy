@@ -859,7 +859,7 @@ mod tests {
         ";
         assert!(compile(factorial).is_ok());
         
-        let fibonacci = r#"
+        let fibonacci = r"
             fn fibonacci(n) {
                 match n {
                     0 => 0,
@@ -867,10 +867,10 @@ mod tests {
                     _ => fibonacci(n-1) + fibonacci(n-2)
                 }
             }
-        "#;
+        ";
         assert!(compile(fibonacci).is_ok());
         
-        let quicksort = r#"
+        let quicksort = r"
             fn quicksort(arr) {
                 if arr.len() <= 1 { 
                     arr 
@@ -881,7 +881,7 @@ mod tests {
                     quicksort(less) + [pivot] + quicksort(greater)
                 }
             }
-        "#;
+        ";
         assert!(compile(quicksort).is_ok());
     }
 }

@@ -12,7 +12,7 @@ use ruchy::{Transpiler, Parser};
 /// Test result type transpilation
 #[test]
 fn test_transpile_result_types() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let test_cases = [
         // Ok constructor
@@ -47,7 +47,7 @@ fn test_transpile_result_types() {
 /// Test option type transpilation
 #[test]
 fn test_transpile_option_types() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let test_cases = [
         // Some constructor
@@ -82,7 +82,7 @@ fn test_transpile_option_types() {
 /// Test type inference edge cases
 #[test]
 fn test_transpile_type_inference_edge_cases() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let test_cases = [
         // Generic function
@@ -114,7 +114,7 @@ fn test_transpile_type_inference_edge_cases() {
 /// Test dataframe operations transpilation
 #[test]
 fn test_transpile_dataframe_operations() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let test_cases = [
         // DataFrame literal
@@ -146,7 +146,7 @@ fn test_transpile_dataframe_operations() {
 /// Test actor model transpilation
 #[test]
 fn test_transpile_actors() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let test_cases = [
         // Actor definition
@@ -178,7 +178,7 @@ fn test_transpile_actors() {
 /// Test complex nested expressions
 #[test]
 fn test_transpile_complex_nested() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let test_cases = [
         // Nested if-else
@@ -210,7 +210,7 @@ fn test_transpile_complex_nested() {
 /// Test edge cases and error conditions
 #[test]
 fn test_transpile_edge_cases() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let test_cases = [
         // Empty block
@@ -248,7 +248,7 @@ fn test_transpile_edge_cases() {
 /// Test all unary operators
 #[test]
 fn test_transpile_all_unary_ops() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let test_cases = [
         // Negation
@@ -289,7 +289,7 @@ fn test_transpile_all_unary_ops() {
 /// Test try operator and error handling
 #[test]
 fn test_transpile_try_operator() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let test_cases = [
         // Try operator
@@ -321,7 +321,7 @@ fn test_transpile_try_operator() {
 /// Test macro invocations
 #[test]
 fn test_transpile_macros() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let test_cases = [
         // println macro

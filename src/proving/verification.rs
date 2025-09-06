@@ -769,7 +769,8 @@ mod tests {
     #[test]
     fn test_verification_timing() {
         let result = verify_single_assertion("true", false);
-        assert!(result.verification_time_ms >= 0);
+        // Time is always non-negative (u64 type)
+        assert!(result.verification_time_ms < 60000, "Verification should complete within 60 seconds");
     }
 
     #[test]
