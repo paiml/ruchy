@@ -980,14 +980,16 @@ impl Repl {
         if error_msg.contains("Unexpected EOF") || error_msg.contains("expected expression") || 
            error_msg.contains("Unexpected end of input") || error_msg.contains("end of input") {
             if failed_expr.starts_with("let ") && failed_expr.ends_with(" = ") {
-                let var_name = failed_expr.strip_prefix("let ").unwrap()
-                    .strip_suffix(" = ").unwrap();
-                options.push(RecoveryOption::ContinueWithDefault(
-                    format!("let {var_name} = ()")
-                ));
-                options.push(RecoveryOption::RetryWith(
-                    format!("let {var_name} = 0")
-                ));
+                if let Some(without_let) = failed_expr.strip_prefix("let ") {
+                    if let Some(var_name) = without_let.strip_suffix(" = ") {
+                        options.push(RecoveryOption::ContinueWithDefault(
+                            format!("let {var_name} = ()")
+                        ));
+                        options.push(RecoveryOption::RetryWith(
+                            format!("let {var_name} = 0")
+                        ));
+                    }
+                }
             }
             options.push(RecoveryOption::ShowCompletions);
         }
@@ -1457,8 +1459,9 @@ impl Repl {
         
         // Check for shell commands
         if self.is_shell_command(trimmed) {
-            let stripped = trimmed.strip_prefix('!').unwrap();
-            return self.execute_shell_command(stripped);
+            if let Some(stripped) = trimmed.strip_prefix('!') {
+                return self.execute_shell_command(stripped);
+            }
         }
         
         // Check for introspection commands

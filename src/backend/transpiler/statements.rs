@@ -580,7 +580,7 @@ impl Transpiler {
         // Check if this is a built-in function with special handling
         if let ExprKind::Identifier(name) = &func.kind {
             let base_name = if name.ends_with('!') {
-                name.strip_suffix('!').unwrap()
+                name.strip_suffix('!').unwrap_or(name)
             } else {
                 name
             };
