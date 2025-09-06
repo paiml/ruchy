@@ -5,6 +5,21 @@ use crate::frontend::ast::{Literal, Pattern};
 use crate::runtime::Value;
 
 /// Match a literal pattern against a value
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::runtime::pattern_matching::match_literal_pattern;
+/// use ruchy::runtime::Value;
+/// use ruchy::frontend::ast::Literal;
+///
+/// let value = Value::Int(42);
+/// let pattern = Literal::Integer(42);
+/// assert!(match_literal_pattern(&value, &pattern));
+///
+/// let pattern2 = Literal::Integer(43);
+/// assert!(!match_literal_pattern(&value, &pattern2));
+/// ```
 pub fn match_literal_pattern(value: &Value, literal: &Literal) -> bool {
     match (value, literal) {
         (Value::Unit, Literal::Unit) => true,
