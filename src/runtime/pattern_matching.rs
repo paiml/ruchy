@@ -77,16 +77,25 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
             }
         }
         
-        Pattern::Struct { name, fields, .. } => {
-            if let Value::Object(_obj_fields) = value {
-                // Object doesn't store type name, so we can't match on it
-                // Just extract bindings from fields
+        Pattern::Struct { fields, .. } => {
+            if let Value::Object(obj_fields) = value {
                 let mut bindings = Vec::new();
-                for _field in fields {
-                    // Handle StructPatternField properly
-                    // For now, just match by name
-                    bindings.push((name.clone(), value.clone()));
+                
+                // Check each field pattern
+                for field in fields {
+                    // Get the value for this field
+                    let field_value = obj_fields.get(&field.name)?;
+                    
+                    // Match the pattern if provided
+                    if let Some(ref field_pattern) = field.pattern {
+                        let field_bindings = match_pattern(field_pattern, field_value)?;
+                        bindings.extend(field_bindings);
+                    } else {
+                        // Shorthand: field name is the binding
+                        bindings.push((field.name.clone(), field_value.clone()));
+                    }
                 }
+                
                 Some(bindings)
             } else {
                 None
@@ -124,8 +133,32 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
             None
         }
         
-        Pattern::Ok(_) | Pattern::Err(_) | Pattern::Some(_) | Pattern::None => {
-            // Result/Option patterns not yet supported in Value enum
+        Pattern::Some(inner_pattern) => {
+            // Match EnumVariant with variant_name "Some"
+            if let Value::EnumVariant { variant_name, data, .. } = value {
+                if variant_name == "Some" {
+                    if let Some(ref variant_data) = data {
+                        if !variant_data.is_empty() {
+                            return match_pattern(inner_pattern, &variant_data[0]);
+                        }
+                    }
+                }
+            }
+            None
+        }
+        
+        Pattern::None => {
+            // Match EnumVariant with variant_name "None"
+            if let Value::EnumVariant { variant_name, .. } = value {
+                if variant_name == "None" {
+                    return Some(Vec::new());
+                }
+            }
+            None
+        }
+        
+        Pattern::Ok(_) | Pattern::Err(_) => {
+            // Result patterns not yet fully supported
             None
         }
     }
@@ -149,6 +182,10 @@ pub fn values_equal(v1: &Value, v2: &Value) -> bool {
         (Value::Object(f1), Value::Object(f2)) => {
             f1.len() == f2.len() && 
             f1.iter().all(|(k, v)| f2.get(k).is_some_and(|v2| values_equal(v, v2)))
+        }
+        (Value::Range { start: s1, end: e1, inclusive: i1 }, 
+         Value::Range { start: s2, end: e2, inclusive: i2 }) => {
+            s1 == s2 && e1 == e2 && i1 == i2
         }
         _ => false,
     }
