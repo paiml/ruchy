@@ -1577,12 +1577,12 @@ impl Repl {
     /// Try to update an existing binding (for assignment)
     fn update_binding(&mut self, name: &str, value: Value) -> Result<()> {
         if !self.bindings.contains_key(name) {
-            bail!("Cannot assign to undefined variable '{}'. Declare it first with 'let' or 'var'", name)
+            bail!("Cannot assign to undefined variable '{}'. \n  Hint: Declare it first with 'let {} = value' or 'var {} = value'", name, name, name)
         }
         
         let is_mutable = self.binding_mutability.get(name).copied().unwrap_or(false);
         if !is_mutable {
-            bail!("Cannot assign to immutable binding '{}'. Use 'var' for mutable bindings or shadow with 'let'", name)
+            bail!("Cannot assign to immutable binding '{}'. \n  Hint: Use 'var {} = value' for mutable bindings or shadow with 'let {} = new_value'", name, name, name)
         }
         
         self.bindings.insert(name.to_string(), value);
@@ -1609,7 +1609,7 @@ impl Repl {
             bail!("Evaluation timeout exceeded");
         }
         if depth > self.config.max_depth {
-            bail!("Maximum recursion depth {} exceeded", self.config.max_depth);
+            bail!("Maximum recursion depth {} exceeded. \n  Hint: Check for infinite recursion or increase max_depth if needed", self.config.max_depth);
         }
 
         // COMPLEXITY REDUCTION: Dispatcher pattern by expression category
@@ -4138,7 +4138,7 @@ impl Repl {
     /// Evaluate identifier (complexity: 2)
     fn evaluate_identifier(&self, name: &str) -> Result<Value> {
         self.get_binding(name)
-            .ok_or_else(|| anyhow::anyhow!("Undefined variable: {}", name))
+            .ok_or_else(|| anyhow::anyhow!("Undefined variable: '{}'\n  Hint: Did you mean to declare it with 'let {} = value'?", name, name))
     }
 
     /// Evaluate qualified name (complexity: 2)
