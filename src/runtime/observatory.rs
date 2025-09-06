@@ -432,7 +432,7 @@ mod tests {
     fn test_system_metrics_serialization() {
         let mut metrics = SystemMetrics::default();
         metrics.active_actors = 5;
-        metrics.total_memory_usage = 1024000;
+        metrics.total_memory_usage = 1_024_000;
         
         let json = serde_json::to_string(&metrics).unwrap();
         let deserialized: SystemMetrics = serde_json::from_str(&json).unwrap();

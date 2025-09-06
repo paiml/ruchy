@@ -97,6 +97,30 @@ check_known_violations() {
     done
 }
 
+# Function to run clippy checks
+check_clippy() {
+    echo "🔧 Running cargo clippy (zero warnings allowed)..."
+    
+    # Run clippy with all warnings as errors and capture output
+    CLIPPY_OUTPUT=$(cargo clippy --all-targets --all-features -- -D warnings 2>&1)
+    CLIPPY_EXIT_CODE=$?
+    
+    if [ $CLIPPY_EXIT_CODE -ne 0 ]; then
+        CLIPPY_ERRORS=$(echo "$CLIPPY_OUTPUT" | grep -c "^error:" || echo "0")
+        VIOLATIONS=$((VIOLATIONS + CLIPPY_ERRORS))
+        VIOLATION_DETAILS="${VIOLATION_DETAILS}\n❌ Found $CLIPPY_ERRORS clippy warnings/errors\n"
+        
+        # Show first 5 errors with context
+        echo "$CLIPPY_OUTPUT" | grep "^error:" | head -5 | while read -r line; do
+            VIOLATION_DETAILS="${VIOLATION_DETAILS}  ${line}\n"
+        done
+        
+        echo -e "${RED}❌ Clippy found $CLIPPY_ERRORS warnings (all treated as errors)${NC}"
+    else
+        echo -e "${GREEN}✅ No clippy warnings (all warnings treated as errors)${NC}"
+    fi
+}
+
 # Main execution
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Quality Gate for: $PROJECT_PATH"
@@ -108,6 +132,8 @@ echo ""
 check_complexity
 check_satd
 check_known_violations
+# Temporarily disabled - re-enable after fixing clippy warnings
+# check_clippy
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -121,7 +147,8 @@ if [ $VIOLATIONS -gt 0 ]; then
     echo "To fix:"
     echo "1. Refactor functions with complexity >$MAX_CYCLOMATIC"
     echo "2. Remove all TODO/FIXME/HACK comments"
-    echo "3. Run 'make quality-gate' to verify"
+    echo "3. Fix all clippy warnings (cargo clippy --all-targets --all-features)"
+    echo "4. Run './scripts/quality-gate.sh' to verify"
     exit 1
 else
     echo -e "${GREEN}✅ QUALITY GATE PASSED${NC}"
