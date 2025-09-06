@@ -5,7 +5,7 @@
 mod tests {
     use super::super::*;
     use crate::frontend::parser::Parser;
-    use crate::frontend::ast::{Expr, ExprKind, StringPart, Literal};
+    use crate::frontend::ast::{Expr, ExprKind, StringPart};
     use crate::frontend::Span;
 
     fn create_transpiler() -> Transpiler {

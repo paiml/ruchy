@@ -82,10 +82,10 @@ mod tests {
             .expect("Failed to transpile");
         
         let output = result.to_string();
-        assert!(output.contains("("));
-        assert!(output.contains("a"));
-        assert!(output.contains("b"));
-        assert!(output.contains(")"));
+        assert!(output.contains('('));
+        assert!(output.contains('a'));
+        assert!(output.contains('b'));
+        assert!(output.contains(')'));
     }
 
     #[test]
@@ -104,9 +104,9 @@ mod tests {
         
         let output = result.to_string();
         assert!(output.contains("(("));
-        assert!(output.contains("a"));
-        assert!(output.contains("b"));
-        assert!(output.contains("c"));
+        assert!(output.contains('a'));
+        assert!(output.contains('b'));
+        assert!(output.contains('c'));
     }
 
     #[test]
@@ -134,11 +134,11 @@ mod tests {
             .expect("Failed to transpile");
         
         let output = result.to_string();
-        assert!(output.contains("["));
-        assert!(output.contains("a"));
-        assert!(output.contains("b"));
-        assert!(output.contains("c"));
-        assert!(output.contains("]"));
+        assert!(output.contains('['));
+        assert!(output.contains('a'));
+        assert!(output.contains('b'));
+        assert!(output.contains('c'));
+        assert!(output.contains(']'));
     }
 
     #[test]
@@ -153,10 +153,10 @@ mod tests {
             .expect("Failed to transpile");
         
         let output = result.to_string();
-        assert!(output.contains("["));
+        assert!(output.contains('['));
         assert!(output.contains("head"));
         assert!(output.contains(".."));
-        assert!(output.contains("]"));
+        assert!(output.contains(']'));
     }
 
     #[test]
@@ -171,11 +171,11 @@ mod tests {
             .expect("Failed to transpile");
         
         let output = result.to_string();
-        assert!(output.contains("["));
+        assert!(output.contains('['));
         assert!(output.contains("head"));
         assert!(output.contains(".."));
         assert!(output.contains("tail"));
-        assert!(output.contains("]"));
+        assert!(output.contains(']'));
     }
 
     #[test]
@@ -201,12 +201,12 @@ mod tests {
         
         let output = result.to_string();
         assert!(output.contains("Point"));
-        assert!(output.contains("{"));
-        assert!(output.contains("x"));
+        assert!(output.contains('{'));
+        assert!(output.contains('x'));
         assert!(output.contains("x_val"));
-        assert!(output.contains("y"));
+        assert!(output.contains('y'));
         assert!(output.contains("y_val"));
-        assert!(output.contains("}"));
+        assert!(output.contains('}'));
     }
 
     #[test]
@@ -272,7 +272,7 @@ mod tests {
             .expect("Failed to transpile");
         
         let output = result.to_string();
-        assert!(output.contains("0"));
+        assert!(output.contains('0'));
         assert!(output.contains("10"));
     }
 
@@ -289,9 +289,9 @@ mod tests {
             .expect("Failed to transpile");
         
         let output = result.to_string();
-        assert!(output.contains("1"));
-        assert!(output.contains("5"));
-        assert!(output.contains("="));
+        assert!(output.contains('1'));
+        assert!(output.contains('5'));
+        assert!(output.contains('='));
     }
 
     #[test]
@@ -307,11 +307,11 @@ mod tests {
             .expect("Failed to transpile");
         
         let output = result.to_string();
-        assert!(output.contains("1"));
-        assert!(output.contains("|"));
-        assert!(output.contains("2"));
-        assert!(output.contains("|"));
-        assert!(output.contains("3"));
+        assert!(output.contains('1'));
+        assert!(output.contains('|'));
+        assert!(output.contains('2'));
+        assert!(output.contains('|'));
+        assert!(output.contains('3'));
     }
 
     #[test]
@@ -338,8 +338,8 @@ mod tests {
             .expect("Failed to transpile");
         
         let output = result.to_string();
-        assert!(output.contains("("));
-        assert!(output.contains("["));
+        assert!(output.contains('('));
+        assert!(output.contains('['));
         assert!(output.contains("first"));
         assert!(output.contains("Config"));
         assert!(output.contains("enabled"));
