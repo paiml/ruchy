@@ -240,7 +240,7 @@ fn is_object_literal(state: &mut ParserState) -> bool {
 }
 
 /// Parse an object key, handling identifiers, strings, and reserved words
-/// Complexity: 8 (extracted from parse_object_literal_body)
+/// Complexity: 8 (extracted from `parse_object_literal_body`)
 fn parse_object_key(state: &mut ParserState) -> Result<String> {
     if let Some((token, _)) = state.tokens.peek() {
         let key = token_to_object_key(token)?;
@@ -747,7 +747,7 @@ fn parse_dataframe_column_definitions(state: &mut ParserState) -> Result<Vec<Dat
     Ok(columns)
 }
 
-/// Parse a single DataFrame column (either new or legacy syntax) - complexity: 5
+/// Parse a single `DataFrame` column (either new or legacy syntax) - complexity: 5
 fn parse_single_dataframe_column(
     state: &mut ParserState,
     col_name: String,
@@ -768,14 +768,14 @@ fn parse_single_dataframe_column(
     Ok(())
 }
 
-/// Check if current token indicates legacy DataFrame syntax - complexity: 4
+/// Check if current token indicates legacy `DataFrame` syntax - complexity: 4
 fn is_dataframe_legacy_syntax_token(state: &mut ParserState) -> bool {
     matches!(state.tokens.peek(), Some((Token::Comma, _)))
         || matches!(state.tokens.peek(), Some((Token::Semicolon, _)))
         || matches!(state.tokens.peek(), Some((Token::RightBracket, _)))
 }
 
-/// Handle DataFrame column continuation tokens - complexity: 5
+/// Handle `DataFrame` column continuation tokens - complexity: 5
 fn handle_dataframe_column_continuation(
     state: &mut ParserState,
     columns: &mut Vec<DataFrameColumn>

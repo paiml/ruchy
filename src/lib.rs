@@ -852,11 +852,11 @@ mod tests {
     
     #[test]
     fn test_complex_programs() {
-        let factorial = r#"
+        let factorial = r"
             fn factorial(n) {
                 if n <= 1 { 1 } else { n * factorial(n-1) }
             }
-        "#;
+        ";
         assert!(compile(factorial).is_ok());
         
         let fibonacci = r#"

@@ -144,7 +144,7 @@ fn handle_fmt_output(
     formatted_code: &str,
     verbose: bool,
 ) -> Result<()> {
-    use FmtMode::*;
+    use FmtMode::{Check, Stdout, Diff, Write, Default};
     match mode {
         Check => handle_check_mode(path, source, formatted_code),
         Stdout => handle_stdout_mode(formatted_code),
@@ -831,7 +831,7 @@ fn check_complexity_gate(ast: &ruchy::frontend::ast::Expr) -> (bool, String) {
 
 /// Check for SATD comments (complexity: 5)
 fn check_satd_gate(source: &str) -> (bool, String) {
-    let has_satd = source.lines().any(|line| contains_satd_comment(line));
+    let has_satd = source.lines().any(contains_satd_comment);
     
     if has_satd {
         (false, "❌ Contains SATD comments".to_string())

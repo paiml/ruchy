@@ -835,7 +835,7 @@ mod tests {
         assert_eq!(analysis.section_sizes.len(), 11);
         assert_eq!(analysis.platform_limits.len(), 2);
         assert_eq!(*analysis.section_sizes.get("code").unwrap(), 8192);
-        assert_eq!(*analysis.platform_limits.get("browser").unwrap(), 4194304);
+        assert_eq!(*analysis.platform_limits.get("browser").unwrap(), 4_194_304);
     }
 }
 

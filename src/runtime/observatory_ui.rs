@@ -417,7 +417,7 @@ mod tests {
     #[test]
     fn test_format_timestamp() {
         let dashboard = create_test_dashboard();
-        let timestamp = 1234567890;
+        let timestamp = 1_234_567_890;
         let formatted = dashboard.format_timestamp(timestamp);
         
         // Should return a formatted string
