@@ -4,6 +4,26 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.63.0] - 2025-09-06
+
+### 🔧 **TRANSPILER FIXES FOR BOOK COMPATIBILITY**
+
+Major transpiler improvements fixing critical issues with book compatibility.
+
+### Fixed
+- **CRITICAL**: Fixed transpiler bug where semicolons were missing between statements in function blocks
+- **MAJOR**: Fixed nested let statement transpilation creating excessive block nesting  
+- Improved book compatibility from 66% to 90.7% (107/118 tests passing)
+
+### Added
+- TDD test suite for transpiler semicolon handling (`transpiler_semicolon_tdd.rs`)
+- Better handling of sequential let statements in blocks
+
+### Technical Details
+- Modified `generate_body_tokens` to properly add semicolons between statements
+- Updated `transpile_let` to flatten nested let expressions in blocks
+- Properly handles void expressions vs value expressions for semicolon placement
+
 ## [1.62.0] - 2025-09-06
 
 ### 🎯 **COMPREHENSIVE TEST COVERAGE & QUALITY IMPROVEMENTS**
