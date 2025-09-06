@@ -3,6 +3,42 @@
 use crate::frontend::ast::Span;
 use logos::{Lexer, Logos};
 
+/// Process a basic escape character
+fn process_basic_escape(ch: char) -> Option<char> {
+    match ch {
+        'n' => Some('\n'),
+        't' => Some('\t'),
+        'r' => Some('\r'),
+        '\\' => Some('\\'),
+        '"' => Some('"'),
+        '\'' => Some('\''),
+        '0' => Some('\0'),
+        _ => None,
+    }
+}
+
+/// Process a Unicode escape sequence
+fn process_unicode_escape(chars: &mut std::str::Chars) -> String {
+    chars.next(); // consume '{'
+    
+    let mut hex = String::new();
+    for hex_char in chars.by_ref() {
+        if hex_char == '}' {
+            break;
+        }
+        hex.push(hex_char);
+    }
+
+    if let Ok(code_point) = u32::from_str_radix(&hex, 16) {
+        if let Some(unicode_char) = char::from_u32(code_point) {
+            return unicode_char.to_string();
+        }
+    }
+    
+    // Invalid code point or hex, keep as literal
+    format!("\\u{{{}}}", hex)
+}
+
 /// Process escape sequences in a string literal
 fn process_escapes(s: &str) -> String {
     let mut result = String::new();
@@ -11,44 +47,18 @@ fn process_escapes(s: &str) -> String {
     while let Some(ch) = chars.next() {
         if ch == '\\' {
             match chars.next() {
-                Some('n') => result.push('\n'),
-                Some('t') => result.push('\t'),
-                Some('r') => result.push('\r'),
-                Some('\\') | None => result.push('\\'), // Backslash or end of string
-                Some('"') => result.push('"'),
-                Some('\'') => result.push('\''),
-                Some('0') => result.push('\0'),
+                None => result.push('\\'), // End of string
                 Some('u') if chars.as_str().starts_with('{') => {
-                    // Unicode escape: \u{XXXX}
-                    chars.next(); // consume '{'
-                    let mut hex = String::new();
-                    for hex_char in chars.by_ref() {
-                        if hex_char == '}' {
-                            break;
-                        }
-                        hex.push(hex_char);
-                    }
-
-                    if let Ok(code_point) = u32::from_str_radix(&hex, 16) {
-                        if let Some(unicode_char) = char::from_u32(code_point) {
-                            result.push(unicode_char);
-                        } else {
-                            // Invalid Unicode code point, keep as literal
-                            result.push_str("\\u{");
-                            result.push_str(&hex);
-                            result.push('}');
-                        }
-                    } else {
-                        // Invalid hex, keep as literal
-                        result.push_str("\\u{");
-                        result.push_str(&hex);
-                        result.push('}');
-                    }
+                    result.push_str(&process_unicode_escape(&mut chars));
                 }
-                Some(other) => {
-                    // Unknown escape sequence, keep as literal
-                    result.push('\\');
-                    result.push(other);
+                Some(escape_ch) => {
+                    if let Some(escaped) = process_basic_escape(escape_ch) {
+                        result.push(escaped);
+                    } else {
+                        // Unknown escape sequence, keep as literal
+                        result.push('\\');
+                        result.push(escape_ch);
+                    }
                 }
             }
         } else {
