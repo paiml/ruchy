@@ -31,6 +31,10 @@ pub mod inspect;
 // pub mod resource_eval;  // Temporarily disabled - causes duplicate impl
 #[cfg(test)]
 mod repl_function_tests;
+#[cfg(test)]
+mod binary_ops_tests;
+#[cfg(test)]
+mod pattern_matching_tests;
 
 // Export the unified REPL
 pub use repl::{Repl, Value};
