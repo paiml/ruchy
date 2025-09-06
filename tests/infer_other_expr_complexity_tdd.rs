@@ -231,7 +231,7 @@ mod infer_other_expr_tdd {
         #[test]
         fn test_control_flow_expressions() {
             // Test that control flow expressions are properly handled
-            let mut context = create_test_context();
+            let mut _context = create_test_context();
             
             // This would test the extracted infer_control_flow once implemented
             // let result = context.infer_control_flow_expr(&break_expr);
@@ -241,7 +241,7 @@ mod infer_other_expr_tdd {
         #[test]
         fn test_definition_expressions() {
             // Test that definition expressions are properly handled
-            let mut context = create_test_context();
+            let mut _context = create_test_context();
             
             // This would test the extracted infer_definition_expr once implemented  
             // let result = context.infer_definition_expr(&struct_expr);

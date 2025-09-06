@@ -32,6 +32,20 @@ pub fn match_literal_pattern(value: &Value, literal: &Literal) -> bool {
     }
 }
 
+/// Helper function to match collection patterns (tuple or list)
+fn match_collection_patterns(patterns: &[Pattern], values: &[Value]) -> Option<Vec<(String, Value)>> {
+    if patterns.len() != values.len() {
+        return None;
+    }
+    
+    let mut bindings = Vec::new();
+    for (pat, val) in patterns.iter().zip(values.iter()) {
+        let sub_bindings = match_pattern(pat, val)?;
+        bindings.extend(sub_bindings);
+    }
+    Some(bindings)
+}
+
 /// Match a pattern against a value, returning bindings if successful
 pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Value)>> {
     match pattern {
@@ -49,16 +63,7 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
         
         Pattern::Tuple(patterns) => {
             if let Value::Tuple(values) = value {
-                if patterns.len() != values.len() {
-                    return None;
-                }
-                
-                let mut bindings = Vec::new();
-                for (pat, val) in patterns.iter().zip(values.iter()) {
-                    let sub_bindings = match_pattern(pat, val)?;
-                    bindings.extend(sub_bindings);
-                }
-                Some(bindings)
+                match_collection_patterns(patterns, values)
             } else {
                 None
             }
@@ -66,16 +71,7 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
         
         Pattern::List(patterns) => {
             if let Value::List(values) = value {
-                if patterns.len() != values.len() {
-                    return None;
-                }
-                
-                let mut bindings = Vec::new();
-                for (pat, val) in patterns.iter().zip(values.iter()) {
-                    let sub_bindings = match_pattern(pat, val)?;
-                    bindings.extend(sub_bindings);
-                }
-                Some(bindings)
+                match_collection_patterns(patterns, values)
             } else {
                 None
             }
