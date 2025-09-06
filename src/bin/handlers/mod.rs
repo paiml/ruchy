@@ -3,6 +3,7 @@ use anyhow::{Context, Result};
 mod commands;
 mod handlers_modules;
 use ruchy::{Parser as RuchyParser, Transpiler};
+use ruchy::frontend::ast::Expr;
 use ruchy::runtime::Repl;
 use ruchy::runtime::replay_converter::ConversionConfig;
 // Replay functionality imports removed - not needed in handler, used directly in REPL
@@ -168,122 +169,162 @@ pub fn handle_transpile_command(
     minimal: bool,
     verbose: bool
 ) -> Result<()> {
-    if verbose {
-        eprintln!("Transpiling file: {}", file.display());
-        if minimal {
-            eprintln!("Using minimal codegen for self-hosting");
-        }
-    }
+    log_transpile_start(file, minimal, verbose);
     
-    let source = if file.as_os_str() == "-" {
-        // Read from stdin
+    let source = read_source_file(file, verbose)?;
+    let ast = parse_source(&source)?;
+    let rust_code = transpile_ast(&ast, minimal)?;
+    
+    write_output(&rust_code, output, verbose)?;
+    Ok(())
+}
+
+/// Log transpilation start (complexity: 3)
+fn log_transpile_start(file: &Path, minimal: bool, verbose: bool) {
+    if !verbose {
+        return;
+    }
+    eprintln!("Transpiling file: {}", file.display());
+    if minimal {
+        eprintln!("Using minimal codegen for self-hosting");
+    }
+}
+
+/// Read source from file or stdin (complexity: 5)
+fn read_source_file(file: &Path, verbose: bool) -> Result<String> {
+    if file.as_os_str() == "-" {
         if verbose {
             eprintln!("Reading from stdin...");
         }
         let mut input = String::new();
         io::stdin().read_to_string(&mut input)?;
-        input
+        Ok(input)
     } else {
         fs::read_to_string(file)
-            .with_context(|| format!("Failed to read file: {}", file.display()))?
-    };
+            .with_context(|| format!("Failed to read file: {}", file.display()))
+    }
+}
 
-    let mut parser = RuchyParser::new(&source);
-    let ast = parser.parse()
-        .with_context(|| "Failed to parse input")?;
+/// Parse source code to AST (complexity: 2)
+fn parse_source(source: &str) -> Result<Expr> {
+    let mut parser = RuchyParser::new(source);
+    parser.parse()
+        .with_context(|| "Failed to parse input")
+}
 
+/// Transpile AST to Rust code (complexity: 4)
+fn transpile_ast(ast: &Expr, minimal: bool) -> Result<String> {
     let mut transpiler = Transpiler::new();
-    let rust_code = if minimal {
-        transpiler.transpile_minimal(&ast)
-            .with_context(|| "Failed to transpile to Rust (minimal)")?
+    if minimal {
+        transpiler.transpile_minimal(ast)
+            .with_context(|| "Failed to transpile to Rust (minimal)")
     } else {
-        transpiler.transpile_to_program(&ast)
+        transpiler.transpile_to_program(ast)
             .map(|tokens| tokens.to_string())
-            .with_context(|| "Failed to transpile to Rust")?
-    };
+            .with_context(|| "Failed to transpile to Rust")
+    }
+}
 
-    // Output the generated Rust code
+/// Write output to file or stdout (complexity: 5)
+fn write_output(rust_code: &str, output: Option<&Path>, verbose: bool) -> Result<()> {
     if let Some(output_path) = output {
-        fs::write(output_path, &rust_code)
+        fs::write(output_path, rust_code)
             .with_context(|| format!("Failed to write output file: {}", output_path.display()))?;
-        
         if verbose {
             eprintln!("Output written to: {}", output_path.display());
         }
     } else {
         print!("{rust_code}");
     }
-
     Ok(())
 }
 
 /// Handle run command - compile and execute a Ruchy file
 pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
+    log_run_start(file, verbose);
+    
+    // Parse and transpile
+    let source = fs::read_to_string(file)
+        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    let ast = parse_source(&source)?;
+    let rust_code = transpile_for_execution(&ast, file)?;
+    
+    // Compile and execute
+    let (temp_source, binary_path) = prepare_compilation(&rust_code, verbose)?;
+    compile_rust_code(temp_source.path(), &binary_path)?;
+    execute_binary(&binary_path)?;
+    
+    Ok(())
+}
+
+/// Log run command start (complexity: 2)
+fn log_run_start(file: &Path, verbose: bool) {
     if verbose {
         eprintln!("Running file: {}", file.display());
     }
-    
-    let source = fs::read_to_string(file)
-        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+}
 
-    let mut parser = RuchyParser::new(&source);
-    let ast = parser.parse()
-        .with_context(|| "Failed to parse input")?;
-
+/// Transpile AST for execution with context (complexity: 3)
+fn transpile_for_execution(ast: &Expr, file: &Path) -> Result<String> {
     let transpiler = Transpiler::new();
-    let rust_code = transpiler.transpile_to_program_with_context(&ast, Some(file))
+    transpiler.transpile_to_program_with_context(ast, Some(file))
         .map(|tokens| tokens.to_string())
-        .with_context(|| "Failed to transpile to Rust")?;
+        .with_context(|| "Failed to transpile to Rust")
+}
 
-    // Write to unique working file to avoid race conditions
+/// Prepare compilation artifacts (complexity: 4)
+fn prepare_compilation(rust_code: &str, verbose: bool) -> Result<(tempfile::NamedTempFile, PathBuf)> {
     let temp_source = tempfile::NamedTempFile::new()
         .with_context(|| "Failed to create temporary file")?;
-    fs::write(temp_source.path(), &rust_code)
+    fs::write(temp_source.path(), rust_code)
         .with_context(|| "Failed to write temporary file")?;
-
+    
     if verbose {
         eprintln!("Temporary Rust file: {}", temp_source.path().display());
         eprintln!("Compiling and running...");
     }
-
-    // Create unique output binary path (use Builder to avoid keeping file open)
-    let temp_dir = tempfile::tempdir()
-        .with_context(|| "Failed to create temporary directory")?;
-    let binary_path = temp_dir.path().join("ruchy_temp_bin");
     
-    // Compile and run using rustc
+    // Use system temp dir to allow cleanup after execution
+    let binary_path = std::env::temp_dir().join(format!("ruchy_temp_bin_{}", std::process::id()));
+    
+    Ok((temp_source, binary_path))
+}
+
+/// Compile Rust code using rustc (complexity: 5)
+fn compile_rust_code(source_path: &Path, binary_path: &Path) -> Result<()> {
     let output = std::process::Command::new("rustc")
         .arg("--edition=2021")
         .arg("--crate-name=ruchy_temp")
         .arg("-o")
-        .arg(&binary_path)
-        .arg(temp_source.path())
+        .arg(binary_path)
+        .arg(source_path)
         .output()
         .with_context(|| "Failed to run rustc")?;
-
+    
     if !output.status.success() {
         eprintln!("Compilation failed:");
         eprintln!("{}", String::from_utf8_lossy(&output.stderr));
         std::process::exit(1);
     }
+    
+    Ok(())
+}
 
-    // Run the compiled binary
-    let run_output = std::process::Command::new(&binary_path)
+/// Execute compiled binary and handle output (complexity: 5)
+fn execute_binary(binary_path: &Path) -> Result<()> {
+    let run_output = std::process::Command::new(binary_path)
         .output()
         .with_context(|| "Failed to run compiled binary")?;
-
-    // Print the output
+    
     print!("{}", String::from_utf8_lossy(&run_output.stdout));
     if !run_output.stderr.is_empty() {
         eprint!("{}", String::from_utf8_lossy(&run_output.stderr));
     }
-
-    // Working files will be automatically cleaned up when NamedTempFile goes out of scope
-
+    
     if !run_output.status.success() {
         std::process::exit(run_output.status.code().unwrap_or(1));
     }
-
+    
     Ok(())
 }
 
