@@ -6,6 +6,19 @@ use crate::runtime::Value;
 use anyhow::{Result, bail};
 
 /// Evaluate a binary operation on two values
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::runtime::binary_ops::evaluate_binary_op;
+/// use ruchy::runtime::Value;
+/// use ruchy::frontend::ast::BinaryOp;
+///
+/// let lhs = Value::Int(5);
+/// let rhs = Value::Int(3);
+/// let result = evaluate_binary_op(&BinaryOp::Add, &lhs, &rhs).unwrap();
+/// assert_eq!(result, Value::Int(8));
+/// ```
 pub fn evaluate_binary_op(op: &BinaryOp, lhs: &Value, rhs: &Value) -> Result<Value> {
     match op {
         BinaryOp::Add => evaluate_add(lhs, rhs),
