@@ -763,7 +763,7 @@ impl Repl {
         match value {
             Value::Float(f) => Self::ok_float(operation(f)),
             Value::Int(n) => Self::ok_float(operation(n as f64)),
-            _ => bail!("{}() expects a numeric argument", func_name),
+            _ => bail!("{}", Self::numeric_arg_error(func_name)),
         }
     }
     
@@ -790,7 +790,7 @@ impl Repl {
                 validator(f)?;
                 Self::ok_float(operation(f))
             }
-            _ => bail!("{}() expects a numeric argument", func_name),
+            _ => bail!("{}", Self::numeric_arg_error(func_name)),
         }
     }
 
@@ -1843,7 +1843,7 @@ impl Repl {
                     Value::EnumVariant { .. } => {
                         self.evaluate_enum_methods(receiver_val, method, args, deadline, depth)
                     }
-                    _ => bail!("Method {} not supported on this type", method),
+                    _ => Err(Self::method_not_supported(method, "this type"))?,
                 }
             }
             ExprKind::OptionalMethodCall { receiver, method, args } => {
@@ -2243,9 +2243,7 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("push requires exactly 1 argument");
-        }
+        Self::validate_exact_args("push", 1, args.len())?;
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
         items.push(value);
         Self::ok_list(items)
@@ -2271,9 +2269,7 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("append requires exactly 1 argument");
-        }
+        Self::validate_exact_args("append", 1, args.len())?;
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
         if let Value::List(other_items) = value {
             items.extend(other_items);
@@ -2965,7 +2961,7 @@ impl Repl {
             
             (Value::Int(_), _) => self.unknown_method_error("integer", method),
             (Value::Float(_), _) => self.unknown_method_error("float", method),
-            _ => bail!("Method {} not supported on {:?}", method, value),
+            _ => Err(Self::method_not_supported(method, &format!("{:?}", value)))?,
         }
     }
     
@@ -3876,7 +3872,7 @@ impl Repl {
                 "Result" => self.evaluate_result_methods(&variant_name, method, data.as_ref(), args, deadline, depth),
                 "Option" => self.evaluate_option_methods(&variant_name, method, data.as_ref(), args, deadline, depth),
                 "Vec" => self.evaluate_vec_methods(&variant_name, method, data.as_ref(), args, deadline, depth),
-                _ => bail!("Method {} not supported on {}", method, enum_name),
+                _ => Err(Self::method_not_supported(method, &enum_name))?,
             }
         } else {
             bail!("evaluate_enum_methods called on non-enum variant")
@@ -3952,7 +3948,7 @@ impl Repl {
                 // Result::Err(e).ok() -> Option::None
                 Ok(Self::create_option_none())
             }
-            _ => bail!("Method {} not supported on Result::{}", method, variant_name),
+            _ => Err(Self::method_not_supported(method, &format!("Result::{}", variant_name)))?,
         }
     }
 
@@ -4002,7 +3998,7 @@ impl Repl {
             ("Some", "and_then") if args.len() == 1 => {
                 self.apply_function_and_flatten(data, &args[0], deadline, depth)
             }
-            _ => bail!("Method {} not supported on Option::{}", method, variant_name),
+            _ => Err(Self::method_not_supported(method, &format!("Option::{}", variant_name)))?,
         }
     }
 
@@ -4028,7 +4024,7 @@ impl Repl {
                     data: Some(vec_data),
                 })
             }
-            _ => bail!("Method {} not supported on Vec", method),
+            _ => Err(Self::method_not_supported(method, "Vec"))?,
         }
     }
 
@@ -5937,9 +5933,7 @@ impl Repl {
     
     /// Evaluate `type()` function
     fn evaluate_type_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("type() expects 1 argument, got {}", args.len());
-        }
+        Self::validate_exact_args("type()", 1, args.len())?;
         
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
         let type_name = self.get_value_type_name(&value);
@@ -5948,9 +5942,7 @@ impl Repl {
     
     /// Evaluate `summary()` function
     fn evaluate_summary_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("summary() expects 1 argument, got {}", args.len());
-        }
+        Self::validate_exact_args("summary()", 1, args.len())?;
         
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
         let summary = match &value {
@@ -5965,9 +5957,7 @@ impl Repl {
     
     /// Evaluate `dir()` function
     fn evaluate_dir_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("dir() expects 1 argument, got {}", args.len());
-        }
+        Self::validate_exact_args("dir()", 1, args.len())?;
         
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
         let members = match value {
@@ -7346,9 +7336,7 @@ impl Repl {
 
     /// Evaluate curry function - converts a function that takes multiple arguments into a series of functions that each take a single argument
     fn evaluate_curry(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("curry expects exactly 1 argument (a function)");
-        }
+        Self::validate_exact_args("curry", 1, args.len())?;
 
         // Evaluate the function argument
         let func_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
@@ -7382,9 +7370,7 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("uncurry expects exactly 1 argument (a curried function)");
-        }
+        Self::validate_exact_args("uncurry", 1, args.len())?;
 
         // Evaluate the function argument
         let func_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
@@ -7571,9 +7557,7 @@ impl Repl {
     fn evaluate_readline(&mut self, args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         use std::io;
         
-        if !args.is_empty() {
-            bail!("readline expects no arguments");
-        }
+        Self::validate_zero_args("readline", args.len())?;
         
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
@@ -7846,9 +7830,7 @@ impl Repl {
         _deadline: Instant,
         _depth: usize,
     ) -> Result<Value> {
-        if !args.is_empty() {
-            bail!("current_dir expects no arguments");
-        }
+        Self::validate_zero_args("current_dir", args.len())?;
 
         match std::env::current_dir() {
             Ok(path) => Ok(Value::String(path.to_string_lossy().to_string())),
@@ -7929,7 +7911,7 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         if args.len() != 1 {
-            bail!("Some expects exactly 1 argument");
+            Self::validate_exact_args("Some", 1, args.len())?;
         }
 
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
@@ -7962,7 +7944,7 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         if args.len() != 1 {
-            bail!("Ok expects exactly 1 argument");
+            Self::validate_exact_args("Ok", 1, args.len())?;
         }
 
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
@@ -7981,7 +7963,7 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         if args.len() != 1 {
-            bail!("Err expects exactly 1 argument");
+            Self::validate_exact_args("Err", 1, args.len())?;
         }
 
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
@@ -8984,6 +8966,40 @@ impl Repl {
         Ok(Self::enum_variant_value(enum_name, variant_name, data))
     }
 
+    // === Argument Validation Helper Functions ===
+
+    /// Validate that a function receives the expected number of arguments (with "exactly" phrasing)
+    fn validate_exact_args(func_name: &str, expected: usize, actual: usize) -> Result<()> {
+        if actual != expected {
+            bail!("{} expects exactly {} argument{}, got {}", 
+                  func_name, expected, if expected == 1 { "" } else { "s" }, actual);
+        }
+        Ok(())
+    }
+
+    /// Validate that a function receives no arguments
+    fn validate_zero_args(func_name: &str, actual: usize) -> Result<()> {
+        if actual != 0 {
+            bail!("{} expects no arguments, got {}", func_name, actual);
+        }
+        Ok(())
+    }
+
+    /// Validate that a function receives a numeric argument
+    fn numeric_arg_error(func_name: &str) -> String {
+        format!("{}() expects a numeric argument", func_name)
+    }
+
+    /// Validate that a function receives numeric arguments (plural)
+    fn numeric_args_error(func_name: &str) -> String {
+        format!("{} expects numeric arguments", func_name)
+    }
+
+    /// Create a method not supported error message
+    fn method_not_supported(method: &str, type_desc: &str) -> anyhow::Error {
+        anyhow::anyhow!("Method {} not supported on {}", method, type_desc)
+    }
+
     /// Apply unary math operation to a numeric value.
     /// 
     /// # Example Usage
@@ -9010,7 +9026,7 @@ impl Repl {
             (Value::Float(f), "ceil") => Self::ok_float(f.ceil()),
             (Value::Int(n), "round") => Ok(Value::Int(*n)), // Already rounded
             (Value::Float(f), "round") => Self::ok_float(f.round()),
-            _ => bail!("{} expects a numeric argument", op),
+            _ => bail!("{}", Self::numeric_args_error(op)),
         }
     }
 
@@ -9068,7 +9084,7 @@ impl Repl {
                 #[allow(clippy::cast_precision_loss)]
                 Ok(Value::Float(x.max(*y as f64)))
             }
-            _ => bail!("{} expects numeric arguments", op),
+            _ => bail!("{}", Self::numeric_args_error(op)),
         }
     }
 
