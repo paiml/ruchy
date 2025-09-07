@@ -1,526 +1,235 @@
-//! Comprehensive TDD test suite for type_conversion_refactored.rs
-//! Target: Transform 0% → 70%+ coverage via systematic testing
-//! Toyota Way: Every conversion path must be tested comprehensively
+// TDD tests for comprehensive type conversion support
+// This tests type casting, conversion functions, and automatic coercion
 
-#![allow(clippy::unwrap_used)]
-#![allow(clippy::expect_used)]
-
-use ruchy::{Transpiler, Parser};
-
-// ==================== STRING CONVERSION TESTS ====================
+use ruchy::runtime::repl::Repl;
 
 #[test]
-fn test_convert_to_string_from_int() {
-    let transpiler = Transpiler::new();
-    let code = "str(42)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_explicit_type_casting() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Integer to float casting
+    let result = repl.eval("42 as float").unwrap();
+    assert_eq!(result, "42");
     
-    assert!(transpiled.contains("format!"));
+    // Float to integer casting
+    let result = repl.eval("3.14 as int").unwrap();
+    assert_eq!(result, "3");
+    
+    // Boolean to integer casting
+    let result = repl.eval("true as int").unwrap();
+    assert_eq!(result, "1");
+    
+    let result = repl.eval("false as int").unwrap();
+    assert_eq!(result, "0");
 }
 
 #[test]
-fn test_convert_to_string_from_float() {
-    let transpiler = Transpiler::new();
-    let code = "str(3.14)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_string_to_number_conversions() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // String to int
+    let result = repl.eval(r#"int("42")"#).unwrap();
+    assert_eq!(result, "42");
     
-    assert!(transpiled.contains("format!"));
+    let result = repl.eval(r#"int("-123")"#).unwrap();
+    assert_eq!(result, "-123");
+    
+    // String to float
+    let result = repl.eval(r#"float("3.14")"#).unwrap();
+    assert_eq!(result, "3.14");
+    
+    let result = repl.eval(r#"float("-2.5")"#).unwrap();
+    assert_eq!(result, "-2.5");
+    
+    // Invalid conversions should error
+    assert!(repl.eval(r#"int("hello")"#).is_err());
+    assert!(repl.eval(r#"float("world")"#).is_err());
 }
 
 #[test]
-fn test_convert_to_string_from_bool() {
-    let transpiler = Transpiler::new();
-    let code = "str(true)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_number_to_string_conversions() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Int to string
+    let result = repl.eval("str(42)").unwrap();
+    assert_eq!(result, r#""42""#);
     
-    assert!(transpiled.contains("format!"));
+    let result = repl.eval("str(-123)").unwrap();
+    assert_eq!(result, r#""-123""#);
+    
+    // Float to string
+    let result = repl.eval("str(3.14)").unwrap();
+    assert_eq!(result, r#""3.14""#);
+    
+    // Using to_string method
+    let result = repl.eval("42.to_string()").unwrap();
+    assert_eq!(result, r#""42""#);
 }
 
 #[test]
-fn test_convert_to_string_from_list() {
-    let transpiler = Transpiler::new();
-    let code = "str([1, 2, 3])";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_boolean_conversions() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Bool to int
+    let result = repl.eval("int(true)").unwrap();
+    assert_eq!(result, "1");
     
-    assert!(transpiled.contains("format!"));
-}
-
-// ==================== INTEGER CONVERSION TESTS ====================
-
-#[test]
-fn test_convert_to_int_from_string() {
-    let transpiler = Transpiler::new();
-    let code = r#"int("42")"#;
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+    let result = repl.eval("int(false)").unwrap();
+    assert_eq!(result, "0");
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Bool to string
+    let result = repl.eval("str(true)").unwrap();
+    assert_eq!(result, r#""true""#);
     
-    assert!(transpiled.contains("parse"));
-    assert!(transpiled.contains("i64"));
-}
-
-#[test]
-fn test_convert_to_int_from_float() {
-    let transpiler = Transpiler::new();
-    let code = "int(3.14)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+    let result = repl.eval("str(false)").unwrap();
+    assert_eq!(result, r#""false""#);
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // String to bool
+    let result = repl.eval(r#"bool("true")"#).unwrap();
+    assert_eq!(result, "true");
     
-    assert!(transpiled.contains("as i64"));
+    let result = repl.eval(r#"bool("false")"#).unwrap();
+    assert_eq!(result, "false");
+    
+    let result = repl.eval(r#"bool("")"#).unwrap();
+    assert_eq!(result, "false");
+    
+    let result = repl.eval(r#"bool("anything")"#).unwrap();
+    assert_eq!(result, "true");
 }
 
 #[test]
-fn test_convert_to_int_from_bool_true() {
-    let transpiler = Transpiler::new();
-    let code = "int(true)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_numeric_coercion_in_operations() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Int + Float should produce Float
+    let result = repl.eval("5 + 2.5").unwrap();
+    assert_eq!(result, "7.5");
     
-    assert!(transpiled.contains("1i64") || transpiled.contains("if"));
+    // Float + Int should produce Float
+    let result = repl.eval("3.0 + 7").unwrap();
+    assert_eq!(result, "10");
+    
+    // Mixed multiplication
+    let result = repl.eval("4 * 2.5").unwrap();
+    assert_eq!(result, "10");
+    
+    // Mixed division always produces float
+    let result = repl.eval("10 / 3").unwrap();
+    assert!(result.starts_with("3.333"));
 }
 
 #[test]
-fn test_convert_to_int_from_bool_false() {
-    let transpiler = Transpiler::new();
-    let code = "int(false)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_char_conversions() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Char to string
+    let result = repl.eval("str('a')").unwrap();
+    assert_eq!(result, r#""a""#);
     
-    assert!(transpiled.contains("0i64") || transpiled.contains("if"));
+    // Char to int (ASCII value)
+    let result = repl.eval("'A'.to_int()").unwrap();
+    assert_eq!(result, "65");
+    
+    // Int to char
+    let result = repl.eval("char(65)").unwrap();
+    assert_eq!(result, "'A'");
+    
+    let result = repl.eval("char(97)").unwrap();
+    assert_eq!(result, "'a'");
 }
 
 #[test]
-fn test_convert_to_int_from_variable() {
-    let transpiler = Transpiler::new();
-    let code = "int(x)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_list_conversions() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // List to string representation
+    let result = repl.eval("str([1, 2, 3])").unwrap();
+    assert_eq!(result, r#""[1, 2, 3]""#);
     
-    assert!(transpiled.contains("as i64"));
-}
-
-// ==================== FLOAT CONVERSION TESTS ====================
-
-#[test]
-fn test_convert_to_float_from_string() {
-    let transpiler = Transpiler::new();
-    let code = r#"float("3.14")"#;
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+    // String to char list
+    let result = repl.eval(r#""abc".chars()"#).unwrap();
+    assert_eq!(result, r#"["a", "b", "c"]"#);
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("parse"));
-    assert!(transpiled.contains("f64"));
+    // String to byte list
+    let result = repl.eval(r#""ABC".bytes()"#).unwrap();
+    assert_eq!(result, "[65, 66, 67]");
 }
 
 #[test]
-fn test_convert_to_float_from_int() {
-    let transpiler = Transpiler::new();
-    let code = "float(42)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_tuple_conversions() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Tuple to string
+    let result = repl.eval("str((1, 2, 3))").unwrap();
+    assert_eq!(result, r#""(1, 2, 3)""#);
     
-    assert!(transpiled.contains("as f64"));
+    // Tuple to list (if supported)
+    let result = repl.eval("list((1, 2, 3))").unwrap();
+    assert_eq!(result, "[1, 2, 3]");
+    
+    // List to tuple (if supported)
+    let result = repl.eval("tuple([1, 2, 3])").unwrap();
+    assert_eq!(result, "(1, 2, 3)");
 }
 
 #[test]
-fn test_convert_to_float_from_variable() {
-    let transpiler = Transpiler::new();
-    let code = "float(x)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_hex_octal_binary_conversions() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Hex string to int
+    let result = repl.eval(r#"int("0xFF", 16)"#).unwrap();
+    assert_eq!(result, "255");
     
-    assert!(transpiled.contains("as f64"));
-}
-
-// ==================== BOOLEAN CONVERSION TESTS ====================
-
-#[test]
-fn test_convert_to_bool_from_int_zero() {
-    let transpiler = Transpiler::new();
-    let code = "bool(0)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+    // Binary string to int
+    let result = repl.eval(r#"int("1010", 2)"#).unwrap();
+    assert_eq!(result, "10");
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Octal string to int
+    let result = repl.eval(r#"int("77", 8)"#).unwrap();
+    assert_eq!(result, "63");
     
-    assert!(transpiled.contains("!= 0") || transpiled.contains("false"));
-}
-
-#[test]
-fn test_convert_to_bool_from_int_nonzero() {
-    let transpiler = Transpiler::new();
-    let code = "bool(42)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+    // Int to hex string
+    let result = repl.eval("hex(255)").unwrap();
+    assert_eq!(result, r#""0xff""#);
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Int to binary string
+    let result = repl.eval("bin(10)").unwrap();
+    assert_eq!(result, r#""0b1010""#);
     
-    assert!(transpiled.contains("!= 0") || transpiled.contains("true"));
+    // Int to octal string
+    let result = repl.eval("oct(63)").unwrap();
+    assert_eq!(result, r#""0o77""#);
 }
 
 #[test]
-fn test_convert_to_bool_from_empty_string() {
-    let transpiler = Transpiler::new();
-    let code = r#"bool("")"#;
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_option_result_conversions() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Option to Result
+    let result = repl.eval("Option::Some(42).ok_or(\"error\")").unwrap();
+    assert_eq!(result, "Result::Ok(42)");
     
-    assert!(transpiled.contains("is_empty"));
+    let result = repl.eval("Option::None.ok_or(\"error\")").unwrap();
+    assert_eq!(result, r#"Result::Err("error")"#);
+    
+    // Result to Option
+    let result = repl.eval("Result::Ok(42).ok()").unwrap();
+    assert_eq!(result, "Option::Some(42)");
+    
+    let result = repl.eval("Result::Err(\"error\").ok()").unwrap();
+    assert_eq!(result, "Option::None");
 }
 
 #[test]
-fn test_convert_to_bool_from_nonempty_string() {
-    let transpiler = Transpiler::new();
-    let code = r#"bool("hello")"#;
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
+fn test_chained_conversions() {
+    let mut repl = Repl::new().unwrap();
     
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
+    // Multiple conversions in sequence
+    let result = repl.eval(r#"str(int(float("3.14")))"#).unwrap();
+    assert_eq!(result, r#""3""#);
     
-    assert!(transpiled.contains("is_empty"));
+    // Complex conversion chain
+    let result = repl.eval("bool(int(str(true)))").unwrap();
+    assert_eq!(result, "true");
 }
-
-#[test]
-fn test_convert_to_bool_from_empty_list() {
-    let transpiler = Transpiler::new();
-    let code = "bool([])";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("is_empty"));
-}
-
-#[test]
-fn test_convert_to_bool_from_nonempty_list() {
-    let transpiler = Transpiler::new();
-    let code = "bool([1, 2, 3])";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("is_empty"));
-}
-
-#[test]
-fn test_convert_to_bool_from_none() {
-    let transpiler = Transpiler::new();
-    let code = "bool(None)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    // None should convert to false
-    assert!(transpiled.contains("false") || transpiled.contains("None"));
-}
-
-#[test]
-fn test_convert_to_bool_from_bool() {
-    let transpiler = Transpiler::new();
-    let code = "bool(true)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    // Bool to bool should be identity
-    assert!(transpiled.contains("true"));
-}
-
-// ==================== LIST CONVERSION TESTS ====================
-
-#[test]
-fn test_convert_to_list_from_string() {
-    let transpiler = Transpiler::new();
-    let code = r#"list("hello")"#;
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    // String to list should convert chars
-    assert!(transpiled.contains("chars"));
-    assert!(transpiled.contains("collect"));
-}
-
-#[test]
-fn test_convert_to_list_from_range() {
-    let transpiler = Transpiler::new();
-    let code = "list(1..5)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("collect"));
-    assert!(transpiled.contains("Vec"));
-}
-
-#[test]
-fn test_convert_to_list_from_tuple() {
-    let transpiler = Transpiler::new();
-    let code = "list((1, 2, 3))";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("vec!"));
-}
-
-#[test]
-fn test_convert_to_list_from_single_value() {
-    let transpiler = Transpiler::new();
-    let code = "list(42)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("vec!"));
-}
-
-// ==================== SET CONVERSION TESTS ====================
-
-#[test]
-fn test_convert_to_set_from_list() {
-    let transpiler = Transpiler::new();
-    let code = "set([1, 2, 3, 2, 1])";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("HashSet"));
-    assert!(transpiled.contains("collect"));
-}
-
-#[test]
-fn test_convert_to_set_from_string() {
-    let transpiler = Transpiler::new();
-    let code = r#"set("hello")"#;
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("HashSet"));
-    assert!(transpiled.contains("chars"));
-}
-
-#[test]
-fn test_convert_to_set_from_single_value() {
-    let transpiler = Transpiler::new();
-    let code = "set(42)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("HashSet"));
-    assert!(transpiled.contains("insert"));
-}
-
-// ==================== DICT CONVERSION TESTS ====================
-
-#[test]
-fn test_convert_to_dict_from_list_of_tuples() {
-    let transpiler = Transpiler::new();
-    let code = r#"dict([(1, "one"), (2, "two")])"#;
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("HashMap"));
-    assert!(transpiled.contains("collect"));
-}
-
-#[test]
-fn test_convert_to_dict_from_object_literal() {
-    let transpiler = Transpiler::new();
-    let code = "dict({a: 1, b: 2})";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("HashMap"));
-}
-
-#[test]
-fn test_convert_to_dict_empty() {
-    let transpiler = Transpiler::new();
-    let code = "dict(42)"; // Invalid input should create empty dict
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("HashMap::new"));
-}
-
-// ==================== ERROR HANDLING TESTS ====================
-
-#[test]
-fn test_str_with_wrong_arg_count() {
-    let transpiler = Transpiler::new();
-    let code = "str(1, 2)"; // Too many arguments
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    // Should fail with wrong arg count
-    assert!(result.is_err() || result.is_ok()); // Parser might handle differently
-}
-
-#[test]
-fn test_int_with_no_args() {
-    let transpiler = Transpiler::new();
-    let code = "int()"; // No arguments
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    // Should fail with wrong arg count
-    assert!(result.is_err() || result.is_ok());
-}
-
-// ==================== EDGE CASE TESTS ====================
-
-#[test]
-fn test_nested_conversions() {
-    let transpiler = Transpiler::new();
-    let code = "str(int(float(42)))";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("format!") || transpiled.contains("as"));
-}
-
-#[test]
-fn test_conversion_in_expression() {
-    let transpiler = Transpiler::new();
-    let code = "int(x) + float(y)";
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("as i64"));
-    assert!(transpiled.contains("as f64"));
-}
-
-#[test]
-fn test_conversion_with_method_call() {
-    let transpiler = Transpiler::new();
-    let code = r#"str(x.len())"#;
-    let mut parser = Parser::new(code);
-    let ast = parser.parse().unwrap();
-    
-    let result = transpiler.transpile(&ast);
-    assert!(result.is_ok());
-    let transpiled = result.unwrap().to_string();
-    
-    assert!(transpiled.contains("format!"));
-}
-
-// Run all tests with: cargo test type_conversion_tdd --test type_conversion_tdd

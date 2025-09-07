@@ -316,6 +316,29 @@ fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) ->
     };
     
     state.tokens.advance();
+    
+    // Check if this is a qualified name like Option::Some
+    if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
+        state.tokens.advance(); // consume ::
+        
+        if let Some((next_token, _)) = state.tokens.peek() {
+            let variant_name = match next_token.clone() {
+                Token::Some => "Some".to_string(),
+                Token::None => "None".to_string(),
+                Token::Ok => "Ok".to_string(),
+                Token::Err => "Err".to_string(),
+                Token::Identifier(name) => name,
+                _ => bail!("Expected variant name after '::'"),
+            };
+            
+            state.tokens.advance();
+            let qualified_name = format!("{}::{}", constructor_name, variant_name);
+            return Ok(Expr::new(ExprKind::Identifier(qualified_name), span));
+        } else {
+            bail!("Expected variant name after '::'");
+        }
+    }
+    
     Ok(Expr::new(ExprKind::Identifier(constructor_name.to_string()), span))
 }
 

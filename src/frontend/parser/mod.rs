@@ -118,6 +118,7 @@ fn try_handle_infix_operators(
     // Try operators in order of priority
     let handlers = [
         try_new_actor_operators,
+        try_type_cast_operator,
         try_binary_operators,
         try_assignment_operators,
         try_pipeline_operators,
@@ -330,6 +331,39 @@ fn try_binary_operators(
     } else {
         Ok(None)
     }
+}
+
+/// Try to parse type cast operator (as) - complexity: 5
+fn try_type_cast_operator(
+    state: &mut ParserState,
+    left: Expr,
+    token: &Token,
+    _min_prec: i32,
+) -> Result<Option<Expr>> {
+    if !matches!(token, Token::As) {
+        return Ok(None);
+    }
+    
+    state.tokens.advance(); // consume 'as'
+    
+    // Get the target type
+    let target_type = match state.tokens.peek() {
+        Some((Token::Identifier(t), _)) => {
+            let type_name = t.clone();
+            state.tokens.advance();
+            type_name
+        }
+        _ => bail!("Expected type name after 'as'"),
+    };
+    
+    Ok(Some(Expr {
+        kind: ExprKind::TypeCast {
+            expr: Box::new(left),
+            target_type,
+        },
+        span: Span { start: 0, end: 0 },
+        attributes: Vec::new(),
+    }))
 }
 
 /// Try to parse new actor operations (<- and <?)
