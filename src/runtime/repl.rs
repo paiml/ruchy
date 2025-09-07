@@ -759,7 +759,7 @@ impl Repl {
     ) -> Result<Value> {
         self.validate_arg_count(func_name, args, 1)?;
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Float(f) => Self::ok_float(operation(f)),
             Value::Int(n) => Self::ok_float(operation(n as f64)),
@@ -779,7 +779,7 @@ impl Repl {
     ) -> Result<Value> {
         self.validate_arg_count(func_name, args, 1)?;
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Float(f) => {
                 validator(f)?;
@@ -2230,7 +2230,7 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         Self::validate_exact_args("push", 1, args.len())?;
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         items.push(value);
         Self::ok_list(items)
     }
@@ -2256,7 +2256,7 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         Self::validate_exact_args("append", 1, args.len())?;
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         if let Value::List(other_items) = value {
             items.extend(other_items);
             Self::ok_list(items)
@@ -5921,7 +5921,7 @@ impl Repl {
     fn evaluate_type_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         Self::validate_exact_args("type()", 1, args.len())?;
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         let type_name = self.get_value_type_name(&value);
         Ok(Value::String(type_name.to_string()))
     }
@@ -5930,7 +5930,7 @@ impl Repl {
     fn evaluate_summary_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         Self::validate_exact_args("summary()", 1, args.len())?;
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         let summary = match &value {
             Value::List(items) => format!("List with {} items", items.len()),
             Value::Object(fields) => format!("Object with {} fields", fields.len()),
@@ -5945,7 +5945,7 @@ impl Repl {
     fn evaluate_dir_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         Self::validate_exact_args("dir()", 1, args.len())?;
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         let members = match value {
             Value::Object(fields) => {
                 fields.keys().cloned().collect::<Vec<_>>()
@@ -7900,7 +7900,7 @@ impl Repl {
             Self::validate_exact_args("Some", 1, args.len())?;
         }
 
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         Ok(Value::EnumVariant {
             enum_name: "Option".to_string(),
             variant_name: "Some".to_string(),
@@ -7933,7 +7933,7 @@ impl Repl {
             Self::validate_exact_args("Ok", 1, args.len())?;
         }
 
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         Ok(Value::EnumVariant {
             enum_name: "Result".to_string(),
             variant_name: "Ok".to_string(),
@@ -7952,7 +7952,7 @@ impl Repl {
             Self::validate_exact_args("Err", 1, args.len())?;
         }
 
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         Ok(Value::EnumVariant {
             enum_name: "Result".to_string(),
             variant_name: "Err".to_string(),
@@ -8208,7 +8208,7 @@ impl Repl {
             bail!("str() expects exactly 1 argument");
         }
 
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Char(c) => Ok(Value::String(c.to_string())),
             _ => Ok(Value::String(value.to_string())),
@@ -8226,7 +8226,7 @@ impl Repl {
             bail!("int() expects 1 or 2 arguments");
         }
 
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         
         // Handle two-argument form for base conversion
         if args.len() == 2 {
@@ -8287,7 +8287,7 @@ impl Repl {
             bail!("float() expects exactly 1 argument");
         }
 
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Float(f) => Ok(Value::Float(f)),
             Value::Int(n) => Ok(Value::Float(n as f64)),
@@ -8313,7 +8313,7 @@ impl Repl {
             bail!("bool() expects exactly 1 argument");
         }
 
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Bool(b) => Ok(Value::Bool(b)),
             Value::Int(n) => Ok(Value::Bool(n != 0)),
@@ -8399,7 +8399,7 @@ impl Repl {
             bail!("char() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Int(n) => {
                 if n < 0 || n > 1114111 {
@@ -8432,7 +8432,7 @@ impl Repl {
             bail!("hex() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Int(n) => {
                 if n < 0 {
@@ -8456,7 +8456,7 @@ impl Repl {
             bail!("bin() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Int(n) => {
                 if n < 0 {
@@ -8480,7 +8480,7 @@ impl Repl {
             bail!("oct() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Int(n) => {
                 if n < 0 {
@@ -8504,7 +8504,7 @@ impl Repl {
             bail!("list() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::List(items) => Self::ok_list(items),
             Value::Tuple(items) => Self::ok_list(items),
@@ -8529,7 +8529,7 @@ impl Repl {
             bail!("tuple() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_arg(args, 0, deadline, depth)?;
+        let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Tuple(items) => Ok(Value::Tuple(items)),
             Value::List(items) => Ok(Value::Tuple(items)),
@@ -8998,6 +8998,11 @@ impl Repl {
             .replace("format!", "format")
     }
 
+    /// Helper to evaluate the first argument from an argument list
+    fn evaluate_first_arg(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        self.evaluate_arg(args, 0, deadline, depth)
+    }
+
     /// Apply unary math operation to a numeric value.
     /// 
     /// # Example Usage
@@ -9105,7 +9110,7 @@ impl Repl {
             // Unary math functions
             "sqrt" | "abs" | "floor" | "ceil" | "round" => {
                 self.validate_arg_count(func_name, args, 1)?;
-                let value = self.evaluate_arg(args, 0, deadline, depth)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
                 Ok(Some(self.apply_unary_math_op(&value, func_name)?))
             }
             // Binary math functions
@@ -9158,7 +9163,7 @@ impl Repl {
                 if args.len() != 1 {
                     bail!("Some takes exactly 1 argument");
                 }
-                let value = self.evaluate_arg(args, 0, deadline, depth)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
                 Ok(Some(Value::EnumVariant {
                     enum_name: "Option".to_string(),
                     variant_name: "Some".to_string(),
@@ -9169,7 +9174,7 @@ impl Repl {
                 if args.len() != 1 {
                     bail!("Ok takes exactly 1 argument");
                 }
-                let value = self.evaluate_arg(args, 0, deadline, depth)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
                 Ok(Some(Value::EnumVariant {
                     enum_name: "Result".to_string(),
                     variant_name: "Ok".to_string(),
@@ -9180,7 +9185,7 @@ impl Repl {
                 if args.len() != 1 {
                     bail!("Err takes exactly 1 argument");
                 }
-                let value = self.evaluate_arg(args, 0, deadline, depth)?;
+                let value = self.evaluate_first_arg(args, deadline, depth)?;
                 Ok(Some(Value::EnumVariant {
                     enum_name: "Result".to_string(),
                     variant_name: "Err".to_string(),
