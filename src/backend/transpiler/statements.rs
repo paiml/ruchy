@@ -2398,6 +2398,27 @@ impl Transpiler {
     /// assert!(result.contains("polars"));
     /// ```
     fn try_transpile_dataframe_function(&self, base_name: &str, args: &[Expr]) -> Result<Option<TokenStream>> {
+        // Handle DataFrame static methods
+        if base_name.starts_with("DataFrame::") {
+            let method = base_name.strip_prefix("DataFrame::").unwrap();
+            match method {
+                "new" if args.is_empty() => {
+                    return Ok(Some(quote! { polars::prelude::DataFrame::new(vec![]) }));
+                }
+                "from_csv" if args.len() == 1 => {
+                    let path_tokens = self.transpile_expr(&args[0])?;
+                    return Ok(Some(quote! { 
+                        polars::prelude::CsvReader::from_path(#path_tokens)
+                            .unwrap()
+                            .finish()
+                            .unwrap()
+                    }));
+                }
+                _ => {}
+            }
+        }
+        
+        // Handle col() function for column references
         if base_name == "col" && args.len() == 1 {
             if let ExprKind::Literal(Literal::String(col_name)) = &args[0].kind {
                 return Ok(Some(quote! { polars::prelude::col(#col_name) }));

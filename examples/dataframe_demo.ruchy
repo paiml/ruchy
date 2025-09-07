@@ -1,27 +1,28 @@
-# DataFrame demonstration in Ruchy
-# Requires --features dataframe when compiling
+// DataFrame demonstration for Ruchy v1.81.0
+// Shows transpiler support for DataFrames
 
-# Create a DataFrame with sales data
-let sales = df![
-    product, quantity, price;
-    "Apple", 100, 0.5;
-    "Banana", 150, 0.3;
-    "Orange", 80, 0.6;
-    "Grape", 200, 0.25
+// Create a DataFrame using literal syntax
+let sales_data = df![
+    "product" => ["Widget", "Gadget", "Tool", "Widget"],
+    "quantity" => [10, 5, 15, 8],
+    "price" => [99.99, 149.99, 79.99, 99.99],
+    "region" => ["North", "South", "East", "West"]
 ]
 
-# Display the DataFrame
-println("Sales Data:")
-println(sales)
+// Filter for high-value sales
+let high_value = sales_data
+    .filter(quantity > 7)
+    .select(["product", "quantity", "region"])
 
-# Create another DataFrame with inventory
-let inventory = df![
-    product, stock;
-    "Apple", 500;
-    "Banana", 300;
-    "Orange", 250;
-    "Grape", 400
-]
+// Group by product and aggregate
+let product_summary = sales_data
+    .group_by("product")
+    .select(["product", "quantity"])
 
-println("\nInventory Data:")
-println(inventory)
+// Create from CSV (when implemented)
+// let csv_data = DataFrame::from_csv("sales.csv")
+
+// Sort by quantity
+let sorted = sales_data.sort_by("quantity")
+
+println("DataFrame operations completed successfully")
