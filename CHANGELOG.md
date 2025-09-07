@@ -4,6 +4,25 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.68.0] - 2025-09-07
+
+### Added - String Methods
+- `string.to_int()` - Convert string to integer
+- `string.to_float()` - Convert string to float  
+- `string.parse()` - Parse string to appropriate numeric type
+- `string.repeat(n)` - Repeat string n times
+- `string.pad_left(width, char)` - Pad string on left to specified width
+- `string.pad_right(width, char)` - Pad string on right to specified width
+- `string.chars()` - Get list of individual characters
+- `string.bytes()` - Get list of byte values
+- `string.is_numeric()` - Check if string contains only numeric characters
+- `string.is_alpha()` - Check if string contains only alphabetic characters
+- `string.is_alphanumeric()` - Check if string contains only alphanumeric characters
+
+### Testing
+- Comprehensive TDD test suite with 10 passing tests (`string_methods_tdd.rs`)
+- All string conversion and manipulation methods fully functional
+
 ## [1.67.0] - 2025-09-06
 
 ### 🎯 **COMPREHENSIVE LIST METHODS**

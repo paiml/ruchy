@@ -2633,6 +2633,46 @@ impl Repl {
                 let reversed: String = s.chars().rev().collect();
                 Some(Ok(Value::String(reversed)))
             }
+            "to_int" => {
+                match s.parse::<i64>() {
+                    Ok(n) => Some(Ok(Value::Int(n))),
+                    Err(_) => Some(Err(anyhow::anyhow!("Cannot parse '{}' as integer", s))),
+                }
+            }
+            "to_float" => {
+                match s.parse::<f64>() {
+                    Ok(f) => Some(Ok(Value::Float(f))),
+                    Err(_) => Some(Err(anyhow::anyhow!("Cannot parse '{}' as float", s))),
+                }
+            }
+            "parse" => {
+                // Try to parse as int first, then float
+                if let Ok(n) = s.parse::<i64>() {
+                    Some(Ok(Value::Int(n)))
+                } else if let Ok(f) = s.parse::<f64>() {
+                    Some(Ok(Value::Float(f)))
+                } else {
+                    Some(Err(anyhow::anyhow!("Cannot parse '{}' as number", s)))
+                }
+            }
+            "bytes" => {
+                let bytes: Vec<Value> = s.bytes()
+                    .map(|b| Value::Int(b as i64))
+                    .collect();
+                Some(Ok(Value::List(bytes)))
+            }
+            "is_numeric" => {
+                let is_num = s.parse::<f64>().is_ok();
+                Some(Ok(Value::Bool(is_num)))
+            }
+            "is_alpha" => {
+                let is_alpha = !s.is_empty() && s.chars().all(|c| c.is_alphabetic());
+                Some(Ok(Value::Bool(is_alpha)))
+            }
+            "is_alphanumeric" => {
+                let is_alnum = !s.is_empty() && s.chars().all(|c| c.is_alphanumeric());
+                Some(Ok(Value::Bool(is_alnum)))
+            }
             _ => None,
         }
     }
@@ -2713,6 +2753,44 @@ impl Repl {
                     }
                 } else {
                     Some(Err(anyhow::anyhow!("repeat argument must be an integer")))
+                }
+            }
+            "pad_left" => {
+                if args.len() != 2 {
+                    return Some(Err(anyhow::anyhow!("pad_left expects 2 arguments (width, fill)")));
+                }
+                if let (ExprKind::Literal(Literal::Integer(width)), ExprKind::Literal(Literal::String(fill))) = 
+                    (&args[0].kind, &args[1].kind) {
+                    let width = *width as usize;
+                    if s.len() >= width {
+                        Some(Ok(Value::String(s.to_string())))
+                    } else {
+                        let padding_needed = width - s.len();
+                        let fill_char = fill.chars().next().unwrap_or(' ');
+                        let padding = fill_char.to_string().repeat(padding_needed);
+                        Some(Ok(Value::String(format!("{}{}", padding, s))))
+                    }
+                } else {
+                    Some(Err(anyhow::anyhow!("pad_left arguments must be (integer, string)")))
+                }
+            }
+            "pad_right" => {
+                if args.len() != 2 {
+                    return Some(Err(anyhow::anyhow!("pad_right expects 2 arguments (width, fill)")));
+                }
+                if let (ExprKind::Literal(Literal::Integer(width)), ExprKind::Literal(Literal::String(fill))) = 
+                    (&args[0].kind, &args[1].kind) {
+                    let width = *width as usize;
+                    if s.len() >= width {
+                        Some(Ok(Value::String(s.to_string())))
+                    } else {
+                        let padding_needed = width - s.len();
+                        let fill_char = fill.chars().next().unwrap_or(' ');
+                        let padding = fill_char.to_string().repeat(padding_needed);
+                        Some(Ok(Value::String(format!("{}{}", s, padding))))
+                    }
+                } else {
+                    Some(Err(anyhow::anyhow!("pad_right arguments must be (integer, string)")))
                 }
             }
             _ => None,
