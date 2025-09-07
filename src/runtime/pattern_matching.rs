@@ -50,144 +50,19 @@ fn match_collection_patterns(patterns: &[Pattern], values: &[Value]) -> Option<V
 pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Value)>> {
     match pattern {
         Pattern::Wildcard => Some(vec![]),
-        
         Pattern::Identifier(name) => Some(vec![(name.clone(), value.clone())]),
-        
-        Pattern::Literal(lit) => {
-            if match_literal_pattern(value, lit) {
-                Some(vec![])
-            } else {
-                None
-            }
-        }
-        
-        Pattern::Tuple(patterns) => {
-            if let Value::Tuple(values) = value {
-                match_collection_patterns(patterns, values)
-            } else {
-                None
-            }
-        }
-        
-        Pattern::List(patterns) => {
-            if let Value::List(values) = value {
-                match_collection_patterns(patterns, values)
-            } else {
-                None
-            }
-        }
-        
-        Pattern::Struct { fields, .. } => {
-            if let Value::Object(obj_fields) = value {
-                let mut bindings = Vec::new();
-                
-                // Check each field pattern
-                for field in fields {
-                    // Get the value for this field
-                    let field_value = obj_fields.get(&field.name)?;
-                    
-                    // Match the pattern if provided
-                    if let Some(ref field_pattern) = field.pattern {
-                        let field_bindings = match_pattern(field_pattern, field_value)?;
-                        bindings.extend(field_bindings);
-                    } else {
-                        // Shorthand: field name is the binding
-                        bindings.push((field.name.clone(), field_value.clone()));
-                    }
-                }
-                
-                Some(bindings)
-            } else {
-                None
-            }
-        }
-        
-        Pattern::Or(patterns) => {
-            for pat in patterns {
-                if let Some(bindings) = match_pattern(pat, value) {
-                    return Some(bindings);
-                }
-            }
-            None
-        }
-        
-        Pattern::Rest => {
-            // Rest patterns match anything
-            Some(vec![])
-        }
-        
-        Pattern::RestNamed(name) => {
-            // Rest pattern with binding
-            Some(vec![(name.clone(), value.clone())])
-        }
-        
-        Pattern::Range { start, end, inclusive } => {
-            // Range patterns for numeric values
-            if let Value::Int(val) = value {
-                // Extract start and end values from patterns
-                let start_val = if let Pattern::Literal(Literal::Integer(n)) = &**start {
-                    *n
-                } else {
-                    return None; // Start must be a literal integer
-                };
-                
-                let end_val = if let Pattern::Literal(Literal::Integer(n)) = &**end {
-                    *n
-                } else {
-                    return None; // End must be a literal integer
-                };
-                
-                let val = *val;
-                let in_range = if *inclusive {
-                    val >= start_val && val <= end_val
-                } else {
-                    val >= start_val && val < end_val
-                };
-                
-                if in_range {
-                    Some(Vec::new()) // No variable bindings for range patterns
-                } else {
-                    None
-                }
-            } else {
-                None // Range patterns only match integers
-            }
-        }
-        
-        Pattern::QualifiedName(_) => {
-            // Qualified names need enum support
-            // For now, just fail to match
-            None
-        }
-        
-        Pattern::Some(inner_pattern) => {
-            // Match EnumVariant with variant_name "Some"
-            if let Value::EnumVariant { variant_name, data, .. } = value {
-                if variant_name == "Some" {
-                    if let Some(ref variant_data) = data {
-                        if !variant_data.is_empty() {
-                            return match_pattern(inner_pattern, &variant_data[0]);
-                        }
-                    }
-                }
-            }
-            None
-        }
-        
-        Pattern::None => {
-            // Match EnumVariant with variant_name "None"
-            if let Value::EnumVariant { variant_name, .. } = value {
-                if variant_name == "None" {
-                    return Some(Vec::new());
-                }
-            }
-            None
-        }
-        
-        Pattern::Ok(_) | Pattern::Err(_) => {
-            // Result patterns not yet fully supported
-            None
-        }
+        Pattern::Literal(lit) => match_literal_pattern_helper(value, lit),
+        Pattern::Tuple(patterns) => match_tuple_pattern_helper(patterns, value),
+        Pattern::List(patterns) => match_list_pattern_helper(patterns, value),
+        Pattern::Struct { fields, .. } => match_struct_pattern_helper(fields, value),
+        Pattern::Or(patterns) => match_or_pattern_helper(patterns, value),
+        Pattern::Rest => Some(vec![]),
+        Pattern::RestNamed(name) => Some(vec![(name.clone(), value.clone())]),
+        Pattern::Range { start, end, inclusive } => match_range_pattern_helper(start, end, *inclusive, value),
+        Pattern::QualifiedName(_) => None,
+        Pattern::Some(inner_pattern) => match_some_pattern_helper(inner_pattern, value),
+        Pattern::None => match_none_pattern_helper(value),
+        Pattern::Ok(_) | Pattern::Err(_) => None
     }
 }
 
@@ -216,4 +91,119 @@ pub fn values_equal(v1: &Value, v2: &Value) -> bool {
         }
         _ => false,
     }
+}
+
+/// Helper for matching literal patterns (complexity: 2)
+fn match_literal_pattern_helper(value: &Value, lit: &Literal) -> Option<Vec<(String, Value)>> {
+    if match_literal_pattern(value, lit) {
+        Some(vec![])
+    } else {
+        None
+    }
+}
+
+/// Helper for matching tuple patterns (complexity: 3)
+fn match_tuple_pattern_helper(patterns: &[Pattern], value: &Value) -> Option<Vec<(String, Value)>> {
+    if let Value::Tuple(values) = value {
+        match_collection_patterns(patterns, values)
+    } else {
+        None
+    }
+}
+
+/// Helper for matching list patterns (complexity: 3)
+fn match_list_pattern_helper(patterns: &[Pattern], value: &Value) -> Option<Vec<(String, Value)>> {
+    if let Value::List(values) = value {
+        match_collection_patterns(patterns, values)
+    } else {
+        None
+    }
+}
+
+/// Helper for matching struct patterns (complexity: 8)
+fn match_struct_pattern_helper(fields: &[crate::frontend::ast::StructPatternField], value: &Value) -> Option<Vec<(String, Value)>> {
+    if let Value::Object(obj_fields) = value {
+        let mut bindings = Vec::new();
+        
+        for field in fields {
+            let field_value = obj_fields.get(&field.name)?;
+            
+            if let Some(ref field_pattern) = field.pattern {
+                let field_bindings = match_pattern(field_pattern, field_value)?;
+                bindings.extend(field_bindings);
+            } else {
+                bindings.push((field.name.clone(), field_value.clone()));
+            }
+        }
+        
+        Some(bindings)
+    } else {
+        None
+    }
+}
+
+/// Helper for matching or patterns (complexity: 4)
+fn match_or_pattern_helper(patterns: &[Pattern], value: &Value) -> Option<Vec<(String, Value)>> {
+    for pat in patterns {
+        if let Some(bindings) = match_pattern(pat, value) {
+            return Some(bindings);
+        }
+    }
+    None
+}
+
+/// Helper for matching range patterns (complexity: 9)
+fn match_range_pattern_helper(start: &Box<Pattern>, end: &Box<Pattern>, inclusive: bool, value: &Value) -> Option<Vec<(String, Value)>> {
+    if let Value::Int(val) = value {
+        let start_val = if let Pattern::Literal(Literal::Integer(n)) = &**start {
+            *n
+        } else {
+            return None;
+        };
+        
+        let end_val = if let Pattern::Literal(Literal::Integer(n)) = &**end {
+            *n
+        } else {
+            return None;
+        };
+        
+        let val = *val;
+        let in_range = if inclusive {
+            val >= start_val && val <= end_val
+        } else {
+            val >= start_val && val < end_val
+        };
+        
+        if in_range {
+            Some(Vec::new())
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+/// Helper for matching Some patterns (complexity: 6)
+fn match_some_pattern_helper(inner_pattern: &Pattern, value: &Value) -> Option<Vec<(String, Value)>> {
+    if let Value::EnumVariant { variant_name, data, .. } = value {
+        if variant_name == "Some" {
+            if let Some(ref variant_data) = data {
+                if !variant_data.is_empty() {
+                    return match_pattern(inner_pattern, &variant_data[0]);
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Helper for matching None patterns (complexity: 4)
+fn match_none_pattern_helper(value: &Value) -> Option<Vec<(String, Value)>> {
+    if let Value::EnumVariant { variant_name, .. } = value {
+        if variant_name == "None" {
+            return Some(Vec::new());
+        }
+    }
+    None
 }
