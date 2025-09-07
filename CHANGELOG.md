@@ -4,6 +4,37 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.70.0] - 2025-09-07
+
+### Added - Type Conversion System
+- **Type Casting**: Added 'as' keyword for explicit type casting (42 as float, 3.14 as int, true as int)
+- **Conversion Functions**: Extended type conversion capabilities
+  - `int(string, base)` - Convert string to integer with optional base (2-36)
+  - `char(int)` - Convert ASCII value to character
+  - `hex(int)` - Convert integer to hexadecimal string
+  - `bin(int)` - Convert integer to binary string
+  - `oct(int)` - Convert integer to octal string
+  - `list(tuple)` - Convert tuple to list
+  - `tuple(list)` - Convert list to tuple
+- **Numeric Coercion**: Automatic type coercion in mixed operations
+  - Integer division always returns float (10 / 3 = 3.333...)
+  - Mixed int/float operations coerce to float (5 + 2.5 = 7.5)
+- **Option/Result Conversions**:
+  - `Option.ok_or(error)` - Convert Option to Result
+  - `Result.ok()` - Convert Result to Option
+- **Character Operations**:
+  - `char.to_int()` - Get ASCII value of character
+  - Fixed `str(char)` to not include quotes
+
+### Fixed
+- Boolean conversion: `bool("false")` now correctly returns false
+- Integer conversion: `int("true")` returns 1, `int("false")` returns 0
+- Parser now handles `Option::Some`, `Result::Ok` qualified names correctly
+
+### Testing
+- Comprehensive type conversion TDD test suite with 11 tests
+- 100% coverage of casting, coercion, and conversion scenarios
+
 ## [1.69.0] - 2025-09-07
 
 ### Refactoring - Code Quality Improvements
