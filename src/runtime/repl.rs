@@ -3582,11 +3582,7 @@ impl Repl {
         let end_val = self.evaluate_expr(end, deadline, depth + 1)?;
 
         match (start_val, end_val) {
-            (Value::Int(s), Value::Int(e)) => Ok(Value::Range {
-                start: s,
-                end: e,
-                inclusive,
-            }),
+            (Value::Int(s), Value::Int(e)) => Self::ok_range(s, e, inclusive),
             _ => bail!("Range endpoints must be integers"),
         }
     }
@@ -3770,9 +3766,7 @@ impl Repl {
                 values,
             });
         }
-        Ok(Value::DataFrame {
-            columns: df_columns,
-        })
+        Self::ok_dataframe(df_columns)
     }
 
 
@@ -3784,11 +3778,7 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let val = self.evaluate_expr(value, deadline, depth + 1)?;
-        Ok(Value::EnumVariant {
-            enum_name: "Result".to_string(),
-            variant_name: "Ok".to_string(),
-            data: Some(vec![val]),
-        })
+        Self::ok_enum_variant("Result".to_string(), "Ok".to_string(), Some(vec![val]))
     }
 
     /// Evaluate `Result::Err` constructor (complexity: 3)
@@ -3799,11 +3789,7 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let err = self.evaluate_expr(error, deadline, depth + 1)?;
-        Ok(Value::EnumVariant {
-            enum_name: "Result".to_string(),
-            variant_name: "Err".to_string(),
-            data: Some(vec![err]),
-        })
+        Self::ok_enum_variant("Result".to_string(), "Err".to_string(), Some(vec![err]))
     }
 
     /// Evaluate `Option::Some` constructor (complexity: 3)
@@ -3814,11 +3800,7 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let val = self.evaluate_expr(value, deadline, depth + 1)?;
-        Ok(Value::EnumVariant {
-            enum_name: "Option".to_string(),
-            variant_name: "Some".to_string(),
-            data: Some(vec![val]),
-        })
+        Self::ok_enum_variant("Option".to_string(), "Some".to_string(), Some(vec![val]))
     }
 
     /// Evaluate `Option::None` constructor (complexity: 1)
@@ -8970,6 +8952,36 @@ impl Repl {
     /// Create an Ok result with a HashSet value
     fn ok_hashset(set: std::collections::HashSet<Value>) -> Result<Value> {
         Ok(Self::hashset_value(set))
+    }
+    
+    /// Create a Range value
+    fn range_value(start: i64, end: i64, inclusive: bool) -> Value {
+        Value::Range { start, end, inclusive }
+    }
+    
+    /// Create a DataFrame value  
+    fn dataframe_value(columns: Vec<DataFrameColumn>) -> Value {
+        Value::DataFrame { columns }
+    }
+    
+    /// Create an EnumVariant value
+    fn enum_variant_value(enum_name: String, variant_name: String, data: Option<Vec<Value>>) -> Value {
+        Value::EnumVariant { enum_name, variant_name, data }
+    }
+    
+    /// Create an Ok result with a Range value
+    fn ok_range(start: i64, end: i64, inclusive: bool) -> Result<Value> {
+        Ok(Self::range_value(start, end, inclusive))
+    }
+    
+    /// Create an Ok result with a DataFrame value
+    fn ok_dataframe(columns: Vec<DataFrameColumn>) -> Result<Value> {
+        Ok(Self::dataframe_value(columns))
+    }
+    
+    /// Create an Ok result with an EnumVariant value
+    fn ok_enum_variant(enum_name: String, variant_name: String, data: Option<Vec<Value>>) -> Result<Value> {
+        Ok(Self::enum_variant_value(enum_name, variant_name, data))
     }
 
     /// Apply unary math operation to a numeric value.
