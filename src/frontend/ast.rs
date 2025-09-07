@@ -93,6 +93,10 @@ pub enum ExprKind {
         value: Box<Expr>,
     },
     None,
+    TypeCast {
+        expr: Box<Expr>,
+        target_type: String,
+    },
     Try {
         expr: Box<Expr>,
     },

@@ -1838,6 +1838,7 @@ impl Repl {
                     }
                     Value::Int(n) => Self::evaluate_int_methods(n, method),
                     Value::Float(f) => Self::evaluate_float_methods(f, method),
+                    Value::Char(c) => Self::evaluate_char_methods(c, method),
                     Value::Object(obj) => {
                         Self::evaluate_object_methods(obj, method, args, deadline, depth)
                     }
@@ -1989,6 +1990,9 @@ impl Repl {
             }
             ExprKind::Export { items } => {
                 self.evaluate_export(items)
+            }
+            ExprKind::TypeCast { expr, target_type } => {
+                self.evaluate_type_cast(expr, target_type, deadline, depth)
             }
             ExprKind::Spread { .. } => {
                 bail!("Spread operator (...) can only be used inside array literals")
@@ -2939,6 +2943,21 @@ impl Repl {
         bail!("Unknown string method: {}", method)
     }
 
+    /// Handle method calls on char values (complexity < 10)
+    fn evaluate_char_methods(c: char, method: &str) -> Result<Value> {
+        match method {
+            "to_int" => Ok(Value::Int(c as i64)),
+            "to_string" => Ok(Value::String(c.to_string())),
+            "is_alphabetic" => Ok(Value::Bool(c.is_alphabetic())),
+            "is_numeric" => Ok(Value::Bool(c.is_numeric())),
+            "is_alphanumeric" => Ok(Value::Bool(c.is_alphanumeric())),
+            "is_whitespace" => Ok(Value::Bool(c.is_whitespace())),
+            "to_uppercase" => Ok(Value::String(c.to_uppercase().to_string())),
+            "to_lowercase" => Ok(Value::String(c.to_lowercase().to_string())),
+            _ => bail!("Unknown char method: {}", method),
+        }
+    }
+    
     /// Handle method calls on integer values (complexity < 10)
     fn evaluate_int_methods(n: i64, method: &str) -> Result<Value> {
         match method {
@@ -3956,6 +3975,16 @@ impl Repl {
                     data: data.cloned(),
                 })
             }
+            // ok converts Result to Option
+            ("Ok", "ok") if args.is_empty() => {
+                // Result::Ok(x).ok() -> Option::Some(x)
+                let value = self.extract_value_or_unit(data)?;
+                Ok(Self::create_option_some(value))
+            }
+            ("Err", "ok") if args.is_empty() => {
+                // Result::Err(e).ok() -> Option::None
+                Ok(Self::create_option_none())
+            }
             _ => bail!("Method {} not supported on Result::{}", method, variant_name),
         }
     }
@@ -3991,6 +4020,17 @@ impl Repl {
                     variant_name: variant_name.to_string(),
                     data: data.cloned(),
                 })
+            }
+            // ok_or converts Option to Result
+            ("Some", "ok_or") if args.len() == 1 => {
+                // Option::Some(x).ok_or(err) -> Result::Ok(x)
+                let value = self.extract_value_or_unit(data)?;
+                Ok(Self::create_result_ok(value))
+            }
+            ("None", "ok_or") if args.len() == 1 => {
+                // Option::None.ok_or(err) -> Result::Err(err)
+                let err_value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                Ok(Self::create_result_err(err_value))
             }
             ("Some", "and_then") if args.len() == 1 => {
                 self.apply_function_and_flatten(data, &args[0], deadline, depth)
@@ -4581,6 +4621,31 @@ impl Repl {
 
     /// Evaluate identifier (complexity: 2)
     fn evaluate_identifier(&self, name: &str) -> Result<Value> {
+        // Check if it's a qualified enum variant like "Option::None"
+        if let Some(pos) = name.find("::") {
+            let (module, variant) = name.split_at(pos);
+            let variant = &variant[2..]; // Skip the "::"
+            
+            // Handle known enum variants
+            if module == "Option" && variant == "None" {
+                return Ok(Self::create_option_none());
+            } else if module == "Result" {
+                // Result variants without data are not valid, but we create them for consistency
+                return Ok(Value::EnumVariant {
+                    enum_name: module.to_string(),
+                    variant_name: variant.to_string(),
+                    data: None,
+                });
+            }
+            
+            // For other qualified names, create an enum variant
+            return Ok(Value::EnumVariant {
+                enum_name: module.to_string(),
+                variant_name: variant.to_string(),
+                data: None,
+            });
+        }
+        
         self.get_binding(name)
             .ok_or_else(|| anyhow::anyhow!("Undefined variable: '{}'\n  Hint: Did you mean to declare it with 'let {} = value'?", name, name))
     }
@@ -4964,7 +5029,8 @@ impl Repl {
                 if b == 0 {
                     bail!("Division by zero");
                 }
-                Ok(Value::Int(a / b))
+                // Division always produces a float
+                Ok(Value::Float(a as f64 / b as f64))
             }
             BinaryOp::Modulo => {
                 if b == 0 {
@@ -5053,6 +5119,20 @@ impl Repl {
                 BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply |
                 BinaryOp::Divide | BinaryOp::Power) => {
                 Self::evaluate_float_arithmetic(*a, op, *b)
+            }
+
+            // Mixed Int/Float arithmetic - coerce to Float
+            (Value::Int(a), op, Value::Float(b)) if matches!(op,
+                BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply |
+                BinaryOp::Divide | BinaryOp::Power) => {
+                Self::evaluate_float_arithmetic(*a as f64, op, *b)
+            }
+
+            // Mixed Float/Int arithmetic - coerce to Float
+            (Value::Float(a), op, Value::Int(b)) if matches!(op,
+                BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply |
+                BinaryOp::Divide | BinaryOp::Power) => {
+                Self::evaluate_float_arithmetic(*a, op, *b as f64)
             }
 
             // String concatenation - optimized with pre-allocation
@@ -6955,6 +7035,12 @@ impl Repl {
             "int" => Some(self.evaluate_int_conversion(args, deadline, depth)),
             "float" => Some(self.evaluate_float_conversion(args, deadline, depth)),
             "bool" => Some(self.evaluate_bool_conversion(args, deadline, depth)),
+            "char" => Some(self.evaluate_char_conversion(args, deadline, depth)),
+            "hex" => Some(self.evaluate_hex_conversion(args, deadline, depth)),
+            "bin" => Some(self.evaluate_bin_conversion(args, deadline, depth)),
+            "oct" => Some(self.evaluate_oct_conversion(args, deadline, depth)),
+            "list" => Some(self.evaluate_list_conversion(args, deadline, depth)),
+            "tuple" => Some(self.evaluate_tuple_conversion(args, deadline, depth)),
             _ => None,
         }
     }
@@ -7046,10 +7132,10 @@ impl Repl {
         depth: usize,
     ) -> Option<Result<Value>> {
         match func_name {
-            "Some" => Some(self.evaluate_some(args, deadline, depth)),
-            "None" => Some(self.evaluate_none(args, deadline, depth)),
-            "Ok" => Some(self.evaluate_ok(args, deadline, depth)),
-            "Err" => Some(self.evaluate_err(args, deadline, depth)),
+            "Some" | "Option::Some" => Some(self.evaluate_some(args, deadline, depth)),
+            "None" | "Option::None" => Some(self.evaluate_none(args, deadline, depth)),
+            "Ok" | "Result::Ok" => Some(self.evaluate_ok(args, deadline, depth)),
+            "Err" | "Result::Err" => Some(self.evaluate_err(args, deadline, depth)),
             _ => None,
         }
     }
@@ -8191,7 +8277,10 @@ impl Repl {
         }
 
         let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        Ok(Value::String(value.to_string()))
+        match value {
+            Value::Char(c) => Ok(Value::String(c.to_string())),
+            _ => Ok(Value::String(value.to_string())),
+        }
     }
 
     /// Evaluate `int` type conversion function
@@ -8201,20 +8290,57 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("int() expects exactly 1 argument");
+        if args.is_empty() || args.len() > 2 {
+            bail!("int() expects 1 or 2 arguments");
         }
 
         let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        
+        // Handle two-argument form for base conversion
+        if args.len() == 2 {
+            if let Value::String(s) = value {
+                let base_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                if let Value::Int(base) = base_val {
+                    if base < 2 || base > 36 {
+                        bail!("int() base must be between 2 and 36");
+                    }
+                    // Remove common prefixes
+                    let cleaned = s.trim_start_matches("0x")
+                        .trim_start_matches("0X")
+                        .trim_start_matches("0b")
+                        .trim_start_matches("0B")
+                        .trim_start_matches("0o")
+                        .trim_start_matches("0O");
+                    
+                    match i64::from_str_radix(cleaned, base as u32) {
+                        Ok(n) => return Ok(Value::Int(n)),
+                        Err(_) => bail!("Cannot parse '{}' as base {} integer", s, base),
+                    }
+                } else {
+                    bail!("int() base must be an integer");
+                }
+            } else {
+                bail!("int() with base requires string as first argument");
+            }
+        }
+        
         match value {
             Value::Int(n) => Ok(Value::Int(n)),
             Value::Float(f) => Ok(Value::Int(f as i64)),
             Value::Bool(b) => Ok(Value::Int(i64::from(b))),
             Value::String(s) => {
-                match s.trim().parse::<i64>() {
-                    Ok(n) => Ok(Value::Int(n)),
-                    Err(_) => bail!("Cannot convert '{}' to integer", s),
+                // Try parsing as number first
+                if let Ok(n) = s.trim().parse::<i64>() {
+                    return Ok(Value::Int(n));
                 }
+                // Check for boolean strings
+                if s == "true" {
+                    return Ok(Value::Int(1));
+                }
+                if s == "false" {
+                    return Ok(Value::Int(0));
+                }
+                bail!("Cannot convert '{}' to integer", s)
             }
             _ => bail!("Cannot convert value to integer"),
         }
@@ -8262,7 +8388,7 @@ impl Repl {
             Value::Bool(b) => Ok(Value::Bool(b)),
             Value::Int(n) => Ok(Value::Bool(n != 0)),
             Value::Float(f) => Ok(Value::Bool(f != 0.0 && !f.is_nan())),
-            Value::String(s) => Ok(Value::Bool(!s.is_empty())),
+            Value::String(s) => Ok(Value::Bool(!s.is_empty() && s != "false")),
             Value::Unit => Ok(Value::Bool(false)),
             Value::List(l) => Ok(Value::Bool(!l.is_empty())),
             Value::Object(o) => Ok(Value::Bool(!o.is_empty())),
@@ -8332,6 +8458,205 @@ impl Repl {
         self.evaluate_unary_math_function_validated(args, deadline, depth, "log10", f64::log10, validator)
     }
 
+    /// Evaluate char() conversion function (complexity: 6)
+    fn evaluate_char_conversion(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("char() expects exactly 1 argument");
+        }
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Int(n) => {
+                if n < 0 || n > 1114111 {
+                    bail!("char() expects a valid Unicode code point (0-1114111)");
+                }
+                match char::from_u32(n as u32) {
+                    Some(c) => Ok(Value::Char(c)),
+                    None => bail!("Invalid Unicode code point: {}", n),
+                }
+            }
+            Value::String(s) => {
+                if s.len() == 1 {
+                    Ok(Value::Char(s.chars().next().unwrap()))
+                } else {
+                    bail!("char() from string expects exactly 1 character, got {}", s.len());
+                }
+            }
+            _ => bail!("char() expects an integer or single-character string"),
+        }
+    }
+    
+    /// Evaluate hex() conversion - int to hex string (complexity: 5)
+    fn evaluate_hex_conversion(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("hex() expects exactly 1 argument");
+        }
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Int(n) => {
+                if n < 0 {
+                    Ok(Value::String(format!("-0x{:x}", -n)))
+                } else {
+                    Ok(Value::String(format!("0x{:x}", n)))
+                }
+            }
+            _ => bail!("hex() expects an integer"),
+        }
+    }
+    
+    /// Evaluate bin() conversion - int to binary string (complexity: 5)
+    fn evaluate_bin_conversion(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("bin() expects exactly 1 argument");
+        }
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Int(n) => {
+                if n < 0 {
+                    Ok(Value::String(format!("-0b{:b}", -n)))
+                } else {
+                    Ok(Value::String(format!("0b{:b}", n)))
+                }
+            }
+            _ => bail!("bin() expects an integer"),
+        }
+    }
+    
+    /// Evaluate oct() conversion - int to octal string (complexity: 5)
+    fn evaluate_oct_conversion(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("oct() expects exactly 1 argument");
+        }
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Int(n) => {
+                if n < 0 {
+                    Ok(Value::String(format!("-0o{:o}", -n)))
+                } else {
+                    Ok(Value::String(format!("0o{:o}", n)))
+                }
+            }
+            _ => bail!("oct() expects an integer"),
+        }
+    }
+    
+    /// Evaluate list() conversion - convert tuple/iterable to list (complexity: 5)
+    fn evaluate_list_conversion(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("list() expects exactly 1 argument");
+        }
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::List(items) => Ok(Value::List(items)),
+            Value::Tuple(items) => Ok(Value::List(items)),
+            Value::String(s) => {
+                let chars: Vec<Value> = s.chars()
+                    .map(|c| Value::String(c.to_string()))
+                    .collect();
+                Ok(Value::List(chars))
+            }
+            _ => bail!("list() expects a list, tuple, or string"),
+        }
+    }
+    
+    /// Evaluate tuple() conversion - convert list/iterable to tuple (complexity: 5)
+    fn evaluate_tuple_conversion(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if args.len() != 1 {
+            bail!("tuple() expects exactly 1 argument");
+        }
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Tuple(items) => Ok(Value::Tuple(items)),
+            Value::List(items) => Ok(Value::Tuple(items)),
+            Value::String(s) => {
+                let chars: Vec<Value> = s.chars()
+                    .map(|c| Value::String(c.to_string()))
+                    .collect();
+                Ok(Value::Tuple(chars))
+            }
+            _ => bail!("tuple() expects a list, tuple, or string"),
+        }
+    }
+    
+    /// Evaluate type cast expression (complexity: 8)
+    fn evaluate_type_cast(
+        &mut self,
+        expr: &Expr,
+        target_type: &str,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let value = self.evaluate_expr(expr, deadline, depth + 1)?;
+        
+        match target_type {
+            "int" => match value {
+                Value::Int(n) => Ok(Value::Int(n)),
+                Value::Float(f) => Ok(Value::Int(f as i64)),
+                Value::Bool(b) => Ok(Value::Int(if b { 1 } else { 0 })),
+                Value::String(s) => s.parse::<i64>()
+                    .map(Value::Int)
+                    .map_err(|_| anyhow::anyhow!("Cannot cast '{}' to int", s)),
+                _ => bail!("Cannot cast {:?} to int", value),
+            },
+            "float" => match value {
+                Value::Float(f) => Ok(Value::Float(f)),
+                Value::Int(n) => Ok(Value::Float(n as f64)),
+                Value::Bool(b) => Ok(Value::Float(if b { 1.0 } else { 0.0 })),
+                Value::String(s) => s.parse::<f64>()
+                    .map(Value::Float)
+                    .map_err(|_| anyhow::anyhow!("Cannot cast '{}' to float", s)),
+                _ => bail!("Cannot cast {:?} to float", value),
+            },
+            "string" | "str" => match value {
+                Value::Char(c) => Ok(Value::String(c.to_string())),
+                _ => Ok(Value::String(value.to_string())),
+            },
+            "bool" => match value {
+                Value::Bool(b) => Ok(Value::Bool(b)),
+                Value::Int(n) => Ok(Value::Bool(n != 0)),
+                Value::Float(f) => Ok(Value::Bool(f != 0.0)),
+                Value::String(s) => Ok(Value::Bool(!s.is_empty() && s != "false")),
+                _ => bail!("Cannot cast {:?} to bool", value),
+            },
+            _ => bail!("Unknown type for casting: {}", target_type),
+        }
+    }
+    
     /// Evaluate `random()` function - returns float between 0.0 and 1.0
     fn evaluate_random(
         &mut self,
