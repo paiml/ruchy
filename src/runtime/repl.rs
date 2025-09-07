@@ -5036,6 +5036,36 @@ impl Repl {
                 BinaryOp::NotEqual => Ok(Value::Bool(a != b)),
                 _ => bail!("Invalid boolean comparison: {:?}", op),
             },
+            // Float comparisons
+            (Value::Float(a), Value::Float(b)) => match op {
+                BinaryOp::Less => Ok(Value::Bool(a < b)),
+                BinaryOp::LessEqual => Ok(Value::Bool(a <= b)),
+                BinaryOp::Greater => Ok(Value::Bool(a > b)),
+                BinaryOp::GreaterEqual => Ok(Value::Bool(a >= b)),
+                BinaryOp::Equal => Ok(Value::Bool((a - b).abs() < f64::EPSILON)),
+                BinaryOp::NotEqual => Ok(Value::Bool((a - b).abs() >= f64::EPSILON)),
+                _ => bail!("Invalid float comparison: {:?}", op),
+            },
+            // Mixed Int/Float comparisons - coerce to Float
+            (Value::Int(a), Value::Float(b)) => match op {
+                BinaryOp::Less => Ok(Value::Bool((*a as f64) < *b)),
+                BinaryOp::LessEqual => Ok(Value::Bool((*a as f64) <= *b)),
+                BinaryOp::Greater => Ok(Value::Bool((*a as f64) > *b)),
+                BinaryOp::GreaterEqual => Ok(Value::Bool((*a as f64) >= *b)),
+                BinaryOp::Equal => Ok(Value::Bool(((*a as f64) - *b).abs() < f64::EPSILON)),
+                BinaryOp::NotEqual => Ok(Value::Bool(((*a as f64) - *b).abs() >= f64::EPSILON)),
+                _ => bail!("Invalid mixed int/float comparison: {:?}", op),
+            },
+            // Mixed Float/Int comparisons - coerce to Float  
+            (Value::Float(a), Value::Int(b)) => match op {
+                BinaryOp::Less => Ok(Value::Bool(*a < (*b as f64))),
+                BinaryOp::LessEqual => Ok(Value::Bool(*a <= (*b as f64))),
+                BinaryOp::Greater => Ok(Value::Bool(*a > (*b as f64))),
+                BinaryOp::GreaterEqual => Ok(Value::Bool(*a >= (*b as f64))),
+                BinaryOp::Equal => Ok(Value::Bool((*a - (*b as f64)).abs() < f64::EPSILON)),
+                BinaryOp::NotEqual => Ok(Value::Bool((*a - (*b as f64)).abs() >= f64::EPSILON)),
+                _ => bail!("Invalid mixed float/int comparison: {:?}", op),
+            },
             _ => bail!("Type mismatch in comparison: {:?} vs {:?}", lhs, rhs),
         }
     }
