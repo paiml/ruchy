@@ -759,7 +759,7 @@ impl Repl {
     ) -> Result<Value> {
         self.validate_arg_count(func_name, args, 1)?;
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::Float(f) => Ok(Value::Float(operation(f))),
             Value::Int(n) => Ok(Value::Float(operation(n as f64))),
@@ -779,7 +779,7 @@ impl Repl {
     ) -> Result<Value> {
         self.validate_arg_count(func_name, args, 1)?;
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::Float(f) => {
                 validator(f)?;
@@ -1692,12 +1692,7 @@ impl Repl {
     #[allow(clippy::cognitive_complexity)]
     fn evaluate_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         // Check resource bounds
-        if Instant::now() > deadline {
-            bail!("Evaluation timeout exceeded");
-        }
-        if depth > self.config.max_depth {
-            bail!("Maximum recursion depth {} exceeded. \n  Hint: Check for infinite recursion or increase max_depth if needed", self.config.max_depth);
-        }
+        self.check_resource_limits(deadline, depth)?;
 
         // COMPLEXITY REDUCTION: Dispatcher pattern by expression category
         match &expr.kind {
@@ -1827,7 +1822,7 @@ impl Repl {
                             self.validate_arg_count("Array.new", args, 2)?;
                             // Evaluate arguments
                             let size_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                            let default_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                            let default_val = self.evaluate_arg(args, 1, deadline, depth)?;
                             
                             // Return a stub Array representation
                             return Ok(Value::String(format!("Array(size: {size_val}, default: {default_val})")));
@@ -2078,17 +2073,15 @@ impl Repl {
                 bail!("map lambda must take exactly 1 parameter");
             }
 
-            let saved_bindings = self.bindings.clone();
-            let mut results = Vec::new();
-
-            for item in items {
-                self.bindings.insert(params[0].name(), item);
-                let result = self.evaluate_expr(body, deadline, depth + 1)?;
-                results.push(result);
-            }
-
-            self.bindings = saved_bindings;
-            Ok(Value::List(results))
+            self.with_saved_bindings(|repl| {
+                let mut results = Vec::new();
+                for item in items {
+                    repl.bindings.insert(params[0].name(), item);
+                    let result = repl.evaluate_expr(body, deadline, depth + 1)?;
+                    results.push(result);
+                }
+                Ok(Value::List(results))
+            })
         } else {
             bail!("map currently only supports lambda expressions");
         }
@@ -2109,20 +2102,18 @@ impl Repl {
                 bail!("filter lambda must take exactly 1 parameter");
             }
 
-            let saved_bindings = self.bindings.clone();
-            let mut results = Vec::new();
+            self.with_saved_bindings(|repl| {
+                let mut results = Vec::new();
+                for item in items {
+                    repl.bindings.insert(params[0].name(), item.clone());
+                    let predicate_result = repl.evaluate_expr(body, deadline, depth + 1)?;
 
-            for item in items {
-                self.bindings.insert(params[0].name(), item.clone());
-                let predicate_result = self.evaluate_expr(body, deadline, depth + 1)?;
-
-                if let Value::Bool(true) = predicate_result {
-                    results.push(item);
+                    if let Value::Bool(true) = predicate_result {
+                        results.push(item);
+                    }
                 }
-            }
-
-            self.bindings = saved_bindings;
-            Ok(Value::List(results))
+                Ok(Value::List(results))
+            })
         } else {
             bail!("filter currently only supports lambda expressions");
         }
@@ -2141,7 +2132,7 @@ impl Repl {
         }
 
         // Args are now: [lambda, initial_value] to match JS/Ruby style
-        let mut accumulator = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let mut accumulator = self.evaluate_arg(args, 1, deadline, depth)?;
 
         // Debug: Check what type of expression args[0] is
         match &args[0].kind {
@@ -2150,16 +2141,14 @@ impl Repl {
                     bail!("reduce lambda must take exactly 2 parameters");
                 }
 
-                let saved_bindings = self.bindings.clone();
-
-                for item in items {
-                    self.bindings.insert(params[0].name(), accumulator);
-                    self.bindings.insert(params[1].name(), item);
-                    accumulator = self.evaluate_expr(body, deadline, depth + 1)?;
-                }
-
-                self.bindings = saved_bindings;
-                Ok(accumulator)
+                self.with_saved_bindings(|repl| {
+                    for item in items {
+                        repl.bindings.insert(params[0].name(), accumulator);
+                        repl.bindings.insert(params[1].name(), item);
+                        accumulator = repl.evaluate_expr(body, deadline, depth + 1)?;
+                    }
+                    Ok(accumulator)
+                })
             }
             other => {
                 // Debug: Check the actual expression kind
@@ -2257,7 +2246,7 @@ impl Repl {
         if args.len() != 1 {
             bail!("push requires exactly 1 argument");
         }
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         items.push(value);
         Ok(Value::List(items))
     }
@@ -2285,7 +2274,7 @@ impl Repl {
         if args.len() != 1 {
             bail!("append requires exactly 1 argument");
         }
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         if let Value::List(other_items) = value {
             items.extend(other_items);
             Ok(Value::List(items))
@@ -2306,7 +2295,7 @@ impl Repl {
             bail!("insert requires exactly 2 arguments (index, value)");
         }
         let index = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        let value = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 1, deadline, depth)?;
         if let Value::Int(idx) = index {
             if idx < 0 || idx as usize > items.len() {
                 bail!("Insert index out of bounds");
@@ -2353,7 +2342,7 @@ impl Repl {
             bail!("slice requires exactly 2 arguments (start, end)");
         }
         let start_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        let end_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let end_val = self.evaluate_arg(args, 1, deadline, depth)?;
         
         if let (Value::Int(start), Value::Int(end)) = (start_val, end_val) {
             let start = start as usize;
@@ -3049,7 +3038,7 @@ impl Repl {
                     bail!("insert requires exactly 2 arguments (key, value)");
                 }
                 let key = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                let value = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                let value = self.evaluate_arg(args, 1, deadline, depth)?;
                 map.insert(key, value);
                 Ok(Value::HashMap(map))
             }
@@ -5969,7 +5958,7 @@ impl Repl {
             bail!("type() expects 1 argument, got {}", args.len());
         }
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         let type_name = self.get_value_type_name(&value);
         Ok(Value::String(type_name.to_string()))
     }
@@ -5980,7 +5969,7 @@ impl Repl {
             bail!("summary() expects 1 argument, got {}", args.len());
         }
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         let summary = match &value {
             Value::List(items) => format!("List with {} items", items.len()),
             Value::Object(fields) => format!("Object with {} fields", fields.len()),
@@ -5997,7 +5986,7 @@ impl Repl {
             bail!("dir() expects 1 argument, got {}", args.len());
         }
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         let members = match value {
             Value::Object(fields) => {
                 fields.keys().cloned().collect::<Vec<_>>()
@@ -7635,7 +7624,7 @@ impl Repl {
         if !is_true {
             // Get optional message
             let message = if args.len() > 1 {
-                let msg_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                let msg_val = self.evaluate_arg(args, 1, deadline, depth)?;
                 match msg_val {
                     Value::String(s) => s,
                     other => other.to_string(),
@@ -7658,7 +7647,7 @@ impl Repl {
         
         // Evaluate both values
         let left = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        let right = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let right = self.evaluate_arg(args, 1, deadline, depth)?;
         
         // Compare values
         let are_equal = self.values_equal(&left, &right);
@@ -7689,7 +7678,7 @@ impl Repl {
         
         // Evaluate both values
         let left = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        let right = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let right = self.evaluate_arg(args, 1, deadline, depth)?;
         
         // Compare values
         let are_equal = self.values_equal(&left, &right);
@@ -7770,7 +7759,7 @@ impl Repl {
             bail!("write_file expects a string filename")
         };
 
-        let content_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let content_val = self.evaluate_arg(args, 1, deadline, depth)?;
         let content = if let Value::String(s) = content_val {
             s
         } else {
@@ -7802,7 +7791,7 @@ impl Repl {
             bail!("append_file expects a string filename")
         };
 
-        let content_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let content_val = self.evaluate_arg(args, 1, deadline, depth)?;
         let content = if let Value::String(s) = content_val {
             s
         } else {
@@ -7922,7 +7911,7 @@ impl Repl {
             bail!("set_env expects a string variable name")
         };
 
-        let value_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+        let value_val = self.evaluate_arg(args, 1, deadline, depth)?;
         let value = if let Value::String(s) = value_val {
             s
         } else {
@@ -7960,7 +7949,7 @@ impl Repl {
             bail!("Some expects exactly 1 argument");
         }
 
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         Ok(Value::EnumVariant {
             enum_name: "Option".to_string(),
             variant_name: "Some".to_string(),
@@ -7993,7 +7982,7 @@ impl Repl {
             bail!("Ok expects exactly 1 argument");
         }
 
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         Ok(Value::EnumVariant {
             enum_name: "Result".to_string(),
             variant_name: "Ok".to_string(),
@@ -8012,7 +8001,7 @@ impl Repl {
             bail!("Err expects exactly 1 argument");
         }
 
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         Ok(Value::EnumVariant {
             enum_name: "Result".to_string(),
             variant_name: "Err".to_string(),
@@ -8268,7 +8257,7 @@ impl Repl {
             bail!("str() expects exactly 1 argument");
         }
 
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::Char(c) => Ok(Value::String(c.to_string())),
             _ => Ok(Value::String(value.to_string())),
@@ -8286,12 +8275,12 @@ impl Repl {
             bail!("int() expects 1 or 2 arguments");
         }
 
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         
         // Handle two-argument form for base conversion
         if args.len() == 2 {
             if let Value::String(s) = value {
-                let base_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                let base_val = self.evaluate_arg(args, 1, deadline, depth)?;
                 if let Value::Int(base) = base_val {
                     if base < 2 || base > 36 {
                         bail!("int() base must be between 2 and 36");
@@ -8349,7 +8338,7 @@ impl Repl {
             bail!("float() expects exactly 1 argument");
         }
 
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::Float(f) => Ok(Value::Float(f)),
             Value::Int(n) => Ok(Value::Float(n as f64)),
@@ -8375,7 +8364,7 @@ impl Repl {
             bail!("bool() expects exactly 1 argument");
         }
 
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::Bool(b) => Ok(Value::Bool(b)),
             Value::Int(n) => Ok(Value::Bool(n != 0)),
@@ -8461,7 +8450,7 @@ impl Repl {
             bail!("char() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::Int(n) => {
                 if n < 0 || n > 1114111 {
@@ -8494,7 +8483,7 @@ impl Repl {
             bail!("hex() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::Int(n) => {
                 if n < 0 {
@@ -8518,7 +8507,7 @@ impl Repl {
             bail!("bin() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::Int(n) => {
                 if n < 0 {
@@ -8542,7 +8531,7 @@ impl Repl {
             bail!("oct() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::Int(n) => {
                 if n < 0 {
@@ -8566,7 +8555,7 @@ impl Repl {
             bail!("list() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::List(items) => Ok(Value::List(items)),
             Value::Tuple(items) => Ok(Value::List(items)),
@@ -8591,7 +8580,7 @@ impl Repl {
             bail!("tuple() expects exactly 1 argument");
         }
         
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
             Value::Tuple(items) => Ok(Value::Tuple(items)),
             Value::List(items) => Ok(Value::Tuple(items)),
@@ -8823,6 +8812,62 @@ impl Repl {
         bail!("{} expects {}, got {:?}", func_name, expected, got)
     }
 
+    /// Check resource limits (timeout and recursion depth)
+    fn check_resource_limits(&self, deadline: Instant, depth: usize) -> Result<()> {
+        if Instant::now() > deadline {
+            bail!("Evaluation timeout exceeded");
+        }
+        if depth > self.config.max_depth {
+            bail!("Maximum recursion depth {} exceeded. \n  Hint: Check for infinite recursion or increase max_depth if needed", self.config.max_depth);
+        }
+        Ok(())
+    }
+
+    /// Evaluate a single argument expression
+    fn evaluate_arg(&mut self, args: &[Expr], index: usize, deadline: Instant, depth: usize) -> Result<Value> {
+        args.get(index)
+            .ok_or_else(|| anyhow::anyhow!("Missing argument at index {}", index))
+            .and_then(|arg| self.evaluate_expr(arg, deadline, depth + 1))
+    }
+
+    /// Create a string value from a string-like type
+    fn string_value(s: impl Into<String>) -> Value {
+        Value::String(s.into())
+    }
+
+    /// Create an integer value
+    fn int_value(n: i64) -> Value {
+        Value::Int(n)
+    }
+
+    /// Create a float value
+    fn float_value(f: f64) -> Value {
+        Value::Float(f)
+    }
+
+    /// Execute a closure with saved bindings that will be restored afterwards
+    fn with_saved_bindings<F, R>(&mut self, f: F) -> R 
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        let saved_bindings = self.bindings.clone();
+        let result = f(self);
+        self.bindings = saved_bindings;
+        result
+    }
+
+    /// Add a binding temporarily and execute a closure
+    fn with_binding<F, R>(&mut self, name: String, value: Value, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        let saved_bindings = self.bindings.clone();
+        self.bindings.insert(name, value);
+        let result = f(self);
+        self.bindings = saved_bindings;
+        result
+    }
+
     /// Apply unary math operation to a numeric value.
     /// 
     /// # Example Usage
@@ -8930,14 +8975,14 @@ impl Repl {
             // Unary math functions
             "sqrt" | "abs" | "floor" | "ceil" | "round" => {
                 self.validate_arg_count(func_name, args, 1)?;
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let value = self.evaluate_arg(args, 0, deadline, depth)?;
                 Ok(Some(self.apply_unary_math_op(&value, func_name)?))
             }
             // Binary math functions
             "pow" | "min" | "max" => {
                 self.validate_arg_count(func_name, args, 2)?;
                 let a = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                let b = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                let b = self.evaluate_arg(args, 1, deadline, depth)?;
                 Ok(Some(self.apply_binary_math_op(&a, &b, func_name)?))
             }
             _ => Ok(None), // Not a math function
@@ -8983,7 +9028,7 @@ impl Repl {
                 if args.len() != 1 {
                     bail!("Some takes exactly 1 argument");
                 }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let value = self.evaluate_arg(args, 0, deadline, depth)?;
                 Ok(Some(Value::EnumVariant {
                     enum_name: "Option".to_string(),
                     variant_name: "Some".to_string(),
@@ -8994,7 +9039,7 @@ impl Repl {
                 if args.len() != 1 {
                     bail!("Ok takes exactly 1 argument");
                 }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let value = self.evaluate_arg(args, 0, deadline, depth)?;
                 Ok(Some(Value::EnumVariant {
                     enum_name: "Result".to_string(),
                     variant_name: "Ok".to_string(),
@@ -9005,7 +9050,7 @@ impl Repl {
                 if args.len() != 1 {
                     bail!("Err takes exactly 1 argument");
                 }
-                let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let value = self.evaluate_arg(args, 0, deadline, depth)?;
                 Ok(Some(Value::EnumVariant {
                     enum_name: "Result".to_string(),
                     variant_name: "Err".to_string(),
