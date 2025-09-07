@@ -1829,6 +1829,9 @@ impl Repl {
                     Value::EnumVariant { .. } => {
                         self.evaluate_enum_methods(receiver_val, method, args, deadline, depth)
                     }
+                    Value::DataFrame { columns } => {
+                        self.evaluate_dataframe_methods(columns, method, args, deadline, depth)
+                    }
                     _ => Err(Self::method_not_supported(method, "this type"))?,
                 }
             }
@@ -4042,6 +4045,102 @@ impl Repl {
         match value {
             Value::String(s) => s,
             other => format!("{other}"),
+        }
+    }
+
+    /// Evaluate DataFrame methods (builder pattern and queries)
+    fn evaluate_dataframe_methods(
+        &mut self,
+        mut columns: Vec<DataFrameColumn>,
+        method: &str,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        match method {
+            "column" => {
+                // Builder pattern: add a column
+                if args.len() != 2 {
+                    bail!("DataFrame.column() requires exactly 2 arguments (name, values)");
+                }
+                
+                // Evaluate column name
+                let name_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let column_name = match name_val {
+                    Value::String(s) => s,
+                    _ => bail!("Column name must be a string"),
+                };
+                
+                // Evaluate column values (should be a list)
+                let values_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                let column_values = match values_val {
+                    Value::List(items) => items,
+                    _ => bail!("Column values must be a list"),
+                };
+                
+                // Add the column to the DataFrame
+                columns.push(DataFrameColumn {
+                    name: column_name,
+                    values: column_values,
+                });
+                
+                Ok(Value::DataFrame { columns })
+            }
+            "build" => {
+                // Finalize the DataFrame builder
+                if !args.is_empty() {
+                    bail!("DataFrame.build() takes no arguments");
+                }
+                Ok(Value::DataFrame { columns })
+            }
+            "rows" => {
+                // Return number of rows
+                if !args.is_empty() {
+                    bail!("DataFrame.rows() takes no arguments");
+                }
+                let num_rows = columns.first().map_or(0, |col| col.values.len());
+                Ok(Value::Int(num_rows as i64))
+            }
+            "columns" => {
+                // Return number of columns
+                if !args.is_empty() {
+                    bail!("DataFrame.columns() takes no arguments");
+                }
+                Ok(Value::Int(columns.len() as i64))
+            }
+            "get" => {
+                // Get a value at (column_name, row_index)
+                if args.len() != 2 {
+                    bail!("DataFrame.get() requires exactly 2 arguments (column_name, row_index)");
+                }
+                
+                // Evaluate column name
+                let name_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                let column_name = match name_val {
+                    Value::String(s) => s,
+                    _ => bail!("Column name must be a string"),
+                };
+                
+                // Evaluate row index
+                let index_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                let row_index = match index_val {
+                    Value::Int(i) => i as usize,
+                    _ => bail!("Row index must be an integer"),
+                };
+                
+                // Find the column
+                for col in &columns {
+                    if col.name == column_name {
+                        if row_index < col.values.len() {
+                            return Ok(col.values[row_index].clone());
+                        } else {
+                            bail!("Row index {} out of bounds for column '{}'", row_index, column_name);
+                        }
+                    }
+                }
+                bail!("Column '{}' not found in DataFrame", column_name);
+            }
+            _ => bail!("Unknown DataFrame method: {}", method),
         }
     }
 
@@ -7159,6 +7258,14 @@ impl Repl {
                     Some(Err(anyhow::anyhow!("HashSet::new() expects no arguments, got {}", args.len())))
                 }
             }
+            ("DataFrame", "new") => {
+                // Start with simplest implementation - empty DataFrame
+                if args.is_empty() {
+                    Some(Ok(Value::DataFrame { columns: Vec::new() }))
+                } else {
+                    Some(Err(anyhow::anyhow!("DataFrame::new() expects no arguments, got {}", args.len())))
+                }
+            }
             _ => None,
         }
     }
@@ -7244,6 +7351,14 @@ impl Repl {
                     Some(Err(anyhow::anyhow!("HashSet::new() expects no arguments, got {}", args.len())))
                 }
             }
+            ("DataFrame", "new") => {
+                // Start with simplest implementation - empty DataFrame
+                if args.is_empty() {
+                    Some(Ok(Value::DataFrame { columns: Vec::new() }))
+                } else {
+                    Some(Err(anyhow::anyhow!("DataFrame::new() expects no arguments, got {}", args.len())))
+                }
+            }
             _ => None,
         }
     }
@@ -7258,6 +7373,30 @@ impl Repl {
     ) -> Result<Value> {
         if let ExprKind::Identifier(func_name) = &func.kind {
             let func_str = func_name.as_str();
+            
+            // Check if this is a static method call (contains ::)
+            if func_str.contains("::") {
+                let parts: Vec<&str> = func_str.splitn(2, "::").collect();
+                if parts.len() == 2 {
+                    let module = parts[0];
+                    let name = parts[1];
+                    
+                    // Try static collection methods dispatcher
+                    if let Some(result) = self.dispatch_static_collection_methods(module, name, args) {
+                        return result;
+                    }
+                    
+                    // Try performance module dispatcher
+                    if let Some(result) = self.dispatch_performance_methods(module, name, args, deadline, depth) {
+                        return result;
+                    }
+                    
+                    // Try static methods dispatcher
+                    if let Some(result) = self.dispatch_static_methods(module, name, args, deadline, depth) {
+                        return result;
+                    }
+                }
+            }
             
             // Try dispatchers in order of likelihood
             if let Some(result) = self.dispatch_io_functions(func_str, args, deadline, depth) {
