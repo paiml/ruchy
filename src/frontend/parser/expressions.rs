@@ -603,6 +603,11 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
             state.tokens.advance();
             Ok(Pattern::Identifier(name))
         }
+        Some((Token::DataFrame, _)) => {
+            // Allow 'df' as a variable name (common in data science)
+            state.tokens.advance();
+            Ok(Pattern::Identifier("df".to_string()))
+        }
         Some((Token::LeftParen, _)) => {
             // Parse tuple destructuring: (x, y) = (1, 2)
             parse_tuple_pattern(state)
@@ -709,6 +714,11 @@ fn parse_var_statement(state: &mut ParserState) -> Result<Expr> {
             let name = name.clone();
             state.tokens.advance();
             Pattern::Identifier(name)
+        }
+        Some((Token::DataFrame, _)) => {
+            // Allow 'df' as a variable name (common in data science)
+            state.tokens.advance();
+            Pattern::Identifier("df".to_string())
         }
         Some((Token::LeftParen, _)) => {
             // Parse tuple destructuring: (x, y) = (1, 2)
