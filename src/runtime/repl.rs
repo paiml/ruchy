@@ -1824,9 +1824,7 @@ impl Repl {
                     Value::String(s) => {
                         // Special case for Array constructor
                         if s == "Array constructor" && method == "new" {
-                            if args.len() != 2 {
-                                bail!("Array.new() expects 2 arguments (size, default_value), got {}", args.len());
-                            }
+                            self.validate_arg_count("Array.new", args, 2)?;
                             // Evaluate arguments
                             let size_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                             let default_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
@@ -1836,8 +1834,7 @@ impl Repl {
                         }
                         Self::evaluate_string_methods(&s, method, args, deadline, depth)
                     }
-                    Value::Int(n) => Self::evaluate_int_methods(n, method),
-                    Value::Float(f) => Self::evaluate_float_methods(f, method),
+                    Value::Int(_) | Value::Float(_) => self.evaluate_numeric_methods(&receiver_val, method),
                     Value::Char(c) => Self::evaluate_char_methods(c, method),
                     Value::Object(obj) => {
                         Self::evaluate_object_methods(obj, method, args, deadline, depth)
@@ -2062,7 +2059,7 @@ impl Repl {
             "max" => Self::evaluate_list_max(&items),
             "take" => self.evaluate_list_take(items, args, deadline, depth),
             "drop" => self.evaluate_list_drop(items, args, deadline, depth),
-            _ => bail!("Unknown list method: {}", method),
+            _ => self.unknown_method_error("list", method),
         }
     }
 
@@ -2074,9 +2071,7 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("map expects 1 argument");
-        }
+        self.validate_arg_count("map", args, 1)?;
 
         if let ExprKind::Lambda { params, body } = &args[0].kind {
             if params.len() != 1 {
@@ -2107,9 +2102,7 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("filter expects 1 argument");
-        }
+        self.validate_arg_count("filter", args, 1)?;
 
         if let ExprKind::Lambda { params, body } = &args[0].kind {
             if params.len() != 1 {
@@ -2958,45 +2951,47 @@ impl Repl {
         }
     }
     
-    /// Handle method calls on integer values (complexity < 10)
-    fn evaluate_int_methods(n: i64, method: &str) -> Result<Value> {
-        match method {
-            "abs" => Ok(Value::Int(n.abs())),
-            #[allow(clippy::cast_precision_loss)]
-            "sqrt" => Ok(Value::Float((n as f64).sqrt())),
-            #[allow(clippy::cast_precision_loss)]
-            "sin" => Ok(Value::Float((n as f64).sin())),
-            #[allow(clippy::cast_precision_loss)]
-            "cos" => Ok(Value::Float((n as f64).cos())),
-            #[allow(clippy::cast_precision_loss)]
-            "tan" => Ok(Value::Float((n as f64).tan())),
-            #[allow(clippy::cast_precision_loss)]
-            "log" => Ok(Value::Float((n as f64).ln())),
-            #[allow(clippy::cast_precision_loss)]
-            "log10" => Ok(Value::Float((n as f64).log10())),
-            #[allow(clippy::cast_precision_loss)]
-            "exp" => Ok(Value::Float((n as f64).exp())),
-            "to_string" => Ok(Value::String(n.to_string())),
-            _ => bail!("Unknown integer method: {}", method),
+    /// Handle method calls on numeric values (complexity < 10)
+    fn evaluate_numeric_methods(&self, value: &Value, method: &str) -> Result<Value> {
+        match (value, method) {
+            // Integer-specific methods
+            (Value::Int(n), "abs") => Ok(Value::Int(n.abs())),
+            (Value::Int(n), "to_string") => Ok(Value::String(n.to_string())),
+            
+            // Float-specific methods
+            (Value::Float(f), "abs") => Ok(Value::Float(f.abs())),
+            (Value::Float(f), "floor") => Ok(Value::Float(f.floor())),
+            (Value::Float(f), "ceil") => Ok(Value::Float(f.ceil())),
+            (Value::Float(f), "round") => Ok(Value::Float(f.round())),
+            
+            // Math operations that work on both (convert int to float)
+            (Value::Int(n), op @ ("sqrt" | "sin" | "cos" | "tan" | "log" | "log10" | "exp")) => {
+                #[allow(clippy::cast_precision_loss)]
+                let f = *n as f64;
+                self.evaluate_float_math(f, op)
+            }
+            (Value::Float(f), op @ ("sqrt" | "sin" | "cos" | "tan" | "log" | "log10" | "exp")) => {
+                self.evaluate_float_math(*f, op)
+            }
+            
+            (Value::Int(_), _) => self.unknown_method_error("integer", method),
+            (Value::Float(_), _) => self.unknown_method_error("float", method),
+            _ => bail!("Method {} not supported on {:?}", method, value),
         }
     }
-
-    /// Handle method calls on float values (complexity < 10)
-    fn evaluate_float_methods(f: f64, method: &str) -> Result<Value> {
-        match method {
-            "abs" => Ok(Value::Float(f.abs())),
-            "sqrt" => Ok(Value::Float(f.sqrt())),
-            "sin" => Ok(Value::Float(f.sin())),
-            "cos" => Ok(Value::Float(f.cos())),
-            "tan" => Ok(Value::Float(f.tan())),
-            "log" => Ok(Value::Float(f.ln())),
-            "log10" => Ok(Value::Float(f.log10())),
-            "exp" => Ok(Value::Float(f.exp())),
-            "floor" => Ok(Value::Float(f.floor())),
-            "ceil" => Ok(Value::Float(f.ceil())),
-            "round" => Ok(Value::Float(f.round())),
-            _ => bail!("Unknown float method: {}", method),
-        }
+    
+    /// Helper for float math operations (complexity: 8)
+    fn evaluate_float_math(&self, f: f64, op: &str) -> Result<Value> {
+        Ok(Value::Float(match op {
+            "sqrt" => f.sqrt(),
+            "sin" => f.sin(),
+            "cos" => f.cos(),
+            "tan" => f.tan(),
+            "log" => f.ln(),
+            "log10" => f.log10(),
+            "exp" => f.exp(),
+            _ => bail!("Unknown math operation: {}", op),
+        }))
     }
 
     /// Handle method calls on object values (complexity < 10)
@@ -4307,11 +4302,8 @@ impl Repl {
             Value::String(s) => {
                 Self::evaluate_string_methods(&s, method, args, deadline, depth).unwrap_or(Value::Nil)
             }
-            Value::Int(n) => {
-                Self::evaluate_int_methods(n, method).unwrap_or(Value::Nil)
-            }
-            Value::Float(f) => {
-                Self::evaluate_float_methods(f, method).unwrap_or(Value::Nil)
+            Value::Int(_) | Value::Float(_) => {
+                self.evaluate_numeric_methods(&receiver_val, method).unwrap_or(Value::Nil)
             }
             Value::Object(obj) => {
                 Self::evaluate_object_methods(obj, method, args, deadline, depth).unwrap_or(Value::Nil)
@@ -8791,6 +8783,46 @@ impl Repl {
         Ok(())
     }
 
+    /// Validate argument count is within a range
+    fn validate_arg_range(&self, func_name: &str, args: &[Expr], min: usize, max: usize) -> Result<()> {
+        let count = args.len();
+        if count < min || count > max {
+            if min == max {
+                return self.validate_arg_count(func_name, args, min);
+            }
+            bail!("{} takes between {} and {} arguments, got {}", func_name, min, max, count);
+        }
+        Ok(())
+    }
+
+    /// Validate minimum argument count
+    fn validate_min_args(&self, func_name: &str, args: &[Expr], min: usize) -> Result<()> {
+        if args.len() < min {
+            bail!("{} requires at least {} argument{}, got {}", 
+                  func_name, min, if min == 1 { "" } else { "s" }, args.len());
+        }
+        Ok(())
+    }
+
+    /// Validate maximum argument count  
+    fn validate_max_args(&self, func_name: &str, args: &[Expr], max: usize) -> Result<()> {
+        if args.len() > max {
+            bail!("{} takes at most {} argument{}, got {}", 
+                  func_name, max, if max == 1 { "" } else { "s" }, args.len());
+        }
+        Ok(())
+    }
+
+    /// Create error for unknown method
+    fn unknown_method_error(&self, type_name: &str, method: &str) -> Result<Value> {
+        bail!("Unknown {} method: {}", type_name, method)
+    }
+
+    /// Create error for type mismatch
+    fn type_error(&self, func_name: &str, expected: &str, got: &Value) -> Result<Value> {
+        bail!("{} expects {}, got {:?}", func_name, expected, got)
+    }
+
     /// Apply unary math operation to a numeric value.
     /// 
     /// # Example Usage
@@ -9152,8 +9184,7 @@ impl Repl {
                     Value::String(s) => {
                         Self::evaluate_string_methods(s, method, args, deadline, depth)
                     }
-                    Value::Int(n) => Self::evaluate_int_methods(*n, method),
-                    Value::Float(f) => Self::evaluate_float_methods(*f, method),
+                    Value::Int(_) | Value::Float(_) => self.evaluate_numeric_methods(current_value, method),
                     Value::Object(obj) => {
                         Self::evaluate_object_methods(obj.clone(), method, args, deadline, depth)
                     }
