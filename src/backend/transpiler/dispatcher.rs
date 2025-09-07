@@ -19,8 +19,31 @@ impl Transpiler {
                 Ok(Self::transpile_qualified_name(module, name))
             }
             ExprKind::StringInterpolation { parts } => self.transpile_string_interpolation(parts),
+            ExprKind::TypeCast { expr, target_type } => self.transpile_type_cast(expr, target_type),
             _ => unreachable!("Non-basic expression in transpile_basic_expr"),
         }
+    }
+
+    fn transpile_type_cast(&self, expr: &Expr, target_type: &str) -> Result<TokenStream> {
+        let expr_tokens = self.transpile_expr(expr)?;
+        
+        // Map Ruchy types to Rust types
+        let rust_type = match target_type {
+            "i32" => quote! { i32 },
+            "i64" => quote! { i64 },
+            "f32" => quote! { f32 },
+            "f64" => quote! { f64 },
+            "usize" => quote! { usize },
+            "u8" => quote! { u8 },
+            "u16" => quote! { u16 },
+            "u32" => quote! { u32 },
+            "u64" => quote! { u64 },
+            "i8" => quote! { i8 },
+            "i16" => quote! { i16 },
+            _ => bail!("Unsupported cast target type: {}", target_type),
+        };
+        
+        Ok(quote! { (#expr_tokens as #rust_type) })
     }
 
     fn transpile_identifier(name: &str) -> TokenStream {

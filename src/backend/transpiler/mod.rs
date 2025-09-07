@@ -898,14 +898,14 @@ impl Transpiler {
             Actor, ActorQuery, ActorSend, Ask, Assign, AsyncBlock, Await, Binary, Call, Command, CompoundAssign, DataFrame, 
             DataFrameOperation, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess, Lambda, 
             List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None, ObjectLiteral, Ok, QualifiedName, 
-            Range, Send, Slice, Some, StringInterpolation, Struct, StructLiteral, Throw, Try,
+            Range, Send, Slice, Some, StringInterpolation, Struct, StructLiteral, Throw, Try, TypeCast,
             Tuple, Unary, While, WhileLet,
         };
 
         // Dispatch to specialized handlers to keep complexity below 10
         match &expr.kind {
             // Basic expressions
-            Literal(_) | Identifier(_) | QualifiedName { .. } | StringInterpolation { .. } => {
+            Literal(_) | Identifier(_) | QualifiedName { .. } | StringInterpolation { .. } | TypeCast { .. } => {
                 self.transpile_basic_expr(expr)
             }
 

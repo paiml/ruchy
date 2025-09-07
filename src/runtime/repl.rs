@@ -8723,7 +8723,7 @@ impl Repl {
         let value = self.evaluate_expr(expr, deadline, depth + 1)?;
         
         match target_type {
-            "int" => match value {
+            "int" | "i32" | "i64" => match value {
                 Value::Int(n) => Ok(Value::Int(n)),
                 Value::Float(f) => Ok(Value::Int(f as i64)),
                 Value::Bool(b) => Ok(Value::Int(if b { 1 } else { 0 })),
@@ -8732,7 +8732,7 @@ impl Repl {
                     .map_err(|_| anyhow::anyhow!("Cannot cast '{}' to int", s)),
                 _ => bail!("Cannot cast {:?} to int", value),
             },
-            "float" => match value {
+            "float" | "f32" | "f64" => match value {
                 Value::Float(f) => Ok(Value::Float(f)),
                 Value::Int(n) => Ok(Value::Float(n as f64)),
                 Value::Bool(b) => Ok(Value::Float(if b { 1.0 } else { 0.0 })),
