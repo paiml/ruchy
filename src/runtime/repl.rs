@@ -880,14 +880,7 @@ impl Repl {
         let deadline = deadline.unwrap_or_else(|| Instant::now() + self.config.timeout);
 
         // Preprocess macro syntax: convert println! -> println, etc.
-        let preprocessed_input = input
-            .replace("println!", "println")
-            .replace("print!", "print")
-            .replace("assert!", "assert")
-            .replace("assert_eq!", "assert_eq")
-            .replace("panic!", "panic")
-            .replace("vec!", "vec")
-            .replace("format!", "format");
+        let preprocessed_input = Self::preprocess_macro_syntax(input);
         
         // Parse the input
         let mut parser = Parser::new(&preprocessed_input);
@@ -1564,14 +1557,7 @@ impl Repl {
         let deadline = Instant::now() + self.config.timeout;
 
         // Preprocess macro syntax: convert println! -> println, etc.
-        let preprocessed_input = input
-            .replace("println!", "println")
-            .replace("print!", "print")
-            .replace("assert!", "assert")
-            .replace("assert_eq!", "assert_eq")
-            .replace("panic!", "panic")
-            .replace("vec!", "vec")
-            .replace("format!", "format");
+        let preprocessed_input = Self::preprocess_macro_syntax(input);
         
         // Parse the input
         let mut parser = Parser::new(&preprocessed_input);
@@ -8998,6 +8984,18 @@ impl Repl {
     /// Create a method not supported error message
     fn method_not_supported(method: &str, type_desc: &str) -> anyhow::Error {
         anyhow::anyhow!("Method {} not supported on {}", method, type_desc)
+    }
+
+    /// Preprocess macro syntax by converting macro calls (!) to function calls
+    fn preprocess_macro_syntax(input: &str) -> String {
+        input
+            .replace("println!", "println")
+            .replace("print!", "print")
+            .replace("assert!", "assert")
+            .replace("assert_eq!", "assert_eq")
+            .replace("panic!", "panic")
+            .replace("vec!", "vec")
+            .replace("format!", "format")
     }
 
     /// Apply unary math operation to a numeric value.
