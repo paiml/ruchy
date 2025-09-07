@@ -761,8 +761,8 @@ impl Repl {
         
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
-            Value::Float(f) => Ok(Value::Float(operation(f))),
-            Value::Int(n) => Ok(Value::Float(operation(n as f64))),
+            Value::Float(f) => Self::ok_float(operation(f)),
+            Value::Int(n) => Self::ok_float(operation(n as f64)),
             _ => bail!("{}() expects a numeric argument", func_name),
         }
     }
@@ -783,12 +783,12 @@ impl Repl {
         match value {
             Value::Float(f) => {
                 validator(f)?;
-                Ok(Value::Float(operation(f)))
+                Self::ok_float(operation(f))
             }
             Value::Int(n) => {
                 let f = n as f64;
                 validator(f)?;
-                Ok(Value::Float(operation(f)))
+                Self::ok_float(operation(f))
             }
             _ => bail!("{}() expects a numeric argument", func_name),
         }
@@ -1825,7 +1825,7 @@ impl Repl {
                             let default_val = self.evaluate_arg(args, 1, deadline, depth)?;
                             
                             // Return a stub Array representation
-                            return Ok(Value::String(format!("Array(size: {size_val}, default: {default_val})")));
+                            return Self::ok_string(format!("Array(size: {size_val}, default: {default_val})"));
                         }
                         Self::evaluate_string_methods(&s, method, args, deadline, depth)
                     }
@@ -2080,7 +2080,7 @@ impl Repl {
                     let result = repl.evaluate_expr(body, deadline, depth + 1)?;
                     results.push(result);
                 }
-                Ok(Value::List(results))
+                Self::ok_list(results)
             })
         } else {
             bail!("map currently only supports lambda expressions");
@@ -2112,7 +2112,7 @@ impl Repl {
                         results.push(item);
                     }
                 }
-                Ok(Value::List(results))
+                Self::ok_list(results)
             })
         } else {
             bail!("filter currently only supports lambda expressions");
@@ -2191,22 +2191,22 @@ impl Repl {
     /// Evaluate `list.tail()` and `list.rest()` operations (complexity: 2)
     fn evaluate_list_tail(items: Vec<Value>) -> Result<Value> {
         if items.is_empty() {
-            Ok(Value::List(Vec::new()))
+            Self::ok_list(Vec::new())
         } else {
-            Ok(Value::List(items[1..].to_vec()))
+            Self::ok_list(items[1..].to_vec())
         }
     }
 
     /// Evaluate `list.reverse()` operation (complexity: 2)
     fn evaluate_list_reverse(mut items: Vec<Value>) -> Result<Value> {
         items.reverse();
-        Ok(Value::List(items))
+        Self::ok_list(items)
     }
 
     /// Evaluate `list.sum()` operation (complexity: 4)
     fn evaluate_list_sum(items: &[Value]) -> Result<Value> {
         if items.is_empty() {
-            return Ok(Value::Int(0));
+            return Self::ok_int(0);
         }
         
         // Check if we have any floats
@@ -2221,7 +2221,7 @@ impl Repl {
                     _ => bail!("sum can only be applied to numbers"),
                 }
             }
-            Ok(Value::Float(sum))
+            Self::ok_float(sum)
         } else {
             let mut sum = 0i64;
             for item in items {
@@ -2231,7 +2231,7 @@ impl Repl {
                     bail!("sum can only be applied to numbers");
                 }
             }
-            Ok(Value::Int(sum))
+            Self::ok_int(sum)
         }
     }
 
@@ -2248,7 +2248,7 @@ impl Repl {
         }
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
         items.push(value);
-        Ok(Value::List(items))
+        Self::ok_list(items)
     }
 
     /// Evaluate `list.pop()` operation (complexity: 3)
@@ -2277,7 +2277,7 @@ impl Repl {
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
         if let Value::List(other_items) = value {
             items.extend(other_items);
-            Ok(Value::List(items))
+            Self::ok_list(items)
         } else {
             bail!("append requires a list argument");
         }
@@ -2301,7 +2301,7 @@ impl Repl {
                 bail!("Insert index out of bounds");
             }
             items.insert(idx as usize, value);
-            Ok(Value::List(items))
+            Self::ok_list(items)
         } else {
             bail!("Insert index must be an integer");
         }
@@ -2349,9 +2349,9 @@ impl Repl {
             let end = end as usize;
             
             if start > items.len() || end > items.len() || start > end {
-                Ok(Value::List(Vec::new())) // Return empty for out of bounds
+                Self::ok_list(Vec::new()) // Return empty for out of bounds
             } else {
-                Ok(Value::List(items[start..end].to_vec()))
+                Self::ok_list(items[start..end].to_vec())
             }
         } else {
             bail!("slice arguments must be integers");
@@ -2373,7 +2373,7 @@ impl Repl {
         
         if let Value::List(other_items) = other_val {
             items.extend(other_items);
-            Ok(Value::List(items))
+            Self::ok_list(items)
         } else {
             bail!("concat argument must be a list");
         }
@@ -2392,7 +2392,7 @@ impl Repl {
                 result.push(item);
             }
         }
-        Ok(Value::List(result))
+        Self::ok_list(result)
     }
 
     /// Evaluate `list.unique()` operation (complexity: 5)
@@ -2411,7 +2411,7 @@ impl Repl {
                 result.push(item);
             }
         }
-        Ok(Value::List(result))
+        Self::ok_list(result)
     }
 
     /// Evaluate `list.join()` operation (complexity: 7)
@@ -2437,7 +2437,7 @@ impl Repl {
             }).collect();
             
             match strings {
-                Ok(string_vec) => Ok(Value::String(string_vec.join(&separator))),
+                Ok(string_vec) => Self::ok_string(string_vec.join(&separator)),
                 Err(e) => Err(e),
             }
         } else {
@@ -2508,12 +2508,12 @@ impl Repl {
                 
                 if let Value::Bool(true) = result {
                     self.bindings = saved_bindings;
-                    return Ok(Value::Bool(true));
+                    return Self::ok_bool(true);
                 }
             }
             
             self.bindings = saved_bindings;
-            Ok(Value::Bool(false))
+            Self::ok_bool(false)
         } else {
             bail!("any currently only supports lambda expressions");
         }
@@ -2545,7 +2545,7 @@ impl Repl {
                 match result {
                     Value::Bool(false) => {
                         self.bindings = saved_bindings;
-                        return Ok(Value::Bool(false));
+                        return Self::ok_bool(false);
                     }
                     Value::Bool(true) => {}
                     _ => {
@@ -2556,7 +2556,7 @@ impl Repl {
             }
             
             self.bindings = saved_bindings;
-            Ok(Value::Bool(true))
+            Self::ok_bool(true)
         } else {
             bail!("all currently only supports lambda expressions");
         }
@@ -2565,7 +2565,7 @@ impl Repl {
     /// Evaluate `list.product()` operation - multiply all elements
     fn evaluate_list_product(items: &[Value]) -> Result<Value> {
         if items.is_empty() {
-            return Ok(Value::Int(1));
+            return Self::ok_int(1);
         }
         
         let mut product = Value::Int(1);
@@ -2646,7 +2646,7 @@ impl Repl {
         if let Value::Int(n) = count_val {
             let n = n.max(0) as usize;
             let taken: Vec<Value> = items.into_iter().take(n).collect();
-            Ok(Value::List(taken))
+            Self::ok_list(taken)
         } else {
             bail!("take count must be an integer");
         }
@@ -2668,7 +2668,7 @@ impl Repl {
         if let Value::Int(n) = count_val {
             let n = n.max(0) as usize;
             let dropped: Vec<Value> = items.into_iter().skip(n).collect();
-            Ok(Value::List(dropped))
+            Self::ok_list(dropped)
         } else {
             bail!("drop count must be an integer");
         }
@@ -2684,37 +2684,37 @@ impl Repl {
                     .map(Value::Int)
                     .map_err(|_| anyhow::anyhow!("String length too large to represent as i64")))
             }
-            "upper" | "to_upper" | "to_uppercase" => Some(Ok(Value::String(s.to_uppercase()))),
-            "lower" | "to_lower" | "to_lowercase" => Some(Ok(Value::String(s.to_lowercase()))),
-            "trim" => Some(Ok(Value::String(s.trim().to_string()))),
+            "upper" | "to_upper" | "to_uppercase" => Some(Self::ok_string(s.to_uppercase())),
+            "lower" | "to_lower" | "to_lowercase" => Some(Self::ok_string(s.to_lowercase())),
+            "trim" => Some(Self::ok_string(s.trim().to_string())),
             "chars" => {
                 let chars: Vec<Value> = s.chars()
                     .map(|c| Value::String(c.to_string()))
                     .collect();
-                Some(Ok(Value::List(chars)))
+                Some(Self::ok_list(chars))
             }
             "reverse" => {
                 let reversed: String = s.chars().rev().collect();
-                Some(Ok(Value::String(reversed)))
+                Some(Self::ok_string(reversed))
             }
             "to_int" => {
                 match s.parse::<i64>() {
-                    Ok(n) => Some(Ok(Value::Int(n))),
+                    Ok(n) => Some(Self::ok_int(n)),
                     Err(_) => Some(Err(anyhow::anyhow!("Cannot parse '{}' as integer", s))),
                 }
             }
             "to_float" => {
                 match s.parse::<f64>() {
-                    Ok(f) => Some(Ok(Value::Float(f))),
+                    Ok(f) => Some(Self::ok_float(f)),
                     Err(_) => Some(Err(anyhow::anyhow!("Cannot parse '{}' as float", s))),
                 }
             }
             "parse" => {
                 // Try to parse as int first, then float
                 if let Ok(n) = s.parse::<i64>() {
-                    Some(Ok(Value::Int(n)))
+                    Some(Self::ok_int(n))
                 } else if let Ok(f) = s.parse::<f64>() {
-                    Some(Ok(Value::Float(f)))
+                    Some(Self::ok_float(f))
                 } else {
                     Some(Err(anyhow::anyhow!("Cannot parse '{}' as number", s)))
                 }
@@ -2723,19 +2723,19 @@ impl Repl {
                 let bytes: Vec<Value> = s.bytes()
                     .map(|b| Value::Int(b as i64))
                     .collect();
-                Some(Ok(Value::List(bytes)))
+                Some(Self::ok_list(bytes))
             }
             "is_numeric" => {
                 let is_num = s.parse::<f64>().is_ok();
-                Some(Ok(Value::Bool(is_num)))
+                Some(Self::ok_bool(is_num))
             }
             "is_alpha" => {
                 let is_alpha = !s.is_empty() && s.chars().all(|c| c.is_alphabetic());
-                Some(Ok(Value::Bool(is_alpha)))
+                Some(Self::ok_bool(is_alpha))
             }
             "is_alphanumeric" => {
                 let is_alnum = !s.is_empty() && s.chars().all(|c| c.is_alphanumeric());
-                Some(Ok(Value::Bool(is_alnum)))
+                Some(Self::ok_bool(is_alnum))
             }
             _ => None,
         }
@@ -2749,7 +2749,7 @@ impl Repl {
                     return Some(Err(anyhow::anyhow!("contains expects 1 argument")));
                 }
                 if let ExprKind::Literal(Literal::String(needle)) = &args[0].kind {
-                    Some(Ok(Value::Bool(s.contains(needle))))
+                    Some(Self::ok_bool(s.contains(needle)))
                 } else {
                     Some(Err(anyhow::anyhow!("contains argument must be a string literal")))
                 }
@@ -2759,7 +2759,7 @@ impl Repl {
                     return Some(Err(anyhow::anyhow!("starts_with expects 1 argument")));
                 }
                 if let ExprKind::Literal(Literal::String(prefix)) = &args[0].kind {
-                    Some(Ok(Value::Bool(s.starts_with(prefix))))
+                    Some(Self::ok_bool(s.starts_with(prefix)))
                 } else {
                     Some(Err(anyhow::anyhow!("starts_with argument must be a string literal")))
                 }
@@ -2769,7 +2769,7 @@ impl Repl {
                     return Some(Err(anyhow::anyhow!("ends_with expects 1 argument")));
                 }
                 if let ExprKind::Literal(Literal::String(suffix)) = &args[0].kind {
-                    Some(Ok(Value::Bool(s.ends_with(suffix))))
+                    Some(Self::ok_bool(s.ends_with(suffix)))
                 } else {
                     Some(Err(anyhow::anyhow!("ends_with argument must be a string literal")))
                 }
@@ -2789,7 +2789,7 @@ impl Repl {
                     let parts: Vec<Value> = s.split(sep)
                         .map(|p| Value::String(p.to_string()))
                         .collect();
-                    Some(Ok(Value::List(parts)))
+                    Some(Self::ok_list(parts))
                 } else {
                     Some(Err(anyhow::anyhow!("split separator must be a string literal")))
                 }
@@ -2800,7 +2800,7 @@ impl Repl {
                 }
                 if let (ExprKind::Literal(Literal::String(from)), ExprKind::Literal(Literal::String(to))) = 
                     (&args[0].kind, &args[1].kind) {
-                    Some(Ok(Value::String(s.replace(from, to))))
+                    Some(Self::ok_string(s.replace(from, to)))
                 } else {
                     Some(Err(anyhow::anyhow!("replace arguments must be string literals")))
                 }
@@ -2813,7 +2813,7 @@ impl Repl {
                     if *count < 0 {
                         Some(Err(anyhow::anyhow!("repeat count cannot be negative")))
                     } else {
-                        Some(Ok(Value::String(s.repeat(*count as usize))))
+                        Some(Self::ok_string(s.repeat(*count as usize)))
                     }
                 } else {
                     Some(Err(anyhow::anyhow!("repeat argument must be an integer")))
@@ -2827,12 +2827,12 @@ impl Repl {
                     (&args[0].kind, &args[1].kind) {
                     let width = *width as usize;
                     if s.len() >= width {
-                        Some(Ok(Value::String(s.to_string())))
+                        Some(Self::ok_string(s.to_string()))
                     } else {
                         let padding_needed = width - s.len();
                         let fill_char = fill.chars().next().unwrap_or(' ');
                         let padding = fill_char.to_string().repeat(padding_needed);
-                        Some(Ok(Value::String(format!("{}{}", padding, s))))
+                        Some(Self::ok_string(format!("{}{}", padding, s)))
                     }
                 } else {
                     Some(Err(anyhow::anyhow!("pad_left arguments must be (integer, string)")))
@@ -2846,12 +2846,12 @@ impl Repl {
                     (&args[0].kind, &args[1].kind) {
                     let width = *width as usize;
                     if s.len() >= width {
-                        Some(Ok(Value::String(s.to_string())))
+                        Some(Self::ok_string(s.to_string()))
                     } else {
                         let padding_needed = width - s.len();
                         let fill_char = fill.chars().next().unwrap_or(' ');
                         let padding = fill_char.to_string().repeat(padding_needed);
-                        Some(Ok(Value::String(format!("{}{}", s, padding))))
+                        Some(Self::ok_string(format!("{}{}", s, padding)))
                     }
                 } else {
                     Some(Err(anyhow::anyhow!("pad_right arguments must be (integer, string)")))
@@ -2870,9 +2870,9 @@ impl Repl {
                 let start_idx = (*start as usize).min(s.len());
                 let end_idx = (*end as usize).min(s.len());
                 if start_idx <= end_idx {
-                    Ok(Value::String(s[start_idx..end_idx].to_string()))
+                    Self::ok_string(s[start_idx..end_idx].to_string())
                 } else {
-                    Ok(Value::String(String::new()))
+                    Self::ok_string(String::new())
                 }
             } else {
                 bail!("substring arguments must be integers");
@@ -2881,7 +2881,7 @@ impl Repl {
             // substring(start) - to end of string
             if let ExprKind::Literal(Literal::Integer(start)) = &args[0].kind {
                 let start_idx = (*start as usize).min(s.len());
-                Ok(Value::String(s[start_idx..].to_string()))
+                Self::ok_string(s[start_idx..].to_string())
             } else {
                 bail!("substring argument must be an integer");
             }
@@ -2928,14 +2928,14 @@ impl Repl {
     /// Handle method calls on char values (complexity < 10)
     fn evaluate_char_methods(c: char, method: &str) -> Result<Value> {
         match method {
-            "to_int" => Ok(Value::Int(c as i64)),
-            "to_string" => Ok(Value::String(c.to_string())),
+            "to_int" => Self::ok_int(c as i64),
+            "to_string" => Self::ok_string(c.to_string()),
             "is_alphabetic" => Ok(Value::Bool(c.is_alphabetic())),
             "is_numeric" => Ok(Value::Bool(c.is_numeric())),
             "is_alphanumeric" => Ok(Value::Bool(c.is_alphanumeric())),
             "is_whitespace" => Ok(Value::Bool(c.is_whitespace())),
-            "to_uppercase" => Ok(Value::String(c.to_uppercase().to_string())),
-            "to_lowercase" => Ok(Value::String(c.to_lowercase().to_string())),
+            "to_uppercase" => Self::ok_string(c.to_uppercase().to_string()),
+            "to_lowercase" => Self::ok_string(c.to_lowercase().to_string()),
             _ => bail!("Unknown char method: {}", method),
         }
     }
@@ -2944,13 +2944,13 @@ impl Repl {
     fn evaluate_numeric_methods(&self, value: &Value, method: &str) -> Result<Value> {
         match (value, method) {
             // Integer-specific methods
-            (Value::Int(n), "abs") => Ok(Value::Int(n.abs())),
-            (Value::Int(n), "to_string") => Ok(Value::String(n.to_string())),
+            (Value::Int(n), "abs") => Self::ok_int(n.abs()),
+            (Value::Int(n), "to_string") => Self::ok_string(n.to_string()),
             
             // Float-specific methods
-            (Value::Float(f), "abs") => Ok(Value::Float(f.abs())),
-            (Value::Float(f), "floor") => Ok(Value::Float(f.floor())),
-            (Value::Float(f), "ceil") => Ok(Value::Float(f.ceil())),
+            (Value::Float(f), "abs") => Self::ok_float(f.abs()),
+            (Value::Float(f), "floor") => Self::ok_float(f.floor()),
+            (Value::Float(f), "ceil") => Self::ok_float(f.ceil()),
             (Value::Float(f), "round") => Ok(Value::Float(f.round())),
             
             // Math operations that work on both (convert int to float)
@@ -2999,21 +2999,21 @@ impl Repl {
                     let tuple = Value::Tuple(vec![Value::String(key), value]);
                     items.push(tuple);
                 }
-                Ok(Value::List(items))
+                Self::ok_list(items)
             }
             "keys" => {
                 // Return list of keys
                 let keys: Vec<Value> = obj.keys().map(|k| Value::String(k.clone())).collect();
-                Ok(Value::List(keys))
+                Self::ok_list(keys)
             }
             "values" => {
                 // Return list of values
                 let values: Vec<Value> = obj.values().cloned().collect();
-                Ok(Value::List(values))
+                Self::ok_list(values)
             }
             "len" => {
                 // Return length of object
-                Ok(Value::Int(obj.len() as i64))
+                Self::ok_int(obj.len() as i64)
             }
             "has_key" => {
                 // This would need args handling - simplified for now
@@ -3066,11 +3066,11 @@ impl Repl {
                 let key = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 let removed_value = map.remove(&key);
                 match removed_value {
-                    Some(value) => Ok(Value::Tuple(vec![Value::HashMap(map), value])),
-                    None => Ok(Value::Tuple(vec![Value::HashMap(map), Value::Unit])),
+                    Some(value) => Self::ok_tuple(vec![Value::HashMap(map), value]),
+                    None => Self::ok_tuple(vec![Value::HashMap(map), Value::Unit]),
                 }
             }
-            "len" => Ok(Value::Int(map.len() as i64)),
+            "len" => Self::ok_int(map.len() as i64),
             "is_empty" => Ok(Value::Bool(map.is_empty())),
             "clear" => {
                 map.clear();
@@ -3099,7 +3099,7 @@ impl Repl {
                     Err(e) => return Some(Err(e)),
                 };
                 let was_new = set.insert(value);
-                Some(Ok(Value::Tuple(vec![Value::HashSet(set), Value::Bool(was_new)])))
+                Some(Self::ok_tuple(vec![Value::HashSet(set), Self::bool_value(was_new)]))
             }
             "contains" => {
                 if args.len() != 1 {
@@ -3120,9 +3120,9 @@ impl Repl {
                     Err(e) => return Some(Err(e)),
                 };
                 let was_present = set.remove(&value);
-                Some(Ok(Value::Tuple(vec![Value::HashSet(set), Value::Bool(was_present)])))
+                Some(Self::ok_tuple(vec![Value::HashSet(set), Self::bool_value(was_present)]))
             }
-            "len" => Some(Ok(Value::Int(set.len() as i64))),
+            "len" => Some(Self::ok_int(set.len() as i64)),
             "is_empty" => Some(Ok(Value::Bool(set.is_empty()))),
             "clear" => {
                 set.clear();
@@ -3565,7 +3565,7 @@ impl Repl {
             let val = self.evaluate_expr(elem, deadline, depth + 1)?;
             results.push(val);
         }
-        Ok(Value::Tuple(results))
+        Self::ok_tuple(results)
     }
 
     /// Evaluate range literal (complexity: 5)
@@ -3697,7 +3697,7 @@ impl Repl {
                 }
             }
         }
-        Ok(Value::String(result))
+        Self::ok_string(result)
     }
 
     /// Format a value with a format specifier like :.2 for floats
@@ -4170,7 +4170,7 @@ impl Repl {
             }
         }
 
-        Ok(Value::Object(map))
+        Self::ok_object(map)
     }
 
     /// Evaluate enum definition (complexity: 4)
@@ -4207,7 +4207,7 @@ impl Repl {
             let field_value = self.evaluate_expr(field_expr, deadline, depth + 1)?;
             map.insert(field_name.clone(), field_value);
         }
-        Ok(Value::Object(map))
+        Self::ok_object(map)
     }
 
     /// Evaluate field access (complexity: 4)
@@ -4250,7 +4250,7 @@ impl Repl {
         
         // If the object is null, return null (short-circuit evaluation)
         if matches!(obj_val, Value::Nil) {
-            return Ok(Value::Nil);
+            return Self::ok_nil();
         }
         
         match obj_val {
@@ -4260,10 +4260,10 @@ impl Repl {
                 if let Ok(index) = field.parse::<usize>() {
                     Ok(values.get(index).cloned().unwrap_or(Value::Nil))
                 } else {
-                    Ok(Value::Nil) // Invalid tuple index returns nil instead of error
+                    Self::ok_nil() // Invalid tuple index returns nil instead of error
                 }
             }
-            _ => Ok(Value::Nil), // Non-object/tuple values return nil instead of error
+            _ => Self::ok_nil(), // Non-object/tuple values return nil instead of error
         }
     }
 
@@ -4280,7 +4280,7 @@ impl Repl {
         
         // If the receiver is null, return null (short-circuit evaluation)
         if matches!(receiver_val, Value::Nil) {
-            return Ok(Value::Nil);
+            return Self::ok_nil();
         }
         
         // Try to call the method, but return nil if it fails instead of erroring
@@ -4344,12 +4344,12 @@ impl Repl {
         match obj_val {
             Value::List(list) => {
                 let (start_idx, end_idx) = self.calculate_slice_bounds(start, end, inclusive, list.len())?;
-                Ok(Value::List(list[start_idx..end_idx].to_vec()))
+                Self::ok_list(list[start_idx..end_idx].to_vec())
             }
             Value::String(s) => {
                 let chars: Vec<char> = s.chars().collect();
                 let (start_idx, end_idx) = self.calculate_slice_bounds(start, end, inclusive, chars.len())?;
-                Ok(Value::String(chars[start_idx..end_idx].iter().collect()))
+                Self::ok_string(chars[start_idx..end_idx].iter().collect::<String>())
             }
             _ => bail!("Cannot slice into {:?}", obj_val),
         }
@@ -4465,7 +4465,7 @@ impl Repl {
         let end = end_idx.unwrap_or(list.len());
         
         Self::validate_slice_bounds(start, end, list.len())?;
-        Ok(Value::List(list[start..end].to_vec()))
+        Self::ok_list(list[start..end].to_vec())
     }
 
     /// Slice a string value (complexity: 5)
@@ -5121,7 +5121,7 @@ impl Repl {
                 let mut result = String::with_capacity(a.len() + b.len());
                 result.push_str(a);
                 result.push_str(b);
-                Ok(Value::String(result))
+                Self::ok_string(result)
             }
 
             // Comparisons
@@ -6775,7 +6775,7 @@ impl Repl {
                 Ok(Value::String(s.clone()))
             }
             Literal::Bool(b) => Ok(Value::Bool(*b)),
-            Literal::Char(c) => Ok(Value::Char(*c)),
+            Literal::Char(c) => Self::ok_char(*c),
             Literal::Unit => Ok(Value::Unit),
         }
     }
@@ -7935,7 +7935,7 @@ impl Repl {
 
         let args_vec = std::env::args().collect::<Vec<String>>();
         let values: Vec<Value> = args_vec.into_iter().map(Value::String).collect();
-        Ok(Value::List(values))
+        Self::ok_list(values)
     }
 
     /// Evaluate `Some` constructor
@@ -8316,10 +8316,10 @@ impl Repl {
                 }
                 // Check for boolean strings
                 if s == "true" {
-                    return Ok(Value::Int(1));
+                    return Self::ok_int(1);
                 }
                 if s == "false" {
-                    return Ok(Value::Int(0));
+                    return Self::ok_int(0);
                 }
                 bail!("Cannot convert '{}' to integer", s)
             }
@@ -8457,13 +8457,13 @@ impl Repl {
                     bail!("char() expects a valid Unicode code point (0-1114111)");
                 }
                 match char::from_u32(n as u32) {
-                    Some(c) => Ok(Value::Char(c)),
+                    Some(c) => Self::ok_char(c),
                     None => bail!("Invalid Unicode code point: {}", n),
                 }
             }
             Value::String(s) => {
                 if s.len() == 1 {
-                    Ok(Value::Char(s.chars().next().unwrap()))
+                    Self::ok_char(s.chars().next().unwrap())
                 } else {
                     bail!("char() from string expects exactly 1 character, got {}", s.len());
                 }
@@ -8557,13 +8557,13 @@ impl Repl {
         
         let value = self.evaluate_arg(args, 0, deadline, depth)?;
         match value {
-            Value::List(items) => Ok(Value::List(items)),
-            Value::Tuple(items) => Ok(Value::List(items)),
+            Value::List(items) => Self::ok_list(items),
+            Value::Tuple(items) => Self::ok_list(items),
             Value::String(s) => {
                 let chars: Vec<Value> = s.chars()
                     .map(|c| Value::String(c.to_string()))
                     .collect();
-                Ok(Value::List(chars))
+                Self::ok_list(chars)
             }
             _ => bail!("list() expects a list, tuple, or string"),
         }
@@ -8868,6 +8868,81 @@ impl Repl {
         result
     }
 
+    /// Create a list value
+    fn list_value(items: Vec<Value>) -> Value {
+        Value::List(items)
+    }
+
+    /// Create a boolean value
+    fn bool_value(b: bool) -> Value {
+        Value::Bool(b)
+    }
+
+    /// Create an Ok result with a list value
+    fn ok_list(items: Vec<Value>) -> Result<Value> {
+        Ok(Self::list_value(items))
+    }
+
+    /// Create an Ok result with a bool value
+    fn ok_bool(b: bool) -> Result<Value> {
+        Ok(Self::bool_value(b))
+    }
+    
+    /// Create an Ok result with a string value
+    fn ok_string(s: impl Into<String>) -> Result<Value> {
+        Ok(Self::string_value(s))
+    }
+    
+    /// Create an Ok result with an integer value
+    fn ok_int(n: i64) -> Result<Value> {
+        Ok(Self::int_value(n))
+    }
+    
+    /// Create an Ok result with a float value
+    fn ok_float(f: f64) -> Result<Value> {
+        Ok(Self::float_value(f))
+    }
+    
+    /// Create an Ok result with null value
+    fn ok_null() -> Result<Value> {
+        Ok(Self::create_option_none())
+    }
+    
+    /// Create a character value
+    fn char_value(c: char) -> Value {
+        Value::Char(c)
+    }
+    
+    /// Create an object value
+    fn object_value(map: std::collections::HashMap<String, Value>) -> Value {
+        Value::Object(map)
+    }
+    
+    /// Create an Ok result with a character value
+    fn ok_char(c: char) -> Result<Value> {
+        Ok(Self::char_value(c))
+    }
+    
+    /// Create an Ok result with an object value
+    fn ok_object(map: std::collections::HashMap<String, Value>) -> Result<Value> {
+        Ok(Self::object_value(map))
+    }
+    
+    /// Create an Ok result with a nil value
+    fn ok_nil() -> Result<Value> {
+        Ok(Value::Nil)
+    }
+    
+    /// Create a tuple value
+    fn tuple_value(items: Vec<Value>) -> Value {
+        Value::Tuple(items)
+    }
+    
+    /// Create an Ok result with a tuple value
+    fn ok_tuple(items: Vec<Value>) -> Result<Value> {
+        Ok(Self::tuple_value(items))
+    }
+
     /// Apply unary math operation to a numeric value.
     /// 
     /// # Example Usage
@@ -8886,12 +8961,12 @@ impl Repl {
                 Ok(Value::Float((*n as f64).sqrt()))
             }
             (Value::Float(f), "sqrt") => Ok(Value::Float(f.sqrt())),
-            (Value::Int(n), "abs") => Ok(Value::Int(n.abs())),
-            (Value::Float(f), "abs") => Ok(Value::Float(f.abs())),
+            (Value::Int(n), "abs") => Self::ok_int(n.abs()),
+            (Value::Float(f), "abs") => Self::ok_float(f.abs()),
             (Value::Int(n), "floor") => Ok(Value::Int(*n)), // Already floored
-            (Value::Float(f), "floor") => Ok(Value::Float(f.floor())),
+            (Value::Float(f), "floor") => Self::ok_float(f.floor()),
             (Value::Int(n), "ceil") => Ok(Value::Int(*n)), // Already ceiled
-            (Value::Float(f), "ceil") => Ok(Value::Float(f.ceil())),
+            (Value::Float(f), "ceil") => Self::ok_float(f.ceil()),
             (Value::Int(n), "round") => Ok(Value::Int(*n)), // Already rounded
             (Value::Float(f), "round") => Ok(Value::Float(f.round())),
             _ => bail!("{} expects a numeric argument", op),
@@ -9110,9 +9185,9 @@ impl Repl {
                     } else if let Ok(f) = return_val.parse::<f64>() {
                         Ok(Value::Float(f))
                     } else if return_val == "true" {
-                        Ok(Value::Bool(true))
+                        Self::ok_bool(true)
                     } else if return_val == "false" {
-                        Ok(Value::Bool(false))
+                        Self::ok_bool(false)
                     } else {
                         // Return as string for complex values
                         Ok(Value::String(return_val.to_string()))
@@ -9325,7 +9400,7 @@ impl Repl {
                 for arg in args {
                     elements.push(self.evaluate_expr(arg, deadline, depth + 1)?);
                 }
-                Ok(Value::List(elements))
+                Self::ok_list(elements)
             }
             _ => {
                 anyhow::bail!("Unknown macro: {}", name)
