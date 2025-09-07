@@ -334,9 +334,8 @@ fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) ->
             state.tokens.advance();
             let qualified_name = format!("{}::{}", constructor_name, variant_name);
             return Ok(Expr::new(ExprKind::Identifier(qualified_name), span));
-        } else {
-            bail!("Expected variant name after '::'");
         }
+        bail!("Expected variant name after '::'");
     }
     
     Ok(Expr::new(ExprKind::Identifier(constructor_name.to_string()), span))

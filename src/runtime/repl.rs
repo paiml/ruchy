@@ -2930,10 +2930,10 @@ impl Repl {
         match method {
             "to_int" => Self::ok_int(c as i64),
             "to_string" => Self::ok_string(c.to_string()),
-            "is_alphabetic" => Ok(Value::Bool(c.is_alphabetic())),
-            "is_numeric" => Ok(Value::Bool(c.is_numeric())),
-            "is_alphanumeric" => Ok(Value::Bool(c.is_alphanumeric())),
-            "is_whitespace" => Ok(Value::Bool(c.is_whitespace())),
+            "is_alphabetic" => Self::ok_bool(c.is_alphabetic()),
+            "is_numeric" => Self::ok_bool(c.is_numeric()),
+            "is_alphanumeric" => Self::ok_bool(c.is_alphanumeric()),
+            "is_whitespace" => Self::ok_bool(c.is_whitespace()),
             "to_uppercase" => Self::ok_string(c.to_uppercase().to_string()),
             "to_lowercase" => Self::ok_string(c.to_lowercase().to_string()),
             _ => bail!("Unknown char method: {}", method),
@@ -2951,7 +2951,7 @@ impl Repl {
             (Value::Float(f), "abs") => Self::ok_float(f.abs()),
             (Value::Float(f), "floor") => Self::ok_float(f.floor()),
             (Value::Float(f), "ceil") => Self::ok_float(f.ceil()),
-            (Value::Float(f), "round") => Ok(Value::Float(f.round())),
+            (Value::Float(f), "round") => Self::ok_float(f.round()),
             
             // Math operations that work on both (convert int to float)
             (Value::Int(n), op @ ("sqrt" | "sin" | "cos" | "tan" | "log" | "log10" | "exp")) => {
@@ -2971,7 +2971,7 @@ impl Repl {
     
     /// Helper for float math operations (complexity: 8)
     fn evaluate_float_math(&self, f: f64, op: &str) -> Result<Value> {
-        Ok(Value::Float(match op {
+        let result = match op {
             "sqrt" => f.sqrt(),
             "sin" => f.sin(),
             "cos" => f.cos(),
@@ -2980,7 +2980,8 @@ impl Repl {
             "log10" => f.log10(),
             "exp" => f.exp(),
             _ => bail!("Unknown math operation: {}", op),
-        }))
+        };
+        Self::ok_float(result)
     }
 
     /// Handle method calls on object values (complexity < 10)
@@ -3040,7 +3041,7 @@ impl Repl {
                 let key = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 let value = self.evaluate_arg(args, 1, deadline, depth)?;
                 map.insert(key, value);
-                Ok(Value::HashMap(map))
+                Self::ok_hashmap(map)
             }
             "get" => {
                 if args.len() != 1 {
@@ -3049,7 +3050,7 @@ impl Repl {
                 let key = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 match map.get(&key) {
                     Some(value) => Ok(value.clone()),
-                    None => Ok(Value::Unit), // Could return Option::None in future
+                    None => Self::ok_unit(), // Could return Option::None in future
                 }
             }
             "contains_key" => {
@@ -3057,7 +3058,7 @@ impl Repl {
                     bail!("contains_key requires exactly 1 argument (key)");
                 }
                 let key = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-                Ok(Value::Bool(map.contains_key(&key)))
+                Self::ok_bool(map.contains_key(&key))
             }
             "remove" => {
                 if args.len() != 1 {
@@ -3071,10 +3072,10 @@ impl Repl {
                 }
             }
             "len" => Self::ok_int(map.len() as i64),
-            "is_empty" => Ok(Value::Bool(map.is_empty())),
+            "is_empty" => Self::ok_bool(map.is_empty()),
             "clear" => {
                 map.clear();
-                Ok(Value::HashMap(map))
+                Self::ok_hashmap(map)
             }
             _ => bail!("Unknown HashMap method: {}", method),
         }
@@ -3109,7 +3110,7 @@ impl Repl {
                     Ok(v) => v,
                     Err(e) => return Some(Err(e)),
                 };
-                Some(Ok(Value::Bool(set.contains(&value))))
+                Some(Self::ok_bool(set.contains(&value)))
             }
             "remove" => {
                 if args.len() != 1 {
@@ -3123,10 +3124,10 @@ impl Repl {
                 Some(Self::ok_tuple(vec![Value::HashSet(set), Self::bool_value(was_present)]))
             }
             "len" => Some(Self::ok_int(set.len() as i64)),
-            "is_empty" => Some(Ok(Value::Bool(set.is_empty()))),
+            "is_empty" => Some(Self::ok_bool(set.is_empty())),
             "clear" => {
                 set.clear();
-                Some(Ok(Value::HashSet(set)))
+                Some(Self::ok_hashset(set))
             }
             _ => None,
         }
@@ -3154,15 +3155,15 @@ impl Repl {
             match method {
                 "union" => {
                     let union_set = set.union(&other_set).cloned().collect();
-                    Some(Ok(Value::HashSet(union_set)))
+                    Some(Self::ok_hashset(union_set))
                 }
                 "intersection" => {
                     let intersection_set = set.intersection(&other_set).cloned().collect();
-                    Some(Ok(Value::HashSet(intersection_set)))
+                    Some(Self::ok_hashset(intersection_set))
                 }
                 "difference" => {
                     let difference_set = set.difference(&other_set).cloned().collect();
-                    Some(Ok(Value::HashSet(difference_set)))
+                    Some(Self::ok_hashset(difference_set))
                 }
                 _ => None,
             }
@@ -3446,7 +3447,7 @@ impl Repl {
             }
         }
         // While loops always return Unit
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
 
     /// Evaluate loop expression (complexity: 6)
@@ -3482,7 +3483,7 @@ impl Repl {
     /// Evaluate block expression (complexity: 4)
     fn evaluate_block(&mut self, exprs: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if exprs.is_empty() {
-            return Ok(Value::Unit);
+            return Self::ok_unit();
         }
 
         let mut result = Value::Unit;
@@ -4056,7 +4057,7 @@ impl Repl {
                 return Ok(values[0].clone());
             }
         }
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
 
     /// Format error message for unwrap operations
@@ -6184,7 +6185,7 @@ impl Repl {
         // Get the name to delete
         if let ExprKind::Identifier(name) = &args[0].kind {
             if self.bindings.remove(name).is_some() {
-                Ok(Value::Unit)
+                Self::ok_unit()
             } else {
                 bail!("Variable '{}' not found", name)
             }
@@ -6796,7 +6797,7 @@ impl Repl {
                 if let Some(else_expr) = else_branch {
                     self.evaluate_expr(else_expr, deadline, depth + 1)
                 } else {
-                    Ok(Value::Unit)
+                    Self::ok_unit()
                 }
             }
             _ => bail!("If condition must be boolean, got: {:?}", cond_val),
@@ -6886,7 +6887,7 @@ impl Repl {
             if let Some(else_expr) = else_branch {
                 self.evaluate_expr(else_expr, deadline, depth + 1)
             } else {
-                Ok(Value::Unit)
+                Self::ok_unit()
             }
         }
     }
@@ -7429,7 +7430,7 @@ impl Repl {
     ) -> Result<Value> {
         if args.is_empty() {
             println!();
-            return Ok(Value::Unit);
+            return Self::ok_unit();
         }
         
         let first_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
@@ -7473,7 +7474,7 @@ impl Repl {
         }
         
         println!("{output}");
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
     
     fn process_regular_string_println(
@@ -7490,7 +7491,7 @@ impl Repl {
             self.print_remaining_args(&args[1..], deadline, depth)?;
             println!();
         }
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
     
     fn print_remaining_args(
@@ -7527,7 +7528,7 @@ impl Repl {
             }
         }
         println!("{output}");
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
 
     /// Evaluate print function
@@ -7544,7 +7545,7 @@ impl Repl {
             }
         }
         print!("{output}");
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
 
     /// Evaluate `input` function - prompt user for input
@@ -7636,7 +7637,7 @@ impl Repl {
             bail!("Assertion failed: {}", message);
         }
         
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
 
     /// Evaluate `assert_eq` function - panic if values are not equal
@@ -7667,7 +7668,7 @@ impl Repl {
             bail!("Assertion failed: {}", message);
         }
         
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
 
     /// Evaluate `assert_ne` function - panic if values are equal
@@ -7698,7 +7699,7 @@ impl Repl {
             bail!("Assertion failed: {}", message);
         }
         
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
 
     /// Compare two values for equality (helper for assertions)
@@ -7769,7 +7770,7 @@ impl Repl {
         match std::fs::write(&filename, content) {
             Ok(()) => {
                 println!("File '{filename}' written successfully");
-                Ok(Value::Unit)
+                Self::ok_unit()
             }
             Err(e) => bail!("Failed to write file '{}': {}", filename, e),
         }
@@ -7919,7 +7920,7 @@ impl Repl {
         };
 
         std::env::set_var(var_name, value);
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
 
     /// Evaluate `args` function
@@ -8297,12 +8298,10 @@ impl Repl {
                         Ok(n) => return Ok(Value::Int(n)),
                         Err(_) => bail!("Cannot parse '{}' as base {} integer", s, base),
                     }
-                } else {
-                    bail!("int() base must be an integer");
                 }
-            } else {
-                bail!("int() with base requires string as first argument");
+                bail!("int() base must be an integer");
             }
+            bail!("int() with base requires string as first argument");
         }
         
         match value {
@@ -8942,6 +8941,36 @@ impl Repl {
     fn ok_tuple(items: Vec<Value>) -> Result<Value> {
         Ok(Self::tuple_value(items))
     }
+    
+    /// Create a unit value
+    fn unit_value() -> Value {
+        Value::Unit
+    }
+    
+    /// Create a HashMap value
+    fn hashmap_value(map: std::collections::HashMap<Value, Value>) -> Value {
+        Value::HashMap(map)
+    }
+    
+    /// Create a HashSet value
+    fn hashset_value(set: std::collections::HashSet<Value>) -> Value {
+        Value::HashSet(set)
+    }
+    
+    /// Create an Ok result with a unit value
+    fn ok_unit() -> Result<Value> {
+        Ok(Self::unit_value())
+    }
+    
+    /// Create an Ok result with a HashMap value
+    fn ok_hashmap(map: std::collections::HashMap<Value, Value>) -> Result<Value> {
+        Ok(Self::hashmap_value(map))
+    }
+    
+    /// Create an Ok result with a HashSet value
+    fn ok_hashset(set: std::collections::HashSet<Value>) -> Result<Value> {
+        Ok(Self::hashset_value(set))
+    }
 
     /// Apply unary math operation to a numeric value.
     /// 
@@ -8968,7 +8997,7 @@ impl Repl {
             (Value::Int(n), "ceil") => Ok(Value::Int(*n)), // Already ceiled
             (Value::Float(f), "ceil") => Self::ok_float(f.ceil()),
             (Value::Int(n), "round") => Ok(Value::Int(*n)), // Already rounded
-            (Value::Float(f), "round") => Ok(Value::Float(f.round())),
+            (Value::Float(f), "round") => Self::ok_float(f.round()),
             _ => bail!("{} expects a numeric argument", op),
         }
     }
@@ -9175,7 +9204,7 @@ impl Repl {
                     // For now, just extract the string representation
                     // The value was already evaluated, just passed through error
                     if return_val == "()" {
-                        Ok(Value::Unit)
+                        Self::ok_unit()
                     } else if return_val.starts_with('"') && return_val.ends_with('"') {
                         // String value - remove quotes
                         let s = return_val[1..return_val.len()-1].to_string();
@@ -9392,7 +9421,7 @@ impl Repl {
                     output.push_str(&value.to_string());
                 }
                 println!("{output}");
-                Ok(Value::Unit)
+                Self::ok_unit()
             }
             "vec" => {
                 // Evaluate all arguments and create a vector
@@ -9523,7 +9552,7 @@ impl Repl {
             }
         }
         
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
     
     /// Extract functions from a module AST into a `HashMap` for caching
@@ -9577,7 +9606,7 @@ impl Repl {
         
         // Export handling
         
-        Ok(Value::Unit)
+        Self::ok_unit()
     }
     
     /// Handle package mode commands
