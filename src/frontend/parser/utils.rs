@@ -95,6 +95,11 @@ fn parse_param_pattern(state: &mut ParserState) -> Result<Pattern> {
             state.tokens.advance();
             Ok(Pattern::Identifier(name))
         }
+        Some((Token::DataFrame, _)) => {
+            // Handle "df" parameter name (tokenized as DataFrame)
+            state.tokens.advance();
+            Ok(Pattern::Identifier("df".to_string()))
+        }
         _ => bail!("Function parameters must be simple identifiers (destructuring patterns not supported)"),
     }
 }
@@ -199,7 +204,14 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
         Some((Token::Fn, _)) => parse_fn_type(state, span),
         Some((Token::LeftBracket, _)) => parse_list_type(state, span),
         Some((Token::LeftParen, _)) => parse_paren_type(state, span),
-        Some((Token::Identifier(_), _)) => parse_named_type(state, span),
+        Some((Token::Identifier(_), _)) 
+        | Some((Token::Result, _)) 
+        | Some((Token::Option, _))
+        | Some((Token::Ok, _))
+        | Some((Token::Err, _))
+        | Some((Token::Some, _))
+        | Some((Token::DataFrame, _))
+        | Some((Token::None | Token::Null, _)) => parse_named_type(state, span),
         _ => bail!("Expected type"),
     }
 }
@@ -315,6 +327,35 @@ fn parse_qualified_name(state: &mut ParserState) -> Result<String> {
             let name = n.clone();
             state.tokens.advance();
             name
+        }
+        // Handle special tokens that can be type names
+        Some((Token::Result, _)) => {
+            state.tokens.advance();
+            "Result".to_string()
+        }
+        Some((Token::Option, _)) => {
+            state.tokens.advance();
+            "Option".to_string()
+        }
+        Some((Token::Ok, _)) => {
+            state.tokens.advance();
+            "Ok".to_string()
+        }
+        Some((Token::Err, _)) => {
+            state.tokens.advance();
+            "Err".to_string()
+        }
+        Some((Token::Some, _)) => {
+            state.tokens.advance();
+            "Some".to_string()
+        }
+        Some((Token::DataFrame, _)) => {
+            state.tokens.advance();
+            "DataFrame".to_string()
+        }
+        Some((Token::None | Token::Null, _)) => {
+            state.tokens.advance();
+            "None".to_string()
         }
         _ => bail!("Expected identifier"),
     };

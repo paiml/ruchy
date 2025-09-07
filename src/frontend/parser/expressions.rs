@@ -357,51 +357,13 @@ fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Exp
 /// Parse try-catch-finally block
 /// Complexity: <10 (structured error handling)
 fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
-    use crate::frontend::ast::CatchClause;
-    
     let start_span = state.tokens.expect(&Token::Try)?;
     
-    // Parse try block
-    state.tokens.expect(&Token::LeftBrace)?;
-    let try_block = Box::new(super::collections::parse_block(state)?);
+    let try_block = parse_try_block(state)?;
+    let catch_clauses = parse_catch_clauses(state)?;
+    let finally_block = parse_finally_block(state)?;
     
-    // Parse catch clauses
-    let mut catch_clauses = Vec::new();
-    
-    while matches!(state.tokens.peek(), Some((Token::Catch, _))) {
-        state.tokens.advance(); // consume 'catch'
-        
-        // Parse catch pattern - for now just an identifier like (e)
-        state.tokens.expect(&Token::LeftParen)?;
-        let pattern = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            let name = name.clone();
-            state.tokens.advance();
-            Pattern::Identifier(name)
-        } else {
-            bail!("Expected identifier in catch clause");
-        };
-        state.tokens.expect(&Token::RightParen)?;
-        
-        // Parse catch body
-        state.tokens.expect(&Token::LeftBrace)?;
-        let body = Box::new(super::collections::parse_block(state)?);
-        
-        catch_clauses.push(CatchClause { pattern, body });
-    }
-    
-    // Parse optional finally block
-    let finally_block = if matches!(state.tokens.peek(), Some((Token::Finally, _))) {
-        state.tokens.advance(); // consume 'finally'
-        state.tokens.expect(&Token::LeftBrace)?;
-        Some(Box::new(super::collections::parse_block(state)?))
-    } else {
-        None
-    };
-    
-    // Must have at least one catch clause if no finally block
-    if catch_clauses.is_empty() && finally_block.is_none() {
-        bail!("Try block must have at least one catch clause or a finally block");
-    }
+    validate_try_catch_structure(&catch_clauses, &finally_block)?;
     
     Ok(Expr::new(
         ExprKind::TryCatch {
@@ -529,7 +491,20 @@ fn parse_variable_declaration_token(state: &mut ParserState, token: Token) -> Re
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_special_definition_token(state: &mut ParserState, token: Token) -> Result<Expr> {
     match token {
-        Token::DataFrame => parse_dataframe_literal(state),
+        Token::DataFrame => {
+            // Check if this is df! (literal) or df (identifier)
+            if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
+                parse_dataframe_literal(state)
+            } else {
+                // Treat 'df' as a regular identifier for method calls, etc.
+                // Consume the DataFrame token since we're handling it as identifier
+                state.tokens.advance();
+                Ok(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    Span::default(),
+                ))
+            }
+        }
         Token::Actor => parse_actor_definition(state),
         _ => bail!("Expected special definition token, got: {:?}", token),
     }
@@ -978,6 +953,7 @@ fn parse_single_pattern(state: &mut ParserState) -> Result<Pattern> {
         Token::Integer(_) | Token::Float(_) | Token::String(_) | 
         Token::Char(_) | Token::Bool(_) => parse_literal_pattern(state),
         Token::Some | Token::None => parse_option_pattern(state),
+        Token::Ok | Token::Err => parse_result_pattern(state),
         Token::Identifier(_) => parse_identifier_or_constructor_pattern(state),
         Token::LeftParen => parse_match_tuple_pattern(state),
         Token::LeftBracket => parse_match_list_pattern(state),
@@ -1096,6 +1072,34 @@ fn parse_option_pattern(state: &mut ParserState) -> Result<Pattern> {
             }
         }
         _ => bail!("Expected Some or None pattern")
+    }
+}
+
+/// Parse Result patterns (Ok/Err)
+/// Complexity: 4
+fn parse_result_pattern(state: &mut ParserState) -> Result<Pattern> {
+    let Some((token, _span)) = state.tokens.peek() else {
+        bail!("Expected Result pattern");
+    };
+    
+    match token {
+        Token::Ok => {
+            state.tokens.advance();
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                parse_constructor_pattern(state, "Ok".to_string())
+            } else {
+                Ok(Pattern::Identifier("Ok".to_string()))
+            }
+        }
+        Token::Err => {
+            state.tokens.advance();
+            if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+                parse_constructor_pattern(state, "Err".to_string())
+            } else {
+                Ok(Pattern::Identifier("Err".to_string()))
+            }
+        }
+        _ => bail!("Expected Ok or Err pattern")
     }
 }
 
@@ -1221,16 +1225,24 @@ fn parse_constructor_arguments(state: &mut ParserState) -> Result<Vec<Pattern>> 
     Ok(patterns)
 }
 
-/// Create appropriate pattern based on constructor name (complexity: 5)
+/// Create appropriate pattern based on constructor name (complexity: 8)
 fn create_constructor_pattern(name: String, patterns: Vec<Pattern>) -> Result<Pattern> {
     match (name.as_str(), patterns.len()) {
-        ("Some", 1) => {
-            // Some(pattern) - use Ok variant to represent Option::Some
+        ("Ok", 1) => {
+            // Ok(pattern) - Result success case
             Ok(Pattern::Ok(Box::new(patterns.into_iter().next().unwrap())))
         }
+        ("Err", 1) => {
+            // Err(pattern) - Result error case
+            Ok(Pattern::Err(Box::new(patterns.into_iter().next().unwrap())))
+        }
+        ("Some", 1) => {
+            // Some(pattern) - Option success case
+            Ok(Pattern::Some(Box::new(patterns.into_iter().next().unwrap())))
+        }
         ("None", 0) => {
-            // None - just an identifier
-            Ok(Pattern::Identifier("None".to_string()))
+            // None - Option empty case
+            Ok(Pattern::None)
         }
         (_, 1) => {
             // Single argument constructor - for simplicity, use the inner pattern
@@ -2397,4 +2409,69 @@ fn extract_fstring_expr(chars: &mut std::iter::Peekable<std::str::Chars>) -> Res
     }
     
     bail!("Unclosed interpolation in f-string")
+}
+
+/// Helper for parsing try block (complexity: 3)
+fn parse_try_block(state: &mut ParserState) -> Result<Box<Expr>> {
+    state.tokens.expect(&Token::LeftBrace)?;
+    Ok(Box::new(super::collections::parse_block(state)?))
+}
+
+/// Helper for parsing catch clauses (complexity: 8)
+fn parse_catch_clauses(state: &mut ParserState) -> Result<Vec<crate::frontend::ast::CatchClause>> {
+    use crate::frontend::ast::CatchClause;
+    let mut catch_clauses = Vec::new();
+    
+    while matches!(state.tokens.peek(), Some((Token::Catch, _))) {
+        state.tokens.advance(); // consume 'catch'
+        
+        let pattern = parse_catch_pattern(state)?;
+        let body = parse_catch_body(state)?;
+        
+        catch_clauses.push(CatchClause { pattern, body });
+    }
+    
+    Ok(catch_clauses)
+}
+
+/// Helper for parsing catch pattern (complexity: 5)
+fn parse_catch_pattern(state: &mut ParserState) -> Result<Pattern> {
+    state.tokens.expect(&Token::LeftParen)?;
+    let pattern = if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        Pattern::Identifier(name)
+    } else {
+        bail!("Expected identifier in catch clause");
+    };
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(pattern)
+}
+
+/// Helper for parsing catch body (complexity: 3)
+fn parse_catch_body(state: &mut ParserState) -> Result<Box<Expr>> {
+    state.tokens.expect(&Token::LeftBrace)?;
+    Ok(Box::new(super::collections::parse_block(state)?))
+}
+
+/// Helper for parsing optional finally block (complexity: 6)
+fn parse_finally_block(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
+    if matches!(state.tokens.peek(), Some((Token::Finally, _))) {
+        state.tokens.advance(); // consume 'finally'
+        state.tokens.expect(&Token::LeftBrace)?;
+        Ok(Some(Box::new(super::collections::parse_block(state)?)))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Helper for validating try-catch structure (complexity: 3)
+fn validate_try_catch_structure(
+    catch_clauses: &[crate::frontend::ast::CatchClause], 
+    finally_block: &Option<Box<Expr>>
+) -> Result<()> {
+    if catch_clauses.is_empty() && finally_block.is_none() {
+        bail!("Try block must have at least one catch clause or a finally block");
+    }
+    Ok(())
 }
