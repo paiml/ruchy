@@ -119,7 +119,7 @@ fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> 
             
             // Check for module path: math::add
             if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                let mut path = vec![name.clone()];
+                let mut path = vec![name];
                 
                 while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
                     state.tokens.advance(); // consume ::
@@ -332,7 +332,7 @@ fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) ->
             };
             
             state.tokens.advance();
-            let qualified_name = format!("{}::{}", constructor_name, variant_name);
+            let qualified_name = format!("{constructor_name}::{variant_name}");
             return Ok(Expr::new(ExprKind::Identifier(qualified_name), span));
         }
         bail!("Expected variant name after '::'");
@@ -439,7 +439,7 @@ fn parse_module_declaration(state: &mut ParserState) -> Result<Expr> {
 
 /// Parse module body with support for visibility modifiers (pub)
 fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
-    let start_span = state.tokens.peek().map(|t| t.1).unwrap_or(Span { start: 0, end: 0 });
+    let start_span = state.tokens.peek().map_or(Span { start: 0, end: 0 }, |t| t.1);
     let mut exprs = Vec::new();
     
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {

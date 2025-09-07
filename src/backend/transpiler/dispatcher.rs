@@ -32,11 +32,11 @@ impl Transpiler {
             
             for (i, part) in parts.iter().enumerate() {
                 let safe_part = if matches!(*part, "self" | "Self" | "super" | "crate") {
-                    part.to_string()
+                    (*part).to_string()
                 } else if Self::is_rust_reserved_keyword(part) {
                     format!("r#{part}")
                 } else {
-                    part.to_string()
+                    (*part).to_string()
                 };
                 
                 let ident = format_ident!("{}", safe_part);
