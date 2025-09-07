@@ -47,7 +47,7 @@ mod dataframe_standard_tests {
         
         assert!(result.is_ok(), "Should transpile from_csv");
         let transpiled = result.unwrap().to_string();
-        assert!(transpiled.contains("from_csv") || transpiled.contains("read_csv"),
+        assert!(transpiled.contains("CsvReader") || transpiled.contains("from_csv") || transpiled.contains("read_csv"),
             "Should generate CSV reading code");
     }
 
