@@ -710,6 +710,90 @@ impl Repl {
             .push("enum Result<T, E> { Ok(T), Err(E) }".to_string());
     }
 
+    // === Helper Functions for Common Value Creation ===
+    
+    /// Create an Option::None value
+    fn create_option_none() -> Value {
+        Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        }
+    }
+    
+    /// Create an Option::Some(value) value
+    fn create_option_some(value: Value) -> Value {
+        Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![value]),
+        }
+    }
+    
+    /// Create a Result::Ok(value) value
+    fn create_result_ok(value: Value) -> Value {
+        Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Ok".to_string(),
+            data: Some(vec![value]),
+        }
+    }
+    
+    /// Create a Result::Err(value) value
+    fn create_result_err(value: Value) -> Value {
+        Value::EnumVariant {
+            enum_name: "Result".to_string(),
+            variant_name: "Err".to_string(),
+            data: Some(vec![value]),
+        }
+    }
+    
+    /// Evaluate a unary math function
+    fn evaluate_unary_math_function(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+        func_name: &str,
+        operation: fn(f64) -> f64,
+    ) -> Result<Value> {
+        self.validate_arg_count(func_name, args, 1)?;
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Float(f) => Ok(Value::Float(operation(f))),
+            Value::Int(n) => Ok(Value::Float(operation(n as f64))),
+            _ => bail!("{}() expects a numeric argument", func_name),
+        }
+    }
+    
+    /// Evaluate a unary math function with validation
+    fn evaluate_unary_math_function_validated(
+        &mut self,
+        args: &[Expr],
+        deadline: Instant,
+        depth: usize,
+        func_name: &str,
+        operation: fn(f64) -> f64,
+        validator: fn(f64) -> Result<()>,
+    ) -> Result<Value> {
+        self.validate_arg_count(func_name, args, 1)?;
+        
+        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        match value {
+            Value::Float(f) => {
+                validator(f)?;
+                Ok(Value::Float(operation(f)))
+            }
+            Value::Int(n) => {
+                let f = n as f64;
+                validator(f)?;
+                Ok(Value::Float(operation(f)))
+            }
+            _ => bail!("{}() expects a numeric argument", func_name),
+        }
+    }
+
     // === Resource-Bounded Evaluation API ===
     
     /// Create a sandboxed REPL instance for testing/fuzzing
@@ -1932,12 +2016,30 @@ impl Repl {
             "map" => self.evaluate_list_map(items, args, deadline, depth),
             "filter" => self.evaluate_list_filter(items, args, deadline, depth),
             "reduce" => self.evaluate_list_reduce(items, args, deadline, depth),
-            "len" | "length" => Self::evaluate_list_length(&items),
-            "head" | "first" => Self::evaluate_list_head(&items),
-            "last" => Self::evaluate_list_last(&items),
-            "tail" | "rest" => Self::evaluate_list_tail(items),
-            "reverse" => Self::evaluate_list_reverse(items),
-            "sum" => Self::evaluate_list_sum(&items),
+            "len" | "length" => {
+                self.validate_arg_count(method, args, 0)?;
+                Self::evaluate_list_length(&items)
+            }
+            "head" | "first" => {
+                self.validate_arg_count(method, args, 0)?;
+                Self::evaluate_list_head(&items)
+            }
+            "last" => {
+                self.validate_arg_count("last", args, 0)?;
+                Self::evaluate_list_last(&items)
+            }
+            "tail" | "rest" => {
+                self.validate_arg_count(method, args, 0)?;
+                Self::evaluate_list_tail(items)
+            }
+            "reverse" => {
+                self.validate_arg_count("reverse", args, 0)?;
+                Self::evaluate_list_reverse(items)
+            }
+            "sum" => {
+                self.validate_arg_count("sum", args, 0)?;
+                Self::evaluate_list_sum(&items)
+            }
             "push" => self.evaluate_list_push(items, args, deadline, depth),
             "pop" => Self::evaluate_list_pop(items, args),
             "append" => self.evaluate_list_append(items, args, deadline, depth),
@@ -2383,11 +2485,7 @@ impl Repl {
                 self.bindings = saved_bindings.clone();
                 
                 if let Value::Bool(true) = result {
-                return Ok(Value::EnumVariant {
-                    enum_name: "Option".to_string(),
-                    variant_name: "Some".to_string(),
-                    data: Some(vec![item]),
-                });
+                    return Ok(Self::create_option_some(item));
                 }
             }
             
@@ -2396,11 +2494,7 @@ impl Repl {
             bail!("find currently only supports lambda expressions");
         }
         
-        Ok(Value::EnumVariant {
-            enum_name: "Option".to_string(),
-            variant_name: "None".to_string(),
-            data: None,
-        })
+        Ok(Self::create_option_none())
     }
     
     /// Evaluate `list.any()` operation - check if any element matches predicate
@@ -2513,11 +2607,7 @@ impl Repl {
     /// Evaluate `list.min()` operation - find minimum element
     fn evaluate_list_min(items: &[Value]) -> Result<Value> {
         if items.is_empty() {
-            return Ok(Value::EnumVariant {
-                enum_name: "Option".to_string(),
-                variant_name: "None".to_string(),
-                data: None,
-            });
+            return Ok(Self::create_option_none());
         }
         
         let mut min = items[0].clone();
@@ -2531,21 +2621,13 @@ impl Repl {
             }
         }
         
-        Ok(Value::EnumVariant {
-            enum_name: "Option".to_string(),
-            variant_name: "Some".to_string(),
-            data: Some(vec![min]),
-        })
+        Ok(Self::create_option_some(min))
     }
     
     /// Evaluate `list.max()` operation - find maximum element
     fn evaluate_list_max(items: &[Value]) -> Result<Value> {
         if items.is_empty() {
-            return Ok(Value::EnumVariant {
-                enum_name: "Option".to_string(),
-                variant_name: "None".to_string(),
-                data: None,
-            });
+            return Ok(Self::create_option_none());
         }
         
         let mut max = items[0].clone();
@@ -2559,11 +2641,7 @@ impl Repl {
             }
         }
         
-        Ok(Value::EnumVariant {
-            enum_name: "Option".to_string(),
-            variant_name: "Some".to_string(),
-            data: Some(vec![max]),
-        })
+        Ok(Self::create_option_some(max))
     }
     
     /// Evaluate `list.take()` operation - take first n elements
@@ -2834,8 +2912,12 @@ impl Repl {
         _deadline: Instant,
         _depth: usize,
     ) -> Result<Value> {
-        // Try simple transforms first
+        // Try simple transforms first - these methods take no arguments
         if let Some(result) = Self::handle_string_transforms(s, method) {
+            // Check that no arguments were provided for no-arg methods
+            if !args.is_empty() {
+                bail!("{} requires no arguments", method);
+            }
             return result;
         }
         
@@ -3857,11 +3939,12 @@ impl Repl {
                 self.apply_function_to_value("Result", "Ok", data, &args[0], deadline, depth)
             }
             ("Err", "map") if args.len() == 1 => {
-                Ok(Value::EnumVariant {
-                    enum_name: "Result".to_string(),
-                    variant_name: variant_name.to_string(),
-                    data: data.cloned(),
-                })
+                // Err values are not transformed by map
+                if let Some(err_val) = data.and_then(|d| d.first()) {
+                    Ok(Self::create_result_err(err_val.clone()))
+                } else {
+                    Ok(Self::create_result_err(Value::Unit))
+                }
             }
             ("Ok", "and_then") if args.len() == 1 => {
                 self.apply_function_and_flatten(data, &args[0], deadline, depth)
@@ -7818,11 +7901,7 @@ impl Repl {
             bail!("None expects no arguments");
         }
 
-        Ok(Value::EnumVariant {
-            enum_name: "Option".to_string(),
-            variant_name: "None".to_string(),
-            data: None,
-        })
+        Ok(Self::create_option_none())
     }
 
     /// Evaluate `Ok` constructor
@@ -8198,15 +8277,7 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("sin() expects exactly 1 argument");
-        }
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        match value {
-            Value::Float(f) => Ok(Value::Float(f.sin())),
-            Value::Int(n) => Ok(Value::Float((n as f64).sin())),
-            _ => bail!("sin() expects a numeric argument"),
-        }
+        self.evaluate_unary_math_function(args, deadline, depth, "sin", f64::sin)
     }
 
     /// Evaluate `cos()` function
@@ -8216,15 +8287,7 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("cos() expects exactly 1 argument");
-        }
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        match value {
-            Value::Float(f) => Ok(Value::Float(f.cos())),
-            Value::Int(n) => Ok(Value::Float((n as f64).cos())),
-            _ => bail!("cos() expects a numeric argument"),
-        }
+        self.evaluate_unary_math_function(args, deadline, depth, "cos", f64::cos)
     }
 
     /// Evaluate `tan()` function
@@ -8234,15 +8297,7 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("tan() expects exactly 1 argument");
-        }
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        match value {
-            Value::Float(f) => Ok(Value::Float(f.tan())),
-            Value::Int(n) => Ok(Value::Float((n as f64).tan())),
-            _ => bail!("tan() expects a numeric argument"),
-        }
+        self.evaluate_unary_math_function(args, deadline, depth, "tan", f64::tan)
     }
 
     /// Evaluate `log()` function (natural logarithm)
@@ -8252,25 +8307,13 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("log() expects exactly 1 argument");
-        }
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        match value {
-            Value::Float(f) => {
-                if f <= 0.0 {
-                    bail!("log() requires a positive argument");
-                }
-                Ok(Value::Float(f.ln()))
+        let validator = |f: f64| -> Result<()> {
+            if f <= 0.0 {
+                bail!("log() requires a positive argument");
             }
-            Value::Int(n) => {
-                if n <= 0 {
-                    bail!("log() requires a positive argument");
-                }
-                Ok(Value::Float((n as f64).ln()))
-            }
-            _ => bail!("log() expects a numeric argument"),
-        }
+            Ok(())
+        };
+        self.evaluate_unary_math_function_validated(args, deadline, depth, "log", f64::ln, validator)
     }
 
     /// Evaluate `log10()` function (base-10 logarithm)
@@ -8280,25 +8323,13 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if args.len() != 1 {
-            bail!("log10() expects exactly 1 argument");
-        }
-        let value = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        match value {
-            Value::Float(f) => {
-                if f <= 0.0 {
-                    bail!("log10() requires a positive argument");
-                }
-                Ok(Value::Float(f.log10()))
+        let validator = |f: f64| -> Result<()> {
+            if f <= 0.0 {
+                bail!("log10() requires a positive argument");
             }
-            Value::Int(n) => {
-                if n <= 0 {
-                    bail!("log10() requires a positive argument");
-                }
-                Ok(Value::Float((n as f64).log10()))
-            }
-            _ => bail!("log10() expects a numeric argument"),
-        }
+            Ok(())
+        };
+        self.evaluate_unary_math_function_validated(args, deadline, depth, "log10", f64::log10, validator)
     }
 
     /// Evaluate `random()` function - returns float between 0.0 and 1.0
