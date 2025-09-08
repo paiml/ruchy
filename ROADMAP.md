@@ -1,214 +1,249 @@
-# Ruchy Development Roadmap
+# Ruchy Compiler Development Roadmap - v1.84.0
 
-**Last Updated**: August 24, 2025  
-**Current Version**: v1.9.1  
-**Language Completeness**: 85-90% Core Features
+**Last Updated**: September 8, 2025  
+**Current Version**: v1.84.0  
+**Book Compatibility**: 77% (85/111 examples passing)  
+**Language Completeness**: ~90% Core Features
 
-## 🚨 Critical Path (Immediate Blockers)
+## 🎯 Current Status Assessment
 
-### Priority 1: Format String Runtime Fix [BLOCKING EVERYTHING]
-**Status**: 🔴 Critical - Blocking all projects  
-**Impact**: rosetta-ruchy, ruchy-book, user scripts  
-**Issue**: `println!("Result: {}", var)` validates but fails at runtime
+### What's Working Well ✅
+- Basic syntax and control flow (100% in simple chapters)
+- DataFrames in interpreter mode (major v1.84.0 achievement!)
+- String handling, arrays, tuples
+- Basic functions and variables
+- Format strings (fixed since v1.9.1)
 
+### What's Broken ❌ (26 Book Failures Analysis)
+
+## 🚨 Priority 1: Error Handling System [6 failures - HIGHEST IMPACT]
+
+**Status**: 🔴 Critical - Blocking production code  
+**Book Compatibility**: ch17 at 36% pass rate  
+**Files with WIP**: `tests/error_handling_tdd.rs`, `tests/error_handling_comprehensive_tdd.rs`
+
+### Required Implementations:
 ```rust
-// Must fix runtime compilation for:
-println!("Result: {}", variable);
-println!("Float: {:.2}", float_value);
-println!("Multiple: {} and {}", a, b);
+// Result<T, E> type
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+
+// Option<T> type  
+enum Option<T> {
+    Some(T),
+    None,
+}
+
+// ? operator for error propagation
+fn read_file() -> Result<String, Error> {
+    let content = std::fs::read_to_string("file.txt")?;
+    Ok(content)
+}
+
+// unwrap() and expect() methods
+let value = result.unwrap();
+let value = result.expect("Failed to get value");
 ```
 
-**Why Critical**:
-- Every algorithm needs to display results
-- Currently forced to use static strings only
-- Blocks 81% of ruchy-book examples
-- Makes language unusable for real work
-
-**Solution Path**:
-1. Fix transpiler format string generation
-2. Ensure proper Rust macro generation
-3. Add comprehensive format string tests
-4. Validate against rosetta-ruchy algorithms
+**Impact**: Fixes 6 failures, enables production error handling
 
 ---
 
-## 📊 Priority Matrix (Data-Driven from Sister Projects)
+## 🚨 Priority 2: Testing Framework [3 failures - BLOCKS TDD]
 
-| Priority | Feature | Impact | Source | Status |
-|----------|---------|--------|--------|--------|
-| **P0** | Format Strings | 81% examples blocked | rosetta-ruchy | 🔴 Broken |
-| **P1** | Math Functions | 30% examples need | ruchy-book | ⚠️ Missing |
-| **P2** | File I/O | 25% examples need | ruchy-book | ⚠️ Partial |
-| **P3** | HashMap/HashSet | 20% examples need | rosetta-ruchy | ⚠️ Missing |
-| **P4** | Error Handling | 15% examples need | ruchy-book | ✅ Works |
-| **P5** | Iterators | 10% need advanced | rosetta-ruchy | ⚠️ Basic only |
+**Status**: 🔴 Missing - No test runner  
+**Book Compatibility**: ch16 at 62% pass rate  
+
+### Required Implementations:
+```rust
+// assert_eq! macro
+assert_eq!(2 + 2, 4);
+assert_eq!(add(2, 3), 5, "Addition failed");
+
+// assert! macro
+assert!(value > 0);
+assert!(is_valid(), "Validation failed");
+
+// #[test] attribute
+#[test]
+fn test_addition() {
+    assert_eq!(2 + 2, 4);
+}
+
+// Test runner
+$ ruchy test
+running 3 tests
+test test_addition ... ok
+test test_subtraction ... ok
+test test_division ... ok
+```
+
+**Impact**: Fixes 3 failures, enables TDD workflow
 
 ---
 
-## 🎯 Sprint 15: Format String Emergency Fix (Next 2-4 hours)
+## 🚨 Priority 3: DataFrame Transpiler Fix [4 failures]
 
-### Objective: Unblock ALL Projects
-**Success Metric**: `println!("n = {}", n)` works in REPL and transpiler
+**Status**: 🟡 Partial - Works in REPL, broken in transpiler  
+**Book Compatibility**: ch18 DataFrames work in interpreter only  
+**Files with WIP**: `src/backend/transpiler/dataframe.rs`, `tests/dataframe_transpiler_polars_tdd.rs`
 
-### Tasks:
-- [ ] **FIX-001**: Debug why format strings fail at runtime
-- [ ] **FIX-002**: Fix macro generation in transpiler
-- [ ] **FIX-003**: Add format string evaluation to REPL
-- [ ] **FIX-004**: Create comprehensive test suite
-- [ ] **FIX-005**: Validate all rosetta-ruchy algorithms
-- [ ] **FIX-006**: Release v1.9.2 immediately
-
-### Test Cases Required:
+### Current Problem:
 ```rust
-// All must work:
-println!("Simple: {}", 42);
-println!("Float: {:.2}", 3.14159);
-println!("Multiple: {} + {} = {}", 1, 2, 3);
-println!("Mixed: {} and {}", "string", 123);
-println!("Debug: {:?}", vec![1, 2, 3]);
+// Ruchy generates this (WRONG):
+let df = polars::prelude::DataFrame::new(vec![])
+    .column("name", vec!["Alice", "Bob"])  // ❌ .column() doesn't exist
+    .build();
+
+// Should generate this (CORRECT):
+let df = DataFrame::new(vec![
+    Series::new("name", &["Alice", "Bob"]),
+]).unwrap();
 ```
+
+**Impact**: Makes DataFrames compilable, not just interpretable
 
 ---
 
-## 📈 Sprint 16: Standard Library Essentials (After Format Fix)
+## 🚨 Priority 4: Advanced Pattern Matching [3 failures]
 
-### Math Functions (Most Requested)
+**Status**: 🟡 Basic works, advanced broken  
+**Book Compatibility**: ch05 at 82% pass rate  
+
+### Required Implementations:
 ```rust
-// Core math needed by algorithms:
-fn sqrt(x: f64) -> f64
-fn pow(base: f64, exp: f64) -> f64
-fn abs(x: T) -> T
-fn min(a: T, b: T) -> T
-fn max(a: T, b: T) -> T
-fn floor(x: f64) -> f64
-fn ceil(x: f64) -> f64
-fn round(x: f64) -> f64
+// Pattern guards
+match value {
+    x if x > 0 => "positive",
+    x if x < 0 => "negative",
+    _ => "zero",
+}
+
+// Destructuring in match
+match point {
+    Point { x: 0, y } => format!("On Y axis at {}", y),
+    Point { x, y: 0 } => format!("On X axis at {}", x),
+    Point { x, y } => format!("At ({}, {})", x, y),
+}
+
+// Or patterns
+match value {
+    0 | 1 => "binary",
+    2..=9 => "single digit",
+    _ => "other",
+}
 ```
 
-### Collection Utilities
-```rust
-// HashMap/HashSet for algorithms:
-HashMap::new()
-HashMap::insert(k, v)
-HashMap::get(k)
-HashMap::contains_key(k)
-HashSet::new()
-HashSet::insert(v)
-HashSet::contains(v)
-```
+**Impact**: Fixes 3 failures in control flow
 
 ---
 
-## 🚀 Phase 2: Integration Pattern Fixes (Week 2)
+## 🚨 Priority 5: Closures & Iterators [5 failures]
 
-### Complex Patterns That Must Work
-Based on ruchy-book failures:
+**Status**: 🔴 Missing/Broken  
+**Book Compatibility**: ch04 at 50% pass rate  
 
-1. **Nested Closures with Captures**
+### Required Implementations:
 ```rust
-let outer = 10;
-let f = |x| {
-    let g = |y| x + y + outer;
-    g(5)
-};
-```
+// Closures with captures
+let x = 10;
+let add_x = |y| x + y;
+let result = add_x(5);  // 15
 
-2. **Method Chaining on Complex Types**
-```rust
-data.filter(|x| x > 0)
+// Iterator methods
+vec![1, 2, 3]
+    .iter()
     .map(|x| x * 2)
-    .collect::<Vec<_>>()
+    .filter(|x| x > 2)
+    .collect::<Vec<_>>();
+
+// Fold/Reduce
+let sum = vec![1, 2, 3].iter().fold(0, |acc, x| acc + x);
 ```
 
-3. **Generic Type Inference**
-```rust
-fn identity<T>(x: T) -> T { x }
-let result = identity(42);  // Should infer i32
-```
+**Impact**: Fixes 5 failures in practical patterns
 
 ---
 
-## 🔄 Phase 3: WASM REPL Deployment (Week 3)
+## 📊 Sprint Planning
 
-### Browser-Based REPL
-**Status**: Specification complete, ready for implementation
+### Sprint 1: Error Handling & Testing (Target: 85% book compatibility)
+- [ ] **ERR-001**: Implement Result<T,E> enum
+- [ ] **ERR-002**: Implement Option<T> enum  
+- [ ] **ERR-003**: Add ? operator support
+- [ ] **TEST-001**: Implement assert! and assert_eq! macros
+- [ ] **TEST-002**: Add #[test] attribute support
+- [ ] **TEST-003**: Create test runner command
 
-- [ ] Implement core WASM module (<200KB)
-- [ ] Progressive loading strategy
-- [ ] GitHub Pages deployment
-- [ ] Mobile browser support
+**Validation**: All ch16 and ch17 examples pass
 
----
+### Sprint 2: DataFrame Transpiler (Target: 88% book compatibility)
+- [ ] **DF-001**: Fix DataFrame::new() transpilation
+- [ ] **DF-002**: Generate Series::new() calls correctly
+- [ ] **DF-003**: Support all DataFrame methods in transpiler
+- [ ] **DF-004**: Add polars dependency injection
 
-## 📊 Success Metrics
+**Validation**: All ch18 examples compile and run
 
-### Immediate (Sprint 15)
-- ✅ Format strings work: 100% of cases
-- ✅ rosetta-ruchy: All algorithms display output
-- ✅ ruchy-book: Jump from 19% → 40% compatibility
+### Sprint 3: Advanced Features (Target: 95% book compatibility)
+- [ ] **PAT-001**: Add pattern guards
+- [ ] **PAT-002**: Add destructuring in match
+- [ ] **CLOS-001**: Implement closure captures
+- [ ] **ITER-001**: Add iterator trait methods
 
-### Short-term (2 weeks)
-- ✅ Standard library: 60% complete
-- ✅ ruchy-book: 60% compatibility
-- ✅ rosetta-ruchy: 100% algorithms working
+**Validation**: All ch04 and ch05 examples pass
 
-### Medium-term (1 month)
-- ✅ WASM REPL deployed
-- ✅ ruchy-book: 80% compatibility
-- ✅ Bootstrap Stage 0 complete
+### Sprint 4: Binary & Deployment (Target: 100% book compatibility)
+- [ ] **BIN-001**: Fix binary compilation
+- [ ] **BIN-002**: Add optimization levels
+- [ ] **BIN-003**: Support cross-compilation
 
----
-
-## 🚫 What We're NOT Doing
-
-Based on analysis, these are already working or low priority:
-
-### Already Working (Don't Touch)
-- ✅ Pipeline operator
-- ✅ Import/Export
-- ✅ String methods
-- ✅ Fat arrow syntax
-- ✅ Async/await
-- ✅ Generics
-- ✅ Traits
-
-### Low Priority (Later)
-- Actor system (no examples need it)
-- Advanced macros (not blocking anything)
-- Custom operators (nice to have)
-- IDE plugins (after core stable)
+**Validation**: All book examples pass!
 
 ---
 
-## 📝 Sprint Planning Template
+## 📈 Success Metrics
 
-```markdown
-## Sprint N: [Feature Name] (Duration)
-**Objective**: [Clear goal]
-**Success Metric**: [Measurable outcome]
-**Blocking**: [What this unblocks]
+| Milestone | Current | Target | What Gets Fixed |
+|-----------|---------|--------|-----------------|
+| Sprint 1 | 77% | 85% | Error handling, testing |
+| Sprint 2 | 85% | 88% | DataFrames compilable |
+| Sprint 3 | 88% | 95% | Patterns, closures, iterators |
+| Sprint 4 | 95% | 100% | Binary compilation |
 
-### Tasks:
-- [ ] TASK-001: [Specific action]
-- [ ] TASK-002: [Specific action]
+---
 
-### Validation:
-- [ ] rosetta-ruchy: [Specific test]
-- [ ] ruchy-book: [Specific test]
-- [ ] Release: v1.x.x
-```
+## 🚫 What We're NOT Doing (Already Works)
+
+- ✅ Basic DataFrames (interpreter mode works!)
+- ✅ Format strings (fixed in earlier versions)
+- ✅ Basic functions and variables
+- ✅ Arrays and tuples
+- ✅ Basic control flow
+- ✅ String operations
+
+---
+
+## 📝 Next Actions
+
+1. **IMMEDIATE**: Start with error_handling_tdd.rs tests
+2. **THEN**: Implement Result<T,E> and Option<T> in parser
+3. **THEN**: Add ? operator to transpiler
+4. **VALIDATE**: Run book tests after each change
 
 ---
 
 ## 🎯 The North Star
 
-**Make Ruchy usable for real work by fixing what's actually broken, not adding new features.**
+**Get the Ruchy book to 100% pass rate** - This proves the language is production-ready for real-world use.
 
-The data is clear:
-1. Format strings are the #1 blocker
-2. Standard library gaps are #2
-3. Everything else is nice-to-have
+Current blockers are clear:
+1. Error handling (6 failures)
+2. Testing framework (3 failures)  
+3. DataFrame transpiler (4 failures)
+4. Pattern matching (3 failures)
+5. Closures/iterators (5 failures)
 
----
-
-**Remember**: We have 85-90% language completeness. We don't need more features. We need the existing features to work reliably in all contexts.
+Total: Fix these 21 core issues to reach ~95% compatibility.
