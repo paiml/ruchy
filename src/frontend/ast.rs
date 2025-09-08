@@ -83,6 +83,11 @@ pub enum ExprKind {
     Throw {
         expr: Box<Expr>,
     },
+    TryCatch {
+        try_block: Box<Expr>,
+        catch_clauses: Vec<CatchClause>,
+        finally_block: Option<Box<Expr>>,
+    },
     Ok {
         value: Box<Expr>,
     },
@@ -282,11 +287,6 @@ pub enum ExprKind {
         pattern: Pattern,
         expr: Box<Expr>,
         body: Box<Expr>,
-    },
-    TryCatch {
-        try_block: Box<Expr>,
-        catch_clauses: Vec<CatchClause>,
-        finally_block: Option<Box<Expr>>,
     },
     Loop {
         body: Box<Expr>,

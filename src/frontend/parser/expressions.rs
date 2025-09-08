@@ -1830,7 +1830,7 @@ fn parse_use_statement(state: &mut ParserState) -> Result<Expr> {
 }
 
 fn parse_dataframe_literal(state: &mut ParserState) -> Result<Expr> {
-    // Parse df![...] macro syntax
+    // Parse df![...] macro syntax - DataFrame token already consumed by caller
     let start_span = parse_dataframe_header(state)?;
     let columns = parse_dataframe_columns(state)?;
     state.tokens.expect(&Token::RightBracket)?;

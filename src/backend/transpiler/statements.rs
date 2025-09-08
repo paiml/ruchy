@@ -2014,15 +2014,35 @@ impl Transpiler {
                 }
             }
         } else {
-            // Multiple arguments - use appropriate format for each
-            let format_parts: Vec<_> = args.iter().map(|arg| {
-                match &arg.kind {
-                    ExprKind::Literal(Literal::String(_)) => "{}",
-                    _ => "{:?}"
+            // Multiple arguments - check if first is format string
+            if let ExprKind::Literal(Literal::String(format_str)) = &args[0].kind {
+                if format_str.contains("{}") {
+                    // First argument is a format string, rest are values
+                    let format_arg = &all_args[0];
+                    let value_args = &all_args[1..];
+                    Ok(Some(quote! { #func_tokens!(#format_arg, #(#value_args),*) }))
+                } else {
+                    // First argument is regular string, treat all as separate values
+                    let format_parts: Vec<_> = args.iter().map(|arg| {
+                        match &arg.kind {
+                            ExprKind::Literal(Literal::String(_)) => "{}",
+                            _ => "{:?}"
+                        }
+                    }).collect();
+                    let format_str = format_parts.join(" ");
+                    Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
                 }
-            }).collect();
-            let format_str = format_parts.join(" ");
-            Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
+            } else {
+                // No format string, treat all as separate values
+                let format_parts: Vec<_> = args.iter().map(|arg| {
+                    match &arg.kind {
+                        ExprKind::Literal(Literal::String(_)) => "{}",
+                        _ => "{:?}"
+                    }
+                }).collect();
+                let format_str = format_parts.join(" ");
+                Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
+            }
         }
     }
     
