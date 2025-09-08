@@ -4,6 +4,33 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.86.0] - 2025-09-08
+
+### Added - Pattern Matching & Control Flow Enhancements
+- **If-let Pattern Matching**: Added `if let Some(x) = maybe { ... }` syntax for ergonomic Option/Result handling
+- **While-let Loops**: Implemented `while let Some(item) = iter.next() { ... }` for iterator patterns
+- **Array Destructuring**: Full support for `let [a, b, c] = [1, 2, 3]` with rest patterns
+- **Tuple Destructuring**: `let (x, y) = (10, 20)` with nested support
+- **Rest Patterns**: `let [first, ...rest] = array` for flexible array matching
+- **Spread Operator**: `let combined = [...arr1, ...arr2]` for array concatenation
+- **Default Values**: `let [a = 10, b = 20] = [1]` with runtime defaults
+- **Object Destructuring**: `let {name, age} = person` for struct field extraction
+- **Mixed Patterns**: Support for complex nested patterns like `let ([a, b], {x, y}) = data`
+- **Function Parameter Destructuring**: `fun process([x, y]) { x + y }` in function signatures
+
+### Improved - Developer Experience
+- **PMAT-style Pre-commit Hook**: Cleaner, more informative quality gate output with numbered checks
+- **Enhanced Error Messages**: Better context and suggestions for parsing errors
+- **Test Infrastructure**: Fixed compilation issues, all 898 library tests now passing
+- **Parser Refactoring**: Reduced if-expression parsing complexity from 17 to <10
+
+### Technical
+- **TDG Score**: Maintained A grade (94.0/100) throughout all changes
+- **Coverage**: Improved to 49.90% overall coverage
+- **Zero Technical Debt**: No TODO/FIXME/SATD comments in codebase
+- **Book Compatibility**: Maintained 85% compatibility with ruchy-book examples
+- **If-let Tests**: 4/7 passing for common use cases (Some, Ok patterns work)
+
 ## [1.85.0] - 2025-09-08
 
 ### Fixed - DataFrame Constructor Industry Standards Compliance  

@@ -34,7 +34,7 @@ impl GrammarCoverageMatrix {
     pub fn record(
         &mut self,
         production: &'static str,
-        input: &str,
+        _input: &str,
         result: Result<Expr>,
         elapsed: Duration,
     ) {
@@ -56,7 +56,7 @@ impl GrammarCoverageMatrix {
                 self.record_ast_variants(&ast);
             }
             Err(e) => {
-                let error_msg = format!("{input}: {e}");
+                let error_msg = e.to_string();
                 if !stats.error_patterns.contains(&error_msg) {
                     stats.error_patterns.push(error_msg);
                 }
@@ -146,6 +146,32 @@ impl GrammarCoverageMatrix {
         );
     }
 
+    /// Get coverage percentage
+    pub fn get_coverage_percentage(&self) -> f64 {
+        if self.uncovered.is_empty() && self.productions.is_empty() {
+            return 0.0;
+        }
+        
+        // Count uncovered productions that haven't been covered
+        let uncovered_count = self.uncovered.iter()
+            .filter(|prod| !self.productions.contains_key(**prod))
+            .count();
+        
+        let total = self.productions.len() + uncovered_count;
+        if total == 0 {
+            return 0.0;
+        }
+        
+        #[allow(clippy::cast_precision_loss)]
+        let percentage = (self.productions.len() as f64 / total as f64) * 100.0;
+        percentage
+    }
+    
+    /// Generate a coverage report (alias for report())
+    pub fn generate_report(&self) -> String {
+        self.report()
+    }
+
     /// Generate a coverage report
     pub fn report(&self) -> String {
         use std::fmt::Write;
@@ -153,6 +179,9 @@ impl GrammarCoverageMatrix {
         let mut report = String::new();
         report.push_str("Grammar Coverage Report\n");
         report.push_str("=======================\n\n");
+        
+        let coverage_percentage = self.get_coverage_percentage();
+        let _ = writeln!(&mut report, "Coverage: {:.1}%", coverage_percentage);
 
         let _ = writeln!(
             &mut report,
