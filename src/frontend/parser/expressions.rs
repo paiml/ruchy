@@ -920,88 +920,93 @@ pub fn parse_list_pattern(state: &mut ParserState) -> Result<Pattern> {
 
 /// Parse if expression: if condition { `then_branch` } [else { `else_branch` }]
 /// Also handles if-let: if let pattern = expr { `then_branch` } [else { `else_branch` }]
+/// Complexity: <10 (split into helper functions)
 fn parse_if_expression(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::If)?;
     
     // Check for if-let syntax
     if matches!(state.tokens.peek(), Some((Token::Let, _))) {
-        state.tokens.advance(); // consume 'let'
-        
-        // Parse the pattern
-        let pattern = parse_match_pattern(state)
-            .map_err(|e| anyhow::anyhow!("Expected pattern after 'if let': {}", e))?;
-        
-        // Expect '='
-        state.tokens.expect(&Token::Equal)
-            .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in if-let: {}", e))?;
-        
-        // Parse the expression to match against
-        let expr = Box::new(super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected expression after '=' in if-let: {}", e))?);
-        
-        // Parse then branch
-        let then_branch = Box::new(super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected body after if-let condition, typically {{ ... }}: {}", e))?);
-        
-        // Parse optional else branch
-        let else_branch = if matches!(state.tokens.peek(), Some((Token::Else, _))) {
-            state.tokens.advance(); // consume 'else'
-            
-            // Check for else-if-let
-            if matches!(state.tokens.peek(), Some((Token::If, _))) {
-                // Let the recursive call handle else-if or else-if-let
-                Some(Box::new(parse_if_expression(state)?))
-            } else {
-                Some(Box::new(super::parse_expr_recursive(state)
-                    .map_err(|e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {}", e))?))
-            }
-        } else {
-            None
-        };
-        
-        Ok(Expr::new(
-            ExprKind::IfLet {
-                pattern,
-                expr,
-                then_branch,
-                else_branch,
-            },
-            start_span,
-        ))
+        parse_if_let_expression(state, start_span)
     } else {
-        // Regular if expression
-        // Parse condition with better error context
-        let condition = Box::new(super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {}", e))?);
+        parse_regular_if_expression(state, start_span)
+    }
+}
+
+/// Parse if-let expression: if let pattern = expr { then } [else { else }]
+/// Complexity: <10
+fn parse_if_let_expression(state: &mut ParserState, start_span: Span) -> Result<Expr> {
+    state.tokens.advance(); // consume 'let'
+    
+    // Parse the pattern
+    let pattern = parse_match_pattern(state)
+        .map_err(|e| anyhow::anyhow!("Expected pattern after 'if let': {}", e))?;
+    
+    // Expect '='
+    state.tokens.expect(&Token::Equal)
+        .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in if-let: {}", e))?;
+    
+    // Parse the expression to match against
+    let expr = Box::new(super::parse_expr_recursive(state)
+        .map_err(|e| anyhow::anyhow!("Expected expression after '=' in if-let: {}", e))?);
+    
+    // Parse then branch
+    let then_branch = Box::new(super::parse_expr_recursive(state)
+        .map_err(|e| anyhow::anyhow!("Expected body after if-let condition, typically {{ ... }}: {}", e))?);
+    
+    // Parse optional else branch
+    let else_branch = parse_else_branch(state)?;
+    
+    Ok(Expr::new(
+        ExprKind::IfLet {
+            pattern,
+            expr,
+            then_branch,
+            else_branch,
+        },
+        start_span,
+    ))
+}
+
+/// Parse regular if expression: if condition { then } [else { else }]
+/// Complexity: <10
+fn parse_regular_if_expression(state: &mut ParserState, start_span: Span) -> Result<Expr> {
+    // Parse condition with better error context
+    let condition = Box::new(super::parse_expr_recursive(state)
+        .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {}", e))?);
+    
+    // Parse then branch (expect block) with better error context
+    let then_branch = Box::new(super::parse_expr_recursive(state)
+        .map_err(|e| anyhow::anyhow!("Expected body after if condition, typically {{ ... }}: {}", e))?);
+    
+    // Parse optional else branch
+    let else_branch = parse_else_branch(state)?;
+    
+    Ok(Expr::new(
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        },
+        start_span,
+    ))
+}
+
+/// Parse else branch for if/if-let expressions
+/// Complexity: <10
+fn parse_else_branch(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
+    if matches!(state.tokens.peek(), Some((Token::Else, _))) {
+        state.tokens.advance(); // consume 'else'
         
-        // Parse then branch (expect block) with better error context
-        let then_branch = Box::new(super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected body after if condition, typically {{ ... }}: {}", e))?);
-        
-        // Parse optional else branch
-        let else_branch = if matches!(state.tokens.peek(), Some((Token::Else, _))) {
-            state.tokens.advance(); // consume 'else'
-            
-            // Check for else-if
-            if matches!(state.tokens.peek(), Some((Token::If, _))) {
-                // Let the recursive call handle else-if or else-if-let
-                Some(Box::new(parse_if_expression(state)?))
-            } else {
-                Some(Box::new(super::parse_expr_recursive(state)
-                    .map_err(|e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {}", e))?))
-            }
+        // Check for else-if or else-if-let
+        if matches!(state.tokens.peek(), Some((Token::If, _))) {
+            // Let the recursive call handle else-if or else-if-let
+            Ok(Some(Box::new(parse_if_expression(state)?)))
         } else {
-            None
-        };
-        
-        Ok(Expr::new(
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            },
-            start_span,
-        ))
+            Ok(Some(Box::new(super::parse_expr_recursive(state)
+                .map_err(|e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {}", e))?)))
+        }
+    } else {
+        Ok(None)
     }
 }
 
