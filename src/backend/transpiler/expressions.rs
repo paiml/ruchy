@@ -464,10 +464,33 @@ impl Transpiler {
 
     /// Transpiles list literals
     pub fn transpile_list(&self, elements: &[Expr]) -> Result<TokenStream> {
-        let element_tokens: Result<Vec<_>> =
-            elements.iter().map(|e| self.transpile_expr(e)).collect();
-        let element_tokens = element_tokens?;
-        Ok(quote! { vec![#(#element_tokens),*] })
+        // Check if any elements are spread expressions
+        let has_spread = elements.iter().any(|e| matches!(e.kind, crate::frontend::ast::ExprKind::Spread { .. }));
+        
+        if has_spread {
+            // Handle spread expressions by building vector with extends
+            let mut statements = Vec::new();
+            statements.push(quote! { let mut __temp_vec = Vec::new(); });
+            
+            for element in elements {
+                if let crate::frontend::ast::ExprKind::Spread { expr } = &element.kind {
+                    let expr_tokens = self.transpile_expr(expr)?;
+                    statements.push(quote! { __temp_vec.extend(#expr_tokens); });
+                } else {
+                    let expr_tokens = self.transpile_expr(element)?;
+                    statements.push(quote! { __temp_vec.push(#expr_tokens); });
+                }
+            }
+            
+            statements.push(quote! { __temp_vec });
+            Ok(quote! { { #(#statements)* } })
+        } else {
+            // No spread expressions, use simple vec![] macro
+            let element_tokens: Result<Vec<_>> =
+                elements.iter().map(|e| self.transpile_expr(e)).collect();
+            let element_tokens = element_tokens?;
+            Ok(quote! { vec![#(#element_tokens),*] })
+        }
     }
 
     /// Transpiles tuple literals

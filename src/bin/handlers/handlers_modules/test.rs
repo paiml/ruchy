@@ -77,7 +77,7 @@ fn run_tests(
     }
     
     // Check for failures
-    check_test_failures(&test_results)?;
+    check_test_failures(&test_results);
     
     println!("\n✅ All tests passed!");
     Ok(())
@@ -140,10 +140,9 @@ fn get_latest_modification(path: &Path) -> std::time::SystemTime {
 }
 
 /// Check if any tests failed and exit if necessary
-fn check_test_failures(test_results: &[TestResult]) -> Result<()> {
+fn check_test_failures(test_results: &[TestResult]) {
     let failed = test_results.iter().filter(|r| !r.success).count();
     if failed > 0 {
         std::process::exit(1);
     }
-    Ok(())
 }

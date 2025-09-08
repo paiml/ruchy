@@ -1,17 +1,17 @@
-//! DataFrame builder pattern transpilation for correct Polars API
+//! `DataFrame` builder pattern transpilation for correct Polars API
 //! 
 //! Transforms Ruchy's builder pattern into valid Polars code
 
-use super::*;
+use super::Transpiler;
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::quote;
 use crate::frontend::ast::{Expr, ExprKind};
 
 impl Transpiler {
-    /// Transpile DataFrame builder pattern chains
-    /// Transforms: DataFrame::new().column("a", [1,2]).column("b", [3,4]).build()
-    /// Into: DataFrame::new(vec![Series::new("a", &[1,2]), Series::new("b", &[3,4])])
+    /// Transpile `DataFrame` builder pattern chains
+    /// Transforms: `DataFrame::new().column("a", [1,2]).column("b", [3,4]).build()`
+    /// Into: `DataFrame::new(vec![Series::new("a", &[1,2]), Series::new("b", &[3,4])])`
     pub fn transpile_dataframe_builder(&self, expr: &Expr) -> Result<Option<TokenStream>> {
         // Check if this is a DataFrame builder pattern
         if let Some((columns, _base)) = self.extract_dataframe_builder_chain(expr) {
@@ -38,7 +38,7 @@ impl Transpiler {
         }
     }
     
-    /// Extract DataFrame builder chain pattern
+    /// Extract `DataFrame` builder chain pattern
     /// Returns columns and base expression if it's a builder pattern
     fn extract_dataframe_builder_chain(&self, expr: &Expr) -> Option<(Vec<(Expr, Expr)>, Expr)> {
         match &expr.kind {
@@ -84,7 +84,7 @@ impl Transpiler {
         }
     }
     
-    /// Check if expression is a DataFrame builder pattern
+    /// Check if expression is a `DataFrame` builder pattern
     pub fn is_dataframe_builder(&self, expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::MethodCall { method, .. } => {

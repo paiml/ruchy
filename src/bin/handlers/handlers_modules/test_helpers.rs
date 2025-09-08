@@ -272,7 +272,7 @@ pub fn generate_coverage_report(
     output_coverage_report(&collector, coverage_format)?;
     
     // Check threshold
-    check_coverage_threshold(&collector, threshold)?;
+    check_coverage_threshold(&collector, threshold);
     
     Ok(())
 }
@@ -308,7 +308,7 @@ fn save_html_report(html_report: &str) -> Result<String> {
 fn check_coverage_threshold(
     collector: &ruchy::quality::ruchy_coverage::RuchyCoverageCollector,
     threshold: f64,
-) -> Result<()> {
+) {
     if threshold > 0.0 {
         if collector.meets_threshold(threshold) {
             println!("\n✅ Coverage meets threshold of {:.1}%", threshold);
@@ -317,5 +317,4 @@ fn check_coverage_threshold(
             std::process::exit(1);
         }
     }
-    Ok(())
 }

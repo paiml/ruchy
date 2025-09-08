@@ -93,11 +93,13 @@ impl Transpiler {
     fn generate_value_printing_tokens(&self, value_expr: TokenStream, func_tokens: TokenStream) -> TokenStream {
         quote! {
             {
+                use std::any::Any;
                 let value = #value_expr;
-                // Check if it's a String type at runtime
-                if std::any::type_name_of_val(&value).contains("String") || 
-                   std::any::type_name_of_val(&value).contains("&str") {
-                    #func_tokens!("{}", value)
+                // Special handling for String and &str types to avoid quotes
+                if let Some(s) = (&value as &dyn Any).downcast_ref::<String>() {
+                    #func_tokens!("{}", s)
+                } else if let Some(s) = (&value as &dyn Any).downcast_ref::<&str>() {
+                    #func_tokens!("{}", s)
                 } else {
                     #func_tokens!("{:?}", value)
                 }
@@ -494,7 +496,14 @@ impl Transpiler {
                     }
                 },
                 _ => {
-                    statements.push(self.transpile_expr(expr)?);
+                    let stmt = self.transpile_expr(expr)?;
+                    // Ensure statements have semicolons for proper separation
+                    let stmt_str = stmt.to_string();
+                    if !stmt_str.trim().ends_with(';') && !stmt_str.trim().ends_with('}') {
+                        statements.push(quote! { #stmt; });
+                    } else {
+                        statements.push(stmt);
+                    }
                 }
             }
         }

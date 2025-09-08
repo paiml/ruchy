@@ -143,6 +143,13 @@ impl Transpiler {
                 }
             }
             Pattern::Struct { name, fields, has_rest } => {
+                // Handle anonymous struct destructuring for objects
+                if name.is_empty() {
+                    // For nested patterns within tuples/arrays, we need to generate a wildcard
+                    // The actual field extraction will be handled by special transpilation logic
+                    return Ok(quote! { _ });
+                }
+                
                 let struct_name = format_ident!("{}", name);
 
                 if fields.is_empty() {
@@ -216,6 +223,11 @@ impl Transpiler {
                 Ok(quote! { Some(#inner) })
             }
             Pattern::None => Ok(quote! { None }),
+            Pattern::WithDefault { pattern, .. } => {
+                // For pattern transpilation, we just transpile the inner pattern
+                // The default handling is done in the destructuring code
+                self.transpile_pattern(pattern)
+            }
         }
     }
 }

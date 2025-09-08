@@ -286,7 +286,8 @@ pub fn verify_proofs_from_ast(
     
     output_verification_results(&results, file_path, format, verbose)?;
     
-    check_verification_failures(&results)
+    check_verification_failures(&results);
+    Ok(())
 }
 
 /// Handle case when no assertions found
@@ -420,10 +421,9 @@ fn print_passed_proofs(results: &[ruchy::proving::ProofVerificationResult]) {
 }
 
 /// Check if any verifications failed and exit accordingly
-fn check_verification_failures(results: &[ruchy::proving::ProofVerificationResult]) -> Result<()> {
+fn check_verification_failures(results: &[ruchy::proving::ProofVerificationResult]) {
     let failed = results.iter().filter(|r| !r.is_verified).count();
     if failed > 0 {
         std::process::exit(1);
     }
-    Ok(())
 }

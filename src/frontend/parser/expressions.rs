@@ -363,7 +363,7 @@ fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
     let catch_clauses = parse_catch_clauses(state)?;
     let finally_block = parse_finally_block(state)?;
     
-    validate_try_catch_structure(&catch_clauses, &finally_block)?;
+    validate_try_catch_structure(&catch_clauses, finally_block.as_deref())?;
     
     Ok(Expr::new(
         ExprKind::TryCatch {
@@ -591,6 +591,10 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
             // Parse list destructuring: [a, b] = [1, 2]
             parse_list_pattern(state)
         }
+        Some((Token::LeftBrace, _)) => {
+            // Parse struct destructuring: {name, age} = obj
+            parse_struct_pattern(state)
+        }
         _ => bail!("Expected identifier or pattern after 'let{}'", 
                    if is_mutable { " mut" } else { "" })
     }
@@ -659,7 +663,7 @@ fn create_let_expression(
         }
         Pattern::Wildcard | Pattern::Literal(_) | Pattern::QualifiedName(_) | Pattern::Struct { .. } 
         | Pattern::Range { .. } | Pattern::Or(_) | Pattern::Rest | Pattern::RestNamed(_) 
-        | Pattern::Ok(_) | Pattern::Err(_) | Pattern::Some(_) | Pattern::None => {
+        | Pattern::WithDefault { .. } | Pattern::Ok(_) | Pattern::Err(_) | Pattern::Some(_) | Pattern::None => {
             // For other pattern types, use LetPattern variant
             Ok(Expr::new(
                 ExprKind::LetPattern {
@@ -756,17 +760,37 @@ fn parse_var_statement(state: &mut ParserState) -> Result<Expr> {
     }
 }
 
-fn parse_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
+pub fn parse_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftParen)?;
     let mut patterns = Vec::new();
     
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            patterns.push(Pattern::Identifier(name.clone()));
-            state.tokens.advance();
-        } else {
-            bail!("Expected identifier in tuple pattern");
-        }
+        // Parse nested pattern recursively
+        let pattern = match state.tokens.peek() {
+            Some((Token::Identifier(name), _)) => {
+                let name = name.clone();
+                state.tokens.advance();
+                Pattern::Identifier(name)
+            }
+            Some((Token::LeftParen, _)) => {
+                // Nested tuple pattern
+                parse_tuple_pattern(state)?
+            }
+            Some((Token::LeftBracket, _)) => {
+                // Nested list pattern
+                parse_list_pattern(state)?
+            }
+            Some((Token::LeftBrace, _)) => {
+                // Nested struct pattern
+                parse_struct_pattern(state)?
+            }
+            Some((Token::Underscore, _)) => {
+                state.tokens.advance();
+                Pattern::Wildcard
+            }
+            _ => bail!("Expected identifier, tuple, list, struct, or wildcard in tuple pattern"),
+        };
+        patterns.push(pattern);
         
         // Only consume comma if not at end
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
@@ -784,20 +808,109 @@ fn parse_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
     Ok(Pattern::Tuple(patterns))
 }
 
-fn parse_list_pattern(state: &mut ParserState) -> Result<Pattern> {
+pub fn parse_struct_pattern(state: &mut ParserState) -> Result<Pattern> {
+    state.tokens.advance(); // consume '{'
+    
+    let mut fields = Vec::new();
+    let mut is_first = true;
+    
+    while let Some((token, _)) = state.tokens.peek() {
+        if matches!(token, Token::RightBrace) {
+            state.tokens.advance(); // consume '}'
+            break;
+        }
+        
+        if !is_first {
+            if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                state.tokens.advance(); // consume ','
+            } else {
+                bail!("Expected comma between struct pattern fields");
+            }
+        }
+        is_first = false;
+        
+        // Parse field name
+        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            let field_name = name.clone();
+            state.tokens.advance();
+            
+            // For now, support shorthand syntax only: {name, age}
+            // TODO: Support full syntax: {name: pattern, age: other_pattern}
+            let field = crate::frontend::ast::StructPatternField {
+                name: field_name.clone(),
+                pattern: None, // Shorthand means field name is the variable name
+            };
+            fields.push(field);
+        } else {
+            bail!("Expected identifier in struct pattern");
+        }
+    }
+    
+    Ok(Pattern::Struct {
+        name: String::new(), // Anonymous struct pattern (empty name)
+        fields,
+        has_rest: false, // No rest patterns in basic struct destructuring
+    })
+}
+
+pub fn parse_list_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftBracket)?;
     let mut patterns = Vec::new();
     
     while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-        if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-            patterns.push(Pattern::Identifier(name.clone()));
-            state.tokens.advance();
-        } else {
-            bail!("Expected identifier in list pattern");
-        }
+        let pattern = match state.tokens.peek() {
+            Some((Token::Identifier(name), _)) => {
+                let name = name.clone();
+                state.tokens.advance();
+                
+                // Check for default value: identifier = expr
+                if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+                    state.tokens.advance(); // consume '='
+                    let default_expr = super::parse_expr_recursive(state)?;
+                    Pattern::WithDefault {
+                        pattern: Box::new(Pattern::Identifier(name)),
+                        default: Box::new(default_expr),
+                    }
+                } else {
+                    Pattern::Identifier(name)
+                }
+            }
+            Some((Token::DotDotDot, _)) => {
+                // Rest pattern: ...rest or ...
+                state.tokens.advance(); // consume ...
+                // Check if named rest pattern
+                if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+                    let name = name.clone();
+                    state.tokens.advance();
+                    Pattern::RestNamed(name)
+                } else {
+                    Pattern::Rest
+                }
+            }
+            Some((Token::LeftParen, _)) => {
+                // Nested tuple pattern in list
+                parse_tuple_pattern(state)?
+            }
+            Some((Token::LeftBracket, _)) => {
+                // Nested list pattern
+                parse_list_pattern(state)?
+            }
+            Some((Token::Underscore, _)) => {
+                state.tokens.advance();
+                Pattern::Wildcard
+            }
+            _ => bail!("Expected identifier, tuple, list, wildcard, or rest pattern in list pattern"),
+        };
+        patterns.push(pattern);
         
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
+            // Break if we hit the closing bracket after comma
+            if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+                break;
+            }
+        } else if !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
+            bail!("Expected ',' or ']' in list pattern");
         }
     }
     
@@ -1365,6 +1478,17 @@ fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
     }
 }
 
+/// Parse an array element which might be a spread expression (...expr) or regular expression
+fn parse_array_element(state: &mut ParserState) -> Result<Expr> {
+    if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
+        let start_span = state.tokens.expect(&Token::DotDotDot)?; // consume ...
+        let expr = super::parse_expr_recursive(state)?;
+        Ok(Expr::new(ExprKind::Spread { expr: Box::new(expr) }, start_span))
+    } else {
+        super::parse_expr_recursive(state)
+    }
+}
+
 fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
     // Parse [ expr, expr, ... ] or [expr for var in iter if cond]
     let start_span = state.tokens.expect(&Token::LeftBracket)?;
@@ -1375,8 +1499,8 @@ fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
         return Ok(Expr::new(ExprKind::List(vec![]), start_span));
     }
     
-    // Parse first element/expression
-    let first_expr = super::parse_expr_recursive(state)?;
+    // Parse first element/expression (might be spread)
+    let first_expr = parse_array_element(state)?;
     
     // Check if this is a list comprehension
     if matches!(state.tokens.peek(), Some((Token::For, _))) {
@@ -1395,7 +1519,7 @@ fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
             break;
         }
         
-        elements.push(super::parse_expr_recursive(state)?);
+        elements.push(parse_array_element(state)?);
     }
     
     state.tokens.expect(&Token::RightBracket)
@@ -2468,7 +2592,7 @@ fn parse_finally_block(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
 /// Helper for validating try-catch structure (complexity: 3)
 fn validate_try_catch_structure(
     catch_clauses: &[crate::frontend::ast::CatchClause], 
-    finally_block: &Option<Box<Expr>>
+    finally_block: Option<&Expr>
 ) -> Result<()> {
     if catch_clauses.is_empty() && finally_block.is_none() {
         bail!("Try block must have at least one catch clause or a finally block");

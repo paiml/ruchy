@@ -324,12 +324,28 @@ pub struct SessionRecorder {
 
 impl SessionRecorder {
     pub fn new(metadata: SessionMetadata) -> Self {
+        use std::time::SystemTime;
+        
+        // Generate unique seed based on current time + session_id hash
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos() as u64;
+        
+        let session_hash = {
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            std::hash::Hasher::write(&mut hasher, metadata.session_id.as_bytes());
+            std::hash::Hasher::finish(&hasher)
+        };
+        
+        let unique_seed = now.wrapping_add(session_hash);
+        
         Self {
             session: ReplSession {
                 version: SemVer::new(1, 0, 0),
                 metadata,
                 environment: Environment {
-                    seed: 0,
+                    seed: unique_seed,
                     feature_flags: vec![],
                     resource_limits: ResourceLimits {
                         heap_mb: 100,
