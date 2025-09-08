@@ -919,34 +919,90 @@ pub fn parse_list_pattern(state: &mut ParserState) -> Result<Pattern> {
 }
 
 /// Parse if expression: if condition { `then_branch` } [else { `else_branch` }]
+/// Also handles if-let: if let pattern = expr { `then_branch` } [else { `else_branch` }]
 fn parse_if_expression(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::If)?;
     
-    // Parse condition with better error context
-    let condition = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {}", e))?);
-    
-    // Parse then branch (expect block) with better error context
-    let then_branch = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected body after if condition, typically {{ ... }}: {}", e))?);
-    
-    // Parse optional else branch
-    let else_branch = if matches!(state.tokens.peek(), Some((Token::Else, _))) {
-        state.tokens.advance(); // consume 'else'
-        Some(Box::new(super::parse_expr_recursive(state)
-            .map_err(|e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {}", e))?))
+    // Check for if-let syntax
+    if matches!(state.tokens.peek(), Some((Token::Let, _))) {
+        state.tokens.advance(); // consume 'let'
+        
+        // Parse the pattern
+        let pattern = parse_match_pattern(state)
+            .map_err(|e| anyhow::anyhow!("Expected pattern after 'if let': {}", e))?;
+        
+        // Expect '='
+        state.tokens.expect(&Token::Equal)
+            .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in if-let: {}", e))?;
+        
+        // Parse the expression to match against
+        let expr = Box::new(super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected expression after '=' in if-let: {}", e))?);
+        
+        // Parse then branch
+        let then_branch = Box::new(super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected body after if-let condition, typically {{ ... }}: {}", e))?);
+        
+        // Parse optional else branch
+        let else_branch = if matches!(state.tokens.peek(), Some((Token::Else, _))) {
+            state.tokens.advance(); // consume 'else'
+            
+            // Check for else-if-let
+            if matches!(state.tokens.peek(), Some((Token::If, _))) {
+                // Let the recursive call handle else-if or else-if-let
+                Some(Box::new(parse_if_expression(state)?))
+            } else {
+                Some(Box::new(super::parse_expr_recursive(state)
+                    .map_err(|e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {}", e))?))
+            }
+        } else {
+            None
+        };
+        
+        Ok(Expr::new(
+            ExprKind::IfLet {
+                pattern,
+                expr,
+                then_branch,
+                else_branch,
+            },
+            start_span,
+        ))
     } else {
-        None
-    };
-    
-    Ok(Expr::new(
-        ExprKind::If {
-            condition,
-            then_branch,
-            else_branch,
-        },
-        start_span,
-    ))
+        // Regular if expression
+        // Parse condition with better error context
+        let condition = Box::new(super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {}", e))?);
+        
+        // Parse then branch (expect block) with better error context
+        let then_branch = Box::new(super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected body after if condition, typically {{ ... }}: {}", e))?);
+        
+        // Parse optional else branch
+        let else_branch = if matches!(state.tokens.peek(), Some((Token::Else, _))) {
+            state.tokens.advance(); // consume 'else'
+            
+            // Check for else-if
+            if matches!(state.tokens.peek(), Some((Token::If, _))) {
+                // Let the recursive call handle else-if or else-if-let
+                Some(Box::new(parse_if_expression(state)?))
+            } else {
+                Some(Box::new(super::parse_expr_recursive(state)
+                    .map_err(|e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {}", e))?))
+            }
+        } else {
+            None
+        };
+        
+        Ok(Expr::new(
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            },
+            start_span,
+        ))
+    }
 }
 
 /// Parse match expression: match expr { pattern => result, ... }
@@ -1401,18 +1457,49 @@ fn parse_or_pattern(state: &mut ParserState, first: Pattern) -> Result<Pattern> 
 fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::While)?;
     
-    // Parse condition
-    let condition = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected condition after 'while': {}", e))?);
-    
-    // Parse body (expect block)
-    let body = Box::new(super::parse_expr_recursive(state)
-        .map_err(|e| anyhow::anyhow!("Expected body after while condition: {}", e))?);
-    
-    Ok(Expr::new(
-        ExprKind::While { condition, body },
-        start_span,
-    ))
+    // Check for while-let syntax
+    if matches!(state.tokens.peek(), Some((Token::Let, _))) {
+        state.tokens.advance(); // consume 'let'
+        
+        // Parse the pattern
+        let pattern = parse_match_pattern(state)
+            .map_err(|e| anyhow::anyhow!("Expected pattern after 'while let': {}", e))?;
+        
+        // Expect '='
+        state.tokens.expect(&Token::Equal)
+            .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in while-let: {}", e))?;
+        
+        // Parse the expression to match against
+        let expr = Box::new(super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected expression after '=' in while-let: {}", e))?);
+        
+        // Parse body (expect block)
+        let body = Box::new(super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected body after while-let condition: {}", e))?);
+        
+        Ok(Expr::new(
+            ExprKind::WhileLet {
+                pattern,
+                expr,
+                body,
+            },
+            start_span,
+        ))
+    } else {
+        // Regular while loop
+        // Parse condition
+        let condition = Box::new(super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected condition after 'while': {}", e))?);
+        
+        // Parse body (expect block)
+        let body = Box::new(super::parse_expr_recursive(state)
+            .map_err(|e| anyhow::anyhow!("Expected body after while condition: {}", e))?);
+        
+        Ok(Expr::new(
+            ExprKind::While { condition, body },
+            start_span,
+        ))
+    }
 }
 
 /// Parse for loop: for pattern in iterator { body }
