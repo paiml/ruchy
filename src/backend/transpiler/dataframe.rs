@@ -149,23 +149,81 @@ impl Transpiler {
         args: &[Expr],
     ) -> Result<TokenStream> {
         let df_tokens = self.transpile_expr(df_expr)?;
-        let method_ident = format_ident!("{}", method);
 
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
 
-        // Map Ruchy DataFrame methods to Polars methods
+        // Map Ruchy DataFrame methods to correct Polars API
         match method {
-            "select" | "filter" | "groupby" | "agg" | "sort" | "join" => Ok(quote! {
-                #df_tokens.#method_ident(#(#arg_tokens),*).unwrap()
-            }),
+            // DataFrame builder pattern methods (don't exist in Polars)
+            "column" => {
+                // .column() doesn't exist - this is part of builder pattern
+                // For now, just pass through to show the issue
+                if arg_tokens.len() == 2 {
+                    let name = &arg_tokens[0];
+                    let data = &arg_tokens[1];
+                    Ok(quote! { #df_tokens.column(#name, #data) })
+                } else {
+                    Ok(quote! { #df_tokens.column(#(#arg_tokens),*) })
+                }
+            }
+            "build" => {
+                // .build() doesn't exist in Polars - just return the DataFrame
+                Ok(quote! { #df_tokens })
+            }
+            
+            // DataFrame inspection methods
+            "rows" => {
+                // Polars uses .height() not .rows()
+                Ok(quote! { #df_tokens.height() })
+            }
+            "columns" => {
+                // Polars uses .get_column_names() for column names
+                Ok(quote! { #df_tokens.get_column_names() })
+            }
+            "get" => {
+                // df.get("column") -> df.column("column") in Polars
+                if arg_tokens.len() == 1 {
+                    let col_name = &arg_tokens[0];
+                    Ok(quote! { #df_tokens.column(#col_name) })
+                } else {
+                    Ok(quote! { #df_tokens.get(#(#arg_tokens),*) })
+                }
+            }
+            
+            // DataFrame operations
+            "select" | "filter" | "sort" => {
+                // These need lazy evaluation for proper chaining
+                let method_ident = format_ident!("{}", method);
+                Ok(quote! {
+                    #df_tokens.lazy().#method_ident(#(#arg_tokens),*).collect().unwrap()
+                })
+            }
+            "groupby" | "group_by" => {
+                // Polars uses group_by
+                Ok(quote! {
+                    #df_tokens.group_by(#(#arg_tokens),*).unwrap()
+                })
+            }
+            "agg" | "join" => {
+                let method_ident = format_ident!("{}", method);
+                Ok(quote! {
+                    #df_tokens.#method_ident(#(#arg_tokens),*).unwrap()
+                })
+            }
+            
+            // Statistical methods
             "mean" | "std" | "min" | "max" | "sum" | "count" => {
                 // These are aggregate functions
+                let method_ident = format_ident!("{}", method);
                 Ok(quote! {
                     #df_tokens.#method_ident()
                 })
             }
+            
+            // Head/tail methods
             "head" | "tail" => {
+                let method_ident = format_ident!("{}", method);
                 if args.is_empty() {
                     Ok(quote! { #df_tokens.#method_ident(Some(5)) })
                 } else {
@@ -174,10 +232,44 @@ impl Transpiler {
             }
             _ => {
                 // Default method call
+                let method_ident = format_ident!("{}", method);
                 Ok(quote! {
                     #df_tokens.#method_ident(#(#arg_tokens),*)
                 })
             }
+        }
+    }
+    
+    /// Check if an expression is a DataFrame type
+    pub fn is_dataframe_expr(&self, expr: &Expr) -> bool {
+        use crate::frontend::ast::ExprKind;
+        
+        match &expr.kind {
+            // Variable named "df" is likely a DataFrame
+            ExprKind::Identifier(name) if name == "df" => true,
+            
+            // DataFrame constructor calls
+            ExprKind::Call { func, .. } => {
+                if let ExprKind::QualifiedName { module, name } = &func.kind {
+                    module == "DataFrame" && (name == "new" || name == "from_csv" || name == "from_json" || name == "from_csv_string")
+                } else {
+                    false
+                }
+            }
+            
+            // Method calls that return DataFrames
+            ExprKind::MethodCall { receiver, method, .. } => {
+                // Check if it's a DataFrame method chain
+                matches!(method.as_str(), 
+                    "column" | "build" | "select" | "filter" | "sort" | 
+                    "head" | "tail" | "drop_nulls" | "fill_null"
+                ) || self.is_dataframe_expr(receiver)
+            }
+            
+            // DataFrame literals
+            ExprKind::DataFrame { .. } => true,
+            
+            _ => false,
         }
     }
 }
