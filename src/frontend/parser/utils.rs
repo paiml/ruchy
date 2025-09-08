@@ -86,7 +86,7 @@ fn check_and_consume_mut(state: &mut ParserState) -> bool {
     }
 }
 
-/// Parse parameter pattern (complexity: 6)
+/// Parse parameter pattern (complexity: 8 - increased to support destructuring)
 fn parse_param_pattern(state: &mut ParserState) -> Result<Pattern> {
     match state.tokens.peek() {
         Some((Token::Ampersand, _)) => parse_reference_pattern(state),
@@ -100,7 +100,19 @@ fn parse_param_pattern(state: &mut ParserState) -> Result<Pattern> {
             state.tokens.advance();
             Ok(Pattern::Identifier("df".to_string()))
         }
-        _ => bail!("Function parameters must be simple identifiers (destructuring patterns not supported)"),
+        Some((Token::LeftParen, _)) => {
+            // Parse tuple destructuring: fun f((x, y)) {}
+            super::expressions::parse_tuple_pattern(state)
+        }
+        Some((Token::LeftBracket, _)) => {
+            // Parse list destructuring: fun f([x, y]) {}
+            super::expressions::parse_list_pattern(state)
+        }
+        Some((Token::LeftBrace, _)) => {
+            // Parse struct destructuring: fun f({x, y}) {}
+            super::expressions::parse_struct_pattern(state)
+        }
+        _ => bail!("Function parameters must be simple identifiers or destructuring patterns"),
     }
 }
 

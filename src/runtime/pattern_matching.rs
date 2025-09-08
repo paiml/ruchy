@@ -62,7 +62,12 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
         Pattern::QualifiedName(_) => None,
         Pattern::Some(inner_pattern) => match_some_pattern_helper(inner_pattern, value),
         Pattern::None => match_none_pattern_helper(value),
-        Pattern::Ok(_) | Pattern::Err(_) => None
+        Pattern::Ok(_) | Pattern::Err(_) => None,
+        Pattern::WithDefault { pattern, .. } => {
+            // For default patterns, we match the inner pattern
+            // Default handling is done at the destructuring level
+            match_pattern(pattern, value)
+        }
     }
 }
 
@@ -153,15 +158,15 @@ fn match_or_pattern_helper(patterns: &[Pattern], value: &Value) -> Option<Vec<(S
 }
 
 /// Helper for matching range patterns (complexity: 9)
-fn match_range_pattern_helper(start: &Box<Pattern>, end: &Box<Pattern>, inclusive: bool, value: &Value) -> Option<Vec<(String, Value)>> {
+fn match_range_pattern_helper(start: &Pattern, end: &Pattern, inclusive: bool, value: &Value) -> Option<Vec<(String, Value)>> {
     if let Value::Int(val) = value {
-        let start_val = if let Pattern::Literal(Literal::Integer(n)) = &**start {
+        let start_val = if let Pattern::Literal(Literal::Integer(n)) = start {
             *n
         } else {
             return None;
         };
         
-        let end_val = if let Pattern::Literal(Literal::Integer(n)) = &**end {
+        let end_val = if let Pattern::Literal(Literal::Integer(n)) = end {
             *n
         } else {
             return None;

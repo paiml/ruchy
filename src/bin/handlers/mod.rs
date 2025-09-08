@@ -40,7 +40,7 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
 
             if format == "json" {
                 // Manually construct JSON to ensure field order matches test expectations
-                let result_str = format!("{result}").replace('"', "\\\"");
+                let result_str = result.replace('"', "\\\"");
                 println!("{{\"success\":true,\"result\":\"{result_str}\"}}");
             } else {
                 // Default text output - always show result for one-liner evaluation

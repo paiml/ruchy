@@ -746,7 +746,7 @@ impl Transpiler {
                     method: method.to_string(),
                     args: args.to_vec(),
                 },
-                span: object.span.clone(),
+                span: object.span,
                 attributes: vec![],
             };
             
@@ -1184,13 +1184,10 @@ impl Transpiler {
         }
         
         // Generate the catch handling
-        let catch_pattern = match &catch_clauses[0].pattern {
-            Pattern::Identifier(name) => {
-                let ident = format_ident!("{}", name);
-                quote! { #ident }
-            }
-            _ => quote! { _e }
-        };
+        let catch_pattern = if let Pattern::Identifier(name) = &catch_clauses[0].pattern {
+            let ident = format_ident!("{}", name);
+            quote! { #ident }
+        } else { quote! { _e } };
         
         let catch_body = self.transpile_expr(&catch_clauses[0].body)?;
         

@@ -539,6 +539,10 @@ pub enum Pattern {
     Or(Vec<Pattern>),
     Rest, // For ... patterns
     RestNamed(String), // For ..name patterns
+    WithDefault {
+        pattern: Box<Pattern>,
+        default: Box<Expr>,
+    }, // For patterns with default values like a = 10
     Ok(Box<Pattern>),
     Err(Box<Pattern>),
     Some(Box<Pattern>),
@@ -565,9 +569,13 @@ impl Pattern {
                     .first()
                     .map_or_else(|| "_list".to_string(), Pattern::primary_name)
             }
-            Pattern::Struct { name, .. } => {
-                // Return the struct type name
-                name.clone()
+            Pattern::Struct { name, fields, .. } => {
+                // Return the struct type name, or first field name if anonymous
+                if name.is_empty() {
+                    fields.first().map_or_else(|| "_struct".to_string(), |f| f.name.clone())
+                } else {
+                    name.clone()
+                }
             }
             Pattern::Ok(inner) | Pattern::Err(inner) | Pattern::Some(inner) => inner.primary_name(),
             Pattern::None => "_none".to_string(),
@@ -580,6 +588,7 @@ impl Pattern {
             Pattern::Wildcard => "_".to_string(),
             Pattern::Rest => "_rest".to_string(),
             Pattern::RestNamed(name) => name.clone(),
+            Pattern::WithDefault { pattern, .. } => pattern.primary_name(),
             Pattern::Literal(lit) => format!("_literal_{lit:?}"),
             Pattern::Range { .. } => "_range".to_string(),
         }
@@ -1347,7 +1356,8 @@ mod tests {
                 | Pattern::Err(_)
                 | Pattern::Some(_)
                 | Pattern::None
-                | Pattern::QualifiedName(_) => {} // Simple patterns
+                | Pattern::QualifiedName(_) 
+                | Pattern::WithDefault { .. } => {} // Simple patterns
             }
         }
     }

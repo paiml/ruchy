@@ -101,6 +101,7 @@ pub fn handle_fmt_command(
 }
 
 /// Output mode for formatting (complexity: 1)
+#[derive(Copy, Clone)]
 enum FmtMode {
     Check,
     Stdout,
@@ -146,33 +147,43 @@ fn handle_fmt_output(
 ) -> Result<()> {
     use FmtMode::{Check, Stdout, Diff, Write, Default};
     match mode {
-        Check => handle_check_mode(path, source, formatted_code),
-        Stdout => handle_stdout_mode(formatted_code),
-        Diff => handle_diff_mode(path, source, formatted_code),
+        Check => {
+            handle_check_mode(path, source, formatted_code);
+            Ok(())
+        },
+        Stdout => {
+            handle_stdout_mode(formatted_code);
+            Ok(())
+        },
+        Diff => {
+            handle_diff_mode(path, source, formatted_code);
+            Ok(())
+        },
         Write => handle_write_mode(path, source, formatted_code, verbose),
-        Default => handle_default_mode(formatted_code),
+        Default => {
+            handle_default_mode(formatted_code);
+            Ok(())
+        },
     }
 }
 
 /// Handle check mode output (complexity: 3)
-fn handle_check_mode(path: &Path, source: &str, formatted_code: &str) -> Result<()> {
+fn handle_check_mode(path: &Path, source: &str, formatted_code: &str) {
     if source == formatted_code {
         println!("{} {} is properly formatted", "✓".green(), path.display());
     } else {
         println!("{} {} needs formatting", "⚠".yellow(), path.display());
         std::process::exit(1);
     }
-    Ok(())
 }
 
 /// Handle stdout mode output (complexity: 1)
-fn handle_stdout_mode(formatted_code: &str) -> Result<()> {
+fn handle_stdout_mode(formatted_code: &str) {
     print!("{}", formatted_code);
-    Ok(())
 }
 
 /// Handle diff mode output (complexity: 4)
-fn handle_diff_mode(path: &Path, source: &str, formatted_code: &str) -> Result<()> {
+fn handle_diff_mode(path: &Path, source: &str, formatted_code: &str) {
     println!("--- {}", path.display());
     println!("+++ {} (formatted)", path.display());
     
@@ -182,7 +193,6 @@ fn handle_diff_mode(path: &Path, source: &str, formatted_code: &str) -> Result<(
             println!("+{}: {}", i + 1, fmt);
         }
     }
-    Ok(())
 }
 
 /// Handle write mode output (complexity: 4)
@@ -199,9 +209,8 @@ fn handle_write_mode(path: &Path, source: &str, formatted_code: &str, verbose: b
 }
 
 /// Handle default mode output (complexity: 1)
-fn handle_default_mode(formatted_code: &str) -> Result<()> {
+fn handle_default_mode(formatted_code: &str) {
     print!("{}", formatted_code);
-    Ok(())
 }
 
 /// Read file and parse AST (complexity: 4)
@@ -263,7 +272,7 @@ fn format_text_output(
     issues: &[ruchy::quality::linter::LintIssue],
     path: &Path,
     verbose: bool
-) -> Result<()> {
+) {
     if issues.is_empty() {
         println!("{} No issues found in {}", "✓".green(), path.display());
     } else {
@@ -297,7 +306,6 @@ fn format_text_output(
             );
         }
     }
-    Ok(())
 }
 
 /// Handle auto-fix if requested (complexity: 4)
@@ -342,7 +350,7 @@ pub fn handle_lint_command(
     if json {
         format_json_output(&issues)?;
     } else {
-        format_text_output(&issues, path, verbose)?;
+        format_text_output(&issues, path, verbose);
         handle_auto_fix(&linter, &source, &issues, path, auto_fix)?;
     }
     
@@ -587,7 +595,7 @@ fn handle_directory_score(
     }
     
     // Calculate scores for all files
-    let file_scores = calculate_all_file_scores(&ruchy_files)?;
+    let file_scores = calculate_all_file_scores(&ruchy_files);
     if file_scores.is_empty() {
         anyhow::bail!("No .ruchy files could be successfully analyzed");
     }
@@ -600,7 +608,7 @@ fn handle_directory_score(
     write_output(&output_content, output)?;
     
     // Check threshold
-    check_score_threshold(average_score, min)?;
+    check_score_threshold(average_score, min);
     
     Ok(())
 }
@@ -642,7 +650,7 @@ fn format_empty_directory_output(path: &Path, depth: &str, format: &str) -> Resu
 }
 
 /// Calculate scores for all files (complexity: 5)
-fn calculate_all_file_scores(ruchy_files: &[PathBuf]) -> Result<HashMap<PathBuf, f64>> {
+fn calculate_all_file_scores(ruchy_files: &[PathBuf]) -> HashMap<PathBuf, f64> {
     use std::collections::HashMap;
     let mut file_scores = HashMap::new();
     
@@ -658,7 +666,7 @@ fn calculate_all_file_scores(ruchy_files: &[PathBuf]) -> Result<HashMap<PathBuf,
         }
     }
     
-    Ok(file_scores)
+    file_scores
 }
 
 /// Calculate average score (complexity: 2)
@@ -720,14 +728,13 @@ fn write_output(content: &str, output: Option<&Path>) -> Result<()> {
 }
 
 /// Check if score meets threshold (complexity: 3)
-fn check_score_threshold(average_score: f64, min: Option<f64>) -> Result<()> {
+fn check_score_threshold(average_score: f64, min: Option<f64>) {
     if let Some(min_score) = min {
         if average_score < min_score {
             eprintln!("❌ Average score {} is below threshold {}", average_score, min_score);
             std::process::exit(1);
         }
     }
-    Ok(())
 }
 
 /// Recursively collect all .ruchy files in a directory

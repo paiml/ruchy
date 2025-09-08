@@ -1757,7 +1757,7 @@ impl Repl {
             ExprKind::Break { .. } => Err(anyhow::anyhow!("break")),
             ExprKind::Continue { .. } => Err(anyhow::anyhow!("continue")),
             ExprKind::TryCatch { try_block, catch_clauses, finally_block } => {
-                self.evaluate_try_catch_block(try_block, catch_clauses, finally_block, deadline, depth)
+                self.evaluate_try_catch_block(try_block, catch_clauses, finally_block.as_deref(), deadline, depth)
             }
             _ => bail!("Non-control-flow expression in control flow dispatcher"),
         }
@@ -6895,7 +6895,7 @@ impl Repl {
         &mut self,
         try_block: &Expr,
         catch_clauses: &[crate::frontend::ast::CatchClause],
-        finally_block: &Option<Box<Expr>>,
+        finally_block: Option<&Expr>,
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
@@ -6907,12 +6907,11 @@ impl Repl {
                 let mut caught = false;
                 let mut catch_result = Ok(Value::Unit);
                 
-                for catch_clause in catch_clauses {
+                if let Some(catch_clause) = catch_clauses.first() {
                     // For now, just use the first catch clause (simple implementation)
                     // TODO: Implement pattern matching on error types
                     caught = true;
                     catch_result = self.evaluate_expr(&catch_clause.body, deadline, depth + 1);
-                    break;
                 }
                 
                 if caught {
@@ -7826,7 +7825,7 @@ impl Repl {
 
     /// Evaluate `assert_true` function - panic if condition is false
     fn evaluate_assert_true(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
-        if args.len() < 1 || args.len() > 2 {
+        if args.is_empty() || args.len() > 2 {
             bail!("assert_true expects 1 or 2 arguments (condition, optional message)");
         }
         
@@ -7859,7 +7858,7 @@ impl Repl {
     
     /// Evaluate `assert_false` function - panic if condition is true
     fn evaluate_assert_false(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
-        if args.len() < 1 || args.len() > 2 {
+        if args.is_empty() || args.len() > 2 {
             bail!("assert_false expects 1 or 2 arguments (condition, optional message)");
         }
         
@@ -8638,7 +8637,7 @@ impl Repl {
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Int(n) => {
-                if !(0..=1114111).contains(&n) {
+                if !(0..=1_114_111).contains(&n) {
                     bail!("char() expects a valid Unicode code point (0-1114111)");
                 }
                 match char::from_u32(n as u32) {

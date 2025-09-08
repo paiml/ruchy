@@ -898,12 +898,12 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Try to handle direct evaluation first
-    if let Some(result) = try_handle_direct_evaluation(&cli)? {
+    if let Some(result) = try_handle_direct_evaluation(&cli) {
         return result;
     }
 
     // Try to handle stdin input
-    if let Some(result) = try_handle_stdin(&cli.command)? {
+    if let Some(result) = try_handle_stdin(cli.command.as_ref())? {
         return result;
     }
 
@@ -912,22 +912,22 @@ fn main() -> Result<()> {
 }
 
 /// Handle direct evaluation via -e flag or file argument (complexity: 4)
-fn try_handle_direct_evaluation(cli: &Cli) -> Result<Option<Result<()>>> {
+fn try_handle_direct_evaluation(cli: &Cli) -> Option<Result<()>> {
     // Handle one-liner evaluation with -e flag
     if let Some(expr) = &cli.eval {
-        return Ok(Some(handle_eval_command(expr, cli.verbose, &cli.format)));
+        return Some(handle_eval_command(expr, cli.verbose, &cli.format));
     }
 
     // Handle script file execution (without subcommand)
     if let Some(file) = &cli.file {
-        return Ok(Some(handle_file_execution(file)));
+        return Some(handle_file_execution(file));
     }
 
-    Ok(None)
+    None
 }
 
 /// Handle stdin input if present (complexity: 5)
-fn try_handle_stdin(command: &Option<Commands>) -> Result<Option<Result<()>>> {
+fn try_handle_stdin(command: Option<&Commands>) -> Result<Option<Result<()>>> {
     // Check if stdin has input (piped mode) - but only when no command is specified
     if !io::stdin().is_terminal() && command.is_none() {
         let mut input = String::new();
@@ -956,7 +956,7 @@ fn handle_command_dispatch(command: Option<Commands>, verbose: bool) -> Result<(
         }
         Some(Commands::Check { file, watch }) => handle_check_command(&file, watch),
         Some(Commands::Test { path, watch, verbose, filter, coverage, coverage_format, parallel, threshold, format }) => {
-            handle_test_dispatch(path, watch, verbose, filter, coverage, coverage_format, parallel, threshold, format)
+            handle_test_dispatch(path, watch, verbose, filter.as_ref(), coverage, &coverage_format, parallel, threshold, &format)
         }
         Some(command) => handle_advanced_command(command),
     }
@@ -967,23 +967,23 @@ fn handle_test_dispatch(
     path: Option<PathBuf>,
     watch: bool,
     verbose: bool,
-    filter: Option<String>,
+    filter: Option<&String>,
     coverage: bool,
-    coverage_format: String,
+    coverage_format: &str,
     parallel: bool,
     threshold: Option<f64>,
-    format: String,
+    format: &str,
 ) -> Result<()> {
     handle_test_command(
         path,
         watch,
         verbose,
-        filter.as_deref(),
+        filter.map(String::as_str),
         coverage,
-        &coverage_format,
+        coverage_format,
         usize::from(parallel),
         threshold.unwrap_or(0.0),
-        &format,
+        format,
     )
 }
 
