@@ -712,7 +712,7 @@ impl Repl {
 
     // === Helper Functions for Common Value Creation ===
     
-    /// Create an Option::None value
+    /// Create an `Option::None` value
     fn create_option_none() -> Value {
         Value::EnumVariant {
             enum_name: "Option".to_string(),
@@ -721,7 +721,7 @@ impl Repl {
         }
     }
     
-    /// Create an Option::Some(value) value
+    /// Create an `Option::Some(value)` value
     fn create_option_some(value: Value) -> Value {
         Value::EnumVariant {
             enum_name: "Option".to_string(),
@@ -730,7 +730,7 @@ impl Repl {
         }
     }
     
-    /// Create a Result::Ok(value) value
+    /// Create a `Result::Ok(value)` value
     fn create_result_ok(value: Value) -> Value {
         Value::EnumVariant {
             enum_name: "Result".to_string(),
@@ -739,7 +739,7 @@ impl Repl {
         }
     }
     
-    /// Create a Result::Err(value) value
+    /// Create a `Result::Err(value)` value
     fn create_result_err(value: Value) -> Value {
         Value::EnumVariant {
             enum_name: "Result".to_string(),
@@ -2706,7 +2706,7 @@ impl Repl {
             }
             "bytes" => {
                 let bytes: Vec<Value> = s.bytes()
-                    .map(|b| Value::Int(b as i64))
+                    .map(|b| Value::Int(i64::from(b)))
                     .collect();
                 Some(Self::ok_list(bytes))
             }
@@ -2715,11 +2715,11 @@ impl Repl {
                 Some(Self::ok_bool(is_num))
             }
             "is_alpha" => {
-                let is_alpha = !s.is_empty() && s.chars().all(|c| c.is_alphabetic());
+                let is_alpha = !s.is_empty() && s.chars().all(char::is_alphabetic);
                 Some(Self::ok_bool(is_alpha))
             }
             "is_alphanumeric" => {
-                let is_alnum = !s.is_empty() && s.chars().all(|c| c.is_alphanumeric());
+                let is_alnum = !s.is_empty() && s.chars().all(char::is_alphanumeric);
                 Some(Self::ok_bool(is_alnum))
             }
             _ => None,
@@ -2817,7 +2817,7 @@ impl Repl {
                         let padding_needed = width - s.len();
                         let fill_char = fill.chars().next().unwrap_or(' ');
                         let padding = fill_char.to_string().repeat(padding_needed);
-                        Some(Self::ok_string(format!("{}{}", padding, s)))
+                        Some(Self::ok_string(format!("{padding}{s}")))
                     }
                 } else {
                     Some(Err(anyhow::anyhow!("pad_left arguments must be (integer, string)")))
@@ -2836,7 +2836,7 @@ impl Repl {
                         let padding_needed = width - s.len();
                         let fill_char = fill.chars().next().unwrap_or(' ');
                         let padding = fill_char.to_string().repeat(padding_needed);
-                        Some(Self::ok_string(format!("{}{}", s, padding)))
+                        Some(Self::ok_string(format!("{s}{padding}")))
                     }
                 } else {
                     Some(Err(anyhow::anyhow!("pad_right arguments must be (integer, string)")))
@@ -2950,7 +2950,7 @@ impl Repl {
             
             (Value::Int(_), _) => self.unknown_method_error("integer", method),
             (Value::Float(_), _) => self.unknown_method_error("float", method),
-            _ => Err(Self::method_not_supported(method, &format!("{:?}", value)))?,
+            _ => Err(Self::method_not_supported(method, &format!("{value:?}")))?,
         }
     }
     
@@ -3937,7 +3937,7 @@ impl Repl {
                 // Result::Err(e).ok() -> Option::None
                 Ok(Self::create_option_none())
             }
-            _ => Err(Self::method_not_supported(method, &format!("Result::{}", variant_name)))?,
+            _ => Err(Self::method_not_supported(method, &format!("Result::{variant_name}")))?,
         }
     }
 
@@ -3987,7 +3987,7 @@ impl Repl {
             ("Some", "and_then") if args.len() == 1 => {
                 self.apply_function_and_flatten(data, &args[0], deadline, depth)
             }
-            _ => Err(Self::method_not_supported(method, &format!("Option::{}", variant_name)))?,
+            _ => Err(Self::method_not_supported(method, &format!("Option::{variant_name}")))?,
         }
     }
 
@@ -4048,7 +4048,7 @@ impl Repl {
         }
     }
 
-    /// Evaluate DataFrame methods (builder pattern and queries)
+    /// Evaluate `DataFrame` methods (builder pattern and queries)
     fn evaluate_dataframe_methods(
         &mut self,
         mut columns: Vec<DataFrameColumn>,
@@ -4133,9 +4133,8 @@ impl Repl {
                     if col.name == column_name {
                         if row_index < col.values.len() {
                             return Ok(col.values[row_index].clone());
-                        } else {
-                            bail!("Row index {} out of bounds for column '{}'", row_index, column_name);
                         }
+                        bail!("Row index {} out of bounds for column '{}'", row_index, column_name);
                     }
                 }
                 bail!("Column '{}' not found in DataFrame", column_name);
@@ -8402,7 +8401,7 @@ impl Repl {
             if let Value::String(s) = value {
                 let base_val = self.evaluate_arg(args, 1, deadline, depth)?;
                 if let Value::Int(base) = base_val {
-                    if base < 2 || base > 36 {
+                    if !(2..=36).contains(&base) {
                         bail!("int() base must be between 2 and 36");
                     }
                     // Remove common prefixes
@@ -8557,7 +8556,7 @@ impl Repl {
         self.evaluate_unary_math_function_validated(args, deadline, depth, "log10", f64::log10, validator)
     }
 
-    /// Evaluate char() conversion function (complexity: 6)
+    /// Evaluate `char()` conversion function (complexity: 6)
     fn evaluate_char_conversion(
         &mut self,
         args: &[Expr],
@@ -8571,7 +8570,7 @@ impl Repl {
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Int(n) => {
-                if n < 0 || n > 1114111 {
+                if !(0..=1114111).contains(&n) {
                     bail!("char() expects a valid Unicode code point (0-1114111)");
                 }
                 match char::from_u32(n as u32) {
@@ -8590,7 +8589,7 @@ impl Repl {
         }
     }
     
-    /// Evaluate hex() conversion - int to hex string (complexity: 5)
+    /// Evaluate `hex()` conversion - int to hex string (complexity: 5)
     fn evaluate_hex_conversion(
         &mut self,
         args: &[Expr],
@@ -8607,14 +8606,14 @@ impl Repl {
                 if n < 0 {
                     Ok(Value::String(format!("-0x{:x}", -n)))
                 } else {
-                    Ok(Value::String(format!("0x{:x}", n)))
+                    Ok(Value::String(format!("0x{n:x}")))
                 }
             }
             _ => bail!("hex() expects an integer"),
         }
     }
     
-    /// Evaluate bin() conversion - int to binary string (complexity: 5)
+    /// Evaluate `bin()` conversion - int to binary string (complexity: 5)
     fn evaluate_bin_conversion(
         &mut self,
         args: &[Expr],
@@ -8631,14 +8630,14 @@ impl Repl {
                 if n < 0 {
                     Ok(Value::String(format!("-0b{:b}", -n)))
                 } else {
-                    Ok(Value::String(format!("0b{:b}", n)))
+                    Ok(Value::String(format!("0b{n:b}")))
                 }
             }
             _ => bail!("bin() expects an integer"),
         }
     }
     
-    /// Evaluate oct() conversion - int to octal string (complexity: 5)
+    /// Evaluate `oct()` conversion - int to octal string (complexity: 5)
     fn evaluate_oct_conversion(
         &mut self,
         args: &[Expr],
@@ -8655,14 +8654,14 @@ impl Repl {
                 if n < 0 {
                     Ok(Value::String(format!("-0o{:o}", -n)))
                 } else {
-                    Ok(Value::String(format!("0o{:o}", n)))
+                    Ok(Value::String(format!("0o{n:o}")))
                 }
             }
             _ => bail!("oct() expects an integer"),
         }
     }
     
-    /// Evaluate list() conversion - convert tuple/iterable to list (complexity: 5)
+    /// Evaluate `list()` conversion - convert tuple/iterable to list (complexity: 5)
     fn evaluate_list_conversion(
         &mut self,
         args: &[Expr],
@@ -8687,7 +8686,7 @@ impl Repl {
         }
     }
     
-    /// Evaluate tuple() conversion - convert list/iterable to tuple (complexity: 5)
+    /// Evaluate `tuple()` conversion - convert list/iterable to tuple (complexity: 5)
     fn evaluate_tuple_conversion(
         &mut self,
         args: &[Expr],
@@ -8726,7 +8725,7 @@ impl Repl {
             "int" | "i32" | "i64" => match value {
                 Value::Int(n) => Ok(Value::Int(n)),
                 Value::Float(f) => Ok(Value::Int(f as i64)),
-                Value::Bool(b) => Ok(Value::Int(if b { 1 } else { 0 })),
+                Value::Bool(b) => Ok(Value::Int(i64::from(b))),
                 Value::String(s) => s.parse::<i64>()
                     .map(Value::Int)
                     .map_err(|_| anyhow::anyhow!("Cannot cast '{}' to int", s)),
@@ -9066,12 +9065,12 @@ impl Repl {
         Value::Unit
     }
     
-    /// Create a HashMap value
+    /// Create a `HashMap` value
     fn hashmap_value(map: std::collections::HashMap<Value, Value>) -> Value {
         Value::HashMap(map)
     }
     
-    /// Create a HashSet value
+    /// Create a `HashSet` value
     fn hashset_value(set: std::collections::HashSet<Value>) -> Value {
         Value::HashSet(set)
     }
@@ -9081,12 +9080,12 @@ impl Repl {
         Ok(Self::unit_value())
     }
     
-    /// Create an Ok result with a HashMap value
+    /// Create an Ok result with a `HashMap` value
     fn ok_hashmap(map: std::collections::HashMap<Value, Value>) -> Result<Value> {
         Ok(Self::hashmap_value(map))
     }
     
-    /// Create an Ok result with a HashSet value
+    /// Create an Ok result with a `HashSet` value
     fn ok_hashset(set: std::collections::HashSet<Value>) -> Result<Value> {
         Ok(Self::hashset_value(set))
     }
@@ -9096,12 +9095,12 @@ impl Repl {
         Value::Range { start, end, inclusive }
     }
     
-    /// Create a DataFrame value  
+    /// Create a `DataFrame` value  
     fn dataframe_value(columns: Vec<DataFrameColumn>) -> Value {
         Value::DataFrame { columns }
     }
     
-    /// Create an EnumVariant value
+    /// Create an `EnumVariant` value
     fn enum_variant_value(enum_name: String, variant_name: String, data: Option<Vec<Value>>) -> Value {
         Value::EnumVariant { enum_name, variant_name, data }
     }
@@ -9111,12 +9110,12 @@ impl Repl {
         Ok(Self::range_value(start, end, inclusive))
     }
     
-    /// Create an Ok result with a DataFrame value
+    /// Create an Ok result with a `DataFrame` value
     fn ok_dataframe(columns: Vec<DataFrameColumn>) -> Result<Value> {
         Ok(Self::dataframe_value(columns))
     }
     
-    /// Create an Ok result with an EnumVariant value
+    /// Create an Ok result with an `EnumVariant` value
     fn ok_enum_variant(enum_name: String, variant_name: String, data: Option<Vec<Value>>) -> Result<Value> {
         Ok(Self::enum_variant_value(enum_name, variant_name, data))
     }
@@ -9142,12 +9141,12 @@ impl Repl {
 
     /// Validate that a function receives a numeric argument
     fn numeric_arg_error(func_name: &str) -> String {
-        format!("{}() expects a numeric argument", func_name)
+        format!("{func_name}() expects a numeric argument")
     }
 
     /// Validate that a function receives numeric arguments (plural)
     fn numeric_args_error(func_name: &str) -> String {
-        format!("{} expects numeric arguments", func_name)
+        format!("{func_name} expects numeric arguments")
     }
 
     /// Create a method not supported error message

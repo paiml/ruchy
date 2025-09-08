@@ -127,7 +127,8 @@ impl Transpiler {
             | ExprKind::Match { .. }
             | ExprKind::For { .. }
             | ExprKind::While { .. }
-            | ExprKind::Loop { .. } => self.transpile_control_flow_only_expr(expr),
+            | ExprKind::Loop { .. }
+            | ExprKind::TryCatch { .. } => self.transpile_control_flow_only_expr(expr),
             _ => unreachable!("Non-operator/control expression in transpile_operator_control_expr"),
         }
     }
@@ -166,6 +167,9 @@ impl Transpiler {
                 body,
             } => self.transpile_while_let(pattern, expr, body),
             ExprKind::Loop { body } => self.transpile_loop(body),
+            ExprKind::TryCatch { try_block, catch_clauses, finally_block } => {
+                self.transpile_try_catch(try_block, catch_clauses, finally_block.as_deref())
+            }
             _ => unreachable!(),
         }
     }

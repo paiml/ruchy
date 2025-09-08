@@ -7,6 +7,7 @@
 
 mod actors;
 mod dataframe;
+mod dataframe_builder;
 mod dataframe_helpers;
 mod dispatcher;
 mod expressions;
@@ -898,7 +899,7 @@ impl Transpiler {
             Actor, ActorQuery, ActorSend, Ask, Assign, AsyncBlock, Await, Binary, Call, Command, CompoundAssign, DataFrame, 
             DataFrameOperation, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess, Lambda, 
             List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None, ObjectLiteral, Ok, QualifiedName, 
-            Range, Send, Slice, Some, StringInterpolation, Struct, StructLiteral, Throw, Try, TypeCast,
+            Range, Send, Slice, Some, StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, TypeCast,
             Tuple, Unary, While, WhileLet,
         };
 
@@ -922,7 +923,8 @@ impl Transpiler {
             | For { .. }
             | While { .. }
             | WhileLet { .. }
-            | Loop { .. } => self.transpile_operator_control_expr(expr),
+            | Loop { .. }
+            | TryCatch { .. } => self.transpile_operator_control_expr(expr),
 
             // Functions
             Function { .. } | Lambda { .. } | Call { .. } | MethodCall { .. } | Macro { .. } => {

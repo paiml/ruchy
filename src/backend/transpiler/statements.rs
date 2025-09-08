@@ -5,7 +5,7 @@
 #![allow(clippy::collapsible_else_if)]
 
 use super::*;
-use crate::frontend::ast::{Literal, Param, Pattern, PipelineStage, UnaryOp};
+use crate::frontend::ast::{CatchClause, Literal, Param, Pattern, PipelineStage, UnaryOp};
 use anyhow::{Result, bail};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -737,8 +737,25 @@ impl Transpiler {
         method: &str,
         args: &[Expr],
     ) -> Result<TokenStream> {
-        // Use the old implementation for now since refactored version is in separate file
-        // Integration with method_call_refactored.rs pending modularization
+        // Check if this is part of a DataFrame builder pattern
+        if method == "column" || method == "build" {
+            // Build the full method call expression to check for builder pattern
+            let method_call_expr = Expr {
+                kind: ExprKind::MethodCall {
+                    receiver: Box::new(object.clone()),
+                    method: method.to_string(),
+                    args: args.to_vec(),
+                },
+                span: object.span.clone(),
+                attributes: vec![],
+            };
+            
+            if let Some(tokens) = self.transpile_dataframe_builder(&method_call_expr)? {
+                return Ok(tokens);
+            }
+        }
+        
+        // Use the old implementation for other cases
         self.transpile_method_call_old(object, method, args)
     }
     
@@ -754,6 +771,14 @@ impl Transpiler {
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
 
+        // Check DataFrame methods FIRST before generic collection methods
+        if self.is_dataframe_expr(object) && matches!(method, 
+            "get" | "rows" | "columns" | "select" | "filter" | "sort" | 
+            "head" | "tail" | "mean" | "std" | "min" | "max" | "sum" | "count"
+        ) {
+            return self.transpile_dataframe_method(object, method, args);
+        }
+        
         // Dispatch to specialized handlers based on method category
         match method {
             // Iterator operations (map, filter, reduce)
@@ -773,11 +798,16 @@ impl Transpiler {
             "insert" | "remove" | "clear" | "len" | "is_empty" | "iter" => {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
-            // DataFrame operations
-            "select" | "groupby" | "agg" | "sort" | "mean" | "std" | "min"
+            // DataFrame operations - use special handling for correct Polars API
+            "select" | "groupby" | "group_by" | "agg" | "sort" | "mean" | "std" | "min"
             | "max" | "sum" | "count" | "drop_nulls" | "fill_null" | "pivot"
-            | "melt" | "head" | "tail" | "sample" | "describe" => {
-                Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+            | "melt" | "head" | "tail" | "sample" | "describe" | "rows" | "columns" | "column" | "build" => {
+                // Check if this is a DataFrame operation
+                if self.is_dataframe_expr(object) {
+                    self.transpile_dataframe_method(object, method, args)
+                } else {
+                    Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
+                }
             }
             // String methods (Python-style and Rust-style)
             "to_s" | "to_string" | "to_upper" | "to_lower" | "upper" | "lower" | 
@@ -1136,6 +1166,65 @@ impl Transpiler {
                 #body_tokens
             }
         })
+    }
+
+    /// Transpiles try-catch-finally blocks
+    pub fn transpile_try_catch(
+        &self, 
+        try_block: &Expr, 
+        catch_clauses: &[CatchClause],
+        finally_block: Option<&Expr>
+    ) -> Result<TokenStream> {
+        // For now, we'll transpile try-catch to a match on Result
+        // This is a simplified implementation that handles the common case
+        let try_body = self.transpile_expr(try_block)?;
+        
+        if catch_clauses.is_empty() {
+            bail!("Try block must have at least one catch clause");
+        }
+        
+        // Generate the catch handling
+        let catch_pattern = match &catch_clauses[0].pattern {
+            Pattern::Identifier(name) => {
+                let ident = format_ident!("{}", name);
+                quote! { #ident }
+            }
+            _ => quote! { _e }
+        };
+        
+        let catch_body = self.transpile_expr(&catch_clauses[0].body)?;
+        
+        // If there's a finally block, we need to ensure it runs
+        let result = if let Some(finally) = finally_block {
+            let finally_tokens = self.transpile_expr(finally)?;
+            quote! {
+                {
+                    let _result = (|| -> Result<_, Box<dyn std::error::Error>> {
+                        Ok(#try_body)
+                    })();
+                    
+                    let _final_result = match _result {
+                        Ok(val) => val,
+                        Err(#catch_pattern) => #catch_body
+                    };
+                    
+                    #finally_tokens;
+                    _final_result
+                }
+            }
+        } else {
+            // Simple try-catch without finally
+            quote! {
+                match (|| -> Result<_, Box<dyn std::error::Error>> {
+                    Ok(#try_body)
+                })() {
+                    Ok(val) => val,
+                    Err(#catch_pattern) => #catch_body
+                }
+            }
+        };
+        
+        Ok(result)
     }
 
     /// Transpiles list comprehensions
@@ -2403,7 +2492,7 @@ impl Transpiler {
             let method = base_name.strip_prefix("DataFrame::").unwrap();
             match method {
                 "new" if args.is_empty() => {
-                    return Ok(Some(quote! { polars::prelude::DataFrame::new(vec![]) }));
+                    return Ok(Some(quote! { polars::prelude::DataFrame::empty() }));
                 }
                 "from_csv" if args.len() == 1 => {
                     let path_tokens = self.transpile_expr(&args[0])?;

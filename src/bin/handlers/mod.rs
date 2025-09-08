@@ -284,7 +284,7 @@ fn prepare_compilation(rust_code: &str, verbose: bool) -> Result<(tempfile::Name
         eprintln!("Compiling and running...");
     }
     
-    // Use system temp dir to allow cleanup after execution
+    // Create unique binary path using process ID for temporary compilation output
     let binary_path = std::env::temp_dir().join(format!("ruchy_temp_bin_{}", std::process::id()));
     
     Ok((temp_source, binary_path))

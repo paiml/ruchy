@@ -204,14 +204,8 @@ pub fn parse_type(state: &mut ParserState) -> Result<Type> {
         Some((Token::Fn, _)) => parse_fn_type(state, span),
         Some((Token::LeftBracket, _)) => parse_list_type(state, span),
         Some((Token::LeftParen, _)) => parse_paren_type(state, span),
-        Some((Token::Identifier(_), _)) 
-        | Some((Token::Result, _)) 
-        | Some((Token::Option, _))
-        | Some((Token::Ok, _))
-        | Some((Token::Err, _))
-        | Some((Token::Some, _))
-        | Some((Token::DataFrame, _))
-        | Some((Token::None | Token::Null, _)) => parse_named_type(state, span),
+        Some((Token::Identifier(_) | Token::Result | Token::Option | Token::Ok |
+Token::Err | Token::Some | Token::DataFrame | Token::None | Token::Null, _)) => parse_named_type(state, span),
         _ => bail!("Expected type"),
     }
 }

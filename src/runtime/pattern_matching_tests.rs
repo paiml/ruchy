@@ -40,8 +40,8 @@ mod tests {
 
     #[test]
     fn test_literal_pattern_float() {
-        let pattern = Pattern::Literal(Literal::Float(3.14));
-        let value = Value::Float(3.14);
+        let pattern = Pattern::Literal(Literal::Float(std::f64::consts::PI));
+        let value = Value::Float(std::f64::consts::PI);
         let bindings = match_pattern(&pattern, &value).unwrap();
         assert_eq!(bindings.len(), 0);
         
@@ -221,8 +221,8 @@ mod tests {
         assert!(match_literal_pattern(&Value::Int(42), &Literal::Integer(42)));
         assert!(!match_literal_pattern(&Value::Int(42), &Literal::Integer(43)));
         
-        assert!(match_literal_pattern(&Value::Float(3.14), &Literal::Float(3.14)));
-        assert!(!match_literal_pattern(&Value::Float(3.14), &Literal::Float(2.71)));
+        assert!(match_literal_pattern(&Value::Float(std::f64::consts::PI), &Literal::Float(std::f64::consts::PI)));
+        assert!(!match_literal_pattern(&Value::Float(std::f64::consts::PI), &Literal::Float(2.71)));
         
         assert!(match_literal_pattern(&Value::String("hello".to_string()), &Literal::String("hello".to_string())));
         assert!(!match_literal_pattern(&Value::String("hello".to_string()), &Literal::String("world".to_string())));
@@ -240,8 +240,8 @@ mod tests {
         assert!(values_equal(&Value::Int(42), &Value::Int(42)));
         assert!(!values_equal(&Value::Int(42), &Value::Int(43)));
         
-        assert!(values_equal(&Value::Float(3.14), &Value::Float(3.14)));
-        assert!(!values_equal(&Value::Float(3.14), &Value::Float(2.71)));
+        assert!(values_equal(&Value::Float(std::f64::consts::PI), &Value::Float(std::f64::consts::PI)));
+        assert!(!values_equal(&Value::Float(std::f64::consts::PI), &Value::Float(2.71)));
         
         assert!(values_equal(&Value::String("hello".to_string()), &Value::String("hello".to_string())));
         assert!(!values_equal(&Value::String("hello".to_string()), &Value::String("world".to_string())));
