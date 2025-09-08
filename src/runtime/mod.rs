@@ -37,7 +37,7 @@ mod binary_ops_tests;
 mod pattern_matching_tests;
 
 // Export the unified REPL
-pub use repl::{Repl, Value};
+pub use repl::{Repl, ReplConfig, ReplState, Value};
 
 // Export interpreter components
 pub use interpreter::{
