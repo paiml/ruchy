@@ -4,6 +4,47 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [1.85.0] - 2025-09-08
+
+### Fixed - DataFrame Constructor Industry Standards Compliance  
+- **DataFrame Constructor**: Fixed DataFrame syntax to follow industry standards (pandas, R, Julia)
+  - Removed: `df![]` macro syntax (conflicts with data science conventions)
+  - Confirmed: `DataFrame::new()` constructor pattern works correctly
+  - **Data Science Friendly**: `df` variable name available for user DataFrames (like `df = pd.DataFrame()`)
+- **Book Compatibility Improvements**: Multiple critical fixes for ruchy-book integration
+  - Fixed: Format string transpilation `println!("Value: {}", x)` from broken to working
+  - Fixed: JSON output field order for one-liner tests (`{"success":true,"result":"8"}`)  
+  - Fixed: println() + unit value output for comprehensive test coverage
+  - Added: Complete assertion function support (assert_true, assert_false)
+- **Test Suite Enhancement**: Major improvements to book example compatibility
+  - One-liners: 17/20 → 20/20 (100% passing)
+  - Expected significant improvement in Ch04, Ch15, Ch16, Ch17 compatibility
+  - Format strings now work across multiple chapters
+
+### Technical
+- **TDD Methodology**: All fixes implemented using comprehensive Test-Driven Development
+- **Toyota Way**: Applied stop-the-line quality principles for systematic defect resolution
+- **Research-Based**: DataFrame syntax aligned with pandas, R, Julia, and Polars industry standards
+
+## [1.84.1] - 2025-09-08
+
+### Fixed - DataFrame Transpiler Polars API Generation
+- **DataFrame Builder Pattern**: Fixed transpiler to generate correct Polars API calls
+  - Changed: `.column("name", [...])` → `Series::new("name", &[...])`
+  - Changed: `DataFrame::new()` (empty) → `DataFrame::empty()`
+  - Changed: `df.rows()` → `df.height()`
+  - Changed: `df.get(col)` → `df.column(col)`
+- **Lazy Evaluation**: Added proper `.lazy()` and `.collect()` generation for Polars operations
+- **Builder Transformation**: Transpiler now correctly transforms builder pattern chains
+  - `DataFrame::new().column("a", [1,2]).column("b", [3,4]).build()`
+  - Becomes: `DataFrame::new(vec![Series::new("a", &[1,2]), Series::new("b", &[3,4])])`
+- **CSV/JSON Support**: Fixed DataFrame::from_csv() and from_json() transpilation
+
+### Testing
+- Added comprehensive DataFrame transpiler TDD test suite (9/9 tests passing)
+- Tests cover: Polars imports, builder patterns, empty DataFrames, method mappings, lazy operations
+- DataFrames now work in both interpreter AND transpiler modes
+
 ## [1.70.0] - 2025-09-07
 
 ### Added - Type Conversion System

@@ -129,7 +129,7 @@ map.get("key").unwrap()
 
 ```bash
 # Clone repository
-git clone https://github.com/zacharycarter/ruchy.git
+git clone https://github.com/paiml/ruchy.git
 cd ruchy
 
 # Build
@@ -154,9 +154,9 @@ cargo install --path .
 
 ## Related Projects
 
-- [ruchy-book](https://github.com/zacharycarter/ruchy-book) - Language documentation and examples
-- [rosetta-ruchy](https://github.com/zacharycarter/rosetta-ruchy) - Algorithm implementations
-- [ruchyruchy](https://github.com/zacharycarter/ruchyruchy) - Test suite
+- [ruchy-book](https://github.com/paiml/ruchy-book) - Language documentation and examples
+- [rosetta-ruchy](https://github.com/paiml/rosetta-ruchy) - Algorithm implementations  
+- [ruchyruchy](https://github.com/paiml/ruchyruchy) - Test suite
 
 ## License
 

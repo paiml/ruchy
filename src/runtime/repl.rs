@@ -7056,7 +7056,7 @@ impl Repl {
         }
     }
 
-    /// Dispatcher for assertion functions (complexity: 4)
+    /// Dispatcher for assertion functions (complexity: 6)
     fn dispatch_assertion_functions(
         &mut self,
         func_name: &str,
@@ -7068,6 +7068,8 @@ impl Repl {
             "assert" => Some(self.evaluate_assert(args, deadline, depth)),
             "assert_eq" => Some(self.evaluate_assert_eq(args, deadline, depth)),
             "assert_ne" => Some(self.evaluate_assert_ne(args, deadline, depth)),
+            "assert_true" => Some(self.evaluate_assert_true(args, deadline, depth)),
+            "assert_false" => Some(self.evaluate_assert_false(args, deadline, depth)),
             _ => None,
         }
     }
@@ -7822,6 +7824,72 @@ impl Repl {
         Self::ok_unit()
     }
 
+    /// Evaluate `assert_true` function - panic if condition is false
+    fn evaluate_assert_true(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() < 1 || args.len() > 2 {
+            bail!("assert_true expects 1 or 2 arguments (condition, optional message)");
+        }
+        
+        // Evaluate condition
+        let condition = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        
+        // Check if condition is truthy
+        let is_true = match condition {
+            Value::Bool(b) => b,
+            _ => bail!("assert_true expects a boolean condition, got {}", self.get_value_type_name(&condition)),
+        };
+        
+        if !is_true {
+            // Get optional message
+            let message = if args.len() > 1 {
+                let msg_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                match msg_val {
+                    Value::String(s) => s,
+                    other => other.to_string(),
+                }
+            } else {
+                "assertion failed: condition is false".to_string()
+            };
+            
+            bail!("Assertion failed: {}", message);
+        }
+        
+        Self::ok_unit()
+    }
+    
+    /// Evaluate `assert_false` function - panic if condition is true
+    fn evaluate_assert_false(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
+        if args.len() < 1 || args.len() > 2 {
+            bail!("assert_false expects 1 or 2 arguments (condition, optional message)");
+        }
+        
+        // Evaluate condition
+        let condition = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+        
+        // Check if condition is falsy
+        let is_false = match condition {
+            Value::Bool(b) => !b,
+            _ => bail!("assert_false expects a boolean condition, got {}", self.get_value_type_name(&condition)),
+        };
+        
+        if !is_false {
+            // Get optional message
+            let message = if args.len() > 1 {
+                let msg_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
+                match msg_val {
+                    Value::String(s) => s,
+                    other => other.to_string(),
+                }
+            } else {
+                "assertion failed: condition is true".to_string()
+            };
+            
+            bail!("Assertion failed: {}", message);
+        }
+        
+        Self::ok_unit()
+    }
+    
     /// Compare two values for equality (helper for assertions)
     fn values_equal(&self, left: &Value, right: &Value) -> bool {
         match (left, right) {

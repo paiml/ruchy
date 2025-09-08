@@ -317,7 +317,14 @@ impl Transpiler {
 
     fn transpile_result_err(&self, error: &Expr) -> Result<TokenStream> {
         let error_tokens = self.transpile_expr(error)?;
-        Ok(quote! { Err(#error_tokens) })
+        // If error is a string literal, add .to_string() for String error types
+        let final_tokens = match &error.kind {
+            ExprKind::Literal(crate::frontend::ast::Literal::String(_)) => {
+                quote! { #error_tokens.to_string() }
+            }
+            _ => error_tokens
+        };
+        Ok(quote! { Err(#final_tokens) })
     }
     
     fn transpile_option_some(&self, value: &Expr) -> Result<TokenStream> {
@@ -475,24 +482,53 @@ impl Transpiler {
     /// This eliminates code duplication between println!, print!, and panic!.
     /// Complexity: <10 per Toyota Way requirement.
     fn transpile_print_args(&self, args: &[Expr]) -> Result<Vec<TokenStream>> {
-        args.iter()
-            .map(|arg| {
-                match &arg.kind {
-                    ExprKind::Literal(Literal::String(s)) => {
-                        Ok(quote! { #s })
+        if args.is_empty() {
+            return Ok(vec![]);
+        }
+        
+        // Check if first argument is a format string (contains {})
+        let first_is_format_string = match &args[0].kind {
+            ExprKind::Literal(Literal::String(s)) => s.contains("{}"),
+            _ => false,
+        };
+        
+        if first_is_format_string && args.len() > 1 {
+            // First argument is format string, rest are values
+            let format_str = match &args[0].kind {
+                ExprKind::Literal(Literal::String(s)) => s,
+                _ => unreachable!(),
+            };
+            
+            let mut tokens = vec![quote! { #format_str }];
+            
+            // Add remaining arguments as values (without extra format strings)
+            for arg in &args[1..] {
+                let expr_tokens = self.transpile_expr(arg)?;
+                tokens.push(expr_tokens);
+            }
+            
+            Ok(tokens)
+        } else {
+            // Original behavior for non-format cases
+            args.iter()
+                .map(|arg| {
+                    match &arg.kind {
+                        ExprKind::Literal(Literal::String(s)) => {
+                            Ok(quote! { #s })
+                        }
+                        ExprKind::StringInterpolation { parts } => {
+                            self.transpile_string_interpolation_for_print(parts)
+                        }
+                        _ => {
+                            // Use Debug formatting for all non-string expressions to be safe
+                            // This prevents Display trait errors and works with all types
+                            let expr_tokens = self.transpile_expr(arg)?;
+                            Ok(quote! { "{:?}", #expr_tokens })
+                        }
                     }
-                    ExprKind::StringInterpolation { parts } => {
-                        self.transpile_string_interpolation_for_print(parts)
-                    }
-                    _ => {
-                        // Use Debug formatting for all non-string expressions to be safe
-                        // This prevents Display trait errors and works with all types
-                        let expr_tokens = self.transpile_expr(arg)?;
-                        Ok(quote! { "{:?}", #expr_tokens })
-                    }
-                }
-            })
-            .collect()
+                })
+                .collect()
+        }
     }
 
 
