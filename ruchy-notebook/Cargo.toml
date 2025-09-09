@@ -39,6 +39,11 @@ num-traits = "0.2"
 
 # Memory management
 bumpalo = { version = "3.14", optional = true }
+parking_lot = "0.12"
+
+# DataFrame support
+arrow = { version = "53", optional = true }
+parquet = { version = "53", optional = true }
 
 [dev-dependencies]
 proptest = "1.4"
@@ -47,8 +52,9 @@ wasm-bindgen-test = "0.3"
 
 [features]
 default = ["native"]
-native = ["axum", "tokio", "tower", "tower-http"]
+native = ["axum", "tokio", "tower", "tower-http", "arrow", "parquet"]
 wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys", "js-sys", "bumpalo"]
+dataframe = ["arrow", "parquet"]
 
 [profile.release]
 opt-level = "z"
