@@ -7630,7 +7630,9 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        if format_str.contains("{}") && args.len() > 1 {
+        // Check for both {} and format specifiers like {:.2}
+        let has_placeholders = format_str.contains("{}") || format_str.contains("{:");
+        if has_placeholders && args.len() > 1 {
             self.process_format_string_println(format_str, args, deadline, depth)
         } else {
             self.process_regular_string_println(format_str, args, deadline, depth)
@@ -7645,12 +7647,30 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let mut output = format_str.to_string();
+        let mut arg_index = 1; // Start from args[1] since args[0] is the format string
         
-        for arg in &args[1..] {
-            let val = self.evaluate_expr(arg, deadline, depth + 1)?;
+        // Process both {} and {:spec} placeholders
+        while arg_index < args.len() {
+            let val = self.evaluate_expr(&args[arg_index], deadline, depth + 1)?;
+            
+            // Find the next placeholder (either {} or {: with format spec)
             if let Some(pos) = output.find("{}") {
+                // Simple {} placeholder
                 output.replace_range(pos..pos+2, &val.to_string());
+            } else if let Some(start_pos) = output.find("{:") {
+                // Format specifier placeholder
+                if let Some(end_pos) = output[start_pos..].find('}') {
+                    let end_pos = start_pos + end_pos;
+                    let format_spec = &output[start_pos+2..end_pos]; // Extract ":.2" from "{:.2}"
+                    let formatted = Self::format_value_with_spec(&val, format_spec);
+                    output.replace_range(start_pos..end_pos+1, &formatted);
+                }
+            } else {
+                // No more placeholders found
+                break;
             }
+            
+            arg_index += 1;
         }
         
         println!("{output}");
