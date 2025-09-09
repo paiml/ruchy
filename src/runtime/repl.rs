@@ -1925,6 +1925,10 @@ impl Repl {
                     Some(Err(anyhow::anyhow!("return:()")))
                 }
             }
+            ExprKind::Throw { expr } => {
+                let result = self.evaluate_expr(expr, deadline, depth + 1);
+                Some(result.and_then(|v| Err(anyhow::anyhow!("throw:{}", v))))
+            }
             ExprKind::Await { expr } => Some(self.evaluate_await_expr(expr, deadline, depth)),
             ExprKind::AsyncBlock { body } => Some(self.evaluate_async_block(body, deadline, depth)),
             _ => None,
@@ -3809,11 +3813,21 @@ impl Repl {
         // Check if it's a Result::Err or Option::None and propagate
         if let Value::EnumVariant { enum_name, variant_name, data } = &val {
             if enum_name == "Result" && variant_name == "Err" {
-                // For Result::Err, propagate the error
-                return Ok(val.clone());
+                // For Result::Err, propagate the error by returning an error
+                // This causes early return from the containing function
+                let error_msg = if let Some(values) = data {
+                    if let Some(first_val) = values.first() {
+                        format!("try_operator_err:{first_val}")
+                    } else {
+                        "try_operator_err:()".to_string()
+                    }
+                } else {
+                    "try_operator_err:()".to_string()
+                };
+                return Err(anyhow::anyhow!(error_msg));
             } else if enum_name == "Option" && variant_name == "None" {
-                // For Option::None, propagate None
-                return Ok(val.clone());
+                // For Option::None, propagate None by returning an error
+                return Err(anyhow::anyhow!("try_operator_none"));
             } else if enum_name == "Result" && variant_name == "Ok" {
                 // For Result::Ok, unwrap the value
                 if let Some(values) = data {
@@ -3936,6 +3950,19 @@ impl Repl {
             ("Err", "ok") if args.is_empty() => {
                 // Result::Err(e).ok() -> Option::None
                 Ok(Self::create_option_none())
+            }
+            // is_ok method: returns true for Ok, false for Err
+            ("Ok", "is_ok") if args.is_empty() => Ok(Value::Bool(true)),
+            ("Err", "is_ok") if args.is_empty() => Ok(Value::Bool(false)),
+            // is_err method: returns false for Ok, true for Err
+            ("Ok", "is_err") if args.is_empty() => Ok(Value::Bool(false)),
+            ("Err", "is_err") if args.is_empty() => Ok(Value::Bool(true)),
+            // unwrap_or method: returns value for Ok, default for Err
+            ("Ok", "unwrap_or") if args.len() == 1 => {
+                self.extract_value_or_unit(data)
+            }
+            ("Err", "unwrap_or") if args.len() == 1 => {
+                self.evaluate_expr(&args[0], deadline, depth + 1)
             }
             _ => Err(Self::method_not_supported(method, &format!("Result::{variant_name}")))?,
         }
@@ -6908,10 +6935,40 @@ impl Repl {
                 let mut catch_result = Ok(Value::Unit);
                 
                 if let Some(catch_clause) = catch_clauses.first() {
-                    // For now, just use the first catch clause (simple implementation)
-                    // TODO: Implement pattern matching on error types
+                    // Extract the error value from throw/panic errors
+                    let error_value = if let Some(thrown_msg) = err.to_string().strip_prefix("throw:") {
+                        // This was a throw statement, use the thrown value
+                        Value::String(thrown_msg.to_string())
+                    } else if let Some(panic_msg) = err.to_string().strip_prefix("panic:") {
+                        // This was a panic! macro, use the panic message
+                        Value::String(panic_msg.to_string())
+                    } else {
+                        // Regular error, convert to string
+                        Value::String(err.to_string())
+                    };
+                    
+                    // Bind the error value to the catch variable if it's an identifier pattern
+                    use crate::frontend::ast::Pattern;
+                    let saved_binding = if let Pattern::Identifier(var_name) = &catch_clause.pattern {
+                        let old_val = self.bindings.get(var_name).cloned();
+                        self.bindings.insert(var_name.clone(), error_value);
+                        Some((var_name.clone(), old_val))
+                    } else {
+                        // TODO: Handle other patterns
+                        None
+                    };
+                    
                     caught = true;
                     catch_result = self.evaluate_expr(&catch_clause.body, deadline, depth + 1);
+                    
+                    // Restore binding if we saved one
+                    if let Some((name, old_val)) = saved_binding {
+                        if let Some(val) = old_val {
+                            self.bindings.insert(name, val);
+                        } else {
+                            self.bindings.remove(&name);
+                        }
+                    }
                 }
                 
                 if caught {
@@ -9487,6 +9544,15 @@ impl Repl {
                         // Return as string for complex values
                         Ok(Value::String(return_val.to_string()))
                     }
+                } else if let Some(error_val) = err_str.strip_prefix("try_operator_err:") {
+                    // Handle ? operator errors - convert back to Result::Err
+                    let error_value = if error_val == "()" {
+                        Value::Unit
+                    } else {
+                        // Parse the error value (simplified - could be improved)
+                        Value::String(error_val.to_string())
+                    };
+                    Ok(Self::create_result_err(error_value))
                 } else {
                     Err(e)
                 }
@@ -9696,6 +9762,17 @@ impl Repl {
                     elements.push(self.evaluate_expr(arg, deadline, depth + 1)?);
                 }
                 Self::ok_list(elements)
+            }
+            "panic" => {
+                // Panic with optional message
+                let message = if args.is_empty() {
+                    "explicit panic".to_string()
+                } else {
+                    let msg_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
+                    msg_val.to_string()
+                };
+                // Panic works similar to throw - it creates an error that can be caught by try-catch
+                Err(anyhow::anyhow!("panic:{}", message))
             }
             _ => {
                 anyhow::bail!("Unknown macro: {}", name)
