@@ -1603,6 +1603,28 @@ fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
     // Parse first element/expression (might be spread)
     let first_expr = parse_array_element(state)?;
     
+    // Check if this is an array initialization syntax [value; size]
+    if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+        state.tokens.advance(); // consume ;
+        
+        // Parse the size expression
+        let size_expr = super::parse_expr_recursive(state)?;
+        
+        state.tokens.expect(&Token::RightBracket)
+            .map_err(|_| anyhow::anyhow!("Expected ']' after array initialization"))?;
+        
+        // Create an array initialization expression
+        // We'll represent this as a special List with repeated elements
+        // The transpiler will need to handle this specially
+        return Ok(Expr::new(
+            ExprKind::ArrayInit { 
+                value: Box::new(first_expr), 
+                size: Box::new(size_expr) 
+            }, 
+            start_span
+        ));
+    }
+    
     // Check if this is a list comprehension
     if matches!(state.tokens.peek(), Some((Token::For, _))) {
         return parse_list_comprehension_body(state, first_expr, start_span);
