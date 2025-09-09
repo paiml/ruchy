@@ -723,6 +723,144 @@ pmat mcp serve --port 3000
 6. CONTINUE: Only proceed when ALL violations resolved
 ```
 
+## 🔥 PMAT v2.68.0+ Advanced Quality Features (MANDATORY INTEGRATION)
+
+### 📊 TDG Persistent Storage (NEW - Dogfooding Excellence)
+**MANDATORY**: Use TDG persistent scoring for continuous quality tracking and historical analysis.
+
+```bash
+# Install latest PMAT with TDG storage features
+cargo install pmat --force --version ">=2.68.0"
+
+# Analyze files (automatically stores scores to ~/.pmat/tdg-*)
+pmat tdg src/runtime/repl.rs --include-components
+
+# Check storage statistics (monitor quality trends)
+pmat tdg storage stats
+
+# View historical scores (uses cached results for performance)
+pmat tdg src/runtime/repl.rs  # Instant retrieval from storage
+
+# Export quality trends
+pmat tdg export . --format markdown --output quality-trends.md
+```
+
+**Storage Benefits**:
+- **📈 Historical Tracking**: Every TDG score persistently stored
+- **⚡ Performance**: Cache hits avoid re-analysis on unchanged files
+- **🎯 Quality Trends**: Track improvements/regressions over time
+- **💾 Tiered Storage**: Hot/warm/cold optimization for 100K+ files
+
+### 🎯 Actionable Entropy Analysis (v2.70.0+)
+**MANDATORY**: Replace noisy character entropy with AST-based actionable patterns.
+
+```bash
+# Analyze entropy for actionable refactoring opportunities
+pmat analyze entropy . --min-severity high --top-violations 10
+
+# Pattern types detected:
+# - ErrorHandling: Repetitive error handling patterns
+# - DataValidation: Duplicate validation logic
+# - ResourceManagement: Repeated resource patterns
+# - ConfigurationAccess: Multiple config accesses
+# - StateManagement: Redundant state checks
+# - AlgorithmicComplexity: Similar algorithm implementations
+
+# Each violation includes:
+# - Specific fix suggestion
+# - LOC reduction estimate
+# - Refactoring strategy
+```
+
+### 🌐 Real-time TDG Dashboard (v2.39.0+)
+```bash
+# Start interactive web dashboard for continuous monitoring
+pmat tdg dashboard --port 8080 --open
+
+# Features:
+# - Real-time quality metrics with 5-second updates
+# - Storage backend monitoring (Hot/Warm/Cold tiers)
+# - Performance profiling with flame graphs
+# - Bottleneck detection (CPU, I/O, Memory, Lock contention)
+# - Server-Sent Events for live updates
+```
+
+### 🔌 MCP Server Integration (Enterprise Features)
+```bash
+# Start MCP server for external tool integration
+pmat mcp serve --port 3000
+
+# Available MCP tools:
+# - tdg_analyze_with_storage: Analysis with persistent storage
+# - tdg_system_diagnostics: System health monitoring
+# - tdg_storage_management: Storage optimization
+# - tdg_performance_profiling: Advanced profiling
+# - tdg_alert_management: Configurable alerts
+# - tdg_export_data: Multi-format export
+# - analyze_entropy: Actionable pattern detection
+```
+
+### 🔒 Pre-commit Hooks Management (v2.66.0+)
+```bash
+# Install PMAT-managed pre-commit hooks
+pmat tdg hooks install --backup
+
+# Features:
+# - Dynamic generation from pmat.toml
+# - Single source of truth for thresholds
+# - Automatic TDG scoring on commit
+# - Entropy analysis integration
+# - Zero configuration duplication
+```
+
+### 📋 Daily PMAT Workflow (MANDATORY)
+
+**Before Starting Work**:
+```bash
+# 1. Check baseline quality with persistent storage
+pmat tdg . --top-files 10  # Uses cached scores for speed
+
+# 2. Start real-time dashboard
+pmat tdg dashboard --port 8080 --open &
+
+# 3. Analyze entropy patterns
+pmat analyze entropy . --min-severity medium
+```
+
+**During Development**:
+```bash
+# 1. Monitor dashboard for real-time quality feedback
+# 2. Check specific files after changes
+pmat tdg src/modified_file.rs --include-components
+
+# 3. Validate entropy patterns
+pmat analyze entropy --file src/modified_file.rs
+```
+
+**Before Committing**:
+```bash
+# 1. Full TDG validation (uses persistent storage)
+pmat tdg . --min-grade A- --fail-on-violation
+
+# 2. Entropy check for new patterns
+pmat analyze entropy --changed-files --min-severity high
+
+# 3. Export quality report
+pmat tdg export . --format json > commit-quality.json
+
+# 4. Storage statistics (track quality trends)
+pmat tdg storage stats
+```
+
+### 🏆 Quality Metrics Integration
+
+**Ruchy-Specific Thresholds**:
+- **TDG Grade**: Maintain A- (≥85 points) minimum
+- **Complexity**: ≤10 cyclomatic (strict Toyota Way)
+- **Entropy Violations**: ≤10 high-severity patterns
+- **Storage Growth**: Monitor ~/.pmat/tdg-* weekly
+- **Cache Hit Ratio**: >80% for unchanged files
+
 **Key Rules**:
 - **PMAT FIRST**: Always run PMAT quality gates before starting any task
 - **COMPLEXITY BUDGET**: Every function must justify its complexity via PMAT metrics
