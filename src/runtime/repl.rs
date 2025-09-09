@@ -1699,7 +1699,7 @@ impl Repl {
             // Data structure expressions
             ExprKind::List(_) | ExprKind::Tuple(_) | ExprKind::ObjectLiteral { .. }
             | ExprKind::Range { .. } | ExprKind::FieldAccess { .. } | ExprKind::OptionalFieldAccess { .. }
-            | ExprKind::IndexAccess { .. } | ExprKind::Slice { .. } => {
+            | ExprKind::IndexAccess { .. } | ExprKind::Slice { .. } | ExprKind::ArrayInit { .. } => {
                 self.evaluate_data_structure_expr(expr, deadline, depth)
             }
             
@@ -1783,6 +1783,9 @@ impl Repl {
             }
             ExprKind::Slice { object, start, end } => {
                 self.evaluate_slice(object, start.as_deref(), end.as_deref(), deadline, depth)
+            }
+            ExprKind::ArrayInit { value, size } => {
+                self.evaluate_array_init(value, size, deadline, depth)
             }
             _ => bail!("Non-data-structure expression in data structure dispatcher"),
         }
@@ -3534,6 +3537,35 @@ impl Repl {
             }
         }
         Ok(Value::List(results))
+    }
+
+    /// Evaluate array initialization expression [value; size]
+    fn evaluate_array_init(
+        &mut self,
+        value_expr: &Expr,
+        size_expr: &Expr,
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        let value = self.evaluate_expr(value_expr, deadline, depth + 1)?;
+        let size_val = self.evaluate_expr(size_expr, deadline, depth + 1)?;
+        
+        let size = match size_val {
+            Value::Int(n) => {
+                if n < 0 {
+                    bail!("Array size cannot be negative: {}", n);
+                }
+                n as usize
+            }
+            _ => bail!("Array size must be an integer, got: {}", self.get_value_type_name(&size_val)),
+        };
+        
+        let mut values = Vec::with_capacity(size);
+        for _ in 0..size {
+            values.push(value.clone());
+        }
+        
+        Ok(Value::List(values))
     }
 
     /// Expand a range into individual `Value::Int` items for spreading

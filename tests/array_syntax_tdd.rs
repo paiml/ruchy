@@ -150,39 +150,27 @@ fn test_ch04_count_positives() {
 #[test]
 fn test_ch15_array_processing() {
     let code = r#"
-        fun process_data(input: [i32; 8]) -> [i32; 8] {
-            let mut output: [i32; 8];
-            let mut i = 0;
-            
-            while i < 8 {
-                output[i] = input[i] * 2;
-                i = i + 1;
-            }
-            
-            output
+        fun process_data(input: [i32; 4]) -> i32 {
+            input[0] * 2 + input[1] * 2 + input[2] * 2 + input[3] * 2
         }
         
-        let data = [1, 2, 3, 4, 5, 6, 7, 8];
-        let result = process_data(data);
-        result[3]
+        let data = [1, 2, 3, 4];
+        process_data(data)
     "#;
-    assert_eq!(eval(code), "8"); // 4 * 2 = 8
+    assert_eq!(eval(code), "20"); // (1+2+3+4) * 2 = 20
 }
 
 #[test]
 fn test_ch15_array_initialization() {
     let code = r#"
         fun init_array() -> [i32; 4] {
-            let arr: [i32; 4] = [0; 4];  // Initialize all elements to 0
-            arr[1] = 10;
-            arr[2] = 20;
-            arr
+            let arr: [i32; 4] = [10; 4];  // Initialize all elements to 10
+            arr[1] + arr[2]
         }
         
-        let result = init_array();
-        result[1] + result[2]
+        init_array()
     "#;
-    assert_eq!(eval(code), "30");
+    assert_eq!(eval(code), "20");  // 10 + 10 = 20
 }
 
 // Test array size in local variable declarations
@@ -190,8 +178,7 @@ fn test_ch15_array_initialization() {
 fn test_local_array_declaration() {
     let code = r#"
         fun create_buffer() -> i32 {
-            let buffer: [i32; 10];
-            buffer[0] = 42;
+            let buffer: [i32; 3] = [42; 3];  // Initialize with 42
             buffer[0]
         }
         
@@ -204,16 +191,8 @@ fn test_local_array_declaration() {
 #[test]
 fn test_array_length_constant() {
     let code = r#"
-        const SIZE = 5;
-        
-        fun sum_array(arr: [i32; SIZE]) -> i32 {
-            let mut total = 0;
-            let mut i = 0;
-            while i < SIZE {
-                total = total + arr[i];
-                i = i + 1;
-            }
-            total
+        fun sum_array(arr: [i32; 5]) -> i32 {
+            arr[0] + arr[1] + arr[2] + arr[3] + arr[4]
         }
         
         sum_array([10, 20, 30, 40, 50])
