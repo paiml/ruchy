@@ -179,7 +179,9 @@ fn test_format_idempotent() {
     let formatter = Formatter::new();
     
     let input = "let x = 5";
-    let once = formatter.format(input).unwrap();
+    let mut parser = Parser::new(input);
+    let ast = parser.parse().unwrap();
+    let once = formatter.format(&ast).unwrap();
     let mut parser2 = Parser::new(&once);
     let ast2 = parser2.parse().unwrap();
     let twice = formatter.format(&ast2).unwrap();
