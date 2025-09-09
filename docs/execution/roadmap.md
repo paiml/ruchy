@@ -26,52 +26,188 @@
     - ✅ Fixed pattern matching, format strings, redundant code
     - ✅ TDG A- grade maintained throughout improvements
 
-## 🎯 **v1.90.0 NEXT MAJOR RELEASE - NOTEBOOK PLATFORM**:
+## 🎯 **WASM NOTEBOOK PLATFORM - TDD/PMAT-DRIVEN IMPLEMENTATION**:
 
-### **Vision: "Every REPL Session Becomes a Shareable Notebook"**
+### **Vision: "Browser-Based Notebook Runtime with <50ms Cell Execution"**
 
-**📋 Core Features Planned:**
-  - 🔥 **NOTEBOOK-001**: Convert any .ruchy demo to interactive notebook
-    - ✅ Specification Complete: `docs/specifications/wasm-notebooks-spec.md`
-    - 📊 Target: 106 existing demos → fully executable notebooks
-    - 🎯 Auto-convert ruchy-repl-demos collection (11 categories)
-    - 🔧 Cell-based editing with markdown + code cells
-    
-  - 🔥 **NOTEBOOK-002**: Browser-native notebook execution (WASM)
-    - 📊 Target: <350KB total bundle size (includes visualization)
-    - 🎯 Offline-capable with ServiceWorker caching
-    - 🔧 Real-time execution with <100ms cell response time
-    - 📱 Progressive Web App with mobile support
-    
-  - 🔥 **NOTEBOOK-003**: Educational assignment integration
-    - 📊 Target: Auto-grading with hidden test cases
-    - 🎯 Import existing demos as assignment templates
-    - 🔧 Built-in assessment with REPL replay validation
-    - 👥 Real-time collaboration via operational transform
+**📋 Technical Foundation:** `docs/specifications/wasm-repl-spec.md` v4.0
+  - Bytecode VM with stack-based execution
+  - Apache Arrow DataFrames with zero-copy operations
+  - <200KB WASM module with offline capabilities
+  - Unified Script/REPL/Notebook execution model
 
-**📊 Success Metrics:**
-  - **Demo Conversion**: 100% of 106 demos → notebooks (iris, titanic, algorithms, etc.)
-  - **Performance**: <500ms notebook loading, <100ms cell execution
-  - **Educational**: 80% CS educator adoption target
-  - **Quality**: Maintain A- TDG grade throughout development
+---
 
-**🗓️ Development Timeline:**
-  - **Phase 1** (Weeks 1-3): Core notebook infrastructure + WASM engine
-  - **Phase 2** (Weeks 4-5): Demo conversion pipeline + batch processing
-  - **Phase 3** (Weeks 6-8): Interactive features + visualization engine
-  - **Phase 4** (Weeks 9-10): Educational integration + assignment workflow
+## 📅 **SPRINT 4 - BYTECODE VM FOUNDATION** (v1.90.0 - Weeks 1-2)
 
-**🔗 Integration Points:**
-  - **Existing WASM REPL**: Extend current `wasm-repl-spec.md` infrastructure
-  - **Replay System**: Leverage `repl-replay-testing-spec.md` for deterministic notebooks
-  - **Demo Collection**: Convert entire `ruchy-repl-demos` (iris, algorithms, data science)
-  - **Quality Gates**: Maintain PMAT TDG A- standards throughout
+### **VM-001**: Stack-Based Bytecode Interpreter
+**TDD Requirements:**
+  - 100% test coverage for all OpCodes (Push, Pop, Add, Sub, Mul, Div, etc.)
+  - Property tests: bytecode ↔ AST semantic equivalence (10,000 iterations)
+  - Fuzz testing: random instruction sequences for crash resistance
+  - Doctests: every OpCode with runnable examples
 
-**🌟 Competitive Advantages:**
-  - **Zero Installation**: Run data science notebooks in any browser
-  - **True Offline**: Full notebook editing without internet
-  - **Educational Focus**: Built-in assessment and grading
-  - **Performance**: WASM execution faster than Python alternatives
+**PMAT Quality Gates:**
+  - Cyclomatic complexity ≤8 per VM method (enforced)
+  - TDG A- grade required before merge
+  - Zero SATD comments allowed
+  - Performance: <5ms compilation, <10ms simple execution
+
+**Deliverables:**
+  - `crates/ruchy-vm/`: Bytecode VM implementation
+  - `OpCode` enum with 20+ instructions
+  - Single-pass AST → bytecode compiler
+  - Comprehensive benchmark suite
+
+### **VM-002**: Call Stack and Control Flow
+**TDD Requirements:**
+  - Function calls with proper frame management
+  - Jump instructions (conditional/unconditional)
+  - Return value handling
+  - Stack overflow detection tests
+
+**Success Metrics:**
+  - 1M+ function calls/second
+  - Max recursion depth: 10,000 frames
+  - Memory per frame: <1KB
+
+---
+
+## 📅 **SPRINT 5 - MEMORY & DATAFRAMES** (v1.91.0 - Weeks 3-4)
+
+### **MEM-001**: Arena Memory Management
+**TDD Requirements:**
+  - Transient arena (256KB) with reset between cells
+  - Persistent slab allocator for promoted values
+  - Explicit promotion API with doctests
+  - Memory leak detection tests
+
+**PMAT Quality Gates:**
+  - Memory fragmentation <5%
+  - Allocation performance: <100ns per alloc
+  - TDG complexity limits enforced
+
+### **DF-001**: Apache Arrow DataFrame Integration
+**TDD Requirements:**
+  - Zero-copy slice operations (verified via pointer tests)
+  - Column selection/projection
+  - Filter with boolean arrays
+  - Property tests: operations preserve data integrity
+
+**Performance Targets:**
+  - 1M row DataFrame operations <50ms
+  - Zero-copy verified via proptest
+  - Memory overhead <10% of raw data
+
+---
+
+## 📅 **SPRINT 6 - DEMO CONVERSION** (v1.92.0 - Weeks 5-6)
+
+### **CONV-001**: AST-Based Demo Parser
+**TDD Requirements:**
+  - Parse all 106 ruchy-repl-demos without errors
+  - Comment → Markdown cell conversion
+  - Code grouping heuristics with tests
+  - Section detection from println patterns
+
+**Quality Metrics:**
+  - 100% demo conversion success rate
+  - Preservation of educational metadata
+  - Output validation against golden files
+
+### **CONV-002**: Notebook Serialization
+**TDD Requirements:**
+  - Jupyter .ipynb format compatibility
+  - Bidirectional script ↔ notebook conversion
+  - Round-trip property tests
+  - Module import resolution
+
+---
+
+## 📅 **SPRINT 7 - ERROR HANDLING & UX** (v1.93.0 - Weeks 7-8)
+
+### **ERR-001**: Structured Error System
+**TDD Requirements:**
+  - Error kinds with span tracking
+  - Suggestion engine (Levenshtein distance)
+  - Stack traces through bytecode
+  - WASM-friendly serialization
+
+**User Experience:**
+  - Helpful error messages with fix suggestions
+  - Source location highlighting
+  - Related symbol recommendations
+
+### **UX-001**: Global State Management
+**TDD Requirements:**
+  - Explicit `global` keyword support
+  - Cell provenance tracking
+  - Dependency graph for execution order
+  - State persistence across sessions
+
+---
+
+## 📅 **SPRINT 8 - INTEGRATION & OPTIMIZATION** (v1.94.0 - Weeks 9-10)
+
+### **INT-001**: Frontend Integration
+**TDD Requirements:**
+  - WASM module <200KB (enforced in CI)
+  - React/Vue component library
+  - WebWorker execution model
+  - Progressive loading strategy
+
+### **OPT-001**: Performance Optimization
+**TDD Requirements:**
+  - Inline caching for hot paths
+  - JIT compilation hints from profiling
+  - Benchmark suite with regression detection
+  - Memory profiling with leak detection
+
+**Final Metrics:**
+  - Cell execution: <50ms for DataFrames
+  - Module size: <200KB gzipped
+  - Demo conversion: 100% success
+  - Quality: TDG A- maintained
+
+---
+
+## 📅 **SPRINT 9 - EDUCATIONAL FEATURES** (v1.95.0 - Weeks 11-12)
+
+### **EDU-001**: Assignment System
+**TDD Requirements:**
+  - Test case execution with timeouts
+  - Hidden test support
+  - Auto-grading with detailed feedback
+  - Plagiarism detection via AST comparison
+
+### **EDU-002**: Collaboration Engine
+**TDD Requirements:**
+  - Operational transform for concurrent edits
+  - WebSocket synchronization
+  - Conflict resolution tests
+  - Offline queue with eventual consistency
+
+---
+
+## 🏆 **SUCCESS CRITERIA**
+
+**Technical Excellence:**
+  - 100% TDD coverage with property/fuzz tests
+  - PMAT TDG A- grade throughout
+  - <200KB WASM module
+  - <50ms DataFrame operations
+
+**User Impact:**
+  - All 106 demos → interactive notebooks
+  - Zero-installation browser experience
+  - Educational assessment built-in
+  - Offline-first architecture
+
+**Quality Enforcement:**
+  - Pre-commit: PMAT quality gates
+  - CI/CD: Size budget enforcement
+  - Performance: Regression detection
+  - Toyota Way: Stop-the-line for any defect
 
 ## 🚀 **v1.88.0 BREAKTHROUGH ACHIEVEMENTS** (HISTORICAL):
   - ✅ **FILE-EXEC-001 COMPLETE**: Critical file execution and formatting fixes
