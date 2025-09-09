@@ -1,6 +1,6 @@
 [package]
 name = "ruchy-notebook"
-version.workspace = true
+version = "1.91.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
