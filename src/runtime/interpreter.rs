@@ -1771,7 +1771,8 @@ impl Interpreter {
             ExprKind::List(_) |
             ExprKind::Block(_) |
             ExprKind::Tuple(_) |
-            ExprKind::Range { .. }
+            ExprKind::Range { .. } |
+            ExprKind::ArrayInit { .. }
         )
     }
     
@@ -1810,6 +1811,7 @@ impl Interpreter {
             ExprKind::Block(statements) => self.eval_block_expr(statements),
             ExprKind::Tuple(elements) => self.eval_tuple_expr(elements),
             ExprKind::Range { start, end, inclusive } => self.eval_range_expr(start, end, *inclusive),
+            ExprKind::ArrayInit { value, size } => self.eval_array_init_expr(value, size),
             _ => unreachable!("Non-data-structure expression passed to eval_data_structure_expr"),
         }
     }
@@ -2195,6 +2197,26 @@ impl Interpreter {
         for elem in elements {
             values.push(self.eval_expr(elem)?);
         }
+        Ok(Value::from_array(values))
+    }
+
+    /// Evaluate array initialization expression [value; size]
+    fn eval_array_init_expr(&mut self, value_expr: &Expr, size_expr: &Expr) -> Result<Value, InterpreterError> {
+        let value = self.eval_expr(value_expr)?;
+        let size_val = self.eval_expr(size_expr)?;
+        
+        let size = match size_val {
+            Value::Integer(n) => n as usize,
+            _ => return Err(InterpreterError::RuntimeError(
+                "Array size must be an integer".to_string()
+            )),
+        };
+        
+        let mut values = Vec::with_capacity(size);
+        for _ in 0..size {
+            values.push(value.clone());
+        }
+        
         Ok(Value::from_array(values))
     }
 
