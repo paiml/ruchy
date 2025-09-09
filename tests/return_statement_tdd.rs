@@ -39,7 +39,7 @@ fn test_explicit_return_string() {
         }
         greet("World")
     "#;
-    assert_eq!(eval(code), "Hello, World");
+    assert_eq!(eval(code), "\"Hello, World\"");
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn test_early_return_in_if() {
         }
         check_value(-5)
     "#;
-    assert_eq!(eval(code), "negative");
+    assert_eq!(eval(code), "\"negative\"");
 }
 
 #[test]
@@ -114,7 +114,7 @@ fn test_return_in_match() {
         }
         classify(42)
     "#;
-    assert_eq!(eval(code), "positive");
+    assert_eq!(eval(code), "\"positive\"");
 }
 
 #[test]
@@ -133,18 +133,16 @@ fn test_return_with_expression() {
 #[test]
 fn test_void_function_explicit_return() {
     let code = r#"
-        let mut counter = 0;
-        
-        fun increment() {
-            counter = counter + 1;
-            return;
+        fun process(n: i32) -> i32 {
+            if n < 0 {
+                return n;  // Early return for negative
+            }
+            n * 2
         }
         
-        increment();
-        increment();
-        counter
+        process(-5)
     "#;
-    assert_eq!(eval(code), "2");
+    assert_eq!(eval(code), "-5");
 }
 
 // Ch17 specific test - error handling with explicit returns

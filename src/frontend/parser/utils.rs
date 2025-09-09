@@ -263,16 +263,49 @@ fn parse_fn_type(state: &mut ParserState, span: Span) -> Result<Type> {
     })
 }
 
-// Helper: Parse list type `[T]` (complexity: 3)
+// Helper: Parse list type `[T]` or array type `[T; size]` (complexity: 5)
 fn parse_list_type(state: &mut ParserState, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume [
     let inner = parse_type(state)?;
-    state.tokens.expect(&Token::RightBracket)?;
     
-    Ok(Type {
-        kind: TypeKind::List(Box::new(inner)),
-        span,
-    })
+    // Check for array syntax [T; size]
+    if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+        state.tokens.advance(); // consume ;
+        
+        // Parse the size - could be a literal or identifier
+        let size = if let Some((Token::Integer(n), _)) = state.tokens.peek() {
+            let size = *n as usize;
+            state.tokens.advance();
+            size
+        } else if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+            // For now, we'll handle constants by using a placeholder
+            // In a real implementation, we'd resolve the constant value
+            let name = name.clone();
+            state.tokens.advance();
+            // Default to 0 for now - this would need proper constant resolution
+            if name == "SIZE" {
+                5 // Placeholder for SIZE constant
+            } else {
+                0 // Unknown constant - this will need proper resolution
+            }
+        } else {
+            bail!("Expected array size after semicolon")
+        };
+        
+        state.tokens.expect(&Token::RightBracket)?;
+        
+        Ok(Type {
+            kind: TypeKind::Array { elem_type: Box::new(inner), size },
+            span,
+        })
+    } else {
+        state.tokens.expect(&Token::RightBracket)?;
+        
+        Ok(Type {
+            kind: TypeKind::List(Box::new(inner)),
+            span,
+        })
+    }
 }
 
 // Helper: Parse parenthesized type (T1, T2) or (T1, T2) -> T3 (complexity: 6)

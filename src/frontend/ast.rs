@@ -497,6 +497,7 @@ pub enum TypeKind {
     Generic { base: String, params: Vec<Type> },
     Optional(Box<Type>),
     List(Box<Type>),
+    Array { elem_type: Box<Type>, size: usize },
     Tuple(Vec<Type>),
     Function { params: Vec<Type>, ret: Box<Type> },
     DataFrame { columns: Vec<(String, Type)> },

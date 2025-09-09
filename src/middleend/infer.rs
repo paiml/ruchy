@@ -1202,6 +1202,11 @@ impl InferenceContext {
             TypeKind::List(inner) => {
                 MonoType::List(Box::new(Self::ast_type_to_mono_static(inner)?))
             }
+            TypeKind::Array { elem_type, size: _ } => {
+                // For now, treat arrays as lists in the type system
+                // The size is tracked in the AST but not in the monomorphic type
+                MonoType::List(Box::new(Self::ast_type_to_mono_static(elem_type)?))
+            }
             TypeKind::Function { params, ret } => {
                 let ret_ty = Self::ast_type_to_mono_static(ret)?;
                 let result: Result<MonoType> =

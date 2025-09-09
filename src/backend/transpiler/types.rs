@@ -94,6 +94,11 @@ impl Transpiler {
                 let elem_tokens = self.transpile_type(elem_type)?;
                 Ok(quote! { Vec<#elem_tokens> })
             }
+            TypeKind::Array { elem_type, size } => {
+                let elem_tokens = self.transpile_type(elem_type)?;
+                let size_lit = proc_macro2::Literal::usize_unsuffixed(*size);
+                Ok(quote! { [#elem_tokens; #size_lit] })
+            }
             TypeKind::Tuple(types) => {
                 let type_tokens: Result<Vec<_>> =
                     types.iter().map(|t| self.transpile_type(t)).collect();
