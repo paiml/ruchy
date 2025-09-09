@@ -1,0 +1,66 @@
+[package]
+name = "ruchy-notebook"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+rust-version.workspace = true
+description = "Interactive notebook runtime for Ruchy programming language"
+keywords = ["notebook", "wasm", "repl", "interactive", "ruchy"]
+categories = ["development-tools", "wasm", "web-programming"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Core dependencies
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Web server (native only)
+axum = { version = "0.7", optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+tower = { version = "0.4", optional = true }
+tower-http = { version = "0.5", features = ["fs", "cors"], optional = true }
+
+# WASM dependencies
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+web-sys = { version = "0.3", optional = true }
+js-sys = { version = "0.3", optional = true }
+
+# Bytecode VM
+num-derive = "0.4"
+num-traits = "0.2"
+
+# Memory management
+bumpalo = { version = "3.14", optional = true }
+
+[dev-dependencies]
+proptest = "1.4"
+criterion = "0.5"
+wasm-bindgen-test = "0.3"
+
+[features]
+default = ["native"]
+native = ["axum", "tokio", "tower", "tower-http"]
+wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys", "js-sys", "bumpalo"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.wasm]
+inherits = "release"
+opt-level = "z"
+panic = "abort"
+
+
+[lints]
+workspace = true

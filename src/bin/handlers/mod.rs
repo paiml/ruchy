@@ -942,6 +942,9 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
         crate::Commands::Coverage { path, threshold, format, verbose } => {
             handle_coverage_command(&path, threshold.unwrap_or(80.0), &format, verbose)
         }
+        crate::Commands::Notebook { port, open, host } => {
+            handle_notebook_command(port, open, &host)
+        }
         crate::Commands::ReplayToTests { input, output, property_tests, benchmarks, timeout } => {
             handle_replay_to_tests_command(&input, output.as_deref(), property_tests, benchmarks, timeout)
         }
@@ -1302,6 +1305,44 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
         }
     }
     */
+}
+
+/// Handle notebook command
+#[cfg(feature = "notebook")]
+pub fn handle_notebook_command(port: u16, open_browser: bool, host: &str) -> Result<()> {
+    use std::process::Command;
+    
+    println!("🚀 Starting Ruchy Notebook server...");
+    println!("   Host: {}:{}", host, port);
+    
+    // Create async runtime for the server
+    let runtime = tokio::runtime::Runtime::new()?;
+    
+    // Open browser if requested
+    if open_browser {
+        let url = format!("http://{}:{}", host, port);
+        println!("   Opening browser at {}", url);
+        
+        #[cfg(target_os = "macos")]
+        Command::new("open").arg(&url).spawn()?;
+        
+        #[cfg(target_os = "linux")]
+        Command::new("xdg-open").arg(&url).spawn()?;
+        
+        #[cfg(target_os = "windows")]
+        Command::new("cmd").args(["/C", "start", &url]).spawn()?;
+    }
+    
+    // Start the notebook server
+    runtime.block_on(async {
+        ruchy_notebook::server::start_server(port).await
+    })
+}
+
+#[cfg(not(feature = "notebook"))]
+pub fn handle_notebook_command(_port: u16, _open_browser: bool, _host: &str) -> Result<()> {
+    eprintln!("Notebook feature not enabled. Rebuild with --features notebook");
+    std::process::exit(1)
 }
 
 /// Handle replay-to-tests command - convert .replay files to regression tests
