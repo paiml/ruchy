@@ -49,6 +49,7 @@ parquet = { version = "53", optional = true }
 proptest = "1.4"
 criterion = "0.5"
 wasm-bindgen-test = "0.3"
+tempfile = "3.8"
 
 [features]
 default = ["native"]
