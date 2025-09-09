@@ -1,0 +1,179 @@
+{
+    "name": "Ruchy Notebook",
+    "short_name": "Ruchy",
+    "description": "Interactive notebook environment for Ruchy programming language",
+    "version": "1.90.0",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "orientation": "any",
+    "theme_color": "#2D3748",
+    "background_color": "#1A202C",
+    "scope": "./",
+    
+    "icons": [
+        {
+            "src": "./icons/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "./icons/icon-96x96.png",
+            "sizes": "96x96", 
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "./icons/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "./icons/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "./icons/icon-152x152.png", 
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "./icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "./icons/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "./icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable any"
+        }
+    ],
+    
+    "categories": [
+        "developer",
+        "education", 
+        "productivity"
+    ],
+    
+    "screenshots": [
+        {
+            "src": "./screenshots/desktop-home.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Ruchy Notebook main interface"
+        },
+        {
+            "src": "./screenshots/mobile-home.png", 
+            "sizes": "540x720",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Ruchy Notebook mobile view"
+        }
+    ],
+    
+    "features": [
+        "offline-support",
+        "installable", 
+        "progressive-loading",
+        "wasm-runtime",
+        "jupyter-compatible"
+    ],
+    
+    "prefer_related_applications": false,
+    "shortcuts": [
+        {
+            "name": "New Notebook",
+            "short_name": "New",
+            "description": "Create a new notebook",
+            "url": "./index.html?action=new",
+            "icons": [
+                {
+                    "src": "./icons/shortcut-new.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Examples",
+            "short_name": "Examples", 
+            "description": "Browse example notebooks",
+            "url": "./examples.html",
+            "icons": [
+                {
+                    "src": "./icons/shortcut-examples.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Documentation",
+            "short_name": "Docs",
+            "description": "View Ruchy documentation", 
+            "url": "./docs.html",
+            "icons": [
+                {
+                    "src": "./icons/shortcut-docs.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    
+    "edge_side_panel": {
+        "preferred_width": 400
+    },
+    
+    "file_handlers": [
+        {
+            "action": "./index.html",
+            "accept": {
+                "application/x-ipynb+json": [".ipynb"],
+                "text/x-ruchy": [".ruchy", ".rcy"]
+            },
+            "launch_type": "single-client"
+        }
+    ],
+    
+    "protocol_handlers": [
+        {
+            "protocol": "ruchy",
+            "url": "./index.html?url=%s"
+        }
+    ],
+    
+    "share_target": {
+        "action": "./share.html",
+        "method": "POST", 
+        "enctype": "multipart/form-data",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url",
+            "files": [
+                {
+                    "name": "notebook",
+                    "accept": ["application/x-ipynb+json", "text/x-ruchy"]
+                }
+            ]
+        }
+    },
+    
+    "launch_handler": {
+        "client_mode": ["navigate-existing", "navigate-new"]
+    },
+    
+    "handle_links": "preferred"
+}

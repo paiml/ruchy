@@ -1,0 +1,126 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/noah/src/ruchy/ruchy-notebook/Cargo.toml
+workspace: /home/noah/src/ruchy/Cargo.toml
+   Compiling tokio v1.47.1
+   Compiling hyper v1.7.0
+   Compiling tower v0.5.2
+   Compiling tokio-util v0.7.16
+   Compiling tower-http v0.5.2
+   Compiling hyper-util v0.1.16
+   Compiling axum v0.7.9
+   Compiling ruchy-notebook v1.86.0 (/home/noah/src/ruchy/ruchy-notebook)
+warning: unused import: `std::collections::HashMap`
+ --> ruchy-notebook/src/state/session.rs:2:5
+  |
+2 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: type `SymbolKind` is more private than the item `SuggestionEngine::add_symbol`
+  --> ruchy-notebook/src/error/suggestions.rs:64:5
+   |
+64 |     pub fn add_symbol(&mut self, name: String, kind: SymbolKind) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method `SuggestionEngine::add_symbol` is reachable at visibility `pub`
+   |
+note: but type `SymbolKind` is only usable at visibility `pub(self)`
+  --> ruchy-notebook/src/error/suggestions.rs:18:1
+   |
+18 | enum SymbolKind {
+   | ^^^^^^^^^^^^^^^
+   = note: `#[warn(private_interfaces)]` on by default
+
+warning: field `call_stack` is never read
+  --> ruchy-notebook/src/vm/interpreter.rs:13:5
+   |
+11 | pub struct VirtualMachine {
+   |            -------------- field in this struct
+12 |     stack: Vec<Value>,
+13 |     call_stack: Vec<usize>,
+   |     ^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: variants `Type` and `Module` are never constructed
+  --> ruchy-notebook/src/error/suggestions.rs:21:5
+   |
+18 | enum SymbolKind {
+   |      ---------- variants in this enum
+...
+21 |     Type,
+   |     ^^^^
+22 |     Module,
+   |     ^^^^^^
+   |
+   = note: `SymbolKind` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: `ruchy-notebook` (lib) generated 4 warnings (run `cargo fix --lib -p ruchy-notebook` to apply 1 suggestion)
+error[E0433]: failed to resolve: could not find `DemoConverter` in `converter`
+   --> ruchy-notebook/benches/notebook_benchmarks.rs:221:48
+    |
+221 |                     let converter = converter::DemoConverter::new();
+    |                                                ^^^^^^^^^^^^^ could not find `DemoConverter` in `converter`
+
+error[E0599]: no method named `alloc` found for struct `SlabAllocator` in the current scope
+  --> ruchy-notebook/benches/notebook_benchmarks.rs:75:35
+   |
+75 |                 let handle = slab.alloc(black_box(format!("value_{}", i)));
+   |                                   ^^^^^ method not found in `SlabAllocator<_>`
+
+error[E0308]: mismatched types
+  --> ruchy-notebook/benches/notebook_benchmarks.rs:81:34
+   |
+81 |                 let _ = slab.get(&handle);
+   |                              --- ^^^^^^^ expected `SlabHandle`, found `&_`
+   |                              |
+   |                              arguments to this method are incorrect
+   |
+   = note: expected struct `SlabHandle`
+           found reference `&_`
+note: method defined here
+  --> /home/noah/src/ruchy/ruchy-notebook/src/memory/slab.rs:63:12
+   |
+63 |     pub fn get(&self, handle: SlabHandle) -> Option<&T> {
+   |            ^^^
+help: consider removing the borrow
+   |
+81 -                 let _ = slab.get(&handle);
+81 +                 let _ = slab.get(handle);
+   |
+
+error[E0599]: no method named `parse` found for struct `DemoParser` in the current scope
+   --> ruchy-notebook/benches/notebook_benchmarks.rs:208:36
+    |
+208 |                     let _ = parser.parse(black_box(content));
+    |                                    ^^^^^
+    |
+help: there is a method `parse_file` with a similar name
+    |
+208 |                     let _ = parser.parse_file(black_box(content));
+    |                                         +++++
+
+error[E0599]: no method named `parse` found for struct `DemoParser` in the current scope
+   --> ruchy-notebook/benches/notebook_benchmarks.rs:214:28
+    |
+214 |         let cells = parser.parse(content).unwrap_or_default();
+    |                            ^^^^^
+    |
+help: there is a method `parse_file` with a similar name
+    |
+214 |         let cells = parser.parse_file(content).unwrap_or_default();
+    |                                 +++++
+
+error[E0596]: cannot borrow `suggestion_engine` as mutable, as it is not declared as mutable
+   --> ruchy-notebook/benches/notebook_benchmarks.rs:240:9
+    |
+240 |         suggestion_engine.add_variable(var.to_string());
+    |         ^^^^^^^^^^^^^^^^^ cannot borrow as mutable
+    |
+help: consider changing this to be mutable
+    |
+236 |     let mut suggestion_engine = error::SuggestionEngine::new();
+    |         +++
+
+Some errors have detailed explanations: E0308, E0433, E0596, E0599.
+For more information about an error, try `rustc --explain E0308`.
+error: could not compile `ruchy-notebook` (bench "notebook_benchmarks") due to 6 previous errors
