@@ -28,17 +28,46 @@
 
 ## 🎯 **WASM NOTEBOOK PLATFORM - TDD/PMAT-DRIVEN IMPLEMENTATION**:
 
-### **Vision: "Browser-Based Notebook Runtime with <50ms Cell Execution"**
+### **Vision: "Zero-Dependency Notebooks in Every Ruchy Installation"**
 
 **📋 Technical Foundation:** `docs/specifications/wasm-repl-spec.md` v4.0
-  - Bytecode VM with stack-based execution
+  - **Single Binary Distribution**: Notebooks ship embedded in main `ruchy` binary
+  - **Zero Additional Dependencies**: No npm, Python, or separate tools required
+  - **Instant Availability**: `cargo install ruchy` includes full notebook support
+  - Bytecode VM with <50ms cell execution
   - Apache Arrow DataFrames with zero-copy operations
-  - <200KB WASM module with offline capabilities
+  - <200KB WASM module embedded in binary
   - Unified Script/REPL/Notebook execution model
+
+**🏗️ Architecture Principles:**
+  - `ruchy notebook` subcommand launches local server
+  - Static HTML/JS/WASM assets embedded at compile time
+  - Browser execution via WASM, no server round-trips
+  - Native and WASM targets from same codebase
 
 ---
 
-## 📅 **SPRINT 4 - BYTECODE VM FOUNDATION** (v1.90.0 - Weeks 1-2)
+## 📅 **SPRINT 4 - NOTEBOOK INFRASTRUCTURE & VM** (v1.90.0 - Weeks 1-2)
+
+### **NB-001**: Notebook Crate & CLI Integration
+**TDD Requirements:**
+  - Create `ruchy-notebook/` crate with dual native/WASM targets
+  - `ruchy notebook` subcommand implementation
+  - Embedded asset system for HTML/JS/CSS (compile-time inclusion)
+  - Local web server using `axum` or `warp`
+  - WebSocket support for hot reload
+
+**PMAT Quality Gates:**
+  - Binary size increase <5MB with embedded assets
+  - Server startup <50ms
+  - Zero external runtime dependencies
+  - TDG A- grade maintained
+
+**Deliverables:**
+  - `src/bin/ruchy/notebook.rs`: CLI subcommand handler
+  - `ruchy-notebook/`: Core notebook runtime crate
+  - `ruchy-notebook/assets/`: Static frontend files
+  - `build.rs`: Asset embedding at compile time
 
 ### **VM-001**: Stack-Based Bytecode Interpreter
 **TDD Requirements:**
@@ -54,22 +83,22 @@
   - Performance: <5ms compilation, <10ms simple execution
 
 **Deliverables:**
-  - `crates/ruchy-vm/`: Bytecode VM implementation
+  - `ruchy-notebook/src/vm/`: Bytecode VM implementation
   - `OpCode` enum with 20+ instructions
   - Single-pass AST → bytecode compiler
   - Comprehensive benchmark suite
 
-### **VM-002**: Call Stack and Control Flow
+### **VM-002**: WASM Compilation Target
 **TDD Requirements:**
-  - Function calls with proper frame management
-  - Jump instructions (conditional/unconditional)
-  - Return value handling
-  - Stack overflow detection tests
+  - `wasm-pack` build integration
+  - WASM module <200KB after optimization
+  - Browser API bindings via `wasm-bindgen`
+  - File system bridge for native/WASM compatibility
 
 **Success Metrics:**
-  - 1M+ function calls/second
-  - Max recursion depth: 10,000 frames
-  - Memory per frame: <1KB
+  - Cold start in browser <200ms
+  - Cell execution <10ms for simple code
+  - Memory usage <50MB in browser
 
 ---
 

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruchy Notebook</title>
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #d4d4d4;
+            --text-secondary: #808080;
+            --accent: #569cd6;
+            --border: #3e3e3e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: var(--accent);
+            font-size: 2rem;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .notebook-container {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 400px;
+        }
+        
+        .cell {
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .cell-input {
+            background: var(--bg-primary);
+            padding: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            border: none;
+            width: 100%;
+            color: var(--text-primary);
+            min-height: 60px;
+            resize: vertical;
+        }
+        
+        .cell-output {
+            background: #1a1a1a;
+            padding: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            color: #9cdcfe;
+            border-top: 1px solid var(--border);
+            min-height: 40px;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+        
+        button:hover {
+            opacity: 0.9;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Ruchy Notebook</h1>
+            <div class="subtitle">Interactive Programming Environment</div>
+        </header>
+        
+        <div class="notebook-container">
+            <div class="cell">
+                <textarea class="cell-input" placeholder="Enter Ruchy code here...">// Welcome to Ruchy Notebook!
+println("Hello, Notebook!")</textarea>
+                <div class="cell-output"></div>
+            </div>
+            
+            <div class="controls">
+                <button onclick="runCell()">Run Cell (Shift+Enter)</button>
+                <button onclick="addCell()">Add Cell</button>
+                <button onclick="clearOutput()">Clear Output</button>
+            </div>
+            
+            <div class="status">
+                Status: <span id="status-text">Ready</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let wasmModule = null;
+        
+        async function initWasm() {
+            try {
+                setStatus('Loading WASM module...');
+                // TODO: Load actual WASM module
+                setStatus('Ready');
+            } catch (error) {
+                setStatus('Error loading WASM: ' + error.message);
+            }
+        }
+        
+        function runCell() {
+            const input = document.querySelector('.cell-input');
+            const output = document.querySelector('.cell-output');
+            const code = input.value;
+            
+            setStatus('Running...');
+            
+            // TODO: Execute code via WASM
+            output.textContent = `// Output will appear here\n// Code: ${code}`;
+            
+            setStatus('Ready');
+        }
+        
+        function addCell() {
+            const container = document.querySelector('.notebook-container');
+            const controls = document.querySelector('.controls');
+            
+            const newCell = document.createElement('div');
+            newCell.className = 'cell';
+            newCell.innerHTML = `
+                <textarea class="cell-input" placeholder="Enter Ruchy code here..."></textarea>
+                <div class="cell-output"></div>
+            `;
+            
+            container.insertBefore(newCell, controls);
+        }
+        
+        function clearOutput() {
+            const outputs = document.querySelectorAll('.cell-output');
+            outputs.forEach(output => output.textContent = '');
+        }
+        
+        function setStatus(text) {
+            document.getElementById('status-text').textContent = text;
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.shiftKey && e.key === 'Enter') {
+                e.preventDefault();
+                runCell();
+            }
+        });
+        
+        // Initialize on load
+        window.addEventListener('load', initWasm);
+    </script>
+</body>
+</html>

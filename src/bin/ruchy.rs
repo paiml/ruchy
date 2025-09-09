@@ -183,6 +183,21 @@ enum Commands {
         format: String,
     },
 
+    /// Launch interactive notebook server
+    Notebook {
+        /// Port to run the server on
+        #[arg(short, long, default_value = "8080")]
+        port: u16,
+
+        /// Open browser automatically
+        #[arg(long)]
+        open: bool,
+
+        /// Host to bind to
+        #[arg(long, default_value = "127.0.0.1")]
+        host: String,
+    },
+
     /// Generate coverage report for Ruchy code
     Coverage {
         /// The file or directory to analyze  

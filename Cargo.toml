@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    ".",
+    ".", "ruchy-notebook",
 ]
 exclude = ["fuzz"]
 resolver = "2"
@@ -220,6 +220,7 @@ default = []
 dataframe = ["polars"]
 testing = ["proptest"]
 mcp = ["tokio", "tokio-util", "pmcp", "async-trait", "tower-lsp"]
+notebook = ["ruchy-notebook", "tokio"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -269,6 +270,8 @@ once_cell = "1.21"
 # Compilation support
 tempfile = "3.21"
 proptest = { version = "1.7", optional = true }
+# Notebook support
+ruchy-notebook = { path = "ruchy-notebook", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
