@@ -93,10 +93,25 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
     let mut repl = Repl::new()?;
     match repl.eval(&source) {
         Ok(result) => {
-            // Only print non-unit results
+            // Only print non-unit results from file evaluation
             if result != "Unit" && result != "()" {
                 println!("{result}");
             }
+            
+            // After evaluating the file, check if main() function exists and call it
+            match repl.eval("main()") {
+                Ok(main_result) => {
+                    // Only print non-unit results from main()
+                    if main_result != "Unit" && main_result != "()" {
+                        println!("{main_result}");
+                    }
+                }
+                Err(_) => {
+                    // main() function doesn't exist or failed - that's OK
+                    // Files don't have to have main() functions
+                }
+            }
+            
             Ok(())
         }
         Err(e) => {
