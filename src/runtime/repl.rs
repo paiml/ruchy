@@ -1927,15 +1927,15 @@ impl Repl {
                     Some(result.and_then(|v| {
                         // Use a special encoding that preserves the exact value
                         let encoded = match &v {
-                            Value::Int(i) => format!("return:int:{}", i),
-                            Value::Float(f) => format!("return:float:{}", f),
-                            Value::Bool(b) => format!("return:bool:{}", b),
-                            Value::String(s) => format!("return:string:{}", s),
+                            Value::Int(i) => format!("return:int:{i}"),
+                            Value::Float(f) => format!("return:float:{f}"),
+                            Value::Bool(b) => format!("return:bool:{b}"),
+                            Value::String(s) => format!("return:string:{s}"),
                             Value::Unit => "return:unit".to_string(),
                             Value::List(items) => format!("return:list:{}", items.len()),
                             Value::Object(_) => "return:object".to_string(),
-                            Value::Char(c) => format!("return:char:{}", c),
-                            _ => format!("return:value:{}", v),
+                            Value::Char(c) => format!("return:char:{c}"),
+                            _ => format!("return:value:{v}"),
                         };
                         Err(anyhow::anyhow!(encoded))
                     }))
@@ -7710,7 +7710,7 @@ impl Repl {
                     let end_pos = start_pos + end_pos;
                     let format_spec = &output[start_pos+2..end_pos]; // Extract ":.2" from "{:.2}"
                     let formatted = Self::format_value_with_spec(&val, format_spec);
-                    output.replace_range(start_pos..end_pos+1, &formatted);
+                    output.replace_range(start_pos..=end_pos, &formatted);
                 }
             } else {
                 // No more placeholders found
@@ -9623,10 +9623,10 @@ impl Repl {
                         return Self::ok_bool(true);
                     } else if return_val == "false" {
                         return Self::ok_bool(false);
-                    } else {
-                        // Return as string for complex values
-                        return Ok(Value::String(return_val.to_string()));
                     }
+                    
+                    // Return as string for complex values
+                    Ok(Value::String(return_val.to_string()))
                 } else if let Some(error_val) = err_str.strip_prefix("try_operator_err:") {
                     // Handle ? operator errors - convert back to Result::Err
                     let error_value = if error_val == "()" {
