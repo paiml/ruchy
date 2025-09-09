@@ -144,7 +144,7 @@ mod repl_recording_tdd {
         // Verify timeline is array (empty for new session)
         assert!(parsed.get("timeline").unwrap().is_array(), "Timeline should be array");
         
-        println!("✅ Replay file structure verified with seed: {}", seed);
+        println!("✅ Replay file structure verified with seed: {seed}");
     }
     
     #[test]
@@ -159,7 +159,7 @@ mod repl_recording_tdd {
         
         // Build the binary first
         Command::new("cargo")
-            .args(&["build", "--bin", "ruchy"])
+            .args(["build", "--bin", "ruchy"])
             .output()
             .expect("Failed to build");
         
@@ -186,6 +186,6 @@ mod repl_recording_tdd {
             .expect("Should have seed field");
         
         // RED: This should fail if seed is still 0
-        assert_ne!(seed, 0, "Seed should not be 0, got {}", seed);
+        assert_ne!(seed, 0, "Seed should not be 0, got {seed}");
     }
 }

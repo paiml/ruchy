@@ -179,9 +179,9 @@ fn test_transpile_block_multiple_exprs() {
     };
     let result = transpiler.transpile(&expr).unwrap();
     let code = result.to_string();
-    assert!(code.contains("1"));
-    assert!(code.contains("2"));
-    assert!(code.contains("3"));
+    assert!(code.contains('1'));
+    assert!(code.contains('2'));
+    assert!(code.contains('3'));
 }
 
 #[test]
@@ -382,9 +382,9 @@ fn test_transpile_add() {
     };
     let result = transpiler.transpile(&expr).unwrap();
     let code = result.to_string();
-    assert!(code.contains("5"));
-    assert!(code.contains("3"));
-    assert!(code.contains("+"));
+    assert!(code.contains('5'));
+    assert!(code.contains('3'));
+    assert!(code.contains('+'));
 }
 
 #[test]
@@ -402,8 +402,8 @@ fn test_transpile_subtract() {
     let result = transpiler.transpile(&expr).unwrap();
     let code = result.to_string();
     assert!(code.contains("10"));
-    assert!(code.contains("4"));
-    assert!(code.contains("-"));
+    assert!(code.contains('4'));
+    assert!(code.contains('-'));
 }
 
 #[test]
@@ -420,9 +420,9 @@ fn test_transpile_multiply() {
     };
     let result = transpiler.transpile(&expr).unwrap();
     let code = result.to_string();
-    assert!(code.contains("6"));
-    assert!(code.contains("7"));
-    assert!(code.contains("*"));
+    assert!(code.contains('6'));
+    assert!(code.contains('7'));
+    assert!(code.contains('*'));
 }
 
 // ============================================================================
@@ -442,8 +442,8 @@ fn test_transpile_negate() {
     };
     let result = transpiler.transpile(&expr).unwrap();
     let code = result.to_string();
-    assert!(code.contains("-") || code.contains("neg"));
-    assert!(code.contains("5"));
+    assert!(code.contains('-') || code.contains("neg"));
+    assert!(code.contains('5'));
 }
 
 #[test]
@@ -463,7 +463,7 @@ fn test_transpile_not() {
     };
     let result = transpiler.transpile(&expr).unwrap();
     let code = result.to_string();
-    assert!(code.contains("!"));
+    assert!(code.contains('!'));
     assert!(code.contains("true"));
 }
 

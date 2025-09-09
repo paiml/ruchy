@@ -7,7 +7,7 @@ mod mathematical_validation {
     use std::collections::HashMap;
     use std::time::Instant;
     
-    /// MATHEMATICAL PROOF 1: RuchyCompleter can be instantiated
+    /// MATHEMATICAL PROOF 1: `RuchyCompleter` can be instantiated
     #[test]
     fn test_completer_instantiation() {
         let _completer = RuchyCompleter::new();
@@ -15,7 +15,7 @@ mod mathematical_validation {
         assert!(true, "RuchyCompleter successfully instantiated");
     }
     
-    /// MATHEMATICAL PROOF 2: get_completions method exists and returns data
+    /// MATHEMATICAL PROOF 2: `get_completions` method exists and returns data
     #[test]
     fn test_get_completions_exists() {
         let mut completer = RuchyCompleter::new();
@@ -58,9 +58,9 @@ mod mathematical_validation {
         
         // MATHEMATICAL REQUIREMENT: Must suggest "println"
         assert!(completion_text.contains("println"), 
-                "MISSING BUILTIN: 'println' not in '{}'", completion_text);
+                "MISSING BUILTIN: 'println' not in '{completion_text}'");
         
-        println!("✅ PROOF: println completion found in: {}", completion_text);
+        println!("✅ PROOF: println completion found in: {completion_text}");
     }
     
     /// MATHEMATICAL PROOF 5: Variable completion functionality
@@ -78,11 +78,11 @@ mod mathematical_validation {
         
         // MATHEMATICAL REQUIREMENTS: Must suggest variables
         assert!(completion_text.contains("test_variable"), 
-                "MISSING VARIABLE: 'test_variable' not in '{}'", completion_text);
+                "MISSING VARIABLE: 'test_variable' not in '{completion_text}'");
         assert!(completion_text.contains("test_var2"),
-                "MISSING VARIABLE: 'test_var2' not in '{}'", completion_text);
+                "MISSING VARIABLE: 'test_var2' not in '{completion_text}'");
         
-        println!("✅ PROOF: Variable completions found: {}", completion_text);
+        println!("✅ PROOF: Variable completions found: {completion_text}");
     }
     
     /// MATHEMATICAL PROOF 6: Context analysis functionality  
@@ -149,7 +149,7 @@ mod mathematical_validation {
         
         // Add many variables
         for i in 0..1000 {
-            bindings.insert(format!("test_var_{}", i), ruchy::runtime::repl::Value::Int(i));
+            bindings.insert(format!("test_var_{i}"), ruchy::runtime::repl::Value::Int(i));
         }
         
         let start = Instant::now();
