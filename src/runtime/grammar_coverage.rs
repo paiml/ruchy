@@ -167,7 +167,7 @@ impl GrammarCoverageMatrix {
         percentage
     }
     
-    /// Generate a coverage report (alias for report())
+    /// Generate a coverage report (alias for `report()`)
     pub fn generate_report(&self) -> String {
         self.report()
     }
@@ -181,7 +181,7 @@ impl GrammarCoverageMatrix {
         report.push_str("=======================\n\n");
         
         let coverage_percentage = self.get_coverage_percentage();
-        let _ = writeln!(&mut report, "Coverage: {:.1}%", coverage_percentage);
+        let _ = writeln!(&mut report, "Coverage: {coverage_percentage:.1}%");
 
         let _ = writeln!(
             &mut report,
