@@ -1420,6 +1420,10 @@ mod tests {
                         assert!(!name.is_empty());
                     }
                 }
+                TypeKind::Array { elem_type: _, size } => {
+                    // Array types should have a valid size
+                    assert!(size > 0);
+                }
             }
         }
     }
