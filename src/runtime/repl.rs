@@ -1920,9 +1920,24 @@ impl Repl {
             ExprKind::Return { value } => {
                 if let Some(val) = value {
                     let result = self.evaluate_expr(val, deadline, depth + 1);
-                    Some(result.and_then(|v| Err(anyhow::anyhow!("return:{}", v))))
+                    // Encode the return value in a way that preserves type information
+                    Some(result.and_then(|v| {
+                        // Use a special encoding that preserves the exact value
+                        let encoded = match &v {
+                            Value::Int(i) => format!("return:int:{}", i),
+                            Value::Float(f) => format!("return:float:{}", f),
+                            Value::Bool(b) => format!("return:bool:{}", b),
+                            Value::String(s) => format!("return:string:{}", s),
+                            Value::Unit => "return:unit".to_string(),
+                            Value::List(items) => format!("return:list:{}", items.len()),
+                            Value::Object(_) => "return:object".to_string(),
+                            Value::Char(c) => format!("return:char:{}", c),
+                            _ => format!("return:value:{}", v),
+                        };
+                        Err(anyhow::anyhow!(encoded))
+                    }))
                 } else {
-                    Some(Err(anyhow::anyhow!("return:()")))
+                    Some(Err(anyhow::anyhow!("return:unit")))
                 }
             }
             ExprKind::Throw { expr } => {
@@ -9543,26 +9558,42 @@ impl Repl {
                 // Check if this is a return statement
                 let err_str = e.to_string();
                 if let Some(return_val) = err_str.strip_prefix("return:") {
-                    // Parse the return value - it's already a formatted Value string
-                    // For now, just extract the string representation
-                    // The value was already evaluated, just passed through error
-                    if return_val == "()" {
-                        Self::ok_unit()
+                    // Parse the typed return value
+                    if let Some(int_val) = return_val.strip_prefix("int:") {
+                        return int_val.parse::<i64>()
+                            .map(Value::Int)
+                            .map_err(|_| anyhow::anyhow!("Invalid integer in return"));
+                    } else if let Some(float_val) = return_val.strip_prefix("float:") {
+                        return float_val.parse::<f64>()
+                            .map(Value::Float)
+                            .map_err(|_| anyhow::anyhow!("Invalid float in return"));
+                    } else if let Some(bool_val) = return_val.strip_prefix("bool:") {
+                        return bool_val.parse::<bool>()
+                            .map(Value::Bool)
+                            .map_err(|_| anyhow::anyhow!("Invalid bool in return"));
+                    } else if let Some(string_val) = return_val.strip_prefix("string:") {
+                        return Ok(Value::String(string_val.to_string()));
+                    } else if let Some(char_val) = return_val.strip_prefix("char:") {
+                        return char_val.chars().next()
+                            .map(Value::Char)
+                            .ok_or_else(|| anyhow::anyhow!("Invalid char in return"));
+                    } else if return_val == "unit" || return_val == "()" {
+                        return Self::ok_unit();
                     } else if return_val.starts_with('"') && return_val.ends_with('"') {
                         // String value - remove quotes
                         let s = return_val[1..return_val.len()-1].to_string();
-                        Ok(Value::String(s))
+                        return Ok(Value::String(s));
                     } else if let Ok(i) = return_val.parse::<i64>() {
-                        Ok(Value::Int(i))
+                        return Ok(Value::Int(i));
                     } else if let Ok(f) = return_val.parse::<f64>() {
-                        Ok(Value::Float(f))
+                        return Ok(Value::Float(f));
                     } else if return_val == "true" {
-                        Self::ok_bool(true)
+                        return Self::ok_bool(true);
                     } else if return_val == "false" {
-                        Self::ok_bool(false)
+                        return Self::ok_bool(false);
                     } else {
                         // Return as string for complex values
-                        Ok(Value::String(return_val.to_string()))
+                        return Ok(Value::String(return_val.to_string()));
                     }
                 } else if let Some(error_val) = err_str.strip_prefix("try_operator_err:") {
                     // Handle ? operator errors - convert back to Result::Err

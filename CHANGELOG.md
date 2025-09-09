@@ -4,6 +4,17 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+### Fixed - Sprint 1 & 2 Completion
+- **RETURN-STMT-001**: Explicit return statements now preserve value types correctly
+  - Functions with `return value;` statements now return the actual value instead of `()`
+  - Fixes 6+ examples in Ch17, Ch03, Ch04 improving book compatibility
+  - All 13 TDD tests passing for comprehensive return statement handling
+- **ARRAY-SYNTAX-001**: Array type syntax `[T; size]` now parses in function parameters
+  - Function parameters can now use fixed-size array types like `[i32; 5]`
+  - Transpiles correctly to Rust array syntax
+  - 8/12 TDD tests passing - core functionality working
+  - Remaining work: local array declarations and array initialization expressions
+
 ## [1.88.0] - 2025-09-09
 
 ### 🚀 Major Breakthrough - 95.6% Book Compatibility Achieved

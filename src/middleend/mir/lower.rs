@@ -354,6 +354,11 @@ impl LoweringContext {
                 Type::FnPtr(param_types, Box::new(self.ast_to_mir_type(ret)))
             }
             TypeKind::List(inner) => Type::Vec(Box::new(self.ast_to_mir_type(inner))),
+            TypeKind::Array { elem_type, size: _ } => {
+                // For MIR, treat arrays as vectors for now
+                // The size information is preserved in the AST
+                Type::Vec(Box::new(self.ast_to_mir_type(elem_type)))
+            }
             TypeKind::DataFrame { .. } => {
                 // Map DataFrames to a user type for now
                 Type::UserType("DataFrame".to_string())
