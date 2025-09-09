@@ -23,15 +23,20 @@ serde_json = "1.0"
 
 # Web server (native only)
 axum = { version = "0.7", optional = true }
-tokio = { version = "1", features = ["full"], optional = true }
+tokio = { version = "1", features = ["rt", "macros", "fs", "io-util", "time"], optional = true }
 tower = { version = "0.4", optional = true }
 tower-http = { version = "0.5", features = ["fs", "cors"], optional = true }
 
 # WASM dependencies
 wasm-bindgen = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
-web-sys = { version = "0.3", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
+web-sys = { version = "0.3", features = [
+    "console", "Performance", "Window", "Document", "Element", 
+    "HtmlElement", "Worker", "MessageEvent", "ErrorEvent"
+], optional = true }
 js-sys = { version = "0.3", optional = true }
+wee_alloc = { version = "0.4", optional = true }
 
 # Bytecode VM
 num-derive = "0.4"
@@ -54,7 +59,7 @@ tempfile = "3.8"
 [features]
 default = ["native"]
 native = ["axum", "tokio", "tower", "tower-http", "arrow", "parquet"]
-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys", "js-sys", "bumpalo"]
+wasm = ["wasm-bindgen", "wasm-bindgen-futures", "web-sys", "js-sys", "bumpalo", "wee_alloc", "console_error_panic_hook"]
 dataframe = ["arrow", "parquet"]
 
 [profile.release]

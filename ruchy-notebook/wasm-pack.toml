@@ -1,0 +1,22 @@
+[package]
+name = "ruchy-notebook-wasm"
+description = "Ruchy Notebook WASM runtime"
+
+[build]
+target = "web"
+
+[build.profile.release]
+wee_alloc = true
+opt_level = "z"
+debug = false
+
+[build.profile.dev]
+debug = true
+opt_level = 1
+
+[pack]
+out-dir = "pkg"
+
+[pack.profile.release]
+files = ["*.wasm", "*.js", "*.ts", "*.d.ts"]
+size_limit = 204800  # 200KB limit
