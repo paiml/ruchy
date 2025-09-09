@@ -462,6 +462,16 @@ impl Transpiler {
         })
     }
 
+    /// Transpiles array initialization syntax [value; size]
+    pub fn transpile_array_init(&self, value: &Expr, size: &Expr) -> Result<TokenStream> {
+        let value_tokens = self.transpile_expr(value)?;
+        let size_tokens = self.transpile_expr(size)?;
+        
+        // Generate vec![value; size] for now
+        // TODO: In the future, could generate actual arrays when size is known at compile time
+        Ok(quote! { vec![#value_tokens; #size_tokens as usize] })
+    }
+    
     /// Transpiles list literals
     pub fn transpile_list(&self, elements: &[Expr]) -> Result<TokenStream> {
         // Check if any elements are spread expressions

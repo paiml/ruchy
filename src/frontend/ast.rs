@@ -256,6 +256,10 @@ pub enum ExprKind {
         arms: Vec<MatchArm>,
     },
     List(Vec<Expr>),
+    ArrayInit {
+        value: Box<Expr>,
+        size: Box<Expr>,
+    },
     Tuple(Vec<Expr>),
     Spread {
         expr: Box<Expr>,
