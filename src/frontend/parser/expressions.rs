@@ -61,7 +61,7 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
             parse_special_definition_token(state, token_clone)
         }
         // Control statement tokens - delegated to focused helper
-        Token::Pub | Token::Break | Token::Continue | Token::Return => {
+        Token::Pub | Token::Break | Token::Continue | Token::Return | Token::Throw => {
             parse_control_statement_token(state, token_clone, span_clone)
         }
         // Collection/enum definition tokens - delegated to focused helper
@@ -302,6 +302,14 @@ fn parse_return_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     Ok(Expr::new(ExprKind::Return { value }, span))
 }
 
+/// Parse throw statement token  
+fn parse_throw_token(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance();
+    // Throw always requires an expression
+    let expr = Box::new(super::parse_expr_recursive(state)?);
+    Ok(Expr::new(ExprKind::Throw { expr }, span))
+}
+
 /// Parse constructor tokens (Some, None, Ok, Err, Result, Option)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
@@ -518,6 +526,7 @@ fn parse_control_statement_token(state: &mut ParserState, token: Token, span: Sp
         Token::Break => parse_break_token(state, span),
         Token::Continue => parse_continue_token(state, span), 
         Token::Return => parse_return_token(state, span),
+        Token::Throw => parse_throw_token(state, span),
         _ => bail!("Expected control statement token, got: {:?}", token),
     }
 }
@@ -2629,7 +2638,7 @@ fn extract_fstring_expr(chars: &mut std::iter::Peekable<std::str::Chars>) -> Res
 
 /// Helper for parsing try block (complexity: 3)
 fn parse_try_block(state: &mut ParserState) -> Result<Box<Expr>> {
-    state.tokens.expect(&Token::LeftBrace)?;
+    // parse_block expects and consumes the left brace
     Ok(Box::new(super::collections::parse_block(state)?))
 }
 
@@ -2666,7 +2675,7 @@ fn parse_catch_pattern(state: &mut ParserState) -> Result<Pattern> {
 
 /// Helper for parsing catch body (complexity: 3)
 fn parse_catch_body(state: &mut ParserState) -> Result<Box<Expr>> {
-    state.tokens.expect(&Token::LeftBrace)?;
+    // parse_block expects and consumes the left brace
     Ok(Box::new(super::collections::parse_block(state)?))
 }
 
@@ -2674,7 +2683,7 @@ fn parse_catch_body(state: &mut ParserState) -> Result<Box<Expr>> {
 fn parse_finally_block(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
     if matches!(state.tokens.peek(), Some((Token::Finally, _))) {
         state.tokens.advance(); // consume 'finally'
-        state.tokens.expect(&Token::LeftBrace)?;
+        // parse_block expects and consumes the left brace
         Ok(Some(Box::new(super::collections::parse_block(state)?)))
     } else {
         Ok(None)

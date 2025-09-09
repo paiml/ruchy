@@ -184,6 +184,13 @@ fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) -> Result<E
                 );
                 handled_postfix = true;
             }
+            Some((Token::Bang, _)) => {
+                // Parse macro call: identifier! ( args )
+                if let Some(new_left) = try_parse_macro_call(state, &left)? {
+                    left = new_left;
+                    handled_postfix = true;
+                }
+            }
             _ => {}
         }
     }
@@ -543,4 +550,36 @@ fn try_range_operators(
         span: Span { start: 0, end: 0 },
         attributes: Vec::new(),
     }))
+}
+
+/// Try to parse a macro call: identifier!( args )
+fn try_parse_macro_call(state: &mut ParserState, left: &Expr) -> Result<Option<Expr>> {
+    if let ExprKind::Identifier(name) = &left.kind {
+        state.tokens.advance(); // consume !
+        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            state.tokens.advance(); // consume (
+            
+            let mut args = Vec::new();
+            while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
+                args.push(parse_expr_recursive(state)?);
+
+                if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+                    state.tokens.advance(); // consume comma
+                } else {
+                    break;
+                }
+            }
+            
+            state.tokens.expect(&Token::RightParen)?;
+            
+            return Ok(Some(Expr::new(
+                ExprKind::Macro {
+                    name: name.clone(),
+                    args,
+                },
+                Span { start: 0, end: 0 },
+            )));
+        }
+    }
+    Ok(None)
 }
