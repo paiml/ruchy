@@ -99,17 +99,14 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
             }
             
             // After evaluating the file, check if main() function exists and call it
-            match repl.eval("main()") {
-                Ok(main_result) => {
-                    // Only print non-unit results from main()
-                    if main_result != "Unit" && main_result != "()" {
-                        println!("{main_result}");
-                    }
+            if let Ok(main_result) = repl.eval("main()") {
+                // Only print non-unit results from main()
+                if main_result != "Unit" && main_result != "()" {
+                    println!("{main_result}");
                 }
-                Err(_) => {
-                    // main() function doesn't exist or failed - that's OK
-                    // Files don't have to have main() functions
-                }
+            } else {
+                // main() function doesn't exist or failed - that's OK
+                // Files don't have to have main() functions
             }
             
             Ok(())

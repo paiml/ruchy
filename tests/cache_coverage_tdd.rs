@@ -9,7 +9,7 @@ use std::time::Duration;
 #[test]
 fn test_cache_key_new() {
     let source = "println(\"hello\")".to_string();
-    let _key = CacheKey::new(source.clone());
+    let _key = CacheKey::new(source);
     
     // Can't access private fields, but can test creation doesn't panic
     // and the key can be used for equality comparisons
@@ -19,7 +19,7 @@ fn test_cache_key_new() {
 fn test_cache_key_equality() {
     let source = "let x = 42".to_string();
     let key1 = CacheKey::new(source.clone());
-    let key2 = CacheKey::new(source.clone());
+    let key2 = CacheKey::new(source);
     let key3 = CacheKey::new("let y = 42".to_string());
     
     assert_eq!(key1, key2);
@@ -62,7 +62,7 @@ fn test_cached_result_clone() {
     });
     
     let original = CachedResult {
-        ast: expr.clone(),
+        ast: expr,
         rust_code: None,
         timestamp: std::time::Instant::now(),
     };

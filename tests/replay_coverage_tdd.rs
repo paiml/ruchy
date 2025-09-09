@@ -734,7 +734,7 @@ fn test_session_recorder_new() {
         tags: vec!["test".to_string()],
     };
     
-    let recorder = SessionRecorder::new(metadata.clone());
+    let recorder = SessionRecorder::new(metadata);
     let session = recorder.get_session();
     
     assert_eq!(session.metadata.session_id, "test-123");

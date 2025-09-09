@@ -75,8 +75,8 @@ fn test_transpile_if_with_else() {
     let code = result.to_string();
     assert!(code.contains("if"));
     assert!(code.contains("else"));
-    assert!(code.contains("1"));
-    assert!(code.contains("2"));
+    assert!(code.contains('1'));
+    assert!(code.contains('2'));
 }
 
 // ============================================================================
@@ -92,7 +92,7 @@ fn test_transpile_let_simple() {
     let result = transpiler.transpile_let(name, &value, &body, false).unwrap();
     let code = result.to_string();
     assert!(code.contains("let"));
-    assert!(code.contains("x"));
+    assert!(code.contains('x'));
     assert!(code.contains("100"));
 }
 
@@ -122,7 +122,7 @@ fn test_transpile_let_pattern_identifier() {
     let result = transpiler.transpile_let_pattern(&pattern, &value, &body).unwrap();
     let code = result.to_string();
     assert!(code.contains("let"));
-    assert!(code.contains("x"));
+    assert!(code.contains('x'));
     assert!(code.contains("42"));
 }
 
@@ -142,8 +142,8 @@ fn test_transpile_let_pattern_tuple() {
     let result = transpiler.transpile_let_pattern(&pattern, &value, &body).unwrap();
     let code = result.to_string();
     assert!(code.contains("let"));
-    assert!(code.contains("a"));
-    assert!(code.contains("b"));
+    assert!(code.contains('a'));
+    assert!(code.contains('b'));
 }
 
 #[test]
@@ -155,7 +155,7 @@ fn test_transpile_let_pattern_wildcard() {
     let result = transpiler.transpile_let_pattern(&pattern, &value, &body).unwrap();
     let code = result.to_string();
     assert!(code.contains("let"));
-    assert!(code.contains("_"));
+    assert!(code.contains('_'));
 }
 
 // ============================================================================
@@ -210,8 +210,8 @@ fn test_transpile_block_empty() {
     let transpiler = Transpiler::new();
     let result = transpiler.transpile_block(&[]).unwrap();
     let code = result.to_string();
-    assert!(code.contains("{"));
-    assert!(code.contains("}"));
+    assert!(code.contains('{'));
+    assert!(code.contains('}'));
 }
 
 #[test]
@@ -220,9 +220,9 @@ fn test_transpile_block_single() {
     let exprs = vec![make_literal(42)];
     let result = transpiler.transpile_block(&exprs).unwrap();
     let code = result.to_string();
-    assert!(code.contains("{"));
+    assert!(code.contains('{'));
     assert!(code.contains("42"));
-    assert!(code.contains("}"));
+    assert!(code.contains('}'));
 }
 
 #[test]
@@ -235,11 +235,11 @@ fn test_transpile_block_multiple() {
     ];
     let result = transpiler.transpile_block(&exprs).unwrap();
     let code = result.to_string();
-    assert!(code.contains("{"));
-    assert!(code.contains("1"));
-    assert!(code.contains("2"));
-    assert!(code.contains("3"));
-    assert!(code.contains("}"));
+    assert!(code.contains('{'));
+    assert!(code.contains('1'));
+    assert!(code.contains('2'));
+    assert!(code.contains('3'));
+    assert!(code.contains('}'));
 }
 
 #[test]
@@ -261,8 +261,8 @@ fn test_transpile_block_with_semicolons() {
     ];
     let result = transpiler.transpile_block(&exprs).unwrap();
     let code = result.to_string();
-    assert!(code.contains("{"));
-    assert!(code.contains("}"));
+    assert!(code.contains('{'));
+    assert!(code.contains('}'));
 }
 
 // ============================================================================
@@ -286,7 +286,7 @@ fn test_transpile_for_simple() {
     let result = transpiler.transpile_for(var, None, &iter, &body).unwrap();
     let code = result.to_string();
     assert!(code.contains("for"));
-    assert!(code.contains("i"));
+    assert!(code.contains('i'));
     assert!(code.contains("in"));
 }
 
@@ -367,7 +367,7 @@ fn test_transpile_pipeline_simple() {
     ];
     let result = transpiler.transpile_pipeline(&expr, &stages).unwrap();
     let code = result.to_string();
-    assert!(code.contains("5"));
+    assert!(code.contains('5'));
 }
 
 #[test]
@@ -400,7 +400,7 @@ fn test_transpile_list_comprehension() {
     };
     let result = transpiler.transpile_list_comprehension(&output, var, &iter, None).unwrap();
     let code = result.to_string();
-    assert!(code.contains("x"));
+    assert!(code.contains('x'));
 }
 
 #[test]
@@ -451,7 +451,7 @@ fn test_transpile_import_wildcard() {
     assert!(code.contains("use"));
     assert!(code.contains("std"));
     assert!(code.contains("collections"));
-    assert!(code.contains("*"));
+    assert!(code.contains('*'));
 }
 
 #[test]

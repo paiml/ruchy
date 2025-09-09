@@ -1,7 +1,7 @@
 //! TDD tests for quality formatter functionality
 //! Target: Improve coverage from 0% to 80%+
 
-use ruchy::quality::Formatter;
+use ruchy::quality::formatter::Formatter;
 use ruchy::Parser;
 
 #[test]
