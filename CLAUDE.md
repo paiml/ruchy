@@ -49,6 +49,65 @@
 4. **Analyze**: Draw conclusions only from the evidence
 5. **Document**: Record findings and next steps
 
+## QDD (Quality-Driven Development) Protocol
+
+**QUALITY IS THE DRIVER, NOT AN AFTERTHOUGHT - BASED ON PMAT BOOK CH14**
+
+### QDD Core Principles:
+1. **Quality Metrics First**: Define quality metrics BEFORE writing code
+2. **Continuous Monitoring**: Real-time quality tracking during development
+3. **Automated Enforcement**: Quality gates that cannot be bypassed
+4. **Data-Driven Decisions**: Let metrics guide development priorities
+5. **Preventive Maintenance**: Fix quality issues before they become technical debt
+
+### QDD Implementation with PMAT:
+```bash
+# BEFORE starting any task - establish quality baseline
+pmat tdg . --min-grade A- --format=json > quality_baseline.json
+pmat analyze complexity --format=csv > complexity_baseline.csv
+
+# DURING development - continuous quality monitoring
+pmat tdg dashboard --port 8080 --update-interval 5 &  # Real-time monitoring
+watch -n 5 'pmat quality-gate --quiet || echo "QUALITY DEGRADATION DETECTED"'
+
+# AFTER each function/module - verify quality maintained
+pmat tdg <file> --compare-baseline quality_baseline.json
+pmat analyze complexity <file> --max-cyclomatic 10 --max-cognitive 10
+
+# BEFORE commit - comprehensive quality validation
+pmat tdg . --min-grade A- --fail-on-violation
+pmat quality-gate --fail-on-violation --format=detailed
+```
+
+### QDD Metrics Hierarchy:
+1. **Code Quality Metrics** (via PMAT TDG):
+   - Cyclomatic Complexity: ≤10 per function
+   - Cognitive Complexity: ≤10 per function
+   - Code Duplication: <10% across codebase
+   - Documentation Coverage: >70% for public APIs
+   - Technical Debt: 0 SATD comments allowed
+
+2. **Test Quality Metrics** (via cargo llvm-cov):
+   - Line Coverage: ≥80% per module
+   - Branch Coverage: ≥75% per module
+   - Function Coverage: 100% for public APIs
+   - Test Diversity: Unit + Integration + Property + Fuzz
+
+3. **Performance Metrics** (via cargo bench):
+   - Regression Detection: ±5% performance variance allowed
+   - Memory Usage: Track peak and average
+   - Compilation Speed: <1s for incremental builds
+
+### QDD Workflow Integration:
+```yaml
+Development Cycle:
+1. DEFINE: Quality metrics for the task
+2. MEASURE: Baseline quality before changes
+3. DEVELOP: Write code with real-time monitoring
+4. VALIDATE: Ensure all metrics maintained/improved
+5. DOCUMENT: Record quality impact in commit message
+```
+
 ## Toyota Way Implementation
 
 **STOP THE LINE FOR ANY DEFECT. NO DEFECT IS TOO SMALL. NO SHORTCUT IS ACCEPTABLE.**
