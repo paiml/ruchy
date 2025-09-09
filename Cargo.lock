@@ -4071,7 +4071,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "1.90.0"
+version = "1.91.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -4101,7 +4101,7 @@ dependencies = [
  "quickcheck_macros",
  "quote",
  "regex",
- "ruchy-notebook 1.90.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ruchy-notebook",
  "rustyline",
  "serde",
  "serde-wasm-bindgen",
@@ -4125,7 +4125,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy-notebook"
-version = "1.90.0"
+version = "1.91.0"
 dependencies = [
  "anyhow",
  "arrow",
@@ -4150,26 +4150,6 @@ dependencies = [
  "wasm-bindgen-test",
  "web-sys",
  "wee_alloc",
-]
-
-[[package]]
-name = "ruchy-notebook"
-version = "1.90.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9aa975b0c7dbf90ac3c84c3e4309d14d48278277cfc36c4ab6287e85d99799ce"
-dependencies = [
- "anyhow",
- "arrow",
- "axum",
- "num-derive",
- "num-traits",
- "parking_lot",
- "parquet",
- "serde",
- "serde_json",
- "tokio",
- "tower 0.4.13",
- "tower-http 0.5.2",
 ]
 
 [[package]]

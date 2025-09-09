@@ -80,10 +80,12 @@ mod tab_completion_proof {
         let completer = RuchyCompleter::new();
         
         // MATHEMATICAL PROOF: Type system verifies trait implementation
-        let _helper: &dyn Helper = &completer;
-        let _hinter: &dyn Hinter = &completer;
+        use rustyline::completion::Pair;
+        use rustyline::hint::HistoryHinter;
+        let _helper: &dyn Helper<Hint = String, Candidate = Pair> = &completer;
+        let _hinter: &dyn Hinter<Hint = String> = &completer;
         let _highlighter: &dyn Highlighter = &completer;
-        let _completer_trait: &dyn Completer = &completer;
+        let _completer_trait: &dyn Completer<Candidate = Pair> = &completer;
         
         // If this compiles, traits are mathematically proven to be implemented
         assert!(true, "All required traits are implemented");

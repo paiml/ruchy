@@ -281,7 +281,7 @@ fn test_collect_function_signatures() {
             type_params: vec![],
             params: vec![
                 Param {
-                    pattern: Pattern::Identifier( "a".to_string(),
+                    pattern: Pattern::Identifier("a".to_string()),
                     ty: Type {
                         kind: TypeKind::Named("Int".to_string()),
                         span: Span::default(),
@@ -289,7 +289,7 @@ fn test_collect_function_signatures() {
                     default: None,
                 },
                 Param {
-                    pattern: Pattern::Identifier( "b".to_string(),
+                    pattern: Pattern::Identifier("b".to_string()),
                     ty: Type {
                         kind: TypeKind::Named("Int".to_string()),
                         span: Span::default(),
@@ -688,7 +688,7 @@ fn test_type_to_string_named() {
             type_params: vec![],
             params: vec![
                 Param {
-                    pattern: Pattern::Identifier( "s".to_string(),
+                    pattern: Pattern::Identifier("s".to_string()),
                     ty,
                     default: None,
                 },
@@ -726,7 +726,7 @@ fn test_type_to_string_reference() {
             type_params: vec![],
             params: vec![
                 Param {
-                    pattern: Pattern::Identifier( "r".to_string(),
+                    pattern: Pattern::Identifier("r".to_string()),
                     ty,
                     default: None,
                 },
