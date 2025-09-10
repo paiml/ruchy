@@ -203,7 +203,7 @@ description = "A systems scripting language that transpiles to idiomatic Rust wi
 readme = "README.md"
 keywords = ["language", "compiler", "transpiler", "rust", "scripting"]
 categories = ["compilers", "development-tools", "parser-implementations"]
-exclude = ["src/bin/ruchy-lsp.rs", "src/bin/ruchy-coverage.rs"]
+exclude = ["src/bin/ruchy-lsp.rs", "src/bin/ruchy-coverage.rs", "coverage/", "node_modules/", "docs/specifications/", "tests/tdd_*"]
 
 [[bin]]
 name = "ruchy"
