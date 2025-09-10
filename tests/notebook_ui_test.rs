@@ -1,11 +1,8 @@
 // SPRINT0-001: TDD Tests for Professional Notebook UI
 // Target: Jupyter/Colab-style interface with production quality
 
-use wasm_bindgen_test::*;
-
 #[cfg(test)]
 mod notebook_ui_tests {
-    use super::*;
     
     /// Test that notebook has proper Jupyter-style structure
     #[test]
@@ -145,10 +142,9 @@ mod notebook_ui_tests {
 
 #[cfg(test)]
 mod notebook_api_tests {
-    use super::*;
     
     /// Test WebSocket connection for real-time updates
-    #[test]
+    #[tokio::test]
     async fn test_websocket_connection() {
         // WebSocket for kernel communication
         let ws_url = "ws://localhost:8888/api/kernel";
@@ -158,7 +154,7 @@ mod notebook_api_tests {
     }
     
     /// Test cell execution API
-    #[test]
+    #[tokio::test]
     async fn test_cell_execution_api() {
         let response = reqwest::Client::new()
             .post("http://localhost:8888/api/execute")
@@ -180,7 +176,7 @@ mod notebook_api_tests {
     }
     
     /// Test kernel management
-    #[test]
+    #[tokio::test]
     async fn test_kernel_management() {
         // Start kernel
         let start_response = reqwest::Client::new()
@@ -213,7 +209,6 @@ mod notebook_api_tests {
 
 #[cfg(test)]
 mod notebook_styling_tests {
-    use super::*;
     
     /// Test that styling matches professional notebooks
     #[test]
