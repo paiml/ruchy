@@ -9,6 +9,9 @@ pub mod coverage;
 pub mod state;
 pub mod report;
 pub mod types;
+pub mod property;
+pub mod differential;
+pub mod mutation;
 
 pub use tester::{NotebookTester, NotebookTestSession, NotebookParser as TestNotebookParser};
 pub use golden::GoldenManager;
@@ -17,9 +20,12 @@ pub use state::TestState;
 pub use types::{
     TestConfig, TestResult, CellTestType, CellOutput,
     Cell, CellType, CellMetadata, CellTestMetadata,
-    Notebook, NotebookParser, DataFrameData,
-    TestReport, TestFailure, CoverageReport,
+    Notebook, NotebookParser, DataFrameData, NotebookMetadata,
+    TestReport, TestFailure, CoverageReport, PlotData,
 };
+pub use property::{PropertyTester, PropertyTestConfig};
+pub use differential::{DifferentialTester, DifferentialConfig, DifferentialResult, DivergenceType};
+pub use mutation::{MutationTester, MutationConfig, MutationType, Mutation, MutationResult};
 
 /// Initialize the testing framework with default configuration
 pub fn init() -> NotebookTester {
