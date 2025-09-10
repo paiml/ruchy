@@ -58,6 +58,10 @@ tempfile = "3.8"
 wasm-encoder = "0.207.0"
 wasmparser = "0.207.0"
 wasmtime = "21.0.2"
+# TDD and acceptance testing
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+tokio-test = "0.4"
 
 [features]
 default = ["native"]

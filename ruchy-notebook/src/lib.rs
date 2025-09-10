@@ -10,6 +10,9 @@ pub mod dataframe;
 #[cfg(feature = "native")]
 pub mod server;
 
+#[cfg(feature = "native")]
+pub mod api;
+
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
