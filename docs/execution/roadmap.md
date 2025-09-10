@@ -4,8 +4,8 @@
 
 **Last Active**: 2025-09-10 (v1.95.0 TDD NOTEBOOK INFRASTRUCTURE)
 **Current Version**: v1.95.0 (TDD notebook server complete, deployment issue identified) 
-**Current Sprint**: v1.95.0 - Notebook Deployment & Version Resolution
-**Target**: Deploy working TDD notebook implementation - resolve version mismatch issue
+**Current Sprint**: Sprint 1 - Core Testing Infrastructure (v1.96.0)
+**Target**: Build comprehensive notebook testing framework - first 4-week sprint of 5-sprint roadmap
 
 ## 🏆 **MAJOR ACHIEVEMENTS - TDD SUCCESS** (2025-09-10)
 
@@ -997,37 +997,331 @@ println(total)  // Outputs: 10
 - "tdd only" - Reinforced strict TDD approach
 - User emphasized quality: "using prioritized roadmap, tdd, extreme quality"
 
-## 🎯 **CURRENT FOCUS: Quality, Coverage & Compatibility Sprint (v1.32.2)**
+## 🎯 **CURRENT FOCUS: Ruchy Test Notebook Testing Framework (v1.96.0-v2.0.0)**
 
-**MISSION**: Increase code coverage to 80%, reduce complexity, improve book compatibility
-**METRICS**: Coverage: 39.45%→80%, Book: 67.1%→85%, Complexity: Reduce by 50%
-**METHODOLOGY**: Strict TDD, measure coverage increase with each fix
-**STATUS**: v1.32.1 released - Starting quality improvement sprint
+**MISSION**: Build the world's first comprehensive notebook testing framework exceeding nbval capabilities
+**VISION**: Make Ruchy the first language with built-in notebook testing including formal verification, property testing, and educational sandboxing
+**METHODOLOGY**: TDD-driven implementation with PMAT quality gates and extreme quality standards
+**TIMELINE**: 5 sprints × 4 weeks = 20 weeks total (September 2025 → February 2026)
 
-## 🎯 **NEXT PRIORITIES (v1.88.0 - 95.6% Book Compatibility)**
+### 🚀 **RUCHY TEST FRAMEWORK: 5-SPRINT ROADMAP**
 
-### 📋 **HIGH PRIORITY (Final 4.4% to 100% Book Compatibility)**
+**CRITICAL**: This comprehensive testing framework will establish Ruchy as the premier language for data science education and formal verification, with capabilities far exceeding existing notebook testing solutions.
 
-**RETURN-STMT-001**: 🎯 **Fix Explicit Return Statement Bug** *(P0 - CRITICAL)*
-- **Impact**: 6+ examples failing due to `return value;` returning `()` instead of value
-- **Root Cause**: Function evaluation logic incorrectly handles explicit return statements
-- **Examples**: Ch17 error handling, Ch03 functions, Ch04 practical patterns
-- **Implementation**: Fix return statement evaluation in function body processing
-- **Test Cases**: Create comprehensive TDD test suite for return statement variations
-- **Expected Impact**: +2-3% book compatibility improvement
+## 📋 **SPRINT 1: Core Testing Infrastructure (v1.96.0) - WEEKS 1-4**
 
-**ARRAY-SYNTAX-001**: 🎯 **Array Type Syntax Parsing** *(P1 - HIGH)*  
-- **Impact**: Ch04, Ch15 examples failing with `[i32; 5]` syntax parsing errors
-- **Root Cause**: Array type annotations not fully implemented in parser
-- **Examples**: `fun calculate_total(prices: [i32; 5]) -> i32`
-- **Implementation**: Extend type parser to handle array type annotations with size
-- **Expected Impact**: +1-2% book compatibility improvement
+**Sprint Goal**: Implement fundamental notebook testing with basic assertions, snapshot management, state preservation, and coverage tracking.
 
-**INTEGRATION-001**: 🎯 **Comprehensive Integration Testing** *(P2 - MEDIUM)*
-- **Impact**: Validate all 229 examples work correctly with fixed issues
-- **Root Cause**: Need systematic validation of all book examples
-- **Implementation**: Enhanced test runner with detailed failure analysis
-- **Expected Impact**: Reach 98-100% book compatibility
+### **Core Deliverables**:
+
+**TEST-001**: 🎯 **Basic Assertion Testing Engine** *(P0 - FOUNDATION)*
+- **Implementation**: `ruchy test` command with notebook cell execution and validation
+- **Features**: 
+  - Cell-by-cell execution with accumulated state preservation
+  - Basic assertion support: `assert_eq!`, `assert!`, `assert_ne!`
+  - Test metadata in notebook JSON format
+  - Configurable tolerance for floating-point comparisons
+- **TDD Requirements**: Write tests first for all assertion types
+- **PMAT Standards**: All functions <10 complexity, A- grade minimum
+- **Coverage Target**: ≥80% code coverage
+- **Task IDs**: TEST-001 through TEST-010
+
+**TEST-002**: 🎯 **Golden Output Management** *(P0 - FOUNDATION)*
+- **Implementation**: Snapshot-based testing with version control integration
+- **Features**:
+  - Format-aware golden output storage (Parquet for DataFrames, MessagePack for values)
+  - `--update-golden` flag for baseline regeneration
+  - Efficient binary diff for large datasets
+  - Git integration for golden output versioning
+- **Quality Gates**: Zero tolerance for golden output corruption
+- **Task IDs**: TEST-011 through TEST-020
+
+**TEST-003**: 🎯 **State Preservation System** *(P1 - CRITICAL)*
+- **Implementation**: Notebook execution session management
+- **Features**:
+  - Cell-to-cell state propagation (variables, imports, functions)
+  - Checkpoint/restore for failed test recovery
+  - Memory-efficient state serialization
+  - Debugging support with state inspection
+- **Toyota Way**: Zero state corruption tolerance
+- **Task IDs**: TEST-021 through TEST-030
+
+**TEST-004**: 🎯 **Coverage Analysis** *(P1 - CRITICAL)*
+- **Implementation**: Code coverage tracking for notebook cells
+- **Features**:
+  - Line coverage, branch coverage, function coverage
+  - Instrumentation of notebook code paths
+  - Coverage reports with uncovered section identification
+  - Integration with cargo-llvm-cov infrastructure
+- **Target**: >80% coverage reporting accuracy
+- **Task IDs**: TEST-031 through TEST-040
+
+### **Sprint 1 Success Criteria**:
+- ✅ `ruchy test` command executes notebooks with basic assertions
+- ✅ Golden output management with binary formats working
+- ✅ State preservation between cells functional
+- ✅ Coverage reporting integrated
+- ✅ TDD methodology demonstrated with comprehensive test suites
+- ✅ PMAT A- grade maintained across all components
+- ✅ Release v1.96.0 published to crates.io
+
+## 📋 **SPRINT 2: Property & Differential Testing (v1.97.0) - WEEKS 5-8**
+
+**Sprint Goal**: Implement advanced testing methodologies including property-based testing, backend differential validation, mutation testing, and performance baselines.
+
+### **Core Deliverables**:
+
+**TEST-041**: 🎯 **Property-Based Testing Engine** *(P0 - ADVANCED)*
+- **Implementation**: Integration with proptest for automated test case generation
+- **Features**:
+  - In-notebook property specifications with `#[test_cell(property)]`
+  - Configurable generators for DataFrames, numeric data, strings
+  - Property invariant checking with automatic shrinking
+  - 10,000+ test iterations with counterexample reporting
+- **Formal Methods**: Mathematical invariant verification
+- **Task IDs**: TEST-041 through TEST-060
+
+**TEST-042**: 🎯 **Backend Differential Testing** *(P0 - COMPILER)*
+- **Implementation**: Cross-backend execution validation for compiler quality
+- **Features**:
+  - Parallel execution on Interpreter, JIT, Transpiled, WASM backends
+  - Semantic equivalence verification across all backends
+  - Performance regression detection with baseline comparison
+  - Canary notebook integration for compiler testing
+- **Zero Tolerance**: No semantic divergence between backends allowed
+- **Task IDs**: TEST-061 through TEST-080
+
+**TEST-043**: 🎯 **Mutation Testing Framework** *(P1 - QUALITY)*
+- **Implementation**: Test quality validation through code mutation
+- **Features**:
+  - Notebook-specific mutations (data corruption, operator swapping, cell reordering)
+  - Mutation score calculation with survival analysis
+  - Integration with CI/CD for test quality gates
+  - Automated test improvement suggestions
+- **Target**: >75% mutation kill rate
+- **Task IDs**: TEST-081 through TEST-100
+
+**TEST-044**: 🎯 **Performance Baseline System** *(P1 - PERFORMANCE)*
+- **Implementation**: Automated performance regression detection
+- **Features**:
+  - Execution time and memory usage tracking
+  - Statistical significance testing for performance changes
+  - Baseline storage and comparison infrastructure
+  - Performance alert system for significant regressions
+- **Thresholds**: <10% time regression, <20% memory regression
+- **Task IDs**: TEST-101 through TEST-120
+
+### **Sprint 2 Success Criteria**:
+- ✅ Property-based testing with 10,000+ iterations working
+- ✅ Differential testing across 4 backends operational
+- ✅ Mutation testing with >75% kill rate achieved
+- ✅ Performance regression detection functional
+- ✅ All test frameworks integrated into unified CLI
+- ✅ Release v1.97.0 with advanced testing capabilities
+
+## 📋 **SPRINT 3: Formal Methods Integration (v1.98.0) - WEEKS 9-12**
+
+**Sprint Goal**: Integrate SMT-based formal verification, complexity analysis, bounded verification, and proof caching for mathematical rigor.
+
+### **Core Deliverables**:
+
+**TEST-121**: 🎯 **SMT Integration with Z3** *(P0 - FORMAL)*
+- **Implementation**: Integration with Z3 solver for formal verification
+- **Features**:
+  - `#[test_cell(prove)]` annotation for formal verification
+  - Pre/postcondition specification with requires/ensures
+  - Bounded model checking with configurable timeout (5s default)
+  - Counterexample generation for failed proofs
+- **Pragmatic Limits**: Functions <10 complexity, <2 loop depth for tractability
+- **Task IDs**: TEST-121 through TEST-150
+
+**TEST-122**: 🎯 **Complexity Analysis Engine** *(P1 - ANALYSIS)*
+- **Implementation**: Static and empirical complexity analysis
+- **Features**:
+  - Big-O notation verification with `#[complexity(O("n log n"))]`
+  - Recurrence relation extraction from AST
+  - Master theorem and substitution method solving
+  - Empirical validation with curve fitting
+- **Accuracy Target**: >90% correct complexity classification
+- **Task IDs**: TEST-151 through TEST-170
+
+**TEST-123**: 🎯 **Bounded Verification System** *(P1 - VERIFICATION)*
+- **Implementation**: Tractable formal verification with escape hatches
+- **Features**:
+  - Quick syntactic checks for verification feasibility
+  - Bounded verification with iteration limits (100 iterations max)
+  - Abstraction levels for complex control flow
+  - Verification result caching for performance
+- **Timeout Strategy**: 5s timeout with bounded-safe fallback
+- **Task IDs**: TEST-171 through TEST-190
+
+**TEST-124**: 🎯 **Proof Cache Infrastructure** *(P2 - PERFORMANCE)*
+- **Implementation**: Persistent storage for verification results
+- **Features**:
+  - Proof result caching with content-based invalidation
+  - Incremental verification for unchanged code
+  - Proof certificate storage and validation
+  - Cache statistics and hit rate monitoring
+- **Performance Target**: >80% cache hit rate for repeated verification
+- **Task IDs**: TEST-191 through TEST-200
+
+### **Sprint 3 Success Criteria**:
+- ✅ Z3 integration with formal verification working
+- ✅ Complexity analysis with empirical validation functional
+- ✅ Bounded verification with timeout handling operational
+- ✅ Proof caching with >80% hit rate achieved
+- ✅ Formal methods integrated into notebook testing pipeline
+- ✅ Release v1.98.0 with formal verification capabilities
+
+## 📋 **SPRINT 4: Educational Platform (v1.99.0) - WEEKS 13-16**
+
+**Sprint Goal**: Build WASM-based educational sandbox with automated feedback, anti-cheating measures, and learning analytics.
+
+### **Core Deliverables**:
+
+**TEST-201**: 🎯 **WASM Educational Sandbox** *(P0 - EDUCATION)*
+- **Implementation**: Secure WASM execution environment for student code
+- **Features**:
+  - Resource-limited WASM compilation (64MB memory, 5s timeout)
+  - Restricted import system (no filesystem/network access)
+  - Deterministic execution for reproducible grading
+  - Progressive test disclosure (visible tests → hidden tests)
+- **Security**: Zero escape from sandbox, no host system access
+- **Task IDs**: TEST-201 through TEST-230
+
+**TEST-202**: 🎯 **Automated Feedback Engine** *(P0 - EDUCATION)*
+- **Implementation**: Intelligent error analysis and feedback generation
+- **Features**:
+  - Error pattern classification (syntax, type, logic, performance)
+  - Adaptive feedback based on common mistakes database
+  - Progressive hint system with increasing specificity
+  - Performance feedback with optimization suggestions
+- **Effectiveness Target**: >80% student problem resolution rate
+- **Task IDs**: TEST-231 through TEST-250
+
+**TEST-203**: 🎯 **Anti-Cheating System** *(P1 - INTEGRITY)*
+- **Implementation**: Plagiarism detection and solution validation
+- **Features**:
+  - Structural similarity detection between submissions
+  - Timing analysis for suspiciously fast submissions
+  - Parameterized problems with student-specific variants
+  - Solution pattern matching against known answers
+- **Detection Accuracy**: >95% plagiarism detection rate
+- **Task IDs**: TEST-251 through TEST-270
+
+**TEST-204**: 🎯 **Learning Analytics Pipeline** *(P1 - INSIGHTS)*
+- **Implementation**: Data collection and analysis for educational insights
+- **Features**:
+  - Error pattern evolution tracking
+  - Concept mastery estimation algorithms
+  - Struggle point identification and intervention suggestions
+  - Instructor dashboard with cohort analytics
+- **Privacy**: GDPR-compliant data collection and storage
+- **Task IDs**: TEST-271 through TEST-290
+
+### **Sprint 4 Success Criteria**:
+- ✅ WASM sandbox with secure student code execution
+- ✅ Automated feedback with >80% effectiveness rate
+- ✅ Anti-cheating with >95% detection accuracy
+- ✅ Learning analytics pipeline operational
+- ✅ Coursera-compatible educational deployment ready
+- ✅ Release v1.99.0 with educational platform
+
+## 📋 **SPRINT 5: Production Hardening (v2.0.0) - WEEKS 17-20**
+
+**Sprint Goal**: Finalize production readiness with CI/CD integration, performance optimization, comprehensive documentation, and migration tools.
+
+### **Core Deliverables**:
+
+**TEST-291**: 🎯 **CI/CD Integration Suite** *(P0 - PRODUCTION)*
+- **Implementation**: Complete CI/CD workflow integration
+- **Features**:
+  - GitHub Actions workflows for automated notebook testing
+  - Pre-commit hooks with notebook validation
+  - Quality gates integration with existing PMAT infrastructure
+  - Automated regression detection in pull requests
+- **Automation Target**: 100% automated validation pipeline
+- **Task IDs**: TEST-291 through TEST-310
+
+**TEST-292**: 🎯 **Performance Optimization** *(P0 - PRODUCTION)*
+- **Implementation**: Performance tuning for production workloads
+- **Features**:
+  - Parallel test execution for large notebook suites
+  - Memory optimization for large dataset testing
+  - Incremental testing with dependency analysis
+  - Caching optimization for repeated test runs
+- **Performance Targets**: <1ms assertion overhead, <100ms property testing
+- **Task IDs**: TEST-311 through TEST-330
+
+**TEST-293**: 🎯 **Comprehensive Documentation** *(P1 - ADOPTION)*
+- **Implementation**: Complete user and developer documentation
+- **Features**:
+  - Tutorial series from basic to advanced testing
+  - API reference documentation with examples
+  - Best practices guide for notebook testing
+  - Migration guide from nbval and other tools
+- **Quality Standard**: Professional technical writing standards
+- **Task IDs**: TEST-331 through TEST-350
+
+**TEST-294**: 🎯 **Migration Tools & Compatibility** *(P1 - ADOPTION)*
+- **Implementation**: Tools for migrating from existing notebook testing solutions
+- **Features**:
+  - nbval migration utility with automated conversion
+  - Jupyter notebook import/export with test metadata preservation
+  - Configuration migration from pytest-notebook
+  - Compatibility layer for existing notebook formats
+- **Migration Success**: 100% feature parity with nbval
+- **Task IDs**: TEST-351 through TEST-370
+
+### **Sprint 5 Success Criteria**:
+- ✅ Complete CI/CD integration operational
+- ✅ Performance targets achieved across all components
+- ✅ Comprehensive documentation published
+- ✅ Migration tools with nbval compatibility ready
+- ✅ v2.0.0 release: First language with comprehensive notebook testing
+- ✅ Production deployment ready for educational institutions
+
+## 🎯 **FRAMEWORK SUCCESS METRICS**
+
+### **Technical Excellence**:
+- **Coverage**: >80% code coverage across entire testing framework
+- **Quality**: PMAT A- grade (≥85 points) maintained throughout
+- **Complexity**: All functions <10 cognitive complexity
+- **Performance**: Sub-second feedback for 90% of test operations
+- **Reliability**: Zero false positives in test results
+
+### **Feature Completeness**:
+- **Basic Testing**: 100% nbval feature parity + enhancements
+- **Advanced Testing**: Property-based, differential, mutation, formal verification
+- **Educational**: Complete WASM sandbox with automated feedback
+- **Production**: CI/CD integration with enterprise-grade quality gates
+
+### **Ecosystem Impact**:
+- **First Language**: First programming language with built-in comprehensive notebook testing
+- **Educational Leadership**: Coursera-compatible educational platform
+- **Research Tool**: SMT-based formal verification for computational notebooks
+- **Industry Standard**: New benchmark for data science language tooling
+
+## 🏆 **COMPETITIVE ADVANTAGES**
+
+**vs nbval**: 
+- ✅ Formal verification with Z3 integration
+- ✅ Property-based testing with automatic generation
+- ✅ Educational sandbox with anti-cheating
+- ✅ Performance regression detection
+- ✅ Multi-backend differential testing
+
+**vs pytest-notebook**:
+- ✅ Built-in language support (not external plugin)
+- ✅ State preservation with checkpoint/restore
+- ✅ Complexity analysis with Big-O verification
+- ✅ Learning analytics with adaptive feedback
+
+**vs Jupyter testing tools**:
+- ✅ Unified CLI with comprehensive testing modes
+- ✅ WASM compilation for secure execution
+- ✅ Mutation testing for test quality validation
+- ✅ Production-grade CI/CD integration
 
 ## 🎯 **COMPLETED PRIORITIES (Post Complexity Crisis Resolution)**
 

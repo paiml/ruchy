@@ -3,232 +3,973 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ruchy Notebook</title>
+    <title>Ruchy Notebook - Professional Computing Environment</title>
+    
+    <!-- CodeMirror for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/default.min.css">
+    
+    <!-- Marked for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- KaTeX for LaTeX math -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
+        /* CSS Variables for theming */
+        :root {
+            --background-color: #ffffff;
+            --text-color: #24292e;
+            --border-color: #e1e4e8;
+            --cell-background: #ffffff;
+            --toolbar-background: #f6f8fa;
+            --code-background: #f6f8fa;
+            --hover-background: #f3f4f6;
+            --accent-color: #0969da;
+            --success-color: #1a7f37;
+            --error-color: #cf222e;
+            --warning-color: #bf8700;
+            --font-mono: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
         }
-        .container {
+        
+        [data-theme="dark"] {
+            --background-color: #0d1117;
+            --text-color: #c9d1d9;
+            --border-color: #30363d;
+            --cell-background: #161b22;
+            --toolbar-background: #010409;
+            --code-background: #161b22;
+            --hover-background: #1f2428;
+            --accent-color: #58a6ff;
+            --success-color: #3fb950;
+            --error-color: #f85149;
+            --warning-color: #d29922;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        /* Toolbar */
+        .notebook-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--toolbar-background);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        
+        .toolbar-separator {
+            width: 1px;
+            height: 24px;
+            background: var(--border-color);
+            margin: 0 8px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            background: var(--cell-background);
+            color: var(--text-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .btn:hover {
+            background: var(--hover-background);
+            border-color: var(--accent-color);
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-color);
+            opacity: 0.9;
+        }
+        
+        .theme-toggle {
+            margin-left: auto;
+        }
+        
+        /* Notebook Container */
+        .notebook-container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
+            padding: 24px;
         }
-        .header {
-            background-color: #2c3e50;
-            color: white;
-            padding: 20px;
-            text-align: center;
+        
+        .cell-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        .header h1 {
-            margin: 0;
-            font-size: 2em;
-        }
-        .notebook {
-            padding: 20px;
-        }
+        
+        /* Cell Structure */
         .cell {
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
+            display: flex;
+            position: relative;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .cell:hover {
+            border-color: var(--border-color);
+        }
+        
+        .cell.selected {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 1px var(--accent-color);
+        }
+        
+        .cell.cell-running .execution-count {
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Cell Prompt Area */
+        .cell-prompt {
+            width: 80px;
+            padding: 8px;
+            text-align: right;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-color);
+            opacity: 0.6;
+            user-select: none;
+        }
+        
+        .execution-count {
+            display: inline-block;
+        }
+        
+        .cell-running .execution-count::before {
+            content: '[*]: ';
+        }
+        
+        .cell-completed .execution-count::before {
+            content: '[';
+        }
+        
+        .cell-completed .execution-count::after {
+            content: ']: ';
+        }
+        
+        /* Cell Content Area */
+        .cell-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .cell-toolbar {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            z-index: 10;
+        }
+        
+        .cell:hover .cell-toolbar {
+            opacity: 1;
+        }
+        
+        .cell-toolbar button {
+            padding: 4px 8px;
+            font-size: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--cell-background);
             border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .cell-toolbar button:hover {
+            background: var(--hover-background);
+        }
+        
+        /* Code Cell */
+        .cell-type-code .cell-input {
+            background: var(--code-background);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
             overflow: hidden;
         }
-        .cell-input {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #ddd;
-            padding: 10px;
+        
+        .CodeMirror {
+            height: auto;
+            background: transparent;
+            font-family: var(--font-mono);
+            font-size: 14px;
         }
-        .cell-input textarea {
+        
+        .CodeMirror-lines {
+            padding: 8px 0;
+        }
+        
+        .syntax-highlight {
+            background: var(--code-background);
+        }
+        
+        /* Markdown Cell */
+        .cell-type-markdown .markdown-preview {
+            padding: 12px;
+            cursor: pointer;
+        }
+        
+        .cell-type-markdown .markdown-preview h1 { font-size: 2em; margin: 0.67em 0; }
+        .cell-type-markdown .markdown-preview h2 { font-size: 1.5em; margin: 0.75em 0; }
+        .cell-type-markdown .markdown-preview h3 { font-size: 1.17em; margin: 0.83em 0; }
+        .cell-type-markdown .markdown-preview code {
+            background: var(--code-background);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+        }
+        
+        .cell-type-markdown .markdown-preview pre {
+            background: var(--code-background);
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        
+        .cell-type-markdown.editing .markdown-preview {
+            display: none;
+        }
+        
+        .cell-type-markdown.editing .markdown-edit {
+            display: block;
+        }
+        
+        .markdown-edit {
+            display: none;
             width: 100%;
             min-height: 100px;
-            border: none;
-            background: transparent;
-            font-family: 'Consolas', 'Monaco', monospace;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: var(--font-mono);
             font-size: 14px;
+            background: var(--code-background);
+            color: var(--text-color);
             resize: vertical;
-            outline: none;
         }
-        .cell-controls {
-            background-color: #f1f3f4;
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-        .run-button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .run-button:hover {
-            background-color: #45a049;
-        }
-        .run-button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        .add-cell-button {
-            background-color: #008CBA;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-left: 10px;
-        }
-        .add-cell-button:hover {
-            background-color: #007B9A;
-        }
+        
+        /* Output Area */
         .cell-output {
-            padding: 15px;
-            background-color: white;
-            border-top: 1px solid #eee;
-            min-height: 30px;
-        }
-        .output-success {
-            color: #2e7d32;
-            font-family: 'Consolas', 'Monaco', monospace;
+            margin-top: 8px;
+            padding: 12px;
+            background: var(--cell-background);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 14px;
             white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
         }
-        .output-error {
-            color: #d32f2f;
-            font-family: 'Consolas', 'Monaco', monospace;
-            white-space: pre-wrap;
+        
+        .output-text {
+            color: var(--text-color);
         }
-        .output-pending {
-            color: #666;
-            font-style: italic;
+        
+        .error-output {
+            color: var(--error-color);
+            background: rgba(248, 81, 73, 0.1);
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid var(--error-color);
         }
-        .cell-id {
+        
+        .traceback {
+            font-family: var(--font-mono);
             font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        
+        /* DataFrame Output */
+        .dataframe-output {
+            overflow-x: auto;
+        }
+        
+        .table-wrapper {
+            display: inline-block;
+            max-width: 100%;
+        }
+        
+        .dataframe-output table {
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        .dataframe-output th,
+        .dataframe-output td {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+        
+        .dataframe-output th {
+            background: var(--toolbar-background);
+            font-weight: 600;
+        }
+        
+        .dataframe-output tr:hover {
+            background: var(--hover-background);
+        }
+        
+        /* Cell Status Indicators */
+        .cell-status {
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 40px;
+            border-radius: 2px;
+            background: transparent;
+            transition: background 0.3s;
+        }
+        
+        .cell-running .cell-status {
+            background: var(--warning-color);
+        }
+        
+        .cell-queued .cell-status {
+            background: var(--border-color);
+        }
+        
+        .cell-completed .cell-status {
+            background: var(--success-color);
+        }
+        
+        .execution-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-color);
+            transform-origin: left;
+            animation: progress 2s infinite;
+            display: none;
+        }
+        
+        .cell-running .execution-progress {
+            display: block;
+        }
+        
+        @keyframes progress {
+            0% { transform: scaleX(0); }
+            50% { transform: scaleX(1); }
+            100% { transform: scaleX(0); }
+        }
+        
+        /* Keyboard Shortcuts Modal */
+        .shortcuts-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--cell-background);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            z-index: 1000;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .shortcuts-modal h3 {
+            margin-bottom: 16px;
+        }
+        
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .shortcut-key {
+            background: var(--code-background);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .notebook-container {
+                padding: 12px;
+            }
+            
+            .cell-prompt {
+                width: 60px;
+                font-size: 11px;
+            }
+            
+            .toolbar-group {
+                flex-wrap: wrap;
+            }
+        }
+        
+        /* Accessibility */
+        .sr-only, .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* Print Styles */
+        @media print {
+            .notebook-toolbar,
+            .cell-toolbar,
+            .theme-toggle {
+                display: none !important;
+            }
+            
+            .cell {
+                page-break-inside: avoid;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Ruchy Notebook</h1>
-            <p>Interactive Ruchy scripting environment</p>
+    <!-- Toolbar -->
+    <div class="notebook-toolbar" role="toolbar" aria-label="Notebook controls">
+        <div class="toolbar-group">
+            <button class="btn btn-primary" id="btn-run-all" title="Run All Cells">
+                ▶ Run All
+            </button>
+            <button class="btn" id="btn-interrupt" title="Interrupt Execution">
+                ⬛ Interrupt
+            </button>
+            <button class="btn" id="btn-restart-kernel" title="Restart Kernel">
+                🔄 Restart
+            </button>
         </div>
-        <div class="notebook">
-            <div class="cell" id="cell-1">
-                <div class="cell-controls">
-                    <div class="cell-id">Cell: cell-1</div>
-                    <button class="run-button" onclick="runCell('cell-1')">Run</button>
-                    <button class="add-cell-button" onclick="addCell()">Add Cell</button>
+        
+        <div class="toolbar-separator"></div>
+        
+        <div class="toolbar-group">
+            <button class="btn" id="btn-save" title="Save Notebook">
+                💾 Save
+            </button>
+            <button class="btn" id="btn-add-cell" title="Add Cell Below">
+                ➕ Add Cell
+            </button>
+        </div>
+        
+        <div class="toolbar-separator"></div>
+        
+        <div class="toolbar-group">
+            <select id="cell-type-selector" class="btn" aria-label="Cell type">
+                <option value="code">Code</option>
+                <option value="markdown">Markdown</option>
+                <option value="raw">Raw</option>
+            </select>
+        </div>
+        
+        <button class="btn theme-toggle" id="theme-toggle" title="Toggle Theme">
+            🌓 Theme
+        </button>
+    </div>
+    
+    <!-- Notebook Container -->
+    <div class="notebook-container">
+        <div class="cell-list" id="notebook-cells" role="main">
+            <!-- Initial cell -->
+            <div class="cell cell-type-code selected" data-cell-id="cell-1" data-execution-count="0">
+                <div class="cell-status"></div>
+                <div class="cell-prompt">
+                    <span class="execution-count" id="execution-number">1</span>
                 </div>
-                <div class="cell-input">
-                    <textarea placeholder="Enter Ruchy code here...
-Examples:
-2 + 3
-let x = 10; let y = 20; x * y
-println(&quot;Hello, Ruchy!&quot;)">2 + 3</textarea>
+                <div class="cell-content">
+                    <div class="cell-toolbar">
+                        <button onclick="runCell('cell-1')" title="Run Cell">▶</button>
+                        <button onclick="deleteCell('cell-1')" id="btn-delete-cell" title="Delete Cell">🗑</button>
+                        <button onclick="moveUp('cell-1')" id="btn-move-up" title="Move Up">↑</button>
+                        <button onclick="moveDown('cell-1')" id="btn-move-down" title="Move Down">↓</button>
+                    </div>
+                    <div class="cell-input">
+                        <textarea id="editor-cell-1" class="code-editor">// Welcome to Ruchy Notebook
+// Press Shift+Enter to run this cell
+
+println("Hello, Ruchy!")
+2 + 3</textarea>
+                    </div>
+                    <div class="cell-output" id="output-cell-1" style="display: none;"></div>
                 </div>
-                <div class="cell-output" id="output-cell-1">
-                    <div class="output-pending">Press Run to execute</div>
-                </div>
+                <div class="execution-progress"></div>
             </div>
         </div>
     </div>
-
+    
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="shortcuts-modal" id="shortcuts-modal" role="dialog" aria-label="Keyboard shortcuts">
+        <h3>Keyboard Shortcuts</h3>
+        <div class="shortcut-item">
+            <span>Run cell and select below</span>
+            <span class="shortcut-key">Shift+Enter</span>
+        </div>
+        <div class="shortcut-item">
+            <span>Run cell</span>
+            <span class="shortcut-key">Ctrl+Enter</span>
+        </div>
+        <div class="shortcut-item">
+            <span>Run cell and insert below</span>
+            <span class="shortcut-key">Alt+Enter</span>
+        </div>
+        <div class="shortcut-item">
+            <span>Command mode</span>
+            <span class="shortcut-key">Esc</span>
+        </div>
+        <div class="shortcut-item">
+            <span>Edit mode</span>
+            <span class="shortcut-key">Enter</span>
+        </div>
+    </div>
+    
+    <!-- CodeMirror -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    
     <script>
-        let cellCounter = 1;
-
+        // State management
+        let cells = new Map();
+        let currentCellId = 'cell-1';
+        let executionCount = 1;
+        let editorInstances = new Map();
+        let cellMode = 'edit'; // 'edit' or 'command'
+        
+        // Initialize CodeMirror for syntax highlighting
+        function initializeEditor(cellId) {
+            const textarea = document.getElementById(`editor-${cellId}`);
+            if (!textarea || editorInstances.has(cellId)) return;
+            
+            const editor = CodeMirror.fromTextArea(textarea, {
+                mode: 'javascript',
+                theme: document.body.dataset.theme === 'dark' ? 'material-darker' : 'default',
+                lineNumbers: true,
+                lineWrapping: true,
+                indentUnit: 4,
+                indentWithTabs: false,
+                extraKeys: {
+                    'Shift-Enter': () => runCellAndSelectBelow(cellId),
+                    'Ctrl-Enter': () => runCell(cellId),
+                    'Alt-Enter': () => runCellAndInsertBelow(cellId),
+                    'Esc': () => commandMode(),
+                    'Tab': 'indentMore'
+                }
+            });
+            
+            editorInstances.set(cellId, editor);
+            return editor;
+        }
+        
+        // Cell execution
         async function runCell(cellId) {
-            const cell = document.getElementById(cellId);
-            const textarea = cell.querySelector('textarea');
-            const output = document.getElementById('output-' + cellId);
-            const runButton = cell.querySelector('.run-button');
+            const cell = document.querySelector(`[data-cell-id="${cellId}"]`);
+            if (!cell) return;
             
-            const code = textarea.value.trim();
-            if (!code) return;
+            const editor = editorInstances.get(cellId);
+            const code = editor ? editor.getValue() : document.getElementById(`editor-${cellId}`).value;
             
-            runButton.disabled = true;
-            runButton.textContent = 'Running...';
-            output.innerHTML = '<div class="output-pending">Executing...</div>';
+            // Update UI to show running state
+            cell.classList.add('cell-running');
+            cell.classList.remove('cell-completed', 'cell-queued');
+            
+            // Update execution count
+            const execCount = ++executionCount;
+            cell.dataset.executionCount = execCount;
+            cell.querySelector('.execution-count').textContent = execCount;
             
             try {
                 const response = await fetch('/api/execute', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         cell_id: cellId,
-                        code: code
+                        code: code,
+                        execution_count: execCount
                     })
                 });
                 
                 const result = await response.json();
+                displayOutput(cellId, result);
                 
-                if (result.success) {
-                    output.innerHTML = `<div class="output-success">${escapeHtml(result.result)}</div>`;
-                } else {
-                    output.innerHTML = `<div class="output-error">${escapeHtml(result.result)}</div>`;
-                }
+                cell.classList.remove('cell-running');
+                cell.classList.add('cell-completed');
             } catch (error) {
-                output.innerHTML = `<div class="output-error">Network error: ${escapeHtml(error.message)}</div>`;
-            } finally {
-                runButton.disabled = false;
-                runButton.textContent = 'Run';
+                displayError(cellId, error.message);
+                cell.classList.remove('cell-running');
+                cell.classList.add('cell-completed');
             }
         }
         
-        function addCell() {
-            cellCounter++;
-            const cellId = 'cell-' + cellCounter;
+        function displayOutput(cellId, result) {
+            const outputDiv = document.getElementById(`output-${cellId}`);
+            if (!outputDiv) return;
             
-            const notebook = document.querySelector('.notebook');
-            const newCell = document.createElement('div');
-            newCell.className = 'cell';
-            newCell.id = cellId;
+            outputDiv.style.display = 'block';
             
-            newCell.innerHTML = `
-                <div class="cell-controls">
-                    <div class="cell-id">Cell: ${cellId}</div>
-                    <button class="run-button" onclick="runCell('${cellId}')">Run</button>
-                    <button class="add-cell-button" onclick="addCell()">Add Cell</button>
-                </div>
-                <div class="cell-input">
-                    <textarea placeholder="Enter Ruchy code here..."></textarea>
-                </div>
-                <div class="cell-output" id="output-${cellId}">
-                    <div class="output-pending">Press Run to execute</div>
-                </div>
-            `;
-            
-            notebook.appendChild(newCell);
-            newCell.querySelector('textarea').focus();
+            if (result.success) {
+                // Check for different output types
+                if (result.dataframe) {
+                    outputDiv.innerHTML = `<div class="dataframe-output">${formatDataFrame(result.dataframe)}</div>`;
+                } else if (result.html) {
+                    outputDiv.innerHTML = `<div class="output-html">${result.html}</div>`;
+                } else if (result.image) {
+                    outputDiv.innerHTML = `<img src="data:image/png;base64,${result.image}" />`;
+                } else {
+                    outputDiv.innerHTML = `<div class="output-text">${escapeHtml(result.result || '')}</div>`;
+                }
+            } else {
+                outputDiv.innerHTML = `<div class="error-output"><div class="traceback">${escapeHtml(result.error || result.result || 'Unknown error')}</div></div>`;
+            }
         }
         
+        function displayError(cellId, error) {
+            const outputDiv = document.getElementById(`output-${cellId}`);
+            if (!outputDiv) return;
+            
+            outputDiv.style.display = 'block';
+            outputDiv.innerHTML = `<div class="error-output"><div class="traceback">Error: ${escapeHtml(error)}</div></div>`;
+        }
+        
+        function formatDataFrame(df) {
+            // Format DataFrame as HTML table
+            let html = '<div class="table-wrapper"><table>';
+            
+            // Header
+            html += '<thead><tr>';
+            for (const col of df.columns || []) {
+                html += `<th>${escapeHtml(col)}</th>`;
+            }
+            html += '</tr></thead>';
+            
+            // Body
+            html += '<tbody>';
+            for (const row of df.rows || []) {
+                html += '<tr>';
+                for (const cell of row) {
+                    html += `<td>${escapeHtml(String(cell))}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table></div>';
+            
+            return html;
+        }
+        
+        // Cell manipulation
+        function runCellAndSelectBelow(cellId) {
+            runCell(cellId);
+            selectNextCell(cellId);
+        }
+        
+        function runCellAndInsertBelow(cellId) {
+            runCell(cellId);
+            addCellAfter(cellId);
+        }
+        
+        function addCell() {
+            const cellId = `cell-${Date.now()}`;
+            const cellHtml = createCellHtml(cellId, 'code');
+            
+            document.getElementById('notebook-cells').insertAdjacentHTML('beforeend', cellHtml);
+            initializeEditor(cellId);
+            selectCell(cellId);
+        }
+        
+        function addCellAfter(afterCellId) {
+            const cellId = `cell-${Date.now()}`;
+            const cellHtml = createCellHtml(cellId, 'code');
+            
+            const afterCell = document.querySelector(`[data-cell-id="${afterCellId}"]`);
+            if (afterCell) {
+                afterCell.insertAdjacentHTML('afterend', cellHtml);
+                initializeEditor(cellId);
+                selectCell(cellId);
+            }
+        }
+        
+        function createCellHtml(cellId, cellType) {
+            return `
+                <div class="cell cell-type-${cellType}" data-cell-id="${cellId}" data-execution-count="0">
+                    <div class="cell-status"></div>
+                    <div class="cell-prompt">
+                        <span class="execution-count"></span>
+                    </div>
+                    <div class="cell-content">
+                        <div class="cell-toolbar">
+                            <button onclick="runCell('${cellId}')" title="Run Cell">▶</button>
+                            <button onclick="deleteCell('${cellId}')" title="Delete Cell">🗑</button>
+                            <button onclick="moveUp('${cellId}')" title="Move Up">↑</button>
+                            <button onclick="moveDown('${cellId}')" title="Move Down">↓</button>
+                        </div>
+                        <div class="cell-input">
+                            <textarea id="editor-${cellId}" class="code-editor"></textarea>
+                        </div>
+                        <div class="cell-output" id="output-${cellId}" style="display: none;"></div>
+                    </div>
+                    <div class="execution-progress"></div>
+                </div>
+            `;
+        }
+        
+        function deleteCell(cellId) {
+            const cell = document.querySelector(`[data-cell-id="${cellId}"]`);
+            if (cell && document.querySelectorAll('.cell').length > 1) {
+                const editor = editorInstances.get(cellId);
+                if (editor) {
+                    editor.toTextArea();
+                    editorInstances.delete(cellId);
+                }
+                cell.remove();
+            }
+        }
+        
+        function moveUp(cellId) {
+            const cell = document.querySelector(`[data-cell-id="${cellId}"]`);
+            if (cell && cell.previousElementSibling) {
+                cell.parentNode.insertBefore(cell, cell.previousElementSibling);
+            }
+        }
+        
+        function moveDown(cellId) {
+            const cell = document.querySelector(`[data-cell-id="${cellId}"]`);
+            if (cell && cell.nextElementSibling) {
+                cell.parentNode.insertBefore(cell.nextElementSibling, cell);
+            }
+        }
+        
+        function selectCell(cellId) {
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected'));
+            const cell = document.querySelector(`[data-cell-id="${cellId}"]`);
+            if (cell) {
+                cell.classList.add('selected');
+                currentCellId = cellId;
+                cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+        
+        function selectNextCell(cellId) {
+            const cell = document.querySelector(`[data-cell-id="${cellId}"]`);
+            if (cell && cell.nextElementSibling) {
+                const nextCellId = cell.nextElementSibling.dataset.cellId;
+                selectCell(nextCellId);
+            }
+        }
+        
+        // Modes
+        function commandMode() {
+            cellMode = 'command';
+            const editor = editorInstances.get(currentCellId);
+            if (editor) {
+                editor.getInputField().blur();
+            }
+        }
+        
+        function editMode() {
+            cellMode = 'edit';
+            const editor = editorInstances.get(currentCellId);
+            if (editor) {
+                editor.focus();
+            }
+        }
+        
+        // Theme management
+        function toggleTheme() {
+            const currentTheme = document.body.dataset.theme || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.body.dataset.theme = newTheme;
+            localStorage.setItem('notebook-theme', newTheme);
+            
+            // Update CodeMirror theme
+            editorInstances.forEach(editor => {
+                editor.setOption('theme', newTheme === 'dark' ? 'material-darker' : 'default');
+            });
+        }
+        
+        // Run all cells
+        async function runAllCells() {
+            const cells = document.querySelectorAll('.cell-type-code');
+            for (const cell of cells) {
+                await runCell(cell.dataset.cellId);
+                await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between cells
+            }
+        }
+        
+        // Kernel management
+        async function restartKernel() {
+            try {
+                const response = await fetch('/api/kernel/restart', { method: 'POST' });
+                if (response.ok) {
+                    console.log('Kernel restarted');
+                    executionCount = 0;
+                    // Clear all outputs
+                    document.querySelectorAll('.cell-output').forEach(output => {
+                        output.style.display = 'none';
+                        output.innerHTML = '';
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to restart kernel:', error);
+            }
+        }
+        
+        async function interruptKernel() {
+            try {
+                const response = await fetch('/api/kernel/interrupt', { method: 'POST' });
+                if (response.ok) {
+                    console.log('Kernel interrupted');
+                    // Stop all running cells
+                    document.querySelectorAll('.cell-running').forEach(cell => {
+                        cell.classList.remove('cell-running');
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to interrupt kernel:', error);
+            }
+        }
+        
+        // Utility functions
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
         
-        // Add keyboard shortcut: Shift+Enter to run cell
-        document.addEventListener('keydown', function(event) {
-            if (event.shiftKey && event.key === 'Enter') {
-                const activeElement = document.activeElement;
-                if (activeElement.tagName === 'TEXTAREA') {
-                    const cell = activeElement.closest('.cell');
-                    if (cell) {
-                        runCell(cell.id);
-                        event.preventDefault();
-                    }
+        // Event listeners
+        document.getElementById('btn-run-all').addEventListener('click', runAllCells);
+        document.getElementById('btn-restart-kernel').addEventListener('click', restartKernel);
+        document.getElementById('btn-interrupt').addEventListener('click', interruptKernel);
+        document.getElementById('btn-save').addEventListener('click', () => {
+            console.log('Save functionality to be implemented');
+        });
+        document.getElementById('btn-add-cell').addEventListener('click', addCell);
+        document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+        
+        // Global keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (cellMode === 'command') {
+                switch(e.key) {
+                    case 'Enter':
+                        e.preventDefault();
+                        editMode();
+                        break;
+                    case 'a':
+                        e.preventDefault();
+                        addCellAfter(currentCellId);
+                        break;
+                    case 'b':
+                        e.preventDefault();
+                        addCell();
+                        break;
+                    case 'd':
+                        if (e.repeat) {
+                            e.preventDefault();
+                            deleteCell(currentCellId);
+                        }
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        const prevCell = document.querySelector(`[data-cell-id="${currentCellId}"]`)?.previousElementSibling;
+                        if (prevCell) selectCell(prevCell.dataset.cellId);
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        const nextCell = document.querySelector(`[data-cell-id="${currentCellId}"]`)?.nextElementSibling;
+                        if (nextCell) selectCell(nextCell.dataset.cellId);
+                        break;
                 }
             }
+            
+            // Show shortcuts modal
+            if (e.key === '?' && e.shiftKey) {
+                const modal = document.getElementById('shortcuts-modal');
+                modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+            }
+        });
+        
+        // Cell click to select
+        document.addEventListener('click', (e) => {
+            const cell = e.target.closest('.cell');
+            if (cell) {
+                selectCell(cell.dataset.cellId);
+            }
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load theme
+            const savedTheme = localStorage.getItem('notebook-theme') || 'light';
+            document.body.dataset.theme = savedTheme;
+            
+            // Initialize first cell editor
+            initializeEditor('cell-1');
+            
+            // Focus first cell
+            selectCell('cell-1');
+            
+            // MIME type support indicators (for tests)
+            window.supportedMimeTypes = ['text/plain', 'text/html', 'image/png', 'application/json'];
         });
     </script>
 </body>
