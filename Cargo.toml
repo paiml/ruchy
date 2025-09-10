@@ -223,6 +223,7 @@ mcp = ["tokio", "tokio-util", "pmcp", "async-trait", "tower-lsp"]
 notebook = ["ruchy-notebook", "tokio"]
 
 [dependencies]
+wasm-encoder = "0.207.0"
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
@@ -272,6 +273,8 @@ tempfile = "3.21"
 proptest = { version = "1.7", optional = true }
 # Notebook support
 ruchy-notebook = { version = "1.91.0", optional = true }
+wasmparser = "0.239.0"
+wasmtime = "36.0.2"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
