@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 
 mod commands;
 mod handlers_modules;
-use ruchy::{Parser as RuchyParser, Transpiler};
+use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
 use ruchy::frontend::ast::Expr;
 use ruchy::runtime::Repl;
 use ruchy::runtime::replay_converter::ConversionConfig;
@@ -948,6 +948,41 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
         crate::Commands::ReplayToTests { input, output, property_tests, benchmarks, timeout } => {
             handle_replay_to_tests_command(&input, output.as_deref(), property_tests, benchmarks, timeout)
         }
+        crate::Commands::Wasm { 
+            file, 
+            output, 
+            target, 
+            wit, 
+            deploy, 
+            deploy_target, 
+            portability, 
+            opt_level, 
+            debug, 
+            simd, 
+            threads, 
+            component_model, 
+            name, 
+            version, 
+            verbose 
+        } => {
+            handle_wasm_command(
+                &file, 
+                output.as_deref(), 
+                &target, 
+                wit, 
+                deploy, 
+                deploy_target.as_deref(), 
+                portability, 
+                &opt_level, 
+                debug, 
+                simd, 
+                threads, 
+                component_model, 
+                name.as_deref(), 
+                &version, 
+                verbose
+            )
+        }
         _ => {
             // Other commands not yet implemented
             eprintln!("Command not yet implemented");
@@ -1586,6 +1621,134 @@ pub fn handle_replay_to_tests_command(
     
     write_test_output(&converter, &all_tests, output_path)?;
     generate_summary_report(&all_tests, processed_files);
+    
+    Ok(())
+}
+
+/// Handle wasm command - compile Ruchy source to WebAssembly
+/// 
+/// # Arguments
+/// * `file` - Path to the Ruchy source file
+/// * `output` - Optional output file path
+/// * `target` - WASM target (browser/node/cloudflare/universal)
+/// * `wit` - Optional WIT file for component model
+/// * `deploy` - Deploy to specified platform
+/// * `deploy_target` - Deployment target path
+/// * `portability` - Portability settings
+/// * `opt_level` - Optimization level
+/// * `debug` - Include debug info
+/// * `simd` - Enable SIMD instructions
+/// * `threads` - Enable threading
+/// * `component_model` - Enable component model
+/// * `name` - Module name
+/// * `version` - Module version
+/// * `verbose` - Enable verbose output
+/// 
+/// # Errors
+/// Returns error if compilation fails or WASM generation fails
+pub fn handle_wasm_command(
+    file: &Path,
+    output: Option<&Path>,
+    target: &str,
+    wit: bool,
+    deploy: bool,
+    deploy_target: Option<&str>,
+    _portability: bool,
+    opt_level: &str,
+    _debug: bool,
+    _simd: bool,
+    _threads: bool,
+    _component_model: bool,
+    _name: Option<&str>,
+    _version: &str,
+    verbose: bool,
+) -> Result<()> {
+    use colored::Colorize;
+    
+    if verbose {
+        println!("{} Compiling {} to WebAssembly", "→".bright_cyan(), file.display());
+        println!("  Target: {}", target);
+        if wit {
+            println!("  WIT: enabled");
+        }
+    }
+    
+    // Read source file
+    let source = fs::read_to_string(file)
+        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    
+    // Parse the source
+    let mut parser = RuchyParser::new(&source);
+    let ast = parser.parse()
+        .with_context(|| format!("Failed to parse {}", file.display()))?;
+    
+    // Create WASM emitter
+    let emitter = WasmEmitter::new();
+    
+    // Generate WASM bytecode
+    let wasm_bytes = emitter.emit(&ast)
+        .map_err(|e| anyhow::anyhow!("Failed to generate WASM: {}", e))?;
+    
+    // Always validate the generated WASM
+    if verbose {
+        println!("{} Validating WASM module...", "→".bright_cyan());
+    }
+    
+    // Use wasmparser for validation
+    match wasmparser::validate(&wasm_bytes) {
+        Ok(_) => {
+            if verbose {
+                println!("{} WASM validation successful", "✓".green());
+            }
+        }
+        Err(e) => {
+            eprintln!("{} WASM validation failed: {}", "✗".red(), e);
+            if !verbose {
+                eprintln!("Run with --verbose for more details");
+            }
+            return Err(anyhow::anyhow!("WASM validation failed"));
+        }
+    }
+    
+    // Determine output file name
+    let output_path = if let Some(out) = output {
+        out.to_path_buf()
+    } else {
+        // Default: replace .ruchy extension with .wasm
+        let mut path = file.to_path_buf();
+        path.set_extension("wasm");
+        path
+    };
+    
+    // Write WASM file
+    fs::write(&output_path, &wasm_bytes)
+        .with_context(|| format!("Failed to write WASM to {}", output_path.display()))?;
+    
+    println!(
+        "{} Successfully compiled to {}",
+        "✓".green(),
+        output_path.display()
+    );
+    
+    if verbose {
+        println!("  Size: {} bytes", wasm_bytes.len());
+        println!("  Target: {}", target);
+    }
+    
+    // Handle optimization if requested
+    if opt_level != "0" {
+        if verbose {
+            println!("{} Optimization level {} requested (not yet implemented)", "ℹ".bright_blue(), opt_level);
+        }
+    }
+    
+    // Handle deployment if requested
+    if deploy {
+        let platform = deploy_target.unwrap_or("default");
+        if verbose {
+            println!("{} Deployment to {} requested (not yet implemented)", "ℹ".bright_blue(), platform);
+        }
+    }
     
     Ok(())
 }
