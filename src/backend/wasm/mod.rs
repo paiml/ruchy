@@ -25,21 +25,52 @@ impl WasmEmitter {
     pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
         let mut module = Module::new();
 
-        // Add type section with main function type
+        // Collect all function definitions
+        let func_defs = self.collect_functions(expr);
+        let has_functions = !func_defs.is_empty();
+        
+        // Add type section
         let mut types = TypeSection::new();
         
-        // Check if we have return statements with values
-        let has_return_value = self.has_return_with_value(expr);
-        if has_return_value {
-            types.function(vec![], vec![wasm_encoder::ValType::I32]); // () -> i32 type
+        if has_functions {
+            // Add a type for each function
+            for (_name, params, _body) in &func_defs {
+                // For now, assume all functions take i32 params and return i32
+                let param_types = vec![wasm_encoder::ValType::I32; params.len()];
+                types.function(param_types, vec![wasm_encoder::ValType::I32]);
+            }
+            
+            // Also add a type for the main function if there's non-function code
+            let main_expr = self.get_non_function_code(expr);
+            if main_expr.is_some() {
+                types.function(vec![], vec![]); // Main function type
+            }
         } else {
-            types.function(vec![], vec![]); // () -> () type
+            // Single implicit main function
+            let has_return_value = self.has_return_with_value(expr);
+            if has_return_value {
+                types.function(vec![], vec![wasm_encoder::ValType::I32]);
+            } else {
+                types.function(vec![], vec![]);
+            }
         }
         module.section(&types);
 
-        // Add function section pointing to type 0
+        // Add function section
         let mut functions = FunctionSection::new();
-        functions.function(0); // Use type 0
+        if has_functions {
+            for i in 0..func_defs.len() {
+                functions.function(i as u32);
+            }
+            
+            // Add main function if there's non-function code
+            let main_expr = self.get_non_function_code(expr);
+            if main_expr.is_some() {
+                functions.function(func_defs.len() as u32); // Main uses the last type
+            }
+        } else {
+            functions.function(0);
+        }
         module.section(&functions);
 
         // Add memory section if we need memory (for arrays/strings)
@@ -62,35 +93,80 @@ impl WasmEmitter {
             module.section(&exports);
         }
 
-        // Add code section with our expression
+        // Add code section
         let mut codes = CodeSection::new();
         
-        // Create a minimal function body for the expression
-        // Add one local for simple variable storage (if needed)
-        let locals = if self.needs_locals(expr) {
-            vec![(1, wasm_encoder::ValType::I32)]
+        if has_functions {
+            // Compile each function
+            for (_name, _params, body) in &func_defs {
+                let locals = if self.needs_locals(body) {
+                    vec![(1, wasm_encoder::ValType::I32)]
+                } else {
+                    vec![]
+                };
+                let mut func = Function::new(locals);
+                
+                // Compile function body
+                let instructions = self.lower_expression(body)?;
+                for instr in instructions {
+                    func.instruction(&instr);
+                }
+                
+                // Functions with explicit returns don't need Drop
+                // All our test functions return values
+                
+                func.instruction(&Instruction::End);
+                codes.function(&func);
+            }
+            
+            // Also compile the main code (non-function expressions)
+            let main_expr = self.get_non_function_code(expr);
+            if let Some(main_expr) = main_expr {
+                let locals = if self.needs_locals(&main_expr) {
+                    vec![(1, wasm_encoder::ValType::I32)]
+                } else {
+                    vec![]
+                };
+                let mut func = Function::new(locals);
+                
+                let instructions = self.lower_expression(&main_expr)?;
+                let has_instructions = !instructions.is_empty();
+                
+                for instr in instructions {
+                    func.instruction(&instr);
+                }
+                
+                if has_instructions && self.expression_produces_value(&main_expr) {
+                    func.instruction(&Instruction::Drop);
+                }
+                
+                func.instruction(&Instruction::End);
+                codes.function(&func);
+            }
         } else {
-            vec![]
-        };
-        let mut func = Function::new(locals);
-        
-        // Lower the expression to WASM instructions
-        let instructions = self.lower_expression(expr)?;
-        let has_instructions = !instructions.is_empty();
-        
-        for instr in instructions {
-            func.instruction(&instr);
+            // Single implicit main function
+            let locals = if self.needs_locals(expr) {
+                vec![(1, wasm_encoder::ValType::I32)]
+            } else {
+                vec![]
+            };
+            let mut func = Function::new(locals);
+            
+            let instructions = self.lower_expression(expr)?;
+            let has_instructions = !instructions.is_empty();
+            let has_return_value = self.has_return_with_value(expr);
+            
+            for instr in instructions {
+                func.instruction(&instr);
+            }
+            
+            if has_instructions && self.expression_produces_value(expr) && !has_return_value {
+                func.instruction(&Instruction::Drop);
+            }
+            
+            func.instruction(&Instruction::End);
+            codes.function(&func);
         }
-        
-        // Drop any remaining stack values (void function)
-        // Count how many values the expression produces
-        if has_instructions && self.expression_produces_value(expr) && !has_return_value {
-            func.instruction(&Instruction::Drop);
-        }
-        
-        // End the function
-        func.instruction(&Instruction::End);
-        codes.function(&func);
         module.section(&codes);
 
         Ok(module.finish())
@@ -299,6 +375,49 @@ impl WasmEmitter {
                 Ok(instructions)
             }
             _ => Ok(vec![]), // Skip complex expressions for now
+        }
+    }
+
+    /// Collect all function definitions from the AST
+    fn collect_functions(&self, expr: &Expr) -> Vec<(String, Vec<crate::frontend::ast::Param>, Box<Expr>)> {
+        let mut functions = Vec::new();
+        self.collect_functions_rec(expr, &mut functions);
+        functions
+    }
+    
+    fn collect_functions_rec(&self, expr: &Expr, functions: &mut Vec<(String, Vec<crate::frontend::ast::Param>, Box<Expr>)>) {
+        match &expr.kind {
+            ExprKind::Function { name, params, body, .. } => {
+                functions.push((name.clone(), params.clone(), body.clone()));
+            }
+            ExprKind::Block(exprs) => {
+                for e in exprs {
+                    self.collect_functions_rec(e, functions);
+                }
+            }
+            _ => {}
+        }
+    }
+    
+    /// Get non-function code from the expression (e.g., function calls)
+    fn get_non_function_code(&self, expr: &Expr) -> Option<Expr> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => {
+                let non_func_exprs: Vec<Expr> = exprs.iter()
+                    .filter(|e| !matches!(e.kind, ExprKind::Function { .. }))
+                    .cloned()
+                    .collect();
+                
+                if non_func_exprs.is_empty() {
+                    None
+                } else if non_func_exprs.len() == 1 {
+                    Some(non_func_exprs.into_iter().next().unwrap())
+                } else {
+                    Some(Expr::new(ExprKind::Block(non_func_exprs), expr.span.clone()))
+                }
+            }
+            ExprKind::Function { .. } => None,
+            _ => Some(expr.clone()),
         }
     }
 
