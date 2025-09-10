@@ -14,6 +14,9 @@ pub mod differential;
 pub mod mutation;
 pub mod formal;
 pub mod complexity;
+pub mod educational;
+pub mod grading;
+pub mod tutorial;
 
 pub use tester::{NotebookTester, NotebookTestSession, NotebookParser as TestNotebookParser};
 pub use golden::GoldenManager;
@@ -32,6 +35,10 @@ pub use formal::{FormalVerifier, FormalConfig, Invariant, Constraint, Constraint
                  VerificationResult, FunctionSpec, ExecutionPath, LoopInvariant};
 pub use complexity::{ComplexityAnalyzer, ComplexityConfig, TimeComplexity, SpaceComplexity,
                      ComplexityResult, Hotspot};
+pub use educational::{EducationalPlatform, Assignment, RubricItem, TestCase as EduTestCase,
+                      StudentSubmission, Grade, LearningAnalytics, LearningEvent, EventType};
+pub use grading::{Grader, GradingConfig, ExerciseValidator, Exercise, Difficulty, ValidationResult};
+pub use tutorial::{InteractiveTutorial, TutorialStep, ValidationRule, StepResult, AdaptiveHintSystem};
 
 /// Initialize the testing framework with default configuration
 pub fn init() -> NotebookTester {
