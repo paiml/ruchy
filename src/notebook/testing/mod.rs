@@ -12,6 +12,8 @@ pub mod types;
 pub mod property;
 pub mod differential;
 pub mod mutation;
+pub mod formal;
+pub mod complexity;
 
 pub use tester::{NotebookTester, NotebookTestSession, NotebookParser as TestNotebookParser};
 pub use golden::GoldenManager;
@@ -26,6 +28,10 @@ pub use types::{
 pub use property::{PropertyTester, PropertyTestConfig};
 pub use differential::{DifferentialTester, DifferentialConfig, DifferentialResult, DivergenceType};
 pub use mutation::{MutationTester, MutationConfig, MutationType, Mutation, MutationResult};
+pub use formal::{FormalVerifier, FormalConfig, Invariant, Constraint, ConstraintSeverity, 
+                 VerificationResult, FunctionSpec, ExecutionPath, LoopInvariant};
+pub use complexity::{ComplexityAnalyzer, ComplexityConfig, TimeComplexity, SpaceComplexity,
+                     ComplexityResult, Hotspot};
 
 /// Initialize the testing framework with default configuration
 pub fn init() -> NotebookTester {
