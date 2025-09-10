@@ -58,6 +58,8 @@ pub mod lsp;
 #[cfg(feature = "mcp")]
 pub mod mcp;
 pub mod middleend;
+#[cfg(feature = "notebook")]
+pub mod notebook;
 pub mod parser;
 pub mod proving;
 pub mod quality;

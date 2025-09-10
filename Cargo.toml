@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    ".", "ruchy-notebook",
+    ".",
 ]
 exclude = ["fuzz"]
 resolver = "2"
@@ -194,7 +194,7 @@ quickcheck_macros = "1.1"
 
 [package]
 name = "ruchy"
-version = "1.95.0"
+version = "1.95.3"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -221,8 +221,8 @@ batteries-included = ["dataframe", "notebook", "wasm-compile"]
 minimal = []  # Users can use --no-default-features --features minimal for core only
 dataframe = ["polars"]
 testing = ["proptest"]
+notebook = ["tokio", "tokio-util", "axum", "tower", "tower-http"]
 mcp = ["tokio", "tokio-util", "pmcp", "async-trait", "tower-lsp"]
-notebook = ["ruchy-notebook", "tokio"]
 wasm-compile = []  # WASM compilation is always available via wasm-encoder
 
 [dependencies]
@@ -270,12 +270,15 @@ chrono = "0.4"
 notify = "8.2"
 # LSP support (optional for WASM compatibility)
 tower-lsp = { version = "0.20", optional = true }
+# Notebook support (optional)
+axum = { version = "0.7", features = ["macros"], optional = true }
+tower = { version = "0.4", features = ["util"], optional = true }
+tower-http = { version = "0.5", features = ["cors"], optional = true }
 once_cell = "1.21"
 # Compilation support
 tempfile = "3.21"
 proptest = { version = "1.7", optional = true }
 # Notebook support
-ruchy-notebook = { version = "1.91.0", optional = true }
 wasmparser = "0.239.0"
 wasmtime = "36.0.2"
 
@@ -295,6 +298,10 @@ predicates = "3.1"
 tempfile = "3.21"
 quickcheck_macros = { workspace = true }
 walkdir = "2.5"
+# TDD Web testing dependencies
+axum = { version = "0.7", features = ["macros"] }
+tower = { version = "0.4", features = ["util"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [[bench]]
 name = "parser"
