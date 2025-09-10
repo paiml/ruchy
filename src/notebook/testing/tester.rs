@@ -1,11 +1,15 @@
 use crate::notebook::testing::types::*;
 use crate::notebook::testing::state::TestState;
+use crate::runtime::repl::Repl;
 use std::path::Path;
+use std::collections::HashMap;
 
 /// Core notebook testing functionality
 pub struct NotebookTester {
     config: TestConfig,
     state: TestState,
+    repl: Repl,
+    cell_outputs: HashMap<String, CellOutput>,
 }
 
 impl NotebookTester {
@@ -14,19 +18,52 @@ impl NotebookTester {
     }
 
     pub fn with_config(config: TestConfig) -> Self {
+        let repl = Repl::new().expect("Failed to create REPL");
         Self {
             config,
             state: TestState::default(),
+            repl,
+            cell_outputs: HashMap::new(),
         }
     }
 
-    pub fn execute_cell(&mut self, _cell: &Cell) -> Result<CellOutput, String> {
-        // Stub implementation for Sprint 0
-        Ok(CellOutput::Value("5".to_string()))
+    pub fn execute_cell(&mut self, cell: &Cell) -> Result<CellOutput, String> {
+        // Skip markdown cells
+        if matches!(cell.cell_type, CellType::Markdown) {
+            return Ok(CellOutput::None);
+        }
+        
+        // Execute the cell using the REPL
+        match self.repl.eval(&cell.source) {
+            Ok(value) => {
+                let output = CellOutput::Value(value.to_string());
+                self.cell_outputs.insert(cell.id.clone(), output.clone());
+                
+                // Update state if it's a variable assignment
+                if cell.source.starts_with("let ") {
+                    if let Some(eq_pos) = cell.source.find('=') {
+                        let var_part = &cell.source[4..eq_pos].trim();
+                        if let Some(space_pos) = var_part.find(' ') {
+                            let var_name = &var_part[..space_pos];
+                            self.state.set_variable(var_name.to_string(), value.to_string());
+                        } else {
+                            self.state.set_variable(var_part.to_string(), value.to_string());
+                        }
+                    }
+                }
+                
+                Ok(output)
+            }
+            Err(e) => {
+                let output = CellOutput::Error(e.to_string());
+                self.cell_outputs.insert(cell.id.clone(), output.clone());
+                Ok(output)
+            }
+        }
     }
 
     pub fn cell_count(&self) -> usize {
-        0
+        self.cell_outputs.len()
     }
 
     pub fn get_state(&self) -> &TestState {
@@ -66,12 +103,49 @@ impl NotebookTester {
 
     pub fn compare_dataframes(
         &self,
-        _df1: &CellOutput,
-        _df2: &CellOutput,
-        _tolerance: f64,
+        df1: &CellOutput,
+        df2: &CellOutput,
+        tolerance: f64,
     ) -> TestResult {
-        // Stub for Sprint 0
-        TestResult::Pass
+        match (df1, df2) {
+            (CellOutput::DataFrame(data1), CellOutput::DataFrame(data2)) => {
+                // Check column names match
+                if data1.columns != data2.columns {
+                    return TestResult::ShapeMismatch;
+                }
+                
+                // Check row count matches
+                if data1.rows.len() != data2.rows.len() {
+                    return TestResult::ShapeMismatch;
+                }
+                
+                // Check each cell with tolerance for numeric values
+                for (row1, row2) in data1.rows.iter().zip(data2.rows.iter()) {
+                    if row1.len() != row2.len() {
+                        return TestResult::ShapeMismatch;
+                    }
+                    
+                    for (cell1, cell2) in row1.iter().zip(row2.iter()) {
+                        // Try to parse as numbers for tolerance comparison
+                        if let (Ok(num1), Ok(num2)) = (cell1.parse::<f64>(), cell2.parse::<f64>()) {
+                            if (num1 - num2).abs() > tolerance {
+                                return TestResult::NumericDivergence { 
+                                    max_delta: (num1 - num2).abs() 
+                                };
+                            }
+                        } else if cell1 != cell2 {
+                            // String comparison for non-numeric values
+                            return TestResult::Fail(format!(
+                                "Cell mismatch: '{}' != '{}'", cell1, cell2
+                            ));
+                        }
+                    }
+                }
+                
+                TestResult::Pass
+            }
+            _ => TestResult::TypeMismatch,
+        }
     }
 
     pub fn test_file(&self, path: &Path) -> anyhow::Result<TestReport> {
