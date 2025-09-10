@@ -4,7 +4,7 @@
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
 use wasm_encoder::{
     CodeSection, ExportSection, Function, FunctionSection,
-    Instruction, Module, TypeSection,
+    Instruction, MemorySection, MemoryType, Module, TypeSection,
 };
 
 #[cfg(test)]
@@ -42,6 +42,26 @@ impl WasmEmitter {
         functions.function(0); // Use type 0
         module.section(&functions);
 
+        // Add memory section if we need memory (for arrays/strings)
+        if self.needs_memory(expr) {
+            let mut memories = MemorySection::new();
+            memories.memory(MemoryType {
+                minimum: 1,  // 1 page (64KB)
+                maximum: None,
+                memory64: false,
+                shared: false,
+                page_size_log2: None,  // Use default page size
+            });
+            module.section(&memories);
+        }
+
+        // Add export section if we have a main function (must come before code section)
+        if self.has_main_function(expr) {
+            let mut exports = ExportSection::new();
+            exports.export("main", wasm_encoder::ExportKind::Func, 0);
+            module.section(&exports);
+        }
+
         // Add code section with our expression
         let mut codes = CodeSection::new();
         
@@ -72,8 +92,6 @@ impl WasmEmitter {
         func.instruction(&Instruction::End);
         codes.function(&func);
         module.section(&codes);
-
-        // Export section is optional - don't add if empty
 
         Ok(module.finish())
     }
@@ -187,7 +205,7 @@ impl WasmEmitter {
                 // They would be handled separately to create new WASM functions
                 Ok(vec![])
             }
-            ExprKind::Call { func, args } => {
+            ExprKind::Call { func: _, args } => {
                 let mut instructions = vec![];
                 
                 // Push arguments onto stack
@@ -257,6 +275,16 @@ impl WasmEmitter {
                 
                 Ok(instructions)
             }
+            ExprKind::List(items) => {
+                // For now, just allocate space and return a pointer
+                // Real implementation would store items in memory
+                let mut instructions = vec![];
+                
+                // Allocate memory for array (simplified - just return 0 as pointer)
+                instructions.push(Instruction::I32Const(0));
+                
+                Ok(instructions)
+            }
             ExprKind::Return { value } => {
                 let mut instructions = vec![];
                 
@@ -271,6 +299,37 @@ impl WasmEmitter {
                 Ok(instructions)
             }
             _ => Ok(vec![]), // Skip complex expressions for now
+        }
+    }
+
+    /// Check if an expression needs memory (for arrays/strings)
+    fn needs_memory(&self, expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::Literal(Literal::String(_)) => true,
+            ExprKind::List(_) => true,
+            ExprKind::ArrayInit { .. } => true,
+            ExprKind::Block(exprs) => exprs.iter().any(|e| self.needs_memory(e)),
+            ExprKind::Let { value, body, .. } => {
+                self.needs_memory(value) || self.needs_memory(body)
+            }
+            ExprKind::Binary { left, right, .. } => {
+                self.needs_memory(left) || self.needs_memory(right)
+            }
+            ExprKind::If { condition, then_branch, else_branch } => {
+                self.needs_memory(condition) ||
+                self.needs_memory(then_branch) ||
+                else_branch.as_ref().map_or(false, |e| self.needs_memory(e))
+            }
+            _ => false,
+        }
+    }
+
+    /// Check if an expression contains a main function
+    fn has_main_function(&self, expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::Function { name, .. } => name == "main",
+            ExprKind::Block(exprs) => exprs.iter().any(|e| self.has_main_function(e)),
+            _ => false,
         }
     }
 
@@ -328,6 +387,7 @@ impl WasmEmitter {
             ExprKind::Unary { .. } => true,
             ExprKind::Identifier(_) => true,
             ExprKind::Call { .. } => true,
+            ExprKind::List(_) => true,
             ExprKind::Block(exprs) => {
                 // Block produces value if last expression does
                 exprs.last().map_or(false, |e| self.expression_produces_value(e))
