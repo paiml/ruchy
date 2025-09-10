@@ -57,6 +57,7 @@ pub mod lints;
 pub mod lsp;
 #[cfg(feature = "mcp")]
 pub mod mcp;
+pub mod cli;
 pub mod middleend;
 #[cfg(feature = "notebook")]
 pub mod notebook;
