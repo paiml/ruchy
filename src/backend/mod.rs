@@ -6,6 +6,7 @@ pub mod compiler;
 pub mod module_loader;
 pub mod module_resolver;
 pub mod transpiler;
+pub mod wasm;
 
 pub use compiler::{compile_to_binary, compile_source_to_binary, CompileOptions};
 pub use module_loader::{ModuleLoader, ParsedModule, ModuleLoaderStats};

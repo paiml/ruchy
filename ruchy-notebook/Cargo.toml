@@ -55,6 +55,9 @@ proptest = "1.4"
 criterion = "0.5"
 wasm-bindgen-test = "0.3"
 tempfile = "3.8"
+wasm-encoder = "0.207.0"
+wasmparser = "0.207.0"
+wasmtime = "21.0.2"
 
 [features]
 default = ["native"]
