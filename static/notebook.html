@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruchy Notebook</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+        .notebook {
+            padding: 20px;
+        }
+        .cell {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .cell-input {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            padding: 10px;
+        }
+        .cell-input textarea {
+            width: 100%;
+            min-height: 100px;
+            border: none;
+            background: transparent;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            resize: vertical;
+            outline: none;
+        }
+        .cell-controls {
+            background-color: #f1f3f4;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .run-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .run-button:hover {
+            background-color: #45a049;
+        }
+        .run-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .add-cell-button {
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .add-cell-button:hover {
+            background-color: #007B9A;
+        }
+        .cell-output {
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid #eee;
+            min-height: 30px;
+        }
+        .output-success {
+            color: #2e7d32;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+        }
+        .output-error {
+            color: #d32f2f;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+        }
+        .output-pending {
+            color: #666;
+            font-style: italic;
+        }
+        .cell-id {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Ruchy Notebook</h1>
+            <p>Interactive Ruchy scripting environment</p>
+        </div>
+        <div class="notebook">
+            <div class="cell" id="cell-1">
+                <div class="cell-controls">
+                    <div class="cell-id">Cell: cell-1</div>
+                    <button class="run-button" onclick="runCell('cell-1')">Run</button>
+                    <button class="add-cell-button" onclick="addCell()">Add Cell</button>
+                </div>
+                <div class="cell-input">
+                    <textarea placeholder="Enter Ruchy code here...
+Examples:
+2 + 3
+let x = 10; let y = 20; x * y
+println(&quot;Hello, Ruchy!&quot;)">2 + 3</textarea>
+                </div>
+                <div class="cell-output" id="output-cell-1">
+                    <div class="output-pending">Press Run to execute</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cellCounter = 1;
+
+        async function runCell(cellId) {
+            const cell = document.getElementById(cellId);
+            const textarea = cell.querySelector('textarea');
+            const output = document.getElementById('output-' + cellId);
+            const runButton = cell.querySelector('.run-button');
+            
+            const code = textarea.value.trim();
+            if (!code) return;
+            
+            runButton.disabled = true;
+            runButton.textContent = 'Running...';
+            output.innerHTML = '<div class="output-pending">Executing...</div>';
+            
+            try {
+                const response = await fetch('/api/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        cell_id: cellId,
+                        code: code
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    output.innerHTML = `<div class="output-success">${escapeHtml(result.result)}</div>`;
+                } else {
+                    output.innerHTML = `<div class="output-error">${escapeHtml(result.result)}</div>`;
+                }
+            } catch (error) {
+                output.innerHTML = `<div class="output-error">Network error: ${escapeHtml(error.message)}</div>`;
+            } finally {
+                runButton.disabled = false;
+                runButton.textContent = 'Run';
+            }
+        }
+        
+        function addCell() {
+            cellCounter++;
+            const cellId = 'cell-' + cellCounter;
+            
+            const notebook = document.querySelector('.notebook');
+            const newCell = document.createElement('div');
+            newCell.className = 'cell';
+            newCell.id = cellId;
+            
+            newCell.innerHTML = `
+                <div class="cell-controls">
+                    <div class="cell-id">Cell: ${cellId}</div>
+                    <button class="run-button" onclick="runCell('${cellId}')">Run</button>
+                    <button class="add-cell-button" onclick="addCell()">Add Cell</button>
+                </div>
+                <div class="cell-input">
+                    <textarea placeholder="Enter Ruchy code here..."></textarea>
+                </div>
+                <div class="cell-output" id="output-${cellId}">
+                    <div class="output-pending">Press Run to execute</div>
+                </div>
+            `;
+            
+            notebook.appendChild(newCell);
+            newCell.querySelector('textarea').focus();
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Add keyboard shortcut: Shift+Enter to run cell
+        document.addEventListener('keydown', function(event) {
+            if (event.shiftKey && event.key === 'Enter') {
+                const activeElement = document.activeElement;
+                if (activeElement.tagName === 'TEXTAREA') {
+                    const cell = activeElement.closest('.cell');
+                    if (cell) {
+                        runCell(cell.id);
+                        event.preventDefault();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
