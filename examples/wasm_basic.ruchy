@@ -1,0 +1,13 @@
+// Basic WASM compilation example
+// This demonstrates simple arithmetic compilation to WebAssembly
+
+// Simple arithmetic expression
+let result = 10 + 20 * 3
+
+// Function definition
+fun calculate(x, y) {
+    x * y + 100
+}
+
+// Call the function
+calculate(5, 10)
