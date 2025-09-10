@@ -17,6 +17,8 @@ pub mod complexity;
 pub mod educational;
 pub mod grading;
 pub mod tutorial;
+pub mod integration;
+pub mod performance;
 
 pub use tester::{NotebookTester, NotebookTestSession, NotebookParser as TestNotebookParser};
 pub use golden::GoldenManager;
@@ -39,6 +41,11 @@ pub use educational::{EducationalPlatform, Assignment, RubricItem, TestCase as E
                       StudentSubmission, Grade, LearningAnalytics, LearningEvent, EventType};
 pub use grading::{Grader, GradingConfig, ExerciseValidator, Exercise, Difficulty, ValidationResult};
 pub use tutorial::{InteractiveTutorial, TutorialStep, ValidationRule, StepResult, AdaptiveHintSystem};
+pub use integration::{CiCdIntegrator, CiCdConfig, CiProvider, DistributedTestCoordinator, 
+                      ContinuousMonitor, Alert, Metric, AlertAction};
+pub use performance::{PerformanceBenchmarker, BenchmarkResult, ParallelTestExecutor,
+                      TestCache, CacheStats, ResourceMonitor, ResourceUsage, TestSharder,
+                      RegressionDetector, RegressionResult, TestPrioritizer};
 
 /// Initialize the testing framework with default configuration
 pub fn init() -> NotebookTester {
