@@ -1,0 +1,124 @@
+// Data Science Workflow Example for Ruchy Notebooks
+// This file demonstrates typical data science operations
+
+// Data loading and preprocessing
+let data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+println("Original data: " + data.to_string())
+
+// Statistical operations
+fun mean(numbers) {
+    let sum = 0
+    for num in numbers {
+        sum = sum + num
+    }
+    sum / numbers.length()
+}
+
+fun variance(numbers) {
+    let avg = mean(numbers)
+    let sum_sq_diff = 0
+    for num in numbers {
+        let diff = num - avg
+        sum_sq_diff = sum_sq_diff + (diff * diff)
+    }
+    sum_sq_diff / numbers.length()
+}
+
+// Calculate statistics
+let data_mean = mean(data)
+let data_variance = variance(data)
+
+println("Mean: " + data_mean.to_string())
+println("Variance: " + data_variance.to_string())
+
+// Data transformation
+fun normalize(numbers) {
+    let avg = mean(numbers)
+    let std_dev = variance(numbers).sqrt()
+    numbers.map(|x| (x - avg) / std_dev)
+}
+
+let normalized_data = normalize(data)
+println("Normalized data: " + normalized_data.to_string())
+
+// Simple linear regression example
+fun linear_regression(x_values, y_values) {
+    let n = x_values.length()
+    let sum_x = x_values.sum()
+    let sum_y = y_values.sum()
+    let sum_xy = 0
+    let sum_x_sq = 0
+    
+    for i in 0..n {
+        sum_xy = sum_xy + (x_values[i] * y_values[i])
+        sum_x_sq = sum_x_sq + (x_values[i] * x_values[i])
+    }
+    
+    let slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x_sq - sum_x * sum_x)
+    let intercept = (sum_y - slope * sum_x) / n
+    
+    {slope: slope, intercept: intercept}
+}
+
+// Example data for regression
+let x_data = [1, 2, 3, 4, 5]
+let y_data = [2, 4, 6, 8, 10]  // Perfect linear relationship
+
+let regression_result = linear_regression(x_data, y_data)
+println("Regression - Slope: " + regression_result.slope.to_string())
+println("Regression - Intercept: " + regression_result.intercept.to_string())
+
+// Prediction function
+fun predict(x, model) {
+    model.slope * x + model.intercept
+}
+
+let prediction = predict(6, regression_result)
+println("Prediction for x=6: " + prediction.to_string())
+
+// Data quality checks
+fun check_data_quality(numbers) {
+    let issues = []
+    
+    // Check for missing values (represented as null or very large negative numbers)
+    let missing_count = 0
+    for num in numbers {
+        if num < -999999 {
+            missing_count = missing_count + 1
+        }
+    }
+    
+    // Check for outliers (simple z-score method)
+    let avg = mean(numbers)
+    let std_dev = variance(numbers).sqrt()
+    let outlier_count = 0
+    
+    for num in numbers {
+        let z_score = (num - avg) / std_dev
+        if z_score.abs() > 3 {
+            outlier_count = outlier_count + 1
+        }
+    }
+    
+    {
+        missing_values: missing_count,
+        outliers: outlier_count,
+        total_records: numbers.length(),
+        data_quality_score: (numbers.length() - missing_count - outlier_count) / numbers.length()
+    }
+}
+
+let quality_report = check_data_quality(data)
+println("Data Quality Report:")
+println("  Missing values: " + quality_report.missing_values.to_string())
+println("  Outliers: " + quality_report.outliers.to_string()) 
+println("  Total records: " + quality_report.total_records.to_string())
+println("  Quality score: " + quality_report.data_quality_score.to_string())
+
+// Final summary
+println("\n🎉 Data Science Workflow Complete!")
+println("📊 Analysis Summary:")
+println("   • Dataset size: " + data.length().to_string() + " records")
+println("   • Mean value: " + data_mean.to_string())
+println("   • Data quality: " + (quality_report.data_quality_score * 100).to_string() + "%")
+println("   • Linear model: y = " + regression_result.slope.to_string() + "x + " + regression_result.intercept.to_string())

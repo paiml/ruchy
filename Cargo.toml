@@ -153,7 +153,7 @@ approx_constant = "allow"  # Tests can use literal values
 unnecessary_to_owned = "allow"  # Tests can be explicit
 
 [workspace.package]
-version = "1.92.0"
+version = "1.93.0"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
@@ -194,7 +194,7 @@ quickcheck_macros = "1.1"
 
 [package]
 name = "ruchy"
-version = "1.92.0"
+version = "1.93.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -216,11 +216,14 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [features]
-default = []
+default = ["batteries-included"]
+batteries-included = ["dataframe", "notebook", "wasm-compile"]
+minimal = []  # Users can use --no-default-features --features minimal for core only
 dataframe = ["polars"]
 testing = ["proptest"]
 mcp = ["tokio", "tokio-util", "pmcp", "async-trait", "tower-lsp"]
 notebook = ["ruchy-notebook", "tokio"]
+wasm-compile = []  # WASM compilation is always available via wasm-encoder
 
 [dependencies]
 wasm-encoder = "0.207.0"

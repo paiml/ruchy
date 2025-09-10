@@ -173,7 +173,7 @@ impl WasmEmitter {
     }
 
     /// Lower a Ruchy expression to WASM instructions
-    fn lower_expression(&self, expr: &Expr) -> Result<Vec<Instruction>, String> {
+    fn lower_expression(&self, expr: &Expr) -> Result<Vec<Instruction<'static>>, String> {
         match &expr.kind {
             ExprKind::Literal(literal) => self.lower_literal(literal),
             ExprKind::Binary { op, left, right } => {
@@ -351,7 +351,7 @@ impl WasmEmitter {
                 
                 Ok(instructions)
             }
-            ExprKind::List(items) => {
+            ExprKind::List(_items) => {
                 // For now, just allocate space and return a pointer
                 // Real implementation would store items in memory
                 let mut instructions = vec![];
@@ -526,7 +526,7 @@ impl WasmEmitter {
         }
     }
 
-    fn lower_literal(&self, literal: &Literal) -> Result<Vec<Instruction>, String> {
+    fn lower_literal(&self, literal: &Literal) -> Result<Vec<Instruction<'static>>, String> {
         match literal {
             Literal::Integer(n) => Ok(vec![Instruction::I32Const(*n as i32)]),
             Literal::Float(f) => Ok(vec![Instruction::F32Const(*f as f32)]),

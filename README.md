@@ -80,6 +80,36 @@ ruchy lint script.ruchy
 | `ruchy run` | Script execution |
 | `ruchy repl` | Interactive environment |
 | `ruchy transpile` | Convert to Rust |
+| `ruchy wasm` | **🚀 NEW**: Compile to WebAssembly |
+| `ruchy notebook` | **📊 NEW**: Start interactive data science notebook |
+
+### 🚀 WebAssembly Compilation
+```bash
+# Compile Ruchy to WebAssembly
+ruchy wasm my_program.ruchy --output program.wasm --verbose
+
+# Generate optimized WASM for different targets
+ruchy wasm script.ruchy --target browser --optimize --validate
+ruchy wasm api.ruchy --target nodejs --deploy aws-lambda
+```
+
+### 📊 Data Science Notebook
+```bash
+# Start interactive notebook server
+ruchy notebook --port 8888
+
+# Enable all data science features (default in v1.93.0+)
+cargo install ruchy
+
+# Minimal installation (just core language)
+cargo install ruchy --no-default-features --features minimal
+```
+
+**Batteries-Included Features (Default)**:
+- 📊 **DataFrames**: Polars integration for data manipulation
+- 🚀 **WebAssembly**: Direct compilation to WASM modules  
+- 📝 **Notebooks**: Interactive Jupyter-like environment
+- 🧮 **Math Libraries**: Statistical operations and linear algebra
 
 ### REPL Features
 - Tab completion with context awareness
