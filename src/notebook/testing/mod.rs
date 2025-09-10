@@ -19,6 +19,12 @@ pub mod grading;
 pub mod tutorial;
 pub mod integration;
 pub mod performance;
+pub mod sandbox;
+pub mod anticheat;
+pub mod migration;
+pub mod incremental;
+pub mod smt;
+pub mod progressive;
 
 pub use tester::{NotebookTester, NotebookTestSession, NotebookParser as TestNotebookParser};
 pub use golden::GoldenManager;
@@ -46,6 +52,13 @@ pub use integration::{CiCdIntegrator, CiCdConfig, CiProvider, DistributedTestCoo
 pub use performance::{PerformanceBenchmarker, BenchmarkResult, ParallelTestExecutor,
                       TestCache, CacheStats, ResourceMonitor, ResourceUsage, TestSharder,
                       RegressionDetector, RegressionResult, TestPrioritizer};
+pub use sandbox::{WasmSandbox, ResourceLimits, SandboxError, ExecutionResult, SandboxCoordinator, 
+                  ProblemGenerator, Exercise as SandboxExercise};
+pub use anticheat::{AntiCheatSystem, Submission, PlagiarismResult, ObfuscationDetector, PatternAnalyzer};
+pub use migration::{MigrationTool, TestFramework, MigrationConfig, MigrationResult};
+pub use incremental::{IncrementalTester, IncrementalConfig, IncrementalResult, TestResultCache};
+pub use smt::{SmtSolver, SolverType, SmtQuery, SmtResult, BoundedModelChecker};
+pub use progressive::{ProgressiveDisclosure, DisclosureConfig, StudentProgress, TestHierarchy};
 
 /// Initialize the testing framework with default configuration
 pub fn init() -> NotebookTester {

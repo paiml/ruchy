@@ -1,0 +1,534 @@
+// SPRINT6-004: Incremental testing with smart caching
+// PMAT Complexity: <10 per function
+
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, Duration};
+use sha2::{Sha256, Digest};
+use serde::{Serialize, Deserialize};
+
+/// Incremental test executor with dependency tracking
+pub struct IncrementalTester {
+    cache: TestResultCache,
+    dependency_tracker: DependencyTracker,
+    config: IncrementalConfig,
+}
+
+#[derive(Debug, Clone)]
+pub struct IncrementalConfig {
+    pub cache_directory: PathBuf,
+    pub max_cache_size: usize,
+    pub cache_ttl: Duration,
+    pub force_rerun_threshold: f64,
+    pub dependency_analysis: bool,
+}
+
+#[derive(Debug)]
+pub struct IncrementalResult {
+    pub executed_cells: Vec<String>,
+    pub cached_cells: Vec<String>,
+    pub dependency_graph: DependencyGraph,
+    pub cache_stats: CacheStatistics,
+}
+
+/// Cache for test results with TTL and LRU eviction
+#[derive(Debug)]
+pub struct TestResultCache {
+    cache: HashMap<String, CachedTestResult>,
+    access_order: Vec<String>,
+    max_size: usize,
+    cache_dir: PathBuf,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CachedTestResult {
+    pub cell_id: String,
+    pub source_hash: String,
+    pub dependencies_hash: String,
+    pub result: TestResult,
+    pub timestamp: SystemTime,
+    pub access_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TestResult {
+    pub success: bool,
+    pub output: String,
+    pub duration_ms: u64,
+    pub memory_used: usize,
+}
+
+/// Tracks dependencies between notebook cells
+#[derive(Debug)]
+pub struct DependencyTracker {
+    dependencies: HashMap<String, HashSet<String>>,
+    variable_definitions: HashMap<String, String>, // variable -> defining cell
+}
+
+#[derive(Debug, Clone)]
+pub struct DependencyGraph {
+    pub nodes: Vec<String>,
+    pub edges: Vec<(String, String)>,
+    pub execution_order: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CacheStatistics {
+    pub hit_rate: f64,
+    pub total_lookups: usize,
+    pub cache_hits: usize,
+    pub cache_misses: usize,
+    pub evictions: usize,
+}
+
+impl IncrementalTester {
+    pub fn new() -> Self {
+        Self::with_config(IncrementalConfig::default())
+    }
+    
+    pub fn with_config(config: IncrementalConfig) -> Self {
+        let cache = TestResultCache::new(config.cache_directory.clone(), config.max_cache_size);
+        let dependency_tracker = DependencyTracker::new();
+        
+        Self {
+            cache,
+            dependency_tracker,
+            config,
+        }
+    }
+    
+    /// Execute notebook with incremental testing
+    pub fn execute_incremental(&mut self, notebook: &Notebook, changed_cells: &[String]) -> IncrementalResult {
+        let mut executed_cells = Vec::new();
+        let mut cached_cells = Vec::new();
+        
+        // Build dependency graph
+        if self.config.dependency_analysis {
+            self.dependency_tracker.analyze_dependencies(notebook);
+        }
+        
+        // Determine execution order
+        let execution_order = self.dependency_tracker.topological_sort(notebook);
+        
+        // Find cells that need re-execution
+        let cells_to_execute = self.find_cells_to_execute(notebook, changed_cells, &execution_order);
+        
+        // Execute or retrieve from cache
+        for cell_id in &execution_order {
+            let cell = notebook.get_cell(cell_id).unwrap();
+            
+            if cells_to_execute.contains(cell_id) {
+                // Execute and cache
+                let result = self.execute_cell(cell);
+                self.cache.store(cell_id, &cell.source, &self.get_dependencies_hash(cell_id), result);
+                executed_cells.push(cell_id.clone());
+            } else {
+                // Try to use cached result
+                if let Some(cached) = self.cache.get(cell_id) {
+                    cached_cells.push(cell_id.clone());
+                } else {
+                    // Cache miss - need to execute
+                    let result = self.execute_cell(cell);
+                    self.cache.store(cell_id, &cell.source, &self.get_dependencies_hash(cell_id), result);
+                    executed_cells.push(cell_id.clone());
+                }
+            }
+        }
+        
+        IncrementalResult {
+            executed_cells,
+            cached_cells,
+            dependency_graph: self.dependency_tracker.get_graph(),
+            cache_stats: self.cache.get_statistics(),
+        }
+    }
+    
+    fn find_cells_to_execute(&mut self, notebook: &Notebook, changed_cells: &[String], execution_order: &[String]) -> HashSet<String> {
+        let mut to_execute = HashSet::new();
+        
+        // Add directly changed cells
+        for cell_id in changed_cells {
+            to_execute.insert(cell_id.clone());
+        }
+        
+        // Add dependent cells (cascade invalidation)
+        for cell_id in execution_order {
+            if to_execute.contains(cell_id) {
+                continue;
+            }
+            
+            // Check if any dependencies have changed
+            let dependencies = self.dependency_tracker.get_dependencies(cell_id);
+            if dependencies.iter().any(|dep| to_execute.contains(dep)) {
+                to_execute.insert(cell_id.clone());
+            }
+            
+            // Check if cached result is stale
+            let cell = notebook.get_cell(cell_id).unwrap();
+            if !self.is_cache_valid(cell_id, &cell.source) {
+                to_execute.insert(cell_id.clone());
+            }
+        }
+        
+        to_execute
+    }
+    
+    fn execute_cell(&self, cell: &Cell) -> TestResult {
+        let start = std::time::Instant::now();
+        
+        // Simulate cell execution
+        let success = !cell.source.contains("error");
+        let output = if success {
+            "OK".to_string()
+        } else {
+            "Error occurred".to_string()
+        };
+        
+        let duration = start.elapsed();
+        
+        TestResult {
+            success,
+            output,
+            duration_ms: duration.as_millis() as u64,
+            memory_used: 1024, // Simulate memory usage
+        }
+    }
+    
+    fn is_cache_valid(&mut self, cell_id: &str, source: &str) -> bool {
+        if let Some(cached) = self.cache.get(cell_id) {
+            let source_hash = self.calculate_hash(source);
+            let deps_hash = self.get_dependencies_hash(cell_id);
+            
+            // Check if source or dependencies changed
+            if cached.source_hash != source_hash || cached.dependencies_hash != deps_hash {
+                return false;
+            }
+            
+            // Check TTL
+            if let Ok(elapsed) = cached.timestamp.elapsed() {
+                if elapsed > self.config.cache_ttl {
+                    return false;
+                }
+            }
+            
+            true
+        } else {
+            false
+        }
+    }
+    
+    fn get_dependencies_hash(&self, cell_id: &str) -> String {
+        let dependencies = self.dependency_tracker.get_dependencies(cell_id);
+        let mut combined = dependencies.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+        combined.sort();
+        self.calculate_hash(&combined.join(","))
+    }
+    
+    fn calculate_hash(&self, content: &str) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(content);
+        format!("{:x}", hasher.finalize())
+    }
+}
+
+impl TestResultCache {
+    pub fn new(cache_dir: PathBuf, max_size: usize) -> Self {
+        // Create cache directory if it doesn't exist
+        if !cache_dir.exists() {
+            std::fs::create_dir_all(&cache_dir).ok();
+        }
+        
+        let mut cache = Self {
+            cache: HashMap::new(),
+            access_order: Vec::new(),
+            max_size,
+            cache_dir,
+        };
+        
+        // Load existing cache from disk
+        cache.load_from_disk();
+        cache
+    }
+    
+    pub fn store(&mut self, cell_id: &str, source: &str, dependencies_hash: &str, result: TestResult) {
+        let source_hash = self.calculate_hash(source);
+        
+        let cached_result = CachedTestResult {
+            cell_id: cell_id.to_string(),
+            source_hash,
+            dependencies_hash: dependencies_hash.to_string(),
+            result,
+            timestamp: SystemTime::now(),
+            access_count: 0,
+        };
+        
+        // Remove old entry from access order
+        self.access_order.retain(|id| id != cell_id);
+        
+        // Add to front of access order
+        self.access_order.insert(0, cell_id.to_string());
+        
+        // Store in cache
+        self.cache.insert(cell_id.to_string(), cached_result);
+        
+        // Evict if over capacity
+        if self.cache.len() > self.max_size {
+            self.evict_lru();
+        }
+        
+        // Persist to disk
+        self.save_to_disk(cell_id);
+    }
+    
+    pub fn get(&mut self, cell_id: &str) -> Option<CachedTestResult> {
+        if let Some(mut cached) = self.cache.get(cell_id).cloned() {
+            // Update access order
+            self.access_order.retain(|id| id != cell_id);
+            self.access_order.insert(0, cell_id.to_string());
+            
+            // Update access count
+            cached.access_count += 1;
+            self.cache.insert(cell_id.to_string(), cached.clone());
+            
+            Some(cached)
+        } else {
+            None
+        }
+    }
+    
+    fn evict_lru(&mut self) {
+        if let Some(lru_key) = self.access_order.pop() {
+            self.cache.remove(&lru_key);
+            
+            // Remove from disk
+            let cache_file = self.cache_dir.join(format!("{}.json", lru_key));
+            std::fs::remove_file(cache_file).ok();
+        }
+    }
+    
+    fn load_from_disk(&mut self) {
+        if let Ok(entries) = std::fs::read_dir(&self.cache_dir) {
+            for entry in entries.flatten() {
+                if let Some(ext) = entry.path().extension() {
+                    if ext == "json" {
+                        if let Ok(content) = std::fs::read_to_string(entry.path()) {
+                            if let Ok(cached) = serde_json::from_str::<CachedTestResult>(&content) {
+                                self.cache.insert(cached.cell_id.clone(), cached.clone());
+                                self.access_order.push(cached.cell_id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    fn save_to_disk(&self, cell_id: &str) {
+        if let Some(cached) = self.cache.get(cell_id) {
+            let cache_file = self.cache_dir.join(format!("{}.json", cell_id));
+            if let Ok(content) = serde_json::to_string_pretty(cached) {
+                std::fs::write(cache_file, content).ok();
+            }
+        }
+    }
+    
+    pub fn get_statistics(&self) -> CacheStatistics {
+        let total_access_count: usize = self.cache.values().map(|c| c.access_count).sum();
+        let total_lookups = total_access_count + self.cache.len(); // Approximate
+        
+        CacheStatistics {
+            hit_rate: if total_lookups > 0 { 
+                total_access_count as f64 / total_lookups as f64 
+            } else { 
+                0.0 
+            },
+            total_lookups,
+            cache_hits: total_access_count,
+            cache_misses: self.cache.len(),
+            evictions: 0, // Would track in real implementation
+        }
+    }
+    
+    fn calculate_hash(&self, content: &str) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(content);
+        format!("{:x}", hasher.finalize())
+    }
+}
+
+impl DependencyTracker {
+    pub fn new() -> Self {
+        Self {
+            dependencies: HashMap::new(),
+            variable_definitions: HashMap::new(),
+        }
+    }
+    
+    /// Analyze dependencies between cells
+    pub fn analyze_dependencies(&mut self, notebook: &Notebook) {
+        self.dependencies.clear();
+        self.variable_definitions.clear();
+        
+        // First pass: find variable definitions
+        for cell in &notebook.cells {
+            if matches!(cell.cell_type, CellType::Code) {
+                let defined_vars = self.extract_definitions(&cell.source);
+                for var in defined_vars {
+                    self.variable_definitions.insert(var, cell.id.clone());
+                }
+            }
+        }
+        
+        // Second pass: find variable usages and create dependencies
+        for cell in &notebook.cells {
+            if matches!(cell.cell_type, CellType::Code) {
+                let used_vars = self.extract_usages(&cell.source);
+                let mut cell_deps = HashSet::new();
+                
+                for var in used_vars {
+                    if let Some(defining_cell) = self.variable_definitions.get(&var) {
+                        if defining_cell != &cell.id {
+                            cell_deps.insert(defining_cell.clone());
+                        }
+                    }
+                }
+                
+                if !cell_deps.is_empty() {
+                    self.dependencies.insert(cell.id.clone(), cell_deps);
+                }
+            }
+        }
+    }
+    
+    fn extract_definitions(&self, source: &str) -> Vec<String> {
+        let mut definitions = Vec::new();
+        
+        for line in source.lines() {
+            let line = line.trim();
+            
+            // Look for variable assignments
+            if let Some(pos) = line.find(" = ") {
+                let var_part = &line[..pos];
+                if let Some(var) = var_part.split_whitespace().last() {
+                    definitions.push(var.to_string());
+                }
+            }
+            
+            // Look for let declarations
+            if line.starts_with("let ") {
+                if let Some(var) = line[4..].split_whitespace().next() {
+                    definitions.push(var.to_string());
+                }
+            }
+        }
+        
+        definitions
+    }
+    
+    fn extract_usages(&self, source: &str) -> Vec<String> {
+        // Simple variable extraction - split on non-alphanumeric chars
+        source
+            .split(|c: char| !c.is_alphanumeric() && c != '_')
+            .filter(|s| !s.is_empty() && s.chars().all(|c| c.is_alphabetic() || c == '_'))
+            .map(|s| s.to_string())
+            .collect()
+    }
+    
+    /// Get dependencies for a specific cell
+    pub fn get_dependencies(&self, cell_id: &str) -> HashSet<String> {
+        self.dependencies.get(cell_id).cloned().unwrap_or_default()
+    }
+    
+    /// Perform topological sort for execution order
+    pub fn topological_sort(&self, notebook: &Notebook) -> Vec<String> {
+        let mut result = Vec::new();
+        let mut visited = HashSet::new();
+        let mut visiting = HashSet::new();
+        
+        for cell in &notebook.cells {
+            if !visited.contains(&cell.id) {
+                self.dfs_visit(&cell.id, &mut visited, &mut visiting, &mut result);
+            }
+        }
+        
+        result.reverse();
+        result
+    }
+    
+    fn dfs_visit(&self, cell_id: &str, visited: &mut HashSet<String>, visiting: &mut HashSet<String>, result: &mut Vec<String>) {
+        if visiting.contains(cell_id) {
+            // Cycle detected - skip for now
+            return;
+        }
+        
+        if visited.contains(cell_id) {
+            return;
+        }
+        
+        visiting.insert(cell_id.to_string());
+        
+        if let Some(deps) = self.dependencies.get(cell_id) {
+            for dep in deps {
+                self.dfs_visit(dep, visited, visiting, result);
+            }
+        }
+        
+        visiting.remove(cell_id);
+        visited.insert(cell_id.to_string());
+        result.push(cell_id.to_string());
+    }
+    
+    /// Get dependency graph representation
+    pub fn get_graph(&self) -> DependencyGraph {
+        let mut nodes = HashSet::new();
+        let mut edges = Vec::new();
+        
+        for (cell_id, deps) in &self.dependencies {
+            nodes.insert(cell_id.clone());
+            for dep in deps {
+                nodes.insert(dep.clone());
+                edges.push((dep.clone(), cell_id.clone()));
+            }
+        }
+        
+        DependencyGraph {
+            nodes: nodes.into_iter().collect(),
+            edges,
+            execution_order: Vec::new(), // Would be filled by topological sort
+        }
+    }
+}
+
+impl Default for IncrementalConfig {
+    fn default() -> Self {
+        Self {
+            cache_directory: PathBuf::from(".ruchy_cache"),
+            max_cache_size: 1000,
+            cache_ttl: Duration::from_secs(24 * 60 * 60), // 24 hours
+            force_rerun_threshold: 0.1, // 10% change threshold
+            dependency_analysis: true,
+        }
+    }
+}
+
+// Supporting types
+pub struct Notebook {
+    pub cells: Vec<Cell>,
+}
+
+pub struct Cell {
+    pub id: String,
+    pub source: String,
+    pub cell_type: CellType,
+}
+
+pub enum CellType {
+    Code,
+    Markdown,
+}
+
+impl Notebook {
+    pub fn get_cell(&self, cell_id: &str) -> Option<&Cell> {
+        self.cells.iter().find(|c| c.id == cell_id)
+    }
+}
