@@ -37,7 +37,7 @@ mod debug_tests {
         
         // Validate
         match wasmparser::validate(&bytes) {
-            Ok(()) => println!("✅ Valid WASM"),
+            Ok(_types) => println!("✅ Valid WASM"),
             Err(e) => panic!("❌ Invalid: {}", e),
         }
     }
