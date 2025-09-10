@@ -90,7 +90,7 @@ impl FormalVerifier {
     }
     
     /// Verify an invariant holds for a cell
-    pub fn verify_invariant(&self, invariant: &Invariant, cell: &Cell) -> VerificationResult {
+    pub fn verify_invariant(&self, invariant: &Invariant, _cell: &Cell) -> VerificationResult {
         // Simplified verification logic
         let mut is_valid = true;
         let mut counterexample = None;
@@ -205,7 +205,7 @@ impl FormalVerifier {
     }
     
     /// Verify loop invariants
-    pub fn verify_loop_invariant(&self, invariant: &LoopInvariant, _cell: &Cell) -> LoopVerificationResult {
+    pub fn verify_loop_invariant(&self, _invariant: &LoopInvariant, _cell: &Cell) -> LoopVerificationResult {
         // Simplified verification
         LoopVerificationResult {
             initialization_valid: true,
