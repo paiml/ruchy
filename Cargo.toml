@@ -288,6 +288,8 @@ criterion = { workspace = true }
 insta = { workspace = true }
 tracing-subscriber = { workspace = true }
 quickcheck = { workspace = true }
+reqwest = { version = "0.12", features = ["json"] }
+serde_json = "1.0"
 assert_cmd = "2.0"
 predicates = "3.1"
 tempfile = "3.21"

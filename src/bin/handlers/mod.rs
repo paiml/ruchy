@@ -1369,9 +1369,12 @@ pub fn handle_notebook_command(port: u16, open_browser: bool, host: &str) -> Res
     }
     
     // Start the notebook server
-    runtime.block_on(async {
+    println!("🔧 DEBUG: About to call ruchy_notebook::server::start_server({})", port);
+    let result = runtime.block_on(async {
         ruchy_notebook::server::start_server(port).await
-    })
+    });
+    println!("🔧 DEBUG: Server returned: {:?}", result);
+    result
 }
 
 #[cfg(not(feature = "notebook"))]

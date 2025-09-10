@@ -1,0 +1,1 @@
+{"version":3,"file":"parse-glob.d.ts","sourceRoot":"","sources":["../../src/cli/parse-glob.ts"],"names":[],"mappings":"AAEA,wBAAgB,SAAS,CAAC,MAAM,EAAE,MAAM,GAAG;IACzC,IAAI,EAAE,MAAM,CAAA;IACZ,IAAI,EAAE,MAAM,CAAA;IACZ,EAAE,EAAE;QACF,IAAI,EAAE,OAAO,CAAA;KACd,CAAA;IACD,IAAI,EAAE;QACJ,QAAQ,EAAE,MAAM,CAAA;KACjB,CAAA;CACF,CAwBA"}

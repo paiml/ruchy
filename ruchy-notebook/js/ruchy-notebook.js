@@ -25,6 +25,7 @@ class RuchyNotebook {
         this.nextCellId = 1;
         this.visibleCells = new Set();
         this.intersectionObserver = null;
+        this.sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         this.init();
     }
@@ -435,10 +436,10 @@ class RuchyNotebook {
             
             if (this.worker) {
                 // Use WebWorker for execution
-                result = await this.runInWorker(cell.content);
+                result = await this.runInWorker(cell.content, cell.id);
             } else {
-                // Run in main thread
-                result = await this.runInMainThread(cell.content);
+                // Run via API (main thread)
+                result = await this.runInMainThread(cell.content, cell.id);
             }
             
             cell.output = result.output;
@@ -457,39 +458,45 @@ class RuchyNotebook {
         }
     }
     
-    async runInMainThread(code) {
-        const notebook = new this.wasmModule.WasmNotebook();
-        return notebook.execute(code);
+    async runInMainThread(code, cellId) {
+        // Use server API instead of WASM
+        try {
+            const response = await fetch('/api/execute', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    code: code,
+                    cell_id: cellId || `cell-${Date.now()}`,
+                    session_id: this.sessionId || 'default-session'
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                return {
+                    output: result.result || '',
+                    execution_time_ms: result.execution_time_ms || 0
+                };
+            } else {
+                throw new Error(result.error || 'Execution failed');
+            }
+        } catch (error) {
+            console.error('API execution error:', error);
+            throw error;
+        }
     }
     
-    async runInWorker(code) {
-        return new Promise((resolve, reject) => {
-            const messageId = Date.now().toString();
-            
-            const timeout = setTimeout(() => {
-                reject(new Error('Execution timeout'));
-            }, 30000);
-            
-            const handler = (e) => {
-                if (e.data.id === messageId) {
-                    clearTimeout(timeout);
-                    this.worker.removeEventListener('message', handler);
-                    
-                    if (e.data.success) {
-                        resolve(e.data.result);
-                    } else {
-                        reject(new Error(e.data.error));
-                    }
-                }
-            };
-            
-            this.worker.addEventListener('message', handler);
-            this.worker.postMessage({
-                id: messageId,
-                type: 'execute',
-                code: code
-            });
-        });
+    async runInWorker(code, cellId) {
+        // For now, just use the API even in "worker" mode
+        // In the future, we could actually run a worker that calls the API
+        return this.runInMainThread(code, cellId);
     }
     
     updateCellUI(cell) {
