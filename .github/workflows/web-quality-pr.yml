@@ -1,0 +1,286 @@
+name: Web Quality PR Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**.js'
+      - '**.html'
+      - '**.css'
+      - 'package.json'
+      - '.eslintrc.json'
+      - '.htmlhintrc'
+
+jobs:
+  pr-quality-gate:
+    name: PR Web Quality Gate
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+      statuses: write
+    
+    steps:
+      - name: 📥 Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 📥 Checkout Base
+        run: |
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: 📦 Install Dependencies
+        run: npm ci
+      
+      - name: 🔍 Check Changed Files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
+        with:
+          files: |
+            **/*.js
+            **/*.html
+            **/*.css
+          files_ignore: |
+            node_modules/**
+            coverage/**
+            dist/**
+            build/**
+      
+      - name: 🔍 Lint Changed Files Only
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          echo "Changed files:"
+          echo "${{ steps.changed-files.outputs.all_changed_files }}"
+          
+          # Lint only changed JS files
+          CHANGED_JS=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep '\.js$' || true)
+          if [ ! -z "$CHANGED_JS" ]; then
+            echo "Linting changed JavaScript files..."
+            echo "$CHANGED_JS" | xargs npx eslint --format stylish
+          fi
+          
+          # Lint only changed HTML files  
+          CHANGED_HTML=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep '\.html$' || true)
+          if [ ! -z "$CHANGED_HTML" ]; then
+            echo "Linting changed HTML files..."
+            echo "$CHANGED_HTML" | xargs npx htmlhint
+          fi
+      
+      - name: 🧪 Run Tests for Changed Components
+        run: |
+          # Run tests related to changed files
+          npm test -- --findRelatedTests ${{ steps.changed-files.outputs.all_changed_files }} --coverage || true
+      
+      - name: 📊 Compare Coverage with Base
+        id: coverage-diff
+        run: |
+          # Get base branch coverage
+          git checkout ${{ github.base_ref }}
+          npm ci
+          npm test -- --coverage --coverageReporters=json-summary --silent || true
+          
+          if [ -f coverage/coverage-summary.json ]; then
+            BASE_COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+          else
+            BASE_COVERAGE=0
+          fi
+          
+          # Get PR coverage
+          git checkout ${{ github.head_ref }}
+          npm test -- --coverage --coverageReporters=json-summary --silent || true
+          
+          if [ -f coverage/coverage-summary.json ]; then
+            PR_COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+          else
+            PR_COVERAGE=0
+          fi
+          
+          # Calculate difference
+          COVERAGE_DIFF=$(echo "$PR_COVERAGE - $BASE_COVERAGE" | bc)
+          
+          echo "base_coverage=$BASE_COVERAGE" >> $GITHUB_OUTPUT
+          echo "pr_coverage=$PR_COVERAGE" >> $GITHUB_OUTPUT
+          echo "coverage_diff=$COVERAGE_DIFF" >> $GITHUB_OUTPUT
+          
+          # Check if coverage decreased
+          if (( $(echo "$COVERAGE_DIFF < -1" | bc -l) )); then
+            echo "❌ Coverage decreased by ${COVERAGE_DIFF}%"
+            exit 1
+          elif (( $(echo "$COVERAGE_DIFF > 1" | bc -l) )); then
+            echo "✅ Coverage increased by ${COVERAGE_DIFF}%"
+          else
+            echo "➖ Coverage unchanged"
+          fi
+      
+      - name: 🎯 Check Quality Standards
+        id: quality-check
+        run: |
+          CHECKS_PASSED=0
+          CHECKS_FAILED=0
+          
+          # Check 1: No console.log in production code
+          CONSOLE_LOGS=$(grep -r "console\.log" js/**/*.js --exclude="*.test.js" --exclude="*.spec.js" | wc -l || echo 0)
+          if [ "$CONSOLE_LOGS" -eq 0 ]; then
+            echo "✅ No console.log statements"
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "❌ Found $CONSOLE_LOGS console.log statements"
+            CHECKS_FAILED=$((CHECKS_FAILED + 1))
+          fi
+          
+          # Check 2: No TODO comments
+          TODOS=$(grep -r "TODO\|FIXME\|HACK" js/**/*.js | wc -l || echo 0)
+          if [ "$TODOS" -eq 0 ]; then
+            echo "✅ No TODO/FIXME/HACK comments"
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "⚠️ Found $TODOS TODO/FIXME/HACK comments"
+          fi
+          
+          # Check 3: No large files
+          LARGE_FILES=$(find js -name "*.js" -size +100k | wc -l)
+          if [ "$LARGE_FILES" -eq 0 ]; then
+            echo "✅ No large JavaScript files (>100KB)"
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "❌ Found $LARGE_FILES large JavaScript files"
+            CHECKS_FAILED=$((CHECKS_FAILED + 1))
+          fi
+          
+          # Check 4: Required files exist
+          REQUIRED_FILES=(".eslintrc.json" ".htmlhintrc" "package.json")
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ -f "$file" ]; then
+              echo "✅ $file exists"
+              CHECKS_PASSED=$((CHECKS_PASSED + 1))
+            else
+              echo "❌ $file missing"
+              CHECKS_FAILED=$((CHECKS_FAILED + 1))
+            fi
+          done
+          
+          echo "checks_passed=$CHECKS_PASSED" >> $GITHUB_OUTPUT
+          echo "checks_failed=$CHECKS_FAILED" >> $GITHUB_OUTPUT
+          
+          if [ "$CHECKS_FAILED" -gt 0 ]; then
+            exit 1
+          fi
+      
+      - name: 📝 Create PR Comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const coverageDiff = ${{ steps.coverage-diff.outputs.coverage_diff || 0 }};
+            const prCoverage = ${{ steps.coverage-diff.outputs.pr_coverage || 0 }};
+            const baseCoverage = ${{ steps.coverage-diff.outputs.base_coverage || 0 }};
+            const checksPassed = ${{ steps.quality-check.outputs.checks_passed || 0 }};
+            const checksFailed = ${{ steps.quality-check.outputs.checks_failed || 0 }};
+            
+            let coverageEmoji = '➖';
+            let coverageColor = 'gray';
+            if (coverageDiff > 1) {
+              coverageEmoji = '📈';
+              coverageColor = 'green';
+            } else if (coverageDiff < -1) {
+              coverageEmoji = '📉';
+              coverageColor = 'red';
+            }
+            
+            const comment = `## 🌐 Web Quality Report
+            
+            ### 📊 Coverage Analysis
+            | Metric | Base | PR | Diff |
+            |--------|------|-----|------|
+            | Coverage | ${baseCoverage}% | ${prCoverage}% | ${coverageEmoji} ${coverageDiff > 0 ? '+' : ''}${coverageDiff}% |
+            
+            ### ✅ Quality Checks
+            - Passed: ${checksPassed}
+            - Failed: ${checksFailed}
+            
+            ### 📋 Requirements
+            - [${prCoverage >= 80 ? 'x' : ' '}] Coverage ≥ 80%
+            - [${checksFailed === 0 ? 'x' : ' '}] All quality checks pass
+            - [${coverageDiff >= 0 ? 'x' : ' '}] No coverage regression
+            
+            ---
+            <details>
+            <summary>💡 How to improve</summary>
+            
+            - Run \`npm test\` locally to check coverage
+            - Run \`npm run lint\` to fix linting issues
+            - Run \`make quality-web\` for full quality check
+            
+            </details>`;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Web Quality Report')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+            }
+      
+      - name: 🚦 Set Status Check
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prCoverage = ${{ steps.coverage-diff.outputs.pr_coverage || 0 }};
+            const checksFailed = ${{ steps.quality-check.outputs.checks_failed || 0 }};
+            const coverageDiff = ${{ steps.coverage-diff.outputs.coverage_diff || 0 }};
+            
+            let state = 'success';
+            let description = '✅ All quality checks passed';
+            
+            if (prCoverage < 80) {
+              state = 'failure';
+              description = `❌ Coverage ${prCoverage}% is below 80% threshold`;
+            } else if (checksFailed > 0) {
+              state = 'failure';
+              description = `❌ ${checksFailed} quality checks failed`;
+            } else if (coverageDiff < -1) {
+              state = 'failure';
+              description = `❌ Coverage decreased by ${Math.abs(coverageDiff)}%`;
+            }
+            
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: state,
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: description,
+              context: 'Web Quality Gate'
+            });

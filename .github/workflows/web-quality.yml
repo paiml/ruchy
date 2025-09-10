@@ -1,0 +1,344 @@
+name: Web Quality CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**.js'
+      - '**.html'
+      - '**.css'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.eslintrc.json'
+      - '.htmlhintrc'
+      - 'tests/**'
+      - '.github/workflows/web-quality.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.js'
+      - '**.html'
+      - '**.css'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.eslintrc.json'
+      - '.htmlhintrc'
+      - 'tests/**'
+  workflow_dispatch:
+    inputs:
+      coverage_threshold:
+        description: 'Minimum coverage percentage required'
+        required: false
+        default: '80'
+        type: string
+
+env:
+  NODE_VERSION: '20.x'
+  COVERAGE_THRESHOLD: ${{ github.event.inputs.coverage_threshold || '80' }}
+
+jobs:
+  web-quality-check:
+    name: HTML/JS Quality & Coverage
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+      
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      
+      - name: 📦 Install Dependencies
+        run: |
+          echo "📦 Installing npm packages..."
+          npm ci --prefer-offline --no-audit
+          echo "✅ Dependencies installed"
+      
+      - name: 🔍 Lint HTML Files
+        id: html-lint
+        run: |
+          echo "🔍 Running HTMLHint..."
+          npx htmlhint assets/**/*.html testing/**/*.html --format json > html-lint-results.json || true
+          
+          # Parse results
+          HTML_ERRORS=$(cat html-lint-results.json | jq '[.[] | .messages | length] | add' || echo 0)
+          echo "html_errors=$HTML_ERRORS" >> $GITHUB_OUTPUT
+          
+          if [ "$HTML_ERRORS" -gt 0 ]; then
+            echo "❌ Found $HTML_ERRORS HTML linting errors"
+            npx htmlhint assets/**/*.html testing/**/*.html --format stylish
+            exit 1
+          else
+            echo "✅ HTML linting passed"
+          fi
+      
+      - name: 🔍 Lint JavaScript Files
+        id: js-lint
+        run: |
+          echo "🔍 Running ESLint..."
+          npx eslint js/**/*.js --format json --output-file eslint-results.json || true
+          
+          # Parse results
+          JS_ERRORS=$(cat eslint-results.json | jq '[.[] | .errorCount] | add' || echo 0)
+          JS_WARNINGS=$(cat eslint-results.json | jq '[.[] | .warningCount] | add' || echo 0)
+          echo "js_errors=$JS_ERRORS" >> $GITHUB_OUTPUT
+          echo "js_warnings=$JS_WARNINGS" >> $GITHUB_OUTPUT
+          
+          if [ "$JS_ERRORS" -gt 0 ]; then
+            echo "❌ Found $JS_ERRORS JavaScript linting errors"
+            npx eslint js/**/*.js --format stylish
+            exit 1
+          else
+            echo "✅ JavaScript linting passed with $JS_WARNINGS warnings"
+          fi
+      
+      - name: 🧪 Run Tests with Coverage
+        id: test-coverage
+        run: |
+          echo "🧪 Running Jest tests with coverage..."
+          npm test -- --coverage --coverageReporters=json-summary --coverageReporters=lcov --coverageReporters=text || true
+          
+          # Extract coverage percentages
+          if [ -f coverage/coverage-summary.json ]; then
+            LINES=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+            STATEMENTS=$(cat coverage/coverage-summary.json | jq '.total.statements.pct')
+            FUNCTIONS=$(cat coverage/coverage-summary.json | jq '.total.functions.pct')
+            BRANCHES=$(cat coverage/coverage-summary.json | jq '.total.branches.pct')
+            
+            echo "lines_coverage=$LINES" >> $GITHUB_OUTPUT
+            echo "statements_coverage=$STATEMENTS" >> $GITHUB_OUTPUT
+            echo "functions_coverage=$FUNCTIONS" >> $GITHUB_OUTPUT
+            echo "branches_coverage=$BRANCHES" >> $GITHUB_OUTPUT
+            
+            echo "📊 Coverage Results:"
+            echo "  Lines: ${LINES}%"
+            echo "  Statements: ${STATEMENTS}%"
+            echo "  Functions: ${FUNCTIONS}%"
+            echo "  Branches: ${BRANCHES}%"
+            
+            # Check if coverage meets threshold
+            if (( $(echo "$LINES < $COVERAGE_THRESHOLD" | bc -l) )); then
+              echo "❌ Coverage ${LINES}% is below threshold ${COVERAGE_THRESHOLD}%"
+              exit 1
+            else
+              echo "✅ Coverage ${LINES}% meets threshold ${COVERAGE_THRESHOLD}%"
+            fi
+          else
+            echo "⚠️ No coverage data generated"
+            exit 1
+          fi
+      
+      - name: 📊 Generate Coverage Report
+        if: always()
+        uses: ArtiomTr/jest-coverage-report-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          test-script: npm test
+          threshold: ${{ env.COVERAGE_THRESHOLD }}
+          skip-step: all
+          annotations: failed-tests
+          coverage-file: ./coverage/coverage-summary.json
+          base-coverage-file: ./coverage/coverage-summary.json
+      
+      - name: 📈 Upload Coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: javascript,html
+          name: web-coverage
+          fail_ci_if_error: false
+      
+      - name: 📁 Upload Coverage Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage/
+            html-lint-results.json
+            eslint-results.json
+          retention-days: 30
+      
+      - name: ♿ Accessibility Check
+        id: accessibility
+        run: |
+          echo "♿ Running accessibility checks..."
+          
+          # Check for ARIA attributes
+          ARIA_COUNT=$(grep -r "aria-\|role=" assets/*.html 2>/dev/null | wc -l || echo 0)
+          ALT_COUNT=$(grep -r 'alt=' assets/*.html 2>/dev/null | wc -l || echo 0)
+          
+          echo "aria_count=$ARIA_COUNT" >> $GITHUB_OUTPUT
+          echo "alt_count=$ALT_COUNT" >> $GITHUB_OUTPUT
+          
+          if [ "$ARIA_COUNT" -eq 0 ]; then
+            echo "⚠️ No ARIA attributes found - accessibility may be limited"
+          fi
+          
+          if [ "$ALT_COUNT" -eq 0 ]; then
+            echo "⚠️ No alt attributes found - images need descriptions"
+          fi
+          
+          echo "✅ Basic accessibility check complete"
+      
+      - name: 🔒 Security Check
+        id: security
+        run: |
+          echo "🔒 Running security checks..."
+          
+          # Check for inline scripts
+          INLINE_SCRIPTS=$(grep -r '<script>' assets/*.html 2>/dev/null | grep -v 'src=' | wc -l || echo 0)
+          INLINE_STYLES=$(grep -r 'style=' assets/*.html 2>/dev/null | wc -l || echo 0)
+          
+          echo "inline_scripts=$INLINE_SCRIPTS" >> $GITHUB_OUTPUT
+          echo "inline_styles=$INLINE_STYLES" >> $GITHUB_OUTPUT
+          
+          if [ "$INLINE_SCRIPTS" -gt 0 ]; then
+            echo "⚠️ Found $INLINE_SCRIPTS inline scripts - consider CSP implications"
+          fi
+          
+          if [ "$INLINE_STYLES" -gt 0 ]; then
+            echo "⚠️ Found $INLINE_STYLES inline styles - consider moving to CSS files"
+          fi
+          
+          echo "✅ Security check complete"
+      
+      - name: ⚡ Performance Check
+        id: performance
+        run: |
+          echo "⚡ Running performance checks..."
+          
+          # Check for lazy loading
+          LAZY_LOADING=$(grep -r 'loading="lazy"' assets/*.html 2>/dev/null | wc -l || echo 0)
+          
+          # Check for service worker
+          if [ -f "js/sw.js" ] || [ -f "sw.js" ]; then
+            SERVICE_WORKER="true"
+          else
+            SERVICE_WORKER="false"
+          fi
+          
+          echo "lazy_loading=$LAZY_LOADING" >> $GITHUB_OUTPUT
+          echo "service_worker=$SERVICE_WORKER" >> $GITHUB_OUTPUT
+          
+          echo "  Lazy loading attributes: $LAZY_LOADING"
+          echo "  Service Worker present: $SERVICE_WORKER"
+          echo "✅ Performance check complete"
+      
+      - name: 📝 Generate Quality Report
+        if: always()
+        run: |
+          echo "# 🌐 Web Quality Report" > web-quality-report.md
+          echo "" >> web-quality-report.md
+          echo "## 📊 Coverage Results" >> web-quality-report.md
+          echo "| Metric | Coverage | Threshold |" >> web-quality-report.md
+          echo "|--------|----------|-----------|" >> web-quality-report.md
+          echo "| Lines | ${{ steps.test-coverage.outputs.lines_coverage }}% | ${{ env.COVERAGE_THRESHOLD }}% |" >> web-quality-report.md
+          echo "| Statements | ${{ steps.test-coverage.outputs.statements_coverage }}% | ${{ env.COVERAGE_THRESHOLD }}% |" >> web-quality-report.md
+          echo "| Functions | ${{ steps.test-coverage.outputs.functions_coverage }}% | ${{ env.COVERAGE_THRESHOLD }}% |" >> web-quality-report.md
+          echo "| Branches | ${{ steps.test-coverage.outputs.branches_coverage }}% | ${{ env.COVERAGE_THRESHOLD }}% |" >> web-quality-report.md
+          echo "" >> web-quality-report.md
+          echo "## 🔍 Linting Results" >> web-quality-report.md
+          echo "- HTML Errors: ${{ steps.html-lint.outputs.html_errors }}" >> web-quality-report.md
+          echo "- JavaScript Errors: ${{ steps.js-lint.outputs.js_errors }}" >> web-quality-report.md
+          echo "- JavaScript Warnings: ${{ steps.js-lint.outputs.js_warnings }}" >> web-quality-report.md
+          echo "" >> web-quality-report.md
+          echo "## ♿ Accessibility" >> web-quality-report.md
+          echo "- ARIA Attributes: ${{ steps.accessibility.outputs.aria_count }}" >> web-quality-report.md
+          echo "- Alt Attributes: ${{ steps.accessibility.outputs.alt_count }}" >> web-quality-report.md
+          echo "" >> web-quality-report.md
+          echo "## 🔒 Security" >> web-quality-report.md
+          echo "- Inline Scripts: ${{ steps.security.outputs.inline_scripts }}" >> web-quality-report.md
+          echo "- Inline Styles: ${{ steps.security.outputs.inline_styles }}" >> web-quality-report.md
+          echo "" >> web-quality-report.md
+          echo "## ⚡ Performance" >> web-quality-report.md
+          echo "- Lazy Loading: ${{ steps.performance.outputs.lazy_loading }}" >> web-quality-report.md
+          echo "- Service Worker: ${{ steps.performance.outputs.service_worker }}" >> web-quality-report.md
+          
+          cat web-quality-report.md
+      
+      - name: 💬 Comment on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('web-quality-report.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+      
+      - name: 🏆 Quality Gate Summary
+        if: always()
+        run: |
+          echo "==================================="
+          echo "🏆 Web Quality Gate Summary"
+          echo "==================================="
+          
+          PASSED=true
+          
+          # Check coverage (MANDATORY 80% threshold)
+          if [ "${{ steps.test-coverage.outputs.lines_coverage }}" ]; then
+            COVERAGE="${{ steps.test-coverage.outputs.lines_coverage }}"
+            if (( $(echo "$COVERAGE >= $COVERAGE_THRESHOLD" | bc -l) )); then
+              echo "✅ Coverage: ${COVERAGE}% (>= ${COVERAGE_THRESHOLD}%)"
+            else
+              echo "❌ Coverage: ${COVERAGE}% (< ${COVERAGE_THRESHOLD}%)"
+              PASSED=false
+            fi
+          else
+            echo "❌ Coverage: No data available"
+            PASSED=false
+          fi
+          
+          # Check linting (MANDATORY no errors)
+          if [ "${{ steps.html-lint.outputs.html_errors }}" -eq 0 ] && [ "${{ steps.js-lint.outputs.js_errors }}" -eq 0 ]; then
+            echo "✅ Linting: No errors"
+          else
+            echo "❌ Linting: Errors found"
+            PASSED=false
+          fi
+          
+          # Check accessibility
+          if [ "${{ steps.accessibility.outputs.aria_count }}" -gt 0 ] && [ "${{ steps.accessibility.outputs.alt_count }}" -gt 0 ]; then
+            echo "✅ Accessibility: Basic requirements met"
+          else
+            echo "⚠️ Accessibility: Consider improvements"
+          fi
+          
+          # Check security
+          if [ "${{ steps.security.outputs.inline_scripts }}" -eq 0 ]; then
+            echo "✅ Security: No inline scripts"
+          else
+            echo "⚠️ Security: Inline scripts present"
+          fi
+          
+          echo "==================================="
+          echo "MANDATORY: 80% coverage threshold"
+          echo "==================================="
+          
+          if [ "$PASSED" = true ]; then
+            echo "✅ QUALITY GATE: PASSED"
+            exit 0
+          else
+            echo "❌ QUALITY GATE: FAILED - BUILD BLOCKED"
+            exit 1
+          fi

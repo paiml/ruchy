@@ -119,6 +119,26 @@
             color: var(--text-secondary);
             font-size: 14px;
         }
+        
+        .output-success {
+            color: #4ec9b0;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            background: var(--bg-secondary);
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 4px solid #4ec9b0;
+        }
+        
+        .output-error {
+            color: #f44747;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            background: var(--bg-secondary);
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 4px solid #f44747;
+        }
     </style>
 </head>
 <body>
@@ -160,17 +180,43 @@ println("Hello, Notebook!")</textarea>
             }
         }
         
-        function runCell() {
+        async function runCell() {
             const input = document.querySelector('.cell-input');
             const output = document.querySelector('.cell-output');
             const code = input.value;
             
+            if (!code.trim()) {
+                return;
+            }
+            
             setStatus('Running...');
             
-            // TODO: Execute code via WASM
-            output.textContent = `// Output will appear here\n// Code: ${code}`;
-            
-            setStatus('Ready');
+            try {
+                const response = await fetch('/api/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        cell_id: 'cell-' + Date.now(),
+                        session_id: 'default-session'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    output.innerHTML = `<div class="output-success">${result.result || '(no output)'}</div>`;
+                } else {
+                    output.innerHTML = `<div class="output-error">Error: ${result.error}</div>`;
+                }
+                
+                setStatus(`Ready (executed in ${result.execution_time_ms}ms)`);
+            } catch (error) {
+                output.innerHTML = `<div class="output-error">Network Error: ${error.message}</div>`;
+                setStatus('Error - Check network connection');
+            }
         }
         
         function addCell() {
