@@ -1,13 +1,13 @@
 // [RUCHY-207] CLI Module Implementation
 // PMAT Complexity: <10 per function
 
-use clap::{Parser, Subcommand, Args};
+use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(name = "ruchy")]
 #[command(author = "Noah Gift")]
-#[command(version = "3.0.1")]
+#[command(version = "3.0.3")]
 #[command(about = "The Ruchy programming language - A modern, expressive language for data science")]
 #[command(long_about = None)]
 pub struct Cli {
@@ -183,7 +183,7 @@ impl Cli {
 
 fn execute_repl(verbose: bool, quiet: bool) -> Result<(), String> {
     if !quiet {
-        println!("Starting Ruchy REPL v3.0.1...");
+        println!("Starting Ruchy REPL v3.0.3...");
     }
     
     // Use existing REPL implementation
@@ -253,13 +253,22 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
                 println!("Testing notebook: {:?}", path);
             }
             
-            let config = crate::notebook::testing::types::TestConfig::default();
-            let report = run_test_command(&path, config)?;
+            #[cfg(feature = "notebook")]
+            {
+                let config = crate::notebook::testing::types::TestConfig::default();
+                let report = run_test_command(&path, config)?;
+                
+                match format.as_str() {
+                    "json" => println!("{}", serde_json::to_string_pretty(&report).unwrap()),
+                    "html" => println!("HTML report generation not yet implemented"),
+                    _ => println!("{:#?}", report),
+                }
+            }
             
-            match format.as_str() {
-                "json" => println!("{}", serde_json::to_string_pretty(&report).unwrap()),
-                "html" => println!("HTML report generation not yet implemented"),
-                _ => println!("{:#?}", report),
+            #[cfg(not(feature = "notebook"))]
+            {
+                let _ = (coverage, format);
+                return Err("Notebook feature not enabled".to_string());
             }
             
             Ok(())
@@ -367,6 +376,7 @@ fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {
 }
 
 // Keep the existing run_test_command function
+#[cfg(feature = "notebook")]
 pub fn run_test_command(_notebook_path: &std::path::Path, _config: crate::notebook::testing::types::TestConfig) -> Result<crate::notebook::testing::types::TestReport, String> {
     // Stub implementation for Sprint 0
     Ok(crate::notebook::testing::types::TestReport {

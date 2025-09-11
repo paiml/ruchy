@@ -54,7 +54,7 @@ ruchy test run src/ --coverage --parallel
 ruchy test report --format junit
 ```
 
-## Current Status - v3.0.1 (September 2025)
+## Current Status - v3.0.3 (September 2025)
 
 ### 🎯 WASM Excellence: 100% Pass Rate
 - **8 of 8** WASM acceptance tests passing
