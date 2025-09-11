@@ -286,7 +286,9 @@ fn test_collect_function_signatures() {
                         kind: TypeKind::Named("Int".to_string()),
                         span: Span::default(),
                     },
-                    default: None,
+                    default_value: None,
+                    is_mutable: false,
+                    span: Span::default(),
                 },
                 Param {
                     pattern: Pattern::Identifier("b".to_string()),
@@ -294,7 +296,9 @@ fn test_collect_function_signatures() {
                         kind: TypeKind::Named("Int".to_string()),
                         span: Span::default(),
                     },
-                    default: None,
+                    default_value: None,
+                    is_mutable: false,
+                    span: Span::default(),
                 },
             ],
             return_type: Some(Type {
@@ -475,7 +479,7 @@ fn test_transpile_let_binding() {
     let expr = Expr {
         kind: ExprKind::Let {
             name: "x".to_string(),
-            ty: None,
+            type_annotation: None,
             value: Box::new(make_literal(42)),
             body: Box::new(Expr {
                 kind: ExprKind::Identifier("x".to_string()),
@@ -501,7 +505,7 @@ fn test_transpile_let_mutable() {
     let expr = Expr {
         kind: ExprKind::Let {
             name: "y".to_string(),
-            ty: None,
+            type_annotation: None,
             value: Box::new(make_literal(10)),
             body: Box::new(Expr {
                 kind: ExprKind::Identifier("y".to_string()),
@@ -690,7 +694,9 @@ fn test_type_to_string_named() {
                 Param {
                     pattern: Pattern::Identifier("s".to_string()),
                     ty,
-                    default: None,
+                    default_value: None,
+                    is_mutable: false,
+                    span: Span::default(),
                 },
             ],
             return_type: None,
@@ -711,7 +717,7 @@ fn test_type_to_string_reference() {
     let mut transpiler = Transpiler::new();
     let ty = Type {
         kind: TypeKind::Reference {
-            mutable: false,
+            is_mut: false,
             inner: Box::new(Type {
                 kind: TypeKind::Named("Int".to_string()),
                 span: Span::default(),
@@ -728,7 +734,9 @@ fn test_type_to_string_reference() {
                 Param {
                     pattern: Pattern::Identifier("r".to_string()),
                     ty,
-                    default: None,
+                    default_value: None,
+                    is_mutable: false,
+                    span: Span::default(),
                 },
             ],
             return_type: None,
