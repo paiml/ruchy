@@ -2370,8 +2370,14 @@ impl Interpreter {
         body: &Expr,
     ) -> Result<Value, InterpreterError> {
         let val = self.eval_expr(value)?;
-        self.env_set(name.to_string(), val);
-        self.eval_expr(body)
+        self.env_set(name.to_string(), val.clone());
+        
+        // If body is unit (empty), return the value like REPL does
+        // This makes `let x = 42` return 42 instead of nil
+        match &body.kind {
+            ExprKind::Literal(Literal::Unit) => Ok(val),
+            _ => self.eval_expr(body)
+        }
     }
 
     /// Evaluate return expression
@@ -3069,6 +3075,35 @@ impl Interpreter {
         let closure_value = Value::Closure { params, body, env };
         self.gc.track_object(closure_value.clone());
         closure_value
+    }
+    
+    // ========================================================================
+    // Public methods for SharedSession integration
+    // ========================================================================
+    
+    /// Get all bindings from the global environment (for SharedSession state persistence)
+    pub fn get_global_bindings(&self) -> HashMap<String, Value> {
+        if let Some(global_env) = self.env_stack.first() {
+            global_env.clone()
+        } else {
+            HashMap::new()
+        }
+    }
+    
+    /// Set a binding in the global environment (for SharedSession state restoration)
+    pub fn set_global_binding(&mut self, name: String, value: Value) {
+        if let Some(global_env) = self.env_stack.first_mut() {
+            global_env.insert(name, value);
+        }
+    }
+    
+    /// Get all bindings from the current environment (for SharedSession extraction)
+    pub fn get_current_bindings(&self) -> HashMap<String, Value> {
+        if let Some(current_env) = self.env_stack.last() {
+            current_env.clone()
+        } else {
+            HashMap::new()
+        }
     }
     
     /// Evaluate a for loop
