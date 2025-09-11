@@ -489,9 +489,9 @@ impl SharedSession {
     
     fn hydrate_interpreter(&mut self) {
         // Load all global values into interpreter
-        // Since env_stack is private, we'll need to work differently
-        // For now, just store in our own globals
-        // TODO: Add a public method to Interpreter to set bindings
+        for (name, (value, _def_id)) in self.globals.values.iter() {
+            self.interpreter.set_global_binding(name.clone(), value.clone());
+        }
     }
     
     fn collect_current_defs(&self) -> HashSet<DefId> {
@@ -501,12 +501,18 @@ impl SharedSession {
     fn extract_new_bindings(&mut self, cell_id: &str, initial_defs: &HashSet<DefId>) -> HashSet<DefId> {
         let mut new_defs = HashSet::new();
         
-        // Find new bindings in interpreter
-        // Since env_stack is private, we'll track our own bindings
-        // TODO: Add a public method to Interpreter to get bindings
-        let bindings: HashMap<String, Value> = HashMap::new();
+        // Get current bindings from interpreter
+        let bindings = self.interpreter.get_current_bindings();
         
         for (name, value) in bindings {
+            // Skip builtin function markers
+            if let Value::String(s) = &value {
+                if s.starts_with("__builtin_") {
+                    continue;
+                }
+            }
+            
+            // Check if this is a new or updated binding
             if !self.globals.values.contains_key(&name) || 
                !initial_defs.contains(&self.globals.get_def_id(&name).unwrap_or(DefId(0))) {
                 let def_id = self.globals.store_value(name, value, cell_id);
@@ -818,7 +824,7 @@ impl SessionVersion {
 }
 
 /// Variable inspection result
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VariableInspectionResult {
     pub total_variables: usize,
     pub memory_usage: usize,
@@ -826,7 +832,7 @@ pub struct VariableInspectionResult {
 }
 
 /// Execution history entry
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecutionHistoryEntry {
     pub sequence: usize,
     pub cell_id: String,
