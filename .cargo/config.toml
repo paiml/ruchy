@@ -37,3 +37,10 @@ incremental = true
 # Optimize test builds for faster compilation
 opt-level = 1
 debug = 1
+
+[target.wasm32-unknown-unknown]
+rustflags = [
+    "-C", "opt-level=z",
+    "-C", "lto=fat",
+    "-C", "embed-bitcode=yes",
+]
