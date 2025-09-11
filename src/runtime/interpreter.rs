@@ -1721,6 +1721,8 @@ impl Interpreter {
         global_env.insert("format".to_string(), Value::String(Rc::new("__builtin_format__".to_string())));
         global_env.insert("HashMap".to_string(), Value::String(Rc::new("__builtin_hashmap__".to_string())));
         global_env.insert("DataFrame".to_string(), Value::String(Rc::new("__builtin_dataframe__".to_string())));
+        global_env.insert("DataFrame::from_range".to_string(), Value::String(Rc::new("__builtin_dataframe_from_range__".to_string())));
+        global_env.insert("DataFrame::from_rows".to_string(), Value::String(Rc::new("__builtin_dataframe_from_rows__".to_string())));
         global_env.insert("col".to_string(), Value::String(Rc::new("__builtin_col__".to_string())));
         
         Self {
@@ -2038,6 +2040,93 @@ impl Interpreter {
                             }
                         } else {
                             Err(InterpreterError::RuntimeError("col() expects exactly 1 argument (column_name)".to_string()))
+                        }
+                    }
+                    "__builtin_dataframe_from_range__" => {
+                        // Handle DataFrame::from_range(start, end) function
+                        if args.len() != 2 {
+                            return Err(InterpreterError::RuntimeError("DataFrame::from_range() expects exactly 2 arguments (start, end)".to_string()));
+                        }
+                        
+                        let start = match &args[0] {
+                            Value::Integer(s) => *s,
+                            _ => return Err(InterpreterError::RuntimeError("DataFrame::from_range() expects start as integer".to_string())),
+                        };
+                        
+                        let end = match &args[1] {
+                            Value::Integer(e) => *e,
+                            _ => return Err(InterpreterError::RuntimeError("DataFrame::from_range() expects end as integer".to_string())),
+                        };
+                        
+                        if start >= end {
+                            return Err(InterpreterError::RuntimeError("DataFrame::from_range() expects start < end".to_string()));
+                        }
+                        
+                        // Create a DataFrame with a single "value" column containing the range
+                        let mut values = Vec::new();
+                        for i in start..end {
+                            values.push(Value::Integer(i));
+                        }
+                        
+                        let column = DataFrameColumn {
+                            name: "value".to_string(),
+                            values,
+                        };
+                        
+                        Ok(Value::DataFrame {
+                            columns: vec![column],
+                        })
+                    }
+                    "__builtin_dataframe_from_rows__" => {
+                        // Handle DataFrame::from_rows(rows) function
+                        if args.len() != 1 {
+                            return Err(InterpreterError::RuntimeError("DataFrame::from_rows() expects exactly 1 argument (rows)".to_string()));
+                        }
+                        
+                        match &args[0] {
+                            Value::Array(rows) => {
+                                // Convert rows to columns
+                                let mut columns = Vec::new();
+                                if !rows.is_empty() {
+                                    // Determine number of columns from first row
+                                    if let Value::Array(first_row) = &rows[0] {
+                                        let num_cols = first_row.len();
+                                        
+                                        // Initialize columns with default names
+                                        for col_idx in 0..num_cols {
+                                            columns.push(DataFrameColumn {
+                                                name: format!("column_{}", col_idx),
+                                                values: Vec::new(),
+                                            });
+                                        }
+                                        
+                                        // Fill column data from rows
+                                        for row in rows.iter() {
+                                            if let Value::Array(row_values) = row {
+                                                if row_values.len() != num_cols {
+                                                    return Err(InterpreterError::RuntimeError(
+                                                        "DataFrame::from_rows rows must have the same length".to_string()
+                                                    ));
+                                                }
+                                                for (col_idx, value) in row_values.iter().enumerate() {
+                                                    columns[col_idx].values.push(value.clone());
+                                                }
+                                            } else {
+                                                return Err(InterpreterError::RuntimeError(
+                                                    "DataFrame::from_rows expects each row to be an array".to_string()
+                                                ));
+                                            }
+                                        }
+                                    } else {
+                                        return Err(InterpreterError::RuntimeError(
+                                            "DataFrame::from_rows expects first row to be an array".to_string()
+                                        ));
+                                    }
+                                }
+                                
+                                Ok(Value::DataFrame { columns })
+                            }
+                            _ => Err(InterpreterError::RuntimeError("DataFrame::from_rows() expects rows as array".to_string())),
                         }
                     }
                     _ => Err(InterpreterError::RuntimeError(format!("Unknown builtin function: {}", s))),
@@ -3285,6 +3374,12 @@ impl Interpreter {
     /// Evaluate a method call
     fn eval_method_call(&mut self, receiver: &Expr, method: &str, args: &[Expr]) -> Result<Value, InterpreterError> {
         let receiver_value = self.eval_expr(receiver)?;
+        
+        // Special handling for DataFrame filter method - don't pre-evaluate the condition
+        if matches!(receiver_value, Value::DataFrame { .. }) && method == "filter" {
+            return self.eval_dataframe_filter_method(&receiver_value, args);
+        }
+        
         let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| self.eval_expr(arg)).collect();
         let arg_values = arg_values?;
         
@@ -3391,10 +3486,361 @@ impl Interpreter {
                     Ok(Value::Float(total))
                 }
             }
+            "slice" => {
+                // Slice DataFrame rows
+                if arg_values.len() != 2 {
+                    return Err(InterpreterError::RuntimeError("DataFrame.slice() requires exactly 2 arguments (start, length)".to_string()));
+                }
+                
+                let start = match &arg_values[0] {
+                    Value::Integer(s) => *s as usize,
+                    _ => return Err(InterpreterError::RuntimeError("DataFrame.slice() expects start as integer".to_string())),
+                };
+                
+                let length = match &arg_values[1] {
+                    Value::Integer(l) => *l as usize,
+                    _ => return Err(InterpreterError::RuntimeError("DataFrame.slice() expects length as integer".to_string())),
+                };
+                
+                // Create new columns with sliced values (zero-copy by cloning references)
+                let mut sliced_columns = Vec::new();
+                for col in columns {
+                    let end_idx = (start + length).min(col.values.len());
+                    let sliced_values = if start < col.values.len() {
+                        col.values[start..end_idx].to_vec()
+                    } else {
+                        Vec::new()
+                    };
+                    
+                    sliced_columns.push(DataFrameColumn {
+                        name: col.name.clone(),
+                        values: sliced_values,
+                    });
+                }
+                
+                Ok(Value::DataFrame {
+                    columns: sliced_columns,
+                })
+            }
+            "join" => {
+                // Join two DataFrames
+                if arg_values.len() != 2 {
+                    return Err(InterpreterError::RuntimeError("DataFrame.join() requires exactly 2 arguments (other_df, on)".to_string()));
+                }
+                
+                let other_df = &arg_values[0];
+                let join_column = match &arg_values[1] {
+                    Value::String(col_name) => col_name.as_str(),
+                    _ => return Err(InterpreterError::RuntimeError("DataFrame.join() expects 'on' as string column name".to_string())),
+                };
+                
+                if let Value::DataFrame { columns: other_columns } = other_df {
+                    // Find the join column in both DataFrames
+                    let left_join_col = columns.iter().find(|col| col.name == join_column);
+                    let right_join_col = other_columns.iter().find(|col| col.name == join_column);
+                    
+                    if left_join_col.is_none() {
+                        return Err(InterpreterError::RuntimeError(format!("Join column '{}' not found in left DataFrame", join_column)));
+                    }
+                    if right_join_col.is_none() {
+                        return Err(InterpreterError::RuntimeError(format!("Join column '{}' not found in right DataFrame", join_column)));
+                    }
+                    
+                    let left_join_col = left_join_col.unwrap();
+                    let right_join_col = right_join_col.unwrap();
+                    
+                    // For simplicity, implement inner join
+                    let mut joined_columns = Vec::new();
+                    
+                    // Add all columns from left DataFrame
+                    for col in columns {
+                        joined_columns.push(DataFrameColumn {
+                            name: col.name.clone(),
+                            values: Vec::new(),
+                        });
+                    }
+                    
+                    // Add columns from right DataFrame (excluding the join column to avoid duplication)
+                    for col in other_columns {
+                        if col.name != join_column {
+                            joined_columns.push(DataFrameColumn {
+                                name: format!("{}_right", col.name), // Rename to avoid conflicts
+                                values: Vec::new(),
+                            });
+                        }
+                    }
+                    
+                    // Perform inner join
+                    for (left_idx, left_join_val) in left_join_col.values.iter().enumerate() {
+                        for (right_idx, right_join_val) in right_join_col.values.iter().enumerate() {
+                            if self.values_equal(left_join_val, right_join_val) {
+                                // Match found - add row to result
+                                
+                                // Add values from left DataFrame
+                                for (col_idx, col) in columns.iter().enumerate() {
+                                    if let Some(val) = col.values.get(left_idx) {
+                                        joined_columns[col_idx].values.push(val.clone());
+                                    }
+                                }
+                                
+                                // Add values from right DataFrame (excluding join column)
+                                let mut right_col_idx = columns.len();
+                                for col in other_columns {
+                                    if col.name != join_column {
+                                        if let Some(val) = col.values.get(right_idx) {
+                                            joined_columns[right_col_idx].values.push(val.clone());
+                                        }
+                                        right_col_idx += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    Ok(Value::DataFrame {
+                        columns: joined_columns,
+                    })
+                } else {
+                    Err(InterpreterError::RuntimeError("DataFrame.join() expects first argument to be a DataFrame".to_string()))
+                }
+            }
+            "groupby" => {
+                // Group by a column (simplified implementation - returns grouped DataFrame for now)
+                if arg_values.len() != 1 {
+                    return Err(InterpreterError::RuntimeError("DataFrame.groupby() requires exactly 1 argument (column_name)".to_string()));
+                }
+                
+                let group_column = match &arg_values[0] {
+                    Value::String(col_name) => col_name.as_str(),
+                    _ => return Err(InterpreterError::RuntimeError("DataFrame.groupby() expects column name as string".to_string())),
+                };
+                
+                // Find the group column
+                let group_col = columns.iter().find(|col| col.name == group_column);
+                if group_col.is_none() {
+                    return Err(InterpreterError::RuntimeError(format!("Group column '{}' not found in DataFrame", group_column)));
+                }
+                let group_col = group_col.unwrap();
+                
+                // For simplicity, implement groupby as immediate aggregation (sum)
+                // In a full implementation, this would return a GroupBy object
+                use std::collections::HashMap;
+                let mut groups: HashMap<String, Vec<usize>> = HashMap::new();
+                
+                // Group rows by the group column values
+                for (row_idx, value) in group_col.values.iter().enumerate() {
+                    let key = match value {
+                        Value::String(s) => s.to_string(),
+                        Value::Integer(i) => i.to_string(),
+                        Value::Float(f) => f.to_string(),
+                        Value::Bool(b) => b.to_string(),
+                        _ => "null".to_string(),
+                    };
+                    groups.entry(key).or_insert_with(Vec::new).push(row_idx);
+                }
+                
+                // Create result columns: group column + aggregated numeric columns
+                let mut result_columns = Vec::new();
+                
+                // Group column (unique values)
+                let mut group_values = Vec::new();
+                for key in groups.keys() {
+                    group_values.push(Value::from_string(key.clone()));
+                }
+                result_columns.push(DataFrameColumn {
+                    name: group_column.to_string(),
+                    values: group_values,
+                });
+                
+                // Aggregate numeric columns
+                for col in columns {
+                    if col.name != group_column {
+                        let mut aggregated_values = Vec::new();
+                        for (_key, indices) in &groups {
+                            let mut sum = 0.0;
+                            for &idx in indices {
+                                if let Some(value) = col.values.get(idx) {
+                                    match value {
+                                        Value::Integer(i) => sum += *i as f64,
+                                        Value::Float(f) => sum += f,
+                                        _ => {} // Skip non-numeric values
+                                    }
+                                }
+                            }
+                            // Return as integer if it's a whole number, otherwise float
+                            if sum.fract() == 0.0 {
+                                aggregated_values.push(Value::Integer(sum as i64));
+                            } else {
+                                aggregated_values.push(Value::Float(sum));
+                            }
+                        }
+                        result_columns.push(DataFrameColumn {
+                            name: format!("{}_sum", col.name),
+                            values: aggregated_values,
+                        });
+                    }
+                }
+                
+                Ok(Value::DataFrame {
+                    columns: result_columns,
+                })
+            }
             _ => Err(InterpreterError::RuntimeError(format!("Unknown DataFrame method: {}", method))),
         }
     }
     
+    /// Special handler for DataFrame filter method
+    fn eval_dataframe_filter_method(&mut self, receiver: &Value, args: &[Expr]) -> Result<Value, InterpreterError> {
+        if args.len() != 1 {
+            return Err(InterpreterError::RuntimeError("DataFrame.filter() requires exactly 1 argument (condition)".to_string()));
+        }
+        
+        if let Value::DataFrame { columns } = receiver {
+            let condition = &args[0];
+            
+            if columns.is_empty() {
+                return Ok(Value::DataFrame { columns: columns.clone() });
+            }
+            
+            let num_rows = columns[0].values.len();
+            let mut filtered_rows: Vec<bool> = Vec::new();
+            
+            // Evaluate the condition for each row
+            for row_idx in 0..num_rows {
+                let condition_result = self.eval_expr_with_column_context(condition, columns, row_idx);
+                
+                match condition_result {
+                    Ok(Value::Bool(true)) => filtered_rows.push(true),
+                    Ok(Value::Bool(false)) => filtered_rows.push(false),
+                    Ok(_) => return Err(InterpreterError::RuntimeError("Filter condition must return boolean".to_string())),
+                    Err(e) => return Err(e),
+                }
+            }
+            
+            // Create new columns with filtered values
+            let mut new_columns = Vec::new();
+            for col in columns {
+                let mut filtered_values = Vec::new();
+                for (idx, &keep) in filtered_rows.iter().enumerate() {
+                    if keep {
+                        if let Some(value) = col.values.get(idx) {
+                            filtered_values.push(value.clone());
+                        }
+                    }
+                }
+                new_columns.push(DataFrameColumn {
+                    name: col.name.clone(),
+                    values: filtered_values,
+                });
+            }
+            
+            Ok(Value::DataFrame {
+                columns: new_columns,
+            })
+        } else {
+            Err(InterpreterError::RuntimeError("filter method can only be called on DataFrame".to_string()))
+        }
+    }
+
+    /// Compare two values using a comparison function
+    fn compare_values<F>(&self, left: &Value, right: &Value, cmp: F) -> Result<Value, InterpreterError>
+    where
+        F: Fn(i64, i64) -> bool,
+    {
+        match (left, right) {
+            (Value::Integer(a), Value::Integer(b)) => Ok(Value::Bool(cmp(*a, *b))),
+            (Value::Float(a), Value::Float(b)) => {
+                // Convert float comparison to integer-like for simplicity
+                let a_int = *a as i64;
+                let b_int = *b as i64;
+                Ok(Value::Bool(cmp(a_int, b_int)))
+            }
+            (Value::Integer(a), Value::Float(b)) => {
+                let b_int = *b as i64;
+                Ok(Value::Bool(cmp(*a, b_int)))
+            }
+            (Value::Float(a), Value::Integer(b)) => {
+                let a_int = *a as i64;
+                Ok(Value::Bool(cmp(a_int, *b)))
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Cannot compare {} and {}",
+                left.type_name(),
+                right.type_name()
+            ))),
+        }
+    }
+
+    /// Check if two values are equal
+    fn values_equal(&self, left: &Value, right: &Value) -> bool {
+        match (left, right) {
+            (Value::Integer(a), Value::Integer(b)) => a == b,
+            (Value::Float(a), Value::Float(b)) => (a - b).abs() < f64::EPSILON,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Nil, Value::Nil) => true,
+            _ => false,
+        }
+    }
+
+    /// Evaluate an expression with column context (for DataFrame filtering)
+    fn eval_expr_with_column_context(&mut self, expr: &Expr, columns: &[DataFrameColumn], row_idx: usize) -> Result<Value, InterpreterError> {
+        match &expr.kind {
+            // Special handling for function calls that might be col() references
+            ExprKind::Call { func, args } => {
+                if let ExprKind::Identifier(name) = &func.kind {
+                    if name == "col" && args.len() == 1 {
+                        // This is a col("column_name") call - resolve to actual column value
+                        let col_name_expr = &args[0];
+                        if let ExprKind::Literal(crate::frontend::ast::Literal::String(col_name)) = &col_name_expr.kind {
+                            // Find the column and return the value for this row
+                            for col in columns {
+                                if col.name == *col_name {
+                                    if let Some(value) = col.values.get(row_idx) {
+                                        return Ok(value.clone());
+                                    }
+                                    return Err(InterpreterError::RuntimeError(format!("Row index {} out of bounds for column '{}'", row_idx, col_name)));
+                                }
+                            }
+                            return Err(InterpreterError::RuntimeError(format!("Column '{}' not found", col_name)));
+                        }
+                    }
+                }
+                // Fall back to normal function call evaluation
+                self.eval_expr(expr)
+            }
+            // Handle binary expressions that might need column context
+            ExprKind::Binary { left, right, .. } => {
+                let left_val = self.eval_expr_with_column_context(left, columns, row_idx)?;
+                let right_val = self.eval_expr_with_column_context(right, columns, row_idx)?;
+                
+                // Rebuild the binary expression with resolved values and evaluate
+                // For simplicity, handle common comparison operations directly
+                if let (ExprKind::Binary { op, .. }) = &expr.kind {
+                    match op {
+                        crate::frontend::ast::BinaryOp::Greater => {
+                            self.compare_values(&left_val, &right_val, |a, b| a > b)
+                        }
+                        crate::frontend::ast::BinaryOp::Less => {
+                            self.compare_values(&left_val, &right_val, |a, b| a < b)
+                        }
+                        crate::frontend::ast::BinaryOp::Equal => {
+                            Ok(Value::Bool(self.values_equal(&left_val, &right_val)))
+                        }
+                        crate::frontend::ast::BinaryOp::NotEqual => {
+                            Ok(Value::Bool(!self.values_equal(&left_val, &right_val)))
+                        }
+                        _ => self.eval_expr(expr) // Use regular evaluation for other operators
+                    }
+                } else {
+                    unreachable!()
+                }
+            }
+            // For all other expressions, use normal evaluation
+            _ => self.eval_expr(expr)
+        }
+    }
+
     fn eval_dataframe_operation(&mut self, source: &Expr, operation: &crate::frontend::ast::DataFrameOp) -> Result<Value, InterpreterError> {
         let source_value = self.eval_expr(source)?;
         
@@ -3423,11 +3869,125 @@ impl Interpreter {
                         columns: selected_columns,
                     })
                 }
-                crate::frontend::ast::DataFrameOp::Filter(_condition) => {
+                crate::frontend::ast::DataFrameOp::Filter(condition) => {
                     // Filter rows based on condition
-                    // For now, return the original DataFrame (placeholder implementation)
-                    // TODO: Implement proper row filtering based on condition
-                    Ok(Value::DataFrame { columns })
+                    if columns.is_empty() {
+                        return Ok(Value::DataFrame { columns });
+                    }
+                    
+                    let num_rows = columns[0].values.len();
+                    let mut filtered_rows: Vec<bool> = Vec::new();
+                    
+                    // Evaluate the condition for each row
+                    for row_idx in 0..num_rows {
+                        // Evaluate condition with column context
+                        let condition_result = self.eval_expr_with_column_context(condition, &columns, row_idx);
+                        
+                        match condition_result {
+                            Ok(Value::Bool(true)) => filtered_rows.push(true),
+                            Ok(Value::Bool(false)) => filtered_rows.push(false),
+                            Ok(_) => return Err(InterpreterError::RuntimeError("Filter condition must return boolean".to_string())),
+                            Err(e) => return Err(e),
+                        }
+                    }
+                    
+                    // Create new columns with filtered values
+                    let mut new_columns = Vec::new();
+                    for col in &columns {
+                        let mut filtered_values = Vec::new();
+                        for (idx, &keep) in filtered_rows.iter().enumerate() {
+                            if keep {
+                                if let Some(value) = col.values.get(idx) {
+                                    filtered_values.push(value.clone());
+                                }
+                            }
+                        }
+                        new_columns.push(DataFrameColumn {
+                            name: col.name.clone(),
+                            values: filtered_values,
+                        });
+                    }
+                    
+                    Ok(Value::DataFrame {
+                        columns: new_columns,
+                    })
+                }
+                crate::frontend::ast::DataFrameOp::GroupBy(group_columns) => {
+                    // Group by one or more columns (currently parser issue - empty columns)
+                    if group_columns.is_empty() {
+                        return Err(InterpreterError::RuntimeError("GroupBy operation requires at least one column (parser limitation)".to_string()));
+                    }
+                    
+                    // For now, support single column groupby
+                    let group_column = &group_columns[0];
+                    
+                    // Find the group column
+                    let group_col = columns.iter().find(|col| col.name == *group_column);
+                    if group_col.is_none() {
+                        return Err(InterpreterError::RuntimeError(format!("Group column '{}' not found in DataFrame", group_column)));
+                    }
+                    let group_col = group_col.unwrap();
+                    
+                    // Group rows by the group column values
+                    use std::collections::HashMap;
+                    let mut groups: HashMap<String, Vec<usize>> = HashMap::new();
+                    
+                    for (row_idx, value) in group_col.values.iter().enumerate() {
+                        let key = match value {
+                            Value::String(s) => s.to_string(),
+                            Value::Integer(i) => i.to_string(),
+                            Value::Float(f) => f.to_string(),
+                            Value::Bool(b) => b.to_string(),
+                            _ => "null".to_string(),
+                        };
+                        groups.entry(key).or_insert_with(Vec::new).push(row_idx);
+                    }
+                    
+                    // Create result columns: group column + aggregated numeric columns
+                    let mut result_columns = Vec::new();
+                    
+                    // Group column (unique values)
+                    let mut group_values = Vec::new();
+                    for key in groups.keys() {
+                        group_values.push(Value::from_string(key.clone()));
+                    }
+                    result_columns.push(DataFrameColumn {
+                        name: group_column.to_string(),
+                        values: group_values,
+                    });
+                    
+                    // Aggregate numeric columns (sum by default for now)
+                    for col in &columns {
+                        if col.name != *group_column {
+                            let mut aggregated_values = Vec::new();
+                            for (_key, indices) in &groups {
+                                let mut sum = 0.0;
+                                for &idx in indices {
+                                    if let Some(value) = col.values.get(idx) {
+                                        match value {
+                                            Value::Integer(i) => sum += *i as f64,
+                                            Value::Float(f) => sum += f,
+                                            _ => {} // Skip non-numeric values
+                                        }
+                                    }
+                                }
+                                // Return as integer if it's a whole number, otherwise float
+                                if sum.fract() == 0.0 {
+                                    aggregated_values.push(Value::Integer(sum as i64));
+                                } else {
+                                    aggregated_values.push(Value::Float(sum));
+                                }
+                            }
+                            result_columns.push(DataFrameColumn {
+                                name: format!("{}_sum", col.name),
+                                values: aggregated_values,
+                            });
+                        }
+                    }
+                    
+                    Ok(Value::DataFrame {
+                        columns: result_columns,
+                    })
                 }
                 _ => Err(InterpreterError::RuntimeError("DataFrameOperation not yet implemented".to_string())),
             }
