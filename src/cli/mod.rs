@@ -181,19 +181,19 @@ impl Cli {
     }
 }
 
-fn execute_repl(verbose: bool, quiet: bool) -> Result<(), String> {
+fn execute_repl(_verbose: bool, quiet: bool) -> Result<(), String> {
     if !quiet {
         println!("Starting Ruchy REPL v3.0.3...");
     }
     
     // Use existing REPL implementation
     crate::run_repl()
-        .map_err(|e| format!("REPL error: {}", e))
+        .map_err(|e| format!("REPL error: {e}"))
 }
 
 fn execute_run(path: PathBuf, verbose: bool) -> Result<(), String> {
     if verbose {
-        println!("Running script: {:?}", path);
+        println!("Running script: {}", path.display());
     }
     
     let source = std::fs::read_to_string(&path)
@@ -248,7 +248,7 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
             
             Ok(())
         }
-        NotebookCommand::Test { path, coverage, format } => {
+        NotebookCommand::Test { path, coverage: _, format } => {
             if verbose {
                 println!("Testing notebook: {:?}", path);
             }
@@ -273,7 +273,7 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
             
             Ok(())
         }
-        NotebookCommand::Convert { input, output, format } => {
+        NotebookCommand::Convert { input, output: _, format } => {
             if verbose {
                 println!("Converting {:?} to {} format", input, format);
             }
@@ -285,7 +285,7 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
 
 fn execute_wasm(cmd: WasmCommand, verbose: bool) -> Result<(), String> {
     match cmd {
-        WasmCommand::Compile { input, output, optimize, validate } => {
+        WasmCommand::Compile { input, output, optimize: _, validate } => {
             if verbose {
                 println!("Compiling {:?} to WASM", input);
             }
@@ -330,7 +330,7 @@ fn execute_wasm(cmd: WasmCommand, verbose: bool) -> Result<(), String> {
             
             Ok(())
         }
-        WasmCommand::Run { module, args } => {
+        WasmCommand::Run { module, args: _ } => {
             if verbose {
                 println!("Running WASM module: {:?}", module);
             }
@@ -356,7 +356,7 @@ fn execute_wasm(cmd: WasmCommand, verbose: bool) -> Result<(), String> {
 
 fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {
     match cmd {
-        TestCommand::Run { path, coverage, parallel, filter } => {
+        TestCommand::Run { path, coverage: _, parallel: _, filter: _ } => {
             if verbose {
                 println!("Running tests in {:?}", path);
             }
@@ -365,7 +365,7 @@ fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {
             println!("Test runner not yet implemented");
             Ok(())
         }
-        TestCommand::Report { format, output } => {
+        TestCommand::Report { format, output: _ } => {
             if verbose {
                 println!("Generating test report in {} format", format);
             }
