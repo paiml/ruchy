@@ -7,6 +7,32 @@
 **Status**: ✅ **NOTEBOOK STATE PERSISTENCE COMPLETE**
 **Achievement**: SharedSession solves fundamental notebook invariant violation
 
+## 🎯 **NEXT PRIORITIES - POST v3.1.0**
+
+### 🔴 **Priority 1: Fix Remaining SharedSession Issues**
+- [ ] **SS-001**: Fix test_basic_state_persistence (value formatting)
+- [ ] **SS-002**: Fix test_function_persistence (value formatting)
+- [ ] **SS-003**: Complete actual expression evaluation (currently returns placeholder)
+- [ ] **SS-004**: Add proper binding extraction from interpreter
+
+### 🟡 **Priority 2: WASM Module Optimization**
+- [ ] **WASM-004**: Reduce module size to <200KB target
+- [ ] **WASM-005**: Implement browser API bindings
+- [ ] **WASM-006**: Add WebWorker execution model
+- [ ] **WASM-007**: Performance optimization for <10ms cell execution
+
+### 🟢 **Priority 3: DataFrame Integration**
+- [ ] **DF-002**: Complete Apache Arrow integration
+- [ ] **DF-003**: Zero-copy operations verification
+- [ ] **DF-004**: 1M row performance targets
+- [ ] **DF-005**: Polars WASM compatibility
+
+### 🔵 **Priority 4: Demo Migration**
+- [ ] **DEMO-001**: Convert all 106 ruchy-repl-demos to notebooks
+- [ ] **DEMO-002**: AST-based parser for automatic conversion
+- [ ] **DEMO-003**: Jupyter .ipynb format export
+- [ ] **DEMO-004**: Round-trip conversion tests
+
 ## 🏆 **NOTEBOOK STATE MANAGEMENT COMPLETE** (v3.1.0 - 2025-09-11)
 
 ### ✅ **NOTEBOOK-002 COMPLETE**: SharedSession Architecture Implemented
@@ -88,10 +114,10 @@
   - Professional-grade VM with error handling and performance optimization
   - 10 comprehensive tests covering all instruction types
 
-⚠️ **BLOCKING ISSUE**: Version mismatch preventing deployment
-  - TDD implementation exists in local v1.95.0 but binary uses crates.io v1.91.0
-  - Circular dependency prevents direct publication
-  - Notebook appears broken despite complete implementation
+✅ **RESOLVED**: Version mismatch fixed with v3.1.0 publication
+  - SharedSession architecture successfully deployed
+  - State persistence across cells now functional
+  - Published to crates.io as v3.1.0
 
 ## 🎯 **TOP PRIORITY: BATTERIES-INCLUDED DATA SCIENCE PLATFORM (v1.94.0)**
 
