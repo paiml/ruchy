@@ -3,6 +3,7 @@
 //! Provides Jupyter-style notebook functionality in the browser.
 
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -12,6 +13,12 @@ type JsValue = String;
 
 #[cfg(not(target_arch = "wasm32"))]
 use serde::{Serialize, Deserialize};
+
+use crate::wasm::shared_session::{
+    SharedSession, ExecutionMode, ExecuteResponse, 
+    DependencyGraph, CellProvenance, MemoryUsage, Edge
+};
+
 
 // ============================================================================
 // Notebook Types
@@ -90,7 +97,7 @@ pub struct NotebookMetadata {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct NotebookRuntime {
     notebook: Notebook,
-    repl: crate::wasm::repl::WasmRepl,
+    session: Arc<Mutex<SharedSession>>,
     execution_count: usize,
     variables: HashMap<String, String>,
 }
@@ -100,13 +107,9 @@ impl NotebookRuntime {
     /// Create a new notebook runtime
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(constructor))]
     pub fn new() -> Result<NotebookRuntime, JsValue> {
-        #[cfg(target_arch = "wasm32")]
-        let repl = crate::wasm::repl::WasmRepl::new()?;
-        #[cfg(not(target_arch = "wasm32"))]
-        let repl = crate::wasm::repl::WasmRepl::new().map_err(|_| "Error creating REPL".to_string())?;
         Ok(NotebookRuntime {
             notebook: Notebook {
-                version: "1.0.0".to_string(),
+                version: "2.0.0".to_string(),
                 metadata: NotebookMetadata {
                     kernel: "wasm".to_string(),
                     language: "ruchy".to_string(),
@@ -116,7 +119,7 @@ impl NotebookRuntime {
                 },
                 cells: Vec::new(),
             },
-            repl,
+            session: Arc::new(Mutex::new(SharedSession::new())),
             execution_count: 0,
             variables: HashMap::new(),
         })
@@ -160,26 +163,30 @@ impl NotebookRuntime {
             CellType::Code => {
                 let start = get_timestamp();
                 
-                // Execute the code
-                let result = self.repl.eval(&cell.source).map_err(|e| {
-                    #[cfg(target_arch = "wasm32")]
-                    return e;
-                    #[cfg(not(target_arch = "wasm32"))]
-                    return format!("Eval error: {e:?}");
-                })?;
+                // Execute using SharedSession for persistent state
+                let mut session = self.session.lock().unwrap();
+                let result = session.execute(cell_id, &cell.source);
                 
                 // Update execution count
                 self.execution_count += 1;
                 cell.execution_count = Some(self.execution_count);
                 
                 // Parse result and create output
-                let output = if result.contains("error") {
-                    CellOutput::Error {
-                        message: result,
+                let output = match result {
+                    Ok(response) => {
+                        if response.success {
+                            CellOutput::Text(response.value)
+                        } else {
+                            CellOutput::Error {
+                                message: response.error.unwrap_or_default(),
+                                traceback: vec![],
+                            }
+                        }
+                    }
+                    Err(e) => CellOutput::Error {
+                        message: e,
                         traceback: vec![],
                     }
-                } else {
-                    CellOutput::Text(result)
                 };
                 
                 cell.outputs = vec![output];
@@ -192,6 +199,131 @@ impl NotebookRuntime {
                 Ok(String::new())
             }
         }
+    }
+    
+    /// Execute a cell with shared session (for testing)
+    pub fn execute_cell_with_session(&mut self, cell_id: &str, code: &str) -> Result<ExecuteResponse, String> {
+        // Add cell if it doesn't exist
+        if !self.notebook.cells.iter().any(|c| c.id == cell_id) {
+            let cell = NotebookCell {
+                id: cell_id.to_string(),
+                cell_type: CellType::Code,
+                source: code.to_string(),
+                outputs: Vec::new(),
+                execution_count: None,
+                metadata: CellMetadata::default(),
+            };
+            self.notebook.cells.push(cell);
+        }
+        
+        let mut session = self.session.lock().unwrap();
+        session.execute(cell_id, code)
+    }
+    
+    /// Execute cell in reactive mode
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn execute_reactive(&mut self, cell_id: &str, code: &str) -> Result<String, JsValue> {
+        let mut session = self.session.lock().unwrap();
+        let responses = session.execute_reactive(cell_id, code);
+        
+        Ok(serde_json::to_string(&responses).unwrap_or_else(|_| "[]".to_string()))
+    }
+    
+    /// Set execution mode
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn set_execution_mode(&mut self, mode: &str) {
+        let mut session = self.session.lock().unwrap();
+        let exec_mode = if mode == "reactive" {
+            ExecutionMode::Reactive
+        } else {
+            ExecutionMode::Manual
+        };
+        session.set_execution_mode(exec_mode);
+    }
+    
+    /// Get execution plan without executing
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn explain_reactive(&self, cell_id: &str) -> String {
+        let session = self.session.lock().unwrap();
+        let plan = session.explain_reactive(cell_id);
+        serde_json::to_string(&plan).unwrap_or_else(|_| "{}".to_string())
+    }
+    
+    /// Get global variables
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn get_globals(&self) -> String {
+        let session = self.session.lock().unwrap();
+        let globals = session.globals.serialize_for_inspection();
+        serde_json::to_string(&globals).unwrap_or_else(|_| "{}".to_string())
+    }
+    
+    /// Get dependency graph
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn get_dependency_graph(&self) -> String {
+        let session = self.session.lock().unwrap();
+        let graph = DependencyGraph {
+            nodes: session.cell_cache.keys().cloned().collect(),
+            edges: session.def_graph.iter()
+                .flat_map(|(cell, (deps, _))| {
+                    deps.iter().filter_map(|def_id| {
+                        session.globals.def_sources.get(def_id)
+                            .map(|source| Edge { from: source.clone(), to: cell.clone() })
+                    })
+                })
+                .collect(),
+        };
+        serde_json::to_string(&graph).unwrap_or_else(|_| "{}".to_string())
+    }
+    
+    /// Get cell provenance
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn get_cell_provenance(&self, cell_id: &str) -> String {
+        let session = self.session.lock().unwrap();
+        
+        let (reads, writes) = session.def_graph.get(cell_id)
+            .cloned()
+            .unwrap_or_default();
+        
+        let provenance = CellProvenance {
+            defines: writes.iter()
+                .filter_map(|def_id| session.globals.def_to_name.get(def_id))
+                .cloned()
+                .collect(),
+            depends_on: reads.iter()
+                .filter_map(|def_id| session.globals.def_to_name.get(def_id))
+                .cloned()
+                .collect(),
+            stale: session.stale_cells.contains(cell_id),
+        };
+        
+        serde_json::to_string(&provenance).unwrap_or_else(|_| "{}".to_string())
+    }
+    
+    /// Get memory usage
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn get_memory_usage(&self) -> String {
+        let session = self.session.lock().unwrap();
+        let usage = MemoryUsage {
+            globals_bytes: session.globals.size_bytes(),
+            checkpoints_count: session.checkpoints.len(),
+            checkpoints_bytes: session.checkpoints.values()
+                .map(|_| 1024) // Approximate
+                .sum(),
+            #[cfg(target_arch = "wasm32")]
+            total_allocated: wasm_bindgen::memory().buffer().byte_length(),
+            #[cfg(not(target_arch = "wasm32"))]
+            total_allocated: 0,
+        };
+        serde_json::to_string(&usage).unwrap_or_else(|_| "{}".to_string())
+    }
+    
+    /// Restart session
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+    pub fn restart_session(&mut self) {
+        let mut session = self.session.lock().unwrap();
+        *session = SharedSession::new();
+        self.notebook.cells.clear();
+        self.execution_count = 0;
     }
     
     /// Get all cells as JSON
