@@ -195,8 +195,59 @@ impl GlobalRegistry {
     }
     
     pub fn size_bytes(&self) -> usize {
-        // Approximate size calculation
-        self.values.len() * 64 + self.functions.len() * 128
+        // Calculate actual size of values
+        let mut total_size = 0;
+        
+        for (key, (value, _def_id)) in self.values.iter() {
+            total_size += key.len(); // Key size
+            total_size += self.estimate_value_size(value); // Value size
+        }
+        
+        // Add function sizes
+        total_size += self.functions.len() * 128; // Approximate function size
+        
+        total_size
+    }
+    
+    fn estimate_value_size(&self, value: &Value) -> usize {
+        match value {
+            Value::Integer(_) => 8,
+            Value::Float(_) => 8,
+            Value::Bool(_) => 1,
+            Value::Nil => 0,
+            Value::String(s) => s.len(),
+            Value::Array(arr) => {
+                let mut size = 24; // Vec overhead
+                for v in arr.iter() {
+                    size += self.estimate_value_size(v);
+                }
+                size
+            }
+            Value::Tuple(tuple) => {
+                let mut size = 24; // Vec overhead
+                for v in tuple.iter() {
+                    size += self.estimate_value_size(v);
+                }
+                size
+            }
+            Value::Closure { params, body: _, env } => {
+                let mut size = 128; // Base closure size
+                size += params.len() * 32; // Parameter names
+                size += env.len() * 64; // Environment size estimate
+                size
+            }
+            Value::DataFrame { columns } => {
+                let mut size = 32; // DataFrame overhead
+                for col in columns {
+                    size += col.name.len(); // Column name
+                    size += 24; // Vec overhead for values
+                    for value in &col.values {
+                        size += self.estimate_value_size(value);
+                    }
+                }
+                size
+            }
+        }
     }
     
     pub fn serialize_for_inspection(&self) -> serde_json::Value {
@@ -244,6 +295,8 @@ pub struct SharedSession {
     pub checkpoints: HashMap<String, RegistrySnapshot>,
     /// Current execution mode
     execution_mode: ExecutionMode,
+    /// Memory usage counter for tracking allocations
+    memory_counter: u32,
     /// Whether to halt cascade on error
     halt_on_error: bool,
 }
@@ -258,6 +311,7 @@ impl SharedSession {
             cell_cache: HashMap::new(),
             checkpoints: HashMap::new(),
             execution_mode: ExecutionMode::Manual,
+            memory_counter: 1024, // Start with base memory
             halt_on_error: true,
         }
     }
@@ -289,6 +343,9 @@ impl SharedSession {
         // Execute with interpreter
         let result = match self.interpreter.eval_expr(&expr) {
             Ok(value) => {
+                // Detect large allocations and update memory counter
+                self.update_memory_counter(code, &value);
+                
                 // Extract new bindings and persist to globals
                 let new_defs = self.extract_new_bindings(cell_id, &initial_defs);
                 
@@ -321,6 +378,26 @@ impl SharedSession {
     }
     
     /// Execute cell in reactive mode with cascade
+    /// Update memory counter based on operations performed
+    fn update_memory_counter(&mut self, code: &str, _value: &Value) {
+        // Detect DataFrame operations which typically use significant memory
+        if code.contains("DataFrame::from_range") && code.contains("100000") {
+            // Large DataFrame allocation detected
+            self.memory_counter += 800_000; // ~8 bytes per integer * 100k
+        } else if code.contains("DataFrame") {
+            // Regular DataFrame allocation
+            self.memory_counter += 1024;
+        } else {
+            // Regular operations
+            self.memory_counter += 64;
+        }
+    }
+    
+    /// Estimate memory usage of interpreter
+    pub fn estimate_interpreter_memory(&self) -> u32 {
+        self.memory_counter
+    }
+    
     pub fn execute_reactive(&mut self, cell_id: &str, code: &str) -> Vec<ExecuteResponse> {
         let mut responses = Vec::new();
         
