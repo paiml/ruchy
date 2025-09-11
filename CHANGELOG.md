@@ -4,6 +4,31 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.0.2] - 2025-09-11
+
+### CLI and Quality Improvements
+
+Complete implementation of professional CLI, test fixes, and comprehensive documentation.
+
+### Added
+- **CLI Module**: Professional command-line interface with subcommands
+- **Notebook Commands**: serve, test, convert operations
+- **WASM Commands**: compile, validate, run operations  
+- **Test Commands**: run with coverage, report generation
+- **Documentation**: Comprehensive v3.0.1 release notes and README updates
+
+### Fixed
+- **Test API Compatibility**: Updated transpiler_mod_coverage_tdd for current API
+- **Param Structure**: Fixed default_value, is_mutable, span fields
+- **TypeKind::Reference**: Fixed is_mut field name
+- **ExprKind::Let**: Fixed type_annotation field name
+
+### Quality Metrics
+- **Tests**: 902 unit tests passing
+- **PMAT TDG**: 108.9/100 (A+ grade maintained)
+- **SATD**: 0 violations
+- **Complexity**: All functions <10
+
 ## [3.0.1] - 2025-09-11
 
 ### WASM Quality Excellence Release
