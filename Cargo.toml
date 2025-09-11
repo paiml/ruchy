@@ -312,6 +312,10 @@ harness = false
 name = "transpiler"
 harness = false
 
+[[bench]]
+name = "shared_session_performance"
+harness = false
+
 [profile.dev]
 opt-level = 0
 
