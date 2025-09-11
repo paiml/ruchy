@@ -1,7 +1,7 @@
 // SPRINT6-005: Full Z3 SMT solver integration
 // PMAT Complexity: <10 per function
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::time::Duration;
 use std::process::{Command, Stdio};
 use std::io::Write;
@@ -491,7 +491,7 @@ impl BoundedModelChecker {
         BoundedResult::BoundedSafe { max_depth: self.max_depth }
     }
     
-    fn unroll_program(&self, program: &Program, depth: usize) -> String {
+    fn unroll_program(&self, _program: &Program, depth: usize) -> String {
         // Unroll loops and function calls up to specified depth
         let mut unrolled = String::new();
         

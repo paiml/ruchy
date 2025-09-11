@@ -2,7 +2,7 @@
 // PMAT Complexity: <10 per function
 
 use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::{SystemTime, Duration};
 use sha2::{Sha256, Digest};
 use serde::{Serialize, Deserialize};
@@ -124,7 +124,7 @@ impl IncrementalTester {
                 executed_cells.push(cell_id.clone());
             } else {
                 // Try to use cached result
-                if let Some(cached) = self.cache.get(cell_id) {
+                if let Some(_cached) = self.cache.get(cell_id) {
                     cached_cells.push(cell_id.clone());
                 } else {
                     // Cache miss - need to execute

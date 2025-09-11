@@ -354,10 +354,9 @@ impl WasmEmitter {
             ExprKind::List(_items) => {
                 // For now, just allocate space and return a pointer
                 // Real implementation would store items in memory
-                let mut instructions = vec![];
                 
                 // Allocate memory for array (simplified - just return 0 as pointer)
-                instructions.push(Instruction::I32Const(0));
+                let instructions = vec![Instruction::I32Const(0)];
                 
                 Ok(instructions)
             }
@@ -413,7 +412,7 @@ impl WasmEmitter {
                 } else if non_func_exprs.len() == 1 {
                     Some(non_func_exprs.into_iter().next().unwrap())
                 } else {
-                    Some(Expr::new(ExprKind::Block(non_func_exprs), expr.span.clone()))
+                    Some(Expr::new(ExprKind::Block(non_func_exprs), expr.span))
                 }
             }
             ExprKind::Function { .. } => None,
@@ -437,7 +436,7 @@ impl WasmEmitter {
             ExprKind::If { condition, then_branch, else_branch } => {
                 self.needs_memory(condition) ||
                 self.needs_memory(then_branch) ||
-                else_branch.as_ref().map_or(false, |e| self.needs_memory(e))
+                else_branch.as_ref().is_some_and(|e| self.needs_memory(e))
             }
             _ => false,
         }
@@ -460,7 +459,7 @@ impl WasmEmitter {
             ExprKind::If { condition, then_branch, else_branch } => {
                 self.has_return_with_value(condition) ||
                 self.has_return_with_value(then_branch) ||
-                else_branch.as_ref().map_or(false, |e| self.has_return_with_value(e))
+                else_branch.as_ref().is_some_and(|e| self.has_return_with_value(e))
             }
             ExprKind::While { condition, body } => {
                 self.has_return_with_value(condition) || self.has_return_with_value(body)
@@ -486,7 +485,7 @@ impl WasmEmitter {
             ExprKind::If { condition, then_branch, else_branch } => {
                 self.needs_locals(condition) ||
                 self.needs_locals(then_branch) ||
-                else_branch.as_ref().map_or(false, |e| self.needs_locals(e))
+                else_branch.as_ref().is_some_and(|e| self.needs_locals(e))
             }
             ExprKind::While { condition, body } => {
                 self.needs_locals(condition) || self.needs_locals(body)
@@ -509,7 +508,7 @@ impl WasmEmitter {
             ExprKind::List(_) => true,
             ExprKind::Block(exprs) => {
                 // Block produces value if last expression does
-                exprs.last().map_or(false, |e| self.expression_produces_value(e))
+                exprs.last().is_some_and(|e| self.expression_produces_value(e))
             }
             ExprKind::If { .. } => true,
             ExprKind::Let { body, .. } => {
@@ -530,7 +529,7 @@ impl WasmEmitter {
         match literal {
             Literal::Integer(n) => Ok(vec![Instruction::I32Const(*n as i32)]),
             Literal::Float(f) => Ok(vec![Instruction::F32Const(*f as f32)]),
-            Literal::Bool(b) => Ok(vec![Instruction::I32Const(if *b { 1 } else { 0 })]),
+            Literal::Bool(b) => Ok(vec![Instruction::I32Const(i32::from(*b))]),
             Literal::String(_) => {
                 // String literals would need memory allocation
                 // For now, return a placeholder
