@@ -7370,6 +7370,52 @@ impl Repl {
                     Some(Err(anyhow::anyhow!("DataFrame::new() expects no arguments, got {}", args.len())))
                 }
             }
+            ("DataFrame", "from_rows") => {
+                // Create DataFrame from list of row lists
+                if args.len() != 1 {
+                    Some(Err(anyhow::anyhow!("DataFrame::from_rows() requires exactly 1 argument (rows), got {}", args.len())))
+                } else {
+                    match self.evaluate_expr(&args[0], _deadline, _depth + 1) {
+                        Ok(Value::List(rows)) => {
+                            // Convert rows to columns
+                            let mut columns = Vec::new();
+                            if !rows.is_empty() {
+                                // Determine number of columns from first row
+                                let num_cols = match &rows[0] {
+                                    Value::List(row_values) => row_values.len(),
+                                    _ => return Some(Err(anyhow::anyhow!("DataFrame::from_rows() expects each row to be a list"))),
+                                };
+                                
+                                // Initialize columns with default names
+                                for col_idx in 0..num_cols {
+                                    columns.push(DataFrameColumn {
+                                        name: format!("column_{}", col_idx),
+                                        values: Vec::new(),
+                                    });
+                                }
+                                
+                                // Fill column data from rows
+                                for row in rows {
+                                    match row {
+                                        Value::List(row_values) => {
+                                            if row_values.len() != num_cols {
+                                                return Some(Err(anyhow::anyhow!("DataFrame::from_rows() all rows must have the same length")));
+                                            }
+                                            for (col_idx, value) in row_values.into_iter().enumerate() {
+                                                columns[col_idx].values.push(value);
+                                            }
+                                        }
+                                        _ => return Some(Err(anyhow::anyhow!("DataFrame::from_rows() expects each row to be a list"))),
+                                    }
+                                }
+                            }
+                            Some(Ok(Value::DataFrame { columns }))
+                        }
+                        Ok(_) => Some(Err(anyhow::anyhow!("DataFrame::from_rows() expects a list of rows"))),
+                        Err(e) => Some(Err(e)),
+                    }
+                }
+            }
             _ => None,
         }
     }
