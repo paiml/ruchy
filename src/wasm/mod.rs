@@ -10,6 +10,7 @@ pub mod portability;
 pub mod repl;
 pub mod notebook;
 pub mod shared_session;
+pub mod demo_converter;
 
 pub use component::{WasmComponent, ComponentBuilder, ComponentConfig};
 pub use wit::{WitInterface, WitGenerator, InterfaceDefinition};
@@ -18,3 +19,4 @@ pub use portability::{PortabilityScore, PortabilityAnalyzer, PortabilityReport};
 pub use repl::{WasmRepl, ReplOutput, TimingInfo};
 pub use notebook::{NotebookRuntime, NotebookCell, Notebook, CellType, CellOutput};
 pub use shared_session::{SharedSession, GlobalRegistry, DefId, ExecutionMode, ExecuteResponse};
+pub use demo_converter::{convert_demo_to_notebook, find_demo_files, NotebookCell as DemoNotebookCell, Notebook as DemoNotebook};
