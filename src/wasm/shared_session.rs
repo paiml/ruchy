@@ -52,8 +52,8 @@ impl ExecuteResponse {
         ExecuteResponse {
             success: true,
             cell_id: String::new(),
-            value: format!("{:?}", value),
-            result: format!("{:?}", value),
+            value: format!("{}", value),
+            result: format!("{}", value),
             error: None,
             execution_time_ms: 0.0,
         }
@@ -304,8 +304,8 @@ impl SharedSession {
                 Ok(ExecuteResponse {
                     success: true,
                     cell_id: cell_id.to_string(),
-                    value: format!("{:?}", value),
-                    result: format!("{:?}", value),
+                    value: format!("{}", value),
+                    result: format!("{}", value),
                     error: None,
                     execution_time_ms: elapsed,
                 })
