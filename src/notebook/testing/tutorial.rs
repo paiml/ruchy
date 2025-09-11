@@ -1,7 +1,6 @@
 // SPRINT4-004: Interactive tutorial system
 // PMAT Complexity: <10 per function
 
-use crate::notebook::testing::types::*;
 use std::collections::HashMap;
 
 /// Interactive tutorial system

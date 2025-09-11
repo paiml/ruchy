@@ -114,7 +114,6 @@ impl PropertyTester {
 }
 
 fn generate_random_code(rng: &mut impl rand::Rng, index: usize) -> String {
-    use rand::Rng;
     
     match rng.gen_range(0..6) {
         0 => format!("let x{} = {}", index, rng.gen_range(0..100)),
