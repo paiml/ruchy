@@ -211,8 +211,8 @@ impl ComplexityAnalyzer {
     }
     
     fn count_loop_depth(&self, source: &str) -> usize {
-        let mut max_depth = 0;
-        let mut current_depth = 0;
+        let mut max_depth: usize = 0;
+        let mut current_depth: usize = 0;
         
         for line in source.lines() {
             if line.trim().starts_with("for ") || line.trim().starts_with("while ") {

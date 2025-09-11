@@ -3,10 +3,9 @@
 // PMAT Complexity Target: <10 per function
 // Coverage Target: ≥80%
 
-use ruchy::notebook::testing::{
-    NotebookTester, TestResult, TestConfig, CellTestType, 
-    CellOutput, TestReport, GoldenManager
-};
+// These modules don't exist yet in the public API
+// TODO: Implement these as part of the notebook testing framework
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 

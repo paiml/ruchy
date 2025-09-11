@@ -3851,7 +3851,7 @@ impl Interpreter {
                 
                 // Rebuild the binary expression with resolved values and evaluate
                 // For simplicity, handle common comparison operations directly
-                if let (ExprKind::Binary { op, .. }) = &expr.kind {
+                if let ExprKind::Binary { op, .. } = &expr.kind {
                     match op {
                         crate::frontend::ast::BinaryOp::Greater => {
                             self.compare_values(&left_val, &right_val, |a, b| a > b)
