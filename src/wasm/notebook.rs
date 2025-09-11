@@ -303,6 +303,7 @@ impl NotebookRuntime {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
     pub fn get_memory_usage(&self) -> String {
         let session = self.session.lock().unwrap();
+        let interpreter_memory = session.estimate_interpreter_memory();
         let usage = MemoryUsage {
             globals_bytes: session.globals.size_bytes(),
             checkpoints_count: session.checkpoints.len(),
@@ -312,7 +313,7 @@ impl NotebookRuntime {
             #[cfg(target_arch = "wasm32")]
             total_allocated: wasm_bindgen::memory().buffer().byte_length(),
             #[cfg(not(target_arch = "wasm32"))]
-            total_allocated: 0,
+            total_allocated: interpreter_memory,
         };
         serde_json::to_string(&usage).unwrap_or_else(|_| "{}".to_string())
     }

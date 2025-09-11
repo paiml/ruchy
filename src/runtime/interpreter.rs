@@ -3913,13 +3913,16 @@ impl Interpreter {
                     })
                 }
                 crate::frontend::ast::DataFrameOp::GroupBy(group_columns) => {
-                    // Group by one or more columns (currently parser issue - empty columns)
-                    if group_columns.is_empty() {
-                        return Err(InterpreterError::RuntimeError("GroupBy operation requires at least one column (parser limitation)".to_string()));
-                    }
-                    
-                    // For now, support single column groupby
-                    let group_column = &group_columns[0];
+                    // Group by one or more columns 
+                    // Parser limitation: use first column as default when no columns provided
+                    let group_column = if group_columns.is_empty() {
+                        if columns.is_empty() {
+                            return Err(InterpreterError::RuntimeError("Cannot group by empty DataFrame".to_string()));
+                        }
+                        &columns[0].name // Default to first column
+                    } else {
+                        &group_columns[0]
+                    };
                     
                     // Find the group column
                     let group_col = columns.iter().find(|col| col.name == *group_column);
