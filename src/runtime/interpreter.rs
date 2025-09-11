@@ -19,6 +19,13 @@ use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
 use std::rc::Rc;
 
+/// DataFrame column representation for the interpreter
+#[derive(Debug, Clone, PartialEq)]
+pub struct DataFrameColumn {
+    pub name: String,
+    pub values: Vec<Value>,
+}
+
 /// Runtime value representation using safe enum approach
 /// Alternative to tagged pointers that respects project's `unsafe_code = "forbid"`
 #[derive(Clone, Debug, PartialEq)]
@@ -42,6 +49,10 @@ pub enum Value {
         params: Vec<String>,
         body: Rc<Expr>,
         env: Rc<HashMap<String, Value>>, // Captured environment
+    },
+    /// DataFrame value
+    DataFrame {
+        columns: Vec<DataFrameColumn>,
     },
 }
 
@@ -140,6 +151,7 @@ impl Value {
             Value::Array(_) => "array",
             Value::Tuple(_) => "tuple",
             Value::Closure { .. } => "function",
+            Value::DataFrame { .. } => "dataframe",
         }
     }
 }
@@ -239,6 +251,13 @@ impl std::fmt::Display for Value {
                 write!(f, ")")
             }
             Value::Closure { .. } => write!(f, "<function>"),
+            Value::DataFrame { columns } => {
+                writeln!(f, "DataFrame with {} columns:", columns.len())?;
+                for col in columns {
+                    writeln!(f, "  {}: {} rows", col.name, col.values.len())?;
+                }
+                Ok(())
+            }
         }
     }
 }
@@ -926,6 +945,13 @@ impl ConservativeGC {
                 let base_size = 48; // Closure overhead
                 let params_size = params.iter().map(std::string::String::len).sum::<usize>();
                 base_size + params_size
+            }
+            Value::DataFrame { columns } => {
+                let base_size = 24; // DataFrame overhead
+                let columns_size = columns.iter().map(|col| {
+                    col.name.len() + col.values.iter().map(|v| self.estimate_object_size(v)).sum::<usize>()
+                }).sum::<usize>();
+                base_size + columns_size
             }
         }
     }
@@ -1680,6 +1706,7 @@ impl Value {
             Value::Array(_) => std::any::TypeId::of::<Vec<Value>>(),
             Value::Tuple(_) => std::any::TypeId::of::<(Value,)>(),
             Value::Closure { .. } => std::any::TypeId::of::<fn()>(),
+            Value::DataFrame { .. } => std::any::TypeId::of::<DataFrameColumn>(),
         }
     }
 }
@@ -1693,6 +1720,8 @@ impl Interpreter {
         // These are special markers that will be handled in eval_function_call
         global_env.insert("format".to_string(), Value::String(Rc::new("__builtin_format__".to_string())));
         global_env.insert("HashMap".to_string(), Value::String(Rc::new("__builtin_hashmap__".to_string())));
+        global_env.insert("DataFrame".to_string(), Value::String(Rc::new("__builtin_dataframe__".to_string())));
+        global_env.insert("col".to_string(), Value::String(Rc::new("__builtin_col__".to_string())));
         
         Self {
             stack: Vec::with_capacity(1024), // Pre-allocate stack
@@ -1726,6 +1755,7 @@ impl Interpreter {
             ExprKind::Unary { op, operand } => self.eval_unary_expr(*op, operand),
             ExprKind::Call { func, args } => self.eval_function_call(func, args),
             ExprKind::MethodCall { receiver, method, args } => self.eval_method_call(receiver, method, args),
+            ExprKind::DataFrameOperation { source, operation } => self.eval_dataframe_operation(source, operation),
             
             // Functions and lambdas
             ExprKind::Function { name, params, body, .. } => self.eval_function(name, params, body),
@@ -1935,6 +1965,80 @@ impl Interpreter {
                     "__builtin_hashmap__" => {
                         // For now, we don't have a proper HashMap type, so return empty string representation
                         Ok(Value::from_string("{}".to_string()))
+                    }
+                    "__builtin_dataframe__" => {
+                        // Handle DataFrame constructor
+                        if args.is_empty() {
+                            // DataFrame() - create empty DataFrame
+                            Ok(Value::DataFrame { columns: Vec::new() })
+                        } else if args.len() == 1 {
+                            // DataFrame(rows) - from_rows pattern
+                            match &args[0] {
+                                Value::Array(rows) => {
+                                    // Convert rows to columns
+                                    let mut columns = Vec::new();
+                                    if !rows.is_empty() {
+                                        // Determine number of columns from first row
+                                        if let Value::Array(first_row) = &rows[0] {
+                                            let num_cols = first_row.len();
+                                            
+                                            // Initialize columns with default names
+                                            for col_idx in 0..num_cols {
+                                                columns.push(DataFrameColumn {
+                                                    name: format!("column_{}", col_idx),
+                                                    values: Vec::new(),
+                                                });
+                                            }
+                                            
+                                            // Fill column data from rows
+                                            for row in rows.iter() {
+                                                if let Value::Array(row_values) = row {
+                                                    if row_values.len() != num_cols {
+                                                        return Err(InterpreterError::RuntimeError(
+                                                            "DataFrame rows must have the same length".to_string()
+                                                        ));
+                                                    }
+                                                    for (col_idx, value) in row_values.iter().enumerate() {
+                                                        columns[col_idx].values.push(value.clone());
+                                                    }
+                                                } else {
+                                                    return Err(InterpreterError::RuntimeError(
+                                                        "DataFrame expects each row to be an array".to_string()
+                                                    ));
+                                                }
+                                            }
+                                        } else {
+                                            return Err(InterpreterError::RuntimeError(
+                                                "DataFrame expects rows to be arrays".to_string()
+                                            ));
+                                        }
+                                    }
+                                    Ok(Value::DataFrame { columns })
+                                }
+                                _ => Err(InterpreterError::RuntimeError(
+                                    "DataFrame expects an array of rows".to_string()
+                                )),
+                            }
+                        } else {
+                            Err(InterpreterError::RuntimeError(
+                                "DataFrame expects 0 or 1 arguments".to_string()
+                            ))
+                        }
+                    }
+                    "__builtin_col__" => {
+                        // Handle col() function - for now just return the column name as a string
+                        // In a full implementation, this would create a column reference object
+                        if args.len() == 1 {
+                            if let Value::String(_column_name) = &args[0] {
+                                // For now, just return the column name
+                                // TODO: Create a proper ColumnRef type
+                                Ok(args[0].clone())
+                            } else {
+                                Err(InterpreterError::RuntimeError("col() expects a string column name".to_string()))
+                            }
+                        } else {
+                            Err(InterpreterError::RuntimeError("col() expects exactly 1 argument (column_name)".to_string()))
+                        }
                     }
                     _ => Err(InterpreterError::RuntimeError(format!("Unknown builtin function: {}", s))),
                 }
@@ -2584,6 +2688,12 @@ impl Interpreter {
             Value::Closure { params, .. } => {
                 format!("function/{}", params.len())
             }
+            Value::DataFrame { columns } => {
+                format!("DataFrame({} columns, {} rows)", 
+                    columns.len(), 
+                    columns.first().map_or(0, |c| c.values.len())
+                )
+            }
         }
     }
 
@@ -3189,6 +3299,7 @@ impl Interpreter {
             Value::Array(arr) => self.eval_array_method(arr, method, arg_values),
             Value::Float(f) => self.eval_float_method(*f, method, args_empty),
             Value::Integer(n) => self.eval_integer_method(*n, method, args_empty),
+            Value::DataFrame { columns } => self.eval_dataframe_method(columns, method, arg_values),
             _ => self.eval_generic_method(receiver, method, args_empty),
         }
     }
@@ -3233,6 +3344,97 @@ impl Interpreter {
         }
     }
     
+    fn eval_dataframe_method(&self, columns: &[DataFrameColumn], method: &str, arg_values: &[Value]) -> Result<Value, InterpreterError> {
+        match method {
+            "select" => {
+                // Select specific columns by name
+                if arg_values.len() != 1 {
+                    return Err(InterpreterError::RuntimeError("DataFrame.select() requires exactly 1 argument (column_name)".to_string()));
+                }
+                
+                if let Value::String(column_name) = &arg_values[0] {
+                    // Find the column
+                    for col in columns {
+                        if col.name == **column_name {
+                            // Return a DataFrame with just this column
+                            return Ok(Value::DataFrame {
+                                columns: vec![col.clone()],
+                            });
+                        }
+                    }
+                    Err(InterpreterError::RuntimeError(format!("Column '{}' not found in DataFrame", column_name)))
+                } else {
+                    Err(InterpreterError::RuntimeError("DataFrame.select() expects column name as string".to_string()))
+                }
+            }
+            "sum" => {
+                // Sum all numeric values in all columns
+                if !arg_values.is_empty() {
+                    return Err(InterpreterError::RuntimeError("DataFrame.sum() takes no arguments".to_string()));
+                }
+                
+                let mut total = 0.0;
+                for col in columns {
+                    for value in &col.values {
+                        match value {
+                            Value::Integer(i) => total += *i as f64,
+                            Value::Float(f) => total += f,
+                            _ => {} // Skip non-numeric values
+                        }
+                    }
+                }
+                
+                // Return as integer if it's a whole number, otherwise float
+                if total.fract() == 0.0 {
+                    Ok(Value::Integer(total as i64))
+                } else {
+                    Ok(Value::Float(total))
+                }
+            }
+            _ => Err(InterpreterError::RuntimeError(format!("Unknown DataFrame method: {}", method))),
+        }
+    }
+    
+    fn eval_dataframe_operation(&mut self, source: &Expr, operation: &crate::frontend::ast::DataFrameOp) -> Result<Value, InterpreterError> {
+        let source_value = self.eval_expr(source)?;
+        
+        if let Value::DataFrame { columns } = source_value {
+            match operation {
+                crate::frontend::ast::DataFrameOp::Select(column_names) => {
+                    // Select specific columns by name
+                    let mut selected_columns = Vec::new();
+                    
+                    for name in column_names {
+                        // Find the column
+                        let mut found = false;
+                        for col in &columns {
+                            if col.name == *name {
+                                selected_columns.push(col.clone());
+                                found = true;
+                                break;
+                            }
+                        }
+                        if !found {
+                            return Err(InterpreterError::RuntimeError(format!("Column '{}' not found in DataFrame", name)));
+                        }
+                    }
+                    
+                    Ok(Value::DataFrame {
+                        columns: selected_columns,
+                    })
+                }
+                crate::frontend::ast::DataFrameOp::Filter(_condition) => {
+                    // Filter rows based on condition
+                    // For now, return the original DataFrame (placeholder implementation)
+                    // TODO: Implement proper row filtering based on condition
+                    Ok(Value::DataFrame { columns })
+                }
+                _ => Err(InterpreterError::RuntimeError("DataFrameOperation not yet implemented".to_string())),
+            }
+        } else {
+            Err(InterpreterError::RuntimeError("DataFrameOperation can only be applied to DataFrame values".to_string()))
+        }
+    }
     
     /// Evaluate string interpolation
     fn eval_string_interpolation(&mut self, parts: &[StringPart]) -> Result<Value, InterpreterError> {

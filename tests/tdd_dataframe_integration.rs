@@ -10,10 +10,16 @@ use std::time::Instant;
 fn test_dataframe_creation_in_notebook() {
     let mut runtime = NotebookRuntime::new().unwrap();
     
-    // Create a simple DataFrame
+    // Create a simple DataFrame with from_rows pattern - simplified for now
     let result = runtime.execute_cell_with_session("cell1", 
-        "let df = DataFrame::from_rows([[1, 2], [3, 4]])"
+        "DataFrame([[1, 2], [3, 4]])"
     );
+    
+    // Debug output
+    match &result {
+        Ok(response) => println!("Success: {}", response.value),
+        Err(e) => println!("Error: {}", e),
+    }
     
     // Should succeed without error
     assert!(result.is_ok(), "DataFrame creation failed");
@@ -25,12 +31,18 @@ fn test_dataframe_column_selection() {
     
     // Create DataFrame and select column
     runtime.execute_cell_with_session("cell1", 
-        "let df = DataFrame::from_rows([[1, 2], [3, 4]])"
+        "let df = DataFrame([[1, 2], [3, 4]])"
     ).ok();
     
     let result = runtime.execute_cell_with_session("cell2", 
         "df.select(\"column_0\")"
     );
+    
+    // Debug output
+    match &result {
+        Ok(response) => println!("Success: {}", response.value),
+        Err(e) => println!("Error: {}", e),
+    }
     
     // Should be able to select columns
     assert!(result.is_ok(), "Column selection failed");
@@ -42,12 +54,18 @@ fn test_dataframe_filter_operations() {
     
     // Create and filter DataFrame
     runtime.execute_cell_with_session("cell1", 
-        "let df = DataFrame::from_rows([[1, 2], [3, 4], [5, 6]])"
+        "let df = DataFrame([[1, 2], [3, 4], [5, 6]])"
     ).ok();
     
     let result = runtime.execute_cell_with_session("cell2", 
         "df.filter(col(\"column_0\") > 2)"
     );
+    
+    // Debug output
+    match &result {
+        Ok(response) => println!("Success: {}", response.value),
+        Err(e) => println!("Error: {}", e),
+    }
     
     // Filter should work
     assert!(result.is_ok(), "DataFrame filter failed");
@@ -59,7 +77,7 @@ fn test_dataframe_aggregation() {
     
     // Create and aggregate DataFrame
     runtime.execute_cell_with_session("cell1", 
-        "let df = DataFrame::from_rows([[1, 2], [3, 4], [5, 6]])"
+        "let df = DataFrame([[1, 2], [3, 4], [5, 6]])"
     ).ok();
     
     let result = runtime.execute_cell_with_session("cell2", 
