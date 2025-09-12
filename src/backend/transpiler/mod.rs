@@ -319,7 +319,7 @@ impl Transpiler {
     /// let mut parser = Parser::new("42");
     /// let ast = parser.parse().expect("Failed to parse");
     /// 
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let result = transpiler.transpile_to_program(&ast);
     /// assert!(result.is_ok());
     /// 

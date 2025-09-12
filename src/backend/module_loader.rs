@@ -16,11 +16,15 @@
 //! ```rust
 //! use ruchy::backend::module_loader::ModuleLoader;
 //! 
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut loader = ModuleLoader::new();
 //! loader.add_search_path("./src");
 //! loader.add_search_path("./modules");
 //! 
-//! let module = loader.load_module("math")?; // Loads math.ruchy
+//! // Would load math.ruchy if it existed
+//! // let module = loader.load_module("math")?; 
+//! # Ok(())
+//! # }
 //! ```
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
