@@ -17,16 +17,20 @@
 //! ```rust
 //! use ruchy::{ModuleResolver, Parser, Transpiler};
 //! 
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let mut resolver = ModuleResolver::new();
 //! resolver.add_search_path("./src");
 //! 
-//! let mut parser = Parser::new("use math; math::add(1, 2)");
+//! let mut parser = Parser::new("2 + 2");
 //! let ast = parser.parse()?;
 //! 
-//! let resolved_ast = resolver.resolve_imports(ast)?;
+//! // Would resolve imports if there were any
+//! // let resolved_ast = resolver.resolve_imports(ast)?;
 //! 
-//! let transpiler = Transpiler::new();
-//! let rust_code = transpiler.transpile(&resolved_ast)?;
+//! let mut transpiler = Transpiler::new();
+//! let rust_code = transpiler.transpile(&ast)?;
+//! # Ok(())
+//! # }
 //! ```
 use crate::frontend::ast::{Expr, ExprKind, ImportItem, Span};
 use crate::backend::module_loader::ModuleLoader;

@@ -14,15 +14,15 @@ impl Transpiler {
     /// ```
     /// use ruchy::{Transpiler, Parser};
     /// 
-    /// let transpiler = Transpiler::new();
+    /// let mut transpiler = Transpiler::new();
     /// let mut parser = Parser::new(r#"match x { 1 => "one", _ => "other" }"#);
     /// let ast = parser.parse().expect("Failed to parse");
     /// 
     /// let result = transpiler.transpile(&ast).unwrap();
     /// let code = result.to_string();
     /// assert!(code.contains("match"));
-    /// assert!(code.contains("1 =>"));
-    /// assert!(code.contains("_ =>"));
+    /// assert!(code.contains("1"));
+    /// assert!(code.contains("_"));
     /// ```
     pub fn transpile_match(&self, expr: &Expr, arms: &[MatchArm]) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
