@@ -774,47 +774,37 @@ pub fn parse_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
     let mut patterns = Vec::new();
     
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-        // Parse nested pattern recursively
-        let pattern = match state.tokens.peek() {
-            Some((Token::Identifier(name), _)) => {
-                let name = name.clone();
-                state.tokens.advance();
-                Pattern::Identifier(name)
-            }
-            Some((Token::LeftParen, _)) => {
-                // Nested tuple pattern
-                parse_tuple_pattern(state)?
-            }
-            Some((Token::LeftBracket, _)) => {
-                // Nested list pattern
-                parse_list_pattern(state)?
-            }
-            Some((Token::LeftBrace, _)) => {
-                // Nested struct pattern
-                parse_struct_pattern(state)?
-            }
-            Some((Token::Underscore, _)) => {
-                state.tokens.advance();
-                Pattern::Wildcard
-            }
-            _ => bail!("Expected identifier, tuple, list, struct, or wildcard in tuple pattern"),
-        };
+        let pattern = parse_single_tuple_pattern_element(state)?;
         patterns.push(pattern);
         
-        // Only consume comma if not at end
-        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-            state.tokens.advance();
-            // If we hit RightParen after comma, break (trailing comma case)
-            if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-                break;
-            }
-        } else if !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
-            bail!("Expected ',' or ')' in tuple pattern");
+        // Use shared separator handler
+        if !handle_pattern_separator(state, Token::RightParen)? {
+            break;
         }
     }
     
     state.tokens.expect(&Token::RightParen)?;
     Ok(Pattern::Tuple(patterns))
+}
+
+/// Parse a single element in a tuple pattern
+/// Extracted to reduce complexity of parse_tuple_pattern
+fn parse_single_tuple_pattern_element(state: &mut ParserState) -> Result<Pattern> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            let name = name.clone();
+            state.tokens.advance();
+            Ok(Pattern::Identifier(name))
+        }
+        Some((Token::LeftParen, _)) => parse_tuple_pattern(state),
+        Some((Token::LeftBracket, _)) => parse_list_pattern(state),
+        Some((Token::LeftBrace, _)) => parse_struct_pattern(state),
+        Some((Token::Underscore, _)) => {
+            state.tokens.advance();
+            Ok(Pattern::Wildcard)
+        }
+        _ => bail!("Expected identifier, tuple, list, struct, or wildcard in tuple pattern"),
+    }
 }
 
 pub fn parse_struct_pattern(state: &mut ParserState) -> Result<Pattern> {
@@ -867,64 +857,98 @@ pub fn parse_list_pattern(state: &mut ParserState) -> Result<Pattern> {
     let mut patterns = Vec::new();
     
     while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-        let pattern = match state.tokens.peek() {
-            Some((Token::Identifier(name), _)) => {
-                let name = name.clone();
-                state.tokens.advance();
-                
-                // Check for default value: identifier = expr
-                if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
-                    state.tokens.advance(); // consume '='
-                    let default_expr = super::parse_expr_recursive(state)?;
-                    Pattern::WithDefault {
-                        pattern: Box::new(Pattern::Identifier(name)),
-                        default: Box::new(default_expr),
-                    }
-                } else {
-                    Pattern::Identifier(name)
-                }
-            }
-            Some((Token::DotDotDot, _)) => {
-                // Rest pattern: ...rest or ...
-                state.tokens.advance(); // consume ...
-                // Check if named rest pattern
-                if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-                    let name = name.clone();
-                    state.tokens.advance();
-                    Pattern::RestNamed(name)
-                } else {
-                    Pattern::Rest
-                }
-            }
-            Some((Token::LeftParen, _)) => {
-                // Nested tuple pattern in list
-                parse_tuple_pattern(state)?
-            }
-            Some((Token::LeftBracket, _)) => {
-                // Nested list pattern
-                parse_list_pattern(state)?
-            }
-            Some((Token::Underscore, _)) => {
-                state.tokens.advance();
-                Pattern::Wildcard
-            }
-            _ => bail!("Expected identifier, tuple, list, wildcard, or rest pattern in list pattern"),
-        };
+        let pattern = parse_single_list_pattern_element(state)?;
         patterns.push(pattern);
         
-        if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
-            state.tokens.advance();
-            // Break if we hit the closing bracket after comma
-            if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-                break;
-            }
-        } else if !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
-            bail!("Expected ',' or ']' in list pattern");
+        // Handle comma separator
+        if !handle_pattern_separator(state, Token::RightBracket)? {
+            break;
         }
     }
     
     state.tokens.expect(&Token::RightBracket)?;
     Ok(Pattern::List(patterns))
+}
+
+/// Parse a single element in a list pattern
+/// Extracted to reduce complexity of parse_list_pattern
+fn parse_single_list_pattern_element(state: &mut ParserState) -> Result<Pattern> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(name), _)) => {
+            let name = name.clone();
+            parse_identifier_pattern_with_default(state, name)
+        }
+        Some((Token::DotDotDot, _)) => parse_rest_pattern(state),
+        Some((Token::LeftParen, _)) => parse_tuple_pattern(state),
+        Some((Token::LeftBracket, _)) => parse_list_pattern(state),
+        Some((Token::Underscore, _)) => {
+            state.tokens.advance();
+            Ok(Pattern::Wildcard)
+        }
+        _ => bail!("Expected identifier, tuple, list, wildcard, or rest pattern in list pattern"),
+    }
+}
+
+/// Parse identifier pattern with optional default value
+/// Extracted to reduce complexity
+fn parse_identifier_pattern_with_default(state: &mut ParserState, name: String) -> Result<Pattern> {
+    state.tokens.advance();
+    
+    // Check for default value: identifier = expr
+    if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
+        state.tokens.advance(); // consume '='
+        let default_expr = super::parse_expr_recursive(state)?;
+        Ok(Pattern::WithDefault {
+            pattern: Box::new(Pattern::Identifier(name)),
+            default: Box::new(default_expr),
+        })
+    } else {
+        Ok(Pattern::Identifier(name))
+    }
+}
+
+/// Parse rest pattern (...rest or ...)
+/// Extracted to reduce complexity
+fn parse_rest_pattern(state: &mut ParserState) -> Result<Pattern> {
+    state.tokens.advance(); // consume ...
+    
+    // Check if named rest pattern
+    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
+        let name = name.clone();
+        state.tokens.advance();
+        Ok(Pattern::RestNamed(name))
+    } else {
+        Ok(Pattern::Rest)
+    }
+}
+
+/// Handle pattern separator (comma) and check for trailing comma
+/// Returns true if should continue parsing, false if should stop
+/// Extracted to reduce complexity and share with tuple pattern
+fn handle_pattern_separator(state: &mut ParserState, end_token: Token) -> Result<bool> {
+    if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
+        state.tokens.advance();
+        // Check for trailing comma
+        if let Some((token, _)) = state.tokens.peek() {
+            if *token == end_token {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    } else if let Some((token, _)) = state.tokens.peek() {
+        if *token != end_token {
+        let expected = match end_token {
+            Token::RightBracket => "',' or ']'",
+            Token::RightParen => "',' or ')'",
+            _ => "',' or closing delimiter",
+        };
+            bail!("Expected {} in pattern", expected);
+        } else {
+            Ok(false)
+        }
+    } else {
+        bail!("Unexpected end of input in pattern")
+    }
 }
 
 /// Parse if expression: if condition { `then_branch` } [else { `else_branch` }]
@@ -1591,7 +1615,6 @@ fn parse_array_element(state: &mut ParserState) -> Result<Expr> {
 }
 
 fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
-    // Parse [ expr, expr, ... ] or [expr for var in iter if cond]
     let start_span = state.tokens.expect(&Token::LeftBracket)?;
     
     // Handle empty list
@@ -1600,37 +1623,39 @@ fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
         return Ok(Expr::new(ExprKind::List(vec![]), start_span));
     }
     
-    // Parse first element/expression (might be spread)
+    // Parse first element
     let first_expr = parse_array_element(state)?;
     
-    // Check if this is an array initialization syntax [value; size]
-    if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
-        state.tokens.advance(); // consume ;
-        
-        // Parse the size expression
-        let size_expr = super::parse_expr_recursive(state)?;
-        
-        state.tokens.expect(&Token::RightBracket)
-            .map_err(|_| anyhow::anyhow!("Expected ']' after array initialization"))?;
-        
-        // Create an array initialization expression
-        // We'll represent this as a special List with repeated elements
-        // The transpiler will need to handle this specially
-        return Ok(Expr::new(
-            ExprKind::ArrayInit { 
-                value: Box::new(first_expr), 
-                size: Box::new(size_expr) 
-            }, 
-            start_span
-        ));
+    // Determine list type based on next token
+    match state.tokens.peek() {
+        Some((Token::Semicolon, _)) => parse_array_init(state, first_expr, start_span),
+        Some((Token::For, _)) => parse_list_comprehension_body(state, first_expr, start_span),
+        _ => parse_regular_list(state, first_expr, start_span),
     }
+}
+
+/// Parse array initialization syntax: [value; size]
+/// Extracted to reduce complexity
+fn parse_array_init(state: &mut ParserState, value_expr: Expr, start_span: Span) -> Result<Expr> {
+    state.tokens.advance(); // consume ;
     
-    // Check if this is a list comprehension
-    if matches!(state.tokens.peek(), Some((Token::For, _))) {
-        return parse_list_comprehension_body(state, first_expr, start_span);
-    }
+    let size_expr = super::parse_expr_recursive(state)?;
     
-    // Regular list literal
+    state.tokens.expect(&Token::RightBracket)
+        .map_err(|_| anyhow::anyhow!("Expected ']' after array initialization"))?;
+    
+    Ok(Expr::new(
+        ExprKind::ArrayInit { 
+            value: Box::new(value_expr), 
+            size: Box::new(size_expr) 
+        }, 
+        start_span
+    ))
+}
+
+/// Parse regular list literal: [expr, expr, ...]
+/// Extracted to reduce complexity
+fn parse_regular_list(state: &mut ParserState, first_expr: Expr, start_span: Span) -> Result<Expr> {
     let mut elements = vec![first_expr];
     
     // Parse remaining elements

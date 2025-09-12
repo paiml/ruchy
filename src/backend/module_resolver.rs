@@ -91,68 +91,14 @@ impl ModuleResolver {
     /// Recursively resolve imports in an expression
     fn resolve_expr(&mut self, expr: Expr) -> Result<Expr> {
         match expr.kind {
-            ExprKind::Import { ref path, ref items } => {
-                // Check if this is a file import (no :: and not std:: or http)
-                if self.is_file_import(path) {
-                    // Load the module file
-                    let parsed_module = self.module_loader.load_module(path)
-                        .with_context(|| format!("Failed to resolve import '{path}'"))?;
-                    
-                    // Recursively resolve imports in the loaded module
-                    let resolved_module_ast = self.resolve_expr(parsed_module.ast)?;
-                    
-                    // Create an inline module declaration
-                    let module_expr = Expr::new(
-                        ExprKind::Module {
-                            name: path.clone(),
-                            body: Box::new(resolved_module_ast),
-                        },
-                        expr.span,
-                    );
-                    
-                    // Create a use statement to import from the module
-                    let use_statement = if items.iter().any(|item| matches!(item, ImportItem::Wildcard)) || items.is_empty() {
-                        // Wildcard import: use module::*;
-                        Expr::new(
-                            ExprKind::Import {
-                                path: path.clone(),
-                                items: vec![ImportItem::Wildcard],
-                            },
-                            Span { start: 0, end: 0 },
-                        )
-                    } else {
-                        // Specific imports: use module::{item1, item2};
-                        self.create_use_statements(path, items)
-                    };
-                    
-                    // Return a block with the module declaration and use statement
-                    Ok(Expr::new(
-                        ExprKind::Block(vec![module_expr, use_statement]),
-                        expr.span,
-                    ))
-                } else {
-                    // Not a file import, keep as-is
-                    Ok(expr)
-                }
+            ExprKind::Import { path, items } => {
+                self.resolve_import_expr(expr.span, &path, &items)
             }
             ExprKind::Block(exprs) => {
-                // Resolve imports in all block expressions
-                let resolved_exprs: Result<Vec<_>> = exprs
-                    .into_iter()
-                    .map(|e| self.resolve_expr(e))
-                    .collect();
-                Ok(Expr::new(ExprKind::Block(resolved_exprs?), expr.span))
+                self.resolve_block_expr(exprs, expr.span)
             }
             ExprKind::Module { name, body } => {
-                // Resolve imports in module body
-                let resolved_body = self.resolve_expr(*body)?;
-                Ok(Expr::new(
-                    ExprKind::Module {
-                        name,
-                        body: Box::new(resolved_body),
-                    },
-                    expr.span,
-                ))
+                self.resolve_module_expr(name, *body, expr.span)
             }
             ExprKind::Function { 
                 name, 
@@ -163,38 +109,148 @@ impl ModuleResolver {
                 return_type,
                 is_pub,
             } => {
-                // Resolve imports in function body
-                let resolved_body = self.resolve_expr(*body)?;
-                Ok(Expr::new(
-                    ExprKind::Function {
-                        name,
-                        type_params,
-                        params,
-                        body: Box::new(resolved_body),
-                        is_async,
-                        return_type,
-                        is_pub,
-                    },
+                self.resolve_function_expr(
+                    name,
+                    type_params,
+                    params,
+                    *body,
+                    is_async,
+                    return_type,
+                    is_pub,
                     expr.span,
-                ))
+                )
             }
             ExprKind::If { condition, then_branch, else_branch } => {
-                let resolved_condition = self.resolve_expr(*condition)?;
-                let resolved_then = self.resolve_expr(*then_branch)?;
-                let resolved_else = else_branch.map(|e| self.resolve_expr(*e)).transpose()?;
-                Ok(Expr::new(
-                    ExprKind::If {
-                        condition: Box::new(resolved_condition),
-                        then_branch: Box::new(resolved_then),
-                        else_branch: resolved_else.map(Box::new),
-                    },
-                    expr.span,
-                ))
+                self.resolve_if_expr(*condition, *then_branch, else_branch, expr.span)
             }
             // For other expression types, recursively process children as needed
             // For now, just return the expression as-is
             _ => Ok(expr),
         }
+    }
+    
+    /// Resolve import expressions
+    fn resolve_import_expr(&mut self, span: Span, path: &str, items: &[ImportItem]) -> Result<Expr> {
+        // Check if this is a file import (no :: and not std:: or http)
+        if self.is_file_import(path) {
+            // Load the module file
+            let parsed_module = self.module_loader.load_module(path)
+                .with_context(|| format!("Failed to resolve import '{path}'"))?;
+            
+            // Recursively resolve imports in the loaded module
+            let resolved_module_ast = self.resolve_expr(parsed_module.ast)?;
+            
+            // Create an inline module declaration
+            let module_expr = Expr::new(
+                ExprKind::Module {
+                    name: path.to_string(),
+                    body: Box::new(resolved_module_ast),
+                },
+                span,
+            );
+            
+            // Create a use statement to import from the module
+            let use_statement = if items.iter().any(|item| matches!(item, ImportItem::Wildcard)) || items.is_empty() {
+                // Wildcard import: use module::*;
+                Expr::new(
+                    ExprKind::Import {
+                        path: path.to_string(),
+                        items: vec![ImportItem::Wildcard],
+                    },
+                    Span { start: 0, end: 0 },
+                )
+            } else {
+                // Specific imports: use module::{item1, item2};
+                self.create_use_statements(path, items)
+            };
+            
+            // Return a block with the module declaration and use statement
+            Ok(Expr::new(
+                ExprKind::Block(vec![module_expr, use_statement]),
+                span,
+            ))
+        } else {
+            // Not a file import, keep as-is
+            Ok(Expr::new(
+                ExprKind::Import {
+                    path: path.to_string(),
+                    items: items.to_vec(),
+                },
+                span,
+            ))
+        }
+    }
+    
+    /// Resolve block expressions
+    fn resolve_block_expr(&mut self, exprs: Vec<Expr>, span: Span) -> Result<Expr> {
+        // Resolve imports in all block expressions
+        let resolved_exprs: Result<Vec<_>> = exprs
+            .into_iter()
+            .map(|e| self.resolve_expr(e))
+            .collect();
+        Ok(Expr::new(ExprKind::Block(resolved_exprs?), span))
+    }
+    
+    /// Resolve module expressions
+    fn resolve_module_expr(&mut self, name: String, body: Expr, span: Span) -> Result<Expr> {
+        // Resolve imports in module body
+        let resolved_body = self.resolve_expr(body)?;
+        Ok(Expr::new(
+            ExprKind::Module {
+                name,
+                body: Box::new(resolved_body),
+            },
+            span,
+        ))
+    }
+    
+    /// Resolve function expressions
+    fn resolve_function_expr(
+        &mut self,
+        name: String,
+        type_params: Vec<String>,
+        params: Vec<crate::frontend::ast::Param>,
+        body: Expr,
+        is_async: bool,
+        return_type: Option<crate::frontend::ast::Type>,
+        is_pub: bool,
+        span: Span,
+    ) -> Result<Expr> {
+        // Resolve imports in function body
+        let resolved_body = self.resolve_expr(body)?;
+        Ok(Expr::new(
+            ExprKind::Function {
+                name,
+                type_params,
+                params,
+                body: Box::new(resolved_body),
+                is_async,
+                return_type,
+                is_pub,
+            },
+            span,
+        ))
+    }
+    
+    /// Resolve if expressions
+    fn resolve_if_expr(
+        &mut self,
+        condition: Expr,
+        then_branch: Expr,
+        else_branch: Option<Box<Expr>>,
+        span: Span,
+    ) -> Result<Expr> {
+        let resolved_condition = self.resolve_expr(condition)?;
+        let resolved_then = self.resolve_expr(then_branch)?;
+        let resolved_else = else_branch.map(|e| self.resolve_expr(*e)).transpose()?;
+        Ok(Expr::new(
+            ExprKind::If {
+                condition: Box::new(resolved_condition),
+                then_branch: Box::new(resolved_then),
+                else_branch: resolved_else.map(Box::new),
+            },
+            span,
+        ))
     }
     
     /// Check if an import path represents a file import

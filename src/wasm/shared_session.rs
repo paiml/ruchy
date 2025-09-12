@@ -394,6 +394,19 @@ impl SharedSession {
     }
     
     /// Estimate memory usage of interpreter
+    /// 
+    /// Returns an approximation of memory used by variable bindings and state.
+    /// This is useful for monitoring resource usage in notebook environments.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::wasm::shared_session::SharedSession;
+    /// 
+    /// let session = SharedSession::new();
+    /// let initial_memory = session.estimate_interpreter_memory();
+    /// assert!(initial_memory > 0);
+    /// ```
     pub fn estimate_interpreter_memory(&self) -> u32 {
         self.memory_counter
     }
@@ -627,6 +640,26 @@ impl SharedSession {
     // ============================================================================
     
     /// Create a named checkpoint for rollback
+    /// 
+    /// Saves the current state of all variable bindings so it can be restored later.
+    /// Useful for experimental changes that might need to be rolled back.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::wasm::shared_session::SharedSession;
+    /// 
+    /// let mut session = SharedSession::new();
+    /// session.execute("cell1", "let x = 42").unwrap();
+    /// 
+    /// // Save checkpoint
+    /// session.create_checkpoint("before_changes").unwrap();
+    /// 
+    /// // Make some changes
+    /// session.execute("cell2", "let x = 100").unwrap();
+    /// 
+    /// // Can restore later with restore_from_checkpoint
+    /// ```
     pub fn create_checkpoint(&mut self, name: &str) -> Result<(), String> {
         let snapshot = self.globals.cow_checkpoint();
         self.checkpoints.insert(name.to_string(), snapshot);

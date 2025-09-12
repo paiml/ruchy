@@ -3,6 +3,7 @@
 
 use anyhow::{Context, Result};
 use ruchy::Parser as RuchyParser;
+use ruchy::utils::{read_file_with_context, parse_ruchy_code};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
@@ -19,63 +20,100 @@ pub fn handle_ast_command(
     verbose: bool,
     output: Option<&Path>,
 ) -> Result<()> {
-    let source = fs::read_to_string(file)
-        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    let source = read_file_with_context(file)?;
+    let ast = parse_ruchy_code(&source)?;
     
-    let mut parser = RuchyParser::new(&source);
-    let ast = parser.parse()?;
-    
-    let output_content;
-    
-    if json {
-        // Output AST as JSON
-        let json_ast = serde_json::to_string_pretty(&ast)?;
-        output_content = json_ast;
-    } else if graph {
-        // Generate DOT graph representation
-        output_content = "digraph AST {\n  // AST graph visualization\n  node [shape=box];\n  // Graph generation placeholder\n}\n".to_string();
-    } else if metrics {
-        // Calculate complexity metrics
-        let node_count = count_ast_nodes(&ast);
-        let depth = calculate_ast_depth(&ast);
-        output_content = format!(
-            "=== AST Metrics ===\n\
-             Nodes: {}\n\
-             Depth: {}\n\
-             Complexity: {}\n",
-            node_count, depth, node_count + depth
-        );
-    } else if symbols {
-        // Symbol table analysis
-        let symbols = extract_symbols(&ast);
-        output_content = format!(
-            "=== Symbol Analysis ===\n\
-             Defined: {}\n\
-             Used: {}\n\
-             Unused: {}\n",
-            symbols.defined.len(),
-            symbols.used.len(),
-            symbols.unused.len()
-        );
-    } else if deps {
-        // Dependency analysis
-        output_content = "=== Dependencies ===\nNo external dependencies\n".to_string();
-    } else {
-        // Default: pretty-print AST
-        output_content = format!("{:#?}", ast);
-    }
+    // Determine output format based on flags
+    let output_content = generate_ast_output(&ast, json, graph, metrics, symbols, deps)?;
     
     if verbose {
         eprintln!("AST analysis complete for: {}", file.display());
     }
     
+    write_ast_output(output_content, output)?;
+    Ok(())
+}
+
+/// Generate appropriate AST output based on flags
+/// Extracted to reduce complexity
+fn generate_ast_output(
+    ast: &ruchy::Expr,
+    json: bool,
+    graph: bool,
+    metrics: bool,
+    symbols: bool,
+    deps: bool,
+) -> Result<String> {
+    if json {
+        generate_json_output(ast)
+    } else if graph {
+        Ok(generate_graph_output())
+    } else if metrics {
+        Ok(generate_metrics_output(ast))
+    } else if symbols {
+        Ok(generate_symbols_output(ast))
+    } else if deps {
+        Ok(generate_deps_output())
+    } else {
+        Ok(generate_default_output(ast))
+    }
+}
+
+/// Generate JSON output for AST
+fn generate_json_output(ast: &ruchy::Expr) -> Result<String> {
+    Ok(serde_json::to_string_pretty(ast)?)
+}
+
+/// Generate DOT graph representation
+fn generate_graph_output() -> String {
+    "digraph AST {\n  // AST graph visualization\n  node [shape=box];\n  // Graph generation placeholder\n}\n".to_string()
+}
+
+/// Generate metrics output
+fn generate_metrics_output(ast: &ruchy::Expr) -> String {
+    let node_count = count_ast_nodes(ast);
+    let depth = calculate_ast_depth(ast);
+    format!(
+        "=== AST Metrics ===\n\
+         Nodes: {}\n\
+         Depth: {}\n\
+         Complexity: {}\n",
+        node_count, depth, node_count + depth
+    )
+}
+
+/// Generate symbols output
+fn generate_symbols_output(ast: &ruchy::Expr) -> String {
+    let symbols = extract_symbols(ast);
+    format!(
+        "=== Symbol Analysis ===\n\
+         Defined: {}\n\
+         Used: {}\n\
+         Unused: {}\n",
+        symbols.defined.len(),
+        symbols.used.len(),
+        symbols.unused.len()
+    )
+}
+
+/// Generate dependencies output
+fn generate_deps_output() -> String {
+    "=== Dependencies ===\nNo external dependencies\n".to_string()
+}
+
+/// Generate default pretty-print output
+fn generate_default_output(ast: &ruchy::Expr) -> String {
+    format!("{:#?}", ast)
+}
+
+/// Write AST output to file or stdout
+fn write_ast_output(content: String, output: Option<&Path>) -> Result<()> {
     if let Some(output_path) = output {
-        fs::write(output_path, output_content)?;
+        fs::write(output_path, content)?;
         println!("✅ Output written to: {}", output_path.display());
     } else {
-        println!("{}", output_content);
+        println!("{}", content);
     }
-    
     Ok(())
 }
 
@@ -370,59 +408,99 @@ pub fn handle_provability_command(
     _verbose: bool,
     output: Option<&Path>,
 ) -> Result<()> {
-    let source = fs::read_to_string(file)
-        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    let source = read_file_with_context(file)?;
+    let ast = parse_ruchy_code(&source)?;
     
-    let mut parser = RuchyParser::new(&source);
-    let ast = parser.parse()?;
+    let mut output_content = generate_provability_header(file, &ast);
     
-    let mut output_content = String::new();
+    // Add requested analysis sections
+    add_provability_sections(&mut output_content, verify, contracts, invariants, termination, bounds);
     
-    // Basic provability analysis
-    let provability_score = calculate_provability_score(&ast);
-    output_content.push_str(&format!(
+    write_provability_output(output_content, output)?;
+    Ok(())
+}
+
+/// Generate basic provability analysis header
+/// Extracted to reduce complexity
+fn generate_provability_header(file: &Path, ast: &ruchy::frontend::ast::Expr) -> String {
+    let provability_score = calculate_provability_score(ast);
+    format!(
         "=== Provability Analysis ===\n\
          File: {}\n\
          Provability Score: {:.1}/100\n\n",
         file.display(),
         provability_score
-    ));
-    
+    )
+}
+
+/// Add requested provability analysis sections
+/// Extracted to reduce complexity
+fn add_provability_sections(
+    output: &mut String,
+    verify: bool,
+    contracts: bool,
+    invariants: bool,
+    termination: bool,
+    bounds: bool,
+) {
     if verify {
-        output_content.push_str("=== Formal Verification ===\n");
-        output_content.push_str("✓ No unsafe operations detected\n");
-        output_content.push_str("✓ All functions are pure\n");
-        output_content.push_str("✓ No side effects found\n\n");
+        add_verification_section(output);
     }
-    
     if contracts {
-        output_content.push_str("=== Contract Verification ===\n");
-        output_content.push_str("No contracts defined\n\n");
+        add_contracts_section(output);
     }
-    
     if invariants {
-        output_content.push_str("=== Loop Invariants ===\n");
-        output_content.push_str("No loops found\n\n");
+        add_invariants_section(output);
     }
-    
     if termination {
-        output_content.push_str("=== Termination Analysis ===\n");
-        output_content.push_str("✓ All functions terminate\n\n");
+        add_termination_section(output);
     }
-    
     if bounds {
-        output_content.push_str("=== Bounds Checking ===\n");
-        output_content.push_str("✓ Array access is bounds-checked\n");
-        output_content.push_str("✓ No buffer overflows possible\n\n");
+        add_bounds_section(output);
     }
-    
+}
+
+/// Add formal verification section
+fn add_verification_section(output: &mut String) {
+    output.push_str("=== Formal Verification ===\n");
+    output.push_str("✓ No unsafe operations detected\n");
+    output.push_str("✓ All functions are pure\n");
+    output.push_str("✓ No side effects found\n\n");
+}
+
+/// Add contract verification section
+fn add_contracts_section(output: &mut String) {
+    output.push_str("=== Contract Verification ===\n");
+    output.push_str("No contracts defined\n\n");
+}
+
+/// Add loop invariants section
+fn add_invariants_section(output: &mut String) {
+    output.push_str("=== Loop Invariants ===\n");
+    output.push_str("No loops found\n\n");
+}
+
+/// Add termination analysis section
+fn add_termination_section(output: &mut String) {
+    output.push_str("=== Termination Analysis ===\n");
+    output.push_str("✓ All functions terminate\n\n");
+}
+
+/// Add bounds checking section
+fn add_bounds_section(output: &mut String) {
+    output.push_str("=== Bounds Checking ===\n");
+    output.push_str("✓ Array access is bounds-checked\n");
+    output.push_str("✓ No buffer overflows possible\n\n");
+}
+
+/// Write provability output to file or stdout
+fn write_provability_output(content: String, output: Option<&Path>) -> Result<()> {
     if let Some(output_path) = output {
-        fs::write(output_path, output_content)?;
+        fs::write(output_path, content)?;
         println!("✅ Verification report written to: {}", output_path.display());
     } else {
-        print!("{}", output_content);
+        print!("{}", content);
     }
-    
     Ok(())
 }
 
@@ -437,63 +515,103 @@ pub fn handle_runtime_command(
     _verbose: bool,
     output: Option<&Path>,
 ) -> Result<()> {
-    let source = fs::read_to_string(file)
-        .with_context(|| format!("Failed to read file: {}", file.display()))?;
+    let source = read_file_with_context(file)?;
+    let ast = parse_ruchy_code(&source)?;
     
-    let mut parser = RuchyParser::new(&source);
-    let ast = parser.parse()?;
+    let mut output_content = generate_runtime_header(file);
+    add_runtime_sections(&mut output_content, &ast, profile, bigo, bench, memory);
     
-    let mut output_content = String::new();
+    if let Some(compare_file) = compare {
+        add_comparison_section(&mut output_content, file, compare_file);
+    }
     
-    output_content.push_str(&format!(
+    write_runtime_output(output_content, output)?;
+    Ok(())
+}
+
+/// Generate runtime analysis header
+/// Extracted to reduce complexity
+fn generate_runtime_header(file: &Path) -> String {
+    format!(
         "=== Performance Analysis ===\n\
          File: {}\n\n",
         file.display()
-    ));
-    
+    )
+}
+
+/// Add requested runtime analysis sections
+/// Extracted to reduce complexity
+fn add_runtime_sections(
+    output: &mut String,
+    ast: &ruchy::frontend::ast::Expr,
+    profile: bool,
+    bigo: bool,
+    bench: bool,
+    memory: bool,
+) {
     if profile {
-        output_content.push_str("=== Execution Profile ===\n");
-        output_content.push_str("Function call times:\n");
-        output_content.push_str("  main: 0.001ms\n\n");
+        add_profile_section(output);
     }
-    
     if bigo {
-        output_content.push_str("=== BigO Complexity Analysis ===\n");
-        let complexity = analyze_complexity(&ast);
-        output_content.push_str(&format!("Algorithmic Complexity: O({})\n", complexity));
-        output_content.push_str("Worst-case scenario: Linear\n\n");
+        add_bigo_section(output, ast);
     }
-    
     if bench {
-        output_content.push_str("=== Benchmark Results ===\n");
-        output_content.push_str("Average execution time: 0.1ms\n");
-        output_content.push_str("Min: 0.08ms, Max: 0.12ms\n\n");
+        add_benchmark_section(output);
     }
-    
     if memory {
-        output_content.push_str("=== Memory Analysis ===\n");
-        output_content.push_str("Peak memory usage: 1MB\n");
-        output_content.push_str("Allocations: 10\n\n");
+        add_memory_section(output);
     }
-    
-    if let Some(compare_file) = compare {
-        output_content.push_str(&format!(
-            "=== Performance Comparison ===\n\
-             Current: {}\n\
-             Baseline: {}\n\
-             Difference: +5% faster\n\n",
-            file.display(),
-            compare_file.display()
-        ));
-    }
-    
+}
+
+/// Add execution profiling section
+fn add_profile_section(output: &mut String) {
+    output.push_str("=== Execution Profile ===\n");
+    output.push_str("Function call times:\n");
+    output.push_str("  main: 0.001ms\n\n");
+}
+
+/// Add BigO complexity analysis section
+fn add_bigo_section(output: &mut String, ast: &ruchy::frontend::ast::Expr) {
+    output.push_str("=== BigO Complexity Analysis ===\n");
+    let complexity = analyze_complexity(ast);
+    output.push_str(&format!("Algorithmic Complexity: O({})\n", complexity));
+    output.push_str("Worst-case scenario: Linear\n\n");
+}
+
+/// Add benchmark results section
+fn add_benchmark_section(output: &mut String) {
+    output.push_str("=== Benchmark Results ===\n");
+    output.push_str("Average execution time: 0.1ms\n");
+    output.push_str("Min: 0.08ms, Max: 0.12ms\n\n");
+}
+
+/// Add memory analysis section
+fn add_memory_section(output: &mut String) {
+    output.push_str("=== Memory Analysis ===\n");
+    output.push_str("Peak memory usage: 1MB\n");
+    output.push_str("Allocations: 10\n\n");
+}
+
+/// Add performance comparison section
+fn add_comparison_section(output: &mut String, current: &Path, baseline: &Path) {
+    output.push_str(&format!(
+        "=== Performance Comparison ===\n\
+         Current: {}\n\
+         Baseline: {}\n\
+         Difference: +5% faster\n\n",
+        current.display(),
+        baseline.display()
+    ));
+}
+
+/// Write runtime output to file or stdout
+fn write_runtime_output(content: String, output: Option<&Path>) -> Result<()> {
     if let Some(output_path) = output {
-        fs::write(output_path, output_content)?;
+        fs::write(output_path, content)?;
         println!("✅ Performance report written to: {}", output_path.display());
     } else {
-        print!("{}", output_content);
+        print!("{}", content);
     }
-    
     Ok(())
 }
 
@@ -1290,31 +1408,70 @@ fn count_assertions_recursive(
     *total_statements += 1;
     
     match &expr.kind {
-        ExprKind::MethodCall { receiver: _, method, args: _ } => {
-            if method == "assert" || method == "assert_eq" || method == "assert_ne" {
-                *assertion_count += 1;
-            }
+        ExprKind::MethodCall { method, .. } => {
+            check_method_assertion(method, assertion_count);
         }
-        ExprKind::Call { func, args: _ } => {
-            if let ExprKind::Identifier(name) = &func.kind {
-                if name == "assert" || name == "assert_eq" || name == "assert_ne" {
-                    *assertion_count += 1;
-                }
-            }
+        ExprKind::Call { func, .. } => {
+            check_call_assertion(func, assertion_count);
         }
         ExprKind::Block(exprs) => {
-            for expr in exprs {
-                count_assertions_recursive(expr, assertion_count, total_statements);
-            }
+            count_assertions_in_block(exprs, assertion_count, total_statements);
         }
         ExprKind::If { condition, then_branch, else_branch } => {
-            count_assertions_recursive(condition, assertion_count, total_statements);
-            count_assertions_recursive(then_branch, assertion_count, total_statements);
-            if let Some(else_expr) = else_branch {
-                count_assertions_recursive(else_expr, assertion_count, total_statements);
-            }
+            count_assertions_in_if(condition, then_branch, else_branch.as_deref(), 
+                                   assertion_count, total_statements);
         }
         _ => {}
+    }
+}
+
+/// Check if method call is an assertion
+/// Extracted to reduce complexity
+fn check_method_assertion(method: &str, assertion_count: &mut usize) {
+    const ASSERTION_METHODS: &[&str] = &["assert", "assert_eq", "assert_ne"];
+    if ASSERTION_METHODS.contains(&method) {
+        *assertion_count += 1;
+    }
+}
+
+/// Check if function call is an assertion
+/// Extracted to reduce complexity
+fn check_call_assertion(func: &ruchy::frontend::ast::Expr, assertion_count: &mut usize) {
+    use ruchy::frontend::ast::ExprKind;
+    
+    if let ExprKind::Identifier(name) = &func.kind {
+        const ASSERTION_FUNCTIONS: &[&str] = &["assert", "assert_eq", "assert_ne"];
+        if ASSERTION_FUNCTIONS.contains(&name.as_str()) {
+            *assertion_count += 1;
+        }
+    }
+}
+
+/// Count assertions in a block of expressions
+/// Extracted to reduce complexity
+fn count_assertions_in_block(
+    exprs: &[ruchy::frontend::ast::Expr],
+    assertion_count: &mut usize,
+    total_statements: &mut usize
+) {
+    for expr in exprs {
+        count_assertions_recursive(expr, assertion_count, total_statements);
+    }
+}
+
+/// Count assertions in if expression branches
+/// Extracted to reduce complexity
+fn count_assertions_in_if(
+    condition: &ruchy::frontend::ast::Expr,
+    then_branch: &ruchy::frontend::ast::Expr,
+    else_branch: Option<&ruchy::frontend::ast::Expr>,
+    assertion_count: &mut usize,
+    total_statements: &mut usize
+) {
+    count_assertions_recursive(condition, assertion_count, total_statements);
+    count_assertions_recursive(then_branch, assertion_count, total_statements);
+    if let Some(else_expr) = else_branch {
+        count_assertions_recursive(else_expr, assertion_count, total_statements);
     }
 }
 

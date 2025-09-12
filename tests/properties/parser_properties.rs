@@ -3,6 +3,7 @@
 
 #[cfg(feature = "testing")]
 use quickcheck_macros::quickcheck;
+use ruchy::utils::is_valid_identifier;
 
 #[test]
 #[cfg(feature = "testing")]
@@ -12,11 +13,7 @@ fn test_parser_properties() {
     // Property: Valid identifiers should always parse
     fn prop_valid_identifiers_parse(name: String) -> TestResult {
         // Filter to valid identifiers
-        if name.is_empty() || !name.chars().next().unwrap().is_alphabetic() {
-            return TestResult::discard();
-        }
-        
-        if !name.chars().all(|c| c.is_alphanumeric() || c == '_') {
+        if !is_valid_identifier(&name) {
             return TestResult::discard();
         }
         

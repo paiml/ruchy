@@ -70,6 +70,7 @@ pub mod testing;
 #[cfg(any(test, feature = "testing"))]
 pub use testing::AstBuilder;
 pub mod transpiler;
+pub mod utils;
 pub mod wasm;
 
 #[cfg(feature = "mcp")]
@@ -88,6 +89,7 @@ pub use quality::{
     HtmlReportGenerator, QualityGates, QualityMetrics, QualityReport, QualityThresholds,
 };
 pub use quality::gates::{QualityGateEnforcer, QualityGateConfig, GateResult};
+pub use utils::*;
 
 use anyhow::Result;
 

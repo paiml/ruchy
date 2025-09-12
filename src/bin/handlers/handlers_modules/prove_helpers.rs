@@ -3,7 +3,7 @@
 
 use anyhow::{Context, Result};
 use ruchy::proving::{InteractiveProver, ProverSession, SmtBackend};
-use std::fs;
+use ruchy::utils::{read_file_with_context, write_file_with_context, add_success_indicator};
 
 /// Parse SMT backend from string
 pub fn parse_smt_backend(backend: &str, verbose: bool) -> SmtBackend {
@@ -45,8 +45,7 @@ pub fn load_proof_file(file_path: &std::path::Path, verbose: bool) -> Result<ruc
         println!("📂 Loading file: {}", file_path.display());
     }
     
-    let source = fs::read_to_string(file_path)
-        .with_context(|| format!("Failed to read file: {}", file_path.display()))?;
+    let source = read_file_with_context(file_path)?;
     
     let mut parser = RuchyParser::new(&source);
     let ast = parser.parse()
@@ -69,8 +68,7 @@ pub fn load_proof_script(
         println!("📜 Loading proof script: {}", script_path.display());
     }
     
-    let script_content = fs::read_to_string(script_path)
-        .with_context(|| format!("Failed to read script: {}", script_path.display()))?;
+    let script_content = read_file_with_context(script_path)?;
     
     prover.load_script(&script_content)?;
     Ok(())
@@ -213,7 +211,7 @@ pub fn show_prover_state(
     ml_suggestions: bool,
 ) {
     if session.is_complete() {
-        println!("✅ All goals proved!");
+        print!("{}", add_success_indicator("All goals proved!"));
     } else if let Some(current_goal) = session.current_goal() {
         println!("\nCurrent goal: {}", current_goal.statement);
         
@@ -254,10 +252,9 @@ pub fn export_proof(
         _ => session.to_text_proof(),
     };
     
-    fs::write(export_path, proof_content)
-        .with_context(|| format!("Failed to write proof: {}", export_path.display()))?;
+    write_file_with_context(export_path, &proof_content)?;
     
-    println!("✅ Proof exported successfully");
+    print!("{}", add_success_indicator("Proof exported successfully"));
     Ok(())
 }
 
@@ -311,7 +308,7 @@ fn handle_no_assertions(
         });
         println!("{}", serde_json::to_string_pretty(&json_result)?);
     } else {
-        println!("✅ No proofs found (file valid)");
+        print!("{}", add_success_indicator("No proofs found (file valid)"));
     }
     
     Ok(())

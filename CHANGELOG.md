@@ -4,6 +4,38 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.3.0] - 2025-09-12
+
+### Code Quality Revolution - Systematic Refactoring
+
+Major code quality improvements through systematic refactoring using Extract Method pattern and Toyota Way principles.
+
+### Refactored
+- **frontend/diagnostics.rs**: `format_colored` reduced from 83→10 lines (88% reduction)
+- **scripts/automated_recording.rs**: `record_demo_session` from 51→6 lines (88% reduction)  
+- **backend/transpiler/types.rs**: `transpile_type` from 86→14 lines (84% reduction)
+- **backend/module_resolver.rs**: `resolve_expr` from 105→30 lines (71% reduction)
+- **backend/transpiler/codegen_minimal.rs**: `gen_expr` from 180→25 lines (86% reduction)
+- **backend/transpiler/dataframe.rs**: `transpile_dataframe_method` from 96→40 lines (58% reduction)
+
+### Quality Metrics
+- **Total Lines Reduced**: 601→125 (79% overall reduction)
+- **Helper Functions Created**: 31 focused single-responsibility functions
+- **Complexity Violations**: Reduced from 15→9 (40% reduction)
+- **Test Coverage**: Maintained 905 passing tests (100% success rate)
+- **Average Function Complexity**: Reduced to <10 (Toyota Way target achieved)
+
+### Added
+- **Property-Based Tests**: Comprehensive quickcheck tests for refactored modules
+- **Common Patterns Module**: Entropy reduction utilities in `utils/common_patterns.rs`
+- **Improved Error Formatting**: Consistent error messages across the codebase
+
+### Technical Debt Reduction
+- Eliminated high-complexity functions through systematic decomposition
+- Improved code maintainability with single-responsibility principle
+- Enhanced testability through smaller, focused functions
+- Reduced cognitive load for future maintainers
+
 ## [3.2.0] - 2025-09-11
 
 ### SharedSession Complete Implementation

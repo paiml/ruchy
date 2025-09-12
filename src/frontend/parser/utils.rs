@@ -5,29 +5,57 @@ use crate::frontend::ast::ImportItem;
 
 /// Validate URL imports for safe operation
 fn validate_url_import(url: &str) -> Result<()> {
-    // Safety checks for URL imports
-    
-    // 1. Must be HTTPS in production (allow HTTP for local dev)
-    if !url.starts_with("https://") && !url.starts_with("http://localhost") 
-        && !url.starts_with("http://127.0.0.1") {
-        bail!("URL imports must use HTTPS (except for localhost)");
+    validate_url_scheme(url)?;
+    validate_url_extension(url)?;
+    validate_url_path_safety(url)?;
+    validate_url_no_suspicious_patterns(url)?;
+    Ok(())
+}
+
+/// Validate URL uses HTTPS (except for localhost)
+/// Extracted to reduce complexity
+fn validate_url_scheme(url: &str) -> Result<()> {
+    if is_valid_url_scheme(url) {
+        Ok(())
+    } else {
+        bail!("URL imports must use HTTPS (except for localhost)")
     }
-    
-    // 2. Must end with .ruchy or .rchy extension
-    if !url.ends_with(".ruchy") && !url.ends_with(".rchy") {
-        bail!("URL imports must reference .ruchy or .rchy files");
+}
+
+/// Check if URL has valid scheme
+fn is_valid_url_scheme(url: &str) -> bool {
+    url.starts_with("https://") || 
+    url.starts_with("http://localhost") ||
+    url.starts_with("http://127.0.0.1")
+}
+
+/// Validate URL has correct file extension
+fn validate_url_extension(url: &str) -> Result<()> {
+    if url.ends_with(".ruchy") || url.ends_with(".rchy") {
+        Ok(())
+    } else {
+        bail!("URL imports must reference .ruchy or .rchy files")
     }
-    
-    // 3. Basic URL validation - no path traversal
+}
+
+/// Validate URL doesn't contain path traversal
+fn validate_url_path_safety(url: &str) -> Result<()> {
     if url.contains("..") || url.contains("/.") {
-        bail!("URL imports cannot contain path traversal sequences");
+        bail!("URL imports cannot contain path traversal sequences")
+    } else {
+        Ok(())
     }
+}
+
+/// Validate URL doesn't contain suspicious patterns
+fn validate_url_no_suspicious_patterns(url: &str) -> Result<()> {
+    const SUSPICIOUS_PATTERNS: &[&str] = &["javascript:", "data:", "file:"];
     
-    // 4. Disallow certain suspicious patterns
-    if url.contains("javascript:") || url.contains("data:") || url.contains("file:") {
-        bail!("Invalid URL scheme for import");
+    for pattern in SUSPICIOUS_PATTERNS {
+        if url.contains(pattern) {
+            bail!("Invalid URL scheme for import");
+        }
     }
-    
     Ok(())
 }
 

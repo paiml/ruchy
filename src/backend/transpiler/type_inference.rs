@@ -9,45 +9,67 @@ use crate::frontend::ast::{Expr, ExprKind, BinaryOp, Literal};
 pub fn is_param_used_as_function_argument(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::Call { func, args } => {
-            // Check if the function being called has the parameter as an argument
-            if let ExprKind::Identifier(_func_name) = &func.kind {
-                // If this is calling another function parameter (higher-order function)
-                for arg in args {
-                    if let ExprKind::Identifier(arg_name) = &arg.kind {
-                        if arg_name == param_name {
-                            return true; // Parameter is used as argument to function call
-                        }
-                    }
-                }
-            }
-            // Recursively check arguments
-            args.iter().any(|arg| is_param_used_as_function_argument(param_name, arg))
+            check_call_for_param_argument(param_name, func, args)
         }
         ExprKind::Block(exprs) => {
-            exprs.iter().any(|e| is_param_used_as_function_argument(param_name, e))
+            check_expressions_for_param(param_name, exprs)
         }
         ExprKind::If { condition, then_branch, else_branch } => {
-            is_param_used_as_function_argument(param_name, condition) ||
-            is_param_used_as_function_argument(param_name, then_branch) ||
-            else_branch.as_ref().is_some_and(|e| is_param_used_as_function_argument(param_name, e))
+            check_if_for_param(param_name, condition, then_branch, else_branch.as_deref())
         }
-        ExprKind::Let { value, body, .. } => {
-            is_param_used_as_function_argument(param_name, value) ||
-            is_param_used_as_function_argument(param_name, body)
-        }
+        ExprKind::Let { value, body, .. } | 
         ExprKind::LetPattern { value, body, .. } => {
-            is_param_used_as_function_argument(param_name, value) ||
-            is_param_used_as_function_argument(param_name, body)
+            check_let_for_param(param_name, value, body)
         }
         ExprKind::Binary { left, right, .. } => {
-            is_param_used_as_function_argument(param_name, left) ||
-            is_param_used_as_function_argument(param_name, right)
+            check_binary_for_param(param_name, left, right)
         }
         ExprKind::Unary { operand, .. } => {
             is_param_used_as_function_argument(param_name, operand)
         }
         _ => false
     }
+}
+
+/// Check if parameter is used as argument in function call
+/// Extracted to reduce complexity
+fn check_call_for_param_argument(param_name: &str, func: &Expr, args: &[Expr]) -> bool {
+    // Check if any argument is the parameter
+    if let ExprKind::Identifier(_) = &func.kind {
+        for arg in args {
+            if let ExprKind::Identifier(arg_name) = &arg.kind {
+                if arg_name == param_name {
+                    return true;
+                }
+            }
+        }
+    }
+    // Recursively check arguments
+    args.iter().any(|arg| is_param_used_as_function_argument(param_name, arg))
+}
+
+/// Check if parameter is used in expressions list
+fn check_expressions_for_param(param_name: &str, exprs: &[Expr]) -> bool {
+    exprs.iter().any(|e| is_param_used_as_function_argument(param_name, e))
+}
+
+/// Check if parameter is used in if expression
+fn check_if_for_param(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> bool {
+    is_param_used_as_function_argument(param_name, condition) ||
+    is_param_used_as_function_argument(param_name, then_branch) ||
+    else_branch.is_some_and(|e| is_param_used_as_function_argument(param_name, e))
+}
+
+/// Check if parameter is used in let expression
+fn check_let_for_param(param_name: &str, value: &Expr, body: &Expr) -> bool {
+    is_param_used_as_function_argument(param_name, value) ||
+    is_param_used_as_function_argument(param_name, body)
+}
+
+/// Check if parameter is used in binary expression
+fn check_binary_for_param(param_name: &str, left: &Expr, right: &Expr) -> bool {
+    is_param_used_as_function_argument(param_name, left) ||
+    is_param_used_as_function_argument(param_name, right)
 }
 
 /// Analyzes if a parameter is used as a function in the given expression

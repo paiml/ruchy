@@ -74,10 +74,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn record_demo_session(demo_file: &Path, replay_file: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    // Read the demo file content
-    let demo_content = fs::read_to_string(demo_file)?;
+    let repl_input = extract_repl_input_from_demo(demo_file)?;
+    let mut child = spawn_repl_process(replay_file)?;
+    send_input_to_repl(&mut child, repl_input)?;
+    validate_recording_completion(&child, replay_file)?;
     
-    // Extract executable lines (non-comments, non-empty)
+    Ok(())
+}
+
+/// Extract executable REPL input from demo file, filtering comments and empty lines
+fn extract_repl_input_from_demo(demo_file: &Path) -> Result<String, Box<dyn std::error::Error>> {
+    let demo_content = fs::read_to_string(demo_file)?;
     let mut repl_input = String::new();
     
     for line in demo_content.lines() {
@@ -88,18 +95,25 @@ fn record_demo_session(demo_file: &Path, replay_file: &Path) -> Result<(), Box<d
         }
     }
     
-    // Add quit command
+    // Add quit command to cleanly terminate session
     repl_input.push_str(":quit\n");
-    
-    // Execute ruchy repl with recording
-    let mut child = Command::new("./target/debug/ruchy")
+    Ok(repl_input)
+}
+
+/// Spawn REPL process configured for recording
+fn spawn_repl_process(replay_file: &Path) -> Result<std::process::Child, Box<dyn std::error::Error>> {
+    let child = Command::new("./target/debug/ruchy")
         .args(&["repl", "--record", replay_file.to_str().unwrap()])
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()?;
     
-    // Send input to REPL
+    Ok(child)
+}
+
+/// Send input to REPL process via stdin in separate thread
+fn send_input_to_repl(child: &mut std::process::Child, repl_input: String) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(stdin) = child.stdin.take() {
         std::thread::spawn(move || {
             let mut stdin = stdin;
@@ -107,8 +121,11 @@ fn record_demo_session(demo_file: &Path, replay_file: &Path) -> Result<(), Box<d
             let _ = stdin.flush();
         });
     }
-    
-    // Wait for completion
+    Ok(())
+}
+
+/// Validate that recording completed successfully and replay file was created
+fn validate_recording_completion(child: &std::process::Child, replay_file: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let output = child.wait_with_output()?;
     
     if !output.status.success() {
@@ -118,7 +135,6 @@ fn record_demo_session(demo_file: &Path, replay_file: &Path) -> Result<(), Box<d
         ).into());
     }
     
-    // Verify replay file was created
     if !replay_file.exists() {
         return Err("Replay file was not created".into());
     }
