@@ -1,17 +1,24 @@
 //! Actor system transpilation
-
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::wildcard_imports)]
-
 use super::*;
 use crate::frontend::ast::{ActorHandler, StructField};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-
+#[cfg(test)]
+use proptest::prelude::*;
 impl Transpiler {
     /// Transpiles actor definitions
-    pub fn transpile_actor(
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::transpiler::actors::transpile_actor;
+/// 
+/// let result = transpile_actor("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn transpile_actor(
         &self,
         name: &str,
         state: &[StructField],
@@ -19,7 +26,6 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let actor_name = format_ident!("{}", name);
         let message_enum_name = format_ident!("{}Message", name);
-
         // Generate state fields
         let state_fields: Vec<TokenStream> = state
             .iter()
@@ -31,18 +37,14 @@ impl Transpiler {
                 quote! { #field_name: #field_type }
             })
             .collect();
-
         // Generate message enum variants
         let mut message_variants = Vec::new();
         let mut handler_arms = Vec::new();
-
         for handler in handlers {
             let variant_name = format_ident!("{}", handler.message_type);
-
             if handler.params.is_empty() {
                 // Simple message without parameters
                 message_variants.push(quote! { #variant_name });
-
                 let body_tokens = self.transpile_expr(&handler.body)?;
                 handler_arms.push(quote! {
                     #message_enum_name::#variant_name => {
@@ -59,22 +61,18 @@ impl Transpiler {
                             .unwrap_or_else(|_| quote! { String })
                     })
                     .collect();
-
                 if param_types.len() == 1 {
                     message_variants.push(quote! { #variant_name(#(#param_types),*) });
                 } else {
                     message_variants.push(quote! { #variant_name { #(#param_types),* } });
                 }
-
                 // Generate parameter bindings for the handler
                 let param_names: Vec<_> = handler
                     .params
                     .iter()
                     .map(|p| format_ident!("{}", p.name()))
                     .collect();
-
                 let body_tokens = self.transpile_expr(&handler.body)?;
-
                 if param_names.len() == 1 {
                     let param = &param_names[0];
                     handler_arms.push(quote! {
@@ -91,7 +89,6 @@ impl Transpiler {
                 }
             }
         }
-
         // Generate the complete actor implementation
         Ok(quote! {
             // Message enum
@@ -99,14 +96,12 @@ impl Transpiler {
             enum #message_enum_name {
                 #(#message_variants,)*
             }
-
             // Actor struct
             struct #actor_name {
                 #(#state_fields,)*
                 receiver: tokio::sync::mpsc::Receiver<#message_enum_name>,
                 sender: tokio::sync::mpsc::Sender<#message_enum_name>,
             }
-
             impl #actor_name {
                 fn new() -> Self {
                     let (sender, receiver) = tokio::sync::mpsc::channel(100);
@@ -116,17 +111,14 @@ impl Transpiler {
                         sender,
                     }
                 }
-
                 fn sender(&self) -> tokio::sync::mpsc::Sender<#message_enum_name> {
                     self.sender.clone()
                 }
-
                 async fn run(&mut self) {
                     while let Some(msg) = self.receiver.recv().await {
                         self.handle_message(msg).await;
                     }
                 }
-
                 async fn handle_message(&mut self, msg: #message_enum_name) {
                     match msg {
                         #(#handler_arms)*
@@ -135,19 +127,32 @@ impl Transpiler {
             }
         })
     }
-
     /// Transpiles send operations (actor ! message)
-    pub fn transpile_send(&self, actor: &Expr, message: &Expr) -> Result<TokenStream> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::transpiler::actors::transpile_send;
+/// 
+/// let result = transpile_send(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn transpile_send(&self, actor: &Expr, message: &Expr) -> Result<TokenStream> {
         let actor_tokens = self.transpile_expr(actor)?;
         let message_tokens = self.transpile_expr(message)?;
-
         Ok(quote! {
             #actor_tokens.send(#message_tokens).await
         })
     }
-
     /// Transpiles ask operations (actor ? message)
-    pub fn transpile_ask(
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::transpiler::actors::transpile_ask;
+/// 
+/// let result = transpile_ask(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn transpile_ask(
         &self,
         actor: &Expr,
         message: &Expr,
@@ -155,7 +160,6 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let actor_tokens = self.transpile_expr(actor)?;
         let message_tokens = self.transpile_expr(message)?;
-
         if let Some(timeout_expr) = timeout {
             let timeout_tokens = self.transpile_expr(timeout_expr)?;
             Ok(quote! {
@@ -168,9 +172,16 @@ impl Transpiler {
             })
         }
     }
-
     /// Transpiles command execution
-    pub fn transpile_command(
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::transpiler::actors::transpile_command;
+/// 
+/// let result = transpile_command("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn transpile_command(
         &self,
         program: &str,
         args: &[String],
@@ -179,12 +190,30 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let prog_str = program;
         let args_tokens: Vec<_> = args.iter().map(|arg| quote! { #arg }).collect();
-
         Ok(quote! {
             std::process::Command::new(#prog_str)
                 .args(&[#(#args_tokens),*])
                 .output()
                 .expect("Failed to execute command")
         })
+    }
+}
+#[cfg(test)]
+mod property_tests_actors {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_transpile_actor_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

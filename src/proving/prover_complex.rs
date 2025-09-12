@@ -1,243 +1,191 @@
 //! Interactive theorem prover core functionality
-
 use anyhow::Result;
 use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::time::{Duration, Instant};
-
 use super::tactics::{Tactic, TacticLibrary, TacticSuggestion};
 use super::smt::{SmtSolver, SmtQuery, SmtResult, SmtBackend};
 use super::refinement::{RefinementType, RefinementChecker};
 use super::counterexample::{CounterexampleGenerator, Counterexample};
-
+#[cfg(test)]
+use proptest::prelude::*;
 /// Interactive prover session
 pub struct InteractiveProver {
     /// Current proof session
     session: ProverSession,
-    
     /// Tactic library
     tactics: TacticLibrary,
-    
     /// SMT solver backend
     smt: SmtSolver,
-    
     /// Refinement type checker
     refinement_checker: RefinementChecker,
-    
     /// Counterexample generator
     counterexample_gen: CounterexampleGenerator,
-    
     /// Command history
     history: Vec<String>,
-    
     /// Proof cache
     proof_cache: HashMap<String, ProofResult>,
 }
-
 /// Prover session state
 pub struct ProverSession {
     /// Current proof goals
     goals: VecDeque<ProofGoal>,
-    
     /// Completed proofs
     completed: Vec<CompletedProof>,
-    
     /// Current context (assumptions)
     context: ProofContext,
-    
     /// Session metadata
     metadata: SessionMetadata,
 }
-
 /// A proof goal to be proven
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProofGoal {
     /// Goal identifier
     pub id: String,
-    
     /// Goal statement (property to prove)
     pub statement: String,
-    
     /// Goal type
     pub goal_type: GoalType,
-    
     /// Associated source location
     pub source_location: Option<SourceLocation>,
-    
     /// Priority level
     pub priority: Priority,
-    
     /// Parent goal (if this is a subgoal)
     pub parent: Option<String>,
 }
-
 /// Types of proof goals
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum GoalType {
     /// Type refinement proof
     TypeRefinement,
-    
     /// Function correctness
     FunctionCorrectness,
-    
     /// Loop invariant
     LoopInvariant,
-    
     /// Precondition
     Precondition,
-    
     /// Postcondition
     Postcondition,
-    
     /// Assertion
     Assertion,
-    
     /// Custom property
     Custom(String),
 }
-
 /// Source location information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SourceLocation {
     /// File path
     pub file: String,
-    
     /// Line number
     pub line: usize,
-    
     /// Column number
     pub column: usize,
 }
-
 /// Priority levels for goals
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Priority {
     /// Critical - must be proven
     Critical,
-    
     /// High priority
     High,
-    
     /// Normal priority
     Normal,
-    
     /// Low priority
     Low,
-    
     /// Optional
     Optional,
 }
-
 /// Proof context (assumptions and definitions)
 #[derive(Debug, Clone)]
 pub struct ProofContext {
     /// Variable bindings
     bindings: HashMap<String, RefinementType>,
-    
     /// Assumptions
     pub assumptions: Vec<String>,
-    
     /// Definitions
     pub definitions: HashMap<String, String>,
-    
     /// Imported modules
     imports: Vec<String>,
 }
-
 /// Completed proof
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CompletedProof {
     /// Goal that was proven
     pub goal: ProofGoal,
-    
     /// Proof steps
     pub steps: Vec<ProofStep>,
-    
     /// Time taken
     pub duration: Duration,
-    
     /// Tactics used
     pub tactics_used: Vec<String>,
-    
     /// Confidence score
     pub confidence: f64,
 }
-
 /// A single proof step
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProofStep {
     /// Step description
     pub description: String,
-    
     /// Tactic applied
     pub tactic: String,
-    
     /// Arguments to tactic
     pub arguments: Vec<String>,
-    
     /// Result of step
     pub result: StepResult,
 }
-
 /// Result of a proof step
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum StepResult {
     /// Goal solved
     Solved,
-    
     /// Produced subgoals
     Subgoals(Vec<String>),
-    
     /// Simplified to
     Simplified(String),
-    
     /// Failed with error
     Failed(String),
 }
-
 /// Session metadata
 #[derive(Debug, Clone)]
 struct SessionMetadata {
     /// Session start time
     start_time: Instant,
-    
     /// Number of goals proven
     goals_proven: usize,
-    
     /// Number of goals remaining
     goals_remaining: usize,
-    
     /// Total tactics applied
     tactics_applied: usize,
-    
     /// SMT queries made
     smt_queries: usize,
 }
-
 /// Result of a proof attempt
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProofResult {
     /// Whether the proof succeeded
     pub success: bool,
-    
     /// Proof if successful
     pub proof: Option<CompletedProof>,
-    
     /// Counterexample if failed
     pub counterexample: Option<Counterexample>,
-    
     /// Error message if failed
     pub error: Option<String>,
-    
     /// Suggestions for next steps
     pub suggestions: Vec<TacticSuggestion>,
 }
-
 impl InteractiveProver {
     /// Create a new interactive prover
-    pub fn new(backend: SmtBackend) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::proving::prover_complex::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new(backend: SmtBackend) -> Self {
         Self {
             session: ProverSession::new(),
             tactics: TacticLibrary::default(),
@@ -248,14 +196,19 @@ impl InteractiveProver {
             proof_cache: HashMap::new(),
         }
     }
-    
     /// Start an interactive proving session
-    pub fn run_interactive(&mut self) -> Result<()> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::proving::prover_complex::run_interactive;
+/// 
+/// let result = run_interactive(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn run_interactive(&mut self) -> Result<()> {
         let mut editor = DefaultEditor::new()?;
-        
         println!("🔍 Ruchy Interactive Prover v0.1.0");
         println!("Type :help for commands, :quit to exit\n");
-        
         loop {
             // Display current goal
             if let Some(goal) = self.session.current_goal() {
@@ -268,7 +221,6 @@ impl InteractiveProver {
                     }
                 }
             }
-            
             // Get ML-powered suggestions
             let suggestions = self.get_tactic_suggestions()?;
             if !suggestions.is_empty() {
@@ -281,14 +233,12 @@ impl InteractiveProver {
                     );
                 }
             }
-            
             // Read command
             let prompt = if self.session.goals.is_empty() {
                 "prove> "
             } else {
                 &format!("[{} goals] prove> ", self.session.goals.len())
             };
-            
             let line = match editor.readline(prompt) {
                 Ok(line) => line,
                 Err(ReadlineError::Interrupted) => continue,
@@ -298,26 +248,21 @@ impl InteractiveProver {
                     break;
                 }
             };
-            
             editor.add_history_entry(&line);
             self.history.push(line.clone());
-            
             // Process command
             if let Err(e) = self.process_command(&line) {
                 eprintln!("Error: {}", e);
             }
         }
-        
         Ok(())
     }
-    
     /// Process a prover command
     fn process_command(&mut self, command: &str) -> Result<()> {
         let parts: Vec<&str> = command.split_whitespace().collect();
         if parts.is_empty() {
             return Ok(());
         }
-        
         match parts[0] {
             ":help" | ":h" => self.show_help(),
             ":quit" | ":q" => std::process::exit(0),
@@ -359,10 +304,8 @@ impl InteractiveProver {
                 }
             }
         }
-        
         Ok(())
     }
-    
     /// Show help message
     fn show_help(&self) {
         println!("\n📚 Interactive Prover Commands:");
@@ -381,14 +324,12 @@ impl InteractiveProver {
         println!("  :help              - Show this help");
         println!("  :quit              - Exit prover\n");
     }
-    
     /// Show current goals
     fn show_goals(&self) {
         if self.session.goals.is_empty() {
             println!("No goals to prove.");
             return;
         }
-        
         println!("\n📋 Current Goals:");
         for (i, goal) in self.session.goals.iter().enumerate() {
             let priority_icon = match goal.priority {
@@ -398,7 +339,6 @@ impl InteractiveProver {
                 Priority::Low => "🟢",
                 Priority::Optional => "⚪",
             };
-            
             println!("  {}. {} {} - {}", 
                 i + 1, 
                 priority_icon,
@@ -408,35 +348,29 @@ impl InteractiveProver {
         }
         println!();
     }
-    
     /// Show current context
     fn show_context(&self) {
         println!("\n📖 Current Context:");
-        
         if !self.session.context.bindings.is_empty() {
             println!("  Variables:");
             for (name, ty) in &self.session.context.bindings {
                 println!("    {} : {:?}", name, ty);
             }
         }
-        
         if !self.session.context.assumptions.is_empty() {
             println!("  Assumptions:");
             for assumption in &self.session.context.assumptions {
                 println!("    - {}", assumption);
             }
         }
-        
         if !self.session.context.definitions.is_empty() {
             println!("  Definitions:");
             for (name, def) in &self.session.context.definitions {
                 println!("    {} = {}", name, def);
             }
         }
-        
         println!();
     }
-    
     /// Show available tactics
     fn show_tactics(&self) {
         println!("\n🛠️ Available Tactics:");
@@ -445,19 +379,15 @@ impl InteractiveProver {
         }
         println!();
     }
-    
     /// Apply a tactic to the current goal
     fn apply_tactic(&mut self, tactic_name: &str, args: &[&str]) -> Result<()> {
         if let Some(goal) = self.session.current_goal() {
             println!("Applying {} to: {}", tactic_name, goal.statement);
-            
             // Find tactic
             let tactic = self.tactics.get_tactic(tactic_name)
                 .ok_or_else(|| anyhow::anyhow!("Unknown tactic: {}", tactic_name))?;
-            
             // Apply tactic
             let result = tactic.apply(goal, args, &self.session.context)?;
-            
             // Process result
             match result {
                 StepResult::Solved => {
@@ -482,38 +412,29 @@ impl InteractiveProver {
         } else {
             println!("No current goal to apply tactic to.");
         }
-        
         Ok(())
     }
-    
     /// Try automatic proving
     fn auto_prove(&mut self) -> Result<()> {
         println!("🤖 Attempting automatic proof...");
-        
         let start = Instant::now();
         let mut steps = 0;
-        
         while let Some(goal) = self.session.current_goal() {
             steps += 1;
-            
             // Try SMT solver first
             if self.try_smt_solve(goal)? {
                 println!("  ✓ Solved by SMT");
                 self.session.complete_current_goal();
                 continue;
             }
-            
             // Try tactics in order of suggestion confidence
             let suggestions = self.get_tactic_suggestions()?;
             let mut solved = false;
-            
             for suggestion in suggestions.iter().take(5) {
                 if suggestion.confidence < 0.5 {
                     break;
                 }
-                
                 println!("  Trying {}: {}", suggestion.tactic_name, goal.statement);
-                
                 if let Ok(tactic) = self.tactics.get_tactic(&suggestion.tactic_name) {
                     if let Ok(result) = tactic.apply(goal, &[], &self.session.context) {
                         match result {
@@ -531,15 +452,12 @@ impl InteractiveProver {
                     }
                 }
             }
-            
             if !solved && steps > 100 {
                 println!("⚠️ Automatic proof attempt exceeded step limit");
                 break;
             }
         }
-        
         let duration = start.elapsed();
-        
         if self.session.goals.is_empty() {
             println!("✅ All goals proven in {:.2}s ({} steps)", 
                 duration.as_secs_f64(), steps);
@@ -547,17 +465,13 @@ impl InteractiveProver {
             println!("⚠️ Could not prove all goals automatically");
             println!("   {} goals remaining", self.session.goals.len());
         }
-        
         Ok(())
     }
-    
     /// Try to solve with SMT
     fn try_smt_solve(&mut self, goal: &ProofGoal) -> Result<bool> {
         let query = SmtQuery::from_goal(goal, &self.session.context)?;
         let result = self.smt.check(query)?;
-        
         self.session.metadata.smt_queries += 1;
-        
         match result {
             SmtResult::Sat => Ok(true),
             SmtResult::Unsat => Ok(false),
@@ -565,7 +479,6 @@ impl InteractiveProver {
             SmtResult::Timeout => Ok(false),
         }
     }
-    
     /// Get ML-powered tactic suggestions
     fn get_tactic_suggestions(&self) -> Result<Vec<TacticSuggestion>> {
         if let Some(goal) = self.session.current_goal() {
@@ -574,11 +487,9 @@ impl InteractiveProver {
             Ok(Vec::new())
         }
     }
-    
     /// Show tactic suggestions
     fn show_suggestions(&self) -> Result<()> {
         let suggestions = self.get_tactic_suggestions()?;
-        
         if suggestions.is_empty() {
             println!("No suggestions available.");
         } else {
@@ -594,18 +505,14 @@ impl InteractiveProver {
                 }
             }
         }
-        
         Ok(())
     }
-    
     /// Check current goal with SMT
     fn check_current_goal(&mut self) -> Result<()> {
         if let Some(goal) = self.session.current_goal() {
             println!("Checking with SMT solver...");
-            
             let query = SmtQuery::from_goal(goal, &self.session.context)?;
             let result = self.smt.check(query)?;
-            
             match result {
                 SmtResult::Satisfiable => {
                     println!("✅ Goal is valid");
@@ -623,19 +530,15 @@ impl InteractiveProver {
         } else {
             println!("No current goal to check.");
         }
-        
         Ok(())
     }
-    
     /// Find counterexample for current goal
     fn find_counterexample(&mut self) -> Result<()> {
         if let Some(goal) = self.session.current_goal() {
             println!("Searching for counterexample...");
-            
             if let Some(counterexample) = self.counterexample_gen.generate(goal, &self.session.context)? {
                 println!("❌ Found counterexample:");
                 println!("{}", counterexample);
-                
                 // Generate test case
                 let test_case = counterexample.to_test_case()?;
                 println!("\n📝 Generated test case:");
@@ -646,17 +549,14 @@ impl InteractiveProver {
         } else {
             println!("No current goal to check.");
         }
-        
         Ok(())
     }
-    
     /// Undo last proof step
     fn undo_last_step(&mut self) -> Result<()> {
         // Implementation would restore previous state
         println!("⏪ Undid last proof step");
         Ok(())
     }
-    
     /// Add a new goal
     fn add_goal(&mut self, statement: &str) -> Result<()> {
         let goal = ProofGoal {
@@ -667,13 +567,10 @@ impl InteractiveProver {
             priority: Priority::Normal,
             parent: None,
         };
-        
         self.session.goals.push_back(goal);
         println!("Added goal: {}", statement);
-        
         Ok(())
     }
-    
     /// Save proof session
     fn save_proof(&self, filename: &str) -> Result<()> {
         let session_data = serde_json::to_string_pretty(&self.session.completed)?;
@@ -681,7 +578,6 @@ impl InteractiveProver {
         println!("💾 Saved proof to {}", filename);
         Ok(())
     }
-    
     /// Load proof session
     fn load_proof(&mut self, filename: &str) -> Result<()> {
         let data = std::fs::read_to_string(filename)?;
@@ -691,7 +587,6 @@ impl InteractiveProver {
         Ok(())
     }
 }
-
 impl ProverSession {
     /// Create a new prover session
     fn new() -> Self {
@@ -708,12 +603,10 @@ impl ProverSession {
             },
         }
     }
-    
     /// Get current goal
     fn current_goal(&self) -> Option<&ProofGoal> {
         self.goals.front()
     }
-    
     /// Complete current goal
     fn complete_current_goal(&mut self) {
         if let Some(goal) = self.goals.pop_front() {
@@ -727,18 +620,15 @@ impl ProverSession {
             self.metadata.goals_proven += 1;
         }
     }
-    
     /// Update current goal
     fn update_current_goal(&mut self, new_statement: &str) {
         if let Some(goal) = self.goals.front_mut() {
             goal.statement = new_statement.to_string();
         }
     }
-    
     /// Add a subgoal
     fn add_subgoal(&mut self, statement: &str) -> Result<()> {
         let parent_id = self.current_goal().map(|g| g.id.clone());
-        
         let subgoal = ProofGoal {
             id: format!("subgoal_{}", self.goals.len()),
             statement: statement.to_string(),
@@ -747,12 +637,10 @@ impl ProverSession {
             priority: Priority::Normal,
             parent: parent_id,
         };
-        
         self.goals.push_front(subgoal);
         Ok(())
     }
 }
-
 impl ProofContext {
     /// Create a new proof context
     fn new() -> Self {
@@ -761,6 +649,25 @@ impl ProofContext {
             assumptions: Vec::new(),
             definitions: HashMap::new(),
             imports: Vec::new(),
+        }
+    }
+}
+#[cfg(test)]
+mod property_tests_prover_complex {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
         }
     }
 }

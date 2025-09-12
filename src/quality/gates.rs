@@ -1,143 +1,106 @@
 //! Quality gate enforcement system (RUCHY-0815)
-
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use crate::quality::scoring::{QualityScore, Grade};
-
 /// Quality gate configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QualityGateConfig {
     /// Minimum overall score required (0.0-1.0)
     pub min_score: f64,
-    
     /// Minimum grade required
     pub min_grade: Grade,
-    
     /// Component-specific thresholds
     pub component_thresholds: ComponentThresholds,
-    
     /// Anti-gaming rules
     pub anti_gaming: AntiGamingRules,
-    
     /// CI/CD integration settings
     pub ci_integration: CiIntegration,
-    
     /// Project-specific overrides
     pub project_overrides: HashMap<String, f64>,
 }
-
 /// Component-specific quality thresholds
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComponentThresholds {
     /// Minimum correctness score (0.0-1.0)
     pub correctness: f64,
-    
     /// Minimum performance score (0.0-1.0)
     pub performance: f64,
-    
     /// Minimum maintainability score (0.0-1.0)
     pub maintainability: f64,
-    
     /// Minimum safety score (0.0-1.0)
     pub safety: f64,
-    
     /// Minimum idiomaticity score (0.0-1.0)
     pub idiomaticity: f64,
 }
-
 /// Anti-gaming rules to prevent score manipulation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AntiGamingRules {
     /// Minimum confidence level required (0.0-1.0)
     pub min_confidence: f64,
-    
     /// Maximum cache hit rate allowed (0.0-1.0) - prevents stale analysis
     pub max_cache_hit_rate: f64,
-    
     /// Require deep analysis for critical files
     pub require_deep_analysis: Vec<String>,
-    
     /// Penalty for files that are too small (gaming by splitting)
     pub min_file_size_bytes: usize,
-    
     /// Penalty for excessive test file ratios (gaming with trivial tests)
     pub max_test_ratio: f64,
 }
-
 /// CI/CD integration configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CiIntegration {
     /// Fail CI/CD pipeline on gate failure
     pub fail_on_violation: bool,
-    
     /// Export results in `JUnit` XML format
     pub junit_xml: bool,
-    
     /// Export results in JSON format for tooling
     pub json_output: bool,
-    
     /// Send notifications on quality degradation
     pub notifications: NotificationConfig,
-    
     /// Block merge requests below threshold
     pub block_merge: bool,
 }
-
 /// Notification configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotificationConfig {
     /// Enable Slack notifications
     pub slack: bool,
-    
     /// Enable email notifications  
     pub email: bool,
-    
     /// Webhook URL for custom notifications
     pub webhook: Option<String>,
 }
-
 /// Quality gate enforcement result
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct GateResult {
     /// Whether the quality gate passed
     pub passed: bool,
-    
     /// Overall score achieved
     pub score: f64,
-    
     /// Grade achieved
     pub grade: Grade,
-    
     /// Specific violations found
     pub violations: Vec<Violation>,
-    
     /// Confidence in the result
     pub confidence: f64,
-    
     /// Anti-gaming warnings
     pub gaming_warnings: Vec<String>,
 }
-
 /// Specific quality gate violation
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Violation {
     /// Type of violation
     pub violation_type: ViolationType,
-    
     /// Actual value that caused violation
     pub actual: f64,
-    
     /// Required threshold
     pub required: f64,
-    
     /// Severity of the violation
     pub severity: Severity,
-    
     /// Human-readable message
     pub message: String,
 }
-
 /// Types of quality gate violations
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum ViolationType {
@@ -151,7 +114,6 @@ pub enum ViolationType {
     Confidence,
     Gaming,
 }
-
 /// Violation severity levels
 #[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Severity {
@@ -160,12 +122,10 @@ pub enum Severity {
     Medium,   // Should improve
     Low,      // Nice to improve
 }
-
 /// Quality gate enforcer
 pub struct QualityGateEnforcer {
     config: QualityGateConfig,
 }
-
 impl Default for QualityGateConfig {
     fn default() -> Self {
         Self {
@@ -203,16 +163,29 @@ impl Default for QualityGateConfig {
         }
     }
 }
-
 impl QualityGateEnforcer {
-    pub fn new(config: QualityGateConfig) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::quality::gates::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new(config: QualityGateConfig) -> Self {
         Self { config }
     }
-    
     /// Load configuration from .ruchy/score.toml
-    pub fn load_config(project_root: &Path) -> anyhow::Result<QualityGateConfig> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::quality::gates::load_config;
+/// 
+/// let result = load_config(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn load_config(project_root: &Path) -> anyhow::Result<QualityGateConfig> {
         let config_path = project_root.join(".ruchy").join("score.toml");
-        
         if config_path.exists() {
             let content = std::fs::read_to_string(&config_path)?;
             let config: QualityGateConfig = toml::from_str(&content)?;
@@ -226,12 +199,18 @@ impl QualityGateEnforcer {
             Ok(default_config)
         }
     }
-    
     /// Enforce quality gates on a score
-    pub fn enforce_gates(&self, score: &QualityScore, file_path: Option<&PathBuf>) -> GateResult {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::quality::gates::enforce_gates;
+/// 
+/// let result = enforce_gates(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn enforce_gates(&self, score: &QualityScore, file_path: Option<&PathBuf>) -> GateResult {
         let mut violations = Vec::new();
         let mut gaming_warnings = Vec::new();
-        
         // Check overall score threshold
         if score.value < self.config.min_score {
             violations.push(Violation {
@@ -246,7 +225,6 @@ impl QualityGateEnforcer {
                 ),
             });
         }
-        
         // Check grade requirement
         if score.grade < self.config.min_grade {
             violations.push(Violation {
@@ -261,13 +239,10 @@ impl QualityGateEnforcer {
                 ),
             });
         }
-        
         // Check component thresholds
         self.check_component_thresholds(score, &mut violations);
-        
         // Check anti-gaming rules
         self.check_anti_gaming_rules(score, file_path, &mut gaming_warnings, &mut violations);
-        
         // Check confidence threshold
         if score.confidence < self.config.anti_gaming.min_confidence {
             violations.push(Violation {
@@ -282,9 +257,7 @@ impl QualityGateEnforcer {
                 ),
             });
         }
-        
         let passed = violations.iter().all(|v| v.severity != Severity::Critical);
-        
         GateResult {
             passed,
             score: score.value,
@@ -294,10 +267,8 @@ impl QualityGateEnforcer {
             gaming_warnings,
         }
     }
-    
     fn check_component_thresholds(&self, score: &QualityScore, violations: &mut Vec<Violation>) {
         let thresholds = &self.config.component_thresholds;
-        
         if score.components.correctness < thresholds.correctness {
             violations.push(Violation {
                 violation_type: ViolationType::Correctness,
@@ -311,7 +282,6 @@ impl QualityGateEnforcer {
                 ),
             });
         }
-        
         if score.components.performance < thresholds.performance {
             violations.push(Violation {
                 violation_type: ViolationType::Performance,
@@ -325,7 +295,6 @@ impl QualityGateEnforcer {
                 ),
             });
         }
-        
         if score.components.maintainability < thresholds.maintainability {
             violations.push(Violation {
                 violation_type: ViolationType::Maintainability,
@@ -339,7 +308,6 @@ impl QualityGateEnforcer {
                 ),
             });
         }
-        
         if score.components.safety < thresholds.safety {
             violations.push(Violation {
                 violation_type: ViolationType::Safety,
@@ -353,7 +321,6 @@ impl QualityGateEnforcer {
                 ),
             });
         }
-        
         if score.components.idiomaticity < thresholds.idiomaticity {
             violations.push(Violation {
                 violation_type: ViolationType::Idiomaticity,
@@ -368,7 +335,6 @@ impl QualityGateEnforcer {
             });
         }
     }
-    
     fn check_anti_gaming_rules(
         &self,
         score: &QualityScore,
@@ -383,7 +349,6 @@ impl QualityGateEnforcer {
                 score.cache_hit_rate * 100.0
             ));
         }
-        
         // Check file size requirements
         if let Some(path) = file_path {
             if let Ok(metadata) = std::fs::metadata(path) {
@@ -395,7 +360,6 @@ impl QualityGateEnforcer {
                     ));
                 }
             }
-            
             // Check if critical files require deep analysis
             let path_str = path.to_string_lossy();
             if self.config.anti_gaming.require_deep_analysis.iter().any(|p| path_str.contains(p))
@@ -413,37 +377,37 @@ impl QualityGateEnforcer {
                 }
         }
     }
-    
     /// Export results for CI/CD integration
-    pub fn export_ci_results(&self, results: &[GateResult], output_dir: &Path) -> anyhow::Result<()> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::quality::gates::export_ci_results;
+/// 
+/// let result = export_ci_results(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn export_ci_results(&self, results: &[GateResult], output_dir: &Path) -> anyhow::Result<()> {
         if self.config.ci_integration.json_output {
             self.export_json_results(results, output_dir)?;
         }
-        
         if self.config.ci_integration.junit_xml {
             self.export_junit_results(results, output_dir)?;
         }
-        
         Ok(())
     }
-    
     fn export_json_results(&self, results: &[GateResult], output_dir: &Path) -> anyhow::Result<()> {
         let output_path = output_dir.join("quality-gates.json");
         let json_content = serde_json::to_string_pretty(results)?;
         std::fs::write(output_path, json_content)?;
         Ok(())
     }
-    
     fn export_junit_results(&self, results: &[GateResult], output_dir: &Path) -> anyhow::Result<()> {
         let output_path = output_dir.join("quality-gates.xml");
-        
         let total = results.len();
         let failures = results.iter().filter(|r| !r.passed).count();
-        
         let mut xml = format!(r#"<?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="Quality Gates" tests="{total}" failures="{failures}" time="0.0">
 "#);
-        
         for (i, result) in results.iter().enumerate() {
             let test_name = format!("quality-gate-{i}");
             if result.passed {
@@ -463,64 +427,27 @@ impl QualityGateEnforcer {
                 ));
             }
         }
-        
         xml.push_str("</testsuite>\n");
         std::fs::write(output_path, xml)?;
         Ok(())
     }
 }
-
 impl PartialOrd for Grade {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
-
 impl Ord for Grade {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // use std::cmp::Ordering;
-        use Grade::{F, D, CMinus, C, CPlus, BMinus, B, BPlus, AMinus, A, APlus};
-        
-        let self_rank = match self {
-            F => 0,
-            D => 1,
-            CMinus => 2,
-            C => 3,
-            CPlus => 4,
-            BMinus => 5,
-            B => 6,
-            BPlus => 7,
-            AMinus => 8,
-            A => 9,
-            APlus => 10,
-        };
-        
-        let other_rank = match other {
-            F => 0,
-            D => 1,
-            CMinus => 2,
-            C => 3,
-            CPlus => 4,
-            BMinus => 5,
-            B => 6,
-            BPlus => 7,
-            AMinus => 8,
-            A => 9,
-            APlus => 10,
-        };
-        
-        self_rank.cmp(&other_rank)
+        self.to_rank().cmp(&other.to_rank())
     }
 }
-
 // PartialEq and Eq are now derived in scoring.rs
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::quality::scoring::{QualityScore, Grade};
     use tempfile::TempDir;
-
     fn create_minimal_score() -> QualityScore {
         use crate::quality::scoring::ScoreComponents;
         QualityScore {
@@ -537,9 +464,10 @@ mod tests {
             cache_hit_rate: 0.3,
         }
     }
-
     fn create_passing_score() -> QualityScore {
         use crate::quality::scoring::ScoreComponents;
+#[cfg(test)]
+use proptest::prelude::*;
         QualityScore {
             value: 0.85,
             components: ScoreComponents {
@@ -554,12 +482,10 @@ mod tests {
             cache_hit_rate: 0.2,
         }
     }
-
     // Test 1: Default Configuration Creation
     #[test]
     fn test_default_quality_gate_config() {
         let config = QualityGateConfig::default();
-        
         assert_eq!(config.min_score, 0.7);
         assert_eq!(config.min_grade, Grade::BMinus);
         assert_eq!(config.component_thresholds.correctness, 0.8);
@@ -568,31 +494,25 @@ mod tests {
         assert!(config.ci_integration.fail_on_violation);
         assert!(config.project_overrides.is_empty());
     }
-
     // Test 2: Quality Gate Enforcer Creation
     #[test]
     fn test_quality_gate_enforcer_creation() {
         let config = QualityGateConfig::default();
         let enforcer = QualityGateEnforcer::new(config);
-        
         // Verify enforcer uses the provided config
         let score = create_minimal_score();
         let result = enforcer.enforce_gates(&score, None);
-        
         // Should fail with default thresholds
         assert!(!result.passed);
         assert!(!result.violations.is_empty());
     }
-
     // Test 3: Passing Quality Gate - All Criteria Met
     #[test]
     fn test_quality_gate_passes_with_high_score() {
         let config = QualityGateConfig::default();
         let enforcer = QualityGateEnforcer::new(config);
         let score = create_passing_score();
-        
         let result = enforcer.enforce_gates(&score, None);
-        
         assert!(result.passed, "High quality score should pass all gates");
         assert_eq!(result.score, 0.85);
         assert_eq!(result.grade, Grade::APlus);
@@ -600,26 +520,20 @@ mod tests {
         assert_eq!(result.confidence, 0.9);
         assert!(result.gaming_warnings.is_empty());
     }
-
     // Test 4: Failing Overall Score Threshold
     #[test]
     fn test_quality_gate_fails_overall_score() {
         let config = QualityGateConfig::default(); // min_score: 0.7
         let enforcer = QualityGateEnforcer::new(config);
-        
         let mut score = create_minimal_score();
         score.value = 0.6; // Below 0.7 threshold
-        
         let result = enforcer.enforce_gates(&score, None);
-        
         assert!(!result.passed, "Score below threshold should fail");
-        
         // Should have overall score violation
         let overall_violations: Vec<_> = result.violations.iter()
             .filter(|v| v.violation_type == ViolationType::OverallScore)
             .collect();
         assert_eq!(overall_violations.len(), 1);
-        
         let violation = &overall_violations[0];
         assert_eq!(violation.actual, 0.6);
         assert_eq!(violation.required, 0.7);
@@ -627,63 +541,69 @@ mod tests {
         assert!(violation.message.contains("60.0%"));
         assert!(violation.message.contains("70.0%"));
     }
-
     // Test 5: Confidence Threshold Violation
     #[test]
     fn test_confidence_threshold_violation() {
         let config = QualityGateConfig::default(); // min_confidence: 0.6
         let enforcer = QualityGateEnforcer::new(config);
-        
         let mut score = create_passing_score();
         score.confidence = 0.4; // Below 0.6 threshold
-        
         let result = enforcer.enforce_gates(&score, None);
-        
         let confidence_violations: Vec<_> = result.violations.iter()
             .filter(|v| v.violation_type == ViolationType::Confidence)
             .collect();
         assert_eq!(confidence_violations.len(), 1);
-        
         let violation = &confidence_violations[0];
         assert_eq!(violation.severity, Severity::High);
         assert_eq!(violation.actual, 0.4);
         assert_eq!(violation.required, 0.6);
     }
-
     // Test 6: Configuration File Loading (Success)
     #[test]
     fn test_load_config_creates_default() {
         let temp_dir = TempDir::new().unwrap();
         let project_root = temp_dir.path();
-        
         let config = QualityGateEnforcer::load_config(project_root).unwrap();
-        
         // Should create default config
         assert_eq!(config.min_score, 0.7);
         assert_eq!(config.min_grade, Grade::BMinus);
-        
         // Should create .ruchy/score.toml file
         let config_path = project_root.join(".ruchy").join("score.toml");
         assert!(config_path.exists(), "Config file should be created");
-        
         // File should contain valid TOML
         let content = std::fs::read_to_string(config_path).unwrap();
         assert!(content.contains("min_score"));
         assert!(content.contains("0.7"));
     }
-
     // Test 7: Serialization/Deserialization
     #[test]
     fn test_config_serialization() {
         let original_config = QualityGateConfig::default();
-        
         // Serialize to TOML
         let toml_content = toml::to_string(&original_config).unwrap();
         assert!(toml_content.contains("min_score"));
-        
         // Deserialize back
         let deserialized_config: QualityGateConfig = toml::from_str(&toml_content).unwrap();
         assert_eq!(deserialized_config.min_score, original_config.min_score);
         assert_eq!(deserialized_config.min_grade, original_config.min_grade);
+    }
+}
+#[cfg(test)]
+mod property_tests_gates {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

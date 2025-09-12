@@ -1,12 +1,10 @@
 //! Grammar coverage matrix for REPL testing
 //!
 //! Tracks coverage of all grammar productions to ensure complete testing
-
 use crate::frontend::ast::Expr;
 use anyhow::Result;
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
-
 /// Statistics for a single grammar production
 #[derive(Default, Debug)]
 pub struct ProductionStats {
@@ -15,7 +13,6 @@ pub struct ProductionStats {
     pub avg_latency_ns: u64,
     pub error_patterns: Vec<String>,
 }
-
 /// Grammar coverage tracking matrix
 #[derive(Default)]
 pub struct GrammarCoverageMatrix {
@@ -23,13 +20,11 @@ pub struct GrammarCoverageMatrix {
     pub ast_variants: HashSet<String>,
     pub uncovered: Vec<&'static str>,
 }
-
 impl GrammarCoverageMatrix {
     /// Create a new coverage matrix
     pub fn new() -> Self {
         Self::default()
     }
-
     /// Record a parse attempt
     pub fn record(
         &mut self,
@@ -39,7 +34,6 @@ impl GrammarCoverageMatrix {
         elapsed: Duration,
     ) {
         let stats = self.productions.entry(production).or_default();
-
         stats.hit_count += 1;
         let elapsed_ns =
             u64::try_from(elapsed.as_nanos().min(u128::from(u64::MAX))).unwrap_or(u64::MAX);
@@ -49,7 +43,6 @@ impl GrammarCoverageMatrix {
             (stats.avg_latency_ns * (stats.hit_count as u64 - 1) + elapsed_ns)
                 / stats.hit_count as u64
         };
-
         match result {
             Ok(ast) => {
                 stats.success_count += 1;
@@ -63,11 +56,9 @@ impl GrammarCoverageMatrix {
             }
         }
     }
-
     /// Record AST variant usage
     fn record_ast_variants(&mut self, expr: &Expr) {
         use crate::frontend::ast::ExprKind;
-
         let variant_name = match &expr.kind {
             ExprKind::Literal(_) => "Literal",
             ExprKind::Identifier(_) => "Identifier",
@@ -116,15 +107,12 @@ impl GrammarCoverageMatrix {
             ExprKind::CompoundAssign { .. } => "CompoundAssign",
             _ => "Other",
         };
-
         self.ast_variants.insert(variant_name.to_string());
     }
-
     /// Check if coverage is complete
     pub fn is_complete(&self, required_productions: usize) -> bool {
         self.productions.len() >= required_productions && self.uncovered.is_empty()
     }
-
     /// Assert that coverage is complete
     ///
     /// # Panics
@@ -137,7 +125,6 @@ impl GrammarCoverageMatrix {
             "Uncovered productions: {:?}",
             self.uncovered
         );
-
         assert!(
             self.productions.len() >= required_productions,
             "Only {} of {} productions covered",
@@ -145,44 +132,35 @@ impl GrammarCoverageMatrix {
             required_productions
         );
     }
-
     /// Get coverage percentage
     pub fn get_coverage_percentage(&self) -> f64 {
         if self.uncovered.is_empty() && self.productions.is_empty() {
             return 0.0;
         }
-        
         // Count uncovered productions that haven't been covered
         let uncovered_count = self.uncovered.iter()
             .filter(|prod| !self.productions.contains_key(**prod))
             .count();
-        
         let total = self.productions.len() + uncovered_count;
         if total == 0 {
             return 0.0;
         }
-        
         #[allow(clippy::cast_precision_loss)]
         let percentage = (self.productions.len() as f64 / total as f64) * 100.0;
         percentage
     }
-    
     /// Generate a coverage report (alias for `report()`)
     pub fn generate_report(&self) -> String {
         self.report()
     }
-
     /// Generate a coverage report
     pub fn report(&self) -> String {
         use std::fmt::Write;
-
         let mut report = String::new();
         report.push_str("Grammar Coverage Report\n");
         report.push_str("=======================\n\n");
-        
         let coverage_percentage = self.get_coverage_percentage();
         let _ = writeln!(&mut report, "Coverage: {coverage_percentage:.1}%");
-
         let _ = writeln!(
             &mut report,
             "Productions covered: {}",
@@ -193,11 +171,9 @@ impl GrammarCoverageMatrix {
             "AST variants seen: {}",
             self.ast_variants.len()
         );
-
         let total_hits: usize = self.productions.values().map(|s| s.hit_count).sum();
         let total_success: usize = self.productions.values().map(|s| s.success_count).sum();
         let _ = writeln!(&mut report, "Total attempts: {total_hits}");
-
         let success_rate = if total_hits > 0 {
             #[allow(clippy::cast_precision_loss)]
             let rate = (total_success as f64 / total_hits as f64) * 100.0;
@@ -206,12 +182,10 @@ impl GrammarCoverageMatrix {
             0.0
         };
         let _ = writeln!(&mut report, "Success rate: {success_rate:.2}%");
-
         // Find slowest productions
         let mut slowest: Vec<_> = self.productions.iter().collect();
         slowest.sort_by_key(|(_, stats)| stats.avg_latency_ns);
         slowest.reverse();
-
         if !slowest.is_empty() {
             report.push_str("\nSlowest productions:\n");
             for (name, stats) in slowest.iter().take(5) {
@@ -220,18 +194,15 @@ impl GrammarCoverageMatrix {
                 let _ = writeln!(&mut report, "  {name}: {ms:.2}ms");
             }
         }
-
         if !self.uncovered.is_empty() {
             report.push_str("\nUncovered productions:\n");
             for prod in &self.uncovered {
                 let _ = writeln!(&mut report, "  - {prod}");
             }
         }
-
         report
     }
 }
-
 /// All grammar productions that need coverage
 pub const GRAMMAR_PRODUCTIONS: &[(&str, &str)] = &[
     // Core literals (5)

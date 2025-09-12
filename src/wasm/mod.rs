@@ -2,7 +2,6 @@
 //!
 //! This module provides WebAssembly component generation, WIT interface generation,
 //! platform-specific deployment, and portability scoring for Ruchy code.
-
 pub mod component;
 pub mod wit;
 pub mod deployment;
@@ -12,6 +11,8 @@ pub mod notebook;
 pub mod shared_session;
 pub mod demo_converter;
 
+#[cfg(test)]
+pub mod webworker_tests;
 pub use component::{WasmComponent, ComponentBuilder, ComponentConfig};
 pub use wit::{WitInterface, WitGenerator, InterfaceDefinition};
 pub use deployment::{DeploymentTarget, Deployer, DeploymentConfig};

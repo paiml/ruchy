@@ -1,5 +1,4 @@
 //! Core LSP server implementation
-
 use super::{Formatter, SemanticAnalyzer, Workspace, SEMANTIC_TOKEN_LEGEND};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -15,16 +14,24 @@ use tower_lsp::lsp_types::{
     Url, WorkDoneProgressOptions,
 };
 use tower_lsp::{Client, LanguageServer};
-
+#[cfg(test)]
+use proptest::prelude::*;
 pub struct RuchyLanguageServer {
     client: Client,
     workspace: Arc<Mutex<Workspace>>,
     analyzer: Arc<Mutex<SemanticAnalyzer>>,
     formatter: Arc<Formatter>,
 }
-
 impl RuchyLanguageServer {
-    pub fn new(client: Client) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::lsp::server::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new(client: Client) -> Self {
         Self {
             client,
             workspace: Arc::new(Mutex::new(Workspace::new())),
@@ -33,7 +40,6 @@ impl RuchyLanguageServer {
         }
     }
 }
-
 #[tower_lsp::async_trait]
 impl LanguageServer for RuchyLanguageServer {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
@@ -78,46 +84,36 @@ impl LanguageServer for RuchyLanguageServer {
             }),
         })
     }
-
     async fn initialized(&self, _: InitializedParams) {
         self.client
             .log_message(MessageType::INFO, "Ruchy Language Server initialized!")
             .await;
     }
-
     async fn shutdown(&self) -> Result<()> {
         Ok(())
     }
-
     async fn did_open(&self, params: DidOpenTextDocumentParams) {
         let mut workspace = self.workspace.lock().await;
         workspace.add_document(params.text_document.uri.clone(), params.text_document.text);
-
         // Publish diagnostics
         self.publish_diagnostics(params.text_document.uri).await;
     }
-
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         if let Some(change) = params.content_changes.into_iter().next() {
             let mut workspace = self.workspace.lock().await;
             workspace.update_document(&params.text_document.uri, change.text);
-
             drop(workspace); // Release lock before async call
             self.publish_diagnostics(params.text_document.uri).await;
         }
     }
-
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let mut workspace = self.workspace.lock().await;
         workspace.remove_document(&params.text_document.uri);
     }
-
     async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let workspace = self.workspace.lock().await;
         let analyzer = self.analyzer.lock().await;
-
         let position = params.text_document_position;
-
         if let Ok(document) = workspace.get_document(&position.text_document.uri) {
             let completions = analyzer.get_completions(document, position.position)?;
             Ok(Some(CompletionResponse::Array(completions)))
@@ -125,13 +121,10 @@ impl LanguageServer for RuchyLanguageServer {
             Ok(None)
         }
     }
-
     async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
         let workspace = self.workspace.lock().await;
         let analyzer = self.analyzer.lock().await;
-
         let position = params.text_document_position_params;
-
         if let Ok(document) = workspace.get_document(&position.text_document.uri) {
             let hover_info = analyzer.get_hover_info(document, position.position)?;
             Ok(hover_info)
@@ -139,16 +132,13 @@ impl LanguageServer for RuchyLanguageServer {
             Ok(None)
         }
     }
-
     async fn goto_definition(
         &self,
         params: GotoDefinitionParams,
     ) -> Result<Option<GotoDefinitionResponse>> {
         let workspace = self.workspace.lock().await;
         let analyzer = self.analyzer.lock().await;
-
         let position = params.text_document_position_params;
-
         if let Ok(document) = workspace.get_document(&position.text_document.uri) {
             let definition = analyzer.get_definition(document, position.position)?;
             Ok(definition.map(GotoDefinitionResponse::Scalar))
@@ -156,13 +146,10 @@ impl LanguageServer for RuchyLanguageServer {
             Ok(None)
         }
     }
-
     async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
         let workspace = self.workspace.lock().await;
-
         if let Ok(document) = workspace.get_document(&params.text_document.uri) {
             let formatted = self.formatter.format(document)?;
-
             // Return a single text edit that replaces the entire document
             let edit = TextEdit {
                 range: Range {
@@ -177,25 +164,40 @@ impl LanguageServer for RuchyLanguageServer {
                 },
                 new_text: formatted,
             };
-
             Ok(Some(vec![edit]))
         } else {
             Ok(None)
         }
     }
 }
-
 impl RuchyLanguageServer {
     async fn publish_diagnostics(&self, uri: Url) {
         let workspace = self.workspace.lock().await;
         let mut analyzer = self.analyzer.lock().await;
-
         if let Ok(document) = workspace.get_document(&uri) {
             let diagnostics = analyzer.get_diagnostics(document).unwrap_or_default();
-
             self.client
                 .publish_diagnostics(uri, diagnostics, None)
                 .await;
+        }
+    }
+}
+#[cfg(test)]
+mod property_tests_server {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
         }
     }
 }

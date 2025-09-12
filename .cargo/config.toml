@@ -43,4 +43,7 @@ rustflags = [
     "-C", "opt-level=z",
     "-C", "lto=fat",
     "-C", "embed-bitcode=yes",
+    "-C", "codegen-units=1",
+    "-C", "strip=symbols",
+    "-C", "panic=abort",
 ]

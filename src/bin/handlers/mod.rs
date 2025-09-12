@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-
 mod commands;
 mod handlers_modules;
 use ruchy::{Parser as RuchyParser, Transpiler, WasmEmitter};
@@ -10,7 +9,6 @@ use ruchy::runtime::replay_converter::ConversionConfig;
 use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
-
 /// Handle eval command - evaluate a one-liner expression with -e flag
 /// 
 /// # Arguments
@@ -30,14 +28,12 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
     if verbose {
         eprintln!("Parsing expression: {expr}");
     }
-
     let mut repl = Repl::new()?;
     match repl.eval(expr) {
         Ok(result) => {
             if verbose {
                 eprintln!("Evaluation successful");
             }
-
             if format == "json" {
                 // Manually construct JSON to ensure field order matches test expectations
                 let result_str = result.replace('"', "\\\"");
@@ -52,7 +48,6 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
             if verbose {
                 eprintln!("Evaluation failed: {e}");
             }
-
             match format {
                 "json" => {
                     println!(
@@ -71,7 +66,6 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
         }
     }
 }
-
 /// Handle file execution - run a Ruchy script file directly (not via subcommand)
 /// 
 /// # Arguments
@@ -88,7 +82,6 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str) -> Result<()
 pub fn handle_file_execution(file: &Path) -> Result<()> {
     let source = fs::read_to_string(file)
         .with_context(|| format!("Failed to read file: {}", file.display()))?;
-
     // Use REPL to evaluate the file
     let mut repl = Repl::new()?;
     match repl.eval(&source) {
@@ -97,7 +90,6 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
             if result != "Unit" && result != "()" {
                 println!("{result}");
             }
-            
             // After evaluating the file, check if main() function exists and call it
             if let Ok(main_result) = repl.eval("main()") {
                 // Only print non-unit results from main()
@@ -108,7 +100,6 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
                 // main() function doesn't exist or failed - that's OK
                 // Files don't have to have main() functions
             }
-            
             Ok(())
         }
         Err(e) => {
@@ -117,7 +108,6 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
         }
     }
 }
-
 /// Handle stdin/piped input - evaluate input from standard input
 /// 
 /// # Arguments
@@ -144,16 +134,13 @@ pub fn handle_stdin_input(input: &str) -> Result<()> {
         }
     }
 }
-
 /// Handle parse command - show AST for a Ruchy file
 pub fn handle_parse_command(file: &Path, verbose: bool) -> Result<()> {
     if verbose {
         eprintln!("Parsing file: {}", file.display());
     }
-    
     let source = fs::read_to_string(file)
         .with_context(|| format!("Failed to read file: {}", file.display()))?;
-    
     let mut parser = RuchyParser::new(&source);
     match parser.parse() {
         Ok(ast) => {
@@ -166,7 +153,6 @@ pub fn handle_parse_command(file: &Path, verbose: bool) -> Result<()> {
         }
     }
 }
-
 /// Handle transpile command - convert Ruchy to Rust
 pub fn handle_transpile_command(
     file: &Path, 
@@ -175,15 +161,12 @@ pub fn handle_transpile_command(
     verbose: bool
 ) -> Result<()> {
     log_transpile_start(file, minimal, verbose);
-    
     let source = read_source_file(file, verbose)?;
     let ast = parse_source(&source)?;
     let rust_code = transpile_ast(&ast, minimal)?;
-    
     write_output(&rust_code, output, verbose)?;
     Ok(())
 }
-
 /// Log transpilation start (complexity: 3)
 fn log_transpile_start(file: &Path, minimal: bool, verbose: bool) {
     if !verbose {
@@ -194,7 +177,6 @@ fn log_transpile_start(file: &Path, minimal: bool, verbose: bool) {
         eprintln!("Using minimal codegen for self-hosting");
     }
 }
-
 /// Read source from file or stdin (complexity: 5)
 fn read_source_file(file: &Path, verbose: bool) -> Result<String> {
     if file.as_os_str() == "-" {
@@ -209,14 +191,12 @@ fn read_source_file(file: &Path, verbose: bool) -> Result<String> {
             .with_context(|| format!("Failed to read file: {}", file.display()))
     }
 }
-
 /// Parse source code to AST (complexity: 2)
 fn parse_source(source: &str) -> Result<Expr> {
     let mut parser = RuchyParser::new(source);
     parser.parse()
         .with_context(|| "Failed to parse input")
 }
-
 /// Transpile AST to Rust code (complexity: 4)
 fn transpile_ast(ast: &Expr, minimal: bool) -> Result<String> {
     let mut transpiler = Transpiler::new();
@@ -229,7 +209,6 @@ fn transpile_ast(ast: &Expr, minimal: bool) -> Result<String> {
             .with_context(|| "Failed to transpile to Rust")
     }
 }
-
 /// Write output to file or stdout (complexity: 5)
 fn write_output(rust_code: &str, output: Option<&Path>, verbose: bool) -> Result<()> {
     if let Some(output_path) = output {
@@ -243,32 +222,26 @@ fn write_output(rust_code: &str, output: Option<&Path>, verbose: bool) -> Result
     }
     Ok(())
 }
-
 /// Handle run command - compile and execute a Ruchy file
 pub fn handle_run_command(file: &Path, verbose: bool) -> Result<()> {
     log_run_start(file, verbose);
-    
     // Parse and transpile
     let source = fs::read_to_string(file)
         .with_context(|| format!("Failed to read file: {}", file.display()))?;
     let ast = parse_source(&source)?;
     let rust_code = transpile_for_execution(&ast, file)?;
-    
     // Compile and execute
     let (temp_source, binary_path) = prepare_compilation(&rust_code, verbose)?;
     compile_rust_code(temp_source.path(), &binary_path)?;
     execute_binary(&binary_path)?;
-    
     Ok(())
 }
-
 /// Log run command start (complexity: 2)
 fn log_run_start(file: &Path, verbose: bool) {
     if verbose {
         eprintln!("Running file: {}", file.display());
     }
 }
-
 /// Transpile AST for execution with context (complexity: 3)
 fn transpile_for_execution(ast: &Expr, file: &Path) -> Result<String> {
     let transpiler = Transpiler::new();
@@ -276,25 +249,20 @@ fn transpile_for_execution(ast: &Expr, file: &Path) -> Result<String> {
         .map(|tokens| tokens.to_string())
         .with_context(|| "Failed to transpile to Rust")
 }
-
 /// Prepare compilation artifacts (complexity: 4)
 fn prepare_compilation(rust_code: &str, verbose: bool) -> Result<(tempfile::NamedTempFile, PathBuf)> {
     let temp_source = tempfile::NamedTempFile::new()
         .with_context(|| "Failed to create temporary file")?;
     fs::write(temp_source.path(), rust_code)
         .with_context(|| "Failed to write temporary file")?;
-    
     if verbose {
         eprintln!("Temporary Rust file: {}", temp_source.path().display());
         eprintln!("Compiling and running...");
     }
-    
     // Create unique binary path using process ID for temporary compilation output
     let binary_path = std::env::temp_dir().join(format!("ruchy_temp_bin_{}", std::process::id()));
-    
     Ok((temp_source, binary_path))
 }
-
 /// Compile Rust code using rustc (complexity: 5)
 fn compile_rust_code(source_path: &Path, binary_path: &Path) -> Result<()> {
     let output = std::process::Command::new("rustc")
@@ -305,34 +273,27 @@ fn compile_rust_code(source_path: &Path, binary_path: &Path) -> Result<()> {
         .arg(source_path)
         .output()
         .with_context(|| "Failed to run rustc")?;
-    
     if !output.status.success() {
         eprintln!("Compilation failed:");
         eprintln!("{}", String::from_utf8_lossy(&output.stderr));
         std::process::exit(1);
     }
-    
     Ok(())
 }
-
 /// Execute compiled binary and handle output (complexity: 5)
 fn execute_binary(binary_path: &Path) -> Result<()> {
     let run_output = std::process::Command::new(binary_path)
         .output()
         .with_context(|| "Failed to run compiled binary")?;
-    
     print!("{}", String::from_utf8_lossy(&run_output.stdout));
     if !run_output.stderr.is_empty() {
         eprint!("{}", String::from_utf8_lossy(&run_output.stderr));
     }
-    
     if !run_output.status.success() {
         std::process::exit(run_output.status.code().unwrap_or(1));
     }
-    
     Ok(())
 }
-
 /// Handle interactive theorem prover (RUCHY-0820) - delegated to refactored module
 pub fn handle_prove_command(
     file: Option<&std::path::Path>,
@@ -360,7 +321,6 @@ pub fn handle_prove_command(
         format,
     )
 }
-
 /// Print prover help - moved to separate function for clarity
 fn print_prover_help() {
     println!("\nInteractive Prover Commands:");
@@ -383,7 +343,6 @@ fn print_prover_help() {
     println!("  apply intro");
     println!("  apply simplify\n");
 }
-
 /// Handle REPL command - start the interactive Read-Eval-Print Loop
 /// 
 /// # Examples
@@ -396,7 +355,6 @@ fn print_prover_help() {
 /// Returns error if REPL fails to initialize or run
 pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
     use colored::Colorize;
-    
     let version_msg = format!("Welcome to Ruchy REPL v{}", env!("CARGO_PKG_VERSION"));
     println!("{}", version_msg.bright_cyan().bold());
     println!(
@@ -404,16 +362,13 @@ pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
         ":help".green(),
         ":quit".yellow()
     );
-
     let mut repl = Repl::new()?;
-    
     if let Some(record_path) = record_file {
         repl.run_with_recording(&record_path)
     } else {
         repl.run()
     }
 }
-
 /// Handle compile command - compile Ruchy file to native binary
 /// 
 /// # Arguments
@@ -443,16 +398,13 @@ pub fn handle_compile_command(
     use ruchy::backend::{CompileOptions, compile_to_binary as backend_compile};
     use colored::Colorize;
     use std::fs;
-    
     // Check if rustc is available
     if let Err(e) = ruchy::backend::compiler::check_rustc_available() {
         eprintln!("{} {}", "Error:".bright_red(), e);
         eprintln!("Please install Rust toolchain from https://rustup.rs/");
         std::process::exit(1);
     }
-    
     println!("{} Compiling {}...", "→".bright_blue(), file.display());
-    
     let options = CompileOptions {
         output,
         opt_level,
@@ -461,7 +413,6 @@ pub fn handle_compile_command(
         target,
         rustc_flags: Vec::new(),
     };
-    
     match backend_compile(file, &options) {
         Ok(binary_path) => {
             println!(
@@ -469,7 +420,6 @@ pub fn handle_compile_command(
                 "✓".bright_green(),
                 binary_path.display()
             );
-            
             // Make the binary executable on Unix
             #[cfg(unix)]
             {
@@ -478,7 +428,6 @@ pub fn handle_compile_command(
                 perms.set_mode(0o755);
                 fs::set_permissions(&binary_path, perms)?;
             }
-            
             println!(
                 "{} Binary size: {} bytes",
                 "ℹ".bright_blue(),
@@ -490,10 +439,8 @@ pub fn handle_compile_command(
             std::process::exit(1);
         }
     }
-    
     Ok(())
 }
-
 /// Handle check command - check syntax of a Ruchy file
 /// 
 /// # Arguments
@@ -515,11 +462,9 @@ pub fn handle_check_command(file: &Path, watch: bool) -> Result<()> {
         handle_check_syntax(file)
     }
 }
-
 /// Check syntax of a single file
 fn handle_check_syntax(file: &Path) -> Result<()> {
     use colored::Colorize;
-    
     let source = fs::read_to_string(file)?;
     let mut parser = RuchyParser::new(&source);
     match parser.parse() {
@@ -533,37 +478,29 @@ fn handle_check_syntax(file: &Path) -> Result<()> {
         }
     }
 }
-
 /// Watch a file and check syntax on changes
 fn handle_watch_and_check(file: &Path) -> Result<()> {
     use colored::Colorize;
     use std::thread;
     use std::time::Duration;
-    
     println!(
         "{} Watching {} for changes...",
         "👁".bright_cyan(),
         file.display()
     );
     println!("Press Ctrl+C to stop watching\n");
-
     // Initial check
     handle_check_syntax(file)?;
-
     // Simple file watching using polling
     let mut last_modified = fs::metadata(file)?.modified()?;
-
     loop {
         thread::sleep(Duration::from_millis(500));
-
         let Ok(metadata) = fs::metadata(file) else {
             continue; // File might be temporarily unavailable
         };
-
         let Ok(modified) = metadata.modified() else {
             continue;
         };
-
         if modified != last_modified {
             last_modified = modified;
             println!("\n{} File changed, checking...", "→".bright_cyan());
@@ -571,7 +508,6 @@ fn handle_watch_and_check(file: &Path) -> Result<()> {
         }
     }
 }
-
 /// Handle test command - run tests with various options (delegated to refactored module)
 /// 
 /// # Arguments
@@ -617,7 +553,6 @@ pub fn handle_test_command(
         format,
     )
 }
-
 /// Handle the coverage command - generate coverage report for Ruchy code
 ///
 /// # Arguments
@@ -635,19 +570,15 @@ pub fn handle_coverage_command(
     verbose: bool,
 ) -> Result<()> {
     use ruchy::quality::ruchy_coverage::RuchyCoverageCollector;
-    
     if verbose {
         println!("🔍 Analyzing coverage for: {}", path.display());
         println!("📊 Threshold: {:.1}%", threshold);
         println!("📋 Format: {}", format);
     }
-
     // Create coverage collector
     let mut collector = RuchyCoverageCollector::new();
-    
     // Execute the file with coverage collection
     collector.execute_with_coverage(path)?;
-    
     // Generate the coverage report based on format
     let report = match format {
         "html" => collector.generate_html_report(),
@@ -655,7 +586,6 @@ pub fn handle_coverage_command(
         _ => collector.generate_text_report(), // Default to text
     };
     println!("{}", report);
-    
     // Check threshold if specified
     if threshold > 0.0 {
         if collector.meets_threshold(threshold) {
@@ -665,10 +595,8 @@ pub fn handle_coverage_command(
             std::process::exit(1);
         }
     }
-    
     Ok(())
 }
-
 /// Watch and run tests on changes - delegated to refactored module
 fn handle_watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
     handlers_modules::test::handle_test_command(
@@ -683,7 +611,6 @@ fn handle_watch_and_test(path: &Path, verbose: bool, filter: Option<&str>) -> Re
         "text",
     )
 }
-
 /// Run enhanced tests - delegated to refactored module
 #[allow(clippy::unnecessary_wraps)]
 fn handle_run_enhanced_tests(
@@ -708,12 +635,10 @@ fn handle_run_enhanced_tests(
         format,
     )
 }
-
 /// Run a single .ruchy test file - delegated to `test_helpers` module
 fn run_ruchy_test_file(test_file: &Path, verbose: bool) -> Result<()> {
     handlers_modules::test_helpers::run_test_file(test_file, verbose)
 }
-
 /// Verify proofs extracted from AST - delegated to `prove_helpers` module
 fn verify_proofs_from_ast(
     ast: &ruchy::frontend::ast::Expr, 
@@ -989,7 +914,6 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             Ok(())
         }
     }
-    
     /*
     // Original complex command handling - commented out until handlers implemented
     match command {
@@ -1138,7 +1062,6 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
                     // Custom lint rules implementation planned
                     Default::default()
                 };
-
                 if all {
                     crate::lint_ruchy_code(
                         &PathBuf::from("."),
@@ -1341,33 +1264,25 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
     }
     */
 }
-
 /// Handle notebook command
 #[cfg(feature = "notebook")]
 pub fn handle_notebook_command(port: u16, open_browser: bool, host: &str) -> Result<()> {
     use std::process::Command;
-    
     println!("🚀 Starting Ruchy Notebook server...");
     println!("   Host: {}:{}", host, port);
-    
     // Create async runtime for the server
     let runtime = tokio::runtime::Runtime::new()?;
-    
     // Open browser if requested
     if open_browser {
         let url = format!("http://{}:{}", host, port);
         println!("   Opening browser at {}", url);
-        
         #[cfg(target_os = "macos")]
         Command::new("open").arg(&url).spawn()?;
-        
         #[cfg(target_os = "linux")]
         Command::new("xdg-open").arg(&url).spawn()?;
-        
         #[cfg(target_os = "windows")]
         Command::new("cmd").args(["/C", "start", &url]).spawn()?;
     }
-    
     // Start the notebook server
     println!("🔧 DEBUG: About to call ruchy::notebook::start_server({})", port);
     let result = runtime.block_on(async {
@@ -1376,13 +1291,11 @@ pub fn handle_notebook_command(port: u16, open_browser: bool, host: &str) -> Res
     println!("🔧 DEBUG: Server returned: {:?}", result);
     result.map_err(|e| anyhow::anyhow!("Notebook server error: {}", e))
 }
-
 #[cfg(not(feature = "notebook"))]
 pub fn handle_notebook_command(_port: u16, _open_browser: bool, _host: &str) -> Result<()> {
     eprintln!("Notebook feature not enabled. Rebuild with --features notebook");
     std::process::exit(1)
 }
-
 /// Handle replay-to-tests command - convert .replay files to regression tests
 /// 
 /// # Arguments
@@ -1403,7 +1316,6 @@ pub fn handle_notebook_command(_port: u16, _open_browser: bool, _host: &str) -> 
 /// 
 /// # Errors
 /// Returns error if replay files can't be read or test files can't be written
-
 /// Setup conversion configuration for replay-to-test conversion (complexity: 4)
 fn setup_conversion_config(property_tests: bool, benchmarks: bool, timeout: u64) -> ConversionConfig {
     ConversionConfig {
@@ -1413,13 +1325,11 @@ fn setup_conversion_config(property_tests: bool, benchmarks: bool, timeout: u64)
         timeout_ms: timeout,
     }
 }
-
 /// Determine output path, using default if none provided (complexity: 3)
 fn determine_output_path(output: Option<&Path>) -> &Path {
     let default_output = Path::new("tests/generated_from_replays.rs");
     output.unwrap_or(default_output)
 }
-
 /// Validate that file has .replay extension (complexity: 3)
 fn validate_replay_file(path: &Path) -> Result<()> {
     if path.extension().and_then(|s| s.to_str()) == Some("replay") {
@@ -1429,7 +1339,6 @@ fn validate_replay_file(path: &Path) -> Result<()> {
         Err(anyhow::anyhow!("Invalid file extension"))
     }
 }
-
 /// Process a single .replay file (complexity: 8)
 fn process_single_file(
     input: &Path, 
@@ -1437,12 +1346,8 @@ fn process_single_file(
     all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
     processed_files: &mut usize
 ) -> Result<()> {
-    
-    
     validate_replay_file(input)?;
-    
     println!("📄 Processing replay file: {}", input.display());
-    
     match converter.convert_file(input) {
         Ok(tests) => {
             println!("  ✅ Generated {} tests", tests.len());
@@ -1456,7 +1361,6 @@ fn process_single_file(
         }
     }
 }
-
 /// Process directory containing .replay files (complexity: 10)
 fn process_directory(
     input: &Path,
@@ -1464,11 +1368,8 @@ fn process_directory(
     all_tests: &mut Vec<ruchy::runtime::replay_converter::GeneratedTest>,
     processed_files: &mut usize
 ) -> Result<()> {
-    
     use std::fs;
-    
     println!("📁 Processing replay directory: {}", input.display());
-    
     // Find all .replay files in directory
     let replay_files: Vec<_> = fs::read_dir(input)?
         .filter_map(|entry| {
@@ -1481,17 +1382,13 @@ fn process_directory(
             }
         })
         .collect();
-    
     if replay_files.is_empty() {
         println!("⚠️  No .replay files found in directory");
         return Ok(());
     }
-    
     println!("🔍 Found {} replay files", replay_files.len());
-    
     for replay_file in replay_files {
         println!("📄 Processing: {}", replay_file.display());
-        
         match converter.convert_file(&replay_file) {
             Ok(tests) => {
                 println!("  ✅ Generated {} tests", tests.len());
@@ -1504,10 +1401,8 @@ fn process_directory(
             }
         }
     }
-    
     Ok(())
 }
-
 /// Write test output to file, creating directories if needed (complexity: 4)
 fn write_test_output(
     converter: &ruchy::runtime::replay_converter::ReplayConverter,
@@ -1516,20 +1411,15 @@ fn write_test_output(
 ) -> Result<()> {
     use std::fs;
     use anyhow::Context;
-    
     // Create output directory if needed
     if let Some(parent) = output_path.parent() {
         fs::create_dir_all(parent)?;
     }
-    
     println!("📝 Writing tests to: {}", output_path.display());
-    
     converter.write_tests(all_tests, output_path)
         .context("Failed to write test file")?;
-    
     Ok(())
 }
-
 /// Generate comprehensive summary report of conversion results (complexity: 8)
 fn generate_summary_report(
     all_tests: &[ruchy::runtime::replay_converter::GeneratedTest],
@@ -1537,26 +1427,21 @@ fn generate_summary_report(
 ) {
     use colored::Colorize;
     use std::collections::{HashMap, HashSet};
-    
     println!("\n{}", "🎉 Conversion Summary".bright_green().bold());
     println!("=====================================");
     println!("📊 Files processed: {}", processed_files);
     println!("✅ Tests generated: {}", all_tests.len());
-    
     // Breakdown by test category
     let mut category_counts = HashMap::new();
     let mut coverage_areas = HashSet::new();
-    
     for test in all_tests {
         *category_counts.entry(&test.category).or_insert(0) += 1;
         coverage_areas.extend(test.coverage_areas.iter().cloned());
     }
-    
     println!("\n📋 Test Breakdown:");
     for (category, count) in category_counts {
         println!("   {:?}: {}", category, count);
     }
-    
     println!("\n🎯 Coverage Areas: {} unique areas", coverage_areas.len());
     if !coverage_areas.is_empty() {
         let mut areas: Vec<_> = coverage_areas.into_iter().collect();
@@ -1568,15 +1453,12 @@ fn generate_summary_report(
             println!("   ... and {} more", areas.len() - 10);
         }
     }
-    
     println!("\n💡 Next Steps:");
     println!("   1. Run tests: cargo test");
     println!("   2. Measure coverage: cargo test -- --test-threads=1");
     println!("   3. Validate replay determinism");
-    
     println!("\n🚀 {}", "Replay-to-test conversion complete!".bright_green());
 }
-
 /// Process input path (file or directory) with replay files (complexity: 5)
 fn process_input_path(
     input: &Path,
@@ -1593,7 +1475,6 @@ fn process_input_path(
         Err(anyhow::anyhow!("Invalid input path"))
     }
 }
-
 /// Convert REPL replay files to regression tests (complexity: 7)
 pub fn handle_replay_to_tests_command(
     input: &Path,
@@ -1604,30 +1485,22 @@ pub fn handle_replay_to_tests_command(
 ) -> Result<()> {
     use colored::Colorize;
     use ruchy::runtime::replay_converter::ReplayConverter;
-    
     println!("{}", "🔄 Converting REPL replay files to regression tests".bright_cyan().bold());
     println!("Input: {}", input.display());
-    
     let config = setup_conversion_config(property_tests, benchmarks, timeout);
     let converter = ReplayConverter::with_config(config);
     let mut all_tests = Vec::new();
     let mut processed_files = 0;
-    
     let output_path = determine_output_path(output);
-    
     process_input_path(input, &converter, &mut all_tests, &mut processed_files)?;
-    
     if all_tests.is_empty() {
         println!("⚠️  No tests generated");
         return Ok(());
     }
-    
     write_test_output(&converter, &all_tests, output_path)?;
     generate_summary_report(&all_tests, processed_files);
-    
     Ok(())
 }
-
 /// Handle wasm command - compile Ruchy source to WebAssembly
 /// 
 /// # Arguments
@@ -1650,7 +1523,6 @@ pub fn handle_replay_to_tests_command(
 /// Print verbose compilation status and configuration
 fn print_wasm_compilation_status(file: &Path, target: &str, wit: bool, verbose: bool) {
     use colored::Colorize;
-    
     if verbose {
         println!("{} Compiling {} to WebAssembly", "→".bright_cyan(), file.display());
         println!("  Target: {}", target);
@@ -1659,7 +1531,6 @@ fn print_wasm_compilation_status(file: &Path, target: &str, wit: bool, verbose: 
         }
     }
 }
-
 /// Parse Ruchy source file into AST
 /// 
 /// # Errors
@@ -1667,12 +1538,10 @@ fn print_wasm_compilation_status(file: &Path, target: &str, wit: bool, verbose: 
 fn parse_ruchy_source(file: &Path) -> Result<ruchy::frontend::ast::Expr> {
     let source = fs::read_to_string(file)
         .with_context(|| format!("Failed to read file: {}", file.display()))?;
-    
     let mut parser = RuchyParser::new(&source);
     parser.parse()
         .with_context(|| format!("Failed to parse {}", file.display()))
 }
-
 /// Generate and validate WASM bytecode with enterprise-grade analysis
 /// 
 /// # Errors 
@@ -1682,15 +1551,12 @@ fn generate_and_validate_wasm(
     verbose: bool
 ) -> Result<Vec<u8>> {
     use colored::Colorize;
-    
     let emitter = WasmEmitter::new();
     let wasm_bytes = emitter.emit(ast)
         .map_err(|e| anyhow::anyhow!("Failed to generate WASM: {}", e))?;
-    
     if verbose {
         println!("{} Validating WASM module...", "→".bright_cyan());
     }
-    
     match wasmparser::validate(&wasm_bytes) {
         Ok(_) => {
             if verbose {
@@ -1707,10 +1573,8 @@ fn generate_and_validate_wasm(
             return Err(anyhow::anyhow!("WASM validation failed: {}", e));
         }
     }
-    
     Ok(wasm_bytes)
 }
-
 /// Determine output path for WASM file
 fn determine_wasm_output_path(file: &Path, output: Option<&Path>) -> PathBuf {
     if let Some(out) = output {
@@ -1721,7 +1585,6 @@ fn determine_wasm_output_path(file: &Path, output: Option<&Path>) -> PathBuf {
         path
     }
 }
-
 /// Write WASM file and display success information
 /// 
 /// # Errors
@@ -1733,26 +1596,21 @@ fn write_wasm_output(
     verbose: bool
 ) -> Result<()> {
     use colored::Colorize;
-    
     fs::write(output_path, wasm_bytes)
         .with_context(|| format!("Failed to write WASM to {}", output_path.display()))?;
-    
     println!(
         "{} Successfully compiled to {}",
         "✓".green(),
         output_path.display()
     );
-    
     if verbose {
         println!("  Size: {} bytes", wasm_bytes.len());
         println!("  Target: {}", target);
         println!("  Security: Buffer overflow protection enabled");
         println!("  Performance: Instruction mix optimized");
     }
-    
     Ok(())
 }
-
 /// Handle post-compilation optimization and deployment
 fn handle_optimization_and_deployment(
     opt_level: &str,
@@ -1761,13 +1619,11 @@ fn handle_optimization_and_deployment(
     verbose: bool
 ) {
     use colored::Colorize;
-    
     if opt_level != "0" {
         if verbose {
             println!("{} Optimization level {} requested (enterprise streaming analysis)", "ℹ".bright_blue(), opt_level);
         }
     }
-    
     if deploy {
         let platform = deploy_target.unwrap_or("default");
         if verbose {
@@ -1775,7 +1631,6 @@ fn handle_optimization_and_deployment(
         }
     }
 }
-
 /// # Errors
 /// Returns error if compilation fails or WASM generation fails
 pub fn handle_wasm_command(
@@ -1796,13 +1651,10 @@ pub fn handle_wasm_command(
     verbose: bool,
 ) -> Result<()> {
     print_wasm_compilation_status(file, target, wit, verbose);
-    
     let ast = parse_ruchy_source(file)?;
     let wasm_bytes = generate_and_validate_wasm(&ast, verbose)?;
     let output_path = determine_wasm_output_path(file, output);
-    
     write_wasm_output(&wasm_bytes, &output_path, target, verbose)?;
     handle_optimization_and_deployment(opt_level, deploy, deploy_target, verbose);
-    
     Ok(())
 }

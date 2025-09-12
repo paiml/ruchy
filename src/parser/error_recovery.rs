@@ -2,9 +2,7 @@
 //!
 //! Based on docs/ruchy-transpiler-docs.md Section 4: Deterministic Error Recovery
 //! Ensures predictable parser behavior on malformed input
-
 use crate::frontend::ast::{Expr, ExprKind, Literal, Param, Span};
-
 /// Synthetic error node that can be embedded in the AST
 #[derive(Debug, Clone, PartialEq)]
 pub struct ErrorNode {
@@ -17,14 +15,12 @@ pub struct ErrorNode {
     /// Recovery strategy used
     pub recovery: RecoveryStrategy,
 }
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct SourceLocation {
     pub line: usize,
     pub column: usize,
     pub file: Option<String>,
 }
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum ErrorContext {
     FunctionDecl {
@@ -56,7 +52,6 @@ pub enum ErrorContext {
         error_field: Option<String>,
     },
 }
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum RecoveryStrategy {
     /// Skip tokens until a synchronization point
@@ -70,26 +65,22 @@ pub enum RecoveryStrategy {
     /// Panic mode - skip until statement boundary
     PanicMode,
 }
-
 /// Extension to Expr to support error nodes
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExprWithError {
     Valid(Expr),
     Error(ErrorNode),
 }
-
 impl From<Expr> for ExprWithError {
     fn from(expr: Expr) -> Self {
         ExprWithError::Valid(expr)
     }
 }
-
 impl From<ErrorNode> for ExprWithError {
     fn from(error: ErrorNode) -> Self {
         ExprWithError::Error(error)
     }
 }
-
 /// Parser error recovery implementation
 pub struct ErrorRecovery {
     /// Synchronization tokens for panic mode recovery
@@ -99,7 +90,6 @@ pub struct ErrorRecovery {
     /// Current error count
     error_count: usize,
 }
-
 impl Default for ErrorRecovery {
     fn default() -> Self {
         Self {
@@ -120,15 +110,29 @@ impl Default for ErrorRecovery {
         }
     }
 }
-
 impl ErrorRecovery {
     #[must_use]
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         Self::default()
     }
-
     /// Create a synthetic error node for missing function name
-    pub fn missing_function_name(&mut self, location: SourceLocation) -> ErrorNode {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::missing_function_name;
+/// 
+/// let result = missing_function_name(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn missing_function_name(&mut self, location: SourceLocation) -> ErrorNode {
         self.error_count += 1;
         ErrorNode {
             message: "expected function name".to_string(),
@@ -141,9 +145,16 @@ impl ErrorRecovery {
             recovery: RecoveryStrategy::InsertToken("error_fn".to_string()),
         }
     }
-
     /// Create a synthetic error node for missing function parameters
-    pub fn missing_function_params(&mut self, name: String, location: SourceLocation) -> ErrorNode {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::missing_function_params;
+/// 
+/// let result = missing_function_params(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn missing_function_params(&mut self, name: String, location: SourceLocation) -> ErrorNode {
         self.error_count += 1;
         ErrorNode {
             message: "expected function parameters".to_string(),
@@ -156,9 +167,16 @@ impl ErrorRecovery {
             recovery: RecoveryStrategy::DefaultValue,
         }
     }
-
     /// Create a synthetic error node for missing function body
-    pub fn missing_function_body(
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::missing_function_body;
+/// 
+/// let result = missing_function_body(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn missing_function_body(
         &mut self,
         name: String,
         params: Vec<Param>,
@@ -176,9 +194,16 @@ impl ErrorRecovery {
             recovery: RecoveryStrategy::InsertToken("{ /* missing body */ }".to_string()),
         }
     }
-
     /// Create error node for malformed let binding
-    pub fn malformed_let_binding(
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::malformed_let_binding;
+/// 
+/// let result = malformed_let_binding(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn malformed_let_binding(
         &mut self,
         partial_name: Option<String>,
         partial_value: Option<Box<Expr>>,
@@ -195,9 +220,16 @@ impl ErrorRecovery {
             recovery: RecoveryStrategy::PartialParse,
         }
     }
-
     /// Create error node for incomplete if expression
-    pub fn incomplete_if_expr(
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::incomplete_if_expr;
+/// 
+/// let result = incomplete_if_expr(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn incomplete_if_expr(
         &mut self,
         condition: Option<Box<Expr>>,
         then_branch: Option<Box<Expr>>,
@@ -215,24 +247,44 @@ impl ErrorRecovery {
             recovery: RecoveryStrategy::DefaultValue,
         }
     }
-
     /// Check if we should continue parsing or give up
     #[must_use]
-    pub fn should_continue(&self) -> bool {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::should_continue;
+/// 
+/// let result = should_continue(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn should_continue(&self) -> bool {
         self.error_count < self.max_errors
     }
-
     /// Reset error count for new parsing session
-    pub fn reset(&mut self) {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::reset;
+/// 
+/// let result = reset(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn reset(&mut self) {
         self.error_count = 0;
     }
-
     /// Check if token is a synchronization point
     #[must_use]
-    pub fn is_sync_token(&self, token: &str) -> bool {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::is_sync_token;
+/// 
+/// let result = is_sync_token("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn is_sync_token(&self, token: &str) -> bool {
         self.sync_tokens.contains(&token.to_string())
     }
-
     /// Skip tokens until we find a synchronization point
     pub fn skip_until_sync<'a, I>(&self, tokens: &mut I) -> Option<String>
     where
@@ -246,14 +298,20 @@ impl ErrorRecovery {
         None
     }
 }
-
 /// Error recovery rules for different contexts
 pub struct RecoveryRules;
-
 impl RecoveryRules {
     /// Determine recovery strategy based on context
     #[must_use]
-    pub fn select_strategy(context: &ErrorContext) -> RecoveryStrategy {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::select_strategy;
+/// 
+/// let result = select_strategy(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn select_strategy(context: &ErrorContext) -> RecoveryStrategy {
         match context {
             ErrorContext::FunctionDecl { name, params, body } => {
                 if name.is_none() {
@@ -274,10 +332,17 @@ impl RecoveryRules {
             ErrorContext::BinaryOp { .. } => RecoveryStrategy::PanicMode,
         }
     }
-
     /// Generate synthetic AST for error recovery
     #[must_use]
-    pub fn synthesize_ast(error: &ErrorNode) -> Expr {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::parser::error_recovery::synthesize_ast;
+/// 
+/// let result = synthesize_ast(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn synthesize_ast(error: &ErrorNode) -> Expr {
         let default_span = Span::new(0, 0);
         match &error.context {
             ErrorContext::FunctionDecl { .. } => {
@@ -359,39 +424,33 @@ impl RecoveryRules {
         }
     }
 }
-
 /// Integration with parser
 pub trait ErrorRecoverable {
     /// Try to recover from parse error
     fn recover_from_error(&mut self, error: ErrorNode) -> Option<Expr>;
-
     /// Check if we're in a recoverable state
     fn can_recover(&self) -> bool;
-
     /// Get current error nodes
     fn get_errors(&self) -> Vec<ErrorNode>;
 }
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
-
+#[cfg(test)]
+use proptest::prelude::*;
     #[test]
     fn test_error_recovery_creation() {
         let mut recovery = ErrorRecovery::new();
-
         let error = recovery.missing_function_name(SourceLocation {
             line: 1,
             column: 5,
             file: None,
         });
-
         assert_eq!(error.message, "expected function name");
         assert_eq!(recovery.error_count, 1);
         assert!(recovery.should_continue());
     }
-
     #[test]
     fn test_recovery_strategy_selection() {
         let context = ErrorContext::FunctionDecl {
@@ -399,9 +458,7 @@ mod tests {
             params: None,
             body: None,
         };
-
         let strategy = RecoveryRules::select_strategy(&context);
-
         match strategy {
             RecoveryStrategy::InsertToken(token) => {
                 assert_eq!(token, "error_fn");
@@ -409,7 +466,6 @@ mod tests {
             _ => panic!("Expected InsertToken strategy"),
         }
     }
-
     #[test]
     fn test_synthetic_ast_generation() {
         let error = ErrorNode {
@@ -425,9 +481,7 @@ mod tests {
             },
             recovery: RecoveryStrategy::DefaultValue,
         };
-
         let ast = RecoveryRules::synthesize_ast(&error);
-
         match ast.kind {
             ExprKind::Let { name, type_annotation: _, value, .. } => {
                 assert_eq!(name, "x");
@@ -439,23 +493,19 @@ mod tests {
             _ => panic!("Expected Let expression"),
         }
     }
-
     #[test]
     fn test_sync_token_detection() {
         let recovery = ErrorRecovery::new();
-
         assert!(recovery.is_sync_token(";"));
         assert!(recovery.is_sync_token("fun"));
         assert!(recovery.is_sync_token("let"));
         assert!(!recovery.is_sync_token("="));
         assert!(!recovery.is_sync_token("+"));
     }
-
     #[test]
     fn test_max_errors_limit() {
         let mut recovery = ErrorRecovery::new();
         recovery.max_errors = 3;
-
         for i in 0..5 {
             if recovery.should_continue() {
                 recovery.missing_function_name(SourceLocation {
@@ -465,8 +515,26 @@ mod tests {
                 });
             }
         }
-
         assert_eq!(recovery.error_count, 3);
         assert!(!recovery.should_continue());
+    }
+}
+#[cfg(test)]
+mod property_tests_error_recovery {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

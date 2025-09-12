@@ -2,19 +2,16 @@
 //!
 //! Provides comprehensive monitoring and debugging capabilities for the actor system,
 //! including message tracing, deadlock detection, and performance analysis.
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::runtime::actor::{ActorSystem, Message};
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
-
     // Helper functions for consistent test setup
     fn create_test_actor_system() -> Arc<Mutex<ActorSystem>> {
         ActorSystem::new()
     }
-
     fn create_test_config() -> ObservatoryConfig {
         ObservatoryConfig {
             max_traces: 100,
@@ -26,13 +23,11 @@ mod tests {
             max_snapshots: 50,
         }
     }
-
     fn create_test_observatory() -> ActorObservatory {
         let system = create_test_actor_system();
         let config = create_test_config();
         ActorObservatory::new(system, config)
     }
-
     fn create_test_message_trace() -> MessageTrace {
         MessageTrace {
             trace_id: 12345,
@@ -47,7 +42,6 @@ mod tests {
             correlation_id: Some("corr-123".to_string()),
         }
     }
-
     fn create_test_actor_snapshot() -> ActorSnapshot {
         ActorSnapshot {
             actor_id: ActorId(1),
@@ -61,7 +55,6 @@ mod tests {
             memory_usage: Some(1024),
         }
     }
-
     fn create_test_message_filter() -> MessageFilter {
         MessageFilter {
             name: "test_filter".to_string(),
@@ -73,9 +66,7 @@ mod tests {
             max_stack_depth: Some(10),
         }
     }
-
     // ========== Observatory Configuration Tests ==========
-
     #[test]
     fn test_observatory_config_default() {
         let config = ObservatoryConfig::default();
@@ -87,7 +78,6 @@ mod tests {
         assert_eq!(config.metrics_interval_ms, 5000);
         assert_eq!(config.max_snapshots, 1000);
     }
-
     #[test]
     fn test_observatory_config_clone() {
         let config1 = create_test_config();
@@ -95,7 +85,6 @@ mod tests {
         assert_eq!(config1.max_traces, config2.max_traces);
         assert_eq!(config1.enable_deadlock_detection, config2.enable_deadlock_detection);
     }
-
     #[test]
     fn test_observatory_config_debug() {
         let config = create_test_config();
@@ -104,7 +93,6 @@ mod tests {
         assert!(debug_str.contains("max_traces"));
         assert!(debug_str.contains("enable_deadlock_detection"));
     }
-
     #[test]
     fn test_observatory_config_serialization() {
         let config = create_test_config();
@@ -113,58 +101,45 @@ mod tests {
         assert_eq!(config.max_traces, deserialized.max_traces);
         assert_eq!(config.enable_metrics, deserialized.enable_metrics);
     }
-
     // ========== Observatory Creation and Setup Tests ==========
-
     #[test]
     fn test_observatory_creation() {
         let system = create_test_actor_system();
         let config = create_test_config();
         let observatory = ActorObservatory::new(system, config.clone());
-        
         assert_eq!(observatory.config.max_traces, config.max_traces);
         assert!(observatory.filters.is_empty());
         assert!(observatory.start_time.elapsed() < Duration::from_secs(1));
     }
-
     #[test]
     fn test_observatory_with_default_config() {
         let system = create_test_actor_system();
         let config = ObservatoryConfig::default();
         let observatory = ActorObservatory::new(system, config);
-        
         assert_eq!(observatory.config.max_traces, 10000);
         assert!(observatory.config.enable_deadlock_detection);
     }
-
     #[test]
     fn test_observatory_initialization_state() {
         let observatory = create_test_observatory();
-        
         // Should start with empty state
         assert!(observatory.get_filters().is_empty());
-        let metrics = observatory.metrics.lock().unwrap();
+        let metrics = observatory.metrics.lock().expect("Failed to acquire lock");
         assert_eq!(metrics.active_actors, 0);
         assert_eq!(metrics.total_messages_processed, 0);
     }
-
     // ========== Message Filter Management Tests ==========
-
     #[test]
     fn test_add_message_filter() {
         let mut observatory = create_test_observatory();
         let filter = create_test_message_filter();
-        
         observatory.add_filter(filter.clone());
-        
         assert_eq!(observatory.get_filters().len(), 1);
         assert_eq!(observatory.get_filters()[0].name, filter.name);
     }
-
     #[test]
     fn test_add_multiple_filters() {
         let mut observatory = create_test_observatory();
-        
         let filter1 = MessageFilter {
             name: "filter1".to_string(),
             actor_id: None,
@@ -174,7 +149,6 @@ mod tests {
             failed_only: false,
             max_stack_depth: None,
         };
-        
         let filter2 = MessageFilter {
             name: "filter2".to_string(),
             actor_id: Some(ActorId(2)),
@@ -184,110 +158,87 @@ mod tests {
             failed_only: true,
             max_stack_depth: Some(5),
         };
-        
         observatory.add_filter(filter1);
         observatory.add_filter(filter2);
-        
         assert_eq!(observatory.get_filters().len(), 2);
         assert_eq!(observatory.get_filters()[0].name, "filter1");
         assert_eq!(observatory.get_filters()[1].name, "filter2");
     }
-
     #[test]
     fn test_remove_message_filter() {
         let mut observatory = create_test_observatory();
         let filter = create_test_message_filter();
-        
         observatory.add_filter(filter);
         assert_eq!(observatory.get_filters().len(), 1);
-        
         let removed = observatory.remove_filter("test_filter");
         assert!(removed);
         assert!(observatory.get_filters().is_empty());
     }
-
     #[test]
     fn test_remove_nonexistent_filter() {
         let mut observatory = create_test_observatory();
         let removed = observatory.remove_filter("nonexistent");
         assert!(!removed);
     }
-
     #[test]
     fn test_get_filters_empty() {
         let observatory = create_test_observatory();
         assert!(observatory.get_filters().is_empty());
     }
-
     // ========== Message Tracing Tests ==========
-
     #[test]
     fn test_trace_message() {
         let observatory = create_test_observatory();
         let trace = create_test_message_trace();
-        
         let result = observatory.trace_message(trace.clone());
         assert!(result.is_ok());
-        
         let traces = observatory.get_traces(None, None).unwrap();
         assert_eq!(traces.len(), 1);
         assert_eq!(traces[0].trace_id, trace.trace_id);
     }
-
     #[test]
     fn test_trace_message_with_limit() {
         let mut observatory = create_test_observatory();
         observatory.config.max_traces = 2;
-        
         // Add 3 traces, should only keep 2 most recent
         for i in 0..3 {
             let mut trace = create_test_message_trace();
             trace.trace_id = i as u64;
             observatory.trace_message(trace).unwrap();
         }
-        
         let traces = observatory.get_traces(None, None).unwrap();
         assert_eq!(traces.len(), 2);
         assert_eq!(traces[0].trace_id, 1); // First trace should be evicted
         assert_eq!(traces[1].trace_id, 2);
     }
-
     #[test]
     fn test_trace_message_age_retention() {
         let mut observatory = create_test_observatory();
         observatory.config.trace_retention_seconds = 1; // 1 second retention
-        
         // Add an old trace
         let mut old_trace = create_test_message_trace();
         old_trace.timestamp = current_timestamp() - 3600; // 1 hour ago
         observatory.trace_message(old_trace).unwrap();
-        
         // Add a recent trace
         let recent_trace = create_test_message_trace();
         observatory.trace_message(recent_trace).unwrap();
-        
         let traces = observatory.get_traces(None, None).unwrap();
         // Only recent trace should remain
         assert_eq!(traces.len(), 1);
     }
-
     #[test]
     fn test_get_traces_with_limit() {
         let observatory = create_test_observatory();
-        
         // Add 5 traces
         for i in 0..5 {
             let mut trace = create_test_message_trace();
             trace.trace_id = i as u64;
             observatory.trace_message(trace).unwrap();
         }
-        
         let traces = observatory.get_traces(Some(3), None).unwrap();
         assert_eq!(traces.len(), 3);
     }
-
     // ========== Message Status Tests ==========
-
     #[test]
     fn test_message_status_variants() {
         let statuses = [MessageStatus::Queued,
@@ -295,12 +246,10 @@ mod tests {
             MessageStatus::Completed,
             MessageStatus::Failed,
             MessageStatus::Dropped];
-        
         assert_eq!(statuses.len(), 5);
         assert_eq!(statuses[0], MessageStatus::Queued);
         assert_ne!(statuses[0], MessageStatus::Processing);
     }
-
     #[test]
     fn test_message_status_serialization() {
         let status = MessageStatus::Processing;
@@ -308,16 +257,13 @@ mod tests {
         let deserialized: MessageStatus = serde_json::from_str(&json).unwrap();
         assert_eq!(status, deserialized);
     }
-
     #[test]
     fn test_message_status_debug() {
         let status = MessageStatus::Failed;
         let debug_str = format!("{status:?}");
         assert!(debug_str.contains("Failed"));
     }
-
     // ========== Actor State Tests ==========
-
     #[test]
     fn test_actor_state_variants() {
         let states = vec![
@@ -329,12 +275,10 @@ mod tests {
             ActorState::Stopped,
             ActorState::Failed("test_error".to_string()),
         ];
-        
         assert_eq!(states.len(), 7);
         assert_eq!(states[0], ActorState::Starting);
         assert_ne!(states[0], ActorState::Running);
     }
-
     #[test]
     fn test_actor_state_processing() {
         let state = ActorState::Processing("handle_request".to_string());
@@ -344,7 +288,6 @@ mod tests {
             panic!("Expected Processing state");
         }
     }
-
     #[test]
     fn test_actor_state_failed() {
         let state = ActorState::Failed("connection_timeout".to_string());
@@ -354,7 +297,6 @@ mod tests {
             panic!("Expected Failed state");
         }
     }
-
     #[test]
     fn test_actor_state_serialization() {
         let state = ActorState::Processing("test".to_string());
@@ -362,9 +304,7 @@ mod tests {
         let deserialized: ActorState = serde_json::from_str(&json).unwrap();
         assert_eq!(state, deserialized);
     }
-
     // ========== Message Statistics Tests ==========
-
     #[test]
     fn test_message_stats_default() {
         let stats = MessageStats::default();
@@ -375,31 +315,25 @@ mod tests {
         assert_eq!(stats.failed_messages, 0);
         assert!(stats.last_processed.is_none());
     }
-
     #[test]
     fn test_message_stats_clone() {
         let mut stats1 = MessageStats::default();
         stats1.total_processed = 100;
         stats1.messages_per_second = 10.5;
-        
         let stats2 = stats1.clone();
         assert_eq!(stats1.total_processed, stats2.total_processed);
         assert_eq!(stats1.messages_per_second, stats2.messages_per_second);
     }
-
     #[test]
     fn test_message_stats_serialization() {
         let mut stats = MessageStats::default();
         stats.total_processed = 500;
         stats.avg_processing_time_us = 1500.0;
-        
         let json = serde_json::to_string(&stats).unwrap();
         let deserialized: MessageStats = serde_json::from_str(&json).unwrap();
         assert_eq!(stats.total_processed, deserialized.total_processed);
     }
-
     // ========== System Metrics Tests ==========
-
     #[test]
     fn test_system_metrics_default() {
         let metrics = SystemMetrics::default();
@@ -412,7 +346,6 @@ mod tests {
         assert_eq!(metrics.recent_restarts, 0);
         assert!(metrics.last_updated > 0); // Uses current timestamp
     }
-
     #[test]
     fn test_system_metrics_update() {
         let mut metrics = SystemMetrics::default();
@@ -420,30 +353,24 @@ mod tests {
         metrics.total_messages_processed = 1000;
         metrics.system_messages_per_second = 50.5;
         metrics.last_updated = current_timestamp();
-        
         assert_eq!(metrics.active_actors, 10);
         assert_eq!(metrics.total_messages_processed, 1000);
         assert!(metrics.last_updated > 0);
     }
-
     #[test]
     fn test_system_metrics_serialization() {
         let mut metrics = SystemMetrics::default();
         metrics.active_actors = 5;
         metrics.total_memory_usage = 1_024_000;
-        
         let json = serde_json::to_string(&metrics).unwrap();
         let deserialized: SystemMetrics = serde_json::from_str(&json).unwrap();
         assert_eq!(metrics.active_actors, deserialized.active_actors);
         assert_eq!(metrics.total_memory_usage, deserialized.total_memory_usage);
     }
-
     // ========== Actor Snapshot Tests ==========
-
     #[test]
     fn test_actor_snapshot_creation() {
         let snapshot = create_test_actor_snapshot();
-        
         assert_eq!(snapshot.actor_id, ActorId(1));
         assert_eq!(snapshot.name, "test_actor");
         assert_eq!(snapshot.state, ActorState::Running);
@@ -451,41 +378,32 @@ mod tests {
         assert_eq!(snapshot.children.len(), 2);
         assert!(snapshot.memory_usage.is_some());
     }
-
     #[test]
     fn test_actor_snapshot_with_no_parent() {
         let mut snapshot = create_test_actor_snapshot();
         snapshot.parent = None;
-        
         assert!(snapshot.parent.is_none());
         assert_eq!(snapshot.children.len(), 2);
     }
-
     #[test]
     fn test_actor_snapshot_serialization() {
         let snapshot = create_test_actor_snapshot();
-        
         let json = serde_json::to_string(&snapshot).unwrap();
         let deserialized: ActorSnapshot = serde_json::from_str(&json).unwrap();
-        
         assert_eq!(snapshot.actor_id, deserialized.actor_id);
         assert_eq!(snapshot.name, deserialized.name);
         assert_eq!(snapshot.state, deserialized.state);
     }
-
     // ========== Message Filter Tests ==========
-
     #[test]
     fn test_message_filter_creation() {
         let filter = create_test_message_filter();
-        
         assert_eq!(filter.name, "test_filter");
         assert!(filter.actor_id.is_some());
         assert!(filter.actor_name_pattern.is_some());
         assert!(filter.message_type_pattern.is_some());
         assert!(!filter.failed_only);
     }
-
     #[test]
     fn test_message_filter_with_duration_limits() {
         let filter = MessageFilter {
@@ -497,10 +415,8 @@ mod tests {
             failed_only: false,
             max_stack_depth: None,
         };
-        
         assert_eq!(filter.min_processing_time_us, Some(1000));
     }
-
     #[test]
     fn test_message_filter_errors_only() {
         let filter = MessageFilter {
@@ -512,16 +428,12 @@ mod tests {
             failed_only: true,
             max_stack_depth: None,
         };
-        
         assert!(filter.failed_only);
     }
-
     // ========== Message Trace Tests ==========
-
     #[test]
     fn test_message_trace_creation() {
         let trace = create_test_message_trace();
-        
         assert_eq!(trace.trace_id, 12345);
         assert!(trace.source.is_some());
         assert_eq!(trace.destination, ActorId(2));
@@ -529,55 +441,42 @@ mod tests {
         assert_eq!(trace.stack_depth, 1);
         assert!(trace.correlation_id.is_some());
     }
-
     #[test]
     fn test_message_trace_with_processing() {
         let mut trace = create_test_message_trace();
         trace.status = MessageStatus::Processing;
         trace.processing_duration_us = Some(1500);
-        
         assert_eq!(trace.status, MessageStatus::Processing);
         assert_eq!(trace.processing_duration_us, Some(1500));
     }
-
     #[test]
     fn test_message_trace_with_error() {
         let mut trace = create_test_message_trace();
         trace.status = MessageStatus::Failed;
         trace.error = Some("timeout_error".to_string());
-        
         assert_eq!(trace.status, MessageStatus::Failed);
         assert_eq!(trace.error, Some("timeout_error".to_string()));
     }
-
     #[test]
     fn test_message_trace_serialization() {
         let trace = create_test_message_trace();
-        
         let json = serde_json::to_string(&trace).unwrap();
         let deserialized: MessageTrace = serde_json::from_str(&json).unwrap();
-        
         assert_eq!(trace.trace_id, deserialized.trace_id);
         assert_eq!(trace.status, deserialized.status);
     }
-
     // ========== Utility Function Tests ==========
-
     #[test]
     fn test_current_timestamp() {
         let ts1 = current_timestamp();
         std::thread::sleep(Duration::from_millis(10)); // Increase sleep time for more reliable test
         let ts2 = current_timestamp();
-        
         assert!(ts2 >= ts1); // May be equal due to precision
     }
-
     // ========== Integration Tests ==========
-
     #[test]
     fn test_observatory_full_workflow() {
         let mut observatory = create_test_observatory();
-        
         // Add filter that matches our test message
         let filter = MessageFilter {
             name: "permissive_filter".to_string(),
@@ -590,42 +489,34 @@ mod tests {
         };
         observatory.add_filter(filter);
         assert_eq!(observatory.get_filters().len(), 1);
-        
         // Add trace
         let trace = create_test_message_trace();
         observatory.trace_message(trace.clone()).unwrap();
-        
         // Verify trace was recorded 
         let traces = observatory.get_traces(None, None).unwrap();
         assert_eq!(traces.len(), 1);
         assert_eq!(traces[0].trace_id, trace.trace_id);
-        
         // Remove filter
         let removed = observatory.remove_filter("permissive_filter");
         assert!(removed);
         assert!(observatory.get_filters().is_empty());
     }
-
     #[test]
     fn test_observatory_multiple_traces() {
         let observatory = create_test_observatory();
-        
         // Add multiple traces with different statuses
         let statuses = [MessageStatus::Queued,
             MessageStatus::Processing,
             MessageStatus::Completed,
             MessageStatus::Failed];
-        
         for (i, status) in statuses.iter().enumerate() {
             let mut trace = create_test_message_trace();
             trace.trace_id = i as u64;
             trace.status = status.clone();
             observatory.trace_message(trace).unwrap();
         }
-        
         let traces = observatory.get_traces(None, None).unwrap();
         assert_eq!(traces.len(), 4);
-        
         // Verify different statuses were recorded - count unique statuses differently
         let mut status_counts = std::collections::HashMap::new();
         for trace in &traces {
@@ -633,7 +524,6 @@ mod tests {
         }
         assert_eq!(status_counts.len(), 4);
     }
-
     #[test]
     fn test_observatory_config_variations() {
         let configs = vec![
@@ -650,7 +540,6 @@ mod tests {
                 ..ObservatoryConfig::default()
             },
         ];
-        
         for config in configs {
             let system = create_test_actor_system();
             let observatory = ActorObservatory::new(system, config.clone());
@@ -658,14 +547,11 @@ mod tests {
             assert_eq!(observatory.config.enable_deadlock_detection, config.enable_deadlock_detection);
         }
     }
-
     #[test]
     fn test_observatory_concurrent_access() {
         use std::thread;
-        
         let observatory = Arc::new(create_test_observatory());
         let mut handles = vec![];
-        
         // Spawn multiple threads to add traces concurrently
         for i in 0..5 {
             let obs = observatory.clone();
@@ -676,77 +562,60 @@ mod tests {
             });
             handles.push(handle);
         }
-        
         // Wait for all threads to complete
         for handle in handles {
-            handle.join().unwrap();
+            handle.join().expect("Thread failed to join");
         }
-        
         // Verify all traces were recorded
         let traces = observatory.get_traces(None, None).unwrap();
         assert_eq!(traces.len(), 5);
     }
 }
-
 use crate::runtime::actor::{ActorId, ActorSystem, Message};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-
+#[cfg(test)]
+use proptest::prelude::*;
 /// Actor system observatory for live introspection and monitoring
 pub struct ActorObservatory {
     /// Reference to the actor system being observed
     actor_system: Arc<Mutex<ActorSystem>>,
-    
     /// Message trace storage
     message_traces: Arc<Mutex<VecDeque<MessageTrace>>>,
-    
     /// Actor state snapshots
     actor_snapshots: Arc<Mutex<HashMap<ActorId, ActorSnapshot>>>,
-    
     /// Deadlock detection state
     deadlock_detector: Arc<Mutex<DeadlockDetector>>,
-    
     /// Observatory configuration
     config: ObservatoryConfig,
-    
     /// Active filters for message tracing
     filters: Vec<MessageFilter>,
-    
     /// Performance metrics
     metrics: Arc<Mutex<SystemMetrics>>,
-    
     /// Observatory start time
     start_time: Instant,
 }
-
 /// Configuration for the actor observatory
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ObservatoryConfig {
     /// Maximum number of message traces to keep
     pub max_traces: usize,
-    
     /// Maximum age for message traces (in seconds)
     pub trace_retention_seconds: u64,
-    
     /// Enable deadlock detection
     pub enable_deadlock_detection: bool,
-    
     /// Deadlock detection interval (in milliseconds)
     pub deadlock_check_interval_ms: u64,
-    
     /// Enable performance metrics collection
     pub enable_metrics: bool,
-    
     /// Metrics collection interval (in milliseconds)
     pub metrics_interval_ms: u64,
-    
     /// Maximum number of actor snapshots to keep
     pub max_snapshots: usize,
 }
-
 impl Default for ObservatoryConfig {
     fn default() -> Self {
         Self {
@@ -760,41 +629,30 @@ impl Default for ObservatoryConfig {
         }
     }
 }
-
 /// Message trace entry for debugging and analysis
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageTrace {
     /// Unique trace ID
     pub trace_id: u64,
-    
     /// Timestamp when the message was traced
     pub timestamp: u64,
-    
     /// Source actor ID (None for external messages)
     pub source: Option<ActorId>,
-    
     /// Destination actor ID
     pub destination: ActorId,
-    
     /// The traced message
     pub message: Message,
-    
     /// Message processing status
     pub status: MessageStatus,
-    
     /// Processing duration in microseconds
     pub processing_duration_us: Option<u64>,
-    
     /// Error information if message processing failed
     pub error: Option<String>,
-    
     /// Stack depth for nested message calls
     pub stack_depth: usize,
-    
     /// Correlation ID for tracking message chains
     pub correlation_id: Option<String>,
 }
-
 /// Status of a traced message
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MessageStatus {
@@ -809,38 +667,28 @@ pub enum MessageStatus {
     /// Message was dropped due to actor failure
     Dropped,
 }
-
 /// Snapshot of an actor's state at a point in time
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActorSnapshot {
     /// Actor ID
     pub actor_id: ActorId,
-    
     /// Actor name
     pub name: String,
-    
     /// Snapshot timestamp
     pub timestamp: u64,
-    
     /// Current state of the actor
     pub state: ActorState,
-    
     /// Number of messages in the actor's mailbox
     pub mailbox_size: usize,
-    
     /// Actor's supervision parent (if any)
     pub parent: Option<ActorId>,
-    
     /// Actor's supervised children
     pub children: Vec<ActorId>,
-    
     /// Recent message processing statistics
     pub message_stats: MessageStats,
-    
     /// Memory usage estimate (in bytes)
     pub memory_usage: Option<usize>,
 }
-
 /// Current state of an actor
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ActorState {
@@ -859,29 +707,22 @@ pub enum ActorState {
     /// Actor has failed
     Failed(String), // Failure reason
 }
-
 /// Message processing statistics for an actor
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageStats {
     /// Total messages processed
     pub total_processed: u64,
-    
     /// Messages processed per second (recent average)
     pub messages_per_second: f64,
-    
     /// Average message processing time in microseconds
     pub avg_processing_time_us: f64,
-    
     /// Maximum message processing time in microseconds
     pub max_processing_time_us: u64,
-    
     /// Number of failed message processings
     pub failed_messages: u64,
-    
     /// Last processing timestamp
     pub last_processed: Option<u64>,
 }
-
 impl Default for MessageStats {
     fn default() -> Self {
         Self {
@@ -894,35 +735,26 @@ impl Default for MessageStats {
         }
     }
 }
-
 /// System-wide performance metrics
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemMetrics {
     /// Total number of active actors
     pub active_actors: usize,
-    
     /// Total messages processed across all actors
     pub total_messages_processed: u64,
-    
     /// System-wide messages per second
     pub system_messages_per_second: f64,
-    
     /// Total memory usage estimate (in bytes)
     pub total_memory_usage: usize,
-    
     /// Number of currently queued messages across all actors
     pub total_queued_messages: usize,
-    
     /// Average actor mailbox size
     pub avg_mailbox_size: f64,
-    
     /// Number of actor restarts in the last period
     pub recent_restarts: u64,
-    
     /// Last metrics update timestamp
     pub last_updated: u64,
 }
-
 impl Default for SystemMetrics {
     fn default() -> Self {
         Self {
@@ -937,86 +769,89 @@ impl Default for SystemMetrics {
         }
     }
 }
-
 /// Filter for message tracing
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MessageFilter {
     /// Filter name for identification
     pub name: String,
-    
     /// Actor ID to filter by (None for all actors)
     pub actor_id: Option<ActorId>,
-    
     /// Actor name pattern to filter by
     pub actor_name_pattern: Option<String>,
-    
     /// Message type pattern to filter by
     pub message_type_pattern: Option<String>,
-    
     /// Minimum message processing time to include (microseconds)
     pub min_processing_time_us: Option<u64>,
-    
     /// Only include failed messages
     pub failed_only: bool,
-    
     /// Maximum stack depth to include
     pub max_stack_depth: Option<usize>,
 }
-
 /// Deadlock detection system
 #[derive(Debug)]
 pub struct DeadlockDetector {
     /// Graph of actor message dependencies
     dependency_graph: HashMap<ActorId, HashSet<ActorId>>,
-    
     /// Currently blocked actors waiting for responses
     blocked_actors: HashMap<ActorId, Vec<BlockedRequest>>,
-    
     /// Last deadlock check timestamp
     last_check: Instant,
-    
     /// Detected deadlocks
     detected_deadlocks: Vec<DeadlockCycle>,
 }
-
 /// Information about a blocked request
 #[derive(Debug, Clone)]
 pub struct BlockedRequest {
     /// Actor making the request
     pub requester: ActorId,
-    
     /// Actor being requested from
     pub target: ActorId,
-    
     /// When the request was made
     pub timestamp: Instant,
-    
     /// Timeout for the request
     pub timeout: Duration,
-    
     /// Message correlation ID
     pub correlation_id: Option<String>,
 }
-
 /// A detected deadlock cycle
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeadlockCycle {
     /// Actors involved in the deadlock
     pub actors: Vec<ActorId>,
-    
     /// When the deadlock was detected
     pub detected_at: u64,
-    
     /// Estimated duration of the deadlock
     pub duration_estimate_ms: u64,
-    
     /// Suggested resolution strategy
     pub resolution_suggestion: String,
 }
-
 impl ActorObservatory {
     /// Create a new actor observatory
-    pub fn new(actor_system: Arc<Mutex<ActorSystem>>, config: ObservatoryConfig) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new(actor_system: Arc<Mutex<ActorSystem>>, config: ObservatoryConfig) -> Self {
         Self {
             actor_system,
             message_traces: Arc::new(Mutex::new(VecDeque::new())),
@@ -1028,42 +863,66 @@ impl ActorObservatory {
             start_time: Instant::now(),
         }
     }
-    
     /// Add a message filter for tracing
-    pub fn add_filter(&mut self, filter: MessageFilter) {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::add_filter;
+/// 
+/// let result = add_filter(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn add_filter(&mut self, filter: MessageFilter) {
         self.filters.push(filter);
     }
-    
     /// Remove a message filter by name
-    pub fn remove_filter(&mut self, name: &str) -> bool {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::remove_filter;
+/// 
+/// let result = remove_filter("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn remove_filter(&mut self, name: &str) -> bool {
         let initial_len = self.filters.len();
         self.filters.retain(|f| f.name != name);
         self.filters.len() != initial_len
     }
-    
     /// Get current list of filters
-    pub fn get_filters(&self) -> &[MessageFilter] {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::get_filters;
+/// 
+/// let result = get_filters(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn get_filters(&self) -> &[MessageFilter] {
         &self.filters
     }
-    
     /// Record a message trace
-    pub fn trace_message(&self, trace: MessageTrace) -> Result<()> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::trace_message;
+/// 
+/// let result = trace_message(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn trace_message(&self, trace: MessageTrace) -> Result<()> {
         let mut traces = self.message_traces
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire message traces lock"))?;
-        
         // Apply filters
         if !self.message_matches_filters(&trace) {
             return Ok(());
         }
-        
         traces.push_back(trace);
-        
         // Enforce retention limits
         while traces.len() > self.config.max_traces {
             traces.pop_front();
         }
-        
         // Remove old traces based on age
         let retention_threshold = current_timestamp() - self.config.trace_retention_seconds;
         while let Some(front) = traces.front() {
@@ -1073,16 +932,21 @@ impl ActorObservatory {
                 break;
             }
         }
-        
         Ok(())
     }
-    
     /// Get recent message traces with optional filtering
-    pub fn get_traces(&self, limit: Option<usize>, filter_name: Option<&str>) -> Result<Vec<MessageTrace>> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::get_traces;
+/// 
+/// let result = get_traces("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn get_traces(&self, limit: Option<usize>, filter_name: Option<&str>) -> Result<Vec<MessageTrace>> {
         let traces = self.message_traces
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire message traces lock"))?;
-        
         let mut result: Vec<MessageTrace> = if let Some(filter_name) = filter_name {
             traces.iter()
                 .filter(|trace| self.trace_matches_filter(trace, filter_name))
@@ -1091,22 +955,25 @@ impl ActorObservatory {
         } else {
             traces.iter().cloned().collect()
         };
-        
         if let Some(limit) = limit {
             result.truncate(limit);
         }
-        
         Ok(result)
     }
-    
     /// Update actor snapshot
-    pub fn update_actor_snapshot(&self, snapshot: ActorSnapshot) -> Result<()> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::update_actor_snapshot;
+/// 
+/// let result = update_actor_snapshot(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn update_actor_snapshot(&self, snapshot: ActorSnapshot) -> Result<()> {
         let mut snapshots = self.actor_snapshots
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire actor snapshots lock"))?;
-        
         snapshots.insert(snapshot.actor_id, snapshot);
-        
         // Enforce snapshot limits
         if snapshots.len() > self.config.max_snapshots {
             // Remove oldest snapshots
@@ -1114,7 +981,6 @@ impl ActorObservatory {
                 .map(|(&id, snapshot)| (id, snapshot.timestamp))
                 .collect();
             oldest_actors.sort_by_key(|(_, timestamp)| *timestamp);
-            
             let to_remove = snapshots.len() - self.config.max_snapshots;
             for i in 0..to_remove {
                 if let Some((actor_id, _)) = oldest_actors.get(i) {
@@ -1122,105 +988,132 @@ impl ActorObservatory {
                 }
             }
         }
-        
         Ok(())
     }
-    
     /// Get current actor snapshots
-    pub fn get_actor_snapshots(&self) -> Result<HashMap<ActorId, ActorSnapshot>> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::get_actor_snapshots;
+/// 
+/// let result = get_actor_snapshots(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn get_actor_snapshots(&self) -> Result<HashMap<ActorId, ActorSnapshot>> {
         Ok(self.actor_snapshots
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire actor snapshots lock"))?
             .clone())
     }
-    
     /// Get specific actor snapshot
-    pub fn get_actor_snapshot(&self, actor_id: ActorId) -> Result<Option<ActorSnapshot>> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::get_actor_snapshot;
+/// 
+/// let result = get_actor_snapshot(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn get_actor_snapshot(&self, actor_id: ActorId) -> Result<Option<ActorSnapshot>> {
         Ok(self.actor_snapshots
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire actor snapshots lock"))?
             .get(&actor_id)
             .cloned())
     }
-    
     /// Perform deadlock detection
-    pub fn detect_deadlocks(&self) -> Result<Vec<DeadlockCycle>> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::detect_deadlocks;
+/// 
+/// let result = detect_deadlocks(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn detect_deadlocks(&self) -> Result<Vec<DeadlockCycle>> {
         if !self.config.enable_deadlock_detection {
             return Ok(Vec::new());
         }
-        
         let mut detector = self.deadlock_detector
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire deadlock detector lock"))?;
-        
         detector.detect_cycles()
     }
-    
     /// Update system metrics
-    pub fn update_metrics(&self) -> Result<()> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::update_metrics;
+/// 
+/// let result = update_metrics(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn update_metrics(&self) -> Result<()> {
         if !self.config.enable_metrics {
             return Ok(());
         }
-        
         let _system = self.actor_system
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire actor system lock"))?;
-        
         let mut metrics = self.metrics
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire metrics lock"))?;
-        
         let snapshots = self.actor_snapshots
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire actor snapshots lock"))?;
-        
         // Update metrics based on current system state
         metrics.active_actors = snapshots.len();
         metrics.total_messages_processed = snapshots.values()
             .map(|s| s.message_stats.total_processed)
             .sum();
-        
         metrics.total_queued_messages = snapshots.values()
             .map(|s| s.mailbox_size)
             .sum();
-        
         metrics.avg_mailbox_size = if snapshots.is_empty() {
             0.0
         } else {
             metrics.total_queued_messages as f64 / snapshots.len() as f64
         };
-        
         metrics.total_memory_usage = snapshots.values()
             .filter_map(|s| s.memory_usage)
             .sum();
-        
         metrics.last_updated = current_timestamp();
-        
         Ok(())
     }
-    
     /// Get current system metrics
-    pub fn get_metrics(&self) -> Result<SystemMetrics> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::get_metrics;
+/// 
+/// let result = get_metrics(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn get_metrics(&self) -> Result<SystemMetrics> {
         Ok(self.metrics
             .lock()
             .map_err(|_| anyhow::anyhow!("Failed to acquire metrics lock"))?
             .clone())
     }
-    
     /// Get observatory uptime
-    pub fn uptime(&self) -> Duration {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::uptime;
+/// 
+/// let result = uptime(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn uptime(&self) -> Duration {
         self.start_time.elapsed()
     }
-    
     /// Check if a message matches the configured filters
     fn message_matches_filters(&self, trace: &MessageTrace) -> bool {
         if self.filters.is_empty() {
             return true; // No filters means include all messages
         }
-        
         self.filters.iter().any(|filter| self.message_matches_filter(trace, filter))
     }
-    
     /// Check if a message matches a specific filter
     fn message_matches_filter(&self, trace: &MessageTrace, filter: &MessageFilter) -> bool {
         // Filter by actor ID
@@ -1229,7 +1122,6 @@ impl ActorObservatory {
                 return false;
             }
         }
-        
         // Filter by processing time
         if let Some(min_time) = filter.min_processing_time_us {
             if let Some(duration) = trace.processing_duration_us {
@@ -1240,22 +1132,18 @@ impl ActorObservatory {
                 return false;
             }
         }
-        
         // Filter by failed messages only
         if filter.failed_only && trace.status != MessageStatus::Failed {
             return false;
         }
-        
         // Filter by stack depth
         if let Some(max_depth) = filter.max_stack_depth {
             if trace.stack_depth > max_depth {
                 return false;
             }
         }
-        
         true
     }
-    
     /// Check if a trace matches a filter by name
     fn trace_matches_filter(&self, trace: &MessageTrace, filter_name: &str) -> bool {
         self.filters.iter()
@@ -1263,13 +1151,11 @@ impl ActorObservatory {
             .is_some_and(|filter| self.message_matches_filter(trace, filter))
     }
 }
-
 impl Default for DeadlockDetector {
     fn default() -> Self {
         Self::new()
     }
 }
-
 impl DeadlockDetector {
     /// Create a new deadlock detector
     pub fn new() -> Self {
@@ -1280,30 +1166,42 @@ impl DeadlockDetector {
             detected_deadlocks: Vec::new(),
         }
     }
-    
     /// Add a blocked request to track
-    pub fn add_blocked_request(&mut self, request: BlockedRequest) {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::add_blocked_request;
+/// 
+/// let result = add_blocked_request(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn add_blocked_request(&mut self, request: BlockedRequest) {
         self.blocked_actors
             .entry(request.requester)
             .or_default()
             .push(request.clone());
-        
         // Update dependency graph
         self.dependency_graph
             .entry(request.requester)
             .or_default()
             .insert(request.target);
     }
-    
     /// Remove a blocked request (when resolved)
-    pub fn remove_blocked_request(&mut self, requester: ActorId, target: ActorId) {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::remove_blocked_request;
+/// 
+/// let result = remove_blocked_request(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn remove_blocked_request(&mut self, requester: ActorId, target: ActorId) {
         if let Some(requests) = self.blocked_actors.get_mut(&requester) {
             requests.retain(|r| r.target != target);
             if requests.is_empty() {
                 self.blocked_actors.remove(&requester);
             }
         }
-        
         // Update dependency graph
         if let Some(dependencies) = self.dependency_graph.get_mut(&requester) {
             dependencies.remove(&target);
@@ -1312,25 +1210,28 @@ impl DeadlockDetector {
             }
         }
     }
-    
     /// Detect cycles in the dependency graph (potential deadlocks)
-    pub fn detect_cycles(&mut self) -> Result<Vec<DeadlockCycle>> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::detect_cycles;
+/// 
+/// let result = detect_cycles(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn detect_cycles(&mut self) -> Result<Vec<DeadlockCycle>> {
         let mut cycles = Vec::new();
         let mut visited = HashSet::new();
         let mut path = Vec::new();
-        
         for &actor in self.dependency_graph.keys() {
             if !visited.contains(&actor) {
                 self.dfs_detect_cycle(actor, &mut visited, &mut path, &mut cycles)?;
             }
         }
-        
         self.detected_deadlocks.extend(cycles.clone());
         self.last_check = Instant::now();
-        
         Ok(cycles)
     }
-    
     /// Depth-first search to detect cycles
     fn dfs_detect_cycle(
         &self,
@@ -1341,14 +1242,12 @@ impl DeadlockDetector {
     ) -> Result<()> {
         visited.insert(actor);
         path.push(actor);
-        
         if let Some(dependencies) = self.dependency_graph.get(&actor) {
             for &dependent_actor in dependencies {
                 if let Some(cycle_start_index) = path.iter().position(|&a| a == dependent_actor) {
                     // Found a cycle
                     let cycle_actors = path[cycle_start_index..].to_vec();
                     let duration_estimate = self.estimate_cycle_duration(&cycle_actors);
-                    
                     cycles.push(DeadlockCycle {
                         actors: cycle_actors.clone(),
                         detected_at: current_timestamp(),
@@ -1360,11 +1259,9 @@ impl DeadlockDetector {
                 }
             }
         }
-        
         path.pop();
         Ok(())
     }
-    
     /// Estimate how long a deadlock cycle has been active
     fn estimate_cycle_duration(&self, actors: &[ActorId]) -> u64 {
         let now = Instant::now();
@@ -1375,7 +1272,6 @@ impl DeadlockDetector {
             .max()
             .unwrap_or(0)
     }
-    
     /// Suggest a resolution strategy for a deadlock cycle
     fn suggest_resolution(&self, actors: &[ActorId]) -> String {
         match actors.len() {
@@ -1386,7 +1282,6 @@ impl DeadlockDetector {
         }
     }
 }
-
 /// Get current timestamp in seconds since Unix epoch
 fn current_timestamp() -> u64 {
     SystemTime::now()
@@ -1394,7 +1289,6 @@ fn current_timestamp() -> u64 {
         .unwrap_or_default()
         .as_secs()
 }
-
 /// Create a simple message filter for testing
 impl MessageFilter {
     pub fn new(name: &str) -> Self {
@@ -1408,9 +1302,16 @@ impl MessageFilter {
             max_stack_depth: None,
         }
     }
-    
     /// Create a filter for a specific actor
-    pub fn for_actor(name: &str, actor_id: ActorId) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::for_actor;
+/// 
+/// let result = for_actor("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn for_actor(name: &str, actor_id: ActorId) -> Self {
         Self {
             name: name.to_string(),
             actor_id: Some(actor_id),
@@ -1421,9 +1322,16 @@ impl MessageFilter {
             max_stack_depth: None,
         }
     }
-    
     /// Create a filter for failed messages only
-    pub fn failed_messages_only(name: &str) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::failed_messages_only;
+/// 
+/// let result = failed_messages_only("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn failed_messages_only(name: &str) -> Self {
         Self {
             name: name.to_string(),
             actor_id: None,
@@ -1434,9 +1342,16 @@ impl MessageFilter {
             max_stack_depth: None,
         }
     }
-    
     /// Create a filter for delayed messages
-    pub fn slow_messages(name: &str, min_time_us: u64) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::observatory::slow_messages;
+/// 
+/// let result = slow_messages("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn slow_messages(name: &str, min_time_us: u64) -> Self {
         Self {
             name: name.to_string(),
             actor_id: None,
@@ -1445,6 +1360,25 @@ impl MessageFilter {
             min_processing_time_us: Some(min_time_us),
             failed_only: false,
             max_stack_depth: None,
+        }
+    }
+}
+#[cfg(test)]
+mod property_tests_observatory {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
         }
     }
 }

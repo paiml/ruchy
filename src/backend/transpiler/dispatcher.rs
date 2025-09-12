@@ -2,13 +2,11 @@
 //!
 //! This module contains delegated transpilation functions to keep
 //! cyclomatic complexity below 10 for each function.
-
 use super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind, Literal};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-
 impl Transpiler {
     /// Transpile basic expressions (literals, identifiers, strings)
     pub(super) fn transpile_basic_expr(&self, expr: &Expr) -> Result<TokenStream> {
@@ -23,10 +21,8 @@ impl Transpiler {
             _ => unreachable!("Non-basic expression in transpile_basic_expr"),
         }
     }
-
     fn transpile_type_cast(&self, expr: &Expr, target_type: &str) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
-        
         // Map Ruchy types to Rust types
         let rust_type = match target_type {
             "i32" => quote! { i32 },
@@ -42,17 +38,14 @@ impl Transpiler {
             "i16" => quote! { i16 },
             _ => bail!("Unsupported cast target type: {}", target_type),
         };
-        
         Ok(quote! { (#expr_tokens as #rust_type) })
     }
-
     fn transpile_identifier(name: &str) -> TokenStream {
         // Check if this is a module path like "math::add"
         if name.contains("::") {
             // Split into module path components
             let parts: Vec<&str> = name.split("::").collect();
             let mut tokens = Vec::new();
-            
             for (i, part) in parts.iter().enumerate() {
                 let safe_part = if matches!(*part, "self" | "Self" | "super" | "crate") {
                     (*part).to_string()
@@ -61,15 +54,12 @@ impl Transpiler {
                 } else {
                     (*part).to_string()
                 };
-                
                 let ident = format_ident!("{}", safe_part);
                 tokens.push(quote! { #ident });
-                
                 if i < parts.len() - 1 {
                     tokens.push(quote! { :: });
                 }
             }
-            
             quote! { #(#tokens)* }
         } else {
             // Handle single identifier with Rust reserved keywords
@@ -81,17 +71,14 @@ impl Transpiler {
             } else {
                 name.to_string()
             };
-            
             let ident = format_ident!("{}", safe_name);
             quote! { #ident }
         }
     }
-
     fn transpile_qualified_name(module: &str, name: &str) -> TokenStream {
         // Handle nested qualified names like "net::TcpListener"
         let module_parts: Vec<&str> = module.split("::").collect();
         let name_ident = format_ident!("{}", name);
-        
         if module_parts.len() == 1 {
             // Simple case: single module name
             let module_ident = format_ident!("{}", module_parts[0]);
@@ -109,7 +96,6 @@ impl Transpiler {
             quote! { #tokens::#name_ident }
         }
     }
-
     /// Transpile operator and control flow expressions (split for complexity)
     pub(super) fn transpile_operator_control_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
@@ -132,7 +118,6 @@ impl Transpiler {
             _ => unreachable!("Non-operator/control expression in transpile_operator_control_expr"),
         }
     }
-
     fn transpile_operator_only_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Binary { left, op, right } => self.transpile_binary(left, *op, right),
@@ -144,7 +129,6 @@ impl Transpiler {
             _ => unreachable!(),
         }
     }
-
     fn transpile_control_flow_only_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::If {
@@ -173,7 +157,6 @@ impl Transpiler {
             _ => unreachable!(),
         }
     }
-
     /// Transpile function-related expressions
     pub(super) fn transpile_function_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
@@ -206,7 +189,6 @@ impl Transpiler {
             _ => unreachable!("Non-function expression in transpile_function_expr"),
         }
     }
-
     /// Transpile macro expressions with clean dispatch pattern
     ///
     /// This function uses specialized handlers for different macro categories:
@@ -223,19 +205,15 @@ impl Transpiler {
             "println" => self.transpile_println_macro(args),
             "print" => self.transpile_print_macro(args),
             "panic" => self.transpile_panic_macro(args),
-            
             // Collection macros (simple transpilation)
             "vec" => self.transpile_vec_macro(args),
-            
             // Assertion macros (validation + transpilation)
             "assert" => self.transpile_assert_macro(args),
             "assert_eq" => self.transpile_assert_eq_macro(args),
             "assert_ne" => self.transpile_assert_ne_macro(args),
-            
             _ => bail!("Unknown macro: {}", name),
         }
     }
-
     /// Transpile structure-related expressions
     pub(super) fn transpile_struct_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
@@ -253,7 +231,6 @@ impl Transpiler {
             _ => unreachable!("Non-struct expression in transpile_struct_expr"),
         }
     }
-
     /// Transpile data and error handling expressions (split for complexity)
     pub(super) fn transpile_data_error_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
@@ -273,7 +250,6 @@ impl Transpiler {
             _ => unreachable!("Non-data/error expression in transpile_data_error_expr"),
         }
     }
-
     fn transpile_data_only_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::DataFrame { columns } => self.transpile_dataframe(columns),
@@ -299,7 +275,6 @@ impl Transpiler {
             _ => unreachable!(),
         }
     }
-
     fn transpile_error_only_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Throw { expr } => self.transpile_throw(expr),
@@ -311,12 +286,10 @@ impl Transpiler {
             _ => unreachable!(),
         }
     }
-
     fn transpile_result_ok(&self, value: &Expr) -> Result<TokenStream> {
         let value_tokens = self.transpile_expr(value)?;
         Ok(quote! { Ok(#value_tokens) })
     }
-
     fn transpile_result_err(&self, error: &Expr) -> Result<TokenStream> {
         let error_tokens = self.transpile_expr(error)?;
         // If error is a string literal, add .to_string() for String error types
@@ -328,17 +301,14 @@ impl Transpiler {
         };
         Ok(quote! { Err(#final_tokens) })
     }
-    
     fn transpile_option_some(&self, value: &Expr) -> Result<TokenStream> {
         let value_tokens = self.transpile_expr(value)?;
         Ok(quote! { Some(#value_tokens) })
     }
-    
     fn transpile_try_operator(&self, expr: &Expr) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
         Ok(quote! { #expr_tokens? })
     }
-
     /// Transpile actor system expressions
     pub(super) fn transpile_actor_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
@@ -365,7 +335,6 @@ impl Transpiler {
             _ => unreachable!("Non-actor expression in transpile_actor_expr"),
         }
     }
-
     /// Transpile miscellaneous expressions
     pub(super) fn transpile_misc_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
@@ -397,7 +366,6 @@ impl Transpiler {
             _ => bail!("Unsupported expression kind: {:?}", expr.kind),
         }
     }
-
     fn transpile_type_decl_expr(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Trait {
@@ -426,7 +394,6 @@ impl Transpiler {
             _ => unreachable!(),
         }
     }
-
     /// Transpile println! macro with string formatting support
     /// 
     /// Handles string literals, string interpolation, and format strings correctly.
@@ -443,7 +410,6 @@ impl Transpiler {
             Ok(quote! { println!(#(#arg_tokens),*) })
         }
     }
-
     /// Transpile print! macro with string formatting support
     /// 
     /// Handles string literals, string interpolation, and format strings correctly.
@@ -460,7 +426,6 @@ impl Transpiler {
             Ok(quote! { print!(#(#arg_tokens),*) })
         }
     }
-
     /// Transpile panic! macro with string formatting support
     /// 
     /// Handles string literals, string interpolation, and format strings correctly.
@@ -477,7 +442,6 @@ impl Transpiler {
             Ok(quote! { panic!(#(#arg_tokens),*) })
         }
     }
-
     /// Common helper for transpiling print-style macro arguments
     /// 
     /// Handles string literals, string interpolation, and format strings.
@@ -487,28 +451,23 @@ impl Transpiler {
         if args.is_empty() {
             return Ok(vec![]);
         }
-        
         // Check if first argument is a format string (contains {})
         let first_is_format_string = match &args[0].kind {
             ExprKind::Literal(Literal::String(s)) => s.contains("{}"),
             _ => false,
         };
-        
         if first_is_format_string && args.len() > 1 {
             // First argument is format string, rest are values
             let format_str = match &args[0].kind {
                 ExprKind::Literal(Literal::String(s)) => s,
                 _ => unreachable!(),
             };
-            
             let mut tokens = vec![quote! { #format_str }];
-            
             // Add remaining arguments as values (without extra format strings)
             for arg in &args[1..] {
                 let expr_tokens = self.transpile_expr(arg)?;
                 tokens.push(expr_tokens);
             }
-            
             Ok(tokens)
         } else {
             // Original behavior for non-format cases
@@ -540,8 +499,6 @@ impl Transpiler {
                 .collect()
         }
     }
-
-
     /// Handle string interpolation for print-style macros
     /// 
     /// Detects if string interpolation has expressions or is just format text.
@@ -550,7 +507,6 @@ impl Transpiler {
         let has_expressions = parts.iter().any(|part| matches!(part, 
             crate::frontend::ast::StringPart::Expr(_) | 
             crate::frontend::ast::StringPart::ExprWithFormat { .. }));
-        
         if has_expressions {
             // This has actual interpolation - transpile normally
             self.transpile_string_interpolation(parts)
@@ -566,7 +522,6 @@ impl Transpiler {
             Ok(quote! { #format_string })
         }
     }
-
     /// Transpile vec! macro
     /// 
     /// Simple element-by-element transpilation for collection creation.
@@ -581,10 +536,8 @@ impl Transpiler {
             .map(|arg| self.transpile_expr(arg))
             .collect();
         let arg_tokens = arg_tokens?;
-
         Ok(quote! { vec![#(#arg_tokens),*] })
     }
-
     /// Transpile assert! macro
     /// 
     /// Simple argument transpilation for basic assertions.
@@ -599,14 +552,12 @@ impl Transpiler {
             .map(|arg| self.transpile_expr(arg))
             .collect();
         let arg_tokens = arg_tokens?;
-
         if arg_tokens.is_empty() {
             Ok(quote! { assert!() })
         } else {
             Ok(quote! { assert!(#(#arg_tokens),*) })
         }
     }
-
     /// Transpile `assert_eq`! macro with validation
     /// 
     /// Validates argument count and transpiles for equality assertions.
@@ -619,16 +570,13 @@ impl Transpiler {
         if args.len() < 2 {
             bail!("assert_eq! requires at least 2 arguments")
         }
-        
         let arg_tokens: Result<Vec<_>, _> = args
             .iter()
             .map(|arg| self.transpile_expr(arg))
             .collect();
         let arg_tokens = arg_tokens?;
-
         Ok(quote! { assert_eq!(#(#arg_tokens),*) })
     }
-
     /// Transpile `assert_ne`! macro with validation
     /// 
     /// Validates argument count and transpiles for inequality assertions.
@@ -641,16 +589,13 @@ impl Transpiler {
         if args.len() < 2 {
             bail!("assert_ne! requires at least 2 arguments")
         }
-        
         let arg_tokens: Result<Vec<_>, _> = args
             .iter()
             .map(|arg| self.transpile_expr(arg))
             .collect();
         let arg_tokens = arg_tokens?;
-
         Ok(quote! { assert_ne!(#(#arg_tokens),*) })
     }
-
     fn transpile_control_misc_expr(expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Break { label } => Ok(Self::make_break_continue(true, label.as_ref())),
@@ -672,7 +617,6 @@ impl Transpiler {
             _ => unreachable!(),
         }
     }
-
     fn make_break_continue(is_break: bool, label: Option<&String>) -> TokenStream {
         let keyword = if is_break {
             quote! { break }
@@ -687,5 +631,4 @@ impl Transpiler {
             None => keyword,
         }
     }
-
 }

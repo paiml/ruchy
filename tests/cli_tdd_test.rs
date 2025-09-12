@@ -11,7 +11,7 @@ fn test_cli_parse_notebook_serve() {
     let cli = Cli::parse_from(args);
     
     match cli.command {
-        Command::Notebook(NotebookCommand::Serve { port }) => {
+        Command::Notebook(NotebookCommand::Serve { port, host: _ }) => {
             assert_eq!(port, 9000);
         }
         _ => panic!("Expected Notebook Serve command"),

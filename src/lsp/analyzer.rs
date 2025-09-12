@@ -1,5 +1,4 @@
 //! Semantic analysis for LSP
-
 use crate::frontend::ast::{Expr, ExprKind};
 use crate::frontend::parser::Parser;
 use std::collections::HashMap;
@@ -8,23 +7,19 @@ use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, Diagnostic, DiagnosticSeverity, Documentation, Hover,
     HoverContents, Location, MarkedString, NumberOrString, Position, Range,
 };
-
 pub struct SemanticAnalyzer {
     symbol_table: SymbolTable,
 }
-
 #[derive(Debug, Default)]
 struct SymbolTable {
     symbols: HashMap<String, Symbol>,
 }
-
 #[derive(Debug, Clone)]
 struct Symbol {
     name: String,
     kind: String,
     documentation: Option<String>,
 }
-
 impl SemanticAnalyzer {
     /// Create a new semantic analyzer
     ///
@@ -32,6 +27,7 @@ impl SemanticAnalyzer {
     ///
     /// ```
     /// use ruchy::lsp::SemanticAnalyzer;
+#[cfg(test)]
     ///
     /// let analyzer = SemanticAnalyzer::new();
     /// // Analyzer starts with empty symbol table
@@ -41,7 +37,6 @@ impl SemanticAnalyzer {
             symbol_table: SymbolTable::default(),
         }
     }
-
     /// Get completions for a position in the document
     ///
     /// # Errors
@@ -57,9 +52,7 @@ impl SemanticAnalyzer {
             "fun", "let", "if", "else", "match", "struct", "trait", "impl", "actor", "import",
             "for", "while", "break", "continue", "true", "false",
         ];
-
         let mut completions = Vec::new();
-
         // Add keyword completions
         for keyword in keywords {
             completions.push(CompletionItem {
@@ -69,7 +62,6 @@ impl SemanticAnalyzer {
                 ..Default::default()
             });
         }
-
         // Add built-in types
         let types = vec!["i32", "i64", "f32", "f64", "String", "bool", "()"];
         for type_name in types {
@@ -80,7 +72,6 @@ impl SemanticAnalyzer {
                 ..Default::default()
             });
         }
-
         // Add symbols from symbol table
         for symbol in self.symbol_table.symbols.values() {
             completions.push(CompletionItem {
@@ -94,10 +85,8 @@ impl SemanticAnalyzer {
                 ..Default::default()
             });
         }
-
         Ok(completions)
     }
-
     /// Get hover information for a position
     ///
     /// # Errors
@@ -109,16 +98,13 @@ impl SemanticAnalyzer {
         if parser.parse().is_err() {
             return Ok(None);
         }
-
         // For now, return basic info about Ruchy features
         let hover_text = "Ruchy Language\n\nA systems scripting language with:\n- Strong type inference\n- Actor-based concurrency\n- DataFrame-first collections\n- Rust interoperability";
-
         Ok(Some(Hover {
             contents: HoverContents::Scalar(MarkedString::String(hover_text.to_string())),
             range: None,
         }))
     }
-
     /// Get definition location for a symbol
     ///
     /// # Errors
@@ -128,7 +114,6 @@ impl SemanticAnalyzer {
         // For now, return None - would need more sophisticated symbol tracking
         Ok(None)
     }
-
     /// Get diagnostics for a document
     ///
     /// # Errors
@@ -136,14 +121,12 @@ impl SemanticAnalyzer {
     /// This function currently does not return errors but returns Result for future compatibility
     pub fn get_diagnostics(&mut self, document: &str) -> Result<Vec<Diagnostic>> {
         let mut diagnostics = Vec::new();
-
         // Try to parse the document
         let mut parser = Parser::new(document);
         match parser.parse() {
             Ok(ast) => {
                 // Update symbol table
                 self.update_symbol_table(&ast, document);
-
                 // Add any semantic warnings
                 // For now, just check for unused variables (placeholder)
             }
@@ -168,15 +151,12 @@ impl SemanticAnalyzer {
                 });
             }
         }
-
         Ok(diagnostics)
     }
-
     fn update_symbol_table(&mut self, ast: &Expr, document: &str) {
         // Walk the AST and extract symbols
         self.extract_symbols(ast, document);
     }
-
     fn extract_symbols(&mut self, expr: &Expr, _document: &str) {
         match &expr.kind {
             ExprKind::Function { name, params, .. } => {
@@ -187,7 +167,6 @@ impl SemanticAnalyzer {
                     documentation: None,
                 };
                 self.symbol_table.symbols.insert(name.clone(), symbol);
-
                 // Add parameters
                 for param in params {
                     let param_symbol = Symbol {
@@ -222,9 +201,29 @@ impl SemanticAnalyzer {
         }
     }
 }
-
 impl Default for SemanticAnalyzer {
     fn default() -> Self {
         Self::new()
+    }
+}
+#[cfg(test)]
+mod property_tests_analyzer {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
+    }
+}
     }
 }

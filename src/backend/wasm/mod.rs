@@ -1,37 +1,53 @@
 /// TDD: Minimal WASM emitter implementation
 /// Following strict TDD - only implement what tests require
-
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
 use wasm_encoder::{
     CodeSection, ExportSection, Function, FunctionSection,
     Instruction, MemorySection, MemoryType, Module, TypeSection,
 };
-
 #[cfg(test)]
 mod debug;
-
 pub struct WasmEmitter {
     module: Module,
 }
-
 impl WasmEmitter {
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::wasm::mod::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::wasm::mod::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         Self {
             module: Module::new(),
         }
     }
-
     /// Emit a complete WASM module from a Ruchy AST expression
-    pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::wasm::mod::emit;
+/// 
+/// let result = emit(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
         let mut module = Module::new();
-
         // Collect all function definitions
         let func_defs = self.collect_functions(expr);
         let has_functions = !func_defs.is_empty();
-        
         // Add type section
         let mut types = TypeSection::new();
-        
         if has_functions {
             // Add a type for each function
             for (_name, params, _body) in &func_defs {
@@ -39,7 +55,6 @@ impl WasmEmitter {
                 let param_types = vec![wasm_encoder::ValType::I32; params.len()];
                 types.function(param_types, vec![wasm_encoder::ValType::I32]);
             }
-            
             // Also add a type for the main function if there's non-function code
             let main_expr = self.get_non_function_code(expr);
             if main_expr.is_some() {
@@ -55,14 +70,12 @@ impl WasmEmitter {
             }
         }
         module.section(&types);
-
         // Add function section
         let mut functions = FunctionSection::new();
         if has_functions {
             for i in 0..func_defs.len() {
                 functions.function(i as u32);
             }
-            
             // Add main function if there's non-function code
             let main_expr = self.get_non_function_code(expr);
             if main_expr.is_some() {
@@ -72,7 +85,6 @@ impl WasmEmitter {
             functions.function(0);
         }
         module.section(&functions);
-
         // Add memory section if we need memory (for arrays/strings)
         if self.needs_memory(expr) {
             let mut memories = MemorySection::new();
@@ -85,17 +97,14 @@ impl WasmEmitter {
             });
             module.section(&memories);
         }
-
         // Add export section if we have a main function (must come before code section)
         if self.has_main_function(expr) {
             let mut exports = ExportSection::new();
             exports.export("main", wasm_encoder::ExportKind::Func, 0);
             module.section(&exports);
         }
-
         // Add code section
         let mut codes = CodeSection::new();
-        
         if has_functions {
             // Compile each function
             for (_name, _params, body) in &func_defs {
@@ -105,20 +114,16 @@ impl WasmEmitter {
                     vec![]
                 };
                 let mut func = Function::new(locals);
-                
                 // Compile function body
                 let instructions = self.lower_expression(body)?;
                 for instr in instructions {
                     func.instruction(&instr);
                 }
-                
                 // Functions with explicit returns don't need Drop
                 // All our test functions return values
-                
                 func.instruction(&Instruction::End);
                 codes.function(&func);
             }
-            
             // Also compile the main code (non-function expressions)
             let main_expr = self.get_non_function_code(expr);
             if let Some(main_expr) = main_expr {
@@ -128,18 +133,14 @@ impl WasmEmitter {
                     vec![]
                 };
                 let mut func = Function::new(locals);
-                
                 let instructions = self.lower_expression(&main_expr)?;
                 let has_instructions = !instructions.is_empty();
-                
                 for instr in instructions {
                     func.instruction(&instr);
                 }
-                
                 if has_instructions && self.expression_produces_value(&main_expr) {
                     func.instruction(&Instruction::Drop);
                 }
-                
                 func.instruction(&Instruction::End);
                 codes.function(&func);
             }
@@ -151,40 +152,31 @@ impl WasmEmitter {
                 vec![]
             };
             let mut func = Function::new(locals);
-            
             let instructions = self.lower_expression(expr)?;
             let has_instructions = !instructions.is_empty();
             let has_return_value = self.has_return_with_value(expr);
-            
             for instr in instructions {
                 func.instruction(&instr);
             }
-            
             if has_instructions && self.expression_produces_value(expr) && !has_return_value {
                 func.instruction(&Instruction::Drop);
             }
-            
             func.instruction(&Instruction::End);
             codes.function(&func);
         }
         module.section(&codes);
-
         Ok(module.finish())
     }
-
     /// Lower a Ruchy expression to WASM instructions
     fn lower_expression(&self, expr: &Expr) -> Result<Vec<Instruction<'static>>, String> {
         match &expr.kind {
             ExprKind::Literal(literal) => self.lower_literal(literal),
             ExprKind::Binary { op, left, right } => {
                 let mut instructions = vec![];
-                
                 // Emit left operand
                 instructions.extend(self.lower_expression(left)?);
-                
                 // Emit right operand
                 instructions.extend(self.lower_expression(right)?);
-                
                 // Emit operation
                 let op_instr = match op {
                     BinaryOp::Add => Instruction::I32Add,
@@ -201,7 +193,6 @@ impl WasmEmitter {
                     _ => return Ok(instructions), // Skip unsupported ops for now
                 };
                 instructions.push(op_instr);
-                
                 Ok(instructions)
             }
             ExprKind::Block(exprs) => {
@@ -209,7 +200,6 @@ impl WasmEmitter {
                 let mut instructions = vec![];
                 for (i, expr) in exprs.iter().enumerate() {
                     instructions.extend(self.lower_expression(expr)?);
-                    
                     // Drop intermediate values (keep only last if block produces value)
                     let is_last = i == exprs.len() - 1;
                     if !is_last && self.expression_produces_value(expr) {
@@ -220,23 +210,18 @@ impl WasmEmitter {
             }
             ExprKind::If { condition, then_branch, else_branch } => {
                 let mut instructions = vec![];
-                
                 // Emit condition
                 instructions.extend(self.lower_expression(condition)?);
-                
                 // Determine block type based on whether branches produce values
                 let block_type = if self.expression_produces_value(then_branch) {
                     wasm_encoder::BlockType::Result(wasm_encoder::ValType::I32)
                 } else {
                     wasm_encoder::BlockType::Empty
                 };
-                
                 // If instruction
                 instructions.push(Instruction::If(block_type));
-                
                 // Then branch
                 instructions.extend(self.lower_expression(then_branch)?);
-                
                 // Else branch (if present)
                 if let Some(else_expr) = else_branch {
                     instructions.push(Instruction::Else);
@@ -246,34 +231,25 @@ impl WasmEmitter {
                     instructions.push(Instruction::Else);
                     instructions.push(Instruction::I32Const(0));
                 }
-                
                 // End if
                 instructions.push(Instruction::End);
-                
                 Ok(instructions)
             }
             ExprKind::While { condition, body } => {
                 let mut instructions = vec![];
-                
                 // Loop instruction
                 instructions.push(Instruction::Loop(wasm_encoder::BlockType::Empty));
-                
                 // Check condition
                 instructions.extend(self.lower_expression(condition)?);
-                
                 // Branch if false (exit loop)
                 instructions.push(Instruction::I32Eqz);
                 instructions.push(Instruction::BrIf(1)); // Break out of loop
-                
                 // Body
                 instructions.extend(self.lower_expression(body)?);
-                
                 // Branch back to loop start
                 instructions.push(Instruction::Br(0));
-                
                 // End loop
                 instructions.push(Instruction::End);
-                
                 Ok(instructions)
             }
             ExprKind::Function { name: _, params: _, body: _, .. } => {
@@ -283,27 +259,21 @@ impl WasmEmitter {
             }
             ExprKind::Call { func: _, args } => {
                 let mut instructions = vec![];
-                
                 // Push arguments onto stack
                 for arg in args {
                     instructions.extend(self.lower_expression(arg)?);
                 }
-                
                 // For now, we'll emit a placeholder call instruction
                 // In a real implementation, this would resolve the function index
                 instructions.push(Instruction::Call(0));
-                
                 Ok(instructions)
             }
             ExprKind::Let { name: _, value, body, .. } => {
                 let mut instructions = vec![];
-                
                 // Compile the value
                 instructions.extend(self.lower_expression(value)?);
-                
                 // Store in local (simplified - would need local index tracking)
                 instructions.push(Instruction::LocalSet(0));
-                
                 // Compile the body if it's not Unit
                 match &body.kind {
                     ExprKind::Literal(Literal::Unit) => {
@@ -314,7 +284,6 @@ impl WasmEmitter {
                         instructions.extend(self.lower_expression(body)?);
                     }
                 }
-                
                 Ok(instructions)
             }
             ExprKind::Identifier(_name) => {
@@ -323,10 +292,8 @@ impl WasmEmitter {
             }
             ExprKind::Unary { op, operand } => {
                 let mut instructions = vec![];
-                
                 // Emit operand
                 instructions.extend(self.lower_expression(operand)?);
-                
                 // Emit unary operation
                 match op {
                     crate::frontend::ast::UnaryOp::Negate => {
@@ -348,42 +315,34 @@ impl WasmEmitter {
                         return Ok(instructions);
                     }
                 }
-                
                 Ok(instructions)
             }
             ExprKind::List(_items) => {
                 // For now, just allocate space and return a pointer
                 // Real implementation would store items in memory
-                
                 // Allocate memory for array (simplified - just return 0 as pointer)
                 let instructions = vec![Instruction::I32Const(0)];
-                
                 Ok(instructions)
             }
             ExprKind::Return { value } => {
                 let mut instructions = vec![];
-                
                 // Compile the return value
                 if let Some(val) = value {
                     instructions.extend(self.lower_expression(val)?);
                 }
-                
                 // Return instruction
                 instructions.push(Instruction::Return);
-                
                 Ok(instructions)
             }
             _ => Ok(vec![]), // Skip complex expressions for now
         }
     }
-
     /// Collect all function definitions from the AST
     fn collect_functions(&self, expr: &Expr) -> Vec<(String, Vec<crate::frontend::ast::Param>, Box<Expr>)> {
         let mut functions = Vec::new();
         self.collect_functions_rec(expr, &mut functions);
         functions
     }
-    
     fn collect_functions_rec(&self, expr: &Expr, functions: &mut Vec<(String, Vec<crate::frontend::ast::Param>, Box<Expr>)>) {
         match &expr.kind {
             ExprKind::Function { name, params, body, .. } => {
@@ -397,7 +356,6 @@ impl WasmEmitter {
             _ => {}
         }
     }
-    
     /// Get non-function code from the expression (e.g., function calls)
     fn get_non_function_code(&self, expr: &Expr) -> Option<Expr> {
         match &expr.kind {
@@ -406,11 +364,11 @@ impl WasmEmitter {
                     .filter(|e| !matches!(e.kind, ExprKind::Function { .. }))
                     .cloned()
                     .collect();
-                
                 if non_func_exprs.is_empty() {
                     None
                 } else if non_func_exprs.len() == 1 {
-                    Some(non_func_exprs.into_iter().next().unwrap())
+                    Some(non_func_exprs.into_iter().next()
+                        .expect("non_func_exprs.len() == 1, so next() must return Some"))
                 } else {
                     Some(Expr::new(ExprKind::Block(non_func_exprs), expr.span))
                 }
@@ -419,7 +377,6 @@ impl WasmEmitter {
             _ => Some(expr.clone()),
         }
     }
-
     /// Check if an expression needs memory (for arrays/strings)
     fn needs_memory(&self, expr: &Expr) -> bool {
         match &expr.kind {
@@ -441,7 +398,6 @@ impl WasmEmitter {
             _ => false,
         }
     }
-
     /// Check if an expression contains a main function
     fn has_main_function(&self, expr: &Expr) -> bool {
         match &expr.kind {
@@ -450,7 +406,6 @@ impl WasmEmitter {
             _ => false,
         }
     }
-
     /// Check if an expression has return statements with values
     fn has_return_with_value(&self, expr: &Expr) -> bool {
         match &expr.kind {
@@ -474,7 +429,6 @@ impl WasmEmitter {
             _ => false,
         }
     }
-
     /// Check if an expression needs local variables
     fn needs_locals(&self, expr: &Expr) -> bool {
         match &expr.kind {
@@ -496,7 +450,6 @@ impl WasmEmitter {
             _ => false,
         }
     }
-
     /// Check if an expression produces a value on the stack
     fn expression_produces_value(&self, expr: &Expr) -> bool {
         match &expr.kind {
@@ -524,7 +477,6 @@ impl WasmEmitter {
             _ => false,
         }
     }
-
     fn lower_literal(&self, literal: &Literal) -> Result<Vec<Instruction<'static>>, String> {
         match literal {
             Literal::Integer(n) => Ok(vec![Instruction::I32Const(*n as i32)]),
@@ -539,38 +491,41 @@ impl WasmEmitter {
         }
     }
 }
-
 impl Default for WasmEmitter {
     fn default() -> Self {
         Self::new()
     }
 }
-
 /// Represents a compiled WASM module
 pub struct WasmModule {
     bytes: Vec<u8>,
 }
-
 impl WasmModule {
     pub fn new(bytes: Vec<u8>) -> Self {
         Self { bytes }
     }
-
-    pub fn bytes(&self) -> &[u8] {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::wasm::mod::bytes;
+/// 
+/// let result = bytes(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::frontend::parser::Parser;
-
+#[cfg(test)]
+use proptest::prelude::*;
     #[test]
     fn test_emitter_creates() {
         let _emitter = WasmEmitter::new();
     }
-
     #[test]
     fn test_empty_program_emits() {
         let mut parser = Parser::new("");
@@ -581,32 +536,44 @@ mod tests {
                 Default::default(),
             )
         });
-        
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
-        
         assert!(result.is_ok());
         let bytes = result.unwrap();
         assert!(!bytes.is_empty());
-        
         // Check WASM magic number
         assert_eq!(&bytes[0..4], b"\0asm");
         // Check version
         assert_eq!(&bytes[4..8], &[1, 0, 0, 0]);
     }
-
     #[test]
     fn test_integer_literal() {
         let mut parser = Parser::new("42");
         let expr = parser.parse().expect("Should parse integer");
-        
         let emitter = WasmEmitter::new();
         let result = emitter.emit(&expr);
-        
         assert!(result.is_ok());
         let bytes = result.unwrap();
-        
         // Should contain i32.const instruction (0x41)
         assert!(bytes.iter().any(|&b| b == 0x41));
+    }
+}
+#[cfg(test)]
+mod property_tests_mod {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

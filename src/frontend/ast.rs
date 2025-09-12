@@ -1,21 +1,17 @@
 //! Abstract Syntax Tree definitions for Ruchy
-
 use serde::{Deserialize, Serialize};
 use std::fmt;
-
 /// Source location tracking for error reporting
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct Span {
     pub start: usize,
     pub end: usize,
 }
-
 impl Span {
     #[must_use]
     pub fn new(start: usize, end: usize) -> Self {
         Self { start, end }
     }
-
     #[must_use]
     pub fn merge(self, other: Self) -> Self {
         Self {
@@ -24,14 +20,12 @@ impl Span {
         }
     }
 }
-
 /// Catch clause in try-catch blocks
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CatchClause {
     pub pattern: Pattern,  // The error pattern to match
     pub body: Box<Expr>,    // The catch block body
 }
-
 /// The main AST node type for expressions
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Expr {
@@ -39,7 +33,6 @@ pub struct Expr {
     pub span: Span,
     pub attributes: Vec<Attribute>,
 }
-
 impl Expr {
     #[must_use]
     pub fn new(kind: ExprKind, span: Span) -> Self {
@@ -49,7 +42,6 @@ impl Expr {
             attributes: Vec::new(),
         }
     }
-
     #[must_use]
     pub fn with_attributes(kind: ExprKind, span: Span, attributes: Vec<Attribute>) -> Self {
         Self {
@@ -59,7 +51,6 @@ impl Expr {
         }
     }
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ExprKind {
     Literal(Literal),
@@ -346,7 +337,6 @@ pub enum ExprKind {
         methods: Vec<ImplMethod>,
     },
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Literal {
     Integer(i64),
@@ -356,7 +346,6 @@ pub enum Literal {
     Char(char),
     Unit,
 }
-
 impl Literal {
     /// Convert a REPL Value to a Literal (for synthetic expressions)
     pub fn from_value(value: &crate::runtime::repl::Value) -> Self {
@@ -372,7 +361,6 @@ impl Literal {
         }
     }
 }
-
 /// String interpolation parts - either literal text or an expression
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum StringPart {
@@ -386,7 +374,6 @@ pub enum StringPart {
         format_spec: String,
     },
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum BinaryOp {
     // Arithmetic
@@ -396,7 +383,6 @@ pub enum BinaryOp {
     Divide,
     Modulo,
     Power,
-
     // Comparison
     Equal,
     NotEqual,
@@ -404,19 +390,16 @@ pub enum BinaryOp {
     LessEqual,
     Greater,
     GreaterEqual,
-
     // Logical
     And,
     Or,
     NullCoalesce,
-
     // Bitwise
     BitwiseAnd,
     BitwiseOr,
     BitwiseXor,
     LeftShift,
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum UnaryOp {
     Not,
@@ -424,7 +407,6 @@ pub enum UnaryOp {
     BitwiseNot,
     Reference,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Param {
     pub pattern: Pattern,
@@ -433,7 +415,6 @@ pub struct Param {
     pub is_mutable: bool,
     pub default_value: Option<Box<Expr>>,
 }
-
 impl Param {
     /// Get the primary name from this parameter pattern.
     /// For complex patterns, this returns the first/primary identifier.
@@ -443,27 +424,23 @@ impl Param {
         self.pattern.primary_name()
     }
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StructField {
     pub name: String,
     pub ty: Type,
     pub is_pub: bool,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EnumVariant {
     pub name: String,
     pub fields: Option<Vec<Type>>, // None for unit variant, Some for tuple variant
     pub discriminant: Option<i64>, // Explicit discriminant value for TypeScript compatibility
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ObjectField {
     KeyValue { key: String, value: Expr },
     Spread { expr: Expr },
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TraitMethod {
     pub name: String,
@@ -472,7 +449,6 @@ pub struct TraitMethod {
     pub body: Option<Box<Expr>>, // None for method signatures, Some for default implementations
     pub is_pub: bool,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ImplMethod {
     pub name: String,
@@ -481,20 +457,17 @@ pub struct ImplMethod {
     pub body: Box<Expr>,
     pub is_pub: bool,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ActorHandler {
     pub message_type: String,
     pub params: Vec<Param>,
     pub body: Box<Expr>,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Type {
     pub kind: TypeKind,
     pub span: Span,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TypeKind {
     Named(String),
@@ -508,13 +481,11 @@ pub enum TypeKind {
     Series { dtype: Box<Type> },
     Reference { is_mut: bool, inner: Box<Type> },
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PipelineStage {
     pub op: Box<Expr>,
     pub span: Span,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MatchArm {
     pub pattern: Pattern,
@@ -522,7 +493,6 @@ pub struct MatchArm {
     pub body: Box<Expr>,
     pub span: Span,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Pattern {
     Wildcard,
@@ -553,7 +523,6 @@ pub enum Pattern {
     Some(Box<Pattern>),
     None,
 }
-
 impl Pattern {
     /// Get the primary identifier name from this pattern.
     /// For complex patterns, returns the first/most significant identifier.
@@ -599,14 +568,11 @@ impl Pattern {
         }
     }
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StructPatternField {
     pub name: String,
     pub pattern: Option<Pattern>, // None for shorthand like { x } instead of { x: x }
 }
-
-
 /// Custom error type definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ErrorTypeDef {
@@ -614,7 +580,6 @@ pub struct ErrorTypeDef {
     pub fields: Vec<StructField>,
     pub extends: Option<String>, // Parent error type
 }
-
 /// Attribute for annotating expressions (e.g., `#[property]`)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Attribute {
@@ -622,13 +587,11 @@ pub struct Attribute {
     pub args: Vec<String>,
     pub span: Span,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataFrameColumn {
     pub name: String,
     pub values: Vec<Expr>,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DataFrameOp {
     Filter(Box<Expr>),
@@ -645,7 +608,6 @@ pub enum DataFrameOp {
     Head(usize),
     Tail(usize),
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum JoinType {
     Inner,
@@ -653,7 +615,6 @@ pub enum JoinType {
     Right,
     Outer,
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ImportItem {
     /// Import a specific name: `use std::collections::HashMap`
@@ -663,14 +624,12 @@ pub enum ImportItem {
     /// Import all: `use std::collections::*`
     Wildcard,
 }
-
 impl ImportItem {
     /// Check if this import is for a URL module
     pub fn is_url_import(path: &str) -> bool {
         path.starts_with("https://") || path.starts_with("http://")
     }
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AggregateOp {
     Sum(String),
@@ -681,7 +640,6 @@ pub enum AggregateOp {
     Std(String),
     Var(String),
 }
-
 impl fmt::Display for BinaryOp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -707,7 +665,6 @@ impl fmt::Display for BinaryOp {
         }
     }
 }
-
 impl fmt::Display for UnaryOp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -718,7 +675,6 @@ impl fmt::Display for UnaryOp {
         }
     }
 }
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::panic, clippy::expect_used)]
 #[allow(clippy::unwrap_used)]
@@ -726,7 +682,6 @@ impl fmt::Display for UnaryOp {
 mod tests {
     use super::*;
     use proptest::prelude::*;
-
     proptest! {
         #[test]
         fn test_span_merge(start1 in 0usize..1000, end1 in 0usize..1000,
@@ -734,14 +689,12 @@ mod tests {
             let span1 = Span::new(start1, end1);
             let span2 = Span::new(start2, end2);
             let merged = span1.merge(span2);
-
             prop_assert!(merged.start <= span1.start);
             prop_assert!(merged.start <= span2.start);
             prop_assert!(merged.end >= span1.end);
             prop_assert!(merged.end >= span2.end);
         }
     }
-
     #[test]
     fn test_ast_size() {
         // Track AST node sizes for optimization
@@ -752,14 +705,12 @@ mod tests {
         assert!(expr_size <= 192, "Expr too large: {expr_size} bytes");
         assert!(kind_size <= 152, "ExprKind too large: {kind_size} bytes");
     }
-
     #[test]
     fn test_span_creation() {
         let span = Span::new(10, 20);
         assert_eq!(span.start, 10);
         assert_eq!(span.end, 20);
     }
-
     #[test]
     fn test_span_merge_simple() {
         let span1 = Span::new(5, 10);
@@ -768,7 +719,6 @@ mod tests {
         assert_eq!(merged.start, 5);
         assert_eq!(merged.end, 15);
     }
-
     #[test]
     fn test_span_merge_disjoint() {
         let span1 = Span::new(0, 5);
@@ -777,7 +727,6 @@ mod tests {
         assert_eq!(merged.start, 0);
         assert_eq!(merged.end, 15);
     }
-
     #[test]
     fn test_expr_creation() {
         let span = Span::new(0, 10);
@@ -789,7 +738,6 @@ mod tests {
             _ => panic!("Wrong expression kind"),
         }
     }
-
     #[test]
     fn test_literal_variants() {
         let literals = vec![
@@ -800,7 +748,6 @@ mod tests {
             Literal::Bool(true),
             Literal::Unit,
         ];
-
         for lit in literals {
             let expr = Expr::new(ExprKind::Literal(lit.clone()), Span::new(0, 0));
             match expr.kind {
@@ -809,7 +756,6 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_binary_op_display() {
         assert_eq!(BinaryOp::Add.to_string(), "+");
@@ -831,7 +777,6 @@ mod tests {
         assert_eq!(BinaryOp::BitwiseXor.to_string(), "^");
         assert_eq!(BinaryOp::LeftShift.to_string(), "<<");
     }
-
     #[test]
     fn test_unary_op_display() {
         assert_eq!(UnaryOp::Not.to_string(), "!");
@@ -839,7 +784,6 @@ mod tests {
         assert_eq!(UnaryOp::BitwiseNot.to_string(), "~");
         assert_eq!(UnaryOp::Reference.to_string(), "&");
     }
-
     #[test]
     fn test_binary_expression() {
         let left = Box::new(Expr::new(
@@ -858,7 +802,6 @@ mod tests {
             },
             Span::new(0, 5),
         );
-
         match expr.kind {
             ExprKind::Binary {
                 left: l,
@@ -878,7 +821,6 @@ mod tests {
             _ => panic!("Expected binary expression"),
         }
     }
-
     #[test]
     fn test_unary_expression() {
         let operand = Box::new(Expr::new(
@@ -892,7 +834,6 @@ mod tests {
             },
             Span::new(0, 5),
         );
-
         match expr.kind {
             ExprKind::Unary { op, operand } => {
                 assert_eq!(op, UnaryOp::Not);
@@ -904,7 +845,6 @@ mod tests {
             _ => panic!("Expected unary expression"),
         }
     }
-
     #[test]
     fn test_if_expression() {
         let condition = Box::new(Expr::new(
@@ -919,7 +859,6 @@ mod tests {
             ExprKind::Literal(Literal::Integer(2)),
             Span::new(17, 18),
         )));
-
         let expr = Expr::new(
             ExprKind::If {
                 condition,
@@ -928,7 +867,6 @@ mod tests {
             },
             Span::new(0, 18),
         );
-
         match expr.kind {
             ExprKind::If {
                 condition: c,
@@ -954,7 +892,6 @@ mod tests {
             _ => panic!("Expected if expression"),
         }
     }
-
     #[test]
     fn test_let_expression() {
         let value = Box::new(Expr::new(
@@ -965,7 +902,6 @@ mod tests {
             ExprKind::Identifier("x".to_string()),
             Span::new(14, 15),
         ));
-
         let expr = Expr::new(
             ExprKind::Let {
                 name: "x".to_string(),
@@ -976,7 +912,6 @@ mod tests {
             },
             Span::new(0, 15),
         );
-
         match expr.kind {
             ExprKind::Let {
                 name,
@@ -997,7 +932,6 @@ mod tests {
             _ => panic!("Expected let expression"),
         }
     }
-
     #[test]
     fn test_function_expression() {
         let params = vec![Param {
@@ -1014,7 +948,6 @@ mod tests {
             ExprKind::Identifier("x".to_string()),
             Span::new(20, 21),
         ));
-
         let expr = Expr::new(
             ExprKind::Function {
                 name: "identity".to_string(),
@@ -1030,7 +963,6 @@ mod tests {
             },
             Span::new(0, 22),
         );
-
         match expr.kind {
             ExprKind::Function {
                 name,
@@ -1051,7 +983,6 @@ mod tests {
             _ => panic!("Expected function expression"),
         }
     }
-
     #[test]
     fn test_call_expression() {
         let func = Box::new(Expr::new(
@@ -1062,9 +993,7 @@ mod tests {
             Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(4, 5)),
             Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(7, 8)),
         ];
-
         let expr = Expr::new(ExprKind::Call { func, args }, Span::new(0, 9));
-
         match expr.kind {
             ExprKind::Call { func: f, args: a } => {
                 match f.kind {
@@ -1076,16 +1005,13 @@ mod tests {
             _ => panic!("Expected call expression"),
         }
     }
-
     #[test]
     fn test_block_expression() {
         let exprs = vec![
             Expr::new(ExprKind::Literal(Literal::Integer(1)), Span::new(2, 3)),
             Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(5, 6)),
         ];
-
         let expr = Expr::new(ExprKind::Block(exprs), Span::new(0, 8));
-
         match expr.kind {
             ExprKind::Block(block) => {
                 assert_eq!(block.len(), 2);
@@ -1093,7 +1019,6 @@ mod tests {
             _ => panic!("Expected block expression"),
         }
     }
-
     #[test]
     fn test_list_expression() {
         let items = vec![
@@ -1101,9 +1026,7 @@ mod tests {
             Expr::new(ExprKind::Literal(Literal::Integer(2)), Span::new(4, 5)),
             Expr::new(ExprKind::Literal(Literal::Integer(3)), Span::new(7, 8)),
         ];
-
         let expr = Expr::new(ExprKind::List(items), Span::new(0, 9));
-
         match expr.kind {
             ExprKind::List(list) => {
                 assert_eq!(list.len(), 3);
@@ -1111,7 +1034,6 @@ mod tests {
             _ => panic!("Expected list expression"),
         }
     }
-
     #[test]
     fn test_for_expression() {
         let iter = Box::new(Expr::new(
@@ -1132,7 +1054,6 @@ mod tests {
             ExprKind::Identifier("i".to_string()),
             Span::new(20, 21),
         ));
-
         let expr = Expr::new(
             ExprKind::For {
                 var: "i".to_string(),
@@ -1142,7 +1063,6 @@ mod tests {
             },
             Span::new(0, 22),
         );
-
         match expr.kind {
             ExprKind::For {
                 var,
@@ -1163,7 +1083,6 @@ mod tests {
             _ => panic!("Expected for expression"),
         }
     }
-
     #[test]
     fn test_range_expression() {
         let start = Box::new(Expr::new(
@@ -1174,7 +1093,6 @@ mod tests {
             ExprKind::Literal(Literal::Integer(10)),
             Span::new(3, 5),
         ));
-
         let expr = Expr::new(
             ExprKind::Range {
                 start,
@@ -1183,7 +1101,6 @@ mod tests {
             },
             Span::new(0, 5),
         );
-
         match expr.kind {
             ExprKind::Range {
                 start: s,
@@ -1203,7 +1120,6 @@ mod tests {
             _ => panic!("Expected range expression"),
         }
     }
-
     #[test]
     fn test_import_expression() {
         let expr = Expr::new(
@@ -1216,7 +1132,6 @@ mod tests {
             },
             Span::new(0, 30),
         );
-
         match expr.kind {
             ExprKind::Import { path, items } => {
                 assert_eq!(path, "std::collections");
@@ -1227,7 +1142,6 @@ mod tests {
             _ => panic!("Expected import expression"),
         }
     }
-
     #[test]
     fn test_pipeline_expression() {
         let expr_start = Box::new(Expr::new(
@@ -1244,7 +1158,6 @@ mod tests {
             )),
             span: Span::new(10, 16),
         }];
-
         let expr = Expr::new(
             ExprKind::Pipeline {
                 expr: expr_start,
@@ -1252,7 +1165,6 @@ mod tests {
             },
             Span::new(0, 16),
         );
-
         match expr.kind {
             ExprKind::Pipeline { expr: e, stages: s } => {
                 assert_eq!(s.len(), 1);
@@ -1264,7 +1176,6 @@ mod tests {
             _ => panic!("Expected pipeline expression"),
         }
     }
-
     #[test]
     fn test_match_expression() {
         let expr_to_match = Box::new(Expr::new(
@@ -1291,7 +1202,6 @@ mod tests {
                 span: Span::new(25, 35),
             },
         ];
-
         let expr = Expr::new(
             ExprKind::Match {
                 expr: expr_to_match,
@@ -1299,7 +1209,6 @@ mod tests {
             },
             Span::new(0, 36),
         );
-
         match expr.kind {
             ExprKind::Match { expr: e, arms: a } => {
                 assert_eq!(a.len(), 2);
@@ -1311,7 +1220,6 @@ mod tests {
             _ => panic!("Expected match expression"),
         }
     }
-
     #[test]
     fn test_pattern_variants() {
         let patterns = vec![
@@ -1345,7 +1253,6 @@ mod tests {
             ]),
             Pattern::Rest,
         ];
-
         for pattern in patterns {
             match pattern {
                 Pattern::Tuple(list) | Pattern::List(list) => assert!(!list.is_empty()),
@@ -1366,7 +1273,6 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_type_kinds() {
         let types = vec![
@@ -1402,7 +1308,6 @@ mod tests {
                 span: Span::new(0, 13),
             },
         ];
-
         for ty in types {
             match ty.kind {
                 TypeKind::Named(name) => assert!(!name.is_empty()),
@@ -1427,7 +1332,6 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_param_creation() {
         let param = Param {
@@ -1440,7 +1344,6 @@ mod tests {
             is_mutable: false,
             default_value: None,
         };
-
         assert_eq!(param.name(), "count");
         match param.ty.kind {
             TypeKind::Named(name) => assert_eq!(name, "usize"),

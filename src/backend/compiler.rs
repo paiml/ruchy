@@ -2,16 +2,14 @@
 //! 
 //! This module provides functionality to compile Ruchy code to standalone binaries
 //! via Rust compilation toolchain (rustc).
-
 use anyhow::{Context, Result, bail};
+use crate::utils::common_patterns::ResultContextExt;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempfile::TempDir;
 use proc_macro2::TokenStream;
-
 use crate::{Parser, Transpiler};
-
 /// Binary compilation options
 #[derive(Debug, Clone)]
 pub struct CompileOptions {
@@ -28,7 +26,6 @@ pub struct CompileOptions {
     /// Additional rustc flags
     pub rustc_flags: Vec<String>,
 }
-
 impl Default for CompileOptions {
     fn default() -> Self {
         Self {
@@ -41,7 +38,6 @@ impl Default for CompileOptions {
         }
     }
 }
-
 /// Compile a Ruchy source file to a standalone binary
 ///
 /// # Examples
@@ -72,11 +68,9 @@ impl Default for CompileOptions {
 pub fn compile_to_binary(source_path: &Path, options: &CompileOptions) -> Result<PathBuf> {
     // Read source file
     let source = fs::read_to_string(source_path)
-        .with_context(|| format!("Failed to read source file: {}", source_path.display()))?;
-    
+        .file_context("read", source_path)?;
     compile_source_to_binary(&source, options)
 }
-
 /// Compile Ruchy source code to a standalone binary
 ///
 /// # Examples
@@ -105,102 +99,77 @@ pub fn compile_to_binary(source_path: &Path, options: &CompileOptions) -> Result
 pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Result<PathBuf> {
     // Parse and transpile
     let rust_code = parse_and_transpile(source)?;
-    
     // Prepare compilation artifacts
     let (_temp_dir, rust_file) = prepare_rust_file(&rust_code)?;
-    
     // Build and execute rustc
     let cmd = build_rustc_command(&rust_file, options);
     execute_compilation(cmd)?;
-    
     // Verify output
     verify_output_exists(&options.output)?;
-    
     Ok(options.output.clone())
 }
-
 /// Parse Ruchy source and transpile to Rust (complexity: 4)
 fn parse_and_transpile(source: &str) -> Result<TokenStream> {
     eprintln!("DEBUG: About to call transpile_to_program");
-    
     let mut parser = Parser::new(source);
     let ast = parser.parse()
-        .context("Failed to parse Ruchy source")?;
-    
+        .parse_context("Ruchy source")?;
     let mut transpiler = Transpiler::new();
     let rust_code = transpiler.transpile_to_program(&ast)
-        .context("Failed to transpile to Rust")?;
-    
+        .compile_context("transpile to Rust")?;
     eprintln!("DEBUG: transpile_to_program completed");
     Ok(rust_code)
 }
-
 /// Prepare temporary Rust file for compilation (complexity: 4)
 fn prepare_rust_file(rust_code: &TokenStream) -> Result<(TempDir, PathBuf)> {
     let temp_dir = TempDir::new()
-        .context("Failed to create temporary directory")?;
-    
+        .compile_context("create temporary directory")?;
     let rust_file = temp_dir.path().join("main.rs");
     let rust_code_str = rust_code.to_string();
-    
     // Debug: Also write to /tmp/debug_rust_output.rs for inspection
     fs::write("/tmp/debug_rust_output.rs", &rust_code_str)
         .context("Failed to write debug Rust code")?;
-    
     fs::write(&rust_file, &rust_code_str)
         .context("Failed to write Rust code to temporary file")?;
-    
     Ok((temp_dir, rust_file))
 }
-
 /// Build rustc command with options (complexity: 7)
 fn build_rustc_command(rust_file: &Path, options: &CompileOptions) -> Command {
     let mut cmd = Command::new("rustc");
     cmd.arg(rust_file)
         .arg("-o")
         .arg(&options.output);
-    
     // Add optimization level
     cmd.arg("-C").arg(format!("opt-level={}", options.opt_level));
-    
     // Add optional flags
     apply_optional_flags(&mut cmd, options);
-    
     cmd
 }
-
 /// Apply optional compilation flags (complexity: 5)
 fn apply_optional_flags(cmd: &mut Command, options: &CompileOptions) {
     if options.strip {
         cmd.arg("-C").arg("strip=symbols");
     }
-    
     if options.static_link {
         cmd.arg("-C").arg("target-feature=+crt-static");
     }
-    
     if let Some(target) = &options.target {
         cmd.arg("--target").arg(target);
     }
-    
     for flag in &options.rustc_flags {
         cmd.arg(flag);
     }
 }
-
 /// Execute compilation command (complexity: 3)
 fn execute_compilation(mut cmd: Command) -> Result<()> {
     let output = cmd.output()
         .context("Failed to execute rustc")?;
-    
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         bail!("Compilation failed:\n{}", stderr);
     }
-    
     Ok(())
 }
-
 /// Verify output file exists (complexity: 2)
 fn verify_output_exists(output_path: &Path) -> Result<()> {
     if !output_path.exists() {
@@ -208,7 +177,6 @@ fn verify_output_exists(output_path: &Path) -> Result<()> {
     }
     Ok(())
 }
-
 /// Check if rustc is available
 ///
 /// # Examples
@@ -229,14 +197,11 @@ pub fn check_rustc_available() -> Result<()> {
         .arg("--version")
         .output()
         .context("Failed to execute rustc")?;
-    
     if !output.status.success() {
         bail!("rustc is not available. Please install Rust toolchain.");
     }
-    
     Ok(())
 }
-
 /// Get rustc version information
 ///
 /// # Examples
@@ -257,30 +222,26 @@ pub fn get_rustc_version() -> Result<String> {
         .arg("--version")
         .output()
         .context("Failed to execute rustc")?;
-    
     if !output.status.success() {
         bail!("Failed to get rustc version");
     }
-    
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+#[cfg(test)]
+use proptest::prelude::*;
     #[test]
     fn test_check_rustc_available() {
         // This should pass in any environment with Rust installed
         assert!(check_rustc_available().is_ok());
     }
-    
     #[test]
     fn test_get_rustc_version() {
         let version = get_rustc_version().unwrap_or_else(|_| "unknown".to_string());
         assert!(version.contains("rustc"));
     }
-    
     #[test]
     fn test_compile_simple_program() {
         let source = r#"
@@ -288,14 +249,33 @@ mod tests {
                 println("Hello from compiled Ruchy!");
             }
         "#;
-        
         let options = CompileOptions {
             output: PathBuf::from("/tmp/test_ruchy_binary"),
             ..Default::default()
         };
-        
         // This might fail if the transpiler doesn't support the syntax yet
         // but the infrastructure should work
         let _ = compile_source_to_binary(source, &options);
+    }
+}
+#[cfg(test)]
+mod property_tests_compiler {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: compile_source_to_binary never panics on any string input
+        #[test]
+        fn test_compile_source_to_binary_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input, even invalid syntax
+            let result = std::panic::catch_unwind(|| {
+                let options = CompileOptions::default();
+                let _ = compile_source_to_binary(&input, &options);
+            });
+            // Assert that no panic occurred (Result can be Ok or Err, but no panic)
+            assert!(result.is_ok(), "compile_source_to_binary panicked on input: {:?}", input);
+        }
     }
 }

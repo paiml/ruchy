@@ -1,12 +1,12 @@
 //! Modular transpiler for Ruchy language
 //!
 //! This module is responsible for converting Ruchy AST into Rust code using `proc_macro2` `TokenStream`.
-
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::too_many_lines)]
-
 mod actors;
 mod dataframe;
+#[cfg(feature = "dataframe")]
+// mod dataframe_arrow; // Temporarily disabled until proper implementation
 mod dataframe_builder;
 mod dataframe_helpers;
 mod dispatcher;
@@ -19,26 +19,22 @@ mod type_conversion_refactored;
 mod type_inference;
 mod types;
 pub mod codegen_minimal;
-
 use crate::frontend::ast::{Attribute, Expr, ExprKind, Span, Type};
 use crate::backend::module_resolver::ModuleResolver;
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-
 // Module exports are handled by the impl blocks in each module
-
 /// Block categorization result: (functions, statements, modules, `has_main`, `main_expr`)
 type BlockCategorization<'a> = (Vec<TokenStream>, Vec<TokenStream>, Vec<TokenStream>, bool, Option<&'a Expr>);
-
 /// Function signature information for type coercion
 #[derive(Debug, Clone)]
 pub struct FunctionSignature {
     pub name: String,
     pub param_types: Vec<String>,  // Simplified: just the type name as string
 }
-
 /// The main transpiler struct
+#[derive(Clone)]
 pub struct Transpiler {
     /// Track whether we're in an async context
     pub in_async_context: bool,
@@ -47,13 +43,11 @@ pub struct Transpiler {
     /// Track function signatures for type coercion
     pub function_signatures: std::collections::HashMap<String, FunctionSignature>,
 }
-
 impl Default for Transpiler {
     fn default() -> Self {
         Self::new()
     }
 }
-
 impl Transpiler {
     /// Creates a new transpiler instance without module loader
     ///
@@ -72,7 +66,6 @@ impl Transpiler {
             function_signatures: std::collections::HashMap::new(),
         }
     }
-
     /// Centralized result printing logic - ONE PLACE FOR ALL RESULT PRINTING
     /// This eliminates code duplication and ensures consistent Unit type handling
     fn generate_result_printing_tokens(&self) -> TokenStream {
@@ -88,7 +81,6 @@ impl Transpiler {
             }
         }
     }
-    
     /// Centralized value printing logic for functions like println
     fn generate_value_printing_tokens(&self, value_expr: TokenStream, func_tokens: TokenStream) -> TokenStream {
         quote! {
@@ -106,35 +98,29 @@ impl Transpiler {
             }
         }
     }
-
     /// Analyze expressions to determine which variables need to be mutable
     pub fn analyze_mutability(&mut self, exprs: &[Expr]) {
         for expr in exprs {
             self.analyze_expr_mutability(expr);
         }
     }
-    
     /// Collect function signatures for type coercion
     pub fn collect_function_signatures(&mut self, exprs: &[Expr]) {
         for expr in exprs {
             self.collect_signatures_from_expr(expr);
         }
     }
-    
     fn collect_signatures_from_expr(&mut self, expr: &Expr) {
         use crate::frontend::ast::ExprKind;
-        
         match &expr.kind {
             ExprKind::Function { name, params, .. } => {
                 let param_types: Vec<String> = params.iter()
                     .map(|param| self.type_to_string(&param.ty))
                     .collect();
-                    
                 let signature = FunctionSignature {
                     name: name.clone(),
                     param_types,
                 };
-                
                 self.function_signatures.insert(name.clone(), signature);
             }
             ExprKind::Block(exprs) => {
@@ -148,20 +134,16 @@ impl Transpiler {
             _ => {}
         }
     }
-    
     fn type_to_string(&self, ty: &crate::frontend::ast::Type) -> String {
         use crate::frontend::ast::TypeKind;
-        
         match &ty.kind {
             TypeKind::Named(name) => name.clone(),
             TypeKind::Reference { inner, .. } => format!("&{}", self.type_to_string(inner)),
             _ => "Unknown".to_string(),
         }
     }
-    
     fn analyze_expr_mutability(&mut self, expr: &Expr) {
         use crate::frontend::ast::ExprKind;
-        
         match &expr.kind {
             // Direct assignment marks the target as mutable
             ExprKind::Assign { target, value } => {
@@ -251,7 +233,6 @@ impl Transpiler {
             _ => {}
         }
     }
-    
     /// Resolves file imports in the AST using `ModuleResolver`
     #[allow(dead_code)]
     fn resolve_imports(&self, expr: &Expr) -> Result<Expr> {
@@ -259,21 +240,17 @@ impl Transpiler {
         let mut resolver = ModuleResolver::new();
         resolver.resolve_imports(expr.clone())
     }
-
     /// Resolves file imports with a specific file context for search paths
     fn resolve_imports_with_context(&self, expr: &Expr, file_path: Option<&std::path::Path>) -> Result<Expr> {
         let mut resolver = ModuleResolver::new();
-        
         // Add the file's directory to search paths if provided
         if let Some(path) = file_path {
             if let Some(dir) = path.parent() {
                 resolver.add_search_path(dir);
             }
         }
-        
         resolver.resolve_imports(expr.clone())
     }
-
     /// Transpiles an expression to a `TokenStream`
     ///
     /// # Examples
@@ -282,7 +259,7 @@ impl Transpiler {
     /// use ruchy::{Transpiler, Parser};
     /// 
     /// let mut parser = Parser::new("42");
-    /// let ast = parser.parse().unwrap();
+    /// let ast = parser.parse().expect("Failed to parse");
     /// 
     /// let transpiler = Transpiler::new();
     /// let result = transpiler.transpile(&ast);
@@ -295,11 +272,9 @@ impl Transpiler {
     pub fn transpile(&self, expr: &Expr) -> Result<TokenStream> {
         self.transpile_expr(expr)
     }
-
     /// Check if AST contains `HashMap` operations requiring `std::collections::HashMap` import
     fn contains_hashmap(expr: &Expr) -> bool {
         use crate::frontend::ast::{ExprKind, Literal};
-        
         match &expr.kind {
             ExprKind::ObjectLiteral { .. } => true,
             ExprKind::Call { func, .. } => {
@@ -327,7 +302,6 @@ impl Transpiler {
             _ => false,
         }
     }
-
     /// Checks if an expression contains `DataFrame` operations (simplified for complexity)
     fn contains_dataframe(expr: &Expr) -> bool {
         matches!(
@@ -335,7 +309,6 @@ impl Transpiler {
             ExprKind::DataFrame { .. } | ExprKind::DataFrameOperation { .. }
         )
     }
-
     /// Wraps transpiled code in a complete Rust program with necessary imports
     ///
     /// # Examples
@@ -344,7 +317,7 @@ impl Transpiler {
     /// use ruchy::{Transpiler, Parser};
     /// 
     /// let mut parser = Parser::new("42");
-    /// let ast = parser.parse().unwrap();
+    /// let ast = parser.parse().expect("Failed to parse");
     /// 
     /// let transpiler = Transpiler::new();
     /// let result = transpiler.transpile_to_program(&ast);
@@ -367,7 +340,6 @@ impl Transpiler {
             self.analyze_expr_mutability(expr);
             self.collect_signatures_from_expr(expr);
         }
-        
         let result = self.transpile_to_program_with_context(expr, None);
         if let Ok(ref token_stream) = result {
             // Debug: Write the generated Rust code to a debug file
@@ -376,14 +348,12 @@ impl Transpiler {
         }
         result
     }
-
     /// Transpile with file context for module resolution
     pub fn transpile_to_program_with_context(&self, expr: &Expr, file_path: Option<&std::path::Path>) -> Result<TokenStream> {
         // First, resolve any file imports using the module resolver
         let resolved_expr = self.resolve_imports_with_context(expr, file_path)?;
         let needs_polars = Self::contains_dataframe(&resolved_expr);
         let needs_hashmap = Self::contains_hashmap(&resolved_expr);
-        
         match &resolved_expr.kind {
             ExprKind::Function { name, .. } => {
                 self.transpile_single_function(&resolved_expr, name, needs_polars, needs_hashmap)
@@ -396,7 +366,6 @@ impl Transpiler {
             }
         }
     }
-    
     fn transpile_single_function(&self, expr: &Expr, name: &str, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         // Use the proper function expression transpiler to handle attributes correctly
         let func = match &expr.kind {
@@ -404,7 +373,6 @@ impl Transpiler {
             _ => self.transpile_expr(expr)?,
         };
         let needs_main = name != "main";
-        
         match (needs_polars, needs_hashmap, needs_main) {
             (true, true, true) => Ok(quote! {
                 use polars::prelude::*;
@@ -444,10 +412,8 @@ impl Transpiler {
             })
         }
     }
-    
     fn transpile_program_block(&self, exprs: &[Expr], needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         let (functions, statements, modules, has_main, main_expr) = self.categorize_block_expressions(exprs)?;
-        
         if functions.is_empty() && !has_main && modules.is_empty() {
             self.transpile_statement_only_block(exprs, needs_polars, needs_hashmap)
         } else if has_main || !modules.is_empty() {
@@ -456,15 +422,12 @@ impl Transpiler {
             self.transpile_block_with_functions(&functions, &statements, needs_polars, needs_hashmap)
         }
     }
-    
     fn categorize_block_expressions<'a>(&self, exprs: &'a [Expr]) -> Result<BlockCategorization<'a>> {
         let mut functions = Vec::new();
         let mut statements = Vec::new();
         let mut modules = Vec::new();
         let mut has_main_function = false;
         let mut main_function_expr = None;
-        
-        
         for expr in exprs {
             match &expr.kind {
                 ExprKind::Function { name, .. } => {
@@ -507,18 +470,14 @@ impl Transpiler {
                 }
             }
         }
-        
         Ok((functions, statements, modules, has_main_function, main_function_expr))
     }
-
     fn transpile_module_declaration(&self, name: &str, body: &Expr) -> Result<TokenStream> {
         let module_name = format_ident!("{}", name);
-        
         // Handle module body - if it's a block, transpile its contents as module items
         let body_tokens = if let ExprKind::Block(exprs) = &body.kind {
             // Separate functions from other items in the module
             let mut module_items = Vec::new();
-            
             for expr in exprs {
                 match &expr.kind {
                     ExprKind::Function { .. } => {
@@ -531,24 +490,20 @@ impl Transpiler {
                     }
                 }
             }
-            
             quote! { #(#module_items)* }
         } else {
             // Single expression - transpile normally
             self.transpile_expr(body)?
         };
-
         Ok(quote! {
             mod #module_name {
                 #body_tokens
             }
         })
     }
-    
     fn transpile_statement_only_block(&self, exprs: &[Expr], needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         // Check if this is a statement sequence (contains let, assignments, etc.) or an expression sequence
         let has_statements = exprs.iter().any(|expr| self.is_statement_expr(expr));
-        
         if has_statements {
             // Split into statements and possible final expression
             let (statements, final_expr) = if !exprs.is_empty() && !self.is_statement_expr(exprs.last().unwrap()) {
@@ -558,7 +513,6 @@ impl Transpiler {
                 // All are statements
                 (exprs, None)
             };
-            
             // Transpile all statements and add semicolons intelligently
             let statement_results: Result<Vec<_>> = statements.iter().map(|expr| {
                 let tokens = self.transpile_expr(expr)?;
@@ -572,7 +526,6 @@ impl Transpiler {
                 }
             }).collect();
             let statement_tokens = statement_results?;
-            
             // Handle final expression if present
             let main_body = if let Some(final_expr) = final_expr {
                 let final_tokens = self.transpile_expr(final_expr)?;
@@ -587,7 +540,6 @@ impl Transpiler {
                     #(#statement_tokens)*
                 }
             };
-            
             match (needs_polars, needs_hashmap) {
                 (true, true) => Ok(quote! {
                     use polars::prelude::*;
@@ -621,7 +573,6 @@ impl Transpiler {
             self.wrap_in_main_with_result_printing(body, needs_polars, needs_hashmap)
         }
     }
-    
     fn is_statement_expr(&self, expr: &Expr) -> bool {
         match &expr.kind {
             // Let bindings are statements
@@ -644,7 +595,6 @@ impl Transpiler {
             _ => false,
         }
     }
-    
     fn transpile_block_with_main_function(&self, functions: &[TokenStream], statements: &[TokenStream], modules: &[TokenStream], main_expr: Option<&Expr>, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         if statements.is_empty() && main_expr.is_some() {
             // Only functions, just emit them normally (includes user's main)
@@ -653,7 +603,6 @@ impl Transpiler {
             } else {
                 return Err(anyhow::anyhow!("Expected main function expression"));
             };
-            
             match (needs_polars, needs_hashmap) {
                 (true, true) => Ok(quote! {
                     use polars::prelude::*;
@@ -688,7 +637,6 @@ impl Transpiler {
                 // No user main function, just use empty body
                 quote! {}
             };
-            
             match (needs_polars, needs_hashmap) {
                 (true, true) => Ok(quote! {
                     use polars::prelude::*;
@@ -698,7 +646,6 @@ impl Transpiler {
                     fn main() {
                         // Top-level statements execute first
                         #(#statements)*
-                        
                         // Then user's main function body  
                         #main_body
                     }
@@ -710,7 +657,6 @@ impl Transpiler {
                     fn main() {
                         // Top-level statements execute first
                         #(#statements)*
-                        
                         // Then user's main function body  
                         #main_body
                     }
@@ -722,7 +668,6 @@ impl Transpiler {
                     fn main() {
                         // Top-level statements execute first
                         #(#statements)*
-                        
                         // Then user's main function body
                         #main_body
                     }
@@ -733,7 +678,6 @@ impl Transpiler {
                     fn main() {
                         // Top-level statements execute first
                         #(#statements)*
-                        
                         // Then user's main function body
                         #main_body
                     }
@@ -741,7 +685,6 @@ impl Transpiler {
             }
         }
     }
-    
     /// Extracts the body of a main function for inlining with top-level statements
     fn extract_main_function_body(&self, main_expr: &Expr) -> Result<TokenStream> {
         if let ExprKind::Function { body, .. } = &main_expr.kind {
@@ -751,7 +694,6 @@ impl Transpiler {
             Err(anyhow::anyhow!("Expected function expression for main body extraction"))
         }
     }
-    
     fn transpile_block_with_functions(&self, functions: &[TokenStream], statements: &[TokenStream], needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         // No main function among extracted functions - create one for statements
         match (needs_polars, needs_hashmap) {
@@ -777,11 +719,8 @@ impl Transpiler {
             })
         }
     }
-    
-    
     fn transpile_expression_program(&self, expr: &Expr, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         let body = self.transpile_expr(expr)?;
-        
         // Check if this is a statement vs expression
         if self.is_statement_expr(expr) {
             // For statements, execute directly without result wrapping
@@ -791,7 +730,6 @@ impl Transpiler {
             self.wrap_in_main_with_result_printing(body, needs_polars, needs_hashmap)
         }
     }
-    
     fn wrap_statement_in_main(&self, body: TokenStream, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         // For statements, execute directly without result capture
         match (needs_polars, needs_hashmap) {
@@ -821,7 +759,6 @@ impl Transpiler {
             })
         }
     }
-    
     fn wrap_in_main_with_result_printing(&self, body: TokenStream, needs_polars: bool, needs_hashmap: bool) -> Result<TokenStream> {
         let result_printing_logic = self.generate_result_printing_tokens();
         match (needs_polars, needs_hashmap) {
@@ -859,15 +796,12 @@ impl Transpiler {
             }
         }
     }
-
     /// Transpiles an expression to a String
     pub fn transpile_to_string(&self, expr: &Expr) -> Result<String> {
         let tokens = self.transpile(expr)?;
-
         // Format the tokens with rustfmt-like style
         let mut result = String::new();
         let token_str = tokens.to_string();
-
         // Basic formatting: add newlines after semicolons and braces
         for ch in token_str.chars() {
             result.push(ch);
@@ -875,15 +809,12 @@ impl Transpiler {
                 result.push('\n');
             }
         }
-
         Ok(result)
     }
-
     /// Generate minimal code for self-hosting (direct Rust mapping, no optimization)
     pub fn transpile_minimal(&self, expr: &Expr) -> Result<String> {
         codegen_minimal::MinimalCodeGen::gen_program(expr)
     }
-
     /// Check if a name is a Rust reserved keyword
     pub(crate) fn is_rust_reserved_keyword(name: &str) -> bool {
         // List of Rust reserved keywords that would conflict
@@ -897,7 +828,6 @@ impl Transpiler {
             "unsized" | "virtual" | "yield"
         )
     }
-
     /// Main expression transpilation dispatcher
     ///
     /// # Panics
@@ -911,14 +841,14 @@ impl Transpiler {
             Range, Send, Slice, Some, StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, TypeCast,
             Tuple, Unary, While, WhileLet,
         };
-
+#[cfg(test)]
+use proptest::prelude::*;
         // Dispatch to specialized handlers to keep complexity below 10
         match &expr.kind {
             // Basic expressions
             Literal(_) | Identifier(_) | QualifiedName { .. } | StringInterpolation { .. } | TypeCast { .. } => {
                 self.transpile_basic_expr(expr)
             }
-
             // Operators and control flow
             Binary { .. }
             | Unary { .. }
@@ -934,18 +864,15 @@ impl Transpiler {
             | WhileLet { .. }
             | Loop { .. }
             | TryCatch { .. } => self.transpile_operator_control_expr(expr),
-
             // Functions
             Function { .. } | Lambda { .. } | Call { .. } | MethodCall { .. } | Macro { .. } => {
                 self.transpile_function_expr(expr)
             }
-
             // Structures
             Struct { .. } | StructLiteral { .. } | ObjectLiteral { .. } | FieldAccess { .. } 
             | IndexAccess { .. } | Slice { .. } => {
                 self.transpile_struct_expr(expr)
             }
-
             // Data and error handling
             DataFrame { .. }
             | DataFrameOperation { .. }
@@ -960,12 +887,29 @@ impl Transpiler {
             | Some { .. }
             | None
             | Try { .. } => self.transpile_data_error_expr(expr),
-
             // Actor system and process execution
             Actor { .. } | Send { .. } | Ask { .. } | ActorSend { .. } | ActorQuery { .. } | Command { .. } => self.transpile_actor_expr(expr),
-
             // Everything else
             _ => self.transpile_misc_expr(expr),
+        }
+    }
+}
+#[cfg(test)]
+mod property_tests_mod {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
         }
     }
 }

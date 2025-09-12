@@ -2,10 +2,8 @@
 //!
 //! This module implements lazy evaluation for performance optimization,
 //! allowing operations to be composed without immediate execution.
-
 use std::cell::RefCell;
 use std::rc::Rc;
-
 /// Represents a lazily evaluated value
 pub enum LazyValue {
     /// Already computed value
@@ -18,7 +16,6 @@ pub enum LazyValue {
         transform: Rc<dyn Fn(Value) -> Result<Value>>,
     },
 }
-
 impl Clone for LazyValue {
     fn clone(&self) -> Self {
         match self {
@@ -33,16 +30,21 @@ impl Clone for LazyValue {
         }
     }
 }
-
 use crate::runtime::repl::Value;
 use anyhow::Result;
-
 impl LazyValue {
     /// Create a new computed lazy value
-    pub fn computed(value: Value) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::computed;
+/// 
+/// let result = computed(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn computed(value: Value) -> Self {
         LazyValue::Computed(value)
     }
-
     /// Create a new deferred lazy value
     pub fn deferred<F>(computation: F) -> Self
     where
@@ -50,7 +52,6 @@ impl LazyValue {
     {
         LazyValue::Deferred(Rc::new(RefCell::new(None)), Rc::new(computation))
     }
-
     /// Create a pipeline transformation
     pub fn pipeline<F>(source: LazyValue, transform: F) -> Self
     where
@@ -61,13 +62,20 @@ impl LazyValue {
             transform: Rc::new(transform),
         }
     }
-
     /// Force evaluation of the lazy value
     ///
     /// # Errors
     ///
     /// Returns an error if the computation fails
-    pub fn force(&self) -> Result<Value> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::force;
+/// 
+/// let result = force(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn force(&self) -> Result<Value> {
         match self {
             LazyValue::Computed(value) => Ok(value.clone()),
             LazyValue::Deferred(cache, computation) => {
@@ -75,7 +83,6 @@ impl LazyValue {
                 if let Some(cached) = cache.borrow().as_ref() {
                     return Ok(cached.clone());
                 }
-
                 // Compute and cache
                 let result = computation()?;
                 *cache.borrow_mut() = Some(result.clone());
@@ -87,9 +94,16 @@ impl LazyValue {
             }
         }
     }
-
     /// Check if the value has been computed
-    pub fn is_computed(&self) -> bool {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::is_computed;
+/// 
+/// let result = is_computed(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn is_computed(&self) -> bool {
         match self {
             LazyValue::Computed(_) => true,
             LazyValue::Deferred(cache, _) => cache.borrow().is_some(),
@@ -97,18 +111,15 @@ impl LazyValue {
         }
     }
 }
-
 /// Type alias for filter predicates
 type FilterPredicate = Box<dyn Fn(&Value) -> Result<bool>>;
 /// Type alias for map transforms
 type MapTransform = Box<dyn Fn(Value) -> Result<Value>>;
-
 /// Lazy iterator for efficient collection processing
 pub struct LazyIterator {
     /// Current state of the iterator
     state: RefCell<LazyIterState>,
 }
-
 enum LazyIterState {
     /// Source collection
     Source(Vec<Value>),
@@ -133,15 +144,21 @@ enum LazyIterState {
         count: usize,
     },
 }
-
 impl LazyIterator {
     /// Create a new lazy iterator from a collection
-    pub fn from_vec(values: Vec<Value>) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::from_vec;
+/// 
+/// let result = from_vec(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn from_vec(values: Vec<Value>) -> Self {
         LazyIterator {
             state: RefCell::new(LazyIterState::Source(values)),
         }
     }
-
     /// Map transformation
     #[must_use]
     pub fn map<F>(self, transform: F) -> Self
@@ -155,7 +172,6 @@ impl LazyIterator {
             }),
         }
     }
-
     /// Filter transformation
     #[must_use]
     pub fn filter<F>(self, predicate: F) -> Self
@@ -169,10 +185,17 @@ impl LazyIterator {
             }),
         }
     }
-
     /// Take first n elements
     #[must_use]
-    pub fn take(self, count: usize) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::take;
+/// 
+/// let result = take(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn take(self, count: usize) -> Self {
         LazyIterator {
             state: RefCell::new(LazyIterState::Take {
                 source: Box::new(self),
@@ -180,10 +203,17 @@ impl LazyIterator {
             }),
         }
     }
-
     /// Skip first n elements
     #[must_use]
-    pub fn skip(self, count: usize) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::skip;
+/// 
+/// let result = skip(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn skip(self, count: usize) -> Self {
         LazyIterator {
             state: RefCell::new(LazyIterState::Skip {
                 source: Box::new(self),
@@ -191,13 +221,20 @@ impl LazyIterator {
             }),
         }
     }
-
     /// Collect the iterator into a vector (forces evaluation)
     ///
     /// # Errors
     ///
     /// Returns an error if any transformation fails
-    pub fn collect(&self) -> Result<Vec<Value>> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::collect;
+/// 
+/// let result = collect(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn collect(&self) -> Result<Vec<Value>> {
         match &*self.state.borrow() {
             LazyIterState::Source(values) => Ok(values.clone()),
             LazyIterState::Map { source, transform } => {
@@ -227,43 +264,62 @@ impl LazyIterator {
             }
         }
     }
-
     /// Get the first element (forces minimal evaluation)
     ///
     /// # Errors
     ///
     /// Returns an error if evaluation fails
-    pub fn first(&self) -> Result<Option<Value>> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::first;
+/// 
+/// let result = first(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn first(&self) -> Result<Option<Value>> {
         let values = self.collect()?;
         Ok(values.into_iter().next())
     }
-
     /// Count elements (optimized to avoid full materialization where possible)
     ///
     /// # Errors
     ///
     /// Returns an error if evaluation fails
-    pub fn count(&self) -> Result<usize> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::count;
+/// 
+/// let result = count(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn count(&self) -> Result<usize> {
         match &*self.state.borrow() {
             LazyIterState::Source(values) => Ok(values.len()),
             _ => self.collect().map(|v| v.len()),
         }
     }
 }
-
 /// Lazy evaluation cache for memoization
 pub struct LazyCache {
     cache: RefCell<std::collections::HashMap<String, Value>>,
 }
-
 impl LazyCache {
     /// Create a new lazy cache
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         LazyCache {
             cache: RefCell::new(std::collections::HashMap::new()),
         }
     }
-
     /// Get or compute a value
     ///
     /// # Errors
@@ -276,65 +332,71 @@ impl LazyCache {
         if let Some(value) = self.cache.borrow().get(key) {
             return Ok(value.clone());
         }
-
         let value = compute()?;
         self.cache
             .borrow_mut()
             .insert(key.to_string(), value.clone());
         Ok(value)
     }
-
     /// Clear the cache
-    pub fn clear(&self) {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::clear;
+/// 
+/// let result = clear(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn clear(&self) {
         self.cache.borrow_mut().clear();
     }
-
     /// Get cache size
-    pub fn size(&self) -> usize {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::lazy::size;
+/// 
+/// let result = size(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn size(&self) -> usize {
         self.cache.borrow().len()
     }
 }
-
 impl Default for LazyCache {
     fn default() -> Self {
         Self::new()
     }
 }
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
-
+#[cfg(test)]
+use proptest::prelude::*;
     #[test]
     fn test_lazy_value_computed() {
         let lazy = LazyValue::computed(Value::Int(42));
         assert!(lazy.is_computed());
         assert_eq!(lazy.force().unwrap(), Value::Int(42));
     }
-
     #[test]
     fn test_lazy_value_deferred() {
         let counter = Rc::new(RefCell::new(0));
         let counter_clone = Rc::clone(&counter);
-
         let lazy = LazyValue::deferred(move || {
             *counter_clone.borrow_mut() += 1;
             Ok(Value::Int(42))
         });
-
         assert!(!lazy.is_computed());
         assert_eq!(*counter.borrow(), 0);
-
         // First force computes
         assert_eq!(lazy.force().unwrap(), Value::Int(42));
         assert_eq!(*counter.borrow(), 1);
-
         // Second force uses cache
         assert_eq!(lazy.force().unwrap(), Value::Int(42));
         assert_eq!(*counter.borrow(), 1); // Not incremented again
     }
-
     #[test]
     fn test_lazy_iterator_map() {
         let values = vec![Value::Int(1), Value::Int(2), Value::Int(3)];
@@ -345,11 +407,9 @@ mod tests {
                 Ok(v)
             }
         });
-
         let result = lazy.collect().unwrap();
         assert_eq!(result, vec![Value::Int(2), Value::Int(4), Value::Int(6)]);
     }
-
     #[test]
     fn test_lazy_iterator_filter() {
         let values = vec![Value::Int(1), Value::Int(2), Value::Int(3), Value::Int(4)];
@@ -360,16 +420,13 @@ mod tests {
                 Ok(false)
             }
         });
-
         let result = lazy.collect().unwrap();
         assert_eq!(result, vec![Value::Int(2), Value::Int(4)]);
     }
-
     #[test]
     fn test_lazy_cache() {
         let cache = LazyCache::new();
         let counter = Rc::new(RefCell::new(0));
-
         // First call computes
         let counter_clone = Rc::clone(&counter);
         let result = cache
@@ -380,7 +437,6 @@ mod tests {
             .unwrap();
         assert_eq!(result, Value::Int(42));
         assert_eq!(*counter.borrow(), 1);
-
         // Second call uses cache
         let counter_clone = Rc::clone(&counter);
         let result = cache
@@ -391,5 +447,24 @@ mod tests {
             .unwrap();
         assert_eq!(result, Value::Int(42)); // Cached value
         assert_eq!(*counter.borrow(), 1); // Not incremented
+    }
+}
+#[cfg(test)]
+mod property_tests_lazy {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_computed_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

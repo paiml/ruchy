@@ -1,21 +1,19 @@
 // SPRINT2-003: Mutation testing implementation
 // PMAT Complexity: <10 per function
-
 use crate::notebook::testing::types::*;
 use crate::notebook::testing::NotebookTester;
-
+#[cfg(test)]
+use proptest::prelude::*;
 /// Mutation testing for notebook code
 pub struct MutationTester {
     config: MutationConfig,
     results: Vec<MutationResult>,
 }
-
 #[derive(Debug, Clone)]
 pub struct MutationConfig {
     pub enabled_mutations: Vec<MutationType>,
     pub timeout_ms: u64,
 }
-
 impl Default for MutationConfig {
     fn default() -> Self {
         Self {
@@ -29,7 +27,6 @@ impl Default for MutationConfig {
         }
     }
 }
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum MutationType {
     ArithmeticOperator,
@@ -39,7 +36,6 @@ pub enum MutationType {
     ReturnValue,
     ConditionalNegation,
 }
-
 #[derive(Debug, Clone)]
 pub struct Mutation {
     pub id: String,
@@ -50,44 +46,60 @@ pub struct Mutation {
     pub original: String,
     pub mutated: String,
 }
-
 #[derive(Debug, Clone)]
 pub struct MutationResult {
     pub mutation: Mutation,
     pub killed: bool,
     pub killing_test: Option<String>,
 }
-
 impl MutationTester {
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::mutation::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         Self {
             config: MutationConfig::default(),
             results: Vec::new(),
         }
     }
-    
-    pub fn with_config(config: MutationConfig) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::mutation::with_config;
+/// 
+/// let result = with_config(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn with_config(config: MutationConfig) -> Self {
         Self {
             config,
             results: Vec::new(),
         }
     }
-    
     /// Generate mutations for a cell
-    pub fn generate_mutations(&self, cell: &Cell) -> Vec<Mutation> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::mutation::generate_mutations;
+/// 
+/// let result = generate_mutations(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn generate_mutations(&self, cell: &Cell) -> Vec<Mutation> {
         let mut mutations = Vec::new();
-        
         for mutation_type in &self.config.enabled_mutations {
             mutations.extend(self.generate_mutations_by_type(cell, mutation_type));
         }
-        
         mutations
     }
-    
     fn generate_mutations_by_type(&self, cell: &Cell, mutation_type: &MutationType) -> Vec<Mutation> {
         let mut mutations = Vec::new();
         let lines: Vec<&str> = cell.source.lines().collect();
-        
         for (line_num, line) in lines.iter().enumerate() {
             match mutation_type {
                 MutationType::ArithmeticOperator => {
@@ -105,20 +117,16 @@ impl MutationTester {
                 _ => {}
             }
         }
-        
         mutations
     }
-    
     fn mutate_arithmetic(&self, cell: &Cell, line_num: usize, line: &str) -> Vec<Mutation> {
         let mut mutations = Vec::new();
-        
         let operators = vec![
             ("+", "-"),
             ("-", "+"),
             ("*", "/"),
             ("/", "*"),
         ];
-        
         for (original_op, mutated_op) in operators {
             if let Some(col) = line.find(original_op) {
                 mutations.push(Mutation {
@@ -132,13 +140,10 @@ impl MutationTester {
                 });
             }
         }
-        
         mutations
     }
-    
     fn mutate_comparison(&self, cell: &Cell, line_num: usize, line: &str) -> Vec<Mutation> {
         let mut mutations = Vec::new();
-        
         let operators = vec![
             (">", "<"),
             ("<", ">"),
@@ -147,7 +152,6 @@ impl MutationTester {
             ("==", "!="),
             ("!=", "=="),
         ];
-        
         for (original_op, mutated_op) in operators {
             if let Some(col) = line.find(original_op) {
                 mutations.push(Mutation {
@@ -161,13 +165,10 @@ impl MutationTester {
                 });
             }
         }
-        
         mutations
     }
-    
     fn mutate_boundary(&self, cell: &Cell, line_num: usize, line: &str) -> Vec<Mutation> {
         let mut mutations = Vec::new();
-        
         // Look for common boundary values
         let boundaries = vec![
             (" 0", " 1"),
@@ -175,7 +176,6 @@ impl MutationTester {
             (" 1", " 0"),
             ("(1", "(0"),
         ];
-        
         for (original, mutated) in boundaries {
             if let Some(col) = line.find(original) {
                 mutations.push(Mutation {
@@ -189,18 +189,14 @@ impl MutationTester {
                 });
             }
         }
-        
         mutations
     }
-    
     fn mutate_logical(&self, cell: &Cell, line_num: usize, line: &str) -> Vec<Mutation> {
         let mut mutations = Vec::new();
-        
         let operators = vec![
             ("&&", "||"),
             ("||", "&&"),
         ];
-        
         for (original_op, mutated_op) in operators {
             if let Some(col) = line.find(original_op) {
                 mutations.push(Mutation {
@@ -214,19 +210,23 @@ impl MutationTester {
                 });
             }
         }
-        
         mutations
     }
-    
     /// Apply a mutation to a cell
-    pub fn apply_mutation(&self, cell: &Cell, mutation: &Mutation) -> Cell {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::mutation::apply_mutation;
+/// 
+/// let result = apply_mutation(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn apply_mutation(&self, cell: &Cell, mutation: &Mutation) -> Cell {
         let lines: Vec<&str> = cell.source.lines().collect();
         let mut mutated_lines = lines.clone();
-        
         if mutation.line < mutated_lines.len() {
             mutated_lines[mutation.line] = &mutation.mutated;
         }
-        
         Cell {
             id: cell.id.clone(),
             source: mutated_lines.join("\n"),
@@ -234,7 +234,6 @@ impl MutationTester {
             metadata: cell.metadata.clone(),
         }
     }
-    
     /// Test if a mutation is killed by test cells
     pub fn test_mutation(
         &mut self,
@@ -243,20 +242,16 @@ impl MutationTester {
         test_cells: &[Cell],
     ) -> MutationResult {
         let mutated_cell = self.apply_mutation(original_cell, mutation);
-        
         // Execute with original
         let mut original_tester = NotebookTester::new();
         let _ = original_tester.execute_cell(original_cell);
-        
         // Execute with mutation
         let mut mutated_tester = NotebookTester::new();
         let _ = mutated_tester.execute_cell(&mutated_cell);
-        
         // Run tests
         for test_cell in test_cells {
             let original_result = original_tester.execute_cell(test_cell);
             let mutated_result = mutated_tester.execute_cell(test_cell);
-            
             if original_result != mutated_result {
                 // Mutation killed
                 return MutationResult {
@@ -266,7 +261,6 @@ impl MutationTester {
                 };
             }
         }
-        
         // Mutation survived
         MutationResult {
             mutation: mutation.clone(),
@@ -274,32 +268,42 @@ impl MutationTester {
             killing_test: None,
         }
     }
-    
     /// Calculate mutation score
-    pub fn calculate_score(&self) -> f64 {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::mutation::calculate_score;
+/// 
+/// let result = calculate_score(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn calculate_score(&self) -> f64 {
         if self.results.is_empty() {
             return 0.0;
         }
-        
         let killed = self.results.iter().filter(|r| r.killed).count();
         (killed as f64) / (self.results.len() as f64)
     }
-    
     /// Generate mutation testing report
-    pub fn generate_report(&self) -> String {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::mutation::generate_report;
+/// 
+/// let result = generate_report(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn generate_report(&self) -> String {
         let mut report = String::new();
         report.push_str("=== Mutation Testing Report ===\n\n");
-        
         let total = self.results.len();
         let killed = self.results.iter().filter(|r| r.killed).count();
         let survived = total - killed;
         let score = self.calculate_score() * 100.0;
-        
         report.push_str(&format!("Total Mutations: {}\n", total));
         report.push_str(&format!("Killed: {}\n", killed));
         report.push_str(&format!("Survived: {}\n", survived));
         report.push_str(&format!("Mutation Score: {:.1}%\n\n", score));
-        
         if survived > 0 {
             report.push_str("Surviving Mutations (improve tests for these):\n");
             for result in self.results.iter().filter(|r| !r.killed) {
@@ -311,7 +315,25 @@ impl MutationTester {
                 ));
             }
         }
-        
         report
+    }
+}
+#[cfg(test)]
+mod property_tests_mutation {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

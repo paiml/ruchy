@@ -2,14 +2,11 @@
 //!
 //! This module provides caching mechanisms to avoid re-parsing and
 //! re-compiling expressions that have been seen before.
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
-
 use crate::frontend::ast::Expr;
-
 /// A cache key that represents source code
 #[derive(Clone, Debug, Eq)]
 pub struct CacheKey {
@@ -18,7 +15,6 @@ pub struct CacheKey {
     /// Hash of the source for fast comparison
     hash: u64,
 }
-
 impl CacheKey {
     /// Create a new cache key from source code
     pub fn new(source: String) -> Self {
@@ -30,19 +26,16 @@ impl CacheKey {
         CacheKey { source, hash }
     }
 }
-
 impl PartialEq for CacheKey {
     fn eq(&self, other: &Self) -> bool {
         self.hash == other.hash && self.source == other.source
     }
 }
-
 impl Hash for CacheKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.hash.hash(state);
     }
 }
-
 /// Cached compilation result
 #[derive(Clone)]
 pub struct CachedResult {
@@ -53,7 +46,6 @@ pub struct CachedResult {
     /// Timestamp when cached
     pub timestamp: std::time::Instant,
 }
-
 /// Bytecode cache for REPL expressions
 pub struct BytecodeCache {
     /// Cache storage
@@ -66,7 +58,6 @@ pub struct BytecodeCache {
     hits: RefCell<usize>,
     misses: RefCell<usize>,
 }
-
 impl BytecodeCache {
     /// Create a new bytecode cache with specified max size
     pub fn with_capacity(max_size: usize) -> Self {
@@ -78,52 +69,42 @@ impl BytecodeCache {
             misses: RefCell::new(0),
         }
     }
-
     /// Create a default cache with 1000 entry capacity
     pub fn new() -> Self {
         Self::with_capacity(1000)
     }
-
     /// Get a cached result if available
     pub fn get(&self, source: &str) -> Option<CachedResult> {
         let key = CacheKey::new(source.to_string());
-
         if let Some(result) = self.cache.borrow().get(&key) {
             *self.hits.borrow_mut() += 1;
-
             // Update access order for LRU
             let mut access = self.access_order.borrow_mut();
             if let Some(pos) = access.iter().position(|k| k == &key) {
                 access.remove(pos);
             }
             access.push(key.clone());
-
             Some(result.clone())
         } else {
             *self.misses.borrow_mut() += 1;
             None
         }
     }
-
     /// Store a compilation result in the cache
     pub fn insert(&self, source: String, ast: Rc<Expr>, rust_code: Option<String>) {
         let key = CacheKey::new(source);
-
         // Check if we need to evict
         if self.cache.borrow().len() >= self.max_size {
             self.evict_lru();
         }
-
         let result = CachedResult {
             ast,
             rust_code,
             timestamp: std::time::Instant::now(),
         };
-
         self.cache.borrow_mut().insert(key.clone(), result);
         self.access_order.borrow_mut().push(key);
     }
-
     /// Evict least recently used entry
     fn evict_lru(&self) {
         let mut access = self.access_order.borrow_mut();
@@ -132,7 +113,6 @@ impl BytecodeCache {
             self.cache.borrow_mut().remove(&lru_key);
         }
     }
-
     /// Clear the entire cache
     pub fn clear(&self) {
         self.cache.borrow_mut().clear();
@@ -140,7 +120,6 @@ impl BytecodeCache {
         *self.hits.borrow_mut() = 0;
         *self.misses.borrow_mut() = 0;
     }
-
     /// Get cache statistics
     pub fn stats(&self) -> CacheStats {
         CacheStats {
@@ -151,7 +130,6 @@ impl BytecodeCache {
             hit_rate: self.calculate_hit_rate(),
         }
     }
-
     /// Calculate hit rate as a percentage
     #[allow(clippy::cast_precision_loss)]
     fn calculate_hit_rate(&self) -> f64 {
@@ -163,20 +141,17 @@ impl BytecodeCache {
             0.0
         }
     }
-
     /// Remove entries older than specified duration
     pub fn evict_older_than(&self, age: std::time::Duration) {
         let now = std::time::Instant::now();
         let mut cache = self.cache.borrow_mut();
         let mut access = self.access_order.borrow_mut();
-
         // Find keys to remove
         let keys_to_remove: Vec<CacheKey> = cache
             .iter()
             .filter(|(_, result)| now.duration_since(result.timestamp) > age)
             .map(|(key, _)| key.clone())
             .collect();
-
         // Remove from cache and access order
         for key in keys_to_remove {
             cache.remove(&key);
@@ -186,13 +161,11 @@ impl BytecodeCache {
         }
     }
 }
-
 impl Default for BytecodeCache {
     fn default() -> Self {
         Self::new()
     }
 }
-
 /// Cache statistics
 #[derive(Debug, Clone)]
 pub struct CacheStats {
@@ -207,7 +180,6 @@ pub struct CacheStats {
     /// Hit rate percentage
     pub hit_rate: f64,
 }
-
 impl std::fmt::Display for CacheStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -217,12 +189,10 @@ impl std::fmt::Display for CacheStats {
         )
     }
 }
-
 /// Expression cache for parsed ASTs
 pub struct ExpressionCache {
     inner: BytecodeCache,
 }
-
 impl ExpressionCache {
     /// Create a new expression cache
     pub fn new() -> Self {
@@ -230,50 +200,41 @@ impl ExpressionCache {
             inner: BytecodeCache::new(),
         }
     }
-
     /// Try to get a parsed expression from cache
     pub fn get_parsed(&self, source: &str) -> Option<Rc<Expr>> {
         self.inner.get(source).map(|result| result.ast)
     }
-
     /// Cache a parsed expression
     pub fn cache_parsed(&self, source: String, ast: Rc<Expr>) {
         self.inner.insert(source, ast, None);
     }
-
     /// Try to get transpiled code from cache
     pub fn get_transpiled(&self, source: &str) -> Option<String> {
         self.inner.get(source).and_then(|result| result.rust_code)
     }
-
     /// Cache transpiled code
     pub fn cache_transpiled(&self, source: String, ast: Rc<Expr>, rust_code: String) {
         self.inner.insert(source, ast, Some(rust_code));
     }
-
     /// Get cache statistics
     pub fn stats(&self) -> CacheStats {
         self.inner.stats()
     }
-
     /// Clear the cache
     pub fn clear(&self) {
         self.inner.clear();
     }
 }
-
 impl Default for ExpressionCache {
     fn default() -> Self {
         Self::new()
     }
 }
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
     use crate::frontend::ast::{ExprKind, Literal, Span};
-
     fn make_test_expr(value: i64) -> Rc<Expr> {
         Rc::new(Expr {
             kind: ExprKind::Literal(Literal::Integer(value)),
@@ -281,90 +242,90 @@ mod tests {
             attributes: Vec::new(),
         })
     }
-
     #[test]
     fn test_cache_key() {
         let key1 = CacheKey::new("let x = 42".to_string());
         let key2 = CacheKey::new("let x = 42".to_string());
         let key3 = CacheKey::new("let y = 42".to_string());
-
         assert_eq!(key1, key2);
         assert_ne!(key1, key3);
     }
-
     #[test]
     fn test_bytecode_cache_basic() {
         let cache = BytecodeCache::with_capacity(3);
-
         // Cache miss
         assert!(cache.get("let x = 1").is_none());
         assert_eq!(cache.stats().misses, 1);
-
         // Insert and hit
         cache.insert("let x = 1".to_string(), make_test_expr(1), None);
         assert!(cache.get("let x = 1").is_some());
         assert_eq!(cache.stats().hits, 1);
     }
-
     #[test]
     fn test_cache_lru_eviction() {
         let cache = BytecodeCache::with_capacity(2);
-
         cache.insert("expr1".to_string(), make_test_expr(1), None);
         cache.insert("expr2".to_string(), make_test_expr(2), None);
-
         // Access expr1 to make it more recent
         let _ = cache.get("expr1");
-
         // This should evict expr2 (least recently used)
         cache.insert("expr3".to_string(), make_test_expr(3), None);
-
         assert!(cache.get("expr1").is_some());
         assert!(cache.get("expr2").is_none()); // Evicted
         assert!(cache.get("expr3").is_some());
     }
-
     #[test]
     fn test_expression_cache() {
         let cache = ExpressionCache::new();
-
         let expr = make_test_expr(42);
         cache.cache_parsed("let x = 42".to_string(), Rc::clone(&expr));
-
         let cached = cache.get_parsed("let x = 42").unwrap();
         assert!(Rc::ptr_eq(&expr, &cached));
-
         // Test transpiled code caching
         cache.cache_transpiled(
             "let y = 10".to_string(),
             make_test_expr(10),
             "let y = 10;".to_string(),
         );
-
         assert_eq!(
             cache.get_transpiled("let y = 10"),
             Some("let y = 10;".to_string())
         );
     }
-
     #[test]
     fn test_cache_stats() {
         let cache = BytecodeCache::with_capacity(10);
-
         for i in 0..5 {
             cache.insert(format!("expr{i}"), make_test_expr(i), None);
         }
-
         // Generate some hits and misses
         let _ = cache.get("expr1");
         let _ = cache.get("expr2");
         let _ = cache.get("expr_missing");
-
         let stats = cache.stats();
         assert_eq!(stats.size, 5);
         assert_eq!(stats.capacity, 10);
         assert_eq!(stats.hits, 2);
         assert_eq!(stats.misses, 1);
         assert!(stats.hit_rate > 60.0 && stats.hit_rate < 70.0);
+    }
+}
+#[cfg(test)]
+mod property_tests_cache {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

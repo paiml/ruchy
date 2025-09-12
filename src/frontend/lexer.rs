@@ -1,8 +1,6 @@
 //! Lexical analysis and tokenization
-
 use crate::frontend::ast::Span;
 use logos::{Lexer, Logos};
-
 /// Process a basic escape character
 fn process_basic_escape(ch: char) -> Option<char> {
     match ch {
@@ -16,11 +14,9 @@ fn process_basic_escape(ch: char) -> Option<char> {
         _ => None,
     }
 }
-
 /// Process a Unicode escape sequence
 fn process_unicode_escape(chars: &mut std::str::Chars) -> String {
     chars.next(); // consume '{'
-    
     let mut hex = String::new();
     for hex_char in chars.by_ref() {
         if hex_char == '}' {
@@ -28,22 +24,18 @@ fn process_unicode_escape(chars: &mut std::str::Chars) -> String {
         }
         hex.push(hex_char);
     }
-
     if let Ok(code_point) = u32::from_str_radix(&hex, 16) {
         if let Some(unicode_char) = char::from_u32(code_point) {
             return unicode_char.to_string();
         }
     }
-    
     // Invalid code point or hex, keep as literal
     format!("\\u{{{hex}}}")
 }
-
 /// Process escape sequences in a string literal
 fn process_escapes(s: &str) -> String {
     let mut result = String::new();
     let mut chars = s.chars();
-
     while let Some(ch) = chars.next() {
         if ch == '\\' {
             match chars.next() {
@@ -65,10 +57,8 @@ fn process_escapes(s: &str) -> String {
             result.push(ch);
         }
     }
-
     result
 }
-
 #[derive(Logos, Debug, PartialEq, Clone)]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"//[^\n]*")]
@@ -86,17 +76,14 @@ pub enum Token {
         num_part.parse::<i64>().ok()
     })]
     Integer(i64),
-
     #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())]
     Float(f64),
-
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {
         let s = lex.slice();
         let inner = &s[1..s.len()-1];
         Some(process_escapes(inner))
     })]
     String(String),
-
     #[regex(r#"f"([^"\\]|\\.)*""#, |lex| {
         let s = lex.slice();
         // Remove f" prefix and " suffix
@@ -104,14 +91,12 @@ pub enum Token {
         Some(process_escapes(inner))
     })]
     FString(String),
-
     #[regex(r#"r"([^"])*""#, |lex| {
         let s = lex.slice();
         // Remove r" prefix and " suffix - no escape processing for raw strings
         Some(s[2..s.len()-1].to_string())
     })]
     RawString(String),
-
     #[regex(r"'([^'\\]|\\.)'", |lex| {
         let s = lex.slice();
         let inner = &s[1..s.len()-1];
@@ -132,11 +117,9 @@ pub enum Token {
         }
     })]
     Char(char),
-
     #[token("true", |_| true)]
     #[token("false", |_| false)]
     Bool(bool),
-
     // Keywords
     #[token("fun")]
     Fun,
@@ -240,11 +223,9 @@ pub enum Token {
     Export,
     #[token("df", priority = 2)]
     DataFrame,
-
     // Identifiers (lower priority than keywords)
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string(), priority = 1)]
     Identifier(String),
-
     // Operators
     #[token("+")]
     Plus,
@@ -258,7 +239,6 @@ pub enum Token {
     Percent,
     #[token("**")]
     Power,
-
     #[token("==")]
     EqualEqual,
     #[token("!=")]
@@ -275,14 +255,12 @@ pub enum Token {
     Greater,
     #[token(">=")]
     GreaterEqual,
-
     #[token("&&")]
     AndAnd,
     #[token("||")]
     OrOr,
     #[token("!")]
     Bang,
-
     #[token("&")]
     Ampersand,
     #[token("|")]
@@ -295,7 +273,6 @@ pub enum Token {
     Backslash,
     #[token("<<")]
     LeftShift,
-
     #[token("=")]
     Equal,
     #[token("+=")]
@@ -318,12 +295,10 @@ pub enum Token {
     CaretEqual,
     #[token("<<=")]
     LeftShiftEqual,
-
     #[token("++")]
     Increment,
     #[token("--")]
     Decrement,
-
     #[token("|>")]
     Pipeline,
     #[token("->")]
@@ -342,7 +317,6 @@ pub enum Token {
     Question,
     #[token("?.")]
     SafeNav,
-
     // Delimiters
     #[token("(")]
     LeftParen,
@@ -356,7 +330,6 @@ pub enum Token {
     LeftBrace,
     #[token("}")]
     RightBrace,
-
     // Punctuation
     #[token(",")]
     Comma,
@@ -370,12 +343,10 @@ pub enum Token {
     Semicolon,
     #[token("_", priority = 2)]
     Underscore,
-
     // Attribute support
     #[token("#")]
     Hash,
 }
-
 impl Token {
     #[must_use]
     pub fn is_binary_op(&self) -> bool {
@@ -401,7 +372,6 @@ impl Token {
                 | Token::LeftShift
         )
     }
-
     #[must_use]
     pub fn is_unary_op(&self) -> bool {
         matches!(
@@ -409,7 +379,6 @@ impl Token {
             Token::Bang | Token::Minus | Token::Tilde | Token::Ampersand
         )
     }
-
     #[must_use]
     pub fn is_assignment_op(&self) -> bool {
         matches!(
@@ -428,19 +397,16 @@ impl Token {
         )
     }
 }
-
 pub struct TokenStream<'a> {
     lexer: Lexer<'a, Token>,
     peeked: Option<(Token, Span)>,
 }
-
 /// Saved position in the token stream for backtracking
 #[derive(Clone)]
 pub struct TokenStreamPosition<'a> {
     lexer: Lexer<'a, Token>,
     peeked: Option<(Token, Span)>,
 }
-
 impl<'a> TokenStream<'a> {
     #[must_use]
     pub fn new(input: &'a str) -> Self {
@@ -449,7 +415,6 @@ impl<'a> TokenStream<'a> {
             peeked: None,
         }
     }
-
     /// Save the current position for later restoration
     #[must_use]
     pub fn position(&self) -> TokenStreamPosition<'a> {
@@ -458,56 +423,46 @@ impl<'a> TokenStream<'a> {
             peeked: self.peeked.clone(),
         }
     }
-
     /// Restore a previously saved position
     pub fn set_position(&mut self, pos: TokenStreamPosition<'a>) {
         self.lexer = pos.lexer;
         self.peeked = pos.peeked;
     }
-
     #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<(Token, Span)> {
         if let Some(peeked) = self.peeked.take() {
             return Some(peeked);
         }
-
         self.lexer.next().map(|result| {
             let token = result.unwrap_or(Token::Bang); // Error recovery
             let span = Span::new(self.lexer.span().start, self.lexer.span().end);
             (token, span)
         })
     }
-
     pub fn peek(&mut self) -> Option<&(Token, Span)> {
         if self.peeked.is_none() {
             self.peeked = self.next();
         }
         self.peeked.as_ref()
     }
-
     pub fn peek_nth(&mut self, n: usize) -> Option<(Token, Span)> {
         // For simplicity, we'll only support peek_nth(1) by cloning the lexer
         if n == 1 {
             let saved_peeked = self.peeked.clone();
             let saved_lexer = self.lexer.clone();
-
             // Get first token
             let _first = self.peek();
             self.advance();
-
             // Get second token
             let result = self.peek().cloned();
-
             // Restore state
             self.lexer = saved_lexer;
             self.peeked = saved_peeked;
-
             result
         } else {
             None // Not supported for n > 1
         }
     }
-
     pub fn peek_nth_is_colon(&mut self, n: usize) -> bool {
         if n == 0 {
             self.peek().is_some_and(|(t, _)| matches!(t, Token::Colon))
@@ -516,7 +471,6 @@ impl<'a> TokenStream<'a> {
                 .is_some_and(|(t, _)| matches!(t, Token::Colon))
         }
     }
-
     /// Expect a specific token and return its span
     ///
     /// # Errors
@@ -529,25 +483,21 @@ impl<'a> TokenStream<'a> {
             None => anyhow::bail!("Expected {:?}, found EOF", expected),
         }
     }
-
     // Alias for next() to avoid clippy warning about Iterator trait
     pub fn advance(&mut self) -> Option<(Token, Span)> {
         self.next()
     }
 }
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 #[allow(clippy::panic)]
 mod tests {
     use super::*;
     use proptest::prelude::*;
-
     #[test]
     #[allow(clippy::approx_constant)] // Intentional literal for test
     fn test_tokenize_basic() {
         let mut stream = TokenStream::new("let x = 42 + 3.14");
-
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Let));
         assert_eq!(
             stream.next().map(|(t, _)| t),
@@ -559,20 +509,16 @@ mod tests {
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Float(3.14))); // Intentional literal for test
         assert_eq!(stream.next().map(|(t, _)| t), None);
     }
-
     #[test]
     fn test_tokenize_pipeline() {
         let mut stream = TokenStream::new("[1, 2, 3] >> map(|x| x * 2)");
-
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::LeftBracket));
         assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Integer(1)));
         // ... rest of tokens
     }
-
     #[test]
     fn test_tokenize_comments() {
         let mut stream = TokenStream::new("x // comment\n+ /* block */ y");
-
         assert_eq!(
             stream.next().map(|(t, _)| t),
             Some(Token::Identifier("x".to_string()))
@@ -583,7 +529,6 @@ mod tests {
             Some(Token::Identifier("y".to_string()))
         );
     }
-
     proptest! {
         #[test]
         fn test_tokenize_identifiers(s in "[a-zA-Z_][a-zA-Z0-9_]{0,100}") {
@@ -596,11 +541,9 @@ mod tests {
                 "state", "receive", "send", "ask", "type", "where", "const", "static",
                 "mut", "pub", "import", "use", "as", "module", "export", "df"
             ];
-            
             if reserved_keywords.contains(&s.as_str()) {
                 return Ok(()); // Skip test for reserved keywords
             }
-            
             let mut stream = TokenStream::new(&s);
             match stream.advance() {
                 Some((Token::Identifier(id), _)) => prop_assert_eq!(id, s),
@@ -608,7 +551,6 @@ mod tests {
                 _ => panic!("Failed to tokenize identifier: {s}"),
             }
         }
-
         #[test]
         fn test_tokenize_integers(n in 0i64..1_000_000) {
             let s = n.to_string();

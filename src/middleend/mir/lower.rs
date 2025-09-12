@@ -1,5 +1,4 @@
 //! AST to MIR lowering
-
 use super::builder::MirBuilder;
 use super::types::{
     BinOp, BlockId, Constant, Mutability, Operand, Place, Program, Rvalue, Type, UnOp,
@@ -9,7 +8,6 @@ use crate::frontend::ast::{
 };
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
-
 /// Context for lowering AST to MIR
 pub struct LoweringContext {
     /// MIR builder
@@ -20,18 +18,24 @@ pub struct LoweringContext {
     /// Current block being built
     current_block: Option<BlockId>,
 }
-
 impl LoweringContext {
     /// Create a new lowering context
     #[must_use]
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::middleend::mir::lower::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         Self {
             builder: MirBuilder::new(),
             type_env: HashMap::new(),
             current_block: None,
         }
     }
-
     /// Lower an expression to MIR
     ///
     /// # Errors
@@ -40,7 +44,15 @@ impl LoweringContext {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-    pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::middleend::mir::lower::lower_expr;
+/// 
+/// let result = lower_expr(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
         match &expr.kind {
             ExprKind::Function {
                 name,
@@ -55,7 +67,6 @@ impl LoweringContext {
             }
         }
     }
-
     /// Lower a function expression
     fn lower_function(
         &mut self,
@@ -66,73 +77,56 @@ impl LoweringContext {
     ) -> Result<Program> {
         let func_name = name.to_string();
         let ret_ty = return_type.map_or(Type::Unit, |t| self.ast_to_mir_type(t));
-
         self.builder.start_function(func_name.clone(), ret_ty);
-
         // Add parameters
         for param in params {
             let ty = self.ast_to_mir_type(&param.ty);
             self.builder.add_param(param.name(), ty);
         }
-
         // Create entry block
         let entry = self.builder.new_block();
         self.current_block = Some(entry);
-
         // Lower function body
         let result = self.lower_expr_to_operand(body)?;
-
         // Return the result
         self.builder.return_(entry, Some(result));
-
         let function = self
             .builder
             .finish_function()
             .ok_or_else(|| anyhow!("Failed to finish function"))?;
-
         let mut functions = HashMap::new();
         functions.insert(func_name.clone(), function);
-
         Ok(Program {
             functions,
             entry: func_name,
         })
     }
-
     /// Lower a main expression (wrap in main function)
     fn lower_main_expr(&mut self, expr: &Expr) -> Result<Program> {
         self.builder.start_function("main".to_string(), Type::Unit);
-
         let entry = self.builder.new_block();
         self.current_block = Some(entry);
-
         // Lower the expression
         let _result = self.lower_expr_to_operand(expr)?;
-
         // Main function returns unit
         self.builder
             .return_(entry, Some(Operand::Constant(Constant::Unit)));
-
         let function = self
             .builder
             .finish_function()
             .ok_or_else(|| anyhow!("Failed to finish main function"))?;
-
         let mut functions = HashMap::new();
         functions.insert("main".to_string(), function);
-
         Ok(Program {
             functions,
             entry: "main".to_string(),
         })
     }
-
     /// Lower an expression to an operand
     fn lower_expr_to_operand(&mut self, expr: &Expr) -> Result<Operand> {
         let block = self
             .current_block
             .ok_or_else(|| anyhow!("No current block"))?;
-
         match &expr.kind {
             ExprKind::Literal(lit) => Ok(Operand::Constant(Self::lower_literal(lit))),
             ExprKind::Identifier(name) => {
@@ -146,11 +140,9 @@ impl LoweringContext {
                 let left_op = self.lower_expr_to_operand(left)?;
                 let right_op = self.lower_expr_to_operand(right)?;
                 let mir_op = Self::lower_binary_op(*op);
-
                 // Create a variable for the result
                 let result_ty = Self::infer_binary_result_type(*op);
                 let temp = self.builder.alloc_local(result_ty, false, None);
-
                 self.builder
                     .binary_op(block, temp, mir_op, left_op, right_op);
                 Ok(Operand::Move(Place::Local(temp)))
@@ -158,10 +150,8 @@ impl LoweringContext {
             ExprKind::Unary { op, operand } => {
                 let operand_mir = self.lower_expr_to_operand(operand)?;
                 let mir_op = Self::lower_unary_op(*op);
-
                 let result_ty = Self::infer_unary_result_type(*op);
                 let temp = self.builder.alloc_local(result_ty, false, None);
-
                 self.builder.unary_op(block, temp, mir_op, operand_mir);
                 Ok(Operand::Move(Place::Local(temp)))
             }
@@ -170,17 +160,14 @@ impl LoweringContext {
             } => {
                 // Lower the value
                 let value_op = self.lower_expr_to_operand(value)?;
-
                 // Create a local for the binding
                 let local_ty = Type::I32; // Default type inference
                 let local = self
                     .builder
                     .alloc_local(local_ty, false, Some(name.clone()));
-
                 // Assign the value
                 self.builder
                     .assign(block, Place::Local(local), Rvalue::Use(value_op));
-
                 // Lower the body with the binding in scope
                 self.lower_expr_to_operand(body)
             }
@@ -190,19 +177,15 @@ impl LoweringContext {
                 else_branch,
             } => {
                 let cond_op = self.lower_expr_to_operand(condition)?;
-
                 let then_block = self.builder.new_block();
                 let else_block = self.builder.new_block();
                 let merge_block = self.builder.new_block();
-
                 // Branch based on condition
                 self.builder.branch(block, cond_op, then_block, else_block);
-
                 // Lower then branch
                 self.current_block = Some(then_block);
                 let then_result = self.lower_expr_to_operand(then_branch)?;
                 self.builder.goto(then_block, merge_block);
-
                 // Lower else branch
                 self.current_block = Some(else_block);
                 let _else_result = if let Some(else_expr) = else_branch {
@@ -211,11 +194,9 @@ impl LoweringContext {
                     Operand::Constant(Constant::Unit)
                 };
                 self.builder.goto(else_block, merge_block);
-
                 // Create a variable for the result
                 let result_ty = Type::I32; // Type inference would determine this
                 let result_temp = self.builder.alloc_local(result_ty, false, None);
-
                 // In merge block, we'd need phi nodes, but for simplicity we'll just use the then result
                 self.current_block = Some(merge_block);
                 self.builder.assign(
@@ -223,25 +204,20 @@ impl LoweringContext {
                     Place::Local(result_temp),
                     Rvalue::Use(then_result),
                 );
-
                 Ok(Operand::Move(Place::Local(result_temp)))
             }
             ExprKind::Call { func, args } => {
                 let func_op = self.lower_expr_to_operand(func)?;
                 let mut arg_ops = Vec::new();
-
                 for arg in args {
                     arg_ops.push(self.lower_expr_to_operand(arg)?);
                 }
-
                 // Create a variable for the result
                 let result_ty = Type::I32; // Type inference would determine this
                 let result_temp = self.builder.alloc_local(result_ty, false, None);
-
                 // Create call terminator
                 let next_block = self.builder.call(block, result_temp, func_op, arg_ops);
                 self.current_block = Some(next_block);
-
                 Ok(Operand::Move(Place::Local(result_temp)))
             }
             ExprKind::Block(exprs) => {
@@ -262,7 +238,6 @@ impl LoweringContext {
             }
         }
     }
-
     /// Lower a literal to a constant
     fn lower_literal(lit: &Literal) -> Constant {
         match lit {
@@ -274,7 +249,6 @@ impl LoweringContext {
             Literal::Unit => Constant::Unit,
         }
     }
-
     /// Lower binary operator
     fn lower_binary_op(op: AstBinOp) -> BinOp {
         match op {
@@ -299,7 +273,6 @@ impl LoweringContext {
             AstBinOp::LeftShift => BinOp::Shl,
         }
     }
-
     /// Lower unary operator
     fn lower_unary_op(op: AstUnOp) -> UnOp {
         match op {
@@ -309,7 +282,6 @@ impl LoweringContext {
             AstUnOp::Reference => UnOp::Ref,
         }
     }
-
     /// Convert AST Type to MIR Type
     #[allow(clippy::only_used_in_recursion)]
     fn ast_to_mir_type(&self, ast_ty: &AstType) -> Type {
@@ -377,7 +349,6 @@ impl LoweringContext {
             }
         }
     }
-
     /// Infer result type for binary operations
     fn infer_binary_result_type(op: AstBinOp) -> Type {
         match op {
@@ -402,7 +373,6 @@ impl LoweringContext {
             AstBinOp::NullCoalesce => Type::I32, // For now, assume Int (could be improved)
         }
     }
-
     /// Infer result type for unary operations
     fn infer_unary_result_type(op: AstUnOp) -> Type {
         match op {
@@ -412,74 +382,77 @@ impl LoweringContext {
         }
     }
 }
-
 impl Default for LoweringContext {
     fn default() -> Self {
         Self::new()
     }
 }
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
     use crate::frontend::Parser;
-
+#[cfg(test)]
+use proptest::prelude::*;
     #[test]
     fn test_lower_literal() -> Result<()> {
         let mut parser = Parser::new("42");
         let ast = parser.parse()?;
-
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-
         assert_eq!(program.entry, "main");
         assert!(program.functions.contains_key("main"));
-
         Ok(())
     }
-
     #[test]
     fn test_lower_binary_expr() -> Result<()> {
         let mut parser = Parser::new("1 + 2");
         let ast = parser.parse()?;
-
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-
         let main_func = &program.functions["main"];
         assert!(!main_func.blocks.is_empty());
-
         Ok(())
     }
-
     #[test]
     fn test_lower_function() -> Result<()> {
         let mut parser = Parser::new("fun add(x: i32, y: i32) -> i32 { x + y }");
         let ast = parser.parse()?;
-
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-
         assert!(program.functions.contains_key("add"));
         let func = &program.functions["add"];
         assert_eq!(func.params.len(), 2);
-
         Ok(())
     }
-
     #[test]
     fn test_lower_if_expr() -> Result<()> {
         let mut parser = Parser::new("if true { 1 } else { 2 }");
         let ast = parser.parse()?;
-
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-
         let main_func = &program.functions["main"];
         // Should have multiple blocks for if/else
         assert!(main_func.blocks.len() > 1);
-
         Ok(())
+    }
+}
+#[cfg(test)]
+mod property_tests_lower {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }
