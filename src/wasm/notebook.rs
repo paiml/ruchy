@@ -15,6 +15,7 @@ type JsValue = String;
 #[cfg(not(target_arch = "wasm32"))]
 use serde::{Serialize, Deserialize};
 
+use crate::utils::{format_serialize_error, format_deserialize_error, format_operation_error};
 use crate::wasm::shared_session::{
     SharedSession, ExecutionMode, ExecuteResponse, 
     DependencyGraph, CellProvenance, MemoryUsage, Edge,
@@ -1656,7 +1657,7 @@ impl NotebookRuntime {
     /// Commit notebook changes
     pub fn commit_notebook(&mut self, message: &str, parent: Option<&str>) -> Result<NotebookCommit, String> {
         let notebook_snapshot = serde_json::to_string(&self.notebook)
-            .map_err(|e| format!("Failed to serialize notebook: {}", e))?;
+            .map_err(|e| format_serialize_error("notebook", e))?;
         
         let commit = NotebookCommit {
             hash: format!("{:x}", sha2::Sha256::digest(
@@ -1767,7 +1768,7 @@ impl NotebookRuntime {
             .ok_or_else(|| format!("Commit '{}' not found", tag.commit))?;
         
         self.notebook = serde_json::from_str(&commit.notebook_snapshot)
-            .map_err(|e| format!("Failed to restore notebook: {}", e))?;
+            .map_err(|e| format_deserialize_error("notebook", e))?;
         
         Ok(())
     }
@@ -1897,7 +1898,7 @@ impl NotebookRuntime {
             .ok_or_else(|| format!("Commit '{}' not found", commit_hash))?;
         
         self.notebook = serde_json::from_str(&commit.notebook_snapshot)
-            .map_err(|e| format!("Failed to clone notebook: {}", e))?;
+            .map_err(|e| format_operation_error("clone notebook", e))?;
         
         Ok(())
     }

@@ -73,8 +73,19 @@ impl Diagnostic {
     /// Generate colored output for terminal display
     pub fn format_colored(&self) -> String {
         let mut output = String::new();
+        let (severity_color, reset, bold) = self.get_color_codes();
         
-        // Header with severity and location
+        // Build diagnostic sections
+        output.push_str(&self.format_header(&severity_color, &reset, &bold));
+        output.push_str(&self.format_source_context(&severity_color, &reset, &bold));
+        output.push_str(&self.format_suggestions(&bold, &reset));
+        
+        output.push_str(&reset);
+        output
+    }
+    
+    /// Get terminal color codes for diagnostic formatting
+    fn get_color_codes(&self) -> (&'static str, &'static str, &'static str) {
         let severity_color = match self.error.severity {
             ErrorSeverity::Error => "\x1b[31m",   // Red
             ErrorSeverity::Warning => "\x1b[33m", // Yellow
@@ -83,29 +94,35 @@ impl Diagnostic {
         };
         let reset = "\x1b[0m";
         let bold = "\x1b[1m";
+        (severity_color, reset, bold)
+    }
+    
+    /// Format the diagnostic header with error message and location
+    fn format_header(&self, severity_color: &str, reset: &str, bold: &str) -> String {
+        let mut header = String::new();
         
-        // File and location header
+        let error_line = format!(
+            "{bold}{severity_color}error[{:?}]{reset}: {}\n",
+            self.error.error_code,
+            self.error.message
+        );
+        header.push_str(&error_line);
+        
         if let Some(ref filename) = self.filename {
-            output.push_str(&format!(
-                "{bold}{severity_color}error[{:?}]{reset}: {}\n",
-                self.error.error_code,
-                self.error.message
-            ));
-            output.push_str(&format!(
+            header.push_str(&format!(
                 "  {bold}-->{reset} {}:{}:{}\n",
                 filename,
                 self.error.span.start / 100 + 1, // Rough line estimate
                 self.error.span.start % 100 + 1  // Rough column estimate
             ));
-        } else {
-            output.push_str(&format!(
-                "{bold}{severity_color}error[{:?}]{reset}: {}\n",
-                self.error.error_code,
-                self.error.message
-            ));
         }
         
-        // Source code context with error highlighting
+        header
+    }
+    
+    /// Format source code context with error highlighting
+    fn format_source_context(&self, severity_color: &str, reset: &str, bold: &str) -> String {
+        let mut context = String::new();
         let (context_lines, error_line_idx, col_start, col_end) = self.get_source_context();
         let line_num_start = (self.error.span.start / 100 + 1).saturating_sub(error_line_idx);
         
@@ -113,47 +130,58 @@ impl Diagnostic {
             let line_num = line_num_start + i;
             let is_error_line = i == error_line_idx;
             
-            // Line number and content
             if is_error_line {
-                output.push_str(&format!(
-                    "{bold}{line_num:4} |{reset} {line}\n"
-                ));
-                
-                // Error underline
-                let spaces = " ".repeat(col_start);
-                let arrows = "^".repeat((col_end - col_start).max(1));
-                output.push_str(&format!(
-                    "     | {spaces}{severity_color}{arrows}\n"
-                ));
-                
-                // Error message under the line
-                if let Some(ref hint) = self.error.recovery_hint {
-                    output.push_str(&format!(
-                        "     {} {}{}{reset} {}\n",
-                        "|",
-                        " ".repeat(col_start),
-                        severity_color,
-                        hint
-                    ));
-                }
+                context.push_str(&self.format_error_line(line, line_num, col_start, col_end, severity_color, reset, bold));
             } else {
-                output.push_str(&format!("{line_num:4} | {line}\n"));
+                context.push_str(&format!("{line_num:4} | {line}\n"));
             }
         }
         
-        // Suggestions
+        context
+    }
+    
+    /// Format the specific error line with underline and hint
+    fn format_error_line(&self, line: &str, line_num: usize, col_start: usize, col_end: usize, 
+                        severity_color: &str, reset: &str, bold: &str) -> String {
+        let mut error_line = String::new();
+        
+        // Line number and content
+        error_line.push_str(&format!("{bold}{line_num:4} |{reset} {line}\n"));
+        
+        // Error underline
+        let spaces = " ".repeat(col_start);
+        let arrows = "^".repeat((col_end - col_start).max(1));
+        error_line.push_str(&format!("     | {spaces}{severity_color}{arrows}\n"));
+        
+        // Error message under the line
+        if let Some(ref hint) = self.error.recovery_hint {
+            error_line.push_str(&format!(
+                "     {} {}{}{reset} {}\n",
+                "|",
+                " ".repeat(col_start),
+                severity_color,
+                hint
+            ));
+        }
+        
+        error_line
+    }
+    
+    /// Format suggestions section
+    fn format_suggestions(&self, bold: &str, reset: &str) -> String {
+        let mut suggestions = String::new();
+        
         if !self.suggestions.is_empty() {
-            output.push_str(&format!("\n{bold}help{reset}: "));
+            suggestions.push_str(&format!("\n{bold}help{reset}: "));
             for suggestion in &self.suggestions {
-                output.push_str(&format!("{}\n", suggestion.message));
+                suggestions.push_str(&format!("{}\n", suggestion.message));
                 if let Some(ref replacement) = suggestion.replacement {
-                    output.push_str(&format!("      suggested fix: `{replacement}`\n"));
+                    suggestions.push_str(&format!("      suggested fix: `{replacement}`\n"));
                 }
             }
         }
         
-        output.push_str(reset);
-        output
+        suggestions
     }
 }
 

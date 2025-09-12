@@ -136,65 +136,62 @@ fn try_handle_infix_operators(
 
 /// Handle all postfix operators in a loop
 fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) -> Result<Expr> {
-    let mut handled_postfix = true;
-    while handled_postfix {
-        handled_postfix = false;
-        match state.tokens.peek() {
-            Some((Token::Dot, _)) => {
-                state.tokens.advance();
-                left = functions::parse_method_call(state, left)?;
-                handled_postfix = true;
-            }
-            Some((Token::SafeNav, _)) => {
-                state.tokens.advance();
-                left = functions::parse_optional_method_call(state, left)?;
-                handled_postfix = true;
-            }
-            Some((Token::LeftParen, _)) => {
-                left = functions::parse_call(state, left)?;
-                handled_postfix = true;
-            }
-            Some((Token::LeftBracket, _)) => {
-                left = handle_array_indexing(state, left)?;
-                handled_postfix = true;
-            }
-            Some((Token::LeftBrace, _)) => {
-                if let Some(new_left) = try_parse_struct_literal(state, &left)? {
-                    left = new_left;
-                    handled_postfix = true;
-                }
-            }
-            Some((Token::Increment, _)) => {
-                state.tokens.advance();
-                left = create_post_increment(left);
-                handled_postfix = true;
-            }
-            Some((Token::Decrement, _)) => {
-                state.tokens.advance();
-                left = create_post_decrement(left);
-                handled_postfix = true;
-            }
-            Some((Token::Question, _)) => {
-                state.tokens.advance();
-                left = Expr::new(
-                    ExprKind::Try {
-                        expr: Box::new(left),
-                    },
-                    Span { start: 0, end: 0 },
-                );
-                handled_postfix = true;
-            }
-            Some((Token::Bang, _)) => {
-                // Parse macro call: identifier! ( args )
-                if let Some(new_left) = try_parse_macro_call(state, &left)? {
-                    left = new_left;
-                    handled_postfix = true;
-                }
-            }
-            _ => {}
-        }
+    while let Some(new_left) = try_handle_single_postfix(state, left.clone())? {
+        left = new_left;
     }
     Ok(left)
+}
+
+/// Try to handle a single postfix operator
+/// Returns Some(expr) if handled, None if no postfix operator found
+fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Option<Expr>> {
+    match state.tokens.peek() {
+        Some((Token::Dot, _)) => handle_dot_operator(state, left).map(Some),
+        Some((Token::SafeNav, _)) => handle_safe_nav_operator(state, left).map(Some),
+        Some((Token::LeftParen, _)) => Ok(Some(functions::parse_call(state, left)?)),
+        Some((Token::LeftBracket, _)) => Ok(Some(handle_array_indexing(state, left)?)),
+        Some((Token::LeftBrace, _)) => try_parse_struct_literal(state, &left),
+        Some((Token::Increment, _)) => handle_increment_operator(state, left).map(Some),
+        Some((Token::Decrement, _)) => handle_decrement_operator(state, left).map(Some),
+        Some((Token::Question, _)) => handle_try_operator(state, left).map(Some),
+        Some((Token::Bang, _)) => try_parse_macro_call(state, &left),
+        _ => Ok(None),
+    }
+}
+
+/// Handle dot operator for method calls
+fn handle_dot_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
+    state.tokens.advance();
+    functions::parse_method_call(state, left)
+}
+
+/// Handle safe navigation operator ?.
+fn handle_safe_nav_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
+    state.tokens.advance();
+    functions::parse_optional_method_call(state, left)
+}
+
+/// Handle postfix increment operator ++
+fn handle_increment_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
+    state.tokens.advance();
+    Ok(create_post_increment(left))
+}
+
+/// Handle postfix decrement operator --
+fn handle_decrement_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
+    state.tokens.advance();
+    Ok(create_post_decrement(left))
+}
+
+/// Handle try operator ?
+fn handle_try_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
+    state.tokens.advance();
+    Ok(Expr::new(
+        ExprKind::Try {
+            expr: Box::new(left),
+        },
+        Span { start: 0, end: 0 },
+    ))
 }
 
 /// Handle array indexing and slicing syntax `[expr]` or `[start:end]`

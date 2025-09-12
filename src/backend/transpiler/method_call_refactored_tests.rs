@@ -5,6 +5,7 @@
 use super::super::*;
 use crate::frontend::parser::Parser;
 use crate::frontend::ast::{Expr, ExprKind};
+use crate::utils::assert_output_contains;
 
 fn create_transpiler() -> Transpiler {
     Transpiler::new()
@@ -29,10 +30,9 @@ fn test_map_method() {
     let result = transpiler.transpile_method_call_refactored(&obj, &method, &args)
         .expect("Failed to transpile");
     
-    let output = result.to_string();
-    assert!(output.contains("iter"));
-    assert!(output.contains("map"));
-    assert!(output.contains("collect"));
+    assert_output_contains(&result, "iter");
+    assert_output_contains(&result, "map");
+    assert_output_contains(&result, "collect");
 }
 
 #[test]
@@ -43,10 +43,9 @@ fn test_filter_method() {
     let result = transpiler.transpile_method_call_refactored(&obj, &method, &args)
         .expect("Failed to transpile");
     
-    let output = result.to_string();
-    assert!(output.contains("into_iter"));
-    assert!(output.contains("filter"));
-    assert!(output.contains("collect"));
+    assert_output_contains(&result, "into_iter");
+    assert_output_contains(&result, "filter");
+    assert_output_contains(&result, "collect");
 }
 
 #[test]
@@ -58,7 +57,7 @@ fn test_reduce_method() {
         .expect("Failed to transpile");
     
     let output = result.to_string();
-    assert!(output.contains("reduce") || output.contains("fold"));
+    assert!(output.contains("reduce") || output.contains("fold"), "Expected reduce or fold, got: {}", output);
 }
 
 #[test]
@@ -69,9 +68,8 @@ fn test_hashmap_get() {
     let result = transpiler.transpile_method_call_refactored(&obj, &method, &args)
         .expect("Failed to transpile");
     
-    let output = result.to_string();
-    assert!(output.contains("get"));
-    assert!(output.contains("cloned"));
+    assert_output_contains(&result, "get");
+    assert_output_contains(&result, "cloned");
 }
 
 #[test]
@@ -82,8 +80,7 @@ fn test_hashmap_contains_key() {
     let result = transpiler.transpile_method_call_refactored(&obj, &method, &args)
         .expect("Failed to transpile");
     
-    let output = result.to_string();
-    assert!(output.contains("contains_key"));
+    assert_output_contains(&result, "contains_key");
 }
 
 #[test]

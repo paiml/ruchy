@@ -1,7 +1,8 @@
 //! TDD tests for REPL core functionality
 //! Target: Improve coverage from 10.9% to 60%+
 
-use ruchy::runtime::repl::ReplSession;
+// ReplSession no longer exists, using Repl directly
+use ruchy::runtime::repl::Repl;
 use ruchy::runtime::Value;
 
 #[test]

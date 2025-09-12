@@ -3,11 +3,11 @@
 //! Generates WebAssembly components from Ruchy source code with full
 //! component model support and interface bindings.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
+use crate::utils::{read_file_with_context, write_file_with_context};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::fs;
 
 /// WebAssembly component generated from Ruchy code
 #[derive(Debug, Clone)]
@@ -494,8 +494,7 @@ impl ComponentBuilder {
     fn load_sources(&self) -> Result<Vec<String>> {
         let mut sources = Vec::new();
         for path in &self.source_files {
-            let source = fs::read_to_string(path)
-                .with_context(|| format!("Failed to read source file: {}", path.display()))?;
+            let source = read_file_with_context(path)?;
             sources.push(source);
         }
         Ok(sources)
@@ -621,8 +620,7 @@ impl WasmComponent {
     /// Save the component to a file
     pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
         let path = path.as_ref();
-        fs::write(path, &self.bytecode)
-            .with_context(|| format!("Failed to write WASM component to {}", path.display()))?;
+        write_file_with_context(path, std::str::from_utf8(&self.bytecode)?)?;
         Ok(())
     }
     

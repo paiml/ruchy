@@ -61,87 +61,105 @@ impl Transpiler {
         use crate::frontend::ast::TypeKind;
 
         match &ty.kind {
-            TypeKind::Named(name) => {
-                // Map common Ruchy types to Rust types
-                let rust_type = match name.as_str() {
-                    "int" => quote! { i64 },
-                    "float" => quote! { f64 },
-                    "bool" => quote! { bool },
-                    "str" => quote! { str },  // Plain str type (will be used with & for references)
-                    "string" | "String" => quote! { String },
-                    "char" => quote! { char },
-                    // PERFORMANCE OPTIMIZATION: Use Rust type inference instead of Any
-                    "_" | "Any" => quote! { _ },
-                    _ => {
-                        let type_ident = format_ident!("{}", name);
-                        quote! { #type_ident }
-                    }
-                };
-                Ok(rust_type)
+            TypeKind::Named(name) => self.transpile_named_type(name),
+            TypeKind::Generic { base, params } => self.transpile_generic_type(base, params),
+            TypeKind::Optional(inner) => self.transpile_optional_type(inner),
+            TypeKind::List(elem_type) => self.transpile_list_type(elem_type),
+            TypeKind::Array { elem_type, size } => self.transpile_array_type(elem_type, *size),
+            TypeKind::Tuple(types) => self.transpile_tuple_type(types),
+            TypeKind::Function { params, ret } => self.transpile_function_type(params, ret),
+            TypeKind::DataFrame { .. } => Ok(quote! { polars::prelude::DataFrame }),
+            TypeKind::Series { .. } => Ok(quote! { polars::prelude::Series }),
+            TypeKind::Reference { is_mut, inner } => self.transpile_reference_type(*is_mut, inner),
+        }
+    }
+    
+    /// Transpile named types with built-in type mapping
+    fn transpile_named_type(&self, name: &str) -> Result<TokenStream> {
+        let rust_type = match name {
+            "int" => quote! { i64 },
+            "float" => quote! { f64 },
+            "bool" => quote! { bool },
+            "str" => quote! { str },  // Plain str type (will be used with & for references)
+            "string" | "String" => quote! { String },
+            "char" => quote! { char },
+            "_" | "Any" => quote! { _ },  // Use Rust type inference
+            _ => {
+                let type_ident = format_ident!("{}", name);
+                quote! { #type_ident }
             }
-            TypeKind::Generic { base, params } => {
-                let base_ident = format_ident!("{}", base);
-                let param_tokens: Result<Vec<_>> =
-                    params.iter().map(|p| self.transpile_type(p)).collect();
-                let param_tokens = param_tokens?;
-                Ok(quote! { #base_ident<#(#param_tokens),*> })
-            }
-            TypeKind::Optional(inner) => {
-                let inner_tokens = self.transpile_type(inner)?;
-                Ok(quote! { Option<#inner_tokens> })
-            }
-            TypeKind::List(elem_type) => {
-                let elem_tokens = self.transpile_type(elem_type)?;
-                Ok(quote! { Vec<#elem_tokens> })
-            }
-            TypeKind::Array { elem_type, size } => {
-                let elem_tokens = self.transpile_type(elem_type)?;
-                let size_lit = proc_macro2::Literal::usize_unsuffixed(*size);
-                Ok(quote! { [#elem_tokens; #size_lit] })
-            }
-            TypeKind::Tuple(types) => {
-                let type_tokens: Result<Vec<_>> =
-                    types.iter().map(|t| self.transpile_type(t)).collect();
-                let type_tokens = type_tokens?;
-                Ok(quote! { (#(#type_tokens),*) })
-            }
-            TypeKind::Function { params, ret } => {
-                let param_tokens: Result<Vec<_>> =
-                    params.iter().map(|p| self.transpile_type(p)).collect();
-                let param_tokens = param_tokens?;
-                let ret_tokens = self.transpile_type(ret)?;
-
-                // Rust function type syntax
-                Ok(quote! { fn(#(#param_tokens),*) -> #ret_tokens })
-            }
-            TypeKind::DataFrame { .. } => {
-                // DataFrames map to Polars DataFrame type
-                Ok(quote! { polars::prelude::DataFrame })
-            }
-            TypeKind::Series { .. } => {
-                // Series maps to Polars Series type
-                Ok(quote! { polars::prelude::Series })
-            }
-            TypeKind::Reference { is_mut, inner } => {
-                // Special case: &str should not become &&str
-                if let TypeKind::Named(name) = &inner.kind {
-                    if name == "str" {
-                        // str is already a reference type in Rust
-                        return if *is_mut {
-                            Ok(quote! { &mut str })
-                        } else {
-                            Ok(quote! { &str })
-                        };
-                    }
-                }
-                
-                let inner_tokens = self.transpile_type(inner)?;
-                if *is_mut {
-                    Ok(quote! { &mut #inner_tokens })
+        };
+        Ok(rust_type)
+    }
+    
+    /// Transpile generic types with type parameters
+    fn transpile_generic_type(&self, base: &str, params: &[Type]) -> Result<TokenStream> {
+        let base_ident = format_ident!("{}", base);
+        let param_tokens: Result<Vec<_>> = params.iter()
+            .map(|p| self.transpile_type(p))
+            .collect();
+        let param_tokens = param_tokens?;
+        Ok(quote! { #base_ident<#(#param_tokens),*> })
+    }
+    
+    /// Transpile optional types to Option<T>
+    fn transpile_optional_type(&self, inner: &Type) -> Result<TokenStream> {
+        let inner_tokens = self.transpile_type(inner)?;
+        Ok(quote! { Option<#inner_tokens> })
+    }
+    
+    /// Transpile list types to Vec<T>
+    fn transpile_list_type(&self, elem_type: &Type) -> Result<TokenStream> {
+        let elem_tokens = self.transpile_type(elem_type)?;
+        Ok(quote! { Vec<#elem_tokens> })
+    }
+    
+    /// Transpile array types with fixed size
+    fn transpile_array_type(&self, elem_type: &Type, size: usize) -> Result<TokenStream> {
+        let elem_tokens = self.transpile_type(elem_type)?;
+        let size_lit = proc_macro2::Literal::usize_unsuffixed(size);
+        Ok(quote! { [#elem_tokens; #size_lit] })
+    }
+    
+    /// Transpile tuple types
+    fn transpile_tuple_type(&self, types: &[Type]) -> Result<TokenStream> {
+        let type_tokens: Result<Vec<_>> = types.iter()
+            .map(|t| self.transpile_type(t))
+            .collect();
+        let type_tokens = type_tokens?;
+        Ok(quote! { (#(#type_tokens),*) })
+    }
+    
+    /// Transpile function types
+    fn transpile_function_type(&self, params: &[Type], ret: &Type) -> Result<TokenStream> {
+        let param_tokens: Result<Vec<_>> = params.iter()
+            .map(|p| self.transpile_type(p))
+            .collect();
+        let param_tokens = param_tokens?;
+        let ret_tokens = self.transpile_type(ret)?;
+        Ok(quote! { fn(#(#param_tokens),*) -> #ret_tokens })
+    }
+    
+    /// Transpile reference types with special handling for &str
+    fn transpile_reference_type(&self, is_mut: bool, inner: &Type) -> Result<TokenStream> {
+        use crate::frontend::ast::TypeKind;
+        
+        // Special case: &str should not become &&str
+        if let TypeKind::Named(name) = &inner.kind {
+            if name == "str" {
+                return if is_mut {
+                    Ok(quote! { &mut str })
                 } else {
-                    Ok(quote! { &#inner_tokens })
-                }
+                    Ok(quote! { &str })
+                };
             }
+        }
+        
+        let inner_tokens = self.transpile_type(inner)?;
+        if is_mut {
+            Ok(quote! { &mut #inner_tokens })
+        } else {
+            Ok(quote! { &#inner_tokens })
         }
     }
 

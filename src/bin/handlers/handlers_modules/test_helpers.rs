@@ -3,6 +3,7 @@
 
 use anyhow::{Context, Result};
 use colored::Colorize;
+use ruchy::utils::read_file_with_context;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -80,8 +81,7 @@ fn should_include_file(entry: &walkdir::DirEntry, filter: Option<&str>) -> bool 
 pub fn run_test_file(test_file: &Path, verbose: bool) -> Result<()> {
     use ruchy::runtime::repl::Repl;
     
-    let test_content = fs::read_to_string(test_file)
-        .with_context(|| format!("Failed to read test file: {}", test_file.display()))?;
+    let test_content = read_file_with_context(test_file)?;
     
     if verbose {
         println!("   📖 Parsing test file...");

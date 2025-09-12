@@ -155,10 +155,45 @@ impl Transpiler {
 
         // Map Ruchy DataFrame methods to correct Polars API
         match method {
-            // DataFrame builder pattern methods (don't exist in Polars)
+            // Builder pattern methods
+            "column" | "build" => 
+                self.transpile_builder_method(&df_tokens, method, &arg_tokens),
+            
+            // Inspection methods
+            "rows" | "columns" | "get" => 
+                self.transpile_inspection_method(&df_tokens, method, &arg_tokens),
+            
+            // DataFrame operations
+            "select" | "filter" | "sort" => 
+                self.transpile_lazy_operation(&df_tokens, method, &arg_tokens),
+            
+            "groupby" | "group_by" => 
+                self.transpile_groupby(&df_tokens, &arg_tokens),
+            
+            "agg" | "join" => 
+                self.transpile_simple_operation(&df_tokens, method, &arg_tokens),
+            
+            // Statistical methods
+            "mean" | "std" | "min" | "max" | "sum" | "count" => 
+                self.transpile_statistical_method(&df_tokens, method),
+            
+            // Head/tail methods
+            "head" | "tail" => 
+                self.transpile_head_tail(&df_tokens, method, &arg_tokens),
+            
+            // Default case
+            _ => self.transpile_default_method(&df_tokens, method, &arg_tokens),
+        }
+    }
+    
+    fn transpile_builder_method(
+        &self,
+        df_tokens: &TokenStream,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
+        match method {
             "column" => {
-                // .column() doesn't exist - this is part of builder pattern
-                // For now, just pass through to show the issue
                 if arg_tokens.len() == 2 {
                     let name = &arg_tokens[0];
                     let data = &arg_tokens[1];
@@ -167,22 +202,21 @@ impl Transpiler {
                     Ok(quote! { #df_tokens.column(#(#arg_tokens),*) })
                 }
             }
-            "build" => {
-                // .build() doesn't exist in Polars - just return the DataFrame
-                Ok(quote! { #df_tokens })
-            }
-            
-            // DataFrame inspection methods
-            "rows" => {
-                // Polars uses .height() not .rows()
-                Ok(quote! { #df_tokens.height() })
-            }
-            "columns" => {
-                // Polars uses .get_column_names() for column names
-                Ok(quote! { #df_tokens.get_column_names() })
-            }
+            "build" => Ok(quote! { #df_tokens }),
+            _ => unreachable!("Invalid builder method: {}", method),
+        }
+    }
+    
+    fn transpile_inspection_method(
+        &self,
+        df_tokens: &TokenStream,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
+        match method {
+            "rows" => Ok(quote! { #df_tokens.height() }),
+            "columns" => Ok(quote! { #df_tokens.get_column_names() }),
             "get" => {
-                // df.get("column") -> df.column("column") in Polars
                 if arg_tokens.len() == 1 {
                     let col_name = &arg_tokens[0];
                     Ok(quote! { #df_tokens.column(#col_name) })
@@ -190,54 +224,79 @@ impl Transpiler {
                     Ok(quote! { #df_tokens.get(#(#arg_tokens),*) })
                 }
             }
-            
-            // DataFrame operations
-            "select" | "filter" | "sort" => {
-                // These need lazy evaluation for proper chaining
-                let method_ident = format_ident!("{}", method);
-                Ok(quote! {
-                    #df_tokens.lazy().#method_ident(#(#arg_tokens),*).collect().unwrap()
-                })
-            }
-            "groupby" | "group_by" => {
-                // Polars uses group_by
-                Ok(quote! {
-                    #df_tokens.group_by(#(#arg_tokens),*).unwrap()
-                })
-            }
-            "agg" | "join" => {
-                let method_ident = format_ident!("{}", method);
-                Ok(quote! {
-                    #df_tokens.#method_ident(#(#arg_tokens),*).unwrap()
-                })
-            }
-            
-            // Statistical methods
-            "mean" | "std" | "min" | "max" | "sum" | "count" => {
-                // These are aggregate functions
-                let method_ident = format_ident!("{}", method);
-                Ok(quote! {
-                    #df_tokens.#method_ident()
-                })
-            }
-            
-            // Head/tail methods
-            "head" | "tail" => {
-                let method_ident = format_ident!("{}", method);
-                if args.is_empty() {
-                    Ok(quote! { #df_tokens.#method_ident(Some(5)) })
-                } else {
-                    Ok(quote! { #df_tokens.#method_ident(Some(#(#arg_tokens),*)) })
-                }
-            }
-            _ => {
-                // Default method call
-                let method_ident = format_ident!("{}", method);
-                Ok(quote! {
-                    #df_tokens.#method_ident(#(#arg_tokens),*)
-                })
-            }
+            _ => unreachable!("Invalid inspection method: {}", method),
         }
+    }
+    
+    fn transpile_lazy_operation(
+        &self,
+        df_tokens: &TokenStream,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
+        let method_ident = format_ident!("{}", method);
+        Ok(quote! {
+            #df_tokens.lazy().#method_ident(#(#arg_tokens),*).collect().unwrap()
+        })
+    }
+    
+    fn transpile_groupby(
+        &self,
+        df_tokens: &TokenStream,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
+        Ok(quote! {
+            #df_tokens.group_by(#(#arg_tokens),*).unwrap()
+        })
+    }
+    
+    fn transpile_simple_operation(
+        &self,
+        df_tokens: &TokenStream,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
+        let method_ident = format_ident!("{}", method);
+        Ok(quote! {
+            #df_tokens.#method_ident(#(#arg_tokens),*).unwrap()
+        })
+    }
+    
+    fn transpile_statistical_method(
+        &self,
+        df_tokens: &TokenStream,
+        method: &str,
+    ) -> Result<TokenStream> {
+        let method_ident = format_ident!("{}", method);
+        Ok(quote! {
+            #df_tokens.#method_ident()
+        })
+    }
+    
+    fn transpile_head_tail(
+        &self,
+        df_tokens: &TokenStream,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
+        let method_ident = format_ident!("{}", method);
+        if arg_tokens.is_empty() {
+            Ok(quote! { #df_tokens.#method_ident(Some(5)) })
+        } else {
+            Ok(quote! { #df_tokens.#method_ident(Some(#(#arg_tokens),*)) })
+        }
+    }
+    
+    fn transpile_default_method(
+        &self,
+        df_tokens: &TokenStream,
+        method: &str,
+        arg_tokens: &[TokenStream],
+    ) -> Result<TokenStream> {
+        let method_ident = format_ident!("{}", method);
+        Ok(quote! {
+            #df_tokens.#method_ident(#(#arg_tokens),*)
+        })
     }
     
     /// Check if an expression is a DataFrame type

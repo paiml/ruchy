@@ -8,6 +8,7 @@
 
 use ruchy::wasm::shared_session::{SharedSession, ExecutionMode};
 use ruchy::wasm::notebook::NotebookRuntime;
+use ruchy::utils::time_operation;
 use std::time::Instant;
 
 #[test]
@@ -15,12 +16,10 @@ fn test_cell_execution_performance() {
     let mut session = SharedSession::new();
     
     // Simple arithmetic should be very fast
-    let start = Instant::now();
-    let result = session.execute("perf_test", "42 + 58");
-    let elapsed = start.elapsed();
+    let (result, elapsed_ms) = time_operation(|| session.execute("perf_test", "42 + 58"));
     
     assert!(result.is_ok(), "Simple arithmetic failed");
-    assert!(elapsed.as_millis() < 10, "Simple arithmetic too slow: {}ms", elapsed.as_millis());
+    assert!(elapsed_ms < 10.0, "Simple arithmetic too slow: {:.2}ms", elapsed_ms);
 }
 
 #[test]
@@ -28,12 +27,10 @@ fn test_variable_assignment_performance() {
     let mut session = SharedSession::new();
     
     // Variable assignment should be fast
-    let start = Instant::now();
-    let result = session.execute("perf_test", "let x = 100; x * 2");
-    let elapsed = start.elapsed();
+    let (result, elapsed_ms) = time_operation(|| session.execute("perf_test", "let x = 100; x * 2"));
     
     assert!(result.is_ok(), "Variable assignment failed");
-    assert!(elapsed.as_millis() < 15, "Variable assignment too slow: {}ms", elapsed.as_millis());
+    assert!(elapsed_ms < 15.0, "Variable assignment too slow: {:.2}ms", elapsed_ms);
 }
 
 #[test]
@@ -41,12 +38,10 @@ fn test_dataframe_creation_performance() {
     let mut session = SharedSession::new();
     
     // Small DataFrame creation should be reasonable
-    let start = Instant::now();
-    let result = session.execute("perf_test", "DataFrame([[1, 2], [3, 4], [5, 6]])");
-    let elapsed = start.elapsed();
+    let (result, elapsed_ms) = time_operation(|| session.execute("perf_test", "DataFrame([[1, 2], [3, 4], [5, 6]])"));
     
     assert!(result.is_ok(), "DataFrame creation failed");
-    assert!(elapsed.as_millis() < 50, "DataFrame creation too slow: {}ms", elapsed.as_millis());
+    assert!(elapsed_ms < 50.0, "DataFrame creation too slow: {:.2}ms", elapsed_ms);
 }
 
 #[test]
@@ -57,12 +52,10 @@ fn test_dataframe_operation_performance() {
     session.execute("setup", "let df = DataFrame([[1, 2], [3, 4], [5, 6]])").unwrap();
     
     // Test column selection performance
-    let start = Instant::now();
-    let result = session.execute("perf_test", "df.select(\"column_0\")");
-    let elapsed = start.elapsed();
+    let (result, elapsed_ms) = time_operation(|| session.execute("perf_test", "df.select(\"column_0\")"));
     
     assert!(result.is_ok(), "DataFrame selection failed");
-    assert!(elapsed.as_millis() < 25, "DataFrame selection too slow: {}ms", elapsed.as_millis());
+    assert!(elapsed_ms < 25.0, "DataFrame selection too slow: {:.2}ms", elapsed_ms);
 }
 
 #[test]
