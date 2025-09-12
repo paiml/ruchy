@@ -6,7 +6,7 @@ use std::fs;
 use tempfile::NamedTempFile;
 
 fn run_test_file(code: &str) -> Result<String, String> {
-    let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
+    let temp_file = NamedTempFile::new().expect("Failed to create temp file");
     fs::write(temp_file.path(), code).expect("Failed to write test code");
     
     let output = Command::new("cargo")

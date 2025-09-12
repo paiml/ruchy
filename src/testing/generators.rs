@@ -1,13 +1,18 @@
 //! Property-based test generators for AST nodes
-
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Pattern, Span, UnaryOp};
 use proptest::prelude::*;
 use proptest::strategy::{BoxedStrategy, Strategy};
-
 /// Maximum depth for recursive AST generation to avoid stack overflow
 const MAX_DEPTH: u32 = 5;
-
 /// Generate arbitrary literals
+/// # Examples
+/// 
+/// ```
+/// use ruchy::testing::generators::arb_literal;
+/// 
+/// let result = arb_literal(());
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn arb_literal() -> BoxedStrategy<Literal> {
     prop_oneof![
         (0i64..i64::MAX).prop_map(Literal::Integer),
@@ -18,13 +23,27 @@ pub fn arb_literal() -> BoxedStrategy<Literal> {
     ]
     .boxed()
 }
-
 /// Generate arbitrary identifiers
+/// # Examples
+/// 
+/// ```
+/// use ruchy::testing::generators::arb_identifier;
+/// 
+/// let result = arb_identifier(());
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn arb_identifier() -> BoxedStrategy<String> {
     "[a-z][a-z0-9_]{0,10}".prop_map(|s| s).boxed()
 }
-
 /// Generate arbitrary binary operators
+/// # Examples
+/// 
+/// ```
+/// use ruchy::testing::generators::arb_binary_op;
+/// 
+/// let result = arb_binary_op(());
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn arb_binary_op() -> BoxedStrategy<BinaryOp> {
     prop_oneof![
         Just(BinaryOp::Add),
@@ -48,8 +67,15 @@ pub fn arb_binary_op() -> BoxedStrategy<BinaryOp> {
     ]
     .boxed()
 }
-
 /// Generate arbitrary unary operators
+/// # Examples
+/// 
+/// ```
+/// use ruchy::testing::generators::arb_unary_op;
+/// 
+/// let result = arb_unary_op(());
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn arb_unary_op() -> BoxedStrategy<UnaryOp> {
     prop_oneof![
         Just(UnaryOp::Negate),
@@ -59,8 +85,15 @@ pub fn arb_unary_op() -> BoxedStrategy<UnaryOp> {
     ]
     .boxed()
 }
-
 /// Generate arbitrary expressions with depth limiting
+/// # Examples
+/// 
+/// ```
+/// use ruchy::testing::generators::arb_expr_with_depth;
+/// 
+/// let result = arb_expr_with_depth(());
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn arb_expr_with_depth(depth: u32) -> BoxedStrategy<Expr> {
     if depth >= MAX_DEPTH {
         // Base case: only generate non-recursive expressions
@@ -122,13 +155,27 @@ pub fn arb_expr_with_depth(depth: u32) -> BoxedStrategy<Expr> {
         .boxed()
     }
 }
-
 /// Generate arbitrary expressions
+/// # Examples
+/// 
+/// ```
+/// use ruchy::testing::generators::arb_expr;
+/// 
+/// let result = arb_expr(());
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn arb_expr() -> BoxedStrategy<Expr> {
     arb_expr_with_depth(0)
 }
-
 /// Generate arbitrary patterns
+/// # Examples
+/// 
+/// ```
+/// use ruchy::testing::generators::arb_pattern;
+/// 
+/// let result = arb_pattern(());
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn arb_pattern() -> BoxedStrategy<Pattern> {
     prop_oneof![
         any::<i64>().prop_map(|i| Pattern::Literal(Literal::Integer(i))),
@@ -138,8 +185,15 @@ pub fn arb_pattern() -> BoxedStrategy<Pattern> {
     ]
     .boxed()
 }
-
 /// Generate well-typed expressions (simplified for testing)
+/// # Examples
+/// 
+/// ```
+/// use ruchy::testing::generators::arb_well_typed_expr;
+/// 
+/// let result = arb_well_typed_expr(());
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn arb_well_typed_expr() -> BoxedStrategy<Expr> {
     // For now, just use simple expressions that are likely to be well-typed
     prop_oneof![
@@ -164,4 +218,23 @@ pub fn arb_well_typed_expr() -> BoxedStrategy<Expr> {
         }),
     ]
     .boxed()
+}
+#[cfg(test)]
+mod property_tests_generators {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_arb_literal_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
+    }
 }

@@ -4,7 +4,6 @@
 //! ensuring that variables, functions, and types are preserved between executions.
 
 use ruchy::wasm::notebook::NotebookRuntime;
-use std::collections::{HashMap, HashSet};
 use serde_json;
 
 // Test 1: Basic state persistence across cells

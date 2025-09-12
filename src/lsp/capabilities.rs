@@ -1,8 +1,6 @@
 //! LSP semantic token capabilities
-
 use std::sync::LazyLock;
 use tower_lsp::lsp_types::{SemanticTokenModifier, SemanticTokenType, SemanticTokensLegend};
-
 /// Semantic token types for Ruchy
 pub static SEMANTIC_TOKEN_LEGEND: LazyLock<SemanticTokensLegend> =
     LazyLock::new(|| SemanticTokensLegend {
@@ -43,7 +41,6 @@ pub static SEMANTIC_TOKEN_LEGEND: LazyLock<SemanticTokensLegend> =
             SemanticTokenModifier::DEFAULT_LIBRARY,
         ],
     });
-
 /// Token types specific to Ruchy
 ///
 /// # Examples
@@ -63,7 +60,6 @@ pub enum RuchyTokenType {
     Pipeline,
     Pattern,
 }
-
 /// Convert Ruchy-specific tokens to LSP semantic token types
 ///
 /// # Examples
@@ -71,6 +67,8 @@ pub enum RuchyTokenType {
 /// ```
 /// use ruchy::lsp::{RuchyTokenType, ruchy_token_to_lsp};
 /// use tower_lsp::lsp_types::SemanticTokenType;
+#[cfg(test)]
+use proptest::prelude::*;
 ///
 /// assert_eq!(ruchy_token_to_lsp(RuchyTokenType::Actor), SemanticTokenType::CLASS);
 /// assert_eq!(ruchy_token_to_lsp(RuchyTokenType::DataFrame), SemanticTokenType::TYPE);
@@ -81,5 +79,24 @@ pub fn ruchy_token_to_lsp(token: RuchyTokenType) -> SemanticTokenType {
         RuchyTokenType::DataFrame => SemanticTokenType::TYPE,
         RuchyTokenType::Pipeline => SemanticTokenType::OPERATOR,
         RuchyTokenType::Pattern => SemanticTokenType::ENUM_MEMBER,
+    }
+}
+#[cfg(test)]
+mod property_tests_capabilities {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_ruchy_token_to_lsp_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

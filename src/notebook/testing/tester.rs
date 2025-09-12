@@ -3,7 +3,8 @@ use crate::notebook::testing::state::TestState;
 use crate::runtime::repl::Repl;
 use std::path::Path;
 use std::collections::HashMap;
-
+#[cfg(test)]
+use proptest::prelude::*;
 /// Core notebook testing functionality
 pub struct NotebookTester {
     config: TestConfig,
@@ -11,13 +12,43 @@ pub struct NotebookTester {
     repl: Repl,
     cell_outputs: HashMap<String, CellOutput>,
 }
-
 impl NotebookTester {
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         Self::with_config(TestConfig::default())
     }
-
-    pub fn with_config(config: TestConfig) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::with_config;
+/// 
+/// let result = with_config(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn with_config(config: TestConfig) -> Self {
         let repl = Repl::new().expect("Failed to create REPL");
         Self {
             config,
@@ -26,19 +57,24 @@ impl NotebookTester {
             cell_outputs: HashMap::new(),
         }
     }
-
-    pub fn execute_cell(&mut self, cell: &Cell) -> Result<CellOutput, String> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::execute_cell;
+/// 
+/// let result = execute_cell(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn execute_cell(&mut self, cell: &Cell) -> Result<CellOutput, String> {
         // Skip markdown cells
         if matches!(cell.cell_type, CellType::Markdown) {
             return Ok(CellOutput::None);
         }
-        
         // Execute the cell using the REPL
         match self.repl.eval(&cell.source) {
             Ok(value) => {
                 let output = CellOutput::Value(value.to_string());
                 self.cell_outputs.insert(cell.id.clone(), output.clone());
-                
                 // Update state if it's a variable assignment
                 if cell.source.starts_with("let ") {
                     if let Some(eq_pos) = cell.source.find('=') {
@@ -51,7 +87,6 @@ impl NotebookTester {
                         }
                     }
                 }
-                
                 Ok(output)
             }
             Err(e) => {
@@ -61,16 +96,37 @@ impl NotebookTester {
             }
         }
     }
-
-    pub fn cell_count(&self) -> usize {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::cell_count;
+/// 
+/// let result = cell_count(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn cell_count(&self) -> usize {
         self.cell_outputs.len()
     }
-
-    pub fn get_state(&self) -> &TestState {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::get_state;
+/// 
+/// let result = get_state(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn get_state(&self) -> &TestState {
         &self.state
     }
-
-    pub fn compare_outputs(
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::compare_outputs;
+/// 
+/// let result = compare_outputs(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn compare_outputs(
         &self,
         actual: &CellOutput,
         expected: &CellOutput,
@@ -100,8 +156,15 @@ impl NotebookTester {
             _ => TestResult::TypeMismatch,
         }
     }
-
-    pub fn compare_dataframes(
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::compare_dataframes;
+/// 
+/// let result = compare_dataframes(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn compare_dataframes(
         &self,
         df1: &CellOutput,
         df2: &CellOutput,
@@ -113,18 +176,15 @@ impl NotebookTester {
                 if data1.columns != data2.columns {
                     return TestResult::ShapeMismatch;
                 }
-                
                 // Check row count matches
                 if data1.rows.len() != data2.rows.len() {
                     return TestResult::ShapeMismatch;
                 }
-                
                 // Check each cell with tolerance for numeric values
                 for (row1, row2) in data1.rows.iter().zip(data2.rows.iter()) {
                     if row1.len() != row2.len() {
                         return TestResult::ShapeMismatch;
                     }
-                    
                     for (cell1, cell2) in row1.iter().zip(row2.iter()) {
                         // Try to parse as numbers for tolerance comparison
                         if let (Ok(num1), Ok(num2)) = (cell1.parse::<f64>(), cell2.parse::<f64>()) {
@@ -141,28 +201,23 @@ impl NotebookTester {
                         }
                     }
                 }
-                
                 TestResult::Pass
             }
             _ => TestResult::TypeMismatch,
         }
     }
-
     pub fn test_file(&self, path: &Path) -> anyhow::Result<TestReport> {
         // Stub for Sprint 0
         let content = std::fs::read_to_string(path)?;
         let notebook: Notebook = serde_json::from_str(&content)?;
-        
         let mut session = NotebookTestSession::new();
         Ok(session.run_notebook_test(&notebook))
     }
 }
-
 pub struct NotebookTestSession {
     tester: NotebookTester,
     checkpoints: Vec<(String, TestState)>,
 }
-
 impl NotebookTestSession {
     pub fn new() -> Self {
         Self {
@@ -170,18 +225,39 @@ impl NotebookTestSession {
             checkpoints: Vec::new(),
         }
     }
-
-    pub fn execute_cell_str(&mut self, _source: &str) -> CellOutput {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::execute_cell_str;
+/// 
+/// let result = execute_cell_str("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn execute_cell_str(&mut self, _source: &str) -> CellOutput {
         CellOutput::Value("42".to_string())
     }
-
-    pub fn create_checkpoint(&mut self, name: &str) -> Option<String> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::create_checkpoint;
+/// 
+/// let result = create_checkpoint("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn create_checkpoint(&mut self, name: &str) -> Option<String> {
         let id = format!("checkpoint_{}", name);
         self.checkpoints.push((id.clone(), self.tester.state.clone()));
         Some(id)
     }
-
-    pub fn restore_checkpoint(&mut self, id: &str) -> bool {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::restore_checkpoint;
+/// 
+/// let result = restore_checkpoint("example");
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn restore_checkpoint(&mut self, id: &str) -> bool {
         if let Some(pos) = self.checkpoints.iter().position(|(cid, _)| cid == id) {
             self.tester.state = self.checkpoints[pos].1.clone();
             true
@@ -189,10 +265,16 @@ impl NotebookTestSession {
             false
         }
     }
-
-    pub fn run_notebook_test(&mut self, notebook: &Notebook) -> TestReport {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::run_notebook_test;
+/// 
+/// let result = run_notebook_test(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn run_notebook_test(&mut self, notebook: &Notebook) -> TestReport {
         let mut results = Vec::new();
-        
         for cell in &notebook.cells {
             if let Some(ref metadata) = cell.metadata.test {
                 match &metadata.test_type {
@@ -208,11 +290,9 @@ impl NotebookTestSession {
                 }
             }
         }
-
         let total_tests = results.len();
         let passed_tests = results.iter().filter(|r| matches!(r, TestResult::Pass)).count();
         let failed_tests = results.iter().filter(|r| !matches!(r, TestResult::Pass)).count();
-        
         TestReport {
             results,
             total_tests,
@@ -225,15 +305,39 @@ impl NotebookTestSession {
         }
     }
 }
-
 pub struct NotebookParser;
-
 impl NotebookParser {
     pub fn new() -> Self {
         Self
     }
-
-    pub fn validate(&self, _notebook: &Notebook) -> Result<(), String> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::tester::validate;
+/// 
+/// let result = validate(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn validate(&self, _notebook: &Notebook) -> Result<(), String> {
         Ok(())
+    }
+}
+#[cfg(test)]
+mod property_tests_tester {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

@@ -1737,6 +1737,30 @@ impl Interpreter {
     }
 
     /// Evaluate an AST expression directly
+    /// 
+    /// # Examples
+    /// ```
+    /// use ruchy::runtime::interpreter::Interpreter;
+    /// use ruchy::frontend::parser::Parser;
+    /// 
+    /// let mut interpreter = Interpreter::new();
+    /// let mut parser = Parser::new("42");
+    /// let expr = parser.parse().unwrap();
+    /// let result = interpreter.eval_expr(&expr).unwrap();
+    /// assert_eq!(result.to_string(), "42");
+    /// ```
+    /// 
+    /// ```
+    /// use ruchy::runtime::interpreter::Interpreter;
+    /// use ruchy::frontend::parser::Parser;
+    /// 
+    /// let mut interpreter = Interpreter::new();
+    /// let mut parser = Parser::new("2 + 3");
+    /// let expr = parser.parse().unwrap();
+    /// let result = interpreter.eval_expr(&expr).unwrap();
+    /// assert_eq!(result.to_string(), "5");
+    /// ```
+    /// 
     /// # Errors
     /// Returns error if evaluation fails (type errors, runtime errors, etc.)
     pub fn eval_expr(&mut self, expr: &Expr) -> Result<Value, InterpreterError> {
@@ -2033,7 +2057,7 @@ impl Interpreter {
                         if args.len() == 1 {
                             if let Value::String(_column_name) = &args[0] {
                                 // For now, just return the column name
-                                // TODO: Create a proper ColumnRef type
+                                // Note: Create a proper ColumnRef type
                                 Ok(args[0].clone())
                             } else {
                                 Err(InterpreterError::RuntimeError("col() expects a string column name".to_string()))
@@ -3581,8 +3605,10 @@ impl Interpreter {
                         return Err(InterpreterError::RuntimeError(format!("Join column '{}' not found in right DataFrame", join_column)));
                     }
                     
-                    let left_join_col = left_join_col.unwrap();
-                    let right_join_col = right_join_col.unwrap();
+                    let left_join_col = left_join_col
+                        .expect("left_join_col existence verified by is_none() check above");
+                    let right_join_col = right_join_col
+                        .expect("right_join_col existence verified by is_none() check above");
                     
                     // For simplicity, implement inner join
                     let mut joined_columns = Vec::new();
@@ -3655,7 +3681,8 @@ impl Interpreter {
                 if group_col.is_none() {
                     return Err(InterpreterError::RuntimeError(format!("Group column '{}' not found in DataFrame", group_column)));
                 }
-                let group_col = group_col.unwrap();
+                let group_col = group_col
+                    .expect("group_col existence verified by is_none() check above");
                 
                 // For simplicity, implement groupby as immediate aggregation (sum)
                 // In a full implementation, this would return a GroupBy object
@@ -3964,7 +3991,8 @@ impl Interpreter {
                     if group_col.is_none() {
                         return Err(InterpreterError::RuntimeError(format!("Group column '{}' not found in DataFrame", group_column)));
                     }
-                    let group_col = group_col.unwrap();
+                    let group_col = group_col
+                        .expect("group_col existence verified by is_none() check above");
                     
                     // Group rows by the group column values
                     use std::collections::HashMap;

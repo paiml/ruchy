@@ -1,8 +1,6 @@
 //! MIR type definitions
-
 use std::collections::HashMap;
 use std::fmt;
-
 /// A MIR program consists of functions
 #[derive(Debug, Clone)]
 pub struct Program {
@@ -11,7 +9,6 @@ pub struct Program {
     /// Entry point function name
     pub entry: String,
 }
-
 /// A function in MIR representation
 #[derive(Debug, Clone)]
 pub struct Function {
@@ -28,7 +25,6 @@ pub struct Function {
     /// Entry block index
     pub entry_block: BlockId,
 }
-
 /// A basic block is a sequence of statements with a single entry and exit
 #[derive(Debug, Clone)]
 pub struct BasicBlock {
@@ -39,15 +35,12 @@ pub struct BasicBlock {
     /// Terminator - how control leaves this block
     pub terminator: Terminator,
 }
-
 /// Block identifier
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BlockId(pub usize);
-
 /// Local variable identifier
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Local(pub usize);
-
 /// Local variable declaration
 #[derive(Debug, Clone)]
 pub struct LocalDecl {
@@ -60,7 +53,6 @@ pub struct LocalDecl {
     /// Optional name for debugging
     pub name: Option<String>,
 }
-
 /// MIR types (simplified from AST types)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
@@ -98,14 +90,12 @@ pub enum Type {
     /// User-defined type
     UserType(String),
 }
-
 /// Mutability of references
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mutability {
     Immutable,
     Mutable,
 }
-
 /// A statement that doesn't affect control flow
 #[derive(Debug, Clone)]
 pub enum Statement {
@@ -118,7 +108,6 @@ pub enum Statement {
     /// No operation
     Nop,
 }
-
 /// A place where a value can be stored
 #[derive(Debug, Clone)]
 pub enum Place {
@@ -131,11 +120,9 @@ pub enum Place {
     /// Dereference
     Deref(Box<Place>),
 }
-
 /// Field index in a struct/tuple
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FieldIdx(pub usize);
-
 /// Right-hand side of an assignment
 #[derive(Debug, Clone)]
 pub enum Rvalue {
@@ -154,7 +141,6 @@ pub enum Rvalue {
     /// Cast between types
     Cast(CastKind, Operand, Type),
 }
-
 /// An operand (value that can be used)
 #[derive(Debug, Clone)]
 pub enum Operand {
@@ -165,7 +151,6 @@ pub enum Operand {
     /// Constant value
     Constant(Constant),
 }
-
 /// Constant values
 #[derive(Debug, Clone)]
 pub enum Constant {
@@ -184,7 +169,6 @@ pub enum Constant {
     /// Character literal
     Char(char),
 }
-
 /// Binary operations
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinOp {
@@ -213,7 +197,6 @@ pub enum BinOp {
     Or,
     NullCoalesce,
 }
-
 /// Unary operations
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnOp {
@@ -226,7 +209,6 @@ pub enum UnOp {
     /// Reference (borrow)
     Ref,
 }
-
 /// Aggregate kinds
 #[derive(Debug, Clone)]
 pub enum AggregateKind {
@@ -237,7 +219,6 @@ pub enum AggregateKind {
     /// Struct
     Struct(String),
 }
-
 /// Cast kinds
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CastKind {
@@ -248,7 +229,6 @@ pub enum CastKind {
     /// Unsizing (e.g., array to slice)
     Unsize,
 }
-
 /// How control flow leaves a basic block
 #[derive(Debug, Clone)]
 pub enum Terminator {
@@ -277,20 +257,17 @@ pub enum Terminator {
     /// Unreachable code (for exhaustiveness)
     Unreachable,
 }
-
 // Display implementations for debugging
 impl fmt::Display for BlockId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "bb{}", self.0)
     }
 }
-
 impl fmt::Display for Local {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "__{}", self.0)
     }
 }
-
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -337,45 +314,36 @@ impl fmt::Display for Type {
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    
     #[test]
     fn test_program_creation() {
         let program = Program {
             functions: HashMap::new(),
             entry: "main".to_string(),
         };
-        
         assert_eq!(program.entry, "main");
         assert_eq!(program.functions.len(), 0);
     }
-    
-    
     #[test]
     fn test_block_id() {
         let id1 = BlockId(0);
         let id2 = BlockId(1);
         let id3 = BlockId(0);
-        
         assert_eq!(id1, id3);
         assert_ne!(id1, id2);
         assert_eq!(format!("{id1:?}"), "BlockId(0)");
     }
-    
     #[test]
     fn test_local_variable() {
         let local1 = Local(0);
         let local2 = Local(1);
         let local3 = Local(0);
-        
         assert_eq!(local1, local3);
         assert_ne!(local1, local2);
         assert_eq!(format!("{local1:?}"), "Local(0)");
     }
-    
     #[test]
     fn test_type_variants() {
         let types = vec![
@@ -390,12 +358,10 @@ mod tests {
             Type::Vec(Box::new(Type::F64)),
             Type::Tuple(vec![Type::I32, Type::Bool]),
         ];
-        
         for ty in types {
             assert!(!format!("{ty:?}").is_empty());
         }
     }
-    
     #[test]
     fn test_type_equality() {
         assert_eq!(Type::I32, Type::I32);

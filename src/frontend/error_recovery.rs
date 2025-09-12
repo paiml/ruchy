@@ -1,14 +1,11 @@
 //! Error recovery parser for better error messages and IDE support
-
 #![allow(clippy::items_after_statements)] // Recovery parser needs constants in local scopes
-
 use crate::frontend::ast::{
     BinaryOp, Expr, ExprKind, Literal, Param, Pattern, Span, Type, TypeKind,
 };
 use crate::frontend::lexer::{Token, TokenStream};
 use anyhow::Result;
 use std::fmt;
-
 /// Parse error with recovery information
 #[derive(Debug, Clone)]
 pub struct ParseError {
@@ -21,7 +18,6 @@ pub struct ParseError {
     pub error_code: ErrorCode,
     pub context: Vec<String>, // Stack of parsing contexts for better error messages
 }
-
 /// Error severity levels
 #[derive(Debug, Clone, PartialEq)]
 pub enum ErrorSeverity {
@@ -30,7 +26,6 @@ pub enum ErrorSeverity {
     Info,
     Hint,
 }
-
 /// Error codes for categorizing different types of errors
 #[derive(Debug, Clone, PartialEq)]
 pub enum ErrorCode {
@@ -38,39 +33,31 @@ pub enum ErrorCode {
     UnexpectedToken,
     MissingToken,
     InvalidSyntax,
-
     // Type errors
     TypeMismatch,
     UndefinedVariable,
     DuplicateDefinition,
-
     // Pattern matching errors
     UnreachablePattern,
     NonExhaustivePattern,
-
     // Import/module errors
     ModuleNotFound,
     SymbolNotFound,
     CircularImport,
-
     // General errors
     InvalidOperation,
     InternalError,
 }
-
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Write severity and error code
         write!(f, "[{:?}:{:?}] ", self.severity, self.error_code)?;
-
         // Write context if available
         if !self.context.is_empty() {
             write!(f, "In {}: ", self.context.join(" -> "))?;
         }
-
         // Write main message
         write!(f, "{}", self.message)?;
-
         // Write location info
         write!(
             f,
@@ -78,7 +65,6 @@ impl fmt::Display for ParseError {
             self.span.start + 1, // Convert to 1-based indexing for user display
             self.span.end - self.span.start + 1
         )?;
-
         // Write expected vs found tokens if available
         if !self.expected.is_empty() {
             write!(f, " (expected: {:?}", self.expected)?;
@@ -87,18 +73,14 @@ impl fmt::Display for ParseError {
             }
             write!(f, ")")?;
         }
-
         // Write recovery hint
         if let Some(ref hint) = self.recovery_hint {
             write!(f, "\n  💡 Hint: {hint}")?;
         }
-
         Ok(())
     }
 }
-
 impl std::error::Error for ParseError {}
-
 impl ParseError {
     /// Create a new parse error with basic information
     pub fn new(message: String, span: Span) -> Self {
@@ -113,7 +95,6 @@ impl ParseError {
             context: Vec::new(),
         }
     }
-
     /// Create an error for unexpected token
     pub fn unexpected_token(expected: Vec<Token>, found: Token, span: Span) -> Self {
         let message = format!("Unexpected token '{found:?}'");
@@ -130,7 +111,6 @@ impl ParseError {
             context: Vec::new(),
         }
     }
-
     /// Create an error for missing token
     pub fn missing_token(expected: Token, span: Span) -> Self {
         let message = format!("Missing '{expected:?}'");
@@ -145,28 +125,24 @@ impl ParseError {
             context: Vec::new(),
         }
     }
-
     /// Add parsing context to the error
     #[must_use]
     pub fn with_context(mut self, context: String) -> Self {
         self.context.push(context);
         self
     }
-
     /// Add recovery hint
     #[must_use]
     pub fn with_hint(mut self, hint: String) -> Self {
         self.recovery_hint = Some(hint);
         self
     }
-
     /// Set severity level
     #[must_use]
     pub fn with_severity(mut self, severity: ErrorSeverity) -> Self {
         self.severity = severity;
         self
     }
-
     /// Set error code
     #[must_use]
     pub fn with_code(mut self, code: ErrorCode) -> Self {
@@ -174,7 +150,6 @@ impl ParseError {
         self
     }
 }
-
 /// Result of parsing with error recovery
 #[derive(Debug)]
 pub struct ParseResult {
@@ -182,7 +157,6 @@ pub struct ParseResult {
     pub errors: Vec<ParseError>,
     pub partial_ast: bool,
 }
-
 /// Parser with error recovery capabilities
 pub struct RecoveryParser<'a> {
     tokens: TokenStream<'a>,
@@ -191,7 +165,6 @@ pub struct RecoveryParser<'a> {
     ghost_node_count: usize,
     recursion_depth: usize,
 }
-
 impl<'a> RecoveryParser<'a> {
     #[must_use]
     pub fn new(input: &'a str) -> Self {
@@ -203,7 +176,6 @@ impl<'a> RecoveryParser<'a> {
             recursion_depth: 0,
         }
     }
-
     /// Parse with error recovery, always producing some AST
     pub fn parse_with_recovery(&mut self) -> ParseResult {
         match self.parse_expr_recovery() {
@@ -235,16 +207,13 @@ impl<'a> RecoveryParser<'a> {
             }
         }
     }
-
     fn parse_expr_recovery(&mut self) -> Result<Expr> {
         self.parse_expr_with_precedence_recovery(0)
     }
-
     fn parse_expr_with_precedence_recovery(&mut self, min_prec: i32) -> Result<Expr> {
         let mut left = self.parse_prefix_recovery()?;
         const MAX_ITERATIONS: usize = 1000; // Prevent infinite loops
         let mut iteration_count = 0;
-
         loop {
             iteration_count += 1;
             if iteration_count > MAX_ITERATIONS {
@@ -254,21 +223,17 @@ impl<'a> RecoveryParser<'a> {
                 );
                 break;
             }
-
             let Some((token, _)) = self.tokens.peek() else {
                 break;
             };
-
             if !token.is_binary_op() {
                 break;
             }
-
             let token_clone = token.clone();
             let prec = Self::precedence(&token_clone);
             if prec < min_prec {
                 break;
             }
-
             match self.tokens.advance() {
                 Some((op_token, _op_span)) => {
                     let op = match Self::token_to_binary_op(&op_token) {
@@ -279,7 +244,6 @@ impl<'a> RecoveryParser<'a> {
                             continue;
                         }
                     };
-
                     let right = if let Ok(expr) = self.parse_expr_with_precedence_recovery(prec + 1)
                     {
                         expr
@@ -292,7 +256,6 @@ impl<'a> RecoveryParser<'a> {
                         );
                         ghost
                     };
-
                     let span = left.span.merge(right.span);
                     left = Expr::new(
                         ExprKind::Binary {
@@ -306,13 +269,10 @@ impl<'a> RecoveryParser<'a> {
                 None => break,
             }
         }
-
         Ok(left)
     }
-
     fn parse_prefix_recovery(&mut self) -> Result<Expr> {
         const MAX_RECURSION_DEPTH: usize = 100;
-
         self.recursion_depth += 1;
         if self.recursion_depth > MAX_RECURSION_DEPTH {
             self.recursion_depth -= 1;
@@ -322,7 +282,6 @@ impl<'a> RecoveryParser<'a> {
             );
             return Ok(self.create_ghost_node("Max recursion depth"));
         }
-
         let result = match self.tokens.peek() {
             Some((Token::Integer(n), span)) => {
                 let n = *n;
@@ -361,7 +320,6 @@ impl<'a> RecoveryParser<'a> {
             Some((Token::LeftParen, _)) => self.parse_paren_recovery(),
             Some((token, _span)) => {
                 let token_clone = token.clone();
-
                 // Special handling for binary operators in prefix position
                 if token.is_binary_op() {
                     self.tokens.advance(); // Consume the misplaced operator
@@ -372,7 +330,6 @@ impl<'a> RecoveryParser<'a> {
                     // Try to parse what comes after the misplaced operator
                     return self.parse_prefix_recovery();
                 }
-
                 self.tokens.advance(); // Advance before recording error
                 self.record_error(
                     format!("Unexpected token: {token_clone:?}"),
@@ -390,14 +347,11 @@ impl<'a> RecoveryParser<'a> {
                 Ok(self.create_ghost_node("Unexpected EOF"))
             }
         };
-
         self.recursion_depth -= 1;
         result
     }
-
     fn parse_if_recovery(&mut self) -> Expr {
         let start_span = self.expect_or_recover(&Token::If);
-
         let condition = if let Ok(expr) = self.parse_expr_recovery() {
             Box::new(expr)
         } else {
@@ -407,10 +361,8 @@ impl<'a> RecoveryParser<'a> {
             );
             Box::new(self.create_ghost_node("Missing condition"))
         };
-
         let _ = self.expect_or_recover(&Token::LeftBrace);
         let then_branch = Box::new(self.parse_block_recovery());
-
         let else_branch = if matches!(self.tokens.peek(), Some((Token::Else, _))) {
             self.tokens.advance();
             let _ = self.expect_or_recover(&Token::LeftBrace);
@@ -418,13 +370,11 @@ impl<'a> RecoveryParser<'a> {
         } else {
             None
         };
-
         let span = if let Some(ref else_br) = else_branch {
             start_span.merge(else_br.span)
         } else {
             start_span.merge(then_branch.span)
         };
-
         Expr::new(
             ExprKind::If {
                 condition,
@@ -434,10 +384,8 @@ impl<'a> RecoveryParser<'a> {
             span,
         )
     }
-
     fn parse_let_recovery(&mut self) -> Expr {
         let start_span = self.expect_or_recover(&Token::Let);
-
         let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() {
             name
         } else {
@@ -447,9 +395,7 @@ impl<'a> RecoveryParser<'a> {
             );
             format!("_ghost_{}", self.ghost_node_count)
         };
-
         let _ = self.expect_or_recover(&Token::Equal);
-
         let value = if let Ok(expr) = self.parse_expr_recovery() {
             Box::new(expr)
         } else {
@@ -459,7 +405,6 @@ impl<'a> RecoveryParser<'a> {
             );
             Box::new(self.create_ghost_node("Missing value"))
         };
-
         let body = if matches!(self.tokens.peek(), Some((Token::In, _))) {
             self.tokens.advance();
             match self.parse_expr_recovery() {
@@ -469,7 +414,6 @@ impl<'a> RecoveryParser<'a> {
         } else {
             Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value.span))
         };
-
         let span = start_span.merge(body.span);
         Expr::new(
             ExprKind::Let {
@@ -482,10 +426,8 @@ impl<'a> RecoveryParser<'a> {
             span,
         )
     }
-
     fn parse_function_recovery(&mut self) -> Expr {
         let start_span = self.expect_or_recover(&Token::Fun);
-
         let name = if let Some((Token::Identifier(name), _)) = self.tokens.advance() {
             name
         } else {
@@ -495,21 +437,17 @@ impl<'a> RecoveryParser<'a> {
             );
             format!("_ghost_fn_{}", self.ghost_node_count)
         };
-
         let _ = self.expect_or_recover(&Token::LeftParen);
         let params = self.parse_params_recovery();
         let _ = self.expect_or_recover(&Token::RightParen);
-
         let return_type = if matches!(self.tokens.peek(), Some((Token::Arrow, _))) {
             self.tokens.advance();
             Some(self.parse_type_recovery())
         } else {
             None
         };
-
         let _ = self.expect_or_recover(&Token::LeftBrace);
         let body = Box::new(self.parse_block_recovery());
-
         let span = start_span.merge(body.span);
         Expr::new(
             ExprKind::Function {
@@ -524,14 +462,12 @@ impl<'a> RecoveryParser<'a> {
             span,
         )
     }
-
     fn parse_block_recovery(&mut self) -> Expr {
         let mut exprs = Vec::new();
         let start_span = self
             .tokens
             .peek()
             .map_or(Span::new(0, 0), |(_, span)| *span);
-
         while !matches!(self.tokens.peek(), Some((Token::RightBrace, _)) | None) {
             if let Ok(expr) = self.parse_expr_recovery() {
                 exprs.push(expr);
@@ -542,28 +478,22 @@ impl<'a> RecoveryParser<'a> {
                     exprs.push(self.create_ghost_node("Recovery statement"));
                 }
             }
-
             // Optional semicolon
             if matches!(self.tokens.peek(), Some((Token::Semicolon, _))) {
                 self.tokens.advance();
             }
         }
-
         let _ = self.expect_or_recover(&Token::RightBrace);
-
         let span = if let Some(last) = exprs.last() {
             start_span.merge(last.span)
         } else {
             start_span
         };
-
         Expr::new(ExprKind::Block(exprs), span)
     }
-
     fn parse_list_recovery(&mut self) -> Expr {
         let start_span = self.expect_or_recover(&Token::LeftBracket);
         let mut elements = Vec::new();
-
         while !matches!(self.tokens.peek(), Some((Token::RightBracket, _))) {
             match self.parse_expr_recovery() {
                 Ok(expr) => elements.push(expr),
@@ -571,34 +501,27 @@ impl<'a> RecoveryParser<'a> {
                     self.synchronize_to(&[Token::Comma, Token::RightBracket]);
                 }
             }
-
             if matches!(self.tokens.peek(), Some((Token::Comma, _))) {
                 self.tokens.advance();
             } else {
                 break;
             }
         }
-
         let end_span = self.expect_or_recover(&Token::RightBracket);
         let span = start_span.merge(end_span);
-
         Expr::new(ExprKind::List(elements), span)
     }
-
     fn parse_paren_recovery(&mut self) -> Result<Expr> {
         self.tokens.advance(); // consume (
         let expr = self.parse_expr_recovery()?;
         let _ = self.expect_or_recover(&Token::RightParen);
         Ok(expr)
     }
-
     fn parse_params_recovery(&mut self) -> Vec<Param> {
         let mut params = Vec::new();
-
         if matches!(self.tokens.peek(), Some((Token::RightParen, _))) {
             return params;
         }
-
         loop {
             let Some((Token::Identifier(name), name_span)) = self.tokens.advance() else {
                 self.record_error(
@@ -608,7 +531,6 @@ impl<'a> RecoveryParser<'a> {
                 self.synchronize_to(&[Token::Comma, Token::RightParen]);
                 continue;
             };
-
             let ty = if matches!(self.tokens.peek(), Some((Token::Colon, _))) {
                 self.tokens.advance();
                 self.parse_type_recovery()
@@ -619,7 +541,6 @@ impl<'a> RecoveryParser<'a> {
                     span: name_span,
                 }
             };
-
             params.push(Param {
                 pattern: Pattern::Identifier(name),
                 ty,
@@ -627,7 +548,6 @@ impl<'a> RecoveryParser<'a> {
                 is_mutable: false,
                 default_value: None,
             });
-
             match self.tokens.peek() {
                 Some((Token::Comma, _)) => {
                     self.tokens.advance();
@@ -639,10 +559,8 @@ impl<'a> RecoveryParser<'a> {
                 }
             }
         }
-
         params
     }
-
     fn parse_type_recovery(&mut self) -> Type {
         let (base_type, span) = if let Some((Token::Identifier(name), span)) = self.tokens.advance()
         {
@@ -654,7 +572,6 @@ impl<'a> RecoveryParser<'a> {
             );
             (TypeKind::Named("_".to_string()), Span::new(0, 0))
         };
-
         let kind = if matches!(self.tokens.peek(), Some((Token::Question, _))) {
             self.tokens.advance();
             TypeKind::Optional(Box::new(Type {
@@ -664,10 +581,8 @@ impl<'a> RecoveryParser<'a> {
         } else {
             base_type
         };
-
         Type { kind, span }
     }
-
     /// Create a ghost node for error recovery
     fn create_ghost_node(&mut self, reason: &str) -> Expr {
         self.ghost_node_count += 1;
@@ -680,11 +595,9 @@ impl<'a> RecoveryParser<'a> {
             Span::new(0, 0),
         )
     }
-
     /// Record an error for later reporting
     fn record_error(&mut self, message: String, hint: Option<String>) {
         let span = self.tokens.peek().map_or(Span::new(0, 0), |(_, s)| *s);
-
         let mut error = ParseError::new(message, span);
         if let Some(hint) = hint {
             error = error.with_hint(hint);
@@ -694,7 +607,6 @@ impl<'a> RecoveryParser<'a> {
         }
         self.errors.push(error);
     }
-
     /// Expect a token or record error and try to recover
     fn expect_or_recover(&mut self, expected: &Token) -> Span {
         match self.tokens.peek() {
@@ -713,11 +625,9 @@ impl<'a> RecoveryParser<'a> {
             }
         }
     }
-
     /// Synchronize to a known recovery point
     fn synchronize(&mut self) {
         self.recovery_mode = true;
-
         // Synchronization tokens - statement boundaries
         let sync_tokens = [
             Token::Semicolon,
@@ -728,16 +638,13 @@ impl<'a> RecoveryParser<'a> {
             Token::For,
             Token::Match,
         ];
-
         let mut tokens_consumed = 0;
         const MAX_SYNC_TOKENS: usize = 100; // Prevent infinite loops
-
         while let Some((token, _)) = self.tokens.peek() {
             if tokens_consumed >= MAX_SYNC_TOKENS {
                 // Force exit to prevent infinite loop
                 break;
             }
-
             if sync_tokens.iter().any(|t| t == token) {
                 if matches!(token, Token::Semicolon) {
                     self.tokens.advance(); // consume semicolon
@@ -747,21 +654,17 @@ impl<'a> RecoveryParser<'a> {
             self.tokens.advance();
             tokens_consumed += 1;
         }
-
         self.recovery_mode = false;
     }
-
     /// Synchronize to specific tokens
     fn synchronize_to(&mut self, targets: &[Token]) {
         let mut tokens_consumed = 0;
         const MAX_SYNC_TOKENS: usize = 100; // Prevent infinite loops
-
         while let Some((token, _)) = self.tokens.peek() {
             if tokens_consumed >= MAX_SYNC_TOKENS {
                 // Force exit to prevent infinite loop
                 break;
             }
-
             if targets.iter().any(|t| t == token) {
                 break;
             }
@@ -769,7 +672,6 @@ impl<'a> RecoveryParser<'a> {
             tokens_consumed += 1;
         }
     }
-
     fn precedence(token: &Token) -> i32 {
         match token {
             Token::OrOr => 1,
@@ -786,7 +688,6 @@ impl<'a> RecoveryParser<'a> {
             _ => 0,
         }
     }
-
     fn token_to_binary_op(token: &Token) -> Result<BinaryOp> {
         Ok(match token {
             Token::Plus => BinaryOp::Add,
@@ -811,64 +712,51 @@ impl<'a> RecoveryParser<'a> {
         })
     }
 }
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
-
     #[test]
     fn test_recovery_missing_operand() {
         let mut parser = RecoveryParser::new("1 +");
         let result = parser.parse_with_recovery();
-
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
         assert!(result.partial_ast);
     }
-
     #[test]
     fn test_recovery_missing_paren() {
         let mut parser = RecoveryParser::new("(1 + 2");
         let result = parser.parse_with_recovery();
-
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
     }
-
     #[test]
     fn test_recovery_invalid_token() {
         let mut parser = RecoveryParser::new("let x = @ + 1");
         let result = parser.parse_with_recovery();
-
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
     }
-
     #[test]
     fn test_recovery_incomplete_if() {
         let mut parser = RecoveryParser::new("if x > 0 { print(x)");
         let result = parser.parse_with_recovery();
-
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
         assert!(result.partial_ast);
     }
-
     #[test]
     fn test_recovery_missing_function_body() {
         let mut parser = RecoveryParser::new("fun foo(x: i32)");
         let result = parser.parse_with_recovery();
-
         assert!(result.ast.is_some());
         assert!(!result.errors.is_empty());
     }
-
     #[test]
     fn test_no_errors_on_valid_code() {
         let mut parser = RecoveryParser::new("1 + 2 * 3");
         let result = parser.parse_with_recovery();
-
         assert!(result.ast.is_some());
         assert!(result.errors.is_empty());
         assert!(!result.partial_ast);

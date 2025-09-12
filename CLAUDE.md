@@ -7,6 +7,48 @@
 
 **Generate correct code that compiles on first attempt. Quality is built-in, not bolted-on.**
 
+## 🚨 CRITICAL: A+ Code Standard (From paiml-mcp-agent-toolkit)
+
+**ABSOLUTE REQUIREMENT**: All NEW code MUST achieve A+ quality standards:
+- **Maximum Cyclomatic Complexity**: ≤10 (not 20, not 15, TEN!)
+- **Maximum Cognitive Complexity**: ≤10 (simple, readable, maintainable)
+- **Function Size**: ≤30 lines (if longer, decompose it)
+- **Single Responsibility**: Each function does ONE thing well
+- **Zero SATD**: No TODO, FIXME, HACK, or "temporary" solutions
+- **TDD Mandatory**: Write test FIRST, then implementation
+- **Test Coverage**: 100% for new functions (no exceptions)
+
+**Enforcement Example**:
+```rust
+// ❌ BAD: Complexity 15+
+fn process_data(items: Vec<Item>) -> Result<Output> {
+    let mut results = Vec::new();
+    for item in items {
+        if item.valid {
+            if item.type == "A" {
+                // ... 20 more lines of nested logic
+            }
+        }
+    }
+    // ... more complexity
+}
+
+// ✅ GOOD: Complexity ≤10
+fn process_data(items: Vec<Item>) -> Result<Output> {
+    items.into_iter()
+        .filter(|item| item.valid)
+        .map(process_single_item)
+        .collect()
+}
+
+fn process_single_item(item: Item) -> Result<ItemOutput> {
+    match item.item_type {
+        ItemType::A => process_type_a(item),
+        ItemType::B => process_type_b(item),
+    }
+}
+```
+
 ## EXTREME TDD Protocol (CRITICAL RESPONSE TO PARSER FAILURES)
 
 **ANY PARSER OR TRANSPILER BUG REQUIRES IMMEDIATE EXTREME TDD RESPONSE:**
@@ -142,16 +184,39 @@ Level 7: Performance Tests  - Non-functional requirements
 
 **NEVER AGAIN RULE**: Every defect must be made impossible to repeat through systematic prevention.
 
-### Mandatory Testing Requirements for Quality Issues
+### Mandatory Testing Requirements (80% Property Test Coverage)
 
-**CRITICAL**: Any regression or quality problem REQUIRES this diverse testing approach:
+**CRITICAL**: Following paiml-mcp-agent-toolkit Sprint 88 success pattern:
 
-1. **Doctests**: Every public function MUST have runnable documentation examples
-2. **Property Tests**: Use proptest to verify invariants with 10,000+ random inputs
-3. **Fuzz Tests**: Use cargo-fuzz or AFL to find edge cases with millions of inputs
-4. **Examples**: Create working examples in examples/ directory demonstrating correct usage
-5. **Integration Tests**: End-to-end scenarios covering real-world usage patterns
-6. **Regression Tests**: Specific test case that reproduces and prevents the exact defect
+1. **Property Test Coverage**: Target 80% of all modules with property tests
+2. **Doctests**: Every public function MUST have runnable documentation examples
+3. **Property Tests**: Use proptest to verify invariants with 10,000+ random inputs
+4. **Fuzz Tests**: Use cargo-fuzz or AFL to find edge cases with millions of inputs
+5. **Examples**: Create working examples in examples/ directory demonstrating correct usage
+6. **Integration Tests**: End-to-end scenarios covering real-world usage patterns
+7. **Regression Tests**: Specific test case that reproduces and prevents the exact defect
+
+**Property Test Injection Pattern** (from pmat):
+```rust
+#[cfg(test)]
+mod property_tests {
+    use super::*;
+    use proptest::prelude::*;
+    
+    proptest! {
+        #[test]
+        fn test_function_never_panics(input: String) {
+            let _ = function_under_test(&input); // Should not panic
+        }
+        
+        #[test]
+        fn test_invariant_holds(a: i32, b: i32) {
+            let result = add(a, b);
+            prop_assert_eq!(result, b + a); // Commutative property
+        }
+    }
+}
+```
 
 **Code Coverage Requirements** (QUALITY-008 Implemented):
 - **Current Baseline**: 33.34% overall (post-QUALITY-007 parser enhancements)
@@ -315,6 +380,19 @@ Navigation:
 - Quality gates must use consistent binary paths
 - Never allow behavioral differences between debug/release
 
+## Absolute Rules (From paiml-mcp-agent-toolkit)
+
+1. **NEVER Leave Stub Implementations**: Every feature must be fully functional. No "TODO" or "not yet implemented".
+2. **NEVER Add SATD Comments**: Zero tolerance for TODO, FIXME, HACK comments. Complete implementation only.
+3. **NEVER Use Simple Heuristics**: Always use proper AST-based analysis and accurate algorithms.
+4. **NEVER Duplicate Core Logic**: ONE implementation per feature. All consumers use same underlying logic.
+5. **ALWAYS Dogfood via MCP First**: Use our own MCP tools as primary interface when available.
+6. **NEVER Bypass Quality Gates**: Zero tolerance for `--no-verify`. Fix issues, don't bypass.
+7. **NEVER Use Git Branches**: Work directly on main branch. Continuous integration prevents conflicts.
+8. **ALWAYS Apply Kaizen**: Small, incremental improvements. One file at a time.
+9. **ALWAYS Use Genchi Genbutsu**: Don't guess. Use PMAT to find actual root causes.
+10. **ALWAYS Apply Jidoka**: Automate with human verification. Use `pmat refactor auto`.
+
 ## Task Execution Protocol
 
 ### MANDATORY: Roadmap and Ticket Tracking
@@ -323,7 +401,7 @@ Navigation:
 
 1. **ALWAYS Use Ticket Numbers**: Every commit, PR, and task MUST reference a ticket ID from docs/execution/roadmap.md
 2. **Roadmap-First Development**: No work begins without a corresponding roadmap entry
-3. **Ticket Format**: Use format "RUCHY-XXXX" or established ticket naming (e.g., QUALITY-001, USABLE-001)
+3. **Ticket Format**: Use format "QUALITY-XXX", "PARSER-XXX", "DF-XXX", "WASM-XXX" per roadmap
 4. **Traceability**: Every change must be traceable back to business requirements via ticket system
 5. **Sprint Planning**: Work is organized by sprint with clear task dependencies and priorities
 

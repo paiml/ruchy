@@ -1,15 +1,11 @@
 //! Basic expression parsing - minimal version with only used functions
-
 use super::{ParserState, *};
-
 pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input - expected expression");
     };
-
     let token_clone = token.clone();
     let span_clone = *span;
-
     match token_clone {
         // Literal tokens - delegated to focused helper
         Token::Integer(_) | Token::Float(_) | Token::String(_) | 
@@ -75,7 +71,6 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
         _ => bail!("Unexpected token: {:?}", token_clone),
     }
 }
-
 /// Parse literal tokens (Integer, Float, String, Char, Bool, `FString`)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_literal_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
@@ -109,21 +104,17 @@ fn parse_literal_token(state: &mut ParserState, token: Token, span: Span) -> Res
         _ => bail!("Expected literal token, got: {:?}", token),
     }
 }
-
 /// Parse identifier tokens (Identifier, Underscore, fat arrow lambdas)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
     match token {
         Token::Identifier(name) => {
             state.tokens.advance();
-            
             // Check for module path: math::add
             if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
                 let mut path = vec![name];
-                
                 while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
                     state.tokens.advance(); // consume ::
-                    
                     if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
                         path.push(segment.clone());
                         state.tokens.advance();
@@ -131,7 +122,6 @@ fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> 
                         bail!("Expected identifier after '::'");
                     }
                 }
-                
                 // Create a qualified name expression
                 let qualified_name = path.join("::");
                 Ok(Expr::new(ExprKind::Identifier(qualified_name), span))
@@ -155,7 +145,6 @@ fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> 
             } else if matches!(state.tokens.peek(), Some((Token::Bang, _))) {
                 // This is a macro call like println!
                 state.tokens.advance(); // consume !
-                
                 // Convert macro syntax to regular function call
                 // println! -> println, assert! -> assert, etc.
                 Ok(Expr::new(ExprKind::Identifier(name), span))
@@ -170,7 +159,6 @@ fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> 
         _ => bail!("Expected identifier token, got: {:?}", token),
     }
 }
-
 /// Parse unary operator tokens (Minus, Bang)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_unary_operator_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
@@ -194,7 +182,6 @@ fn parse_unary_operator_token(state: &mut ParserState, token: Token, span: Span)
         _ => bail!("Expected unary operator token, got: {:?}", token),
     }
 }
-
 /// Parse parentheses tokens - either unit type (), grouped expression (expr), or tuple (a, b, c)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> {
@@ -206,29 +193,23 @@ fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> 
     } else {
         // Parse first expression
         let first_expr = super::parse_expr_recursive(state)?;
-        
         // Check if we have a comma (tuple) or just closing paren (grouped expr)
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             // This is a tuple, parse remaining elements
             let mut elements = vec![first_expr];
-            
             while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance(); // consume comma
-                
                 // Check for trailing comma before closing paren
                 if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                     break;
                 }
-                
                 elements.push(super::parse_expr_recursive(state)?);
             }
-            
             state.tokens.expect(&Token::RightParen)?;
             Ok(Expr::new(ExprKind::Tuple(elements), span))
         } else {
             // Just a grouped expression
             state.tokens.expect(&Token::RightParen)?;
-            
             // Check if this is a lambda: (x) => expr
             if matches!(state.tokens.peek(), Some((Token::FatArrow, _))) {
                 parse_lambda_from_expr(state, first_expr, span)
@@ -238,7 +219,6 @@ fn parse_parentheses_token(state: &mut ParserState, span: Span) -> Result<Expr> 
         }
     }
 }
-
 /// Parse pub token - handles public declarations for functions, structs, traits, impl blocks
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
@@ -255,7 +235,6 @@ fn parse_pub_token(state: &mut ParserState) -> Result<Expr> {
     }
     Ok(expr)
 }
-
 /// Parse break token with optional label
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_break_token(state: &mut ParserState, span: Span) -> Result<Expr> {
@@ -270,7 +249,6 @@ fn parse_break_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     };
     Ok(Expr::new(ExprKind::Break { label }, span))
 }
-
 /// Parse continue token with optional label
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_continue_token(state: &mut ParserState, span: Span) -> Result<Expr> {
@@ -285,7 +263,6 @@ fn parse_continue_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     };
     Ok(Expr::new(ExprKind::Continue { label }, span))
 }
-
 /// Parse return token with optional expression
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_return_token(state: &mut ParserState, span: Span) -> Result<Expr> {
@@ -301,7 +278,6 @@ fn parse_return_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     };
     Ok(Expr::new(ExprKind::Return { value }, span))
 }
-
 /// Parse throw statement token  
 fn parse_throw_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     state.tokens.advance();
@@ -309,7 +285,6 @@ fn parse_throw_token(state: &mut ParserState, span: Span) -> Result<Expr> {
     let expr = Box::new(super::parse_expr_recursive(state)?);
     Ok(Expr::new(ExprKind::Throw { expr }, span))
 }
-
 /// Parse constructor tokens (Some, None, Ok, Err, Result, Option)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
@@ -322,13 +297,10 @@ fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) ->
         Token::Option => "Option",
         _ => bail!("Expected constructor token, got: {:?}", token),
     };
-    
     state.tokens.advance();
-    
     // Check if this is a qualified name like Option::Some
     if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
         state.tokens.advance(); // consume ::
-        
         if let Some((next_token, _)) = state.tokens.peek() {
             let variant_name = match next_token.clone() {
                 Token::Some => "Some".to_string(),
@@ -338,17 +310,14 @@ fn parse_constructor_token(state: &mut ParserState, token: Token, span: Span) ->
                 Token::Identifier(name) => name,
                 _ => bail!("Expected variant name after '::'"),
             };
-            
             state.tokens.advance();
             let qualified_name = format!("{constructor_name}::{variant_name}");
             return Ok(Expr::new(ExprKind::Identifier(qualified_name), span));
         }
         bail!("Expected variant name after '::'");
     }
-    
     Ok(Expr::new(ExprKind::Identifier(constructor_name.to_string()), span))
 }
-
 /// Parse control flow tokens (If, Match, While, For, Try)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Expr> {
@@ -361,18 +330,14 @@ fn parse_control_flow_token(state: &mut ParserState, token: Token) -> Result<Exp
         _ => bail!("Expected control flow token, got: {:?}", token),
     }
 }
-
 /// Parse try-catch-finally block
 /// Complexity: <10 (structured error handling)
 fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Try)?;
-    
     let try_block = parse_try_block(state)?;
     let catch_clauses = parse_catch_clauses(state)?;
     let finally_block = parse_finally_block(state)?;
-    
     validate_try_catch_structure(&catch_clauses, finally_block.as_deref())?;
-    
     Ok(Expr::new(
         ExprKind::TryCatch {
             try_block,
@@ -382,12 +347,10 @@ fn parse_try_catch(state: &mut ParserState) -> Result<Expr> {
         start_span,
     ))
 }
-
 /// Parse module declaration: mod name { body }
 /// Complexity: <5 (simple structure)
 fn parse_module_declaration(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Mod)?;
-    
     // Parse module name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let n = n.clone();
@@ -396,22 +359,18 @@ fn parse_module_declaration(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected module name after 'mod'");
     };
-    
     // Parse module body with visibility support
     state.tokens.expect(&Token::LeftBrace)?;
     let body = Box::new(parse_module_body(state)?);
-    
     Ok(Expr::new(
         ExprKind::Module { name, body },
         start_span,
     ))
 }
-
 /// Parse module body with support for visibility modifiers (pub)
 fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.peek().map_or(Span { start: 0, end: 0 }, |t| t.1);
     let mut exprs = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Check for visibility modifier
         let is_pub = if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
@@ -420,7 +379,6 @@ fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
         } else {
             false
         };
-        
         // Parse the item with visibility
         let expr = if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
             super::functions::parse_function_with_visibility(state, is_pub)?
@@ -430,20 +388,15 @@ fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
             // Regular expression without visibility
             super::parse_expr_recursive(state)?
         };
-        
         exprs.push(expr);
-        
         // Skip optional semicolons
         if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
             state.tokens.advance();
         }
     }
-    
     state.tokens.expect(&Token::RightBrace)?;
-    
     Ok(Expr::new(ExprKind::Block(exprs), start_span))
 }
-
 /// Parse data structure definition tokens (Struct, Trait, Impl)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_data_structure_token(state: &mut ParserState, token: Token) -> Result<Expr> {
@@ -454,7 +407,6 @@ fn parse_data_structure_token(state: &mut ParserState, token: Token) -> Result<E
         _ => bail!("Expected data structure token, got: {:?}", token),
     }
 }
-
 /// Parse import/module tokens (Import, Use)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_import_token(state: &mut ParserState, token: Token) -> Result<Expr> {
@@ -464,7 +416,6 @@ fn parse_import_token(state: &mut ParserState, token: Token) -> Result<Expr> {
         _ => bail!("Expected import token, got: {:?}", token),
     }
 }
-
 /// Parse lambda expression tokens (Pipe, `OrOr`)\
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_lambda_token(state: &mut ParserState, token: Token) -> Result<Expr> {
@@ -474,7 +425,6 @@ fn parse_lambda_token(state: &mut ParserState, token: Token) -> Result<Expr> {
         _ => bail!("Expected lambda token, got: {:?}", token),
     }
 }
-
 /// Parse function/block tokens (Fun, Fn, `LeftBrace`)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_function_block_token(state: &mut ParserState, token: Token) -> Result<Expr> {
@@ -484,7 +434,6 @@ fn parse_function_block_token(state: &mut ParserState, token: Token) -> Result<E
         _ => bail!("Expected function/block token, got: {:?}", token),
     }
 }
-
 /// Parse variable declaration tokens (Let, Var)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_variable_declaration_token(state: &mut ParserState, token: Token) -> Result<Expr> {
@@ -494,7 +443,6 @@ fn parse_variable_declaration_token(state: &mut ParserState, token: Token) -> Re
         _ => bail!("Expected variable declaration token, got: {:?}", token),
     }
 }
-
 /// Parse special definition tokens (`DataFrame`, Actor)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_special_definition_token(state: &mut ParserState, token: Token) -> Result<Expr> {
@@ -517,7 +465,6 @@ fn parse_special_definition_token(state: &mut ParserState, token: Token) -> Resu
         _ => bail!("Expected special definition token, got: {:?}", token),
     }
 }
-
 /// Parse control statement tokens (Pub, Break, Continue, Return)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_control_statement_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
@@ -530,7 +477,6 @@ fn parse_control_statement_token(state: &mut ParserState, token: Token, span: Sp
         _ => bail!("Expected control statement token, got: {:?}", token),
     }
 }
-
 /// Parse collection/enum definition tokens (`LeftBracket`, Enum)
 /// Extracted from `parse_prefix` to reduce complexity
 fn parse_collection_enum_token(state: &mut ParserState, token: Token) -> Result<Expr> {
@@ -540,33 +486,24 @@ fn parse_collection_enum_token(state: &mut ParserState, token: Token) -> Result<
         _ => bail!("Expected collection/enum token, got: {:?}", token),
     }
 }
-
 /// Parse let statement: let [mut] name [: type] = value [in body]
 fn parse_let_statement(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Let)?;
-    
     // Check for optional 'mut' keyword
     let is_mutable = parse_let_mutability(state);
-    
     // Parse variable name or destructuring pattern
     let pattern = parse_let_pattern(state, is_mutable)?;
-    
     // Parse optional type annotation
     let type_annotation = parse_let_type_annotation(state)?;
-    
     // Parse '=' token
     state.tokens.expect(&Token::Equal)?;
-    
     // Parse value expression
     let value = Box::new(super::parse_expr_recursive(state)?);
-    
     // Parse optional 'in' clause for let expressions
     let body = parse_let_in_clause(state, value.span)?;
-    
     // Create the appropriate expression based on pattern type
     create_let_expression(pattern, type_annotation, value, body, is_mutable, start_span)
 }
-
 /// Parse mutability for let statement
 /// Extracted from `parse_let_statement` to reduce complexity
 fn parse_let_mutability(state: &mut ParserState) -> bool {
@@ -577,7 +514,6 @@ fn parse_let_mutability(state: &mut ParserState) -> bool {
         false
     }
 }
-
 /// Parse pattern for let statement (identifier or destructuring)
 /// Extracted from `parse_let_statement` to reduce complexity
 fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Pattern> {
@@ -608,7 +544,6 @@ fn parse_let_pattern(state: &mut ParserState, is_mutable: bool) -> Result<Patter
                    if is_mutable { " mut" } else { "" })
     }
 }
-
 /// Parse optional type annotation for let statement
 /// Extracted from `parse_let_statement` to reduce complexity
 fn parse_let_type_annotation(state: &mut ParserState) -> Result<Option<Type>> {
@@ -619,7 +554,6 @@ fn parse_let_type_annotation(state: &mut ParserState) -> Result<Option<Type>> {
         Ok(None)
     }
 }
-
 /// Parse optional 'in' clause for let expressions
 /// Extracted from `parse_let_statement` to reduce complexity
 fn parse_let_in_clause(state: &mut ParserState, value_span: Span) -> Result<Box<Expr>> {
@@ -631,7 +565,6 @@ fn parse_let_in_clause(state: &mut ParserState, value_span: Span) -> Result<Box<
         Ok(Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value_span)))
     }
 }
-
 /// Create the appropriate let expression based on pattern type
 /// Extracted from `parse_let_statement` to reduce complexity
 fn create_let_expression(
@@ -643,7 +576,6 @@ fn create_let_expression(
     start_span: Span,
 ) -> Result<Expr> {
     let end_span = body.span;
-    
     match &pattern {
         Pattern::Identifier(name) => {
             Ok(Expr::new(
@@ -687,61 +619,63 @@ fn create_let_expression(
         }
     }
 }
-
 /// Parse var statement: var name [: type] = value
 /// var is implicitly mutable (like let mut)
 fn parse_var_statement(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Var)?;
+    let is_mutable = true; // var is always mutable
     
-    // var is always mutable
-    let is_mutable = true;
+    let pattern = parse_var_pattern(state)?;
+    let type_annotation = parse_optional_type_annotation(state)?;
     
-    // Parse variable name or destructuring pattern
-    let pattern = match state.tokens.peek() {
+    state.tokens.expect(&Token::Equal)?;
+    let value = Box::new(super::parse_expr_recursive(state)?);
+    
+    create_var_expression(pattern, type_annotation, value, start_span)
+}
+
+/// Extract method: Parse variable pattern - complexity: 6
+fn parse_var_pattern(state: &mut ParserState) -> Result<Pattern> {
+    match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
             let name = name.clone();
             state.tokens.advance();
-            Pattern::Identifier(name)
+            Ok(Pattern::Identifier(name))
         }
         Some((Token::DataFrame, _)) => {
             // Allow 'df' as a variable name (common in data science)
             state.tokens.advance();
-            Pattern::Identifier("df".to_string())
+            Ok(Pattern::Identifier("df".to_string()))
         }
-        Some((Token::LeftParen, _)) => {
-            // Parse tuple destructuring: (x, y) = (1, 2)
-            parse_tuple_pattern(state)?
-        }
-        Some((Token::LeftBracket, _)) => {
-            // Parse list destructuring: [a, b] = [1, 2]
-            parse_list_pattern(state)?
-        }
+        Some((Token::LeftParen, _)) => parse_tuple_pattern(state),
+        Some((Token::LeftBracket, _)) => parse_list_pattern(state),
         _ => bail!("Expected identifier or pattern after 'var'")
-    };
-    
-    // Parse optional type annotation
-    let type_annotation = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
+    }
+}
+
+/// Extract method: Parse optional type annotation - complexity: 4
+fn parse_optional_type_annotation(state: &mut ParserState) -> Result<Option<crate::frontend::ast::Type>> {
+    if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
         state.tokens.advance();
-        Some(super::utils::parse_type(state)?)
+        Ok(Some(super::utils::parse_type(state)?))
     } else {
-        None
-    };
-    
-    // Parse '=' token
-    state.tokens.expect(&Token::Equal)?;
-    
-    // Parse value expression
-    let value = Box::new(super::parse_expr_recursive(state)?);
-    
-    // var doesn't support 'in' syntax, just creates a mutable binding
+        Ok(None)
+    }
+}
+
+/// Extract method: Create variable expression - complexity: 6
+fn create_var_expression(
+    pattern: Pattern, 
+    type_annotation: Option<crate::frontend::ast::Type>, 
+    value: Box<Expr>, 
+    start_span: Span
+) -> Result<Expr> {
     let body = Box::new(Expr::new(ExprKind::Literal(Literal::Unit), value.span));
-    
     let end_span = value.span;
+    let is_mutable = true;
     
-    // Handle different pattern types
     match &pattern {
         Pattern::Identifier(name) => {
-            // Simple identifier binding
             Ok(Expr::new(
                 ExprKind::Let {
                     name: name.clone(),
@@ -754,7 +688,6 @@ fn parse_var_statement(state: &mut ParserState) -> Result<Expr> {
             ))
         }
         _ => {
-            // For all other patterns (tuple, list, etc), use LetPattern variant
             Ok(Expr::new(
                 ExprKind::LetPattern {
                     pattern,
@@ -768,25 +701,20 @@ fn parse_var_statement(state: &mut ParserState) -> Result<Expr> {
         }
     }
 }
-
 pub fn parse_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftParen)?;
     let mut patterns = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         let pattern = parse_single_tuple_pattern_element(state)?;
         patterns.push(pattern);
-        
         // Use shared separator handler
         if !handle_pattern_separator(state, Token::RightParen)? {
             break;
         }
     }
-    
     state.tokens.expect(&Token::RightParen)?;
     Ok(Pattern::Tuple(patterns))
 }
-
 /// Parse a single element in a tuple pattern
 /// Extracted to reduce complexity of parse_tuple_pattern
 fn parse_single_tuple_pattern_element(state: &mut ParserState) -> Result<Pattern> {
@@ -806,19 +734,15 @@ fn parse_single_tuple_pattern_element(state: &mut ParserState) -> Result<Pattern
         _ => bail!("Expected identifier, tuple, list, struct, or wildcard in tuple pattern"),
     }
 }
-
 pub fn parse_struct_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.advance(); // consume '{'
-    
     let mut fields = Vec::new();
     let mut is_first = true;
-    
     while let Some((token, _)) = state.tokens.peek() {
         if matches!(token, Token::RightBrace) {
             state.tokens.advance(); // consume '}'
             break;
         }
-        
         if !is_first {
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance(); // consume ','
@@ -827,14 +751,12 @@ pub fn parse_struct_pattern(state: &mut ParserState) -> Result<Pattern> {
             }
         }
         is_first = false;
-        
         // Parse field name
         if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             let field_name = name.clone();
             state.tokens.advance();
-            
             // For now, support shorthand syntax only: {name, age}
-            // TODO: Support full syntax: {name: pattern, age: other_pattern}
+            // Note: Support full syntax: {name: pattern, age: other_pattern}
             let field = crate::frontend::ast::StructPatternField {
                 name: field_name.clone(),
                 pattern: None, // Shorthand means field name is the variable name
@@ -844,32 +766,26 @@ pub fn parse_struct_pattern(state: &mut ParserState) -> Result<Pattern> {
             bail!("Expected identifier in struct pattern");
         }
     }
-    
     Ok(Pattern::Struct {
         name: String::new(), // Anonymous struct pattern (empty name)
         fields,
         has_rest: false, // No rest patterns in basic struct destructuring
     })
 }
-
 pub fn parse_list_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftBracket)?;
     let mut patterns = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
         let pattern = parse_single_list_pattern_element(state)?;
         patterns.push(pattern);
-        
         // Handle comma separator
         if !handle_pattern_separator(state, Token::RightBracket)? {
             break;
         }
     }
-    
     state.tokens.expect(&Token::RightBracket)?;
     Ok(Pattern::List(patterns))
 }
-
 /// Parse a single element in a list pattern
 /// Extracted to reduce complexity of parse_list_pattern
 fn parse_single_list_pattern_element(state: &mut ParserState) -> Result<Pattern> {
@@ -888,12 +804,10 @@ fn parse_single_list_pattern_element(state: &mut ParserState) -> Result<Pattern>
         _ => bail!("Expected identifier, tuple, list, wildcard, or rest pattern in list pattern"),
     }
 }
-
 /// Parse identifier pattern with optional default value
 /// Extracted to reduce complexity
 fn parse_identifier_pattern_with_default(state: &mut ParserState, name: String) -> Result<Pattern> {
     state.tokens.advance();
-    
     // Check for default value: identifier = expr
     if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
         state.tokens.advance(); // consume '='
@@ -906,12 +820,10 @@ fn parse_identifier_pattern_with_default(state: &mut ParserState, name: String) 
         Ok(Pattern::Identifier(name))
     }
 }
-
 /// Parse rest pattern (...rest or ...)
 /// Extracted to reduce complexity
 fn parse_rest_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.advance(); // consume ...
-    
     // Check if named rest pattern
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         let name = name.clone();
@@ -921,7 +833,6 @@ fn parse_rest_pattern(state: &mut ParserState) -> Result<Pattern> {
         Ok(Pattern::Rest)
     }
 }
-
 /// Handle pattern separator (comma) and check for trailing comma
 /// Returns true if should continue parsing, false if should stop
 /// Extracted to reduce complexity and share with tuple pattern
@@ -950,13 +861,11 @@ fn handle_pattern_separator(state: &mut ParserState, end_token: Token) -> Result
         bail!("Unexpected end of input in pattern")
     }
 }
-
 /// Parse if expression: if condition { `then_branch` } [else { `else_branch` }]
 /// Also handles if-let: if let pattern = expr { `then_branch` } [else { `else_branch` }]
 /// Complexity: <10 (split into helper functions)
 fn parse_if_expression(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::If)?;
-    
     // Check for if-let syntax
     if matches!(state.tokens.peek(), Some((Token::Let, _))) {
         parse_if_let_expression(state, start_span)
@@ -964,31 +873,24 @@ fn parse_if_expression(state: &mut ParserState) -> Result<Expr> {
         parse_regular_if_expression(state, start_span)
     }
 }
-
 /// Parse if-let expression: if let pattern = expr { then } [else { else }]
 /// Complexity: <10
 fn parse_if_let_expression(state: &mut ParserState, start_span: Span) -> Result<Expr> {
     state.tokens.advance(); // consume 'let'
-    
     // Parse the pattern
     let pattern = parse_match_pattern(state)
         .map_err(|e| anyhow::anyhow!("Expected pattern after 'if let': {}", e))?;
-    
     // Expect '='
     state.tokens.expect(&Token::Equal)
         .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in if-let: {}", e))?;
-    
     // Parse the expression to match against
     let expr = Box::new(super::parse_expr_recursive(state)
         .map_err(|e| anyhow::anyhow!("Expected expression after '=' in if-let: {}", e))?);
-    
     // Parse then branch
     let then_branch = Box::new(super::parse_expr_recursive(state)
         .map_err(|e| anyhow::anyhow!("Expected body after if-let condition, typically {{ ... }}: {}", e))?);
-    
     // Parse optional else branch
     let else_branch = parse_else_branch(state)?;
-    
     Ok(Expr::new(
         ExprKind::IfLet {
             pattern,
@@ -999,21 +901,17 @@ fn parse_if_let_expression(state: &mut ParserState, start_span: Span) -> Result<
         start_span,
     ))
 }
-
 /// Parse regular if expression: if condition { then } [else { else }]
 /// Complexity: <10
 fn parse_regular_if_expression(state: &mut ParserState, start_span: Span) -> Result<Expr> {
     // Parse condition with better error context
     let condition = Box::new(super::parse_expr_recursive(state)
         .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {}", e))?);
-    
     // Parse then branch (expect block) with better error context
     let then_branch = Box::new(super::parse_expr_recursive(state)
         .map_err(|e| anyhow::anyhow!("Expected body after if condition, typically {{ ... }}: {}", e))?);
-    
     // Parse optional else branch
     let else_branch = parse_else_branch(state)?;
-    
     Ok(Expr::new(
         ExprKind::If {
             condition,
@@ -1023,13 +921,11 @@ fn parse_regular_if_expression(state: &mut ParserState, start_span: Span) -> Res
         start_span,
     ))
 }
-
 /// Parse else branch for if/if-let expressions
 /// Complexity: <10
 fn parse_else_branch(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
     if matches!(state.tokens.peek(), Some((Token::Else, _))) {
         state.tokens.advance(); // consume 'else'
-        
         // Check for else-if or else-if-let
         if matches!(state.tokens.peek(), Some((Token::If, _))) {
             // Let the recursive call handle else-if or else-if-let
@@ -1042,69 +938,54 @@ fn parse_else_branch(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
         Ok(None)
     }
 }
-
 /// Parse match expression: match expr { pattern => result, ... }
 /// Complexity target: <10 (using helper functions for TDG compliance)
 fn parse_match_expression(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Match)?;
-    
     // Parse the expression to match on
     let expr = Box::new(super::parse_expr_recursive(state)
         .map_err(|e| anyhow::anyhow!("Expected expression after 'match': {}", e))?);
-    
     // Expect opening brace for match arms
     state.tokens.expect(&Token::LeftBrace)
         .map_err(|_| anyhow::anyhow!("Expected '{{' after match expression"))?;
-    
     // Parse match arms
     let arms = parse_match_arms(state)?;
-    
     // Expect closing brace
     state.tokens.expect(&Token::RightBrace)
         .map_err(|_| anyhow::anyhow!("Expected '}}' after match arms"))?;
-    
     Ok(Expr::new(
         ExprKind::Match { expr, arms },
         start_span,
     ))
 }
-
 /// Parse match arms with low complexity (helper function for TDG compliance)
 fn parse_match_arms(state: &mut ParserState) -> Result<Vec<MatchArm>> {
     let mut arms = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _)) | None) {
         // Parse single arm
         let arm = parse_single_match_arm(state)?;
         arms.push(arm);
-        
         // Optional comma
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
         }
-        
         // Check if we're done
         if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
             break;
         }
     }
-    
     if arms.is_empty() {
         bail!("Match expression must have at least one arm");
     }
-    
     Ok(arms)
 }
-
 /// Parse a single match arm: pattern [if guard] => expr
 /// Complexity: <5 (simple sequential parsing)
 fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
     let start_span = state.tokens.peek().map(|(_, s)| *s)
         .unwrap_or_default();
-    
     // Parse pattern
     let pattern = parse_match_pattern(state)?;
-    
     // Parse optional guard (if condition)
     let guard = if matches!(state.tokens.peek(), Some((Token::If, _))) {
         state.tokens.advance(); // consume 'if'
@@ -1112,16 +993,12 @@ fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
     } else {
         None
     };
-    
     // Expect => token
     state.tokens.expect(&Token::FatArrow)
         .map_err(|_| anyhow::anyhow!("Expected '=>' in match arm"))?;
-    
     // Parse result expression
     let body = Box::new(super::parse_expr_recursive(state)?);
-    
     let end_span = body.span;
-    
     Ok(MatchArm {
         pattern,
         guard,
@@ -1129,17 +1006,14 @@ fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
         span: start_span.merge(end_span),
     })
 }
-
 /// Parse match pattern with low complexity
 /// Complexity: <5 (simple pattern matching)
 fn parse_match_pattern(state: &mut ParserState) -> Result<Pattern> {
     if state.tokens.peek().is_none() {
         bail!("Expected pattern in match arm");
     }
-    
     // Delegate to focused helper functions
     let pattern = parse_single_pattern(state)?;
-    
     // Handle multiple patterns with | (or)
     if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         parse_or_pattern(state, pattern)
@@ -1147,14 +1021,12 @@ fn parse_match_pattern(state: &mut ParserState) -> Result<Pattern> {
         Ok(pattern)
     }
 }
-
 /// Parse a single pattern (delegates to specific pattern parsers)
 /// Complexity: <8
 fn parse_single_pattern(state: &mut ParserState) -> Result<Pattern> {
     let Some((token, _span)) = state.tokens.peek() else {
         bail!("Expected pattern");
     };
-    
     match token {
         Token::Underscore => parse_wildcard_pattern(state),
         Token::Integer(_) | Token::Float(_) | Token::String(_) | 
@@ -1167,100 +1039,68 @@ fn parse_single_pattern(state: &mut ParserState) -> Result<Pattern> {
         _ => bail!("Unexpected token in pattern: {:?}", token)
     }
 }
-
 /// Parse wildcard pattern: _
 /// Complexity: 1
 fn parse_wildcard_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.advance();
     Ok(Pattern::Wildcard)
 }
-
 /// Parse literal patterns: integers, floats, strings, chars, booleans
 /// Complexity: <5
 fn parse_literal_pattern(state: &mut ParserState) -> Result<Pattern> {
     let Some((token, _span)) = state.tokens.peek() else {
         bail!("Expected literal pattern");
     };
-    
+    let token = token.clone(); // Clone to avoid borrow issues
     let pattern = match token {
-        Token::Integer(val) => {
-            let val = *val;
-            state.tokens.advance();
-            
-            // Check for range patterns: 1..5 or 1..=5
-            match state.tokens.peek() {
-                Some((Token::DotDot, _)) => {
-                    state.tokens.advance(); // consume '..'
-                    
-                    // Parse end value
-                    if let Some((Token::Integer(end_val), _)) = state.tokens.peek() {
-                        let end_val = *end_val;
-                        state.tokens.advance();
-                        
-                        Pattern::Range {
-                            start: Box::new(Pattern::Literal(Literal::Integer(val))),
-                            end: Box::new(Pattern::Literal(Literal::Integer(end_val))),
-                            inclusive: false, // exclusive range
-                        }
-                    } else {
-                        bail!("Expected integer after range operator");
-                    }
-                }
-                Some((Token::DotDotEqual, _)) => {
-                    state.tokens.advance(); // consume '..='
-                    
-                    // Parse end value
-                    if let Some((Token::Integer(end_val), _)) = state.tokens.peek() {
-                        let end_val = *end_val;
-                        state.tokens.advance();
-                        
-                        Pattern::Range {
-                            start: Box::new(Pattern::Literal(Literal::Integer(val))),
-                            end: Box::new(Pattern::Literal(Literal::Integer(end_val))),
-                            inclusive: true, // inclusive range
-                        }
-                    } else {
-                        bail!("Expected integer after range operator");
-                    }
-                }
-                _ => {
-                    Pattern::Literal(Literal::Integer(val))
-                }
-            }
-        }
-        Token::Float(val) => {
-            let val = *val;
-            state.tokens.advance();
-            Pattern::Literal(Literal::Float(val))
-        }
-        Token::String(s) => {
-            let s = s.clone();
-            state.tokens.advance();
-            Pattern::Literal(Literal::String(s))
-        }
-        Token::Char(c) => {
-            let c = *c;
-            state.tokens.advance();
-            Pattern::Literal(Literal::Char(c))
-        }
-        Token::Bool(b) => {
-            let b = *b;
-            state.tokens.advance();
-            Pattern::Literal(Literal::Bool(b))
-        }
+        Token::Integer(val) => parse_integer_literal_pattern(state, val)?,
+        Token::Float(val) => parse_simple_literal_pattern(state, Literal::Float(val))?,
+        Token::String(s) => parse_simple_literal_pattern(state, Literal::String(s))?,
+        Token::Char(c) => parse_simple_literal_pattern(state, Literal::Char(c))?,
+        Token::Bool(b) => parse_simple_literal_pattern(state, Literal::Bool(b))?,
         _ => bail!("Expected literal pattern, got: {:?}", token)
     };
-    
     Ok(pattern)
 }
 
+/// Extract method: Parse integer literal with optional range pattern - complexity: 8
+fn parse_integer_literal_pattern(state: &mut ParserState, val: i64) -> Result<Pattern> {
+    state.tokens.advance();
+    // Check for range patterns: 1..5 or 1..=5
+    match state.tokens.peek() {
+        Some((Token::DotDot, _)) => parse_integer_range_pattern(state, val, false),
+        Some((Token::DotDotEqual, _)) => parse_integer_range_pattern(state, val, true),
+        _ => Ok(Pattern::Literal(Literal::Integer(val))),
+    }
+}
+
+/// Extract method: Parse integer range pattern - complexity: 6
+fn parse_integer_range_pattern(state: &mut ParserState, start_val: i64, inclusive: bool) -> Result<Pattern> {
+    state.tokens.advance(); // consume '..' or '..='
+    if let Some((Token::Integer(end_val), _)) = state.tokens.peek() {
+        let end_val = *end_val;
+        state.tokens.advance();
+        Ok(Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(start_val))),
+            end: Box::new(Pattern::Literal(Literal::Integer(end_val))),
+            inclusive,
+        })
+    } else {
+        bail!("Expected integer after range operator");
+    }
+}
+
+/// Extract method: Parse simple literal patterns - complexity: 2
+fn parse_simple_literal_pattern(state: &mut ParserState, literal: Literal) -> Result<Pattern> {
+    state.tokens.advance();
+    Ok(Pattern::Literal(literal))
+}
 /// Parse Option patterns: Some, None
 /// Complexity: <5
 fn parse_option_pattern(state: &mut ParserState) -> Result<Pattern> {
     let Some((token, _span)) = state.tokens.peek() else {
         bail!("Expected Option pattern");
     };
-    
     match token {
         Token::Some => {
             state.tokens.advance();
@@ -1281,14 +1121,12 @@ fn parse_option_pattern(state: &mut ParserState) -> Result<Pattern> {
         _ => bail!("Expected Some or None pattern")
     }
 }
-
 /// Parse Result patterns (Ok/Err)
 /// Complexity: 4
 fn parse_result_pattern(state: &mut ParserState) -> Result<Pattern> {
     let Some((token, _span)) = state.tokens.peek() else {
         bail!("Expected Result pattern");
     };
-    
     match token {
         Token::Ok => {
             state.tokens.advance();
@@ -1309,17 +1147,14 @@ fn parse_result_pattern(state: &mut ParserState) -> Result<Pattern> {
         _ => bail!("Expected Ok or Err pattern")
     }
 }
-
 /// Parse identifier or constructor patterns
 /// Complexity: <5
 fn parse_identifier_or_constructor_pattern(state: &mut ParserState) -> Result<Pattern> {
     let Some((Token::Identifier(name), _span)) = state.tokens.peek() else {
         bail!("Expected identifier pattern");
     };
-    
     let name = name.clone();
     state.tokens.advance();
-    
     // Check for enum-like patterns: Ok(x), Err(e), etc.
     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
         parse_constructor_pattern(state, name)
@@ -1327,21 +1162,17 @@ fn parse_identifier_or_constructor_pattern(state: &mut ParserState) -> Result<Pa
         Ok(Pattern::Identifier(name))
     }
 }
-
 /// Parse match tuple pattern: (a, b, c)
 /// Complexity: <7
 fn parse_match_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftParen)?;
-    
     // Check for empty tuple ()
     if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         state.tokens.advance();
         return Ok(Pattern::Tuple(vec![]));
     }
-    
     // Parse pattern elements
     let mut patterns = vec![parse_match_pattern(state)?];
-    
     while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
         state.tokens.advance(); // consume comma
         if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
@@ -1349,25 +1180,20 @@ fn parse_match_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
         }
         patterns.push(parse_match_pattern(state)?);
     }
-    
     state.tokens.expect(&Token::RightParen)?;
     Ok(Pattern::Tuple(patterns))
 }
-
 /// Parse list pattern in match: [], [a], [a, b], [head, ...tail]
 /// Complexity: <8
 fn parse_match_list_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftBracket)?;
-    
     // Check for empty list []
     if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
         state.tokens.advance();
         return Ok(Pattern::List(vec![]));
     }
-    
     // Parse pattern elements
     let mut patterns = vec![];
-    
     loop {
         // Check for rest pattern ...tail
         if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
@@ -1380,9 +1206,7 @@ fn parse_match_list_pattern(state: &mut ParserState) -> Result<Pattern> {
             }
             bail!("Expected identifier after ... in list pattern");
         }
-        
         patterns.push(parse_match_pattern(state)?);
-        
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
             if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
@@ -1392,34 +1216,26 @@ fn parse_match_list_pattern(state: &mut ParserState) -> Result<Pattern> {
             break;
         }
     }
-    
     state.tokens.expect(&Token::RightBracket)?;
     Ok(Pattern::List(patterns))
 }
-
 /// Parse constructor pattern: Some(x), Ok(value), etc.
 /// Complexity: <5
 fn parse_constructor_pattern(state: &mut ParserState, name: String) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftParen)?;
-    
     // Parse the pattern arguments
     let patterns = parse_constructor_arguments(state)?;
-    
     state.tokens.expect(&Token::RightParen)?;
-    
     // Delegate pattern creation to helper
     create_constructor_pattern(name, patterns)
 }
-
 /// Parse constructor arguments (complexity: 6)
 fn parse_constructor_arguments(state: &mut ParserState) -> Result<Vec<Pattern>> {
     // Check for empty tuple
     if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         return Ok(vec![]);
     }
-    
     let mut patterns = vec![parse_match_pattern(state)?];
-    
     // Parse additional patterns if comma-separated
     while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
         state.tokens.advance(); // consume comma
@@ -1428,24 +1244,25 @@ fn parse_constructor_arguments(state: &mut ParserState) -> Result<Vec<Pattern>> 
         }
         patterns.push(parse_match_pattern(state)?);
     }
-    
     Ok(patterns)
 }
-
 /// Create appropriate pattern based on constructor name (complexity: 8)
 fn create_constructor_pattern(name: String, patterns: Vec<Pattern>) -> Result<Pattern> {
     match (name.as_str(), patterns.len()) {
         ("Ok", 1) => {
             // Ok(pattern) - Result success case
-            Ok(Pattern::Ok(Box::new(patterns.into_iter().next().unwrap())))
+            Ok(Pattern::Ok(Box::new(patterns.into_iter().next()
+                .expect("patterns.len() == 1, so next() must return Some"))))
         }
         ("Err", 1) => {
             // Err(pattern) - Result error case
-            Ok(Pattern::Err(Box::new(patterns.into_iter().next().unwrap())))
+            Ok(Pattern::Err(Box::new(patterns.into_iter().next()
+                .expect("patterns.len() == 1, so next() must return Some"))))
         }
         ("Some", 1) => {
             // Some(pattern) - Option success case
-            Ok(Pattern::Some(Box::new(patterns.into_iter().next().unwrap())))
+            Ok(Pattern::Some(Box::new(patterns.into_iter().next()
+                .expect("patterns.len() == 1, so next() must return Some"))))
         }
         ("None", 0) => {
             // None - Option empty case
@@ -1453,7 +1270,8 @@ fn create_constructor_pattern(name: String, patterns: Vec<Pattern>) -> Result<Pa
         }
         (_, 1) => {
             // Single argument constructor - for simplicity, use the inner pattern
-            Ok(patterns.into_iter().next().unwrap())
+            Ok(patterns.into_iter().next()
+                .expect("patterns.len() == 1, so next() must return Some"))
         }
         (name, 0) => {
             // Empty constructor - return as identifier
@@ -1465,56 +1283,45 @@ fn create_constructor_pattern(name: String, patterns: Vec<Pattern>) -> Result<Pa
         }
     }
 }
-
 /// Parse or-pattern: pattern | pattern | ...
 /// Complexity: <5
 fn parse_or_pattern(state: &mut ParserState, first: Pattern) -> Result<Pattern> {
     let mut patterns = vec![first];
-    
     while matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         state.tokens.advance(); // consume '|'
-        
         // Need to parse the next pattern without recursing into or-patterns again
         let next = parse_single_pattern(state)?;
         patterns.push(next);
     }
-    
     // Use the Or pattern variant for multiple alternatives
     if patterns.len() == 1 {
-        Ok(patterns.into_iter().next().unwrap())
+        Ok(patterns.into_iter().next()
+            .expect("patterns.len() == 1, so next() must return Some"))
     } else {
         Ok(Pattern::Or(patterns))
     }
 }
-
 /// Parse a single pattern without checking for | (helper to avoid recursion)
 /// Complexity: <5
-
 /// Parse while loop: while condition { body }
 /// Complexity: <5 (simple structure)
 fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::While)?;
-    
     // Check for while-let syntax
     if matches!(state.tokens.peek(), Some((Token::Let, _))) {
         state.tokens.advance(); // consume 'let'
-        
         // Parse the pattern
         let pattern = parse_match_pattern(state)
             .map_err(|e| anyhow::anyhow!("Expected pattern after 'while let': {}", e))?;
-        
         // Expect '='
         state.tokens.expect(&Token::Equal)
             .map_err(|e| anyhow::anyhow!("Expected '=' after pattern in while-let: {}", e))?;
-        
         // Parse the expression to match against
         let expr = Box::new(super::parse_expr_recursive(state)
             .map_err(|e| anyhow::anyhow!("Expected expression after '=' in while-let: {}", e))?);
-        
         // Parse body (expect block)
         let body = Box::new(super::parse_expr_recursive(state)
             .map_err(|e| anyhow::anyhow!("Expected body after while-let condition: {}", e))?);
-        
         Ok(Expr::new(
             ExprKind::WhileLet {
                 pattern,
@@ -1528,41 +1335,32 @@ fn parse_while_loop(state: &mut ParserState) -> Result<Expr> {
         // Parse condition
         let condition = Box::new(super::parse_expr_recursive(state)
             .map_err(|e| anyhow::anyhow!("Expected condition after 'while': {}", e))?);
-        
         // Parse body (expect block)
         let body = Box::new(super::parse_expr_recursive(state)
             .map_err(|e| anyhow::anyhow!("Expected body after while condition: {}", e))?);
-        
         Ok(Expr::new(
             ExprKind::While { condition, body },
             start_span,
         ))
     }
 }
-
 /// Parse for loop: for pattern in iterator { body }
 /// Complexity: <5 (simple structure)
 fn parse_for_loop(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::For)?;
-    
     // Parse pattern (e.g., "i" in "for i in ...")
     let pattern = parse_for_pattern(state)?;
-    
     // Expect 'in' keyword
     state.tokens.expect(&Token::In)
         .map_err(|_| anyhow::anyhow!("Expected 'in' after for pattern"))?;
-    
     // Parse iterator expression
     let iterator = Box::new(super::parse_expr_recursive(state)
         .map_err(|e| anyhow::anyhow!("Expected iterator after 'in': {}", e))?);
-    
     // Parse body (expect block)
     let body = Box::new(super::parse_expr_recursive(state)
         .map_err(|e| anyhow::anyhow!("Expected body after for iterator: {}", e))?);
-    
     // Get the var name from the pattern for backward compatibility
     let var = pattern.primary_name();
-    
     Ok(Expr::new(
         ExprKind::For { 
             var,
@@ -1573,14 +1371,12 @@ fn parse_for_loop(state: &mut ParserState) -> Result<Expr> {
         start_span,
     ))
 }
-
 /// Parse for loop pattern (simple version)
 /// Complexity: <3
 fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
     let Some((token, _)) = state.tokens.peek() else {
         bail!("Expected pattern in for loop");
     };
-    
     match token {
         Token::Identifier(name) => {
             let name = name.clone();
@@ -1602,7 +1398,6 @@ fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
         _ => bail!("Expected identifier, underscore, or destructuring pattern in for loop")
     }
 }
-
 /// Parse an array element which might be a spread expression (...expr) or regular expression
 fn parse_array_element(state: &mut ParserState) -> Result<Expr> {
     if matches!(state.tokens.peek(), Some((Token::DotDotDot, _))) {
@@ -1613,19 +1408,15 @@ fn parse_array_element(state: &mut ParserState) -> Result<Expr> {
         super::parse_expr_recursive(state)
     }
 }
-
 fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::LeftBracket)?;
-    
     // Handle empty list
     if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
         state.tokens.advance();
         return Ok(Expr::new(ExprKind::List(vec![]), start_span));
     }
-    
     // Parse first element
     let first_expr = parse_array_element(state)?;
-    
     // Determine list type based on next token
     match state.tokens.peek() {
         Some((Token::Semicolon, _)) => parse_array_init(state, first_expr, start_span),
@@ -1633,17 +1424,13 @@ fn parse_list_literal(state: &mut ParserState) -> Result<Expr> {
         _ => parse_regular_list(state, first_expr, start_span),
     }
 }
-
 /// Parse array initialization syntax: [value; size]
 /// Extracted to reduce complexity
 fn parse_array_init(state: &mut ParserState, value_expr: Expr, start_span: Span) -> Result<Expr> {
     state.tokens.advance(); // consume ;
-    
     let size_expr = super::parse_expr_recursive(state)?;
-    
     state.tokens.expect(&Token::RightBracket)
         .map_err(|_| anyhow::anyhow!("Expected ']' after array initialization"))?;
-    
     Ok(Expr::new(
         ExprKind::ArrayInit { 
             value: Box::new(value_expr), 
@@ -1652,30 +1439,23 @@ fn parse_array_init(state: &mut ParserState, value_expr: Expr, start_span: Span)
         start_span
     ))
 }
-
 /// Parse regular list literal: [expr, expr, ...]
 /// Extracted to reduce complexity
 fn parse_regular_list(state: &mut ParserState, first_expr: Expr, start_span: Span) -> Result<Expr> {
     let mut elements = vec![first_expr];
-    
     // Parse remaining elements
     while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
         state.tokens.advance();
-        
         // Check for trailing comma
         if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
             break;
         }
-        
         elements.push(parse_array_element(state)?);
     }
-    
     state.tokens.expect(&Token::RightBracket)
         .map_err(|_| anyhow::anyhow!("Expected ']' to close list literal"))?;
-    
     Ok(Expr::new(ExprKind::List(elements), start_span))
 }
-
 fn parse_list_comprehension_body(
     state: &mut ParserState,
     expr: Expr,
@@ -1683,7 +1463,6 @@ fn parse_list_comprehension_body(
 ) -> Result<Expr> {
     // Parse: for var in iter [if cond]
     state.tokens.expect(&Token::For)?;
-    
     // Parse variable
     let var = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -1692,12 +1471,9 @@ fn parse_list_comprehension_body(
     } else {
         bail!("Expected variable name in list comprehension");
     };
-    
     state.tokens.expect(&Token::In)?;
-    
     // Parse iterator
     let iter = super::parse_expr_recursive(state)?;
-    
     // Parse optional condition
     let condition = if matches!(state.tokens.peek(), Some((Token::If, _))) {
         state.tokens.advance();
@@ -1705,9 +1481,7 @@ fn parse_list_comprehension_body(
     } else {
         None
     };
-    
     state.tokens.expect(&Token::RightBracket)?;
-    
     Ok(Expr::new(
         ExprKind::ListComprehension {
             element: Box::new(expr),
@@ -1718,24 +1492,19 @@ fn parse_list_comprehension_body(
         start_span,
     ))
 }
-
 fn parse_lambda_no_params(state: &mut ParserState) -> Result<Expr> {
     // Parse || body
     let start_span = state.tokens.expect(&Token::OrOr)?;
-    
     // Parse the body
     let body = Box::new(super::parse_expr_recursive(state)?);
-    
     Ok(Expr::new(ExprKind::Lambda { 
         params: vec![], 
         body 
     }, start_span))
 }
-
 fn parse_lambda_from_expr(state: &mut ParserState, expr: Expr, start_span: Span) -> Result<Expr> {
     // Convert (x) => expr syntax
     state.tokens.advance(); // consume =>
-    
     // Convert the expression to a parameter
     let param = match &expr.kind {
         ExprKind::Identifier(name) => Param {
@@ -1750,28 +1519,22 @@ fn parse_lambda_from_expr(state: &mut ParserState, expr: Expr, start_span: Span)
         },
         _ => bail!("Expected identifier in lambda parameter")
     };
-    
     // Parse the body
     let body = Box::new(super::parse_expr_recursive(state)?);
-    
     Ok(Expr::new(ExprKind::Lambda {
         params: vec![param],
         body,
     }, start_span))
 }
-
 fn parse_lambda_expression(state: &mut ParserState) -> Result<Expr> {
     // Parse |param, param| body or |param| body
     let start_span = state.tokens.expect(&Token::Pipe)?;
-    
     let mut params = Vec::new();
-    
     // Parse parameters
     while !matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             params.push(Pattern::Identifier(name.clone()));
             state.tokens.advance();
-            
             // Check for comma
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance();
@@ -1780,13 +1543,10 @@ fn parse_lambda_expression(state: &mut ParserState) -> Result<Expr> {
             bail!("Expected parameter name in lambda");
         }
     }
-    
     state.tokens.expect(&Token::Pipe)
         .map_err(|_| anyhow::anyhow!("Expected '|' after lambda parameters"))?;
-    
     // Parse body
     let body = Box::new(super::parse_expr_recursive(state)?);
-    
     // Convert Pattern to Param for Lambda
     let params = params.into_iter().map(|p| Param {
         pattern: p,
@@ -1798,17 +1558,14 @@ fn parse_lambda_expression(state: &mut ParserState) -> Result<Expr> {
         is_mutable: false,
         default_value: None,
     }).collect();
-    
     Ok(Expr::new(ExprKind::Lambda { params, body }, start_span))
 }
-
 fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
     // Parse struct Name<T> { field: Type, ... }
     let start_span = state.tokens.expect(&Token::Struct)?;
     let name = parse_struct_name(state)?;
     let type_params = parse_optional_generics(state)?;
     let struct_fields = parse_struct_fields(state)?;
-    
     Ok(Expr::new(ExprKind::Struct {
         name,
         type_params,
@@ -1816,7 +1573,6 @@ fn parse_struct_definition(state: &mut ParserState) -> Result<Expr> {
         is_pub: false,
     }, start_span))
 }
-
 /// Parse struct name identifier - complexity: 4
 fn parse_struct_name(state: &mut ParserState) -> Result<String> {
     if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
@@ -1827,23 +1583,18 @@ fn parse_struct_name(state: &mut ParserState) -> Result<String> {
         bail!("Expected struct name after 'struct'");
     }
 }
-
 /// Parse struct field definitions - complexity: 6
 fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
     state.tokens.expect(&Token::LeftBrace)?;
     let mut fields = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         let (field_name, field_type) = parse_single_struct_field(state)?;
         fields.push((field_name, field_type));
-        
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
         }
     }
-    
     state.tokens.expect(&Token::RightBrace)?;
-    
     // Convert to proper Struct variant with StructField
     Ok(fields.into_iter().map(|(name, ty)| StructField {
         name,
@@ -1851,7 +1602,6 @@ fn parse_struct_fields(state: &mut ParserState) -> Result<Vec<StructField>> {
         is_pub: false,
     }).collect())
 }
-
 /// Parse a single struct field (name: Type) - complexity: 5
 fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type)> {
     let field_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
@@ -1861,17 +1611,13 @@ fn parse_single_struct_field(state: &mut ParserState) -> Result<(String, Type)> 
     } else {
         bail!("Expected field name in struct");
     };
-    
     state.tokens.expect(&Token::Colon)?;
     let field_type = super::utils::parse_type(state)?;
-    
     Ok((field_name, field_type))
 }
-
 fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
     // Parse trait Name { fun method(self) -> Type ... }
     let start_span = state.tokens.expect(&Token::Trait)?;
-    
     // Get trait name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -1880,17 +1626,13 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected trait name after 'trait'");
     };
-    
     // Parse { methods }
     state.tokens.expect(&Token::LeftBrace)?;
-    
     let mut methods = Vec::new();
-    
     // Parse methods
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Expect 'fun' keyword
         state.tokens.expect(&Token::Fun)?;
-        
         // Parse method name
         let method_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
             let name = n.clone();
@@ -1899,20 +1641,16 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
         } else {
             bail!("Expected method name in trait");
         };
-        
         // For now, skip the rest of the method signature
         // This is a simplified implementation
         methods.push(method_name);
-        
         // Skip to end of line or next method
         while !matches!(state.tokens.peek(), Some((Token::Fun | Token::RightBrace, _))) 
               && state.tokens.peek().is_some() {
             state.tokens.advance();
         }
     }
-    
     state.tokens.expect(&Token::RightBrace)?;
-    
     // Convert to proper Trait variant with TraitMethod
     let trait_methods = methods.into_iter().map(|name| TraitMethod {
         name,
@@ -1921,7 +1659,6 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
         body: None,
         is_pub: true,
     }).collect();
-    
     Ok(Expr::new(ExprKind::Trait {
         name,
         type_params: vec![],
@@ -1929,18 +1666,14 @@ fn parse_trait_definition(state: &mut ParserState) -> Result<Expr> {
         is_pub: false,
     }, start_span))
 }
-
 fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Impl)?;
-    
     // Parse impl header (trait and type names)
     let (trait_name, type_name) = parse_impl_header(state)?;
-    
     // Parse impl body (methods)
     state.tokens.expect(&Token::LeftBrace)?;
     skip_impl_body(state)?;
     state.tokens.expect(&Token::RightBrace)?;
-    
     Ok(Expr::new(ExprKind::Impl {
         type_params: vec![],
         trait_name,
@@ -1949,12 +1682,10 @@ fn parse_impl_block(state: &mut ParserState) -> Result<Expr> {
         is_pub: false,
     }, start_span))
 }
-
 /// Parse impl header to get trait and type names (complexity: 8)
 fn parse_impl_header(state: &mut ParserState) -> Result<(Option<String>, String)> {
     // Parse first identifier (trait or type name)
     let first_name = parse_optional_identifier(state);
-    
     // Check for "for" keyword to determine if first was trait
     if matches!(state.tokens.peek(), Some((Token::For, _))) {
         state.tokens.advance();
@@ -1967,7 +1698,6 @@ fn parse_impl_header(state: &mut ParserState) -> Result<(Option<String>, String)
         bail!("Expected type or trait name in impl");
     }
 }
-
 /// Parse optional identifier (complexity: 3)
 fn parse_optional_identifier(state: &mut ParserState) -> Option<String> {
     if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
@@ -1978,7 +1708,6 @@ fn parse_optional_identifier(state: &mut ParserState) -> Option<String> {
         None
     }
 }
-
 /// Parse required identifier with error message (complexity: 3)
 fn parse_required_identifier(state: &mut ParserState, context: &str) -> Result<String> {
     if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
@@ -1989,7 +1718,6 @@ fn parse_required_identifier(state: &mut ParserState, context: &str) -> Result<S
         bail!("Expected {}", context)
     }
 }
-
 /// Skip impl body by tracking brace depth (complexity: 5)
 fn skip_impl_body(state: &mut ParserState) -> Result<()> {
     let mut depth = 1;
@@ -2005,14 +1733,11 @@ fn skip_impl_body(state: &mut ParserState) -> Result<()> {
     }
     Ok(())
 }
-
 fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
     // Parse import path::to::module
     let start_span = state.tokens.expect(&Token::Import)?;
-    
     // Parse module path
     let mut path_parts = Vec::new();
-    
     // Get first identifier
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         path_parts.push(name.clone());
@@ -2020,7 +1745,6 @@ fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected module path after 'import'");
     }
-    
     // Parse additional path segments
     while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
         state.tokens.advance(); // consume ::
@@ -2031,22 +1755,17 @@ fn parse_import_statement(state: &mut ParserState) -> Result<Expr> {
             bail!("Expected identifier after '::'");
         }
     }
-    
     let path = path_parts.join("::");
-    
     Ok(Expr::new(ExprKind::Import {
         path,
         items: vec![],
     }, start_span))
 }
-
 fn parse_use_statement(state: &mut ParserState) -> Result<Expr> {
     // Parse use path::to::Type or use path::to::{Type1, Type2}
     let start_span = state.tokens.expect(&Token::Use)?;
-    
     // Parse module path
     let mut path_parts = Vec::new();
-    
     // Get first identifier
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         path_parts.push(name.clone());
@@ -2054,22 +1773,18 @@ fn parse_use_statement(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected module path after 'use'");
     }
-    
     // Parse additional path segments
     while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
         state.tokens.advance(); // consume ::
-        
         // Check for { imports }
         if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
             state.tokens.advance();
             let mut items = Vec::new();
-            
             // Parse imported items
             while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
                 if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
                     items.push(ImportItem::Named(name.clone()));
                     state.tokens.advance();
-                    
                     // Check for comma
                     if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                         state.tokens.advance();
@@ -2078,9 +1793,7 @@ fn parse_use_statement(state: &mut ParserState) -> Result<Expr> {
                     bail!("Expected identifier in import list");
                 }
             }
-            
             state.tokens.expect(&Token::RightBrace)?;
-            
             let path = path_parts.join("::");
             return Ok(Expr::new(ExprKind::Import { path, items }, start_span));
         } else if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
@@ -2090,28 +1803,24 @@ fn parse_use_statement(state: &mut ParserState) -> Result<Expr> {
             bail!("Expected identifier or '{{' after '::'");
         }
     }
-    
     // Simple use statement (use fully::qualified::Name)
     let path = path_parts.join("::");
-    let last_part = path_parts.last().unwrap().clone();
-    
+    let last_part = path_parts.last()
+        .expect("path_parts guaranteed non-empty by parser logic").clone();
     Ok(Expr::new(ExprKind::Import {
         path,
         items: vec![ImportItem::Named(last_part)],
     }, start_span))
 }
-
 fn parse_dataframe_literal(state: &mut ParserState) -> Result<Expr> {
     // Parse df![...] macro syntax - DataFrame token already consumed by caller
     let start_span = parse_dataframe_header(state)?;
     let columns = parse_dataframe_columns(state)?;
     state.tokens.expect(&Token::RightBracket)?;
-    
     // Convert to DataFrame expression
     let df_columns = create_dataframe_columns(columns);
     Ok(Expr::new(ExprKind::DataFrame { columns: df_columns }, start_span))
 }
-
 /// Parse dataframe header: df![
 /// Complexity: 3
 fn parse_dataframe_header(state: &mut ParserState) -> Result<Span> {
@@ -2120,25 +1829,20 @@ fn parse_dataframe_header(state: &mut ParserState) -> Result<Span> {
     state.tokens.expect(&Token::LeftBracket)?;
     Ok(start_span)
 }
-
 /// Parse all dataframe columns
 /// Complexity: <5
 fn parse_dataframe_columns(state: &mut ParserState) -> Result<Vec<(String, Expr)>> {
     let mut columns = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
         let column = parse_single_dataframe_column(state)?;
         columns.push(column);
-        
         // Check for comma separator
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
         }
     }
-    
     Ok(columns)
 }
-
 /// Parse a single dataframe column: "name" => [values]
 /// Complexity: <5
 fn parse_single_dataframe_column(state: &mut ParserState) -> Result<(String, Expr)> {
@@ -2147,7 +1851,6 @@ fn parse_single_dataframe_column(state: &mut ParserState) -> Result<(String, Exp
     let values = parse_dataframe_column_values(state)?;
     Ok((col_name, values))
 }
-
 /// Parse dataframe column name (string or identifier)
 /// Complexity: 3
 fn parse_dataframe_column_name(state: &mut ParserState) -> Result<String> {
@@ -2165,7 +1868,6 @@ fn parse_dataframe_column_name(state: &mut ParserState) -> Result<String> {
         _ => bail!("Expected column name (string or identifier) in dataframe")
     }
 }
-
 /// Parse dataframe column values (must be a list)
 /// Complexity: 2
 fn parse_dataframe_column_values(state: &mut ParserState) -> Result<Expr> {
@@ -2175,7 +1877,6 @@ fn parse_dataframe_column_values(state: &mut ParserState) -> Result<Expr> {
         bail!("Expected list of values after => in dataframe column")
     }
 }
-
 /// Convert parsed columns to `DataFrameColumn` structs
 /// Complexity: <5
 fn create_dataframe_columns(columns: Vec<(String, Expr)>) -> Vec<DataFrameColumn> {
@@ -2190,13 +1891,11 @@ fn create_dataframe_columns(columns: Vec<(String, Expr)>) -> Vec<DataFrameColumn
         }
     }).collect()
 }
-
 fn parse_enum_definition(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Enum)?;
     let name = parse_enum_name(state)?;
     let type_params = parse_optional_generics(state)?;
     let variants = parse_enum_variants(state)?;
-    
     Ok(Expr::new(ExprKind::Enum {
         name,
         type_params,
@@ -2204,7 +1903,6 @@ fn parse_enum_definition(state: &mut ParserState) -> Result<Expr> {
         is_pub: false,
     }, start_span))
 }
-
 fn parse_enum_name(state: &mut ParserState) -> Result<String> {
     match state.tokens.peek() {
         Some((Token::Identifier(n), _)) => {
@@ -2223,7 +1921,6 @@ fn parse_enum_name(state: &mut ParserState) -> Result<String> {
         _ => bail!("Expected enum name after 'enum'")
     }
 }
-
 fn parse_optional_generics(state: &mut ParserState) -> Result<Vec<String>> {
     if matches!(state.tokens.peek(), Some((Token::Less, _))) {
         parse_generic_params(state)
@@ -2231,26 +1928,20 @@ fn parse_optional_generics(state: &mut ParserState) -> Result<Vec<String>> {
         Ok(vec![])
     }
 }
-
 fn parse_enum_variants(state: &mut ParserState) -> Result<Vec<EnumVariant>> {
     state.tokens.expect(&Token::LeftBrace)?;
     let mut variants = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         variants.push(parse_single_variant(state)?);
-        
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
         }
     }
-    
     state.tokens.expect(&Token::RightBrace)?;
     Ok(variants)
 }
-
 fn parse_single_variant(state: &mut ParserState) -> Result<EnumVariant> {
     let variant_name = parse_variant_name(state)?;
-    
     // Check for discriminant value: = <integer>
     let discriminant = if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
         state.tokens.advance(); // consume =
@@ -2258,21 +1949,18 @@ fn parse_single_variant(state: &mut ParserState) -> Result<EnumVariant> {
     } else {
         None
     };
-    
     // Check for fields (tuple variants)
     let fields = if discriminant.is_none() {
         parse_variant_fields(state)?
     } else {
         None // Can't have both discriminant and fields
     };
-    
     Ok(EnumVariant {
         name: variant_name,
         fields,
         discriminant,
     })
 }
-
 /// Parse discriminant value for enum variant
 /// Complexity: <5
 fn parse_variant_discriminant(state: &mut ParserState) -> Result<Option<i64>> {
@@ -2296,7 +1984,6 @@ fn parse_variant_discriminant(state: &mut ParserState) -> Result<Option<i64>> {
         _ => bail!("Expected integer value for enum discriminant")
     }
 }
-
 fn parse_variant_name(state: &mut ParserState) -> Result<String> {
     match state.tokens.peek() {
         Some((Token::Identifier(n), _)) => {
@@ -2323,37 +2010,29 @@ fn parse_variant_name(state: &mut ParserState) -> Result<String> {
         _ => bail!("Expected variant name in enum")
     }
 }
-
 fn parse_variant_fields(state: &mut ParserState) -> Result<Option<Vec<Type>>> {
     if !matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
         return Ok(None);
     }
-    
     state.tokens.advance();
     let mut field_types = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         field_types.push(super::utils::parse_type(state)?);
-        
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
         }
     }
-    
     state.tokens.expect(&Token::RightParen)?;
     Ok(Some(field_types))
 }
-
 fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
     // Parse <T, U, ...>
     state.tokens.expect(&Token::Less)?;
     let mut params = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::Greater, _))) {
         if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             params.push(name.clone());
             state.tokens.advance();
-            
             // Check for comma
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance();
@@ -2362,30 +2041,22 @@ fn parse_generic_params(state: &mut ParserState) -> Result<Vec<String>> {
             bail!("Expected type parameter name");
         }
     }
-    
     state.tokens.expect(&Token::Greater)?;
     Ok(params)
 }
-
 fn parse_actor_definition(state: &mut ParserState) -> Result<Expr> {
     // Parse actor Name { state: fields, receive handlers }
     let start_span = state.tokens.expect(&Token::Actor)?;
-    
     // Get actor name
     let name = parse_actor_name(state)?;
-    
     // Parse { body }
     state.tokens.expect(&Token::LeftBrace)?;
-    
     // Parse actor body components
     let (state_fields, handlers) = parse_actor_body(state)?;
-    
     state.tokens.expect(&Token::RightBrace)?;
-    
     // Create the actor expression
     create_actor_expression(name, state_fields, handlers, start_span)
 }
-
 /// Parse actor name
 /// Extracted from `parse_actor_definition` to reduce complexity
 fn parse_actor_name(state: &mut ParserState) -> Result<String> {
@@ -2397,13 +2068,11 @@ fn parse_actor_name(state: &mut ParserState) -> Result<String> {
         bail!("Expected actor name after 'actor'");
     }
 }
-
 /// Parse actor body including state fields and handlers
 /// Extracted from `parse_actor_definition` to reduce complexity
 fn parse_actor_body(state: &mut ParserState) -> Result<(Vec<(String, Type, Option<Box<Expr>>)>, Vec<String>)> {
     let mut state_fields = Vec::new();
     let mut handlers = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         match state.tokens.peek() {
             Some((Token::State, _)) => {
@@ -2424,23 +2093,18 @@ fn parse_actor_body(state: &mut ParserState) -> Result<(Vec<(String, Type, Optio
             }
         }
     }
-    
     Ok((state_fields, handlers))
 }
-
 /// Parse state field with 'state' keyword
 /// Extracted from `parse_actor_body` to reduce complexity
 fn parse_actor_state_field(state: &mut ParserState) -> Result<(String, Type, Option<Box<Expr>>)> {
     state.tokens.advance(); // consume 'state'
-    
     if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
         let field = field_name.clone();
         state.tokens.advance();
-        
         // Parse : Type
         state.tokens.expect(&Token::Colon)?;
         let field_type = super::utils::parse_type(state)?;
-        
         // Optional = initial_value
         let initial_value = if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
             state.tokens.advance();
@@ -2448,30 +2112,24 @@ fn parse_actor_state_field(state: &mut ParserState) -> Result<(String, Type, Opt
         } else {
             None
         };
-        
         Ok((field, field_type, initial_value))
     } else {
         bail!("Expected field name after 'state'");
     }
 }
-
 /// Parse receive block with handlers
 /// Extracted from `parse_actor_body` to reduce complexity
 fn parse_actor_receive_block(state: &mut ParserState) -> Result<Vec<String>> {
     state.tokens.advance(); // consume 'receive'
     state.tokens.expect(&Token::LeftBrace)?;
-    
     let mut handlers = Vec::new();
-    
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         if let Some((Token::Identifier(handler_name), _)) = state.tokens.peek() {
             handlers.push(handler_name.clone());
             state.tokens.advance();
-            
             // Skip => value for now
             state.tokens.expect(&Token::FatArrow)?;
             super::parse_expr_recursive(state)?; // Skip the value
-            
             // Optional comma
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance();
@@ -2480,33 +2138,27 @@ fn parse_actor_receive_block(state: &mut ParserState) -> Result<Vec<String>> {
             bail!("Expected handler name in receive block");
         }
     }
-    
     state.tokens.expect(&Token::RightBrace)?;
     Ok(handlers)
 }
-
 /// Parse bare field definition
 /// Extracted from `parse_actor_body` to reduce complexity
 fn parse_actor_bare_field(state: &mut ParserState) -> Result<(String, Type, Option<Box<Expr>>)> {
     if let Some((Token::Identifier(field_name), _)) = state.tokens.peek() {
         let field = field_name.clone();
         state.tokens.advance();
-        
         // Parse : Type
         state.tokens.expect(&Token::Colon)?;
         let field_type = super::utils::parse_type(state)?;
-        
         // Optional comma
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance();
         }
-        
         Ok((field, field_type, None))
     } else {
         bail!("Expected field name in actor");
     }
 }
-
 /// Create the final actor expression
 /// Extracted from `parse_actor_definition` to reduce complexity
 fn create_actor_expression(
@@ -2521,21 +2173,18 @@ fn create_actor_expression(
         ty,
         is_pub: false,
     }).collect();
-    
     // For now, create simple handlers
     let actor_handlers = handlers.into_iter().map(|name| ActorHandler {
         message_type: name,
         params: vec![],
         body: Box::new(Expr::new(ExprKind::Block(vec![]), start_span)),
     }).collect();
-    
     Ok(Expr::new(ExprKind::Actor { 
         name, 
         state: actor_state,
         handlers: actor_handlers,
     }, start_span))
 }
-
 pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {
     // Try each category of operators
     map_arithmetic_operator(token)
@@ -2543,7 +2192,6 @@ pub fn token_to_binary_op(token: &Token) -> Option<BinaryOp> {
         .or_else(|| map_logical_operator(token))
         .or_else(|| map_bitwise_operator(token))
 }
-
 /// Map arithmetic tokens to binary operators
 /// Extracted from `token_to_binary_op` to reduce complexity
 fn map_arithmetic_operator(token: &Token) -> Option<BinaryOp> {
@@ -2557,7 +2205,6 @@ fn map_arithmetic_operator(token: &Token) -> Option<BinaryOp> {
         _ => None,
     }
 }
-
 /// Map comparison tokens to binary operators
 /// Extracted from `token_to_binary_op` to reduce complexity
 fn map_comparison_operator(token: &Token) -> Option<BinaryOp> {
@@ -2571,7 +2218,6 @@ fn map_comparison_operator(token: &Token) -> Option<BinaryOp> {
         _ => None,
     }
 }
-
 /// Map logical tokens to binary operators
 /// Extracted from `token_to_binary_op` to reduce complexity
 fn map_logical_operator(token: &Token) -> Option<BinaryOp> {
@@ -2582,7 +2228,6 @@ fn map_logical_operator(token: &Token) -> Option<BinaryOp> {
         _ => None,
     }
 }
-
 /// Map bitwise tokens to binary operators
 /// Extracted from `token_to_binary_op` to reduce complexity
 fn map_bitwise_operator(token: &Token) -> Option<BinaryOp> {
@@ -2594,7 +2239,6 @@ fn map_bitwise_operator(token: &Token) -> Option<BinaryOp> {
         _ => None,
     }
 }
-
 pub fn get_precedence(op: BinaryOp) -> i32 {
     match op {
         BinaryOp::Or => 1,
@@ -2611,15 +2255,12 @@ pub fn get_precedence(op: BinaryOp) -> i32 {
         BinaryOp::Power => 12,
     }
 }
-
 /// Parse f-string content into interpolation parts
 fn parse_fstring_into_parts(input: &str) -> Result<Vec<StringPart>> {
     use crate::frontend::parser::Parser;
-    
     let mut parts = Vec::new();
     let mut current = String::new();
     let mut chars = input.chars().peekable();
-    
     while let Some(ch) = chars.next() {
         if ch == '{' {
             if chars.peek() == Some(&'{') {
@@ -2632,7 +2273,6 @@ fn parse_fstring_into_parts(input: &str) -> Result<Vec<StringPart>> {
                     parts.push(StringPart::Text(current.clone()));
                     current.clear();
                 }
-                
                 // Extract and parse expression
                 let expr_str = extract_fstring_expr(&mut chars)?;
                 let mut parser = Parser::new(&expr_str);
@@ -2651,20 +2291,16 @@ fn parse_fstring_into_parts(input: &str) -> Result<Vec<StringPart>> {
             current.push(ch);
         }
     }
-    
     // Add remaining text
     if !current.is_empty() {
         parts.push(StringPart::Text(current));
     }
-    
     Ok(parts)
 }
-
 /// Extract expression from f-string between braces
 fn extract_fstring_expr(chars: &mut std::iter::Peekable<std::str::Chars>) -> Result<String> {
     let mut expr = String::new();
     let mut depth = 1;
-    
     for ch in chars.by_ref() {
         if ch == '{' {
             depth += 1;
@@ -2679,33 +2315,25 @@ fn extract_fstring_expr(chars: &mut std::iter::Peekable<std::str::Chars>) -> Res
             expr.push(ch);
         }
     }
-    
     bail!("Unclosed interpolation in f-string")
 }
-
 /// Helper for parsing try block (complexity: 3)
 fn parse_try_block(state: &mut ParserState) -> Result<Box<Expr>> {
     // parse_block expects and consumes the left brace
     Ok(Box::new(super::collections::parse_block(state)?))
 }
-
 /// Helper for parsing catch clauses (complexity: 8)
 fn parse_catch_clauses(state: &mut ParserState) -> Result<Vec<crate::frontend::ast::CatchClause>> {
     use crate::frontend::ast::CatchClause;
     let mut catch_clauses = Vec::new();
-    
     while matches!(state.tokens.peek(), Some((Token::Catch, _))) {
         state.tokens.advance(); // consume 'catch'
-        
         let pattern = parse_catch_pattern(state)?;
         let body = parse_catch_body(state)?;
-        
         catch_clauses.push(CatchClause { pattern, body });
     }
-    
     Ok(catch_clauses)
 }
-
 /// Helper for parsing catch pattern (complexity: 5)
 fn parse_catch_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.expect(&Token::LeftParen)?;
@@ -2719,13 +2347,11 @@ fn parse_catch_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.expect(&Token::RightParen)?;
     Ok(pattern)
 }
-
 /// Helper for parsing catch body (complexity: 3)
 fn parse_catch_body(state: &mut ParserState) -> Result<Box<Expr>> {
     // parse_block expects and consumes the left brace
     Ok(Box::new(super::collections::parse_block(state)?))
 }
-
 /// Helper for parsing optional finally block (complexity: 6)
 fn parse_finally_block(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
     if matches!(state.tokens.peek(), Some((Token::Finally, _))) {
@@ -2736,7 +2362,6 @@ fn parse_finally_block(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
         Ok(None)
     }
 }
-
 /// Helper for validating try-catch structure (complexity: 3)
 fn validate_try_catch_structure(
     catch_clauses: &[crate::frontend::ast::CatchClause], 
@@ -2746,4 +2371,103 @@ fn validate_try_catch_structure(
         bail!("Try block must have at least one catch clause or a finally block");
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod property_tests_parser_expressions {
+    use super::*;
+    use proptest::prelude::*;
+    use crate::frontend::parser::Parser;
+    
+    proptest! {
+        /// Property: Parser never panics on any string input (fuzzing)
+        #[test]
+        fn test_parser_never_panics_on_any_input(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 200 { &input[..200] } else { &input };
+            
+            let result = std::panic::catch_unwind(|| {
+                let mut parser = Parser::new(input);
+                // Parser should never panic, even on invalid syntax
+                let _ = parser.parse();
+            });
+            
+            assert!(result.is_ok(), "Parser panicked on input: {:?}", input);
+        }
+        
+        /// Property: Valid literals always parse successfully
+        #[test]
+        fn test_valid_literals_always_parse(
+            int_val in any::<i64>(),
+            float_val in any::<f64>().prop_filter("finite", |f| f.is_finite()),
+            bool_val in any::<bool>(),
+            string_val in ".*{0,50}", // Limit string length
+        ) {
+            let test_cases = vec![
+                int_val.to_string(),
+                float_val.to_string(),
+                bool_val.to_string(),
+                format!("\"{}\"", string_val.replace('"', "\\\"")),
+            ];
+            
+            for input in test_cases {
+                let mut parser = Parser::new(&input);
+                let result = parser.parse();
+                
+                // Valid literals should always parse successfully
+                prop_assert!(result.is_ok(), "Failed to parse valid literal: {}", input);
+            }
+        }
+        
+        /// Property: Balanced parentheses expressions parse correctly
+        #[test]
+        fn test_balanced_parentheses_parse(
+            expr_content in "42|true|\"test\"|x",
+            nesting_level in 0..5_u32, // Limit nesting to avoid timeout
+        ) {
+            let mut input = expr_content.clone();
+            
+            // Add balanced parentheses
+            for _ in 0..nesting_level {
+                input = format!("({})", input);
+            }
+            
+            let mut parser = Parser::new(&input);
+            let result = parser.parse();
+            
+            // Balanced expressions should parse successfully
+            prop_assert!(result.is_ok(), "Failed to parse balanced expression: {}", input);
+        }
+        
+        /// Property: Binary operations with valid operators parse correctly
+        #[test]
+        fn test_binary_operations_parse(
+            left in "42|x|true",
+            op in r"\+|\-|\*|/|==|!=|<|>|<=|>=|&&|\|\|",
+            right in "42|y|false",
+        ) {
+            let input = format!("{} {} {}", left, op, right);
+            
+            let mut parser = Parser::new(&input);
+            let result = parser.parse();
+            
+            // Valid binary operations should parse successfully  
+            prop_assert!(result.is_ok(), "Failed to parse binary operation: {}", input);
+        }
+        
+        /// Property: Function definitions with valid syntax parse correctly
+        #[test]
+        fn test_function_definitions_parse(
+            func_name in "[a-z][a-z0-9_]*{1,20}",
+            param_name in "[a-z][a-z0-9_]*{1,10}",
+        ) {
+            let input = format!("fun {}({}: i32) -> i32 {{ {} + 1 }}", func_name, param_name, param_name);
+            
+            let mut parser = Parser::new(&input);
+            let result = parser.parse();
+            
+            // Valid function definitions should parse successfully
+            prop_assert!(result.is_ok(), "Failed to parse function definition: {}", input);
+        }
+    }
 }

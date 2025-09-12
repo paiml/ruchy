@@ -1,26 +1,21 @@
 //! Comprehensive unit tests for `type_conversion_refactored` module
 //! Target: Increase coverage from 6.38% to 80%+
-
 #[cfg(test)]
 use super::super::*;
 use crate::frontend::parser::Parser;
 use crate::frontend::ast::{Expr, ExprKind, StringPart};
 use crate::frontend::Span;
-
 fn create_transpiler() -> Transpiler {
     Transpiler::new()
 }
-
 fn parse_expr(code: &str) -> Expr {
     let mut parser = Parser::new(code);
     parser.parse_expr().expect("Failed to parse expression")
 }
-
 #[test]
 fn test_str_conversion_integer() {
     let transpiler = create_transpiler();
     let expr = parse_expr("str(42)");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -32,12 +27,10 @@ fn test_str_conversion_integer() {
         }
     }
 }
-
 #[test]
 fn test_str_conversion_float() {
     let transpiler = create_transpiler();
     let expr = parse_expr("str(3.14)");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -49,12 +42,10 @@ fn test_str_conversion_float() {
         }
     }
 }
-
 #[test]
 fn test_str_conversion_bool() {
     let transpiler = create_transpiler();
     let expr = parse_expr("str(true)");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -63,12 +54,10 @@ fn test_str_conversion_bool() {
         }
     }
 }
-
 #[test]
 fn test_int_conversion_string_literal() {
     let transpiler = create_transpiler();
     let expr = parse_expr("int(\"123\")");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -81,12 +70,10 @@ fn test_int_conversion_string_literal() {
         }
     }
 }
-
 #[test]
 fn test_int_conversion_float() {
     let transpiler = create_transpiler();
     let expr = parse_expr("int(3.14)");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -98,12 +85,10 @@ fn test_int_conversion_float() {
         }
     }
 }
-
 #[test]
 fn test_float_conversion_string() {
     let transpiler = create_transpiler();
     let expr = parse_expr("float(\"3.14\")");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -116,12 +101,10 @@ fn test_float_conversion_string() {
         }
     }
 }
-
 #[test]
 fn test_float_conversion_int() {
     let transpiler = create_transpiler();
     let expr = parse_expr("float(42)");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -133,12 +116,10 @@ fn test_float_conversion_int() {
         }
     }
 }
-
 #[test]
 fn test_bool_conversion_zero() {
     let transpiler = create_transpiler();
     let expr = parse_expr("bool(0)");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -150,12 +131,10 @@ fn test_bool_conversion_zero() {
         }
     }
 }
-
 #[test]
 fn test_bool_conversion_nonzero() {
     let transpiler = create_transpiler();
     let expr = parse_expr("bool(42)");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -167,12 +146,10 @@ fn test_bool_conversion_nonzero() {
         }
     }
 }
-
 #[test]
 fn test_bool_conversion_empty_string() {
     let transpiler = create_transpiler();
     let expr = parse_expr("bool(\"\")");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -184,12 +161,10 @@ fn test_bool_conversion_empty_string() {
         }
     }
 }
-
 #[test]
 fn test_bool_conversion_nonempty_string() {
     let transpiler = create_transpiler();
     let expr = parse_expr("bool(\"hello\")");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -201,12 +176,10 @@ fn test_bool_conversion_nonempty_string() {
         }
     }
 }
-
 #[test]
 fn test_list_conversion_string() {
     let transpiler = create_transpiler();
     let expr = parse_expr("list(\"hello\")");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -218,12 +191,10 @@ fn test_list_conversion_string() {
         }
     }
 }
-
 #[test]
 fn test_list_conversion_range() {
     let transpiler = create_transpiler();
     let expr = parse_expr("list(0..10)");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -235,12 +206,10 @@ fn test_list_conversion_range() {
         }
     }
 }
-
 #[test]
 fn test_set_conversion_list() {
     let transpiler = create_transpiler();
     let expr = parse_expr("set([1, 2, 3])");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -252,12 +221,10 @@ fn test_set_conversion_list() {
         }
     }
 }
-
 #[test]
 fn test_not_type_conversion() {
     let transpiler = create_transpiler();
     let expr = parse_expr("print(42)");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -266,12 +233,10 @@ fn test_not_type_conversion() {
         }
     }
 }
-
 #[test]
 fn test_invalid_arg_count() {
     let transpiler = create_transpiler();
     let expr = parse_expr("int(1, 2)");
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args);
@@ -279,7 +244,6 @@ fn test_invalid_arg_count() {
         }
     }
 }
-
 #[test]
 fn test_string_interpolation_to_bool() {
     let transpiler = create_transpiler();
@@ -302,7 +266,6 @@ fn test_string_interpolation_to_bool() {
         span: Span::new(0, 0),
         attributes: vec![],
     };
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -311,7 +274,6 @@ fn test_string_interpolation_to_bool() {
         }
     }
 }
-
 #[test]
 fn test_dict_conversion() {
     let transpiler = create_transpiler();
@@ -332,7 +294,6 @@ fn test_dict_conversion() {
         span: Span::new(0, 0),
         attributes: vec![],
     };
-    
     if let ExprKind::Call { func, args } = &expr.kind {
         if let ExprKind::Identifier(name) = &func.kind {
             let result = transpiler.try_transpile_type_conversion_refactored(name, args)
@@ -344,16 +305,13 @@ fn test_dict_conversion() {
         }
     }
 }
-
 #[test]
 fn test_all_type_conversions_exist() {
     let transpiler = create_transpiler();
     let conversions = vec!["str", "int", "float", "bool", "list", "set", "dict"];
-    
     for conv in conversions {
         let code = format!("{conv}(42)");
         let expr = parse_expr(&code);
-        
         if let ExprKind::Call { func, args } = &expr.kind {
             if let ExprKind::Identifier(name) = &func.kind {
                 let result = transpiler.try_transpile_type_conversion_refactored(name, args);

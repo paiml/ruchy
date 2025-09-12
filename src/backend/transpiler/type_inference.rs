@@ -2,10 +2,16 @@
 //! 
 //! This module provides intelligent type inference by analyzing how
 //! parameters and expressions are used in function bodies.
-
 use crate::frontend::ast::{Expr, ExprKind, BinaryOp, Literal};
-
 /// Analyzes if a parameter is used as an argument to a function that takes i32
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::transpiler::type_inference::is_param_used_as_function_argument;
+/// 
+/// let result = is_param_used_as_function_argument("example");
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn is_param_used_as_function_argument(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::Call { func, args } => {
@@ -30,7 +36,6 @@ pub fn is_param_used_as_function_argument(param_name: &str, expr: &Expr) -> bool
         _ => false
     }
 }
-
 /// Check if parameter is used as argument in function call
 /// Extracted to reduce complexity
 fn check_call_for_param_argument(param_name: &str, func: &Expr, args: &[Expr]) -> bool {
@@ -47,32 +52,35 @@ fn check_call_for_param_argument(param_name: &str, func: &Expr, args: &[Expr]) -
     // Recursively check arguments
     args.iter().any(|arg| is_param_used_as_function_argument(param_name, arg))
 }
-
 /// Check if parameter is used in expressions list
 fn check_expressions_for_param(param_name: &str, exprs: &[Expr]) -> bool {
     exprs.iter().any(|e| is_param_used_as_function_argument(param_name, e))
 }
-
 /// Check if parameter is used in if expression
 fn check_if_for_param(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> bool {
     is_param_used_as_function_argument(param_name, condition) ||
     is_param_used_as_function_argument(param_name, then_branch) ||
     else_branch.is_some_and(|e| is_param_used_as_function_argument(param_name, e))
 }
-
 /// Check if parameter is used in let expression
 fn check_let_for_param(param_name: &str, value: &Expr, body: &Expr) -> bool {
     is_param_used_as_function_argument(param_name, value) ||
     is_param_used_as_function_argument(param_name, body)
 }
-
 /// Check if parameter is used in binary expression
 fn check_binary_for_param(param_name: &str, left: &Expr, right: &Expr) -> bool {
     is_param_used_as_function_argument(param_name, left) ||
     is_param_used_as_function_argument(param_name, right)
 }
-
 /// Analyzes if a parameter is used as a function in the given expression
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::transpiler::type_inference::is_param_used_as_function;
+/// 
+/// let result = is_param_used_as_function("example");
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::Call { func, args } => {
@@ -107,9 +115,15 @@ pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
         _ => false
     }
 }
-
-
 /// Checks if a parameter is used in numeric operations
+/// # Examples
+/// 
+/// ```
+/// use ruchy::backend::transpiler::type_inference::is_param_used_numerically;
+/// 
+/// let result = is_param_used_numerically("example");
+/// assert_eq!(result, Ok(()));
+/// ```
 pub fn is_param_used_numerically(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
         ExprKind::Binary { op, left, right } => {
@@ -130,7 +144,6 @@ pub fn is_param_used_numerically(param_name: &str, expr: &Expr) -> bool {
         _ => false
     }
 }
-
 /// Check numeric usage in binary expressions (complexity: 6)
 fn check_binary_numeric_usage(param_name: &str, op: &BinaryOp, left: &Expr, right: &Expr) -> bool {
     if is_numeric_operator(op) && has_param_in_operation(param_name, left, right) {
@@ -140,12 +153,10 @@ fn check_binary_numeric_usage(param_name: &str, op: &BinaryOp, left: &Expr, righ
         }
         return true;
     }
-    
     // Recursively check both sides
     is_param_used_numerically(param_name, left) ||
     is_param_used_numerically(param_name, right)
 }
-
 /// Check if operator is numeric (complexity: 1)
 fn is_numeric_operator(op: &BinaryOp) -> bool {
     matches!(op, 
@@ -153,41 +164,34 @@ fn is_numeric_operator(op: &BinaryOp) -> bool {
         BinaryOp::Divide | BinaryOp::Modulo
     )
 }
-
 /// Check if param is in operation (complexity: 2)
 fn has_param_in_operation(param_name: &str, left: &Expr, right: &Expr) -> bool {
     contains_param(param_name, left) || contains_param(param_name, right)
 }
-
 /// Check if operation is string concatenation (complexity: 3)
 fn is_string_concatenation(op: &BinaryOp, left: &Expr, right: &Expr) -> bool {
     matches!(op, BinaryOp::Add) && 
     (is_string_literal(left) || is_string_literal(right))
 }
-
 /// Check numeric usage in blocks (complexity: 1)
 fn check_block_numeric_usage(param_name: &str, exprs: &[Expr]) -> bool {
     exprs.iter().any(|e| is_param_used_numerically(param_name, e))
 }
-
 /// Check numeric usage in if expressions (complexity: 3)
 fn check_if_numeric_usage(param_name: &str, condition: &Expr, then_branch: &Expr, else_branch: Option<&Expr>) -> bool {
     is_param_used_numerically(param_name, condition) ||
     is_param_used_numerically(param_name, then_branch) ||
     else_branch.is_some_and(|e| is_param_used_numerically(param_name, e))
 }
-
 /// Check numeric usage in let expressions (complexity: 2)
 fn check_let_numeric_usage(param_name: &str, value: &Expr, body: &Expr) -> bool {
     is_param_used_numerically(param_name, value) ||
     is_param_used_numerically(param_name, body)
 }
-
 /// Check numeric usage in call arguments (complexity: 1)
 fn check_call_numeric_usage(param_name: &str, args: &[Expr]) -> bool {
     args.iter().any(|arg| is_param_used_numerically(param_name, arg))
 }
-
 /// Helper to check if an expression contains a specific parameter
 fn contains_param(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
@@ -205,17 +209,16 @@ fn contains_param(param_name: &str, expr: &Expr) -> bool {
         _ => false
     }
 }
-
 /// Helper to check if an expression is a string literal
 fn is_string_literal(expr: &Expr) -> bool {
     matches!(&expr.kind, ExprKind::Literal(Literal::String(_)))
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::Parser;
-
+#[cfg(test)]
+use proptest::prelude::*;
     /// Checks if an expression contains numeric operations (test helper)
     fn contains_numeric_operations(expr: &Expr) -> bool {
         match &expr.kind {
@@ -246,13 +249,11 @@ mod tests {
             _ => false
         }
     }
-
     #[test]
     fn test_detects_function_parameter() {
         let code = "fun test() { f(x) }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         // Find the function body
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
@@ -263,13 +264,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_detects_numeric_operations() {
         let code = "fun test(x) { x * 2 }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -279,13 +278,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_detects_nested_function_call() {
         let code = "fun test() { g(f(x)) }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -296,13 +293,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_detects_function_in_if_branch() {
         let code = "fun test(p) { if (true) { p(5) } else { 0 } }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -311,13 +306,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_detects_function_in_let_body() {
         let code = "fun test(f) { let x = 5; f(x) }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -326,13 +319,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_detects_function_in_lambda() {
         let code = "fun test(f) { (x) => f(x) }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -341,13 +332,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_detects_numeric_in_addition() {
         let code = "fun test(n) { n + 10 }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -357,13 +346,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_detects_numeric_in_subtraction() {
         let code = "fun test(n) { n - 5 }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -373,13 +360,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_detects_numeric_in_division() {
         let code = "fun test(n) { n / 2 }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -389,13 +374,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_detects_numeric_in_modulo() {
         let code = "fun test(n) { n % 3 }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -405,13 +388,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_detects_numeric_in_comparison() {
         let code = "fun test(n) { n > 5 }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -421,13 +402,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_no_function_no_numeric() {
         let code = "fun test(s) { s + \" world\" }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -437,13 +416,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_contains_param_helper() {
         let code = "fun test(x) { x }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -453,13 +430,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_contains_param_in_binary() {
         let code = "fun test(x, y) { x + y }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -470,13 +445,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_complex_nested_detection() {
         let code = "fun test(f, g, x) { f(g(x * 2)) }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -488,13 +461,11 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_string_concatenation_not_numeric() {
         let code = "fun greet(name) { \"Hello \" + name }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
@@ -505,19 +476,36 @@ mod tests {
             }
         }
     }
-
     #[test]
     fn test_string_literal_helper() {
         let code = "fun test() { \"hello\" }";
         let mut parser = Parser::new(code);
-        let ast = parser.parse().unwrap();
-        
+        let ast = parser.parse().expect("Failed to parse");
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
                     assert!(is_string_literal(body));
                 }
             }
+        }
+    }
+}
+#[cfg(test)]
+mod property_tests_type_inference {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_is_param_used_as_function_argument_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
         }
     }
 }

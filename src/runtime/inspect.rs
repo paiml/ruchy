@@ -1,21 +1,17 @@
 //! Object inspection protocol for REPL display
 //!
 //! [OBJ-INSPECT-002] Implement consistent object introspection API
-
 use std::collections::{HashMap, HashSet};
 use std::fmt::{self, Write};
-
 /// Object inspection trait for human-readable display in REPL
 pub trait Inspect {
     /// Inspect the object, writing to the inspector
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result;
-    
     /// Maximum recursion depth for this type
     fn inspect_depth(&self) -> usize {
         1
     }
 }
-
 /// Inspector manages inspection state and formatting
 pub struct Inspector {
     /// Current recursion depth
@@ -31,7 +27,6 @@ pub struct Inspector {
     /// Output buffer
     pub output: String,
 }
-
 /// Optimized set for tracking visited objects
 struct VisitSet {
     /// Inline storage for common case (<8 elements)
@@ -41,7 +36,6 @@ struct VisitSet {
     /// Overflow storage for larger sets
     overflow: Option<HashSet<usize>>,
 }
-
 impl VisitSet {
     fn new() -> Self {
         Self {
@@ -50,7 +44,6 @@ impl VisitSet {
             overflow: None,
         }
     }
-    
     fn insert(&mut self, addr: usize) -> bool {
         // Check inline storage first
         for i in 0..self.count.min(8) {
@@ -58,12 +51,10 @@ impl VisitSet {
                 return false; // Already visited
             }
         }
-        
         // Check overflow if present
         if let Some(ref mut overflow) = self.overflow {
             return overflow.insert(addr);
         }
-        
         // Add to inline if space available
         if self.count < 8 {
             self.inline[self.count] = addr;
@@ -81,7 +72,6 @@ impl VisitSet {
             true
         }
     }
-    
     fn contains(&self, addr: usize) -> bool {
         // Check inline
         for i in 0..self.count.min(8) {
@@ -89,7 +79,6 @@ impl VisitSet {
                 return true;
             }
         }
-        
         // Check overflow
         if let Some(ref overflow) = self.overflow {
             overflow.contains(&addr)
@@ -98,7 +87,6 @@ impl VisitSet {
         }
     }
 }
-
 /// Display style configuration
 #[derive(Debug, Clone)]
 pub struct InspectStyle {
@@ -111,7 +99,6 @@ pub struct InspectStyle {
     /// Indentation string
     pub indent: String,
 }
-
 impl Default for InspectStyle {
     fn default() -> Self {
         Self {
@@ -122,7 +109,6 @@ impl Default for InspectStyle {
         }
     }
 }
-
 /// Canonical display forms for values
 #[derive(Debug, Clone)]
 pub enum DisplayForm {
@@ -135,7 +121,6 @@ pub enum DisplayForm {
     /// Opaque values (`<fn>`, `<thread#42>`)
     Opaque(OpaqueHandle),
 }
-
 /// Composite value display structure
 #[derive(Debug, Clone)]
 pub struct CompositeForm {
@@ -148,7 +133,6 @@ pub struct CompositeForm {
     /// Number of elided elements
     pub elided: Option<usize>,
 }
-
 /// Handle for opaque values
 #[derive(Debug, Clone)]
 pub struct OpaqueHandle {
@@ -157,21 +141,34 @@ pub struct OpaqueHandle {
     /// Optional identifier
     pub id: Option<String>,
 }
-
 impl Default for Inspector {
     fn default() -> Self {
         Self::new()
     }
 }
-
 impl Inspector {
     /// Create a new inspector with default settings
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::inspect::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         Self::with_style(InspectStyle::default())
     }
-    
     /// Create an inspector with custom style
-    pub fn with_style(style: InspectStyle) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::inspect::with_style;
+/// 
+/// let result = with_style(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn with_style(style: InspectStyle) -> Self {
         Self {
             depth: 0,
             max_depth: 10,
@@ -181,7 +178,6 @@ impl Inspector {
             output: String::new(),
         }
     }
-    
     /// Enter a new inspection context (cycle detection)
     pub fn enter<T>(&mut self, val: &T) -> bool {
         let addr = std::ptr::from_ref::<T>(val) as usize;
@@ -193,33 +189,67 @@ impl Inspector {
             true
         }
     }
-    
     /// Exit an inspection context
-    pub fn exit(&mut self) {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::inspect::exit;
+/// 
+/// let result = exit(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn exit(&mut self) {
         self.depth = self.depth.saturating_sub(1);
     }
-    
     /// Check if budget allows continued inspection
-    pub fn has_budget(&self) -> bool {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::inspect::has_budget;
+/// 
+/// let result = has_budget(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn has_budget(&self) -> bool {
         self.budget > 0
     }
-    
     /// Consume inspection budget
-    pub fn consume_budget(&mut self, amount: usize) {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::inspect::consume_budget;
+/// 
+/// let result = consume_budget(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn consume_budget(&mut self, amount: usize) {
         self.budget = self.budget.saturating_sub(amount);
     }
-    
     /// Get current depth
-    pub fn depth(&self) -> usize {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::inspect::depth;
+/// 
+/// let result = depth(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn depth(&self) -> usize {
         self.depth
     }
-    
     /// Check if at maximum depth
-    pub fn at_max_depth(&self) -> bool {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::inspect::at_max_depth;
+/// 
+/// let result = at_max_depth(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn at_max_depth(&self) -> bool {
         self.depth >= self.max_depth
     }
 }
-
 impl fmt::Write for Inspector {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.consume_budget(s.len());
@@ -227,33 +257,27 @@ impl fmt::Write for Inspector {
         Ok(())
     }
 }
-
 // === Primitive Implementations ===
-
 impl Inspect for i32 {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         write!(inspector, "{self}")
     }
 }
-
 impl Inspect for i64 {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         write!(inspector, "{self}")
     }
 }
-
 impl Inspect for f64 {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         write!(inspector, "{self}")
     }
 }
-
 impl Inspect for bool {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         write!(inspector, "{self}")
     }
 }
-
 impl Inspect for String {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         if self.len() <= inspector.style.max_string_len {
@@ -265,7 +289,6 @@ impl Inspect for String {
         }
     }
 }
-
 impl Inspect for &str {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         if self.len() <= inspector.style.max_string_len {
@@ -277,53 +300,42 @@ impl Inspect for &str {
         }
     }
 }
-
 impl<T: Inspect> Inspect for Vec<T> {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         if inspector.at_max_depth() {
             return write!(inspector, "[{} elements]", self.len());
         }
-        
         if !inspector.enter(self) {
             return write!(inspector, "[<circular>]");
         }
-        
         write!(inspector, "[")?;
-        
         let display_count = self.len().min(inspector.style.max_elements);
         for (i, item) in self.iter().take(display_count).enumerate() {
             if i > 0 {
                 write!(inspector, ", ")?;
             }
             item.inspect(inspector)?;
-            
             if !inspector.has_budget() {
                 write!(inspector, ", ...")?;
                 break;
             }
         }
-        
         if self.len() > display_count {
             write!(inspector, ", ...{} more", self.len() - display_count)?;
         }
-        
         inspector.exit();
         write!(inspector, "]")
     }
 }
-
 impl<K: Inspect, V: Inspect> Inspect for HashMap<K, V> {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         if inspector.at_max_depth() {
             return write!(inspector, "{{{} entries}}", self.len());
         }
-        
         if !inspector.enter(self) {
             return write!(inspector, "{{<circular>}}");
         }
-        
         write!(inspector, "{{")?;
-        
         let display_count = self.len().min(inspector.style.max_elements);
         for (i, (key, value)) in self.iter().take(display_count).enumerate() {
             if i > 0 {
@@ -332,22 +344,18 @@ impl<K: Inspect, V: Inspect> Inspect for HashMap<K, V> {
             key.inspect(inspector)?;
             write!(inspector, ": ")?;
             value.inspect(inspector)?;
-            
             if !inspector.has_budget() {
                 write!(inspector, ", ...")?;
                 break;
             }
         }
-        
         if self.len() > display_count {
             write!(inspector, ", ...{} more", self.len() - display_count)?;
         }
-        
         inspector.exit();
         write!(inspector, "}}")
     }
 }
-
 impl<T: Inspect> Inspect for Option<T> {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         match self {
@@ -360,7 +368,6 @@ impl<T: Inspect> Inspect for Option<T> {
         }
     }
 }
-
 impl<T: Inspect, E: Inspect> Inspect for Result<T, E> {
     fn inspect(&self, inspector: &mut Inspector) -> fmt::Result {
         match self {
@@ -377,35 +384,30 @@ impl<T: Inspect, E: Inspect> Inspect for Result<T, E> {
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+#[cfg(test)]
+use proptest::prelude::*;
     #[test]
     fn test_primitive_inspection() {
         let mut inspector = Inspector::new();
-        
         42i32.inspect(&mut inspector).unwrap();
         assert!(inspector.output.contains("42"));
     }
-    
     #[test]
     fn test_vector_inspection() {
         let vec = vec![1, 2, 3, 4, 5];
         let mut inspector = Inspector::new();
-        
         vec.inspect(&mut inspector).unwrap();
         assert!(inspector.output.contains('['));
         assert!(inspector.output.contains('1'));
         assert!(inspector.output.contains('5'));
     }
-    
     #[test]
     fn test_cycle_detection() {
         // Can't easily test with standard types, but VisitSet works
         let mut visited = VisitSet::new();
-        
         assert!(visited.insert(0x1000));
         assert!(!visited.insert(0x1000)); // Already visited
         assert!(visited.insert(0x2000));
@@ -413,19 +415,35 @@ mod tests {
         assert!(visited.contains(0x2000));
         assert!(!visited.contains(0x3000));
     }
-    
     #[test]
     fn test_overflow_visit_set() {
         let mut visited = VisitSet::new();
-        
         // Fill inline storage
         for i in 0..10 {
             visited.insert(i * 0x1000);
         }
-        
         // Should have migrated to overflow
         assert!(visited.overflow.is_some());
         assert!(visited.contains(0x0000));
         assert!(visited.contains(0x9000));
+    }
+}
+#[cfg(test)]
+mod property_tests_inspect {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

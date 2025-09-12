@@ -9,7 +9,7 @@ use ruchy::{Transpiler, Parser};
 proptest! {
     #[test]
     fn test_math_function_sqrt_always_positive(x in 0.0f64..1000.0) {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let input = format!("sqrt({x})");
         let mut parser = Parser::new(&input);
         
@@ -26,7 +26,7 @@ proptest! {
 
     #[test]  
     fn test_math_function_pow_deterministic(base in 0.0f64..100.0, exp in 0.0f64..5.0) {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let input = format!("pow({base}, {exp})");
         let mut parser = Parser::new(&input);
         
@@ -43,7 +43,7 @@ proptest! {
 
     #[test]
     fn test_math_function_abs_preserves_structure(x in -1000.0f64..1000.0) {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let input = format!("abs({x})");
         let mut parser = Parser::new(&input);
         
@@ -58,7 +58,7 @@ proptest! {
 
     #[test]
     fn test_math_min_max_symmetry(a in 0.0f64..1000.0, b in 0.0f64..1000.0) {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         
         // Test min function
         let input_min = format!("min({a}, {b})");
@@ -83,7 +83,7 @@ proptest! {
 
     #[test]
     fn test_print_macro_format_strings(s in r"[a-zA-Z0-9 ]{1,20}") {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let input = format!(r#"println("{s}")"#);
         let mut parser = Parser::new(&input);
         
@@ -100,7 +100,7 @@ proptest! {
 
     #[test]
     fn test_assert_functions_preserve_structure(condition in any::<bool>()) {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let input = format!("assert({condition})");
         let mut parser = Parser::new(&input);
         
@@ -117,7 +117,7 @@ proptest! {
 
     #[test]
     fn test_regular_function_calls_preserve_name(func_name in r"[a-zA-Z_][a-zA-Z0-9_]{0,10}") {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let input = format!(r#"{func_name}("test")"#);
         let mut parser = Parser::new(&input);
         
@@ -134,7 +134,7 @@ proptest! {
 
     #[test]
     fn test_transpiler_determinism(input in r"[a-zA-Z0-9()., ]{1,50}") {
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         let mut parser1 = Parser::new(&input);
         let mut parser2 = Parser::new(&input);
         
@@ -160,7 +160,7 @@ mod unit_tests {
     fn test_transpile_call_complexity_reduced() {
         // This test verifies that our refactoring worked by checking
         // that the main function delegates properly to helpers
-        let mut transpiler = Transpiler::new();
+        let transpiler = Transpiler::new();
         
         // Test each category of function
         let test_cases = vec![

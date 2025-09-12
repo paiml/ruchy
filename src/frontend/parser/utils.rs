@@ -1,8 +1,6 @@
 //! Parsing utilities and helper functions
-
 use super::{ParserState, *};
 use crate::frontend::ast::ImportItem;
-
 /// Validate URL imports for safe operation
 fn validate_url_import(url: &str) -> Result<()> {
     validate_url_scheme(url)?;
@@ -11,7 +9,6 @@ fn validate_url_import(url: &str) -> Result<()> {
     validate_url_no_suspicious_patterns(url)?;
     Ok(())
 }
-
 /// Validate URL uses HTTPS (except for localhost)
 /// Extracted to reduce complexity
 fn validate_url_scheme(url: &str) -> Result<()> {
@@ -21,14 +18,12 @@ fn validate_url_scheme(url: &str) -> Result<()> {
         bail!("URL imports must use HTTPS (except for localhost)")
     }
 }
-
 /// Check if URL has valid scheme
 fn is_valid_url_scheme(url: &str) -> bool {
     url.starts_with("https://") || 
     url.starts_with("http://localhost") ||
     url.starts_with("http://127.0.0.1")
 }
-
 /// Validate URL has correct file extension
 fn validate_url_extension(url: &str) -> Result<()> {
     if url.ends_with(".ruchy") || url.ends_with(".rchy") {
@@ -37,7 +32,6 @@ fn validate_url_extension(url: &str) -> Result<()> {
         bail!("URL imports must reference .ruchy or .rchy files")
     }
 }
-
 /// Validate URL doesn't contain path traversal
 fn validate_url_path_safety(url: &str) -> Result<()> {
     if url.contains("..") || url.contains("/.") {
@@ -46,11 +40,9 @@ fn validate_url_path_safety(url: &str) -> Result<()> {
         Ok(())
     }
 }
-
 /// Validate URL doesn't contain suspicious patterns
 fn validate_url_no_suspicious_patterns(url: &str) -> Result<()> {
     const SUSPICIOUS_PATTERNS: &[&str] = &["javascript:", "data:", "file:"];
-    
     for pattern in SUSPICIOUS_PATTERNS {
         if url.contains(pattern) {
             bail!("Invalid URL scheme for import");
@@ -58,7 +50,6 @@ fn validate_url_no_suspicious_patterns(url: &str) -> Result<()> {
     }
     Ok(())
 }
-
 /// Parse a pattern for destructuring
 ///
 /// Supports:
@@ -73,28 +64,23 @@ fn validate_url_no_suspicious_patterns(url: &str) -> Result<()> {
 /// Returns an error if the operation fails
 pub fn parse_params(state: &mut ParserState) -> Result<Vec<Param>> {
     state.tokens.expect(&Token::LeftParen)?;
-
     let mut params = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         let param = parse_single_param(state)?;
         params.push(param);
-        
         if !should_continue_param_list(state)? {
             break;
         }
     }
-
     state.tokens.expect(&Token::RightParen)?;
     Ok(params)
 }
-
 /// Parse a single parameter (complexity: 7)
 fn parse_single_param(state: &mut ParserState) -> Result<Param> {
     let is_mutable = check_and_consume_mut(state);
     let pattern = parse_param_pattern(state)?;
     let ty = parse_optional_type_annotation(state)?;
     let default_value = parse_optional_default_value(state)?;
-    
     Ok(Param {
         pattern,
         ty,
@@ -103,7 +89,6 @@ fn parse_single_param(state: &mut ParserState) -> Result<Param> {
         default_value,
     })
 }
-
 /// Check for and consume mut keyword (complexity: 2)
 fn check_and_consume_mut(state: &mut ParserState) -> bool {
     if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
@@ -113,7 +98,6 @@ fn check_and_consume_mut(state: &mut ParserState) -> bool {
         false
     }
 }
-
 /// Parse parameter pattern (complexity: 8 - increased to support destructuring)
 fn parse_param_pattern(state: &mut ParserState) -> Result<Pattern> {
     match state.tokens.peek() {
@@ -143,16 +127,13 @@ fn parse_param_pattern(state: &mut ParserState) -> Result<Pattern> {
         _ => bail!("Function parameters must be simple identifiers or destructuring patterns"),
     }
 }
-
 /// Parse reference patterns (&self, &mut self) (complexity: 8)
 fn parse_reference_pattern(state: &mut ParserState) -> Result<Pattern> {
     state.tokens.advance(); // consume &
-
     let is_mut_ref = matches!(state.tokens.peek(), Some((Token::Mut, _)));
     if is_mut_ref {
         state.tokens.advance(); // consume mut
     }
-
     match state.tokens.peek() {
         Some((Token::Identifier(n), _)) if n == "self" => {
             state.tokens.advance();
@@ -168,7 +149,6 @@ fn parse_reference_pattern(state: &mut ParserState) -> Result<Pattern> {
         }
     }
 }
-
 /// Parse optional type annotation (complexity: 4)
 fn parse_optional_type_annotation(state: &mut ParserState) -> Result<Type> {
     if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
@@ -182,7 +162,6 @@ fn parse_optional_type_annotation(state: &mut ParserState) -> Result<Type> {
         })
     }
 }
-
 /// Parse optional default value (complexity: 3)
 fn parse_optional_default_value(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
     if matches!(state.tokens.peek(), Some((Token::Equal, _))) {
@@ -192,7 +171,6 @@ fn parse_optional_default_value(state: &mut ParserState) -> Result<Option<Box<Ex
         Ok(None)
     }
 }
-
 /// Check if we should continue parsing parameters (complexity: 3)
 fn should_continue_param_list(state: &mut ParserState) -> Result<bool> {
     if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
@@ -202,7 +180,6 @@ fn should_continue_param_list(state: &mut ParserState) -> Result<bool> {
         Ok(false)
     }
 }
-
 /// # Errors
 ///
 /// Returns an error if the operation fails
@@ -211,15 +188,12 @@ fn should_continue_param_list(state: &mut ParserState) -> Result<bool> {
 /// Returns an error if the operation fails
 pub fn parse_type_parameters(state: &mut ParserState) -> Result<Vec<String>> {
     state.tokens.expect(&Token::Less)?;
-
     let mut type_params = Vec::new();
-
     // Parse first type parameter
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         type_params.push(name.clone());
         state.tokens.advance();
     }
-
     // Parse additional type parameters
     while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
         state.tokens.advance(); // consume comma
@@ -228,17 +202,14 @@ pub fn parse_type_parameters(state: &mut ParserState) -> Result<Vec<String>> {
             state.tokens.advance();
         }
     }
-
     state.tokens.expect(&Token::Greater)?;
     Ok(type_params)
 }
-
 /// Parse type expressions with complexity ≤10
 /// # Errors
 /// Returns an error if the operation fails
 pub fn parse_type(state: &mut ParserState) -> Result<Type> {
     let span = Span { start: 0, end: 0 }; // Simplified for now
-
     match state.tokens.peek() {
         Some((Token::Ampersand, _)) => parse_reference_type(state, span),
         Some((Token::Fn, _)) => parse_fn_type(state, span),
@@ -249,20 +220,16 @@ Token::Err | Token::Some | Token::DataFrame | Token::None | Token::Null, _)) => 
         _ => bail!("Expected type"),
     }
 }
-
 // Helper: Parse reference type &T or &mut T (complexity: 4)
 fn parse_reference_type(state: &mut ParserState, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume &
-    
     let is_mut = if matches!(state.tokens.peek(), Some((Token::Mut, _))) {
         state.tokens.advance(); // consume mut
         true
     } else {
         false
     };
-    
     let inner_type = parse_type(state)?;
-    
     Ok(Type {
         kind: TypeKind::Reference {
             is_mut,
@@ -271,17 +238,14 @@ fn parse_reference_type(state: &mut ParserState, span: Span) -> Result<Type> {
         span,
     })
 }
-
 // Helper: Parse function type fn(T1, T2) -> T3 (complexity: 5)
 fn parse_fn_type(state: &mut ParserState, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume fn
     state.tokens.expect(&Token::LeftParen)?;
-    
     let param_types = parse_type_list(state)?;
     state.tokens.expect(&Token::RightParen)?;
     state.tokens.expect(&Token::Arrow)?;
     let ret_type = parse_type(state)?;
-    
     Ok(Type {
         kind: TypeKind::Function {
             params: param_types,
@@ -290,16 +254,13 @@ fn parse_fn_type(state: &mut ParserState, span: Span) -> Result<Type> {
         span,
     })
 }
-
 // Helper: Parse list type `[T]` or array type `[T; size]` (complexity: 5)
 fn parse_list_type(state: &mut ParserState, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume [
     let inner = parse_type(state)?;
-    
     // Check for array syntax [T; size]
     if matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
         state.tokens.advance(); // consume ;
-        
         // Parse the size - could be a literal or identifier
         let size = if let Some((Token::Integer(n), _)) = state.tokens.peek() {
             let size = *n as usize;
@@ -319,27 +280,22 @@ fn parse_list_type(state: &mut ParserState, span: Span) -> Result<Type> {
         } else {
             bail!("Expected array size after semicolon")
         };
-        
         state.tokens.expect(&Token::RightBracket)?;
-        
         Ok(Type {
             kind: TypeKind::Array { elem_type: Box::new(inner), size },
             span,
         })
     } else {
         state.tokens.expect(&Token::RightBracket)?;
-        
         Ok(Type {
             kind: TypeKind::List(Box::new(inner)),
             span,
         })
     }
 }
-
 // Helper: Parse parenthesized type (T1, T2) or (T1, T2) -> T3 (complexity: 6)
 fn parse_paren_type(state: &mut ParserState, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume (
-    
     if matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         // Unit type: ()
         state.tokens.advance();
@@ -350,12 +306,10 @@ fn parse_paren_type(state: &mut ParserState, span: Span) -> Result<Type> {
     } else {
         let param_types = parse_type_list(state)?;
         state.tokens.expect(&Token::RightParen)?;
-        
         if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
             // Function type: (T1, T2) -> T3
             state.tokens.advance(); // consume ->
             let ret_type = parse_type(state)?;
-
             Ok(Type {
                 kind: TypeKind::Function {
                     params: param_types,
@@ -372,11 +326,9 @@ fn parse_paren_type(state: &mut ParserState, span: Span) -> Result<Type> {
         }
     }
 }
-
 // Helper: Parse named type with optional generics (complexity: 4)
 fn parse_named_type(state: &mut ParserState, span: Span) -> Result<Type> {
     let name = parse_qualified_name(state)?;
-    
     if matches!(state.tokens.peek(), Some((Token::Less, _))) {
         parse_generic_type(state, name, span)
     } else {
@@ -386,7 +338,6 @@ fn parse_named_type(state: &mut ParserState, span: Span) -> Result<Type> {
         })
     }
 }
-
 // Helper: Parse qualified name like std::collections::HashMap (complexity: 6)
 fn parse_qualified_name(state: &mut ParserState) -> Result<String> {
     let mut name = match state.tokens.peek() {
@@ -426,10 +377,8 @@ fn parse_qualified_name(state: &mut ParserState) -> Result<String> {
         }
         _ => bail!("Expected identifier"),
     };
-
     while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
         state.tokens.advance(); // consume ::
-        
         let next_name = match state.tokens.peek() {
             Some((Token::Identifier(next), _)) => next.clone(),
             // Handle special tokens that can be type names
@@ -441,21 +390,17 @@ fn parse_qualified_name(state: &mut ParserState) -> Result<String> {
             Some((Token::None | Token::Null, _)) => "None".to_string(),
             _ => bail!("Expected identifier after :: in type name"),
         };
-        
         name.push_str("::");
         name.push_str(&next_name);
         state.tokens.advance();
     }
-
     Ok(name)
 }
-
 // Helper: Parse generic type Vec<T, U> (complexity: 4)
 fn parse_generic_type(state: &mut ParserState, base: String, span: Span) -> Result<Type> {
     state.tokens.advance(); // consume <
     let type_params = parse_type_list(state)?;
     state.tokens.expect(&Token::Greater)?;
-
     Ok(Type {
         kind: TypeKind::Generic {
             base,
@@ -464,23 +409,18 @@ fn parse_generic_type(state: &mut ParserState, base: String, span: Span) -> Resu
         span,
     })
 }
-
 // Helper: Parse comma-separated type list (complexity: 3)
 fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
     let mut types = Vec::new();
-    
     if !matches!(state.tokens.peek(), Some((Token::RightParen | Token::Greater, _))) {
         types.push(parse_type(state)?);
-        
         while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
             types.push(parse_type(state)?);
         }
     }
-    
     Ok(types)
 }
-
 /// Parse import statements in various forms
 ///
 /// Supports:
@@ -496,7 +436,7 @@ fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
 /// use ruchy::frontend::ast::{ExprKind, ImportItem};
 ///
 /// let mut parser = Parser::new("import std::collections::HashMap");
-/// let expr = parser.parse().unwrap();
+/// let expr = parser.parse().expect("Failed to parse");
 ///
 /// match &expr.kind {
 ///     ExprKind::Import { path, items } => {
@@ -514,7 +454,7 @@ fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
 ///
 /// // Multiple imports with alias
 /// let mut parser = Parser::new("import std::collections::{HashMap as Map, Vec}");
-/// let expr = parser.parse().unwrap();
+/// let expr = parser.parse().expect("Failed to parse");
 ///
 /// match &expr.kind {
 ///     ExprKind::Import { path, items } => {
@@ -539,32 +479,25 @@ fn parse_type_list(state: &mut ParserState) -> Result<Vec<Type>> {
 /// Orchestrates URL and regular import parsing
 pub fn parse_import(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1;
-    
     // Check for URL import first
     if let Some((Token::String(url), _)) = state.tokens.peek() {
         let url = url.clone();
         return parse_url_import(state, &url, start_span);
     }
-    
     // Parse regular module import
     let path_parts = parse_module_path(state)?;
     let items = parse_import_items(state, &path_parts)?;
-    
     create_import_expression(path_parts, items, start_span)
 }
-
 /// Parse URL import statement (complexity: 6)
 fn parse_url_import(state: &mut ParserState, url: &str, start_span: Span) -> Result<Expr> {
     // Validate URL format
     if !url.starts_with("https://") && !url.starts_with("http://") {
         bail!("URL imports must start with 'https://' or 'http://'");
     }
-    
     // Safety validation for URL imports
     validate_url_import(url)?;
-    
     state.tokens.advance();
-    
     Ok(Expr::new(
         ExprKind::Import {
             path: url.to_string(),
@@ -573,32 +506,25 @@ fn parse_url_import(state: &mut ParserState, url: &str, start_span: Span) -> Res
         start_span,
     ))
 }
-
 /// Parse module path components (complexity: 8)
 fn parse_module_path(state: &mut ParserState) -> Result<Vec<String>> {
     let mut path_parts = Vec::new();
-    
     // Get first identifier
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         path_parts.push(name.clone());
         state.tokens.advance();
-        
         // Parse additional path segments
         while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
             state.tokens.advance(); // consume ::
-            
             // Check if this is the start of import items
             if is_import_items_start(state) {
                 break;
             }
-            
             path_parts.push(parse_path_segment(state)?);
         }
     }
-    
     Ok(path_parts)
 }
-
 /// Check if current position is start of import items (complexity: 2)
 fn is_import_items_start(state: &mut ParserState) -> bool {
     matches!(
@@ -606,7 +532,6 @@ fn is_import_items_start(state: &mut ParserState) -> bool {
         Some((Token::Star | Token::LeftBrace, _))
     )
 }
-
 /// Parse single path segment after :: (complexity: 3)
 fn parse_path_segment(state: &mut ParserState) -> Result<String> {
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
@@ -617,7 +542,6 @@ fn parse_path_segment(state: &mut ParserState) -> Result<String> {
         bail!("Expected identifier, '*', or '{{' after '::'");
     }
 }
-
 /// Parse import items (wildcard, braced list, or simple) (complexity: 9)
 fn parse_import_items(state: &mut ParserState, path_parts: &[String]) -> Result<Vec<ImportItem>> {
     if matches!(state.tokens.peek(), Some((Token::Star, _))) {
@@ -628,26 +552,21 @@ fn parse_import_items(state: &mut ParserState, path_parts: &[String]) -> Result<
         parse_simple_import(state, path_parts)
     }
 }
-
 /// Parse wildcard import (* syntax) (complexity: 2)
 fn parse_wildcard_import(state: &mut ParserState) -> Result<Vec<ImportItem>> {
     state.tokens.advance(); // consume *
     Ok(vec![ImportItem::Wildcard])
 }
-
 /// Parse braced import list ({item1, item2, ...}) (complexity: 10)
 fn parse_braced_import_list(state: &mut ParserState) -> Result<Vec<ImportItem>> {
     state.tokens.expect(&Token::LeftBrace)?;
-    
     let mut items = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
             let name = name.clone();
             state.tokens.advance();
-            
             let item = parse_import_item_with_alias(state, name)?;
             items.push(item);
-            
             if !handle_item_separator(state)? {
                 break;
             }
@@ -655,11 +574,9 @@ fn parse_braced_import_list(state: &mut ParserState) -> Result<Vec<ImportItem>> 
             validate_braced_list_token(state)?;
         }
     }
-    
     state.tokens.expect(&Token::RightBrace)?;
     Ok(items)
 }
-
 /// Parse import item with optional alias (complexity: 6)
 fn parse_import_item_with_alias(state: &mut ParserState, name: String) -> Result<ImportItem> {
     if matches!(state.tokens.peek(), Some((Token::As, _))) {
@@ -675,7 +592,6 @@ fn parse_import_item_with_alias(state: &mut ParserState, name: String) -> Result
         Ok(ImportItem::Named(name))
     }
 }
-
 /// Handle item separator in braced list (complexity: 4)
 fn handle_item_separator(state: &mut ParserState) -> Result<bool> {
     if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
@@ -687,7 +603,6 @@ fn handle_item_separator(state: &mut ParserState) -> Result<bool> {
         bail!("Expected ',' or '}}' in import list");
     }
 }
-
 /// Validate token in braced import list (complexity: 3)
 fn validate_braced_list_token(state: &mut ParserState) -> Result<()> {
     if !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
@@ -695,7 +610,6 @@ fn validate_braced_list_token(state: &mut ParserState) -> Result<()> {
     }
     Ok(())
 }
-
 /// Parse simple import (path or path as alias) (complexity: 8)
 fn parse_simple_import(state: &mut ParserState, path_parts: &[String]) -> Result<Vec<ImportItem>> {
     if matches!(state.tokens.peek(), Some((Token::As, _))) {
@@ -704,7 +618,6 @@ fn parse_simple_import(state: &mut ParserState, path_parts: &[String]) -> Result
         parse_simple_import_without_alias(path_parts)
     }
 }
-
 /// Parse simple import with alias (complexity: 5)
 fn parse_simple_import_with_alias(state: &mut ParserState, path_parts: &[String]) -> Result<Vec<ImportItem>> {
     state.tokens.advance(); // consume as
@@ -719,7 +632,6 @@ fn parse_simple_import_with_alias(state: &mut ParserState, path_parts: &[String]
         bail!("Expected alias name after 'as'");
     }
 }
-
 /// Parse simple import without alias (complexity: 5)
 fn parse_simple_import_without_alias(path_parts: &[String]) -> Result<Vec<ImportItem>> {
     if path_parts.is_empty() {
@@ -737,19 +649,15 @@ fn parse_simple_import_without_alias(path_parts: &[String]) -> Result<Vec<Import
         )])
     }
 }
-
 /// Create final import expression (complexity: 4)
 fn create_import_expression(path_parts: Vec<String>, items: Vec<ImportItem>, start_span: Span) -> Result<Expr> {
     let path = path_parts.join("::");
-    
     // Validate that we have either a path or items
     if path.is_empty() && items.is_empty() {
         bail!("Expected import path or items after 'import'");
     }
-    
     Ok(Expr::new(ExprKind::Import { path, items }, start_span))
 }
-
 /// # Errors
 ///
 /// Returns an error if the operation fails
@@ -758,15 +666,12 @@ fn create_import_expression(path_parts: Vec<String>, items: Vec<ImportItem>, sta
 /// Returns an error if the operation fails
 pub fn parse_attributes(state: &mut ParserState) -> Result<Vec<Attribute>> {
     let mut attributes = Vec::new();
-
     while matches!(state.tokens.peek(), Some((Token::Hash, _))) {
         state.tokens.advance(); // consume #
-
         if !matches!(state.tokens.peek(), Some((Token::LeftBracket, _))) {
             bail!("Expected '[' after '#'");
         }
         state.tokens.advance(); // consume [
-
         let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
             let name = n.clone();
             state.tokens.advance();
@@ -774,16 +679,13 @@ pub fn parse_attributes(state: &mut ParserState) -> Result<Vec<Attribute>> {
         } else {
             bail!("Expected attribute name");
         };
-
         let mut args = Vec::new();
         if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
             state.tokens.advance(); // consume (
-
             while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
                 if let Some((Token::Identifier(arg), _)) = state.tokens.peek() {
                     args.push(arg.clone());
                     state.tokens.advance();
-
                     if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                         state.tokens.advance();
                     } else {
@@ -793,28 +695,22 @@ pub fn parse_attributes(state: &mut ParserState) -> Result<Vec<Attribute>> {
                     break;
                 }
             }
-
             state.tokens.advance(); // consume )
         }
-
         let end_span = state.tokens.advance().expect("Expected ']' token").1; // consume ]
-
         attributes.push(Attribute {
             name,
             args,
             span: end_span,
         });
     }
-
     Ok(attributes)
 }
-
 /// Parse string interpolation from a string containing {expr} patterns
 pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Vec<StringPart> {
     let mut parts = Vec::new();
     let mut chars = s.chars().peekable();
     let mut current_text = String::new();
-
     while let Some(ch) = chars.next() {
         match ch {
             '{' if chars.peek() == Some(&'{') => {
@@ -829,11 +725,9 @@ pub fn parse_string_interpolation(_state: &mut ParserState, s: &str) -> Vec<Stri
             _ => current_text.push(ch),
         }
     }
-
     finalize_text_part(&mut parts, current_text);
     parts
 }
-
 // Helper: Handle escaped braces (complexity: 2)
 fn handle_escaped_brace<T: Iterator<Item = char>>(
     chars: &mut T,
@@ -843,7 +737,6 @@ fn handle_escaped_brace<T: Iterator<Item = char>>(
     chars.next(); // consume second brace
     current_text.push(brace_char);
 }
-
 // Helper: Handle interpolation expressions (complexity: 4)
 fn handle_interpolation<T: Iterator<Item = char>>(
     chars: &mut T,
@@ -854,26 +747,21 @@ fn handle_interpolation<T: Iterator<Item = char>>(
         parts.push(StringPart::Text(current_text.clone()));
         current_text.clear();
     }
-
     let expr_text = extract_expression_text(chars);
     let string_part = parse_interpolated_expr(&expr_text);
     parts.push(string_part);
 }
-
 // Helper: Extract expression text from braces (complexity: 8)
 fn extract_expression_text<T: Iterator<Item = char>>(chars: &mut T) -> String {
     let mut expr_text = String::new();
     let mut context = ExprContext::default();
-
     for expr_ch in chars {
         if process_character(expr_ch, &mut context, &mut expr_text) {
             break;
         }
     }
-
     expr_text
 }
-
 /// Process a single character in expression extraction (complexity: 8)
 fn process_character(ch: char, context: &mut ExprContext, expr_text: &mut String) -> bool {
     match ch {
@@ -905,78 +793,63 @@ fn process_character(ch: char, context: &mut ExprContext, expr_text: &mut String
             expr_text.push(ch);
         }
     }
-    
     // Reset escape flag for non-backslash characters
     reset_escape_flag(context, ch);
     false // Continue processing
 }
-
 /// Check if string quote should be processed (complexity: 1)
 fn should_process_string_quote(context: &ExprContext) -> bool {
     !context.in_char && !context.escaped
 }
-
 /// Check if char quote should be processed (complexity: 1)
 fn should_process_char_quote(context: &ExprContext) -> bool {
     !context.in_string && !context.escaped
 }
-
 /// Check if brace should be processed (complexity: 1)
 fn should_process_brace(context: &ExprContext) -> bool {
     !context.in_string && !context.in_char
 }
-
 /// Check if escape should be handled (complexity: 1)
 fn should_escape(context: &ExprContext) -> bool {
     (context.in_string || context.in_char) && !context.escaped
 }
-
 /// Toggle string delimiter state (complexity: 1)
 fn handle_string_delimiter(context: &mut ExprContext) {
     context.in_string = !context.in_string;
 }
-
 /// Toggle char delimiter state (complexity: 1)
 fn handle_char_delimiter(context: &mut ExprContext) {
     context.in_char = !context.in_char;
 }
-
 /// Increment brace count (complexity: 1)
 fn handle_open_brace(context: &mut ExprContext) {
     context.brace_count += 1;
 }
-
 /// Decrement brace count (complexity: 1)
 fn handle_close_brace(context: &mut ExprContext) {
     context.brace_count -= 1;
 }
-
 /// Set escape flag (complexity: 1)
 fn handle_escape(context: &mut ExprContext) {
     context.escaped = true;
 }
-
 /// Handle regular character (complexity: 1)
 fn handle_regular_char(context: &mut ExprContext, _ch: char) {
     context.escaped = false;
 }
-
 /// Reset escape flag if needed (complexity: 2)
 fn reset_escape_flag(context: &mut ExprContext, ch: char) {
     if ch != '\\' {
         context.escaped = false;
     }
 }
-
 /// Check if we should terminate extraction (complexity: 1)
 fn should_terminate(context: &ExprContext) -> bool {
     context.brace_count == 0
 }
-
 // Helper: Parse interpolated expression with format specifier (complexity: 4)
 fn parse_interpolated_expr(expr_text: &str) -> StringPart {
     let (expr_part, format_spec) = split_format_specifier(expr_text);
-    
     let mut expr_parser = super::core::Parser::new(expr_part);
     match expr_parser.parse() {
         Ok(expr) => {
@@ -995,7 +868,6 @@ fn parse_interpolated_expr(expr_text: &str) -> StringPart {
         }
     }
 }
-
 // Helper: Split format specifier from expression (complexity: 3)
 fn split_format_specifier(expr_text: &str) -> (&str, Option<&str>) {
     if let Some(colon_pos) = expr_text.find(':') {
@@ -1009,14 +881,12 @@ fn split_format_specifier(expr_text: &str) -> (&str, Option<&str>) {
         (expr_text, None)
     }
 }
-
 // Helper: Finalize remaining text (complexity: 2)
 fn finalize_text_part(parts: &mut Vec<StringPart>, current_text: String) {
     if !current_text.is_empty() {
         parts.push(StringPart::Text(current_text));
     }
 }
-
 // Helper struct to track expression parsing context (complexity: 0)
 #[derive(Default)]
 struct ExprContext {
@@ -1025,7 +895,6 @@ struct ExprContext {
     in_char: bool,
     escaped: bool,
 }
-
 impl ExprContext {
     fn default() -> Self {
         Self {
@@ -1036,7 +905,6 @@ impl ExprContext {
         }
     }
 }
-
 /// Parse module declarations
 ///
 /// Supports:
@@ -1052,7 +920,7 @@ impl ExprContext {
 ///
 /// // Empty module
 /// let mut parser = Parser::new("module Empty {}");
-/// let expr = parser.parse().unwrap();
+/// let expr = parser.parse().expect("Failed to parse");
 ///
 /// match &expr.kind {
 ///     ExprKind::Module { name, .. } => {
@@ -1068,7 +936,7 @@ impl ExprContext {
 ///
 /// // Module with content
 /// let mut parser = Parser::new("module Math { 42 }");
-/// let expr = parser.parse().unwrap();
+/// let expr = parser.parse().expect("Failed to parse");
 ///
 /// match &expr.kind {
 ///     ExprKind::Module { name, body } => {
@@ -1091,7 +959,6 @@ impl ExprContext {
 /// - Invalid syntax in module body
 pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume module
-
     // Parse module name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -1100,10 +967,8 @@ pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected module name after 'module'");
     };
-
     // Expect opening brace
     state.tokens.expect(&Token::LeftBrace)?;
-
     // Parse module body (can be a block or single expression)
     let body = if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         // Empty module
@@ -1124,20 +989,16 @@ pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
                 state.tokens.advance();
             }
         }
-
         if exprs.len() == 1 {
             Box::new(exprs.into_iter().next().expect("checked: exprs.len() == 1"))
         } else {
             Box::new(Expr::new(ExprKind::Block(exprs), Span { start: 0, end: 0 }))
         }
     };
-
     // Expect closing brace
     state.tokens.expect(&Token::RightBrace)?;
-
     Ok(Expr::new(ExprKind::Module { name, body }, start_span))
 }
-
 /// Parse export statements
 ///
 /// Supports:
@@ -1152,7 +1013,7 @@ pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
 ///
 /// // Single export
 /// let mut parser = Parser::new("export myFunction");
-/// let expr = parser.parse().unwrap();
+/// let expr = parser.parse().expect("Failed to parse");
 ///
 /// match &expr.kind {
 ///     ExprKind::Export { items } => {
@@ -1169,7 +1030,7 @@ pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
 ///
 /// // Multiple exports
 /// let mut parser = Parser::new("export { add, subtract, multiply }");
-/// let expr = parser.parse().unwrap();
+/// let expr = parser.parse().expect("Failed to parse");
 ///
 /// match &expr.kind {
 ///     ExprKind::Export { items } => {
@@ -1190,19 +1051,15 @@ pub fn parse_module(state: &mut ParserState) -> Result<Expr> {
 /// - Missing closing brace in export block
 pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume export
-
     let mut items = Vec::new();
-
     // Parse export list
     if matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
         // Export block: export { item1, item2, ... }
         state.tokens.advance(); // consume {
-
         while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
             if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
                 items.push(name.clone());
                 state.tokens.advance();
-
                 if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     state.tokens.advance(); // consume comma
                 } else {
@@ -1212,7 +1069,6 @@ pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
                 bail!("Expected identifier in export list");
             }
         }
-
         state.tokens.expect(&Token::RightBrace)?;
     } else if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         // Single export: export item
@@ -1221,6 +1077,5 @@ pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
     } else {
         bail!("Expected export list or identifier after 'export'");
     }
-
     Ok(Expr::new(ExprKind::Export { items }, start_span))
 }

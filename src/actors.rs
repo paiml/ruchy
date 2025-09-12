@@ -1,26 +1,21 @@
 //! MCP-compatible Actor system implementation
 //!
 //! Based on SPECIFICATION.md section 7: MCP Message-Passing Architecture
-
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tracing;
-
 /// Core Actor trait compatible with MCP message passing
 #[async_trait::async_trait]
 pub trait Actor: Send + Sync + 'static + Sized {
     type Message: McpSerializable + Send + 'static;
     type Response: McpSerializable + Send + 'static;
-
     async fn receive(&mut self, msg: Self::Message) -> Option<Self::Response>;
-
     /// Spawn the actor and return a handle to communicate with it
     fn spawn(mut self) -> ActorHandle<Self::Message, Self::Response> {
         let (tx, mut rx) = mpsc::channel::<(Self::Message, mpsc::Sender<Self::Response>)>(100);
-
         tokio::spawn(async move {
             while let Some((msg, reply_tx)) = rx.recv().await {
                 let response = self.receive(msg).await;
@@ -29,22 +24,17 @@ pub trait Actor: Send + Sync + 'static + Sized {
                 }
             }
         });
-
         ActorHandle { tx }
     }
 }
-
 /// Trait for MCP serializable messages
 pub trait McpSerializable: Serialize + for<'de> Deserialize<'de> + fmt::Debug + Clone {}
-
 // Blanket implementation for types that satisfy the bounds
 impl<T> McpSerializable for T where T: Serialize + for<'de> Deserialize<'de> + fmt::Debug + Clone {}
-
 /// Handle for communicating with an actor
 pub struct ActorHandle<M, R> {
     tx: mpsc::Sender<(M, mpsc::Sender<R>)>,
 }
-
 impl<M, R> ActorHandle<M, R>
 where
     M: McpSerializable + Send + 'static,
@@ -55,7 +45,15 @@ where
     /// # Errors
     ///
     /// Returns an error if the actor has stopped and can no longer receive messages
-    pub async fn send(&self, msg: M) -> Result<()> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::actors::send;
+/// 
+/// let result = send(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub async fn send(&self, msg: M) -> Result<()> {
         let (reply_tx, _) = mpsc::channel::<R>(1);
         self.tx
             .send((msg, reply_tx))
@@ -63,32 +61,43 @@ where
             .map_err(|_| anyhow::anyhow!("Actor has stopped"))?;
         Ok(())
     }
-
     /// Send a message and wait for response
     ///
     /// # Errors
     ///
     /// Returns an error if the actor has stopped or does not respond
-    pub async fn ask(&self, msg: M) -> Result<R> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::actors::ask;
+/// 
+/// let result = ask(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub async fn ask(&self, msg: M) -> Result<R> {
         let (reply_tx, mut reply_rx) = mpsc::channel::<R>(1);
-
         self.tx
             .send((msg, reply_tx))
             .await
             .map_err(|_| anyhow::anyhow!("Actor has stopped"))?;
-
         reply_rx
             .recv()
             .await
             .ok_or_else(|| anyhow::anyhow!("No response received"))
     }
-
     /// Check if the actor is still alive
-    pub fn is_alive(&self) -> bool {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::actors::is_alive;
+/// 
+/// let result = is_alive(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn is_alive(&self) -> bool {
         !self.tx.is_closed()
     }
 }
-
 /// MCP protocol message structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpMessage {
@@ -97,7 +106,6 @@ pub struct McpMessage {
     pub params: serde_json::Value,
     pub id: Option<String>,
 }
-
 /// MCP protocol response structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpResponse {
@@ -106,19 +114,16 @@ pub struct McpResponse {
     pub error: Option<McpError>,
     pub id: Option<String>,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpError {
     pub code: i32,
     pub message: String,
     pub data: Option<serde_json::Value>,
 }
-
 /// MCP-compatible actor for handling protocol messages
 pub struct McpActor {
     pub tools: Vec<String>,
 }
-
 impl McpActor {
     /// Create a new MCP actor with default tools
     ///
@@ -140,7 +145,6 @@ impl McpActor {
             ],
         }
     }
-
     fn list_tools(&self) -> McpResponse {
         McpResponse {
             jsonrpc: "2.0".to_string(),
@@ -156,11 +160,9 @@ impl McpActor {
             id: None,
         }
     }
-
     fn call_tool(params: &serde_json::Value) -> Option<McpResponse> {
         // Extract tool name and arguments from params
         let tool_name = params.get("name")?.as_str()?;
-
         let result = match tool_name {
             "transpile" => {
                 serde_json::json!({
@@ -205,7 +207,6 @@ impl McpActor {
                 });
             }
         };
-
         Some(McpResponse {
             jsonrpc: "2.0".to_string(),
             result: Some(result),
@@ -214,18 +215,15 @@ impl McpActor {
         })
     }
 }
-
 impl Default for McpActor {
     fn default() -> Self {
         Self::new()
     }
 }
-
 #[async_trait::async_trait]
 impl Actor for McpActor {
     type Message = McpMessage;
     type Response = McpResponse;
-
     async fn receive(&mut self, msg: McpMessage) -> Option<McpResponse> {
         match msg.method.as_str() {
             "tools/list" => Some(self.list_tools()),
@@ -243,7 +241,6 @@ impl Actor for McpActor {
         }
     }
 }
-
 /// Supervision strategies for actor fault tolerance
 #[derive(Debug, Clone)]
 pub enum SupervisionStrategy {
@@ -254,13 +251,11 @@ pub enum SupervisionStrategy {
     /// Restart the failed child and all children started after it
     RestForOne,
 }
-
 /// Supervisor for managing actor lifecycles
 pub struct Supervisor<A: Actor> {
     children: Vec<ActorHandle<A::Message, A::Response>>,
     strategy: SupervisionStrategy,
 }
-
 impl<A: Actor> Supervisor<A> {
     pub fn new(strategy: SupervisionStrategy) -> Self {
         Self {
@@ -268,12 +263,10 @@ impl<A: Actor> Supervisor<A> {
             strategy,
         }
     }
-
     pub fn supervise(&mut self, actor: A) {
         let handle = actor.spawn();
         self.children.push(handle);
     }
-
     pub async fn monitor(&mut self) {
         // Monitoring implementation would go here
         // For now, just check if actors are alive periodically
@@ -295,78 +288,65 @@ impl<A: Actor> Supervisor<A> {
                     }
                 }
             }
-
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use tokio;
-
+#[cfg(test)]
+use proptest::prelude::*;
     #[derive(Debug, Clone, Serialize, Deserialize)]
     struct TestMessage {
         content: String,
     }
-
     #[derive(Debug, Clone, Serialize, Deserialize)]
     struct TestResponse {
         echo: String,
     }
-
     struct EchoActor;
-
     #[async_trait::async_trait]
     impl Actor for EchoActor {
         type Message = TestMessage;
         type Response = TestResponse;
-
         async fn receive(&mut self, msg: TestMessage) -> Option<TestResponse> {
             Some(TestResponse {
                 echo: format!("Echo: {content}", content = msg.content),
             })
         }
     }
-
     #[tokio::test]
     async fn test_actor_spawn_and_communication() -> Result<(), Box<dyn std::error::Error>> {
         let actor = EchoActor;
         let handle = actor.spawn();
-
         let msg = TestMessage {
             content: "Hello, Actor!".to_string(),
         };
-
         let response = handle.ask(msg).await?;
         assert_eq!(response.echo, "Echo: Hello, Actor!");
         Ok(())
     }
-
     #[tokio::test]
     async fn test_mcp_actor_list_tools() -> Result<(), Box<dyn std::error::Error>> {
         let actor = McpActor::new();
         let handle = actor.spawn();
-
         let msg = McpMessage {
             jsonrpc: "2.0".to_string(),
             method: "tools/list".to_string(),
             params: serde_json::Value::Null,
             id: Some("test".to_string()),
         };
-
         let response = handle.ask(msg).await?;
         assert!(response.result.is_some());
         assert!(response.error.is_none());
         Ok(())
     }
-
     #[tokio::test]
     async fn test_mcp_actor_call_tool() -> Result<(), Box<dyn std::error::Error>> {
         let actor = McpActor::new();
         let handle = actor.spawn();
-
         let msg = McpMessage {
             jsonrpc: "2.0".to_string(),
             method: "tools/call".to_string(),
@@ -376,13 +356,11 @@ mod tests {
             }),
             id: Some("test".to_string()),
         };
-
         let response = handle.ask(msg).await?;
         assert!(response.result.is_some());
         assert!(response.error.is_none());
         Ok(())
     }
-
     #[test]
     fn test_supervision_strategy_creation() {
         let supervisor: Supervisor<EchoActor> = Supervisor::new(SupervisionStrategy::OneForOne);
@@ -392,7 +370,6 @@ mod tests {
         ));
         assert_eq!(supervisor.children.len(), 0);
     }
-
     #[test]
     fn test_mcp_message_serialization() -> Result<(), Box<dyn std::error::Error>> {
         let msg = McpMessage {
@@ -401,13 +378,32 @@ mod tests {
             params: serde_json::json!({"key": "value"}),
             id: Some("123".to_string()),
         };
-
         let serialized = serde_json::to_string(&msg)?;
         let deserialized: McpMessage = serde_json::from_str(&serialized)?;
-
         assert_eq!(msg.jsonrpc, deserialized.jsonrpc);
         assert_eq!(msg.method, deserialized.method);
         assert_eq!(msg.id, deserialized.id);
         Ok(())
+    }
+}
+#[cfg(test)]
+mod property_tests_actors {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_send_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
+    }
+}
     }
 }

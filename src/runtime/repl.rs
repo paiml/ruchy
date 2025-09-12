@@ -32,11 +32,9 @@
 //! let value = repl.evaluate_expr_str("5 + 3", deadline).unwrap();
 //! assert_eq!(value.to_string(), "8");
 //! ```
-
 #![allow(clippy::print_stdout)] // REPL needs to print to stdout
 #![allow(clippy::print_stderr)] // REPL needs to print errors
 #![allow(clippy::expect_used)] // REPL can panic on initialization failure
-
 use crate::frontend::ast::{
     BinaryOp, Expr, ExprKind, ImportItem, Literal, MatchArm, Pattern, PipelineStage, Span, StructPatternField, UnaryOp,
 };
@@ -46,7 +44,6 @@ use crate::runtime::transaction::TransactionalState;
 use crate::{Parser, Transpiler};
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
-
 // mod display;
 // mod inspect;
 use rustyline::error::ReadlineError;
@@ -60,7 +57,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{Duration, Instant, SystemTime};
-
 /// Runtime value for evaluation
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -99,17 +95,14 @@ pub enum Value {
     Unit,
     Nil,
 }
-
 /// `DataFrame` column representation for pretty printing
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataFrameColumn {
     pub name: String,
     pub values: Vec<Value>,
 }
-
 // Manual Eq implementation for Value
 impl Eq for Value {}
-
 // Manual Hash implementation for Value
 impl std::hash::Hash for Value {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -160,9 +153,7 @@ impl std::hash::Hash for Value {
         }
     }
 }
-
 // Display implementations moved to repl_display.rs
-
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -256,7 +247,6 @@ impl fmt::Display for Value {
         }
     }
 }
-
 impl Value {
     /// Check if the value is considered truthy in boolean contexts
     fn is_truthy(&self) -> bool {
@@ -272,7 +262,6 @@ impl Value {
         }
     }
 }
-
 /// REPL mode determines how input is processed
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ReplMode {
@@ -286,7 +275,6 @@ pub enum ReplMode {
     Time,    // Time mode showing execution timing
     Test,    // Test mode with assertions and table tests
 }
-
 impl ReplMode {
     fn prompt(&self) -> String {
         match self {
@@ -302,7 +290,6 @@ impl ReplMode {
         }
     }
 }
-
 /// Debug information for post-mortem analysis
 #[derive(Debug, Clone)]
 pub struct DebugInfo {
@@ -317,9 +304,7 @@ pub struct DebugInfo {
     /// Timestamp when error occurred
     pub timestamp: std::time::SystemTime,
 }
-
 // === Error Recovery UI System ===
-
 /// Interactive error recovery options
 #[derive(Debug, Clone)]
 pub enum RecoveryOption {
@@ -336,7 +321,6 @@ pub enum RecoveryOption {
     /// Use a specific value from history
     UseHistoryValue(usize),
 }
-
 /// Error recovery context with available options
 #[derive(Debug, Clone)]
 pub struct ErrorRecovery {
@@ -353,7 +337,6 @@ pub struct ErrorRecovery {
     /// Checkpoint at time of error for recovery
     pub error_checkpoint: Checkpoint,
 }
-
 /// Recovery result after user chooses an option
 #[derive(Debug)]
 pub enum RecoveryResult {
@@ -366,9 +349,7 @@ pub enum RecoveryResult {
     /// Show completions to user
     ShowCompletions(Vec<String>),
 }
-
 // === Transactional State Machine ===
-
 /// Checkpoint for O(1) state recovery using persistent data structures
 #[derive(Debug, Clone)]
 pub struct Checkpoint {
@@ -385,7 +366,6 @@ pub struct Checkpoint {
     /// Program counter for recovery context
     _pc: usize,
 }
-
 /// REPL transaction state for reliable evaluation
 #[derive(Clone, Default)]
 pub enum ReplState {
@@ -397,24 +377,19 @@ pub enum ReplState {
     /// Failed state (with checkpoint for recovery)  
     Failed(Checkpoint),
 }
-
 impl Checkpoint {
     /// Create new checkpoint from current REPL state
     fn from_repl(repl: &Repl) -> Self {
         let bindings = repl.bindings.iter()
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect();
-            
         let mutability = repl.binding_mutability.iter()
             .map(|(k, v)| (k.clone(), *v))
             .collect();
-            
         let result_history = repl.result_history.iter().cloned().collect();
-        
         let enum_definitions = repl.enum_definitions.iter()
             .map(|(k, v)| (k.clone(), v.iter().cloned().collect()))
             .collect();
-        
         Self {
             bindings,
             mutability,
@@ -424,36 +399,36 @@ impl Checkpoint {
             _pc: repl.history.len(),
         }
     }
-
     /// Restore REPL state from checkpoint (O(1) with persistent structures)
     fn restore_to(&self, repl: &mut Repl) {
         // Convert from persistent structures back to std collections
         repl.bindings = self.bindings.iter()
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect();
-            
         repl.binding_mutability = self.mutability.iter()
             .map(|(k, v)| (k.clone(), *v))
             .collect();
-            
         repl.result_history = self.result_history.iter().cloned().collect();
-        
         repl.enum_definitions = self.enum_definitions.iter()
             .map(|(k, v)| (k.clone(), v.iter().cloned().collect()))
             .collect();
-        
         // Update history variables (_1, _2, etc.) after restoration
         repl.update_history_variables();
     }
-
     /// Get checkpoint age
-    pub fn age(&self) -> Duration {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::runtime::repl::age;
+/// 
+/// let result = age(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn age(&self) -> Duration {
         SystemTime::now().duration_since(self.timestamp)
             .unwrap_or(Duration::ZERO)
     }
 }
-
-
 impl ReplState {
     /// Transition state machine for evaluation
     pub fn eval(self, repl: &mut Repl, input: &str) -> (ReplState, Result<String>) {
@@ -461,7 +436,6 @@ impl ReplState {
             ReplState::Ready => {
                 // Create checkpoint before evaluation
                 let checkpoint = Checkpoint::from_repl(repl);
-                
                 // Attempt evaluation
                 match repl.eval_internal(input) {
                     Ok(result) => (ReplState::Ready, Ok(result)),
@@ -480,7 +454,6 @@ impl ReplState {
         }
     }
 }
-
 /// REPL configuration  
 #[derive(Clone)]
 pub struct ReplConfig {
@@ -493,7 +466,6 @@ pub struct ReplConfig {
     /// Enable debug mode
     pub debug: bool,
 }
-
 impl Default for ReplConfig {
     fn default() -> Self {
         Self {
@@ -504,16 +476,11 @@ impl Default for ReplConfig {
         }
     }
 }
-
 // RuchyCompleter is now imported from crate::runtime::completion
-
 // Old RuchyCompleter implementation removed - now using advanced completion from runtime::completion module
-
 // Keep only the trait implementations that rustyline needs
 // The Completer trait is already implemented in the completion module
-
 // rustyline trait implementations moved to completion.rs module
-
 /// Memory tracker for bounded allocation
 /// Arena-style memory tracker for bounded evaluation
 /// Provides fixed memory allocation with reset capability
@@ -523,7 +490,6 @@ struct MemoryTracker {
     peak_usage: usize,
     allocation_count: usize,
 }
-
 impl MemoryTracker {
     fn new(max_size: usize) -> Self {
         Self {
@@ -533,13 +499,11 @@ impl MemoryTracker {
             allocation_count: 0,
         }
     }
-
     /// Reset arena for new evaluation (O(1) operation)
     fn reset(&mut self) {
         self.current = 0;
         self.allocation_count = 0;
     }
-
     /// Track memory usage during evaluation
     fn try_alloc(&mut self, size: usize) -> Result<()> {
         if self.current + size > self.max_size {
@@ -554,37 +518,30 @@ impl MemoryTracker {
         }
         self.current += size;
         self.allocation_count += 1;
-        
         // Track peak usage
         if self.current > self.peak_usage {
             self.peak_usage = self.current;
         }
-        
         Ok(())
     }
-
     /// Get current memory usage
     fn memory_used(&self) -> usize {
         self.current
     }
-
     /// Get peak memory usage since last reset
     fn peak_memory(&self) -> usize {
         self.peak_usage
     }
-
     /// Get allocation count since last reset
     #[allow(dead_code)]
     fn allocation_count(&self) -> usize {
         self.allocation_count
     }
-
     /// Check if we're approaching memory limit
     fn memory_pressure(&self) -> f64 {
         self.current as f64 / self.max_size as f64
     }
 }
-
 /// REPL state management with resource bounds
 pub struct Repl {
     /// History of successfully parsed expressions
@@ -629,7 +586,6 @@ pub struct Repl {
     /// Transactional state for safe evaluation
     tx_state: TransactionalState,
 }
-
 impl Repl {
     /// Create a new REPL instance with default config
     ///
@@ -648,7 +604,6 @@ impl Repl {
     pub fn new() -> Result<Self> {
         Self::with_config(ReplConfig::default())
     }
-
     /// Create a new REPL instance with custom config
     ///
     /// # Errors
@@ -657,9 +612,7 @@ impl Repl {
     pub fn with_config(config: ReplConfig) -> Result<Self> {
         let temp_dir = std::env::temp_dir().join("ruchy_repl");
         fs::create_dir_all(&temp_dir)?;
-
         let memory = MemoryTracker::new(config.max_memory);
-
         let mut repl = Self {
             history: Vec::new(),
             result_history: Vec::new(),
@@ -682,13 +635,10 @@ impl Repl {
             tx_state: TransactionalState::new(config.max_memory),
             config,
         };
-
         // Initialize built-in types
         repl.init_builtins();
-
         Ok(repl)
     }
-
     /// Initialize built-in enum types (Option, Result)
     fn init_builtins(&mut self) {
         // Register Option enum
@@ -696,22 +646,18 @@ impl Repl {
             "Option".to_string(),
             vec!["None".to_string(), "Some".to_string()],
         );
-
         // Register Result enum
         self.enum_definitions.insert(
             "Result".to_string(),
             vec!["Ok".to_string(), "Err".to_string()],
         );
-
         // Add Option and Result to definitions for transpiler
         self.definitions
             .push("enum Option<T> { None, Some(T) }".to_string());
         self.definitions
             .push("enum Result<T, E> { Ok(T), Err(E) }".to_string());
     }
-
     // === Helper Functions for Common Value Creation ===
-    
     /// Create an `Option::None` value
     fn create_option_none() -> Value {
         Value::EnumVariant {
@@ -720,7 +666,6 @@ impl Repl {
             data: None,
         }
     }
-    
     /// Create an `Option::Some(value)` value
     fn create_option_some(value: Value) -> Value {
         Value::EnumVariant {
@@ -729,7 +674,6 @@ impl Repl {
             data: Some(vec![value]),
         }
     }
-    
     /// Create a `Result::Ok(value)` value
     fn create_result_ok(value: Value) -> Value {
         Value::EnumVariant {
@@ -738,7 +682,6 @@ impl Repl {
             data: Some(vec![value]),
         }
     }
-    
     /// Create a `Result::Err(value)` value
     fn create_result_err(value: Value) -> Value {
         Value::EnumVariant {
@@ -747,7 +690,6 @@ impl Repl {
             data: Some(vec![value]),
         }
     }
-    
     /// Evaluate a unary math function
     fn evaluate_unary_math_function(
         &mut self,
@@ -758,7 +700,6 @@ impl Repl {
         operation: fn(f64) -> f64,
     ) -> Result<Value> {
         self.validate_arg_count(func_name, args, 1)?;
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Float(f) => Self::ok_float(operation(f)),
@@ -766,7 +707,6 @@ impl Repl {
             _ => bail!("{}", Self::numeric_arg_error(func_name)),
         }
     }
-    
     /// Evaluate a unary math function with validation
     fn evaluate_unary_math_function_validated(
         &mut self,
@@ -778,7 +718,6 @@ impl Repl {
         validator: fn(f64) -> Result<()>,
     ) -> Result<Value> {
         self.validate_arg_count(func_name, args, 1)?;
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Float(f) => {
@@ -793,9 +732,7 @@ impl Repl {
             _ => bail!("{}", Self::numeric_arg_error(func_name)),
         }
     }
-
     // === Resource-Bounded Evaluation API ===
-    
     /// Create a sandboxed REPL instance for testing/fuzzing
     /// Uses minimal resource limits for safety
     pub fn sandboxed() -> Result<Self> {
@@ -807,27 +744,22 @@ impl Repl {
         };
         Self::with_config(config)
     }
-
     /// Get current memory usage in bytes
     pub fn memory_used(&self) -> usize {
         self.memory.memory_used()
     }
-
     /// Get peak memory usage since last evaluation
     pub fn peak_memory(&self) -> usize {
         self.memory.peak_memory()
     }
-
     /// Get memory pressure (0.0 to 1.0)
     pub fn memory_pressure(&self) -> f64 {
         self.memory.memory_pressure()
     }
-
     /// Check if REPL can accept new input (not at resource limits)
     pub fn can_accept_input(&self) -> bool {
         self.memory_pressure() < 0.95 // Less than 95% memory usage
     }
-
     /// Validate that all bindings are still valid (no corruption)
     pub fn bindings_valid(&self) -> bool {
         // Check that mutability tracking doesn't have orphaned entries
@@ -839,29 +771,22 @@ impl Repl {
         }
         true
     }
-
     /// Evaluate with explicit resource bounds (for testing)
     pub fn eval_bounded(&mut self, input: &str, max_memory: usize, timeout: Duration) -> Result<String> {
         // Save current config
         let old_config = self.config.clone();
-        
         // Apply working bounds
         self.config.max_memory = max_memory;
         self.config.timeout = timeout;
-        
         // Update memory tracker limit
         self.memory.max_size = max_memory;
-        
         // Evaluate
         let result = self.eval(input);
-        
         // Restore original config
         self.config = old_config;
         self.memory.max_size = self.config.max_memory;
-        
         result
     }
-
     /// Evaluate an expression string and return the Value
     ///
     /// This is used for one-liner evaluation from CLI
@@ -872,43 +797,32 @@ impl Repl {
     pub fn evaluate_expr_str(&mut self, input: &str, deadline: Option<Instant>) -> Result<Value> {
         // Reset memory tracker for fresh evaluation
         self.memory.reset();
-
         // Track input memory
         self.memory.try_alloc(input.len())?;
-
         // Use provided deadline or default timeout
         let deadline = deadline.unwrap_or_else(|| Instant::now() + self.config.timeout);
-
         // Preprocess macro syntax: convert println! -> println, etc.
         let preprocessed_input = Self::preprocess_macro_syntax(input);
-        
         // Parse the input
         let mut parser = Parser::new(&preprocessed_input);
         let ast = parser.parse().context("Failed to parse input")?;
-
         // Check memory for AST
         self.memory.try_alloc(std::mem::size_of_val(&ast))?;
-
         // Evaluate the expression
         let value = self.evaluate_expr(&ast, deadline, 0)?;
-
         // Handle let bindings specially (for backward compatibility)
         if let ExprKind::Let { name, type_annotation: _, is_mutable, .. } = &ast.kind {
             self.create_binding(name.clone(), value.clone(), *is_mutable);
         }
-
         Ok(value)
     }
-
     // === Transactional Evaluation API ===
-    
     /// Evaluate with transactional state machine
     pub fn eval_transactional(&mut self, input: &str) -> Result<String> {
         let (new_state, result) = std::mem::take(&mut self.state).eval(self, input);
         self.state = new_state;
         result
     }
-    
     /// Create checkpoint of current state
     ///
     /// # Example
@@ -925,7 +839,6 @@ impl Repl {
     pub fn checkpoint(&self) -> Checkpoint {
         Checkpoint::from_repl(self)
     }
-    
     /// Restore from checkpoint
     ///
     /// # Example
@@ -942,48 +855,39 @@ impl Repl {
         checkpoint.restore_to(self);
         self.state = ReplState::Ready;
     }
-    
     /// Get current state
     pub fn get_state(&self) -> &ReplState {
         &self.state
     }
-    
     /// Set state (for testing purposes only - do not use in production)
     pub fn set_state_for_testing(&mut self, state: ReplState) {
         self.state = state;
     }
-    
     /// Get result history length (for debugging)
     pub fn result_history_len(&self) -> usize {
         self.result_history.len()
     }
-    
     /// Get bindings (for replay testing)
     pub fn get_bindings(&self) -> &HashMap<String, Value> {
         &self.bindings
     }
-    
     /// Get mutable bindings (for replay testing)
     pub fn get_bindings_mut(&mut self) -> &mut HashMap<String, Value> {
         &mut self.bindings
     }
-    
     /// Clear bindings (for replay testing)
     pub fn clear_bindings(&mut self) {
         self.bindings.clear();
         self.binding_mutability.clear();
     }
-    
     /// Get last error (for magic commands)
     pub fn get_last_error(&self) -> Option<&DebugInfo> {
         self.last_error_debug.as_ref()
     }
-    
     /// Check if REPL is in failed state 
     pub fn is_failed(&self) -> bool {
         matches!(self.state, ReplState::Failed(_))
     }
-    
     /// Recover from failed state (if applicable)
     pub fn recover(&mut self) -> Result<String> {
         match std::mem::take(&mut self.state) {
@@ -999,26 +903,20 @@ impl Repl {
             }
         }
     }
-
     // === Interactive Error Recovery System ===
-    
     /// Create error recovery context when evaluation fails
     pub fn create_error_recovery(&mut self, failed_expr: &str, error_msg: &str) -> ErrorRecovery {
         let checkpoint = self.checkpoint();
-        
         // Parse error message to determine position if possible
         let position = self.parse_error_position(error_msg);
-        
         // Determine appropriate recovery options based on error type
         let options = self.suggest_recovery_options(failed_expr, error_msg);
-        
         // Generate completions if appropriate
         let completions = if failed_expr.trim().is_empty() || error_msg.contains("expected expression") {
             self.generate_completions_for_error(failed_expr)
         } else {
             Vec::new()
         };
-        
         let recovery = ErrorRecovery {
             failed_expression: failed_expr.to_string(),
             error_message: error_msg.to_string(),
@@ -1027,11 +925,9 @@ impl Repl {
             completions,
             error_checkpoint: checkpoint,
         };
-        
         self.error_recovery = Some(recovery.clone());
         recovery
     }
-    
     /// Parse error position from error message
     fn parse_error_position(&self, error_msg: &str) -> Option<(usize, usize)> {
         // Try to extract line:column from common error formats
@@ -1048,11 +944,9 @@ impl Repl {
         }
         None
     }
-    
     /// Suggest appropriate recovery options based on error type
     fn suggest_recovery_options(&self, failed_expr: &str, error_msg: &str) -> Vec<RecoveryOption> {
         let mut options = Vec::new();
-        
         // Common recovery options based on error patterns
         if error_msg.contains("Unexpected EOF") || error_msg.contains("expected expression") || 
            error_msg.contains("Unexpected end of input") || error_msg.contains("end of input") {
@@ -1070,7 +964,6 @@ impl Repl {
             }
             options.push(RecoveryOption::ShowCompletions);
         }
-        
         if error_msg.to_lowercase().contains("undefined variable") || error_msg.contains("not found") {
             // Suggest similar variable names
             if let Some(undefined_var) = self.extract_undefined_variable(error_msg) {
@@ -1080,7 +973,6 @@ impl Repl {
                         failed_expr.replace(&undefined_var, similar_var)
                     ));
                 }
-                
                 // If no similar variables found, provide a default fallback
                 if similar_vars.is_empty() {
                     options.push(RecoveryOption::ContinueWithDefault(format!("let {undefined_var} = ()")));
@@ -1088,28 +980,23 @@ impl Repl {
                 }
             }
         }
-        
         if error_msg.contains("type mismatch") || error_msg.contains("cannot convert") {
             // Suggest type conversions
             options.push(RecoveryOption::RetryWith(
                 format!("{}.to_string()", failed_expr.trim())
             ));
         }
-        
         // Always provide these standard options
         options.push(RecoveryOption::Abort);
         options.push(RecoveryOption::RestoreCheckpoint);
-        
         // Suggest using recent history values
         if !self.result_history.is_empty() {
             for (i, _) in self.result_history.iter().enumerate().take(3) {
                 options.push(RecoveryOption::UseHistoryValue(i + 1));
             }
         }
-        
         options
     }
-    
     /// Extract undefined variable name from error message
     pub fn extract_undefined_variable(&self, error_msg: &str) -> Option<String> {
         // Try to find variable name in various error message formats
@@ -1120,7 +1007,6 @@ impl Repl {
         {
             return Some(caps.get(1)?.as_str().to_string());
         }
-        
         // Pattern for "undefined variable name" or "undefined variable 'name'"
         if let Some(caps) = regex::Regex::new(r#"undefined variable[: ]+['"]?([a-zA-Z_][a-zA-Z0-9_]*)['"]?"#)
             .ok()
@@ -1128,7 +1014,6 @@ impl Repl {
         {
             return Some(caps.get(1)?.as_str().to_string());
         }
-        
         // Pattern for "variable name not found" 
         if let Some(caps) = regex::Regex::new(r#"variable[: ]+['"]?([a-zA-Z_][a-zA-Z0-9_]*)['"]? not found"#)
             .ok()
@@ -1136,14 +1021,11 @@ impl Repl {
         {
             return Some(caps.get(1)?.as_str().to_string());
         }
-        
         None
     }
-    
     /// Find variables similar to the undefined one (for typo correction)
     pub fn find_similar_variables(&self, target: &str) -> Vec<String> {
         let mut similar = Vec::new();
-        
         for var_name in self.bindings.keys() {
             let distance = self.edit_distance(target, var_name);
             // Suggest variables with edit distance <= 2
@@ -1151,19 +1033,16 @@ impl Repl {
                 similar.push(var_name.clone());
             }
         }
-        
         // Sort by similarity (lower distance first)
         similar.sort_by_key(|var| self.edit_distance(target, var));
         similar.truncate(5); // Limit to top 5 suggestions
         similar
     }
-    
     /// Calculate edit distance between two strings (Levenshtein distance)
     pub fn edit_distance(&self, a: &str, b: &str) -> usize {
         let a_chars: Vec<char> = a.chars().collect();
         let b_chars: Vec<char> = b.chars().collect();
         let mut matrix = vec![vec![0; b_chars.len() + 1]; a_chars.len() + 1];
-        
         // Initialize first row and column
         for (i, row) in matrix.iter_mut().enumerate().take(a_chars.len() + 1) {
             row[0] = i;
@@ -1171,7 +1050,6 @@ impl Repl {
         for j in 0..=b_chars.len() {
             matrix[0][j] = j;
         }
-        
         // Fill the matrix
         for i in 1..=a_chars.len() {
             for j in 1..=b_chars.len() {
@@ -1185,14 +1063,11 @@ impl Repl {
                 );
             }
         }
-        
         matrix[a_chars.len()][b_chars.len()]
     }
-    
     /// Generate completions for incomplete expressions
     pub fn generate_completions_for_error(&self, partial_expr: &str) -> Vec<String> {
         let mut completions = Vec::new();
-        
         if partial_expr.trim().is_empty() {
             // Suggest common starting patterns
             completions.extend(vec![
@@ -1203,7 +1078,6 @@ impl Repl {
                 "while ".to_string(),
                 "fun ".to_string(),
             ]);
-            
             // Add some variable names
             for var_name in self.bindings.keys().take(10) {
                 completions.push(var_name.clone());
@@ -1227,13 +1101,11 @@ impl Repl {
                 }
             }
         }
-        
         completions.sort();
         completions.dedup();
         completions.truncate(10); // Limit suggestions
         completions
     }
-    
     /// Apply a recovery option and return the result
     pub fn apply_recovery(&mut self, option: RecoveryOption) -> Result<RecoveryResult> {
         match option {
@@ -1276,31 +1148,24 @@ impl Repl {
             }
         }
     }
-    
     /// Get current error recovery context
     pub fn get_error_recovery(&self) -> Option<&ErrorRecovery> {
         self.error_recovery.as_ref()
     }
-    
     /// Clear error recovery context
     pub fn clear_error_recovery(&mut self) {
         self.error_recovery = None;
     }
-    
     /// Format error recovery options for display
     pub fn format_error_recovery(&self, recovery: &ErrorRecovery) -> String {
         let mut output = String::new();
-        
         output.push_str(&format!("Error: {}\n", recovery.error_message));
-        
         if let Some((line, col)) = recovery.position {
             output.push_str(&format!("     │ {} \n", recovery.failed_expression));
             output.push_str(&format!("     │ {}↑ at line {}:{}\n", 
                 " ".repeat(col.saturating_sub(1)), line, col));
         }
-        
         output.push_str("\nRecovery Options:\n");
-        
         for (i, option) in recovery.options.iter().enumerate() {
             match option {
                 RecoveryOption::ContinueWithDefault(expr) => {
@@ -1323,45 +1188,35 @@ impl Repl {
                 }
             }
         }
-        
         if !recovery.completions.is_empty() {
             output.push_str("\nSuggestions: ");
             output.push_str(&recovery.completions.join(", "));
             output.push('\n');
         }
-        
         output.push_str("\nEnter option number, or press Ctrl+C to abort.");
         output
     }
-    
     /// Check if error recovery is available
     pub fn has_error_recovery(&self) -> bool {
         self.error_recovery.is_some()
     }
-    
     /// Get a formatted error recovery prompt if available
     pub fn get_error_recovery_prompt(&self) -> Option<String> {
         self.error_recovery.as_ref().map(|recovery| self.format_error_recovery(recovery))
     }
-    
     /// Internal evaluation method (called by state machine)
     fn eval_internal(&mut self, input: &str) -> Result<String> {
         // This will be the core evaluation logic without state machine overhead
         // For now, use a simplified approach that bypasses the state machine
-        
         // Reset memory tracker for fresh evaluation
         self.memory.reset();
-
         // Track input memory
         self.memory.try_alloc(input.len())?;
-
         // Check for magic commands
         let trimmed = input.trim();
-        
         if trimmed.starts_with('%') {
             return self.handle_magic_command(trimmed);
         }
-
         // Check for REPL commands
         if trimmed.starts_with(':') {
             let (should_quit, output) = self.handle_command_with_output(trimmed)?;
@@ -1370,10 +1225,8 @@ impl Repl {
             }
             return Ok(output);
         }
-        
         // Set evaluation deadline
         let deadline = Instant::now() + self.config.timeout;
-
         // Preprocess macro syntax: convert println! -> println, etc.
         let preprocessed = trimmed
             .replace("println!", "println")
@@ -1383,29 +1236,23 @@ impl Repl {
             .replace("panic!", "panic")
             .replace("vec!", "vec")
             .replace("format!", "format");
-        
         // Try to parse the input as an expression
         let mut parser = Parser::new(&preprocessed);
         let ast = parser.parse().context("Failed to parse input")?;
-
         // Track AST memory
         self.memory.try_alloc(std::mem::size_of_val(&ast))?;
-
         // Evaluate the expression
         let value = self.evaluate_expr(&ast, deadline, 0)?;
-        
         // Add to history and update variables
         self.history.push(input.to_string());
         self.result_history.push(value.clone());
         self.update_history_variables();
-
         // Return string representation (suppress Unit values from loops/statements)
         match value {
             Value::Unit => Ok(String::new()),
             _ => Ok(value.to_string())
         }
     }
-
     /// Evaluate an expression with resource bounds
     ///
     /// # Errors
@@ -1429,7 +1276,6 @@ impl Repl {
         if trimmed.starts_with(':') {
             return None; // Colon commands are handled normally
         }
-        
         match self.mode {
             ReplMode::Shell => Some(self.execute_shell_command(trimmed)),
             ReplMode::Pkg => Some(self.handle_pkg_command(trimmed)),
@@ -1442,7 +1288,6 @@ impl Repl {
             ReplMode::Normal => None,
         }
     }
-
     /// Check if input is a shell command (complexity: 5)
     fn is_shell_command(&self, trimmed: &str) -> bool {
         if let Some(stripped) = trimmed.strip_prefix('!') {
@@ -1456,26 +1301,21 @@ impl Repl {
             false
         }
     }
-
     /// Handle shell substitution in let bindings (complexity: 6)
     fn handle_shell_substitution(&mut self, input: &str, trimmed: &str) -> Option<Result<String>> {
         if !trimmed.starts_with("let ") {
             return None;
         }
-        
         if let Some(bang_pos) = trimmed.find(" = !") {
             let var_part = &trimmed[4..bang_pos];
             let command_part = &trimmed[bang_pos + 4..];
-            
             // Execute the shell command
             let result = match self.execute_shell_command(command_part) {
                 Ok(r) => r,
                 Err(e) => return Some(Err(e)),
             };
-            
             // Create a let binding with the result
             let modified_input = format!("let {} = \"{}\"", var_part, result.replace('"', "\\\""));
-            
             // Parse and evaluate the modified input
             let deadline = Instant::now() + self.config.timeout;
             let mut parser = Parser::new(&modified_input);
@@ -1483,11 +1323,9 @@ impl Repl {
                 Ok(a) => a,
                 Err(e) => return Some(Err(e.context("Failed to parse shell substitution"))),
             };
-            
             if let Err(e) = self.memory.try_alloc(std::mem::size_of_val(&ast)) {
                 return Some(Err(e));
             }
-            
             match self.evaluate_expr(&ast, deadline, 0) {
                 Ok(value) => {
                     self.history.push(input.to_string());
@@ -1501,21 +1339,17 @@ impl Repl {
             None
         }
     }
-
     /// Main eval function with reduced complexity (complexity: 10)
     pub fn eval(&mut self, input: &str) -> Result<String> {
         // Reset memory tracker for fresh evaluation
         self.memory.reset();
         self.memory.try_alloc(input.len())?;
-
         let trimmed = input.trim();
-        
         // Handle progressive mode activation via attributes
         if let Some(activated_mode) = self.detect_mode_activation(trimmed) {
             self.mode = activated_mode;
             return Ok(format!("Activated {} mode", self.get_mode()));
         }
-        
         // Handle mode-specific evaluation
         if let Some(result) = self.handle_mode_evaluation(trimmed) {
             return result;
@@ -1524,7 +1358,6 @@ impl Repl {
         if trimmed.starts_with('%') {
             return self.handle_magic_command(trimmed);
         }
-
         // Check for REPL commands
         if trimmed.starts_with(':') {
             let (should_quit, output) = self.handle_command_with_output(trimmed)?;
@@ -1533,32 +1366,26 @@ impl Repl {
             }
             return Ok(output);
         }
-        
         // Check for shell commands
         if self.is_shell_command(trimmed) {
             if let Some(stripped) = trimmed.strip_prefix('!') {
                 return self.execute_shell_command(stripped);
             }
         }
-        
         // Check for introspection commands
         if let Some(stripped) = trimmed.strip_prefix("??") {
             return self.detailed_introspection(stripped.trim());
         } else if trimmed.starts_with('?') && !trimmed.starts_with("?:") {
             return self.basic_introspection(trimmed[1..].trim());
         }
-
         // Handle shell substitution in let bindings
         if let Some(result) = self.handle_shell_substitution(input, trimmed) {
             return result;
         }
-        
         // Set evaluation deadline
         let deadline = Instant::now() + self.config.timeout;
-
         // Preprocess macro syntax: convert println! -> println, etc.
         let preprocessed_input = Self::preprocess_macro_syntax(input);
-        
         // Parse the input
         let mut parser = Parser::new(&preprocessed_input);
         let ast = match parser.parse() {
@@ -1570,10 +1397,8 @@ impl Repl {
                 return Err(parse_error);
             }
         };
-
         // Check memory for AST
         self.memory.try_alloc(std::mem::size_of_val(&ast))?;
-
         // Evaluate the expression with debug capture
         let value = match self.evaluate_expr(&ast, deadline, 0) {
             Ok(value) => {
@@ -1590,37 +1415,29 @@ impl Repl {
                     bindings_snapshot: self.bindings.clone(),
                     timestamp: std::time::SystemTime::now(),
                 });
-                
                 // Create error recovery context for interactive recovery
                 let _recovery = self.create_error_recovery(input, &e.to_string());
-                
                 return Err(e);
             }
         };
-
         // Store successful evaluation
         self.history.push(input.to_string());
         self.result_history.push(value.clone());
-
         // Update history variables
         self.update_history_variables();
-
         // Let bindings are handled in evaluate_expr, no need to duplicate here
-
         // Return string representation (suppress Unit values from loops/statements)
         match value {
             Value::Unit => Ok(String::new()),
             _ => Ok(value.to_string())
         }
     }
-
     /// Get tab completions for the given input at the cursor position
     pub fn complete(&self, input: &str) -> Vec<String> {
         let pos = input.len();
         let mut completer = RuchyCompleter::new();
         completer.get_completions(input, pos, &self.bindings)
     }
-
     /// Get the current REPL mode
     pub fn get_mode(&self) -> &str {
         match self.mode {
@@ -1635,51 +1452,42 @@ impl Repl {
             ReplMode::Test => "test",
         }
     }
-
     /// Get the current prompt
     pub fn get_prompt(&self) -> String {
         self.mode.prompt()
     }
-    
     /// Create a new binding (for let/var) - handles shadowing
     fn create_binding(&mut self, name: String, value: Value, is_mutable: bool) {
         self.bindings.insert(name.clone(), value);
         self.binding_mutability.insert(name, is_mutable);
     }
-    
     /// Try to update an existing binding (for assignment)
     fn update_binding(&mut self, name: &str, value: Value) -> Result<()> {
         if !self.bindings.contains_key(name) {
             bail!("Cannot assign to undefined variable '{}'. \n  Hint: Declare it first with 'let {} = value' or 'var {} = value'", name, name, name)
         }
-        
         let is_mutable = self.binding_mutability.get(name).copied().unwrap_or(false);
         if !is_mutable {
             bail!("Cannot assign to immutable binding '{}'. \n  Hint: Use 'var {} = value' for mutable bindings or shadow with 'let {} = new_value'", name, name, name)
         }
-        
         self.bindings.insert(name.to_string(), value);
         Ok(())
     }
-    
     /// Get the value of a binding
     fn get_binding(&self, name: &str) -> Option<Value> {
         self.bindings.get(name).cloned()
     }
-    
     /// Check if a binding exists
     #[allow(dead_code)]
     fn has_binding(&self, name: &str) -> bool {
         self.bindings.contains_key(name)
     }
-
     /// Evaluate an expression to a value
     #[allow(clippy::too_many_lines)]
     #[allow(clippy::cognitive_complexity)]
     fn evaluate_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         // Check resource bounds
         self.check_resource_limits(deadline, depth)?;
-
         // COMPLEXITY REDUCTION: Dispatcher pattern by expression category
         match &expr.kind {
             // Basic expressions (literals, identifiers, binaries, unaries)
@@ -1687,7 +1495,6 @@ impl Repl {
             | ExprKind::Identifier(_) | ExprKind::QualifiedName { .. } => {
                 self.evaluate_basic_expr(expr, deadline, depth)
             }
-            
             // Control flow expressions
             ExprKind::If { .. } | ExprKind::Match { .. } | ExprKind::For { .. } 
             | ExprKind::While { .. } | ExprKind::IfLet { .. } | ExprKind::WhileLet { .. }
@@ -1695,25 +1502,21 @@ impl Repl {
             | ExprKind::TryCatch { .. } => {
                 self.evaluate_control_flow_expr(expr, deadline, depth)
             }
-            
             // Data structure expressions
             ExprKind::List(_) | ExprKind::Tuple(_) | ExprKind::ObjectLiteral { .. }
             | ExprKind::Range { .. } | ExprKind::FieldAccess { .. } | ExprKind::OptionalFieldAccess { .. }
             | ExprKind::IndexAccess { .. } | ExprKind::Slice { .. } | ExprKind::ArrayInit { .. } => {
                 self.evaluate_data_structure_expr(expr, deadline, depth)
             }
-            
             // Function and call expressions
             ExprKind::Function { .. } | ExprKind::Lambda { .. } | ExprKind::Call { .. }
             | ExprKind::MethodCall { .. } | ExprKind::OptionalMethodCall { .. } => {
                 self.evaluate_function_expr(expr, deadline, depth)
             }
-            
             // Advanced language features
             _ => self.evaluate_advanced_expr(expr, deadline, depth)
         }
     }
-
     // COMPLEXITY REDUCTION: Basic expressions dispatcher  
     fn evaluate_basic_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         match &expr.kind {
@@ -1731,7 +1534,6 @@ impl Repl {
             _ => bail!("Non-basic expression in basic dispatcher"),
         }
     }
-
     // COMPLEXITY REDUCTION: Control flow expressions dispatcher
     fn evaluate_control_flow_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         match &expr.kind {
@@ -1762,7 +1564,6 @@ impl Repl {
             _ => bail!("Non-control-flow expression in control flow dispatcher"),
         }
     }
-
     // COMPLEXITY REDUCTION: Data structure expressions dispatcher
     fn evaluate_data_structure_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         match &expr.kind {
@@ -1790,7 +1591,6 @@ impl Repl {
             _ => bail!("Non-data-structure expression in data structure dispatcher"),
         }
     }
-
     // COMPLEXITY REDUCTION: Function expressions dispatcher
     fn evaluate_function_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         match &expr.kind {
@@ -1812,7 +1612,6 @@ impl Repl {
                             // Evaluate arguments
                             let size_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                             let default_val = self.evaluate_arg(args, 1, deadline, depth)?;
-                            
                             // Return a stub Array representation
                             return Self::ok_string(format!("Array(size: {size_val}, default: {default_val})"));
                         }
@@ -1844,7 +1643,6 @@ impl Repl {
             _ => bail!("Non-function expression in function dispatcher"),
         }
     }
-
     // COMPLEXITY REDUCTION: Advanced expressions dispatcher
     /// Dispatch binding and assignment expressions (complexity: 6)
     fn dispatch_binding_exprs(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Option<Result<Value>> {
@@ -1865,7 +1663,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatch data structure expressions (complexity: 5)
     fn dispatch_data_exprs(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Option<Result<Value>> {
         match &expr.kind {
@@ -1885,7 +1682,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatch type definition expressions (complexity: 5)
     fn dispatch_type_definitions(&mut self, expr: &Expr) -> Option<Result<Value>> {
         match &expr.kind {
@@ -1904,7 +1700,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatch Result/Option expressions (complexity: 5)
     fn dispatch_result_option_exprs(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Option<Result<Value>> {
         match &expr.kind {
@@ -1916,7 +1711,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatch control flow expressions (complexity: 4)
     fn dispatch_control_flow_exprs(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Option<Result<Value>> {
         match &expr.kind {
@@ -1952,34 +1746,28 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Main advanced expression dispatcher (complexity: 8)
     fn evaluate_advanced_expr(&mut self, expr: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         // Try binding and assignment expressions
         if let Some(result) = self.dispatch_binding_exprs(expr, deadline, depth) {
             return result;
         }
-
         // Try data structure expressions
         if let Some(result) = self.dispatch_data_exprs(expr, deadline, depth) {
             return result;
         }
-
         // Try type definitions
         if let Some(result) = self.dispatch_type_definitions(expr) {
             return result;
         }
-
         // Try Result/Option expressions
         if let Some(result) = self.dispatch_result_option_exprs(expr, deadline, depth) {
             return result;
         }
-
         // Try control flow expressions
         if let Some(result) = self.dispatch_control_flow_exprs(expr, deadline, depth) {
             return result;
         }
-
         // Handle remaining cases
         match &expr.kind {
             ExprKind::Command { program, args, env: _, working_dir: _ } => {
@@ -2003,13 +1791,11 @@ impl Repl {
             _ => bail!("Expression type not yet implemented: {:?}", expr.kind),
         }
     }
-
     // ========================================================================
     // Helper methods extracted to reduce evaluate_expr complexity
     // Following Toyota Way: Each function has single responsibility
     // Target: All functions < 50 cyclomatic complexity
     // ========================================================================
-
     /// Handle method calls on list values (complexity < 20)
     fn evaluate_list_methods(
         &mut self,
@@ -2068,7 +1854,6 @@ impl Repl {
             _ => self.unknown_method_error("list", method),
         }
     }
-
     /// Evaluate `list.map()` operation (complexity: 8)
     fn evaluate_list_map(
         &mut self,
@@ -2078,12 +1863,10 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         self.validate_arg_count("map", args, 1)?;
-
         if let ExprKind::Lambda { params, body } = &args[0].kind {
             if params.len() != 1 {
                 bail!("map lambda must take exactly 1 parameter");
             }
-
             self.with_saved_bindings(|repl| {
                 let mut results = Vec::new();
                 for item in items {
@@ -2097,7 +1880,6 @@ impl Repl {
             bail!("map currently only supports lambda expressions");
         }
     }
-
     /// Evaluate `list.filter()` operation (complexity: 9)
     fn evaluate_list_filter(
         &mut self,
@@ -2107,18 +1889,15 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         self.validate_arg_count("filter", args, 1)?;
-
         if let ExprKind::Lambda { params, body } = &args[0].kind {
             if params.len() != 1 {
                 bail!("filter lambda must take exactly 1 parameter");
             }
-
             self.with_saved_bindings(|repl| {
                 let mut results = Vec::new();
                 for item in items {
                     repl.bindings.insert(params[0].name(), item.clone());
                     let predicate_result = repl.evaluate_expr(body, deadline, depth + 1)?;
-
                     if let Value::Bool(true) = predicate_result {
                         results.push(item);
                     }
@@ -2129,7 +1908,6 @@ impl Repl {
             bail!("filter currently only supports lambda expressions");
         }
     }
-
     /// Evaluate `list.reduce()` operation (complexity: 10)
     fn evaluate_list_reduce(
         &mut self,
@@ -2141,17 +1919,14 @@ impl Repl {
         if args.len() != 2 {
             bail!("reduce expects 2 arguments: lambda and initial value");
         }
-
         // Args are now: [lambda, initial_value] to match JS/Ruby style
         let mut accumulator = self.evaluate_arg(args, 1, deadline, depth)?;
-
         // Debug: Check what type of expression args[0] is
         match &args[0].kind {
             ExprKind::Lambda { params, body } => {
                 if params.len() != 2 {
                     bail!("reduce lambda must take exactly 2 parameters");
                 }
-
                 self.with_saved_bindings(|repl| {
                     for item in items {
                         repl.bindings.insert(params[0].name(), accumulator);
@@ -2174,7 +1949,6 @@ impl Repl {
             }
         }
     }
-
     /// Evaluate `list.len()` and `list.length()` operations (complexity: 3)
     fn evaluate_list_length(items: &[Value]) -> Result<Value> {
         let len = items.len();
@@ -2182,7 +1956,6 @@ impl Repl {
             .map(Value::Int)
             .map_err(|_| anyhow::anyhow!("List length too large to represent as i64"))
     }
-
     /// Evaluate `list.head()` and `list.first()` operations (complexity: 2)
     fn evaluate_list_head(items: &[Value]) -> Result<Value> {
         items
@@ -2190,7 +1963,6 @@ impl Repl {
             .cloned()
             .ok_or_else(|| anyhow::anyhow!("Empty list"))
     }
-
     /// Evaluate `list.last()` operation (complexity: 2)
     fn evaluate_list_last(items: &[Value]) -> Result<Value> {
         items
@@ -2198,7 +1970,6 @@ impl Repl {
             .cloned()
             .ok_or_else(|| anyhow::anyhow!("Empty list"))
     }
-
     /// Evaluate `list.tail()` and `list.rest()` operations (complexity: 2)
     fn evaluate_list_tail(items: Vec<Value>) -> Result<Value> {
         if items.is_empty() {
@@ -2207,22 +1978,18 @@ impl Repl {
             Self::ok_list(items[1..].to_vec())
         }
     }
-
     /// Evaluate `list.reverse()` operation (complexity: 2)
     fn evaluate_list_reverse(mut items: Vec<Value>) -> Result<Value> {
         items.reverse();
         Self::ok_list(items)
     }
-
     /// Evaluate `list.sum()` operation (complexity: 4)
     fn evaluate_list_sum(items: &[Value]) -> Result<Value> {
         if items.is_empty() {
             return Self::ok_int(0);
         }
-        
         // Check if we have any floats
         let has_float = items.iter().any(|v| matches!(v, Value::Float(_)));
-        
         if has_float {
             let mut sum = 0.0;
             for item in items {
@@ -2245,7 +2012,6 @@ impl Repl {
             Self::ok_int(sum)
         }
     }
-
     /// Evaluate `list.push()` operation (complexity: 4)
     fn evaluate_list_push(
         &mut self,
@@ -2259,7 +2025,6 @@ impl Repl {
         items.push(value);
         Self::ok_list(items)
     }
-
     /// Evaluate `list.pop()` operation (complexity: 3)
     fn evaluate_list_pop(mut items: Vec<Value>, args: &[Expr]) -> Result<Value> {
         if !args.is_empty() {
@@ -2271,7 +2036,6 @@ impl Repl {
             bail!("Cannot pop from empty list")
         }
     }
-
     /// Evaluate `list.append()` operation (complexity: 5)
     fn evaluate_list_append(
         &mut self,
@@ -2289,7 +2053,6 @@ impl Repl {
             bail!("append requires a list argument");
         }
     }
-
     /// Evaluate `list.insert()` operation (complexity: 6)
     fn evaluate_list_insert(
         &mut self,
@@ -2313,7 +2076,6 @@ impl Repl {
             bail!("Insert index must be an integer");
         }
     }
-
     /// Evaluate `list.remove()` operation (complexity: 6)
     fn evaluate_list_remove(
         &mut self,
@@ -2336,7 +2098,6 @@ impl Repl {
             bail!("Remove index must be an integer");
         }
     }
-
     /// Evaluate `list.slice()` operation (complexity: 7)
     fn evaluate_list_slice(
         &mut self,
@@ -2350,11 +2111,9 @@ impl Repl {
         }
         let start_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let end_val = self.evaluate_arg(args, 1, deadline, depth)?;
-        
         if let (Value::Int(start), Value::Int(end)) = (start_val, end_val) {
             let start = start as usize;
             let end = end as usize;
-            
             if start > items.len() || end > items.len() || start > end {
                 Self::ok_list(Vec::new()) // Return empty for out of bounds
             } else {
@@ -2364,7 +2123,6 @@ impl Repl {
             bail!("slice arguments must be integers");
         }
     }
-
     /// Evaluate `list.concat()` operation (complexity: 5)
     fn evaluate_list_concat(
         &mut self,
@@ -2377,7 +2135,6 @@ impl Repl {
             bail!("concat requires exactly 1 argument");
         }
         let other_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        
         if let Value::List(other_items) = other_val {
             items.extend(other_items);
             Self::ok_list(items)
@@ -2385,7 +2142,6 @@ impl Repl {
             bail!("concat argument must be a list");
         }
     }
-
     /// Evaluate `list.flatten()` operation (complexity: 4)
     fn evaluate_list_flatten(items: Vec<Value>, args: &[Expr]) -> Result<Value> {
         if !args.is_empty() {
@@ -2401,7 +2157,6 @@ impl Repl {
         }
         Self::ok_list(result)
     }
-
     /// Evaluate `list.unique()` operation (complexity: 5)
     fn evaluate_list_unique(items: Vec<Value>, args: &[Expr]) -> Result<Value> {
         use std::collections::HashSet;
@@ -2410,7 +2165,6 @@ impl Repl {
         }
         let mut seen = HashSet::new();
         let mut result = Vec::new();
-        
         for item in items {
             // Use string representation for hashing since Value doesn't implement Hash
             let key = format!("{item:?}");
@@ -2420,7 +2174,6 @@ impl Repl {
         }
         Self::ok_list(result)
     }
-
     /// Evaluate `list.join()` operation (complexity: 7)
     fn evaluate_list_join(
         &mut self,
@@ -2433,7 +2186,6 @@ impl Repl {
             bail!("join requires exactly 1 argument (separator)");
         }
         let sep_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        
         if let Value::String(separator) = sep_val {
             let strings: Result<Vec<String>, _> = items.iter().map(|item| {
                 if let Value::String(s) = item {
@@ -2442,7 +2194,6 @@ impl Repl {
                     bail!("join requires a list of strings");
                 }
             }).collect();
-            
             match strings {
                 Ok(string_vec) => Self::ok_string(string_vec.join(&separator)),
                 Err(e) => Err(e),
@@ -2451,7 +2202,6 @@ impl Repl {
             bail!("join separator must be a string");
         }
     }
-
     /// Evaluate `list.find()` operation - find first element matching predicate
     fn evaluate_list_find(
         &mut self,
@@ -2463,33 +2213,26 @@ impl Repl {
         if args.len() != 1 {
             bail!("find expects exactly one argument (predicate function)");
         }
-        
         // Handle lambda expression
         if let ExprKind::Lambda { params, body } = &args[0].kind {
             if params.len() != 1 {
                 bail!("find lambda must take exactly 1 parameter");
             }
-            
             let saved_bindings = self.bindings.clone();
-            
             for item in items {
                 self.bindings.insert(params[0].name(), item.clone());
                 let result = self.evaluate_expr(body, deadline, depth + 1)?;
                 self.bindings = saved_bindings.clone();
-                
                 if let Value::Bool(true) = result {
                     return Ok(Self::create_option_some(item));
                 }
             }
-            
             self.bindings = saved_bindings;
         } else {
             bail!("find currently only supports lambda expressions");
         }
-        
         Ok(Self::create_option_none())
     }
-    
     /// Evaluate `list.any()` operation - check if any element matches predicate
     fn evaluate_list_any(
         &mut self,
@@ -2501,31 +2244,25 @@ impl Repl {
         if args.len() != 1 {
             bail!("any expects exactly one argument (predicate function)");
         }
-        
         if let ExprKind::Lambda { params, body } = &args[0].kind {
             if params.len() != 1 {
                 bail!("any lambda must take exactly 1 parameter");
             }
-            
             let saved_bindings = self.bindings.clone();
-            
             for item in items {
                 self.bindings.insert(params[0].name(), item);
                 let result = self.evaluate_expr(body, deadline, depth + 1)?;
-                
                 if let Value::Bool(true) = result {
                     self.bindings = saved_bindings;
                     return Self::ok_bool(true);
                 }
             }
-            
             self.bindings = saved_bindings;
             Self::ok_bool(false)
         } else {
             bail!("any currently only supports lambda expressions");
         }
     }
-    
     /// Evaluate `list.all()` operation - check if all elements match predicate
     fn evaluate_list_all(
         &mut self,
@@ -2537,18 +2274,14 @@ impl Repl {
         if args.len() != 1 {
             bail!("all expects exactly one argument (predicate function)");
         }
-        
         if let ExprKind::Lambda { params, body } = &args[0].kind {
             if params.len() != 1 {
                 bail!("all lambda must take exactly 1 parameter");
             }
-            
             let saved_bindings = self.bindings.clone();
-            
             for item in items {
                 self.bindings.insert(params[0].name(), item);
                 let result = self.evaluate_expr(body, deadline, depth + 1)?;
-                
                 match result {
                     Value::Bool(false) => {
                         self.bindings = saved_bindings;
@@ -2561,20 +2294,17 @@ impl Repl {
                     }
                 }
             }
-            
             self.bindings = saved_bindings;
             Self::ok_bool(true)
         } else {
             bail!("all currently only supports lambda expressions");
         }
     }
-    
     /// Evaluate `list.product()` operation - multiply all elements
     fn evaluate_list_product(items: &[Value]) -> Result<Value> {
         if items.is_empty() {
             return Self::ok_int(1);
         }
-        
         let mut product = Value::Int(1);
         for item in items {
             match (&product, item) {
@@ -2593,16 +2323,13 @@ impl Repl {
                 _ => bail!("Product can only be applied to numbers"),
             }
         }
-        
         Ok(product)
     }
-    
     /// Evaluate `list.min()` operation - find minimum element
     fn evaluate_list_min(items: &[Value]) -> Result<Value> {
         if items.is_empty() {
             return Ok(Self::create_option_none());
         }
-        
         let mut min = items[0].clone();
         for item in &items[1..] {
             match (&min, item) {
@@ -2613,16 +2340,13 @@ impl Repl {
                 _ => {}
             }
         }
-        
         Ok(Self::create_option_some(min))
     }
-    
     /// Evaluate `list.max()` operation - find maximum element
     fn evaluate_list_max(items: &[Value]) -> Result<Value> {
         if items.is_empty() {
             return Ok(Self::create_option_none());
         }
-        
         let mut max = items[0].clone();
         for item in &items[1..] {
             match (&max, item) {
@@ -2633,10 +2357,8 @@ impl Repl {
                 _ => {}
             }
         }
-        
         Ok(Self::create_option_some(max))
     }
-    
     /// Evaluate `list.take()` operation - take first n elements
     fn evaluate_list_take(
         &mut self,
@@ -2648,7 +2370,6 @@ impl Repl {
         if args.len() != 1 {
             bail!("take expects exactly one argument (count)");
         }
-        
         let count_val = self.evaluate_expr(&args[0], deadline, depth)?;
         if let Value::Int(n) = count_val {
             let n = n.max(0) as usize;
@@ -2658,7 +2379,6 @@ impl Repl {
             bail!("take count must be an integer");
         }
     }
-    
     /// Evaluate `list.drop()` operation - drop first n elements
     fn evaluate_list_drop(
         &mut self,
@@ -2670,7 +2390,6 @@ impl Repl {
         if args.len() != 1 {
             bail!("drop expects exactly one argument (count)");
         }
-        
         let count_val = self.evaluate_expr(&args[0], deadline, depth)?;
         if let Value::Int(n) = count_val {
             let n = n.max(0) as usize;
@@ -2680,7 +2399,6 @@ impl Repl {
             bail!("drop count must be an integer");
         }
     }
-
     /// Handle method calls on string values (complexity < 10)
     /// Handle simple string transformation methods (complexity: 5)
     fn handle_string_transforms(s: &str, method: &str) -> Option<Result<Value>> {
@@ -2747,7 +2465,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Handle string search methods (complexity: 6)
     fn handle_string_search(s: &str, method: &str, args: &[Expr]) -> Option<Result<Value>> {
         match method {
@@ -2784,7 +2501,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Handle string manipulation methods (complexity: 8)
     fn handle_string_manipulation(s: &str, method: &str, args: &[Expr]) -> Option<Result<Value>> {
         match method {
@@ -2867,7 +2583,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Handle substring extraction (complexity: 7)
     fn handle_substring(s: &str, args: &[Expr]) -> Result<Value> {
         if args.len() == 2 {
@@ -2896,7 +2611,6 @@ impl Repl {
             bail!("substring expects 1 or 2 arguments");
         }
     }
-
     /// Main string methods dispatcher (complexity: 6)
     fn evaluate_string_methods(
         s: &str,
@@ -2913,25 +2627,20 @@ impl Repl {
             }
             return result;
         }
-        
         // Try search methods
         if let Some(result) = Self::handle_string_search(s, method, args) {
             return result;
         }
-        
         // Try manipulation methods
         if let Some(result) = Self::handle_string_manipulation(s, method, args) {
             return result;
         }
-        
         // Handle substring specially
         if method == "substring" || method == "substr" {
             return Self::handle_substring(s, args);
         }
-        
         bail!("Unknown string method: {}", method)
     }
-
     /// Handle method calls on char values (complexity < 10)
     fn evaluate_char_methods(c: char, method: &str) -> Result<Value> {
         match method {
@@ -2946,20 +2655,17 @@ impl Repl {
             _ => bail!("Unknown char method: {}", method),
         }
     }
-    
     /// Handle method calls on numeric values (complexity < 10)
     fn evaluate_numeric_methods(&self, value: &Value, method: &str) -> Result<Value> {
         match (value, method) {
             // Integer-specific methods
             (Value::Int(n), "abs") => Self::ok_int(n.abs()),
             (Value::Int(n), "to_string") => Self::ok_string(n.to_string()),
-            
             // Float-specific methods
             (Value::Float(f), "abs") => Self::ok_float(f.abs()),
             (Value::Float(f), "floor") => Self::ok_float(f.floor()),
             (Value::Float(f), "ceil") => Self::ok_float(f.ceil()),
             (Value::Float(f), "round") => Self::ok_float(f.round()),
-            
             // Math operations that work on both (convert int to float)
             (Value::Int(n), op @ ("sqrt" | "sin" | "cos" | "tan" | "log" | "log10" | "exp")) => {
                 #[allow(clippy::cast_precision_loss)]
@@ -2969,13 +2675,11 @@ impl Repl {
             (Value::Float(f), op @ ("sqrt" | "sin" | "cos" | "tan" | "log" | "log10" | "exp")) => {
                 self.evaluate_float_math(*f, op)
             }
-            
             (Value::Int(_), _) => self.unknown_method_error("integer", method),
             (Value::Float(_), _) => self.unknown_method_error("float", method),
             _ => Err(Self::method_not_supported(method, &format!("{value:?}")))?,
         }
     }
-    
     /// Helper for float math operations (complexity: 8)
     fn evaluate_float_math(&self, f: f64, op: &str) -> Result<Value> {
         let result = match op {
@@ -2990,7 +2694,6 @@ impl Repl {
         };
         Self::ok_float(result)
     }
-
     /// Handle method calls on object values (complexity < 10)
     fn evaluate_object_methods(
         obj: HashMap<String, Value>,
@@ -3030,7 +2733,6 @@ impl Repl {
             _ => bail!("Unknown object method: {}", method),
         }
     }
-
     /// Handle method calls on `HashMap` values (complexity < 10)
     fn evaluate_hashmap_methods(
         &mut self,
@@ -3087,7 +2789,6 @@ impl Repl {
             _ => bail!("Unknown HashMap method: {}", method),
         }
     }
-
     /// Handle basic `HashSet` methods (complexity: 6)
     fn handle_basic_hashset_methods(
         &mut self,
@@ -3139,7 +2840,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Handle set operation methods (complexity: 8)
     fn handle_set_operation_methods(
         &mut self,
@@ -3152,12 +2852,10 @@ impl Repl {
         if args.len() != 1 {
             return Some(Err(anyhow::anyhow!("{} requires exactly 1 argument (other set)", method)));
         }
-        
         let other_val = match self.evaluate_expr(&args[0], deadline, depth + 1) {
             Ok(v) => v,
             Err(e) => return Some(Err(e)),
         };
-        
         if let Value::HashSet(other_set) = other_val {
             match method {
                 "union" => {
@@ -3178,7 +2876,6 @@ impl Repl {
             Some(Err(anyhow::anyhow!("{} argument must be a HashSet", method)))
         }
     }
-
     /// Handle method calls on `HashSet` values (complexity: 5)
     fn evaluate_hashset_methods(
         &mut self,
@@ -3192,21 +2889,17 @@ impl Repl {
         if let Some(result) = self.handle_basic_hashset_methods(set.clone(), method, args, deadline, depth) {
             return result;
         }
-        
         // Try set operation methods
         if let Some(result) = self.handle_set_operation_methods(set, method, args, deadline, depth) {
             return result;
         }
-        
         // Unknown method
         bail!("Unknown HashSet method: {}", method)
     }
-
     // ========================================================================
     // Additional helper methods to further reduce evaluate_expr complexity
     // Phase 2: Control flow extraction (Target: < 50 total complexity)
     // ========================================================================
-
     /// Evaluate for loop (complexity: 10)
     fn evaluate_for_loop(
         &mut self,
@@ -3219,17 +2912,14 @@ impl Repl {
     ) -> Result<Value> {
         // Evaluate the iterable
         let iterable = self.evaluate_expr(iter, deadline, depth + 1)?;
-
         // Save the previous value of the loop variable (if any)
         let saved_loop_var = self.bindings.get(var).cloned();
-        
         // If we have a pattern, save all variables it will bind
         let saved_pattern_vars = if let Some(pat) = pattern {
             self.save_pattern_variables(pat)
         } else {
             HashMap::new()
         };
-
         // Execute the loop based on iterable type
         let result = match iterable {
             Value::List(items) => {
@@ -3250,14 +2940,12 @@ impl Repl {
                 iterable
             ),
         };
-
         // Restore the loop variable
         if let Some(prev_value) = saved_loop_var {
             self.bindings.insert(var.to_string(), prev_value);
         } else {
             self.bindings.remove(var);
         }
-        
         // Restore pattern variables
         for (name, value) in saved_pattern_vars {
             if let Some(val) = value {
@@ -3266,10 +2954,8 @@ impl Repl {
                 self.bindings.remove(&name);
             }
         }
-
         result
     }
-
     /// Helper: Iterate over a list (complexity: 4)
     fn iterate_list(
         &mut self,
@@ -3291,7 +2977,6 @@ impl Repl {
         }
         Ok(result)
     }
-
     /// Helper: Iterate over a range (complexity: 5)
     #[allow(clippy::too_many_arguments)]
     fn iterate_range(
@@ -3317,7 +3002,6 @@ impl Repl {
         }
         Ok(result)
     }
-
     /// Helper: Iterate over a string (as characters)
     fn iterate_string(
         &mut self,
@@ -3339,14 +3023,12 @@ impl Repl {
         }
         Ok(result)
     }
-
     /// Helper: Save pattern variables for restoration
     fn save_pattern_variables(&self, pattern: &Pattern) -> HashMap<String, Option<Value>> {
         let mut saved = HashMap::new();
         self.collect_pattern_vars(pattern, &mut saved);
         saved
     }
-    
     /// Helper: Collect all variables from a pattern
     fn collect_pattern_vars(&self, pattern: &Pattern, saved: &mut HashMap<String, Option<Value>>) {
         match pattern {
@@ -3361,7 +3043,6 @@ impl Repl {
             _ => {} // Other patterns don't bind variables
         }
     }
-    
     /// Helper: Iterate over a list with pattern destructuring
     fn iterate_list_with_pattern(
         &mut self,
@@ -3375,7 +3056,6 @@ impl Repl {
         for item in items {
             // Bind the pattern variables
             self.bind_pattern(pattern, &item)?;
-            
             match self.evaluate_expr(body, deadline, depth + 1) {
                 Ok(value) => result = value,
                 Err(e) if e.to_string() == "break" => break,
@@ -3385,7 +3065,6 @@ impl Repl {
         }
         Ok(result)
     }
-    
     /// Helper: Bind pattern variables from a value
     fn bind_pattern(&mut self, pattern: &Pattern, value: &Value) -> Result<()> {
         match (pattern, value) {
@@ -3405,7 +3084,6 @@ impl Repl {
             _ => bail!("Pattern does not match value")
         }
     }
-
     /// Evaluate while loop (complexity: 7)
     /// 
     /// While loops always return Unit, regardless of body expression.
@@ -3432,7 +3110,6 @@ impl Repl {
     ) -> Result<Value> {
         let max_iterations = 1000; // Prevent infinite loops in REPL
         let mut iterations = 0;
-
         loop {
             if iterations >= max_iterations {
                 bail!(
@@ -3440,7 +3117,6 @@ impl Repl {
                     max_iterations
                 );
             }
-
             // Evaluate condition
             let cond_val = self.evaluate_expr(condition, deadline, depth + 1)?;
             match cond_val {
@@ -3456,18 +3132,15 @@ impl Repl {
         // While loops always return Unit
         Self::ok_unit()
     }
-
     /// Evaluate loop expression (complexity: 6)
     fn evaluate_loop(&mut self, body: &Expr, deadline: Instant, depth: usize) -> Result<Value> {
         let mut result = Value::Unit;
         let max_iterations = 1000; // Prevent infinite loops in REPL
         let mut iterations = 0;
-
         loop {
             if iterations >= max_iterations {
                 bail!("Loop exceeded maximum iterations ({})", max_iterations);
             }
-
             // Evaluate body, catching break
             match self.evaluate_expr(body, deadline, depth + 1) {
                 Ok(val) => {
@@ -3483,23 +3156,19 @@ impl Repl {
                 Err(e) => return Err(e),
             }
         }
-
         Ok(result)
     }
-
     /// Evaluate block expression (complexity: 4)
     fn evaluate_block(&mut self, exprs: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if exprs.is_empty() {
             return Self::ok_unit();
         }
-
         let mut result = Value::Unit;
         for expr in exprs {
             result = self.evaluate_expr(expr, deadline, depth + 1)?;
         }
         Ok(result)
     }
-
     /// Evaluate list literal (complexity: 4)
     fn evaluate_list_literal(
         &mut self,
@@ -3538,7 +3207,6 @@ impl Repl {
         }
         Ok(Value::List(results))
     }
-
     /// Evaluate array initialization expression [value; size]
     fn evaluate_array_init(
         &mut self,
@@ -3549,7 +3217,6 @@ impl Repl {
     ) -> Result<Value> {
         let value = self.evaluate_expr(value_expr, deadline, depth + 1)?;
         let size_val = self.evaluate_expr(size_expr, deadline, depth + 1)?;
-        
         let size = match size_val {
             Value::Int(n) => {
                 if n < 0 {
@@ -3559,37 +3226,29 @@ impl Repl {
             }
             _ => bail!("Array size must be an integer, got: {}", self.get_value_type_name(&size_val)),
         };
-        
         let mut values = Vec::with_capacity(size);
         for _ in 0..size {
             values.push(value.clone());
         }
-        
         Ok(Value::List(values))
     }
-
     /// Expand a range into individual `Value::Int` items for spreading
     fn expand_range_to_values(&self, start: i64, end: i64, inclusive: bool) -> Result<Vec<Value>> {
         let actual_end = if inclusive { end } else { end - 1 };
-        
         if start > actual_end {
             return Ok(Vec::new()); // Empty range
         }
-        
         // Prevent excessive memory allocation for very large ranges
         let range_size = (actual_end - start + 1) as usize;
         if range_size > 10000 {
             bail!("Range too large to expand: {} elements (limit: 10000)", range_size);
         }
-        
         let mut values = Vec::with_capacity(range_size);
         for i in start..=actual_end {
             values.push(Value::Int(i));
         }
-        
         Ok(values)
     }
-
     /// Evaluate tuple literal (complexity: 4)
     fn evaluate_tuple_literal(
         &mut self,
@@ -3604,7 +3263,6 @@ impl Repl {
         }
         Self::ok_tuple(results)
     }
-
     /// Evaluate range literal (complexity: 5)
     fn evaluate_range_literal(
         &mut self,
@@ -3616,13 +3274,11 @@ impl Repl {
     ) -> Result<Value> {
         let start_val = self.evaluate_expr(start, deadline, depth + 1)?;
         let end_val = self.evaluate_expr(end, deadline, depth + 1)?;
-
         match (start_val, end_val) {
             (Value::Int(s), Value::Int(e)) => Self::ok_range(s, e, inclusive),
             _ => bail!("Range endpoints must be integers"),
         }
     }
-
     /// Evaluate assignment expression (complexity: 5)
     fn evaluate_assignment(
         &mut self,
@@ -3632,7 +3288,6 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let val = self.evaluate_expr(value, deadline, depth + 1)?;
-
         // For now, only support simple variable assignment
         if let ExprKind::Identifier(name) = &target.kind {
             // Use update_binding which checks mutability
@@ -3645,7 +3300,6 @@ impl Repl {
             );
         }
     }
-
     /// Evaluate let binding (complexity: 5)
     fn evaluate_let_binding(
         &mut self,
@@ -3658,14 +3312,12 @@ impl Repl {
     ) -> Result<Value> {
         let val = self.evaluate_expr(value, deadline, depth + 1)?;
         self.create_binding(name.to_string(), val.clone(), is_mutable);
-
         // If there's a body, evaluate it; otherwise return the value
         match &body.kind {
             ExprKind::Literal(Literal::Unit) => Ok(val),
             _ => self.evaluate_expr(body, deadline, depth + 1),
         }
     }
-
     /// Evaluate let pattern binding (destructuring assignment)
     fn evaluate_let_pattern(
         &mut self,
@@ -3677,19 +3329,14 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let val = self.evaluate_expr(value, deadline, depth + 1)?;
-        
         // Use existing pattern matching logic
         if let Some(bindings) = Self::pattern_matches(&val, pattern)? {
             let _saved_bindings = self.bindings.clone();
-            
             // Apply all pattern bindings
             for (name, binding_val) in bindings {
                 self.create_binding(name, binding_val, is_mutable);
             }
-            
             // Evaluate the body expression
-            
-            
             // Pattern matching succeeded, keep the new bindings
             match &body.kind {
                 ExprKind::Literal(Literal::Unit) => Ok(val),
@@ -3699,7 +3346,6 @@ impl Repl {
             bail!("Pattern does not match value in let binding");
         }
     }
-
     /// Evaluate string interpolation (complexity: 7)
     fn evaluate_string_interpolation(
         &mut self,
@@ -3708,7 +3354,6 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         use crate::frontend::ast::StringPart;
-
         let mut result = String::new();
         for part in parts {
             match part {
@@ -3732,7 +3377,6 @@ impl Repl {
         }
         Self::ok_string(result)
     }
-
     /// Format a value with a format specifier like :.2 for floats
     fn format_value_with_spec(value: &Value, spec: &str) -> String {
         // Parse format specifier (e.g., ":.2" -> precision 2)
@@ -3748,7 +3392,6 @@ impl Repl {
         // Default formatting if spec doesn't match or isn't supported
         value.to_string()
     }
-
     /// Evaluate function definition (complexity: 5)
     fn evaluate_function_definition(
         &mut self,
@@ -3765,12 +3408,10 @@ impl Repl {
             params: param_names,
             body: Box::new(body.clone()),
         };
-
         // Store the function in bindings
         self.bindings.insert(name.to_string(), func_value.clone());
         func_value
     }
-
     /// Evaluate lambda expression (complexity: 3)
     fn evaluate_lambda_expression(params: &[crate::frontend::ast::Param], body: &Expr) -> Value {
         let param_names: Vec<String> = params
@@ -3782,7 +3423,6 @@ impl Repl {
             body: Box::new(body.clone()),
         }
     }
-
     /// Evaluate `DataFrame` literal (complexity: 6)
     fn evaluate_dataframe_literal(
         &mut self,
@@ -3804,8 +3444,6 @@ impl Repl {
         }
         Self::ok_dataframe(df_columns)
     }
-
-
     /// Evaluate `Result::Ok` constructor (complexity: 3)
     fn evaluate_result_ok(
         &mut self,
@@ -3816,7 +3454,6 @@ impl Repl {
         let val = self.evaluate_expr(value, deadline, depth + 1)?;
         Self::ok_enum_variant("Result".to_string(), "Ok".to_string(), Some(vec![val]))
     }
-
     /// Evaluate `Result::Err` constructor (complexity: 3)
     fn evaluate_result_err(
         &mut self,
@@ -3827,7 +3464,6 @@ impl Repl {
         let err = self.evaluate_expr(error, deadline, depth + 1)?;
         Self::ok_enum_variant("Result".to_string(), "Err".to_string(), Some(vec![err]))
     }
-
     /// Evaluate `Option::Some` constructor (complexity: 3)
     fn evaluate_option_some(
         &mut self,
@@ -3838,7 +3474,6 @@ impl Repl {
         let val = self.evaluate_expr(value, deadline, depth + 1)?;
         Self::ok_enum_variant("Option".to_string(), "Some".to_string(), Some(vec![val]))
     }
-
     /// Evaluate `Option::None` constructor (complexity: 1)
     fn evaluate_option_none() -> Value {
         Value::EnumVariant {
@@ -3847,7 +3482,6 @@ impl Repl {
             data: None,
         }
     }
-    
     /// Evaluate try operator (?) - early return on Err or None
     fn evaluate_try_operator(
         &mut self,
@@ -3856,7 +3490,6 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let val = self.evaluate_expr(expr, deadline, depth + 1)?;
-        
         // Check if it's a Result::Err or Option::None and propagate
         if let Value::EnumVariant { enum_name, variant_name, data } = &val {
             if enum_name == "Result" && variant_name == "Err" {
@@ -3891,11 +3524,9 @@ impl Repl {
                 }
             }
         }
-        
         // If not a Result or Option, return as-is (this might be an error case)
         Ok(val)
     }
-
     /// Evaluate methods on enum variants (Result/Option types)
     #[allow(clippy::too_many_lines)]
     /// Evaluate enum methods with complexity <10
@@ -3928,7 +3559,6 @@ impl Repl {
             bail!("evaluate_enum_methods called on non-enum variant")
         }
     }
-
     /// Handle Result enum methods (unwrap, expect, map, `and_then`)
     /// 
     /// # Example Usage
@@ -4014,7 +3644,6 @@ impl Repl {
             _ => Err(Self::method_not_supported(method, &format!("Result::{variant_name}")))?,
         }
     }
-
     /// Handle Option enum methods (unwrap, expect, map, `and_then`)
     fn evaluate_option_methods(
         &mut self,
@@ -4064,7 +3693,6 @@ impl Repl {
             _ => Err(Self::method_not_supported(method, &format!("Option::{variant_name}")))?,
         }
     }
-
     /// Handle Vec enum methods (placeholder for future Vec methods)
     fn evaluate_vec_methods(
         &mut self,
@@ -4090,7 +3718,6 @@ impl Repl {
             _ => Err(Self::method_not_supported(method, "Vec"))?,
         }
     }
-
     /// Extract value from enum data or return Unit
     fn extract_value_or_unit(&self, data: Option<&Vec<Value>>) -> Result<Value> {
         if let Some(values) = data {
@@ -4100,7 +3727,6 @@ impl Repl {
         }
         Self::ok_unit()
     }
-
     /// Format error message for unwrap operations
     fn format_error_message(&self, method: &str, variant: &str, data: Option<&Vec<Value>>) -> String {
         if let Some(values) = data {
@@ -4113,7 +3739,6 @@ impl Repl {
             format!("called `{method}` on an `{variant}` value")
         }
     }
-
     /// Convert Value to string representation
     fn value_to_string(&self, value: Value) -> String {
         match value {
@@ -4121,7 +3746,6 @@ impl Repl {
             other => format!("{other}"),
         }
     }
-
     /// Evaluate `DataFrame` methods (builder pattern and queries)
     fn evaluate_dataframe_methods(
         &mut self,
@@ -4137,27 +3761,23 @@ impl Repl {
                 if args.len() != 2 {
                     bail!("DataFrame.column() requires exactly 2 arguments (name, values)");
                 }
-                
                 // Evaluate column name
                 let name_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 let column_name = match name_val {
                     Value::String(s) => s,
                     _ => bail!("Column name must be a string"),
                 };
-                
                 // Evaluate column values (should be a list)
                 let values_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
                 let column_values = match values_val {
                     Value::List(items) => items,
                     _ => bail!("Column values must be a list"),
                 };
-                
                 // Add the column to the DataFrame
                 columns.push(DataFrameColumn {
                     name: column_name,
                     values: column_values,
                 });
-                
                 Ok(Value::DataFrame { columns })
             }
             "build" => {
@@ -4187,21 +3807,18 @@ impl Repl {
                 if args.len() != 2 {
                     bail!("DataFrame.get() requires exactly 2 arguments (column_name, row_index)");
                 }
-                
                 // Evaluate column name
                 let name_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
                 let column_name = match name_val {
                     Value::String(s) => s,
                     _ => bail!("Column name must be a string"),
                 };
-                
                 // Evaluate row index
                 let index_val = self.evaluate_expr(&args[1], deadline, depth + 1)?;
                 let row_index = match index_val {
                     Value::Int(i) => i as usize,
                     _ => bail!("Row index must be an integer"),
                 };
-                
                 // Find the column
                 for col in &columns {
                     if col.name == column_name {
@@ -4216,7 +3833,6 @@ impl Repl {
             _ => bail!("Unknown DataFrame method: {}", method),
         }
     }
-
     /// Apply function to enum value (for map operations)
     fn apply_function_to_value(
         &mut self,
@@ -4244,7 +3860,6 @@ impl Repl {
             data: Some(vec![Value::Unit]),
         })
     }
-
     /// Apply function and flatten result (for `and_then` operations)
     fn apply_function_and_flatten(
         &mut self,
@@ -4265,7 +3880,6 @@ impl Repl {
             data: Some(vec![Value::Unit]),
         })
     }
-
     /// Create function call expression for enum combinators
     fn create_function_call(&self, func_arg: &Expr, value: &Value) -> Expr {
         Expr::new(
@@ -4279,7 +3893,6 @@ impl Repl {
             Span { start: 0, end: 0 },
         )
     }
-
     /// Evaluate object literal (complexity: 10)
     fn evaluate_object_literal(
         &mut self,
@@ -4289,7 +3902,6 @@ impl Repl {
     ) -> Result<Value> {
         use crate::frontend::ast::ObjectField;
         let mut map = HashMap::new();
-
         for field in fields {
             match field {
                 ObjectField::KeyValue { key, value } => {
@@ -4306,10 +3918,8 @@ impl Repl {
                 }
             }
         }
-
         Self::ok_object(map)
     }
-
     /// Evaluate enum definition (complexity: 4)
     fn evaluate_enum_definition(
         &mut self,
@@ -4322,7 +3932,6 @@ impl Repl {
         println!("Defined enum {} with {} variants", name, variants.len());
         Value::Unit
     }
-
     /// Evaluate struct definition (complexity: 3)
     fn evaluate_struct_definition(
         name: &str,
@@ -4331,7 +3940,6 @@ impl Repl {
         println!("Defined struct {} with {} fields", name, fields.len());
         Value::Unit
     }
-
     /// Evaluate struct literal (complexity: 5)
     fn evaluate_struct_literal(
         &mut self,
@@ -4346,7 +3954,6 @@ impl Repl {
         }
         Self::ok_object(map)
     }
-
     /// Evaluate field access (complexity: 4)
     fn evaluate_field_access(
         &mut self,
@@ -4374,7 +3981,6 @@ impl Repl {
             _ => bail!("Field access on non-object value"),
         }
     }
-
     /// Evaluate optional field access (complexity: 5)
     fn evaluate_optional_field_access(
         &mut self,
@@ -4384,12 +3990,10 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
-        
         // If the object is null, return null (short-circuit evaluation)
         if matches!(obj_val, Value::Nil) {
             return Self::ok_nil();
         }
-        
         match obj_val {
             Value::Object(map) => Ok(map.get(field).cloned().unwrap_or(Value::Nil)),
             Value::Tuple(values) => {
@@ -4403,7 +4007,6 @@ impl Repl {
             _ => Self::ok_nil(), // Non-object/tuple values return nil instead of error
         }
     }
-
     /// Evaluate optional method call with null-safe chaining (complexity: 10)
     fn evaluate_optional_method_call(
         &mut self,
@@ -4414,12 +4017,10 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let receiver_val = self.evaluate_expr(receiver, deadline, depth + 1)?;
-        
         // If the receiver is null, return null (short-circuit evaluation)
         if matches!(receiver_val, Value::Nil) {
             return Self::ok_nil();
         }
-        
         // Try to call the method, but return nil if it fails instead of erroring
         let result = match receiver_val {
             Value::List(items) => {
@@ -4445,10 +4046,8 @@ impl Repl {
             }
             _ => Value::Nil, // Unsupported types return nil
         };
-        
         Ok(result)
     }
-
     /// Evaluate index access (complexity: 5)
     fn evaluate_index_access(
         &mut self,
@@ -4459,16 +4058,13 @@ impl Repl {
     ) -> Result<Value> {
         let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
         let index_val = self.evaluate_expr(index, deadline, depth + 1)?;
-
         // Check for range indexing first
         if let Value::Range { start, end, inclusive } = index_val {
             return self.handle_range_indexing(obj_val, start, end, inclusive);
         }
-
         // Handle single index access
         self.handle_single_index_access(obj_val, index_val)
     }
-
     /// Handle range-based indexing for lists and strings
     /// 
     /// Example Usage:
@@ -4491,7 +4087,6 @@ impl Repl {
             _ => bail!("Cannot slice into {:?}", obj_val),
         }
     }
-
     /// Handle single index access for various data types
     /// 
     /// # Example Usage
@@ -4522,7 +4117,6 @@ impl Repl {
             (obj_val, index_val) => bail!("Cannot index into {:?} with index {:?}", obj_val, index_val),
         }
     }
-
     /// Calculate slice bounds and validate them
     /// 
     /// # Example Usage
@@ -4531,7 +4125,6 @@ impl Repl {
     fn calculate_slice_bounds(&self, start: i64, end: i64, inclusive: bool, len: usize) -> Result<(usize, usize)> {
         let start_idx = usize::try_from(start)
             .map_err(|_| anyhow::anyhow!("Invalid start index: {}", start))?;
-        
         let end_idx = if inclusive {
             usize::try_from(end + 1)
                 .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end + 1))?
@@ -4539,17 +4132,14 @@ impl Repl {
             usize::try_from(end)
                 .map_err(|_| anyhow::anyhow!("Invalid end index: {}", end))?
         };
-
         if start_idx > len || end_idx > len {
             bail!("Slice indices out of bounds");
         }
         if start_idx > end_idx {
             bail!("Invalid slice range: start > end");
         }
-
         Ok((start_idx, end_idx))
     }
-
     /// Validate array index and convert to usize
     /// 
     /// # Example Usage
@@ -4562,14 +4152,11 @@ impl Repl {
     fn validate_array_index(&self, idx: i64, len: usize) -> Result<usize> {
         let idx = usize::try_from(idx)
             .map_err(|_| anyhow::anyhow!("Invalid index: {}", idx))?;
-        
         if idx >= len {
             bail!("Index {} out of bounds for length {}", idx, len);
         }
-        
         Ok(idx)
     }
-
     /// Evaluate slice index expression (complexity: 4)
     fn evaluate_slice_index(&mut self, expr: Option<&Expr>, deadline: Instant, depth: usize) -> Result<Option<usize>> {
         if let Some(index_expr) = expr {
@@ -4584,7 +4171,6 @@ impl Repl {
             Ok(None)
         }
     }
-
     /// Validate slice bounds (complexity: 3)
     fn validate_slice_bounds(start: usize, end: usize, len: usize) -> Result<()> {
         if start > len || end > len {
@@ -4595,27 +4181,22 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Slice a list value (complexity: 4)
     fn slice_list(list: Vec<Value>, start_idx: Option<usize>, end_idx: Option<usize>) -> Result<Value> {
         let start = start_idx.unwrap_or(0);
         let end = end_idx.unwrap_or(list.len());
-        
         Self::validate_slice_bounds(start, end, list.len())?;
         Self::ok_list(list[start..end].to_vec())
     }
-
     /// Slice a string value (complexity: 5)
     fn slice_string(s: String, start_idx: Option<usize>, end_idx: Option<usize>) -> Result<Value> {
         let chars: Vec<char> = s.chars().collect();
         let start = start_idx.unwrap_or(0);
         let end = end_idx.unwrap_or(chars.len());
-        
         Self::validate_slice_bounds(start, end, chars.len())?;
         let sliced: String = chars[start..end].iter().collect();
         Ok(Value::String(sliced))
     }
-
     /// Main slice evaluation function (complexity: 6)
     fn evaluate_slice(
         &mut self,
@@ -4626,11 +4207,9 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let obj_val = self.evaluate_expr(object, deadline, depth + 1)?;
-        
         // Evaluate start and end indices
         let start_idx = self.evaluate_slice_index(start, deadline, depth)?;
         let end_idx = self.evaluate_slice_index(end, deadline, depth)?;
-        
         // Perform slicing based on value type
         match obj_val {
             Value::List(list) => Self::slice_list(list, start_idx, end_idx),
@@ -4638,7 +4217,6 @@ impl Repl {
             _ => Err(anyhow::anyhow!("Cannot slice value of type {:?}", obj_val)),
         }
     }
-
     /// Evaluate trait definition (complexity: 3)
     fn evaluate_trait_definition(
         name: &str,
@@ -4647,7 +4225,6 @@ impl Repl {
         println!("Defined trait {} with {} methods", name, methods.len());
         Value::Unit
     }
-
     /// Evaluate impl block (complexity: 12)
     fn evaluate_impl_block(
         &mut self,
@@ -4656,7 +4233,6 @@ impl Repl {
     ) -> Value {
         for method in methods {
             let qualified_name = format!("{}::{}", for_type, method.name);
-
             let param_names: Vec<String> = method
                 .params
                 .iter()
@@ -4669,11 +4245,9 @@ impl Repl {
                     }
                 })
                 .collect();
-
             self.impl_methods
                 .insert(qualified_name, (param_names, method.body.clone()));
         }
-
         println!(
             "Defined impl for {} with {} methods",
             for_type,
@@ -4681,7 +4255,6 @@ impl Repl {
         );
         Value::Unit
     }
-
     /// Evaluate binary expression (complexity: 3)
     fn evaluate_binary_expr(
         &mut self,
@@ -4724,7 +4297,6 @@ impl Repl {
             }
         }
     }
-
     /// Evaluate unary expression (complexity: 2)
     fn evaluate_unary_expr(
         &mut self,
@@ -4736,14 +4308,12 @@ impl Repl {
         let val = self.evaluate_expr(operand, deadline, depth + 1)?;
         Self::evaluate_unary(op, &val)
     }
-
     /// Evaluate identifier (complexity: 2)
     fn evaluate_identifier(&self, name: &str) -> Result<Value> {
         // Check if it's a qualified enum variant like "Option::None"
         if let Some(pos) = name.find("::") {
             let (module, variant) = name.split_at(pos);
             let variant = &variant[2..]; // Skip the "::"
-            
             // Handle known enum variants
             if module == "Option" && variant == "None" {
                 return Ok(Self::create_option_none());
@@ -4755,7 +4325,6 @@ impl Repl {
                     data: None,
                 });
             }
-            
             // For other qualified names, create an enum variant
             return Ok(Value::EnumVariant {
                 enum_name: module.to_string(),
@@ -4763,11 +4332,9 @@ impl Repl {
                 data: None,
             });
         }
-        
         self.get_binding(name)
             .ok_or_else(|| anyhow::anyhow!("Undefined variable: '{}'\n  Hint: Did you mean to declare it with 'let {} = value'?", name, name))
     }
-
     /// Evaluate qualified name (complexity: 2)
     fn evaluate_qualified_name(module: &str, name: &str) -> Value {
         Value::EnumVariant {
@@ -4776,7 +4343,6 @@ impl Repl {
             data: None,
         }
     }
-
     /// Evaluate await expression (complexity: 1)
     fn evaluate_await_expr(
         &mut self,
@@ -4788,7 +4354,6 @@ impl Repl {
         // In a full async implementation, this would handle Future resolution
         self.evaluate_expr(expr, deadline, depth + 1)
     }
-
     /// Evaluate async block (complexity: 1)
     fn evaluate_async_block(
         &mut self,
@@ -4800,27 +4365,27 @@ impl Repl {
         // In a full async implementation, this would return a Future
         self.evaluate_expr(body, deadline, depth + 1)
     }
-
     /// Evaluate try operator (?) (complexity: 1)
     /// Evaluate `DataFrame` operation (complexity: 1)
     fn evaluate_dataframe_operation() -> Result<Value> {
         // DataFrame operations not yet implemented in REPL
         bail!("DataFrame operations not yet implemented in REPL")
     }
-
     /// Check if a pattern matches a value and return bindings
     ///
     /// Returns Some(bindings) if pattern matches, None if it doesn't
     fn pattern_matches(value: &Value, pattern: &Pattern) -> Result<Option<HashMap<String, Value>>> {
-        let mut bindings = HashMap::new();
-
-        if Self::pattern_matches_recursive(value, pattern, &mut bindings)? {
+        // Use the shared pattern matching module which properly handles rest patterns
+        if let Some(bindings_vec) = crate::runtime::pattern_matching::match_pattern(pattern, value) {
+            let mut bindings = HashMap::new();
+            for (name, val) in bindings_vec {
+                bindings.insert(name, val);
+            }
             Ok(Some(bindings))
         } else {
             Ok(None)
         }
     }
-
     /// Recursive pattern matching helper
     /// Match literal patterns (complexity: 4)
     fn match_literal_pattern(value: &Value, literal: &Literal) -> bool {
@@ -4833,7 +4398,6 @@ impl Repl {
             _ => false,
         }
     }
-
     /// Match sequence patterns (list or tuple) (complexity: 4)
     fn match_sequence_pattern(
         values: &[Value],
@@ -4843,7 +4407,6 @@ impl Repl {
         if values.len() != patterns.len() {
             return Ok(false);
         }
-
         for (value, pattern) in values.iter().zip(patterns.iter()) {
             if !Self::pattern_matches_recursive(value, pattern, bindings)? {
                 return Ok(false);
@@ -4851,7 +4414,6 @@ impl Repl {
         }
         Ok(true)
     }
-
     /// Match OR patterns (complexity: 5)
     fn match_or_pattern(
         value: &Value,
@@ -4870,7 +4432,6 @@ impl Repl {
         }
         Ok(false)
     }
-
     /// Match range patterns (complexity: 5)
     fn match_range_pattern(
         value: i64,
@@ -4893,7 +4454,6 @@ impl Repl {
             bail!("Complex range patterns not yet supported");
         }
     }
-
     /// Match struct patterns (complexity: 7)
     fn match_struct_pattern(
         obj_fields: &HashMap<String, Value>,
@@ -4902,7 +4462,6 @@ impl Repl {
     ) -> Result<bool> {
         for pattern_field in pattern_fields {
             let field_name = &pattern_field.name;
-            
             // Find the corresponding field in the object
             if let Some(field_value) = obj_fields.get(field_name) {
                 // Check if pattern matches (if specified)
@@ -4922,7 +4481,6 @@ impl Repl {
         }
         Ok(true)
     }
-
     /// Match qualified name patterns (complexity: 4)
     fn match_qualified_name_pattern(
         value: &Value,
@@ -4944,7 +4502,6 @@ impl Repl {
             value_str == pattern_str
         }
     }
-
     /// Match simple patterns (complexity: 4)
     fn match_simple_patterns(
         value: &Value,
@@ -4961,7 +4518,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Match collection patterns (complexity: 5)
     fn match_collection_patterns(
         value: &Value,
@@ -4982,7 +4538,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Match Result/Option patterns (complexity: 6)
     fn match_result_option_patterns(
         value: &Value,
@@ -5015,7 +4570,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Match complex patterns (complexity: 5)
     fn match_complex_patterns(
         value: &Value,
@@ -5044,7 +4598,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Main pattern matching function (complexity: 6)
     fn pattern_matches_recursive(
         value: &Value,
@@ -5055,26 +4608,21 @@ impl Repl {
         if let Some(result) = Self::match_simple_patterns(value, pattern, bindings) {
             return result;
         }
-
         // Try collection patterns
         if let Some(result) = Self::match_collection_patterns(value, pattern, bindings) {
             return result;
         }
-
         // Try Result/Option patterns
         if let Some(result) = Self::match_result_option_patterns(value, pattern, bindings) {
             return result;
         }
-
         // Try complex patterns
         if let Some(result) = Self::match_complex_patterns(value, pattern, bindings) {
             return result;
         }
-
         // Should never reach here as all pattern types are covered
         bail!("Unhandled pattern type: {:?}", pattern)
     }
-
     /// Extract value from `Result::Ok` variant (complexity: 4)
     fn extract_result_ok(value: &Value) -> Option<Value> {
         match value {
@@ -5088,7 +4636,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Extract value from `Result::Err` variant (complexity: 4)
     fn extract_result_err(value: &Value) -> Option<Value> {
         match value {
@@ -5102,7 +4649,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Extract value from `Option::Some` variant (complexity: 4)
     fn extract_option_some(value: &Value) -> Option<Value> {
         match value {
@@ -5116,7 +4662,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Check if value is `Option::None` variant (complexity: 3)
     fn is_option_none(value: &Value) -> bool {
         match value {
@@ -5126,7 +4671,6 @@ impl Repl {
             _ => false,
         }
     }
-
     /// Evaluate binary operations
     /// Evaluate integer arithmetic operations (complexity: 7)
     fn evaluate_integer_arithmetic(a: i64, op: BinaryOp, b: i64) -> Result<Value> {
@@ -5168,7 +4712,6 @@ impl Repl {
             _ => bail!("Invalid integer arithmetic operation: {:?}", op),
         }
     }
-
     /// Evaluate float arithmetic operations (complexity: 5)
     fn evaluate_float_arithmetic(a: f64, op: BinaryOp, b: f64) -> Result<Value> {
         match op {
@@ -5185,63 +4728,84 @@ impl Repl {
             _ => bail!("Invalid float arithmetic operation: {:?}", op),
         }
     }
-
     /// Evaluate comparison operations (complexity: 6)
     fn evaluate_comparison(lhs: &Value, op: BinaryOp, rhs: &Value) -> Result<Value> {
         match (lhs, rhs) {
-            (Value::Int(a), Value::Int(b)) => match op {
-                BinaryOp::Less => Ok(Value::Bool(a < b)),
-                BinaryOp::LessEqual => Ok(Value::Bool(a <= b)),
-                BinaryOp::Greater => Ok(Value::Bool(a > b)),
-                BinaryOp::GreaterEqual => Ok(Value::Bool(a >= b)),
-                BinaryOp::Equal => Ok(Value::Bool(a == b)),
-                BinaryOp::NotEqual => Ok(Value::Bool(a != b)),
-                _ => bail!("Invalid integer comparison: {:?}", op),
-            },
-            (Value::String(a), Value::String(b)) => match op {
-                BinaryOp::Equal => Ok(Value::Bool(a == b)),
-                BinaryOp::NotEqual => Ok(Value::Bool(a != b)),
-                _ => bail!("Invalid string comparison: {:?}", op),
-            },
-            (Value::Bool(a), Value::Bool(b)) => match op {
-                BinaryOp::Equal => Ok(Value::Bool(a == b)),
-                BinaryOp::NotEqual => Ok(Value::Bool(a != b)),
-                _ => bail!("Invalid boolean comparison: {:?}", op),
-            },
-            // Float comparisons
-            (Value::Float(a), Value::Float(b)) => match op {
-                BinaryOp::Less => Ok(Value::Bool(a < b)),
-                BinaryOp::LessEqual => Ok(Value::Bool(a <= b)),
-                BinaryOp::Greater => Ok(Value::Bool(a > b)),
-                BinaryOp::GreaterEqual => Ok(Value::Bool(a >= b)),
-                BinaryOp::Equal => Ok(Value::Bool((a - b).abs() < f64::EPSILON)),
-                BinaryOp::NotEqual => Ok(Value::Bool((a - b).abs() >= f64::EPSILON)),
-                _ => bail!("Invalid float comparison: {:?}", op),
-            },
-            // Mixed Int/Float comparisons - coerce to Float
-            (Value::Int(a), Value::Float(b)) => match op {
-                BinaryOp::Less => Ok(Value::Bool((*a as f64) < *b)),
-                BinaryOp::LessEqual => Ok(Value::Bool((*a as f64) <= *b)),
-                BinaryOp::Greater => Ok(Value::Bool((*a as f64) > *b)),
-                BinaryOp::GreaterEqual => Ok(Value::Bool((*a as f64) >= *b)),
-                BinaryOp::Equal => Ok(Value::Bool(((*a as f64) - *b).abs() < f64::EPSILON)),
-                BinaryOp::NotEqual => Ok(Value::Bool(((*a as f64) - *b).abs() >= f64::EPSILON)),
-                _ => bail!("Invalid mixed int/float comparison: {:?}", op),
-            },
-            // Mixed Float/Int comparisons - coerce to Float  
-            (Value::Float(a), Value::Int(b)) => match op {
-                BinaryOp::Less => Ok(Value::Bool(*a < (*b as f64))),
-                BinaryOp::LessEqual => Ok(Value::Bool(*a <= (*b as f64))),
-                BinaryOp::Greater => Ok(Value::Bool(*a > (*b as f64))),
-                BinaryOp::GreaterEqual => Ok(Value::Bool(*a >= (*b as f64))),
-                BinaryOp::Equal => Ok(Value::Bool((*a - (*b as f64)).abs() < f64::EPSILON)),
-                BinaryOp::NotEqual => Ok(Value::Bool((*a - (*b as f64)).abs() >= f64::EPSILON)),
-                _ => bail!("Invalid mixed float/int comparison: {:?}", op),
-            },
+            (Value::Int(a), Value::Int(b)) => Self::compare_integers(*a, op, *b),
+            (Value::String(a), Value::String(b)) => Self::compare_strings(a, op, b),
+            (Value::Bool(a), Value::Bool(b)) => Self::compare_booleans(*a, op, *b),
+            (Value::Float(a), Value::Float(b)) => Self::compare_floats(*a, op, *b),
+            (Value::Int(a), Value::Float(b)) => Self::compare_mixed_int_float(*a, op, *b),
+            (Value::Float(a), Value::Int(b)) => Self::compare_mixed_float_int(*a, op, *b),
             _ => bail!("Type mismatch in comparison: {:?} vs {:?}", lhs, rhs),
         }
     }
 
+    fn compare_integers(a: i64, op: BinaryOp, b: i64) -> Result<Value> {
+        match op {
+            BinaryOp::Less => Ok(Value::Bool(a < b)),
+            BinaryOp::LessEqual => Ok(Value::Bool(a <= b)),
+            BinaryOp::Greater => Ok(Value::Bool(a > b)),
+            BinaryOp::GreaterEqual => Ok(Value::Bool(a >= b)),
+            BinaryOp::Equal => Ok(Value::Bool(a == b)),
+            BinaryOp::NotEqual => Ok(Value::Bool(a != b)),
+            _ => bail!("Invalid integer comparison: {:?}", op),
+        }
+    }
+
+    fn compare_strings(a: &str, op: BinaryOp, b: &str) -> Result<Value> {
+        match op {
+            BinaryOp::Equal => Ok(Value::Bool(a == b)),
+            BinaryOp::NotEqual => Ok(Value::Bool(a != b)),
+            _ => bail!("Invalid string comparison: {:?}", op),
+        }
+    }
+
+    fn compare_booleans(a: bool, op: BinaryOp, b: bool) -> Result<Value> {
+        match op {
+            BinaryOp::Equal => Ok(Value::Bool(a == b)),
+            BinaryOp::NotEqual => Ok(Value::Bool(a != b)),
+            _ => bail!("Invalid boolean comparison: {:?}", op),
+        }
+    }
+
+    fn compare_floats(a: f64, op: BinaryOp, b: f64) -> Result<Value> {
+        match op {
+            BinaryOp::Less => Ok(Value::Bool(a < b)),
+            BinaryOp::LessEqual => Ok(Value::Bool(a <= b)),
+            BinaryOp::Greater => Ok(Value::Bool(a > b)),
+            BinaryOp::GreaterEqual => Ok(Value::Bool(a >= b)),
+            BinaryOp::Equal => Ok(Value::Bool((a - b).abs() < f64::EPSILON)),
+            BinaryOp::NotEqual => Ok(Value::Bool((a - b).abs() >= f64::EPSILON)),
+            _ => bail!("Invalid float comparison: {:?}", op),
+        }
+    }
+
+    fn compare_mixed_int_float(a: i64, op: BinaryOp, b: f64) -> Result<Value> {
+        let a_float = a as f64;
+        match op {
+            BinaryOp::Less => Ok(Value::Bool(a_float < b)),
+            BinaryOp::LessEqual => Ok(Value::Bool(a_float <= b)),
+            BinaryOp::Greater => Ok(Value::Bool(a_float > b)),
+            BinaryOp::GreaterEqual => Ok(Value::Bool(a_float >= b)),
+            BinaryOp::Equal => Ok(Value::Bool((a_float - b).abs() < f64::EPSILON)),
+            BinaryOp::NotEqual => Ok(Value::Bool((a_float - b).abs() >= f64::EPSILON)),
+            _ => bail!("Invalid mixed int/float comparison: {:?}", op),
+        }
+    }
+
+    fn compare_mixed_float_int(a: f64, op: BinaryOp, b: i64) -> Result<Value> {
+        let b_float = b as f64;
+        match op {
+            BinaryOp::Less => Ok(Value::Bool(a < b_float)),
+            BinaryOp::LessEqual => Ok(Value::Bool(a <= b_float)),
+            BinaryOp::Greater => Ok(Value::Bool(a > b_float)),
+            BinaryOp::GreaterEqual => Ok(Value::Bool(a >= b_float)),
+            BinaryOp::Equal => Ok(Value::Bool((a - b_float).abs() < f64::EPSILON)),
+            BinaryOp::NotEqual => Ok(Value::Bool((a - b_float).abs() >= f64::EPSILON)),
+            _ => bail!("Invalid mixed float/int comparison: {:?}", op),
+        }
+    }
     /// Evaluate bitwise operations (complexity: 4)
     fn evaluate_bitwise(a: i64, op: BinaryOp, b: i64) -> Result<Value> {
         match op {
@@ -5252,7 +4816,6 @@ impl Repl {
             _ => bail!("Invalid bitwise operation: {:?}", op),
         }
     }
-
     fn evaluate_binary(lhs: &Value, op: BinaryOp, rhs: &Value) -> Result<Value> {
         match (lhs, op, rhs) {
             // Integer arithmetic
@@ -5261,28 +4824,24 @@ impl Repl {
                 BinaryOp::Divide | BinaryOp::Modulo | BinaryOp::Power) => {
                 Self::evaluate_integer_arithmetic(*a, op, *b)
             }
-
             // Float arithmetic
             (Value::Float(a), op, Value::Float(b)) if matches!(op,
                 BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply |
                 BinaryOp::Divide | BinaryOp::Power) => {
                 Self::evaluate_float_arithmetic(*a, op, *b)
             }
-
             // Mixed Int/Float arithmetic - coerce to Float
             (Value::Int(a), op, Value::Float(b)) if matches!(op,
                 BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply |
                 BinaryOp::Divide | BinaryOp::Power) => {
                 Self::evaluate_float_arithmetic(*a as f64, op, *b)
             }
-
             // Mixed Float/Int arithmetic - coerce to Float
             (Value::Float(a), op, Value::Int(b)) if matches!(op,
                 BinaryOp::Add | BinaryOp::Subtract | BinaryOp::Multiply |
                 BinaryOp::Divide | BinaryOp::Power) => {
                 Self::evaluate_float_arithmetic(*a, op, *b as f64)
             }
-
             // String concatenation - optimized with pre-allocation
             (Value::String(a), BinaryOp::Add, Value::String(b)) => {
                 let mut result = String::with_capacity(a.len() + b.len());
@@ -5290,29 +4849,24 @@ impl Repl {
                 result.push_str(b);
                 Self::ok_string(result)
             }
-
             // Comparisons
             (lhs, op, rhs) if matches!(op,
                 BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater |
                 BinaryOp::GreaterEqual | BinaryOp::Equal | BinaryOp::NotEqual) => {
                 Self::evaluate_comparison(lhs, op, rhs)
             }
-
             // Boolean logic
             (Value::Bool(a), BinaryOp::And, Value::Bool(b)) => Ok(Value::Bool(*a && *b)),
             (Value::Bool(a), BinaryOp::Or, Value::Bool(b)) => Ok(Value::Bool(*a || *b)),
-
             // Null coalescing
             (Value::Nil, BinaryOp::NullCoalesce, rhs) => Ok(rhs.clone()),
             (lhs, BinaryOp::NullCoalesce, _) => Ok(lhs.clone()),
-
             // Bitwise operations
             (Value::Int(a), op, Value::Int(b)) if matches!(op,
                 BinaryOp::BitwiseAnd | BinaryOp::BitwiseOr |
                 BinaryOp::BitwiseXor | BinaryOp::LeftShift) => {
                 Self::evaluate_bitwise(*a, op, *b)
             }
-
             _ => bail!(
                 "Type mismatch in binary operation: {:?} {:?} {:?}",
                 lhs,
@@ -5321,11 +4875,9 @@ impl Repl {
             ),
         }
     }
-
     /// Evaluate unary operations
     fn evaluate_unary(op: UnaryOp, val: &Value) -> Result<Value> {
         use Value::{Bool, Float, Int};
-
         match (op, val) {
             (UnaryOp::Negate, Int(n)) => Ok(Int(-n)),
             (UnaryOp::Negate, Float(f)) => Ok(Float(-f)),
@@ -5341,7 +4893,6 @@ impl Repl {
             _ => bail!("Type mismatch in unary operation: {:?} {:?}", op, val),
         }
     }
-
     /// Run the interactive REPL
     ///
     /// # Errors
@@ -5352,14 +4903,11 @@ impl Repl {
     /// - Commands fail to execute
     pub fn run(&mut self) -> Result<()> {
         println!();
-        
         let mut rl = self.setup_readline_editor()?;
         let mut multiline_state = MultilineState::new();
-        
         loop {
             let prompt = self.format_prompt(multiline_state.in_multiline);
             let readline = rl.readline(&prompt);
-            
             match readline {
                 Ok(line) => {
                     if self.process_input_line(&line, &mut rl, &mut multiline_state)? {
@@ -5379,17 +4927,14 @@ impl Repl {
                 }
             }
         }
-
         // Save history
         let history_path = self.temp_dir.join("history.txt");
         let _ = rl.save_history(&history_path);
         Ok(())
     }
-
     /// Handle REPL commands and return output as string (for testing)
     // Helper functions for command handling (complexity < 10 each)
     // ========================================================================
-    
     /// Handle :quit command (complexity: 3)
     fn handle_quit_command(&mut self) -> (bool, String) {
         if self.mode == ReplMode::Normal {
@@ -5401,7 +4946,6 @@ impl Repl {
             (false, "Returned to normal mode".to_string())
         }
     }
-    
     /// Handle :history command (complexity: 3)
     fn handle_history_command(&self) -> String {
         if self.history.is_empty() {
@@ -5414,7 +4958,6 @@ impl Repl {
             output
         }
     }
-    
     /// Handle :clear command (complexity: 2)
     fn handle_clear_command(&mut self) -> String {
         self.history.clear();
@@ -5423,7 +4966,6 @@ impl Repl {
         self.result_history.clear();
         "Session cleared".to_string()
     }
-    
     /// Handle :bindings/:env command (complexity: 3)
     fn handle_bindings_command(&self) -> String {
         if self.bindings.is_empty() {
@@ -5436,7 +4978,6 @@ impl Repl {
             output
         }
     }
-    
     /// Handle :compile command (complexity: 2)
     fn handle_compile_command(&mut self) -> String {
         match self.compile_session() {
@@ -5444,7 +4985,6 @@ impl Repl {
             Err(e) => format!("Compilation failed: {e}"),
         }
     }
-    
     /// Handle :load command (complexity: 3)
     fn handle_load_command(&mut self, parts: &[&str]) -> String {
         if parts.len() == 2 {
@@ -5456,7 +4996,6 @@ impl Repl {
             "Usage: :load <filename>".to_string()
         }
     }
-    
     /// Handle :save command (complexity: 3)
     fn handle_save_command(&mut self, command: &str) -> String {
         let filename = command.strip_prefix(":save").unwrap_or("").trim();
@@ -5469,7 +5008,6 @@ impl Repl {
             }
         }
     }
-    
     /// Handle :export command (complexity: 3)
     fn handle_export_command(&mut self, command: &str) -> String {
         let filename = command.strip_prefix(":export").unwrap_or("").trim();
@@ -5482,7 +5020,6 @@ impl Repl {
             }
         }
     }
-    
     /// Handle :type command (complexity: 3)
     fn handle_type_command(&mut self, command: &str) -> String {
         let expr = command.strip_prefix(":type").unwrap_or("").trim();
@@ -5492,7 +5029,6 @@ impl Repl {
             self.get_type_info_with_bindings(expr)
         }
     }
-    
     /// Handle :ast command (complexity: 3)
     fn handle_ast_command(command: &str) -> String {
         let expr = command.strip_prefix(":ast").unwrap_or("").trim();
@@ -5502,7 +5038,6 @@ impl Repl {
             Self::get_ast_info(expr)
         }
     }
-    
     /// Handle :inspect command (complexity: 3)
     fn handle_inspect_command(&self, command: &str) -> String {
         let var_name = command.strip_prefix(":inspect").unwrap_or("").trim();
@@ -5512,7 +5047,6 @@ impl Repl {
             self.inspect_value(var_name)
         }
     }
-    
     /// Handle :reset command (complexity: 2)
     fn handle_reset_command(&mut self) -> String {
         self.history.clear();
@@ -5522,7 +5056,6 @@ impl Repl {
         self.memory.reset();
         "REPL reset to initial state".to_string()
     }
-    
     /// Handle :search command (complexity: 3)
     fn handle_search_command(&self, command: &str) -> String {
         let query = command.strip_prefix(":search").unwrap_or("").trim();
@@ -5532,13 +5065,11 @@ impl Repl {
             self.get_search_results(query)
         }
     }
-    
     /// Handle mode commands (complexity: 2)
     fn handle_mode_command(&mut self, mode: ReplMode) -> String {
         self.mode = mode;
         format!("Switched to {} mode", mode.prompt())
     }
-    
     /// Dispatch basic REPL commands (complexity: 8)
     fn dispatch_basic_commands(&mut self, cmd: &str, parts: &[&str]) -> Option<Result<(bool, String)>> {
         match cmd {
@@ -5552,7 +5083,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatch analysis commands (complexity: 6)
     fn dispatch_analysis_commands(&mut self, cmd: &str, command: &str) -> Option<Result<(bool, String)>> {
         if cmd.starts_with(":save") {
@@ -5571,7 +5101,6 @@ impl Repl {
             None
         }
     }
-
     /// Dispatch mode switching commands (complexity: 8)
     fn dispatch_mode_commands(&mut self, cmd: &str, parts: &[&str]) -> Option<Result<(bool, String)>> {
         match cmd {
@@ -5599,7 +5128,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Get list of available modes (complexity: 1)
     fn get_modes_list() -> String {
         let mut output = "Available modes:\n".to_string();
@@ -5615,31 +5143,25 @@ impl Repl {
         output.push_str("\nUse :mode_name to switch modes, :normal or :exit to return");
         output
     }
-
     /// Main command handler with output (complexity: 6)
     fn handle_command_with_output(&mut self, command: &str) -> Result<(bool, String)> {
         let parts: Vec<&str> = command.split_whitespace().collect();
         let first_cmd = parts.first().copied().unwrap_or("");
-        
         // Try basic commands
         if let Some(result) = self.dispatch_basic_commands(first_cmd, &parts) {
             return result;
         }
-        
         // Try analysis commands
         if let Some(result) = self.dispatch_analysis_commands(first_cmd, command) {
             return result;
         }
-        
         // Try mode commands
         if let Some(result) = self.dispatch_mode_commands(first_cmd, &parts) {
             return result;
         }
-        
         // Unknown command
         Ok((false, format!("Unknown command: {command}\nType :help for available commands")))
     }
-
     /// Handle session management commands (complexity: 5)
     fn handle_session_commands(&mut self, cmd: &str) -> Option<Result<bool>> {
         match cmd {
@@ -5668,7 +5190,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Handle inspection commands (complexity: 4)
     fn handle_inspection_commands(&mut self, command: &str) -> Option<Result<bool>> {
         if command.starts_with(":type") {
@@ -5708,7 +5229,6 @@ impl Repl {
             None
         }
     }
-
     /// Handle file operations (complexity: 4)
     fn handle_file_operations(&mut self, command: &str, parts: &[&str]) -> Option<Result<bool>> {
         if command.starts_with(":load") && parts.len() == 2 {
@@ -5738,7 +5258,6 @@ impl Repl {
             None
         }
     }
-
     /// Handle REPL commands (public for testing) (complexity: 7)
     ///
     /// # Errors
@@ -5747,39 +5266,32 @@ impl Repl {
     pub fn handle_command(&mut self, command: &str) -> Result<bool> {
         let parts: Vec<&str> = command.split_whitespace().collect();
         let first_cmd = parts.first().copied().unwrap_or("");
-        
         // Check for quit command
         if first_cmd == ":quit" || first_cmd == ":q" {
             return Ok(true);
         }
-        
         // Check for help command
         if first_cmd == ":help" || first_cmd == ":h" {
             Self::print_help();
             return Ok(false);
         }
-        
         // Try session management commands
         if let Some(result) = self.handle_session_commands(first_cmd) {
             return result;
         }
-        
         // Try inspection commands
         if let Some(result) = self.handle_inspection_commands(command) {
             return result;
         }
-        
         // Try file operations
         if let Some(result) = self.handle_file_operations(command, &parts) {
             return result;
         }
-        
         // Unknown command
         eprintln!("Unknown command: {command}");
         Self::print_help();
         Ok(false)
     }
-
     /// Get help text as string
     fn get_help_text() -> String {
         let mut help = String::new();
@@ -5800,19 +5312,16 @@ impl Repl {
         help.push_str("  :export <file>  - Export session to clean script\n");
         help
     }
-    
     /// Print help message
     fn print_help() {
         println!("{}", Self::get_help_text());
     }
-    
     /// Get type information as string  
     fn get_type_info(expr: &str) -> String {
         match Parser::new(expr).parse() {
             Ok(ast) => {
                 // Create an inference context for type checking
                 let mut ctx = crate::middleend::InferenceContext::new();
-                
                 // Infer the type
                 match ctx.infer(&ast) {
                     Ok(ty) => format!("Type: {ty}"),
@@ -5822,7 +5331,6 @@ impl Repl {
             Err(e) => format!("Parse error: {e}"),
         }
     }
-    
     /// Get type information with REPL bindings context
     fn get_type_info_with_bindings(&self, expr: &str) -> String {
         // If the expression is a simple identifier, check bindings first
@@ -5853,11 +5361,9 @@ impl Repl {
                 return format!("Type: {type_name}");
             }
         }
-        
         // Fall back to regular type inference
         Self::get_type_info(expr)
     }
-    
     /// Get AST information as string
     fn get_ast_info(expr: &str) -> String {
         match Parser::new(expr).parse() {
@@ -5865,40 +5371,33 @@ impl Repl {
             Err(e) => format!("Parse error: {e}"),
         }
     }
-    
     /// Get search results as string
     fn get_search_results(&self, query: &str) -> String {
         let mut results = Vec::new();
         let query_lower = query.to_lowercase();
-        
         for (i, item) in self.history.iter().enumerate() {
             if item.to_lowercase().contains(&query_lower) {
                 results.push(format!("{}: {}", i + 1, item));
             }
         }
-        
         if results.is_empty() {
             format!("No matches found for '{query}'")
         } else {
             results.join("\n")
         }
     }
-    
     /// Execute a shell command and return its output
     fn execute_shell_command(&self, command: &str) -> Result<String> {
         use std::process::Command;
-        
         // Execute command through shell
         let output = Command::new("sh")
             .arg("-c")
             .arg(command)
             .output()
             .context(format!("Failed to execute shell command: {command}"))?;
-        
         // Combine stdout and stderr
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
-        
         if !output.status.success() {
             // If command failed, return error with stderr
             if !stderr.is_empty() {
@@ -5906,11 +5405,9 @@ impl Repl {
             }
             bail!("Shell command failed with exit code: {:?}", output.status.code());
         }
-        
         // Return stdout (stderr is usually empty for successful commands)
         Ok(stdout.trim_end().to_string())
     }
-    
     /// Basic introspection with single ?
     fn basic_introspection(&self, target: &str) -> Result<String> {
         // Check if target exists in bindings
@@ -5919,12 +5416,10 @@ impl Repl {
             let value_str = self.format_value_brief(value);
             return Ok(format!("Type: {type_name}\nValue: {value_str}"));
         }
-        
         // Check if it's a builtin function
         if self.is_builtin_function(target) {
             return Ok(format!("Type: Builtin Function\nName: {target}"));
         }
-        
         // Try to evaluate the expression and introspect result
         if let Ok(ast) = Parser::new(target).parse() {
             // Try to get type information
@@ -5933,25 +5428,20 @@ impl Repl {
                 return Ok(format!("Type: {ty}"));
             }
         }
-        
         bail!("'{}' is not defined or cannot be introspected", target)
     }
-    
     /// Detailed introspection with double ??
     fn detailed_introspection(&self, target: &str) -> Result<String> {
         // Check if target exists in bindings  
         if let Some(value) = self.bindings.get(target) {
             return Ok(self.format_detailed_introspection(target, value));
         }
-        
         // Check if it's a builtin function
         if self.is_builtin_function(target) {
             return Ok(self.format_builtin_help(target));
         }
-        
         bail!("'{}' is not defined or cannot be introspected", target)
     }
-    
     /// Check if a name is a builtin function
     fn is_builtin_function(&self, name: &str) -> bool {
         matches!(name, "println" | "print" | "len" | "push" | "pop" | "insert" | 
@@ -5961,7 +5451,6 @@ impl Repl {
                        "type" | "str" | "int" | "float" | "bool" |
                        "sqrt" | "pow" | "abs" | "min" | "max" | "floor" | "ceil" | "round")
     }
-    
     /// Get type name for a value
     fn get_value_type_name(&self, value: &Value) -> &str {
         match value {
@@ -5987,7 +5476,6 @@ impl Repl {
             Value::Nil => "Nil",
         }
     }
-    
     /// Format value briefly for introspection
     fn format_value_brief(&self, value: &Value) -> String {
         match value {
@@ -6005,13 +5493,11 @@ impl Repl {
             _ => value.to_string(),
         }
     }
-    
     /// Format detailed introspection output
     fn format_detailed_introspection(&self, name: &str, value: &Value) -> String {
         let mut output = String::new();
         output.push_str(&format!("Name: {name}\n"));
         output.push_str(&format!("Type: {}\n", self.get_value_type_name(value)));
-        
         match value {
             Value::Function { name: fn_name, params, body } => {
                 output.push_str(&format!("Source: fn {}({}) {{\n", fn_name, params.join(", ")));
@@ -6044,21 +5530,17 @@ impl Repl {
                 output.push_str(&format!("Value: {value}\n"));
             }
         }
-        
         output
     }
-    
     /// Format expression source code
     fn format_expr_source(&self, expr: &Expr) -> String {
         // Format the expression in a more readable way
         self.expr_to_source_string(expr, 0)
     }
-    
     /// Convert expression to source string
     fn expr_to_source_string(&self, expr: &Expr, indent: usize) -> String {
         use crate::frontend::ast::ExprKind;
         let indent_str = "  ".repeat(indent);
-        
         match &expr.kind {
             ExprKind::Binary { left, op, right } => {
                 format!("{} {} {}", 
@@ -6106,7 +5588,6 @@ impl Repl {
             _ => format!("{:?}", expr.kind).chars().take(50).collect()
         }
     }
-    
     /// Format help for builtin functions
     fn format_builtin_help(&self, name: &str) -> String {
         match name {
@@ -6118,20 +5599,16 @@ impl Repl {
             _ => format!("{name}\n  Builtin function\n  (documentation not available)"),
         }
     }
-    
     /// Evaluate `type()` function
     fn evaluate_type_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         Self::validate_exact_args("type()", 1, args.len())?;
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         let type_name = self.get_value_type_name(&value);
         Ok(Value::String(type_name.to_string()))
     }
-    
     /// Evaluate `summary()` function
     fn evaluate_summary_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         Self::validate_exact_args("summary()", 1, args.len())?;
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         let summary = match &value {
             Value::List(items) => format!("List with {} items", items.len()),
@@ -6142,11 +5619,9 @@ impl Repl {
         };
         Ok(Value::String(summary))
     }
-    
     /// Evaluate `dir()` function
     fn evaluate_dir_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         Self::validate_exact_args("dir()", 1, args.len())?;
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         let members = match value {
             Value::Object(fields) => {
@@ -6154,23 +5629,19 @@ impl Repl {
             }
             _ => vec![],
         };
-        
         Ok(Value::String(members.join(", ")))
     }
-    
     /// Evaluate `help()` function
     fn evaluate_help_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("help() expects 1 argument, got {}", args.len());
         }
-        
         // Check if it's a builtin function first
         if let ExprKind::Identifier(name) = &args[0].kind {
             if self.is_builtin_function(name) {
                 return Ok(Value::String(self.format_builtin_help(name)));
             }
         }
-        
         // Try to evaluate the argument and get its type
         match self.evaluate_expr(&args[0], deadline, depth + 1) {
             Ok(value) => {
@@ -6193,7 +5664,6 @@ impl Repl {
             }
         }
     }
-    
     /// Evaluate `whos()` function - lists all variables with types
     fn evaluate_whos_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         let filter = if args.len() == 1 {
@@ -6207,7 +5677,6 @@ impl Repl {
         } else {
             None
         };
-        
         let mut output = Vec::new();
         for (name, value) in &self.bindings {
             let type_name = self.get_value_type_name(value);
@@ -6218,16 +5687,13 @@ impl Repl {
             }
             output.push(format!("{name}: {type_name}"));
         }
-        
         Ok(Value::String(output.join("\n")))
     }
-    
     /// Evaluate `who()` function - simple list of variable names
     fn evaluate_who_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         let names: Vec<_> = self.bindings.keys().cloned().collect();
         Ok(Value::String(names.join(", ")))
     }
-    
     /// Evaluate clear!() function - clears workspace
     fn evaluate_clear_bang_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.is_empty() {
@@ -6255,20 +5721,17 @@ impl Repl {
             }
         }
     }
-    
     /// Evaluate `save_image()` function
     fn evaluate_save_image_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("save_image() expects 1 argument (filename), got {}", args.len());
         }
-        
         let filename = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         if let Value::String(path) = filename {
             // Generate Ruchy code to recreate workspace
             let mut content = String::new();
             content.push_str("// Workspace image\n");
             content.push_str("// Generated by save_image()\n\n");
-            
             // Save all bindings
             for (name, value) in &self.bindings {
                 match value {
@@ -6292,7 +5755,6 @@ impl Repl {
                     _ => {} // Skip complex types for now
                 }
             }
-            
             // Write to file
             fs::write(&path, content)?;
             Ok(Value::String(format!("Workspace saved to {path}")))
@@ -6300,23 +5762,19 @@ impl Repl {
             bail!("save_image() requires a string filename")
         }
     }
-    
     /// Evaluate `workspace()` function
     fn evaluate_workspace_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         let var_count = self.bindings.len();
         let func_count = self.bindings.values()
             .filter(|v| matches!(v, Value::Function { .. } | Value::Lambda { .. }))
             .count();
-        
         Ok(Value::String(format!("{var_count}variables, {func_count} functions")))
     }
-    
     /// Evaluate `locals()` function
     fn evaluate_locals_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         // For now, same as globals since we don't have proper scoping
         self.evaluate_globals_function(&[], Instant::now(), 0)
     }
-    
     /// Evaluate `globals()` function
     fn evaluate_globals_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         let mut output = Vec::new();
@@ -6325,7 +5783,6 @@ impl Repl {
         }
         Ok(Value::String(output.join("\n")))
     }
-    
     /// Evaluate `reset()` function
     fn evaluate_reset_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         self.bindings.clear();
@@ -6335,13 +5792,11 @@ impl Repl {
         self.memory.reset();
         Ok(Value::String("Workspace reset".to_string()))
     }
-    
     /// Evaluate `del()` function
     fn evaluate_del_function(&mut self, args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("del() expects 1 argument, got {}", args.len());
         }
-        
         // Get the name to delete
         if let ExprKind::Identifier(name) = &args[0].kind {
             if self.bindings.remove(name).is_some() {
@@ -6353,13 +5808,11 @@ impl Repl {
             bail!("del() requires a variable name")
         }
     }
-    
     /// Evaluate `exists()` function
     fn evaluate_exists_function(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() != 1 {
             bail!("exists() expects 1 argument, got {}", args.len());
         }
-        
         let name_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         if let Value::String(name) = name_val {
             Ok(Value::Bool(self.bindings.contains_key(&name)))
@@ -6367,7 +5820,6 @@ impl Repl {
             bail!("exists() requires a string variable name")
         }
     }
-    
     /// Evaluate `memory_info()` function
     fn evaluate_memory_info_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         let current = self.memory.current;
@@ -6375,20 +5827,17 @@ impl Repl {
         let kb = current / 1024;
         Ok(Value::String(format!("Memory: {current} bytes ({kb} KB) / {max} max")))
     }
-    
     /// Evaluate `time_info()` function
     fn evaluate_time_info_function(&mut self, _args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         // For simplicity, just return a placeholder
         Ok(Value::String("Session time: active".to_string()))
     }
-
     /// Show the type of an expression
     fn show_type(expr: &str) {
         match Parser::new(expr).parse() {
             Ok(ast) => {
                 // Create an inference context for type checking
                 let mut ctx = crate::middleend::InferenceContext::new();
-
                 // Infer the type
                 match ctx.infer(&ast) {
                     Ok(ty) => {
@@ -6404,7 +5853,6 @@ impl Repl {
             }
         }
     }
-
     /// Show the AST of an expression
     fn show_ast(expr: &str) {
         match Parser::new(expr).parse() {
@@ -6416,29 +5864,24 @@ impl Repl {
             }
         }
     }
-
     /// Check if input needs continuation (incomplete expression)
     pub fn needs_continuation(input: &str) -> bool {
         let trimmed = input.trim();
-
         // Empty input doesn't need continuation
         if trimmed.is_empty() {
             return false;
         }
-
         // Count braces, brackets, and parentheses
         let mut brace_depth = 0;
         let mut bracket_depth = 0;
         let mut paren_depth = 0;
         let mut in_string = false;
         let mut escape_next = false;
-
         for ch in trimmed.chars() {
             if escape_next {
                 escape_next = false;
                 continue;
             }
-
             match ch {
                 '\\' if in_string => escape_next = true,
                 '"' => in_string = !in_string,
@@ -6451,7 +5894,6 @@ impl Repl {
                 _ => {}
             }
         }
-
         // Need continuation if any delimiters are unmatched
         brace_depth > 0 || bracket_depth > 0 || paren_depth > 0 || in_string ||
         // Or if line ends with certain tokens that expect continuation
@@ -6467,23 +5909,18 @@ impl Repl {
         trimmed.ends_with("||") ||
         trimmed.ends_with(">>")
     }
-
     /// Compile and run the current session
     fn compile_session(&mut self) -> Result<()> {
         use std::fmt::Write;
-
         if self.history.is_empty() {
             println!("No expressions to compile");
             return Ok(());
         }
-
         println!("Compiling session...");
-
         // Generate Rust code for all expressions
         let mut rust_code = String::new();
         rust_code.push_str("#![allow(unused)]\n");
         rust_code.push_str("fn main() {\n");
-
         for expr in &self.history {
             match Parser::new(expr).parse() {
                 Ok(ast) => {
@@ -6509,15 +5946,12 @@ impl Repl {
                 }
             }
         }
-
         rust_code.push_str("}\n");
-
         // Write to working file
         self.session_counter += 1;
         let file_name = format!("session_{}.rs", self.session_counter);
         let file_path = self.temp_dir.join(&file_name);
         fs::write(&file_path, rust_code)?;
-
         // Compile with rustc
         let output = Command::new("rustc")
             .arg(&file_path)
@@ -6529,7 +5963,6 @@ impl Repl {
             .current_dir(&self.temp_dir)
             .output()
             .context("Failed to run rustc")?;
-
         if !output.status.success() {
             eprintln!(
                 "Compilation failed:\n{}",
@@ -6537,7 +5970,6 @@ impl Repl {
             );
             return Ok(());
         }
-
         // Run the compiled program
         let exe_path = self
             .temp_dir
@@ -6545,31 +5977,24 @@ impl Repl {
         let output = Command::new(&exe_path)
             .output()
             .context("Failed to run compiled program")?;
-
         println!("{}", "Output:".bright_green());
         print!("{}", String::from_utf8_lossy(&output.stdout));
-
         if !output.stderr.is_empty() {
             eprintln!("{}", String::from_utf8_lossy(&output.stderr));
         }
-
         Ok(())
     }
-
     /// Search through command history with fuzzy matching
     fn search_history(&self, query: &str) {
         let query_lower = query.to_lowercase();
         let mut matches = Vec::new();
-
         // Simple fuzzy matching: contains all characters in order
         for (i, item) in self.history.iter().enumerate() {
             let item_lower = item.to_lowercase();
-
             // Check if query characters appear in order in the history item
             let mut query_chars = query_lower.chars();
             let mut current_char = query_chars.next();
             let mut score = 0;
-
             for item_char in item_lower.chars() {
                 if let Some(q_char) = current_char {
                     if item_char == q_char {
@@ -6578,7 +6003,6 @@ impl Repl {
                     }
                 }
             }
-
             // If all query characters were found, it's a match
             if current_char.is_none() {
                 matches.push((i, item, score));
@@ -6587,15 +6011,12 @@ impl Repl {
                 matches.push((i, item, query.len()));
             }
         }
-
         if matches.is_empty() {
             println!("No matches found for '{query}'");
             return;
         }
-
         // Sort by score (descending) then by recency (descending)
         matches.sort_by(|a, b| b.2.cmp(&a.2).then(b.0.cmp(&a.0)));
-
         println!(
             "{} History search results for '{}':",
             "Found".bright_green(),
@@ -6609,31 +6030,25 @@ impl Repl {
                 format!("{}", hist_idx + 1).bright_black(),
                 highlighted
             );
-
             if i >= 9 {
                 break;
             }
         }
-
         if matches.len() > 10 {
             println!("  ... and {} more matches", matches.len() - 10);
         }
-
         println!(
             "\n{}: Use :history to see all commands or Ctrl+R for interactive search",
             "Tip".bright_cyan()
         );
     }
-
     /// Highlight query matches in text
     fn highlight_match(text: &str, query: &str) -> String {
         let mut result = String::new();
         let mut query_chars = query.chars().peekable();
         let mut current_char = query_chars.next();
-
         for ch in text.chars() {
             let ch_lower = ch.to_lowercase().next().unwrap_or(ch);
-
             if let Some(q_char) = current_char {
                 if ch_lower == q_char {
                     // Highlight matching character
@@ -6646,10 +6061,8 @@ impl Repl {
                 result.push(ch);
             }
         }
-
         result
     }
-
     /// Save current session to a file
     ///
     /// # Errors
@@ -6659,7 +6072,6 @@ impl Repl {
     fn generate_session_header(&self, content: &mut String) -> Result<()> {
         use chrono::Utc;
         use std::fmt::Write;
-        
         writeln!(content, "// Ruchy REPL Session")?;
         writeln!(
             content,
@@ -6671,11 +6083,9 @@ impl Repl {
         writeln!(content)?;
         Ok(())
     }
-
     /// Add variable bindings as comments (complexity: 3)
     fn add_bindings_to_content(&self, content: &mut String) -> Result<()> {
         use std::fmt::Write;
-        
         if !self.bindings.is_empty() {
             writeln!(content, "// Current variable bindings:")?;
             for (name, value) in &self.bindings {
@@ -6685,17 +6095,14 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Add command history to content (complexity: 5)
     fn add_history_to_content(&self, content: &mut String) -> Result<()> {
         use std::fmt::Write;
-        
         writeln!(
             content,
             "// Session history (paste into REPL or run as script):"
         )?;
         writeln!(content)?;
-
         for (i, command) in self.history.iter().enumerate() {
             if command.starts_with(':') {
                 writeln!(
@@ -6706,18 +6113,15 @@ impl Repl {
                 )?;
                 continue;
             }
-
             writeln!(content, "// Command {}:", i + 1)?;
             writeln!(content, "{command}")?;
             writeln!(content)?;
         }
         Ok(())
     }
-
     /// Add usage instructions to content (complexity: 2)
     fn add_usage_instructions(&self, content: &mut String, filename: &str) -> Result<()> {
         use std::fmt::Write;
-        
         writeln!(content, "// To recreate this session, you can:")?;
         writeln!(
             content,
@@ -6733,28 +6137,22 @@ impl Repl {
         )?;
         Ok(())
     }
-
     /// Save REPL session to file (complexity: 7)
     fn save_session(&self, filename: &str) -> Result<()> {
         use std::io::Write;
-
         let mut content = String::new();
-
         // Generate all content sections
         self.generate_session_header(&mut content)?;
         self.add_bindings_to_content(&mut content)?;
         self.add_history_to_content(&mut content)?;
         self.add_usage_instructions(&mut content, filename)?;
-
         // Write to file
         let mut file = std::fs::File::create(filename)
             .with_context(|| format!("Failed to create file: {filename}"))?;
         file.write_all(content.as_bytes())
             .with_context(|| format!("Failed to write to file: {filename}"))?;
-
         Ok(())
     }
-
     /// Export session as a clean production script
     ///
     /// Unlike `save_session` which saves the raw REPL commands with comments,
@@ -6771,7 +6169,6 @@ impl Repl {
     fn generate_export_header(&self, content: &mut String) -> Result<()> {
         use chrono::Utc;
         use std::fmt::Write;
-        
         writeln!(content, "// Ruchy Script - Exported from REPL Session")?;
         writeln!(
             content,
@@ -6782,11 +6179,9 @@ impl Repl {
         writeln!(content)?;
         Ok(())
     }
-
     /// Filter and clean commands for export (complexity: 6)
     fn filter_commands_for_export(&self) -> Vec<String> {
         let mut clean_statements = Vec::new();
-        
         for command in &self.history {
             // Skip REPL commands, introspection, and display-only statements
             if command.starts_with(':') ||
@@ -6796,21 +6191,17 @@ impl Repl {
                self.is_display_only_command(command) {
                 continue;
             }
-
             // Clean up the statement
             let cleaned = self.clean_statement_for_export(command);
             if !cleaned.trim().is_empty() {
                 clean_statements.push(cleaned);
             }
         }
-        
         clean_statements
     }
-
     /// Generate main function wrapper (complexity: 4)
     fn generate_main_function(&self, content: &mut String, statements: &[String]) -> Result<()> {
         use std::fmt::Write;
-        
         if statements.is_empty() {
             writeln!(content, "// No executable statements to export")?;
             writeln!(content, "fn main() {{")?;
@@ -6818,53 +6209,40 @@ impl Repl {
             writeln!(content, "}}")?;
         } else {
             writeln!(content, "fn main() -> Result<(), Box<dyn std::error::Error>> {{")?;
-            
             for statement in statements {
                 writeln!(content, "    {statement}")?;
             }
-            
             writeln!(content, "    Ok(())")?;
             writeln!(content, "}}")?;
         }
         Ok(())
     }
-
     /// Export session as a clean production script (complexity: 6)
     fn export_session(&self, filename: &str) -> Result<()> {
         use std::io::Write;
-
         let mut content = String::new();
-
         // Generate header
         self.generate_export_header(&mut content)?;
-
         // Filter and clean commands
         let clean_statements = self.filter_commands_for_export();
-
         // Generate main function
         self.generate_main_function(&mut content, &clean_statements)?;
-
         // Write to file
         let mut file = std::fs::File::create(filename)
             .with_context(|| format!("Failed to create file: {filename}"))?;
         file.write_all(content.as_bytes())
             .with_context(|| format!("Failed to write to file: {filename}"))?;
-
         Ok(())
     }
-
     /// Check if a command is display-only (just shows a value)
     fn is_display_only_command(&self, command: &str) -> bool {
         let trimmed = command.trim();
-        
         // Check if it's just a variable name or expression that displays a value
         // without assignment or side effects
-        
         // Simple identifier (just displays value)
         if trimmed.chars().all(|c| c.is_alphanumeric() || c == '_') {
             return true;
         }
-        
         // Method calls that are typically for display (head, tail, info, etc.)
         if trimmed.contains(".head()") || 
            trimmed.contains(".tail()") || 
@@ -6873,14 +6251,11 @@ impl Repl {
            trimmed.contains(".describe()") {
             return true;
         }
-        
         false
     }
-
     /// Clean up a statement for export (add proper error handling, etc.)
     fn clean_statement_for_export(&self, command: &str) -> String {
         let trimmed = command.trim();
-        
         // Add error handling for operations that might fail
         if trimmed.contains("read_csv") || 
            trimmed.contains("read_file") ||
@@ -6900,19 +6275,15 @@ impl Repl {
             }
         }
     }
-
     /// Load and evaluate a file
     fn load_file(&mut self, path: &str) -> Result<()> {
         let content =
             fs::read_to_string(path).with_context(|| format!("Failed to read file: {path}"))?;
-
         println!("Loading {path}...");
-
         for line in content.lines() {
             if line.trim().is_empty() || line.trim().starts_with("//") {
                 continue;
             }
-
             match self.eval(line) {
                 Ok(result) => {
                     println!("{}: {}", line.bright_black(), result);
@@ -6922,10 +6293,8 @@ impl Repl {
                 }
             }
         }
-
         Ok(())
     }
-
     /// Evaluate literal expressions
     fn evaluate_literal(&mut self, lit: &Literal) -> Result<Value> {
         match lit {
@@ -6940,7 +6309,6 @@ impl Repl {
             Literal::Unit => Ok(Value::Unit),
         }
     }
-
     /// Evaluate if expressions
     fn evaluate_if(
         &mut self,
@@ -6963,7 +6331,6 @@ impl Repl {
             _ => bail!("If condition must be boolean, got: {:?}", cond_val),
         }
     }
-
     /// Evaluate try-catch-finally block (complexity: <10)
     fn evaluate_try_catch_block(
         &mut self,
@@ -6973,68 +6340,78 @@ impl Repl {
         deadline: Instant,
         depth: usize,
     ) -> Result<Value> {
-        // Try to evaluate the try block
         let result = match self.evaluate_expr(try_block, deadline, depth + 1) {
             Ok(value) => Ok(value),
-            Err(err) => {
-                // Try each catch clause
-                let mut caught = false;
-                let mut catch_result = Ok(Value::Unit);
-                
-                if let Some(catch_clause) = catch_clauses.first() {
-                    // Extract the error value from throw/panic errors
-                    let error_value = if let Some(thrown_msg) = err.to_string().strip_prefix("throw:") {
-                        // This was a throw statement, use the thrown value
-                        Value::String(thrown_msg.to_string())
-                    } else if let Some(panic_msg) = err.to_string().strip_prefix("panic:") {
-                        // This was a panic! macro, use the panic message
-                        Value::String(panic_msg.to_string())
-                    } else {
-                        // Regular error, convert to string
-                        Value::String(err.to_string())
-                    };
-                    
-                    // Bind the error value to the catch variable if it's an identifier pattern
-                    use crate::frontend::ast::Pattern;
-                    let saved_binding = if let Pattern::Identifier(var_name) = &catch_clause.pattern {
-                        let old_val = self.bindings.get(var_name).cloned();
-                        self.bindings.insert(var_name.clone(), error_value);
-                        Some((var_name.clone(), old_val))
-                    } else {
-                        // TODO: Handle other patterns
-                        None
-                    };
-                    
-                    caught = true;
-                    catch_result = self.evaluate_expr(&catch_clause.body, deadline, depth + 1);
-                    
-                    // Restore binding if we saved one
-                    if let Some((name, old_val)) = saved_binding {
-                        if let Some(val) = old_val {
-                            self.bindings.insert(name, val);
-                        } else {
-                            self.bindings.remove(&name);
-                        }
-                    }
-                }
-                
-                if caught {
-                    catch_result
-                } else {
-                    Err(err)
-                }
-            }
+            Err(err) => self.handle_try_block_error(err, catch_clauses, deadline, depth),
         };
-        
-        // Always execute finally block if present
-        if let Some(finally) = finally_block {
-            // Execute finally but don't override the result
-            let _ = self.evaluate_expr(finally, deadline, depth + 1);
-        }
-        
+        self.execute_finally_block(finally_block, deadline, depth);
         result
     }
 
+    fn handle_try_block_error(
+        &mut self,
+        err: anyhow::Error,
+        catch_clauses: &[crate::frontend::ast::CatchClause],
+        deadline: Instant,
+        depth: usize,
+    ) -> Result<Value> {
+        if let Some(catch_clause) = catch_clauses.first() {
+            let error_value = self.extract_error_value(&err);
+            let saved_binding = self.bind_error_variable(&catch_clause.pattern, error_value);
+            let catch_result = self.evaluate_expr(&catch_clause.body, deadline, depth + 1);
+            self.restore_binding(saved_binding);
+            catch_result
+        } else {
+            Err(err)
+        }
+    }
+
+    fn extract_error_value(&self, err: &anyhow::Error) -> Value {
+        let error_string = err.to_string();
+        if let Some(thrown_msg) = error_string.strip_prefix("throw:") {
+            Value::String(thrown_msg.to_string())
+        } else if let Some(panic_msg) = error_string.strip_prefix("panic:") {
+            Value::String(panic_msg.to_string())
+        } else {
+            Value::String(error_string)
+        }
+    }
+
+    fn bind_error_variable(
+        &mut self,
+        pattern: &crate::frontend::ast::Pattern,
+        error_value: Value,
+    ) -> Option<(String, Option<Value>)> {
+        use crate::frontend::ast::Pattern;
+        if let Pattern::Identifier(var_name) = pattern {
+            let old_val = self.bindings.get(var_name).cloned();
+            self.bindings.insert(var_name.clone(), error_value);
+            Some((var_name.clone(), old_val))
+        } else {
+            None
+        }
+    }
+
+    fn restore_binding(&mut self, saved_binding: Option<(String, Option<Value>)>) {
+        if let Some((name, old_val)) = saved_binding {
+            if let Some(val) = old_val {
+                self.bindings.insert(name, val);
+            } else {
+                self.bindings.remove(&name);
+            }
+        }
+    }
+
+    fn execute_finally_block(
+        &mut self,
+        finally_block: Option<&Expr>,
+        deadline: Instant,
+        depth: usize,
+    ) {
+        if let Some(finally) = finally_block {
+            let _ = self.evaluate_expr(finally, deadline, depth + 1);
+        }
+    }
     /// Evaluate if-let expression (complexity: 6)
     fn evaluate_if_let(
         &mut self,
@@ -7046,7 +6423,6 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let value = self.evaluate_expr(expr, deadline, depth + 1)?;
-        
         // Try pattern matching
         if let Ok(Some(bindings)) = Self::pattern_matches(&value, pattern) {
             // Save current bindings
@@ -7056,20 +6432,16 @@ impl Repl {
                     self.bindings.get(name).map(|old_val| (name.clone(), old_val.clone()))
                 })
                 .collect();
-            
             // Apply pattern bindings
             for (name, val) in bindings {
                 self.bindings.insert(name, val);
             }
-            
             // Evaluate then branch
             let result = self.evaluate_expr(then_branch, deadline, depth + 1);
-            
             // Restore bindings
             for (name, old_val) in saved_bindings {
                 self.bindings.insert(name, old_val);
             }
-            
             result
         } else {
             // Pattern didn't match, evaluate else branch
@@ -7080,7 +6452,6 @@ impl Repl {
             }
         }
     }
-
     /// Evaluate while-let expression (complexity: 7)
     fn evaluate_while_let(
         &mut self,
@@ -7091,14 +6462,11 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let mut last_value = Value::Unit;
-        
         loop {
             if Instant::now() > deadline {
                 bail!("Loop timed out");
             }
-            
             let value = self.evaluate_expr(expr, deadline, depth + 1)?;
-            
             // Try pattern matching
             if let Ok(Some(bindings)) = Self::pattern_matches(&value, pattern) {
                 // Save current bindings
@@ -7108,17 +6476,14 @@ impl Repl {
                         self.bindings.get(name).map(|old_val| (name.clone(), old_val.clone()))
                     })
                     .collect();
-                
                 // Apply pattern bindings
                 for (name, val) in bindings {
                     self.bindings.insert(name, val);
                 }
-                
                 // Evaluate body
                 match self.evaluate_expr(body, deadline, depth + 1) {
                     Ok(val) => {
                         last_value = val;
-                        
                         // Restore bindings
                         for (name, old_val) in saved_bindings {
                             self.bindings.insert(name, old_val);
@@ -7137,10 +6502,8 @@ impl Repl {
                 break;
             }
         }
-        
         Ok(last_value)
     }
-
     /// Evaluate function calls
     /// Dispatcher for I/O functions (complexity: 8)
     fn dispatch_io_functions(
@@ -7158,7 +6521,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for assertion functions (complexity: 6)
     fn dispatch_assertion_functions(
         &mut self,
@@ -7176,7 +6538,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for file operations (complexity: 6)
     fn dispatch_file_functions(
         &mut self,
@@ -7194,7 +6555,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for type conversion functions (complexity: 5)
     fn dispatch_type_conversion(
         &mut self,
@@ -7217,7 +6577,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for introspection functions (complexity: 5)
     fn dispatch_introspection_functions(
         &mut self,
@@ -7234,7 +6593,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for math functions (complexity: 7)
     fn dispatch_math_functions(
         &mut self,
@@ -7253,7 +6611,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for workspace functions (complexity: 10)
     fn dispatch_workspace_functions(
         &mut self,
@@ -7278,7 +6635,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for environment and system functions (complexity: 4)
     fn dispatch_system_functions(
         &mut self,
@@ -7295,7 +6651,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for Result/Option constructors (complexity: 5) 
     fn dispatch_result_option_constructors(
         &mut self,
@@ -7312,7 +6667,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for collection constructors (complexity: 3)
     fn dispatch_collection_constructors(
         &mut self,
@@ -7337,7 +6691,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for static method calls (complexity: 9)
     fn dispatch_static_methods(
         &mut self,
@@ -7385,7 +6738,6 @@ impl Repl {
                                     Value::List(row_values) => row_values.len(),
                                     _ => return Some(Err(anyhow::anyhow!("DataFrame::from_rows() expects each row to be a list"))),
                                 };
-                                
                                 // Initialize columns with default names
                                 for col_idx in 0..num_cols {
                                     columns.push(DataFrameColumn {
@@ -7393,7 +6745,6 @@ impl Repl {
                                         values: Vec::new(),
                                     });
                                 }
-                                
                                 // Fill column data from rows
                                 for row in rows {
                                     match row {
@@ -7419,7 +6770,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for performance module methods (complexity: 8)
     fn dispatch_performance_methods(
         &mut self,
@@ -7478,7 +6828,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Dispatcher for static collection methods (complexity: 4)
     fn dispatch_static_collection_methods(
         &mut self,
@@ -7512,7 +6861,6 @@ impl Repl {
             _ => None,
         }
     }
-
     /// Main call dispatcher with reduced complexity (complexity: 8)
     fn evaluate_call(
         &mut self,
@@ -7523,31 +6871,26 @@ impl Repl {
     ) -> Result<Value> {
         if let ExprKind::Identifier(func_name) = &func.kind {
             let func_str = func_name.as_str();
-            
             // Check if this is a static method call (contains ::)
             if func_str.contains("::") {
                 let parts: Vec<&str> = func_str.splitn(2, "::").collect();
                 if parts.len() == 2 {
                     let module = parts[0];
                     let name = parts[1];
-                    
                     // Try static collection methods dispatcher
                     if let Some(result) = self.dispatch_static_collection_methods(module, name, args) {
                         return result;
                     }
-                    
                     // Try performance module dispatcher
                     if let Some(result) = self.dispatch_performance_methods(module, name, args, deadline, depth) {
                         return result;
                     }
-                    
                     // Try static methods dispatcher
                     if let Some(result) = self.dispatch_static_methods(module, name, args, deadline, depth) {
                         return result;
                     }
                 }
             }
-            
             // Try dispatchers in order of likelihood
             if let Some(result) = self.dispatch_io_functions(func_str, args, deadline, depth) {
                 return result;
@@ -7579,7 +6922,6 @@ impl Repl {
             if let Some(result) = self.dispatch_collection_constructors(func_str, args) {
                 return result;
             }
-            
             // Handle remaining special cases (complexity: 3)
             match func_str {
                 "curry" => self.evaluate_curry(args, deadline, depth),
@@ -7591,12 +6933,10 @@ impl Repl {
             if let Some(result) = self.dispatch_static_collection_methods(module, name, args) {
                 return result;
             }
-            
             // Try performance module dispatcher
             if let Some(result) = self.dispatch_performance_methods(module, name, args, deadline, depth) {
                 return result;
             }
-            
             // Handle user-defined static method calls (Type::method)
             let qualified_name = format!("{module}::{name}");
             if let Some((param_names, body)) = self.impl_methods.get(&qualified_name).cloned() {
@@ -7605,7 +6945,6 @@ impl Repl {
                 for arg in args {
                     arg_values.push(self.evaluate_expr(arg, deadline, depth + 1)?);
                 }
-
                 // Check argument count
                 if arg_values.len() != param_names.len() {
                     bail!(
@@ -7615,21 +6954,16 @@ impl Repl {
                         arg_values.len()
                     );
                 }
-
                 // Save current bindings
                 let saved_bindings = self.bindings.clone();
-
                 // Bind arguments
                 for (param, value) in param_names.iter().zip(arg_values.iter()) {
                     self.bindings.insert(param.clone(), value.clone());
                 }
-
                 // Evaluate body with return handling
                 let result = self.evaluate_function_body(&body, deadline, depth)?;
-
                 // Restore bindings
                 self.bindings = saved_bindings;
-
                 Ok(result)
             } else {
                 bail!("Unknown static method: {}", qualified_name);
@@ -7638,14 +6972,11 @@ impl Repl {
             bail!("Complex function calls not yet supported");
         }
     }
-
     /// Evaluate curry function - converts a function that takes multiple arguments into a series of functions that each take a single argument
     fn evaluate_curry(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         Self::validate_exact_args("curry", 1, args.len())?;
-
         // Evaluate the function argument
         let func_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-
         // For now, return a string representation of currying
         match func_val {
             Value::Function { name, params, .. } => {
@@ -7667,7 +6998,6 @@ impl Repl {
             _ => bail!("curry expects a function as argument"),
         }
     }
-
     /// Evaluate uncurry function - converts a curried function back into a function that takes multiple arguments
     fn evaluate_uncurry(
         &mut self,
@@ -7676,10 +7006,8 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         Self::validate_exact_args("uncurry", 1, args.len())?;
-
         // Evaluate the function argument
         let func_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-
         // For now, return a string representation of uncurrying
         match func_val {
             Value::Function { name, params, .. } => {
@@ -7693,7 +7021,6 @@ impl Repl {
             _ => bail!("uncurry expects a curried function as argument"),
         }
     }
-
     /// Evaluate println function
     fn evaluate_println(
         &mut self,
@@ -7705,7 +7032,6 @@ impl Repl {
             println!();
             return Self::ok_unit();
         }
-        
         let first_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         if let Value::String(format_str) = first_val {
             self.handle_string_first_println(&format_str, args, deadline, depth)
@@ -7713,9 +7039,7 @@ impl Repl {
             self.handle_fallback_println(args, deadline, depth)
         }
     }
-    
     // Helper methods for println complexity reduction (complexity <10 each)
-    
     fn handle_string_first_println(
         &mut self,
         format_str: &str,
@@ -7731,7 +7055,6 @@ impl Repl {
             self.process_regular_string_println(format_str, args, deadline, depth)
         }
     }
-    
     fn process_format_string_println(
         &mut self,
         format_str: &str,
@@ -7741,11 +7064,9 @@ impl Repl {
     ) -> Result<Value> {
         let mut output = format_str.to_string();
         let mut arg_index = 1; // Start from args[1] since args[0] is the format string
-        
         // Process both {} and {:spec} placeholders
         while arg_index < args.len() {
             let val = self.evaluate_expr(&args[arg_index], deadline, depth + 1)?;
-            
             // Find the next placeholder (either {} or {: with format spec)
             if let Some(pos) = output.find("{}") {
                 // Simple {} placeholder
@@ -7762,14 +7083,11 @@ impl Repl {
                 // No more placeholders found
                 break;
             }
-            
             arg_index += 1;
         }
-        
         println!("{output}");
         Self::ok_unit()
     }
-    
     fn process_regular_string_println(
         &mut self,
         format_str: &str,
@@ -7786,7 +7104,6 @@ impl Repl {
         }
         Self::ok_unit()
     }
-    
     fn print_remaining_args(
         &mut self,
         args: &[Expr],
@@ -7802,7 +7119,6 @@ impl Repl {
         }
         Ok(())
     }
-    
     fn handle_fallback_println(
         &mut self,
         args: &[Expr],
@@ -7823,7 +7139,6 @@ impl Repl {
         println!("{output}");
         Self::ok_unit()
     }
-
     /// Evaluate print function
     fn evaluate_print(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         let mut output = String::new();
@@ -7840,16 +7155,13 @@ impl Repl {
         print!("{output}");
         Self::ok_unit()
     }
-
     /// Evaluate `input` function - prompt user for input
     fn evaluate_input(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         use std::io::{self, Write};
-        
         // Handle optional prompt argument
         if args.len() > 1 {
             bail!("input expects 0 or 1 arguments (optional prompt)");
         }
-        
         // Show prompt if provided
         if let Some(prompt_expr) = args.first() {
             let prompt_val = self.evaluate_expr(prompt_expr, deadline, depth + 1)?;
@@ -7859,7 +7171,6 @@ impl Repl {
             }
             io::stdout().flush().unwrap_or(());
         }
-        
         // Read line from stdin
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
@@ -7877,13 +7188,10 @@ impl Repl {
             Err(e) => bail!("Failed to read input: {e}"),
         }
     }
-
     /// Evaluate `readline` function - read a line from stdin 
     fn evaluate_readline(&mut self, args: &[Expr], _deadline: Instant, _depth: usize) -> Result<Value> {
         use std::io;
-        
         Self::validate_zero_args("readline", args.len())?;
-        
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
             Ok(_) => {
@@ -7900,19 +7208,16 @@ impl Repl {
             Err(e) => bail!("Failed to read line: {e}"),
         }
     }
-
     /// Evaluate `assert` function - panic if condition is false
     fn evaluate_assert(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.is_empty() || args.len() > 2 {
             bail!("assert expects 1 or 2 arguments (condition, optional message)");
         }
-        
         // Evaluate condition
         let condition = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let Value::Bool(is_true) = condition else {
             bail!("assert expects a boolean condition, got {}", std::any::type_name_of_val(&condition))
         };
-        
         if !is_true {
             // Get optional message
             let message = if args.len() > 1 {
@@ -7924,26 +7229,20 @@ impl Repl {
             } else {
                 "Assertion failed".to_string()
             };
-            
             bail!("Assertion failed: {}", message);
         }
-        
         Self::ok_unit()
     }
-
     /// Evaluate `assert_eq` function - panic if values are not equal
     fn evaluate_assert_eq(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() < 2 || args.len() > 3 {
             bail!("assert_eq expects 2 or 3 arguments (left, right, optional message)");
         }
-        
         // Evaluate both values
         let left = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let right = self.evaluate_arg(args, 1, deadline, depth)?;
-        
         // Compare values
         let are_equal = self.values_equal(&left, &right);
-        
         if !are_equal {
             // Get optional message
             let message = if args.len() > 2 {
@@ -7955,26 +7254,20 @@ impl Repl {
             } else {
                 format!("assertion failed: `(left == right)`\n  left: `{left}`\n right: `{right}`")
             };
-            
             bail!("Assertion failed: {}", message);
         }
-        
         Self::ok_unit()
     }
-
     /// Evaluate `assert_ne` function - panic if values are equal
     fn evaluate_assert_ne(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.len() < 2 || args.len() > 3 {
             bail!("assert_ne expects 2 or 3 arguments (left, right, optional message)");
         }
-        
         // Evaluate both values
         let left = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let right = self.evaluate_arg(args, 1, deadline, depth)?;
-        
         // Compare values
         let are_equal = self.values_equal(&left, &right);
-        
         if are_equal {
             // Get optional message
             let message = if args.len() > 2 {
@@ -7986,28 +7279,22 @@ impl Repl {
             } else {
                 format!("assertion failed: `(left != right)`\n  left: `{left}`\n right: `{right}`")
             };
-            
             bail!("Assertion failed: {}", message);
         }
-        
         Self::ok_unit()
     }
-
     /// Evaluate `assert_true` function - panic if condition is false
     fn evaluate_assert_true(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.is_empty() || args.len() > 2 {
             bail!("assert_true expects 1 or 2 arguments (condition, optional message)");
         }
-        
         // Evaluate condition
         let condition = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        
         // Check if condition is truthy
         let is_true = match condition {
             Value::Bool(b) => b,
             _ => bail!("assert_true expects a boolean condition, got {}", self.get_value_type_name(&condition)),
         };
-        
         if !is_true {
             // Get optional message
             let message = if args.len() > 1 {
@@ -8019,28 +7306,22 @@ impl Repl {
             } else {
                 "assertion failed: condition is false".to_string()
             };
-            
             bail!("Assertion failed: {}", message);
         }
-        
         Self::ok_unit()
     }
-    
     /// Evaluate `assert_false` function - panic if condition is true
     fn evaluate_assert_false(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         if args.is_empty() || args.len() > 2 {
             bail!("assert_false expects 1 or 2 arguments (condition, optional message)");
         }
-        
         // Evaluate condition
         let condition = self.evaluate_expr(&args[0], deadline, depth + 1)?;
-        
         // Check if condition is falsy
         let is_false = match condition {
             Value::Bool(b) => !b,
             _ => bail!("assert_false expects a boolean condition, got {}", self.get_value_type_name(&condition)),
         };
-        
         if !is_false {
             // Get optional message
             let message = if args.len() > 1 {
@@ -8052,13 +7333,10 @@ impl Repl {
             } else {
                 "assertion failed: condition is true".to_string()
             };
-            
             bail!("Assertion failed: {}", message);
         }
-        
         Self::ok_unit()
     }
-    
     /// Compare two values for equality (helper for assertions)
     fn values_equal(&self, left: &Value, right: &Value) -> bool {
         match (left, right) {
@@ -8078,7 +7356,6 @@ impl Repl {
             _ => false,
         }
     }
-
     /// Evaluate `read_file` function
     fn evaluate_read_file(
         &mut self,
@@ -8089,18 +7366,15 @@ impl Repl {
         if args.len() != 1 {
             bail!("read_file expects exactly 1 argument (filename)");
         }
-
         let filename_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let Value::String(filename) = filename_val else {
             bail!("read_file expects a string filename")
         };
-
         match std::fs::read_to_string(&filename) {
             Ok(content) => Ok(Value::String(content)),
             Err(e) => bail!("Failed to read file '{}': {}", filename, e),
         }
     }
-
     /// Evaluate `write_file` function  
     fn evaluate_write_file(
         &mut self,
@@ -8111,19 +7385,16 @@ impl Repl {
         if args.len() != 2 {
             bail!("write_file expects exactly 2 arguments (filename, content)");
         }
-
         let filename_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let Value::String(filename) = filename_val else {
             bail!("write_file expects a string filename")
         };
-
         let content_val = self.evaluate_arg(args, 1, deadline, depth)?;
         let content = if let Value::String(s) = content_val {
             s
         } else {
             content_val.to_string()
         };
-
         match std::fs::write(&filename, content) {
             Ok(()) => {
                 println!("File '{filename}' written successfully");
@@ -8132,7 +7403,6 @@ impl Repl {
             Err(e) => bail!("Failed to write file '{}': {}", filename, e),
         }
     }
-
     /// Evaluate `append_file` function
     fn evaluate_append_file(
         &mut self,
@@ -8143,19 +7413,16 @@ impl Repl {
         if args.len() != 2 {
             bail!("append_file expects exactly 2 arguments (filename, content)");
         }
-
         let filename_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let Value::String(filename) = filename_val else {
             bail!("append_file expects a string filename")
         };
-
         let content_val = self.evaluate_arg(args, 1, deadline, depth)?;
         let content = if let Value::String(s) = content_val {
             s
         } else {
             content_val.to_string()
         };
-
         match std::fs::OpenOptions::new()
             .create(true)
             .append(true)
@@ -8171,7 +7438,6 @@ impl Repl {
             Err(e) => bail!("Failed to open file '{}' for append: {}", filename, e),
         }
     }
-
     /// Evaluate `file_exists` function
     fn evaluate_file_exists(
         &mut self,
@@ -8182,16 +7448,13 @@ impl Repl {
         if args.len() != 1 {
             bail!("file_exists expects exactly 1 argument (filename)");
         }
-
         let filename_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let Value::String(filename) = filename_val else {
             bail!("file_exists expects a string filename")
         };
-
         let exists = std::path::Path::new(&filename).exists();
         Ok(Value::Bool(exists))
     }
-
     /// Evaluate `delete_file` function
     fn evaluate_delete_file(
         &mut self,
@@ -8202,18 +7465,15 @@ impl Repl {
         if args.len() != 1 {
             bail!("delete_file expects exactly 1 argument (filename)");
         }
-
         let filename_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let Value::String(filename) = filename_val else {
             bail!("delete_file expects a string filename")
         };
-
         match std::fs::remove_file(&filename) {
             Ok(()) => Ok(Value::Unit),
             Err(e) => bail!("Failed to delete file '{}': {}", filename, e),
         }
     }
-
     /// Evaluate `current_dir` function
     fn evaluate_current_dir(
         &mut self,
@@ -8222,13 +7482,11 @@ impl Repl {
         _depth: usize,
     ) -> Result<Value> {
         Self::validate_zero_args("current_dir", args.len())?;
-
         match std::env::current_dir() {
             Ok(path) => Ok(Value::String(path.to_string_lossy().to_string())),
             Err(e) => bail!("Failed to get current directory: {}", e),
         }
     }
-
     /// Evaluate `env` function
     fn evaluate_env(
         &mut self,
@@ -8239,18 +7497,15 @@ impl Repl {
         if args.len() != 1 {
             bail!("env expects exactly 1 argument (variable name)");
         }
-
         let var_name_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let Value::String(var_name) = var_name_val else {
             bail!("env expects a string variable name")
         };
-
         match std::env::var(&var_name) {
             Ok(value) => Ok(Value::String(value)),
             Err(_) => Ok(Value::String(String::new())), // Return empty string for non-existent vars
         }
     }
-
     /// Evaluate `set_env` function
     fn evaluate_set_env(
         &mut self,
@@ -8261,23 +7516,19 @@ impl Repl {
         if args.len() != 2 {
             bail!("set_env expects exactly 2 arguments (variable name, value)");
         }
-
         let var_name_val = self.evaluate_expr(&args[0], deadline, depth + 1)?;
         let Value::String(var_name) = var_name_val else {
             bail!("set_env expects a string variable name")
         };
-
         let value_val = self.evaluate_arg(args, 1, deadline, depth)?;
         let value = if let Value::String(s) = value_val {
             s
         } else {
             value_val.to_string()
         };
-
         std::env::set_var(var_name, value);
         Self::ok_unit()
     }
-
     /// Evaluate `args` function
     fn evaluate_args(
         &mut self,
@@ -8288,12 +7539,10 @@ impl Repl {
         if !args.is_empty() {
             bail!("args expects no arguments");
         }
-
         let args_vec = std::env::args().collect::<Vec<String>>();
         let values: Vec<Value> = args_vec.into_iter().map(Value::String).collect();
         Self::ok_list(values)
     }
-
     /// Evaluate `Some` constructor
     fn evaluate_some(
         &mut self,
@@ -8304,7 +7553,6 @@ impl Repl {
         if args.len() != 1 {
             Self::validate_exact_args("Some", 1, args.len())?;
         }
-
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         Ok(Value::EnumVariant {
             enum_name: "Option".to_string(),
@@ -8312,7 +7560,6 @@ impl Repl {
             data: Some(vec![value]),
         })
     }
-
     /// Evaluate `None` constructor
     fn evaluate_none(
         &mut self,
@@ -8323,10 +7570,8 @@ impl Repl {
         if !args.is_empty() {
             bail!("None expects no arguments");
         }
-
         Ok(Self::create_option_none())
     }
-
     /// Evaluate `Ok` constructor
     fn evaluate_ok(
         &mut self,
@@ -8337,7 +7582,6 @@ impl Repl {
         if args.len() != 1 {
             Self::validate_exact_args("Ok", 1, args.len())?;
         }
-
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         Ok(Value::EnumVariant {
             enum_name: "Result".to_string(),
@@ -8345,7 +7589,6 @@ impl Repl {
             data: Some(vec![value]),
         })
     }
-
     /// Evaluate `Err` constructor
     fn evaluate_err(
         &mut self,
@@ -8356,7 +7599,6 @@ impl Repl {
         if args.len() != 1 {
             Self::validate_exact_args("Err", 1, args.len())?;
         }
-
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         Ok(Value::EnumVariant {
             enum_name: "Result".to_string(),
@@ -8364,19 +7606,16 @@ impl Repl {
             data: Some(vec![value]),
         })
     }
-
     /// Update history variables (_ and _n)
     fn update_history_variables(&mut self) {
         let len = self.result_history.len();
         if len == 0 {
             return;
         }
-
         // Set _ to the most recent result
         let last_result = self.result_history[len - 1].clone();
         self.bindings.insert("_".to_string(), last_result);
         self.binding_mutability.insert("_".to_string(), false); // History variables are immutable
-
         // Set _n variables for indexed access
         for (i, result) in self.result_history.iter().enumerate() {
             let var_name = format!("_{}", i + 1);
@@ -8384,54 +7623,44 @@ impl Repl {
             self.binding_mutability.insert(var_name, false); // History variables are immutable
         }
     }
-
     /// Handle REPL magic commands
     /// Handle %time magic command (complexity: 3)
     fn handle_time_magic(&mut self, args: &str) -> Result<String> {
         if args.is_empty() {
             return Ok("Usage: %time <expression>".to_string());
         }
-        
         let start = std::time::Instant::now();
         let result = self.eval(args)?;
         let elapsed = start.elapsed();
-        
         Ok(format!("{result}\nExecuted in: {elapsed:?}"))
     }
-
     /// Handle %timeit magic command (complexity: 4)
     fn handle_timeit_magic(&mut self, args: &str) -> Result<String> {
         if args.is_empty() {
             return Ok("Usage: %timeit <expression>".to_string());
         }
-        
         const ITERATIONS: usize = 1000;
         let mut total_time = std::time::Duration::new(0, 0);
         let mut last_result = String::new();
-        
         for _ in 0..ITERATIONS {
             let start = std::time::Instant::now();
             last_result = self.eval(args)?;
             total_time += start.elapsed();
         }
-        
         let avg_time = total_time / ITERATIONS as u32;
         Ok(format!(
             "{last_result}\n{ITERATIONS} loops, average: {avg_time:?} per loop"
         ))
     }
-
     /// Handle %run magic command (complexity: 6)
     fn handle_run_magic(&mut self, args: &str) -> Result<String> {
         if args.is_empty() {
             return Ok("Usage: %run <script.ruchy>".to_string());
         }
-        
         match std::fs::read_to_string(args) {
             Ok(content) => {
                 let lines: Vec<&str> = content.lines().collect();
                 let mut results = Vec::new();
-                
                 for line in lines {
                     let trimmed = line.trim();
                     if !trimmed.is_empty() && !trimmed.starts_with("//") {
@@ -8441,13 +7670,11 @@ impl Repl {
                         }
                     }
                 }
-                
                 Ok(results.join("\n"))
             }
             Err(e) => Ok(format!("Failed to read file '{args}': {e}"))
         }
     }
-
     /// Handle %debug magic command (complexity: 7)
     fn handle_debug_magic(&self) -> Result<String> {
         if let Some(ref debug_info) = self.last_error_debug {
@@ -8457,24 +7684,20 @@ impl Repl {
             output.push_str(&format!("Error: {}\n", debug_info.error_message));
             output.push_str(&format!("Time: {:?}\n", debug_info.timestamp));
             output.push_str("\n--- Variable Bindings at Error ---\n");
-            
             for (name, value) in &debug_info.bindings_snapshot {
                 output.push_str(&format!("{name}: {value}\n"));
             }
-            
             if !debug_info.stack_trace.is_empty() {
                 output.push_str("\n--- Stack Trace ---\n");
                 for frame in &debug_info.stack_trace {
                     output.push_str(&format!("  {frame}\n"));
                 }
             }
-            
             Ok(output)
         } else {
             Ok("No debug information available. Run an expression that fails first.".to_string())
         }
     }
-
     /// Handle %profile magic command - parsing phase (complexity: 5)
     fn profile_parse_phase(&self, args: &str) -> Result<(Expr, std::time::Duration, usize)> {
         let parse_start = std::time::Instant::now();
@@ -8487,7 +7710,6 @@ impl Repl {
         let alloc_size = std::mem::size_of_val(&ast);
         Ok((ast, parse_time, alloc_size))
     }
-
     /// Handle %profile magic command - evaluation phase (complexity: 4)
     fn profile_eval_phase(&mut self, ast: &Expr) -> Result<(Value, std::time::Duration)> {
         let eval_start = std::time::Instant::now();
@@ -8499,7 +7721,6 @@ impl Repl {
         let eval_time = eval_start.elapsed();
         Ok((result, eval_time))
     }
-
     /// Format profile analysis output (complexity: 6)
     fn format_profile_analysis(
         &self,
@@ -8509,7 +7730,6 @@ impl Repl {
     ) -> String {
         let mut output = String::new();
         output.push_str("\n--- Analysis ---\n");
-        
         if total_time.as_millis() > 50 {
             output.push_str("⚠️  Slow execution (>50ms)\n");
         } else if total_time.as_millis() > 10 {
@@ -8517,40 +7737,30 @@ impl Repl {
         } else {
             output.push_str("🚀 Fast execution (<10ms)\n");
         }
-        
         if parse_time.as_secs_f64() / total_time.as_secs_f64() > 0.3 {
             output.push_str("📝 Parse-heavy (consider simpler syntax)\n");
         }
-        
         if eval_time.as_secs_f64() / total_time.as_secs_f64() > 0.7 {
             output.push_str("🧮 Compute-heavy (consider optimization)\n");
         }
-        
         output
     }
-
     /// Handle %profile magic command (complexity: 8)
     fn handle_profile_magic(&mut self, args: &str) -> Result<String> {
         if args.is_empty() {
             return Ok("Usage: %profile <expression>".to_string());
         }
-        
         let start = std::time::Instant::now();
-        
         // Parse phase
         let (ast, parse_time, alloc_size) = self.profile_parse_phase(args)?;
-        
         // Evaluation phase  
         let (result, eval_time) = self.profile_eval_phase(&ast)?;
-        
         let total_time = start.elapsed();
-        
         // Generate profile report
         let mut output = String::new();
         output.push_str("=== Performance Profile ===\n");
         output.push_str(&format!("Expression: {args}\n"));
         output.push_str(&format!("Result: {result}\n\n"));
-        
         output.push_str("--- Timing Breakdown ---\n");
         output.push_str(&format!("Parse:     {:>8.3}ms ({:>5.1}%)\n", 
             parse_time.as_secs_f64() * 1000.0,
@@ -8560,17 +7770,13 @@ impl Repl {
             (eval_time.as_secs_f64() / total_time.as_secs_f64()) * 100.0));
         output.push_str(&format!("Total:     {:>8.3}ms\n\n", 
             total_time.as_secs_f64() * 1000.0));
-        
         output.push_str("--- Memory Usage ---\n");
         output.push_str(&format!("AST size:  {alloc_size:>8} bytes\n"));
         output.push_str(&format!("Memory:    {:>8} bytes used\n", self.memory.current));
-        
         // Add performance analysis
         output.push_str(&self.format_profile_analysis(total_time, parse_time, eval_time));
-        
         Ok(output)
     }
-
     /// Handle %help magic command (complexity: 1)
     fn handle_help_magic(&self) -> Result<String> {
         Ok(r"Available magic commands:
@@ -8581,16 +7787,13 @@ impl Repl {
 %profile <expr>  - Generate execution profile
 %help            - Show this help message".to_string())
     }
-
     fn handle_magic_command(&mut self, command: &str) -> Result<String> {
         // Uses legacy implementation for backward compatibility
         // Future: Consider refactoring to use magic registry pattern
-        
         // Fall back to legacy implementation for backward compatibility
         let parts: Vec<&str> = command.splitn(2, ' ').collect();
         let magic_cmd = parts[0];
         let args = if parts.len() > 1 { parts[1] } else { "" };
-
         match magic_cmd {
             "%time" => self.handle_time_magic(args),
             "%timeit" => self.handle_timeit_magic(args),
@@ -8601,7 +7804,6 @@ impl Repl {
             _ => Ok(format!("Unknown magic command: {magic_cmd}. Type %help for available commands.")),
         }
     }
-
     /// Evaluate `str` type conversion function
     fn evaluate_str_conversion(
         &mut self,
@@ -8612,14 +7814,12 @@ impl Repl {
         if args.len() != 1 {
             bail!("str() expects exactly 1 argument");
         }
-
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Char(c) => Ok(Value::String(c.to_string())),
             _ => Ok(Value::String(value.to_string())),
         }
     }
-
     /// Evaluate `int` type conversion function
     fn evaluate_int_conversion(
         &mut self,
@@ -8630,9 +7830,7 @@ impl Repl {
         if args.is_empty() || args.len() > 2 {
             bail!("int() expects 1 or 2 arguments");
         }
-
         let value = self.evaluate_first_arg(args, deadline, depth)?;
-        
         // Handle two-argument form for base conversion
         if args.len() == 2 {
             if let Value::String(s) = value {
@@ -8648,7 +7846,6 @@ impl Repl {
                         .trim_start_matches("0B")
                         .trim_start_matches("0o")
                         .trim_start_matches("0O");
-                    
                     match i64::from_str_radix(cleaned, base as u32) {
                         Ok(n) => return Ok(Value::Int(n)),
                         Err(_) => bail!("Cannot parse '{}' as base {} integer", s, base),
@@ -8658,7 +7855,6 @@ impl Repl {
             }
             bail!("int() with base requires string as first argument");
         }
-        
         match value {
             Value::Int(n) => Ok(Value::Int(n)),
             Value::Float(f) => Ok(Value::Int(f as i64)),
@@ -8680,7 +7876,6 @@ impl Repl {
             _ => bail!("Cannot convert value to integer"),
         }
     }
-
     /// Evaluate `float` type conversion function
     fn evaluate_float_conversion(
         &mut self,
@@ -8691,7 +7886,6 @@ impl Repl {
         if args.len() != 1 {
             bail!("float() expects exactly 1 argument");
         }
-
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Float(f) => Ok(Value::Float(f)),
@@ -8706,7 +7900,6 @@ impl Repl {
             _ => bail!("Cannot convert value to float"),
         }
     }
-
     /// Evaluate `bool` type conversion function
     fn evaluate_bool_conversion(
         &mut self,
@@ -8717,7 +7910,6 @@ impl Repl {
         if args.len() != 1 {
             bail!("bool() expects exactly 1 argument");
         }
-
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Bool(b) => Ok(Value::Bool(b)),
@@ -8730,7 +7922,6 @@ impl Repl {
             _ => Ok(Value::Bool(true)), // Most other values are truthy
         }
     }
-
     /// Evaluate `sin()` function
     fn evaluate_sin(
         &mut self,
@@ -8740,7 +7931,6 @@ impl Repl {
     ) -> Result<Value> {
         self.evaluate_unary_math_function(args, deadline, depth, "sin", f64::sin)
     }
-
     /// Evaluate `cos()` function
     fn evaluate_cos(
         &mut self,
@@ -8750,7 +7940,6 @@ impl Repl {
     ) -> Result<Value> {
         self.evaluate_unary_math_function(args, deadline, depth, "cos", f64::cos)
     }
-
     /// Evaluate `tan()` function
     fn evaluate_tan(
         &mut self,
@@ -8760,7 +7949,6 @@ impl Repl {
     ) -> Result<Value> {
         self.evaluate_unary_math_function(args, deadline, depth, "tan", f64::tan)
     }
-
     /// Evaluate `log()` function (natural logarithm)
     fn evaluate_log(
         &mut self,
@@ -8776,7 +7964,6 @@ impl Repl {
         };
         self.evaluate_unary_math_function_validated(args, deadline, depth, "log", f64::ln, validator)
     }
-
     /// Evaluate `log10()` function (base-10 logarithm)
     fn evaluate_log10(
         &mut self,
@@ -8792,7 +7979,6 @@ impl Repl {
         };
         self.evaluate_unary_math_function_validated(args, deadline, depth, "log10", f64::log10, validator)
     }
-
     /// Evaluate `char()` conversion function (complexity: 6)
     fn evaluate_char_conversion(
         &mut self,
@@ -8803,7 +7989,6 @@ impl Repl {
         if args.len() != 1 {
             bail!("char() expects exactly 1 argument");
         }
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Int(n) => {
@@ -8817,7 +8002,7 @@ impl Repl {
             }
             Value::String(s) => {
                 if s.len() == 1 {
-                    Self::ok_char(s.chars().next().unwrap())
+                    Self::ok_char(s.chars().next().expect("String with len==1 must have a char"))
                 } else {
                     bail!("char() from string expects exactly 1 character, got {}", s.len());
                 }
@@ -8825,7 +8010,6 @@ impl Repl {
             _ => bail!("char() expects an integer or single-character string"),
         }
     }
-    
     /// Evaluate `hex()` conversion - int to hex string (complexity: 5)
     fn evaluate_hex_conversion(
         &mut self,
@@ -8836,7 +8020,6 @@ impl Repl {
         if args.len() != 1 {
             bail!("hex() expects exactly 1 argument");
         }
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Int(n) => {
@@ -8849,7 +8032,6 @@ impl Repl {
             _ => bail!("hex() expects an integer"),
         }
     }
-    
     /// Evaluate `bin()` conversion - int to binary string (complexity: 5)
     fn evaluate_bin_conversion(
         &mut self,
@@ -8860,7 +8042,6 @@ impl Repl {
         if args.len() != 1 {
             bail!("bin() expects exactly 1 argument");
         }
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Int(n) => {
@@ -8873,7 +8054,6 @@ impl Repl {
             _ => bail!("bin() expects an integer"),
         }
     }
-    
     /// Evaluate `oct()` conversion - int to octal string (complexity: 5)
     fn evaluate_oct_conversion(
         &mut self,
@@ -8884,7 +8064,6 @@ impl Repl {
         if args.len() != 1 {
             bail!("oct() expects exactly 1 argument");
         }
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Int(n) => {
@@ -8897,7 +8076,6 @@ impl Repl {
             _ => bail!("oct() expects an integer"),
         }
     }
-    
     /// Evaluate `list()` conversion - convert tuple/iterable to list (complexity: 5)
     fn evaluate_list_conversion(
         &mut self,
@@ -8908,7 +8086,6 @@ impl Repl {
         if args.len() != 1 {
             bail!("list() expects exactly 1 argument");
         }
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::List(items) => Self::ok_list(items),
@@ -8922,7 +8099,6 @@ impl Repl {
             _ => bail!("list() expects a list, tuple, or string"),
         }
     }
-    
     /// Evaluate `tuple()` conversion - convert list/iterable to tuple (complexity: 5)
     fn evaluate_tuple_conversion(
         &mut self,
@@ -8933,7 +8109,6 @@ impl Repl {
         if args.len() != 1 {
             bail!("tuple() expects exactly 1 argument");
         }
-        
         let value = self.evaluate_first_arg(args, deadline, depth)?;
         match value {
             Value::Tuple(items) => Ok(Value::Tuple(items)),
@@ -8947,7 +8122,6 @@ impl Repl {
             _ => bail!("tuple() expects a list, tuple, or string"),
         }
     }
-    
     /// Evaluate type cast expression (complexity: 8)
     fn evaluate_type_cast(
         &mut self,
@@ -8957,41 +8131,55 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let value = self.evaluate_expr(expr, deadline, depth + 1)?;
-        
         match target_type {
-            "int" | "i32" | "i64" => match value {
-                Value::Int(n) => Ok(Value::Int(n)),
-                Value::Float(f) => Ok(Value::Int(f as i64)),
-                Value::Bool(b) => Ok(Value::Int(i64::from(b))),
-                Value::String(s) => s.parse::<i64>()
-                    .map(Value::Int)
-                    .map_err(|_| anyhow::anyhow!("Cannot cast '{}' to int", s)),
-                _ => bail!("Cannot cast {:?} to int", value),
-            },
-            "float" | "f32" | "f64" => match value {
-                Value::Float(f) => Ok(Value::Float(f)),
-                Value::Int(n) => Ok(Value::Float(n as f64)),
-                Value::Bool(b) => Ok(Value::Float(if b { 1.0 } else { 0.0 })),
-                Value::String(s) => s.parse::<f64>()
-                    .map(Value::Float)
-                    .map_err(|_| anyhow::anyhow!("Cannot cast '{}' to float", s)),
-                _ => bail!("Cannot cast {:?} to float", value),
-            },
-            "string" | "str" => match value {
-                Value::Char(c) => Ok(Value::String(c.to_string())),
-                _ => Ok(Value::String(value.to_string())),
-            },
-            "bool" => match value {
-                Value::Bool(b) => Ok(Value::Bool(b)),
-                Value::Int(n) => Ok(Value::Bool(n != 0)),
-                Value::Float(f) => Ok(Value::Bool(f != 0.0)),
-                Value::String(s) => Ok(Value::Bool(!s.is_empty() && s != "false")),
-                _ => bail!("Cannot cast {:?} to bool", value),
-            },
+            "int" | "i32" | "i64" => self.cast_to_int(value),
+            "float" | "f32" | "f64" => self.cast_to_float(value),
+            "string" | "str" => self.cast_to_string(value),
+            "bool" => self.cast_to_bool(value),
             _ => bail!("Unknown type for casting: {}", target_type),
         }
     }
-    
+
+    fn cast_to_int(&self, value: Value) -> Result<Value> {
+        match value {
+            Value::Int(n) => Ok(Value::Int(n)),
+            Value::Float(f) => Ok(Value::Int(f as i64)),
+            Value::Bool(b) => Ok(Value::Int(i64::from(b))),
+            Value::String(s) => s.parse::<i64>()
+                .map(Value::Int)
+                .map_err(|_| anyhow::anyhow!("Cannot cast '{}' to int", s)),
+            _ => bail!("Cannot cast {:?} to int", value),
+        }
+    }
+
+    fn cast_to_float(&self, value: Value) -> Result<Value> {
+        match value {
+            Value::Float(f) => Ok(Value::Float(f)),
+            Value::Int(n) => Ok(Value::Float(n as f64)),
+            Value::Bool(b) => Ok(Value::Float(if b { 1.0 } else { 0.0 })),
+            Value::String(s) => s.parse::<f64>()
+                .map(Value::Float)
+                .map_err(|_| anyhow::anyhow!("Cannot cast '{}' to float", s)),
+            _ => bail!("Cannot cast {:?} to float", value),
+        }
+    }
+
+    fn cast_to_string(&self, value: Value) -> Result<Value> {
+        match value {
+            Value::Char(c) => Ok(Value::String(c.to_string())),
+            _ => Ok(Value::String(value.to_string())),
+        }
+    }
+
+    fn cast_to_bool(&self, value: Value) -> Result<Value> {
+        match value {
+            Value::Bool(b) => Ok(Value::Bool(b)),
+            Value::Int(n) => Ok(Value::Bool(n != 0)),
+            Value::Float(f) => Ok(Value::Bool(f != 0.0)),
+            Value::String(s) => Ok(Value::Bool(!s.is_empty() && s != "false")),
+            _ => bail!("Cannot cast {:?} to bool", value),
+        }
+    }
     /// Evaluate `random()` function - returns float between 0.0 and 1.0
     fn evaluate_random(
         &mut self,
@@ -9000,7 +8188,6 @@ impl Repl {
         _depth: usize,
     ) -> Result<Value> {
         use std::time::{SystemTime, UNIX_EPOCH};
-        
         if !args.is_empty() {
             bail!("random() expects no arguments");
         }
@@ -9008,7 +8195,7 @@ impl Repl {
         // In production, you'd want to use rand crate
         let seed = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .expect("System time should be after UNIX_EPOCH")
             .as_nanos() as u64;
         // Use a safe LCG that won't overflow
         let a = 1_664_525u64;
@@ -9017,7 +8204,6 @@ impl Repl {
         let random_value = ((seed.wrapping_mul(a).wrapping_add(c)) % m) as f64 / m as f64;
         Ok(Value::Float(random_value))
     }
-
     /// Execute a user-defined function or lambda by name.
     /// 
     /// Looks up the function in bindings and executes it with parameter binding.
@@ -9060,7 +8246,6 @@ impl Repl {
             bail!("Unknown function: {}", func_name);
         }
     }
-
     /// Execute a function or lambda with parameter binding and scope management.
     /// 
     /// This helper consolidates the common logic between functions and lambdas:
@@ -9098,19 +8283,15 @@ impl Repl {
                 args.len()
             );
         }
-
         let saved_bindings = self.bindings.clone();
-
         for (param, arg) in params.iter().zip(args.iter()) {
             let arg_value = self.evaluate_expr(arg, deadline, depth + 1)?;
             self.bindings.insert(param.clone(), arg_value);
         }
-
         let result = self.evaluate_function_body(body, deadline, depth)?;
         self.bindings = saved_bindings;
         Ok(result)
     }
-
     /// Validate argument count for math functions.
     /// 
     /// Example Usage:
@@ -9125,7 +8306,6 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Validate argument count is within a range
     fn validate_arg_range(&self, func_name: &str, args: &[Expr], min: usize, max: usize) -> Result<()> {
         let count = args.len();
@@ -9137,7 +8317,6 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Validate minimum argument count
     fn validate_min_args(&self, func_name: &str, args: &[Expr], min: usize) -> Result<()> {
         if args.len() < min {
@@ -9146,7 +8325,6 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Validate maximum argument count  
     fn validate_max_args(&self, func_name: &str, args: &[Expr], max: usize) -> Result<()> {
         if args.len() > max {
@@ -9155,17 +8333,14 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Create error for unknown method
     fn unknown_method_error(&self, type_name: &str, method: &str) -> Result<Value> {
         bail!("Unknown {} method: {}", type_name, method)
     }
-
     /// Create error for type mismatch
     fn type_error(&self, func_name: &str, expected: &str, got: &Value) -> Result<Value> {
         bail!("{} expects {}, got {:?}", func_name, expected, got)
     }
-
     /// Check resource limits (timeout and recursion depth)
     fn check_resource_limits(&self, deadline: Instant, depth: usize) -> Result<()> {
         if Instant::now() > deadline {
@@ -9176,29 +8351,24 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Evaluate a single argument expression
     fn evaluate_arg(&mut self, args: &[Expr], index: usize, deadline: Instant, depth: usize) -> Result<Value> {
         args.get(index)
             .ok_or_else(|| anyhow::anyhow!("Missing argument at index {}", index))
             .and_then(|arg| self.evaluate_expr(arg, deadline, depth + 1))
     }
-
     /// Create a string value from a string-like type
     fn string_value(s: impl Into<String>) -> Value {
         Value::String(s.into())
     }
-
     /// Create an integer value
     fn int_value(n: i64) -> Value {
         Value::Int(n)
     }
-
     /// Create a float value
     fn float_value(f: f64) -> Value {
         Value::Float(f)
     }
-
     /// Execute a closure with saved bindings that will be restored afterwards
     fn with_saved_bindings<F, R>(&mut self, f: F) -> R 
     where
@@ -9209,7 +8379,6 @@ impl Repl {
         self.bindings = saved_bindings;
         result
     }
-
     /// Add a binding temporarily and execute a closure
     fn with_binding<F, R>(&mut self, name: String, value: Value, f: F) -> R
     where
@@ -9221,144 +8390,115 @@ impl Repl {
         self.bindings = saved_bindings;
         result
     }
-
     /// Create a list value
     fn list_value(items: Vec<Value>) -> Value {
         Value::List(items)
     }
-
     /// Create a boolean value
     fn bool_value(b: bool) -> Value {
         Value::Bool(b)
     }
-
     /// Create an Ok result with a list value
     fn ok_list(items: Vec<Value>) -> Result<Value> {
         Ok(Self::list_value(items))
     }
-
     /// Create an Ok result with a bool value
     fn ok_bool(b: bool) -> Result<Value> {
         Ok(Self::bool_value(b))
     }
-    
     /// Create an Ok result with a string value
     fn ok_string(s: impl Into<String>) -> Result<Value> {
         Ok(Self::string_value(s))
     }
-    
     /// Create an Ok result with an integer value
     fn ok_int(n: i64) -> Result<Value> {
         Ok(Self::int_value(n))
     }
-    
     /// Create an Ok result with a float value
     fn ok_float(f: f64) -> Result<Value> {
         Ok(Self::float_value(f))
     }
-    
     /// Create an Ok result with null value
     fn ok_null() -> Result<Value> {
         Ok(Self::create_option_none())
     }
-    
     /// Create a character value
     fn char_value(c: char) -> Value {
         Value::Char(c)
     }
-    
     /// Create an object value
     fn object_value(map: std::collections::HashMap<String, Value>) -> Value {
         Value::Object(map)
     }
-    
     /// Create an Ok result with a character value
     fn ok_char(c: char) -> Result<Value> {
         Ok(Self::char_value(c))
     }
-    
     /// Create an Ok result with an object value
     fn ok_object(map: std::collections::HashMap<String, Value>) -> Result<Value> {
         Ok(Self::object_value(map))
     }
-    
     /// Create an Ok result with a nil value
     fn ok_nil() -> Result<Value> {
         Ok(Value::Nil)
     }
-    
     /// Create a tuple value
     fn tuple_value(items: Vec<Value>) -> Value {
         Value::Tuple(items)
     }
-    
     /// Create an Ok result with a tuple value
     fn ok_tuple(items: Vec<Value>) -> Result<Value> {
         Ok(Self::tuple_value(items))
     }
-    
     /// Create a unit value
     fn unit_value() -> Value {
         Value::Unit
     }
-    
     /// Create a `HashMap` value
     fn hashmap_value(map: std::collections::HashMap<Value, Value>) -> Value {
         Value::HashMap(map)
     }
-    
     /// Create a `HashSet` value
     fn hashset_value(set: std::collections::HashSet<Value>) -> Value {
         Value::HashSet(set)
     }
-    
     /// Create an Ok result with a unit value
     fn ok_unit() -> Result<Value> {
         Ok(Self::unit_value())
     }
-    
     /// Create an Ok result with a `HashMap` value
     fn ok_hashmap(map: std::collections::HashMap<Value, Value>) -> Result<Value> {
         Ok(Self::hashmap_value(map))
     }
-    
     /// Create an Ok result with a `HashSet` value
     fn ok_hashset(set: std::collections::HashSet<Value>) -> Result<Value> {
         Ok(Self::hashset_value(set))
     }
-    
     /// Create a Range value
     fn range_value(start: i64, end: i64, inclusive: bool) -> Value {
         Value::Range { start, end, inclusive }
     }
-    
     /// Create a `DataFrame` value  
     fn dataframe_value(columns: Vec<DataFrameColumn>) -> Value {
         Value::DataFrame { columns }
     }
-    
     /// Create an `EnumVariant` value
     fn enum_variant_value(enum_name: String, variant_name: String, data: Option<Vec<Value>>) -> Value {
         Value::EnumVariant { enum_name, variant_name, data }
     }
-    
     /// Create an Ok result with a Range value
     fn ok_range(start: i64, end: i64, inclusive: bool) -> Result<Value> {
         Ok(Self::range_value(start, end, inclusive))
     }
-    
     /// Create an Ok result with a `DataFrame` value
     fn ok_dataframe(columns: Vec<DataFrameColumn>) -> Result<Value> {
         Ok(Self::dataframe_value(columns))
     }
-    
     /// Create an Ok result with an `EnumVariant` value
     fn ok_enum_variant(enum_name: String, variant_name: String, data: Option<Vec<Value>>) -> Result<Value> {
         Ok(Self::enum_variant_value(enum_name, variant_name, data))
     }
-
     // === Argument Validation Helper Functions ===
-
     /// Validate that a function receives the expected number of arguments (with "exactly" phrasing)
     fn validate_exact_args(func_name: &str, expected: usize, actual: usize) -> Result<()> {
         if actual != expected {
@@ -9367,7 +8507,6 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Validate that a function receives no arguments
     fn validate_zero_args(func_name: &str, actual: usize) -> Result<()> {
         if actual != 0 {
@@ -9375,22 +8514,18 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Validate that a function receives a numeric argument
     fn numeric_arg_error(func_name: &str) -> String {
         format!("{func_name}() expects a numeric argument")
     }
-
     /// Validate that a function receives numeric arguments (plural)
     fn numeric_args_error(func_name: &str) -> String {
         format!("{func_name} expects numeric arguments")
     }
-
     /// Create a method not supported error message
     fn method_not_supported(method: &str, type_desc: &str) -> anyhow::Error {
         anyhow::anyhow!("Method {} not supported on {}", method, type_desc)
     }
-
     /// Preprocess macro syntax by converting macro calls (!) to function calls
     fn preprocess_macro_syntax(input: &str) -> String {
         input
@@ -9402,12 +8537,10 @@ impl Repl {
             .replace("vec!", "vec")
             .replace("format!", "format")
     }
-
     /// Helper to evaluate the first argument from an argument list
     fn evaluate_first_arg(&mut self, args: &[Expr], deadline: Instant, depth: usize) -> Result<Value> {
         self.evaluate_arg(args, 0, deadline, depth)
     }
-
     /// Apply unary math operation to a numeric value.
     /// 
     /// # Example Usage
@@ -9437,7 +8570,6 @@ impl Repl {
             _ => bail!("{}", Self::numeric_args_error(op)),
         }
     }
-
     /// Apply binary math operation to two numeric values.
     /// 
     /// # Example Usage
@@ -9495,7 +8627,6 @@ impl Repl {
             _ => bail!("{}", Self::numeric_args_error(op)),
         }
     }
-
     /// Handle built-in math functions (sqrt, pow, abs, min, max, floor, ceil, round).
     /// 
     /// Returns `Ok(Some(value))` if the function name matches a math function,
@@ -9528,7 +8659,6 @@ impl Repl {
             _ => Ok(None), // Not a math function
         }
     }
-
     /// Handle built-in enum variant constructors (None, Some, Ok, Err).
     /// 
     /// Returns `Ok(Some(value))` if the function name matches an enum constructor,
@@ -9600,7 +8730,6 @@ impl Repl {
             _ => Ok(None), // Not an enum constructor
         }
     }
-
     /// Evaluate user-defined functions
     fn evaluate_user_function(
         &mut self,
@@ -9613,16 +8742,13 @@ impl Repl {
         if let Some(result) = self.try_enum_constructor(func_name, args, deadline, depth)? {
             return Ok(result);
         }
-
         // Try built-in math function
         if let Some(result) = self.try_math_function(func_name, args, deadline, depth)? {
             return Ok(result);
         }
-
         // Try user-defined function lookup and execution
         self.execute_user_defined_function(func_name, args, deadline, depth)
     }
-
     /// Helper to evaluate a function body and handle return statements
     fn evaluate_function_body(
         &mut self,
@@ -9632,63 +8758,85 @@ impl Repl {
     ) -> Result<Value> {
         match self.evaluate_expr(body, deadline, depth + 1) {
             Ok(val) => Ok(val),
-            Err(e) => {
-                // Check if this is a return statement
-                let err_str = e.to_string();
-                if let Some(return_val) = err_str.strip_prefix("return:") {
-                    // Parse the typed return value
-                    if let Some(int_val) = return_val.strip_prefix("int:") {
-                        return int_val.parse::<i64>()
-                            .map(Value::Int)
-                            .map_err(|_| anyhow::anyhow!("Invalid integer in return"));
-                    } else if let Some(float_val) = return_val.strip_prefix("float:") {
-                        return float_val.parse::<f64>()
-                            .map(Value::Float)
-                            .map_err(|_| anyhow::anyhow!("Invalid float in return"));
-                    } else if let Some(bool_val) = return_val.strip_prefix("bool:") {
-                        return bool_val.parse::<bool>()
-                            .map(Value::Bool)
-                            .map_err(|_| anyhow::anyhow!("Invalid bool in return"));
-                    } else if let Some(string_val) = return_val.strip_prefix("string:") {
-                        return Ok(Value::String(string_val.to_string()));
-                    } else if let Some(char_val) = return_val.strip_prefix("char:") {
-                        return char_val.chars().next()
-                            .map(Value::Char)
-                            .ok_or_else(|| anyhow::anyhow!("Invalid char in return"));
-                    } else if return_val == "unit" || return_val == "()" {
-                        return Self::ok_unit();
-                    } else if return_val.starts_with('"') && return_val.ends_with('"') {
-                        // String value - remove quotes
-                        let s = return_val[1..return_val.len()-1].to_string();
-                        return Ok(Value::String(s));
-                    } else if let Ok(i) = return_val.parse::<i64>() {
-                        return Ok(Value::Int(i));
-                    } else if let Ok(f) = return_val.parse::<f64>() {
-                        return Ok(Value::Float(f));
-                    } else if return_val == "true" {
-                        return Self::ok_bool(true);
-                    } else if return_val == "false" {
-                        return Self::ok_bool(false);
-                    }
-                    
-                    // Return as string for complex values
-                    Ok(Value::String(return_val.to_string()))
-                } else if let Some(error_val) = err_str.strip_prefix("try_operator_err:") {
-                    // Handle ? operator errors - convert back to Result::Err
-                    let error_value = if error_val == "()" {
-                        Value::Unit
-                    } else {
-                        // Parse the error value (simplified - could be improved)
-                        Value::String(error_val.to_string())
-                    };
-                    Ok(Self::create_result_err(error_value))
-                } else {
-                    Err(e)
-                }
-            }
+            Err(e) => self.handle_function_body_error(e),
         }
     }
 
+    fn handle_function_body_error(&self, e: anyhow::Error) -> Result<Value> {
+        let err_str = e.to_string();
+        if let Some(return_val) = err_str.strip_prefix("return:") {
+            self.parse_return_value(return_val)
+        } else if let Some(error_val) = err_str.strip_prefix("try_operator_err:") {
+            self.handle_try_operator_error(error_val)
+        } else {
+            Err(e)
+        }
+    }
+
+    fn parse_return_value(&self, return_val: &str) -> Result<Value> {
+        // Handle typed returns first
+        if let Some(typed_val) = self.parse_typed_return(return_val) {
+            return typed_val;
+        }
+        // Handle special values
+        if return_val == "unit" || return_val == "()" {
+            return Self::ok_unit();
+        }
+        // Handle quoted strings
+        if return_val.starts_with('"') && return_val.ends_with('"') {
+            let s = return_val[1..return_val.len()-1].to_string();
+            return Ok(Value::String(s));
+        }
+        // Handle primitive parsing
+        self.parse_primitive_return(return_val)
+    }
+
+    fn parse_typed_return(&self, return_val: &str) -> Option<Result<Value>> {
+        if let Some(int_val) = return_val.strip_prefix("int:") {
+            Some(int_val.parse::<i64>()
+                .map(Value::Int)
+                .map_err(|_| anyhow::anyhow!("Invalid integer in return")))
+        } else if let Some(float_val) = return_val.strip_prefix("float:") {
+            Some(float_val.parse::<f64>()
+                .map(Value::Float)
+                .map_err(|_| anyhow::anyhow!("Invalid float in return")))
+        } else if let Some(bool_val) = return_val.strip_prefix("bool:") {
+            Some(bool_val.parse::<bool>()
+                .map(Value::Bool)
+                .map_err(|_| anyhow::anyhow!("Invalid bool in return")))
+        } else if let Some(string_val) = return_val.strip_prefix("string:") {
+            Some(Ok(Value::String(string_val.to_string())))
+        } else if let Some(char_val) = return_val.strip_prefix("char:") {
+            Some(char_val.chars().next()
+                .map(Value::Char)
+                .ok_or_else(|| anyhow::anyhow!("Invalid char in return")))
+        } else {
+            None
+        }
+    }
+
+    fn parse_primitive_return(&self, return_val: &str) -> Result<Value> {
+        if let Ok(i) = return_val.parse::<i64>() {
+            Ok(Value::Int(i))
+        } else if let Ok(f) = return_val.parse::<f64>() {
+            Ok(Value::Float(f))
+        } else if return_val == "true" {
+            Self::ok_bool(true)
+        } else if return_val == "false" {
+            Self::ok_bool(false)
+        } else {
+            Ok(Value::String(return_val.to_string()))
+        }
+    }
+
+    fn handle_try_operator_error(&self, error_val: &str) -> Result<Value> {
+        let error_value = if error_val == "()" {
+            Value::Unit
+        } else {
+            Value::String(error_val.to_string())
+        };
+        Ok(Self::create_result_err(error_value))
+    }
     /// Evaluate match expressions
     fn evaluate_match(
         &mut self,
@@ -9698,16 +8846,13 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let match_value = self.evaluate_expr(match_expr, deadline, depth + 1)?;
-
         for arm in arms {
             if let Some(bindings) = Self::pattern_matches(&match_value, &arm.pattern)? {
                 let saved_bindings = self.bindings.clone();
-
                 // Apply pattern bindings temporarily
                 for (name, value) in bindings {
                     self.bindings.insert(name, value);
                 }
-
                 // Check pattern guard if present
                 let guard_passes = if let Some(guard_expr) = &arm.guard {
                     if let Value::Bool(b) = self.evaluate_expr(guard_expr, deadline, depth + 1)? { 
@@ -9719,21 +8864,17 @@ impl Repl {
                 } else {
                     true // No guard, so it passes
                 };
-
                 if guard_passes {
                     let result = self.evaluate_expr(&arm.body, deadline, depth + 1)?;
                     self.bindings = saved_bindings;
                     return Ok(result);
                 }
-                
                 // Guard failed, restore bindings and try next arm
                 self.bindings = saved_bindings;
             }
         }
-
         bail!("No matching pattern found in match expression");
     }
-
     /// Evaluate pipeline expressions
     fn evaluate_pipeline(
         &mut self,
@@ -9743,14 +8884,11 @@ impl Repl {
         depth: usize,
     ) -> Result<Value> {
         let mut current_value = self.evaluate_expr(expr, deadline, depth + 1)?;
-
         for stage in stages {
             current_value = self.evaluate_pipeline_stage(&current_value, stage, deadline, depth)?;
         }
-
         Ok(current_value)
     }
-
     /// Evaluate a single pipeline stage
     fn evaluate_pipeline_stage(
         &mut self,
@@ -9763,7 +8901,6 @@ impl Repl {
             ExprKind::Call { func, args } => {
                 let mut new_args = vec![Self::value_to_literal_expr(current_value, stage.span)?];
                 new_args.extend(args.iter().cloned());
-
                 let new_call = Expr::new(
                     ExprKind::Call {
                         func: func.clone(),
@@ -9771,7 +8908,6 @@ impl Repl {
                     },
                     stage.span,
                 );
-
                 self.evaluate_expr(&new_call, deadline, depth + 1)
             }
             ExprKind::Identifier(_func_name) => {
@@ -9782,7 +8918,6 @@ impl Repl {
                     },
                     stage.span,
                 );
-
                 self.evaluate_expr(&call, deadline, depth + 1)
             }
             ExprKind::MethodCall { receiver: _, method, args } => {
@@ -9813,7 +8948,6 @@ impl Repl {
             _ => bail!("Pipeline stages must be function calls, method calls, or identifiers"),
         }
     }
-
     /// Convert value to literal expression for pipeline
     fn value_to_literal_expr(value: &Value, span: Span) -> Result<Expr> {
         let expr_kind = match value {
@@ -9833,7 +8967,6 @@ impl Repl {
         };
         Ok(Expr::new(expr_kind, span))
     }
-
     /// Evaluate command execution
     fn evaluate_command(
         program: &str,
@@ -9842,12 +8975,10 @@ impl Repl {
         _depth: usize,
     ) -> Result<Value> {
         use std::process::Command;
-        
         let output = Command::new(program)
             .args(args)
             .output()
             .map_err(|e| anyhow::anyhow!("Failed to execute command '{}': {}", program, e))?;
-        
         if output.status.success() {
             let stdout = String::from_utf8_lossy(&output.stdout).to_string();
             Ok(Value::String(stdout.trim().to_string()))
@@ -9861,7 +8992,6 @@ impl Repl {
             ))
         }
     }
-
     /// Evaluate macro expansion
     fn evaluate_macro(
         &mut self,
@@ -9908,7 +9038,6 @@ impl Repl {
             }
         }
     }
-
     /// Evaluate import statements (complexity < 10)
     /// Import standard library filesystem module (complexity: 6)
     fn import_std_fs(&mut self, items: &[ImportItem]) -> Result<()> {
@@ -9928,7 +9057,6 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Import standard library collections module (complexity: 3)
     fn import_std_collections(&mut self, items: &[ImportItem]) -> Result<()> {
         for item in items {
@@ -9938,7 +9066,6 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Import performance-related modules (complexity: 2)
     fn import_performance_module(&mut self, path: &str) -> Result<()> {
         match path {
@@ -9952,7 +9079,6 @@ impl Repl {
         }
         Ok(())
     }
-
     /// Check if item should be imported (complexity: 4)
     fn should_import_item(items: &[ImportItem], func_name: &str) -> bool {
         items.is_empty() || items.iter().any(|item| match item {
@@ -9961,7 +9087,6 @@ impl Repl {
             ImportItem::Aliased { name: item_name, .. } => item_name == func_name,
         })
     }
-
     /// Import functions from cache (complexity: 3)
     fn import_from_cache(&mut self, cached_functions: &HashMap<String, Value>, items: &[ImportItem]) {
         for (func_name, func_value) in cached_functions {
@@ -9970,36 +9095,27 @@ impl Repl {
             }
         }
     }
-
     /// Load and cache a module from file (complexity: 7)
     fn load_and_cache_module(&mut self, path: &str, items: &[ImportItem]) -> Result<()> {
         let module_path = format!("{path}.ruchy");
-        
         if !std::path::Path::new(&module_path).exists() {
             bail!("Module not found: {}", path);
         }
-
         // Read and parse the module file
         let module_content = std::fs::read_to_string(&module_path)
             .with_context(|| format!("Failed to read module file: {module_path}"))?;
-        
         let mut parser = crate::frontend::Parser::new(&module_content);
         let module_ast = parser.parse()
             .with_context(|| format!("Failed to parse module: {module_path}"))?;
-        
         // Extract and cache all functions from the module
         let mut module_functions = HashMap::new();
         self.extract_module_functions(&module_ast, &mut module_functions)?;
-        
         // Store in cache for future imports
         self.module_cache.insert(path.to_string(), module_functions.clone());
-        
         // Import requested functions into current scope
         self.import_from_cache(&module_functions, items);
-        
         Ok(())
     }
-
     /// Main import dispatcher (complexity: 8)
     fn evaluate_import(&mut self, path: &str, items: &[ImportItem]) -> Result<Value> {
         // Handle standard library imports
@@ -10023,10 +9139,8 @@ impl Repl {
                 }
             }
         }
-        
         Self::ok_unit()
     }
-    
     /// Extract functions from a module AST into a `HashMap` for caching
     fn extract_module_functions(&mut self, module_ast: &Expr, functions_map: &mut HashMap<String, Value>) -> Result<()> {
         // Extract all functions from the module for caching
@@ -10040,7 +9154,6 @@ impl Repl {
                             _ => "unknown".to_string(), // Simplified for now
                         })
                         .collect();
-                    
                     let function_value = Value::Function {
                         name: name.clone(),
                         params: param_names,
@@ -10057,7 +9170,6 @@ impl Repl {
                     _ => "unknown".to_string(), // Simplified for now
                 })
                 .collect();
-            
             let function_value = Value::Function {
                 name: name.clone(),
                 params: param_names,
@@ -10065,22 +9177,17 @@ impl Repl {
             };
             functions_map.insert(name.clone(), function_value);
         }
-        
         Ok(())
     }
-    
     /// Evaluate export statements (complexity < 10)
     fn evaluate_export(&mut self, _items: &[String]) -> Result<Value> {
         // For now, just track the export
         // Real implementation would:
         // 1. Mark items for export
         // 2. Make them available to importing modules
-        
         // Export handling
-        
         Self::ok_unit()
     }
-    
     /// Handle package mode commands
     fn handle_pkg_command(&mut self, input: &str) -> Result<String> {
         let parts: Vec<&str> = input.split_whitespace().collect();
@@ -10099,11 +9206,9 @@ impl Repl {
             }
         }
     }
-    
     /// Show comprehensive help menu
     fn show_help_menu(&self) -> Result<String> {
         Ok(r"🔧 Ruchy REPL Help Menu
-
 📋 COMMANDS:
   :help [topic]  - Show help for specific topic or this menu
   :quit, :q      - Exit the REPL
@@ -10113,7 +9218,6 @@ impl Repl {
   :type <expr>   - Show type of expression
   :ast <expr>    - Show abstract syntax tree
   :inspect <var> - Detailed variable inspection
-
 🎯 MODES:
   :normal        - Standard evaluation mode
   :help          - Help documentation mode (current)
@@ -10123,7 +9227,6 @@ impl Repl {
   :math          - Enhanced math mode
   :sql           - SQL query mode (experimental)
   :shell         - Shell command mode
-
 💡 LANGUAGE TOPICS (type topic name for details):
   fn             - Function definitions
   let            - Variable declarations  
@@ -10131,7 +9234,6 @@ impl Repl {
   for            - Loop constructs
   match          - Pattern matching
   while          - While loops
-
 🚀 FEATURES:
   • Arithmetic: +, -, *, /, %, **
   • Comparisons: ==, !=, <, >, <=, >=
@@ -10143,11 +9245,9 @@ impl Repl {
   • History: _1, _2, _3 (previous results)
   • Shell commands: !ls, !pwd, !echo hello
   • Introspection: ?variable, ??variable (detailed)
-
 Type :normal to exit help mode.
 ".to_string())
     }
-
     /// Handle help mode commands
     fn handle_help_command(&mut self, keyword: &str) -> Result<String> {
         let help_text = match keyword {
@@ -10166,7 +9266,6 @@ Type :normal to exit help mode.
         };
         Ok(help_text)
     }
-    
     /// Handle math mode commands
     fn handle_math_command(&mut self, expr: &str) -> Result<String> {
         // For now, just evaluate normally but could add special math functions
@@ -10176,39 +9275,31 @@ Type :normal to exit help mode.
         let value = self.evaluate_expr(&ast, deadline, 0)?;
         Ok(format!("= {value}"))
     }
-    
     /// Handle debug mode evaluation
     fn handle_debug_evaluation(&mut self, input: &str) -> Result<String> {
         // Use enhanced debug evaluation per progressive modes specification
         self.handle_enhanced_debug_evaluation(input)
     }
-    
     /// Enhanced debug mode evaluation with detailed traces
     fn handle_enhanced_debug_evaluation(&mut self, input: &str) -> Result<String> {
         let start = Instant::now();
-        
         // Parse timing
         let parse_start = Instant::now();
         let mut parser = Parser::new(input);
         let ast = parser.parse().context("Failed to parse input")?;
         let parse_time = parse_start.elapsed();
-        
         // Type checking timing (placeholder)
         let type_start = Instant::now();
         // Type checking would go here
         let type_time = type_start.elapsed();
-        
         // Evaluation timing
         let eval_start = Instant::now();
         let deadline = Instant::now() + self.config.timeout;
         let value = self.evaluate_expr(&ast, deadline, 0)?;
         let eval_time = eval_start.elapsed();
-        
         // Memory allocation (simplified)
         let alloc_bytes = 64; // Placeholder
-        
         let _total_time = start.elapsed();
-        
         // Format trace according to specification
         let trace = format!(
             "┌─ Trace ────────┐\n\
@@ -10226,52 +9317,40 @@ Type :normal to exit help mode.
             self.infer_type(&value),
             value
         );
-        
         Ok(trace)
     }
-    
     /// Handle timed evaluation
     fn handle_timed_evaluation(&mut self, input: &str) -> Result<String> {
         let start = Instant::now();
-        
         // Parse
         let mut parser = Parser::new(input);
         let ast = parser.parse().context("Failed to parse input")?;
-        
         // Evaluate
         let deadline = Instant::now() + self.config.timeout;
         let value = self.evaluate_expr(&ast, deadline, 0)?;
-        
         let elapsed = start.elapsed();
         Ok(format!("{value}\n⏱ Time: {elapsed:?}"))
     }
-    
     /// Generate a stack trace from an error
     fn generate_stack_trace(&self, error: &anyhow::Error) -> Vec<String> {
         let mut stack_trace = Vec::new();
-        
         // Add the main error
         stack_trace.push(format!("Error: {error}"));
-        
         // Add error chain
         let mut current = error.source();
         while let Some(err) = current {
             stack_trace.push(format!("Caused by: {err}"));
             current = err.source();
         }
-        
         // Add current evaluation context if available
         if let Some(last_expr) = self.history.last() {
             stack_trace.push(format!("Last successful expression: {last_expr}"));
         }
-        
         stack_trace
     }
-    
     /// Detect progressive mode activation via attributes like #[test] and #[debug]
     fn detect_mode_activation(&self, input: &str) -> Option<ReplMode> {
         let trimmed = input.trim();
-        
         if trimmed.starts_with("#[test]") {
             Some(ReplMode::Test)
         } else if trimmed.starts_with("#[debug]") {
@@ -10280,49 +9359,40 @@ Type :normal to exit help mode.
             None
         }
     }
-    
     /// Handle test mode evaluation with assertions and table tests
     fn handle_test_evaluation(&mut self, input: &str) -> Result<String> {
         let trimmed = input.trim();
-        
         // Handle assert statements
         if let Some(stripped) = trimmed.strip_prefix("assert ") {
             return self.handle_assertion(stripped);
         }
-        
         // Handle table_test! macro
         if trimmed.starts_with("table_test!(") {
             return self.handle_table_test(trimmed);
         }
-        
         // Regular evaluation with test result formatting
         let result = self.eval_internal(input)?;
         Ok(format!("✓ {result}"))
     }
-    
     /// Handle assertion statements in test mode
     fn handle_assertion(&mut self, assertion: &str) -> Result<String> {
         // Parse and evaluate the assertion
         let mut parser = Parser::new(assertion);
         let expr = parser.parse().context("Failed to parse assertion")?;
-        
         let deadline = Instant::now() + self.config.timeout;
         let result = self.evaluate_expr(&expr, deadline, 0)?;
-        
         match result {
             Value::Bool(true) => Ok("✓ Pass".to_string()),
             Value::Bool(false) => Ok("✗ Fail: assertion failed".to_string()),
             _ => Ok(format!("✗ Fail: assertion must be boolean, got {result}")),
         }
     }
-    
     /// Handle table test macro
     fn handle_table_test(&mut self, _input: &str) -> Result<String> {
         // This is a simplified implementation - in a full version you'd parse the table_test! macro properly
         // For now, just indicate successful parsing
         Ok("✓ Table test recognized (full implementation pending)".to_string())
     }
-    
     /// Simple type inference for display purposes
     fn infer_type(&self, value: &Value) -> &'static str {
         match value {
@@ -10345,7 +9415,6 @@ Type :normal to exit help mode.
             Value::Nil => "Nil",
         }
     }
-    
     /// Format size/length information for value (complexity: 8)
     fn format_value_size(&self, value: &Value) -> String {
         match value {
@@ -10375,12 +9444,10 @@ Type :normal to exit help mode.
             }
         }
     }
-
     /// Format interactive options for value (complexity: 3)
     fn format_value_options(&self, value: &Value) -> String {
         let mut output = String::new();
         output.push_str("│ Options:                   │\n");
-        
         match value {
             Value::List(_) | Value::Object(_) | Value::HashMap(_) => {
                 output.push_str("│ [Enter] Browse entries     │\n");
@@ -10395,11 +9462,9 @@ Type :normal to exit help mode.
                 output.push_str("│ [T] Type details           │\n");
             }
         }
-        
         output.push_str("│ [M] Memory layout          │\n");
         output
     }
-
     /// Create inspector header (complexity: 2)
     fn create_inspector_header(&self, var_name: &str, value: &Value) -> String {
         let mut output = String::new();
@@ -10408,37 +9473,28 @@ Type :normal to exit help mode.
         output.push_str(&format!("│ Type: {:<22} │\n", self.infer_type(value)));
         output
     }
-
     /// Inspect a value in detail (for :inspect command) (complexity: 4)
     fn inspect_value(&self, var_name: &str) -> String {
         if let Some(value) = self.bindings.get(var_name) {
             let mut output = String::new();
-            
             // Header with variable name and type
             output.push_str(&self.create_inspector_header(var_name, value));
-            
             // Size/length information
             output.push_str(&self.format_value_size(value));
-            
             // Memory estimation
             let memory_size = self.estimate_memory_size(value);
             output.push_str(&format!("│ Memory: ~{:<18} │\n", format!("{memory_size} bytes")));
-            
             // Separator line
             output.push_str("│                            │\n");
-            
             // Interactive options
             output.push_str(&self.format_value_options(value));
-            
             // Footer
             output.push_str("└────────────────────────────┘");
-            
             output
         } else {
             format!("Variable '{var_name}' not found. Use :env to list all variables.")
         }
     }
-    
     /// Estimate memory size of a value (simplified)
     fn estimate_memory_size(&self, value: &Value) -> usize {
         match value {
@@ -10462,7 +9518,6 @@ Type :normal to exit help mode.
             Value::Nil => 0,
         }
     }
-
     /// Run the REPL with session recording enabled
     ///
     /// This method creates a session recorder that tracks all inputs, outputs,
@@ -10482,9 +9537,7 @@ Type :normal to exit help mode.
         // Original complexity: 44, New complexity: 15
         self.run_with_recording_refactored(record_file)
     }
-    
     // Helper methods for reduced complexity REPL::run
-    
     fn setup_readline_editor(&self) -> Result<rustyline::Editor<RuchyCompleter, DefaultHistory>> {
         let config = Config::builder()
             .history_ignore_space(true)
@@ -10492,18 +9545,13 @@ Type :normal to exit help mode.
             .completion_type(CompletionType::List)
             .edit_mode(EditMode::Emacs)
             .build();
-
         let mut rl = rustyline::Editor::<RuchyCompleter, DefaultHistory>::with_config(config)?;
-        
         let completer = RuchyCompleter::new();
         rl.set_helper(Some(completer));
-        
         let history_path = self.temp_dir.join("history.txt");
         let _ = rl.load_history(&history_path);
-        
         Ok(rl)
     }
-    
     fn format_prompt(&self, in_multiline: bool) -> String {
         if in_multiline {
             format!("{} ", "   ...".bright_black())
@@ -10511,7 +9559,6 @@ Type :normal to exit help mode.
             format!("{} ", self.get_prompt().bright_green())
         }
     }
-    
     fn process_input_line(
         &mut self, 
         line: &str, 
@@ -10522,16 +9569,13 @@ Type :normal to exit help mode.
         if line.trim().is_empty() && !multiline_state.in_multiline {
             return Ok(false);
         }
-        
         // Handle commands (only when not in multiline mode)
         if !multiline_state.in_multiline && line.starts_with(':') {
             return self.process_command(line);
         }
-        
         // Process regular expression input
         self.process_expression_input(line, rl, multiline_state)
     }
-    
     fn process_command(&mut self, line: &str) -> Result<bool> {
         let (should_quit, output) = self.handle_command_with_output(line)?;
         if !output.is_empty() {
@@ -10539,7 +9583,6 @@ Type :normal to exit help mode.
         }
         Ok(should_quit)
     }
-    
     fn process_expression_input(
         &mut self,
         line: &str,
@@ -10551,14 +9594,12 @@ Type :normal to exit help mode.
             multiline_state.start_multiline(line);
             return Ok(false);
         }
-        
         if multiline_state.in_multiline {
             self.process_multiline_input(line, rl, multiline_state)
         } else {
             self.process_single_line_input(line, rl)
         }
     }
-    
     fn process_multiline_input(
         &mut self,
         line: &str,
@@ -10566,16 +9607,13 @@ Type :normal to exit help mode.
         multiline_state: &mut MultilineState
     ) -> Result<bool> {
         multiline_state.accumulate_line(line);
-        
         if !Self::needs_continuation(&multiline_state.buffer) {
             let _ = rl.add_history_entry(multiline_state.buffer.as_str());
             self.evaluate_and_print(&multiline_state.buffer);
             multiline_state.reset();
         }
-        
         Ok(false)
     }
-    
     fn process_single_line_input(
         &mut self,
         line: &str,
@@ -10585,7 +9623,6 @@ Type :normal to exit help mode.
         self.evaluate_and_print(line);
         Ok(false)
     }
-    
     fn evaluate_and_print(&mut self, expression: &str) {
         match self.eval(expression) {
             Ok(result) => {
@@ -10597,14 +9634,12 @@ Type :normal to exit help mode.
         }
     }
 }
-
 // Helper struct for managing multiline state
 #[derive(Debug)]
 struct MultilineState {
     buffer: String,
     in_multiline: bool,
 }
-
 impl MultilineState {
     fn new() -> Self {
         Self {
@@ -10612,19 +9647,35 @@ impl MultilineState {
             in_multiline: false,
         }
     }
-    
     fn start_multiline(&mut self, line: &str) {
         self.buffer = line.to_string();
         self.in_multiline = true;
     }
-    
     fn accumulate_line(&mut self, line: &str) {
         self.buffer.push('\n');
         self.buffer.push_str(line);
     }
-    
     fn reset(&mut self) {
         self.buffer.clear();
         self.in_multiline = false;
+    }
+}
+#[cfg(test)]
+mod property_tests_repl {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_age_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

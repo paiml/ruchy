@@ -1,8 +1,6 @@
 //! Function-related parsing (function definitions, lambdas, calls)
-
 use super::{ParserState, *};
 use crate::frontend::ast::{DataFrameOp, Literal, Pattern};
-
 /// # Errors
 ///
 /// Returns an error if the operation fails
@@ -12,15 +10,12 @@ use crate::frontend::ast::{DataFrameOp, Literal, Pattern};
 pub fn parse_function(state: &mut ParserState) -> Result<Expr> {
     parse_function_with_visibility(state, false)
 }
-
 pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume fun
-
     // Check for async modifier - currently not implemented in lexer
     // When async keyword is added to lexer, this will be:
     // let is_async = state.tokens.check(&Token::Async);
     let is_async = false;
-
     // Parse function name
     let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
         let name = n.clone();
@@ -29,17 +24,14 @@ pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> 
     } else {
         "anonymous".to_string()
     };
-
     // Parse optional type parameters <T, U, ...>
     let type_params = if matches!(state.tokens.peek(), Some((Token::Less, _))) {
         utils::parse_type_parameters(state)?
     } else {
         Vec::new()
     };
-
     // Parse parameters
     let params = utils::parse_params(state)?;
-
     // Parse return type if present
     let return_type = if matches!(state.tokens.peek(), Some((Token::Arrow, _))) {
         state.tokens.advance(); // consume ->
@@ -47,10 +39,8 @@ pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> 
     } else {
         None
     };
-
     // Parse body
     let body = super::parse_expr_recursive(state)?;
-
     Ok(Expr::new(
         ExprKind::Function {
             name,
@@ -64,17 +54,14 @@ pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> 
         start_span,
     ))
 }
-
 fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
     let mut params = Vec::new();
-
     // Parse parameters until we hit a pipe or arrow
     loop {
         // Check if we've reached the end of parameters
         if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
             break;
         }
-
         // Parse parameter name
         let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
             let name = n.clone();
@@ -83,7 +70,6 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
         } else {
             break; // No more parameters
         };
-
         // Parse optional type annotation
         let ty = if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
             state.tokens.advance(); // consume :
@@ -95,7 +81,6 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
                 span: Span { start: 0, end: 0 },
             }
         };
-
         params.push(Param {
             pattern: Pattern::Identifier(name),
             ty,
@@ -103,7 +88,6 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
             is_mutable: false,
             default_value: None,
         });
-
         // Check for comma
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
@@ -111,10 +95,8 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
             break;
         }
     }
-
     Ok(params)
 }
-
 /// # Errors
 ///
 /// Returns an error if the operation fails
@@ -123,12 +105,9 @@ fn parse_lambda_params(state: &mut ParserState) -> Result<Vec<Param>> {
 /// Returns an error if the operation fails
 pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume ||
-
     // Lambda syntax: || expr (no => allowed)
-
     // Parse the body
     let body = super::parse_expr_recursive(state)?;
-
     Ok(Expr::new(
         ExprKind::Lambda {
             params: Vec::new(),
@@ -137,7 +116,6 @@ pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
         start_span,
     ))
 }
-
 /// # Errors
 ///
 /// Returns an error if the operation fails
@@ -149,17 +127,14 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
         .tokens
         .peek()
         .map_or(Span { start: 0, end: 0 }, |(_, s)| *s);
-
     // Check syntax type and parse accordingly
     let params = if matches!(state.tokens.peek(), Some((Token::Backslash, _))) {
         parse_backslash_lambda(state)?
     } else {
         parse_pipe_lambda(state)?
     };
-
     // Parse body
     let body = super::parse_expr_recursive(state)?;
-
     Ok(Expr::new(
         ExprKind::Lambda {
             params,
@@ -168,50 +143,38 @@ pub fn parse_lambda(state: &mut ParserState) -> Result<Expr> {
         start_span,
     ))
 }
-
 /// Parse backslash-style lambda: \x, y -> body (complexity: 6)
 fn parse_backslash_lambda(state: &mut ParserState) -> Result<Vec<Param>> {
     state.tokens.advance(); // consume \
-    
     let params = parse_simple_params(state)?;
-    
     // Expect arrow
     state.tokens.expect(&Token::Arrow)?;
-    
     Ok(params)
 }
-
 /// Parse pipe-style lambda: |x, y| body (complexity: 5)
 fn parse_pipe_lambda(state: &mut ParserState) -> Result<Vec<Param>> {
     state.tokens.advance(); // consume |
-    
     // Handle || as empty params
     if matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         state.tokens.advance(); // consume second |
         return Ok(Vec::new());
     }
-    
     // Parse parameters between pipes
     let params = parse_lambda_params(state)?;
-    
     // Expect closing pipe
     if !matches!(state.tokens.peek(), Some((Token::Pipe, _))) {
         bail!("Expected '|' after lambda parameters");
     }
     state.tokens.advance(); // consume |
-    
     Ok(params)
 }
-
 /// Parse simple comma-separated parameters (complexity: 6)
 fn parse_simple_params(state: &mut ParserState) -> Result<Vec<Param>> {
     let mut params = Vec::new();
-    
     // Parse first parameter if present
     if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
         params.push(create_simple_param(name.clone()));
         state.tokens.advance();
-        
         // Parse additional parameters
         while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
@@ -221,10 +184,8 @@ fn parse_simple_params(state: &mut ParserState) -> Result<Vec<Param>> {
             }
         }
     }
-    
     Ok(params)
 }
-
 /// Create a simple parameter with default type (complexity: 1)
 fn create_simple_param(name: String) -> Param {
     Param {
@@ -238,8 +199,6 @@ fn create_simple_param(name: String) -> Param {
         default_value: None,
     }
 }
-
-
 /// # Errors
 ///
 /// Returns an error if the operation fails
@@ -248,20 +207,16 @@ fn create_simple_param(name: String) -> Param {
 /// Returns an error if the operation fails
 pub fn parse_call(state: &mut ParserState, func: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume (
-
     let mut args = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         args.push(super::parse_expr_recursive(state)?);
-
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
         } else {
             break;
         }
     }
-
     state.tokens.expect(&Token::RightParen)?;
-
     Ok(Expr {
         kind: ExprKind::Call {
             func: Box::new(func),
@@ -271,7 +226,6 @@ pub fn parse_call(state: &mut ParserState, func: Expr) -> Result<Expr> {
         attributes: Vec::new(),
     })
 }
-
 /// # Errors
 ///
 /// Returns an error if the operation fails
@@ -291,7 +245,6 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
             attributes: Vec::new(),
         });
     }
-
     // Parse method name or tuple index
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
@@ -317,7 +270,6 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
         }
     }
 }
-
 pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr> {
     // Parse method name or tuple index for optional chaining
     match state.tokens.peek() {
@@ -344,7 +296,6 @@ pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Re
         }
     }
 }
-
 fn parse_method_or_field_access(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
     // Check if it's a method call (with parentheses) or field access
     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
@@ -354,13 +305,11 @@ fn parse_method_or_field_access(state: &mut ParserState, receiver: Expr, method:
         Ok(create_field_access(receiver, method))
     }
 }
-
 /// Parse method call with arguments (complexity: 6)
 fn parse_method_call_access(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
     state.tokens.advance(); // consume (
     let args = parse_method_arguments(state)?;
     state.tokens.expect(&Token::RightParen)?;
-
     // Check if this is a DataFrame operation
     if is_dataframe_method(&method) {
         handle_dataframe_method(receiver, method, args)
@@ -368,13 +317,11 @@ fn parse_method_call_access(state: &mut ParserState, receiver: Expr, method: Str
         Ok(create_method_call(receiver, method, args))
     }
 }
-
 /// Parse method arguments (complexity: 5)
 fn parse_method_arguments(state: &mut ParserState) -> Result<Vec<Expr>> {
     let mut args = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
         args.push(super::parse_expr_recursive(state)?);
-
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
             state.tokens.advance(); // consume comma
         } else {
@@ -383,7 +330,6 @@ fn parse_method_arguments(state: &mut ParserState) -> Result<Vec<Expr>> {
     }
     Ok(args)
 }
-
 /// Check if method is DataFrame-specific (complexity: 1)
 fn is_dataframe_method(method: &str) -> bool {
     matches!(
@@ -392,7 +338,6 @@ fn is_dataframe_method(method: &str) -> bool {
         "join" | "rolling" | "shift" | "diff" | "pct_change" | "corr" | "cov"
     )
 }
-
 /// Handle DataFrame-specific methods (complexity: 4)
 fn handle_dataframe_method(receiver: Expr, method: String, args: Vec<Expr>) -> Result<Expr> {
     let operation = match method.as_str() {
@@ -400,7 +345,6 @@ fn handle_dataframe_method(receiver: Expr, method: String, args: Vec<Expr>) -> R
         "groupby" | "group_by" => DataFrameOp::GroupBy(extract_groupby_columns(args)),
         _ => return Ok(create_method_call(receiver, method, args)),
     };
-
     Ok(Expr {
         kind: ExprKind::DataFrameOperation {
             source: Box::new(receiver),
@@ -410,7 +354,6 @@ fn handle_dataframe_method(receiver: Expr, method: String, args: Vec<Expr>) -> R
         attributes: Vec::new(),
     })
 }
-
 /// Extract column names from select arguments (complexity: 8)
 fn extract_select_columns(args: Vec<Expr>) -> Vec<String> {
     let mut columns = Vec::new();
@@ -437,7 +380,6 @@ fn extract_select_columns(args: Vec<Expr>) -> Vec<String> {
     }
     columns
 }
-
 /// Extract column names from groupby arguments (complexity: 3)
 fn extract_groupby_columns(args: Vec<Expr>) -> Vec<String> {
     args.into_iter()
@@ -450,7 +392,6 @@ fn extract_groupby_columns(args: Vec<Expr>) -> Vec<String> {
         })
         .collect()
 }
-
 /// Create a method call expression (complexity: 1)
 fn create_method_call(receiver: Expr, method: String, args: Vec<Expr>) -> Expr {
     Expr {
@@ -463,7 +404,6 @@ fn create_method_call(receiver: Expr, method: String, args: Vec<Expr>) -> Expr {
         attributes: Vec::new(),
     }
 }
-
 /// Create a field access expression (complexity: 1)
 fn create_field_access(receiver: Expr, field: String) -> Expr {
     Expr {
@@ -475,27 +415,22 @@ fn create_field_access(receiver: Expr, field: String) -> Expr {
         attributes: Vec::new(),
     }
 }
-
 fn parse_optional_method_or_field_access(state: &mut ParserState, receiver: Expr, method: String) -> Result<Expr> {
     // Check if it's a method call (with parentheses) or field access
     if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
         // Optional method call - convert to OptionalMethodCall AST node
         // For now, we'll just parse as regular method call but with optional semantics
         state.tokens.advance(); // consume (
-
         let mut args = Vec::new();
         while !matches!(state.tokens.peek(), Some((Token::RightParen, _))) {
             args.push(super::parse_expr_recursive(state)?);
-
             if matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                 state.tokens.advance(); // consume comma
             } else {
                 break;
             }
         }
-
         state.tokens.expect(&Token::RightParen)?;
-
         // Create an OptionalMethodCall expression
         Ok(Expr {
             kind: ExprKind::OptionalMethodCall {

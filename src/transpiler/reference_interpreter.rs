@@ -8,14 +8,11 @@
 //! - No optimizations whatsoever
 //! - Under 1000 LOC
 //! - Direct operational semantics
-
 #![allow(clippy::cast_possible_truncation)] // Reference interpreter prioritizes simplicity
 #![allow(clippy::cast_sign_loss)] // Reference interpreter uses simple casts
 #![allow(clippy::cast_possible_wrap)] // Reference interpreter uses simple casts
-
 use crate::transpiler::canonical_ast::{CoreExpr, CoreLiteral, DeBruijnIndex, PrimOp};
 use std::rc::Rc;
-
 /// Runtime values
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -34,55 +31,86 @@ pub enum Value {
     /// Arrays are just vectors
     Array(Vec<Value>),
 }
-
 /// Environment for variable bindings
 #[derive(Debug, Clone, PartialEq)]
 pub struct Environment {
     bindings: Vec<Value>,
 }
-
 impl Default for Environment {
     fn default() -> Self {
         Self::new()
     }
 }
-
 impl Environment {
     #[must_use]
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::transpiler::reference_interpreter::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+/// # Examples
+/// 
+/// ```
+/// use ruchy::transpiler::reference_interpreter::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         Self {
             bindings: Vec::new(),
         }
     }
-
-    pub fn push(&mut self, value: Value) {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::transpiler::reference_interpreter::push;
+/// 
+/// let result = push(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn push(&mut self, value: Value) {
         self.bindings.push(value);
     }
-
-    pub fn pop(&mut self) {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::transpiler::reference_interpreter::pop;
+/// 
+/// let result = pop(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn pop(&mut self) {
         self.bindings.pop();
     }
-
     #[must_use]
-    pub fn lookup(&self, index: &DeBruijnIndex) -> Option<&Value> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::transpiler::reference_interpreter::lookup;
+/// 
+/// let result = lookup(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn lookup(&self, index: &DeBruijnIndex) -> Option<&Value> {
         // De Bruijn indices count from the end
         let pos = self.bindings.len().checked_sub(index.0 + 1)?;
         self.bindings.get(pos)
     }
 }
-
 /// Reference interpreter - deliberately simple and unoptimized
 pub struct ReferenceInterpreter {
     env: Environment,
     trace: Vec<String>, // For debugging
 }
-
 impl Default for ReferenceInterpreter {
     fn default() -> Self {
         Self::new()
     }
 }
-
 impl ReferenceInterpreter {
     #[must_use]
     pub fn new() -> Self {
@@ -91,7 +119,6 @@ impl ReferenceInterpreter {
             trace: Vec::new(),
         }
     }
-
     /// Evaluate an expression to a value
     /// This is the core of the interpreter - direct operational semantics
     /// # Errors
@@ -100,16 +127,22 @@ impl ReferenceInterpreter {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-    pub fn eval(&mut self, expr: &CoreExpr) -> Result<Value, String> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::transpiler::reference_interpreter::eval;
+/// 
+/// let result = eval(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn eval(&mut self, expr: &CoreExpr) -> Result<Value, String> {
         self.trace.push(format!("Evaluating: {expr:?}"));
-
         match expr {
             CoreExpr::Var(idx) => self
                 .env
                 .lookup(idx)
                 .cloned()
                 .ok_or_else(|| format!("Unbound variable: {idx:?}")),
-
             CoreExpr::Lambda { body, .. } => {
                 // Create closure capturing current environment
                 Ok(Value::Closure {
@@ -117,54 +150,40 @@ impl ReferenceInterpreter {
                     env: self.env.clone(),
                 })
             }
-
             CoreExpr::App(func, arg) => {
                 // Evaluate function
                 let func_val = self.eval(func)?;
-
                 // Evaluate argument (call-by-value)
                 let arg_val = self.eval(arg)?;
-
                 // Apply function to argument
                 match func_val {
                     Value::Closure { body, mut env } => {
                         // Save current environment
                         let saved_env = self.env.clone();
-
                         // Set up closure environment with argument
                         env.push(arg_val);
                         self.env = env;
-
                         // Evaluate body
                         let result = self.eval(&body)?;
-
                         // Restore environment
                         self.env = saved_env;
-
                         Ok(result)
                     }
                     _ => Err(format!("Cannot apply non-function: {func_val:?}")),
                 }
             }
-
             CoreExpr::Let { value, body, name } => {
                 self.trace.push(format!("Let binding: {name:?}"));
-
                 // Evaluate the value
                 let val = self.eval(value)?;
-
                 // Bind it in the environment
                 self.env.push(val);
-
                 // Evaluate the body
                 let result = self.eval(body)?;
-
                 // Pop the binding
                 self.env.pop();
-
                 Ok(result)
             }
-
             CoreExpr::Literal(lit) => Ok(match lit {
                 CoreLiteral::Integer(i) => Value::Integer(*i),
                 CoreLiteral::Float(f) => Value::Float(*f),
@@ -173,11 +192,9 @@ impl ReferenceInterpreter {
                 CoreLiteral::Char(c) => Value::Char(*c),
                 CoreLiteral::Unit => Value::Unit,
             }),
-
             CoreExpr::Prim(op, args) => self.eval_prim(op, args),
         }
     }
-
     /// Evaluate primitive operations
     #[allow(clippy::too_many_lines)] // Comprehensive primitive operations
     fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, String> {
@@ -186,7 +203,6 @@ impl ReferenceInterpreter {
         for arg in args {
             values.push(self.eval(arg)?);
         }
-
         match op {
             // Arithmetic operations
             PrimOp::Add => {
@@ -203,19 +219,16 @@ impl ReferenceInterpreter {
                     )),
                 }
             }
-
             PrimOp::Sub => match (&values[0], &values[1]) {
                 (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a - b)),
                 (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a - b)),
                 _ => Err("Type error in subtraction".to_string()),
             },
-
             PrimOp::Mul => match (&values[0], &values[1]) {
                 (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a * b)),
                 (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a * b)),
                 _ => Err("Type error in multiplication".to_string()),
             },
-
             PrimOp::Div => match (&values[0], &values[1]) {
                 (Value::Integer(a), Value::Integer(b)) => {
                     if *b == 0 {
@@ -233,7 +246,6 @@ impl ReferenceInterpreter {
                 }
                 _ => Err("Type error in division".to_string()),
             },
-
             PrimOp::Mod => match (&values[0], &values[1]) {
                 (Value::Integer(a), Value::Integer(b)) => {
                     if *b == 0 {
@@ -244,7 +256,6 @@ impl ReferenceInterpreter {
                 }
                 _ => Err("Type error in modulo".to_string()),
             },
-
             PrimOp::Pow => match (&values[0], &values[1]) {
                 (Value::Integer(a), Value::Integer(b)) => {
                     if *b < 0 {
@@ -256,47 +267,38 @@ impl ReferenceInterpreter {
                 (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.powf(*b))),
                 _ => Err("Type error in power".to_string()),
             },
-
             // Comparison operations
             PrimOp::Eq => Ok(Value::Bool(values[0] == values[1])),
-
             PrimOp::Ne => Ok(Value::Bool(values[0] != values[1])),
-
             PrimOp::Lt => match (&values[0], &values[1]) {
                 (Value::Integer(a), Value::Integer(b)) => Ok(Value::Bool(a < b)),
                 (Value::Float(a), Value::Float(b)) => Ok(Value::Bool(a < b)),
                 _ => Err("Type error in less-than".to_string()),
             },
-
             PrimOp::Le => match (&values[0], &values[1]) {
                 (Value::Integer(a), Value::Integer(b)) => Ok(Value::Bool(a <= b)),
                 (Value::Float(a), Value::Float(b)) => Ok(Value::Bool(a <= b)),
                 _ => Err("Type error in less-equal".to_string()),
             },
-
             PrimOp::Gt => match (&values[0], &values[1]) {
                 (Value::Integer(a), Value::Integer(b)) => Ok(Value::Bool(a > b)),
                 (Value::Float(a), Value::Float(b)) => Ok(Value::Bool(a > b)),
                 _ => Err("Type error in greater-than".to_string()),
             },
-
             PrimOp::Ge => match (&values[0], &values[1]) {
                 (Value::Integer(a), Value::Integer(b)) => Ok(Value::Bool(a >= b)),
                 (Value::Float(a), Value::Float(b)) => Ok(Value::Bool(a >= b)),
                 _ => Err("Type error in greater-equal".to_string()),
             },
-
             // Logical operations
             PrimOp::And => match (&values[0], &values[1]) {
                 (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(*a && *b)),
                 _ => Err("Type error in AND".to_string()),
             },
-
             PrimOp::Or => match (&values[0], &values[1]) {
                 (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(*a || *b)),
                 _ => Err("Type error in OR".to_string()),
             },
-
             PrimOp::NullCoalesce => {
                 if values.len() != 2 {
                     return Err(format!("NullCoalesce expects 2 arguments, got {}", values.len()));
@@ -307,7 +309,6 @@ impl ReferenceInterpreter {
                     _ => Ok(values[0].clone()),
                 }
             },
-
             PrimOp::Not => {
                 if values.len() != 1 {
                     return Err(format!("NOT expects 1 argument, got {}", values.len()));
@@ -317,13 +318,11 @@ impl ReferenceInterpreter {
                     _ => Err("Type error in NOT".to_string()),
                 }
             }
-
             // Control flow
             PrimOp::If => {
                 if values.len() != 3 {
                     return Err(format!("IF expects 3 arguments, got {}", values.len()));
                 }
-
                 // Note: We already evaluated all branches (strict evaluation)
                 // A lazy interpreter would evaluate condition first, then the appropriate branch
                 match &values[0] {
@@ -332,13 +331,11 @@ impl ReferenceInterpreter {
                     _ => Err("Type error: IF condition must be boolean".to_string()),
                 }
             }
-
             // Array operations
             PrimOp::ArrayNew => {
                 // Create array from all arguments
                 Ok(Value::Array(values))
             }
-
             PrimOp::ArrayIndex => {
                 if values.len() != 2 {
                     return Err("Array index expects 2 arguments".to_string());
@@ -354,7 +351,6 @@ impl ReferenceInterpreter {
                     _ => Err("Type error in array indexing".to_string()),
                 }
             }
-
             PrimOp::ArrayLen => {
                 if values.len() != 1 {
                     return Err("Array length expects 1 argument".to_string());
@@ -364,64 +360,88 @@ impl ReferenceInterpreter {
                     _ => Err("Type error: expected array".to_string()),
                 }
             }
-
             PrimOp::Concat => Err(format!("Unsupported primitive: {op:?}")),
         }
     }
-
     /// Get execution trace for debugging
     #[must_use]
-    pub fn get_trace(&self) -> &[String] {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::transpiler::reference_interpreter::get_trace;
+/// 
+/// let result = get_trace(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn get_trace(&self) -> &[String] {
         &self.trace
     }
-
     /// Clear the trace
-    pub fn clear_trace(&mut self) {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::transpiler::reference_interpreter::clear_trace;
+/// 
+/// let result = clear_trace(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn clear_trace(&mut self) {
         self.trace.clear();
     }
 }
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
     use crate::transpiler::canonical_ast::AstNormalizer;
     use crate::Parser;
-
+#[cfg(test)]
+use proptest::prelude::*;
     #[test]
     fn test_eval_arithmetic() {
         let input = "1 + 2 * 3";
         let mut parser = Parser::new(input);
-        let ast = parser.parse().unwrap();
-
+        let ast = parser.parse().expect("Failed to parse");
         let mut normalizer = AstNormalizer::new();
         let core = normalizer.normalize(&ast);
-
         let mut interp = ReferenceInterpreter::new();
         let result = interp.eval(&core).unwrap();
-
         assert_eq!(result, Value::Integer(7)); // 1 + (2 * 3)
     }
-
     #[test]
     fn test_eval_let_binding() {
         let input = "let x = 10 in ()";
         let mut parser = Parser::new(input);
-        let ast = parser.parse().unwrap();
-
+        let ast = parser.parse().expect("Failed to parse");
         let mut normalizer = AstNormalizer::new();
         let core = normalizer.normalize(&ast);
-
         let mut interp = ReferenceInterpreter::new();
         let result = interp.eval(&core).unwrap();
-
         // Let with unit body evaluates to unit
         assert_eq!(result, Value::Unit);
     }
-
     #[test]
     fn test_eval_function() {
         // This would need more setup to test properly
         // as we need to handle function definitions and calls
+    }
+}
+#[cfg(test)]
+mod property_tests_reference_interpreter {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

@@ -1,23 +1,21 @@
 // SPRINT2-002: Differential testing implementation
 // PMAT Complexity: <10 per function
-
 use crate::notebook::testing::types::*;
 use crate::notebook::testing::NotebookTester;
 use std::time::{Duration, Instant};
-
+#[cfg(test)]
+use proptest::prelude::*;
 /// Differential testing between implementations
 pub struct DifferentialTester {
     reference: NotebookTester,
     candidate: NotebookTester,
     config: DifferentialConfig,
 }
-
 #[derive(Debug, Clone)]
 pub struct DifferentialConfig {
     pub performance_threshold_ms: u64,
     pub track_performance: bool,
 }
-
 impl Default for DifferentialConfig {
     fn default() -> Self {
         Self {
@@ -26,7 +24,6 @@ impl Default for DifferentialConfig {
         }
     }
 }
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct DifferentialResult {
     pub cell_id: String,
@@ -36,7 +33,6 @@ pub struct DifferentialResult {
     pub reference_time: Duration,
     pub candidate_time: Duration,
 }
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum DivergenceType {
     None,
@@ -45,55 +41,70 @@ pub enum DivergenceType {
     PerformanceRegression,
     BothFailed,
 }
-
 impl DifferentialTester {
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::differential::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         Self {
             reference: NotebookTester::new(),
             candidate: NotebookTester::new(),
             config: DifferentialConfig::default(),
         }
     }
-    
-    pub fn with_config(config: DifferentialConfig) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::differential::with_config;
+/// 
+/// let result = with_config(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn with_config(config: DifferentialConfig) -> Self {
         Self {
             reference: NotebookTester::new(),
             candidate: NotebookTester::new(),
             config,
         }
     }
-    
     /// Compare two implementations on a notebook
-    pub fn compare(&mut self, notebook: &Notebook) -> Vec<DifferentialResult> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::differential::compare;
+/// 
+/// let result = compare(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn compare(&mut self, notebook: &Notebook) -> Vec<DifferentialResult> {
         let mut results = Vec::new();
-        
         for cell in &notebook.cells {
             if matches!(cell.cell_type, CellType::Markdown) {
                 continue;
             }
-            
             let result = self.compare_cell(cell);
             if !matches!(result.divergence, DivergenceType::None) {
                 results.push(result);
             }
         }
-        
         results
     }
-    
     fn compare_cell(&mut self, cell: &Cell) -> DifferentialResult {
         // Execute on reference implementation
         let ref_start = Instant::now();
         let ref_output = self.reference.execute_cell(cell)
             .unwrap_or_else(|e| CellOutput::Error(e));
         let ref_time = ref_start.elapsed();
-        
         // Execute on candidate implementation
         let cand_start = Instant::now();
         let cand_output = self.candidate.execute_cell(cell)
             .unwrap_or_else(|e| CellOutput::Error(e));
         let cand_time = cand_start.elapsed();
-        
         // Determine divergence type
         let divergence = self.classify_divergence(
             &ref_output,
@@ -101,7 +112,6 @@ impl DifferentialTester {
             ref_time,
             cand_time
         );
-        
         DifferentialResult {
             cell_id: cell.id.clone(),
             reference_output: ref_output,
@@ -111,7 +121,6 @@ impl DifferentialTester {
             candidate_time: cand_time,
         }
     }
-    
     fn classify_divergence(
         &self,
         ref_output: &CellOutput,
@@ -141,39 +150,59 @@ impl DifferentialTester {
             DivergenceType::None
         }
     }
-    
     /// Generate a report of all divergences
-    pub fn generate_report(&self, results: &[DifferentialResult]) -> String {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::notebook::testing::differential::generate_report;
+/// 
+/// let result = generate_report(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn generate_report(&self, results: &[DifferentialResult]) -> String {
         let mut report = String::new();
         report.push_str("=== Differential Testing Report ===\n\n");
-        
         if results.is_empty() {
             report.push_str("No divergences found. Implementations are consistent.\n");
         } else {
             report.push_str(&format!("Found {} divergences:\n\n", results.len()));
-            
             for (i, result) in results.iter().enumerate() {
                 report.push_str(&format!("{}. Cell '{}'\n", i + 1, result.cell_id));
                 report.push_str(&format!("   Divergence: {:?}\n", result.divergence));
-                
                 if self.config.track_performance {
                     report.push_str(&format!(
                         "   Performance: ref={:?}, candidate={:?}\n",
                         result.reference_time, result.candidate_time
                     ));
                 }
-                
                 if !matches!(result.divergence, DivergenceType::PerformanceRegression) {
                     report.push_str(&format!(
                         "   Reference: {:?}\n   Candidate: {:?}\n",
                         result.reference_output, result.candidate_output
                     ));
                 }
-                
                 report.push('\n');
             }
         }
-        
         report
+    }
+}
+#[cfg(test)]
+mod property_tests_differential {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

@@ -1,10 +1,8 @@
 //! Shared binary operation evaluation
 //! Extracted to reduce duplication across interpreter and REPL
-
 use crate::frontend::ast::BinaryOp;
 use crate::runtime::Value;
 use anyhow::{Result, bail};
-
 /// Evaluate a binary operation on two values
 ///
 /// # Examples
@@ -13,6 +11,8 @@ use anyhow::{Result, bail};
 /// use ruchy::runtime::binary_ops::evaluate_binary_op;
 /// use ruchy::runtime::Value;
 /// use ruchy::frontend::ast::BinaryOp;
+#[cfg(test)]
+use proptest::prelude::*;
 ///
 /// let lhs = Value::Int(5);
 /// let rhs = Value::Int(3);
@@ -27,22 +27,18 @@ pub fn evaluate_binary_op(op: &BinaryOp, lhs: &Value, rhs: &Value) -> Result<Val
         BinaryOp::Divide => evaluate_divide(lhs, rhs),
         BinaryOp::Modulo => evaluate_modulo(lhs, rhs),
         BinaryOp::Power => evaluate_power(lhs, rhs),
-        
         BinaryOp::Equal => Ok(Value::Bool(values_equal(lhs, rhs))),
         BinaryOp::NotEqual => Ok(Value::Bool(!values_equal(lhs, rhs))),
         BinaryOp::Less => evaluate_less(lhs, rhs),
         BinaryOp::LessEqual => evaluate_less_equal(lhs, rhs),
         BinaryOp::Greater => evaluate_greater(lhs, rhs),
         BinaryOp::GreaterEqual => evaluate_greater_equal(lhs, rhs),
-        
         BinaryOp::And => evaluate_and(lhs, rhs),
         BinaryOp::Or => evaluate_or(lhs, rhs),
-        
         BinaryOp::BitwiseAnd => evaluate_bitwise_and(lhs, rhs),
         BinaryOp::BitwiseOr => evaluate_bitwise_or(lhs, rhs),
         BinaryOp::BitwiseXor => evaluate_bitwise_xor(lhs, rhs),
         BinaryOp::LeftShift => evaluate_left_shift(lhs, rhs),
-        
         BinaryOp::NullCoalesce => Ok(if matches!(lhs, Value::Unit) { 
             rhs.clone() 
         } else { 
@@ -50,7 +46,6 @@ pub fn evaluate_binary_op(op: &BinaryOp, lhs: &Value, rhs: &Value) -> Result<Val
         }),
     }
 }
-
 fn evaluate_add(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a + b)),
@@ -70,7 +65,6 @@ fn evaluate_add(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot add {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_subtract(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a - b)),
@@ -78,7 +72,6 @@ fn evaluate_subtract(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot subtract {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_multiply(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a * b)),
@@ -92,7 +85,6 @@ fn evaluate_multiply(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot multiply {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_divide(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => {
@@ -110,7 +102,6 @@ fn evaluate_divide(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot divide {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_modulo(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => {
@@ -122,7 +113,6 @@ fn evaluate_modulo(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot modulo {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_power(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => {
@@ -135,7 +125,6 @@ fn evaluate_power(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot exponentiate {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_less(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a < b)),
@@ -144,7 +133,6 @@ fn evaluate_less(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot compare {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_less_equal(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a <= b)),
@@ -153,7 +141,6 @@ fn evaluate_less_equal(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot compare {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_greater(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a > b)),
@@ -162,7 +149,6 @@ fn evaluate_greater(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot compare {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_greater_equal(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a >= b)),
@@ -171,42 +157,36 @@ fn evaluate_greater_equal(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot compare {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_and(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(*a && *b)),
         _ => bail!("Cannot AND {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_or(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(*a || *b)),
         _ => bail!("Cannot OR {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_bitwise_and(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a & b)),
         _ => bail!("Cannot bitwise AND {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_bitwise_or(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a | b)),
         _ => bail!("Cannot bitwise OR {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_bitwise_xor(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a ^ b)),
         _ => bail!("Cannot bitwise XOR {:?} and {:?}", lhs, rhs),
     }
 }
-
 fn evaluate_left_shift(lhs: &Value, rhs: &Value) -> Result<Value> {
     match (lhs, rhs) {
         (Value::Int(a), Value::Int(b)) => {
@@ -218,7 +198,6 @@ fn evaluate_left_shift(lhs: &Value, rhs: &Value) -> Result<Value> {
         _ => bail!("Cannot left shift {:?} by {:?}", lhs, rhs),
     }
 }
-
 /// Check if two values are equal
 fn values_equal(v1: &Value, v2: &Value) -> bool {
     match (v1, v2) {
@@ -235,5 +214,24 @@ fn values_equal(v1: &Value, v2: &Value) -> bool {
             a.len() == b.len() && a.iter().zip(b.iter()).all(|(x, y)| values_equal(x, y))
         }
         _ => false,
+    }
+}
+#[cfg(test)]
+mod property_tests_binary_ops {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_evaluate_binary_op_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

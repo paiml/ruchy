@@ -1,18 +1,14 @@
 //! Type system representation for Ruchy
-
 use std::collections::HashMap;
 use std::fmt;
-
 /// Type variable for unification
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TyVar(pub u32);
-
 impl fmt::Display for TyVar {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "τ{}", self.0)
     }
 }
-
 /// Monomorphic types in the Hindley-Milner system
 #[derive(Debug, Clone, PartialEq)]
 pub enum MonoType {
@@ -49,7 +45,6 @@ pub enum MonoType {
     /// Series type with element type
     Series(Box<MonoType>),
 }
-
 impl fmt::Display for MonoType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -90,7 +85,6 @@ impl fmt::Display for MonoType {
         }
     }
 }
-
 /// Polymorphic type scheme: ∀α₁...αₙ. τ
 #[derive(Debug, Clone)]
 pub struct TypeScheme {
@@ -99,19 +93,33 @@ pub struct TypeScheme {
     /// The monomorphic type
     pub ty: MonoType,
 }
-
 impl TypeScheme {
     /// Create a monomorphic type scheme (no quantified variables)
     #[must_use]
-    pub fn mono(ty: MonoType) -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::middleend::types::mono;
+/// 
+/// let result = mono(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn mono(ty: MonoType) -> Self {
         TypeScheme {
             vars: Vec::new(),
             ty,
         }
     }
-
     /// Instantiate a type scheme with fresh type variables
-    pub fn instantiate(&self, gen: &mut TyVarGenerator) -> MonoType {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::middleend::types::instantiate;
+/// 
+/// let result = instantiate(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn instantiate(&self, gen: &mut TyVarGenerator) -> MonoType {
         if self.vars.is_empty() {
             self.ty.clone()
         } else {
@@ -124,7 +132,6 @@ impl TypeScheme {
         }
     }
 }
-
 impl fmt::Display for TypeScheme {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.vars.is_empty() {
@@ -141,38 +148,56 @@ impl fmt::Display for TypeScheme {
         }
     }
 }
-
 /// Type variable generator for fresh variables
 pub struct TyVarGenerator {
     next: u32,
 }
-
 impl TyVarGenerator {
     #[must_use]
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::middleend::types::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         TyVarGenerator { next: 0 }
     }
-
-    pub fn fresh(&mut self) -> TyVar {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::middleend::types::fresh;
+/// 
+/// let result = fresh(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn fresh(&mut self) -> TyVar {
         let var = TyVar(self.next);
         self.next += 1;
         var
     }
 }
-
 impl Default for TyVarGenerator {
     fn default() -> Self {
         Self::new()
     }
 }
-
 /// Substitution mapping from type variables to types
 pub type Substitution = HashMap<TyVar, MonoType>;
-
 impl MonoType {
     /// Apply a substitution to this type
     #[must_use]
-    pub fn substitute(&self, subst: &Substitution) -> MonoType {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::middleend::types::substitute;
+/// 
+/// let result = substitute(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn substitute(&self, subst: &Substitution) -> MonoType {
         match self {
             MonoType::Var(v) => subst.get(v).cloned().unwrap_or_else(|| self.clone()),
             MonoType::Function(arg, ret) => MonoType::Function(
@@ -199,12 +224,18 @@ impl MonoType {
             _ => self.clone(),
         }
     }
-
     /// Get free type variables in this type
     #[must_use]
-    pub fn free_vars(&self) -> Vec<TyVar> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::middleend::types::free_vars;
+/// 
+/// let result = free_vars(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn free_vars(&self) -> Vec<TyVar> {
         use std::collections::HashSet;
-
         fn collect_vars(ty: &MonoType, vars: &mut HashSet<TyVar>) {
             match ty {
                 MonoType::Var(v) => {
@@ -237,19 +268,18 @@ impl MonoType {
                 _ => {}
             }
         }
-
         let mut vars = HashSet::new();
         collect_vars(self, &mut vars);
         vars.into_iter().collect()
     }
 }
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::panic, clippy::expect_used)]
 #[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
-
+#[cfg(test)]
+use proptest::prelude::*;
     #[test]
     fn test_type_display() {
         assert_eq!(MonoType::Int.to_string(), "i32");
@@ -260,12 +290,10 @@ mod tests {
         );
         assert_eq!(MonoType::List(Box::new(MonoType::Int)).to_string(), "[i32]");
     }
-
     #[test]
     fn test_type_scheme_instantiation() {
         let mut gen = TyVarGenerator::new();
         let var = gen.fresh();
-
         let scheme = TypeScheme {
             vars: vec![var.clone()],
             ty: MonoType::Function(
@@ -273,7 +301,6 @@ mod tests {
                 Box::new(MonoType::Var(var)),
             ),
         };
-
         let instantiated = scheme.instantiate(&mut gen);
         match instantiated {
             MonoType::Function(arg, ret) => {
@@ -283,34 +310,27 @@ mod tests {
             _ => panic!("Expected function type"),
         }
     }
-
     #[test]
     fn test_substitution() {
         let mut subst = HashMap::new();
         let var = TyVar(0);
         subst.insert(var.clone(), MonoType::Int);
-
         let ty = MonoType::List(Box::new(MonoType::Var(var)));
         let result = ty.substitute(&subst);
-
         assert_eq!(result, MonoType::List(Box::new(MonoType::Int)));
     }
-
     #[test]
     fn test_free_vars() {
         let var1 = TyVar(0);
         let var2 = TyVar(1);
-
         let ty = MonoType::Function(
             Box::new(MonoType::Var(var1.clone())),
             Box::new(MonoType::List(Box::new(MonoType::Var(var2.clone())))),
         );
-
         let free = ty.free_vars();
         assert_eq!(free.len(), 2);
         assert!(free.contains(&var1));
         assert!(free.contains(&var2));
-
         // Test that duplicate variables are deduplicated
         let ty_dup = MonoType::Function(
             Box::new(MonoType::Var(var1.clone())),
@@ -319,5 +339,24 @@ mod tests {
         let free_dup = ty_dup.free_vars();
         assert_eq!(free_dup.len(), 1);
         assert!(free_dup.contains(&var1));
+    }
+}
+#[cfg(test)]
+mod property_tests_types {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_mono_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

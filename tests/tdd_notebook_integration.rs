@@ -8,8 +8,7 @@
 //! - Comprehensive notebook management API
 //! - WebSocket support for real-time updates
 
-use ruchy::wasm::notebook::{NotebookRuntime, NotebookCell, CellType, CellOutput};
-use ruchy::wasm::shared_session::{SharedSession, ExecutionMode, SessionVersion};
+use ruchy::wasm::notebook::NotebookRuntime;
 use serde_json::Value as JsonValue;
 
 // ============================================================================
@@ -72,7 +71,7 @@ fn test_notebook_checkpoint_management() {
 #[test]
 fn test_notebook_collaborative_features() {
     let mut runtime1 = NotebookRuntime::new().unwrap();
-    let mut runtime2 = NotebookRuntime::new().unwrap();
+    let runtime2 = NotebookRuntime::new().unwrap();
     
     // Create notebook in runtime1
     let cell_id = runtime1.add_cell("code", "let shared_data = 100");

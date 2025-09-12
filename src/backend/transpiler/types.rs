@@ -1,16 +1,13 @@
 //! Type transpilation and struct/trait definitions
-
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::wildcard_imports)]
 #![allow(clippy::collapsible_else_if)]
 #![allow(clippy::only_used_in_recursion)]
-
 use super::*;
 use crate::frontend::ast::{EnumVariant, ImplMethod, StructField, TraitMethod, Type};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-
 impl Transpiler {
     /// Transpiles type annotations
     ///
@@ -22,7 +19,7 @@ impl Transpiler {
     /// // Basic types
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new("let x: i32 = 42");
-    /// let ast = parser.parse().unwrap();
+    /// let ast = parser.parse().expect("Failed to parse");
     /// 
     /// let result = transpiler.transpile(&ast).unwrap();
     /// let code = result.to_string();
@@ -36,7 +33,7 @@ impl Transpiler {
     /// // Generic types
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new("let v: Vec<i32> = vec![1, 2, 3]");
-    /// let ast = parser.parse().unwrap();
+    /// let ast = parser.parse().expect("Failed to parse");
     /// 
     /// let result = transpiler.transpile(&ast).unwrap();
     /// let code = result.to_string();
@@ -50,7 +47,7 @@ impl Transpiler {
     /// // Optional types
     /// let transpiler = Transpiler::new();
     /// let mut parser = Parser::new("let opt: Option<i32> = Some(42)");
-    /// let ast = parser.parse().unwrap();
+    /// let ast = parser.parse().expect("Failed to parse");
     /// 
     /// let result = transpiler.transpile(&ast).unwrap();
     /// let code = result.to_string();
@@ -59,7 +56,6 @@ impl Transpiler {
     /// ```
     pub fn transpile_type(&self, ty: &Type) -> Result<TokenStream> {
         use crate::frontend::ast::TypeKind;
-
         match &ty.kind {
             TypeKind::Named(name) => self.transpile_named_type(name),
             TypeKind::Generic { base, params } => self.transpile_generic_type(base, params),
@@ -73,7 +69,6 @@ impl Transpiler {
             TypeKind::Reference { is_mut, inner } => self.transpile_reference_type(*is_mut, inner),
         }
     }
-    
     /// Transpile named types with built-in type mapping
     fn transpile_named_type(&self, name: &str) -> Result<TokenStream> {
         let rust_type = match name {
@@ -91,7 +86,6 @@ impl Transpiler {
         };
         Ok(rust_type)
     }
-    
     /// Transpile generic types with type parameters
     fn transpile_generic_type(&self, base: &str, params: &[Type]) -> Result<TokenStream> {
         let base_ident = format_ident!("{}", base);
@@ -101,26 +95,22 @@ impl Transpiler {
         let param_tokens = param_tokens?;
         Ok(quote! { #base_ident<#(#param_tokens),*> })
     }
-    
     /// Transpile optional types to Option<T>
     fn transpile_optional_type(&self, inner: &Type) -> Result<TokenStream> {
         let inner_tokens = self.transpile_type(inner)?;
         Ok(quote! { Option<#inner_tokens> })
     }
-    
     /// Transpile list types to Vec<T>
     fn transpile_list_type(&self, elem_type: &Type) -> Result<TokenStream> {
         let elem_tokens = self.transpile_type(elem_type)?;
         Ok(quote! { Vec<#elem_tokens> })
     }
-    
     /// Transpile array types with fixed size
     fn transpile_array_type(&self, elem_type: &Type, size: usize) -> Result<TokenStream> {
         let elem_tokens = self.transpile_type(elem_type)?;
         let size_lit = proc_macro2::Literal::usize_unsuffixed(size);
         Ok(quote! { [#elem_tokens; #size_lit] })
     }
-    
     /// Transpile tuple types
     fn transpile_tuple_type(&self, types: &[Type]) -> Result<TokenStream> {
         let type_tokens: Result<Vec<_>> = types.iter()
@@ -129,7 +119,6 @@ impl Transpiler {
         let type_tokens = type_tokens?;
         Ok(quote! { (#(#type_tokens),*) })
     }
-    
     /// Transpile function types
     fn transpile_function_type(&self, params: &[Type], ret: &Type) -> Result<TokenStream> {
         let param_tokens: Result<Vec<_>> = params.iter()
@@ -139,11 +128,9 @@ impl Transpiler {
         let ret_tokens = self.transpile_type(ret)?;
         Ok(quote! { fn(#(#param_tokens),*) -> #ret_tokens })
     }
-    
     /// Transpile reference types with special handling for &str
     fn transpile_reference_type(&self, is_mut: bool, inner: &Type) -> Result<TokenStream> {
         use crate::frontend::ast::TypeKind;
-        
         // Special case: &str should not become &&str
         if let TypeKind::Named(name) = &inner.kind {
             if name == "str" {
@@ -154,7 +141,6 @@ impl Transpiler {
                 };
             }
         }
-        
         let inner_tokens = self.transpile_type(inner)?;
         if is_mut {
             Ok(quote! { &mut #inner_tokens })
@@ -162,7 +148,6 @@ impl Transpiler {
             Ok(quote! { &#inner_tokens })
         }
     }
-
     /// Transpiles struct definitions
     pub fn transpile_struct(
         &self,
@@ -172,10 +157,8 @@ impl Transpiler {
         is_pub: bool,
     ) -> Result<TokenStream> {
         let struct_name = format_ident!("{}", name);
-
         let type_param_tokens: Vec<_> =
             type_params.iter().map(|p| format_ident!("{}", p)).collect();
-
         let field_tokens: Vec<TokenStream> = fields
             .iter()
             .map(|field| {
@@ -183,7 +166,6 @@ impl Transpiler {
                 let field_type = self
                     .transpile_type(&field.ty)
                     .unwrap_or_else(|_| quote! { _ });
-
                 if field.is_pub {
                     quote! { pub #field_name: #field_type }
                 } else {
@@ -191,9 +173,7 @@ impl Transpiler {
                 }
             })
             .collect();
-
         let visibility = if is_pub { quote! { pub } } else { quote! {} };
-
         if type_params.is_empty() {
             Ok(quote! {
                 #visibility struct #struct_name {
@@ -208,7 +188,6 @@ impl Transpiler {
             })
         }
     }
-
     /// Transpiles trait definitions
     pub fn transpile_enum(
         &self,
@@ -218,18 +197,14 @@ impl Transpiler {
         is_pub: bool,
     ) -> Result<TokenStream> {
         let enum_name = format_ident!("{}", name);
-
         let type_param_tokens: Vec<_> =
             type_params.iter().map(|p| format_ident!("{}", p)).collect();
-
         // Check if any variant has discriminant values
         let has_discriminants = variants.iter().any(|v| v.discriminant.is_some());
-        
         let variant_tokens: Vec<TokenStream> = variants
             .iter()
             .map(|variant| {
                 let variant_name = format_ident!("{}", variant.name);
-
                 if let Some(fields) = &variant.fields {
                     // Tuple variant (can't have discriminant)
                     let field_types: Vec<TokenStream> = fields
@@ -248,16 +223,13 @@ impl Transpiler {
                 }
             })
             .collect();
-
         let visibility = if is_pub { quote! { pub } } else { quote! {} };
-        
         // Add #[repr(i32)] attribute if enum has discriminant values
         let repr_attr = if has_discriminants {
             quote! { #[repr(i32)] }
         } else {
             quote! {}
         };
-
         if type_params.is_empty() {
             Ok(quote! {
                 #repr_attr
@@ -274,7 +246,6 @@ impl Transpiler {
             })
         }
     }
-
     pub fn transpile_trait(
         &self,
         name: &str,
@@ -283,12 +254,10 @@ impl Transpiler {
         is_pub: bool,
     ) -> Result<TokenStream> {
         let trait_name = format_ident!("{}", name);
-
         let method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
                 let method_name = format_ident!("{}", method.name);
-
                 // Process parameters
                 let param_tokens: Vec<TokenStream> = method
                     .params
@@ -311,7 +280,6 @@ impl Transpiler {
                         }
                     })
                     .collect();
-
                 // Process return type
                 let return_type_tokens = if let Some(ref ty) = method.return_type {
                     let ty_tokens = self.transpile_type(ty)?;
@@ -319,10 +287,8 @@ impl Transpiler {
                 } else {
                     quote! {}
                 };
-
                 // Process method visibility
                 let visibility = if method.is_pub { quote! { pub } } else { quote! {} };
-
                 // Process method body (if default implementation)
                 if let Some(ref body) = method.body {
                     let body_tokens = self.transpile_expr(body)?;
@@ -338,14 +304,10 @@ impl Transpiler {
                 }
             })
             .collect();
-
         let method_tokens = method_tokens?;
-
         let type_param_tokens: Vec<_> =
             type_params.iter().map(|p| format_ident!("{}", p)).collect();
-
         let visibility = if is_pub { quote! { pub } } else { quote! {} };
-
         if type_params.is_empty() {
             Ok(quote! {
                 #visibility trait #trait_name {
@@ -360,7 +322,6 @@ impl Transpiler {
             })
         }
     }
-
     /// Transpiles impl blocks
     pub fn transpile_impl(
         &self,
@@ -371,12 +332,10 @@ impl Transpiler {
         _is_pub: bool,
     ) -> Result<TokenStream> {
         let type_ident = format_ident!("{}", for_type);
-
         let method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
                 let method_name = format_ident!("{}", method.name);
-
                 // Process parameters
                 let param_tokens: Vec<TokenStream> = method
                     .params
@@ -399,7 +358,6 @@ impl Transpiler {
                         }
                     })
                     .collect();
-
                 // Process return type
                 let return_type_tokens = if let Some(ref ty) = method.return_type {
                     let ty_tokens = self.transpile_type(ty)?;
@@ -407,13 +365,10 @@ impl Transpiler {
                 } else {
                     quote! {}
                 };
-
                 // Process method body (always present in ImplMethod)
                 let body_tokens = self.transpile_expr(&method.body)?;
-
                 // Process method visibility
                 let visibility = if method.is_pub { quote! { pub } } else { quote! {} };
-
                 Ok(quote! {
                     #visibility fn #method_name(#(#param_tokens),*) #return_type_tokens {
                         #body_tokens
@@ -421,12 +376,9 @@ impl Transpiler {
                 })
             })
             .collect();
-
         let method_tokens = method_tokens?;
-
         let type_param_tokens: Vec<_> =
             type_params.iter().map(|p| format_ident!("{}", p)).collect();
-
         if let Some(trait_name) = trait_name {
             let trait_ident = format_ident!("{}", trait_name);
             if type_params.is_empty() {
@@ -458,18 +410,15 @@ impl Transpiler {
             }
         }
     }
-
     /// Transpiles property test attributes
     pub fn transpile_property_test(&self, expr: &Expr, _attr: &Attribute) -> Result<TokenStream> {
         // Property tests in Rust typically use proptest or quickcheck
         // We'll generate proptest-compatible code
-
         if let ExprKind::Function {
             name, params, body, ..
         } = &expr.kind
         {
             let fn_name = format_ident!("{}", name);
-
             // Generate property test parameters
             let param_tokens: Vec<TokenStream> = params
                 .iter()
@@ -481,16 +430,12 @@ impl Transpiler {
                     quote! { #param_name: #type_tokens }
                 })
                 .collect();
-
             let body_tokens = self.transpile_expr(body)?;
-
             // Generate the proptest macro invocation
             Ok(quote! {
                 #[cfg(test)]
                 mod #fn_name {
                     use super::*;
-                    use proptest::prelude::*;
-
                     proptest! {
                         #[test]
                         fn #fn_name(#(#param_tokens),*) {
@@ -503,7 +448,6 @@ impl Transpiler {
             bail!("Property test attribute can only be applied to functions");
         }
     }
-
     /// Transpiles extension methods into trait + impl
     ///
     /// Generates both a trait definition and an implementation according to the specification:
@@ -519,13 +463,11 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let target_ident = format_ident!("{}", target_type);
         let trait_name = format_ident!("{}Ext", target_type); // e.g., StringExt
-
         // Generate trait definition
         let trait_method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
                 let method_name = format_ident!("{}", method.name);
-
                 // Process parameters
                 let param_tokens: Vec<TokenStream> = method
                     .params
@@ -548,7 +490,6 @@ impl Transpiler {
                         }
                     })
                     .collect();
-
                 // Process return type
                 let return_type_tokens = if let Some(ref ty) = method.return_type {
                     let ty_tokens = self.transpile_type(ty)?;
@@ -556,22 +497,18 @@ impl Transpiler {
                 } else {
                     quote! {}
                 };
-
                 // Trait methods are just signatures (no body)
                 Ok(quote! {
                     fn #method_name(#(#param_tokens),*) #return_type_tokens;
                 })
             })
             .collect();
-
         let trait_method_tokens = trait_method_tokens?;
-
         // Generate impl definition
         let impl_method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
                 let method_name = format_ident!("{}", method.name);
-
                 // Process parameters (same as trait)
                 let param_tokens: Vec<TokenStream> = method
                     .params
@@ -593,7 +530,6 @@ impl Transpiler {
                         }
                     })
                     .collect();
-
                 // Process return type
                 let return_type_tokens = if let Some(ref ty) = method.return_type {
                     let ty_tokens = self.transpile_type(ty)?;
@@ -601,10 +537,8 @@ impl Transpiler {
                 } else {
                     quote! {}
                 };
-
                 // Impl methods have bodies
                 let body_tokens = self.transpile_expr(&method.body)?;
-
                 Ok(quote! {
                     fn #method_name(#(#param_tokens),*) #return_type_tokens {
                         #body_tokens
@@ -612,31 +546,25 @@ impl Transpiler {
                 })
             })
             .collect();
-
         let impl_method_tokens = impl_method_tokens?;
-
         // Generate both trait and impl
         Ok(quote! {
             trait #trait_name {
                 #(#trait_method_tokens)*
             }
-
             impl #trait_name for #target_ident {
                 #(#impl_method_tokens)*
             }
         })
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    
     #[test]
     fn test_transpile_result_helpers() {
         let helpers = Transpiler::generate_result_helpers();
         let code = helpers.to_string();
-        
         // Check that the ResultExt trait is generated
         assert!(code.contains("trait ResultExt"));
         assert!(code.contains("map_err_with"));

@@ -1,6 +1,5 @@
 //! Helper functions for test command
 //! Extracted to maintain ≤10 complexity per function
-
 use anyhow::{Context, Result};
 use colored::Colorize;
 use ruchy::utils::read_file_with_context;
@@ -8,7 +7,6 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use walkdir::WalkDir;
-
 /// Test result information
 pub struct TestResult {
     pub file: PathBuf,
@@ -16,15 +14,12 @@ pub struct TestResult {
     pub duration: Duration,
     pub error: Option<String>,
 }
-
 /// Discover .ruchy test files in a path
 pub fn discover_test_files(path: &Path, filter: Option<&str>, verbose: bool) -> Result<Vec<PathBuf>> {
     if verbose {
         println!("🔍 Discovering .ruchy test files in {}", path.display());
     }
-    
     let mut test_files = Vec::new();
-    
     if path.is_file() {
         validate_and_add_file(path, &mut test_files)?;
     } else if path.is_dir() {
@@ -32,10 +27,8 @@ pub fn discover_test_files(path: &Path, filter: Option<&str>, verbose: bool) -> 
     } else {
         return Err(anyhow::anyhow!("Path {} does not exist", path.display()));
     }
-    
     Ok(test_files)
 }
-
 /// Validate and add a single file
 fn validate_and_add_file(path: &Path, test_files: &mut Vec<PathBuf>) -> Result<()> {
     if path.extension().is_some_and(|ext| ext == "ruchy") {
@@ -45,7 +38,6 @@ fn validate_and_add_file(path: &Path, test_files: &mut Vec<PathBuf>) -> Result<(
     }
     Ok(())
 }
-
 /// Discover files in a directory
 fn discover_files_in_directory(
     path: &Path,
@@ -60,13 +52,11 @@ fn discover_files_in_directory(
     }
     Ok(())
 }
-
 /// Check if file should be included based on filter
 fn should_include_file(entry: &walkdir::DirEntry, filter: Option<&str>) -> bool {
     if entry.path().extension().is_none_or(|ext| ext != "ruchy") {
         return false;
     }
-    
     if let Some(filter_pattern) = filter {
         let file_name = entry.path().file_stem()
             .and_then(|s| s.to_str())
@@ -76,45 +66,35 @@ fn should_include_file(entry: &walkdir::DirEntry, filter: Option<&str>) -> bool 
         true
     }
 }
-
 /// Run a single .ruchy test file
 pub fn run_test_file(test_file: &Path, verbose: bool) -> Result<()> {
     use ruchy::runtime::repl::Repl;
-    
     let test_content = read_file_with_context(test_file)?;
-    
     if verbose {
         println!("   📖 Parsing test file...");
         println!("   🏃 Executing test...");
     }
-    
     let mut repl = Repl::new()?;
     let result = repl.evaluate_expr_str(&test_content, None)
         .with_context(|| format!("Test execution failed for: {}", test_file.display()))?;
-    
     if verbose {
         println!("   📤 Test result: {:?}", result);
     }
-    
     Ok(())
 }
-
 /// Execute all test files
 pub fn execute_tests(
     test_files: &[PathBuf],
     verbose: bool,
 ) -> Vec<TestResult> {
     let mut test_results = Vec::new();
-    
     for test_file in test_files {
         if verbose {
             println!("📄 Testing: {}", test_file.display());
         }
-        
         let test_start = Instant::now();
         let result = run_test_file(test_file, verbose);
         let test_duration = test_start.elapsed();
-        
         handle_test_result(
             test_file,
             result,
@@ -123,10 +103,8 @@ pub fn execute_tests(
             &mut test_results,
         );
     }
-    
     test_results
 }
-
 /// Handle a single test result
 fn handle_test_result(
     test_file: &Path,
@@ -139,7 +117,7 @@ fn handle_test_result(
         Ok(()) => {
             if verbose {
                 println!("   ✅ {} ({:.2}ms)", 
-                    test_file.file_name().unwrap().to_str().unwrap(), 
+                    test_file.file_name().unwrap().to_str().expect("Failed to convert to str"), 
                     duration.as_secs_f64() * 1000.0);
             } else {
                 print!(".");
@@ -156,7 +134,7 @@ fn handle_test_result(
             let error_msg = format!("{}", e);
             if verbose {
                 println!("   ❌ {} ({:.2}ms): {}", 
-                    test_file.file_name().unwrap().to_str().unwrap(), 
+                    test_file.file_name().unwrap().to_str().expect("Failed to convert to str"), 
                     duration.as_secs_f64() * 1000.0, 
                     error_msg);
             } else {
@@ -172,7 +150,6 @@ fn handle_test_result(
         }
     }
 }
-
 /// Print test summary
 pub fn print_test_summary(
     test_results: &[TestResult],
@@ -182,28 +159,22 @@ pub fn print_test_summary(
     if !verbose {
         println!(); // New line after dots/F's
     }
-    
     let passed = test_results.iter().filter(|r| r.success).count();
     let failed = test_results.len() - passed;
-    
     println!("\n📊 Test Results:");
     println!("   Total: {}", test_results.len());
     println!("   Passed: {}", passed.to_string().green());
-    
     if failed > 0 {
         println!("   Failed: {}", failed.to_string().red());
         print_failed_tests(test_results, verbose);
     }
-    
     println!("   Duration: {:.2}s", total_duration.as_secs_f64());
 }
-
 /// Print details of failed tests
 fn print_failed_tests(test_results: &[TestResult], verbose: bool) {
     if verbose {
         return; // Already printed during execution
     }
-    
     println!("\n❌ Failed Tests:");
     for result in test_results {
         if !result.success {
@@ -213,7 +184,6 @@ fn print_failed_tests(test_results: &[TestResult], verbose: bool) {
         }
     }
 }
-
 /// Generate JSON output for test results
 pub fn generate_json_output(
     test_results: &[TestResult],
@@ -221,7 +191,6 @@ pub fn generate_json_output(
 ) -> Result<String> {
     let passed = test_results.iter().filter(|r| r.success).count();
     let failed = test_results.len() - passed;
-    
     let json_output = serde_json::json!({
         "total": test_results.len(),
         "passed": passed,
@@ -236,10 +205,8 @@ pub fn generate_json_output(
             })
         }).collect::<Vec<_>>()
     });
-    
     Ok(serde_json::to_string_pretty(&json_output)?)
 }
-
 /// Handle coverage reporting
 pub fn generate_coverage_report(
     test_files: &[PathBuf],
@@ -248,16 +215,13 @@ pub fn generate_coverage_report(
     threshold: f64,
 ) -> Result<()> {
     use ruchy::quality::ruchy_coverage::RuchyCoverageCollector;
-    
     let mut collector = RuchyCoverageCollector::new();
-    
     // Analyze test files
     for test_file in test_files {
         if let Err(e) = collector.analyze_file(test_file) {
             eprintln!("Warning: Failed to analyze {}: {}", test_file.display(), e);
         }
     }
-    
     // Collect runtime coverage for successful tests
     for result in test_results {
         if result.success {
@@ -267,16 +231,12 @@ pub fn generate_coverage_report(
             }
         }
     }
-    
     // Generate and output report
     output_coverage_report(&collector, coverage_format)?;
-    
     // Check threshold
     check_coverage_threshold(&collector, threshold);
-    
     Ok(())
 }
-
 /// Output coverage report in requested format
 fn output_coverage_report(
     collector: &ruchy::quality::ruchy_coverage::RuchyCoverageCollector,
@@ -290,11 +250,9 @@ fn output_coverage_report(
         }
         _ => collector.generate_text_report(),
     };
-    
     println!("{}", report);
     Ok(())
 }
-
 /// Save HTML coverage report to file
 fn save_html_report(html_report: &str) -> Result<String> {
     let coverage_dir = Path::new("target/coverage");
@@ -303,7 +261,6 @@ fn save_html_report(html_report: &str) -> Result<String> {
     fs::write(&html_path, html_report)?;
     Ok(format!("\n📈 HTML Coverage Report written to: {}", html_path.display()))
 }
-
 /// Check if coverage meets threshold
 fn check_coverage_threshold(
     collector: &ruchy::quality::ruchy_coverage::RuchyCoverageCollector,

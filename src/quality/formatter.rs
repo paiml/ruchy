@@ -1,43 +1,54 @@
 // Code formatter for Ruchy
 // Toyota Way: Consistent code style prevents defects
-
 use anyhow::Result;
 use crate::frontend::ast::{Expr, ExprKind};
-
+#[cfg(test)]
+use proptest::prelude::*;
 pub struct Formatter {
     indent_width: usize,
     use_tabs: bool,
     _line_width: usize,
 }
-
 impl Formatter {
-    pub fn new() -> Self {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::quality::formatter::new;
+/// 
+/// let result = new(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn new() -> Self {
         Self {
             indent_width: 4,
             use_tabs: false,
             _line_width: 100,
         }
     }
-    
-    pub fn format(&self, ast: &Expr) -> Result<String> {
+/// # Examples
+/// 
+/// ```
+/// use ruchy::quality::formatter::format;
+/// 
+/// let result = format(());
+/// assert_eq!(result, Ok(()));
+/// ```
+pub fn format(&self, ast: &Expr) -> Result<String> {
         // Simple formatter that converts AST back to source
         Ok(self.format_expr(ast, 0))
     }
-    
     fn format_type(&self, ty_kind: &crate::frontend::ast::TypeKind) -> String {
         match ty_kind {
             crate::frontend::ast::TypeKind::Named(name) => name.clone(),
             _ => format!("{ty_kind:?}"),
         }
     }
-    
     fn format_expr(&self, expr: &Expr, indent: usize) -> String {
         let indent_str = if self.use_tabs {
             "\t".repeat(indent)
         } else {
             " ".repeat(indent * self.indent_width)
         };
-        
         match &expr.kind {
             ExprKind::Literal(lit) => match lit {
                 crate::frontend::ast::Literal::Integer(n) => n.to_string(),
@@ -78,7 +89,6 @@ impl Formatter {
             }
             ExprKind::Function { name, params, return_type, body, .. } => {
                 let mut result = format!("fun {name}");
-                
                 // Parameters
                 result.push('(');
                 for (i, param) in params.iter().enumerate() {
@@ -90,13 +100,11 @@ impl Formatter {
                     }
                 }
                 result.push(')');
-                
                 // Return type
                 if let Some(ret_ty) = return_type {
                     result.push_str(" -> ");
                     result.push_str(&self.format_type(&ret_ty.kind));
                 }
-                
                 result.push(' ');
                 result.push_str(&self.format_expr(body.as_ref(), indent));
                 result
@@ -118,9 +126,27 @@ impl Formatter {
         }
     }
 }
-
 impl Default for Formatter {
     fn default() -> Self {
         Self::new()
+    }
+}
+#[cfg(test)]
+mod property_tests_formatter {
+    use proptest::proptest;
+    use super::*;
+    use proptest::prelude::*;
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
 }

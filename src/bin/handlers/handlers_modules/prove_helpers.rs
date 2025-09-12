@@ -1,10 +1,8 @@
 //! Helper functions for prove command
 //! Extracted to maintain ≤10 complexity per function
-
 use anyhow::{Context, Result};
 use ruchy::proving::{InteractiveProver, ProverSession, SmtBackend};
 use ruchy::utils::{read_file_with_context, write_file_with_context, add_success_indicator};
-
 /// Parse SMT backend from string
 pub fn parse_smt_backend(backend: &str, verbose: bool) -> SmtBackend {
     match backend.to_lowercase().as_str() {
@@ -19,7 +17,6 @@ pub fn parse_smt_backend(backend: &str, verbose: bool) -> SmtBackend {
         }
     }
 }
-
 /// Configure prover with settings
 pub fn configure_prover(
     prover: &mut InteractiveProver,
@@ -29,35 +26,27 @@ pub fn configure_prover(
 ) {
     prover.set_timeout(timeout);
     prover.set_ml_suggestions(ml_suggestions);
-    
     if verbose {
         println!("⚙️  Configuration:");
         println!("  Timeout: {}ms", timeout);
         println!("  ML Suggestions: {}", ml_suggestions);
     }
 }
-
 /// Load and parse file for proof checking
 pub fn load_proof_file(file_path: &std::path::Path, verbose: bool) -> Result<ruchy::frontend::ast::Expr> {
     use ruchy::Parser as RuchyParser;
-    
     if verbose {
         println!("📂 Loading file: {}", file_path.display());
     }
-    
     let source = read_file_with_context(file_path)?;
-    
     let mut parser = RuchyParser::new(&source);
     let ast = parser.parse()
         .with_context(|| format!("Failed to parse file: {}", file_path.display()))?;
-    
     if verbose {
         println!("📋 Extracted proof goals from source");
     }
-    
     Ok(ast)
 }
-
 /// Load proof script from file
 pub fn load_proof_script(
     prover: &mut InteractiveProver,
@@ -67,13 +56,10 @@ pub fn load_proof_script(
     if verbose {
         println!("📜 Loading proof script: {}", script_path.display());
     }
-    
     let script_content = read_file_with_context(script_path)?;
-    
     prover.load_script(&script_content)?;
     Ok(())
 }
-
 /// Print interactive prover help
 pub fn print_prover_help() {
     println!("\nInteractive Prover Commands:");
@@ -96,7 +82,6 @@ pub fn print_prover_help() {
     println!("  apply intro");
     println!("  apply simplify\n");
 }
-
 /// Handle single prover command
 pub fn handle_prover_command(
     input: &str,
@@ -135,7 +120,6 @@ pub fn handle_prover_command(
         }
     }
 }
-
 /// Print current proof goals
 fn print_current_goals(session: &ProverSession) {
     let goals = session.get_goals();
@@ -147,7 +131,6 @@ fn print_current_goals(session: &ProverSession) {
         }
     }
 }
-
 /// Print available tactics
 fn print_available_tactics(prover: &InteractiveProver) {
     let tactics = prover.get_available_tactics();
@@ -156,7 +139,6 @@ fn print_available_tactics(prover: &InteractiveProver) {
         println!("  {} - {}", tactic.name(), tactic.description());
     }
 }
-
 /// Apply a tactic to current goal
 fn apply_tactic(
     cmd: &str,
@@ -175,14 +157,12 @@ fn apply_tactic(
         }
     }
 }
-
 /// Add a new goal to session
 fn add_goal(cmd: &str, session: &mut ProverSession) {
     let goal_stmt = &cmd[5..];
     session.add_goal(goal_stmt.to_string());
     println!("Added goal: {}", goal_stmt);
 }
-
 /// Process general input
 fn process_general_input(
     input: &str,
@@ -203,7 +183,6 @@ fn process_general_input(
         }
     }
 }
-
 /// Show current prover state with ML suggestions
 pub fn show_prover_state(
     session: &ProverSession,
@@ -214,13 +193,11 @@ pub fn show_prover_state(
         print!("{}", add_success_indicator("All goals proved!"));
     } else if let Some(current_goal) = session.current_goal() {
         println!("\nCurrent goal: {}", current_goal.statement);
-        
         if ml_suggestions {
             show_ml_suggestions(prover, current_goal);
         }
     }
 }
-
 /// Show ML-powered tactic suggestions
 fn show_ml_suggestions(prover: &mut InteractiveProver, goal: &ruchy::proving::ProofGoal) {
     if let Ok(suggestions) = prover.suggest_tactics(goal) {
@@ -233,7 +210,6 @@ fn show_ml_suggestions(prover: &mut InteractiveProver, goal: &ruchy::proving::Pr
         }
     }
 }
-
 /// Export proof to file
 pub fn export_proof(
     session: &ProverSession,
@@ -244,20 +220,16 @@ pub fn export_proof(
     if verbose {
         println!("📝 Exporting proof to: {}", export_path.display());
     }
-    
     let proof_content = match format {
         "json" => serde_json::to_string_pretty(session)?,
         "coq" => session.to_coq_proof(),
         "lean" => session.to_lean_proof(),
         _ => session.to_text_proof(),
     };
-    
     write_file_with_context(export_path, &proof_content)?;
-    
     print!("{}", add_success_indicator("Proof exported successfully"));
     Ok(())
 }
-
 /// Verify proofs extracted from AST
 pub fn verify_proofs_from_ast(
     ast: &ruchy::frontend::ast::Expr, 
@@ -267,26 +239,19 @@ pub fn verify_proofs_from_ast(
     verbose: bool
 ) -> Result<()> {
     use ruchy::proving::{extract_assertions_from_ast, verify_assertions_batch};
-    
     let assertions = extract_assertions_from_ast(ast);
-    
     if assertions.is_empty() {
         handle_no_assertions(file_path, format, verbose)?;
         return Ok(());
     }
-    
     if verbose {
         print_assertions(&assertions);
     }
-    
     let results = verify_assertions_batch(&assertions, counterexample);
-    
     output_verification_results(&results, file_path, format, verbose)?;
-    
     check_verification_failures(&results);
     Ok(())
 }
-
 /// Handle case when no assertions found
 fn handle_no_assertions(
     file_path: &std::path::Path,
@@ -296,7 +261,6 @@ fn handle_no_assertions(
     if verbose {
         println!("No assertions found in {}", file_path.display());
     }
-    
     if format == "json" {
         let json_result = serde_json::json!({
             "file": file_path.display().to_string(),
@@ -310,10 +274,8 @@ fn handle_no_assertions(
     } else {
         print!("{}", add_success_indicator("No proofs found (file valid)"));
     }
-    
     Ok(())
 }
-
 /// Print discovered assertions
 fn print_assertions(assertions: &[String]) {
     println!("Found {} assertions to verify", assertions.len());
@@ -321,7 +283,6 @@ fn print_assertions(assertions: &[String]) {
         println!("  {}: {}", i + 1, assertion);
     }
 }
-
 /// Output verification results in requested format
 fn output_verification_results(
     results: &[ruchy::proving::ProofVerificationResult],
@@ -332,16 +293,13 @@ fn output_verification_results(
     let total = results.len();
     let passed = results.iter().filter(|r| r.is_verified).count();
     let failed = total - passed;
-    
     if format == "json" {
         output_json_results(results, file_path, total, passed, failed)?;
     } else {
         output_text_results(results, total, passed, failed, verbose);
     }
-    
     Ok(())
 }
-
 /// Output results in JSON format
 fn output_json_results(
     results: &[ruchy::proving::ProofVerificationResult],
@@ -361,7 +319,6 @@ fn output_json_results(
     println!("{}", serde_json::to_string_pretty(&json_result)?);
     Ok(())
 }
-
 /// Output results in text format
 fn output_text_results(
     results: &[ruchy::proving::ProofVerificationResult],
@@ -385,7 +342,6 @@ fn output_text_results(
         }
     }
 }
-
 /// Print failed proofs
 fn print_failed_proofs(
     results: &[ruchy::proving::ProofVerificationResult],
@@ -405,7 +361,6 @@ fn print_failed_proofs(
         }
     }
 }
-
 /// Print passed proofs
 fn print_passed_proofs(results: &[ruchy::proving::ProofVerificationResult]) {
     println!("\nPassed proofs:");
@@ -416,7 +371,6 @@ fn print_passed_proofs(results: &[ruchy::proving::ProofVerificationResult]) {
         }
     }
 }
-
 /// Check if any verifications failed and exit accordingly
 fn check_verification_failures(results: &[ruchy::proving::ProofVerificationResult]) {
     let failed = results.iter().filter(|r| !r.is_verified).count();

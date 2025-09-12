@@ -2,7 +2,6 @@
 //!
 //! This module provides the interactive REPL, runtime execution environment,
 //! and actor system with supervision trees.
-
 pub mod actor;
 pub mod binary_ops;
 pub mod cache;
@@ -35,44 +34,36 @@ mod repl_function_tests;
 mod binary_ops_tests;
 #[cfg(test)]
 mod pattern_matching_tests;
-
 // Export the unified REPL
 pub use repl::{Repl, ReplConfig, ReplState, Value};
-
 // Export interpreter components
 pub use interpreter::{
     Interpreter, InterpreterError, InterpreterResult, Value as InterpreterValue,
 };
-
 // Export actor system components
 pub use actor::{
     ActorBehavior, ActorContext, ActorId, ActorRef, ActorSystem, EchoActor, Message, MessageValue,
     SupervisorActor, SupervisorDirective,
 };
-
 // Export observatory components
 pub use observatory::{
     ActorObservatory, ActorSnapshot, ActorState, DeadlockCycle, MessageFilter, MessageTrace,
     MessageStatus, ObservatoryConfig, SystemMetrics,
 };
-
 // Export assessment components
 pub use assessment::{
     Assignment, AssignmentSetup, Task, TestCase, ExpectedBehavior,
     GradingEngine, GradeReport, TaskGrade, GradingRubric,
     PlagiarismDetector, SecureSandbox,
 };
-
 // Export magic commands
 pub use magic::{
     MagicRegistry, MagicResult, MagicCommand, UnicodeExpander, ProfileData,
 };
-
 // Export inspection protocol
 pub use inspect::{
     Inspect, Inspector, InspectStyle, DisplayForm, CompositeForm, OpaqueHandle,
 };
-
 // Export resource-bounded evaluation
 pub use safe_arena::{
     SafeArena as Arena, TransactionalArena,
@@ -84,18 +75,14 @@ pub use transaction::{
 // pub use resource_eval::{
 //     CheckpointHandle, ResourceLimits, Sandbox,
 // };
-
 pub use observatory_ui::{DashboardConfig, DisplayMode, ObservatoryDashboard};
-
 // Export dataflow debugger components
 pub use dataflow_debugger::{
     DataflowDebugger, DataflowConfig, PipelineStage, StageType, StageStatus,
     Breakpoint, BreakpointCondition, BreakpointAction, MaterializedFrame, 
     StageMetrics, ExecutionEvent, StageDiff, ExportFormat,
 };
-
 pub use dataflow_ui::{DataflowUI, UIConfig};
-
 // Export replay-to-test converter
 pub use replay_converter::{
     ReplayConverter, ConversionConfig, GeneratedTest, TestCategory,

@@ -1,11 +1,8 @@
 //! Core parser implementation with main entry points
-
 use super::{ParserState, *};
-
 pub struct Parser<'a> {
     state: ParserState<'a>,
 }
-
 impl<'a> Parser<'a> {
     #[must_use]
     pub fn new(input: &'a str) -> Self {
@@ -13,13 +10,11 @@ impl<'a> Parser<'a> {
             state: ParserState::new(input),
         }
     }
-
     /// Get all errors encountered during parsing
     #[must_use]
     pub fn get_errors(&self) -> &[ErrorNode] {
         self.state.get_errors()
     }
-
     /// Parse the input into an expression or block of expressions
     ///
     /// Parse a complete program or expression
@@ -56,19 +51,16 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self) -> Result<Expr> {
         // Parse multiple top-level expressions/statements as a block
         let mut exprs = Vec::new();
-
         while self.state.tokens.peek().is_some() {
             let attributes = utils::parse_attributes(&mut self.state)?;
             let mut expr = super::parse_expr_recursive(&mut self.state)?;
             expr.attributes = attributes;
             exprs.push(expr);
-
             // Skip optional semicolons
             if let Some((Token::Semicolon, _)) = self.state.tokens.peek() {
                 self.state.tokens.advance();
             }
         }
-
         if exprs.is_empty() {
             bail!("Empty program");
         } else if exprs.len() == 1 {
@@ -81,7 +73,6 @@ impl<'a> Parser<'a> {
             })
         }
     }
-
     /// Parse a single expression
     ///
     /// # Examples
@@ -102,7 +93,6 @@ impl<'a> Parser<'a> {
     pub fn parse_expr(&mut self) -> Result<Expr> {
         super::parse_expr_recursive(&mut self.state)
     }
-
     /// Parse an expression with operator precedence
     ///
     /// # Examples
