@@ -9,6 +9,8 @@ pub mod completion;
 pub mod dataflow_debugger;
 pub mod dataflow_ui;
 pub mod grammar_coverage;
+#[cfg(test)]
+mod grammar_coverage_tests;
 pub mod interpreter;
 // pub mod interpreter_modules;  // Temporarily disabled - compilation errors
 pub mod lazy;
