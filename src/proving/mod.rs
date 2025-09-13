@@ -3,6 +3,8 @@
 //! Provides REPL-based refinement type verification, property proving,
 //! and counterexample generation.
 pub mod prover;
+#[cfg(test)]
+mod prover_tests;
 pub mod tactics;
 pub mod smt;
 pub mod refinement;

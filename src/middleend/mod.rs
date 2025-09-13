@@ -1,5 +1,7 @@
 //! Middle-end compiler passes (type checking, inference, optimization)
 pub mod environment;
+#[cfg(test)]
+mod mod_tests;
 pub mod infer;
 pub mod mir;
 pub mod types;

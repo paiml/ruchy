@@ -7,6 +7,8 @@ use wasm_encoder::{
 };
 #[cfg(test)]
 mod debug;
+#[cfg(test)]
+mod mod_tests;
 pub struct WasmEmitter {
     module: Module,
 }
