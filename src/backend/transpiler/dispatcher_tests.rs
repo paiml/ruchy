@@ -5,7 +5,7 @@
 #[cfg(test)]
 mod dispatcher_tests {
     use crate::backend::transpiler::Transpiler;
-    use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, UnaryOp, Span, Pattern};
+    use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, UnaryOp, Span, Pattern, Attribute};
     use proc_macro2::TokenStream;
     use quote::quote;
     
@@ -65,6 +65,7 @@ mod dispatcher_tests {
         let expr = Expr {
             kind: ExprKind::Identifier("my_var".to_string()),
             span: Span::default(),
+            attributes: vec![],
         };
         let result = transpiler.transpile_basic_expr(&expr).unwrap();
         assert_eq!(result.to_string(), "my_var");
@@ -79,6 +80,7 @@ mod dispatcher_tests {
                 name: "vec".to_string(),
             },
             span: Span::default(),
+            attributes: vec![],
         };
         let result = transpiler.transpile_basic_expr(&expr).unwrap();
         assert_eq!(result.to_string(), "std :: vec");
@@ -96,6 +98,7 @@ mod dispatcher_tests {
                 target_type: "i32".to_string(),
             },
             span: Span::default(),
+            attributes: vec![],
         };
         let result = transpiler.transpile_basic_expr(&expr).unwrap();
         assert!(result.to_string().contains("as i32"));
@@ -111,6 +114,7 @@ mod dispatcher_tests {
                 target_type: "f64".to_string(),
             },
             span: Span::default(),
+            attributes: vec![],
         };
         let result = transpiler.transpile_basic_expr(&expr).unwrap();
         assert!(result.to_string().contains("as f64"));
@@ -129,6 +133,7 @@ mod dispatcher_tests {
                     target_type: type_name.to_string(),
                 },
                 span: Span::default(),
+            attributes: vec![],
             };
             let result = transpiler.transpile_basic_expr(&expr).unwrap();
             assert!(result.to_string().contains(&format!("as {}", type_name)));
@@ -145,6 +150,7 @@ mod dispatcher_tests {
                 target_type: "MyCustomType".to_string(),
             },
             span: Span::default(),
+            attributes: vec![],
         };
         let result = transpiler.transpile_basic_expr(&expr);
         assert!(result.is_err());
@@ -166,6 +172,7 @@ mod dispatcher_tests {
                 else_branch,
             },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = transpiler.transpile_control_flow_expr(&if_expr).unwrap();
@@ -183,6 +190,7 @@ mod dispatcher_tests {
         let match_expr = Expr {
             kind: ExprKind::Match { expr, arms },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = transpiler.transpile_control_flow_expr(&match_expr).unwrap();
@@ -203,6 +211,7 @@ mod dispatcher_tests {
         let list_expr = Expr {
             kind: ExprKind::List(elements),
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = transpiler.transpile_data_structure_expr(&list_expr).unwrap();
@@ -220,6 +229,7 @@ mod dispatcher_tests {
         let tuple_expr = Expr {
             kind: ExprKind::Tuple(elements),
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = transpiler.transpile_data_structure_expr(&tuple_expr).unwrap();
@@ -234,6 +244,7 @@ mod dispatcher_tests {
         let list_expr = Expr {
             kind: ExprKind::List(vec![]),
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = transpiler.transpile_data_structure_expr(&list_expr).unwrap();
@@ -251,6 +262,7 @@ mod dispatcher_tests {
         let lambda_expr = Expr {
             kind: ExprKind::Lambda { params, body },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = transpiler.transpile_function_expr(&lambda_expr).unwrap();
@@ -266,12 +278,14 @@ mod dispatcher_tests {
         let func = Box::new(Expr {
             kind: ExprKind::Identifier("println".to_string()),
             span: Span::default(),
+            attributes: vec![],
         });
         let args = vec![create_literal_expr(Literal::String("test".to_string()))];
         
         let call_expr = Expr {
             kind: ExprKind::Call { func, args },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = transpiler.transpile_function_expr(&call_expr).unwrap();
@@ -293,6 +307,7 @@ mod dispatcher_tests {
                 right,
             },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = transpiler.transpile_advanced_expr(&binary_expr).unwrap();
@@ -310,6 +325,7 @@ mod dispatcher_tests {
                 operand,
             },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = transpiler.transpile_advanced_expr(&unary_expr).unwrap();
@@ -323,6 +339,7 @@ mod dispatcher_tests {
         Expr {
             kind: ExprKind::Literal(lit),
             span: Span::default(),
+            attributes: vec![],
         }
     }
     
