@@ -3,8 +3,12 @@
 //! This module provides the interactive REPL, runtime execution environment,
 //! and actor system with supervision trees.
 pub mod actor;
+#[cfg(test)]
+mod actor_tests;
 pub mod binary_ops;
 pub mod cache;
+#[cfg(test)]
+mod cache_tests;
 pub mod completion;
 pub mod dataflow_debugger;
 pub mod dataflow_ui;
