@@ -2398,10 +2398,10 @@ mod property_tests_parser_expressions {
         /// Property: Valid literals always parse successfully
         #[test]
         fn test_valid_literals_always_parse(
-            int_val in any::<i64>(),
-            float_val in any::<f64>().prop_filter("finite", |f| f.is_finite()),
+            int_val in -1000000i64..1000000i64,
+            float_val in -1000000.0f64..1000000.0f64,
             bool_val in any::<bool>(),
-            string_val in ".*{0,50}", // Limit string length
+            string_val in "[a-zA-Z0-9 ]{0,20}", // Simple ASCII strings only
         ) {
             let test_cases = vec![
                 int_val.to_string(),

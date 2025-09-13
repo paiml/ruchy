@@ -11,9 +11,13 @@ mod parser_property_tests {
     /// Generate valid identifiers
     fn identifier_strategy() -> impl Strategy<Value = String> {
         "[a-z][a-z0-9_]{0,10}".prop_filter("Not a keyword", |s| {
-            !matches!(s.as_str(), "let" | "fun" | "if" | "else" | "match" | 
-                     "for" | "while" | "return" | "break" | "continue" |
-                     "true" | "false" | "null" | "var" | "const")
+            !matches!(s.as_str(), 
+                "let" | "fun" | "fn" | "if" | "else" | "match" | "for" | "in" | "while" | "loop" |
+                "return" | "break" | "continue" | "true" | "false" | "null" | "var" | "const" |
+                "mod" | "async" | "await" | "throw" | "try" | "catch" | "finally" | "command" |
+                "struct" | "enum" | "impl" | "trait" | "extend" | "actor" | "state" | "receive" |
+                "send" | "ask" | "type" | "where" | "static" | "mut" | "pub" | "import" | "use" |
+                "as" | "module" | "export" | "df")
         })
     }
     
