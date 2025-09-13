@@ -16,6 +16,7 @@ pub mod pattern_matching;
 pub mod observatory;
 pub mod observatory_ui;
 pub mod repl;
+pub mod repl_comprehensive_tests;
 // pub mod repl_modules;  // Temporarily disabled - compilation errors
 pub mod repl_recording;
 pub mod replay;

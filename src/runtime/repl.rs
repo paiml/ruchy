@@ -447,9 +447,14 @@ impl ReplState {
                 (ReplState::Failed(checkpoint), Err(anyhow::anyhow!("Invalid state transition")))
             }
             ReplState::Failed(checkpoint) => {
-                // Restore from checkpoint and retry
+                // Restore from checkpoint and retry with new input
                 checkpoint.restore_to(repl);
-                (ReplState::Ready, Err(anyhow::anyhow!("Recovered from previous failure")))
+                let new_checkpoint = Checkpoint::from_repl(repl);
+                // Attempt evaluation with new input
+                match repl.eval_internal(input) {
+                    Ok(result) => (ReplState::Ready, Ok(result)),
+                    Err(e) => (ReplState::Failed(new_checkpoint), Err(e)),
+                }
             }
         }
     }
