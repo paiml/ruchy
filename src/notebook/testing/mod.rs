@@ -57,6 +57,9 @@ pub use migration::{MigrationTool, TestFramework, MigrationConfig, MigrationResu
 pub use incremental::{IncrementalTester, IncrementalConfig, IncrementalResult, TestResultCache};
 pub use smt::{SmtSolver, SolverType, SmtQuery, SmtResult, BoundedModelChecker};
 pub use progressive::{ProgressiveDisclosure, DisclosureConfig, StudentProgress, TestHierarchy};
+
+// Test modules (to be added once API stabilizes)
+
 #[cfg(test)]
 use proptest::prelude::*;
 /// Initialize the testing framework with default configuration
