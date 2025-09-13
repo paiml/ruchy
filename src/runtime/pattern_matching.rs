@@ -104,9 +104,9 @@ pub fn match_pattern(pattern: &Pattern, value: &Value) -> Option<Vec<(String, Va
         Pattern::Struct { fields, .. } => match_struct_pattern_helper(fields, value),
         Pattern::Or(patterns) => match_or_pattern_helper(patterns, value),
         Pattern::Rest | Pattern::RestNamed(_) => {
-            // Rest patterns should only appear within list/tuple patterns
-            // They're handled by match_collection_patterns
-            None
+            // Rest patterns when used standalone act like wildcards
+            // When within collections, they're handled by match_collection_patterns
+            Some(vec![])
         },
         Pattern::Range { start, end, inclusive } => match_range_pattern_helper(start, end, *inclusive, value),
         Pattern::QualifiedName(_) => None,
