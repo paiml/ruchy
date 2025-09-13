@@ -4,7 +4,7 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
-## [3.4.2] - 2025-01-13
+## [3.4.3] - 2025-01-13
 
 ### Test Coverage Excellence - 46.41% Achievement
 
