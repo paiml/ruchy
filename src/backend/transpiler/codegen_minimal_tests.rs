@@ -5,7 +5,7 @@
 #[cfg(test)]
 mod codegen_minimal_tests {
     use crate::backend::transpiler::codegen_minimal::MinimalCodeGen;
-    use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, UnaryOp, Pattern, Span};
+    use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, UnaryOp, Pattern, Span, Attribute};
     
     // ========== Literal Generation Tests ==========
     
@@ -55,6 +55,7 @@ mod codegen_minimal_tests {
         let expr = Expr {
             kind: ExprKind::Identifier("my_variable".to_string()),
             span: Span::default(),
+            attributes: vec![],
         };
         let result = MinimalCodeGen::gen_expr(&expr).unwrap();
         assert_eq!(result, "my_variable");
@@ -68,6 +69,7 @@ mod codegen_minimal_tests {
                 name: "vec".to_string(),
             },
             span: Span::default(),
+            attributes: vec![],
         };
         let result = MinimalCodeGen::gen_expr(&expr).unwrap();
         assert_eq!(result, "std::vec");
@@ -130,6 +132,7 @@ mod codegen_minimal_tests {
                 else_branch,
             },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&if_expr).unwrap();
@@ -152,6 +155,7 @@ mod codegen_minimal_tests {
                 else_branch: None,
             },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&if_expr).unwrap();
@@ -173,6 +177,7 @@ mod codegen_minimal_tests {
         let block_expr = Expr {
             kind: ExprKind::Block(exprs),
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&block_expr).unwrap();
@@ -186,6 +191,7 @@ mod codegen_minimal_tests {
         let block_expr = Expr {
             kind: ExprKind::Block(vec![]),
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&block_expr).unwrap();
@@ -205,6 +211,7 @@ mod codegen_minimal_tests {
         let list_expr = Expr {
             kind: ExprKind::List(elements),
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&list_expr).unwrap();
@@ -216,6 +223,7 @@ mod codegen_minimal_tests {
         let list_expr = Expr {
             kind: ExprKind::List(vec![]),
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&list_expr).unwrap();
@@ -232,6 +240,7 @@ mod codegen_minimal_tests {
         let lambda_expr = Expr {
             kind: ExprKind::Lambda { params, body },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&lambda_expr).unwrap();
@@ -247,6 +256,7 @@ mod codegen_minimal_tests {
         let lambda_expr = Expr {
             kind: ExprKind::Lambda { params, body },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&lambda_expr).unwrap();
@@ -261,12 +271,14 @@ mod codegen_minimal_tests {
         let func = Box::new(Expr {
             kind: ExprKind::Identifier("println".to_string()),
             span: Span::default(),
+            attributes: vec![],
         });
         let args = vec![create_literal_expr(Literal::String("Hello!".to_string()))];
         
         let call_expr = Expr {
             kind: ExprKind::Call { func, args },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&call_expr).unwrap();
@@ -282,6 +294,7 @@ mod codegen_minimal_tests {
         let method_call = Expr {
             kind: ExprKind::MethodCall { receiver, method, args },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&method_call).unwrap();
@@ -301,6 +314,7 @@ mod codegen_minimal_tests {
         let macro_expr = Expr {
             kind: ExprKind::Macro { name, args },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&macro_expr).unwrap();
@@ -315,6 +329,7 @@ mod codegen_minimal_tests {
         let expr = Expr {
             kind: ExprKind::Async(Box::new(create_literal_expr(Literal::Integer(42)))),
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&expr);
@@ -330,6 +345,7 @@ mod codegen_minimal_tests {
         Expr {
             kind: ExprKind::Literal(lit),
             span: Span::default(),
+            attributes: vec![],
         }
     }
     
@@ -341,6 +357,7 @@ mod codegen_minimal_tests {
                 operand: Box::new(create_literal_expr(lit)),
             },
             span: Span::default(),
+            attributes: vec![],
         }
     }
     
@@ -349,10 +366,12 @@ mod codegen_minimal_tests {
         let left = Expr {
             kind: ExprKind::Identifier(left_str.to_string()),
             span: Span::default(),
+            attributes: vec![],
         };
         let right = Expr {
             kind: ExprKind::Identifier(right_str.to_string()),
             span: Span::default(),
+            attributes: vec![],
         };
         
         let binary_expr = Expr {
@@ -362,6 +381,7 @@ mod codegen_minimal_tests {
                 right: Box::new(right),
             },
             span: Span::default(),
+            attributes: vec![],
         };
         
         let result = MinimalCodeGen::gen_expr(&binary_expr).unwrap();
@@ -394,6 +414,7 @@ mod codegen_minimal_tests {
             let expr = Expr {
                 kind: ExprKind::Identifier(name.clone()),
                 span: Span::default(),
+            attributes: vec![],
             };
             let result = MinimalCodeGen::gen_expr(&expr);
             assert!(result.is_ok());
