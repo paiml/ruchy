@@ -24,6 +24,8 @@ pub mod migration;
 pub mod incremental;
 pub mod smt;
 pub mod progressive;
+#[cfg(test)]
+mod progressive_tests;
 pub use tester::{NotebookTester, NotebookTestSession, NotebookParser as TestNotebookParser};
 pub use golden::GoldenManager;
 pub use coverage::{CoverageTracker, InstrumentedCell};

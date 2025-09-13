@@ -2,6 +2,8 @@
 //!
 //! This module handles tokenization, parsing, and AST construction.
 pub mod arena;
+#[cfg(test)]
+mod arena_tests;
 pub mod ast;
 pub mod diagnostics;
 pub mod error_recovery;

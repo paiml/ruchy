@@ -8,6 +8,9 @@ pub mod transpiler;
 pub mod wasm;
 #[cfg(feature = "dataframe")]
 pub mod arrow_integration;
+#[cfg(feature = "dataframe")]
+#[cfg(test)]
+mod arrow_integration_tests;
 pub use compiler::{compile_to_binary, compile_source_to_binary, CompileOptions};
 pub use module_loader::{ModuleLoader, ParsedModule, ModuleLoaderStats};
 pub use module_resolver::ModuleResolver;
