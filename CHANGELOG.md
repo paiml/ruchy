@@ -4,6 +4,38 @@ All notable changes to the Ruchy programming language will be documented in this
 
 ## [Unreleased]
 
+## [3.4.2] - 2025-01-13
+
+### TDD Coverage Sprint - Comprehensive Test Infrastructure
+
+Completed three-phase TDD Coverage Sprint adding 100+ test functions across critical modules with PMAT A+ quality standards.
+
+### Added
+- **Phase 1 - REPL & CLI Tests**: 20 comprehensive tests across runtime and CLI modules
+- **Phase 2 - Interpreter Tests**: 26+ tests for largest module (5,980 lines, 297 functions)
+- **Phase 3 - Transpiler Tests**: 55+ tests for compilation pipeline (~900 lines)
+- **Property Testing**: 9+ property tests with 10,000+ iterations each
+- **Test Infrastructure**: Systematic test organization with helper functions
+
+### Fixed
+- **Critical REPL Bug**: Fixed ReplState::Failed recovery loop preventing REPL restart after errors
+- **State Machine**: Corrected checkpoint restoration with proper input evaluation
+- **Error Recovery**: REPL now properly recovers from failed states
+
+### Quality Achievements
+- **Total New Tests**: 100+ test functions across 3 phases
+- **PMAT A+ Standards**: All tests maintain ≤10 complexity, zero SATD
+- **Test Organization**: 8 functional categories for maintainability
+- **Coverage Foundation**: Infrastructure established for 44% → 80% target
+- **Toyota Way**: Systematic defect prevention through comprehensive testing
+
+### Technical Impact
+- **REPL Module**: Critical bug fixed, comprehensive test coverage added
+- **Interpreter Module**: Value system, stack operations, GC fully tested
+- **Transpiler Modules**: Code generation and dispatcher pipeline tested
+- **Property Testing**: Random input validation for robustness
+- **Test Patterns**: Reusable helper functions and test utilities
+
 ## [3.4.1] - 2025-01-13
 
 ### Test Coverage Excellence - Systematic Test Recovery
