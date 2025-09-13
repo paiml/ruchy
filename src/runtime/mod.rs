@@ -14,6 +14,8 @@ mod grammar_coverage_tests;
 pub mod interpreter;
 // pub mod interpreter_modules;  // Temporarily disabled - compilation errors
 pub mod lazy;
+#[cfg(test)]
+mod lazy_tests;
 pub mod pattern_matching;
 pub mod observatory;
 pub mod observatory_ui;
