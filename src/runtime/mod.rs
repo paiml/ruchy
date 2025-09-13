@@ -35,6 +35,8 @@ mod repl_function_tests;
 mod binary_ops_tests;
 #[cfg(test)]
 mod pattern_matching_tests;
+#[cfg(test)]
+mod interpreter_minimal_tests;
 // Export the unified REPL
 pub use repl::{Repl, ReplConfig, ReplState, Value};
 // Export interpreter components
