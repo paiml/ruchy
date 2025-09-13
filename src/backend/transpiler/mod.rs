@@ -19,6 +19,10 @@ mod type_conversion_refactored;
 mod type_inference;
 mod types;
 pub mod codegen_minimal;
+#[cfg(test)]
+mod codegen_minimal_tests;
+#[cfg(test)]
+mod dispatcher_tests;
 use crate::frontend::ast::{Attribute, Expr, ExprKind, Span, Type};
 use crate::backend::module_resolver::ModuleResolver;
 use anyhow::Result;
