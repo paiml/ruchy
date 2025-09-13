@@ -8,7 +8,7 @@ use proptest::prelude::*;
 #[derive(Parser, Debug)]
 #[command(name = "ruchy")]
 #[command(author = "Noah Gift")]
-#[command(version = "3.0.3")]
+#[command(version = "3.4.1")]
 #[command(about = "The Ruchy programming language - A modern, expressive language for data science")]
 #[command(long_about = None)]
 pub struct Cli {
@@ -160,7 +160,7 @@ pub fn execute(self) -> Result<(), String> {
 }
 fn execute_repl(_verbose: bool, quiet: bool) -> Result<(), String> {
     if !quiet {
-        println!("Starting Ruchy REPL v3.0.3...");
+        println!("Starting Ruchy REPL v3.4.1...");
     }
     // Use existing REPL implementation
     crate::run_repl()
