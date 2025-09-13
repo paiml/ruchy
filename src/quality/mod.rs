@@ -8,6 +8,8 @@ pub mod scoring;
 pub mod gates;
 pub mod enforcement;
 pub mod formatter;
+#[cfg(test)]
+mod formatter_tests;
 pub mod linter;
 pub use coverage::{
     CoverageCollector, CoverageReport, CoverageTool, FileCoverage, HtmlReportGenerator,
