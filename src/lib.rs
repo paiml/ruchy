@@ -799,3 +799,7 @@ mod property_tests_lib {
 // Integration tests module
 #[cfg(test)]
 mod integration_tests;
+
+// Performance benchmarks
+#[cfg(test)]
+mod benchmarks;
