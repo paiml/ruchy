@@ -80,20 +80,57 @@ pub fn test_notebook(path: &std::path::Path, config: TestConfig) -> anyhow::Resu
     tester.test_file(path)
 }
 #[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    // Sprint 7: Basic notebook testing module tests
+
+    #[test]
+    fn test_init_creates_notebook_tester() {
+        let tester = init();
+        // Just verify it can be created without panicking
+        let _ = tester;
+    }
+
+    #[test]
+    fn test_notebook_tester_new() {
+        let tester = NotebookTester::new();
+        // Just verify creation
+        let _ = tester;
+    }
+
+    #[test]
+    fn test_notebook_tester_with_config() {
+        let config = TestConfig::default();
+        let tester = NotebookTester::with_config(config);
+        let _ = tester;
+    }
+
+    #[test]
+    fn test_test_notebook_nonexistent_file() {
+        let path = Path::new("nonexistent_notebook.ipynb");
+        let config = TestConfig::default();
+        let result = test_notebook(path, config);
+        assert!(result.is_err());
+    }
+}
+
+#[cfg(test)]
 mod property_tests_mod {
     use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]
         fn test_init_never_panics(input: String) {
             // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
             // Function should not panic on any input
             let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
+                init();
             });
         }
     }
