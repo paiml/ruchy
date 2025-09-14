@@ -9,6 +9,292 @@ pub use canonical_ast::{AstNormalizer, CoreExpr, CoreLiteral, DeBruijnIndex, Pri
 pub use provenance::{CompilationTrace, ProvenanceTracker, TraceDiffer};
 pub use reference_interpreter::{Environment, ReferenceInterpreter, Value};
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Sprint 10: Transpiler module tests
+
+    #[test]
+    fn test_ast_normalizer_creation() {
+        let normalizer = AstNormalizer::new();
+        // Just verify it can be created
+        let _ = normalizer;
+    }
+
+    #[test]
+    fn test_de_bruijn_index_creation() {
+        let idx = DeBruijnIndex(0);
+        assert_eq!(idx.0, 0);
+
+        let idx2 = DeBruijnIndex(42);
+        assert_eq!(idx2.0, 42);
+    }
+
+    #[test]
+    fn test_de_bruijn_index_equality() {
+        let idx1 = DeBruijnIndex(5);
+        let idx2 = DeBruijnIndex(5);
+        let idx3 = DeBruijnIndex(10);
+
+        assert_eq!(idx1, idx2);
+        assert_ne!(idx1, idx3);
+    }
+
+    #[test]
+    fn test_provenance_tracker_creation() {
+        let tracker = ProvenanceTracker::new();
+        assert!(tracker.traces().is_empty());
+    }
+
+    #[test]
+    fn test_provenance_tracker_add_trace() {
+        let mut tracker = ProvenanceTracker::new();
+        let trace = CompilationTrace::new("test_phase");
+        tracker.add_trace(trace);
+        assert_eq!(tracker.traces().len(), 1);
+    }
+
+    #[test]
+    fn test_compilation_trace_creation() {
+        let trace = CompilationTrace::new("optimization");
+        assert_eq!(trace.phase(), "optimization");
+        assert!(trace.steps().is_empty());
+    }
+
+    #[test]
+    fn test_compilation_trace_add_step() {
+        let mut trace = CompilationTrace::new("parsing");
+        trace.add_step("tokenize", "Tokenized input");
+        trace.add_step("parse", "Built AST");
+        assert_eq!(trace.steps().len(), 2);
+    }
+
+    #[test]
+    fn test_trace_differ_creation() {
+        let differ = TraceDiffer::new();
+        // Just verify it can be created
+        let _ = differ;
+    }
+
+    #[test]
+    fn test_trace_differ_compare_identical() {
+        let differ = TraceDiffer::new();
+        let trace1 = CompilationTrace::new("test");
+        let trace2 = CompilationTrace::new("test");
+
+        let diff = differ.compare(&trace1, &trace2);
+        assert!(diff.is_identical());
+    }
+
+    #[test]
+    fn test_trace_differ_compare_different() {
+        let differ = TraceDiffer::new();
+        let mut trace1 = CompilationTrace::new("test");
+        trace1.add_step("step1", "data1");
+
+        let mut trace2 = CompilationTrace::new("test");
+        trace2.add_step("step2", "data2");
+
+        let diff = differ.compare(&trace1, &trace2);
+        assert!(!diff.is_identical());
+    }
+
+    #[test]
+    fn test_environment_creation() {
+        let env = Environment::new();
+        assert!(env.bindings().is_empty());
+    }
+
+    #[test]
+    fn test_environment_bind() {
+        let mut env = Environment::new();
+        env.bind("x", Value::Integer(42));
+        assert_eq!(env.lookup("x"), Some(&Value::Integer(42)));
+    }
+
+    #[test]
+    fn test_environment_lookup_missing() {
+        let env = Environment::new();
+        assert_eq!(env.lookup("y"), None);
+    }
+
+    #[test]
+    fn test_environment_extend() {
+        let mut env = Environment::new();
+        env.bind("x", Value::Integer(1));
+
+        let mut env2 = env.extend();
+        env2.bind("y", Value::Integer(2));
+
+        assert_eq!(env2.lookup("x"), Some(&Value::Integer(1)));
+        assert_eq!(env2.lookup("y"), Some(&Value::Integer(2)));
+    }
+
+    #[test]
+    fn test_value_variants() {
+        let int_val = Value::Integer(42);
+        let float_val = Value::Float(3.14);
+        let bool_val = Value::Bool(true);
+        let string_val = Value::String("hello".to_string());
+        let unit_val = Value::Unit;
+
+        assert!(matches!(int_val, Value::Integer(42)));
+        assert!(matches!(float_val, Value::Float(_)));
+        assert!(matches!(bool_val, Value::Bool(true)));
+        assert!(matches!(string_val, Value::String(_)));
+        assert!(matches!(unit_val, Value::Unit));
+    }
+
+    #[test]
+    fn test_value_equality() {
+        let val1 = Value::Integer(42);
+        let val2 = Value::Integer(42);
+        let val3 = Value::Integer(43);
+
+        assert_eq!(val1, val2);
+        assert_ne!(val1, val3);
+    }
+
+    #[test]
+    fn test_reference_interpreter_creation() {
+        let interpreter = ReferenceInterpreter::new();
+        assert_eq!(interpreter.step_count(), 0);
+    }
+
+    #[test]
+    fn test_reference_interpreter_with_limit() {
+        let interpreter = ReferenceInterpreter::with_step_limit(1000);
+        assert_eq!(interpreter.step_limit(), 1000);
+    }
+
+    #[test]
+    fn test_core_literal_integer() {
+        let lit = CoreLiteral::Integer(100);
+        assert!(matches!(lit, CoreLiteral::Integer(100)));
+    }
+
+    #[test]
+    fn test_core_literal_float() {
+        let lit = CoreLiteral::Float(2.718);
+        if let CoreLiteral::Float(f) = lit {
+            assert!((f - 2.718).abs() < 0.001);
+        }
+    }
+
+    #[test]
+    fn test_core_literal_bool() {
+        let lit_true = CoreLiteral::Bool(true);
+        let lit_false = CoreLiteral::Bool(false);
+        assert!(matches!(lit_true, CoreLiteral::Bool(true)));
+        assert!(matches!(lit_false, CoreLiteral::Bool(false)));
+    }
+
+    #[test]
+    fn test_core_literal_string() {
+        let lit = CoreLiteral::String("test".to_string());
+        if let CoreLiteral::String(s) = lit {
+            assert_eq!(s, "test");
+        }
+    }
+
+    #[test]
+    fn test_core_expr_literal() {
+        let expr = CoreExpr::Literal(CoreLiteral::Integer(42));
+        assert!(matches!(expr, CoreExpr::Literal(_)));
+    }
+
+    #[test]
+    fn test_core_expr_variable() {
+        let expr = CoreExpr::Variable(DeBruijnIndex(0));
+        if let CoreExpr::Variable(idx) = expr {
+            assert_eq!(idx.0, 0);
+        }
+    }
+
+    #[test]
+    fn test_prim_op_add() {
+        let op = PrimOp::Add;
+        assert!(matches!(op, PrimOp::Add));
+    }
+
+    #[test]
+    fn test_prim_op_subtract() {
+        let op = PrimOp::Subtract;
+        assert!(matches!(op, PrimOp::Subtract));
+    }
+
+    #[test]
+    fn test_prim_op_multiply() {
+        let op = PrimOp::Multiply;
+        assert!(matches!(op, PrimOp::Multiply));
+    }
+
+    #[test]
+    fn test_prim_op_divide() {
+        let op = PrimOp::Divide;
+        assert!(matches!(op, PrimOp::Divide));
+    }
+
+    #[test]
+    fn test_prim_op_equality() {
+        assert_eq!(PrimOp::Add, PrimOp::Add);
+        assert_ne!(PrimOp::Add, PrimOp::Subtract);
+    }
+
+    #[test]
+    fn test_value_list() {
+        let list = Value::List(vec![Value::Integer(1), Value::Integer(2)]);
+        if let Value::List(items) = list {
+            assert_eq!(items.len(), 2);
+        }
+    }
+
+    #[test]
+    fn test_value_function() {
+        let func = Value::Function(Box::new(|_env, _arg| Value::Unit));
+        assert!(matches!(func, Value::Function(_)));
+    }
+
+    #[test]
+    fn test_environment_shadow_binding() {
+        let mut env = Environment::new();
+        env.bind("x", Value::Integer(1));
+        env.bind("x", Value::Integer(2));
+        assert_eq!(env.lookup("x"), Some(&Value::Integer(2)));
+    }
+
+    #[test]
+    fn test_provenance_tracker_clear() {
+        let mut tracker = ProvenanceTracker::new();
+        tracker.add_trace(CompilationTrace::new("phase1"));
+        tracker.add_trace(CompilationTrace::new("phase2"));
+        assert_eq!(tracker.traces().len(), 2);
+
+        tracker.clear();
+        assert_eq!(tracker.traces().len(), 0);
+    }
+
+    #[test]
+    fn test_compilation_trace_with_metadata() {
+        let mut trace = CompilationTrace::new("optimization");
+        trace.add_step_with_metadata("inline", "Inlined function foo", vec![("count", "3")]);
+        assert_eq!(trace.steps().len(), 1);
+    }
+
+    #[test]
+    fn test_reference_interpreter_step_counting() {
+        let mut interpreter = ReferenceInterpreter::new();
+        assert_eq!(interpreter.step_count(), 0);
+
+        interpreter.increment_steps();
+        assert_eq!(interpreter.step_count(), 1);
+
+        interpreter.increment_steps();
+        assert_eq!(interpreter.step_count(), 2);
+    }
+}
+
 // Transpiler tests commented out temporarily due to type mismatches
 // TODO: Fix these tests after verifying the actual transpiler API
 
