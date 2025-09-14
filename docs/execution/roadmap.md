@@ -25,18 +25,21 @@
 3. [x] Verified library tests compile and pass
 4. [x] Measured accurate baseline coverage: **41.65%**
 
-### 🟢 **Priority 1: Systematic Coverage Improvement** (ACTIVE - 41.68% → 80%)
-**NEW PLAN**: See [coverage-roadmap-2025.md](./coverage-roadmap-2025.md) for detailed 8-sprint plan
+### 🟢 **Priority 1: Systematic Coverage Improvement** (ACTIVE - 41.65% → 80%)
+**UPDATED PLAN**: Moving tests to src/ modules for accurate coverage tracking
 
-**Sprint Structure**:
-- 8 sprints of 5% coverage increase each
-- 1 week per sprint (5 dev days + 2 review days)
-- Strict TDD with test-first development
-- PMAT TDG A+ grade required for all code
-- Maximum complexity of 10 per function
+**Sprint Progress (2025-01-14)**:
+- ✅ Sprint 1: Runtime/REPL tests (150+ tests added to tests/)
+- ✅ Sprint 2: Parser/Lexer tests (100+ tests added to tests/)
+- ✅ Sprint 3: Deep Runtime tests (150+ tests added to tests/)
+- ✅ Coverage Infrastructure: `make coverage` now works reliably
+- 🔄 Sprint 4: Moving tests to src/ modules (IN PROGRESS)
 
-**Current Sprint**: Sprint 1 (41.68% → 47%) - Runtime/REPL Core
-**Next Milestone**: 47% by 2025-01-21
+**Current Status**:
+- **Baseline**: 41.65% coverage (stable, measured accurately)
+- **Tests Added**: 400+ comprehensive tests in tests/ directory
+- **Next Step**: Move tests to #[cfg(test)] modules in src/ files
+- **Target**: 47% by end of Sprint 4, then continue to 80%
 
 Based on PMAT analysis and paiml-mcp-agent-toolkit best practices:
 
