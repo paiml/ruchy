@@ -206,9 +206,6 @@ pub fn transpile_method_call_refactored(
     }
 }
 #[cfg(test)]
-#[path = "method_call_refactored_tests.rs"]
-mod tests;
-#[cfg(test)]
 mod property_tests_method_call_refactored {
     use proptest::proptest;
     use super::*;

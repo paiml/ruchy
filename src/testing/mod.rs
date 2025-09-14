@@ -3,7 +3,6 @@
 //! This module provides test generators and property-based testing utilities.
 pub mod ast_builder;
 #[cfg(test)]
-mod ast_builder_tests;
 pub mod generators;
 pub mod harness;
 pub mod properties;

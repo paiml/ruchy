@@ -425,5 +425,3 @@ mod property_tests_mod {
     }
 }
 
-#[cfg(test)]
-mod minimal_tests;

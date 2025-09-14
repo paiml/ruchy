@@ -498,7 +498,7 @@ fn add_profile_section(output: &mut String) {
     output.push_str("Function call times:\n");
     output.push_str("  main: 0.001ms\n\n");
 }
-/// Add BigO complexity analysis section
+/// Add `BigO` complexity analysis section
 fn add_bigo_section(output: &mut String, ast: &ruchy::frontend::ast::Expr) {
     output.push_str("=== BigO Complexity Analysis ===\n");
     let complexity = analyze_complexity(ast);

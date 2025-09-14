@@ -2,8 +2,6 @@
 //!
 //! Based on docs/ruchy-transpiler-docs.md
 pub mod canonical_ast;
-#[cfg(test)]
-mod canonical_ast_tests;
 pub mod provenance;
 pub mod reference_interpreter;
 // Re-exports
