@@ -33,13 +33,14 @@
 - ✅ Sprint 2: Parser/Lexer tests (100+ tests added to tests/)
 - ✅ Sprint 3: Deep Runtime tests (150+ tests added to tests/)
 - ✅ Coverage Infrastructure: `make coverage` now works reliably
-- 🔄 Sprint 4: Moving tests to src/ modules (IN PROGRESS)
+- ✅ Sprint 4: Unit tests in src/ modules (41.65% → 42.44%)
+- 🔄 Sprint 5: Frontend/Transpiler/Middleend tests (IN PROGRESS)
 
 **Current Status**:
-- **Baseline**: 41.65% coverage (stable, measured accurately)
-- **Tests Added**: 400+ comprehensive tests in tests/ directory
-- **Next Step**: Move tests to #[cfg(test)] modules in src/ files
-- **Target**: 47% by end of Sprint 4, then continue to 80%
+- **Baseline**: 42.44% coverage (up from 41.65%)
+- **Tests Added**: 400+ in tests/ + 68+ in src/ modules
+- **Sprint 4 Achievement**: Added tests to runtime/mod.rs and frontend/parser/mod.rs
+- **Target**: 47% by end of Sprint 5, then continue to 80%
 
 Based on PMAT analysis and paiml-mcp-agent-toolkit best practices:
 
