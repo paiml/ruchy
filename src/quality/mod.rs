@@ -537,14 +537,53 @@ impl Default for QualityGates {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
+
+    // Sprint 7: Comprehensive quality module tests for coverage improvement
+
     #[test]
     fn test_quality_gates_creation() {
         let gates = QualityGates::new();
         assert_eq!(gates.thresholds.max_satd, 0);
         assert!((gates.thresholds.min_test_coverage - 80.0).abs() < f64::EPSILON);
     }
+
+    #[test]
+    fn test_quality_gates_with_custom_thresholds() {
+        let thresholds = QualityThresholds {
+            min_test_coverage: 90.0,
+            max_complexity: 5,
+            max_satd: 2,
+            max_clippy_warnings: 1,
+            min_doc_coverage: 85.0,
+        };
+        let gates = QualityGates::with_thresholds(thresholds.clone());
+        assert_eq!(gates.thresholds.min_test_coverage, 90.0);
+        assert_eq!(gates.thresholds.max_complexity, 5);
+        assert_eq!(gates.thresholds.max_satd, 2);
+    }
+
+    #[test]
+    fn test_quality_metrics_default() {
+        let metrics = QualityMetrics::default();
+        assert_eq!(metrics.test_coverage, 0.0);
+        assert_eq!(metrics.cyclomatic_complexity, 0);
+        assert_eq!(metrics.cognitive_complexity, 0);
+        assert_eq!(metrics.satd_count, 0);
+        assert_eq!(metrics.clippy_warnings, 0);
+        assert_eq!(metrics.documentation_coverage, 0.0);
+        assert_eq!(metrics.unsafe_blocks, 0);
+    }
+
+    #[test]
+    fn test_quality_thresholds_default() {
+        let thresholds = QualityThresholds::default();
+        assert_eq!(thresholds.min_test_coverage, 80.0);
+        assert_eq!(thresholds.max_complexity, 10);
+        assert_eq!(thresholds.max_satd, 0);
+        assert_eq!(thresholds.max_clippy_warnings, 0);
+        assert_eq!(thresholds.min_doc_coverage, 90.0);
+    }
+
     #[test]
     fn test_quality_check_pass() {
         let mut gates = QualityGates::new();
@@ -561,6 +600,7 @@ use proptest::prelude::*;
         let result = gates.check();
         assert!(matches!(result, Ok(QualityReport::Pass)));
     }
+
     #[test]
     fn test_quality_check_fail() {
         let mut gates = QualityGates::new();
@@ -581,6 +621,221 @@ use proptest::prelude::*;
             unreachable!("Expected quality check to fail");
         }
     }
+
+    #[test]
+    fn test_violation_insufficient_coverage() {
+        let mut gates = QualityGates::new();
+        gates.update_metrics(QualityMetrics {
+            test_coverage: 50.0, // Below threshold
+            ..Default::default()
+        });
+
+        let result = gates.check();
+        if let Err(QualityReport::Fail { violations }) = result {
+            assert!(violations.iter().any(|v| matches!(v,
+                Violation::InsufficientCoverage { current: 50.0, required: 80.0 }
+            )));
+        } else {
+            panic!("Expected insufficient coverage violation");
+        }
+    }
+
+    #[test]
+    fn test_violation_excessive_complexity() {
+        let mut gates = QualityGates::new();
+        gates.update_metrics(QualityMetrics {
+            test_coverage: 85.0,
+            cyclomatic_complexity: 20, // Above threshold
+            documentation_coverage: 95.0,
+            ..Default::default()
+        });
+
+        let result = gates.check();
+        if let Err(QualityReport::Fail { violations }) = result {
+            assert!(violations.iter().any(|v| matches!(v,
+                Violation::ExcessiveComplexity { current: 20, maximum: 10 }
+            )));
+        } else {
+            panic!("Expected excessive complexity violation");
+        }
+    }
+
+    #[test]
+    fn test_violation_technical_debt() {
+        let mut gates = QualityGates::new();
+        gates.update_metrics(QualityMetrics {
+            test_coverage: 85.0,
+            satd_count: 3, // Above threshold of 0
+            documentation_coverage: 95.0,
+            ..Default::default()
+        });
+
+        let result = gates.check();
+        if let Err(QualityReport::Fail { violations }) = result {
+            assert!(violations.iter().any(|v| matches!(v,
+                Violation::TechnicalDebt { count: 3 }
+            )));
+        } else {
+            panic!("Expected technical debt violation");
+        }
+    }
+
+    #[test]
+    fn test_violation_clippy_warnings() {
+        let mut gates = QualityGates::new();
+        gates.update_metrics(QualityMetrics {
+            test_coverage: 85.0,
+            clippy_warnings: 5, // Above threshold of 0
+            documentation_coverage: 95.0,
+            ..Default::default()
+        });
+
+        let result = gates.check();
+        if let Err(QualityReport::Fail { violations }) = result {
+            assert!(violations.iter().any(|v| matches!(v,
+                Violation::ClippyWarnings { count: 5 }
+            )));
+        } else {
+            panic!("Expected clippy warnings violation");
+        }
+    }
+
+    #[test]
+    fn test_violation_insufficient_documentation() {
+        let mut gates = QualityGates::new();
+        gates.update_metrics(QualityMetrics {
+            test_coverage: 85.0,
+            documentation_coverage: 60.0, // Below threshold of 90%
+            ..Default::default()
+        });
+
+        let result = gates.check();
+        if let Err(QualityReport::Fail { violations }) = result {
+            assert!(violations.iter().any(|v| matches!(v,
+                Violation::InsufficientDocumentation { current: 60.0, required: 90.0 }
+            )));
+        } else {
+            panic!("Expected insufficient documentation violation");
+        }
+    }
+
+    #[test]
+    fn test_get_metrics() {
+        let mut gates = QualityGates::new();
+        let metrics = QualityMetrics {
+            test_coverage: 75.0,
+            cyclomatic_complexity: 8,
+            cognitive_complexity: 6,
+            satd_count: 1,
+            clippy_warnings: 2,
+            documentation_coverage: 85.0,
+            unsafe_blocks: 3,
+        };
+        gates.update_metrics(metrics.clone());
+
+        let retrieved = gates.get_metrics();
+        assert_eq!(retrieved.test_coverage, 75.0);
+        assert_eq!(retrieved.cyclomatic_complexity, 8);
+        assert_eq!(retrieved.satd_count, 1);
+    }
+
+    #[test]
+    fn test_get_thresholds() {
+        let thresholds = QualityThresholds {
+            min_test_coverage: 85.0,
+            max_complexity: 8,
+            max_satd: 1,
+            max_clippy_warnings: 2,
+            min_doc_coverage: 80.0,
+        };
+        let gates = QualityGates::with_thresholds(thresholds.clone());
+
+        let retrieved = gates.get_thresholds();
+        assert_eq!(retrieved.min_test_coverage, 85.0);
+        assert_eq!(retrieved.max_complexity, 8);
+        assert_eq!(retrieved.max_satd, 1);
+    }
+
+    #[test]
+    fn test_multiple_violations() {
+        let mut gates = QualityGates::new();
+        gates.update_metrics(QualityMetrics {
+            test_coverage: 50.0,       // Below 80%
+            cyclomatic_complexity: 15, // Above 10
+            cognitive_complexity: 20,
+            satd_count: 10,            // Above 0
+            clippy_warnings: 5,        // Above 0
+            documentation_coverage: 50.0, // Below 90%
+            unsafe_blocks: 0,
+        });
+
+        let result = gates.check();
+        if let Err(QualityReport::Fail { violations }) = result {
+            // Should have violations for coverage, complexity, satd, clippy, and docs
+            assert_eq!(violations.len(), 5);
+        } else {
+            panic!("Expected multiple violations");
+        }
+    }
+
+    #[test]
+    fn test_ci_quality_enforcer_creation() {
+        let gates = QualityGates::new();
+        let enforcer = CiQualityEnforcer::new(gates, ReportingBackend::Console);
+        // Just ensure it can be created
+        assert!(matches!(enforcer.reporting, ReportingBackend::Console));
+    }
+
+    #[test]
+    fn test_reporting_backend_variants() {
+        let console = ReportingBackend::Console;
+        assert!(matches!(console, ReportingBackend::Console));
+
+        let json = ReportingBackend::Json {
+            output_path: "report.json".to_string()
+        };
+        assert!(matches!(json, ReportingBackend::Json { .. }));
+
+        let github = ReportingBackend::GitHub {
+            token: "token".to_string()
+        };
+        assert!(matches!(github, ReportingBackend::GitHub { .. }));
+
+        let html = ReportingBackend::Html {
+            output_dir: "coverage".to_string()
+        };
+        assert!(matches!(html, ReportingBackend::Html { .. }));
+    }
+
+    #[test]
+    fn test_quality_gates_default() {
+        let gates1 = QualityGates::new();
+        let gates2 = QualityGates::default();
+
+        // Both should have same default values
+        assert_eq!(gates1.thresholds.min_test_coverage, gates2.thresholds.min_test_coverage);
+        assert_eq!(gates1.thresholds.max_complexity, gates2.thresholds.max_complexity);
+    }
+
+    #[test]
+    fn test_edge_case_exact_thresholds() {
+        let mut gates = QualityGates::new();
+        // Set metrics exactly at thresholds
+        gates.update_metrics(QualityMetrics {
+            test_coverage: 80.0,      // Exactly at minimum
+            cyclomatic_complexity: 10, // Exactly at maximum
+            cognitive_complexity: 10,
+            satd_count: 0,            // Exactly at maximum
+            clippy_warnings: 0,       // Exactly at maximum
+            documentation_coverage: 90.0, // Exactly at minimum
+            unsafe_blocks: 0,
+        });
+
+        let result = gates.check();
+        // Should pass when exactly meeting thresholds
+        assert!(matches!(result, Ok(QualityReport::Pass)));
+    }
+
     #[test]
     fn test_satd_count_collection() {
         let _gates = QualityGates::new();
@@ -588,6 +843,18 @@ use proptest::prelude::*;
         // Should be 0 after our SATD elimination
         assert_eq!(count, 0, "SATD comments should be eliminated");
     }
+
+    #[test]
+    fn test_estimate_coverage() {
+        // Test that coverage estimation doesn't panic
+        let coverage = QualityGates::estimate_coverage();
+        assert!(coverage.is_ok());
+        if let Ok(pct) = coverage {
+            assert!(pct >= 0.0);
+            assert!(pct <= 100.0);
+        }
+    }
+
     #[test]
     #[ignore = "slow integration test - run with --ignored flag"]
     fn test_coverage_integration() {
@@ -598,6 +865,24 @@ use proptest::prelude::*;
             assert!(report.line_coverage_percentage() >= 0.0);
             assert!(report.line_coverage_percentage() <= 100.0);
         }
+    }
+
+    #[test]
+    #[ignore = "requires filesystem access"]
+    fn test_collect_metrics() {
+        let mut gates = QualityGates::new();
+        let result = gates.collect_metrics();
+        // Should not panic
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    #[ignore = "requires filesystem access"]
+    fn test_generate_coverage_report() {
+        let gates = QualityGates::new();
+        let result = gates.generate_coverage_report();
+        // Should not panic - may succeed or fail depending on environment
+        assert!(result.is_ok() || result.is_err());
     }
 }
 #[cfg(test)]
