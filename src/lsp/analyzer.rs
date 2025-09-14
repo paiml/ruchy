@@ -225,5 +225,3 @@ mod property_tests_analyzer {
         }
     }
 }
-    }
-}

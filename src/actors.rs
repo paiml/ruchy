@@ -405,5 +405,3 @@ mod property_tests_actors {
         }
     }
 }
-    }
-}
