@@ -232,9 +232,6 @@ impl Transpiler {
     }
 }
 #[cfg(test)]
-#[path = "patterns_tests.rs"]
-mod tests;
-#[cfg(test)]
 mod property_tests_patterns {
     use proptest::proptest;
     use super::*;

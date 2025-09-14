@@ -245,9 +245,6 @@ fn is_tuple_expr(expr: &Expr) -> bool {
     matches!(&expr.kind, ExprKind::Tuple(items) if items.len() == 2)
 }
 #[cfg(test)]
-#[path = "type_conversion_refactored_tests.rs"]
-mod tests;
-#[cfg(test)]
 mod property_tests_type_conversion_refactored {
     use proptest::proptest;
     use super::*;

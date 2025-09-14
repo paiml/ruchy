@@ -1,4 +1,36 @@
 //! Type system representation for Ruchy
+//!
+//! This module implements the Hindley-Milner type system for Ruchy, providing
+//! type inference, unification, and polymorphic type schemes.
+//!
+//! # Examples
+//!
+//! ```
+//! use ruchy::middleend::types::{MonoType, TypeScheme, TyVarGenerator};
+//!
+//! // Create basic types
+//! let int_type = MonoType::Int;
+//! let bool_type = MonoType::Bool;
+//! 
+//! // Create function type: i32 -> bool
+//! let func_type = MonoType::Function(
+//!     Box::new(int_type),
+//!     Box::new(bool_type)
+//! );
+//!
+//! // Create type scheme for polymorphic function
+//! let mut gen = TyVarGenerator::new();
+//! let var = gen.fresh();
+//! let scheme = TypeScheme::mono(MonoType::Var(var));
+//! ```
+//!
+//! # Type System Features
+//!
+//! - **Type Variables**: For unification and type inference
+//! - **Monomorphic Types**: Concrete types without quantification
+//! - **Type Schemes**: Polymorphic types with quantified variables
+//! - **Substitution**: Type variable replacement mechanism
+//! - **DataFrame Types**: Support for data science operations
 use std::collections::HashMap;
 use std::fmt;
 /// Type variable for unification
@@ -95,31 +127,41 @@ pub struct TypeScheme {
 }
 impl TypeScheme {
     /// Create a monomorphic type scheme (no quantified variables)
+    ///
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::middleend::types::{MonoType, TypeScheme};
+    /// 
+    /// let scheme = TypeScheme::mono(MonoType::Int);
+    /// assert_eq!(scheme.vars.len(), 0);
+    /// assert_eq!(scheme.ty, MonoType::Int);
+    /// ```
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::types::mono;
-/// 
-/// let result = mono(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn mono(ty: MonoType) -> Self {
+    pub fn mono(ty: MonoType) -> Self {
         TypeScheme {
             vars: Vec::new(),
             ty,
         }
     }
     /// Instantiate a type scheme with fresh type variables
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::types::instantiate;
-/// 
-/// let result = instantiate(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn instantiate(&self, gen: &mut TyVarGenerator) -> MonoType {
+    ///
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::middleend::types::{MonoType, TypeScheme, TyVarGenerator, TyVar};
+    /// 
+    /// let mut gen = TyVarGenerator::new();
+    /// let var = gen.fresh();
+    /// let scheme = TypeScheme {
+    ///     vars: vec![var.clone()],
+    ///     ty: MonoType::Var(var)
+    /// };
+    /// let instance = scheme.instantiate(&mut gen);
+    /// // Should get a fresh type variable
+    /// assert!(matches!(instance, MonoType::Var(_)));
+    /// ```
+    pub fn instantiate(&self, gen: &mut TyVarGenerator) -> MonoType {
         if self.vars.is_empty() {
             self.ty.clone()
         } else {
@@ -153,27 +195,34 @@ pub struct TyVarGenerator {
     next: u32,
 }
 impl TyVarGenerator {
+    /// Create a new type variable generator
+    ///
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::middleend::types::TyVarGenerator;
+    /// 
+    /// let gen = TyVarGenerator::new();
+    /// // Generator starts with id 0
+    /// ```
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::types::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn new() -> Self {
+    pub fn new() -> Self {
         TyVarGenerator { next: 0 }
     }
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::types::fresh;
-/// 
-/// let result = fresh(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn fresh(&mut self) -> TyVar {
+    /// Generate a fresh type variable
+    ///
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::middleend::types::{TyVarGenerator, TyVar};
+    /// 
+    /// let mut gen = TyVarGenerator::new();
+    /// let var1 = gen.fresh();
+    /// let var2 = gen.fresh();
+    /// assert_eq!(var1, TyVar(0));
+    /// assert_eq!(var2, TyVar(1));
+    /// ```
+    pub fn fresh(&mut self) -> TyVar {
         let var = TyVar(self.next);
         self.next += 1;
         var
@@ -188,16 +237,23 @@ impl Default for TyVarGenerator {
 pub type Substitution = HashMap<TyVar, MonoType>;
 impl MonoType {
     /// Apply a substitution to this type
+    ///
+    /// # Examples
+    /// 
+    /// ```
+    /// use std::collections::HashMap;
+    /// use ruchy::middleend::types::{MonoType, TyVar};
+    /// 
+    /// let mut subst = HashMap::new();
+    /// let var = TyVar(0);
+    /// subst.insert(var.clone(), MonoType::Int);
+    /// 
+    /// let list_type = MonoType::List(Box::new(MonoType::Var(var)));
+    /// let result = list_type.substitute(&subst);
+    /// assert_eq!(result, MonoType::List(Box::new(MonoType::Int)));
+    /// ```
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::types::substitute;
-/// 
-/// let result = substitute(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn substitute(&self, subst: &Substitution) -> MonoType {
+    pub fn substitute(&self, subst: &Substitution) -> MonoType {
         match self {
             MonoType::Var(v) => subst.get(v).cloned().unwrap_or_else(|| self.clone()),
             MonoType::Function(arg, ret) => MonoType::Function(
@@ -225,16 +281,26 @@ pub fn substitute(&self, subst: &Substitution) -> MonoType {
         }
     }
     /// Get free type variables in this type
+    ///
+    /// # Examples
+    /// 
+    /// ```
+    /// use ruchy::middleend::types::{MonoType, TyVar};
+    /// 
+    /// let var1 = TyVar(0);
+    /// let var2 = TyVar(1);
+    /// let func_type = MonoType::Function(
+    ///     Box::new(MonoType::Var(var1.clone())),
+    ///     Box::new(MonoType::Var(var2.clone()))
+    /// );
+    /// 
+    /// let free_vars = func_type.free_vars();
+    /// assert_eq!(free_vars.len(), 2);
+    /// assert!(free_vars.contains(&var1));
+    /// assert!(free_vars.contains(&var2));
+    /// ```
     #[must_use]
-/// # Examples
-/// 
-/// ```
-/// use ruchy::middleend::types::free_vars;
-/// 
-/// let result = free_vars(());
-/// assert_eq!(result, Ok(()));
-/// ```
-pub fn free_vars(&self) -> Vec<TyVar> {
+    pub fn free_vars(&self) -> Vec<TyVar> {
         use std::collections::HashSet;
         fn collect_vars(ty: &MonoType, vars: &mut HashSet<TyVar>) {
             match ty {

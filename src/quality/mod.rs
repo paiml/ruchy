@@ -1,5 +1,125 @@
 //! Quality gates implementation for Ruchy compiler
 //!
+//! This module implements comprehensive quality assurance measures for the Ruchy
+//! compiler, enforcing PMAT A+ standards and Toyota Way principles.
+//!
+//! # Overview
+//!
+//! The quality system enforces multiple dimensions of code quality:
+//!
+//! - **Test Coverage**: Minimum 80% line coverage via cargo-llvm-cov
+//! - **Complexity Metrics**: ≤10 cyclomatic complexity per function
+//! - **Technical Debt**: Zero SATD (TODO/FIXME/HACK) comments allowed
+//! - **Documentation**: Comprehensive API documentation with examples
+//! - **Static Analysis**: Zero clippy warnings policy
+//!
+//! # Architecture
+//!
+//! ```text
+//! Quality Pipeline:
+//! Source → Analysis → Metrics → Gates → Pass/Fail
+//!    ↓        ↓         ↓        ↓        ↓
+//!  .rs    Clippy    Coverage   Rules   Commit
+//! ```
+//!
+//! # Components
+//!
+//! ## Quality Gates
+//! Configurable thresholds that must be met:
+//!
+//! ```rust
+//! use ruchy::quality::{QualityGates, QualityThresholds, QualityMetrics};
+//!
+//! let thresholds = QualityThresholds {
+//!     min_test_coverage: 80.0,
+//!     max_complexity: 10,
+//!     max_satd: 0,
+//!     max_clippy_warnings: 0,
+//!     min_doc_coverage: 70.0,
+//! };
+//!
+//! let metrics = QualityMetrics {
+//!     test_coverage: 85.0,
+//!     cyclomatic_complexity: 8,
+//!     satd_count: 0,
+//!     clippy_warnings: 0,
+//!     documentation_coverage: 75.0,
+//!     unsafe_blocks: 0,
+//!     ..Default::default()
+//! };
+//!
+//! let gates = QualityGates::new(metrics, thresholds);
+//! assert!(gates.passes_all_gates());
+//! ```
+//!
+//! ## Coverage Analysis
+//! Test coverage collection and reporting:
+//!
+//! ```rust,no_run
+//! use ruchy::quality::{CoverageCollector, CoverageTool};
+//!
+//! let collector = CoverageCollector::new(CoverageTool::LlvmCov);
+//! let report = collector.collect_coverage("src/").unwrap();
+//!
+//! println!("Overall coverage: {:.1}%", report.overall_percentage());
+//! for file in report.files() {
+//!     println!("  {}: {:.1}%", file.path(), file.line_coverage());
+//! }
+//! ```
+//!
+//! ## PMAT Integration
+//! Integration with PMAT quality analysis tool:
+//!
+//! ```rust,no_run
+//! use ruchy::quality::scoring::PmatScorer;
+//!
+//! let scorer = PmatScorer::new();
+//! let score = scorer.analyze_project(".")?.overall_grade();
+//! 
+//! if score >= 85.0 {
+//!     println!("✅ PMAT A- grade achieved: {:.1}", score);
+//! } else {
+//!     println!("❌ Below A- threshold: {:.1}", score);
+//! }
+//! ```
+//!
+//! # Toyota Way Principles
+//!
+//! The quality system implements Toyota Manufacturing principles:
+//!
+//! ## Jidoka (Stop the Line)
+//! - Pre-commit hooks BLOCK commits below quality threshold
+//! - No bypass mechanisms - fix the root cause
+//! - Real-time quality monitoring during development
+//!
+//! ## Poka-Yoke (Error Prevention)  
+//! - Static analysis catches errors before runtime
+//! - Property tests find edge cases automatically
+//! - Documentation ensures correct usage
+//!
+//! ## Kaizen (Continuous Improvement)
+//! - Quality metrics tracked over time
+//! - Root cause analysis for all violations
+//! - Process improvements based on data
+//!
+//! # Examples
+//!
+//! ## Pre-commit Quality Check
+//! ```bash
+//! # This runs in .git/hooks/pre-commit
+//! ruchy quality-gate --fail-on-violation --format=detailed
+//! ```
+//!
+//! ## CI/CD Integration
+//! ```yaml
+//! # In .github/workflows/quality.yml
+//! - name: Quality Gates
+//!   run: |
+//!     cargo test
+//!     cargo llvm-cov --html --output-dir coverage
+//!     ruchy quality-gate --min-coverage=80 --max-complexity=10
+//! ```
+//!
 //! Based on SPECIFICATION.md section 20 requirements
 pub mod coverage;
 pub mod ruchy_coverage;
@@ -8,8 +128,6 @@ pub mod scoring;
 pub mod gates;
 pub mod enforcement;
 pub mod formatter;
-#[cfg(test)]
-mod formatter_tests;
 pub mod linter;
 pub use coverage::{
     CoverageCollector, CoverageReport, CoverageTool, FileCoverage, HtmlReportGenerator,

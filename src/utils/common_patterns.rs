@@ -451,6 +451,237 @@ pub fn format_deserialize_error(object_type: &str, error: impl std::fmt::Display
 pub fn format_operation_error(operation: &str, error: impl std::fmt::Display) -> String {
     format!("Failed to {}: {}", operation, error)
 }
+
+// String manipulation utilities
+pub fn is_keyword(word: &str) -> bool {
+    matches!(word, "let" | "if" | "else" | "while" | "for" | "return" | "fun" | "match" | "true" | "false" | "struct" | "enum" | "impl" | "trait" | "pub" | "mod" | "use" | "type" | "const" | "static" | "async" | "await" | "break" | "continue" | "loop" | "in" | "ref" | "mut" | "self" | "super" | "crate" | "where" | "as" | "fn")
+}
+
+pub fn escape_string(s: &str) -> String {
+    let mut result = String::new();
+    for ch in s.chars() {
+        match ch {
+            '\n' => result.push_str("\\n"),
+            '\r' => result.push_str("\\r"),
+            '\t' => result.push_str("\\t"),
+            '\\' => result.push_str("\\\\"),
+            '"' => result.push_str("\\\""),
+            '\'' => result.push_str("\\'"),
+            _ => result.push(ch),
+        }
+    }
+    result
+}
+
+pub fn unescape_string(s: &str) -> Result<String> {
+    let mut result = String::new();
+    let mut chars = s.chars();
+    
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            match chars.next() {
+                Some('n') => result.push('\n'),
+                Some('r') => result.push('\r'),
+                Some('t') => result.push('\t'),
+                Some('\\') => result.push('\\'),
+                Some('"') => result.push('"'),
+                Some('\'') => result.push('\''),
+                Some(c) => return Err(anyhow::anyhow!("Invalid escape sequence: \\{}", c)),
+                None => return Err(anyhow::anyhow!("Incomplete escape sequence")),
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+    
+    Ok(result)
+}
+
+pub fn capitalize(s: &str) -> String {
+    if s.is_empty() {
+        return String::new();
+    }
+    
+    let mut chars = s.chars();
+    match chars.next() {
+        None => String::new(),
+        Some(first) => {
+            if first.is_alphabetic() {
+                first.to_uppercase().chain(chars.as_str().to_lowercase().chars()).collect()
+            } else {
+                s.to_string()
+            }
+        }
+    }
+}
+
+pub fn snake_to_camel(s: &str) -> String {
+    if s.starts_with('_') || s.is_empty() {
+        return s.to_string();
+    }
+    
+    let mut result = String::new();
+    let mut capitalize_next = false;
+    
+    for ch in s.chars() {
+        if ch == '_' {
+            capitalize_next = true;
+        } else if capitalize_next {
+            result.push_str(&ch.to_uppercase().to_string());
+            capitalize_next = false;
+        } else {
+            result.push(ch);
+        }
+    }
+    
+    // Don't lose trailing underscores
+    if s.ends_with('_') {
+        result.push('_');
+    }
+    
+    result
+}
+
+pub fn camel_to_snake(s: &str) -> String {
+    let mut result = String::new();
+    let mut prev_was_upper = false;
+    
+    for (i, ch) in s.chars().enumerate() {
+        if ch.is_uppercase() {
+            if i > 0 && !prev_was_upper {
+                result.push('_');
+            }
+            result.push_str(&ch.to_lowercase().to_string());
+            prev_was_upper = true;
+        } else {
+            result.push(ch);
+            prev_was_upper = false;
+        }
+    }
+    
+    result
+}
+
+pub fn is_numeric(s: &str) -> bool {
+    !s.is_empty() && s.chars().all(|c| c.is_ascii_digit())
+}
+
+pub fn is_float(s: &str) -> bool {
+    if s.is_empty() {
+        return false;
+    }
+    
+    let parts: Vec<&str> = s.split('.').collect();
+    if parts.len() != 2 {
+        return false;
+    }
+    
+    let (before, after) = (parts[0], parts[1]);
+    
+    (before.is_empty() || before.chars().all(|c| c.is_ascii_digit())) &&
+    (after.is_empty() || after.chars().all(|c| c.is_ascii_digit()))
+}
+
+pub fn strip_comments(s: &str) -> String {
+    s.lines()
+        .map(|line| {
+            if let Some(pos) = line.find("//") {
+                // Don't strip if it's part of a URL
+                if pos > 0 && line[..pos].contains("http") {
+                    line.to_string()
+                } else {
+                    line[..pos].to_string()
+                }
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+pub fn count_lines(s: &str) -> usize {
+    if s.is_empty() {
+        0
+    } else {
+        s.lines().count() + s.chars().filter(|&c| c == '\n').count().saturating_sub(s.lines().count() - 1)
+    }
+}
+
+pub fn indent_string(s: &str, spaces: usize) -> String {
+    let indent = " ".repeat(spaces);
+    s.lines()
+        .map(|line| {
+            if line.is_empty() {
+                line.to_string()
+            } else {
+                format!("{}{}", indent, line)
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+pub fn trim_indent(s: &str) -> String {
+    s.lines()
+        .map(|line| line.trim_start())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+pub fn split_at_delimiter(s: &str, delimiter: char) -> Vec<String> {
+    s.split(delimiter).map(|part| part.to_string()).collect()
+}
+
+pub fn common_prefix(strings: &[&str]) -> String {
+    if strings.is_empty() {
+        return String::new();
+    }
+    
+    let mut prefix = String::new();
+    let first = strings[0];
+    
+    for (i, ch) in first.chars().enumerate() {
+        if strings.iter().all(|s| s.chars().nth(i) == Some(ch)) {
+            prefix.push(ch);
+        } else {
+            break;
+        }
+    }
+    
+    prefix
+}
+
+pub fn levenshtein_distance(s1: &str, s2: &str) -> usize {
+    let len1 = s1.chars().count();
+    let len2 = s2.chars().count();
+    
+    let mut matrix = vec![vec![0; len2 + 1]; len1 + 1];
+    
+    for i in 0..=len1 {
+        matrix[i][0] = i;
+    }
+    
+    for j in 0..=len2 {
+        matrix[0][j] = j;
+    }
+    
+    for (i, ch1) in s1.chars().enumerate() {
+        for (j, ch2) in s2.chars().enumerate() {
+            let cost = if ch1 == ch2 { 0 } else { 1 };
+            matrix[i + 1][j + 1] = std::cmp::min(
+                matrix[i][j + 1] + 1,
+                std::cmp::min(
+                    matrix[i + 1][j] + 1,
+                    matrix[i][j] + cost
+                )
+            );
+        }
+    }
+    
+    matrix[len1][len2]
+}
+
 #[cfg(test)]
 mod property_tests_common_patterns {
     use proptest::proptest;

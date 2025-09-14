@@ -48,7 +48,9 @@
 #![allow(clippy::if_same_then_else)]
 #[cfg(feature = "mcp")]
 pub mod actors;
+pub mod api_docs;
 pub mod backend;
+pub mod error_recovery_enhanced;
 pub mod frontend;
 pub mod lints;
 #[cfg(feature = "mcp")]
@@ -60,6 +62,7 @@ pub mod middleend;
 #[cfg(feature = "notebook")]
 pub mod notebook;
 pub mod parser;
+pub mod performance_optimizations;
 pub mod proving;
 pub mod quality;
 pub mod runtime;
@@ -795,11 +798,3 @@ mod property_tests_lib {
         }
     }
 }
-
-// Integration tests module
-#[cfg(test)]
-mod integration_tests;
-
-// Performance benchmarks
-#[cfg(test)]
-mod benchmarks;

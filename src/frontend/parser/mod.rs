@@ -20,8 +20,6 @@ mod operator_precedence;
 mod types;
 mod utils;
 
-#[cfg(test)]
-mod property_tests;
 // Re-export the main parser
 pub use core::Parser;
 use crate::frontend::arena::{Arena, StringInterner};

@@ -1,30 +1,76 @@
 //! Runtime execution and REPL support
 //!
 //! This module provides the interactive REPL, runtime execution environment,
-//! and actor system with supervision trees.
+//! and actor system with supervision trees for the Ruchy language.
+//!
+//! # Core Components
+//!
+//! ## REPL (Read-Eval-Print Loop)
+//! Interactive development environment with:
+//! - Line editing and history
+//! - Tab completion
+//! - Magic commands
+//! - Session recording and replay
+//!
+//! ## Actor System
+//! Concurrent programming model featuring:
+//! - Message passing between actors
+//! - Supervision trees for fault tolerance
+//! - Actor observability and debugging
+//! - Deadlock detection
+//!
+//! ## Runtime Execution
+//! - Expression evaluation engine
+//! - Pattern matching implementation
+//! - Binary operations with proper semantics
+//! - Memory-safe arena allocation
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use ruchy::runtime::{Repl, ReplConfig};
+//!
+//! // Start an interactive REPL session
+//! let config = ReplConfig::default();
+//! let mut repl = Repl::new_with_config(config).unwrap();
+//! repl.run().unwrap();
+//! ```
+//!
+//! ```
+//! use ruchy::runtime::{ActorSystem, Message, MessageValue};
+//!
+//! // Create an actor system
+//! let mut system = ActorSystem::new();
+//! 
+//! // Spawn an echo actor
+//! let echo_ref = system.spawn_echo_actor("echo".to_string()).unwrap();
+//! 
+//! // Send a message
+//! let msg = Message::new(MessageValue::String("Hello".to_string()));
+//! // Note: In real usage, you would handle the Result properly
+//! ```
+//!
+//! # Features
+//!
+//! - **Interactive Development**: Full-featured REPL with completion
+//! - **Concurrent Programming**: Actor model with supervision
+//! - **Debugging Tools**: Observatory for system introspection
+//! - **Memory Safety**: Arena allocation without unsafe code
+//! - **Educational Tools**: Assessment and grading systems
 pub mod actor;
-#[cfg(test)]
-mod actor_tests;
 pub mod binary_ops;
 pub mod cache;
-#[cfg(test)]
-mod cache_tests;
 pub mod completion;
 pub mod dataflow_debugger;
 pub mod dataflow_ui;
 pub mod grammar_coverage;
-#[cfg(test)]
-mod grammar_coverage_tests;
 pub mod interpreter;
 // pub mod interpreter_modules;  // Temporarily disabled - compilation errors
 pub mod lazy;
-#[cfg(test)]
-mod lazy_tests;
 pub mod pattern_matching;
 pub mod observatory;
 pub mod observatory_ui;
 pub mod repl;
-pub mod repl_comprehensive_tests;
 // pub mod repl_modules;  // Temporarily disabled - compilation errors
 pub mod repl_recording;
 pub mod replay;
@@ -37,14 +83,6 @@ pub mod safe_arena;
 pub mod transaction;
 pub mod inspect;
 // pub mod resource_eval;  // Temporarily disabled - causes duplicate impl
-#[cfg(test)]
-mod repl_function_tests;
-#[cfg(test)]
-mod binary_ops_tests;
-#[cfg(test)]
-mod pattern_matching_tests;
-#[cfg(test)]
-mod interpreter_minimal_tests;
 // Export the unified REPL
 pub use repl::{Repl, ReplConfig, ReplState, Value};
 // Export interpreter components

@@ -1619,11 +1619,10 @@ fn handle_optimization_and_deployment(
     verbose: bool
 ) {
     use colored::Colorize;
-    if opt_level != "0" {
-        if verbose {
+    if opt_level != "0"
+        && verbose {
             println!("{} Optimization level {} requested (enterprise streaming analysis)", "ℹ".bright_blue(), opt_level);
         }
-    }
     if deploy {
         let platform = deploy_target.unwrap_or("default");
         if verbose {

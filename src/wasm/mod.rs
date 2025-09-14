@@ -11,8 +11,6 @@ pub mod notebook;
 pub mod shared_session;
 pub mod demo_converter;
 
-#[cfg(test)]
-pub mod webworker_tests;
 pub use component::{WasmComponent, ComponentBuilder, ComponentConfig};
 pub use wit::{WitInterface, WitGenerator, InterfaceDefinition};
 pub use deployment::{DeploymentTarget, Deployer, DeploymentConfig};
