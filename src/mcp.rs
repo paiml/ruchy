@@ -648,5 +648,3 @@ mod property_tests_mcp {
         }
     }
 }
-    }
-}

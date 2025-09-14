@@ -154,5 +154,3 @@ mod property_tests_mod {
         }
     }
 }
-    }
-}

@@ -242,8 +242,16 @@ clean:
 
 # Generate comprehensive test coverage using cargo-llvm-cov (Toyota Way)
 coverage:
-	@echo "🧪 Running comprehensive coverage analysis..."
-	@./scripts/coverage.sh
+	@echo "📊 Running test coverage analysis..."
+	@cargo llvm-cov clean --workspace 2>/dev/null || true
+	@cargo llvm-cov --lib --html --output-dir target/coverage
+	@echo ""
+	@echo "Coverage Report:"
+	@echo "================"
+	@cargo llvm-cov report | grep "^TOTAL"
+	@echo ""
+	@echo "📁 HTML report: target/coverage/index.html"
+	@echo "📈 To improve: Add #[cfg(test)] modules in src/ files"
 
 # Quick coverage check for development workflow  
 coverage-quick:
