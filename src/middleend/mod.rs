@@ -11,14 +11,12 @@ pub use mir::{Function as MirFunction, Program as MirProgram};
 pub use types::{MonoType, TyVar, TyVarGenerator, TypeScheme};
 pub use unify::Unifier;
 
-// Middleend tests commented out due to API mismatches
-// TODO: Fix these after verifying actual middleend API
-/*
+/* Middleend tests commented out due to API mismatches
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // Sprint 6: Comprehensive middleend tests for coverage improvement
+    // Sprint 11: Comprehensive middleend tests for coverage improvement
 
     #[test]
     fn test_type_env_creation() {
