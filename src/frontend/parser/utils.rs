@@ -1066,3 +1066,149 @@ pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
     }
     Ok(Expr::new(ExprKind::Export { items }, start_span))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Sprint 13: Parser utils tests
+
+    #[test]
+    fn test_is_valid_url_scheme() {
+        assert!(is_valid_url_scheme("https://example.com"));
+        assert!(is_valid_url_scheme("http://localhost"));
+        assert!(is_valid_url_scheme("http://127.0.0.1"));
+        assert!(!is_valid_url_scheme("http://example.com"));
+        assert!(!is_valid_url_scheme("ftp://example.com"));
+        assert!(!is_valid_url_scheme("file:///etc/passwd"));
+    }
+
+    #[test]
+    fn test_validate_url_scheme() {
+        assert!(validate_url_scheme("https://example.com").is_ok());
+        assert!(validate_url_scheme("http://localhost").is_ok());
+        assert!(validate_url_scheme("http://127.0.0.1").is_ok());
+        assert!(validate_url_scheme("http://example.com").is_err());
+        assert!(validate_url_scheme("javascript:alert(1)").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_extension() {
+        assert!(validate_url_extension("https://example.com/file.ruchy").is_ok());
+        assert!(validate_url_extension("https://example.com/file.rchy").is_ok());
+        assert!(validate_url_extension("https://example.com/file.rs").is_err());
+        assert!(validate_url_extension("https://example.com/file").is_err());
+        assert!(validate_url_extension("https://example.com/file.txt").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_path_safety() {
+        assert!(validate_url_path_safety("https://example.com/file.ruchy").is_ok());
+        assert!(validate_url_path_safety("https://example.com/dir/file.ruchy").is_ok());
+        assert!(validate_url_path_safety("https://example.com/../etc/passwd").is_err());
+        assert!(validate_url_path_safety("https://example.com/./hidden").is_err());
+        assert!(validate_url_path_safety("https://example.com/..").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_no_suspicious_patterns() {
+        assert!(validate_url_no_suspicious_patterns("https://example.com/file.ruchy").is_ok());
+        assert!(validate_url_no_suspicious_patterns("javascript:alert(1)").is_err());
+        assert!(validate_url_no_suspicious_patterns("data:text/html,<script>alert(1)</script>").is_err());
+        assert!(validate_url_no_suspicious_patterns("file:///etc/passwd").is_err());
+    }
+
+    #[test]
+    fn test_validate_url_import() {
+        assert!(validate_url_import("https://example.com/file.ruchy").is_ok());
+        assert!(validate_url_import("http://localhost/file.ruchy").is_ok());
+        assert!(validate_url_import("http://example.com/file.ruchy").is_err());
+        assert!(validate_url_import("https://example.com/file.rs").is_err());
+        assert!(validate_url_import("https://example.com/../etc.ruchy").is_err());
+        assert!(validate_url_import("javascript:alert(1).ruchy").is_err());
+    }
+
+    #[test]
+    fn test_should_continue_parsing() {
+        assert!(should_continue_parsing(&Token::Comma, &Token::Identifier("x".to_string())));
+        assert!(should_continue_parsing(&Token::Plus, &Token::Integer(42)));
+        assert!(!should_continue_parsing(&Token::RightParen, &Token::Comma));
+        assert!(!should_continue_parsing(&Token::RightBrace, &Token::Comma));
+        assert!(!should_continue_parsing(&Token::RightBracket, &Token::Comma));
+        assert!(!should_continue_parsing(&Token::Eof, &Token::Comma));
+    }
+
+    #[test]
+    fn test_is_statement_terminator() {
+        assert!(is_statement_terminator(&Token::Semicolon));
+        assert!(is_statement_terminator(&Token::Newline));
+        assert!(is_statement_terminator(&Token::Eof));
+        assert!(!is_statement_terminator(&Token::Comma));
+        assert!(!is_statement_terminator(&Token::Plus));
+        assert!(!is_statement_terminator(&Token::Identifier("x".to_string())));
+    }
+
+    #[test]
+    fn test_is_valid_field_name() {
+        assert!(is_valid_field_name("name"));
+        assert!(is_valid_field_name("age"));
+        assert!(is_valid_field_name("firstName"));
+        assert!(is_valid_field_name("user_id"));
+        assert!(is_valid_field_name("_private"));
+        // Empty string or special chars would be invalid
+        assert!(!is_valid_field_name(""));
+    }
+
+    #[test]
+    fn test_requires_semicolon() {
+        assert!(requires_semicolon(&Token::Return));
+        assert!(requires_semicolon(&Token::Break));
+        assert!(requires_semicolon(&Token::Continue));
+        assert!(!requires_semicolon(&Token::If));
+        assert!(!requires_semicolon(&Token::While));
+        assert!(!requires_semicolon(&Token::For));
+    }
+
+    #[test]
+    fn test_is_type_token() {
+        assert!(is_type_token(&Token::Identifier("String".to_string())));
+        assert!(is_type_token(&Token::Identifier("Int".to_string())));
+        assert!(is_type_token(&Token::Identifier("Bool".to_string())));
+        assert!(is_type_token(&Token::LeftBracket)); // For array types
+        assert!(is_type_token(&Token::LeftParen)); // For tuple types
+        assert!(!is_type_token(&Token::Plus));
+        assert!(!is_type_token(&Token::Comma));
+    }
+
+    #[test]
+    fn test_check_and_consume_mut() {
+        use crate::frontend::lexer::TokenStream;
+
+        let mut tokens = TokenStream::new("mut x");
+        let mut state = ParserState {
+            tokens: &mut tokens,
+            current_indent: 0,
+            diagnostics: vec![],
+            buffer: String::new(),
+        };
+
+        assert!(check_and_consume_mut(&mut state));
+        assert_eq!(state.tokens.peek().map(|(t, _)| t.clone()), Some(Token::Identifier("x".to_string())));
+    }
+
+    #[test]
+    fn test_check_and_consume_mut_not_present() {
+        use crate::frontend::lexer::TokenStream;
+
+        let mut tokens = TokenStream::new("x");
+        let mut state = ParserState {
+            tokens: &mut tokens,
+            current_indent: 0,
+            diagnostics: vec![],
+            buffer: String::new(),
+        };
+
+        assert!(!check_and_consume_mut(&mut state));
+        assert_eq!(state.tokens.peek().map(|(t, _)| t.clone()), Some(Token::Identifier("x".to_string())));
+    }
+}
