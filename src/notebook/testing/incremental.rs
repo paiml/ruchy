@@ -563,22 +563,3 @@ pub fn get_cell(&self, cell_id: &str) -> Option<&Cell> {
         self.cells.iter().find(|c| c.id == cell_id)
     }
 }
-#[cfg(test)]
-mod property_tests_incremental {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
-    }
-}

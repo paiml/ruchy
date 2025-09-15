@@ -4,8 +4,6 @@ use super::types::{
     Terminator, UnOp,
 };
 use std::collections::{HashMap, HashSet};
-#[cfg(test)]
-use proptest::prelude::*;
 /// Dead Code Elimination pass
 pub struct DeadCodeElimination {
     /// Set of live locals
@@ -551,8 +549,8 @@ mod tests {
 #[cfg(test)]
 mod property_tests_optimize {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

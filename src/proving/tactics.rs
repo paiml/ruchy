@@ -3,8 +3,6 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use super::prover::{ProofGoal, ProofContext, StepResult};
-#[cfg(test)]
-use proptest::prelude::*;
 /// A proof tactic
 pub trait Tactic: Send + Sync {
     /// Get tactic name
@@ -338,8 +336,8 @@ impl Tactic for AssumptionTactic {
 #[cfg(test)]
 mod property_tests_tactics {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

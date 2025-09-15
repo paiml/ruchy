@@ -1,13 +1,6 @@
 // SPRINT5-001: CI/CD Integration implementation
 // PMAT Complexity: <10 per function
 use std::collections::HashMap;
-#[cfg(test)]
-use proptest::prelude::*;
-/// CI/CD integration for notebook testing
-#[derive(Debug)]
-pub struct CiCdIntegrator {
-    config: Option<CiCdConfig>,
-}
 #[derive(Debug, Clone)]
 pub struct CiCdConfig {
     pub provider: CiProvider,
@@ -25,6 +18,12 @@ pub enum CiProvider {
     Jenkins,
     CircleCI,
 }
+
+#[derive(Debug, Clone)]
+pub struct CiCdIntegrator {
+    pub config: Option<CiCdConfig>,
+}
+
 impl Default for CiCdIntegrator {
     fn default() -> Self {
         Self::new()
@@ -353,24 +352,5 @@ pub fn get_triggered_alerts(&self) -> Vec<String> {
 /// ```
 pub fn clear_alerts(&mut self) {
         self.triggered.clear();
-    }
-}
-#[cfg(test)]
-mod property_tests_integration {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
     }
 }

@@ -723,8 +723,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use super::component::WasmComponent;
-#[cfg(test)]
-use proptest::prelude::*;
 /// Portability analyzer for WASM components
 pub struct PortabilityAnalyzer {
     /// Analysis configuration
@@ -1333,8 +1331,8 @@ pub fn analyze(&self, component: &WasmComponent) -> Result<PortabilityReport> {
 #[cfg(test)]
 mod property_tests_portability {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

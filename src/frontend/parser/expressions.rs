@@ -623,7 +623,7 @@ fn create_let_expression(
 /// var is implicitly mutable (like let mut)
 fn parse_var_statement(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Var)?;
-    let is_mutable = true; // var is always mutable
+    // var is always mutable
     
     let pattern = parse_var_pattern(state)?;
     let type_annotation = parse_optional_type_annotation(state)?;
@@ -847,9 +847,7 @@ fn handle_pattern_separator(state: &mut ParserState, end_token: Token) -> Result
         }
         Ok(true)
     } else if let Some((token, _)) = state.tokens.peek() {
-        if *token == end_token {
-            Ok(false)
-        } else {
+        if *token != end_token {
         let expected = match end_token {
             Token::RightBracket => "',' or ']'",
             Token::RightParen => "',' or ')'",
@@ -857,6 +855,7 @@ fn handle_pattern_separator(state: &mut ParserState, end_token: Token) -> Result
         };
             bail!("Expected {} in pattern", expected);
         }
+        Ok(false)
     } else {
         bail!("Unexpected end of input in pattern")
     }
@@ -2375,7 +2374,7 @@ fn validate_try_catch_structure(
 
 #[cfg(test)]
 mod property_tests_parser_expressions {
-    use super::*;
+    
     use proptest::prelude::*;
     use crate::frontend::parser::Parser;
     

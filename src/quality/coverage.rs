@@ -404,8 +404,6 @@ impl HtmlReportGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_file_coverage_percentages() {
         let coverage = FileCoverage {
@@ -479,8 +477,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_coverage {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

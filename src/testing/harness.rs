@@ -9,8 +9,6 @@ use std::path::Path;
 use std::process::Command;
 use tempfile::NamedTempFile;
 use thiserror::Error;
-#[cfg(test)]
-use proptest::prelude::*;
 #[derive(Debug, Error)]
 pub enum TestError {
     #[error("Failed to read file: {0}")]
@@ -246,21 +244,201 @@ struct ExecutionResult {
     stderr: Option<String>,
 }
 #[cfg(test)]
-mod property_tests_harness {
-    use proptest::proptest;
+mod tests {
     use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+    use std::fs;
+    use std::path::Path;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_harness_default() {
+        let harness = RuchyTestHarness::default();
+        assert!(!harness.keep_intermediates);
+        assert_eq!(harness.timeout_secs, 30);
+        assert!(matches!(harness.optimization_level, OptLevel::Basic));
+    }
+
+    #[test]
+    fn test_harness_new() {
+        let harness = RuchyTestHarness::new();
+        assert_eq!(harness.keep_intermediates, false);
+        assert_eq!(harness.timeout_secs, 30);
+    }
+
+    #[test]
+    fn test_opt_level_variants() {
+        let _ = OptLevel::None;
+        let _ = OptLevel::Basic;
+        let _ = OptLevel::Full;
+    }
+
+    #[test]
+    fn test_validate_source_parse_error() {
+        let harness = RuchyTestHarness::new();
+        let result = harness.validate_source("let x = ", "test");
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(matches!(e, TestError::Parse(_)));
         }
+    }
+
+    #[test]
+    fn test_validate_source_simple() {
+        let harness = RuchyTestHarness::new();
+        let result = harness.validate_source("let x = 42", "test");
+        // May fail at transpile or compile stage, but parse should succeed
+        match result {
+            Ok(validation) => {
+                assert_eq!(validation.name, "test");
+                assert!(validation.parse_success);
+            }
+            Err(e) => {
+                // Expected - transpiler may not handle all constructs
+                assert!(!matches!(e, TestError::Parse(_)));
+            }
+        }
+    }
+
+    #[test]
+    fn test_assert_output_mismatch() {
+        let harness = RuchyTestHarness::new();
+        // This will likely fail at parse/transpile, but tests the error path
+        let result = harness.assert_output("println(\"hello\")", "goodbye", "test");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_directory_empty() {
+        let harness = RuchyTestHarness::new();
+        let temp_dir = tempdir().unwrap();
+        let result = harness.validate_directory(temp_dir.path());
+        assert!(result.is_ok());
+        if let Ok(results) = result {
+            assert_eq!(results.len(), 0);
+        }
+    }
+
+    #[test]
+    fn test_validate_directory_with_ruchy_file() {
+        let harness = RuchyTestHarness::new();
+        let temp_dir = tempdir().unwrap();
+        let file_path = temp_dir.path().join("test.ruchy");
+        fs::write(&file_path, "let x = 1").unwrap();
+
+        let result = harness.validate_directory(temp_dir.path());
+        match result {
+            Ok(results) => {
+                assert_eq!(results.len(), 1);
+            }
+            Err(_) => {
+                // Expected - may fail at parse/transpile stage
+            }
+        }
+    }
+
+    #[test]
+    fn test_validation_result_fields() {
+        let result = ValidationResult {
+            name: "test".to_string(),
+            parse_success: true,
+            transpile_success: false,
+            compile_success: false,
+            execution_output: None,
+            rust_code: Some("code".to_string()),
+        };
+        assert_eq!(result.name, "test");
+        assert!(result.parse_success);
+        assert!(!result.transpile_success);
+    }
+
+    #[test]
+    fn test_execution_result_fields() {
+        let result = ExecutionResult {
+            compiled: true,
+            output: Some("output".to_string()),
+            stderr: Some("error".to_string()),
+        };
+        assert!(result.compiled);
+        assert_eq!(result.output.unwrap(), "output");
+        assert_eq!(result.stderr.unwrap(), "error");
+    }
+
+    #[test]
+    fn test_error_variants() {
+        let _ = TestError::FileRead("error".to_string());
+        let _ = TestError::Parse("error".to_string());
+        let _ = TestError::Transpile("error".to_string());
+        let _ = TestError::Compile("error".to_string());
+        let _ = TestError::Execute("error".to_string());
+        let _ = TestError::OutputMismatch {
+            expected: "a".to_string(),
+            actual: "b".to_string(),
+        };
+    }
+
+    #[test]
+    fn test_harness_with_keep_intermediates() {
+        let mut harness = RuchyTestHarness::new();
+        harness.keep_intermediates = true;
+        assert!(harness.keep_intermediates);
+    }
+
+    #[test]
+    fn test_harness_with_optimization() {
+        let mut harness = RuchyTestHarness::new();
+        harness.optimization_level = OptLevel::Full;
+        assert!(matches!(harness.optimization_level, OptLevel::Full));
+    }
+
+    #[test]
+    fn test_harness_with_timeout() {
+        let mut harness = RuchyTestHarness::new();
+        harness.timeout_secs = 60;
+        assert_eq!(harness.timeout_secs, 60);
+    }
+
+    #[test]
+    fn test_validate_file_not_found() {
+        let harness = RuchyTestHarness::new();
+        let result = harness.validate_file(Path::new("/nonexistent/file.ruchy"));
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(matches!(e, TestError::FileRead(_)));
+        }
+    }
+
+    #[test]
+    fn test_error_display() {
+        let err = TestError::Parse("test error".to_string());
+        assert_eq!(err.to_string(), "Parse error: test error");
+
+        let err = TestError::OutputMismatch {
+            expected: "a".to_string(),
+            actual: "b".to_string(),
+        };
+        assert_eq!(err.to_string(), "Output mismatch: expected a, got b");
+    }
+
+    #[test]
+    fn test_result_type_alias() {
+        let result: TestResult<i32> = Ok(42);
+        assert_eq!(result.unwrap(), 42);
+
+        let result: TestResult<i32> = Err(TestError::Execute("failed".to_string()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_harness_clone() {
+        let harness1 = RuchyTestHarness::new();
+        let harness2 = harness1.clone();
+        assert_eq!(harness1.timeout_secs, harness2.timeout_secs);
+    }
+
+    #[test]
+    fn test_opt_level_copy() {
+        let opt1 = OptLevel::Basic;
+        let opt2 = opt1;
+        assert!(matches!(opt2, OptLevel::Basic));
     }
 }

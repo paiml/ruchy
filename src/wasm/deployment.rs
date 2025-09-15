@@ -7,8 +7,6 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::fs;
 use super::component::WasmComponent;
-#[cfg(test)]
-use proptest::prelude::*;
 /// Deployment target platform
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DeploymentTarget {
@@ -506,8 +504,8 @@ impl Default for RuntimeConfig {
 #[cfg(test)]
 mod property_tests_deployment {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

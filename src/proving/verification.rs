@@ -336,8 +336,6 @@ pub fn verify_assertions_batch(assertions: &[String], generate_counterexamples: 
 mod tests {
     use super::*;
     use crate::frontend::ast::{Expr, ExprKind, BinaryOp, Literal, Param, Pattern, MatchArm, Span};
-#[cfg(test)]
-use proptest::prelude::*;
     // Helper functions for test consistency
     fn create_test_span() -> Span {
         Span { start: 0, end: 1 }
@@ -757,8 +755,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_verification {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -1,17 +1,6 @@
 // SPRINT4-004: Interactive tutorial system
 // PMAT Complexity: <10 per function
 use std::collections::HashMap;
-#[cfg(test)]
-use proptest::prelude::*;
-/// Interactive tutorial system
-#[derive(Debug, Clone)]
-pub struct InteractiveTutorial {
-    pub id: String,
-    pub title: String,
-    pub description: String,
-    pub steps: Vec<TutorialStep>,
-    pub progress: HashMap<String, StepProgress>,
-}
 #[derive(Debug, Clone)]
 pub struct TutorialStep {
     pub id: String,
@@ -43,6 +32,16 @@ pub struct StepResult {
     pub feedback: String,
     pub hint: Option<String>,
 }
+
+#[derive(Debug, Clone)]
+pub struct InteractiveTutorial {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub steps: Vec<TutorialStep>,
+    pub progress: HashMap<String, StepProgress>,
+}
+
 impl InteractiveTutorial {
 /// # Examples
 /// 
@@ -332,23 +331,4 @@ pub struct MistakeAnalysis {
     pub total_attempts: usize,
     pub common_errors: HashMap<String, usize>,
     pub success_rate: f64,
-}
-#[cfg(test)]
-mod property_tests_tutorial {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
-    }
 }

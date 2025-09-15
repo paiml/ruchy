@@ -841,8 +841,6 @@ impl Transpiler {
             Range, Send, Slice, Some, StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, TypeCast,
             Tuple, Unary, While, WhileLet,
         };
-#[cfg(test)]
-use proptest::prelude::*;
         // Dispatch to specialized handlers to keep complexity below 10
         match &expr.kind {
             // Basic expressions
@@ -897,8 +895,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_mod {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

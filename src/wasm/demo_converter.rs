@@ -167,8 +167,6 @@ pub fn find_demo_files() -> Vec<std::path::PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_simple_conversion() {
         let content = "42\nlet x = 10";
@@ -197,8 +195,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_demo_converter {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

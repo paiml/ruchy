@@ -1562,8 +1562,6 @@ impl Default for InferenceContext {
 mod tests {
     use super::*;
     use crate::frontend::parser::Parser;
-#[cfg(test)]
-use proptest::prelude::*;
     fn infer_str(input: &str) -> Result<MonoType> {
         let mut parser = Parser::new(input);
         let expr = parser.parse()?;
@@ -1782,8 +1780,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_infer {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

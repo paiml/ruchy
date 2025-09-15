@@ -1,12 +1,6 @@
 // SPRINT3-002: Complexity analysis implementation
 // PMAT Complexity: <10 per function
 use crate::notebook::testing::types::{Cell, Notebook, CellType};
-#[cfg(test)]
-use proptest::prelude::*;
-/// Complexity analysis for notebook cells
-pub struct ComplexityAnalyzer {
-    config: ComplexityConfig,
-}
 #[derive(Debug, Clone)]
 pub struct ComplexityConfig {
     pub cyclomatic_threshold: usize,
@@ -60,6 +54,12 @@ pub struct Hotspot {
     pub impact: f64,
     pub location: String,
 }
+
+/// Complexity analyzer for notebook code
+pub struct ComplexityAnalyzer {
+    config: ComplexityConfig,
+}
+
 impl Default for ComplexityAnalyzer {
     fn default() -> Self {
         Self::new()
@@ -317,24 +317,5 @@ pub fn suggest_optimizations(&self, cell: &Cell) -> Vec<String> {
             suggestions.push("High cognitive complexity - reduce nesting and simplify control flow".to_string());
         }
         suggestions
-    }
-}
-#[cfg(test)]
-mod property_tests_complexity {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
     }
 }

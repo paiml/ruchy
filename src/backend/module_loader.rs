@@ -506,7 +506,7 @@ mod tests {
 mod property_tests_module_loader {
     use proptest::proptest;
     use super::*;
-    use proptest::prelude::*;
+    
     proptest! {
         /// Property: ModuleLoader::new never panics and always creates valid loader
         #[test]

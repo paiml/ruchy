@@ -3,16 +3,6 @@
 use crate::frontend::ast::BinaryOp;
 use crate::runtime::Value;
 use anyhow::{Result, bail};
-/// Evaluate a binary operation on two values
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::runtime::binary_ops::evaluate_binary_op;
-/// use ruchy::runtime::Value;
-/// use ruchy::frontend::ast::BinaryOp;
-#[cfg(test)]
-use proptest::prelude::*;
 ///
 /// let lhs = `Value::Int(5)`;
 /// let rhs = `Value::Int(3)`;
@@ -219,8 +209,8 @@ fn values_equal(v1: &Value, v2: &Value) -> bool {
 #[cfg(test)]
 mod property_tests_binary_ops {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

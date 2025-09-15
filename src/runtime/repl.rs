@@ -467,7 +467,7 @@ pub struct ReplConfig {
     /// Timeout for evaluation (default: 100ms)
     pub timeout: Duration,
     /// Maximum stack depth (default: 1000)
-    pub max_depth: usize,
+    pub maxdepth: usize,
     /// Enable debug mode
     pub debug: bool,
 }
@@ -476,7 +476,7 @@ impl Default for ReplConfig {
         Self {
             max_memory: 10 * 1024 * 1024, // 10MB arena allocation limit
             timeout: Duration::from_millis(100), // 100ms hard limit per spec
-            max_depth: 1000, // 1000 frame maximum per spec
+            maxdepth:1000, // 1000 frame maximum per spec
             debug: false,
         }
     }
@@ -744,7 +744,7 @@ impl Repl {
         let config = ReplConfig {
             max_memory: 1024 * 1024, // 1MB limit for sandbox
             timeout: Duration::from_millis(10), // Very short timeout
-            max_depth: 100, // Limited recursion
+            maxdepth:100, // Limited recursion
             debug: false,
         };
         Self::with_config(config)
@@ -6702,8 +6702,8 @@ impl Repl {
         module: &str,
         name: &str,
         args: &[Expr],
-        _deadline: Instant,
-        _depth: usize,
+        deadline: Instant,
+        depth: usize,
     ) -> Option<Result<Value>> {
         match (module, name) {
             ("HashMap", "new") => {
@@ -6730,10 +6730,8 @@ impl Repl {
             }
             ("DataFrame", "from_rows") => {
                 // Create DataFrame from list of row lists
-                if args.len() != 1 {
-                    Some(Err(anyhow::anyhow!("DataFrame::from_rows() requires exactly 1 argument (rows), got {}", args.len())))
-                } else {
-                    match self.evaluate_expr(&args[0], _deadline, _depth + 1) {
+                if args.len() == 1 {
+                    match self.evaluate_expr(&args[0], deadline, depth + 1) {
                         Ok(Value::List(rows)) => {
                             // Convert rows to columns
                             let mut columns = Vec::new();
@@ -6770,6 +6768,8 @@ impl Repl {
                         Ok(_) => Some(Err(anyhow::anyhow!("DataFrame::from_rows() expects a list of rows"))),
                         Err(e) => Some(Err(e)),
                     }
+                } else {
+                    Some(Err(anyhow::anyhow!("DataFrame::from_rows() requires exactly 1 argument (rows), got {}", args.len())))
                 }
             }
             _ => None,
@@ -8351,8 +8351,8 @@ impl Repl {
         if Instant::now() > deadline {
             bail!("Evaluation timeout exceeded");
         }
-        if depth > self.config.max_depth {
-            bail!("Maximum recursion depth {} exceeded. \n  Hint: Check for infinite recursion or increase max_depth if needed", self.config.max_depth);
+        if depth > self.config.maxdepth {
+            bail!("Maximum recursion depth {} exceeded. \n  Hint: Check for infinite recursion or increase max_depth if needed", self.config.maxdepth);
         }
         Ok(())
     }
@@ -9664,8 +9664,8 @@ impl MultilineState {
 #[cfg(test)]
 mod property_tests_repl {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

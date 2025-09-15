@@ -588,8 +588,6 @@ mod tests {
         Expr, ExprKind, Pattern, Literal, BinaryOp, Span, Param, Type, TypeKind,
         MatchArm, StringPart, StructPatternField
     };
-#[cfg(test)]
-use proptest::prelude::*;
     // Helper functions for consistent test setup
     fn create_test_span() -> Span {
         Span { start: 0, end: 1 }
@@ -1416,8 +1414,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_linter {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

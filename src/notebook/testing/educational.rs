@@ -2,16 +2,6 @@
 // PMAT Complexity: <10 per function
 use crate::notebook::testing::types::Notebook;
 use std::collections::HashMap;
-#[cfg(test)]
-use proptest::prelude::*;
-/// Educational platform for notebook-based learning
-#[derive(Debug, Clone)]
-pub struct EducationalPlatform {
-    assignments: Vec<Assignment>,
-    submissions: HashMap<String, Vec<StudentSubmission>>,
-    peer_reviews: Vec<PeerReview>,
-    analytics: LearningAnalytics,
-}
 #[derive(Debug, Clone)]
 pub struct Assignment {
     pub id: String,
@@ -68,6 +58,15 @@ pub enum FeedbackSeverity {
     Error,
     Info,
 }
+
+/// Educational platform for notebook-based learning
+pub struct EducationalPlatform {
+    assignments: Vec<Assignment>,
+    submissions: std::collections::HashMap<String, Vec<StudentSubmission>>,
+    peer_reviews: Vec<PeerReview>,
+    analytics: LearningAnalytics,
+}
+
 impl Default for EducationalPlatform {
     fn default() -> Self {
         Self::new()
@@ -386,25 +385,6 @@ impl Default for Assignment {
             points: 100,
             rubric: vec![],
             test_cases: vec![],
-        }
-    }
-}
-#[cfg(test)]
-mod property_tests_educational {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
         }
     }
 }

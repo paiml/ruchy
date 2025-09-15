@@ -3,10 +3,8 @@
 // Based on specification: docs/specifications/acceptance-testing-wasm.md
 
 use std::time::{Duration, Instant};
-use std::path::Path;
-use tempfile::NamedTempFile;
 use ruchy::notebook::testing::sandbox::{
-    WasmSandbox, ResourceLimits, SandboxError, ExecutionResult,
+    ResourceLimits,
     SandboxCoordinator, ProblemGenerator
 };
 

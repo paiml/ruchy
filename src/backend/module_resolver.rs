@@ -466,8 +466,6 @@ mod tests {
             match &exprs[0].kind {
                 ExprKind::Block(inner_exprs) => {
                     assert_eq!(inner_exprs.len(), 2);
-#[cfg(test)]
-use proptest::prelude::*;
                     assert!(matches!(inner_exprs[0].kind, ExprKind::Module { .. }));
                     assert!(matches!(inner_exprs[1].kind, ExprKind::Import { .. }));
                 }
@@ -514,8 +512,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_module_resolver {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

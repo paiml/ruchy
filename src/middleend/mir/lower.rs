@@ -392,8 +392,6 @@ impl Default for LoweringContext {
 mod tests {
     use super::*;
     use crate::frontend::Parser;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_lower_literal() -> Result<()> {
         let mut parser = Parser::new("42");
@@ -440,8 +438,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_lower {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

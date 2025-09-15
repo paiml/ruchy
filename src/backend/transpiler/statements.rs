@@ -720,7 +720,7 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
         // Check if this is part of a DataFrame builder pattern
         if method == "column" || method == "build" {
             // Build the full method call expression to check for builder pattern
-            let method_call_expr = Expr {
+            let _method_call_expr = Expr {
                 kind: ExprKind::MethodCall {
                     receiver: Box::new(object.clone()),
                     method: method.to_string(),
@@ -2419,8 +2419,6 @@ pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStr
 mod tests {
     use super::*;
     use crate::Parser;
-#[cfg(test)]
-use proptest::prelude::*;
     fn create_transpiler() -> Transpiler {
         Transpiler::new()
     }
@@ -2678,8 +2676,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_statements {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -3,12 +3,6 @@
 use crate::notebook::testing::types::{Notebook, CellType};
 use crate::notebook::testing::educational::{StudentSubmission, RubricItem, Grade, FeedbackSeverity, Feedback};
 use std::collections::HashMap;
-#[cfg(test)]
-use proptest::prelude::*;
-/// Grading system with rubric support
-pub struct Grader {
-    config: GradingConfig,
-}
 #[derive(Debug, Clone)]
 pub struct GradingConfig {
     pub partial_credit: bool,
@@ -24,6 +18,12 @@ impl Default for GradingConfig {
         }
     }
 }
+
+/// Grading system for notebook assignments
+pub struct Grader {
+    config: GradingConfig,
+}
+
 impl Default for Grader {
     fn default() -> Self {
         Self::new()
@@ -180,7 +180,7 @@ pub fn grade_code_quality(&self, notebook: &Notebook) -> QualityScore {
     }
     fn count_nesting(&self, source: &str) -> usize {
         let mut max_depth = 0;
-        let mut current_depth = 0;
+        let mut current_depth: usize = 0;
         for char in source.chars() {
             match char {
                 '{' => {
@@ -287,23 +287,4 @@ pub struct ValidationResult {
     pub total_tests: usize,
     pub is_correct: bool,
     pub feedback: Vec<String>,
-}
-#[cfg(test)]
-mod property_tests_grading {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
-    }
 }

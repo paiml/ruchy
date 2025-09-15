@@ -524,8 +524,6 @@ impl Default for MVCC {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_transaction_commit() {
         let mut state = TransactionalState::new(1024 * 1024);
@@ -590,7 +588,7 @@ use proptest::prelude::*;
 mod property_tests_transaction {
     use proptest::proptest;
     use super::*;
-    use proptest::prelude::*;
+    
     proptest! {
         /// Property: TransactionalState operations never panic
         #[test]

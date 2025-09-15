@@ -1063,8 +1063,6 @@ mod tests {
         let rust_str = result.to_string();
         // String interpolation should use format!
         assert!(rust_str.contains("format!") || rust_str.contains("Hello"));
-#[cfg(test)]
-use proptest::prelude::*;
         assert!(rust_str.contains("name"));
     }
 }
@@ -1072,7 +1070,7 @@ use proptest::prelude::*;
 mod property_tests_expressions {
     use proptest::proptest;
     use super::*;
-    use proptest::prelude::*;
+    
     proptest! {
         /// Property: transpile_literal never panics on any literal input
         #[test]

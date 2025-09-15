@@ -672,8 +672,6 @@ impl Default for UnicodeExpander {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_magic_registry() {
         let registry = MagicRegistry::new();
@@ -707,8 +705,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_magic {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

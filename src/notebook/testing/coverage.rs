@@ -1,11 +1,17 @@
 use crate::notebook::testing::types::{Cell, CoverageReport};
-#[cfg(test)]
-use proptest::prelude::*;
+
 /// Coverage tracking for notebook tests
 pub struct CoverageTracker {
     lines_covered: usize,
     total_lines: usize,
 }
+
+/// Instrumented cell with coverage probes
+pub struct InstrumentedCell {
+    cell: Cell,
+    probes: Vec<usize>,
+}
+
 impl Default for CoverageTracker {
     fn default() -> Self {
         Self::new()
@@ -65,29 +71,6 @@ pub fn report_coverage(&self) -> CoverageReport {
             line_coverage: 0.5,  // Stub value
             branch_coverage: 0.3, // Stub value
             uncovered_sections: Vec::new(),
-        }
-    }
-}
-pub struct InstrumentedCell {
-    pub cell: Cell,
-    pub probes: Vec<usize>,
-}
-#[cfg(test)]
-mod property_tests_coverage {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
         }
     }
 }

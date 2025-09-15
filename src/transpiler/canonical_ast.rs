@@ -364,8 +364,6 @@ mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
     use crate::Parser;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_normalize_let_statement() {
         let input = "let x = 10 in x + 1";
@@ -407,8 +405,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_canonical_ast {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -3,7 +3,6 @@
 use quickcheck::{quickcheck, TestResult};
 use ruchy::backend::module_resolver::ModuleResolver;
 use ruchy::frontend::ast::{Expr, ExprKind, ImportItem, Span};
-use std::collections::HashSet;
 
 // Property: Module resolver preserves expression structure for non-imports
 fn prop_non_import_preserved(seed: u64) -> TestResult {

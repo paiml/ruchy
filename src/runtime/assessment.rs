@@ -790,8 +790,6 @@ pub struct TestResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_grading_engine_creation() {
         let engine = GradingEngine::new();
@@ -840,7 +838,7 @@ use proptest::prelude::*;
 mod property_tests_assessment {
     use proptest::proptest;
     use super::*;
-    use proptest::prelude::*;
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

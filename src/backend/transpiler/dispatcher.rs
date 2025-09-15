@@ -632,3 +632,130 @@ impl Transpiler {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Literal, Span};
+    use quote::quote;
+
+    // Helper to create a test expression
+    fn make_expr(kind: ExprKind) -> Box<Expr> {
+        Box::new(Expr {
+            kind,
+            span: Span::new(0, 0),
+            attributes: vec![],
+        })
+    }
+
+    #[test]
+    fn test_transpile_identifier() {
+        let result = Transpiler::transpile_identifier("test_var");
+        let expected = quote! { test_var };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_transpile_identifier_with_keyword() {
+        let result = Transpiler::transpile_identifier("type");
+        let expected = quote! { r#type };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_transpile_literal_integer() {
+        let result = Transpiler::transpile_literal(&Literal::Integer(42));
+        let expected = quote! { 42i32 };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_transpile_literal_float() {
+        let result = Transpiler::transpile_literal(&Literal::Float(3.14));
+        let expected = quote! { 3.14f64 };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_transpile_literal_string() {
+        let result = Transpiler::transpile_literal(&Literal::String("hello".to_string()));
+        let expected = quote! { "hello" };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_transpile_literal_boolean_true() {
+        let result = Transpiler::transpile_literal(&Literal::Bool(true));
+        let expected = quote! { true };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_transpile_literal_boolean_false() {
+        let result = Transpiler::transpile_literal(&Literal::Bool(false));
+        let expected = quote! { false };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_transpile_literal_unit() {
+        let result = Transpiler::transpile_literal(&Literal::Unit);
+        let expected = quote! { () };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_transpile_literal_char() {
+        let result = Transpiler::transpile_literal(&Literal::Char('a'));
+        let expected = quote! { 'a' };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_make_break_continue_break_no_label() {
+        let result = Transpiler::make_break_continue(true, None);
+        let expected = quote! { break };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_make_break_continue_break_with_label() {
+        let result = Transpiler::make_break_continue(true, Some(&"loop1".to_string()));
+        let expected = quote! { break loop1 };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_make_break_continue_continue_no_label() {
+        let result = Transpiler::make_break_continue(false, None);
+        let expected = quote! { continue };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_make_break_continue_continue_with_label() {
+        let result = Transpiler::make_break_continue(false, Some(&"loop2".to_string()));
+        let expected = quote! { continue loop2 };
+        assert_eq!(result.to_string(), expected.to_string());
+    }
+
+    #[test]
+    fn test_reserved_keyword_handling() {
+        // Test various reserved keywords
+        let keywords = vec!["type", "match", "async", "await", "move", "ref", "static"];
+        for keyword in keywords {
+            let result = Transpiler::transpile_identifier(keyword);
+            assert!(result.to_string().contains("r#"));
+        }
+    }
+
+    #[test]
+    fn test_non_reserved_keyword() {
+        let non_keywords = vec!["my_var", "foo", "bar", "data", "value"];
+        for name in non_keywords {
+            let result = Transpiler::transpile_identifier(name);
+            assert!(!result.to_string().contains("r#"));
+            assert_eq!(result.to_string(), name);
+        }
+    }
+}

@@ -153,6 +153,7 @@ impl Default for GlobalRegistry {
 impl GlobalRegistry {
     pub fn new() -> Self {
         GlobalRegistry {
+            #[allow(clippy::arc_with_non_send_sync)]
             values: Arc::new(HashMap::new()),
             functions: Arc::new(HashMap::new()),
             types: HashMap::new(),
@@ -699,7 +700,7 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
             return Err("Unsupported session version".to_string());
         }
         // Restore basic state
-        self.cell_cache = data.cell_cache.clone();
+        self.cell_cache.clone_from(&data.cell_cache);
         self.memory_counter = data.memory_counter;
         self.execution_mode = match data.execution_mode.as_str() {
             "reactive" => ExecutionMode::Reactive,
@@ -858,8 +859,8 @@ pub struct TransactionId(pub String);
 #[cfg(test)]
 mod property_tests_shared_session {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

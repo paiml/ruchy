@@ -322,8 +322,6 @@ pub fn transpile_with_provenance(
 #[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_provenance_tracking() {
         let mut tracker = ProvenanceTracker::new("let x = 10");
@@ -392,7 +390,7 @@ use proptest::prelude::*;
 mod property_tests_provenance {
     use proptest::proptest;
     use super::*;
-    use proptest::prelude::*;
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

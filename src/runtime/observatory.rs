@@ -577,8 +577,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-#[cfg(test)]
-use proptest::prelude::*;
 /// Actor system observatory for live introspection and monitoring
 pub struct ActorObservatory {
     /// Reference to the actor system being observed
@@ -1366,8 +1364,8 @@ pub fn slow_messages(name: &str, min_time_us: u64) -> Self {
 #[cfg(test)]
 mod property_tests_observatory {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

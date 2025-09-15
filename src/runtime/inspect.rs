@@ -387,8 +387,6 @@ impl<T: Inspect, E: Inspect> Inspect for Result<T, E> {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_primitive_inspection() {
         let mut inspector = Inspector::new();
@@ -431,8 +429,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_inspect {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

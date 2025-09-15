@@ -460,8 +460,6 @@ impl Default for MirBuilder {
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_build_simple_function() {
         let mut builder = MirBuilder::new();
@@ -525,8 +523,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_builder {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

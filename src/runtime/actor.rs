@@ -593,8 +593,6 @@ impl ActorBehavior for SupervisorActor {
 mod tests {
     use super::*;
     use std::time::Duration;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_actor_system_creation() {
         let system = ActorSystem::new();
@@ -639,8 +637,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_actor {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

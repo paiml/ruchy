@@ -372,8 +372,6 @@ impl Default for LazyCache {
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_lazy_value_computed() {
         let lazy = LazyValue::computed(Value::Int(42));
@@ -452,8 +450,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_lazy {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

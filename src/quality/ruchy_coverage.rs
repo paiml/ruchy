@@ -419,8 +419,8 @@ impl Default for RuchyCoverageCollector {
 #[cfg(test)]
 mod property_tests_ruchy_coverage {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -3,14 +3,6 @@
 use std::collections::{HashMap, HashSet};
 use sha2::{Sha256, Digest};
 use chrono::Timelike;
-#[cfg(test)]
-use proptest::prelude::*;
-/// Anti-cheating system for detecting plagiarism
-pub struct AntiCheatSystem {
-    similarity_threshold: f64,
-    submission_history: HashMap<String, Vec<Submission>>,
-    fingerprint_db: HashMap<String, String>, // hash -> student_id
-}
 #[derive(Debug, Clone)]
 pub struct Submission {
     pub student_id: String,
@@ -32,6 +24,14 @@ pub struct MatchedSection {
     pub end_line: usize,
     pub similarity: f64,
 }
+
+#[derive(Debug, Clone)]
+pub struct AntiCheatSystem {
+    pub similarity_threshold: f64,
+    pub submission_history: HashMap<String, Vec<Submission>>,
+    pub fingerprint_db: HashMap<String, String>,
+}
+
 impl Default for AntiCheatSystem {
     fn default() -> Self {
         Self::new()
@@ -411,23 +411,4 @@ pub struct PatternAnalysis {
     pub is_suspicious: bool,
     pub indicators: Vec<String>,
     pub submission_count: usize,
-}
-#[cfg(test)]
-mod property_tests_anticheat {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
-    }
 }

@@ -373,8 +373,6 @@ pub enum StepResult {
 mod tests {
     use super::*;
     use crate::proving::smt::SmtBackend;
-#[cfg(test)]
-use proptest::prelude::*;
     fn create_test_prover() -> InteractiveProver {
         let backend = SmtBackend::Z3;
         InteractiveProver::new(backend)
@@ -659,8 +657,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_prover {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]
