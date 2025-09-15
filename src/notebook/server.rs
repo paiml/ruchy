@@ -20,7 +20,7 @@ async fn serve_notebook() -> Html<&'static str> {
     Html(include_str!("../../static/notebook.html"))
 }
 async fn execute_handler(Json(request): Json<ExecuteRequest>) -> ResponseJson<ExecuteResponse> {
-    println!("🔧 TDD DEBUG: execute_handler called with: {:?}", request);
+    println!("🔧 TDD DEBUG: execute_handler called with: {request:?}");
     let result = tokio::task::spawn_blocking(move || {
         use crate::runtime::repl::Repl;
         use std::time::{Duration, Instant};
@@ -30,7 +30,7 @@ use proptest::prelude::*;
         let mut repl = match Repl::new() {
             Ok(r) => r,
             Err(e) => {
-                println!("🔧 TDD DEBUG: REPL creation failed: {:?}", e);
+                println!("🔧 TDD DEBUG: REPL creation failed: {e:?}");
                 return ExecuteResponse {
                     success: false,
                     result: "REPL creation failed".to_string(),
@@ -41,31 +41,31 @@ use proptest::prelude::*;
         let deadline = Some(Instant::now() + Duration::from_secs(5));
         match repl.evaluate_expr_str(&request.code, deadline) {
             Ok(value) => {
-                println!("🔧 TDD DEBUG: Execution successful: {}", value);
+                println!("🔧 TDD DEBUG: Execution successful: {value}");
                 ExecuteResponse {
                     success: true,
                     result: value.to_string(),
                 }
             }
             Err(e) => {
-                println!("🔧 TDD DEBUG: Execution failed: {:?}", e);
+                println!("🔧 TDD DEBUG: Execution failed: {e:?}");
                 ExecuteResponse {
                     success: false,
-                    result: format!("Error: {}", e),
+                    result: format!("Error: {e}"),
                 }
             }
         }
     }).await;
     match result {
         Ok(response) => {
-            println!("🔧 TDD DEBUG: Returning response: {:?}", response);
+            println!("🔧 TDD DEBUG: Returning response: {response:?}");
             ResponseJson(response)
         }
         Err(e) => {
-            println!("🔧 TDD DEBUG: Task join error: {:?}", e);
+            println!("🔧 TDD DEBUG: Task join error: {e:?}");
             ResponseJson(ExecuteResponse {
                 success: false,
-                result: format!("Task execution failed: {}", e),
+                result: format!("Task execution failed: {e}"),
             })
         }
     }
@@ -87,7 +87,7 @@ pub async fn start_server(port: u16) -> Result<(), Box<dyn std::error::Error>> {
     println!("🔧 TDD DEBUG: app created, binding to addr");
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    println!("🚀 Notebook server running at http://127.0.0.1:{}", port);
+    println!("🚀 Notebook server running at http://127.0.0.1:{port}");
     axum::serve(listener, app).await?;
     Ok(())
 }

@@ -36,9 +36,9 @@
 //! - Memory management for WASM
 //! - Component model support
 //!
-//! ## DataFrame Integration
+//! ## `DataFrame` Integration
 //! Optional Apache Arrow integration for data science:
-//! - DataFrame ↔ Arrow conversion
+//! - `DataFrame` ↔ Arrow conversion
 //! - Columnar data processing
 //! - Memory-efficient operations
 //!

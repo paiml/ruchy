@@ -311,16 +311,16 @@ impl fmt::Display for RecoveryAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             RecoveryAction::SkippedToDelimiter { skipped_count, delimiter } => {
-                write!(f, "Skipped {} tokens to '{}'", skipped_count, delimiter)
+                write!(f, "Skipped {skipped_count} tokens to '{delimiter}'")
             }
             RecoveryAction::InsertedToken { token } => {
-                write!(f, "Inserted '{}'", token)
+                write!(f, "Inserted '{token}'")
             }
             RecoveryAction::ReplacedToken { original, replacement } => {
-                write!(f, "Replaced '{}' with '{}'", original, replacement)
+                write!(f, "Replaced '{original}' with '{replacement}'")
             }
             RecoveryAction::AdaptiveRecovery { strategy_used } => {
-                write!(f, "Adaptive recovery using {}", strategy_used)
+                write!(f, "Adaptive recovery using {strategy_used}")
             }
         }
     }

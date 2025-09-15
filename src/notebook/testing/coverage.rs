@@ -1,4 +1,4 @@
-use crate::notebook::testing::types::*;
+use crate::notebook::testing::types::{Cell, CoverageReport};
 #[cfg(test)]
 use proptest::prelude::*;
 /// Coverage tracking for notebook tests
@@ -6,6 +6,12 @@ pub struct CoverageTracker {
     lines_covered: usize,
     total_lines: usize,
 }
+impl Default for CoverageTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CoverageTracker {
 /// # Examples
 /// 

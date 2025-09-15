@@ -30,7 +30,7 @@
 //! - **Monomorphic Types**: Concrete types without quantification
 //! - **Type Schemes**: Polymorphic types with quantified variables
 //! - **Substitution**: Type variable replacement mechanism
-//! - **DataFrame Types**: Support for data science operations
+//! - **`DataFrame` Types**: Support for data science operations
 use std::collections::HashMap;
 use std::fmt;
 /// Type variable for unification

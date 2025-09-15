@@ -105,6 +105,12 @@ struct WasmRuntime {
     engine: wasmtime::Engine,
     store: Option<wasmtime::Store<()>>,
 }
+impl Default for WasmSandbox {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WasmSandbox {
     pub fn new() -> Self {
         let config = wasmtime::Config::new();
@@ -158,7 +164,7 @@ pub fn configure(&mut self, limits: ResourceLimits) -> Result<(), String> {
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn get_memory_limit(&self) -> usize {
-        self.limits.as_ref().map(|l| l.memory_mb).unwrap_or(0)
+        self.limits.as_ref().map_or(0, |l| l.memory_mb)
     }
     /// Compiles Ruchy source code to WebAssembly bytecode with security sandboxing.
     ///
@@ -262,7 +268,7 @@ pub fn get_memory_limit(&self) -> usize {
         for pattern in &dangerous_patterns {
             if code.contains(pattern) {
                 return Err(SandboxError::PermissionDenied(
-                    format!("Dangerous pattern detected: {}", pattern)
+                    format!("Dangerous pattern detected: {pattern}")
                 ));
             }
         }
@@ -397,7 +403,7 @@ pub fn get_memory_limit(&self) -> usize {
         // Debug: print the WASM module size and ALL bytes
         eprintln!("DEBUG: Generated WASM module size: {} bytes", wasm_bytes.len());
         eprintln!("DEBUG: ALL bytes: {:02x?}", &wasm_bytes);
-        eprintln!("DEBUG: Expected result in WASM: {}", expected_result);
+        eprintln!("DEBUG: Expected result in WASM: {expected_result}");
         eprintln!("DEBUG: Byte at position 0x21 (33): {:02x}", wasm_bytes.get(0x21).unwrap_or(&0));
         Ok(wasm_bytes)
     }
@@ -414,9 +420,9 @@ pub fn get_memory_limit(&self) -> usize {
     fn validate_wasm_module(&self, wasm_bytes: &[u8]) -> Result<(), SandboxError> {
         // Validate with wasmtime
         match wasmtime::Module::validate(&self.runtime.engine, wasm_bytes) {
-            Ok(_) => Ok(()),
+            Ok(()) => Ok(()),
             Err(e) => Err(SandboxError::CompilationError(
-                format!("WASM validation failed: {}", e)
+                format!("WASM validation failed: {e}")
             )),
         }
     }
@@ -440,7 +446,7 @@ pub fn get_memory_limit(&self) -> usize {
             eprintln!("DEBUG: Found main function in WASM module");
             // Check the function type to allocate correct results
             let func_ty = main_func.ty(&*store);
-            eprintln!("DEBUG: Main function type: {:?}", func_ty);
+            eprintln!("DEBUG: Main function type: {func_ty:?}");
             let mut results: Vec<wasmtime::Val> = func_ty.results()
                 .map(|ty| match ty {
                     wasmtime::ValType::I32 => wasmtime::Val::I32(0),
@@ -454,12 +460,12 @@ pub fn get_memory_limit(&self) -> usize {
             match main_func.call(&mut *store, &[], &mut results) {
                 Ok(()) => {
                     eprintln!("DEBUG: Main function executed successfully!");
-                    eprintln!("DEBUG: Results: {:?}", results);
+                    eprintln!("DEBUG: Results: {results:?}");
                     // Extract result from WASM execution
                     if let Some(result) = results.first() {
                         match result {
                             wasmtime::Val::I32(value) => {
-                                eprintln!("DEBUG: Returning i32 value: {}", value);
+                                eprintln!("DEBUG: Returning i32 value: {value}");
                                 value.to_string()
                             },
                             wasmtime::Val::I64(value) => value.to_string(),
@@ -473,8 +479,8 @@ pub fn get_memory_limit(&self) -> usize {
                     }
                 },
                 Err(e) => {
-                    eprintln!("DEBUG: Main function execution failed: {}", e);
-                    return Err(SandboxError::RuntimeError(format!("WASM execution failed: {}", e)));
+                    eprintln!("DEBUG: Main function execution failed: {e}");
+                    return Err(SandboxError::RuntimeError(format!("WASM execution failed: {e}")));
                 }
             }
         } else {
@@ -547,6 +553,12 @@ pub struct Worker {
     id: usize,
     sandbox: WasmSandbox,
 }
+impl Default for SandboxCoordinator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SandboxCoordinator {
     pub fn new() -> Self {
         Self {
@@ -617,6 +629,12 @@ pub struct GeneratedProblem {
     pub student_id: String,
     pub description: String,
 }
+impl Default for ProblemGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProblemGenerator {
     pub fn new() -> Self {
         let mut templates = HashMap::new();
@@ -637,7 +655,7 @@ impl ProblemGenerator {
     pub fn generate_for_student(&mut self, student_id: &str, problem_type: &str) -> GeneratedProblem {
         // Use student ID as seed for deterministic generation
         let seed = student_id.bytes()
-            .fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64));
+            .fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(u64::from(b)));
         let template = self.templates.get(problem_type).unwrap();
         let mut params = Vec::new();
         // Generate parameters based on seed

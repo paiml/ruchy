@@ -1,7 +1,7 @@
 // SPRINT4-002: Grading system implementation
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::*;
-use crate::notebook::testing::educational::*;
+use crate::notebook::testing::types::{Notebook, CellType};
+use crate::notebook::testing::educational::{StudentSubmission, RubricItem, Grade, FeedbackSeverity, Feedback};
 use std::collections::HashMap;
 #[cfg(test)]
 use proptest::prelude::*;
@@ -24,6 +24,12 @@ impl Default for GradingConfig {
         }
     }
 }
+impl Default for Grader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Grader {
 /// # Examples
 /// 
@@ -82,7 +88,7 @@ pub fn grade_with_rubric(
                 total_points += capped_score;
                 rubric_scores.insert(id.clone(), capped_score);
                 // Generate feedback
-                let percentage = (capped_score as f64 / item.points as f64) * 100.0;
+                let percentage = (f64::from(capped_score) / f64::from(item.points)) * 100.0;
                 let severity = if percentage >= 90.0 {
                     FeedbackSeverity::Success
                 } else if percentage >= 70.0 {
@@ -101,7 +107,7 @@ pub fn grade_with_rubric(
         Grade {
             total_points,
             max_points,
-            percentage: (total_points as f64 / max_points as f64) * 100.0,
+            percentage: (f64::from(total_points) / f64::from(max_points)) * 100.0,
             feedback,
             rubric_scores,
         }
@@ -122,8 +128,8 @@ pub fn apply_late_penalty(&self, grade: &mut Grade, hours_late: f64) {
         let penalty_multiplier = 1.0 - (self.config.late_penalty_percent / 100.0);
         let days_late = (hours_late / 24.0).ceil();
         let final_multiplier = penalty_multiplier.powf(days_late);
-        grade.total_points = (grade.total_points as f64 * final_multiplier) as u32;
-        grade.percentage = (grade.total_points as f64 / grade.max_points as f64) * 100.0;
+        grade.total_points = (f64::from(grade.total_points) * final_multiplier) as u32;
+        grade.percentage = (f64::from(grade.total_points) / f64::from(grade.max_points)) * 100.0;
         grade.feedback.push(Feedback {
             cell_id: String::new(),
             message: format!("Late penalty applied: -{:.0}% for {:.0} days late", 
@@ -182,9 +188,7 @@ pub fn grade_code_quality(&self, notebook: &Notebook) -> QualityScore {
                     max_depth = max_depth.max(current_depth);
                 }
                 '}' => {
-                    if current_depth > 0 {
-                        current_depth -= 1;
-                    }
+                    current_depth = current_depth.saturating_sub(1);
                 }
                 _ => {}
             }
@@ -204,6 +208,12 @@ pub struct QualityScore {
 pub struct ExerciseValidator {
     timeout_ms: u64,
 }
+impl Default for ExerciseValidator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExerciseValidator {
     pub fn new() -> Self {
         Self { timeout_ms: 5000 }
@@ -236,9 +246,9 @@ pub fn validate(&self, exercise: &Exercise, solution: &str) -> ValidationResult 
             // Simulate test execution
             if self.would_pass(solution, input, expected) {
                 passed += 1;
-                feedback.push(format!("✓ Test passed: {}", input));
+                feedback.push(format!("✓ Test passed: {input}"));
             } else {
-                feedback.push(format!("✗ Test failed: {}", input));
+                feedback.push(format!("✗ Test failed: {input}"));
             }
         }
         ValidationResult {

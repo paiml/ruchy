@@ -154,13 +154,12 @@ pub fn validate_step(&mut self, step_id: &str, submission: &str) -> StepResult {
             3 => "Consider using the hint if you're stuck.".to_string(),
             _ => format!("Attempt {}. The solution should {}", 
                         progress.attempts, 
-                        self.get_step(step_id).map(|s| &s.instruction[..20]).unwrap_or("..."))
+                        self.get_step(step_id).map_or("...", |s| &s.instruction[..20]))
         }
     }
     fn should_show_hint(&self, step_id: &str) -> bool {
         self.progress.get(step_id)
-            .map(|p| p.attempts >= 2)
-            .unwrap_or(false)
+            .is_some_and(|p| p.attempts >= 2)
     }
     fn get_step(&self, step_id: &str) -> Option<&TutorialStep> {
         self.steps.iter().find(|s| s.id == step_id)
@@ -204,6 +203,12 @@ struct HintStrategy {
     base_hints: Vec<String>,
     progressive_hints: Vec<String>,
 }
+impl Default for AdaptiveHintSystem {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AdaptiveHintSystem {
     pub fn new() -> Self {
         Self {

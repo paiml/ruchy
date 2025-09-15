@@ -6746,7 +6746,7 @@ impl Repl {
                                 // Initialize columns with default names
                                 for col_idx in 0..num_cols {
                                     columns.push(DataFrameColumn {
-                                        name: format!("column_{}", col_idx),
+                                        name: format!("column_{col_idx}"),
                                         values: Vec::new(),
                                     });
                                 }
@@ -8811,13 +8811,9 @@ impl Repl {
                 .map_err(|_| anyhow::anyhow!("Invalid bool in return")))
         } else if let Some(string_val) = return_val.strip_prefix("string:") {
             Some(Ok(Value::String(string_val.to_string())))
-        } else if let Some(char_val) = return_val.strip_prefix("char:") {
-            Some(char_val.chars().next()
+        } else { return_val.strip_prefix("char:").map(|char_val| char_val.chars().next()
                 .map(Value::Char)
-                .ok_or_else(|| anyhow::anyhow!("Invalid char in return")))
-        } else {
-            None
-        }
+                .ok_or_else(|| anyhow::anyhow!("Invalid char in return"))) }
     }
 
     fn parse_primitive_return(&self, return_val: &str) -> Result<Value> {

@@ -19,7 +19,7 @@ use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
 use std::rc::Rc;
 
-/// DataFrame column representation for the interpreter
+/// `DataFrame` column representation for the interpreter
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataFrameColumn {
     pub name: String,
@@ -50,7 +50,7 @@ pub enum Value {
         body: Rc<Expr>,
         env: Rc<HashMap<String, Value>>, // Captured environment
     },
-    /// DataFrame value
+    /// `DataFrame` value
     DataFrame {
         columns: Vec<DataFrameColumn>,
     },
@@ -3105,7 +3105,7 @@ impl Interpreter {
     // Public methods for SharedSession integration
     // ========================================================================
     
-    /// Get all bindings from the global environment (for SharedSession state persistence)
+    /// Get all bindings from the global environment (for `SharedSession` state persistence)
     pub fn get_global_bindings(&self) -> HashMap<String, Value> {
         if let Some(global_env) = self.env_stack.first() {
             global_env.clone()
@@ -3114,14 +3114,14 @@ impl Interpreter {
         }
     }
     
-    /// Set a binding in the global environment (for SharedSession state restoration)
+    /// Set a binding in the global environment (for `SharedSession` state restoration)
     pub fn set_global_binding(&mut self, name: String, value: Value) {
         if let Some(global_env) = self.env_stack.first_mut() {
             global_env.insert(name, value);
         }
     }
     
-    /// Get all bindings from the current environment (for SharedSession extraction)
+    /// Get all bindings from the current environment (for `SharedSession` extraction)
     pub fn get_current_bindings(&self) -> HashMap<String, Value> {
         if let Some(current_env) = self.env_stack.last() {
             current_env.clone()
@@ -3698,7 +3698,7 @@ impl Interpreter {
                         Value::Bool(b) => b.to_string(),
                         _ => "null".to_string(),
                     };
-                    groups.entry(key).or_insert_with(Vec::new).push(row_idx);
+                    groups.entry(key).or_default().push(row_idx);
                 }
                 
                 // Create result columns: group column + aggregated numeric columns
@@ -3718,7 +3718,7 @@ impl Interpreter {
                 for col in columns {
                     if col.name != group_column {
                         let mut aggregated_values = Vec::new();
-                        for (_key, indices) in &groups {
+                        for indices in groups.values() {
                             let mut sum = 0.0;
                             for &idx in indices {
                                 if let Some(value) = col.values.get(idx) {
@@ -3751,7 +3751,7 @@ impl Interpreter {
         }
     }
     
-    /// Special handler for DataFrame filter method
+    /// Special handler for `DataFrame` filter method
     fn eval_dataframe_filter_method(&mut self, receiver: &Value, args: &[Expr]) -> Result<Value, InterpreterError> {
         if args.len() != 1 {
             return Err(InterpreterError::RuntimeError("DataFrame.filter() requires exactly 1 argument (condition)".to_string()));
@@ -3845,7 +3845,7 @@ impl Interpreter {
         }
     }
 
-    /// Evaluate an expression with column context (for DataFrame filtering)
+    /// Evaluate an expression with column context (for `DataFrame` filtering)
     fn eval_expr_with_column_context(&mut self, expr: &Expr, columns: &[DataFrameColumn], row_idx: usize) -> Result<Value, InterpreterError> {
         match &expr.kind {
             // Special handling for function calls that might be col() references
@@ -4006,7 +4006,7 @@ impl Interpreter {
                             Value::Bool(b) => b.to_string(),
                             _ => "null".to_string(),
                         };
-                        groups.entry(key).or_insert_with(Vec::new).push(row_idx);
+                        groups.entry(key).or_default().push(row_idx);
                     }
                     
                     // Create result columns: group column + aggregated numeric columns
@@ -4026,7 +4026,7 @@ impl Interpreter {
                     for col in &columns {
                         if col.name != *group_column {
                             let mut aggregated_values = Vec::new();
-                            for (_key, indices) in &groups {
+                            for indices in groups.values() {
                                 let mut sum = 0.0;
                                 for &idx in indices {
                                     if let Some(value) = col.values.get(idx) {

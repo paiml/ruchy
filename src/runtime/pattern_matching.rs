@@ -13,12 +13,12 @@ use crate::runtime::Value;
 #[cfg(test)]
 use proptest::prelude::*;
 ///
-/// let value = Value::Int(42);
-/// let pattern = Literal::Integer(42);
-/// assert!(match_literal_pattern(&value, &pattern));
+/// let value = `Value::Int(42)`;
+/// let pattern = `Literal::Integer(42)`;
+/// `assert!(match_literal_pattern(&value`, &pattern));
 ///
-/// let pattern2 = Literal::Integer(43);
-/// assert!(!match_literal_pattern(&value, &pattern2));
+/// let pattern2 = `Literal::Integer(43)`;
+/// `assert!(!match_literal_pattern(&value`, &pattern2));
 /// ```
 pub fn match_literal_pattern(value: &Value, literal: &Literal) -> bool {
     match (value, literal) {

@@ -149,9 +149,9 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
     }
     fn convert_nbval_file(&self, input_path: &Path, output_dir: &Path) -> Result<ConvertedFile, String> {
         let content = std::fs::read_to_string(input_path)
-            .map_err(|e| format!("Failed to read file: {}", e))?;
+            .map_err(|e| format!("Failed to read file: {e}"))?;
         let notebook: NbvalNotebook = serde_json::from_str(&content)
-            .map_err(|e| format!("Failed to parse notebook: {}", e))?;
+            .map_err(|e| format!("Failed to parse notebook: {e}"))?;
         let mut converted_cells = Vec::new();
         let mut test_count = 0;
         for cell in notebook.cells {
@@ -162,7 +162,7 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
                     }
                     converted_cells.push(ruchy_cell);
                 }
-                Err(e) => return Err(format!("Failed to convert cell: {}", e)),
+                Err(e) => return Err(format!("Failed to convert cell: {e}")),
             }
         }
         // Generate output file
@@ -214,7 +214,7 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
     fn convert_pytest_file(&self, input_path: &Path, output_dir: &Path) -> Result<ConvertedFile, String> {
         // Pytest files are Python - need to extract test functions
         let content = std::fs::read_to_string(input_path)
-            .map_err(|e| format!("Failed to read file: {}", e))?;
+            .map_err(|e| format!("Failed to read file: {e}"))?;
         let test_functions = self.extract_pytest_functions(&content);
         let mut cells = Vec::new();
         for func in test_functions {
@@ -293,15 +293,15 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
         // Ensure output directory exists
         if let Some(parent) = output_path.parent() {
             std::fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create output directory: {}", e))?;
+                .map_err(|e| format!("Failed to create output directory: {e}"))?;
         }
         let content = match self.config.output_format {
             OutputFormat::RuchyTestFile => self.serialize_as_rust_test(notebook),
             _ => serde_json::to_string_pretty(notebook)
-                .map_err(|e| format!("Failed to serialize notebook: {}", e))?,
+                .map_err(|e| format!("Failed to serialize notebook: {e}"))?,
         };
         std::fs::write(output_path, content)
-            .map_err(|e| format!("Failed to write output file: {}", e))?;
+            .map_err(|e| format!("Failed to write output file: {e}"))?;
         Ok(())
     }
     fn serialize_as_rust_test(&self, notebook: &RuchyNotebook) -> String {
@@ -311,11 +311,11 @@ pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<Conve
 \n\n");
         for (i, cell) in notebook.cells.iter().enumerate() {
             if matches!(cell.cell_type, RuchyCellType::Code) && cell.metadata.has_tests() {
-                output.push_str(&format!("#[test]\nfn test_cell_{}() {{\n", i));
+                output.push_str(&format!("#[test]\nfn test_cell_{i}() {{\n"));
                 output.push_str("    let mut tester = NotebookTester::new();\n");
                 output.push_str(&format!("    let result = tester.execute_code({:?});\n", cell.source));
                 for expected in &cell.metadata.expected_outputs {
-                    output.push_str(&format!("    assert_eq!(result.output, {:?});\n", expected));
+                    output.push_str(&format!("    assert_eq!(result.output, {expected:?});\n"));
                 }
                 output.push_str("}\n\n");
             }

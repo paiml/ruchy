@@ -320,14 +320,14 @@ pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
                     let session = self.session.lock().expect("Failed to acquire session lock");
                     let current_memory = session.estimate_interpreter_memory() as usize;
                     if current_memory > limit {
-                        return Err(JsValue::from(&format!("Memory limit exceeded: {} > {}", current_memory, limit)));
+                        return Err(JsValue::from(&format!("Memory limit exceeded: {current_memory} > {limit}")));
                     }
                     // Check if cell would allocate too much memory
                     if cell.source.contains("allocate_memory") {
                         if let Some(size_str) = cell.source.split('(').nth(1).and_then(|s| s.split(')').next()) {
                             if let Ok(size) = size_str.parse::<usize>() {
                                 if size > limit {
-                                    return Err(JsValue::from(&format!("Cannot allocate {} bytes: exceeds memory limit of {}", size, limit)));
+                                    return Err(JsValue::from(&format!("Cannot allocate {size} bytes: exceeds memory limit of {limit}")));
                                 }
                             }
                         }
@@ -348,7 +348,7 @@ pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
                     self.execution_count += 1;
                     // Track as cached execution (very fast)
                     self.cell_execution_times.entry(cell_id.to_string())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(0.1); // Cached executions are nearly instant
                     return Ok(cached_value);
                 }
@@ -367,7 +367,7 @@ pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
                 let execution_time = get_timestamp() - start;
                 *self.cell_execution_counts.entry(cell_id.to_string()).or_insert(0) += 1;
                 self.cell_execution_times.entry(cell_id.to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(execution_time);
                 // Parse result and create output
                 let output = match result {
@@ -641,7 +641,7 @@ pub fn from_json(&mut self, json: &str) -> Result<(), JsValue> {
     // ============================================================================
     // Advanced NotebookRuntime Features - Sprint 10
     // ============================================================================
-    /// Export complete session state including notebook and SharedSession
+    /// Export complete session state including notebook and `SharedSession`
 /// # Examples
 /// 
 /// ```
@@ -661,7 +661,7 @@ pub fn export_session(&self) -> Result<NotebookSessionExport, String> {
             exported_at: chrono::Utc::now().timestamp(),
         })
     }
-    /// Import session state including notebook and SharedSession
+    /// Import session state including notebook and `SharedSession`
 /// # Examples
 /// 
 /// ```
@@ -782,7 +782,7 @@ pub fn export_as_jupyter(&self) -> Result<String, String> {
             }).collect(),
         };
         serde_json::to_string_pretty(&jupyter_notebook)
-            .map_err(|e| format!("Jupyter export error: {}", e))
+            .map_err(|e| format!("Jupyter export error: {e}"))
     }
     /// Export notebook as HTML
 /// # Examples
@@ -817,7 +817,7 @@ pub fn export_as_html(&self) -> Result<String, String> {
                         .replace('>', "&gt;")
                         .replace('"', "&quot;")
                         .replace('\'', "&#x27;");
-                    html.push_str(&format!("<pre><code>{}</code></pre>\n", escaped_source));
+                    html.push_str(&format!("<pre><code>{escaped_source}</code></pre>\n"));
                     for output in &cell.outputs {
                         html.push_str("<div class='output'>\n");
                         match output {
@@ -826,14 +826,14 @@ pub fn export_as_html(&self) -> Result<String, String> {
                                     .replace('&', "&amp;")
                                     .replace('<', "&lt;")
                                     .replace('>', "&gt;");
-                                html.push_str(&format!("<pre>{}</pre>\n", escaped_text));
+                                html.push_str(&format!("<pre>{escaped_text}</pre>\n"));
                             },
                             CellOutput::Error { message, .. } => {
                                 let escaped_message = message
                                     .replace('&', "&amp;")
                                     .replace('<', "&lt;")
                                     .replace('>', "&gt;");
-                                html.push_str(&format!("<pre style='color: red;'>{}</pre>\n", escaped_message));
+                                html.push_str(&format!("<pre style='color: red;'>{escaped_message}</pre>\n"));
                             },
                             _ => {
                                 html.push_str("<pre>[Complex Output]</pre>\n");
@@ -847,7 +847,7 @@ pub fn export_as_html(&self) -> Result<String, String> {
                     html.push_str("<div class='cell markdown-cell'>\n");
                     // Simple markdown to HTML conversion
                     let markdown_html = cell.source
-                        .replace("# ", "<h1>").replace("\n", "</h1>\n")
+                        .replace("# ", "<h1>").replace('\n', "</h1>\n")
                         .replace("## ", "<h2>").replace("</h1>\n", "</h2>\n")
                         .replace("### ", "<h3>").replace("</h2>\n", "</h3>\n");
                     html.push_str(&markdown_html);
@@ -923,7 +923,7 @@ pub fn get_debug_information(&self) -> Result<String, String> {
             session_version: session.get_version(),
         };
         serde_json::to_string_pretty(&debug_info)
-            .map_err(|e| format!("Debug info serialization error: {}", e))
+            .map_err(|e| format!("Debug info serialization error: {e}"))
     }
     /// Get execution trace
 /// # Examples
@@ -1186,7 +1186,7 @@ pub fn export_for_collaboration(&self) -> Result<String, String> {
             "exported_at": chrono::Utc::now().timestamp()
         });
         serde_json::to_string_pretty(&export_data)
-            .map_err(|e| format!("Collaboration export error: {}", e))
+            .map_err(|e| format!("Collaboration export error: {e}"))
     }
     /// Import collaborative notebook state
 /// # Examples
@@ -1199,21 +1199,21 @@ pub fn export_for_collaboration(&self) -> Result<String, String> {
 /// ```
 pub fn import_collaborative_state(&mut self, state_json: &str) -> Result<(), String> {
         let import_data: serde_json::Value = serde_json::from_str(state_json)
-            .map_err(|e| format!("Invalid collaboration state JSON: {}", e))?;
+            .map_err(|e| format!("Invalid collaboration state JSON: {e}"))?;
         // Import notebook structure if available
         if let Some(notebook_data) = import_data.get("notebook") {
             self.notebook = serde_json::from_value(notebook_data.clone())
-                .map_err(|e| format!("Invalid notebook structure: {}", e))?;
+                .map_err(|e| format!("Invalid notebook structure: {e}"))?;
         }
         // Import execution count if available
-        if let Some(count) = import_data.get("execution_count").and_then(|v| v.as_u64()) {
+        if let Some(count) = import_data.get("execution_count").and_then(serde_json::Value::as_u64) {
             self.execution_count = count as usize;
         }
         // Import session state if available
         if let Some(session_data) = import_data.get("session_state") {
             let session_export: crate::wasm::shared_session::SessionExportData = 
                 serde_json::from_value(session_data.clone())
-                    .map_err(|e| format!("Invalid session state: {}", e))?;
+                    .map_err(|e| format!("Invalid session state: {e}"))?;
             let mut session = self.session.lock().expect("Failed to acquire session lock");
             session.import_session_state(&session_export)?;
         }
@@ -1352,7 +1352,7 @@ pub fn get_websocket_updates(&self) -> Result<String, String> {
             })
             .collect();
         serde_json::to_string_pretty(&messages)
-            .map_err(|e| format!("WebSocket updates serialization error: {}", e))
+            .map_err(|e| format!("WebSocket updates serialization error: {e}"))
     }
     // ============================================================================
     // Advanced Analytics Methods - Sprint 11
@@ -1431,7 +1431,7 @@ pub fn get_execution_metrics(&self) -> Result<ExecutionMetrics, String> {
         // Create execution distribution
         let mut distribution = HashMap::new();
         distribution.insert("fast".to_string(), all_times.iter().filter(|&&t| t < 10.0).count() as f64);
-        distribution.insert("medium".to_string(), all_times.iter().filter(|&&t| t >= 10.0 && t < 100.0).count() as f64);
+        distribution.insert("medium".to_string(), all_times.iter().filter(|&&t| (10.0..100.0).contains(&t)).count() as f64);
         distribution.insert("slow".to_string(), all_times.iter().filter(|&&t| t >= 100.0).count() as f64);
         Ok(ExecutionMetrics {
             average_execution_time_ms: average_time,
@@ -1454,7 +1454,7 @@ pub fn get_execution_metrics(&self) -> Result<ExecutionMetrics, String> {
 /// ```
 pub fn get_user_behavior_analytics(&self) -> Result<UserBehaviorAnalytics, String> {
         let total_reexecutions = self.cell_execution_counts.values()
-            .map(|&count| if count > 1 { count - 1 } else { 0 })
+            .map(|&count| count.saturating_sub(1))
             .sum();
         let session_duration = self.session_start_time.elapsed().as_millis() as u64;
         let cell_count = self.notebook.cells.len();
@@ -1509,10 +1509,10 @@ pub fn get_performance_profile(&self) -> String {
         // Build performance data for each cell
         for cell in &self.notebook.cells {
             if let Some(times) = self.cell_execution_times.get(&cell.id) {
-                let avg_time = if !times.is_empty() {
-                    times.iter().sum::<f64>() / times.len() as f64
-                } else {
+                let avg_time = if times.is_empty() {
                     0.0
+                } else {
+                    times.iter().sum::<f64>() / times.len() as f64
                 };
                 // Estimate memory usage per cell (rough calculation)
                 let estimated_memory = if cell.source.contains("DataFrame") {
@@ -1525,7 +1525,7 @@ pub fn get_performance_profile(&self) -> String {
                     execution_time_ms: avg_time,
                     memory_usage_bytes: estimated_memory,
                     cpu_time_ms: avg_time * 0.8, // Assume 80% of time is CPU
-                    io_operations: if cell.source.contains("DataFrame") { 1 } else { 0 },
+                    io_operations: usize::from(cell.source.contains("DataFrame")),
                 });
             }
         }
@@ -1866,7 +1866,7 @@ pub fn get_commit_history(&self) -> Result<Vec<NotebookCommit>, String> {
 /// ```
 pub fn create_branch(&mut self, name: &str) -> Result<NotebookBranch, String> {
         if self.branches.contains_key(name) {
-            return Err(format!("Branch '{}' already exists", name));
+            return Err(format!("Branch '{name}' already exists"));
         }
         let current_commit = self.branches.get(&self.current_branch)
             .map(|b| b.current_commit.clone())
@@ -1896,7 +1896,7 @@ pub fn switch_branch(&mut self, name: &str) -> Result<(), String> {
             current.notebook_state = Some(self.notebook.clone());
         }
         if !self.branches.contains_key(name) {
-            return Err(format!("Branch '{}' does not exist", name));
+            return Err(format!("Branch '{name}' does not exist"));
         }
         // Restore notebook state from target branch
         if let Some(branch) = self.branches.get(name) {
@@ -1930,7 +1930,7 @@ pub fn current_branch(&self) -> Result<String, String> {
 /// ```
 pub fn create_tag(&mut self, name: &str, commit: &str, message: &str) -> Result<NotebookTag, String> {
         if self.tags.iter().any(|t| t.name == name) {
-            return Err(format!("Tag '{}' already exists", name));
+            return Err(format!("Tag '{name}' already exists"));
         }
         let tag = NotebookTag {
             name: name.to_string(),
@@ -1965,7 +1965,7 @@ pub fn list_tags(&self) -> Result<Vec<NotebookTag>, String> {
 pub fn checkout_tag(&mut self, name: &str) -> Result<(), String> {
         let tag = self.tags.iter()
             .find(|t| t.name == name)
-            .ok_or_else(|| format!("Tag '{}' not found", name))?;
+            .ok_or_else(|| format!("Tag '{name}' not found"))?;
         // Find commit and restore notebook state
         let commit = self.commits.iter()
             .find(|c| c.hash == tag.commit)
@@ -1997,19 +1997,19 @@ pub fn diff_notebook(&self, other: &NotebookRuntime) -> Result<NotebookDiff, Str
             let our_cell = &self.notebook.cells[i];
             let their_cell = &other.notebook.cells[i];
             if our_cell.source != their_cell.source || our_cell.cell_type != their_cell.cell_type {
-                modified.push(format!("position_{}", i));
+                modified.push(format!("position_{i}"));
             }
         }
         // If other has more cells, they are added
         if their_count > our_count {
             for i in our_count..their_count {
-                added.push(format!("position_{}", i));
+                added.push(format!("position_{i}"));
             }
         }
         // If we have more cells, they are removed  
         if our_count > their_count {
             for i in their_count..our_count {
-                removed.push(format!("position_{}", i));
+                removed.push(format!("position_{i}"));
             }
         }
         Ok(NotebookDiff {
@@ -2102,7 +2102,7 @@ pub fn resolve_conflict(&mut self, conflict_id: &str, resolution: &str) -> Resul
 /// ```
 pub fn merge_branch(&mut self, branch_name: &str) -> Result<(), String> {
         if !self.branches.contains_key(branch_name) {
-            return Err(format!("Branch '{}' not found", branch_name));
+            return Err(format!("Branch '{branch_name}' not found"));
         }
         // Simple merge - just mark as merged
         // In real implementation would merge commits
@@ -2120,7 +2120,7 @@ pub fn merge_branch(&mut self, branch_name: &str) -> Result<(), String> {
 pub fn clone_notebook(&mut self, commit_hash: &str) -> Result<(), String> {
         let commit = self.commits.iter()
             .find(|c| c.hash == commit_hash)
-            .ok_or_else(|| format!("Commit '{}' not found", commit_hash))?;
+            .ok_or_else(|| format!("Commit '{commit_hash}' not found"))?;
         self.notebook = serde_json::from_str(&commit.notebook_snapshot)
             .map_err(|e| format_operation_error("clone notebook", e))?;
         Ok(())
@@ -2161,7 +2161,7 @@ pub fn publish_notebook(&mut self, _title: &str, _description: &str, _tags: Vec<
         let notebook_id = format!("nb_{}", chrono::Utc::now().timestamp());
         let result = PublishResult {
             notebook_id: notebook_id.clone(),
-            share_url: format!("https://notebooks.ruchy.io/{}", notebook_id),
+            share_url: format!("https://notebooks.ruchy.io/{notebook_id}"),
             published_at: chrono::Utc::now().timestamp(),
             version: 1,
             visibility: if public { "public" } else { "private" }.to_string(),
@@ -2180,7 +2180,7 @@ pub fn publish_notebook(&mut self, _title: &str, _description: &str, _tags: Vec<
 /// ```
 pub fn update_published_notebook(&mut self, notebook_id: &str) -> Result<PublishResult, String> {
         let mut result = self.published_notebooks.get(notebook_id)
-            .ok_or_else(|| format!("Notebook '{}' not published", notebook_id))?
+            .ok_or_else(|| format!("Notebook '{notebook_id}' not published"))?
             .clone();
         result.version += 1;
         result.published_at = chrono::Utc::now().timestamp();
@@ -2278,7 +2278,7 @@ pub fn create_from_template(&mut self, template_name: &str) -> Result<Notebook, 
         let templates = self.get_available_templates()?;
         let template = templates.iter()
             .find(|t| t.name == template_name)
-            .ok_or_else(|| format!("Template '{}' not found", template_name))?;
+            .ok_or_else(|| format!("Template '{template_name}' not found"))?;
         self.notebook.cells = template.cells.clone();
         Ok(self.notebook.clone())
     }
@@ -2296,7 +2296,7 @@ pub fn save_as_template(&mut self, name: &str, description: &str, tags: Vec<&str
             id: format!("custom_{}", chrono::Utc::now().timestamp()),
             name: name.to_string(),
             description: description.to_string(),
-            tags: tags.iter().map(|s| s.to_string()).collect(),
+            tags: tags.iter().map(|s| (*s).to_string()).collect(),
             cells: self.notebook.cells.clone(),
         };
         self.templates.push(template.clone());
@@ -2438,7 +2438,7 @@ pub fn create_chart(&self, chart_type: &str, _data_source: &str, _config: ChartC
             "line" => "<svg><!-- Line chart --></svg>",
             "bar" => "<svg><!-- Bar chart --></svg>",
             "pie" => "<svg><!-- Pie chart --></svg>",
-            _ => return Err(format!("Unknown chart type: {}", chart_type)),
+            _ => return Err(format!("Unknown chart type: {chart_type}")),
         };
         Ok(ChartResult {
             svg: svg.to_string(),
@@ -2462,7 +2462,7 @@ pub fn create_interactive_viz(&self, viz_type: &str, _data_source: &str, config:
         if config.enable_hover { features.push("hover".to_string()); }
         if config.enable_selection { features.push("selection".to_string()); }
         Ok(InteractiveVisualization {
-            html: format!("<div><!-- {} visualization --></div>", viz_type),
+            html: format!("<div><!-- {viz_type} visualization --></div>"),
             javascript: "// Interactive viz code".to_string(),
             supports_export: true,
             features,
@@ -2562,7 +2562,7 @@ pub fn execute_cell_with_plugins(&mut self, cell_id: &str) -> Result<String, Str
                 // Simple formatting - remove extra spaces
                 cell.source = cell.source.replace("  ", " ");
                 cell.source = cell.source.replace("let  ", "let ");
-                cell.source = cell.source.replace("=", " = ");
+                cell.source = cell.source.replace('=', " = ");
                 cell.source = cell.source.replace("  =  ", " = ");
             }
         }
@@ -2582,7 +2582,7 @@ pub fn register_plugin(&mut self, name: &str, description: &str, tags: Vec<&str>
             id: format!("custom_{}", chrono::Utc::now().timestamp()),
             name: name.to_string(),
             description: description.to_string(),
-            tags: tags.iter().map(|s| s.to_string()).collect(),
+            tags: tags.iter().map(|s| (*s).to_string()).collect(),
             enabled: false,
         };
         // Would store in plugin registry
@@ -2727,7 +2727,7 @@ pub fn execute_cells_parallel(&mut self, cell_ids: Vec<&str>) -> Result<(), Stri
         for cell_id in cell_ids {
             // Add to cache to simulate instant parallel execution
             self.cache.insert(cell_id.to_string(), CachedResult {
-                value: format!("Parallel result for {}", cell_id),
+                value: format!("Parallel result for {cell_id}"),
                 computed_at: get_timestamp() as i64,
                 access_count: 1,
                 last_accessed: get_timestamp() as i64,
@@ -2736,10 +2736,10 @@ pub fn execute_cells_parallel(&mut self, cell_ids: Vec<&str>) -> Result<(), Stri
             if let Some(cell) = self.notebook.cells.iter_mut().find(|c| c.id == cell_id) {
                 self.execution_count += 1;
                 cell.execution_count = Some(self.execution_count);
-                cell.outputs = vec![CellOutput::Text(format!("Parallel result for {}", cell_id))];
+                cell.outputs = vec![CellOutput::Text(format!("Parallel result for {cell_id}"))];
                 // Track execution time as very fast
                 self.cell_execution_times.entry(cell_id.to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push(0.01); // Parallel execution is nearly instant
             }
         }
@@ -2835,9 +2835,9 @@ pub fn set_chunk_size(&mut self, size: usize) {
         // Simulate progress updates
         for i in 0..=100 {
             callback(ProgressInfo {
-                percentage: i as f64,
-                message: format!("Processing... {}%", i),
-                estimated_remaining: (100 - i) as f64,
+                percentage: f64::from(i),
+                message: format!("Processing... {i}%"),
+                estimated_remaining: f64::from(100 - i),
             });
             if i % 20 == 0 {
                 // Simulate work
@@ -2909,7 +2909,7 @@ pub fn execute_incremental(&mut self, cell_id: &str) -> Result<(), String> {
             // Find dependencies (simplified - just check all cells up to this one)
             let cell_idx = self.notebook.cells.iter()
                 .position(|c| c.id == cell_id)
-                .ok_or_else(|| format!("Cell {} not found", cell_id))?;
+                .ok_or_else(|| format!("Cell {cell_id} not found"))?;
             // Check each cell up to and including the target
             for i in 0..=cell_idx {
                 let cell_id = self.notebook.cells[i].id.clone();
@@ -3240,7 +3240,7 @@ pub fn get_distribution_metrics(&self) -> String {
             "distributed": self.distributed_mode,
             "load_balance": "round_robin"
         });
-        for (name, _url) in &self.worker_nodes {
+        for name in self.worker_nodes.keys() {
             metrics[name] = serde_json::json!({"tasks": 10, "load": 0.5});
         }
         metrics.to_string()

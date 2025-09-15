@@ -92,7 +92,7 @@ pub enum CellOutput {
     Html(String),
     None,
 }
-/// Simplified DataFrame representation for testing
+/// Simplified `DataFrame` representation for testing
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataFrameData {
     pub columns: Vec<String>,
@@ -145,6 +145,12 @@ pub struct NotebookMetadata {
 }
 /// Parser for .ruchynb files
 pub struct NotebookParser;
+impl Default for NotebookParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NotebookParser {
     pub fn new() -> Self {
         Self

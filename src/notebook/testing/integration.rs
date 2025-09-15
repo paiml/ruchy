@@ -25,6 +25,12 @@ pub enum CiProvider {
     Jenkins,
     CircleCI,
 }
+impl Default for CiCdIntegrator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CiCdIntegrator {
 /// # Examples
 /// 
@@ -138,6 +144,12 @@ pub fn generate_workflow(&self) -> String {
 pub struct DistributedTestCoordinator {
     workers: HashMap<String, String>,
 }
+impl Default for DistributedTestCoordinator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DistributedTestCoordinator {
     pub fn new() -> Self {
         Self {
@@ -232,6 +244,12 @@ pub enum AlertAction {
     PagerDuty(String),
     Webhook(String),
 }
+impl Default for ContinuousMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ContinuousMonitor {
     pub fn new() -> Self {
         Self {
@@ -289,27 +307,26 @@ pub fn record_metric(&mut self, metric: Metric, value: f64) {
         self.metrics.insert(metric.clone(), value);
         // Check if any alerts should trigger
         for alert in &self.alerts {
-            if alert.metric == metric && value > alert.threshold {
-                if !self.triggered.contains(&alert.id) {
+            if alert.metric == metric && value > alert.threshold
+                && !self.triggered.contains(&alert.id) {
                     self.triggered.push(alert.id.clone());
                     self.trigger_alert(alert);
                 }
-            }
         }
     }
     fn trigger_alert(&self, alert: &Alert) {
         match &alert.action {
             AlertAction::Email(email) => {
-                println!("Sending alert to {}", email);
+                println!("Sending alert to {email}");
             }
             AlertAction::Slack(channel) => {
-                println!("Posting to Slack channel {}", channel);
+                println!("Posting to Slack channel {channel}");
             }
             AlertAction::PagerDuty(service) => {
-                println!("Triggering PagerDuty service {}", service);
+                println!("Triggering PagerDuty service {service}");
             }
             AlertAction::Webhook(url) => {
-                println!("Calling webhook {}", url);
+                println!("Calling webhook {url}");
             }
         }
     }

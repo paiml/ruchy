@@ -132,7 +132,7 @@ pub fn verify_function(&mut self, function: &Function, spec: &FunctionSpec) -> V
         assertions.push(self.encode_function(function));
         // Add preconditions
         for precond in &spec.preconditions {
-            assertions.push(format!("(assert {})", precond));
+            assertions.push(format!("(assert {precond})"));
         }
         // Verify each postcondition
         let mut results = Vec::new();
@@ -141,7 +141,7 @@ pub fn verify_function(&mut self, function: &Function, spec: &FunctionSpec) -> V
             let query = SmtQuery {
                 declarations: self.generate_declarations(function),
                 assertions: assertions.clone(),
-                query: format!("(assert (not {}))", postcond),
+                query: format!("(assert (not {postcond}))"),
             };
             match self.solve(&query) {
                 SmtResult::Unsatisfiable(_) => {
@@ -197,7 +197,7 @@ pub fn verify_loop_invariant(&mut self, loop_info: &LoopInfo, invariant: &str) -
                 format!("(assert {})", invariant),
                 format!("(assert {})", loop_info.loop_condition),
                 loop_info.loop_body.clone(),
-                format!("(assert (not {}))", invariant.replace("x", "x_next")), // After transformation
+                format!("(assert (not {}))", invariant.replace('x', "x_next")), // After transformation
             ],
             query: "(check-sat)".to_string(),
         };
@@ -213,7 +213,7 @@ pub fn verify_loop_invariant(&mut self, loop_info: &LoopInfo, invariant: &str) -
     }
     fn solve_with_z3(&self, query: &str) -> SmtResult {
         let mut cmd = Command::new("z3")
-            .args(&["-in", "-t:5000"]) // 5 second timeout
+            .args(["-in", "-t:5000"]) // 5 second timeout
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -293,11 +293,11 @@ pub fn verify_loop_invariant(&mut self, loop_info: &LoopInfo, invariant: &str) -
         let mut result = String::new();
         // Add declarations
         for decl in &query.declarations {
-            result.push_str(&format!("{}\n", decl));
+            result.push_str(&format!("{decl}\n"));
         }
         // Add assertions
         for assertion in &query.assertions {
-            result.push_str(&format!("{}\n", assertion));
+            result.push_str(&format!("{assertion}\n"));
         }
         // Add query
         result.push_str(&format!("{}\n", query.query));
@@ -324,7 +324,7 @@ pub fn verify_loop_invariant(&mut self, loop_info: &LoopInfo, invariant: &str) -
         ));
         // Declare variables
         for param in &function.parameters {
-            decls.push(format!("(declare-const {} Int)", param)); // Simplified as Int
+            decls.push(format!("(declare-const {param} Int)")); // Simplified as Int
         }
         decls
     }
@@ -336,7 +336,7 @@ pub fn verify_loop_invariant(&mut self, loop_info: &LoopInfo, invariant: &str) -
                 assertions: vec![
                     format!("(assert {})", loop_info.loop_condition),
                     loop_info.loop_body.clone(),
-                    format!("(assert (>= {} {}))", measure, measure.replace("x", "x_next")),
+                    format!("(assert (>= {} {}))", measure, measure.replace('x', "x_next")),
                 ],
                 query: "(check-sat)".to_string(),
             };

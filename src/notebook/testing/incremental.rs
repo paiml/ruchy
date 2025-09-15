@@ -70,6 +70,12 @@ pub struct CacheStatistics {
     pub cache_misses: usize,
     pub evictions: usize,
 }
+impl Default for IncrementalTester {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IncrementalTester {
 /// # Examples
 /// 
@@ -224,8 +230,8 @@ pub fn execute_incremental(&mut self, notebook: &Notebook, changed_cells: &[Stri
     }
     fn get_dependencies_hash(&self, cell_id: &str) -> String {
         let dependencies = self.dependency_tracker.get_dependencies(cell_id);
-        let mut combined = dependencies.iter().map(|s| s.as_str()).collect::<Vec<_>>();
-        combined.sort();
+        let mut combined = dependencies.iter().map(std::string::String::as_str).collect::<Vec<_>>();
+        combined.sort_unstable();
         self.calculate_hash(&combined.join(","))
     }
     fn calculate_hash(&self, content: &str) -> String {
@@ -306,7 +312,7 @@ pub fn get(&mut self, cell_id: &str) -> Option<CachedTestResult> {
         if let Some(lru_key) = self.access_order.pop() {
             self.cache.remove(&lru_key);
             // Remove from disk
-            let cache_file = self.cache_dir.join(format!("{}.json", lru_key));
+            let cache_file = self.cache_dir.join(format!("{lru_key}.json"));
             std::fs::remove_file(cache_file).ok();
         }
     }
@@ -328,7 +334,7 @@ pub fn get(&mut self, cell_id: &str) -> Option<CachedTestResult> {
     }
     fn save_to_disk(&self, cell_id: &str) {
         if let Some(cached) = self.cache.get(cell_id) {
-            let cache_file = self.cache_dir.join(format!("{}.json", cell_id));
+            let cache_file = self.cache_dir.join(format!("{cell_id}.json"));
             if let Ok(content) = serde_json::to_string_pretty(cached) {
                 std::fs::write(cache_file, content).ok();
             }
@@ -363,6 +369,12 @@ pub fn get_statistics(&self) -> CacheStatistics {
         format!("{:x}", hasher.finalize())
     }
 }
+impl Default for DependencyTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DependencyTracker {
     pub fn new() -> Self {
         Self {
@@ -434,7 +446,7 @@ pub fn analyze_dependencies(&mut self, notebook: &Notebook) {
         source
             .split(|c: char| !c.is_alphanumeric() && c != '_')
             .filter(|s| !s.is_empty() && s.chars().all(|c| c.is_alphabetic() || c == '_'))
-            .map(|s| s.to_string())
+            .map(std::string::ToString::to_string)
             .collect()
     }
     /// Get dependencies for a specific cell

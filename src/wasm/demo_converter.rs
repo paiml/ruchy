@@ -1,7 +1,7 @@
 //! Demo to notebook conversion module
 //! 
 //! Converts Ruchy demo files (.ruchy) to Jupyter notebook format
-//! for use with the SharedSession architecture
+//! for use with the `SharedSession` architecture
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NotebookCell {
