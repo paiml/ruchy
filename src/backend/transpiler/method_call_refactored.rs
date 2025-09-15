@@ -206,21 +206,216 @@ pub fn transpile_method_call_refactored(
     }
 }
 #[cfg(test)]
-mod property_tests_method_call_refactored {
-    use proptest::proptest;
+mod tests {
     use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_transpile_method_call_refactored_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+    use crate::backend::Transpiler;
+    use crate::frontend::ast::{Expr, ExprKind, Literal};
+    use proc_macro2::TokenStream;
+
+    fn setup_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+
+    fn make_ident_expr(name: &str) -> Expr {
+        Expr {
+            kind: ExprKind::Identifier(name.to_string()),
+            span: Default::default(),
+            attributes: Vec::new(),
         }
+    }
+
+    fn make_string_expr(s: &str) -> Expr {
+        Expr {
+            kind: ExprKind::Literal(Literal::String(s.to_string())),
+            span: Default::default(),
+            attributes: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn test_iterator_methods() {
+        let t = setup_transpiler();
+        let obj = make_ident_expr("vec");
+        let arg = make_ident_expr("x");
+
+        // Test map method
+        let result = t.transpile_method_call_refactored(&obj, "map", &[arg.clone()]);
+        assert!(result.is_ok());
+
+        // Test filter method
+        let result = t.transpile_method_call_refactored(&obj, "filter", &[arg.clone()]);
+        assert!(result.is_ok());
+
+        // Test reduce method
+        let result = t.transpile_method_call_refactored(&obj, "reduce", &[arg.clone()]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_hashmap_methods() {
+        let t = setup_transpiler();
+        let obj = make_ident_expr("map");
+        let key = make_string_expr("key");
+
+        // Test get method
+        let result = t.transpile_method_call_refactored(&obj, "get", &[key.clone()]);
+        assert!(result.is_ok());
+
+        // Test contains_key method
+        let result = t.transpile_method_call_refactored(&obj, "contains_key", &[key.clone()]);
+        assert!(result.is_ok());
+
+        // Test keys method
+        let result = t.transpile_method_call_refactored(&obj, "keys", &[]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_hashset_methods() {
+        let t = setup_transpiler();
+        let obj = make_ident_expr("set");
+        let val = make_string_expr("value");
+
+        // Test contains method
+        let result = t.transpile_method_call_refactored(&obj, "contains", &[val.clone()]);
+        assert!(result.is_ok());
+
+        // Test union method
+        let other = make_ident_expr("other_set");
+        let result = t.transpile_method_call_refactored(&obj, "union", &[other]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_collection_mutators() {
+        let t = setup_transpiler();
+        let obj = make_ident_expr("vec");
+        let val = make_string_expr("item");
+
+        // Test push method
+        let result = t.transpile_method_call_refactored(&obj, "push", &[val.clone()]);
+        assert!(result.is_ok());
+
+        // Test pop method
+        let result = t.transpile_method_call_refactored(&obj, "pop", &[]);
+        assert!(result.is_ok());
+
+        // Test clear method
+        let result = t.transpile_method_call_refactored(&obj, "clear", &[]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_collection_accessors() {
+        let t = setup_transpiler();
+        let obj = make_ident_expr("vec");
+
+        // Test len method
+        let result = t.transpile_method_call_refactored(&obj, "len", &[]);
+        assert!(result.is_ok());
+
+        // Test is_empty method
+        let result = t.transpile_method_call_refactored(&obj, "is_empty", &[]);
+        assert!(result.is_ok());
+
+        // Test first method
+        let result = t.transpile_method_call_refactored(&obj, "first", &[]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_string_methods() {
+        let t = setup_transpiler();
+        let obj = make_string_expr("hello");
+
+        // Test to_upper method
+        let result = t.transpile_method_call_refactored(&obj, "to_upper", &[]);
+        assert!(result.is_ok());
+
+        // Test to_lower method
+        let result = t.transpile_method_call_refactored(&obj, "to_lower", &[]);
+        assert!(result.is_ok());
+
+        // Test length method
+        let result = t.transpile_method_call_refactored(&obj, "length", &[]);
+        assert!(result.is_ok());
+
+        // Test trim method
+        let result = t.transpile_method_call_refactored(&obj, "trim", &[]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dataframe_methods() {
+        let t = setup_transpiler();
+        let obj = make_ident_expr("df");
+        let col = make_string_expr("column");
+
+        // Test select method
+        let result = t.transpile_method_call_refactored(&obj, "select", &[col.clone()]);
+        assert!(result.is_ok());
+
+        // Test mean method
+        let result = t.transpile_method_call_refactored(&obj, "mean", &[]);
+        assert!(result.is_ok());
+
+        // Test sum method
+        let result = t.transpile_method_call_refactored(&obj, "sum", &[]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_default_method() {
+        let t = setup_transpiler();
+        let obj = make_ident_expr("obj");
+        let arg = make_string_expr("arg");
+
+        // Test unknown method falls through to default
+        let result = t.transpile_method_call_refactored(&obj, "unknown_method", &[arg]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_iterator_method_implementations() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { vec };
+        let args = vec![quote! { |x| x * 2 }];
+
+        // Test transpile_iterator_method directly
+        let result = t.transpile_iterator_method(&tokens, "map", &args);
+        assert!(result.is_ok());
+
+        // Test with filter
+        let result = t.transpile_iterator_method(&tokens, "filter", &[quote! { |x| x > 0 }]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_hashmap_method_implementations() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { hashmap };
+        let key_arg = vec![quote! { "key" }];
+
+        // Test transpile_hashmap_method directly
+        let result = t.transpile_hashmap_method(&tokens, "get", &key_arg);
+        assert!(result.is_ok());
+
+        // Test keys method with no args
+        let result = t.transpile_hashmap_method(&tokens, "keys", &[]);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_string_method_implementations() {
+        let t = setup_transpiler();
+        let tokens: TokenStream = quote! { "hello" };
+
+        // Test various string methods
+        let result = t.transpile_string_method(&tokens, "to_upper", &[]);
+        assert!(result.is_ok());
+
+        let split_arg = vec![quote! { " " }];
+        let result = t.transpile_string_method(&tokens, "split", &split_arg);
+        assert!(result.is_ok());
     }
 }

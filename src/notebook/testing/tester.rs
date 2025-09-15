@@ -1,17 +1,25 @@
-use crate::notebook::testing::types::{TestConfig, CellOutput, Cell, CellType, TestResult, TestReport, Notebook, CellTestType};
+use crate::notebook::testing::types::{CellOutput, Cell, CellType, TestResult, TestReport, Notebook, CellTestType};
 use crate::notebook::testing::state::TestState;
 use crate::runtime::repl::Repl;
 use std::path::Path;
 use std::collections::HashMap;
-#[cfg(test)]
-use proptest::prelude::*;
-/// Core notebook testing functionality
+
+/// Main notebook testing struct
 pub struct NotebookTester {
     config: TestConfig,
     state: TestState,
     repl: Repl,
     cell_outputs: HashMap<String, CellOutput>,
 }
+
+/// Test configuration
+#[derive(Debug, Clone, Default)]
+pub struct TestConfig {
+    pub timeout_ms: u64,
+    pub capture_output: bool,
+    pub allow_errors: bool,
+}
+
 impl Default for NotebookTester {
     fn default() -> Self {
         Self::new()
@@ -335,24 +343,5 @@ impl NotebookParser {
 /// ```
 pub fn validate(&self, _notebook: &Notebook) -> Result<(), String> {
         Ok(())
-    }
-}
-#[cfg(test)]
-mod property_tests_tester {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
     }
 }

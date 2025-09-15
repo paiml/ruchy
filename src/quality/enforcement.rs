@@ -576,8 +576,6 @@ idiomaticity = 0.4
         );
         // Should use custom config (may pass due to lower thresholds)
         assert!(result.is_ok() || result.is_err(), "Should process with custom config");
-#[cfg(test)]
-use proptest::prelude::*;
     }
     // Test 7: Export Functionality
     #[test]
@@ -668,8 +666,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_enforcement {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

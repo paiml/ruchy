@@ -715,8 +715,8 @@ impl Default for ComponentMetadata {
 #[cfg(test)]
 mod property_tests_component {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

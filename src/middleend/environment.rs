@@ -178,8 +178,6 @@ impl Default for TypeEnv {
 mod tests {
     use super::*;
     use crate::middleend::types::TyVar;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_env_lookup() {
         let mut env = TypeEnv::new();
@@ -375,8 +373,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_environment {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

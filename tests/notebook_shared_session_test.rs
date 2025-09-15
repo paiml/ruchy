@@ -4,7 +4,6 @@
 //! ensuring that variables, functions, and types are preserved between executions.
 
 use ruchy::wasm::notebook::NotebookRuntime;
-use serde_json;
 
 // Test 1: Basic state persistence across cells
 #[test]
@@ -98,7 +97,7 @@ fn test_reactive_cascade_execution() {
     // Verify cascade execution
     assert!(responses.is_array());
     let responses_array = responses.as_array().unwrap();
-    assert!(responses_array.len() >= 1);
+    assert!(!responses_array.is_empty());
 }
 
 // Test 5: Transactional execution with rollback
@@ -112,7 +111,7 @@ fn test_transactional_rollback() {
     
     // Get initial globals
     let globals_before = runtime.get_globals();
-    assert!(globals_before.contains("x") || globals_before.contains("values"));
+    assert!(globals_before.contains('x') || globals_before.contains("values"));
     
     // Execute cell with error - should rollback
     let result = runtime.execute_cell_with_session("cell3", "let z = x / 0");
@@ -120,7 +119,7 @@ fn test_transactional_rollback() {
     
     // State should be unchanged or error handled gracefully
     let globals_after = runtime.get_globals();
-    assert!(globals_after.contains("x") || globals_after.contains("values"));
+    assert!(globals_after.contains('x') || globals_after.contains("values"));
 }
 
 // Test 6: COW checkpoint performance
@@ -130,7 +129,7 @@ fn test_cow_checkpoint_performance() {
     
     // Add many variables
     for i in 0..100 {
-        runtime.execute_cell_with_session(&format!("cell_{}", i), &format!("let var_{} = {}", i, i)).ok();
+        runtime.execute_cell_with_session(&format!("cell_{i}"), &format!("let var_{i} = {i}")).ok();
     }
     
     // Get memory usage - should be fast

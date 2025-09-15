@@ -525,8 +525,6 @@ impl Default for SymbolicExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_counterexample_report() {
         let mut cex = Counterexample::new("x > 10");
@@ -549,8 +547,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_counterexample {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

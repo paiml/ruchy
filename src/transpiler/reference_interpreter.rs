@@ -395,8 +395,6 @@ mod tests {
     use super::*;
     use crate::transpiler::canonical_ast::AstNormalizer;
     use crate::Parser;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_eval_arithmetic() {
         let input = "1 + 2 * 3";
@@ -429,8 +427,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_reference_interpreter {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

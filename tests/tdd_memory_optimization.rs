@@ -31,7 +31,7 @@ fn test_memory_growth_bounds() {
     
     // 5x data should not use more than 10x memory (allowing for overhead)
     assert!(growth_5k < growth_1k * 10, 
-           "Memory growth not linear: 1k={}, 5k={}", growth_1k, growth_5k);
+           "Memory growth not linear: 1k={growth_1k}, 5k={growth_5k}");
 }
 
 #[test] 
@@ -65,7 +65,7 @@ fn test_memory_cleanup_on_variable_reassignment() {
     
     // Memory should not keep growing indefinitely
     // (This test verifies cleanup potential, not forced GC)
-    println!("Before: {}, After: {}", with_large_df, after_reassign);
+    println!("Before: {with_large_df}, After: {after_reassign}");
 }
 
 #[test]
@@ -90,9 +90,9 @@ fn test_memory_pressure_response() {
     
     // Create multiple DataFrames to simulate memory pressure
     for i in 0..5 {
-        let code = format!("let df{} = DataFrame::from_range(0, 500)", i);
-        let result = session.execute(&format!("pressure_{}", i), &code);
-        assert!(result.is_ok(), "Memory pressure test failed at iteration {}", i);
+        let code = format!("let df{i} = DataFrame::from_range(0, 500)");
+        let result = session.execute(&format!("pressure_{i}"), &code);
+        assert!(result.is_ok(), "Memory pressure test failed at iteration {i}");
     }
     
     // System should still be responsive
@@ -130,12 +130,12 @@ fn test_memory_estimation_accuracy() {
     let with_data = session.estimate_interpreter_memory();
     
     // Memory estimation should increase
-    assert!(with_data > baseline, "Memory estimation not working: {} vs {}", baseline, with_data);
+    assert!(with_data > baseline, "Memory estimation not working: {baseline} vs {with_data}");
     
     // Should be reasonable (not too small or too large)
     let growth = with_data - baseline;
-    assert!(growth > 10, "Memory growth too small: {}", growth);
-    assert!(growth < 100000, "Memory growth too large: {}", growth);
+    assert!(growth > 10, "Memory growth too small: {growth}");
+    assert!(growth < 100000, "Memory growth too large: {growth}");
 }
 
 #[test]
@@ -152,7 +152,7 @@ fn test_copy_on_write_efficiency() {
     let memory = session.estimate_interpreter_memory();
     
     // Memory should not be double (exact COW hard to test, but should be reasonable)
-    assert!(memory < 50000, "COW efficiency check: memory too high: {}", memory);
+    assert!(memory < 50000, "COW efficiency check: memory too high: {memory}");
 }
 
 // Helper function to parse memory usage from JSON string

@@ -207,6 +207,7 @@ pub fn new() -> Result<NotebookRuntime, JsValue> {
                 },
                 cells: Vec::new(),
             },
+            #[allow(clippy::arc_with_non_send_sync)]
             session: Arc::new(Mutex::new(SharedSession::new())),
             execution_count: 0,
             variables: HashMap::new(),
@@ -674,7 +675,7 @@ pub fn import_session(&mut self, export: &NotebookSessionExport) -> Result<(), S
         // Import notebook
         self.notebook = export.notebook.clone();
         self.execution_count = export.execution_count;
-        self.variables = export.variables.clone();
+        self.variables.clone_from(&export.variables);
         // Import session state
         let mut session = self.session.lock().expect("Failed to acquire session lock");
         session.import_session_state(&export.session_state)?;
@@ -1839,7 +1840,7 @@ pub fn commit_notebook(&mut self, message: &str, parent: Option<&str>) -> Result
         self.commits.push(commit.clone());
         // Update current branch
         if let Some(branch) = self.branches.get_mut(&self.current_branch) {
-            branch.current_commit = commit.hash.clone();
+            branch.current_commit.clone_from(&commit.hash);
         }
         Ok(commit)
     }
@@ -2279,7 +2280,7 @@ pub fn create_from_template(&mut self, template_name: &str) -> Result<Notebook, 
         let template = templates.iter()
             .find(|t| t.name == template_name)
             .ok_or_else(|| format!("Template '{template_name}' not found"))?;
-        self.notebook.cells = template.cells.clone();
+        self.notebook.cells.clone_from(&template.cells);
         Ok(self.notebook.clone())
     }
     /// Save current notebook as template
@@ -3744,8 +3745,6 @@ pub struct PluginInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_notebook_creation() {
         let runtime = NotebookRuntime::new();
@@ -3774,7 +3773,7 @@ use proptest::prelude::*;
 mod property_tests_notebook {
     use proptest::proptest;
     use super::*;
-    use proptest::prelude::*;
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

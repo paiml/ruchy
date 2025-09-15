@@ -230,8 +230,6 @@ pub fn get_rustc_version() -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_check_rustc_available() {
         // This should pass in any environment with Rust installed
@@ -262,7 +260,7 @@ use proptest::prelude::*;
 mod property_tests_compiler {
     use proptest::proptest;
     use super::*;
-    use proptest::prelude::*;
+    
     proptest! {
         /// Property: compile_source_to_binary never panics on any string input
         #[test]

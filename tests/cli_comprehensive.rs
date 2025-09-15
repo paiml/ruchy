@@ -480,7 +480,7 @@ fn test_cli_execute_run_missing_file() {
     let err = result.unwrap_err();
     // The actual error message uses "Failed to read file"
     assert!(err.contains("Failed to read file") || err.contains("could not read"), 
-            "Expected error message about reading file, got: {}", err);
+            "Expected error message about reading file, got: {err}");
 }
 
 // Test command builder pattern for complex commands
@@ -510,14 +510,14 @@ struct ValidPath(String);
 
 impl Arbitrary for ValidPath {
     fn arbitrary(g: &mut Gen) -> Self {
-        let segments = vec!["src", "tests", "examples", "lib", "bin"];
-        let extensions = vec!["ruchy", "rs", "wasm", "ipynb"];
+        let segments = ["src", "tests", "examples", "lib", "bin"];
+        let extensions = ["ruchy", "rs", "wasm", "ipynb"];
         
         let segment = segments[usize::arbitrary(g) % segments.len()];
         let extension = extensions[usize::arbitrary(g) % extensions.len()];
         let filename = format!("file{}", u32::arbitrary(g) % 100);
         
-        ValidPath(format!("{}/{}.{}", segment, filename, extension))
+        ValidPath(format!("{segment}/{filename}.{extension}"))
     }
 }
 

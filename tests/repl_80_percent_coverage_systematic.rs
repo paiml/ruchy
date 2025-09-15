@@ -22,7 +22,7 @@ mod repl_value_fmt_coverage {
             Value::Float(0.0),
             Value::Float(-0.0),
             Value::Float(3.141592653589793),
-            Value::String("".to_string()),           // Empty string
+            Value::String(String::new()),           // Empty string
             Value::String("hello\nworld\ttab".to_string()), // Escape sequences
             Value::String("🦀 unicode ∑∞".to_string()),     // Unicode
             Value::Bool(true),
@@ -35,16 +35,16 @@ mod repl_value_fmt_coverage {
         ];
         
         for value in test_values {
-            let display_str = format!("{}", value);
-            let debug_str = format!("{:?}", value);
+            let display_str = format!("{value}");
+            let debug_str = format!("{value:?}");
             
-            assert!(!display_str.is_empty(), "Display should not be empty for: {:?}", value);
-            assert!(!debug_str.is_empty(), "Debug should not be empty for: {:?}", value);
+            assert!(!display_str.is_empty(), "Display should not be empty for: {value:?}");
+            assert!(!debug_str.is_empty(), "Debug should not be empty for: {value:?}");
             
             // Test that display is different from debug (generally)
             if !matches!(value, Value::Unit | Value::Nil) {
                 // Most values should have different display vs debug
-                println!("Value: {:?} -> Display: '{}', Debug: '{}'", value, display_str, debug_str);
+                println!("Value: {value:?} -> Display: '{display_str}', Debug: '{debug_str}'");
             }
         }
         
@@ -67,10 +67,10 @@ mod repl_value_fmt_coverage {
         ];
         
         for list in lists {
-            let display = format!("{}", list);
+            let display = format!("{list}");
             assert!(display.starts_with('[') && display.ends_with(']'), 
-                    "List should be bracketed: {}", display);
-            println!("List display: {}", display);
+                    "List should be bracketed: {display}");
+            println!("List display: {display}");
         }
         
         // Test Tuple formatting
@@ -82,10 +82,10 @@ mod repl_value_fmt_coverage {
         ];
         
         for tuple in tuples {
-            let display = format!("{}", tuple);
+            let display = format!("{tuple}");
             assert!(display.starts_with('(') && display.ends_with(')'), 
-                    "Tuple should be parenthesized: {}", display);
-            println!("Tuple display: {}", display);
+                    "Tuple should be parenthesized: {display}");
+            println!("Tuple display: {display}");
         }
         
         // Test Object formatting - HashMap branch
@@ -99,17 +99,17 @@ mod repl_value_fmt_coverage {
             {
                 let mut obj = HashMap::new();
                 for i in 0..10 {
-                    obj.insert(format!("key_{}", i), Value::Int(i));
+                    obj.insert(format!("key_{i}"), Value::Int(i));
                 }
                 Value::Object(obj)
             }
         ];
         
         for obj in objects {
-            let display = format!("{}", obj);
+            let display = format!("{obj}");
             assert!(display.starts_with('{') && display.ends_with('}'),
-                    "Object should be braced: {}", display);
-            println!("Object display: {}", display);
+                    "Object should be braced: {display}");
+            println!("Object display: {display}");
         }
         
         // Test HashMap formatting
@@ -123,8 +123,8 @@ mod repl_value_fmt_coverage {
         ];
         
         for hashmap in hashmaps {
-            let display = format!("{}", hashmap);
-            println!("HashMap display: {}", display);
+            let display = format!("{hashmap}");
+            println!("HashMap display: {display}");
         }
         
         // Test HashSet formatting
@@ -138,8 +138,8 @@ mod repl_value_fmt_coverage {
         ];
         
         for hashset in hashsets {
-            let display = format!("{}", hashset);
-            println!("HashSet display: {}", display);
+            let display = format!("{hashset}");
+            println!("HashSet display: {display}");
         }
         
         println!("✅ COVERAGE: Value::fmt collections tested");
@@ -159,9 +159,9 @@ mod repl_value_fmt_coverage {
         ];
         
         for range in ranges {
-            let display = format!("{}", range);
-            assert!(display.contains(".."), "Range should contain '..' : {}", display);
-            println!("Range display: {}", display);
+            let display = format!("{range}");
+            assert!(display.contains(".."), "Range should contain '..' : {display}");
+            println!("Range display: {display}");
         }
         
         // Test EnumVariant formatting - Multiple branches
@@ -196,8 +196,8 @@ mod repl_value_fmt_coverage {
         ];
         
         for enum_var in enum_variants {
-            let display = format!("{}", enum_var);
-            println!("EnumVariant display: {}", display);
+            let display = format!("{enum_var}");
+            println!("EnumVariant display: {display}");
         }
         
         // Test Function formatting - Function display logic
@@ -219,7 +219,7 @@ mod repl_value_fmt_coverage {
             },
             Value::Function {                            // Many params
                 name: "many_param_func".to_string(),
-                params: (0..10).map(|i| format!("param_{}", i)).collect(),
+                params: (0..10).map(|i| format!("param_{i}")).collect(),
                 body: Box::new(body_expr.clone()),
             },
             Value::Lambda {                              // Lambda
@@ -233,8 +233,8 @@ mod repl_value_fmt_coverage {
         ];
         
         for func in functions {
-            let display = format!("{}", func);
-            println!("Function display: {}", display);
+            let display = format!("{func}");
+            println!("Function display: {display}");
         }
         
         // Test DataFrame formatting - Complex table display
@@ -263,8 +263,8 @@ mod repl_value_fmt_coverage {
         ];
         
         for df in dataframes {
-            let display = format!("{}", df);
-            println!("DataFrame display: {}", display);
+            let display = format!("{df}");
+            println!("DataFrame display: {display}");
         }
         
         println!("✅ COVERAGE: Value::fmt special types tested");
@@ -469,7 +469,7 @@ mod repl_high_complexity_functions_coverage {
         }
         let duration = start.elapsed();
         assert!(duration < Duration::from_millis(100), 
-                "100 function calls took too long: {:?}", duration);
+                "100 function calls took too long: {duration:?}");
         
         println!("✅ COVERAGE: evaluate_call comprehensive paths tested");
     }
@@ -535,10 +535,10 @@ mod repl_high_complexity_functions_coverage {
                     } else {
                         output.trim() == "false"  
                     };
-                    println!("Comparison '{}': {} (expected: {})", test, success, expected);
+                    println!("Comparison '{test}': {success} (expected: {expected})");
                 }
                 Err(_) => {
-                    println!("Comparison '{}': ERROR (might be expected for type mismatches)", test);
+                    println!("Comparison '{test}': ERROR (might be expected for type mismatches)");
                 }
             }
         }
@@ -574,21 +574,21 @@ mod repl_systematic_coverage_summary {
         println!("      • Collections: List, Tuple, Object, HashMap, HashSet");  
         println!("      • Special types: Range, EnumVariant, Function, Lambda, DataFrame");
         println!("      • Edge cases: Empty collections, nested structures, Unicode");
-        println!("");
+        println!();
         
         println!("   2. evaluate_save_image_function (25/59) - Image function paths");
         println!("   3. get_type_info_with_bindings (23/60) - Type system coverage");
         println!("   4. evaluate_function_expr (27/47) - Function definition paths");
         println!("   5. evaluate_call (26/43) - Function call mechanism");
         println!("   6. evaluate_comparison (26/41) - Comparison operator logic");
-        println!("");
+        println!();
         
         println!("🎯 SYSTEMATIC TDD APPROACH:");
         println!("   • PMAT complexity analysis identified exact targets");
         println!("   • Each function tested across ALL code branches");
         println!("   • Error paths and edge cases included");
         println!("   • Performance requirements validated");
-        println!("");
+        println!();
         
         println!("📈 COVERAGE STRATEGY:");
         println!("   • Target highest-complexity functions first (80/20 rule)");
@@ -596,7 +596,7 @@ mod repl_systematic_coverage_summary {
         println!("   • Function evaluation covers ~20% of core functionality");
         println!("   • Comparison logic covers ~10% of expression evaluation");
         println!("   • Combined: 45%+ coverage from top 6 functions");
-        println!("");
+        println!();
         
         println!("🔬 MATHEMATICAL APPROACH:");
         println!("   • 390 total functions in REPL");

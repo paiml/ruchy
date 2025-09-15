@@ -7,7 +7,7 @@ async fn test_notebook_executes_ruchy_code() {
     
     // Start server
     let server_handle = std::process::Command::new("./target/debug/ruchy")
-        .args(&["notebook", "--port", "9200"])
+        .args(["notebook", "--port", "9200"])
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .spawn()

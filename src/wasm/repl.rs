@@ -281,8 +281,6 @@ impl Default for WasmHeap {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_wasm_repl_creation() {
         let repl = WasmRepl::new();
@@ -304,8 +302,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_repl {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

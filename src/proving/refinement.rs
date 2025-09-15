@@ -495,8 +495,6 @@ impl Default for LiquidTypeInference {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_refinement_type_display() {
         let ty = RefinementType::positive_int();
@@ -518,8 +516,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_refinement {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -1,16 +1,8 @@
 // SPRINT2-002: Differential testing implementation
 // PMAT Complexity: <10 per function
 use crate::notebook::testing::types::{CellOutput, Notebook, CellType, Cell};
-use crate::notebook::testing::NotebookTester;
+use crate::notebook::testing::tester::NotebookTester;
 use std::time::{Duration, Instant};
-#[cfg(test)]
-use proptest::prelude::*;
-/// Differential testing between implementations
-pub struct DifferentialTester {
-    reference: NotebookTester,
-    candidate: NotebookTester,
-    config: DifferentialConfig,
-}
 #[derive(Debug, Clone)]
 pub struct DifferentialConfig {
     pub performance_threshold_ms: u64,
@@ -41,6 +33,14 @@ pub enum DivergenceType {
     PerformanceRegression,
     BothFailed,
 }
+
+/// Differential testing for comparing implementations
+pub struct DifferentialTester {
+    reference: NotebookTester,
+    candidate: NotebookTester,
+    config: DifferentialConfig,
+}
+
 impl Default for DifferentialTester {
     fn default() -> Self {
         Self::new()
@@ -191,24 +191,5 @@ pub fn generate_report(&self, results: &[DifferentialResult]) -> String {
             }
         }
         report
-    }
-}
-#[cfg(test)]
-mod property_tests_differential {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
     }
 }

@@ -2,14 +2,6 @@
 // PMAT Complexity: <10 per function
 use std::collections::HashMap;
 use chrono::{DateTime, Utc};
-#[cfg(test)]
-use proptest::prelude::*;
-/// Progressive disclosure system for educational testing
-pub struct ProgressiveDisclosure {
-    config: DisclosureConfig,
-    student_progress: HashMap<String, StudentProgress>,
-    test_hierarchy: TestHierarchy,
-}
 #[derive(Debug, Clone)]
 pub struct DisclosureConfig {
     pub min_attempts_before_hint: usize,
@@ -117,6 +109,14 @@ pub struct NextUnlockInfo {
     pub requirements_pending: Vec<String>,
     pub estimated_unlock_time: Option<DateTime<Utc>>,
 }
+
+#[derive(Debug)]
+pub struct ProgressiveDisclosure {
+    pub config: DisclosureConfig,
+    pub student_progress: HashMap<String, StudentProgress>,
+    pub test_hierarchy: TestHierarchy,
+}
+
 impl ProgressiveDisclosure {
 /// # Examples
 /// 
@@ -432,25 +432,6 @@ impl Default for DisclosureConfig {
             unlock_threshold: 70.0,
             time_based_unlocking: false,
             collaborative_unlocking: true,
-        }
-    }
-}
-#[cfg(test)]
-mod property_tests_progressive {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
         }
     }
 }

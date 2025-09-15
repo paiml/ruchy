@@ -6,8 +6,6 @@ use crate::frontend::ast::{ActorHandler, StructField};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-#[cfg(test)]
-use proptest::prelude::*;
 impl Transpiler {
     /// Transpiles actor definitions
 /// # Examples
@@ -201,8 +199,8 @@ pub fn transpile_command(
 #[cfg(test)]
 mod property_tests_actors {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

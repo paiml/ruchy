@@ -1,1 +1,1 @@
-fn main() { println\!("Testing simple case"); }
+fn main() { println!("Testing simple case"); }

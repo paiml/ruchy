@@ -7,8 +7,6 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::fs;
 use std::fmt;
-#[cfg(test)]
-use proptest::prelude::*;
 /// WIT interface definition
 #[derive(Debug, Clone)]
 pub struct WitInterface {
@@ -633,8 +631,8 @@ impl TypeRegistry {
 #[cfg(test)]
 mod property_tests_wit {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

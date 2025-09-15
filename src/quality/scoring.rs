@@ -1162,8 +1162,6 @@ pub fn score_safety(ast: &crate::frontend::ast::Expr) -> f64 {
     let mut score = 1.0;
     // Error handling coverage (reuse from correctness)
     let error_handling_quality = analyze_error_handling(ast);
-#[cfg(test)]
-use proptest::prelude::*;
     score *= error_handling_quality;
     // Null safety analysis
     let null_safety_score = analyze_null_safety(ast);
@@ -1390,8 +1388,8 @@ fn count_lambda_usage(expr: &crate::frontend::ast::Expr, lambdas: &mut i32, tota
 #[cfg(test)]
 mod property_tests_scoring {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

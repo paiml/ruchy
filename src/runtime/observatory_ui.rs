@@ -1308,8 +1308,6 @@ fn format_bytes(bytes: usize) -> String {
 /// Format a message for preview display
 fn format_message_preview(message: &crate::runtime::actor::Message) -> String {
     use crate::runtime::actor::Message;
-#[cfg(test)]
-use proptest::prelude::*;
     match message {
         Message::Start => "Start".to_string(),
         Message::Stop => "Stop".to_string(),
@@ -1323,8 +1321,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_observatory_ui {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

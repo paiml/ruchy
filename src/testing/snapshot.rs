@@ -278,8 +278,6 @@ mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
     use crate::{Parser, Transpiler};
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_snapshot_basic() {
         let config = SnapshotConfig {
@@ -325,7 +323,7 @@ use proptest::prelude::*;
 mod property_tests_snapshot {
     use proptest::proptest;
     use super::*;
-    use proptest::prelude::*;
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -336,8 +336,6 @@ pub fn is_dataframe_expr(&self, expr: &Expr) -> bool {
 mod tests {
     use super::*;
     use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
-#[cfg(test)]
-use proptest::prelude::*;
     fn make_test_transpiler() -> Transpiler {
         Transpiler::new()
     }
@@ -497,7 +495,7 @@ use proptest::prelude::*;
 mod property_tests_dataframe {
     use proptest::proptest;
     use super::*;
-    use proptest::prelude::*;
+    
     proptest! {
         /// Property: transpile_dataframe never panics on any input
         #[test]

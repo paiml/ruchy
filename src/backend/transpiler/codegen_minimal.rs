@@ -330,7 +330,7 @@ mod tests {
 #[cfg(test)]
 mod property_tests_codegen_minimal {
     use proptest::proptest;
-    use super::*;
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -173,8 +173,6 @@ mod test_config {
 mod tests {
     use super::test_config;
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_compile_simple() {
         test_config::init();
@@ -782,8 +780,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_lib {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

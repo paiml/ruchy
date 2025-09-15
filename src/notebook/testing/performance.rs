@@ -137,7 +137,7 @@ pub fn run_all(&mut self) -> Vec<BenchmarkResult> {
         }
         self.calculate_statistics(&benchmark.id, &mut times)
     }
-    fn calculate_statistics(&self, id: &str, times: &mut Vec<f64>) -> BenchmarkResult {
+    fn calculate_statistics(&self, id: &str, times: &mut [f64]) -> BenchmarkResult {
         times.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let mean = times.iter().sum::<f64>() / times.len() as f64;
         let median = times[times.len() / 2];
@@ -666,24 +666,5 @@ pub fn prioritize(&self, tests: &[String]) -> Vec<String> {
                 .map_or(std::cmp::Reverse(0), |h| std::cmp::Reverse(h.failures * 1000 + h.successes))
         });
         prioritized
-    }
-}
-#[cfg(test)]
-mod property_tests_performance {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
     }
 }

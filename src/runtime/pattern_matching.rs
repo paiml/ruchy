@@ -2,16 +2,6 @@
 //! Extracted to reduce duplication across interpreter and REPL
 use crate::frontend::ast::{Literal, Pattern};
 use crate::runtime::Value;
-/// Match a literal pattern against a value
-///
-/// # Examples
-///
-/// ```
-/// use ruchy::runtime::pattern_matching::match_literal_pattern;
-/// use ruchy::runtime::Value;
-/// use ruchy::frontend::ast::Literal;
-#[cfg(test)]
-use proptest::prelude::*;
 ///
 /// let value = `Value::Int(42)`;
 /// let pattern = `Literal::Integer(42)`;
@@ -250,8 +240,8 @@ fn match_none_pattern_helper(value: &Value) -> Option<Vec<(String, Value)>> {
 #[cfg(test)]
 mod property_tests_pattern_matching {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -302,8 +302,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_instrumentation {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

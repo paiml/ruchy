@@ -344,8 +344,6 @@ impl MonoType {
 #[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_type_display() {
         assert_eq!(MonoType::Int.to_string(), "i32");
@@ -410,8 +408,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_types {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

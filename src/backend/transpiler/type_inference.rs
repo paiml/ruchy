@@ -217,8 +217,6 @@ fn is_string_literal(expr: &Expr) -> bool {
 mod tests {
     use super::*;
     use crate::Parser;
-#[cfg(test)]
-use proptest::prelude::*;
     /// Checks if an expression contains numeric operations (test helper)
     fn contains_numeric_operations(expr: &Expr) -> bool {
         match &expr.kind {
@@ -493,8 +491,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_type_inference {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

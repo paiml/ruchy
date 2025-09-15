@@ -3,8 +3,6 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use crate::utils::format_file_error;
-#[cfg(test)]
-use proptest::prelude::*;
 #[derive(Parser, Debug)]
 #[command(name = "ruchy")]
 #[command(author = "Noah Gift")]
@@ -182,7 +180,7 @@ fn execute_run(path: PathBuf, verbose: bool) -> Result<(), String> {
 }
 fn execute_format(path: PathBuf, check: bool) -> Result<(), String> {
     if check {
-        println!("Checking formatting for: {path:?}");
+        println!("Checking formatting for: {}", path.display());
         // Basic format checking - verify file is parseable
         let source = std::fs::read_to_string(&path)
             .map_err(|_e| format_file_error("read", &path))?;
@@ -192,7 +190,7 @@ fn execute_format(path: PathBuf, check: bool) -> Result<(), String> {
         println!("✓ File is properly formatted");
         Ok(())
     } else {
-        println!("Formatting: {path:?}");
+        println!("Formatting: {}", path.display());
         // Basic formatting - ensure file is parseable and write back
         let source = std::fs::read_to_string(&path)
             .map_err(|_e| format_file_error("read", &path))?;
@@ -228,7 +226,7 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
         }
         NotebookCommand::Test { path, coverage: _coverage, format } => {
             if verbose {
-                println!("Testing notebook: {path:?}");
+                println!("Testing notebook: {}", path.display());
             }
             #[cfg(feature = "notebook")]
             {
@@ -254,7 +252,7 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
         }
         NotebookCommand::Convert { input, output: _, format } => {
             if verbose {
-                println!("Converting {input:?} to {format} format");
+                println!("Converting {} to {format} format", input.display());
             }
             // Note: Implement notebook conversion
             Ok(())
@@ -282,7 +280,7 @@ fn execute_wasm_compile(
     verbose: bool
 ) -> Result<(), String> {
     if verbose {
-        println!("Compiling {input:?} to WASM");
+        println!("Compiling {} to WASM", input.display());
     }
     let source = std::fs::read_to_string(&input)
         .map_err(|e| format!("Failed to read file: {e}"))?;
@@ -320,7 +318,7 @@ fn compile_wasm_source(
     std::fs::write(output_path, wasm_bytes)
         .map_err(|e| format!("Failed to write WASM file: {e}"))?;
     if verbose {
-        println!("Successfully compiled to {output_path:?}");
+        println!("Successfully compiled to {}", output_path.display());
     }
     Ok(())
 }
@@ -339,14 +337,14 @@ fn execute_wasm_run(
     verbose: bool
 ) -> Result<(), String> {
     if verbose {
-        println!("Running WASM module: {module:?}");
+        println!("Running WASM module: {}", module.display());
     }
     // Note: Implement WASM execution
     Ok(())
 }
 fn execute_wasm_validate(module: std::path::PathBuf, verbose: bool) -> Result<(), String> {
     if verbose {
-        println!("Validating WASM module: {module:?}");
+        println!("Validating WASM module: {}", module.display());
     }
     let bytes = std::fs::read(&module)
         .map_err(|e| format!("Failed to read WASM file: {e}"))?;
@@ -367,7 +365,7 @@ fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {
     match cmd {
         TestCommand::Run { path, coverage: _, parallel: _, filter: _ } => {
             if verbose {
-                println!("Running tests in {path:?}");
+                println!("Running tests in {}", path.display());
             }
             // Note: Implement test runner
             println!("Test runner not yet implemented");
@@ -705,8 +703,8 @@ mod tests {
 #[cfg(test)]
 mod property_tests_mod {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

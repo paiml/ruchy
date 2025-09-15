@@ -193,8 +193,6 @@ impl Transpiler {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_result_helpers_generation() {
         let helpers = Transpiler::generate_result_helpers();
@@ -229,8 +227,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_result_type {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

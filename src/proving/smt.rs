@@ -397,8 +397,6 @@ pub fn prove_equivalence(&mut self, left: &str, right: &str) -> Result<SmtResult
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_smt_query_construction() {
         let mut query = SmtQuery::new("(> x 0)");
@@ -418,8 +416,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_smt {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

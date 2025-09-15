@@ -20,7 +20,7 @@ use tempfile::TempDir;
 /// Test string method name mapping in transpilation
 #[test]
 fn test_string_method_name_mapping() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     // Test cases: (ruchy_method, expected_rust_method)
     let test_cases = [
@@ -94,7 +94,7 @@ fn test_string_method_compilation() {
 /// Property test: All string methods should transpile to valid Rust
 #[test]
 fn test_string_method_transpilation_validity() {
-    let mut transpiler = Transpiler::new();
+    let transpiler = Transpiler::new();
     
     let string_methods = [
         "to_upper", "to_lower", "len", "trim", "chars", "reverse",

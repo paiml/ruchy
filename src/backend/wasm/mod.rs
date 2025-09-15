@@ -520,8 +520,6 @@ pub fn bytes(&self) -> &[u8] {
 mod tests {
     use super::*;
     use crate::frontend::parser::Parser;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_emitter_creates() {
         let _emitter = WasmEmitter::new();
@@ -561,8 +559,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_mod {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

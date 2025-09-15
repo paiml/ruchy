@@ -1,14 +1,7 @@
 // SPRINT2-003: Mutation testing implementation
 // PMAT Complexity: <10 per function
 use crate::notebook::testing::types::Cell;
-use crate::notebook::testing::NotebookTester;
-#[cfg(test)]
-use proptest::prelude::*;
-/// Mutation testing for notebook code
-pub struct MutationTester {
-    config: MutationConfig,
-    results: Vec<MutationResult>,
-}
+use crate::notebook::testing::tester::NotebookTester;
 #[derive(Debug, Clone)]
 pub struct MutationConfig {
     pub enabled_mutations: Vec<MutationType>,
@@ -52,6 +45,14 @@ pub struct MutationResult {
     pub killed: bool,
     pub killing_test: Option<String>,
 }
+
+/// Mutation testing for notebook cells
+pub struct MutationTester {
+    tester: NotebookTester,
+    config: MutationConfig,
+    results: Vec<MutationResult>,
+}
+
 impl Default for MutationTester {
     fn default() -> Self {
         Self::new()
@@ -69,6 +70,7 @@ impl MutationTester {
 /// ```
 pub fn new() -> Self {
         Self {
+            tester: NotebookTester::new(),
             config: MutationConfig::default(),
             results: Vec::new(),
         }
@@ -83,6 +85,7 @@ pub fn new() -> Self {
 /// ```
 pub fn with_config(config: MutationConfig) -> Self {
         Self {
+            tester: NotebookTester::new(),
             config,
             results: Vec::new(),
         }
@@ -322,24 +325,5 @@ pub fn generate_report(&self) -> String {
             }
         }
         report
-    }
-}
-#[cfg(test)]
-mod property_tests_mutation {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
     }
 }

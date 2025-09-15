@@ -171,8 +171,6 @@ impl Default for Unifier {
 #[allow(clippy::unwrap_used, clippy::panic)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_unify_same_types() {
         let mut unifier = Unifier::new();
@@ -245,8 +243,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_unify {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

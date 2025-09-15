@@ -1,13 +1,6 @@
 // SPRINT3-001: Formal verification implementation
 // PMAT Complexity: <10 per function
 use crate::notebook::testing::types::Cell;
-#[cfg(test)]
-use proptest::prelude::*;
-/// Formal verification for notebook correctness
-pub struct FormalVerifier {
-    solver: SolverBackend,
-    config: FormalConfig,
-}
 #[derive(Debug, Clone)]
 pub struct FormalConfig {
     pub timeout_ms: u64,
@@ -60,6 +53,27 @@ pub struct FunctionSpec {
     pub postconditions: Vec<String>,
     pub invariants: Vec<String>,
 }
+
+#[derive(Debug, Clone)]
+pub struct ExecutionPath {
+    pub id: String,
+    pub conditions: Vec<String>,
+    pub is_feasible: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct LoopInvariant {
+    pub loop_id: String,
+    pub invariant: String,
+    pub verified: bool,
+}
+
+/// Formal verification for notebook code
+pub struct FormalVerifier {
+    config: FormalConfig,
+    backend: SolverBackend,
+}
+
 impl Default for FormalVerifier {
     fn default() -> Self {
         Self::new()
@@ -77,7 +91,7 @@ impl FormalVerifier {
 /// ```
 pub fn new() -> Self {
         Self {
-            solver: SolverBackend::SimpleSMT,
+            backend: SolverBackend::SimpleSMT,
             config: FormalConfig::default(),
         }
     }
@@ -91,7 +105,7 @@ pub fn new() -> Self {
 /// ```
 pub fn with_config(config: FormalConfig) -> Self {
         Self {
-            solver: SolverBackend::SimpleSMT,
+            backend: SolverBackend::SimpleSMT,
             config,
         }
     }
@@ -218,20 +232,20 @@ pub fn symbolic_execute(&self, cell: &Cell) -> Vec<ExecutionPath> {
             // For each if, we have at least 2 paths
             paths.push(ExecutionPath {
                 id: "path_1".to_string(),
-                constraints: vec!["condition == true".to_string()],
-                result: Some("then_branch".to_string()),
+                conditions: vec!["condition == true".to_string()],
+                is_feasible: true,
             });
             paths.push(ExecutionPath {
                 id: "path_2".to_string(),
-                constraints: vec!["condition == false".to_string()],
-                result: Some("else_branch".to_string()),
+                conditions: vec!["condition == false".to_string()],
+                is_feasible: true,
             });
         } else {
             // Single path for straight-line code
             paths.push(ExecutionPath {
                 id: "path_0".to_string(),
-                constraints: vec![],
-                result: Some("sequential".to_string()),
+                conditions: vec![],
+                is_feasible: true,
             });
         }
         paths
@@ -265,42 +279,11 @@ pub struct ProofResult {
     pub is_valid: bool,
     pub unsatisfied_conditions: Vec<String>,
 }
-#[derive(Debug, Clone)]
-pub struct ExecutionPath {
-    pub id: String,
-    pub constraints: Vec<String>,
-    pub result: Option<String>,
-}
-#[derive(Debug, Clone)]
-pub struct LoopInvariant {
-    pub id: String,
-    pub init: String,
-    pub maintain: String,
-    pub termination: String,
-}
+
 #[derive(Debug, Clone)]
 pub struct LoopVerificationResult {
     pub initialization_valid: bool,
     pub maintenance_valid: bool,
     pub termination_valid: bool,
     pub iterations_bounded: bool,
-}
-#[cfg(test)]
-mod property_tests_formal {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
-    }
 }

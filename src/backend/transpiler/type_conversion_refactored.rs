@@ -5,8 +5,6 @@ use crate::frontend::ast::{Expr, ExprKind, Literal, StringPart};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::quote;
-#[cfg(test)]
-use proptest::prelude::*;
 impl Transpiler {
     /// Main dispatcher for type conversion (complexity: ~8)
 /// # Examples
@@ -247,8 +245,8 @@ fn is_tuple_expr(expr: &Expr) -> bool {
 #[cfg(test)]
 mod property_tests_type_conversion_refactored {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

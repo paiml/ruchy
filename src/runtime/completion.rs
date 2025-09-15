@@ -753,8 +753,8 @@ impl RuchyCompleter {
 #[cfg(test)]
 mod property_tests_completion {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

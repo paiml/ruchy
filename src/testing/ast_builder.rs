@@ -670,8 +670,6 @@ impl Default for AstBuilder {
 mod tests {
     use super::*;
     use crate::Transpiler;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_ast_builder_basic() {
         let builder = AstBuilder::new();
@@ -749,8 +747,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_ast_builder {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

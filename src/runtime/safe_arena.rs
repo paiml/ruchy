@@ -197,8 +197,6 @@ pub fn arena(&self) -> &SafeArena {
 #[cfg(test)]
 mod tests {
     use super::*;
-#[cfg(test)]
-use proptest::prelude::*;
     #[test]
     fn test_safe_arena() {
         let arena = SafeArena::new(1024);
@@ -375,8 +373,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_safe_arena {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -466,8 +466,6 @@ mod tests {
     }
     fn create_passing_score() -> QualityScore {
         use crate::quality::scoring::ScoreComponents;
-#[cfg(test)]
-use proptest::prelude::*;
         QualityScore {
             value: 0.85,
             components: ScoreComponents {
@@ -591,8 +589,8 @@ use proptest::prelude::*;
 #[cfg(test)]
 mod property_tests_gates {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]

@@ -3,10 +3,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-#[cfg(test)]
-use proptest::prelude::*;
-/// Configuration for test execution
-#[derive(Debug, Clone, Default)]
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TestConfig {
     pub tolerance: f64,
     pub coverage: bool,
@@ -16,20 +14,21 @@ pub struct TestConfig {
     pub max_memory: usize,
     pub update_golden: bool,
 }
+
 impl TestConfig {
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::notebook::testing::types::new;
-/// 
+///
 /// let result = new(());
 /// assert_eq!(result, Ok(()));
 /// ```
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::notebook::testing::types::new;
-/// 
+///
 /// let result = new(());
 /// assert_eq!(result, Ok(()));
 /// ```
@@ -43,6 +42,12 @@ pub fn new() -> Self {
             max_memory: 512 * 1024 * 1024, // 512MB
             update_golden: false,
         }
+    }
+}
+
+impl Default for TestConfig {
+    fn default() -> Self {
+        Self::new()
     }
 }
 /// Result of a test execution
@@ -215,23 +220,4 @@ pub struct TestFailure {
     pub expected: String,
     pub actual: String,
     pub message: String,
-}
-#[cfg(test)]
-mod property_tests_types {
-    use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
-        }
-    }
 }

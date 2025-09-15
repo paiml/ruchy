@@ -641,5 +641,3 @@ mod property_tests_tool_discovery {
         }
     }
 }
-    }
-}

@@ -2,8 +2,6 @@
 // Toyota Way: Consistent code style prevents defects
 use anyhow::Result;
 use crate::frontend::ast::{Expr, ExprKind};
-#[cfg(test)]
-use proptest::prelude::*;
 pub struct Formatter {
     indent_width: usize,
     use_tabs: bool,
@@ -134,8 +132,8 @@ impl Default for Formatter {
 #[cfg(test)]
 mod property_tests_formatter {
     use proptest::proptest;
-    use super::*;
-    use proptest::prelude::*;
+    
+    
     proptest! {
         /// Property: Function never panics on any input
         #[test]
