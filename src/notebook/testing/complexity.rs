@@ -1,6 +1,6 @@
 // SPRINT3-002: Complexity analysis implementation
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::*;
+use crate::notebook::testing::types::{Cell, Notebook, CellType};
 #[cfg(test)]
 use proptest::prelude::*;
 /// Complexity analysis for notebook cells
@@ -60,6 +60,12 @@ pub struct Hotspot {
     pub impact: f64,
     pub location: String,
 }
+impl Default for ComplexityAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ComplexityAnalyzer {
 /// # Examples
 /// 
@@ -217,9 +223,7 @@ pub fn analyze(&self, cell: &Cell) -> ComplexityResult {
                 max_depth = max_depth.max(current_depth);
             }
             if line.contains('}') {
-                if current_depth > 0 {
-                    current_depth -= 1;
-                }
+                current_depth = current_depth.saturating_sub(1);
             }
         }
         max_depth

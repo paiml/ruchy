@@ -1,4 +1,4 @@
-//! SharedSession - Persistent state management for notebook cells
+//! `SharedSession` - Persistent state management for notebook cells
 //!
 //! This module implements the core abstraction for maintaining state across
 //! notebook cell executions, solving the fundamental invariant violation where
@@ -53,8 +53,8 @@ pub fn success(value: Value) -> Self {
         ExecuteResponse {
             success: true,
             cell_id: String::new(),
-            value: format!("{}", value),
-            result: format!("{}", value),
+            value: format!("{value}"),
+            result: format!("{value}"),
             error: None,
             execution_time_ms: 0.0,
         }
@@ -137,13 +137,19 @@ pub struct GlobalRegistry {
     pub imports: HashSet<String>,
     /// Symbol to cell mapping
     pub provenance: HashMap<String, String>,
-    /// DefId to variable name mapping
+    /// `DefId` to variable name mapping
     pub def_to_name: HashMap<DefId, String>,
-    /// DefId to source cell mapping
+    /// `DefId` to source cell mapping
     pub def_sources: HashMap<DefId, String>,
     /// Generation counter for versioning
     generation: u64,
 }
+impl Default for GlobalRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GlobalRegistry {
     pub fn new() -> Self {
         GlobalRegistry {
@@ -338,6 +344,12 @@ pub struct SharedSession {
     /// Whether to halt cascade on error
     halt_on_error: bool,
 }
+impl Default for SharedSession {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SharedSession {
     pub fn new() -> Self {
         SharedSession {
@@ -376,7 +388,7 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
         let initial_defs = self.collect_current_defs();
         // Parse and execute
         let mut parser = Parser::new(code);
-        let expr = parser.parse().map_err(|e| format!("Parse error: {:?}", e))?;
+        let expr = parser.parse().map_err(|e| format!("Parse error: {e:?}"))?;
         // Execute with interpreter
         let result = match self.interpreter.eval_expr(&expr) {
             Ok(value) => {
@@ -386,7 +398,7 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
                 let new_defs = self.extract_new_bindings(cell_id, &initial_defs);
                 // Update dependency graph
                 let reads = self.extract_reads(&expr, &initial_defs);
-                let writes = new_defs.clone();
+                let writes = new_defs;
                 self.def_graph.insert(cell_id.to_string(), (reads, writes.clone()));
                 // Invalidate dependent cells
                 self.invalidate_consumers(&writes);
@@ -394,8 +406,8 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
                 Ok(ExecuteResponse {
                     success: true,
                     cell_id: cell_id.to_string(),
-                    value: format!("{}", value),
-                    result: format!("{}", value),
+                    value: format!("{value}"),
+                    result: format!("{value}"),
                     error: None,
                     execution_time_ms: elapsed,
                 })
@@ -403,7 +415,7 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
             Err(err) => {
                 // Rollback on error
                 self.globals.restore_cow(snapshot);
-                Err(format!("Execution error: {}", err))
+                Err(format!("Execution error: {err}"))
             }
         };
         result
@@ -507,11 +519,10 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
         let mut visited = HashSet::new();
         let mut rec_stack = HashSet::new();
         for cell in self.def_graph.keys() {
-            if !visited.contains(cell) {
-                if self.has_cycle_dfs(cell, &mut visited, &mut rec_stack) {
+            if !visited.contains(cell)
+                && self.has_cycle_dfs(cell, &mut visited, &mut rec_stack) {
                     return true;
                 }
-            }
         }
         false
     }
@@ -580,8 +591,7 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
         // Build in-degree map
         for cell in cells {
             let deps = self.def_graph.get(cell)
-                .map(|(d, _)| d.len())
-                .unwrap_or(0);
+                .map_or(0, |(d, _)| d.len());
             in_degree.insert(cell.clone(), deps);
             if deps == 0 {
                 queue.push_back(cell.clone());
@@ -661,7 +671,7 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
     /// Restore session state from a named checkpoint
     pub fn restore_from_checkpoint(&mut self, name: &str) -> Result<(), String> {
         let checkpoint = self.checkpoints.get(name)
-            .ok_or_else(|| format!("Checkpoint '{}' not found", name))?;
+            .ok_or_else(|| format!("Checkpoint '{name}' not found"))?;
         // Note: Implement state restoration
         // This would restore the interpreter state from the checkpoint
         // For now, return success to pass basic tests
@@ -770,7 +780,7 @@ pub fn set_execution_mode(&mut self, mode: ExecutionMode) {
     pub fn trigger_garbage_collection(&mut self) {
         // Simplified GC - remove unused checkpoints
         let mut to_remove = Vec::new();
-        for (name, _) in &self.checkpoints {
+        for name in self.checkpoints.keys() {
             if name.starts_with("auto_") {
                 to_remove.push(name.clone());
             }

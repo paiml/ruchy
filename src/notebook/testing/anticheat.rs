@@ -32,6 +32,12 @@ pub struct MatchedSection {
     pub end_line: usize,
     pub similarity: f64,
 }
+impl Default for AntiCheatSystem {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AntiCheatSystem {
 /// # Examples
 /// 
@@ -109,7 +115,7 @@ pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult 
         let mut max_similarity = 0.0;
         let mut matched_student = None;
         let mut matched_sections = Vec::new();
-        for (_, submissions) in &self.submission_history {
+        for submissions in self.submission_history.values() {
             for other in submissions {
                 if other.student_id == submission.student_id {
                     continue;
@@ -141,7 +147,7 @@ pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult 
         // Remove comments and whitespace for comparison
         code.lines()
             .filter(|line| !line.trim().starts_with("//"))
-            .map(|line| line.trim())
+            .map(str::trim)
             .filter(|line| !line.is_empty())
             .collect::<Vec<_>>()
             .join("\n")
@@ -167,7 +173,7 @@ pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult 
                 word.split(|c: char| !c.is_alphanumeric() && c != '_')
             })
             .filter(|s| !s.is_empty())
-            .map(|s| s.to_string())
+            .map(std::string::ToString::to_string)
             .collect()
     }
     fn find_matched_sections(&self, code1: &str, code2: &str) -> Vec<MatchedSection> {
@@ -216,7 +222,7 @@ pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult 
         for match_section in matches.into_iter().skip(1) {
             if match_section.start_line <= current.end_line + 1 {
                 current.end_line = match_section.end_line;
-                current.similarity = (current.similarity + match_section.similarity) / 2.0;
+                current.similarity = f64::midpoint(current.similarity, match_section.similarity);
             } else {
                 merged.push(current);
                 current = match_section;
@@ -234,7 +240,7 @@ pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult 
         // Store submission history
         self.submission_history
             .entry(submission.assignment_id.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(submission);
     }
 }
@@ -242,6 +248,12 @@ pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult 
 pub struct ObfuscationDetector {
     suspicious_patterns: Vec<String>,
 }
+impl Default for ObfuscationDetector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ObfuscationDetector {
     pub fn new() -> Self {
         Self {
@@ -269,7 +281,7 @@ pub fn is_obfuscated(&self, code: &str) -> ObfuscationResult {
         // Check for suspicious patterns
         for pattern in &self.suspicious_patterns {
             if code.contains(pattern) {
-                indicators.push(format!("Contains suspicious pattern: {}", pattern));
+                indicators.push(format!("Contains suspicious pattern: {pattern}"));
             }
         }
         // Check for unusual variable names
@@ -299,7 +311,7 @@ pub fn is_obfuscated(&self, code: &str) -> ObfuscationResult {
         for line in code.lines() {
             if let Some(pos) = line.find("let ") {
                 let rest = &line[pos + 4..];
-                if let Some(end) = rest.find(|c: char| c == '=' || c == ':' || c == ';') {
+                if let Some(end) = rest.find(['=', ':', ';']) {
                     names.push(rest[..end].trim().to_string());
                 }
             }
@@ -330,6 +342,12 @@ struct SubmissionPattern {
     submission_times: Vec<chrono::DateTime<chrono::Utc>>,
     avg_time_between: Option<chrono::Duration>,
 }
+impl Default for PatternAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PatternAnalyzer {
     pub fn new() -> Self {
         Self {
@@ -375,7 +393,7 @@ pub fn analyze_pattern(&mut self, student_id: &str, timestamp: chrono::DateTime<
         let late_night_count = pattern.submission_times.iter()
             .filter(|t| {
                 let hour = t.hour();
-                hour >= 2 && hour <= 5
+                (2..=5).contains(&hour)
             })
             .count();
         if late_night_count > pattern.submission_times.len() / 2 {

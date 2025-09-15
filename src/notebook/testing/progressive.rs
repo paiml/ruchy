@@ -224,15 +224,15 @@ pub fn use_hint(&mut self, student_id: &str, test_id: &str, hint_id: &str) -> Hi
 /// ```
 pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
         let student_progress = self.student_progress.get(student_id);
-        let current_level = student_progress.map(|p| p.current_level).unwrap_or(0);
+        let current_level = student_progress.map_or(0, |p| p.current_level);
         // Calculate class statistics
         let class_levels: Vec<usize> = self.student_progress.values()
             .map(|p| p.current_level)
             .collect();
-        let avg_level = if !class_levels.is_empty() {
-            class_levels.iter().sum::<usize>() as f64 / class_levels.len() as f64
-        } else {
+        let avg_level = if class_levels.is_empty() {
             0.0
+        } else {
+            class_levels.iter().sum::<usize>() as f64 / class_levels.len() as f64
         };
         let students_ahead = class_levels.iter()
             .filter(|&&level| level > current_level)
@@ -343,7 +343,7 @@ pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
         let attempts = progress
             .and_then(|p| p.attempts_per_test.get(test_id))
             .unwrap_or(&0);
-        let current_level = progress.map(|p| p.current_level).unwrap_or(0);
+        let current_level = progress.map_or(0, |p| p.current_level);
         let level = &self.test_hierarchy.levels[current_level];
         if let Some(test) = level.visible_tests.iter().find(|t| t.id == test_id) {
             return test.hints.iter()
@@ -367,13 +367,11 @@ pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
     fn count_tests_passed(&self, student_id: &str) -> usize {
         // Simplified: count attempts as passes
         self.student_progress.get(student_id)
-            .map(|p| p.attempts_per_test.len())
-            .unwrap_or(0)
+            .map_or(0, |p| p.attempts_per_test.len())
     }
     fn calculate_percentile(&self, student_id: &str) -> f64 {
         let student_score = self.student_progress.get(student_id)
-            .map(|p| p.total_score)
-            .unwrap_or(0.0);
+            .map_or(0.0, |p| p.total_score);
         let all_scores: Vec<f64> = self.student_progress.values()
             .map(|p| p.total_score)
             .collect();
@@ -389,8 +387,7 @@ pub fn get_peer_progress(&self, student_id: &str) -> PeerProgressInfo {
         }
         let class_avg = self.calculate_class_average();
         let student_score = self.student_progress.get(student_id)
-            .map(|p| p.total_score)
-            .unwrap_or(0.0);
+            .map_or(0.0, |p| p.total_score);
         // Allow unlock if student is close to class average
         student_score >= class_avg * 0.8
     }

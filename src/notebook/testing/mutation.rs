@@ -1,6 +1,6 @@
 // SPRINT2-003: Mutation testing implementation
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::*;
+use crate::notebook::testing::types::Cell;
 use crate::notebook::testing::NotebookTester;
 #[cfg(test)]
 use proptest::prelude::*;
@@ -52,6 +52,12 @@ pub struct MutationResult {
     pub killed: bool,
     pub killing_test: Option<String>,
 }
+impl Default for MutationTester {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MutationTester {
 /// # Examples
 /// 
@@ -130,7 +136,7 @@ pub fn generate_mutations(&self, cell: &Cell) -> Vec<Mutation> {
         for (original_op, mutated_op) in operators {
             if let Some(col) = line.find(original_op) {
                 mutations.push(Mutation {
-                    id: format!("mut_arith_{}_{}", line_num, col),
+                    id: format!("mut_arith_{line_num}_{col}"),
                     cell_id: cell.id.clone(),
                     mutation_type: MutationType::ArithmeticOperator,
                     line: line_num,
@@ -155,7 +161,7 @@ pub fn generate_mutations(&self, cell: &Cell) -> Vec<Mutation> {
         for (original_op, mutated_op) in operators {
             if let Some(col) = line.find(original_op) {
                 mutations.push(Mutation {
-                    id: format!("mut_comp_{}_{}", line_num, col),
+                    id: format!("mut_comp_{line_num}_{col}"),
                     cell_id: cell.id.clone(),
                     mutation_type: MutationType::ComparisonOperator,
                     line: line_num,
@@ -179,7 +185,7 @@ pub fn generate_mutations(&self, cell: &Cell) -> Vec<Mutation> {
         for (original, mutated) in boundaries {
             if let Some(col) = line.find(original) {
                 mutations.push(Mutation {
-                    id: format!("mut_bound_{}_{}", line_num, col),
+                    id: format!("mut_bound_{line_num}_{col}"),
                     cell_id: cell.id.clone(),
                     mutation_type: MutationType::BoundaryValue,
                     line: line_num,
@@ -200,7 +206,7 @@ pub fn generate_mutations(&self, cell: &Cell) -> Vec<Mutation> {
         for (original_op, mutated_op) in operators {
             if let Some(col) = line.find(original_op) {
                 mutations.push(Mutation {
-                    id: format!("mut_logic_{}_{}", line_num, col),
+                    id: format!("mut_logic_{line_num}_{col}"),
                     cell_id: cell.id.clone(),
                     mutation_type: MutationType::LogicalOperator,
                     line: line_num,
@@ -300,10 +306,10 @@ pub fn generate_report(&self) -> String {
         let killed = self.results.iter().filter(|r| r.killed).count();
         let survived = total - killed;
         let score = self.calculate_score() * 100.0;
-        report.push_str(&format!("Total Mutations: {}\n", total));
-        report.push_str(&format!("Killed: {}\n", killed));
-        report.push_str(&format!("Survived: {}\n", survived));
-        report.push_str(&format!("Mutation Score: {:.1}%\n\n", score));
+        report.push_str(&format!("Total Mutations: {total}\n"));
+        report.push_str(&format!("Killed: {killed}\n"));
+        report.push_str(&format!("Survived: {survived}\n"));
+        report.push_str(&format!("Mutation Score: {score:.1}%\n\n"));
         if survived > 0 {
             report.push_str("Surviving Mutations (improve tests for these):\n");
             for result in self.results.iter().filter(|r| !r.killed) {

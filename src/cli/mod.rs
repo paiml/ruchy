@@ -174,31 +174,31 @@ fn execute_run(path: PathBuf, verbose: bool) -> Result<(), String> {
         .map_err(|_e| format_file_error("read", &path))?;
     let mut parser = crate::frontend::parser::Parser::new(&source);
     let ast = parser.parse()
-        .map_err(|e| format!("Parse error: {:?}", e))?;
+        .map_err(|e| format!("Parse error: {e:?}"))?;
     let mut interpreter = crate::runtime::interpreter::Interpreter::new();
     interpreter.eval_expr(&ast)
-        .map_err(|e| format!("Runtime error: {:?}", e))?;
+        .map_err(|e| format!("Runtime error: {e:?}"))?;
     Ok(())
 }
 fn execute_format(path: PathBuf, check: bool) -> Result<(), String> {
     if check {
-        println!("Checking formatting for: {:?}", path);
+        println!("Checking formatting for: {path:?}");
         // Basic format checking - verify file is parseable
         let source = std::fs::read_to_string(&path)
             .map_err(|_e| format_file_error("read", &path))?;
         let mut parser = crate::frontend::parser::Parser::new(&source);
         parser.parse()
-            .map_err(|e| format!("Parse error (formatting issue): {:?}", e))?;
+            .map_err(|e| format!("Parse error (formatting issue): {e:?}"))?;
         println!("✓ File is properly formatted");
         Ok(())
     } else {
-        println!("Formatting: {:?}", path);
+        println!("Formatting: {path:?}");
         // Basic formatting - ensure file is parseable and write back
         let source = std::fs::read_to_string(&path)
             .map_err(|_e| format_file_error("read", &path))?;
         let mut parser = crate::frontend::parser::Parser::new(&source);
         let _ast = parser.parse()
-            .map_err(|e| format!("Cannot format unparseable file: {:?}", e))?;
+            .map_err(|e| format!("Cannot format unparseable file: {e:?}"))?;
         // For now, just verify it's parseable (real formatting would rewrite)
         println!("✓ File verified as valid Ruchy code");
         Ok(())
@@ -208,16 +208,16 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
     match cmd {
         NotebookCommand::Serve { port, host } => {
             if verbose {
-                println!("Starting notebook server on {}:{}", host, port);
+                println!("Starting notebook server on {host}:{port}");
             }
             // Use existing notebook server
             #[cfg(feature = "notebook")]
             {
                 let rt = tokio::runtime::Runtime::new()
-                    .map_err(|e| format!("Failed to create runtime: {}", e))?;
+                    .map_err(|e| format!("Failed to create runtime: {e}"))?;
                 rt.block_on(async {
                     crate::notebook::server::start_server(port).await
-                        .map_err(|e| format!("Server error: {}", e))
+                        .map_err(|e| format!("Server error: {e}"))
                 })?;
             }
             #[cfg(not(feature = "notebook"))]
@@ -228,7 +228,7 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
         }
         NotebookCommand::Test { path, coverage: _coverage, format } => {
             if verbose {
-                println!("Testing notebook: {:?}", path);
+                println!("Testing notebook: {path:?}");
             }
             #[cfg(feature = "notebook")]
             {
@@ -237,12 +237,12 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
                 match format.as_str() {
                     "json" => {
                         match serde_json::to_string_pretty(&report) {
-                            Ok(json) => println!("{}", json),
-                            Err(e) => eprintln!("Failed to serialize report: {}", e),
+                            Ok(json) => println!("{json}"),
+                            Err(e) => eprintln!("Failed to serialize report: {e}"),
                         }
                     },
                     "html" => println!("HTML report generation not yet implemented"),
-                    _ => println!("{:#?}", report),
+                    _ => println!("{report:#?}"),
                 }
             }
             #[cfg(not(feature = "notebook"))]
@@ -254,7 +254,7 @@ fn execute_notebook(cmd: NotebookCommand, verbose: bool) -> Result<(), String> {
         }
         NotebookCommand::Convert { input, output: _, format } => {
             if verbose {
-                println!("Converting {:?} to {} format", input, format);
+                println!("Converting {input:?} to {format} format");
             }
             // Note: Implement notebook conversion
             Ok(())
@@ -282,10 +282,10 @@ fn execute_wasm_compile(
     verbose: bool
 ) -> Result<(), String> {
     if verbose {
-        println!("Compiling {:?} to WASM", input);
+        println!("Compiling {input:?} to WASM");
     }
     let source = std::fs::read_to_string(&input)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+        .map_err(|e| format!("Failed to read file: {e}"))?;
     let output_path = output.unwrap_or_else(|| {
         let mut path = input.clone();
         path.set_extension("wasm");
@@ -302,15 +302,15 @@ fn compile_wasm_source(
 ) -> Result<(), String> {
     let mut parser = crate::frontend::parser::Parser::new(source);
     let ast = parser.parse()
-        .map_err(|e| format!("Parse error: {:?}", e))?;
+        .map_err(|e| format!("Parse error: {e:?}"))?;
     let emitter = crate::backend::wasm::WasmEmitter::new();
     let wasm_bytes = emitter.emit(&ast)
-        .map_err(|e| format!("WASM compilation error: {}", e))?;
+        .map_err(|e| format!("WASM compilation error: {e}"))?;
     if validate {
         #[cfg(feature = "notebook")]
         {
             wasmparser::validate(&wasm_bytes)
-                .map_err(|e| format!("WASM validation error: {}", e))?;
+                .map_err(|e| format!("WASM validation error: {e}"))?;
         }
         #[cfg(not(feature = "notebook"))]
         {
@@ -318,9 +318,9 @@ fn compile_wasm_source(
         }
     }
     std::fs::write(output_path, wasm_bytes)
-        .map_err(|e| format!("Failed to write WASM file: {}", e))?;
+        .map_err(|e| format!("Failed to write WASM file: {e}"))?;
     if verbose {
-        println!("Successfully compiled to {:?}", output_path);
+        println!("Successfully compiled to {output_path:?}");
     }
     Ok(())
 }
@@ -339,21 +339,21 @@ fn execute_wasm_run(
     verbose: bool
 ) -> Result<(), String> {
     if verbose {
-        println!("Running WASM module: {:?}", module);
+        println!("Running WASM module: {module:?}");
     }
     // Note: Implement WASM execution
     Ok(())
 }
 fn execute_wasm_validate(module: std::path::PathBuf, verbose: bool) -> Result<(), String> {
     if verbose {
-        println!("Validating WASM module: {:?}", module);
+        println!("Validating WASM module: {module:?}");
     }
     let bytes = std::fs::read(&module)
-        .map_err(|e| format!("Failed to read WASM file: {}", e))?;
+        .map_err(|e| format!("Failed to read WASM file: {e}"))?;
     #[cfg(feature = "notebook")]
     {
         wasmparser::validate(&bytes)
-            .map_err(|e| format!("WASM validation error: {}", e))?;
+            .map_err(|e| format!("WASM validation error: {e}"))?;
     }
     #[cfg(not(feature = "notebook"))]
     {
@@ -367,7 +367,7 @@ fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {
     match cmd {
         TestCommand::Run { path, coverage: _, parallel: _, filter: _ } => {
             if verbose {
-                println!("Running tests in {:?}", path);
+                println!("Running tests in {path:?}");
             }
             // Note: Implement test runner
             println!("Test runner not yet implemented");
@@ -375,7 +375,7 @@ fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {
         }
         TestCommand::Report { format, output: _ } => {
             if verbose {
-                println!("Generating test report in {} format", format);
+                println!("Generating test report in {format} format");
             }
             // Note: Implement test reporting
             Ok(())

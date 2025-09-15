@@ -1,6 +1,6 @@
 // SPRINT4-001: Educational platform implementation
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::*;
+use crate::notebook::testing::types::Notebook;
 use std::collections::HashMap;
 #[cfg(test)]
 use proptest::prelude::*;
@@ -68,6 +68,12 @@ pub enum FeedbackSeverity {
     Error,
     Info,
 }
+impl Default for EducationalPlatform {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EducationalPlatform {
 /// # Examples
 /// 
@@ -144,7 +150,7 @@ pub fn submit_assignment(&mut self, student_id: &str, mut submission: StudentSub
         // Track submission
         self.submissions
             .entry(student_id.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(submission);
         // Track analytics
         self.analytics.track_event(LearningEvent {
@@ -195,7 +201,7 @@ pub fn auto_grade(&self, submission: &StudentSubmission) -> Grade {
         Grade {
             total_points,
             max_points: assignment.points,
-            percentage: (total_points as f64 / assignment.points as f64) * 100.0,
+            percentage: (f64::from(total_points) / f64::from(assignment.points)) * 100.0,
             feedback,
             rubric_scores: HashMap::new(),
         }
@@ -262,6 +268,12 @@ pub struct ClassMetrics {
     pub completion_rate: f64,
     pub avg_score: f64,
 }
+impl Default for LearningAnalytics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LearningAnalytics {
     pub fn new() -> Self {
         Self { events: Vec::new() }
@@ -326,10 +338,10 @@ pub fn get_class_metrics(&self) -> ClassMetrics {
             .count();
         ClassMetrics {
             total_students: unique_students.len(),
-            completion_rate: if !unique_students.is_empty() {
-                completions as f64 / unique_students.len() as f64
-            } else {
+            completion_rate: if unique_students.is_empty() {
                 0.0
+            } else {
+                completions as f64 / unique_students.len() as f64
             },
             avg_score: 0.0, // Would calculate from grades
         }

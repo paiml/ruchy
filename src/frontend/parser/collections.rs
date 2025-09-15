@@ -288,7 +288,7 @@ fn async_error_token_to_key(token: &Token) -> Option<String> {
     }
 }
 
-/// Refactored token_to_object_key using Extract Method pattern
+/// Refactored `token_to_object_key` using Extract Method pattern
 /// Complexity reduced from 50 to 8 by extracting helper functions
 fn token_to_object_key(token: &Token) -> Result<String> {
     match token {

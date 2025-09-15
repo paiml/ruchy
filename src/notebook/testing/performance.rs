@@ -1,6 +1,6 @@
 // SPRINT5-002: Performance benchmarking and optimization
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::*;
+use crate::notebook::testing::types::Notebook;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
@@ -27,6 +27,12 @@ pub struct BenchmarkResult {
     pub max_time_ms: f64,
     pub percentile_95_ms: f64,
 }
+impl Default for PerformanceBenchmarker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PerformanceBenchmarker {
 /// # Examples
 /// 
@@ -164,6 +170,12 @@ pub struct TestExecutionResult {
     pub output: String,
     pub duration_ms: u64,
 }
+impl Default for ParallelTestExecutor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ParallelTestExecutor {
     pub fn new() -> Self {
         Self {
@@ -197,7 +209,7 @@ pub fn execute_parallel(&self, notebook: &Notebook, threads: usize) -> Vec<TestE
         let results = Arc::new(Mutex::new(Vec::new()));
         let mut handles = Vec::new();
         // Split cells among threads
-        let chunk_size = (cells.len() + num_threads - 1) / num_threads;
+        let chunk_size = cells.len().div_ceil(num_threads);
         for chunk_idx in 0..num_threads {
             let start = chunk_idx * chunk_size;
             let end = ((chunk_idx + 1) * chunk_size).min(cells.len());
@@ -250,6 +262,12 @@ pub struct CacheStats {
     pub size: usize,
     pub hit_rate: f64,
 }
+impl Default for TestCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TestCache {
     pub fn new() -> Self {
         Self {
@@ -367,6 +385,12 @@ pub struct ResourceUsage {
     pub duration_ms: u64,
     pub peak_memory_mb: f64,
 }
+impl Default for ResourceMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResourceMonitor {
     pub fn new() -> Self {
         Self {
@@ -410,8 +434,7 @@ pub fn stop(&self) {
 /// ```
 pub fn get_usage(&self) -> ResourceUsage {
         let duration_ms = self.start_time
-            .map(|t| t.elapsed().as_millis() as u64)
-            .unwrap_or(0);
+            .map_or(0, |t| t.elapsed().as_millis() as u64);
         // Simulated values - real implementation would query system
         ResourceUsage {
             memory_mb: 100.0,
@@ -424,6 +447,12 @@ pub fn get_usage(&self) -> ResourceUsage {
 /// Test sharding for distributed execution
 #[derive(Debug)]
 pub struct TestSharder;
+impl Default for TestSharder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TestSharder {
     pub fn new() -> Self {
         Self
@@ -470,8 +499,7 @@ pub fn shard_by_duration(&self, tests: &[(String, Duration)], num_shards: usize)
             let min_shard = shard_durations.iter()
                 .enumerate()
                 .min_by_key(|(_, d)| **d)
-                .map(|(i, _)| i)
-                .unwrap_or(0);
+                .map_or(0, |(i, _)| i);
             shards[min_shard].push(test);
             shard_durations[min_shard] += duration;
         }
@@ -491,6 +519,12 @@ pub struct RegressionResult {
     pub baseline: f64,
     pub current: f64,
 }
+impl Default for RegressionDetector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RegressionDetector {
     pub fn new() -> Self {
         Self {
@@ -564,6 +598,12 @@ pub struct TestHistory {
     pub avg_duration_ms: f64,
     pub last_run: Option<Instant>,
 }
+impl Default for TestPrioritizer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TestPrioritizer {
     pub fn new() -> Self {
         Self {
@@ -623,8 +663,7 @@ pub fn prioritize(&self, tests: &[String]) -> Vec<String> {
         let mut prioritized = tests.to_vec();
         prioritized.sort_by_key(|test| {
             self.history.get(test)
-                .map(|h| std::cmp::Reverse(h.failures * 1000 + h.successes))
-                .unwrap_or(std::cmp::Reverse(0))
+                .map_or(std::cmp::Reverse(0), |h| std::cmp::Reverse(h.failures * 1000 + h.successes))
         });
         prioritized
     }

@@ -1,6 +1,6 @@
 // SPRINT2-001: Property-based testing implementation
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::*;
+use crate::notebook::testing::types::{Notebook, Cell, CellType, CellMetadata};
 /// Property-based testing for notebooks
 pub struct PropertyTester {
     config: PropertyTestConfig,
@@ -20,6 +20,12 @@ impl Default for PropertyTestConfig {
         }
     }
 }
+impl Default for PropertyTester {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PropertyTester {
 /// # Examples
 /// 
@@ -63,15 +69,15 @@ pub fn arbitrary_notebook(seed: u64, size: usize) -> Notebook {
             let is_code = rng.gen_bool(0.8);
             let cell = if is_code {
                 Cell {
-                    id: format!("cell_{}", i),
+                    id: format!("cell_{i}"),
                     source: generate_random_code(&mut rng, i),
                     cell_type: CellType::Code,
                     metadata: CellMetadata::default(),
                 }
             } else {
                 Cell {
-                    id: format!("md_{}", i),
-                    source: format!("# Markdown cell {}", i),
+                    id: format!("md_{i}"),
+                    source: format!("# Markdown cell {i}"),
                     cell_type: CellType::Markdown,
                     metadata: CellMetadata::default(),
                 }
@@ -119,9 +125,9 @@ fn generate_random_code(rng: &mut impl rand::Rng, index: usize) -> String {
     match rng.gen_range(0..6) {
         0 => format!("let x{} = {}", index, rng.gen_range(0..100)),
         1 => format!("{} + {}", rng.gen_range(0..10), rng.gen_range(0..10)),
-        2 => format!("println(\"Cell {}\")", index),
+        2 => format!("println(\"Cell {index}\")"),
         3 => "1 + 1".to_string(),
-        4 => format!("// Comment {}", index),
+        4 => format!("// Comment {index}"),
         _ => format!("let y{} = x{} * 2", index, index.saturating_sub(1)),
     }
 }

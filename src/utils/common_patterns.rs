@@ -92,7 +92,7 @@ pub fn create_error_response(error: String, cell_id: String) -> crate::wasm::sha
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn format_module_error(operation: &str, module_name: &str) -> String {
-    format!("Failed to {} module '{}'", operation, module_name)
+    format!("Failed to {operation} module '{module_name}'")
 }
 /// Format a parsing error
 /// # Examples
@@ -104,7 +104,7 @@ pub fn format_module_error(operation: &str, module_name: &str) -> String {
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn format_parse_error(target: &str) -> String {
-    format!("Failed to parse {}", target)
+    format!("Failed to parse {target}")
 }
 /// Format a compilation error  
 /// # Examples
@@ -116,7 +116,7 @@ pub fn format_parse_error(target: &str) -> String {
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn format_compile_error(stage: &str) -> String {
-    format!("Failed to {}", stage)
+    format!("Failed to {stage}")
 }
 /// Extension trait for Result types to add common context patterns
 pub trait ResultContextExt<T> {
@@ -171,7 +171,7 @@ where
 /// ```
 pub fn is_valid_identifier(name: &str) -> bool {
     !name.is_empty() && 
-    name.chars().next().map_or(false, |c| c.is_alphabetic() || c == '_') &&
+    name.chars().next().is_some_and(|c| c.is_alphabetic() || c == '_') &&
     name.chars().all(|c| c.is_alphanumeric() || c == '_')
 }
 /// Standard pattern for creating section headers in output
@@ -184,7 +184,7 @@ pub fn is_valid_identifier(name: &str) -> bool {
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn create_section_header(title: &str) -> String {
-    format!("=== {} ===\n", title)
+    format!("=== {title} ===\n")
 }
 /// Standard pattern for adding checkmarks to output  
 /// # Examples
@@ -196,7 +196,7 @@ pub fn create_section_header(title: &str) -> String {
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn add_success_indicator(message: &str) -> String {
-    format!("✅ {}\n", message)
+    format!("✅ {message}\n")
 }
 /// Standard pattern for adding error indicators to output
 /// # Examples
@@ -208,7 +208,7 @@ pub fn add_success_indicator(message: &str) -> String {
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn add_error_indicator(message: &str) -> String {
-    format!("❌ {}\n", message)
+    format!("❌ {message}\n")
 }
 /// Standard pattern for handling optional output file writing
 /// # Examples
@@ -225,7 +225,7 @@ pub fn write_output_or_print(content: String, output: Option<&Path>) -> Result<(
             write_file_with_context(output_path, &content)?;
             println!("✅ Output written to: {}", output_path.display());
         }
-        None => print!("{}", content),
+        None => print!("{content}"),
     }
     Ok(())
 }
@@ -356,7 +356,7 @@ pub fn format_version_info() -> String {
 pub fn assert_output_contains(result: impl ToString, expected: &str) {
     let output = result.to_string();
     assert!(output.contains(expected), 
-            "Output does not contain '{}'. Actual output: '{}'", expected, output);
+            "Output does not contain '{expected}'. Actual output: '{output}'");
 }
 /// Standard pattern for test assertion with exact match
 /// # Examples
@@ -383,20 +383,20 @@ pub fn assert_output_equals(result: impl ToString, expected: &str) {
 pub fn format_duration(duration: std::time::Duration) -> String {
     let total_ms = duration.as_millis();
     if total_ms < 1000 {
-        format!("{}ms", total_ms)
+        format!("{total_ms}ms")
     } else if total_ms < 60_000 {
         format!("{:.2}s", total_ms as f64 / 1000.0)
     } else {
         let minutes = total_ms / 60_000;
         let seconds = (total_ms % 60_000) as f64 / 1000.0;
-        format!("{}m {:.1}s", minutes, seconds)
+        format!("{minutes}m {seconds:.1}s")
     }
 }
-/// Safe alternative to unwrap() for Option values with context
+/// Safe alternative to `unwrap()` for Option values with context
 pub fn unwrap_or_bail<T>(opt: Option<T>, msg: &str) -> Result<T> {
     opt.ok_or_else(|| anyhow::anyhow!("{}", msg))
 }
-/// Safe alternative to unwrap() for Result values  
+/// Safe alternative to `unwrap()` for Result values  
 pub fn unwrap_result_or_bail<T, E>(res: std::result::Result<T, E>, msg: &str) -> Result<T> 
 where 
     E: std::fmt::Display
@@ -425,7 +425,7 @@ pub fn format_file_error(operation: &str, path: &std::path::Path) -> String {
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn format_serialize_error(object_type: &str, error: impl std::fmt::Display) -> String {
-    format!("Failed to serialize {}: {}", object_type, error)
+    format!("Failed to serialize {object_type}: {error}")
 }
 /// Standard pattern for deserialization error formatting  
 /// # Examples
@@ -437,7 +437,7 @@ pub fn format_serialize_error(object_type: &str, error: impl std::fmt::Display) 
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn format_deserialize_error(object_type: &str, error: impl std::fmt::Display) -> String {
-    format!("Failed to deserialize {}: {}", object_type, error)
+    format!("Failed to deserialize {object_type}: {error}")
 }
 /// Standard pattern for operation error formatting
 /// # Examples
@@ -449,7 +449,7 @@ pub fn format_deserialize_error(object_type: &str, error: impl std::fmt::Display
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn format_operation_error(operation: &str, error: impl std::fmt::Display) -> String {
-    format!("Failed to {}: {}", operation, error)
+    format!("Failed to {operation}: {error}")
 }
 
 // String manipulation utilities
@@ -615,7 +615,7 @@ pub fn indent_string(s: &str, spaces: usize) -> String {
             if line.is_empty() {
                 line.to_string()
             } else {
-                format!("{}{}", indent, line)
+                format!("{indent}{line}")
             }
         })
         .collect::<Vec<_>>()
@@ -624,13 +624,13 @@ pub fn indent_string(s: &str, spaces: usize) -> String {
 
 pub fn trim_indent(s: &str) -> String {
     s.lines()
-        .map(|line| line.trim_start())
+        .map(str::trim_start)
         .collect::<Vec<_>>()
         .join("\n")
 }
 
 pub fn split_at_delimiter(s: &str, delimiter: char) -> Vec<String> {
-    s.split(delimiter).map(|part| part.to_string()).collect()
+    s.split(delimiter).map(std::string::ToString::to_string).collect()
 }
 
 pub fn common_prefix(strings: &[&str]) -> String {
@@ -668,7 +668,7 @@ pub fn levenshtein_distance(s1: &str, s2: &str) -> usize {
     
     for (i, ch1) in s1.chars().enumerate() {
         for (j, ch2) in s2.chars().enumerate() {
-            let cost = if ch1 == ch2 { 0 } else { 1 };
+            let cost = usize::from(ch1 != ch2);
             matrix[i + 1][j + 1] = std::cmp::min(
                 matrix[i][j + 1] + 1,
                 std::cmp::min(

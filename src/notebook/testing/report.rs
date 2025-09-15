@@ -1,4 +1,4 @@
-use crate::notebook::testing::types::*;
+use crate::notebook::testing::types::TestReport;
 #[cfg(test)]
 use proptest::prelude::*;
 impl TestReport {
@@ -39,7 +39,7 @@ pub fn format_cli(&self) -> String {
 /// ```
 pub fn to_json(&self) -> Result<String, String> {
         serde_json::to_string_pretty(self)
-            .map_err(|e| format!("Failed to serialize report: {}", e))
+            .map_err(|e| format!("Failed to serialize report: {e}"))
     }
 }
 #[cfg(test)]

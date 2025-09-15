@@ -1,6 +1,6 @@
 // SPRINT3-001: Formal verification implementation
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::*;
+use crate::notebook::testing::types::Cell;
 #[cfg(test)]
 use proptest::prelude::*;
 /// Formal verification for notebook correctness
@@ -60,6 +60,12 @@ pub struct FunctionSpec {
     pub postconditions: Vec<String>,
     pub invariants: Vec<String>,
 }
+impl Default for FormalVerifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FormalVerifier {
 /// # Examples
 /// 
@@ -152,17 +158,16 @@ pub fn verify_constraint(&self, constraint: &Constraint, cell: &Cell) -> Constra
         let mut satisfied = true;
         let mut violations = Vec::new();
         // Check array bounds constraints
-        if constraint.expression.contains("0 <= i < arr.length") {
-            if cell.source.contains("arr[") {
+        if constraint.expression.contains("0 <= i < arr.length")
+            && cell.source.contains("arr[") {
                 // Simple check: ensure no negative indices
-                if !cell.source.contains("arr[-") {
-                    satisfied = true;
-                } else {
+                if cell.source.contains("arr[-") {
                     satisfied = false;
                     violations.push("Negative array index detected".to_string());
+                } else {
+                    satisfied = true;
                 }
             }
-        }
         ConstraintResult {
             satisfied,
             violations,

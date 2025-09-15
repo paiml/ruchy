@@ -1,4 +1,4 @@
-use crate::notebook::testing::types::*;
+use crate::notebook::testing::types::{TestConfig, CellOutput, Cell, CellType, TestResult, TestReport, Notebook, CellTestType};
 use crate::notebook::testing::state::TestState;
 use crate::runtime::repl::Repl;
 use std::path::Path;
@@ -12,6 +12,12 @@ pub struct NotebookTester {
     repl: Repl,
     cell_outputs: HashMap<String, CellOutput>,
 }
+impl Default for NotebookTester {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NotebookTester {
 /// # Examples
 /// 
@@ -81,9 +87,9 @@ pub fn execute_cell(&mut self, cell: &Cell) -> Result<CellOutput, String> {
                         let var_part = &cell.source[4..eq_pos].trim();
                         if let Some(space_pos) = var_part.find(' ') {
                             let var_name = &var_part[..space_pos];
-                            self.state.set_variable(var_name.to_string(), value.to_string());
+                            self.state.set_variable(var_name.to_string(), value);
                         } else {
-                            self.state.set_variable(var_part.to_string(), value.to_string());
+                            self.state.set_variable((*var_part).to_string(), value);
                         }
                     }
                 }
@@ -150,7 +156,7 @@ pub fn compare_outputs(
                 } else if a == b {
                     TestResult::Pass
                 } else {
-                    TestResult::Fail(format!("Expected '{}', got '{}'", b, a))
+                    TestResult::Fail(format!("Expected '{b}', got '{a}'"))
                 }
             }
             _ => TestResult::TypeMismatch,
@@ -196,7 +202,7 @@ pub fn compare_dataframes(
                         } else if cell1 != cell2 {
                             // String comparison for non-numeric values
                             return TestResult::Fail(format!(
-                                "Cell mismatch: '{}' != '{}'", cell1, cell2
+                                "Cell mismatch: '{cell1}' != '{cell2}'"
                             ));
                         }
                     }
@@ -218,6 +224,12 @@ pub struct NotebookTestSession {
     tester: NotebookTester,
     checkpoints: Vec<(String, TestState)>,
 }
+impl Default for NotebookTestSession {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NotebookTestSession {
     pub fn new() -> Self {
         Self {
@@ -245,7 +257,7 @@ pub fn execute_cell_str(&mut self, _source: &str) -> CellOutput {
 /// assert_eq!(result, Ok(()));
 /// ```
 pub fn create_checkpoint(&mut self, name: &str) -> Option<String> {
-        let id = format!("checkpoint_{}", name);
+        let id = format!("checkpoint_{name}");
         self.checkpoints.push((id.clone(), self.tester.state.clone()));
         Some(id)
     }
@@ -277,16 +289,13 @@ pub fn run_notebook_test(&mut self, notebook: &Notebook) -> TestReport {
         let mut results = Vec::new();
         for cell in &notebook.cells {
             if let Some(ref metadata) = cell.metadata.test {
-                match &metadata.test_type {
-                    CellTestType::Deterministic { expected, tolerance, .. } => {
-                        let actual = self.execute_cell_str(&cell.source);
-                        let expected = CellOutput::Value(expected.clone());
-                        let result = self.tester.compare_outputs(&actual, &expected, *tolerance);
-                        results.push(result);
-                    }
-                    _ => {
-                        // Other test types not implemented in Sprint 0
-                    }
+                if let CellTestType::Deterministic { expected, tolerance, .. } = &metadata.test_type {
+                    let actual = self.execute_cell_str(&cell.source);
+                    let expected = CellOutput::Value(expected.clone());
+                    let result = self.tester.compare_outputs(&actual, &expected, *tolerance);
+                    results.push(result);
+                } else {
+                    // Other test types not implemented in Sprint 0
                 }
             }
         }
@@ -306,6 +315,12 @@ pub fn run_notebook_test(&mut self, notebook: &Notebook) -> TestReport {
     }
 }
 pub struct NotebookParser;
+impl Default for NotebookParser {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NotebookParser {
     pub fn new() -> Self {
         Self

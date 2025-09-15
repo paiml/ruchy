@@ -14,10 +14,10 @@ use anyhow::{Result, bail};
 #[cfg(test)]
 use proptest::prelude::*;
 ///
-/// let lhs = Value::Int(5);
-/// let rhs = Value::Int(3);
-/// let result = evaluate_binary_op(&BinaryOp::Add, &lhs, &rhs).unwrap();
-/// assert_eq!(result, Value::Int(8));
+/// let lhs = `Value::Int(5)`;
+/// let rhs = `Value::Int(3)`;
+/// let result = `evaluate_binary_op(&BinaryOp::Add`, &lhs, &`rhs).unwrap()`;
+/// `assert_eq!(result`, `Value::Int(8)`);
 /// ```
 pub fn evaluate_binary_op(op: &BinaryOp, lhs: &Value, rhs: &Value) -> Result<Value> {
     match op {

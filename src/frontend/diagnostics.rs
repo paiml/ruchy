@@ -62,10 +62,10 @@ impl Diagnostic {
         let mut output = String::new();
         let (severity_color, reset, bold) = self.get_color_codes();
         // Build diagnostic sections
-        output.push_str(&self.format_header(&severity_color, &reset, &bold));
-        output.push_str(&self.format_source_context(&severity_color, &reset, &bold));
-        output.push_str(&self.format_suggestions(&bold, &reset));
-        output.push_str(&reset);
+        output.push_str(&self.format_header(severity_color, reset, bold));
+        output.push_str(&self.format_source_context(severity_color, reset, bold));
+        output.push_str(&self.format_suggestions(bold, reset));
+        output.push_str(reset);
         output
     }
     /// Get terminal color codes for diagnostic formatting

@@ -716,7 +716,7 @@ pub fn parse_tuple_pattern(state: &mut ParserState) -> Result<Pattern> {
     Ok(Pattern::Tuple(patterns))
 }
 /// Parse a single element in a tuple pattern
-/// Extracted to reduce complexity of parse_tuple_pattern
+/// Extracted to reduce complexity of `parse_tuple_pattern`
 fn parse_single_tuple_pattern_element(state: &mut ParserState) -> Result<Pattern> {
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
@@ -787,7 +787,7 @@ pub fn parse_list_pattern(state: &mut ParserState) -> Result<Pattern> {
     Ok(Pattern::List(patterns))
 }
 /// Parse a single element in a list pattern
-/// Extracted to reduce complexity of parse_list_pattern
+/// Extracted to reduce complexity of `parse_list_pattern`
 fn parse_single_list_pattern_element(state: &mut ParserState) -> Result<Pattern> {
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
@@ -847,15 +847,15 @@ fn handle_pattern_separator(state: &mut ParserState, end_token: Token) -> Result
         }
         Ok(true)
     } else if let Some((token, _)) = state.tokens.peek() {
-        if *token != end_token {
+        if *token == end_token {
+            Ok(false)
+        } else {
         let expected = match end_token {
             Token::RightBracket => "',' or ']'",
             Token::RightParen => "',' or ')'",
             _ => "',' or closing delimiter",
         };
             bail!("Expected {} in pattern", expected);
-        } else {
-            Ok(false)
         }
     } else {
         bail!("Unexpected end of input in pattern")

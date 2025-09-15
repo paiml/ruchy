@@ -295,3 +295,196 @@ pub const GRAMMAR_PRODUCTIONS: &[(&str, &str)] = &[
     ("macro_println", "println!(\"Hello\", \"World\")"),
     ("macro_vec", "vec![1, 2, 3]"),
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{ExprKind, Literal, Span};
+    use std::time::Duration;
+
+    // Sprint 14: Grammar coverage tests
+
+    #[test]
+    fn test_coverage_matrix_creation() {
+        let matrix = GrammarCoverageMatrix::new();
+        assert!(matrix.productions.is_empty());
+        assert!(matrix.ast_variants.is_empty());
+        assert!(matrix.uncovered.is_empty());
+    }
+
+    #[test]
+    fn test_production_stats_default() {
+        let stats = ProductionStats::default();
+        assert_eq!(stats.hit_count, 0);
+        assert_eq!(stats.success_count, 0);
+        assert_eq!(stats.avg_latency_ns, 0);
+        assert!(stats.error_patterns.is_empty());
+    }
+
+    #[test]
+    fn test_record_success() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span { start: 0, end: 1 },
+        );
+
+        matrix.record("literal", "42", Ok(expr), Duration::from_millis(10));
+
+        assert_eq!(matrix.productions.len(), 1);
+        let stats = &matrix.productions["literal"];
+        assert_eq!(stats.hit_count, 1);
+        assert_eq!(stats.success_count, 1);
+        assert!(stats.avg_latency_ns > 0);
+        assert!(stats.error_patterns.is_empty());
+    }
+
+    #[test]
+    fn test_record_failure() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        let error = anyhow::anyhow!("Parse error");
+
+        matrix.record("invalid", "bad input", Err(error), Duration::from_millis(5));
+
+        assert_eq!(matrix.productions.len(), 1);
+        let stats = &matrix.productions["invalid"];
+        assert_eq!(stats.hit_count, 1);
+        assert_eq!(stats.success_count, 0);
+        assert!(stats.avg_latency_ns > 0);
+        assert_eq!(stats.error_patterns.len(), 1);
+        assert!(stats.error_patterns[0].contains("Parse error"));
+    }
+
+    #[test]
+    fn test_record_multiple_attempts() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span { start: 0, end: 1 },
+        );
+
+        matrix.record("literal", "42", Ok(expr.clone()), Duration::from_millis(10));
+        matrix.record("literal", "43", Ok(expr), Duration::from_millis(20));
+
+        let stats = &matrix.productions["literal"];
+        assert_eq!(stats.hit_count, 2);
+        assert_eq!(stats.success_count, 2);
+        // Average should be around 15ms in nanoseconds
+        assert!(stats.avg_latency_ns > 10_000_000 && stats.avg_latency_ns < 20_000_000);
+    }
+
+    #[test]
+    fn test_ast_variant_recording() {
+        let mut matrix = GrammarCoverageMatrix::new();
+
+        let literal_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span { start: 0, end: 1 },
+        );
+
+        let identifier_expr = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span { start: 0, end: 1 },
+        );
+
+        matrix.record("literal", "42", Ok(literal_expr), Duration::from_millis(1));
+        matrix.record("identifier", "x", Ok(identifier_expr), Duration::from_millis(1));
+
+        assert!(matrix.ast_variants.contains("Literal"));
+        assert!(matrix.ast_variants.contains("Identifier"));
+    }
+
+    #[test]
+    fn test_error_pattern_deduplication() {
+        let mut matrix = GrammarCoverageMatrix::new();
+
+        let error1 = anyhow::anyhow!("Same error");
+        let error2 = anyhow::anyhow!("Same error");
+        let error3 = anyhow::anyhow!("Different error");
+
+        matrix.record("test", "input1", Err(error1), Duration::from_millis(1));
+        matrix.record("test", "input2", Err(error2), Duration::from_millis(1));
+        matrix.record("test", "input3", Err(error3), Duration::from_millis(1));
+
+        let stats = &matrix.productions["test"];
+        assert_eq!(stats.hit_count, 3);
+        assert_eq!(stats.success_count, 0);
+        assert_eq!(stats.error_patterns.len(), 2); // Only unique errors
+    }
+
+    #[test]
+    fn test_calculate_stats() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span { start: 0, end: 1 },
+        );
+
+        // Add some successes and failures
+        matrix.record("test1", "input", Ok(expr.clone()), Duration::from_millis(1));
+        matrix.record("test1", "input", Ok(expr.clone()), Duration::from_millis(1));
+        matrix.record("test1", "input", Err(anyhow::anyhow!("error")), Duration::from_millis(1));
+
+        matrix.record("test2", "input", Ok(expr), Duration::from_millis(1));
+
+        let (total, successful, coverage_pct) = matrix.calculate_stats();
+
+        assert_eq!(total, 4);
+        assert_eq!(successful, 3);
+        assert_eq!(coverage_pct, 75.0);
+    }
+
+    #[test]
+    fn test_generate_report() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span { start: 0, end: 1 },
+        );
+
+        matrix.record("literal", "42", Ok(expr), Duration::from_millis(10));
+
+        let report = matrix.generate_report();
+
+        assert!(report.contains("Grammar Coverage Report"));
+        assert!(report.contains("literal"));
+        assert!(report.contains("100.00%"));
+    }
+
+    #[test]
+    fn test_check_coverage_threshold_success() {
+        let mut matrix = GrammarCoverageMatrix::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span { start: 0, end: 1 },
+        );
+
+        matrix.record("test", "input", Ok(expr), Duration::from_millis(1));
+
+        let result = matrix.check_coverage_threshold(50.0);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 100.0);
+    }
+
+    #[test]
+    fn test_check_coverage_threshold_failure() {
+        let mut matrix = GrammarCoverageMatrix::new();
+
+        matrix.record("test", "input", Err(anyhow::anyhow!("error")), Duration::from_millis(1));
+
+        let result = matrix.check_coverage_threshold(50.0);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("below threshold"));
+    }
+
+    #[test]
+    fn test_grammar_samples_array() {
+        // Test that GRAMMAR_SAMPLES array is properly defined
+        assert!(GRAMMAR_SAMPLES.len() > 0);
+
+        // Check a few samples
+        let first = GRAMMAR_SAMPLES[0];
+        assert!(!first.0.is_empty());
+        assert!(!first.1.is_empty());
+    }
+}

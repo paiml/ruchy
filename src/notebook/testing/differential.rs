@@ -1,6 +1,6 @@
 // SPRINT2-002: Differential testing implementation
 // PMAT Complexity: <10 per function
-use crate::notebook::testing::types::*;
+use crate::notebook::testing::types::{CellOutput, Notebook, CellType, Cell};
 use crate::notebook::testing::NotebookTester;
 use std::time::{Duration, Instant};
 #[cfg(test)]
@@ -41,6 +41,12 @@ pub enum DivergenceType {
     PerformanceRegression,
     BothFailed,
 }
+impl Default for DifferentialTester {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DifferentialTester {
 /// # Examples
 /// 
@@ -98,12 +104,12 @@ pub fn compare(&mut self, notebook: &Notebook) -> Vec<DifferentialResult> {
         // Execute on reference implementation
         let ref_start = Instant::now();
         let ref_output = self.reference.execute_cell(cell)
-            .unwrap_or_else(|e| CellOutput::Error(e));
+            .unwrap_or_else(CellOutput::Error);
         let ref_time = ref_start.elapsed();
         // Execute on candidate implementation
         let cand_start = Instant::now();
         let cand_output = self.candidate.execute_cell(cell)
-            .unwrap_or_else(|e| CellOutput::Error(e));
+            .unwrap_or_else(CellOutput::Error);
         let cand_time = cand_start.elapsed();
         // Determine divergence type
         let divergence = self.classify_divergence(

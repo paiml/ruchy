@@ -36,7 +36,7 @@
 //! - Pattern matching for destructuring
 //! - Type annotations and generics
 //! - Actor system constructs
-//! - DataFrame and data science operations
+//! - `DataFrame` and data science operations
 //!
 //! ## Error Recovery
 //! Robust error handling for interactive development:
@@ -98,7 +98,7 @@
 //! - **Data Types**: Structs, enums, traits, implementations
 //! - **Pattern Matching**: Destructuring, guards, exhaustiveness
 //! - **Actors**: Message passing, supervision, ask/tell operations
-//! - **DataFrames**: Column operations, data manipulation
+//! - **`DataFrames`**: Column operations, data manipulation
 //! - **Imports**: Module system with dependency resolution
 pub mod arena;
 pub mod ast;
