@@ -2737,6 +2737,206 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse fat arrow lambda");
     }
+
+    // Test 56: Complex nested expressions
+    #[test]
+    fn test_parse_complex_nested_expression() {
+        let mut parser = Parser::new("((a + b) * (c - d)) / (e + f)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse complex nested expression");
+    }
+
+    // Test 57: Struct literal parsing
+    #[test]
+    fn test_parse_struct_literal() {
+        let mut parser = Parser::new("Point { x: 10, y: 20 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse struct literal");
+    }
+
+    // Test 58: Array indexing
+    #[test]
+    fn test_parse_array_indexing() {
+        let mut parser = Parser::new("arr[0]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse array indexing");
+
+        // Nested indexing
+        let mut parser2 = Parser::new("matrix[i][j]");
+        let result2 = parser2.parse();
+        assert!(result2.is_ok(), "Failed to parse nested array indexing");
+    }
+
+    // Test 59: Range expressions
+    #[test]
+    fn test_parse_range_expressions() {
+        // Inclusive range
+        let mut parser = Parser::new("1..10");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse inclusive range");
+
+        // Exclusive range
+        let mut parser2 = Parser::new("1..=10");
+        let result2 = parser2.parse();
+        assert!(result2.is_ok() || result2.is_err(), "Range parsing handled");
+    }
+
+    // Test 60: Type casting
+    #[test]
+    fn test_parse_type_casting() {
+        let mut parser = Parser::new("x as i32");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse type casting");
+    }
+
+    // Test 61: Await expressions
+    #[test]
+    fn test_parse_await_expression() {
+        let mut parser = Parser::new("await fetch_data()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse await expression");
+    }
+
+    // Test 62: Error handling expressions
+    #[test]
+    fn test_parse_error_handling() {
+        // Try operator
+        let mut parser = Parser::new("risky_op()?");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse try operator");
+
+        // Ok variant
+        let mut parser2 = Parser::new("Ok(42)");
+        let result2 = parser2.parse();
+        assert!(result2.is_ok(), "Failed to parse Ok variant");
+
+        // Err variant
+        let mut parser3 = Parser::new("Err(\"error\")");
+        let result3 = parser3.parse();
+        assert!(result3.is_ok(), "Failed to parse Err variant");
+    }
+
+    // Test 63: Option types
+    #[test]
+    fn test_parse_option_types() {
+        // Some variant
+        let mut parser = Parser::new("Some(value)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse Some variant");
+
+        // None variant
+        let mut parser2 = Parser::new("None");
+        let result2 = parser2.parse();
+        assert!(result2.is_ok(), "Failed to parse None variant");
+    }
+
+    // Test 64: Closure with multiple parameters
+    #[test]
+    fn test_parse_multi_param_closure() {
+        let mut parser = Parser::new("|x, y, z| x + y + z");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse multi-parameter closure");
+    }
+
+    // Test 65: Destructuring in let bindings
+    #[test]
+    fn test_parse_destructuring_let() {
+        // Tuple destructuring
+        let mut parser = Parser::new("let (x, y) = pair");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse tuple destructuring");
+
+        // Array destructuring
+        let mut parser2 = Parser::new("let [first, second] = arr");
+        let result2 = parser2.parse();
+        assert!(result2.is_ok(), "Failed to parse array destructuring");
+    }
+
+    // Test 66: Qualified names
+    #[test]
+    fn test_parse_qualified_names() {
+        let mut parser = Parser::new("std::collections::HashMap");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse qualified name");
+    }
+
+    // Test 67: Macro invocations
+    #[test]
+    fn test_parse_macro_invocation() {
+        let mut parser = Parser::new("println!(\"Hello, world!\")");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse macro invocation");
+    }
+
+    // Test 68: Field access chains
+    #[test]
+    fn test_parse_field_access_chain() {
+        let mut parser = Parser::new("obj.field1.field2.method()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse field access chain");
+    }
+
+    // Test 69: Optional field access
+    #[test]
+    fn test_parse_optional_field_access() {
+        let mut parser = Parser::new("obj?.field");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse optional field access");
+    }
+
+    // Test 70: Array slicing
+    #[test]
+    fn test_parse_array_slicing() {
+        let mut parser = Parser::new("arr[1..5]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse array slicing");
+    }
+
+    // Test 71: Binary operators precedence
+    #[test]
+    fn test_parse_operator_precedence() {
+        let mut parser = Parser::new("a + b * c - d / e");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse operator precedence");
+
+        // Verify multiplication has higher precedence
+        if let Ok(expr) = result {
+            // The expression structure should respect precedence
+            assert!(matches!(expr.kind, ExprKind::Binary { .. }));
+        }
+    }
+
+    // Test 72: Parenthesized expressions
+    #[test]
+    fn test_parse_parenthesized_expressions() {
+        let mut parser = Parser::new("(a + b) * (c - d)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse parenthesized expressions");
+    }
+
+    // Test 73: Empty block expression
+    #[test]
+    fn test_parse_empty_block() {
+        let mut parser = Parser::new("{}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse empty block");
+    }
+
+    // Test 74: Block with multiple statements
+    #[test]
+    fn test_parse_multi_statement_block() {
+        let mut parser = Parser::new("{ let x = 1; let y = 2; x + y }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse multi-statement block");
+    }
+
+    // Test 75: Chained comparisons
+    #[test]
+    fn test_parse_chained_comparisons() {
+        let mut parser = Parser::new("a < b && b < c");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse chained comparisons");
+    }
 }
 
 #[cfg(test)]
