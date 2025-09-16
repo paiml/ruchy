@@ -167,6 +167,7 @@ fn consume_optional_separator(state: &mut ParserState) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn test_parse_actor_function_signature() {
         // This test just verifies the function signature compiles and exists
@@ -177,5 +178,53 @@ mod tests {
         let f: fn(&mut ParserState) -> Result<Expr> = parse_actor;
         // Use the variable to avoid unused warning
         assert!(!format!("{f:p}").is_empty(), "Function exists");
+    }
+
+    #[test]
+    fn test_helper_functions_exist() {
+        // Test that helper functions exist with correct signatures
+        let _f1: fn(&mut ParserState) -> Result<String> = parse_actor_name;
+        let _f2: fn(&mut ParserState, &str) -> Result<String> = parse_field_name;
+        let _f3: fn(&mut ParserState) -> Result<Vec<Param>> = parse_optional_params;
+        let _f4: fn(&mut ParserState) = consume_optional_separator;
+
+        // If this compiles, the signatures are correct
+        assert!(true, "Helper functions exist with correct signatures");
+    }
+
+    #[test]
+    fn test_actor_handler_struct() {
+        // Test that ActorHandler can be created
+        use crate::frontend::ast::{ActorHandler, ExprKind, Span, Literal};
+
+        let handler = ActorHandler {
+            message_type: "TestMessage".to_string(),
+            params: vec![],
+            body: Box::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(42)),
+                Span::new(0, 2),
+            )),
+        };
+
+        assert_eq!(handler.message_type, "TestMessage");
+        assert!(handler.params.is_empty());
+    }
+
+    #[test]
+    fn test_struct_field_creation() {
+        use crate::frontend::ast::{StructField, Type, TypeKind, Span};
+
+        let field = StructField {
+            name: "test_field".to_string(),
+            ty: Type {
+                kind: TypeKind::Named("Int".to_string()),
+                span: Span::new(0, 3),
+            },
+            is_pub: false,
+        };
+
+        assert_eq!(field.name, "test_field");
+        assert_eq!(field.ty.kind, TypeKind::Named("Int".to_string()));
+        assert!(!field.is_pub);
     }
 }
