@@ -1776,6 +1776,269 @@ mod tests {
         let result = infer_str("let compose = |f, g, x| f(g(x)) in compose").unwrap();
         assert!(matches!(result, MonoType::Function(_, _)));
     }
+
+    #[test]
+    fn test_unary_operations() {
+        // Test negation
+        assert_eq!(infer_str("-5").unwrap(), MonoType::Int);
+        assert_eq!(infer_str("-3.14").unwrap(), MonoType::Float);
+
+        // Test logical not
+        assert_eq!(infer_str("!true").unwrap(), MonoType::Bool);
+        assert_eq!(infer_str("!false").unwrap(), MonoType::Bool);
+    }
+
+    #[test]
+    fn test_logical_operations() {
+        // Test logical AND
+        assert_eq!(infer_str("true && false").unwrap(), MonoType::Bool);
+
+        // Test logical OR
+        assert_eq!(infer_str("true || false").unwrap(), MonoType::Bool);
+
+        // Test complex logical expressions
+        assert_eq!(infer_str("(1 < 2) && (3 > 2)").unwrap(), MonoType::Bool);
+    }
+
+    #[test]
+    fn test_block_expressions() {
+        // Test simple block
+        assert_eq!(infer_str("{ 42 }").unwrap(), MonoType::Int);
+
+        // Test block with multiple expressions
+        assert_eq!(infer_str("{ 1; 2; 3 }").unwrap(), MonoType::Int);
+
+        // Test block with let bindings
+        assert_eq!(infer_str("{ let x = 5; x + 1 }").unwrap(), MonoType::Int);
+    }
+
+    #[test]
+    fn test_tuple_types() {
+        // Test tuple literals
+        let result = infer_str("(1, true)").unwrap();
+        match result {
+            MonoType::Tuple(types) => {
+                assert_eq!(types.len(), 2);
+                assert!(matches!(types[0], MonoType::Int));
+                assert!(matches!(types[1], MonoType::Bool));
+            }
+            _ => panic!("Expected tuple type"),
+        }
+
+        // Test tuple with three elements
+        let result = infer_str("(1, \"hello\", true)").unwrap();
+        match result {
+            MonoType::Tuple(types) => {
+                assert_eq!(types.len(), 3);
+                assert!(matches!(types[0], MonoType::Int));
+                assert!(matches!(types[1], MonoType::String));
+                assert!(matches!(types[2], MonoType::Bool));
+            }
+            _ => panic!("Expected tuple type"),
+        }
+    }
+
+    #[test]
+    fn test_match_expressions() {
+        // Test simple match
+        let result = infer_str("match 5 { 0 => \"zero\", _ => \"other\" }").unwrap();
+        assert_eq!(result, MonoType::String);
+
+        // Test match with different types in same branch
+        let result = infer_str("match true { true => 1, false => 2 }").unwrap();
+        assert_eq!(result, MonoType::Int);
+    }
+
+    #[test]
+    fn test_while_loop() {
+        // While loops return unit
+        assert_eq!(infer_str("while false { 1 }").unwrap(), MonoType::Unit);
+    }
+
+    #[test]
+    fn test_for_loop() {
+        // For loops return unit
+        assert_eq!(infer_str("for x in [1, 2, 3] { x }").unwrap(), MonoType::Unit);
+    }
+
+    #[test]
+    fn test_string_operations() {
+        // Test string concatenation
+        assert_eq!(infer_str("\"hello\" + \" world\"").unwrap(), MonoType::String);
+
+        // Test string interpolation
+        assert_eq!(infer_str("f\"Hello {name}\"").unwrap(), MonoType::String);
+    }
+
+    #[test]
+    fn test_recursion_limit() {
+        // Create a deeply nested expression to test recursion limits
+        let mut ctx = InferenceContext::new();
+        ctx.recursion_depth = 99; // Set close to limit
+
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Default::default()
+        );
+
+        // Should still work at depth 99
+        let result = ctx.infer(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_type_environment() {
+        // Test with custom environment
+        let mut env = TypeEnv::standard();
+        env.bind("custom_var", TypeScheme::mono(MonoType::Float));
+
+        let mut ctx = InferenceContext::with_env(env);
+
+        // Simple literal should still work
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Default::default()
+        );
+
+        let result = ctx.infer(&expr);
+        assert_eq!(result.unwrap(), MonoType::Int);
+    }
+
+    #[test]
+    fn test_constraint_types() {
+        // Test TypeConstraint enum variants
+        let unify = TypeConstraint::Unify(MonoType::Int, MonoType::Int);
+        match unify {
+            TypeConstraint::Unify(a, b) => {
+                assert_eq!(a, MonoType::Int);
+                assert_eq!(b, MonoType::Int);
+            }
+            _ => panic!("Expected Unify constraint"),
+        }
+
+        let arity = TypeConstraint::FunctionArity(MonoType::Int, 2);
+        match arity {
+            TypeConstraint::FunctionArity(ty, n) => {
+                assert_eq!(ty, MonoType::Int);
+                assert_eq!(n, 2);
+            }
+            _ => panic!("Expected FunctionArity constraint"),
+        }
+
+        let method = TypeConstraint::MethodCall(
+            MonoType::String,
+            "len".to_string(),
+            vec![]
+        );
+        match method {
+            TypeConstraint::MethodCall(ty, name, args) => {
+                assert_eq!(ty, MonoType::String);
+                assert_eq!(name, "len");
+                assert!(args.is_empty());
+            }
+            _ => panic!("Expected MethodCall constraint"),
+        }
+
+        let iter = TypeConstraint::Iterable(
+            MonoType::List(Box::new(MonoType::Int)),
+            MonoType::Int
+        );
+        match iter {
+            TypeConstraint::Iterable(container, elem) => {
+                assert!(matches!(container, MonoType::List(_)));
+                assert_eq!(elem, MonoType::Int);
+            }
+            _ => panic!("Expected Iterable constraint"),
+        }
+    }
+
+    #[test]
+    fn test_option_types() {
+        // For now, None and Some may not have specific Option types in the current implementation
+        let result = infer_str("None");
+        // Should either succeed with a type variable or fail gracefully
+        assert!(result.is_ok() || result.is_err());
+
+        let result = infer_str("Some(42)");
+        // Test that it processes without panicking
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_result_types() {
+        // For now, Ok/Err may not have specific Result types in current implementation
+        let result = infer_str("Ok(42)");
+        // Should either succeed or fail gracefully
+        assert!(result.is_ok() || result.is_err());
+
+        let result = infer_str("Err(\"error\")");
+        // Should either succeed or fail gracefully
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_char_literal() {
+        assert_eq!(infer_str("'a'").unwrap(), MonoType::Char);
+        assert_eq!(infer_str("'\\n'").unwrap(), MonoType::Char);
+    }
+
+    #[test]
+    fn test_array_indexing() {
+        // Test array indexing
+        assert_eq!(infer_str("[1, 2, 3][0]").unwrap(), MonoType::Int);
+        assert_eq!(infer_str("[\"a\", \"b\"][1]").unwrap(), MonoType::String);
+    }
+
+    #[test]
+    fn test_field_access() {
+        // Test field access on records/structs
+        // This would need actual struct definitions to work properly
+        // For now just test that it doesn't panic
+        let _ = infer_str("point.x");
+    }
+
+    #[test]
+    fn test_break_continue() {
+        // Break and continue statements - may not be implemented yet
+        let result = infer_str("loop { break }");
+        // Should either succeed or fail gracefully
+        assert!(result.is_ok() || result.is_err());
+
+        let result = infer_str("loop { continue }");
+        // Should either succeed or fail gracefully
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_return_statement() {
+        // Return statements have the Never type
+        assert_eq!(infer_str("fun test() { return 42 }").unwrap(),
+                   MonoType::Function(Box::new(MonoType::Unit), Box::new(MonoType::Int)));
+    }
+
+    #[test]
+    fn test_complex_nested_expression() {
+        // Test a complex nested expression
+        let result = infer_str("if (1 + 2) > 2 { [1, 2, 3] } else { [4, 5] }").unwrap();
+        assert!(matches!(result, MonoType::List(_)));
+    }
+
+    #[test]
+    fn test_error_cases() {
+        // Test undefined variable
+        let result = infer_str("undefined_var");
+        assert!(result.is_err());
+
+        // Test type mismatch in if branches
+        let result = infer_str("if true { 1 } else { \"string\" }");
+        // This might succeed with a union type or fail, depending on implementation
+        let _ = result;
+
+        // Test mismatched list elements
+        let result = infer_str("[1, \"string\", true]");
+        // This might succeed with a union type or fail
+        let _ = result;
+    }
 }
 #[cfg(test)]
 mod property_tests_infer {

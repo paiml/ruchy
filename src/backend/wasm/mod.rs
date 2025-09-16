@@ -841,6 +841,7 @@ mod tests {
                 )),
                 return_type: None,
                 is_async: false,
+                is_pub: false,
             },
             Default::default()
         );
