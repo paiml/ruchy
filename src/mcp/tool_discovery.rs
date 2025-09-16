@@ -627,17 +627,227 @@ mod property_tests_tool_discovery {
     use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+
     proptest! {
-        /// Property: Function never panics on any input
+        /// Property: RuchyToolDiscovery::new() never panics
         #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
+        fn test_new_never_panics(_input in ".*") {
+            let result = std::panic::catch_unwind(|| {
+                RuchyToolDiscovery::new()
             });
+            assert!(result.is_ok(), "RuchyToolDiscovery::new() should never panic");
+        }
+
+        /// Property: with_binary_path never panics on any string input
+        #[test]
+        fn test_with_binary_path_never_panics(binary_path in ".*") {
+            let result = std::panic::catch_unwind(|| {
+                RuchyToolDiscovery::with_binary_path(binary_path)
+            });
+            assert!(result.is_ok(), "with_binary_path should never panic");
+        }
+
+        /// Property: get_tool never panics on any string input
+        #[test]
+        fn test_get_tool_never_panics(tool_name in ".*") {
+            let discovery = RuchyToolDiscovery::new();
+            let result = std::panic::catch_unwind(|| {
+                discovery.get_tool(&tool_name)
+            });
+            assert!(result.is_ok(), "get_tool should never panic");
+        }
+
+        /// Property: All discovery instances have the same tool count
+        #[test]
+        fn test_tool_count_invariant(binary_path in ".*") {
+            let discovery1 = RuchyToolDiscovery::new();
+            let discovery2 = RuchyToolDiscovery::with_binary_path(binary_path);
+
+            // Tool count should be invariant across instances
+            assert_eq!(discovery1.get_tools().len(), discovery2.get_tools().len());
+            assert_eq!(discovery1.list_tool_names().len(), discovery2.list_tool_names().len());
+        }
+
+        /// Property: Tool names are always valid (non-empty, valid identifiers)
+        #[test]
+        fn test_tool_names_validity(_input in ".*") {
+            let discovery = RuchyToolDiscovery::new();
+            let tool_names = discovery.list_tool_names();
+
+            for name in tool_names {
+                // Tool names should never be empty
+                assert!(!name.is_empty(), "Tool name should not be empty");
+
+                // Tool names should start with "ruchy_"
+                assert!(name.starts_with("ruchy_"), "Tool name should start with 'ruchy_'");
+
+                // Tool names should be valid identifiers (alphanumeric + underscore)
+                assert!(name.chars().all(|c| c.is_alphanumeric() || c == '_'),
+                       "Tool name should only contain alphanumeric chars and underscores");
+            }
+        }
+
+        /// Property: Tool descriptions are always meaningful
+        #[test]
+        fn test_tool_descriptions_validity(_input in ".*") {
+            let discovery = RuchyToolDiscovery::new();
+
+            for (name, tool) in discovery.get_tools() {
+                let description = tool.description();
+
+                // Descriptions should never be empty
+                assert!(!description.is_empty(),
+                       "Tool '{}' should have non-empty description", name);
+
+                // Descriptions should be reasonably long
+                assert!(description.len() >= 10,
+                       "Tool '{}' description should be at least 10 characters", name);
+
+                // Descriptions should not contain development artifacts
+                assert!(!description.contains("TODO"),
+                       "Tool '{}' description should not contain TODO", name);
+                assert!(!description.contains("FIXME"),
+                       "Tool '{}' description should not contain FIXME", name);
+                assert!(!description.contains("XXX"),
+                       "Tool '{}' description should not contain XXX", name);
+            }
+        }
+
+        /// Property: Discovery info always has valid structure
+        #[test]
+        fn test_discovery_info_structure_invariant(_input in ".*") {
+            let discovery = RuchyToolDiscovery::new();
+            let info = discovery.get_discovery_info();
+
+            // Required fields should always be present
+            assert!(info.get("discovery_service").is_some());
+            assert!(info.get("version").is_some());
+            assert!(info.get("total_tools").is_some());
+            assert!(info.get("tools").is_some());
+            assert!(info.get("categories").is_some());
+
+            // Specific field validations
+            assert_eq!(info.get("discovery_service").unwrap().as_str().unwrap(),
+                      "ruchy_tool_discovery");
+            assert_eq!(info.get("version").unwrap().as_str().unwrap(), "1.0.0");
+
+            // Tools array should match total_tools count
+            let total_tools = info.get("total_tools").unwrap().as_u64().unwrap();
+            let tools_array = info.get("tools").unwrap().as_array().unwrap();
+            assert_eq!(total_tools as usize, tools_array.len());
+        }
+
+        /// Property: Tool categories are always valid
+        #[test]
+        fn test_tool_categories_validity(tool_name in "ruchy_[a-z_]+") {
+            let discovery = RuchyToolDiscovery::new();
+            let category = discovery.get_tool_category(&tool_name);
+
+            // Categories should be one of the expected values
+            let valid_categories = vec!["parsing", "transpilation", "execution", "quality", "analysis"];
+            assert!(valid_categories.contains(&category),
+                   "Category '{}' should be valid for tool '{}'", category, tool_name);
+        }
+
+        /// Property: Tool aliases are consistent and non-empty for known tools
+        #[test]
+        fn test_known_tool_aliases_consistency(_input in ".*") {
+            let discovery = RuchyToolDiscovery::new();
+            let known_tools = vec![
+                "ruchy_parse", "ruchy_ast", "ruchy_transpile", "ruchy_check",
+                "ruchy_eval", "ruchy_run", "ruchy_lint", "ruchy_fmt",
+                "ruchy_score", "ruchy_quality_gate", "ruchy_provability",
+                "ruchy_runtime", "ruchy_optimize"
+            ];
+
+            for tool_name in known_tools {
+                let aliases = discovery.get_tool_aliases(tool_name);
+
+                // Known tools should have at least one alias
+                assert!(!aliases.is_empty(),
+                       "Known tool '{}' should have at least one alias", tool_name);
+
+                // Aliases should be non-empty strings
+                for alias in aliases {
+                    assert!(!alias.is_empty(),
+                           "Alias for tool '{}' should not be empty", tool_name);
+                }
+            }
+        }
+
+        /// Property: Unknown tools always return empty aliases
+        #[test]
+        fn test_unknown_tool_aliases_empty(unknown_tool in "[a-z_]+") {
+            let discovery = RuchyToolDiscovery::new();
+
+            // Skip if this happens to be a real tool name
+            if discovery.get_tool(&unknown_tool).is_some() {
+                return Ok(());
+            }
+
+            let aliases = discovery.get_tool_aliases(&unknown_tool);
+            assert!(aliases.is_empty(),
+                   "Unknown tool '{}' should have empty aliases", unknown_tool);
+        }
+
+        /// Property: Default instance is identical to new()
+        #[test]
+        fn test_default_equivalent_to_new(_input in ".*") {
+            let discovery_new = RuchyToolDiscovery::new();
+            let discovery_default = RuchyToolDiscovery::default();
+
+            // Both should have identical tool counts
+            assert_eq!(discovery_new.get_tools().len(), discovery_default.get_tools().len());
+            assert_eq!(discovery_new.list_tool_names().len(), discovery_default.list_tool_names().len());
+
+            // Tool names should be identical
+            let mut names_new = discovery_new.list_tool_names();
+            let mut names_default = discovery_default.list_tool_names();
+            names_new.sort();
+            names_default.sort();
+            assert_eq!(names_new, names_default);
+        }
+
+        /// Property: Tool registration is deterministic
+        #[test]
+        fn test_tool_registration_deterministic(binary_path in ".*") {
+            let discovery1 = RuchyToolDiscovery::with_binary_path(binary_path.clone());
+            let discovery2 = RuchyToolDiscovery::with_binary_path(binary_path);
+
+            // Multiple instances with same binary path should be identical
+            let names1 = discovery1.list_tool_names();
+            let names2 = discovery2.list_tool_names();
+
+            assert_eq!(names1.len(), names2.len());
+
+            // Sort and compare
+            let mut sorted_names1 = names1;
+            let mut sorted_names2 = names2;
+            sorted_names1.sort();
+            sorted_names2.sort();
+            assert_eq!(sorted_names1, sorted_names2);
+        }
+
+        /// Property: JSON serialization/deserialization is stable
+        #[test]
+        fn test_discovery_info_json_stability(_input in ".*") {
+            let discovery = RuchyToolDiscovery::new();
+            let info = discovery.get_discovery_info();
+
+            // Should serialize and deserialize without errors
+            let json_str = serde_json::to_string(&info);
+            assert!(json_str.is_ok(), "Discovery info should serialize to JSON");
+
+            let json_str = json_str.unwrap();
+            let deserialized = serde_json::from_str::<Value>(&json_str);
+            assert!(deserialized.is_ok(), "Discovery info should deserialize from JSON");
+
+            let deserialized = deserialized.unwrap();
+
+            // Key fields should remain intact
+            assert_eq!(deserialized.get("discovery_service"), info.get("discovery_service"));
+            assert_eq!(deserialized.get("version"), info.get("version"));
+            assert_eq!(deserialized.get("total_tools"), info.get("total_tools"));
         }
     }
 }
