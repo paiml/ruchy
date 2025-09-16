@@ -441,4 +441,307 @@ mod tests {
         let opt2 = opt1;
         assert!(matches!(opt2, OptLevel::Basic));
     }
+
+    #[test]
+    fn test_harness_default() {
+        let harness = RuchyTestHarness::default();
+        assert!(!harness.keep_intermediates);
+        assert!(matches!(harness.optimization_level, OptLevel::Basic));
+        assert_eq!(harness.timeout_secs, 30);
+    }
+
+    #[test]
+    fn test_harness_new_vs_default() {
+        let harness1 = RuchyTestHarness::new();
+        let harness2 = RuchyTestHarness::default();
+        assert_eq!(harness1.keep_intermediates, harness2.keep_intermediates);
+        assert_eq!(harness1.timeout_secs, harness2.timeout_secs);
+    }
+
+    #[test]
+    fn test_all_opt_levels() {
+        let levels = [OptLevel::None, OptLevel::Basic, OptLevel::Full];
+        for level in levels {
+            let mut harness = RuchyTestHarness::new();
+            harness.optimization_level = level;
+            // Just test they can be set and matched
+            match level {
+                OptLevel::None => assert!(matches!(harness.optimization_level, OptLevel::None)),
+                OptLevel::Basic => assert!(matches!(harness.optimization_level, OptLevel::Basic)),
+                OptLevel::Full => assert!(matches!(harness.optimization_level, OptLevel::Full)),
+            }
+        }
+    }
+
+    #[test]
+    fn test_validation_result_with_rust_code() {
+        let result = ValidationResult {
+            name: "test".to_string(),
+            parse_success: true,
+            transpile_success: true,
+            compile_success: true,
+            execution_output: Some("42".to_string()),
+            rust_code: Some("fn main() { println!(\"42\"); }".to_string()),
+        };
+
+        assert_eq!(result.name, "test");
+        assert!(result.parse_success);
+        assert!(result.transpile_success);
+        assert!(result.compile_success);
+        assert_eq!(result.execution_output.unwrap(), "42");
+        assert!(result.rust_code.is_some());
+        assert!(result.rust_code.unwrap().contains("main"));
+    }
+
+    #[test]
+    fn test_validation_result_without_rust_code() {
+        let result = ValidationResult {
+            name: "test".to_string(),
+            parse_success: true,
+            transpile_success: true,
+            compile_success: true,
+            execution_output: Some("42".to_string()),
+            rust_code: None,
+        };
+
+        assert_eq!(result.name, "test");
+        assert!(result.parse_success);
+        assert!(result.transpile_success);
+        assert!(result.compile_success);
+        assert_eq!(result.execution_output.unwrap(), "42");
+        assert!(result.rust_code.is_none());
+    }
+
+    #[test]
+    fn test_execution_result_compilation_failure() {
+        let result = ExecutionResult {
+            compiled: false,
+            output: None,
+            stderr: Some("compilation error".to_string()),
+        };
+
+        assert!(!result.compiled);
+        assert!(result.output.is_none());
+        assert_eq!(result.stderr.unwrap(), "compilation error");
+    }
+
+    #[test]
+    fn test_execution_result_success_no_stderr() {
+        let result = ExecutionResult {
+            compiled: true,
+            output: Some("Hello, World!".to_string()),
+            stderr: None,
+        };
+
+        assert!(result.compiled);
+        assert_eq!(result.output.unwrap(), "Hello, World!");
+        assert!(result.stderr.is_none());
+    }
+
+    #[test]
+    fn test_execution_result_success_with_stderr() {
+        let result = ExecutionResult {
+            compiled: true,
+            output: Some("output".to_string()),
+            stderr: Some("warning: unused variable".to_string()),
+        };
+
+        assert!(result.compiled);
+        assert!(result.output.is_some());
+        assert!(result.stderr.is_some());
+        assert!(result.stderr.unwrap().contains("warning"));
+    }
+
+    #[test]
+    fn test_test_error_file_read() {
+        let error = TestError::FileRead("Permission denied".to_string());
+        assert_eq!(error.to_string(), "Failed to read file: Permission denied");
+    }
+
+    #[test]
+    fn test_test_error_parse() {
+        let error = TestError::Parse("Unexpected token".to_string());
+        assert_eq!(error.to_string(), "Parse error: Unexpected token");
+    }
+
+    #[test]
+    fn test_test_error_transpile() {
+        let error = TestError::Transpile("Unknown type".to_string());
+        assert_eq!(error.to_string(), "Transpile error: Unknown type");
+    }
+
+    #[test]
+    fn test_test_error_compile() {
+        let error = TestError::Compile("rustc not found".to_string());
+        assert_eq!(error.to_string(), "Compilation error: rustc not found");
+    }
+
+    #[test]
+    fn test_test_error_execute() {
+        let error = TestError::Execute("Binary crashed".to_string());
+        assert_eq!(error.to_string(), "Execution error: Binary crashed");
+    }
+
+    #[test]
+    fn test_test_error_output_mismatch() {
+        let error = TestError::OutputMismatch {
+            expected: "Hello".to_string(),
+            actual: "Hi".to_string(),
+        };
+        assert_eq!(error.to_string(), "Output mismatch: expected Hello, got Hi");
+    }
+
+    #[test]
+    fn test_harness_field_modifications() {
+        let mut harness = RuchyTestHarness::new();
+
+        // Modify each field
+        harness.keep_intermediates = true;
+        harness.optimization_level = OptLevel::None;
+        harness.timeout_secs = 120;
+
+        assert!(harness.keep_intermediates);
+        assert!(matches!(harness.optimization_level, OptLevel::None));
+        assert_eq!(harness.timeout_secs, 120);
+    }
+
+    #[test]
+    fn test_validation_result_all_failures() {
+        let result = ValidationResult {
+            name: "failed_test".to_string(),
+            parse_success: false,
+            transpile_success: false,
+            compile_success: false,
+            execution_output: None,
+            rust_code: None,
+        };
+
+        assert_eq!(result.name, "failed_test");
+        assert!(!result.parse_success);
+        assert!(!result.transpile_success);
+        assert!(!result.compile_success);
+        assert!(result.execution_output.is_none());
+        assert!(result.rust_code.is_none());
+    }
+
+    #[test]
+    fn test_validation_result_partial_success() {
+        let result = ValidationResult {
+            name: "partial_test".to_string(),
+            parse_success: true,
+            transpile_success: true,
+            compile_success: false,
+            execution_output: None,
+            rust_code: Some("invalid rust code".to_string()),
+        };
+
+        assert_eq!(result.name, "partial_test");
+        assert!(result.parse_success);
+        assert!(result.transpile_success);
+        assert!(!result.compile_success);
+        assert!(result.execution_output.is_none());
+        assert!(result.rust_code.is_some());
+    }
+
+    #[test]
+    fn test_test_result_type_ok() {
+        let result: TestResult<String> = Ok("success".to_string());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "success");
+    }
+
+    #[test]
+    fn test_test_result_type_err() {
+        let result: TestResult<String> = Err(TestError::Parse("error".to_string()));
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            TestError::Parse(msg) => assert_eq!(msg, "error"),
+            _ => panic!("Expected Parse error"),
+        }
+    }
+
+    #[test]
+    fn test_harness_debug_formatting() {
+        let harness = RuchyTestHarness::new();
+        let debug_str = format!("{:?}", harness);
+        assert!(debug_str.contains("RuchyTestHarness"));
+        assert!(debug_str.contains("keep_intermediates"));
+        assert!(debug_str.contains("optimization_level"));
+        assert!(debug_str.contains("timeout_secs"));
+    }
+
+    #[test]
+    fn test_opt_level_debug_formatting() {
+        let levels = [OptLevel::None, OptLevel::Basic, OptLevel::Full];
+        for level in levels {
+            let debug_str = format!("{:?}", level);
+            assert!(!debug_str.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_validation_result_debug_formatting() {
+        let result = ValidationResult {
+            name: "debug_test".to_string(),
+            parse_success: true,
+            transpile_success: true,
+            compile_success: true,
+            execution_output: Some("output".to_string()),
+            rust_code: None,
+        };
+
+        let debug_str = format!("{:?}", result);
+        assert!(debug_str.contains("ValidationResult"));
+        assert!(debug_str.contains("debug_test"));
+        assert!(debug_str.contains("parse_success"));
+    }
+
+    #[test]
+    fn test_execution_result_debug_formatting() {
+        let result = ExecutionResult {
+            compiled: true,
+            output: Some("test_output".to_string()),
+            stderr: None,
+        };
+
+        let debug_str = format!("{:?}", result);
+        assert!(debug_str.contains("ExecutionResult"));
+        assert!(debug_str.contains("compiled"));
+        assert!(debug_str.contains("test_output"));
+    }
+
+    #[test]
+    fn test_test_error_debug_formatting() {
+        let error = TestError::Parse("test error".to_string());
+        let debug_str = format!("{:?}", error);
+        assert!(debug_str.contains("Parse"));
+        assert!(debug_str.contains("test error"));
+    }
+
+    #[test]
+    fn test_harness_fields_independent() {
+        let mut harness1 = RuchyTestHarness::new();
+        let mut harness2 = RuchyTestHarness::new();
+
+        harness1.keep_intermediates = true;
+        harness2.timeout_secs = 60;
+
+        assert!(harness1.keep_intermediates);
+        assert!(!harness2.keep_intermediates);
+        assert_eq!(harness1.timeout_secs, 30);
+        assert_eq!(harness2.timeout_secs, 60);
+    }
+
+    #[test]
+    fn test_opt_level_enum_completeness() {
+        // Test that we can construct all variants
+        let _none = OptLevel::None;
+        let _basic = OptLevel::Basic;
+        let _full = OptLevel::Full;
+
+        // Test that they're different
+        assert!(!matches!(OptLevel::None, OptLevel::Basic));
+        assert!(!matches!(OptLevel::Basic, OptLevel::Full));
+        assert!(!matches!(OptLevel::Full, OptLevel::None));
+    }
 }
