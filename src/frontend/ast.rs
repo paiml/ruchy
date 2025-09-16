@@ -1350,4 +1350,591 @@ mod tests {
             _ => panic!("Wrong type kind"),
         }
     }
+
+    #[test]
+    fn test_string_interpolation_parts() {
+        // Test string interpolation with mixed parts
+        let parts = vec![
+            StringPart::Static("Hello, ".to_string()),
+            StringPart::Dynamic(Box::new(Expr::new(
+                ExprKind::Identifier("name".to_string()),
+                Span::new(8, 12),
+            ))),
+            StringPart::Static("!".to_string()),
+        ];
+
+        let expr = Expr::new(
+            ExprKind::StringInterpolation { parts },
+            Span::new(0, 13),
+        );
+
+        if let ExprKind::StringInterpolation { parts } = expr.kind {
+            assert_eq!(parts.len(), 3);
+            match &parts[0] {
+                StringPart::Static(s) => assert_eq!(s, "Hello, "),
+                _ => panic!("Expected static part"),
+            }
+            match &parts[1] {
+                StringPart::Dynamic(e) => {
+                    if let ExprKind::Identifier(id) = &e.kind {
+                        assert_eq!(id, "name");
+                    }
+                }
+                _ => panic!("Expected dynamic part"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_async_function_creation() {
+        // Test async function with await
+        let func = Expr::new(
+            ExprKind::Function {
+                name: Some("fetch_data".to_string()),
+                params: vec![],
+                body: Box::new(Expr::new(
+                    ExprKind::Await {
+                        expr: Box::new(Expr::new(
+                            ExprKind::Identifier("api_call".to_string()),
+                            Span::new(0, 8),
+                        )),
+                    },
+                    Span::new(0, 14),
+                )),
+                ret_type: None,
+                is_async: true,
+            },
+            Span::new(0, 30),
+        );
+
+        if let ExprKind::Function { is_async, body, .. } = func.kind {
+            assert!(is_async);
+            if let ExprKind::Await { .. } = body.kind {
+                // Correctly contains await expression
+            } else {
+                panic!("Expected await in async function");
+            }
+        }
+    }
+
+    #[test]
+    fn test_try_catch_finally() {
+        // Test try-catch-finally structure
+        let try_catch = Expr::new(
+            ExprKind::TryCatch {
+                try_block: Box::new(Expr::new(
+                    ExprKind::Identifier("risky_operation".to_string()),
+                    Span::new(4, 19),
+                )),
+                catch_clauses: vec![CatchClause {
+                    pattern: Pattern::Identifier("e".to_string()),
+                    body: Box::new(Expr::new(
+                        ExprKind::Identifier("handle_error".to_string()),
+                        Span::new(25, 37),
+                    )),
+                }],
+                finally_block: Some(Box::new(Expr::new(
+                    ExprKind::Identifier("cleanup".to_string()),
+                    Span::new(45, 52),
+                ))),
+            },
+            Span::new(0, 52),
+        );
+
+        if let ExprKind::TryCatch {
+            catch_clauses,
+            finally_block,
+            ..
+        } = try_catch.kind
+        {
+            assert_eq!(catch_clauses.len(), 1);
+            assert!(finally_block.is_some());
+        }
+    }
+
+    #[test]
+    fn test_result_option_types() {
+        // Test Result and Option type constructors
+        let ok_val = Expr::new(
+            ExprKind::Ok {
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42)),
+                    Span::new(3, 5),
+                )),
+            },
+            Span::new(0, 6),
+        );
+
+        let err_val = Expr::new(
+            ExprKind::Err {
+                error: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("error".to_string())),
+                    Span::new(4, 11),
+                )),
+            },
+            Span::new(0, 12),
+        );
+
+        let some_val = Expr::new(
+            ExprKind::Some {
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1)),
+                    Span::new(5, 6),
+                )),
+            },
+            Span::new(0, 7),
+        );
+
+        let none_val = Expr::new(ExprKind::None, Span::new(0, 4));
+
+        assert!(matches!(ok_val.kind, ExprKind::Ok { .. }));
+        assert!(matches!(err_val.kind, ExprKind::Err { .. }));
+        assert!(matches!(some_val.kind, ExprKind::Some { .. }));
+        assert!(matches!(none_val.kind, ExprKind::None));
+    }
+
+    #[test]
+    fn test_pipeline_operator() {
+        // Test pipeline operator expression
+        let pipeline = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(5)),
+                    Span::new(0, 1),
+                )),
+                op: BinaryOp::Pipeline,
+                right: Box::new(Expr::new(
+                    ExprKind::Identifier("double".to_string()),
+                    Span::new(5, 11),
+                )),
+            },
+            Span::new(0, 11),
+        );
+
+        if let ExprKind::Binary { op, .. } = pipeline.kind {
+            assert_eq!(op, BinaryOp::Pipeline);
+        }
+    }
+
+    #[test]
+    fn test_destructuring_patterns() {
+        // Test tuple and struct destructuring
+        let tuple_pattern = Pattern::Tuple(vec![
+            Pattern::Identifier("x".to_string()),
+            Pattern::Identifier("y".to_string()),
+            Pattern::Rest,
+        ]);
+
+        let struct_pattern = Pattern::Struct {
+            name: "User".to_string(),
+            fields: vec![
+                StructPatternField {
+                    name: "name".to_string(),
+                    pattern: Some(Pattern::Identifier("n".to_string())),
+                },
+                StructPatternField {
+                    name: "age".to_string(),
+                    pattern: None,
+                },
+            ],
+            has_rest: true,
+        };
+
+        if let Pattern::Tuple(elements) = tuple_pattern {
+            assert_eq!(elements.len(), 3);
+            assert!(matches!(elements[2], Pattern::Rest));
+        }
+
+        if let Pattern::Struct {
+            fields, has_rest, ..
+        } = struct_pattern
+        {
+            assert_eq!(fields.len(), 2);
+            assert!(has_rest);
+        }
+    }
+
+    #[test]
+    fn test_qualified_names() {
+        // Test module-qualified names
+        let qualified = Expr::new(
+            ExprKind::QualifiedName {
+                module: "std".to_string(),
+                name: "println".to_string(),
+            },
+            Span::new(0, 11),
+        );
+
+        if let ExprKind::QualifiedName { module, name } = qualified.kind {
+            assert_eq!(module, "std");
+            assert_eq!(name, "println");
+        }
+    }
+
+    #[test]
+    fn test_import_export_statements() {
+        // Test import and export statements
+        let import = Expr::new(
+            ExprKind::Import {
+                module_path: vec!["std".to_string(), "collections".to_string()],
+                items: vec![ImportItem {
+                    name: "HashMap".to_string(),
+                    alias: Some("Map".to_string()),
+                }],
+            },
+            Span::new(0, 30),
+        );
+
+        let export = Expr::new(
+            ExprKind::Export {
+                module_path: vec!["my_module".to_string()],
+                items: vec![ExportItem {
+                    name: "MyClass".to_string(),
+                    exported_name: Some("Class".to_string()),
+                }],
+            },
+            Span::new(0, 25),
+        );
+
+        if let ExprKind::Import { module_path, items } = import.kind {
+            assert_eq!(module_path.len(), 2);
+            assert_eq!(items.len(), 1);
+            assert_eq!(items[0].alias, Some("Map".to_string()));
+        }
+
+        if let ExprKind::Export { items, .. } = export.kind {
+            assert_eq!(items.len(), 1);
+            assert_eq!(items[0].exported_name, Some("Class".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_decorator_attributes() {
+        // Test decorator/attribute attachment
+        let decorated = Expr::with_attributes(
+            ExprKind::Function {
+                name: Some("test_func".to_string()),
+                params: vec![],
+                body: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Unit),
+                    Span::new(0, 0),
+                )),
+                ret_type: None,
+                is_async: false,
+            },
+            Span::new(0, 20),
+            vec![
+                Attribute {
+                    name: "test".to_string(),
+                    args: vec![],
+                },
+                Attribute {
+                    name: "bench".to_string(),
+                    args: vec![],
+                },
+            ],
+        );
+
+        assert_eq!(decorated.attributes.len(), 2);
+        assert_eq!(decorated.attributes[0].name, "test");
+        assert_eq!(decorated.attributes[1].name, "bench");
+    }
+
+    #[test]
+    fn test_comprehensions() {
+        // Test list and dict comprehensions
+        let list_comp = Expr::new(
+            ExprKind::ListComp {
+                expr: Box::new(Expr::new(
+                    ExprKind::Binary {
+                        left: Box::new(Expr::new(
+                            ExprKind::Identifier("x".to_string()),
+                            Span::new(1, 2),
+                        )),
+                        op: BinaryOp::Multiply,
+                        right: Box::new(Expr::new(
+                            ExprKind::Literal(Literal::Integer(2)),
+                            Span::new(5, 6),
+                        )),
+                    },
+                    Span::new(1, 6),
+                )),
+                clauses: vec![CompClause::For {
+                    pattern: Pattern::Identifier("x".to_string()),
+                    iter: Box::new(Expr::new(
+                        ExprKind::Identifier("nums".to_string()),
+                        Span::new(14, 18),
+                    )),
+                }],
+            },
+            Span::new(0, 19),
+        );
+
+        if let ExprKind::ListComp { clauses, .. } = list_comp.kind {
+            assert_eq!(clauses.len(), 1);
+            match &clauses[0] {
+                CompClause::For { .. } => {}
+                _ => panic!("Expected for clause"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_dataframe_operations() {
+        // Test DataFrame literal and operations
+        let df = Expr::new(
+            ExprKind::DataFrameLiteral {
+                columns: vec![
+                    ("name".to_string(), vec![
+                        Expr::new(
+                            ExprKind::Literal(Literal::String("Alice".to_string())),
+                            Span::new(0, 7),
+                        ),
+                        Expr::new(
+                            ExprKind::Literal(Literal::String("Bob".to_string())),
+                            Span::new(8, 13),
+                        ),
+                    ]),
+                    ("age".to_string(), vec![
+                        Expr::new(
+                            ExprKind::Literal(Literal::Integer(25)),
+                            Span::new(14, 16),
+                        ),
+                        Expr::new(
+                            ExprKind::Literal(Literal::Integer(30)),
+                            Span::new(17, 19),
+                        ),
+                    ]),
+                ],
+            },
+            Span::new(0, 50),
+        );
+
+        if let ExprKind::DataFrameLiteral { columns } = df.kind {
+            assert_eq!(columns.len(), 2);
+            assert_eq!(columns[0].0, "name");
+            assert_eq!(columns[0].1.len(), 2);
+            assert_eq!(columns[1].0, "age");
+            assert_eq!(columns[1].1.len(), 2);
+        }
+    }
+
+    #[test]
+    fn test_type_cast_operations() {
+        // Test type casting
+        let cast = Expr::new(
+            ExprKind::TypeCast {
+                expr: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42)),
+                    Span::new(0, 2),
+                )),
+                target_type: "f64".to_string(),
+            },
+            Span::new(0, 10),
+        );
+
+        if let ExprKind::TypeCast { target_type, .. } = cast.kind {
+            assert_eq!(target_type, "f64");
+        }
+    }
+
+    #[test]
+    fn test_binary_operators_complete() {
+        // Test all binary operators
+        let ops = vec![
+            BinaryOp::Add,
+            BinaryOp::Subtract,
+            BinaryOp::Multiply,
+            BinaryOp::Divide,
+            BinaryOp::Modulo,
+            BinaryOp::Power,
+            BinaryOp::Equal,
+            BinaryOp::NotEqual,
+            BinaryOp::Less,
+            BinaryOp::Greater,
+            BinaryOp::LessEqual,
+            BinaryOp::GreaterEqual,
+            BinaryOp::And,
+            BinaryOp::Or,
+            BinaryOp::Pipeline,
+            BinaryOp::BitwiseAnd,
+            BinaryOp::BitwiseOr,
+            BinaryOp::BitwiseXor,
+            BinaryOp::LeftShift,
+            BinaryOp::RightShift,
+        ];
+
+        for op in ops {
+            let expr = Expr::new(
+                ExprKind::Binary {
+                    left: Box::new(Expr::new(
+                        ExprKind::Literal(Literal::Integer(1)),
+                        Span::new(0, 1),
+                    )),
+                    op,
+                    right: Box::new(Expr::new(
+                        ExprKind::Literal(Literal::Integer(2)),
+                        Span::new(2, 3),
+                    )),
+                },
+                Span::new(0, 3),
+            );
+
+            if let ExprKind::Binary { op: test_op, .. } = expr.kind {
+                assert_eq!(test_op, op);
+            }
+        }
+    }
+
+    #[test]
+    fn test_span_operations() {
+        // Test span merging and creation
+        let span1 = Span::new(0, 10);
+        let span2 = Span::new(5, 15);
+        let merged = span1.merge(span2);
+
+        assert_eq!(merged.start, 0);
+        assert_eq!(merged.end, 15);
+
+        // Test with reverse order
+        let merged2 = span2.merge(span1);
+        assert_eq!(merged2.start, 0);
+        assert_eq!(merged2.end, 15);
+    }
+
+    #[test]
+    fn test_pattern_with_default() {
+        // Test pattern with default value
+        let pattern = Pattern::WithDefault {
+            pattern: Box::new(Pattern::Identifier("count".to_string())),
+            default: Box::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(0)),
+                Span::new(0, 1),
+            )),
+        };
+
+        if let Pattern::WithDefault { pattern, default } = pattern {
+            match *pattern {
+                Pattern::Identifier(name) => assert_eq!(name, "count"),
+                _ => panic!("Expected identifier pattern"),
+            }
+            match default.kind {
+                ExprKind::Literal(Literal::Integer(val)) => assert_eq!(val, 0),
+                _ => panic!("Expected integer literal"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_generator_expression() {
+        // Test generator expression
+        let gen = Expr::new(
+            ExprKind::Generator {
+                expr: Box::new(Expr::new(
+                    ExprKind::Binary {
+                        left: Box::new(Expr::new(
+                            ExprKind::Identifier("x".to_string()),
+                            Span::new(0, 1),
+                        )),
+                        op: BinaryOp::Power,
+                        right: Box::new(Expr::new(
+                            ExprKind::Literal(Literal::Integer(2)),
+                            Span::new(3, 4),
+                        )),
+                    },
+                    Span::new(0, 4),
+                )),
+                clauses: vec![
+                    CompClause::For {
+                        pattern: Pattern::Identifier("x".to_string()),
+                        iter: Box::new(Expr::new(
+                            ExprKind::Identifier("range".to_string()),
+                            Span::new(10, 15),
+                        )),
+                    },
+                    CompClause::If {
+                        cond: Box::new(Expr::new(
+                            ExprKind::Binary {
+                                left: Box::new(Expr::new(
+                                    ExprKind::Identifier("x".to_string()),
+                                    Span::new(19, 20),
+                                )),
+                                op: BinaryOp::Greater,
+                                right: Box::new(Expr::new(
+                                    ExprKind::Literal(Literal::Integer(0)),
+                                    Span::new(23, 24),
+                                )),
+                            },
+                            Span::new(19, 24),
+                        )),
+                    },
+                ],
+            },
+            Span::new(0, 25),
+        );
+
+        if let ExprKind::Generator { clauses, .. } = gen.kind {
+            assert_eq!(clauses.len(), 2);
+            assert!(matches!(clauses[0], CompClause::For { .. }));
+            assert!(matches!(clauses[1], CompClause::If { .. }));
+        }
+    }
+
+    #[test]
+    fn test_mutable_parameter() {
+        // Test mutable parameter
+        let param = Param {
+            pattern: Pattern::Identifier("data".to_string()),
+            ty: Type {
+                kind: TypeKind::List(Box::new(Type {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::new(0, 3),
+                })),
+                span: Span::new(0, 6),
+            },
+            span: Span::new(0, 10),
+            is_mutable: true,
+            default_value: None,
+        };
+
+        assert!(param.is_mutable);
+        assert_eq!(param.name(), "data");
+    }
+
+    #[test]
+    fn test_reference_types() {
+        // Test reference and mutable reference types
+        let ref_type = Type {
+            kind: TypeKind::Reference {
+                is_mut: false,
+                inner: Box::new(Type {
+                    kind: TypeKind::Named("String".to_string()),
+                    span: Span::new(1, 7),
+                }),
+            },
+            span: Span::new(0, 7),
+        };
+
+        let mut_ref_type = Type {
+            kind: TypeKind::Reference {
+                is_mut: true,
+                inner: Box::new(Type {
+                    kind: TypeKind::Named("Vec".to_string()),
+                    span: Span::new(4, 7),
+                }),
+            },
+            span: Span::new(0, 7),
+        };
+
+        if let TypeKind::Reference { is_mut, inner } = ref_type.kind {
+            assert!(!is_mut);
+            if let TypeKind::Named(name) = inner.kind {
+                assert_eq!(name, "String");
+            }
+        }
+
+        if let TypeKind::Reference { is_mut, .. } = mut_ref_type.kind {
+            assert!(is_mut);
+        }
+    }
 }
