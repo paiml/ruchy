@@ -653,21 +653,435 @@ impl ProofContext {
     }
 }
 #[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_proof_goal_creation() {
+        let goal = ProofGoal {
+            id: "goal_1".to_string(),
+            statement: "x > 0 => x + 1 > 1".to_string(),
+            goal_type: GoalType::Assertion,
+            source_location: Some(SourceLocation {
+                file: "main.ruchy".to_string(),
+                line: 42,
+                column: 10,
+            }),
+            priority: Priority::High,
+            parent: None,
+        };
+
+        assert_eq!(goal.id, "goal_1");
+        assert_eq!(goal.statement, "x > 0 => x + 1 > 1");
+        assert_eq!(goal.goal_type, GoalType::Assertion);
+        assert_eq!(goal.priority, Priority::High);
+        assert!(goal.source_location.is_some());
+    }
+
+    #[test]
+    fn test_goal_type_variants() {
+        let types = vec![
+            GoalType::TypeRefinement,
+            GoalType::FunctionCorrectness,
+            GoalType::LoopInvariant,
+            GoalType::Precondition,
+            GoalType::Postcondition,
+            GoalType::Assertion,
+            GoalType::Custom("invariant".to_string()),
+        ];
+
+        assert_eq!(types.len(), 7);
+        // Verify distinct types
+        for (i, t1) in types.iter().enumerate() {
+            for (j, t2) in types.iter().enumerate() {
+                if i == j {
+                    assert_eq!(t1, t2);
+                } else {
+                    assert_ne!(t1, t2);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_priority_ordering() {
+        assert!(Priority::Critical > Priority::High);
+        assert!(Priority::High > Priority::Normal);
+        assert!(Priority::Normal > Priority::Low);
+        assert!(Priority::Low > Priority::Optional);
+
+        let mut priorities = vec![
+            Priority::Low,
+            Priority::Critical,
+            Priority::Normal,
+            Priority::Optional,
+            Priority::High,
+        ];
+
+        priorities.sort();
+        assert_eq!(priorities[0], Priority::Optional);
+        assert_eq!(priorities[4], Priority::Critical);
+    }
+
+    #[test]
+    fn test_source_location() {
+        let loc = SourceLocation {
+            file: "src/lib.rs".to_string(),
+            line: 123,
+            column: 45,
+        };
+
+        assert_eq!(loc.file, "src/lib.rs");
+        assert_eq!(loc.line, 123);
+        assert_eq!(loc.column, 45);
+    }
+
+    #[test]
+    fn test_prover_session_new() {
+        let session = ProverSession::new();
+
+        assert!(session.goals.is_empty());
+        assert!(session.completed.is_empty());
+        assert_eq!(session.metadata.goals_proven, 0);
+        assert_eq!(session.metadata.tactics_applied, 0);
+    }
+
+    #[test]
+    fn test_prover_session_add_goal() {
+        let mut session = ProverSession::new();
+
+        let goal = ProofGoal {
+            id: "test_goal".to_string(),
+            statement: "true".to_string(),
+            goal_type: GoalType::Assertion,
+            source_location: None,
+            priority: Priority::Normal,
+            parent: None,
+        };
+
+        session.goals.push_back(goal);
+        assert_eq!(session.goals.len(), 1);
+        assert!(session.current_goal().is_some());
+    }
+
+    #[test]
+    fn test_prover_session_complete_goal() {
+        let mut session = ProverSession::new();
+
+        let goal = ProofGoal {
+            id: "complete_me".to_string(),
+            statement: "1 + 1 = 2".to_string(),
+            goal_type: GoalType::Assertion,
+            source_location: None,
+            priority: Priority::High,
+            parent: None,
+        };
+
+        session.goals.push_back(goal);
+        session.complete_current_goal();
+
+        assert!(session.goals.is_empty());
+        assert_eq!(session.completed.len(), 1);
+        assert_eq!(session.metadata.goals_proven, 1);
+    }
+
+    #[test]
+    fn test_prover_session_update_goal() {
+        let mut session = ProverSession::new();
+
+        let goal = ProofGoal {
+            id: "update_me".to_string(),
+            statement: "original".to_string(),
+            goal_type: GoalType::Assertion,
+            source_location: None,
+            priority: Priority::Normal,
+            parent: None,
+        };
+
+        session.goals.push_back(goal);
+        session.update_current_goal("updated");
+
+        if let Some(current) = session.current_goal() {
+            assert_eq!(current.statement, "updated");
+        }
+    }
+
+    #[test]
+    fn test_prover_session_add_subgoal() {
+        let mut session = ProverSession::new();
+
+        let parent = ProofGoal {
+            id: "parent".to_string(),
+            statement: "complex property".to_string(),
+            goal_type: GoalType::FunctionCorrectness,
+            source_location: None,
+            priority: Priority::High,
+            parent: None,
+        };
+
+        session.goals.push_back(parent);
+        let result = session.add_subgoal("simpler property");
+
+        assert!(result.is_ok());
+        assert_eq!(session.goals.len(), 2);
+
+        if let Some(subgoal) = session.current_goal() {
+            assert_eq!(subgoal.statement, "simpler property");
+            assert_eq!(subgoal.parent, Some("parent".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_proof_context_creation() {
+        let context = ProofContext::new();
+
+        assert!(context.bindings.is_empty());
+        assert!(context.assumptions.is_empty());
+        assert!(context.definitions.is_empty());
+        assert!(context.imports.is_empty());
+    }
+
+    #[test]
+    fn test_session_metadata() {
+        let metadata = SessionMetadata {
+            session_id: "session_123".to_string(),
+            started_at: Instant::now(),
+            goals_proven: 5,
+            goals_remaining: 3,
+            tactics_applied: 12,
+            smt_queries: 7,
+        };
+
+        assert_eq!(metadata.session_id, "session_123");
+        assert_eq!(metadata.goals_proven, 5);
+        assert_eq!(metadata.goals_remaining, 3);
+        assert_eq!(metadata.tactics_applied, 12);
+        assert_eq!(metadata.smt_queries, 7);
+    }
+
+    #[test]
+    fn test_completed_proof() {
+        let goal = ProofGoal {
+            id: "completed".to_string(),
+            statement: "proven".to_string(),
+            goal_type: GoalType::Postcondition,
+            source_location: None,
+            priority: Priority::Critical,
+            parent: None,
+        };
+
+        let proof = CompletedProof {
+            goal,
+            steps: vec![
+                ProofStep {
+                    description: "Apply induction".to_string(),
+                    justification: "Structural induction".to_string(),
+                },
+                ProofStep {
+                    description: "Simplify".to_string(),
+                    justification: "Arithmetic".to_string(),
+                },
+            ],
+            duration: Duration::from_secs(10),
+            tactics_used: vec!["induction".to_string(), "simplify".to_string()],
+            confidence: 0.95,
+        };
+
+        assert_eq!(proof.goal.id, "completed");
+        assert_eq!(proof.steps.len(), 2);
+        assert_eq!(proof.tactics_used.len(), 2);
+        assert_eq!(proof.confidence, 0.95);
+    }
+
+    #[test]
+    fn test_proof_step() {
+        let step = ProofStep {
+            description: "Case split on x > 0".to_string(),
+            justification: "Law of excluded middle".to_string(),
+        };
+
+        assert_eq!(step.description, "Case split on x > 0");
+        assert_eq!(step.justification, "Law of excluded middle");
+    }
+
+    #[test]
+    fn test_proof_result_variants() {
+        let results = vec![
+            ProofResult::Proven {
+                proof: CompletedProof {
+                    goal: ProofGoal {
+                        id: "p1".to_string(),
+                        statement: "true".to_string(),
+                        goal_type: GoalType::Assertion,
+                        source_location: None,
+                        priority: Priority::Normal,
+                        parent: None,
+                    },
+                    steps: vec![],
+                    duration: Duration::from_secs(1),
+                    tactics_used: vec![],
+                    confidence: 1.0,
+                },
+            },
+            ProofResult::CounterExample {
+                counterexample: Counterexample {
+                    inputs: vec![("x".to_string(), "0".to_string())],
+                    output: "false".to_string(),
+                    trace: vec![],
+                },
+            },
+            ProofResult::Timeout {
+                partial_progress: 0.5,
+            },
+            ProofResult::Unknown {
+                reason: "SMT solver returned unknown".to_string(),
+            },
+        ];
+
+        for result in results {
+            match result {
+                ProofResult::Proven { proof } => {
+                    assert!(proof.confidence > 0.0);
+                }
+                ProofResult::CounterExample { counterexample } => {
+                    assert!(!counterexample.inputs.is_empty());
+                }
+                ProofResult::Timeout { partial_progress } => {
+                    assert!(partial_progress >= 0.0 && partial_progress <= 1.0);
+                }
+                ProofResult::Unknown { reason } => {
+                    assert!(!reason.is_empty());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_interactive_command_variants() {
+        let commands = vec![
+            InteractiveCommand::Apply { tactic: "auto".to_string() },
+            InteractiveCommand::Undo,
+            InteractiveCommand::Show,
+            InteractiveCommand::Check { formula: "x > 0".to_string() },
+            InteractiveCommand::Assume { assumption: "y != 0".to_string() },
+            InteractiveCommand::Split,
+            InteractiveCommand::Simplify,
+            InteractiveCommand::Hint,
+            InteractiveCommand::Save { file: "proof.rpf".to_string() },
+            InteractiveCommand::Load { file: "proof.rpf".to_string() },
+            InteractiveCommand::Quit,
+        ];
+
+        assert_eq!(commands.len(), 11);
+    }
+
+    #[test]
+    fn test_proof_state() {
+        let state = ProofState {
+            current_goal: Some(ProofGoal {
+                id: "current".to_string(),
+                statement: "working on this".to_string(),
+                goal_type: GoalType::LoopInvariant,
+                source_location: None,
+                priority: Priority::High,
+                parent: None,
+            }),
+            remaining_goals: 5,
+            completed_goals: 3,
+            context_size: 10,
+            available_tactics: vec![
+                "induction".to_string(),
+                "contradiction".to_string(),
+                "case_split".to_string(),
+            ],
+        };
+
+        assert!(state.current_goal.is_some());
+        assert_eq!(state.remaining_goals, 5);
+        assert_eq!(state.completed_goals, 3);
+        assert_eq!(state.available_tactics.len(), 3);
+    }
+
+    #[test]
+    fn test_counterexample() {
+        let counterexample = Counterexample {
+            inputs: vec![
+                ("n".to_string(), "0".to_string()),
+                ("list".to_string(), "[]".to_string()),
+            ],
+            output: "error".to_string(),
+            trace: vec![
+                "Step 1: Check precondition".to_string(),
+                "Step 2: Precondition failed".to_string(),
+            ],
+        };
+
+        assert_eq!(counterexample.inputs.len(), 2);
+        assert_eq!(counterexample.output, "error");
+        assert_eq!(counterexample.trace.len(), 2);
+    }
+
+    #[test]
+    fn test_proof_context_with_bindings() {
+        let mut context = ProofContext::new();
+
+        context.bindings.insert("x".to_string(), "int".to_string());
+        context.bindings.insert("y".to_string(), "bool".to_string());
+
+        context.assumptions.push("x > 0".to_string());
+        context.assumptions.push("y = true".to_string());
+
+        context.definitions.insert("abs".to_string(), "fn(x) { if x >= 0 then x else -x }".to_string());
+
+        context.imports.push("std.math".to_string());
+
+        assert_eq!(context.bindings.len(), 2);
+        assert_eq!(context.assumptions.len(), 2);
+        assert_eq!(context.definitions.len(), 1);
+        assert_eq!(context.imports.len(), 1);
+    }
+}
+
+#[cfg(test)]
 mod property_tests_prover_complex {
     use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+
     proptest! {
-        /// Property: Function never panics on any input
         #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+        fn test_proof_goal_never_panics(
+            id: String,
+            statement: String,
+            priority: u8
+        ) {
+            let _ = ProofGoal {
+                id,
+                statement,
+                goal_type: GoalType::Assertion,
+                source_location: None,
+                priority: match priority % 5 {
+                    0 => Priority::Critical,
+                    1 => Priority::High,
+                    2 => Priority::Normal,
+                    3 => Priority::Low,
+                    _ => Priority::Optional,
+                },
+                parent: None,
+            };
+        }
+
+        #[test]
+        fn test_source_location_never_panics(
+            file: String,
+            line: usize,
+            column: usize
+        ) {
+            let _ = SourceLocation {
+                file,
+                line,
+                column,
+            };
         }
     }
 }
