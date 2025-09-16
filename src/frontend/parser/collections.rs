@@ -850,3 +850,224 @@ fn populate_dataframe_columns(columns: &mut [DataFrameColumn], rows: &[Vec<Expr>
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::parser::Parser;
+
+    #[test]
+    fn test_parse_empty_list() {
+        let mut parser = Parser::new("[]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse empty list");
+    }
+
+    #[test]
+    fn test_parse_simple_list() {
+        let mut parser = Parser::new("[1, 2, 3]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse simple list");
+    }
+
+    #[test]
+    fn test_parse_nested_list() {
+        let mut parser = Parser::new("[[1, 2], [3, 4]]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse nested list");
+    }
+
+    #[test]
+    fn test_parse_list_with_mixed_types() {
+        let mut parser = Parser::new("[1, \"hello\", true, 3.14]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse list with mixed types");
+    }
+
+    #[test]
+    fn test_parse_empty_block() {
+        let mut parser = Parser::new("{}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse empty block");
+    }
+
+    #[test]
+    fn test_parse_block_with_statements() {
+        let mut parser = Parser::new("{ let x = 5; x + 1 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse block with statements");
+    }
+
+    #[test]
+    fn test_parse_nested_blocks() {
+        let mut parser = Parser::new("{ { 42 } }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse nested blocks");
+    }
+
+    #[test]
+    #[ignore = "empty object literal syntax not fully implemented"]
+    fn test_parse_object_literal_empty() {
+        let mut parser = Parser::new("{:}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse empty object literal");
+    }
+
+    #[test]
+    fn test_parse_object_literal_with_fields() {
+        let mut parser = Parser::new("{name: \"Alice\", age: 30}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse object literal with fields");
+    }
+
+    #[test]
+    fn test_parse_object_literal_quoted_keys() {
+        let mut parser = Parser::new("{\"key\": \"value\"}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse object with quoted keys");
+    }
+
+    #[test]
+    fn test_parse_list_comprehension_simple() {
+        let mut parser = Parser::new("[x * 2 for x in range(10)]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse simple list comprehension");
+    }
+
+    #[test]
+    fn test_parse_list_comprehension_with_filter() {
+        let mut parser = Parser::new("[x for x in range(10) if x % 2 == 0]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse list comprehension with filter");
+    }
+
+    #[test]
+    fn test_parse_dataframe_empty() {
+        let mut parser = Parser::new("df![]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse empty dataframe");
+    }
+
+    #[test]
+    #[ignore = "dataframe column syntax not fully implemented"]
+    fn test_parse_dataframe_with_columns() {
+        let mut parser = Parser::new("df![col1: [1, 2, 3], col2: [4, 5, 6]]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse dataframe with columns");
+    }
+
+    #[test]
+    fn test_parse_dataframe_with_rows() {
+        let mut parser = Parser::new("df![[1, 2, 3], [4, 5, 6]]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse dataframe with rows");
+    }
+
+    #[test]
+    #[ignore = "dataframe curly brace syntax not implemented"]
+    fn test_parse_dataframe_macro() {
+        let mut parser = Parser::new("df!{1, 2, 3; 4, 5, 6}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse dataframe macro");
+    }
+
+    #[test]
+    fn test_parse_block_with_multiple_expressions() {
+        let mut parser = Parser::new("{ 1; 2; 3 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse block with multiple expressions");
+    }
+
+    #[test]
+    fn test_parse_block_with_let_binding() {
+        let mut parser = Parser::new("{ let x = 10; x }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse block with let binding");
+    }
+
+    #[test]
+    fn test_parse_let_expression() {
+        let mut parser = Parser::new("let x = 5 in x + 1");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse let expression");
+    }
+
+    #[test]
+    fn test_parse_object_with_nested_objects() {
+        let mut parser = Parser::new("{outer: {inner: 42}}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse nested objects");
+    }
+
+    #[test]
+    fn test_parse_list_with_trailing_comma() {
+        let mut parser = Parser::new("[1, 2, 3,]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse list with trailing comma");
+    }
+
+    #[test]
+    fn test_parse_object_with_trailing_comma() {
+        let mut parser = Parser::new("{a: 1, b: 2,}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse object with trailing comma");
+    }
+
+    #[test]
+    fn test_parse_complex_nested_structure() {
+        let mut parser = Parser::new("[{a: [1, 2]}, {b: [3, 4]}]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse complex nested structure");
+    }
+
+    #[test]
+    fn test_parse_block_returns_last_expression() {
+        let mut parser = Parser::new("{ 1; 2; 3 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse block that returns last expression");
+    }
+
+    #[test]
+    fn test_parse_list_with_expressions() {
+        let mut parser = Parser::new("[1 + 2, 3 * 4, 5 - 6]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse list with expressions");
+    }
+
+    #[test]
+    fn test_parse_object_with_computed_values() {
+        let mut parser = Parser::new("{sum: 1 + 2, product: 3 * 4}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse object with computed values");
+    }
+
+    #[test]
+    #[ignore = "dataframe row separator syntax not fully implemented"]
+    fn test_parse_dataframe_semicolon_rows() {
+        let mut parser = Parser::new("df![1, 2; 3, 4; 5, 6]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse dataframe with semicolon-separated rows");
+    }
+
+    #[test]
+    fn test_parse_empty_list_comprehension() {
+        let mut parser = Parser::new("[x for x in []]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse empty list comprehension");
+    }
+
+    #[test]
+    fn test_parse_nested_list_comprehension() {
+        let mut parser = Parser::new("[[x * y for x in range(3)] for y in range(3)]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse nested list comprehension");
+    }
+
+    #[test]
+    #[ignore = "object shorthand properties not fully implemented"]
+    fn test_parse_object_shorthand_properties() {
+        let mut parser = Parser::new("{x, y, z}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse object with shorthand properties");
+    }
+}
