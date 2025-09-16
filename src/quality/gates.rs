@@ -585,6 +585,388 @@ mod tests {
         assert_eq!(deserialized_config.min_score, original_config.min_score);
         assert_eq!(deserialized_config.min_grade, original_config.min_grade);
     }
+
+    // Test 8: Grade Comparison Testing
+    #[test]
+    fn test_grade_ordering() {
+        // Test all grade comparisons
+        assert!(Grade::F < Grade::D);
+        assert!(Grade::D < Grade::CMinus);
+        assert!(Grade::CMinus < Grade::C);
+        assert!(Grade::C < Grade::CPlus);
+        assert!(Grade::CPlus < Grade::BMinus);
+        assert!(Grade::BMinus < Grade::B);
+        assert!(Grade::B < Grade::BPlus);
+        assert!(Grade::BPlus < Grade::AMinus);
+        assert!(Grade::AMinus < Grade::A);
+        assert!(Grade::A < Grade::APlus);
+
+        // Test specific comparisons used in gates
+        assert!(Grade::C < Grade::BMinus); // Used in test_grade_threshold_violation
+        assert!(Grade::BMinus < Grade::A);
+    }
+
+    // Test 9: Grade Threshold Violation
+    #[test]
+    fn test_grade_threshold_violation() {
+        let config = QualityGateConfig::default(); // min_grade: BMinus
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.grade = Grade::C; // Below BMinus threshold
+
+        let result = enforcer.enforce_gates(&score, None);
+        let grade_violations: Vec<_> = result.violations.iter()
+            .filter(|v| v.violation_type == ViolationType::Grade)
+            .collect();
+
+        assert_eq!(grade_violations.len(), 1);
+        let violation = &grade_violations[0];
+        assert_eq!(violation.severity, Severity::Critical);
+        assert!(violation.message.contains("Grade C below minimum B-"));
+    }
+
+    // Test 10: Component Threshold Violations - Correctness
+    #[test]
+    fn test_correctness_threshold_violation() {
+        let config = QualityGateConfig::default(); // correctness: 0.8
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.components.correctness = 0.7; // Below 0.8 threshold
+
+        let result = enforcer.enforce_gates(&score, None);
+        let correctness_violations: Vec<_> = result.violations.iter()
+            .filter(|v| v.violation_type == ViolationType::Correctness)
+            .collect();
+
+        assert_eq!(correctness_violations.len(), 1);
+        let violation = &correctness_violations[0];
+        assert_eq!(violation.actual, 0.7);
+        assert_eq!(violation.required, 0.8);
+        assert_eq!(violation.severity, Severity::Critical);
+        assert!(violation.message.contains("70.0%"));
+        assert!(violation.message.contains("80.0%"));
+    }
+
+    // Test 11: Component Threshold Violations - Performance
+    #[test]
+    fn test_performance_threshold_violation() {
+        let config = QualityGateConfig::default(); // performance: 0.6
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.components.performance = 0.5; // Below 0.6 threshold
+
+        let result = enforcer.enforce_gates(&score, None);
+        let performance_violations: Vec<_> = result.violations.iter()
+            .filter(|v| v.violation_type == ViolationType::Performance)
+            .collect();
+
+        assert_eq!(performance_violations.len(), 1);
+        let violation = &performance_violations[0];
+        assert_eq!(violation.actual, 0.5);
+        assert_eq!(violation.required, 0.6);
+        assert_eq!(violation.severity, Severity::High);
+    }
+
+    // Test 12: Component Threshold Violations - Safety
+    #[test]
+    fn test_safety_threshold_violation() {
+        let config = QualityGateConfig::default(); // safety: 0.8
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.components.safety = 0.75; // Below 0.8 threshold
+
+        let result = enforcer.enforce_gates(&score, None);
+        let safety_violations: Vec<_> = result.violations.iter()
+            .filter(|v| v.violation_type == ViolationType::Safety)
+            .collect();
+
+        assert_eq!(safety_violations.len(), 1);
+        let violation = &safety_violations[0];
+        assert_eq!(violation.severity, Severity::Critical);
+        assert!(violation.message.contains("75.0%"));
+        assert!(violation.message.contains("80.0%"));
+    }
+
+    // Test 13: Component Threshold Violations - Maintainability
+    #[test]
+    fn test_maintainability_threshold_violation() {
+        let config = QualityGateConfig::default(); // maintainability: 0.7
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.components.maintainability = 0.65; // Below 0.7 threshold
+
+        let result = enforcer.enforce_gates(&score, None);
+        let maintainability_violations: Vec<_> = result.violations.iter()
+            .filter(|v| v.violation_type == ViolationType::Maintainability)
+            .collect();
+
+        assert_eq!(maintainability_violations.len(), 1);
+        let violation = &maintainability_violations[0];
+        assert_eq!(violation.severity, Severity::High);
+        assert_eq!(violation.actual, 0.65);
+        assert_eq!(violation.required, 0.7);
+    }
+
+    // Test 14: Component Threshold Violations - Idiomaticity
+    #[test]
+    fn test_idiomaticity_threshold_violation() {
+        let config = QualityGateConfig::default(); // idiomaticity: 0.5
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.components.idiomaticity = 0.4; // Below 0.5 threshold
+
+        let result = enforcer.enforce_gates(&score, None);
+        let idiomaticity_violations: Vec<_> = result.violations.iter()
+            .filter(|v| v.violation_type == ViolationType::Idiomaticity)
+            .collect();
+
+        assert_eq!(idiomaticity_violations.len(), 1);
+        let violation = &idiomaticity_violations[0];
+        assert_eq!(violation.severity, Severity::Medium);
+        assert_eq!(violation.actual, 0.4);
+        assert_eq!(violation.required, 0.5);
+    }
+
+    // Test 15: Anti-Gaming Rules - Cache Hit Rate Warning
+    #[test]
+    fn test_high_cache_hit_rate_warning() {
+        let config = QualityGateConfig::default(); // max_cache_hit_rate: 0.8
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.cache_hit_rate = 0.9; // Above 0.8 threshold
+
+        let result = enforcer.enforce_gates(&score, None);
+
+        assert!(!result.gaming_warnings.is_empty());
+        let warning = &result.gaming_warnings[0];
+        assert!(warning.contains("High cache hit rate 90.0%"));
+        assert!(warning.contains("stale analysis"));
+    }
+
+    // Test 16: Anti-Gaming Rules - File Size Warning
+    #[test]
+    fn test_small_file_size_warning() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new().unwrap();
+        let small_file = temp_dir.path().join("small.rs");
+        std::fs::write(&small_file, "// Small file")?; // ~13 bytes, below 100 threshold
+
+        let config = QualityGateConfig::default(); // min_file_size_bytes: 100
+        let enforcer = QualityGateEnforcer::new(config);
+        let score = create_passing_score();
+
+        let result = enforcer.enforce_gates(&score, Some(&small_file));
+
+        assert!(!result.gaming_warnings.is_empty());
+        let warning = &result.gaming_warnings[0];
+        assert!(warning.contains("very small"));
+        assert!(warning.contains("gaming by splitting"));
+        Ok(())
+    }
+
+    // Test 17: Anti-Gaming Rules - Critical Files Deep Analysis
+    #[test]
+    fn test_critical_files_deep_analysis() {
+        let temp_dir = TempDir::new().unwrap();
+        let critical_file = temp_dir.path().join("src").join("main.rs");
+        std::fs::create_dir_all(critical_file.parent().unwrap()).unwrap();
+        std::fs::write(&critical_file, "fn main() {}").unwrap();
+
+        let config = QualityGateConfig::default(); // require_deep_analysis includes "src/main.rs"
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.confidence = 0.8; // Below 0.9 required for critical files
+
+        let result = enforcer.enforce_gates(&score, Some(&critical_file));
+
+        let gaming_violations: Vec<_> = result.violations.iter()
+            .filter(|v| v.violation_type == ViolationType::Gaming)
+            .collect();
+
+        assert_eq!(gaming_violations.len(), 1);
+        let violation = &gaming_violations[0];
+        assert_eq!(violation.severity, Severity::Critical);
+        assert_eq!(violation.actual, 0.8);
+        assert_eq!(violation.required, 0.9);
+        assert!(violation.message.contains("deep analysis"));
+    }
+
+    // Test 18: Multiple Violations Combination
+    #[test]
+    fn test_multiple_violations() {
+        let config = QualityGateConfig::default();
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let score = create_minimal_score(); // This should fail multiple criteria
+        let result = enforcer.enforce_gates(&score, None);
+
+        assert!(!result.passed);
+        // Should have multiple violations
+        assert!(result.violations.len() >= 3); // At least overall score, grade, and confidence
+
+        // Check we have different violation types
+        let violation_types: std::collections::HashSet<_> = result.violations.iter()
+            .map(|v| &v.violation_type)
+            .collect();
+        assert!(violation_types.contains(&ViolationType::OverallScore));
+        assert!(violation_types.contains(&ViolationType::Grade));
+        assert!(violation_types.contains(&ViolationType::Confidence));
+    }
+
+    // Test 19: CI Results Export - JSON Format
+    #[test]
+    fn test_export_json_results() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new().unwrap();
+        let output_dir = temp_dir.path();
+
+        let mut config = QualityGateConfig::default();
+        config.ci_integration.json_output = true;
+        config.ci_integration.junit_xml = false;
+
+        let enforcer = QualityGateEnforcer::new(config);
+        let results = vec![create_gate_result_passed(), create_gate_result_failed()];
+
+        enforcer.export_ci_results(&results, output_dir)?;
+
+        let json_file = output_dir.join("quality-gates.json");
+        assert!(json_file.exists());
+
+        let content = std::fs::read_to_string(json_file)?;
+        let parsed: Vec<GateResult> = serde_json::from_str(&content)?;
+        assert_eq!(parsed.len(), 2);
+        assert!(parsed[0].passed);
+        assert!(!parsed[1].passed);
+
+        Ok(())
+    }
+
+    // Test 20: CI Results Export - JUnit XML Format
+    #[test]
+    fn test_export_junit_xml_results() -> anyhow::Result<()> {
+        let temp_dir = TempDir::new().unwrap();
+        let output_dir = temp_dir.path();
+
+        let mut config = QualityGateConfig::default();
+        config.ci_integration.json_output = false;
+        config.ci_integration.junit_xml = true;
+
+        let enforcer = QualityGateEnforcer::new(config);
+        let results = vec![create_gate_result_passed(), create_gate_result_failed()];
+
+        enforcer.export_ci_results(&results, output_dir)?;
+
+        let xml_file = output_dir.join("quality-gates.xml");
+        assert!(xml_file.exists());
+
+        let content = std::fs::read_to_string(xml_file)?;
+        assert!(content.contains("<?xml version="));
+        assert!(content.contains("<testsuite name=\"Quality Gates\" tests=\"2\" failures=\"1\""));
+        assert!(content.contains("<testcase name=\"quality-gate-0\" classname=\"QualityGate\""));
+        assert!(content.contains("<failure message=\"Quality gate violation\""));
+        assert!(content.contains("</testsuite>"));
+
+        Ok(())
+    }
+
+    // Test 21: Violation Type and Severity Enum Coverage
+    #[test]
+    fn test_violation_enums_coverage() {
+        // Test all ViolationType variants can be created and compared
+        let types = vec![
+            ViolationType::OverallScore,
+            ViolationType::Grade,
+            ViolationType::Correctness,
+            ViolationType::Performance,
+            ViolationType::Maintainability,
+            ViolationType::Safety,
+            ViolationType::Idiomaticity,
+            ViolationType::Confidence,
+            ViolationType::Gaming,
+        ];
+
+        for (i, vtype) in types.iter().enumerate() {
+            for (j, other) in types.iter().enumerate() {
+                if i == j {
+                    assert_eq!(vtype, other);
+                } else {
+                    assert_ne!(vtype, other);
+                }
+            }
+        }
+
+        // Test all Severity variants
+        let severities = vec![
+            Severity::Critical,
+            Severity::High,
+            Severity::Medium,
+            Severity::Low,
+        ];
+
+        for (i, severity) in severities.iter().enumerate() {
+            for (j, other) in severities.iter().enumerate() {
+                if i == j {
+                    assert_eq!(severity, other);
+                } else {
+                    assert_ne!(severity, other);
+                }
+            }
+        }
+    }
+
+    // Test 22: Notification Config Serialization
+    #[test]
+    fn test_notification_config_serialization() {
+        let config = NotificationConfig {
+            slack: true,
+            email: false,
+            webhook: Some("https://test.example.com/webhook".to_string()),
+        };
+
+        let serialized = serde_json::to_string(&config).unwrap();
+        let deserialized: NotificationConfig = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(deserialized.slack, true);
+        assert_eq!(deserialized.email, false);
+        assert_eq!(deserialized.webhook, Some("https://test.example.com/webhook".to_string()));
+    }
+
+    // Helper functions for testing
+    fn create_gate_result_passed() -> GateResult {
+        GateResult {
+            passed: true,
+            score: 0.85,
+            grade: Grade::APlus,
+            violations: vec![],
+            confidence: 0.9,
+            gaming_warnings: vec![],
+        }
+    }
+
+    fn create_gate_result_failed() -> GateResult {
+        GateResult {
+            passed: false,
+            score: 0.6,
+            grade: Grade::D,
+            violations: vec![
+                Violation {
+                    violation_type: ViolationType::OverallScore,
+                    actual: 0.6,
+                    required: 0.7,
+                    severity: Severity::Critical,
+                    message: "Overall score 60.0% below minimum 70.0%".to_string(),
+                },
+            ],
+            confidence: 0.5,
+            gaming_warnings: vec!["Low confidence warning".to_string()],
+        }
+    }
 }
 #[cfg(test)]
 mod property_tests_gates {
