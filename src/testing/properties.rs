@@ -312,4 +312,292 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_prop_parser_never_panics_unit() {
+        let test_cases = vec![
+            "",
+            "42",
+            "hello",
+            "1 + 2",
+            "invalid syntax !@#$",
+            "let x = 42 in x",
+            "fun test() { }",
+            "if true { 1 } else { 2 }",
+        ];
+
+        for input in test_cases {
+            let result = prop_parser_never_panics(input);
+            assert!(result.is_ok(), "Parser panicked on input: {}", input);
+        }
+    }
+
+    #[test]
+    fn test_prop_recovery_parser_unit() {
+        let test_cases = vec![
+            ("", false), // Empty input shouldn't require recovery
+            ("42", true), // Valid input should produce AST
+            ("1 + 2", true), // Valid binary expression
+            ("invalid", true), // Invalid but non-empty should produce something
+        ];
+
+        for (input, expect_output) in test_cases {
+            let result = prop_recovery_parser_always_produces_ast(input);
+            if expect_output {
+                assert!(result.is_ok(), "Recovery parser failed on: {}", input);
+            } else {
+                // Empty input case is handled differently
+                assert!(result.is_ok(), "Recovery parser failed on empty input");
+            }
+        }
+    }
+
+    #[test]
+    fn test_prop_transpilation_unit() {
+        let test_exprs = vec![
+            Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default()),
+            Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default()),
+            Expr::new(ExprKind::Identifier("x".to_string()), Default::default()),
+        ];
+
+        for expr in test_exprs {
+            let result = prop_transpilation_preserves_structure(&expr);
+            assert!(result.is_ok(), "Transpilation property failed");
+        }
+    }
+
+    #[test]
+    fn test_prop_string_interpolation_unit() {
+        let test_cases = vec![
+            vec![], // Empty parts
+            vec![StringPart::Text("hello".to_string())], // Text only
+            vec![StringPart::Expr(Box::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(42)),
+                Default::default()
+            )))], // Expression only
+        ];
+
+        for parts in test_cases {
+            let result = prop_string_interpolation_transpiles(&parts);
+            assert!(result.is_ok(), "String interpolation property failed");
+        }
+    }
+
+    #[test]
+    fn test_is_well_typed_function() {
+        // Test numeric literals
+        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        assert!(is_well_typed(&int_expr));
+
+        let float_expr = Expr::new(ExprKind::Literal(Literal::Float(3.14)), Default::default());
+        assert!(is_well_typed(&float_expr));
+
+        // Test boolean literals
+        let bool_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        assert!(is_well_typed(&bool_expr));
+
+        // Test identifiers
+        let id_expr = Expr::new(ExprKind::Identifier("x".to_string()), Default::default());
+        assert!(is_well_typed(&id_expr));
+    }
+
+    #[test]
+    fn test_is_numeric_function() {
+        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        assert!(is_numeric(&int_expr));
+
+        let float_expr = Expr::new(ExprKind::Literal(Literal::Float(3.14)), Default::default());
+        assert!(is_numeric(&float_expr));
+
+        let bool_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        assert!(!is_numeric(&bool_expr));
+
+        let string_expr = Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Default::default());
+        assert!(!is_numeric(&string_expr));
+    }
+
+    #[test]
+    fn test_is_boolean_function() {
+        let bool_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        assert!(is_boolean(&bool_expr));
+
+        let bool_false_expr = Expr::new(ExprKind::Literal(Literal::Bool(false)), Default::default());
+        assert!(is_boolean(&bool_false_expr));
+
+        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        assert!(!is_boolean(&int_expr));
+
+        let string_expr = Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Default::default());
+        assert!(!is_boolean(&string_expr));
+    }
+
+    #[test]
+    fn test_well_typed_binary_expressions() {
+        let left = Expr::new(ExprKind::Literal(Literal::Integer(1)), Default::default());
+        let right = Expr::new(ExprKind::Literal(Literal::Integer(2)), Default::default());
+
+        // Test arithmetic operations
+        let add_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left.clone()),
+                op: BinaryOp::Add,
+                right: Box::new(right.clone()),
+            },
+            Default::default()
+        );
+        assert!(is_well_typed(&add_expr));
+
+        // Test boolean operations
+        let bool_left = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        let bool_right = Expr::new(ExprKind::Literal(Literal::Bool(false)), Default::default());
+        let and_expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(bool_left),
+                op: BinaryOp::And,
+                right: Box::new(bool_right),
+            },
+            Default::default()
+        );
+        assert!(is_well_typed(&and_expr));
+    }
+
+    #[test]
+    fn test_well_typed_unary_expressions() {
+        // Test negation on numeric
+        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        let neg_expr = Expr::new(
+            ExprKind::Unary {
+                operand: Box::new(int_expr),
+                op: UnaryOp::Negate,
+            },
+            Default::default()
+        );
+        assert!(is_well_typed(&neg_expr));
+
+        // Test not on boolean
+        let bool_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        let not_expr = Expr::new(
+            ExprKind::Unary {
+                operand: Box::new(bool_expr),
+                op: UnaryOp::Not,
+            },
+            Default::default()
+        );
+        assert!(is_well_typed(&not_expr));
+    }
+
+    #[test]
+    fn test_well_typed_if_expressions() {
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        let then_branch = Expr::new(ExprKind::Literal(Literal::Integer(1)), Default::default());
+        let else_branch = Expr::new(ExprKind::Literal(Literal::Integer(2)), Default::default());
+
+        let if_expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: Some(Box::new(else_branch)),
+            },
+            Default::default()
+        );
+        assert!(is_well_typed(&if_expr));
+    }
+
+    #[test]
+    fn test_ill_typed_expressions() {
+        // Test adding boolean to integer (ill-typed)
+        let bool_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
+        let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+
+        let bad_add = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(bool_expr),
+                op: BinaryOp::Add,
+                right: Box::new(int_expr),
+            },
+            Default::default()
+        );
+        assert!(!is_well_typed(&bad_add));
+    }
+
+    #[test]
+    fn test_parser_with_edge_cases() {
+        let edge_cases = vec![
+            "\0", // Null character
+            "\n\n\n", // Multiple newlines
+            "   ", // Whitespace only
+            "\t\t\t", // Tabs only
+            "\"", // Unterminated string
+            "(", // Unmatched paren
+            "}", // Unmatched brace
+        ];
+
+        for case in edge_cases {
+            let result = prop_parser_never_panics(case);
+            assert!(result.is_ok(), "Parser should not panic on: {:?}", case);
+        }
+    }
+
+    #[test]
+    fn test_transpilation_with_complex_expressions() {
+        // Test more complex expressions that might stress the transpiler
+        let complex_exprs = vec![
+            // Nested binary operations
+            Expr::new(
+                ExprKind::Binary {
+                    left: Box::new(Expr::new(
+                        ExprKind::Binary {
+                            left: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1)), Default::default())),
+                            op: BinaryOp::Add,
+                            right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2)), Default::default())),
+                        },
+                        Default::default()
+                    )),
+                    op: BinaryOp::Multiply,
+                    right: Box::new(Expr::new(ExprKind::Literal(Literal::Integer(3)), Default::default())),
+                },
+                Default::default()
+            ),
+        ];
+
+        for expr in complex_exprs {
+            let result = prop_transpilation_preserves_structure(&expr);
+            assert!(result.is_ok(), "Transpilation should handle complex expressions");
+        }
+    }
+
+    #[test]
+    fn test_string_interpolation_edge_cases() {
+        let edge_cases = vec![
+            // Empty string parts
+            vec![StringPart::Text("".to_string())],
+            // Mixed text and expressions
+            vec![
+                StringPart::Text("Hello ".to_string()),
+                StringPart::Expr(Box::new(Expr::new(
+                    ExprKind::Identifier("name".to_string()),
+                    Default::default()
+                ))),
+                StringPart::Text("!".to_string()),
+            ],
+        ];
+
+        for parts in edge_cases {
+            let result = prop_string_interpolation_transpiles(&parts);
+            assert!(result.is_ok(), "String interpolation should handle edge cases");
+        }
+    }
+
+    #[test]
+    fn test_property_functions_return_ok() {
+        // Test that all property functions return Ok for simple cases
+        assert!(prop_parser_never_panics("42").is_ok());
+        assert!(prop_recovery_parser_always_produces_ast("42").is_ok());
+
+        let simple_expr = Expr::new(ExprKind::Literal(Literal::Integer(42)), Default::default());
+        assert!(prop_transpilation_preserves_structure(&simple_expr).is_ok());
+
+        let simple_parts = vec![StringPart::Text("hello".to_string())];
+        assert!(prop_string_interpolation_transpiles(&simple_parts).is_ok());
+    }
 }

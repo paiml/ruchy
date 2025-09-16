@@ -443,7 +443,7 @@ mod tests {
     }
 
     #[test]
-    fn test_harness_default() {
+    fn test_harness_default_duplicate_renamed() {
         let harness = RuchyTestHarness::default();
         assert!(!harness.keep_intermediates);
         assert!(matches!(harness.optimization_level, OptLevel::Basic));
