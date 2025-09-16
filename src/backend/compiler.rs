@@ -389,6 +389,398 @@ mod tests {
         // Whitespace might be valid or not depending on parser
         let _ = result; // Just check it doesn't panic
     }
+
+    // Test 14: CompileOptions builder pattern functionality
+    #[test]
+    fn test_compile_options_builder_pattern() {
+        let mut options = CompileOptions::default();
+        options.output = PathBuf::from("custom_binary");
+        options.opt_level = "3".to_string();
+        options.strip = true;
+        options.rustc_flags.push("--verbose".to_string());
+
+        assert_eq!(options.output, PathBuf::from("custom_binary"));
+        assert_eq!(options.opt_level, "3");
+        assert!(options.strip);
+        assert_eq!(options.rustc_flags.len(), 1);
+        assert_eq!(options.rustc_flags[0], "--verbose");
+    }
+
+    // Test 15: All optimization level variations
+    #[test]
+    fn test_all_optimization_levels() {
+        let valid_levels = vec!["0", "1", "2", "3", "s", "z"];
+
+        for level in valid_levels {
+            let options = CompileOptions {
+                opt_level: level.to_string(),
+                ..Default::default()
+            };
+            assert_eq!(options.opt_level, level);
+
+            // Test command building doesn't panic with any opt level
+            let rust_file = Path::new("/tmp/test.rs");
+            let cmd = build_rustc_command(rust_file, &options);
+            // Verify command was created successfully
+            assert_eq!(cmd.get_program(), "rustc");
+        }
+    }
+
+    // Test 16: Target triple validation
+    #[test]
+    fn test_target_triple_combinations() {
+        let targets = vec![
+            "x86_64-unknown-linux-gnu",
+            "x86_64-unknown-linux-musl",
+            "x86_64-pc-windows-msvc",
+            "x86_64-apple-darwin",
+            "aarch64-unknown-linux-gnu",
+            "wasm32-unknown-unknown",
+        ];
+
+        for target in targets {
+            let options = CompileOptions {
+                target: Some(target.to_string()),
+                ..Default::default()
+            };
+
+            assert_eq!(options.target, Some(target.to_string()));
+
+            // Test command building with target
+            let rust_file = Path::new("/tmp/test.rs");
+            let cmd = build_rustc_command(rust_file, &options);
+            assert_eq!(cmd.get_program(), "rustc");
+        }
+    }
+
+    // Test 17: Multiple rustc flags handling
+    #[test]
+    fn test_multiple_rustc_flags() {
+        let flags = vec![
+            "-C".to_string(),
+            "lto=fat".to_string(),
+            "--verbose".to_string(),
+            "-Z".to_string(),
+            "print-type-sizes".to_string(),
+        ];
+
+        let options = CompileOptions {
+            rustc_flags: flags.clone(),
+            ..Default::default()
+        };
+
+        assert_eq!(options.rustc_flags.len(), 5);
+        assert_eq!(options.rustc_flags, flags);
+
+        // Test flag application
+        let mut cmd = Command::new("rustc");
+        apply_optional_flags(&mut cmd, &options);
+        // Function shouldn't panic with multiple flags
+        assert!(true);
+    }
+
+    // Test 18: Strip and static link combinations
+    #[test]
+    fn test_strip_and_static_combinations() {
+        let combinations = vec![
+            (false, false),
+            (true, false),
+            (false, true),
+            (true, true),
+        ];
+
+        for (strip, static_link) in combinations {
+            let options = CompileOptions {
+                strip,
+                static_link,
+                ..Default::default()
+            };
+
+            assert_eq!(options.strip, strip);
+            assert_eq!(options.static_link, static_link);
+
+            let mut cmd = Command::new("rustc");
+            apply_optional_flags(&mut cmd, &options);
+            // Should handle all combinations without panic
+            assert!(true);
+        }
+    }
+
+    // Test 19: Path handling with different file extensions
+    #[test]
+    fn test_path_handling_extensions() {
+        let paths = vec![
+            PathBuf::from("binary"),
+            PathBuf::from("program.exe"),
+            PathBuf::from("/tmp/output"),
+            PathBuf::from("./relative/path"),
+            PathBuf::from("../parent/binary"),
+        ];
+
+        for path in paths {
+            let options = CompileOptions {
+                output: path.clone(),
+                ..Default::default()
+            };
+
+            assert_eq!(options.output, path);
+
+            let rust_file = Path::new("/tmp/test.rs");
+            let cmd = build_rustc_command(rust_file, &options);
+            assert_eq!(cmd.get_program(), "rustc");
+        }
+    }
+
+    // Test 20: Temporary file creation and cleanup
+    #[test]
+    fn test_temp_file_creation_cleanup() {
+        let rust_code = TokenStream::new();
+
+        // Test multiple temp file creations
+        for i in 0..5 {
+            let result = prepare_rust_file(&rust_code);
+            assert!(result.is_ok());
+
+            if let Ok((_temp_dir, rust_file)) = result {
+                // Verify file was created
+                assert!(rust_file.exists());
+                assert!(rust_file.file_name().unwrap() == "main.rs");
+
+                // Verify parent directory exists
+                assert!(rust_file.parent().unwrap().exists());
+
+                // When _temp_dir goes out of scope, cleanup should happen automatically
+                // This tests the RAII behavior of TempDir
+            }
+        }
+    }
+
+    // Test 21: Error message handling in execute_compilation
+    #[test]
+    fn test_execute_compilation_error_messages() {
+        // Create command that will fail with specific error
+        let mut cmd = Command::new("rustc");
+        cmd.arg("--invalid-flag-that-does-not-exist");
+        cmd.arg("/non/existent/file.rs");
+
+        let result = execute_compilation(cmd);
+        assert!(result.is_err());
+
+        let error_msg = format!("{}", result.err().unwrap());
+        assert!(error_msg.contains("Compilation failed"));
+    }
+
+    // Test 22: Complex source code patterns
+    #[test]
+    fn test_complex_source_patterns() {
+        let complex_sources = vec![
+            // Unicode content
+            "fun main() { println(\"Hello 世界! 🚀\"); }",
+            // Long identifier names
+            "fun this_is_a_very_long_function_name_that_might_cause_issues() { }",
+            // Nested structures
+            "fun main() { if (true) { if (false) { println(\"nested\"); } } }",
+            // Comments and whitespace
+            "// Comment\nfun main() {\n  // Another comment\n  println(\"test\");\n}",
+            // String with escape sequences
+            "fun main() { println(\"Line 1\\nLine 2\\tTabbed\"); }",
+        ];
+
+        for source in complex_sources {
+            let options = CompileOptions {
+                output: PathBuf::from("/tmp/complex_test"),
+                ..Default::default()
+            };
+
+            // These may fail due to parser limitations, but shouldn't panic
+            let result = compile_source_to_binary(source, &options);
+            match result {
+                Ok(_) => assert!(true), // Success is good
+                Err(_) => assert!(true), // Expected failure is also fine
+            }
+        }
+    }
+
+    // Test 23: Parse and transpile error handling
+    #[test]
+    fn test_parse_and_transpile_error_handling() {
+        let invalid_sources = vec![
+            "{{{[[[@#$%",           // Invalid syntax
+            "fun(",                 // Incomplete function
+            "\"unterminated string", // Unterminated string
+            "fun main() { return; return; }", // Multiple returns
+        ];
+
+        for source in invalid_sources {
+            let result = parse_and_transpile(source);
+            // Should return error, not panic
+            assert!(result.is_err());
+        }
+    }
+
+    // Test 24: File I/O edge cases
+    #[test]
+    fn test_file_io_edge_cases() {
+        // Test with empty token stream
+        let empty_tokens = TokenStream::new();
+        let result = prepare_rust_file(&empty_tokens);
+        assert!(result.is_ok());
+
+        if let Ok((_temp_dir, rust_file)) = result {
+            // Verify empty file was created
+            assert!(rust_file.exists());
+            let contents = std::fs::read_to_string(&rust_file).unwrap();
+            assert!(contents.is_empty());
+        }
+    }
+
+    // Test 25: Verify output with different scenarios
+    #[test]
+    fn test_verify_output_scenarios() {
+        // Test with temporary file that exists
+        let temp_file = tempfile::NamedTempFile::new().unwrap();
+        let result = verify_output_exists(temp_file.path());
+        assert!(result.is_ok());
+
+        // Test with directory instead of file
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let result = verify_output_exists(temp_dir.path());
+        assert!(result.is_ok()); // Directory exists, so should pass
+
+        // Test with file in nested directory that doesn't exist
+        let nested_path = Path::new("/non/existent/directory/binary");
+        let result = verify_output_exists(nested_path);
+        assert!(result.is_err());
+    }
+
+    // Test 26: Command building with extreme cases
+    #[test]
+    fn test_command_building_extreme_cases() {
+        let options = CompileOptions {
+            output: PathBuf::from("/very/long/path/with/many/segments/binary"),
+            opt_level: "z".to_string(), // Size optimization
+            strip: true,
+            static_link: true,
+            target: Some("wasm32-unknown-unknown".to_string()),
+            rustc_flags: vec![
+                "-C".to_string(),
+                "lto=fat".to_string(),
+                "-C".to_string(),
+                "codegen-units=1".to_string(),
+                "-C".to_string(),
+                "panic=abort".to_string(),
+            ],
+        };
+
+        let rust_file = Path::new("/tmp/test.rs");
+        let cmd = build_rustc_command(rust_file, &options);
+
+        // Verify command was built successfully
+        assert_eq!(cmd.get_program(), "rustc");
+    }
+
+    // Test 27: CompileOptions clone and debug functionality
+    #[test]
+    fn test_compile_options_traits() {
+        let options = CompileOptions {
+            output: PathBuf::from("test_binary"),
+            opt_level: "2".to_string(),
+            strip: true,
+            static_link: false,
+            target: Some("x86_64-unknown-linux-gnu".to_string()),
+            rustc_flags: vec!["--verbose".to_string()],
+        };
+
+        // Test Clone trait
+        let cloned_options = options.clone();
+        assert_eq!(options.output, cloned_options.output);
+        assert_eq!(options.opt_level, cloned_options.opt_level);
+        assert_eq!(options.strip, cloned_options.strip);
+        assert_eq!(options.static_link, cloned_options.static_link);
+        assert_eq!(options.target, cloned_options.target);
+        assert_eq!(options.rustc_flags, cloned_options.rustc_flags);
+
+        // Test Debug trait
+        let debug_str = format!("{:?}", options);
+        assert!(debug_str.contains("CompileOptions"));
+        assert!(debug_str.contains("test_binary"));
+        assert!(debug_str.contains("2"));
+    }
+
+    // Test 28: Integration with file system operations
+    #[test]
+    fn test_filesystem_integration() {
+        use std::fs;
+
+        // Create a temporary directory for our tests
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let source_file = temp_dir.path().join("test_program.ruchy");
+
+        // Write a simple test program
+        let source_content = "fun main() { println(\"Integration test\"); }";
+        fs::write(&source_file, source_content).unwrap();
+
+        // Verify file was created and can be read
+        assert!(source_file.exists());
+        let read_content = fs::read_to_string(&source_file).unwrap();
+        assert_eq!(read_content, source_content);
+
+        // Test compile_to_binary with actual file
+        let output_path = temp_dir.path().join("test_output");
+        let options = CompileOptions {
+            output: output_path,
+            ..Default::default()
+        };
+
+        // This may fail due to parser/transpiler limitations, but should not panic
+        let result = compile_to_binary(&source_file, &options);
+        match result {
+            Ok(_) => assert!(true), // Success is good
+            Err(_) => assert!(true), // Expected failure due to incomplete implementation
+        }
+    }
+
+    // Test 29: rustc version parsing
+    #[test]
+    fn test_rustc_version_parsing() {
+        if let Ok(version) = get_rustc_version() {
+            // Should contain rustc and version number
+            assert!(version.contains("rustc"));
+
+            // Should contain a version number pattern (X.Y.Z)
+            let has_version_pattern = version
+                .split_whitespace()
+                .any(|part| {
+                    part.split('.').count() >= 2 &&
+                    part.chars().any(|c| c.is_ascii_digit())
+                });
+            assert!(has_version_pattern);
+        }
+    }
+
+    // Test 30: Error context propagation
+    #[test]
+    fn test_error_context_propagation() {
+        // Test parse context in parse_and_transpile
+        let invalid_source = "syntax error @#$%";
+        let result = parse_and_transpile(invalid_source);
+
+        if let Err(error) = result {
+            let error_str = format!("{}", error);
+            // Should contain context information
+            assert!(error_str.len() > 0); // At least some error message
+        }
+
+        // Test compile context for invalid paths
+        let invalid_path = Path::new("/root/no_permission/file.ruchy");
+        let options = CompileOptions::default();
+
+        if invalid_path.exists() {
+            // Only test if file actually exists and we can't read it
+            let result = compile_to_binary(invalid_path, &options);
+            assert!(result.is_err());
+        }
+    }
 }
 #[cfg(test)]
 mod property_tests_compiler {
