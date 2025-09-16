@@ -529,6 +529,283 @@ mod tests {
             Some(Token::Identifier("y".to_string()))
         );
     }
+    #[test]
+    fn test_process_basic_escape() {
+        assert_eq!(process_basic_escape('n'), Some('\n'));
+        assert_eq!(process_basic_escape('t'), Some('\t'));
+        assert_eq!(process_basic_escape('r'), Some('\r'));
+        assert_eq!(process_basic_escape('\\'), Some('\\'));
+        assert_eq!(process_basic_escape('"'), Some('"'));
+        assert_eq!(process_basic_escape('\''), Some('\''));
+        assert_eq!(process_basic_escape('0'), Some('\0'));
+        assert_eq!(process_basic_escape('x'), None); // Invalid escape
+    }
+
+    #[test]
+    fn test_process_unicode_escape() {
+        let mut chars = "{41}".chars();
+        assert_eq!(process_unicode_escape(&mut chars), "A");
+
+        let mut chars = "{1F600}".chars();
+        assert_eq!(process_unicode_escape(&mut chars), "😀");
+
+        let mut chars = "{INVALID}".chars();
+        assert_eq!(process_unicode_escape(&mut chars), "\\u{INVALID}");
+    }
+
+    #[test]
+    fn test_process_escapes() {
+        assert_eq!(process_escapes("Hello\\nWorld"), "Hello\nWorld");
+        assert_eq!(process_escapes("Tab\\tHere"), "Tab\tHere");
+        assert_eq!(process_escapes("Quote\\\"Here"), "Quote\"Here");
+        assert_eq!(process_escapes("Unicode\\u{41}"), "UnicodeA");
+        assert_eq!(process_escapes("Invalid\\x"), "Invalid\\x");
+        assert_eq!(process_escapes("Backslash\\\\"), "Backslash\\");
+    }
+
+    #[test]
+    fn test_tokenize_strings() {
+        let mut stream = TokenStream::new(r#""Hello, World!""#);
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::String("Hello, World!".to_string()))
+        );
+
+        let mut stream = TokenStream::new(r#"'c'"#);
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Char('c'))
+        );
+    }
+
+    #[test]
+    fn test_tokenize_keywords() {
+        let keywords = vec![
+            ("let", Token::Let),
+            ("var", Token::Var),
+            ("fun", Token::Fun),
+            ("fn", Token::Fn),
+            ("if", Token::If),
+            ("else", Token::Else),
+            ("match", Token::Match),
+            ("for", Token::For),
+            ("while", Token::While),
+            ("loop", Token::Loop),
+            ("return", Token::Return),
+            ("break", Token::Break),
+            ("continue", Token::Continue),
+            ("true", Token::Bool(true)),
+            ("false", Token::Bool(false)),
+            ("null", Token::Null),
+        ];
+
+        for (keyword_str, expected_token) in keywords {
+            let mut stream = TokenStream::new(keyword_str);
+            assert_eq!(
+                stream.next().map(|(t, _)| t),
+                Some(expected_token),
+                "Failed to tokenize keyword: {}",
+                keyword_str
+            );
+        }
+    }
+
+    #[test]
+    fn test_tokenize_operators() {
+        let operators = vec![
+            ("+", Token::Plus),
+            ("-", Token::Minus),
+            ("*", Token::Star),
+            ("/", Token::Slash),
+            ("%", Token::Percent),
+            ("**", Token::Power),
+            ("==", Token::EqualEqual),
+            ("!=", Token::NotEqual),
+            ("<", Token::Less),
+            ("<=", Token::LessEqual),
+            (">", Token::Greater),
+            (">=", Token::GreaterEqual),
+            ("&&", Token::AndAnd),
+            ("||", Token::OrOr),
+            ("!", Token::Bang),
+            ("=", Token::Equal),
+            ("|>", Token::Pipeline),
+            // (">>" is parsed differently)
+            ("<<", Token::LeftShift),
+        ];
+
+        for (op_str, expected_token) in operators {
+            let mut stream = TokenStream::new(op_str);
+            assert_eq!(
+                stream.next().map(|(t, _)| t),
+                Some(expected_token),
+                "Failed to tokenize operator: {}",
+                op_str
+            );
+        }
+    }
+
+    #[test]
+    fn test_tokenize_punctuation() {
+        let punctuation = vec![
+            ("(", Token::LeftParen),
+            (")", Token::RightParen),
+            ("[", Token::LeftBracket),
+            ("]", Token::RightBracket),
+            ("{", Token::LeftBrace),
+            ("}", Token::RightBrace),
+            (",", Token::Comma),
+            (".", Token::Dot),
+            (":", Token::Colon),
+            ("::", Token::ColonColon),
+            (";", Token::Semicolon),
+            ("->", Token::Arrow),
+            ("=>", Token::FatArrow),
+            // ("...", Token::Ellipsis), // Doesn't exist
+        ];
+
+        for (punct_str, expected_token) in punctuation {
+            let mut stream = TokenStream::new(punct_str);
+            assert_eq!(
+                stream.next().map(|(t, _)| t),
+                Some(expected_token),
+                "Failed to tokenize punctuation: {}",
+                punct_str
+            );
+        }
+    }
+
+    #[test]
+    fn test_tokenize_floats() {
+        let floats = vec![
+            "3.14",
+            "0.0",
+            "1.0",
+            "999.999",
+            "0.001",
+        ];
+
+        for float_str in floats {
+            let mut stream = TokenStream::new(float_str);
+            match stream.next() {
+                Some((Token::Float(_), _)) => {},
+                _ => panic!("Failed to tokenize float: {}", float_str),
+            }
+        }
+    }
+
+    #[test]
+    fn test_tokenize_complex_expression() {
+        let mut stream = TokenStream::new("fun add(x: i32, y: i32) -> i32 { x + y }");
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Fun));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("add".to_string())));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::LeftParen));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("x".to_string())));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Colon));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("i32".to_string())));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Comma));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("y".to_string())));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Colon));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("i32".to_string())));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::RightParen));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Arrow));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("i32".to_string())));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::LeftBrace));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("x".to_string())));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Plus));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("y".to_string())));
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::RightBrace));
+    }
+
+    #[test]
+    fn test_token_stream_peek() {
+        let mut stream = TokenStream::new("let x = 42");
+
+        // Peek should not consume
+        let peeked = stream.peek().map(|(t, _)| t.clone());
+        assert_eq!(peeked, Some(Token::Let));
+
+        // Peek again should return same
+        let peeked2 = stream.peek().map(|(t, _)| t.clone());
+        assert_eq!(peeked2, Some(Token::Let));
+
+        // Next should consume
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Let));
+
+        // Now peek should show next token
+        let peeked3 = stream.peek().map(|(t, _)| t.clone());
+        assert_eq!(peeked3, Some(Token::Identifier("x".to_string())));
+    }
+
+    #[test]
+    fn test_token_stream_position() {
+        let mut stream = TokenStream::new("a + b");
+
+        // Save position at start
+        let pos = stream.position();
+
+        // Advance
+        stream.advance();
+        stream.advance();
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("b".to_string())));
+
+        // Restore position
+        stream.set_position(pos);
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("a".to_string())));
+    }
+
+    #[test]
+    fn test_token_stream_expect() {
+        let mut stream = TokenStream::new("let x");
+
+        // Expect correct token
+        let span = stream.expect(&Token::Let);
+        assert!(span.is_ok());
+
+        // Expect wrong token
+        let result = stream.expect(&Token::If);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_tokenize_interpolated_string() {
+        let mut stream = TokenStream::new(r#"f"Hello {name}!""#);
+        match stream.next() {
+            Some((Token::FString(s), _)) => {
+                assert!(s.contains("Hello"));
+            },
+            _ => panic!("Failed to tokenize interpolated string"),
+        }
+    }
+
+    #[test]
+    fn test_tokenize_special_tokens() {
+        let mut stream = TokenStream::new("_");
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Underscore));
+    }
+
+    #[test]
+    fn test_peek_nth() {
+        let mut stream = TokenStream::new("a b c");
+
+        // Peek at second token
+        let second = stream.peek_nth(1).map(|(t, _)| t);
+        assert_eq!(second, Some(Token::Identifier("b".to_string())));
+
+        // First token should still be unconsumed
+        assert_eq!(stream.next().map(|(t, _)| t), Some(Token::Identifier("a".to_string())));
+    }
+
+    #[test]
+    fn test_peek_nth_is_colon() {
+        let mut stream = TokenStream::new(": x");
+        assert!(stream.peek_nth_is_colon(0));
+
+        let mut stream = TokenStream::new("x : y");
+        assert!(!stream.peek_nth_is_colon(0));
+        assert!(stream.peek_nth_is_colon(1));
+    }
+
     proptest! {
         #[test]
         fn test_tokenize_identifiers(s in "[a-zA-Z_][a-zA-Z0-9_]{0,100}") {
@@ -559,6 +836,20 @@ mod tests {
                 Some((Token::Integer(i), _)) => prop_assert_eq!(i, n),
                 _ => panic!("Failed to tokenize integer"),
             }
+        }
+
+        #[test]
+        fn test_process_escapes_never_panics(s: String) {
+            // Should never panic on any input
+            let _ = process_escapes(&s);
+        }
+
+        #[test]
+        fn test_tokenize_never_panics(s: String) {
+            // Should never panic on any input
+            let mut stream = TokenStream::new(&s);
+            // Consume all tokens
+            while stream.next().is_some() {}
         }
     }
 }

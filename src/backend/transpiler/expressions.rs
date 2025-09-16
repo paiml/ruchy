@@ -1065,6 +1065,168 @@ mod tests {
         assert!(rust_str.contains("format!") || rust_str.contains("Hello"));
         assert!(rust_str.contains("name"));
     }
+
+    #[test]
+    fn test_transpile_char_literal() {
+        let transpiler = create_transpiler();
+        let code = "'a'";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("'a'"));
+    }
+
+    #[test]
+    fn test_transpile_large_integer() {
+        let transpiler = create_transpiler();
+        // Test large integer that requires i64
+        let code = "9223372036854775807";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("9223372036854775807"));
+    }
+
+    #[test]
+    fn test_transpile_negative_integer() {
+        let transpiler = create_transpiler();
+        let code = "-42";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        // Should transpile to negation of 42
+        assert!(rust_str.contains("42"));
+    }
+
+    #[test]
+    fn test_transpile_expr_comparison_operators() {
+        let tests = vec![
+            ("a == b", "=="),
+            ("a != b", "!="),
+            ("a < b", "<"),
+            ("a <= b", "<="),
+            ("a > b", ">"),
+            ("a >= b", ">="),
+        ];
+
+        for (code, expected_op) in tests {
+            let transpiler = create_transpiler();
+            let mut parser = Parser::new(code);
+            let ast = parser.parse().expect("Failed to parse");
+            let result = transpiler.transpile(&ast).unwrap();
+            let rust_str = result.to_string();
+            assert!(rust_str.contains(expected_op), "Failed for: {}", code);
+        }
+    }
+
+    #[test]
+    fn test_transpile_expr_logical_operators() {
+        let tests = vec![
+            ("a && b", "&&"),
+            ("a || b", "||"),
+            ("!a", "!"),
+        ];
+
+        for (code, expected_op) in tests {
+            let transpiler = create_transpiler();
+            let mut parser = Parser::new(code);
+            let ast = parser.parse().expect("Failed to parse");
+            let result = transpiler.transpile(&ast).unwrap();
+            let rust_str = result.to_string();
+            assert!(rust_str.contains(expected_op), "Failed for: {}", code);
+        }
+    }
+
+    #[test]
+    fn test_transpile_expr_arithmetic_operators() {
+        let tests = vec![
+            ("a + b", "+"),
+            ("a - b", "-"),
+            ("a * b", "*"),
+            ("a / b", "/"),
+            ("a % b", "%"),
+        ];
+
+        for (code, expected_op) in tests {
+            let transpiler = create_transpiler();
+            let mut parser = Parser::new(code);
+            let ast = parser.parse().expect("Failed to parse");
+            let result = transpiler.transpile(&ast).unwrap();
+            let rust_str = result.to_string();
+            // Check that the operator appears
+            assert!(rust_str.contains(expected_op), "Failed for: {}", code);
+        }
+    }
+
+    #[test]
+    #[ignore] // Parser doesn't support this syntax yet
+    fn test_transpile_array_literal() {
+        let transpiler = create_transpiler();
+        let code = "[1, 2, 3]";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("vec!"));
+        assert!(rust_str.contains("1"));
+        assert!(rust_str.contains("2"));
+        assert!(rust_str.contains("3"));
+    }
+
+    #[test]
+    fn test_transpile_tuple_literal() {
+        let transpiler = create_transpiler();
+        let code = "(1, 2, 3)";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("1"));
+        assert!(rust_str.contains("2"));
+        assert!(rust_str.contains("3"));
+    }
+
+    #[test]
+    fn test_transpile_index_access() {
+        let transpiler = create_transpiler();
+        let code = "arr[0]";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("arr"));
+        assert!(rust_str.contains("0"));
+    }
+
+    #[test]
+    fn test_transpile_field_access() {
+        let transpiler = create_transpiler();
+        let code = "obj.field";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("obj"));
+        assert!(rust_str.contains("field"));
+    }
+
+    #[test]
+    fn test_transpile_parenthesized_expression() {
+        let transpiler = create_transpiler();
+        let code = "(a + b) * c";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("a"));
+        assert!(rust_str.contains("b"));
+        assert!(rust_str.contains("c"));
+        assert!(rust_str.contains("+"));
+        assert!(rust_str.contains("*"));
+    }
 }
 #[cfg(test)]
 mod property_tests_expressions {

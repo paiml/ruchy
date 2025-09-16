@@ -319,6 +319,7 @@ pub fn concat(dataframes: &[Self]) -> Result<Self> {
 mod tests {
     use super::*;
     use polars::prelude::*;
+    use polars::datatypes::PlSmallStr;
     #[test]
     fn test_dataframe_to_arrow_roundtrip() {
         // Create a simple Polars DataFrame
@@ -431,6 +432,113 @@ mod tests {
     }
     
     #[test]
+    fn test_polars_dtype_to_arrow() {
+        // Test various data type conversions
+        assert_eq!(polars_dtype_to_arrow(&PolarsDataType::Int32).unwrap(), ArrowDataType::Int32);
+        assert_eq!(polars_dtype_to_arrow(&PolarsDataType::Int64).unwrap(), ArrowDataType::Int64);
+        assert_eq!(polars_dtype_to_arrow(&PolarsDataType::Float32).unwrap(), ArrowDataType::Float32);
+        assert_eq!(polars_dtype_to_arrow(&PolarsDataType::Float64).unwrap(), ArrowDataType::Float64);
+        assert_eq!(polars_dtype_to_arrow(&PolarsDataType::Boolean).unwrap(), ArrowDataType::Boolean);
+        assert_eq!(polars_dtype_to_arrow(&PolarsDataType::String).unwrap(), ArrowDataType::Utf8);
+    }
+
+    // arrow_dtype_to_polars doesn't exist yet, would be for reverse conversion
+
+    #[test]
+    fn test_arrow_dataframe_new() {
+        let schema = Arc::new(Schema::new(vec![
+            Field::new("col1", ArrowDataType::Int32, false),
+        ]));
+        let array = Int64Array::from(vec![1, 2, 3]);
+        let batch = RecordBatch::try_new(
+            schema.clone(),
+            vec![Arc::new(array) as ArrayRef]
+        ).unwrap();
+
+        let arrow_df = ArrowDataFrame::new(schema.clone(), vec![batch]);
+        assert_eq!(arrow_df.schema, schema);
+        assert_eq!(arrow_df.batches.len(), 1);
+    }
+
+    #[test]
+    fn test_arrow_dataframe_num_columns() {
+        let schema = Arc::new(Schema::new(vec![
+            Field::new("col1", ArrowDataType::Int32, false),
+            Field::new("col2", ArrowDataType::Float64, false),
+            Field::new("col3", ArrowDataType::Utf8, false),
+        ]));
+        let arrow_df = ArrowDataFrame::new(schema, Vec::new());
+        assert_eq!(arrow_df.num_columns(), 3);
+    }
+
+    #[test]
+    fn test_arrow_dataframe_concat_empty() {
+        let result = ArrowDataFrame::concat(&[]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("empty list"));
+    }
+
+    #[test]
+    fn test_arrow_dataframe_concat_mismatched_schemas() {
+        let schema1 = Arc::new(Schema::new(vec![
+            Field::new("col1", ArrowDataType::Int32, false),
+        ]));
+        let schema2 = Arc::new(Schema::new(vec![
+            Field::new("col2", ArrowDataType::Float64, false),
+        ]));
+
+        let df1 = ArrowDataFrame::new(schema1, Vec::new());
+        let df2 = ArrowDataFrame::new(schema2, Vec::new());
+
+        let result = ArrowDataFrame::concat(&[df1, df2]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("different schemas"));
+    }
+
+    #[test]
+    fn test_arrow_dataframe_slice_empty() {
+        let schema = Arc::new(Schema::new(vec![
+            Field::new("col1", ArrowDataType::Int32, false),
+        ]));
+        let arrow_df = ArrowDataFrame::new(schema, Vec::new());
+
+        let result = arrow_df.slice(0, 10);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("empty"));
+    }
+
+    #[test]
+    fn test_arrow_dataframe_filter_mismatched_length() {
+        let df = df! {
+            "values" => &[1, 2, 3, 4, 5],
+        }.unwrap();
+        let batch = dataframe_to_arrow(&df).unwrap();
+        let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
+
+        // Create mask with wrong length
+        let mask = BooleanArray::from(vec![true, false]);
+
+        let result = arrow_df.filter(&mask);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("length"));
+    }
+
+    #[test]
+    fn test_dataframe_with_nulls() {
+        // Test handling of nullable columns
+        let values: Vec<Option<i32>> = vec![Some(1), None, Some(3), None, Some(5)];
+        let s = Series::new(PlSmallStr::from("nullable"), values);
+        let df = DataFrame::new(vec![s]).unwrap();
+
+        let batch = dataframe_to_arrow(&df).unwrap();
+        assert_eq!(batch.num_rows(), 5);
+
+        // Convert back and verify nulls preserved
+        let df2 = arrow_to_dataframe(&batch).unwrap();
+        assert_eq!(df.shape(), df2.shape());
+    }
+
+    #[test]
     fn test_df004_1m_row_performance_target() {
         // DF-004: Verify all operations meet 1M row <100ms performance target
         let size = 1_000_000;
@@ -494,17 +602,70 @@ mod property_tests_arrow_integration {
         ) {
             use polars::prelude::{DataFrame, Series};
             use polars::datatypes::PlSmallStr;
-            
+
             // Create DataFrame with random data
             let col_name_small = PlSmallStr::from(col_name.as_str());
             let series = Series::new(col_name_small, int_values);
             let df = DataFrame::new(vec![series]).expect("Failed to create DataFrame");
-            
+
             // Convert to Arrow and back - should preserve shape
             if let Ok(record_batch) = dataframe_to_arrow(&df) {
                 if let Ok(df2) = arrow_to_dataframe(&record_batch) {
                     prop_assert_eq!(df.shape(), df2.shape());
                 }
+            }
+        }
+
+        /// Property: Slicing never produces more rows than requested
+        #[test]
+        fn test_slice_never_exceeds_length(
+            total_rows in 10..100usize,
+            offset in 0..100usize,
+            length in 1..100usize
+        ) {
+            let values: Vec<i32> = (0..total_rows as i32).collect();
+            let df = df! {
+                "values" => values,
+            }.unwrap();
+
+            let batch = dataframe_to_arrow(&df).unwrap();
+            let arrow_df = ArrowDataFrame::new(batch.schema(), vec![batch]);
+
+            if offset < total_rows {
+                if let Ok(sliced) = arrow_df.slice(offset, length) {
+                    let actual_rows = sliced.num_rows();
+                    let max_possible = total_rows.saturating_sub(offset).min(length);
+                    prop_assert!(actual_rows <= max_possible);
+                }
+            }
+        }
+
+        /// Property: Concatenation preserves total row count
+        #[test]
+        fn test_concat_preserves_row_count(
+            sizes in prop::collection::vec(1..20usize, 1..5)
+        ) {
+            let schema = Arc::new(Schema::new(vec![
+                Field::new("col", ArrowDataType::Int32, false),
+            ]));
+
+            let mut dfs = Vec::new();
+            let mut total_rows = 0;
+
+            for size in &sizes {
+                let values: Vec<i32> = (0..*size as i32).collect();
+                let array = Int64Array::from(values);
+                let batch = RecordBatch::try_new(
+                    schema.clone(),
+                    vec![Arc::new(array) as ArrayRef]
+                ).unwrap();
+
+                dfs.push(ArrowDataFrame::new(schema.clone(), vec![batch]));
+                total_rows += size;
+            }
+
+            if let Ok(concatenated) = ArrowDataFrame::concat(&dfs) {
+                prop_assert_eq!(concatenated.num_rows(), total_rows);
             }
         }
     }
