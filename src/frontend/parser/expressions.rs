@@ -2373,8 +2373,375 @@ fn validate_try_catch_structure(
 }
 
 #[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::parser::Parser;
+    use crate::frontend::ast::{Expr, ExprKind, Literal};
+
+    // Unit tests for specific parsing functions
+
+    #[test]
+    fn test_parse_integer_literal() {
+        let mut parser = Parser::new("42");
+        let result = parser.parse().unwrap();
+        if let ExprKind::Literal(Literal::Integer(n)) = &result.kind {
+            assert_eq!(*n, 42);
+        } else {
+            panic!("Expected integer literal, got {:?}", result.kind);
+        }
+    }
+
+    #[test]
+    fn test_parse_float_literal() {
+        let mut parser = Parser::new("3.14");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse float literal");
+    }
+
+    #[test]
+    fn test_parse_string_literal() {
+        let mut parser = Parser::new("\"hello world\"");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse string literal");
+    }
+
+    #[test]
+    fn test_parse_boolean_true() {
+        let mut parser = Parser::new("true");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse boolean true");
+    }
+
+    #[test]
+    fn test_parse_boolean_false() {
+        let mut parser = Parser::new("false");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse boolean false");
+    }
+
+    #[test]
+    fn test_parse_char_literal() {
+        let mut parser = Parser::new("'a'");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse char literal");
+    }
+
+    #[test]
+    fn test_parse_fstring_literal() {
+        let mut parser = Parser::new("f\"Hello {name}\"");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse f-string literal");
+    }
+
+    #[test]
+    fn test_parse_identifier() {
+        let mut parser = Parser::new("variable_name");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse identifier");
+    }
+
+    #[test]
+    fn test_parse_underscore() {
+        let mut parser = Parser::new("_");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse underscore");
+    }
+
+    #[test]
+    fn test_parse_unary_minus() {
+        let mut parser = Parser::new("-42");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse unary minus");
+    }
+
+    #[test]
+    fn test_parse_unary_not() {
+        let mut parser = Parser::new("!true");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse unary not");
+    }
+
+    #[test]
+    fn test_parse_binary_addition() {
+        let mut parser = Parser::new("1 + 2");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary addition");
+    }
+
+    #[test]
+    fn test_parse_binary_subtraction() {
+        let mut parser = Parser::new("5 - 3");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary subtraction");
+    }
+
+    #[test]
+    fn test_parse_binary_multiplication() {
+        let mut parser = Parser::new("4 * 2");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary multiplication");
+    }
+
+    #[test]
+    fn test_parse_binary_division() {
+        let mut parser = Parser::new("8 / 2");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary division");
+    }
+
+    #[test]
+    fn test_parse_binary_modulo() {
+        let mut parser = Parser::new("10 % 3");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary modulo");
+    }
+
+    #[test]
+    fn test_parse_binary_equality() {
+        let mut parser = Parser::new("x == y");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary equality");
+    }
+
+    #[test]
+    fn test_parse_binary_inequality() {
+        let mut parser = Parser::new("x != y");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary inequality");
+    }
+
+    #[test]
+    fn test_parse_binary_less_than() {
+        let mut parser = Parser::new("x < y");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary less than");
+    }
+
+    #[test]
+    fn test_parse_binary_greater_than() {
+        let mut parser = Parser::new("x > y");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary greater than");
+    }
+
+    #[test]
+    fn test_parse_binary_less_equal() {
+        let mut parser = Parser::new("x <= y");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary less equal");
+    }
+
+    #[test]
+    fn test_parse_binary_greater_equal() {
+        let mut parser = Parser::new("x >= y");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary greater equal");
+    }
+
+    #[test]
+    fn test_parse_binary_logical_and() {
+        let mut parser = Parser::new("true && false");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary logical and");
+    }
+
+    #[test]
+    fn test_parse_binary_logical_or() {
+        let mut parser = Parser::new("true || false");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse binary logical or");
+    }
+
+    #[test]
+    fn test_parse_parenthesized_expression() {
+        let mut parser = Parser::new("(42)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse parenthesized expression");
+    }
+
+    #[test]
+    fn test_parse_nested_parentheses() {
+        let mut parser = Parser::new("((42))");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse nested parentheses");
+    }
+
+    #[test]
+    fn test_parse_unit_value() {
+        let mut parser = Parser::new("()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse unit value");
+    }
+
+    #[test]
+    fn test_parse_tuple_two_elements() {
+        let mut parser = Parser::new("(1, 2)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse tuple with two elements");
+    }
+
+    #[test]
+    fn test_parse_tuple_three_elements() {
+        let mut parser = Parser::new("(1, 2, 3)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse tuple with three elements");
+    }
+
+    #[test]
+    fn test_parse_list_empty() {
+        let mut parser = Parser::new("[]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse empty list");
+    }
+
+    #[test]
+    fn test_parse_list_with_elements() {
+        let mut parser = Parser::new("[1, 2, 3]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse list with elements");
+    }
+
+    #[test]
+    fn test_parse_dict_empty() {
+        let mut parser = Parser::new("{}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse empty dict");
+    }
+
+    #[test]
+    fn test_parse_dict_with_entries() {
+        let mut parser = Parser::new("{\"key\": \"value\"}");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse dict with entries");
+    }
+
+    #[test]
+    fn test_parse_function_call_no_args() {
+        let mut parser = Parser::new("func()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function call without args");
+    }
+
+    #[test]
+    fn test_parse_function_call_with_args() {
+        let mut parser = Parser::new("func(1, 2, 3)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function call with args");
+    }
+
+    #[test]
+    fn test_parse_method_call() {
+        let mut parser = Parser::new("obj.method()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse method call");
+    }
+
+    #[test]
+    fn test_parse_chained_method_calls() {
+        let mut parser = Parser::new("obj.method1().method2()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse chained method calls");
+    }
+
+    #[test]
+    fn test_parse_index_access() {
+        let mut parser = Parser::new("array[0]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse index access");
+    }
+
+    #[test]
+    fn test_parse_nested_index_access() {
+        let mut parser = Parser::new("matrix[i][j]");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse nested index access");
+    }
+
+    #[test]
+    fn test_parse_field_access() {
+        let mut parser = Parser::new("obj.field");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse field access");
+    }
+
+    #[test]
+    #[ignore = "async blocks not fully implemented"]
+    fn test_parse_async_block() {
+        let mut parser = Parser::new("async { 42 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse async block");
+    }
+
+    #[test]
+    #[ignore = "await expressions not fully implemented"]
+    fn test_parse_await_expression() {
+        let mut parser = Parser::new("await async_func()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse await expression");
+    }
+
+    #[test]
+    fn test_parse_pipeline_operator() {
+        let mut parser = Parser::new("data |> process |> filter");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse pipeline operator");
+    }
+
+    #[test]
+    fn test_parse_range_inclusive() {
+        let mut parser = Parser::new("1..10");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse inclusive range");
+    }
+
+    #[test]
+    #[ignore = "exclusive range syntax not fully implemented"]
+    fn test_parse_range_exclusive() {
+        let mut parser = Parser::new("1...10");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse exclusive range");
+    }
+
+    #[test]
+    fn test_parse_complex_expression() {
+        let mut parser = Parser::new("(a + b) * c - d / e");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse complex expression");
+    }
+
+    #[test]
+    #[ignore = "ternary conditional not fully implemented"]
+    fn test_parse_ternary_conditional() {
+        let mut parser = Parser::new("condition ? true_val : false_val");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse ternary conditional");
+    }
+
+    #[test]
+    fn test_parse_lambda_no_params() {
+        let mut parser = Parser::new("|| 42");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse lambda without params");
+    }
+
+    #[test]
+    fn test_parse_lambda_with_params() {
+        let mut parser = Parser::new("|x, y| x + y");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse lambda with params");
+    }
+
+    #[test]
+    fn test_parse_fat_arrow_lambda() {
+        let mut parser = Parser::new("x => x * 2");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse fat arrow lambda");
+    }
+}
+
+#[cfg(test)]
 mod property_tests_parser_expressions {
-    
+
     use proptest::prelude::*;
     use crate::frontend::parser::Parser;
     

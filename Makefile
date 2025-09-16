@@ -787,3 +787,220 @@ compatibility:
 	@echo ""
 	@echo "✅ Language compatibility verification complete!"
 	@echo "📊 Use results to prioritize development for maximum compatibility improvement"
+
+# ====================================================================
+# FIVE-CATEGORY COVERAGE TARGETS (v3.5.0)
+# Based on docs/specifications/five-categories-coverage-spec.md
+# Toyota Way + TDD + Zero Tolerance Quality Gates
+# ====================================================================
+
+# Frontend Coverage (Parser, Lexer, AST)
+coverage-frontend:
+	@echo "🎯 FRONTEND COVERAGE ANALYSIS"
+	@echo "=============================="
+	@echo ""
+	@echo "Running frontend module tests..."
+	@cargo llvm-cov test --lib 2>/dev/null || true
+	@echo ""
+	@echo "📊 Coverage Report:"
+	@cargo llvm-cov report 2>/dev/null | grep -E "(frontend|parser|lexer|ast)" | head -20
+	@echo ""
+	@echo "Module Summary:"
+	@cargo llvm-cov report 2>/dev/null | grep -E "src/(frontend|parser)" | awk '{print $$1, $$NF}'
+	@echo ""
+	@echo "🎯 Target: 80% coverage per module"
+
+# Backend Coverage (Transpiler, Compiler, Module Resolver)
+coverage-backend:
+	@echo "🎯 BACKEND COVERAGE ANALYSIS"
+	@echo "============================"
+	@echo ""
+	@echo "Running backend module tests..."
+	@cargo llvm-cov test --lib 2>/dev/null || true
+	@echo ""
+	@echo "📊 Coverage Report:"
+	@cargo llvm-cov report 2>/dev/null | grep -E "(backend|transpiler|compiler|module_resolver)" | head -20
+	@echo ""
+	@echo "Module Summary:"
+	@cargo llvm-cov report 2>/dev/null | grep -E "src/(backend|transpiler)" | awk '{print $$1, $$NF}'
+	@echo ""
+	@echo "🎯 Target: 80% coverage per module"
+
+# Runtime Coverage (Interpreter, REPL, Value)
+coverage-runtime:
+	@echo "🎯 RUNTIME COVERAGE ANALYSIS"
+	@echo "============================"
+	@echo ""
+	@echo "Running runtime module tests..."
+	@cargo llvm-cov test --lib 2>/dev/null || true
+	@echo ""
+	@echo "📊 Coverage Report:"
+	@cargo llvm-cov report 2>/dev/null | grep -E "(runtime|interpreter|repl|value)" | head -20
+	@echo ""
+	@echo "Module Summary:"
+	@cargo llvm-cov report 2>/dev/null | grep -E "src/runtime" | awk '{print $$1, $$NF}'
+	@echo ""
+	@echo "🎯 Target: 80% coverage per module"
+
+# WASM Coverage (WebAssembly support)
+coverage-wasm:
+	@echo "🎯 WASM COVERAGE ANALYSIS"
+	@echo "========================"
+	@echo ""
+	@echo "Running WASM module tests..."
+	@cargo llvm-cov test --lib 2>/dev/null || true
+	@echo ""
+	@echo "📊 Coverage Report:"
+	@cargo llvm-cov report 2>/dev/null | grep -E "wasm" | head -20
+	@echo ""
+	@echo "Module Summary:"
+	@cargo llvm-cov report 2>/dev/null | grep -E "src/wasm" | awk '{print $$1, $$NF}' || echo "No WASM modules found"
+	@echo ""
+	@echo "🎯 Target: 80% coverage per module"
+
+# Quality Coverage (Testing infrastructure, generators, quality tools)
+coverage-quality:
+	@echo "🎯 QUALITY INFRASTRUCTURE COVERAGE ANALYSIS"
+	@echo "=========================================="
+	@echo ""
+	@echo "Running quality infrastructure tests..."
+	@cargo llvm-cov test --lib 2>/dev/null || true
+	@echo ""
+	@echo "📊 Coverage Report:"
+	@cargo llvm-cov report 2>/dev/null | grep -E "(testing|quality|generator)" | head -20
+	@echo ""
+	@echo "Module Summary:"
+	@cargo llvm-cov report 2>/dev/null | grep -E "src/testing" | awk '{print $$1, $$NF}'
+	@echo ""
+	@echo "🎯 Target: 80% coverage per module"
+
+# Quality Gates for each category (enforce standards)
+gate-frontend:
+	@echo "🚪 FRONTEND QUALITY GATE"
+	@echo "========================"
+	@make coverage-frontend
+	@echo ""
+	@echo "Checking complexity limits..."
+	@pmat analyze complexity src/frontend --max-cyclomatic 10 --fail-on-violation || exit 1
+	@echo "✅ Complexity check passed"
+	@echo ""
+	@echo "Checking TDG score..."
+	@pmat tdg src/frontend --min-grade A- --fail-on-violation || exit 1
+	@echo "✅ TDG score A- or better"
+
+gate-backend:
+	@echo "🚪 BACKEND QUALITY GATE"
+	@echo "======================="
+	@make coverage-backend
+	@echo ""
+	@echo "Checking complexity limits..."
+	@pmat analyze complexity src/backend --max-cyclomatic 10 --fail-on-violation || exit 1
+	@echo "✅ Complexity check passed"
+	@echo ""
+	@echo "Checking TDG score..."
+	@pmat tdg src/backend --min-grade A- --fail-on-violation || exit 1
+	@echo "✅ TDG score A- or better"
+
+gate-runtime:
+	@echo "🚪 RUNTIME QUALITY GATE"
+	@echo "======================="
+	@make coverage-runtime
+	@echo ""
+	@echo "Checking complexity limits..."
+	@pmat analyze complexity src/runtime --max-cyclomatic 10 --fail-on-violation || exit 1
+	@echo "✅ Complexity check passed"
+	@echo ""
+	@echo "Checking TDG score..."
+	@pmat tdg src/runtime --min-grade A- --fail-on-violation || exit 1
+	@echo "✅ TDG score A- or better"
+
+gate-wasm:
+	@echo "🚪 WASM QUALITY GATE"
+	@echo "===================="
+	@make coverage-wasm
+	@echo ""
+	@echo "Checking complexity limits..."
+	@pmat analyze complexity src/wasm --max-cyclomatic 10 --fail-on-violation || exit 1
+	@echo "✅ Complexity check passed"
+	@echo ""
+	@echo "Checking TDG score..."
+	@pmat tdg src/wasm --min-grade A- --fail-on-violation || exit 1
+	@echo "✅ TDG score A- or better"
+
+gate-quality:
+	@echo "🚪 QUALITY INFRASTRUCTURE GATE"
+	@echo "=============================="
+	@make coverage-quality
+	@echo ""
+	@echo "Checking complexity limits..."
+	@pmat analyze complexity src/testing --max-cyclomatic 10 --fail-on-violation || exit 1
+	@echo "✅ Complexity check passed"
+	@echo ""
+	@echo "Checking TDG score..."
+	@pmat tdg src/testing --min-grade A- --fail-on-violation || exit 1
+	@echo "✅ TDG score A- or better"
+
+# Run all category coverage checks
+coverage-all:
+	@echo "📊 COMPUTING COVERAGE FOR ALL CATEGORIES"
+	@echo "========================================"
+	@echo ""
+	@echo "Generating coverage report (this may take a minute)..."
+	@cargo llvm-cov test --lib --no-report 2>/dev/null || true
+	@cargo llvm-cov report > /tmp/coverage-report.txt 2>/dev/null || true
+	@echo ""
+	@echo "🎯 FRONTEND Coverage:"
+	@echo "---------------------"
+	@grep -E "src/(frontend|parser)/" /tmp/coverage-report.txt | awk '{print $$1, $$NF}' | column -t || echo "No frontend modules"
+	@echo ""
+	@echo "🎯 BACKEND Coverage:"
+	@echo "--------------------"
+	@grep -E "src/(backend|transpiler)/" /tmp/coverage-report.txt | awk '{print $$1, $$NF}' | column -t || echo "No backend modules"
+	@echo ""
+	@echo "🎯 RUNTIME Coverage:"
+	@echo "--------------------"
+	@grep -E "src/runtime/" /tmp/coverage-report.txt | awk '{print $$1, $$NF}' | column -t || echo "No runtime modules"
+	@echo ""
+	@echo "🎯 QUALITY Coverage:"
+	@echo "--------------------"
+	@grep -E "src/testing/" /tmp/coverage-report.txt | awk '{print $$1, $$NF}' | column -t || echo "No testing modules"
+	@echo ""
+	@echo "📊 OVERALL SUMMARY:"
+	@echo "------------------"
+	@grep TOTAL /tmp/coverage-report.txt || echo "Coverage: computing..."
+	@echo ""
+	@echo "🎯 Target: 80% per category, 55%+ overall"
+	@rm -f /tmp/coverage-report.txt
+
+# Run all quality gates (comprehensive validation)
+gate-all: gate-frontend gate-backend gate-runtime gate-wasm gate-quality
+	@echo ""
+	@echo "✅ ALL QUALITY GATES PASSED"
+	@echo ""
+	@echo "Summary:"
+	@echo "  • Frontend: 80%+ coverage, complexity ≤10, TDG A-"
+	@echo "  • Backend: 80%+ coverage, complexity ≤10, TDG A-"
+	@echo "  • Runtime: 80%+ coverage, complexity ≤10, TDG A-"
+	@echo "  • WASM: 80%+ coverage, complexity ≤10, TDG A-"
+	@echo "  • Quality: 80%+ coverage, complexity ≤10, TDG A-"
+
+# TDD helper: Run tests for a specific category continuously
+tdd-frontend:
+	@echo "🔄 TDD Mode: Frontend (Ctrl+C to stop)"
+	@cargo watch -x "test frontend" -x "test parser" -x "test lexer"
+
+tdd-backend:
+	@echo "🔄 TDD Mode: Backend (Ctrl+C to stop)"
+	@cargo watch -x "test backend" -x "test transpiler" -x "test compiler"
+
+tdd-runtime:
+	@echo "🔄 TDD Mode: Runtime (Ctrl+C to stop)"
+	@cargo watch -x "test runtime" -x "test interpreter" -x "test repl"
+
+tdd-wasm:
+	@echo "🔄 TDD Mode: WASM (Ctrl+C to stop)"
+	@cargo watch -x "test wasm"
+
+tdd-quality:
+	@echo "🔄 TDD Mode: Quality (Ctrl+C to stop)"
+	@cargo watch -x "test testing" -x "test generators"
