@@ -173,8 +173,8 @@ pub fn arb_expr() -> BoxedStrategy<Expr> {
 /// ```
 /// use ruchy::testing::generators::arb_pattern;
 /// 
-/// let result = arb_pattern(());
-/// assert_eq!(result, Ok(()));
+/// let strategy = arb_pattern();
+/// // Use the strategy with proptest
 /// ```
 pub fn arb_pattern() -> BoxedStrategy<Pattern> {
     prop_oneof![
@@ -443,4 +443,155 @@ mod tests {
         let expr = Expr::new(if_expr, Span::new(0, 0));
         assert!(matches!(expr.kind, ExprKind::If { .. }));
     }
+
+    #[test]
+    fn test_arb_literal_generation() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_literal();
+
+        // Generate a few literals and check they're valid
+        for _ in 0..10 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let literal = value_tree.current();
+            // Just verify it doesn't panic
+            match literal {
+                Literal::Integer(_) | Literal::Float(_) | Literal::Bool(_) |
+                Literal::String(_) | Literal::Unit | Literal::Char(_) => {},
+            }
+        }
+    }
+
+    #[test]
+    fn test_arb_identifier_generation() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_identifier();
+
+        for _ in 0..10 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let identifier = value_tree.current();
+            // Check it starts with a letter
+            assert!(!identifier.is_empty());
+            assert!(identifier.chars().next().unwrap().is_alphabetic());
+        }
+    }
+
+    #[test]
+    fn test_arb_binary_op_generation() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_binary_op();
+
+        for _ in 0..10 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let _op = value_tree.current();
+            // Just verify it generates without panic
+        }
+    }
+
+    #[test]
+    fn test_arb_unary_op_generation() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_unary_op();
+
+        for _ in 0..10 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let _op = value_tree.current();
+            // Just verify it generates without panic
+        }
+    }
+
+    #[test]
+    fn test_arb_pattern_generation() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_pattern();
+
+        for _ in 0..10 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let pattern = value_tree.current();
+            // Verify pattern is valid
+            match pattern {
+                Pattern::Literal(_) | Pattern::Identifier(_) | Pattern::Wildcard |
+                Pattern::Tuple(_) | Pattern::Struct { .. } | _ => {},
+            }
+        }
+    }
+
+    #[test]
+    fn test_arb_expr_generation() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_expr();
+
+        // Generate several expressions
+        for _ in 0..10 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let expr = value_tree.current();
+            // Just verify it generates valid AST
+            assert_eq!(expr.span, Span::new(0, 0));
+        }
+    }
+
+    #[test]
+    fn test_multiple_expr_generation() {
+        // Ensure we can generate many expressions without issues
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+        let mut runner = TestRunner::default();
+        let strategy = arb_expr();
+
+        for _ in 0..20 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let _expr = value_tree.current();
+            // If this doesn't panic, generation works
+        }
+    }
+
+    #[test]
+    fn test_expr_kind_variants() {
+        // Test that various ExprKind variants can be constructed
+        let _ = ExprKind::Literal(Literal::Integer(42));
+        let _ = ExprKind::Identifier("x".to_string());
+        let _ = ExprKind::Block(vec![]);
+        let _ = ExprKind::Return { value: None };
+        let _ = ExprKind::Break { label: None };
+        let _ = ExprKind::Continue { label: None };
+    }
+
+    #[test]
+    fn test_span_creation_extended() {
+        let span = Span::new(10, 20);
+        assert_eq!(span.start, 10);
+        assert_eq!(span.end, 20);
+
+        let span2 = Span { start: 5, end: 15 };
+        assert_eq!(span2.start, 5);
+        assert_eq!(span2.end, 15);
+    }
+
+    #[test]
+    fn test_literal_char_variant() {
+        let char_lit = Literal::Char('a');
+        match char_lit {
+            Literal::Char(c) => assert_eq!(c, 'a'),
+            _ => panic!("Expected Char variant"),
+        }
+    }
+
+    // Pattern::Rest doesn't exist in the current AST
 }

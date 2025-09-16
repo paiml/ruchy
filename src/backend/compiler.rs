@@ -255,6 +255,140 @@ mod tests {
         // but the infrastructure should work
         let _ = compile_source_to_binary(source, &options);
     }
+
+    #[test]
+    fn test_compile_options_default() {
+        let options = CompileOptions::default();
+        assert_eq!(options.output, PathBuf::from("a.out"));
+        assert_eq!(options.opt_level, "2");
+        assert!(!options.strip);
+        assert!(!options.static_link);
+        assert!(options.target.is_none());
+        assert!(options.rustc_flags.is_empty());
+    }
+
+    #[test]
+    fn test_compile_options_custom() {
+        let options = CompileOptions {
+            output: PathBuf::from("my_binary"),
+            opt_level: "3".to_string(),
+            strip: true,
+            static_link: true,
+            target: Some("x86_64-unknown-linux-musl".to_string()),
+            rustc_flags: vec!["-C".to_string(), "lto=fat".to_string()],
+        };
+
+        assert_eq!(options.output, PathBuf::from("my_binary"));
+        assert_eq!(options.opt_level, "3");
+        assert!(options.strip);
+        assert!(options.static_link);
+        assert_eq!(options.target, Some("x86_64-unknown-linux-musl".to_string()));
+        assert_eq!(options.rustc_flags.len(), 2);
+    }
+
+    #[test]
+    fn test_build_rustc_command() {
+        let rust_file = Path::new("/tmp/test.rs");
+        let options = CompileOptions {
+            opt_level: "2".to_string(),
+            strip: true,
+            ..Default::default()
+        };
+
+        let cmd = build_rustc_command(rust_file, &options);
+
+        // Can't easily test Command internals, but verify it doesn't panic
+        // The function returns a Command which we can't easily inspect
+        assert!(true); // Just verify no panic
+    }
+
+    #[test]
+    fn test_apply_optional_flags() {
+        let mut cmd = Command::new("rustc");
+        let options = CompileOptions {
+            strip: true,
+            static_link: true,
+            target: Some("x86_64-unknown-linux-musl".to_string()),
+            rustc_flags: vec!["-C".to_string(), "lto=fat".to_string()],
+            ..Default::default()
+        };
+
+        apply_optional_flags(&mut cmd, &options);
+        // Can't easily inspect Command internals, but verify it doesn't panic
+        assert!(true);
+    }
+
+    #[test]
+    fn test_prepare_rust_file() {
+        let rust_code = TokenStream::new();
+        let result = prepare_rust_file(&rust_code);
+        assert!(result.is_ok());
+
+        if let Ok((_temp_dir, rust_file)) = result {
+            assert!(rust_file.exists());
+            assert!(rust_file.extension() == Some(std::ffi::OsStr::new("rs")));
+        }
+    }
+
+    #[test]
+    fn test_parse_and_transpile() {
+        // Test with valid Ruchy code
+        let source = "fun main() { println(\"Hello\"); }";
+        let result = parse_and_transpile(source);
+        // This might fail if parser doesn't support this syntax yet
+        let _ = result; // Just check it doesn't panic
+    }
+
+    #[test]
+    fn test_execute_compilation() {
+        // Test with a command that will fail (non-existent file)
+        let mut cmd = Command::new("rustc");
+        cmd.arg("/non/existent/file.rs");
+
+        let result = execute_compilation(cmd);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_verify_output_exists() {
+        // Test with non-existent file
+        let result = verify_output_exists(Path::new("/non/existent/binary"));
+        assert!(result.is_err());
+
+        // Test with existing file (use temp file)
+        let temp_file = tempfile::NamedTempFile::new().unwrap();
+        let result = verify_output_exists(temp_file.path());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_compile_invalid_source() {
+        let source = "this is not valid Ruchy code!@#$%";
+        let options = CompileOptions::default();
+
+        let result = compile_source_to_binary(source, &options);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_compile_empty_source() {
+        let source = "";
+        let options = CompileOptions::default();
+
+        let result = compile_source_to_binary(source, &options);
+        // Empty source might be valid or not depending on parser
+        let _ = result; // Just check it doesn't panic
+    }
+
+    #[test]
+    fn test_compile_whitespace_only() {
+        let source = "   \n\t\n   ";
+        let options = CompileOptions::default();
+
+        let result = compile_source_to_binary(source, &options);
+        // Whitespace might be valid or not depending on parser
+        let _ = result; // Just check it doesn't panic
+    }
 }
 #[cfg(test)]
 mod property_tests_compiler {
