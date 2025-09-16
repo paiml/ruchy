@@ -776,6 +776,163 @@ mod tests {
         ";
         assert!(compile(quicksort).is_ok());
     }
+
+    #[test]
+    fn test_is_valid_syntax() {
+        // Test valid syntax
+        assert!(is_valid_syntax("42"));
+        assert!(is_valid_syntax("let x = 10 in x"));
+        assert!(is_valid_syntax("fun f() { }"));
+        assert!(is_valid_syntax("[1, 2, 3]"));
+        assert!(is_valid_syntax("true && false"));
+
+        // Test invalid syntax
+        assert!(!is_valid_syntax("let x ="));
+        assert!(!is_valid_syntax("fun"));
+        assert!(!is_valid_syntax("if { }"));
+        assert!(!is_valid_syntax("match"));
+    }
+
+    #[test]
+    fn test_compile_more_binary_ops() {
+        assert!(compile("10 % 3").is_ok());
+        assert!(compile("2 ** 3").is_ok());
+        assert!(compile("\"a\" < \"b\"").is_ok());
+        assert!(compile("[1] + [2]").is_ok());
+    }
+
+    #[test]
+    fn test_compile_more_unary_ops() {
+        // Just test that these don't panic
+        let _ = compile("+42");
+        let _ = compile("-(-42)");
+    }
+
+    #[test]
+    fn test_compile_string_ops() {
+        assert!(compile("\"hello\"").is_ok());
+        assert!(compile("\"hello\" + \" world\"").is_ok());
+        assert!(compile("\"test\".len()").is_ok());
+    }
+
+    #[test]
+    fn test_compile_tuples() {
+        assert!(compile("(1, 2)").is_ok());
+        assert!(compile("(1, \"hello\", true)").is_ok());
+        assert!(compile("(x, y, z)").is_ok());
+    }
+
+    #[test]
+    fn test_compile_do_while() {
+        let result = compile("do { x = x + 1 } while x < 10");
+        // Even if not supported, shouldn't panic
+        let _ = result;
+    }
+
+    #[test]
+    fn test_compile_loop() {
+        // Loop might not be supported, just test it doesn't panic
+        let _ = compile("loop { break }");
+    }
+
+    #[test]
+    fn test_compile_comments() {
+        assert!(compile("// This is a comment\n42").is_ok());
+        assert!(compile("/* Block comment */ 42").is_ok());
+    }
+
+    #[test]
+    fn test_compile_float_literals() {
+        assert!(compile("3.14").is_ok());
+        assert!(compile("2.718").is_ok());
+        assert!(compile("0.5").is_ok());
+        assert!(compile("1.0").is_ok());
+    }
+
+    #[test]
+    fn test_compile_bool_literals() {
+        assert!(compile("true").is_ok());
+        assert!(compile("false").is_ok());
+    }
+
+    #[test]
+    fn test_compile_async() {
+        // Async might not be fully supported, just test it doesn't panic
+        let _ = compile("async fn fetch() { await get_data() }");
+    }
+
+    #[test]
+    fn test_compile_various_errors() {
+        // Test various compilation errors
+        assert!(compile("let x =").is_err());
+        assert!(compile("fun").is_err());
+        assert!(compile("if").is_err());
+        assert!(compile("match x").is_err());
+        assert!(compile("][").is_err());
+        assert!(compile("}{").is_err());
+    }
+
+    #[test]
+    fn test_compile_record() {
+        assert!(compile("{ x: 1, y: 2 }").is_ok());
+        assert!(compile("{ name: \"test\", age: 30 }").is_ok());
+    }
+
+    #[test]
+    fn test_compile_field_access() {
+        assert!(compile("point.x").is_ok());
+        assert!(compile("person.name").is_ok());
+        assert!(compile("obj.method()").is_ok());
+    }
+
+    #[test]
+    fn test_compile_array_index() {
+        assert!(compile("arr[0]").is_ok());
+        assert!(compile("matrix[i][j]").is_ok());
+    }
+
+    #[test]
+    fn test_compile_range_expressions() {
+        assert!(compile("1..10").is_ok());
+        assert!(compile("0..=100").is_ok());
+    }
+
+    #[test]
+    fn test_compile_advanced_patterns() {
+        assert!(compile("match x { Some(v) => v, None => 0 }").is_ok());
+        assert!(compile("match (x, y) { (0, 0) => \"origin\", _ => \"other\" }").is_ok());
+    }
+
+    #[test]
+    fn test_compile_type_annotations() {
+        assert!(compile("let x: i32 = 42").is_ok());
+        assert!(compile("fun f(x: String) -> bool { true }").is_ok());
+    }
+
+    #[test]
+    fn test_compile_generics() {
+        assert!(compile("fun id<T>(x: T) -> T { x }").is_ok());
+        assert!(compile("struct Box<T> { value: T }").is_ok());
+    }
+
+    #[test]
+    fn test_compile_traits() {
+        assert!(compile("trait Show { fun show(self) -> String }").is_ok());
+        assert!(compile("impl Show for i32 { fun show(self) -> String { self.to_string() } }").is_ok());
+    }
+
+    #[test]
+    fn test_compile_modules() {
+        assert!(compile("mod math { fun add(x: i32, y: i32) -> i32 { x + y } }").is_ok());
+        assert!(compile("use std::collections::HashMap").is_ok());
+    }
+
+    #[test]
+    fn test_compile_const() {
+        // Const might not be supported yet, just ensure no panic
+        let _ = compile("const PI: f64 = 3.14159");
+        let _ = compile("static COUNT: i32 = 0");
+    }
 }
 #[cfg(test)]
 mod property_tests_lib {
