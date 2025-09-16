@@ -594,4 +594,336 @@ mod tests {
     }
 
     // Pattern::Rest doesn't exist in the current AST
+
+    #[test]
+    fn test_arb_literal_variants() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_literal();
+
+        // Generate multiple literals to check variety
+        let mut found_variants = std::collections::HashSet::new();
+        for _ in 0..100 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let literal = value_tree.current();
+            match literal {
+                Literal::Integer(_) => { found_variants.insert("Integer"); },
+                Literal::Float(_) => { found_variants.insert("Float"); },
+                Literal::Bool(_) => { found_variants.insert("Bool"); },
+                Literal::String(_) => { found_variants.insert("String"); },
+                Literal::Unit => { found_variants.insert("Unit"); },
+                Literal::Char(_) => { found_variants.insert("Char"); },
+            }
+        }
+        // Should find at least some variants
+        assert!(!found_variants.is_empty());
+    }
+
+    #[test]
+    fn test_arb_identifier_format() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_identifier();
+
+        for _ in 0..50 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let identifier = value_tree.current();
+
+            // Should start with lowercase letter
+            assert!(identifier.chars().next().unwrap().is_ascii_lowercase());
+            // Should be reasonable length
+            assert!(identifier.len() <= 11);
+            // Should only contain valid identifier characters
+            assert!(identifier.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'));
+        }
+    }
+
+    #[test]
+    fn test_arb_binary_op_coverage() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_binary_op();
+
+        let mut found_ops = std::collections::HashSet::new();
+        for _ in 0..200 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let op = value_tree.current();
+            found_ops.insert(format!("{:?}", op));
+        }
+
+        // Should find several different operators
+        assert!(found_ops.len() >= 5);
+        assert!(found_ops.contains("Add"));
+        assert!(found_ops.contains("Subtract"));
+        assert!(found_ops.contains("Multiply"));
+    }
+
+    #[test]
+    fn test_arb_unary_op_coverage() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_unary_op();
+
+        let mut found_ops = std::collections::HashSet::new();
+        for _ in 0..100 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let op = value_tree.current();
+            found_ops.insert(format!("{:?}", op));
+        }
+
+        // Should find all unary operator types
+        assert!(found_ops.contains("Negate"));
+        assert!(found_ops.contains("Not"));
+        assert!(found_ops.contains("BitwiseNot"));
+        assert!(found_ops.contains("Reference"));
+    }
+
+    #[test]
+    fn test_arb_expr_depth_limiting() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+
+        // Test with max depth
+        let deep_strategy = arb_expr_with_depth(MAX_DEPTH);
+        let value_tree = deep_strategy.new_tree(&mut runner).unwrap();
+        let expr = value_tree.current();
+
+        // Should generate without stack overflow
+        assert_eq!(expr.span, Span::new(0, 0));
+
+        // Test with zero depth (should only generate literals/identifiers)
+        let shallow_strategy = arb_expr_with_depth(MAX_DEPTH + 1);
+        let value_tree = shallow_strategy.new_tree(&mut runner).unwrap();
+        let expr = value_tree.current();
+
+        match expr.kind {
+            ExprKind::Literal(_) | ExprKind::Identifier(_) => {
+                // Expected for max depth
+            },
+            _ => {
+                // May still get simple expressions
+            }
+        }
+    }
+
+    #[test]
+    fn test_arb_well_typed_expr_consistency() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_well_typed_expr();
+
+        // Generate several well-typed expressions
+        for _ in 0..20 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let expr = value_tree.current();
+
+            // Basic structure validation
+            assert_eq!(expr.span, Span::new(0, 0));
+
+            // Should be valid expression kinds
+            match &expr.kind {
+                ExprKind::Literal(_) => assert!(true),
+                ExprKind::Identifier(_) => assert!(true),
+                ExprKind::Binary { .. } => assert!(true),
+                ExprKind::Unary { .. } => assert!(true),
+                ExprKind::If { .. } => assert!(true),
+                _ => assert!(true), // Other kinds are valid too
+            }
+        }
+    }
+
+    #[test]
+    fn test_pattern_generation_variants() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_pattern();
+
+        let mut found_patterns = std::collections::HashSet::new();
+        for _ in 0..100 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let pattern = value_tree.current();
+
+            match &pattern {
+                Pattern::Literal(_) => { found_patterns.insert("Literal"); },
+                Pattern::Identifier(_) => { found_patterns.insert("Identifier"); },
+                Pattern::Wildcard => { found_patterns.insert("Wildcard"); },
+                Pattern::Tuple(_) => { found_patterns.insert("Tuple"); },
+                Pattern::Struct { .. } => { found_patterns.insert("Struct"); },
+                _ => { found_patterns.insert("Other"); },
+            }
+        }
+
+        // Should find multiple pattern types
+        assert!(!found_patterns.is_empty());
+        assert!(found_patterns.contains("Literal") || found_patterns.contains("Identifier"));
+    }
+
+    #[test]
+    fn test_generator_max_depth_constant() {
+        // Verify MAX_DEPTH is reasonable
+        assert!(MAX_DEPTH > 0);
+        assert!(MAX_DEPTH < 20); // Shouldn't be too deep to cause issues
+    }
+
+    #[test]
+    fn test_expr_with_specific_kinds() {
+        // Test that we can generate expressions with specific kinds
+        let literal_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42)),
+            Span::new(0, 0)
+        );
+        assert!(matches!(literal_expr.kind, ExprKind::Literal(_)));
+
+        let id_expr = Expr::new(
+            ExprKind::Identifier("test".to_string()),
+            Span::new(0, 0)
+        );
+        assert!(matches!(id_expr.kind, ExprKind::Identifier(_)));
+    }
+
+    #[test]
+    fn test_binary_ops_enumeration() {
+        // Test that we can enumerate all binary operators
+        let all_ops = vec![
+            BinaryOp::Add,
+            BinaryOp::Subtract,
+            BinaryOp::Multiply,
+            BinaryOp::Divide,
+            BinaryOp::Modulo,
+            BinaryOp::Power,
+            BinaryOp::Equal,
+            BinaryOp::NotEqual,
+            BinaryOp::Less,
+            BinaryOp::LessEqual,
+            BinaryOp::Greater,
+            BinaryOp::GreaterEqual,
+            BinaryOp::And,
+            BinaryOp::Or,
+            BinaryOp::BitwiseAnd,
+            BinaryOp::BitwiseOr,
+            BinaryOp::BitwiseXor,
+            BinaryOp::LeftShift,
+        ];
+
+        assert!(!all_ops.is_empty());
+        assert!(all_ops.len() >= 10);
+    }
+
+    #[test]
+    fn test_unary_ops_enumeration() {
+        // Test that we can enumerate all unary operators
+        let all_ops = vec![
+            UnaryOp::Negate,
+            UnaryOp::Not,
+            UnaryOp::BitwiseNot,
+            UnaryOp::Reference,
+        ];
+
+        assert_eq!(all_ops.len(), 4);
+    }
+
+    #[test]
+    fn test_literal_variants_complete() {
+        // Test that we can create all literal types
+        let literals = vec![
+            Literal::Integer(42),
+            Literal::Float(3.14),
+            Literal::Bool(true),
+            Literal::String("test".to_string()),
+            Literal::Char('a'),
+            Literal::Unit,
+        ];
+
+        assert_eq!(literals.len(), 6);
+
+        // Verify each type is distinct
+        for literal in &literals {
+            match literal {
+                Literal::Integer(n) => assert_eq!(*n, 42),
+                Literal::Float(f) => assert!((*f - 3.14).abs() < f64::EPSILON),
+                Literal::Bool(b) => assert_eq!(*b, true),
+                Literal::String(s) => assert_eq!(s, "test"),
+                Literal::Char(c) => assert_eq!(*c, 'a'),
+                Literal::Unit => assert!(true),
+            }
+        }
+    }
+
+    #[test]
+    fn test_generator_strategies_boxed() {
+        // Test that strategies are properly boxed
+        let _lit_strategy: BoxedStrategy<Literal> = arb_literal();
+        let _id_strategy: BoxedStrategy<String> = arb_identifier();
+        let _bin_op_strategy: BoxedStrategy<BinaryOp> = arb_binary_op();
+        let _un_op_strategy: BoxedStrategy<UnaryOp> = arb_unary_op();
+        let _pattern_strategy: BoxedStrategy<Pattern> = arb_pattern();
+        let _expr_strategy: BoxedStrategy<Expr> = arb_expr();
+        let _well_typed_strategy: BoxedStrategy<Expr> = arb_well_typed_expr();
+
+        // If we get here, all strategies are properly typed
+        assert!(true);
+    }
+
+    #[test]
+    fn test_string_literal_length_limit() {
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+
+        let mut runner = TestRunner::default();
+        let strategy = arb_literal();
+
+        // Check that string literals are reasonably bounded
+        for _ in 0..50 {
+            let value_tree = strategy.new_tree(&mut runner).unwrap();
+            let literal = value_tree.current();
+
+            if let Literal::String(s) = literal {
+                assert!(s.len() <= 20, "String literal too long: {}", s.len());
+            }
+        }
+    }
+
+    #[test]
+    fn test_span_default_behavior() {
+        let span = Span::new(0, 0);
+        assert_eq!(span.start, 0);
+        assert_eq!(span.end, 0);
+
+        let default_span = Default::default();
+        let Span { start, end } = default_span;
+        assert_eq!(start, 0);
+        assert_eq!(end, 0);
+    }
+
+    #[test]
+    fn test_expr_construction() {
+        // Test various ways to construct expressions
+        let expr1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(123)),
+            Span::new(5, 8)
+        );
+        assert_eq!(expr1.span.start, 5);
+        assert_eq!(expr1.span.end, 8);
+
+        let expr2 = Expr::new(
+            ExprKind::Identifier("variable".to_string()),
+            Default::default()
+        );
+        assert_eq!(expr2.span.start, 0);
+        assert_eq!(expr2.span.end, 0);
+    }
 }

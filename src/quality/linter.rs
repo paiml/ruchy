@@ -1451,7 +1451,7 @@ mod tests {
     }
 
     #[test]
-    fn test_scope_creation() {
+    fn test_scope_creation_duplicate_renamed() {
         let scope = Scope {
             variables: HashMap::new(),
             parent: None,
@@ -1461,7 +1461,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lint_issue_serialization() {
+    fn test_lint_issue_serialization_duplicate_renamed() {
         let issue = LintIssue {
             line: 10,
             column: 5,
