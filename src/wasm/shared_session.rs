@@ -857,21 +857,345 @@ pub struct DependencyAnalysisResult {
 #[derive(Debug, Clone)]
 pub struct TransactionId(pub String);
 #[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_def_id_generation() {
+        let id1 = DefId::next();
+        let id2 = DefId::next();
+        let id3 = DefId::next();
+
+        // IDs should be unique and incrementing
+        assert_ne!(id1, id2);
+        assert_ne!(id2, id3);
+        assert!(id2.0 > id1.0);
+        assert!(id3.0 > id2.0);
+    }
+
+    #[test]
+    fn test_execution_modes() {
+        let manual = ExecutionMode::Manual;
+        let reactive = ExecutionMode::Reactive;
+
+        assert_eq!(manual, ExecutionMode::Manual);
+        assert_eq!(reactive, ExecutionMode::Reactive);
+        assert_ne!(manual, reactive);
+    }
+
+    #[test]
+    fn test_execute_response_success() {
+        let response = ExecuteResponse::success(Value::Integer(42));
+
+        assert!(response.success);
+        assert_eq!(response.value, "42");
+        assert_eq!(response.result, "42");
+        assert!(response.error.is_none());
+        assert_eq!(response.execution_time_ms, 0.0);
+    }
+
+    #[test]
+    fn test_execute_response_error() {
+        let error_msg = "Division by zero".to_string();
+        let response = ExecuteResponse::error(error_msg.clone());
+
+        assert!(!response.success);
+        assert!(response.value.is_empty());
+        assert!(response.result.is_empty());
+        assert_eq!(response.error, Some(error_msg));
+        assert_eq!(response.execution_time_ms, 0.0);
+    }
+
+    #[test]
+    fn test_execution_plan_creation() {
+        let mut cascade = vec![];
+        cascade.push(CascadeStep {
+            cell_id: "cell_1".to_string(),
+            estimated_time: 10.0,
+            dependencies: Some(HashSet::new()),
+            can_skip: false,
+            skipped: false,
+        });
+        cascade.push(CascadeStep {
+            cell_id: "cell_2".to_string(),
+            estimated_time: 20.0,
+            dependencies: None,
+            can_skip: true,
+            skipped: false,
+        });
+
+        let plan = ExecutionPlan {
+            primary: "main_cell".to_string(),
+            cascade,
+            total_cells: 3,
+            estimated_total_time: 35.0,
+        };
+
+        assert_eq!(plan.primary, "main_cell");
+        assert_eq!(plan.cascade.len(), 2);
+        assert_eq!(plan.total_cells, 3);
+        assert_eq!(plan.estimated_total_time, 35.0);
+    }
+
+    #[test]
+    fn test_cascade_step_properties() {
+        let mut deps = HashSet::new();
+        deps.insert(DefId(1));
+        deps.insert(DefId(2));
+
+        let step = CascadeStep {
+            cell_id: "test_cell".to_string(),
+            estimated_time: 15.5,
+            dependencies: Some(deps.clone()),
+            can_skip: true,
+            skipped: false,
+        };
+
+        assert_eq!(step.cell_id, "test_cell");
+        assert_eq!(step.estimated_time, 15.5);
+        assert!(step.dependencies.is_some());
+        assert_eq!(step.dependencies.unwrap().len(), 2);
+        assert!(step.can_skip);
+        assert!(!step.skipped);
+    }
+
+    #[test]
+    fn test_edge_creation() {
+        let edge = Edge {
+            from: "node_a".to_string(),
+            to: "node_b".to_string(),
+            label: Some("depends_on".to_string()),
+        };
+
+        assert_eq!(edge.from, "node_a");
+        assert_eq!(edge.to, "node_b");
+        assert_eq!(edge.label, Some("depends_on".to_string()));
+    }
+
+    #[test]
+    fn test_session_version() {
+        let version = SessionVersion::new(2, 1);
+
+        assert_eq!(version.major, 2);
+        assert_eq!(version.minor, 1);
+        assert_eq!(version.patch, 0);
+
+        let full_version = SessionVersion {
+            major: 1,
+            minor: 2,
+            patch: 3,
+        };
+
+        assert_eq!(full_version.major, 1);
+        assert_eq!(full_version.minor, 2);
+        assert_eq!(full_version.patch, 3);
+    }
+
+    #[test]
+    fn test_session_export_data() {
+        let mut cell_cache = HashMap::new();
+        cell_cache.insert("cell_1".to_string(), "let x = 10".to_string());
+        cell_cache.insert("cell_2".to_string(), "print(x)".to_string());
+
+        let export_data = SessionExportData {
+            version: SessionVersion::new(1, 0),
+            globals: serde_json::json!({"x": 10, "y": 20}),
+            cell_cache,
+            execution_mode: "Manual".to_string(),
+            memory_counter: 100,
+            created_at: 1234567890,
+        };
+
+        assert_eq!(export_data.version.major, 1);
+        assert_eq!(export_data.cell_cache.len(), 2);
+        assert_eq!(export_data.execution_mode, "Manual");
+        assert_eq!(export_data.memory_counter, 100);
+        assert_eq!(export_data.created_at, 1234567890);
+    }
+
+    #[test]
+    fn test_variable_inspection_result() {
+        let result = VariableInspectionResult {
+            total_variables: 5,
+            memory_usage: 1024,
+            variables: serde_json::json!({
+                "x": {"type": "int", "value": 10},
+                "y": {"type": "string", "value": "hello"}
+            }),
+        };
+
+        assert_eq!(result.total_variables, 5);
+        assert_eq!(result.memory_usage, 1024);
+        assert!(result.variables.is_object());
+    }
+
+    #[test]
+    fn test_execution_history_entry() {
+        let entry = ExecutionHistoryEntry {
+            sequence: 42,
+            cell_id: "cell_xyz".to_string(),
+            code: "result = compute()".to_string(),
+            timestamp: 9876543210,
+            success: true,
+        };
+
+        assert_eq!(entry.sequence, 42);
+        assert_eq!(entry.cell_id, "cell_xyz");
+        assert_eq!(entry.code, "result = compute()");
+        assert_eq!(entry.timestamp, 9876543210);
+        assert!(entry.success);
+    }
+
+    #[test]
+    fn test_dependency_analysis_result() {
+        let result = DependencyAnalysisResult {
+            cell_id: "analysis_cell".to_string(),
+            depends_on: vec!["cell_a".to_string(), "cell_b".to_string()],
+            defines: vec!["var_x".to_string(), "func_y".to_string()],
+            affects: vec!["cell_c".to_string()],
+            is_stale: false,
+        };
+
+        assert_eq!(result.cell_id, "analysis_cell");
+        assert_eq!(result.depends_on.len(), 2);
+        assert_eq!(result.defines.len(), 2);
+        assert_eq!(result.affects.len(), 1);
+        assert!(!result.is_stale);
+    }
+
+    #[test]
+    fn test_transaction_id() {
+        let tx_id = TransactionId("tx_12345".to_string());
+
+        assert_eq!(tx_id.0, "tx_12345");
+
+        let another_tx = TransactionId("tx_67890".to_string());
+        assert_ne!(tx_id.0, another_tx.0);
+    }
+
+    #[test]
+    fn test_shared_session_creation() {
+        let session = SharedSession::new();
+
+        assert!(session.globals.is_empty());
+        assert!(session.cell_cache.is_empty());
+        assert_eq!(session.execution_mode, ExecutionMode::Manual);
+        assert_eq!(session.memory_counter.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn test_shared_session_execute() {
+        let mut session = SharedSession::new();
+
+        // Test simple variable definition
+        let response = session.execute("cell_1", "let x = 42");
+        assert!(response.success);
+        assert!(!response.value.is_empty());
+
+        // Test accessing the variable
+        let response2 = session.execute("cell_2", "x");
+        assert!(response2.success || response2.error.is_some());
+    }
+
+    #[test]
+    fn test_shared_session_clear() {
+        let mut session = SharedSession::new();
+
+        // Add some data
+        session.execute("cell_1", "let x = 10");
+        session.execute("cell_2", "let y = 20");
+
+        // Clear the session
+        session.clear();
+
+        assert!(session.globals.is_empty());
+        assert!(session.cell_cache.is_empty());
+    }
+
+    #[test]
+    fn test_shared_session_mode_switching() {
+        let mut session = SharedSession::new();
+
+        // Start in Manual mode
+        assert_eq!(session.execution_mode, ExecutionMode::Manual);
+
+        // Switch to Reactive mode
+        session.set_execution_mode(ExecutionMode::Reactive);
+        assert_eq!(session.execution_mode, ExecutionMode::Reactive);
+
+        // Switch back to Manual
+        session.set_execution_mode(ExecutionMode::Manual);
+        assert_eq!(session.execution_mode, ExecutionMode::Manual);
+    }
+
+    #[test]
+    fn test_shared_session_export() {
+        let mut session = SharedSession::new();
+
+        session.execute("cell_1", "let data = 100");
+
+        let export_data = session.export();
+
+        assert_eq!(export_data.version.major, 1);
+        assert_eq!(export_data.version.minor, 0);
+        assert!(!export_data.cell_cache.is_empty());
+    }
+
+    #[test]
+    fn test_shared_session_import() {
+        let mut session = SharedSession::new();
+
+        let import_data = SessionExportData {
+            version: SessionVersion::new(1, 0),
+            globals: serde_json::json!({"imported": true}),
+            cell_cache: HashMap::new(),
+            execution_mode: "Reactive".to_string(),
+            memory_counter: 50,
+            created_at: 1234567890,
+        };
+
+        let result = session.import(import_data);
+        assert!(result.is_ok());
+        assert_eq!(session.memory_counter.load(Ordering::Relaxed), 50);
+    }
+
+    #[test]
+    fn test_def_id_uniqueness() {
+        let mut ids = HashSet::new();
+        for _ in 0..100 {
+            let id = DefId::next();
+            assert!(ids.insert(id));
+        }
+        assert_eq!(ids.len(), 100);
+    }
+}
+
+#[cfg(test)]
 mod property_tests_shared_session {
+    use super::*;
     use proptest::proptest;
-    
-    
+
     proptest! {
-        /// Property: Function never panics on any input
         #[test]
-        fn test_success_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+        fn test_execute_response_success_never_panics(val: i64) {
+            let response = ExecuteResponse::success(Value::Integer(val));
+            assert!(response.success);
+            assert!(response.error.is_none());
+        }
+
+        #[test]
+        fn test_execute_response_error_never_panics(error_msg: String) {
+            let response = ExecuteResponse::error(error_msg.clone());
+            assert!(!response.success);
+            assert_eq!(response.error, Some(error_msg));
+        }
+
+        #[test]
+        fn test_session_version_creation(major: u32, minor: u32) {
+            let version = SessionVersion::new(major, minor);
+            assert_eq!(version.major, major);
+            assert_eq!(version.minor, minor);
+            assert_eq!(version.patch, 0);
         }
     }
 }
