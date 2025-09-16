@@ -336,7 +336,7 @@ mod property_tests_codegen_minimal {
         #[test]
         fn test_gen_expr_never_panics(input: String) {
             // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
             // Function should not panic on any input
             let _ = std::panic::catch_unwind(|| {
                 // Call function with various inputs

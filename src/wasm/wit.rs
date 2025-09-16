@@ -629,21 +629,330 @@ impl TypeRegistry {
     }
 }
 #[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_wit_config_default() {
+        let config = WitConfig::default();
+        assert!(config.include_docs);
+        assert!(config.use_type_aliases);
+        assert!(config.generate_resources);
+        assert_eq!(config.component_model_version, "0.2.0");
+        assert!(config.type_mappings.is_empty());
+        assert_eq!(config.world_name, None);
+    }
+
+    #[test]
+    fn test_wit_config_custom() {
+        let mut mappings = HashMap::new();
+        mappings.insert("String".to_string(), "string".to_string());
+
+        let config = WitConfig {
+            include_docs: false,
+            use_type_aliases: false,
+            generate_resources: false,
+            component_model_version: "0.3.0".to_string(),
+            type_mappings: mappings.clone(),
+            world_name: Some("test-world".to_string()),
+        };
+
+        assert!(!config.include_docs);
+        assert!(!config.use_type_aliases);
+        assert!(!config.generate_resources);
+        assert_eq!(config.component_model_version, "0.3.0");
+        assert_eq!(config.type_mappings, mappings);
+        assert_eq!(config.world_name, Some("test-world".to_string()));
+    }
+
+    #[test]
+    fn test_wit_generator_new() {
+        let generator = WitGenerator::new();
+        assert!(generator.config.include_docs);
+        assert!(generator.config.use_type_aliases);
+        assert!(generator.config.generate_resources);
+    }
+
+    #[test]
+    fn test_wit_generator_new_with_config() {
+        let config = WitConfig {
+            include_docs: false,
+            use_type_aliases: false,
+            generate_resources: false,
+            component_model_version: "0.1.0".to_string(),
+            type_mappings: HashMap::new(),
+            world_name: Some("custom".to_string()),
+        };
+
+        let generator = WitGenerator::new_with_config(config.clone());
+        assert!(!generator.config.include_docs);
+        assert_eq!(generator.config.world_name, Some("custom".to_string()));
+    }
+
+    #[test]
+    fn test_wit_generator_with_world() {
+        let mut generator = WitGenerator::new();
+        generator.with_world("my-world");
+        assert_eq!(generator.config.world_name, Some("my-world".to_string()));
+    }
+
+    #[test]
+    fn test_wit_generator_add_type_mapping() {
+        let mut generator = WitGenerator::new();
+        generator.add_type_mapping("Vec<T>".to_string(), "list<T>".to_string());
+        assert_eq!(
+            generator.config.type_mappings.get("Vec<T>"),
+            Some(&"list<T>".to_string())
+        );
+    }
+
+    #[test]
+    fn test_package_info_creation() {
+        let package = PackageInfo {
+            namespace: "test".to_string(),
+            name: "my-package".to_string(),
+            version: "1.0.0".to_string(),
+        };
+
+        assert_eq!(package.namespace, "test");
+        assert_eq!(package.name, "my-package");
+        assert_eq!(package.version, "1.0.0");
+    }
+
+    #[test]
+    fn test_type_definition_creation() {
+        let type_def = TypeDefinition {
+            name: "MyType".to_string(),
+            kind: TypeKind::Record(vec![]),
+            documentation: Some("Test type".to_string()),
+        };
+
+        assert_eq!(type_def.name, "MyType");
+        assert!(matches!(type_def.kind, TypeKind::Record(_)));
+        assert_eq!(type_def.documentation, Some("Test type".to_string()));
+    }
+
+    #[test]
+    fn test_function_definition_creation() {
+        let func = FunctionDefinition {
+            name: "test_func".to_string(),
+            params: vec![],
+            return_type: None,
+            is_async: false,
+            documentation: Some("Test function".to_string()),
+        };
+
+        assert_eq!(func.name, "test_func");
+        assert!(func.params.is_empty());
+        assert!(func.return_type.is_none());
+        assert!(!func.is_async);
+    }
+
+    #[test]
+    fn test_wit_interface_creation() {
+        let interface = WitInterface {
+            name: "test-interface".to_string(),
+            version: "1.0.0".to_string(),
+            package: PackageInfo {
+                namespace: "test".to_string(),
+                name: "package".to_string(),
+                version: "1.0.0".to_string(),
+            },
+            types: vec![],
+            functions: vec![],
+            resources: vec![],
+            world: None,
+        };
+
+        assert_eq!(interface.name, "test-interface");
+        assert_eq!(interface.version, "1.0.0");
+        assert!(interface.types.is_empty());
+        assert!(interface.functions.is_empty());
+        assert!(interface.resources.is_empty());
+        assert!(interface.world.is_none());
+    }
+
+    #[test]
+    fn test_wit_type_variants() {
+        // Test that WitType variants exist and can be created
+        let _bool_type = WitType::Bool;
+        let _u32_type = WitType::U32;
+        let _string_type = WitType::String;
+
+        // Test pattern matching works
+        let wit_type = WitType::Bool;
+        match wit_type {
+            WitType::Bool => assert!(true),
+            _ => assert!(false, "Expected Bool variant"),
+        }
+    }
+
+    #[test]
+    fn test_wit_interface_save() {
+        let interface = WitInterface {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            package: PackageInfo {
+                namespace: "test".to_string(),
+                name: "test".to_string(),
+                version: "1.0.0".to_string(),
+            },
+            types: vec![],
+            functions: vec![],
+            resources: vec![],
+            world: None,
+        };
+
+        let temp_dir = std::env::temp_dir();
+        let temp_file = temp_dir.join("test_wit_interface.wit");
+
+        // Should create the file
+        let result = interface.save(&temp_file);
+        assert!(result.is_ok());
+
+        // Clean up
+        let _ = std::fs::remove_file(temp_file);
+    }
+
+    #[test]
+    fn test_generate_wit_file() {
+        let generator = WitGenerator::new();
+        let interface = WitInterface {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            package: PackageInfo {
+                namespace: "example".to_string(),
+                name: "test".to_string(),
+                version: "1.0.0".to_string(),
+            },
+            types: vec![],
+            functions: vec![],
+            resources: vec![],
+            world: Some(WorldDefinition {
+                name: "test-world".to_string(),
+                imports: vec![],
+                exports: vec![],
+                documentation: None,
+            }),
+        };
+
+        let wit_content = generator.generate_wit_file(&interface);
+        assert!(wit_content.contains("package example:test/test@1.0.0"));
+        assert!(wit_content.contains("world test-world"));
+    }
+
+    #[test]
+    fn test_interface_function_creation() {
+        let func = InterfaceFunction {
+            name: "my_func".to_string(),
+            params: vec![],
+            return_type: None,
+        };
+
+        assert_eq!(func.name, "my_func");
+        assert!(func.params.is_empty());
+        assert!(func.return_type.is_none());
+    }
+
+    #[test]
+    fn test_interface_type_creation() {
+        let ty = InterfaceType {
+            name: "MyType".to_string(),
+            definition: "record my-type { }".to_string(),
+        };
+
+        assert_eq!(ty.name, "MyType");
+        assert_eq!(ty.definition, "record my-type { }");
+    }
+
+    #[test]
+    fn test_resource_definition_creation() {
+        let resource = ResourceDefinition {
+            name: "my-resource".to_string(),
+            methods: vec![],
+            constructor: None,
+            documentation: Some("Resource doc".to_string()),
+        };
+
+        assert_eq!(resource.name, "my-resource");
+        assert!(resource.methods.is_empty());
+        assert!(resource.constructor.is_none());
+        assert_eq!(resource.documentation, Some("Resource doc".to_string()));
+    }
+
+    #[test]
+    fn test_world_definition_creation() {
+        let world = WorldDefinition {
+            name: "my-world".to_string(),
+            imports: vec![],
+            exports: vec![],
+            documentation: None,
+        };
+
+        assert_eq!(world.name, "my-world");
+        assert!(world.imports.is_empty());
+        assert!(world.exports.is_empty());
+        assert!(world.documentation.is_none());
+    }
+
+    #[test]
+    fn test_parameter_creation() {
+        let param = Parameter {
+            name: "input".to_string(),
+            param_type: WitType::String,
+        };
+
+        assert_eq!(param.name, "input");
+        assert!(matches!(param.param_type, WitType::String));
+    }
+
+    #[test]
+    fn test_type_registry_creation() {
+        // Just test that we can create a TypeRegistry
+        let registry = TypeRegistry::new();
+        // Can't test internals since fields are private, but at least verify it compiles
+        let _registry2 = registry; // Move to verify it's a valid type
+    }
+}
+
+#[cfg(test)]
 mod property_tests_wit {
-    use proptest::proptest;
-    
-    
+    use super::*;
+    use proptest::prelude::*;
+
     proptest! {
-        /// Property: Function never panics on any input
         #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+        fn test_wit_generator_doesnt_panic_on_random_world_names(name in "\\PC*") {
+            let mut generator = WitGenerator::new();
+            generator.with_world(&name);
+            assert_eq!(generator.config.world_name, Some(name));
+        }
+
+        #[test]
+        fn test_add_type_mapping_doesnt_panic(
+            key in "\\PC*",
+            value in "\\PC*"
+        ) {
+            let mut generator = WitGenerator::new();
+            generator.add_type_mapping(key.clone(), value.clone());
+            assert_eq!(generator.config.type_mappings.get(&key), Some(&value));
+        }
+
+        #[test]
+        fn test_package_info_with_random_strings(
+            namespace in "\\PC*",
+            name in "\\PC*",
+            version in "\\PC*"
+        ) {
+            let package = PackageInfo {
+                namespace: namespace.clone(),
+                name: name.clone(),
+                version: version.clone(),
+            };
+
+            assert_eq!(package.namespace, namespace);
+            assert_eq!(package.name, name);
+            assert_eq!(package.version, version);
         }
     }
 }

@@ -266,7 +266,7 @@ mod property_tests_compiler {
         #[test]
         fn test_compile_source_to_binary_never_panics(input: String) {
             // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
             // Function should not panic on any input, even invalid syntax
             let result = std::panic::catch_unwind(|| {
                 let options = CompileOptions::default();

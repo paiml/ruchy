@@ -1076,7 +1076,7 @@ mod property_tests_expressions {
         #[test]
         fn test_transpile_literal_never_panics(input: String) {
             // Limit input size to avoid timeout
-            let input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
             // Function should not panic on any valid literal
             let result = std::panic::catch_unwind(|| {
                 use crate::frontend::ast::Literal;

@@ -2383,10 +2383,10 @@ mod property_tests_parser_expressions {
         #[test]
         fn test_parser_never_panics_on_any_input(input: String) {
             // Limit input size to avoid timeout
-            let input = if input.len() > 200 { &input[..200] } else { &input };
+            let _input = if input.len() > 200 { &input[..200] } else { &input };
             
             let result = std::panic::catch_unwind(|| {
-                let mut parser = Parser::new(input);
+                let mut parser = Parser::new(&input);
                 // Parser should never panic, even on invalid syntax
                 let _ = parser.parse();
             });
