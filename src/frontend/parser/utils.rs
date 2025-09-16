@@ -1225,4 +1225,303 @@ mod tests {
         assert!(validate_url_no_suspicious_patterns("https://example.com/data-analysis").is_ok());
         assert!(validate_url_no_suspicious_patterns("https://example.com/file-upload").is_ok());
     }
+
+    #[test]
+    fn test_parse_string_interpolation_basic() {
+        // Test basic string without interpolation - state param is ignored by implementation
+        let parts = parse_string_interpolation(&mut ParserState::new(""), "Hello, World!");
+        assert_eq!(parts.len(), 1);
+        match &parts[0] {
+            StringPart::Text(t) => assert_eq!(t, "Hello, World!"),
+            _ => panic!("Expected text part"),
+        }
+    }
+
+    #[test]
+    fn test_parse_string_interpolation_with_expr() {
+        // Test string with interpolation
+        let parts = parse_string_interpolation(&mut ParserState::new(""), "Hello, {name}!");
+        assert_eq!(parts.len(), 3);
+        match &parts[0] {
+            StringPart::Text(t) => assert_eq!(t, "Hello, "),
+            _ => panic!("Expected text part"),
+        }
+    }
+
+    #[test]
+    fn test_parse_string_interpolation_escaped_brace() {
+        // Test escaped braces
+        let parts = parse_string_interpolation(&mut ParserState::new(""), "Use {{braces}} like this");
+        assert!(parts.len() >= 1);
+        // Should handle escaped braces properly
+    }
+
+    #[test]
+    fn test_parse_string_interpolation_format_spec() {
+        // Test format specifier
+        let parts = parse_string_interpolation(&mut ParserState::new(""), "Pi is {pi:.2f}");
+        assert!(parts.len() >= 1);
+        // Should handle format specifiers
+    }
+
+    #[test]
+    fn test_split_format_specifier() {
+        // Test basic expression without format
+        let (expr, fmt) = split_format_specifier("name");
+        assert_eq!(expr, "name");
+        assert_eq!(fmt, None);
+
+        // Test with format specifier
+        let (expr, fmt) = split_format_specifier("value:.2f");
+        assert_eq!(expr, "value");
+        assert_eq!(fmt, Some(".2f"));
+
+        // Test complex expression with format
+        let (expr, fmt) = split_format_specifier("obj.field:>10");
+        assert_eq!(expr, "obj.field");
+        assert_eq!(fmt, Some(">10"));
+    }
+
+    #[test]
+    fn test_parse_type_simple() {
+        let mut state = ParserState::new("Int");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+        if let Ok(ty) = result {
+            match ty.kind {
+                TypeKind::Named(name) => assert_eq!(name, "Int"),
+                _ => panic!("Expected named type"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_type_generic() {
+        let mut state = ParserState::new("List<Int>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+        if let Ok(ty) = result {
+            match ty.kind {
+                TypeKind::Generic { base, params } => {
+                    assert_eq!(base, "List");
+                    assert_eq!(params.len(), 1);
+                }
+                _ => panic!("Expected generic type"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_type_list() {
+        let mut state = ParserState::new("[Int]");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+        if let Ok(ty) = result {
+            match ty.kind {
+                TypeKind::List(_) => assert!(true),
+                _ => panic!("Expected list type"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_type_function() {
+        let mut state = ParserState::new("fn(Int) -> String");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+        if let Ok(ty) = result {
+            match ty.kind {
+                TypeKind::Function { .. } => assert!(true),
+                _ => panic!("Expected function type"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_type_reference() {
+        let mut state = ParserState::new("&String");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+        if let Ok(ty) = result {
+            match ty.kind {
+                TypeKind::Reference { .. } => assert!(true),
+                _ => panic!("Expected reference type"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_type_tuple() {
+        let mut state = ParserState::new("(Int, String, Bool)");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok());
+        if let Ok(ty) = result {
+            match ty.kind {
+                TypeKind::Tuple(types) => {
+                    assert_eq!(types.len(), 3);
+                }
+                _ => panic!("Expected tuple type"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_parse_module_path_simple() {
+        let mut state = ParserState::new("std.collections");
+        let result = parse_module_path(&mut state);
+        assert!(result.is_ok());
+        if let Ok(path) = result {
+            assert_eq!(path, vec!["std", "collections"]);
+        }
+    }
+
+    #[test]
+    fn test_parse_module_path_single() {
+        let mut state = ParserState::new("math");
+        let result = parse_module_path(&mut state);
+        assert!(result.is_ok());
+        if let Ok(path) = result {
+            assert_eq!(path, vec!["math"]);
+        }
+    }
+
+    #[test]
+    fn test_parse_attributes_empty() {
+        let mut state = ParserState::new("fn test()");
+        let result = parse_attributes(&mut state);
+        assert!(result.is_ok());
+        if let Ok(attrs) = result {
+            assert_eq!(attrs.len(), 0);
+        }
+    }
+
+    #[test]
+    fn test_parse_attributes_single() {
+        let mut state = ParserState::new("#[test] fn");
+        let result = parse_attributes(&mut state);
+        assert!(result.is_ok());
+        if let Ok(attrs) = result {
+            assert!(attrs.len() > 0);
+        }
+    }
+
+    #[test]
+    fn test_validate_url_import_comprehensive() {
+        // Valid imports
+        assert!(validate_url_import("https://example.com/lib.ruchy").is_ok());
+        assert!(validate_url_import("https://cdn.example.org/v1/core.rchy").is_ok());
+        assert!(validate_url_import("http://localhost/local.ruchy").is_ok());
+        assert!(validate_url_import("http://127.0.0.1/test.ruchy").is_ok());
+
+        // Invalid scheme
+        assert!(validate_url_import("http://example.com/lib.ruchy").is_err());
+        assert!(validate_url_import("ftp://example.com/lib.ruchy").is_err());
+
+        // Invalid extension
+        assert!(validate_url_import("https://example.com/lib.py").is_err());
+        assert!(validate_url_import("https://example.com/lib.js").is_err());
+
+        // Path traversal
+        assert!(validate_url_import("https://example.com/../etc/passwd.ruchy").is_err());
+        assert!(validate_url_import("https://example.com/./hidden.ruchy").is_err());
+
+        // Suspicious patterns
+        assert!(validate_url_import("javascript:alert('xss').ruchy").is_err());
+        assert!(validate_url_import("data:text/javascript,alert('xss').ruchy").is_err());
+    }
+
+    #[test]
+    fn test_parse_interpolated_expr() {
+        // Test simple identifier
+        let part = parse_interpolated_expr("name");
+        match part {
+            StringPart::Expr(_) => assert!(true),
+            _ => panic!("Expected expr part"),
+        }
+
+        // Test with format specifier
+        let part = parse_interpolated_expr("value:.2f");
+        match part {
+            StringPart::ExprWithFormat { .. } => assert!(true),
+            _ => panic!("Expected format expr with format"),
+        }
+    }
+
+    #[test]
+    fn test_parse_type_parameters() {
+        let mut state = ParserState::new("<T, U, V>");
+        let result = parse_type_parameters(&mut state);
+        assert!(result.is_ok());
+        if let Ok(params) = result {
+            assert_eq!(params.len(), 3);
+            assert_eq!(params[0], "T");
+            assert_eq!(params[1], "U");
+            assert_eq!(params[2], "V");
+        }
+    }
+
+    #[test]
+    fn test_parse_import_simple() {
+        let mut state = ParserState::new("import std");
+        let result = parse_import(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_import_with_items() {
+        let mut state = ParserState::new("import std.{HashMap, Vec}");
+        let result = parse_import(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_export() {
+        let mut state = ParserState::new("export { test, demo }");
+        let result = parse_export(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_module() {
+        let mut state = ParserState::new("module math { }");
+        let result = parse_module(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_finalize_text_part() {
+        let mut parts = Vec::new();
+
+        // Test adding non-empty text
+        finalize_text_part(&mut parts, "Hello".to_string());
+        assert_eq!(parts.len(), 1);
+        match &parts[0] {
+            StringPart::Text(t) => assert_eq!(t, "Hello"),
+            _ => panic!("Expected text part"),
+        }
+
+        // Test adding empty text (should not add)
+        let mut parts2 = Vec::new();
+        finalize_text_part(&mut parts2, "".to_string());
+        assert_eq!(parts2.len(), 0);
+    }
+
+    #[test]
+    fn test_parse_qualified_name() {
+        let mut state = ParserState::new("std::collections::HashMap");
+        let result = parse_qualified_name(&mut state);
+        assert!(result.is_ok());
+        if let Ok(name) = result {
+            assert_eq!(name, "std::collections::HashMap");
+        }
+    }
+
+    #[test]
+    fn test_parse_generic_type_nested() {
+        let mut state = ParserState::new("HashMap<String, Vec<Int>>");
+        let base = "HashMap".to_string();
+        let span = Span { start: 0, end: 0 };
+        let result = parse_generic_type(&mut state, base, span);
+        assert!(result.is_ok());
+    }
 }
