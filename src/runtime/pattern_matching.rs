@@ -238,21 +238,414 @@ fn match_none_pattern_helper(value: &Value) -> Option<Vec<(String, Value)>> {
     None
 }
 #[cfg(test)]
-mod property_tests_pattern_matching {
-    use proptest::proptest;
-    
-    
-    proptest! {
-        /// Property: Function never panics on any input
-        #[test]
-        fn test_match_literal_pattern_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Literal, Pattern, StructPatternField, StructFieldValue};
+    use crate::runtime::Value;
+    use std::collections::HashMap;
+
+    // Helper function to create test values
+    fn create_test_values() -> Vec<Value> {
+        vec![
+            Value::Unit,
+            Value::Int(42),
+            Value::Float(3.14),
+            Value::String("test".to_string()),
+            Value::Bool(true),
+            Value::Char('a'),
+            Value::List(vec![Value::Int(1), Value::Int(2)]),
+            Value::Tuple(vec![Value::String("hello".to_string()), Value::Int(10)]),
+        ]
+    }
+
+    // Test 1: Literal Pattern Matching
+    #[test]
+    fn test_literal_pattern_matching() {
+        // Integer literal matching
+        assert!(match_literal_pattern(&Value::Int(42), &Literal::Integer(42)));
+        assert!(!match_literal_pattern(&Value::Int(42), &Literal::Integer(43)));
+
+        // Float literal matching with epsilon
+        assert!(match_literal_pattern(&Value::Float(3.14), &Literal::Float(3.14)));
+        assert!(match_literal_pattern(&Value::Float(1.0), &Literal::Float(1.0 + f64::EPSILON / 2.0)));
+        assert!(!match_literal_pattern(&Value::Float(1.0), &Literal::Float(1.5)));
+
+        // String literal matching
+        assert!(match_literal_pattern(&Value::String("hello".to_string()), &Literal::String("hello".to_string())));
+        assert!(!match_literal_pattern(&Value::String("hello".to_string()), &Literal::String("world".to_string())));
+
+        // Boolean literal matching
+        assert!(match_literal_pattern(&Value::Bool(true), &Literal::Bool(true)));
+        assert!(!match_literal_pattern(&Value::Bool(true), &Literal::Bool(false)));
+
+        // Character literal matching
+        assert!(match_literal_pattern(&Value::Char('a'), &Literal::Char('a')));
+        assert!(!match_literal_pattern(&Value::Char('a'), &Literal::Char('b')));
+
+        // Unit literal matching
+        assert!(match_literal_pattern(&Value::Unit, &Literal::Unit));
+
+        // Type mismatch should not match
+        assert!(!match_literal_pattern(&Value::Int(42), &Literal::String("42".to_string())));
+        assert!(!match_literal_pattern(&Value::String("true".to_string()), &Literal::Bool(true)));
+    }
+
+    // Test 2: Values Equality Function
+    #[test]
+    fn test_values_equal() {
+        // Basic type equality
+        assert!(values_equal(&Value::Int(42), &Value::Int(42)));
+        assert!(!values_equal(&Value::Int(42), &Value::Int(43)));
+
+        // Float equality with epsilon
+        assert!(values_equal(&Value::Float(3.14), &Value::Float(3.14)));
+        assert!(values_equal(&Value::Float(1.0), &Value::Float(1.0 + f64::EPSILON / 2.0)));
+        assert!(!values_equal(&Value::Float(1.0), &Value::Float(1.5)));
+
+        // String equality
+        assert!(values_equal(&Value::String("test".to_string()), &Value::String("test".to_string())));
+        assert!(!values_equal(&Value::String("test".to_string()), &Value::String("other".to_string())));
+
+        // List equality (recursive)
+        let list1 = Value::List(vec![Value::Int(1), Value::String("test".to_string())]);
+        let list2 = Value::List(vec![Value::Int(1), Value::String("test".to_string())]);
+        let list3 = Value::List(vec![Value::Int(1), Value::String("other".to_string())]);
+        assert!(values_equal(&list1, &list2));
+        assert!(!values_equal(&list1, &list3));
+
+        // Tuple equality (recursive)
+        let tuple1 = Value::Tuple(vec![Value::Bool(true), Value::Int(42)]);
+        let tuple2 = Value::Tuple(vec![Value::Bool(true), Value::Int(42)]);
+        let tuple3 = Value::Tuple(vec![Value::Bool(false), Value::Int(42)]);
+        assert!(values_equal(&tuple1, &tuple2));
+        assert!(!values_equal(&tuple1, &tuple3));
+
+        // Different lengths should not be equal
+        let short_list = Value::List(vec![Value::Int(1)]);
+        let long_list = Value::List(vec![Value::Int(1), Value::Int(2)]);
+        assert!(!values_equal(&short_list, &long_list));
+
+        // Different types should not be equal
+        assert!(!values_equal(&Value::Int(42), &Value::String("42".to_string())));
+        assert!(!values_equal(&Value::List(vec![]), &Value::Tuple(vec![])));
+    }
+
+    // Test 3: Simple Pattern Matching
+    #[test]
+    fn test_simple_pattern_matching() {
+        // Wildcard pattern should match anything
+        assert!(match_pattern(&Pattern::Wildcard, &Value::Int(42)).is_some());
+        assert!(match_pattern(&Pattern::Wildcard, &Value::String("test".to_string())).is_some());
+        assert!(match_pattern(&Pattern::Wildcard, &Value::Unit).is_some());
+
+        // Variable pattern should bind value
+        let binding = match_pattern(&Pattern::Variable("x".to_string()), &Value::Int(42));
+        assert!(binding.is_some());
+        let bindings = binding.unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "x");
+        assert!(values_equal(&bindings[0].1, &Value::Int(42)));
+
+        // Literal pattern matching
+        let literal_pattern = Pattern::Literal(Literal::Integer(42));
+        assert!(match_pattern(&literal_pattern, &Value::Int(42)).is_some());
+        assert!(match_pattern(&literal_pattern, &Value::Int(43)).is_none());
+    }
+
+    // Test 4: Tuple Pattern Matching
+    #[test]
+    fn test_tuple_pattern_matching() {
+        let tuple_value = Value::Tuple(vec![Value::Int(1), Value::String("test".to_string()), Value::Bool(true)]);
+
+        // Exact tuple match
+        let tuple_pattern = Pattern::Tuple(vec![
+            Pattern::Literal(Literal::Integer(1)),
+            Pattern::Variable("s".to_string()),
+            Pattern::Literal(Literal::Bool(true))
+        ]);
+
+        let binding = match_pattern(&tuple_pattern, &tuple_value);
+        assert!(binding.is_some());
+        let bindings = binding.unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "s");
+        assert!(values_equal(&bindings[0].1, &Value::String("test".to_string())));
+
+        // Wrong tuple length should not match
+        let wrong_pattern = Pattern::Tuple(vec![
+            Pattern::Literal(Literal::Integer(1)),
+            Pattern::Variable("s".to_string())
+        ]);
+        assert!(match_pattern(&wrong_pattern, &tuple_value).is_none());
+
+        // Wrong element values should not match
+        let mismatch_pattern = Pattern::Tuple(vec![
+            Pattern::Literal(Literal::Integer(2)),
+            Pattern::Variable("s".to_string()),
+            Pattern::Literal(Literal::Bool(true))
+        ]);
+        assert!(match_pattern(&mismatch_pattern, &tuple_value).is_none());
+    }
+
+    // Test 5: List Pattern Matching
+    #[test]
+    fn test_list_pattern_matching() {
+        let list_value = Value::List(vec![Value::Int(1), Value::Int(2), Value::Int(3)]);
+
+        // Exact list match with variables
+        let list_pattern = Pattern::List(vec![
+            Pattern::Variable("first".to_string()),
+            Pattern::Literal(Literal::Integer(2)),
+            Pattern::Variable("last".to_string())
+        ]);
+
+        let binding = match_pattern(&list_pattern, &list_value);
+        assert!(binding.is_some());
+        let bindings = binding.unwrap();
+        assert_eq!(bindings.len(), 2);
+
+        // Check bindings (order may vary, so check both)
+        let first_binding = bindings.iter().find(|(name, _)| name == "first").unwrap();
+        let last_binding = bindings.iter().find(|(name, _)| name == "last").unwrap();
+        assert!(values_equal(&first_binding.1, &Value::Int(1)));
+        assert!(values_equal(&last_binding.1, &Value::Int(3)));
+
+        // Empty list pattern
+        let empty_pattern = Pattern::List(vec![]);
+        assert!(match_pattern(&empty_pattern, &Value::List(vec![])).is_some());
+        assert!(match_pattern(&empty_pattern, &list_value).is_none());
+
+        // Wrong list length should not match
+        let short_pattern = Pattern::List(vec![Pattern::Variable("x".to_string())]);
+        assert!(match_pattern(&short_pattern, &list_value).is_none());
+    }
+
+    // Test 6: Rest Pattern Matching
+    #[test]
+    fn test_rest_pattern_matching() {
+        let list_value = Value::List(vec![Value::Int(1), Value::Int(2), Value::Int(3), Value::Int(4)]);
+
+        // Rest pattern at end
+        let rest_pattern = Pattern::List(vec![
+            Pattern::Variable("first".to_string()),
+            Pattern::Rest
+        ]);
+
+        let binding = match_pattern(&rest_pattern, &list_value);
+        assert!(binding.is_some());
+        let bindings = binding.unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "first");
+        assert!(values_equal(&bindings[0].1, &Value::Int(1)));
+
+        // Named rest pattern
+        let named_rest_pattern = Pattern::List(vec![
+            Pattern::Variable("first".to_string()),
+            Pattern::RestNamed("middle".to_string()),
+            Pattern::Variable("last".to_string())
+        ]);
+
+        let binding = match_pattern(&named_rest_pattern, &list_value);
+        assert!(binding.is_some());
+        let bindings = binding.unwrap();
+        assert_eq!(bindings.len(), 3);
+
+        let first_binding = bindings.iter().find(|(name, _)| name == "first").unwrap();
+        let middle_binding = bindings.iter().find(|(name, _)| name == "middle").unwrap();
+        let last_binding = bindings.iter().find(|(name, _)| name == "last").unwrap();
+
+        assert!(values_equal(&first_binding.1, &Value::Int(1)));
+        assert!(values_equal(&last_binding.1, &Value::Int(4)));
+        // Middle should contain [2, 3]
+        if let Value::List(middle_values) = &middle_binding.1 {
+            assert_eq!(middle_values.len(), 2);
+            assert!(values_equal(&middle_values[0], &Value::Int(2)));
+            assert!(values_equal(&middle_values[1], &Value::Int(3)));
+        } else {
+            panic!("Expected middle binding to be a list");
         }
+    }
+
+    // Test 7: OR Pattern Matching
+    #[test]
+    fn test_or_pattern_matching() {
+        let or_pattern = Pattern::Or(vec![
+            Pattern::Literal(Literal::Integer(1)),
+            Pattern::Literal(Literal::Integer(2)),
+            Pattern::Literal(Literal::String("test".to_string()))
+        ]);
+
+        // Should match first option
+        assert!(match_pattern(&or_pattern, &Value::Int(1)).is_some());
+
+        // Should match second option
+        assert!(match_pattern(&or_pattern, &Value::Int(2)).is_some());
+
+        // Should match third option
+        assert!(match_pattern(&or_pattern, &Value::String("test".to_string())).is_some());
+
+        // Should not match non-matching values
+        assert!(match_pattern(&or_pattern, &Value::Int(3)).is_none());
+        assert!(match_pattern(&or_pattern, &Value::String("other".to_string())).is_none());
+    }
+
+    // Test 8: Option Pattern Matching (Some/None)
+    #[test]
+    fn test_option_pattern_matching() {
+        // Some pattern matching
+        let some_value = Value::Object({
+            let mut map = HashMap::new();
+            map.insert("Some".to_string(), Value::Int(42));
+            map
+        });
+
+        let some_pattern = Pattern::Some(Box::new(Pattern::Variable("value".to_string())));
+        let binding = match_pattern(&some_pattern, &some_value);
+        assert!(binding.is_some());
+        let bindings = binding.unwrap();
+        assert_eq!(bindings.len(), 1);
+        assert_eq!(bindings[0].0, "value");
+        assert!(values_equal(&bindings[0].1, &Value::Int(42)));
+
+        // None pattern matching
+        let none_value = Value::Unit; // Assuming None is represented as Unit
+        let none_pattern = Pattern::None;
+        assert!(match_pattern(&none_pattern, &none_value).is_some());
+
+        // None should not match Some
+        assert!(match_pattern(&none_pattern, &some_value).is_none());
+    }
+
+    // Test 9: Struct Pattern Matching
+    #[test]
+    fn test_struct_pattern_matching() {
+        let struct_value = Value::Object({
+            let mut map = HashMap::new();
+            map.insert("name".to_string(), Value::String("Alice".to_string()));
+            map.insert("age".to_string(), Value::Int(30));
+            map.insert("active".to_string(), Value::Bool(true));
+            map
+        });
+
+        let struct_pattern = Pattern::Struct {
+            name: "Person".to_string(),
+            fields: vec![
+                StructPatternField {
+                    name: "name".to_string(),
+                    pattern: Pattern::Variable("person_name".to_string()),
+                    default_value: None,
+                },
+                StructPatternField {
+                    name: "age".to_string(),
+                    pattern: Pattern::Variable("person_age".to_string()),
+                    default_value: None,
+                }
+            ]
+        };
+
+        let binding = match_pattern(&struct_pattern, &struct_value);
+        assert!(binding.is_some());
+        let bindings = binding.unwrap();
+        assert_eq!(bindings.len(), 2);
+
+        let name_binding = bindings.iter().find(|(name, _)| name == "person_name").unwrap();
+        let age_binding = bindings.iter().find(|(name, _)| name == "person_age").unwrap();
+
+        assert!(values_equal(&name_binding.1, &Value::String("Alice".to_string())));
+        assert!(values_equal(&age_binding.1, &Value::Int(30)));
+    }
+
+    // Test 10: Range Pattern Matching Edge Cases
+    #[test]
+    fn test_range_pattern_edge_cases() {
+        // Test with range values
+        let range_value = Value::Range {
+            start: 1,
+            end: 10,
+            inclusive: true
+        };
+
+        let matching_range = Value::Range {
+            start: 1,
+            end: 10,
+            inclusive: true
+        };
+
+        let non_matching_range = Value::Range {
+            start: 1,
+            end: 10,
+            inclusive: false
+        };
+
+        assert!(values_equal(&range_value, &matching_range));
+        assert!(!values_equal(&range_value, &non_matching_range));
+
+        // Test edge case with empty patterns/values
+        assert!(match_pattern(&Pattern::Wildcard, &Value::List(vec![])).is_some());
+        assert!(match_pattern(&Pattern::List(vec![]), &Value::List(vec![])).is_some());
+    }
+
+    // Test 11: Complex Nested Pattern Matching
+    #[test]
+    fn test_nested_pattern_matching() {
+        // Nested tuple with list
+        let complex_value = Value::Tuple(vec![
+            Value::String("outer".to_string()),
+            Value::List(vec![Value::Int(1), Value::Int(2)]),
+            Value::Tuple(vec![Value::Bool(true), Value::Char('x')])
+        ]);
+
+        let nested_pattern = Pattern::Tuple(vec![
+            Pattern::Variable("outer_str".to_string()),
+            Pattern::List(vec![
+                Pattern::Variable("first_int".to_string()),
+                Pattern::Variable("second_int".to_string())
+            ]),
+            Pattern::Tuple(vec![
+                Pattern::Literal(Literal::Bool(true)),
+                Pattern::Variable("inner_char".to_string())
+            ])
+        ]);
+
+        let binding = match_pattern(&nested_pattern, &complex_value);
+        assert!(binding.is_some());
+        let bindings = binding.unwrap();
+        assert_eq!(bindings.len(), 4);
+
+        let outer_binding = bindings.iter().find(|(name, _)| name == "outer_str").unwrap();
+        let first_binding = bindings.iter().find(|(name, _)| name == "first_int").unwrap();
+        let second_binding = bindings.iter().find(|(name, _)| name == "second_int").unwrap();
+        let char_binding = bindings.iter().find(|(name, _)| name == "inner_char").unwrap();
+
+        assert!(values_equal(&outer_binding.1, &Value::String("outer".to_string())));
+        assert!(values_equal(&first_binding.1, &Value::Int(1)));
+        assert!(values_equal(&second_binding.1, &Value::Int(2)));
+        assert!(values_equal(&char_binding.1, &Value::Char('x')));
+    }
+
+    // Test 12: Pattern Matching Failure Cases
+    #[test]
+    fn test_pattern_matching_failures() {
+        // Type mismatch: expecting tuple, got integer
+        let tuple_pattern = Pattern::Tuple(vec![Pattern::Variable("x".to_string())]);
+        assert!(match_pattern(&tuple_pattern, &Value::Int(42)).is_none());
+
+        // Type mismatch: expecting list, got string
+        let list_pattern = Pattern::List(vec![Pattern::Variable("x".to_string())]);
+        assert!(match_pattern(&list_pattern, &Value::String("test".to_string())).is_none());
+
+        // Length mismatch: pattern expects 3 elements, value has 2
+        let long_pattern = Pattern::Tuple(vec![
+            Pattern::Variable("a".to_string()),
+            Pattern::Variable("b".to_string()),
+            Pattern::Variable("c".to_string())
+        ]);
+        let short_tuple = Value::Tuple(vec![Value::Int(1), Value::Int(2)]);
+        assert!(match_pattern(&long_pattern, &short_tuple).is_none());
+
+        // Literal mismatch
+        let literal_pattern = Pattern::Literal(Literal::Integer(42));
+        assert!(match_pattern(&literal_pattern, &Value::Int(43)).is_none());
+        assert!(match_pattern(&literal_pattern, &Value::String("42".to_string())).is_none());
     }
 }
