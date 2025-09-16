@@ -833,6 +833,447 @@ mod tests {
         let score = detector.analyze(&session);
         assert_eq!(score, 100.0); // Empty session should have full originality
     }
+
+    #[test]
+    fn test_assignment_creation() {
+        let assignment = Assignment {
+            id: "hw001".to_string(),
+            title: "Introduction to Ruchy".to_string(),
+            description: "Basic programming exercises".to_string(),
+            setup: AssignmentSetup {
+                prelude_code: vec!["let pi = 3.14159".to_string()],
+                provided_functions: HashMap::new(),
+                immutable_bindings: HashSet::new(),
+            },
+            tasks: vec![],
+            constraints: AssignmentConstraints {
+                max_time_ms: 5000,
+                max_memory_mb: 100,
+                allowed_imports: vec![],
+                forbidden_keywords: vec!["eval".to_string()],
+                performance: None,
+            },
+            rubric: GradingRubric {
+                categories: vec![],
+                late_penalty: LatePenalty::Percent(10),
+            },
+        };
+
+        assert_eq!(assignment.id, "hw001");
+        assert_eq!(assignment.title, "Introduction to Ruchy");
+        assert_eq!(assignment.constraints.max_time_ms, 5000);
+    }
+
+    #[test]
+    fn test_task_with_test_cases() {
+        let task = Task {
+            id: "task_1".to_string(),
+            description: "Implement fibonacci function".to_string(),
+            points: 20,
+            test_cases: vec![
+                TestCase {
+                    input: "fib(5)".to_string(),
+                    expected: ExpectedBehavior::ExactOutput("5".to_string()),
+                    points: 10,
+                    timeout_ms: 1000,
+                },
+            ],
+            hidden_cases: vec![
+                TestCase {
+                    input: "fib(10)".to_string(),
+                    expected: ExpectedBehavior::ExactOutput("55".to_string()),
+                    points: 10,
+                    timeout_ms: 1000,
+                },
+            ],
+            requirements: vec![Requirement::UseRecursion],
+        };
+
+        assert_eq!(task.id, "task_1");
+        assert_eq!(task.points, 20);
+        assert_eq!(task.test_cases.len(), 1);
+        assert_eq!(task.hidden_cases.len(), 1);
+        assert_eq!(task.requirements.len(), 1);
+    }
+
+    #[test]
+    fn test_expected_behavior_variants() {
+        let behaviors = vec![
+            ExpectedBehavior::ExactOutput("42".to_string()),
+            ExpectedBehavior::Pattern(r"Result: \d+".to_string()),
+            ExpectedBehavior::TypeSignature("int -> int".to_string()),
+            ExpectedBehavior::Predicate(PredicateCheck {
+                name: "is_even".to_string(),
+                check_fn: "x % 2 == 0".to_string(),
+            }),
+            ExpectedBehavior::PerformanceBound {
+                max_ns: 1000000,
+                max_bytes: 1024,
+            },
+        ];
+
+        for behavior in behaviors {
+            match behavior {
+                ExpectedBehavior::ExactOutput(s) => assert!(!s.is_empty()),
+                ExpectedBehavior::Pattern(p) => assert!(!p.is_empty()),
+                ExpectedBehavior::TypeSignature(t) => assert!(!t.is_empty()),
+                ExpectedBehavior::Predicate(pred) => assert!(!pred.name.is_empty()),
+                ExpectedBehavior::PerformanceBound { max_ns, max_bytes } => {
+                    assert!(max_ns > 0);
+                    assert!(max_bytes > 0);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_requirements_enum() {
+        let requirements = vec![
+            Requirement::UseRecursion,
+            Requirement::NoLoops,
+            Requirement::UseHigherOrderFunctions,
+            Requirement::TypeSafe,
+            Requirement::PureFunction,
+            Requirement::TailRecursive,
+        ];
+
+        assert_eq!(requirements.len(), 6);
+        // Each requirement should be distinct
+        for (i, req1) in requirements.iter().enumerate() {
+            for (j, req2) in requirements.iter().enumerate() {
+                if i != j {
+                    assert!(!matches!((req1, req2),
+                        (Requirement::UseRecursion, Requirement::UseRecursion)));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_grading_rubric() {
+        let rubric = GradingRubric {
+            categories: vec![
+                RubricCategory {
+                    name: "Correctness".to_string(),
+                    weight: 0.5,
+                    criteria: vec![
+                        Criterion {
+                            description: "All tests pass".to_string(),
+                            points: 50,
+                            partial_credit: true,
+                        },
+                    ],
+                },
+                RubricCategory {
+                    name: "Style".to_string(),
+                    weight: 0.3,
+                    criteria: vec![],
+                },
+            ],
+            late_penalty: LatePenalty::Fixed(5),
+        };
+
+        assert_eq!(rubric.categories.len(), 2);
+        assert_eq!(rubric.categories[0].weight, 0.5);
+        assert_eq!(rubric.categories[1].weight, 0.3);
+        match rubric.late_penalty {
+            LatePenalty::Fixed(p) => assert_eq!(p, 5),
+            _ => panic!("Expected fixed penalty"),
+        }
+    }
+
+    #[test]
+    fn test_performance_constraints() {
+        let constraints = PerformanceConstraints {
+            max_cpu_ms: 1000,
+            max_heap_mb: 50,
+            complexity_bound: "O(n log n)".to_string(),
+        };
+
+        assert_eq!(constraints.max_cpu_ms, 1000);
+        assert_eq!(constraints.max_heap_mb, 50);
+        assert_eq!(constraints.complexity_bound, "O(n log n)");
+    }
+
+    #[test]
+    fn test_integrity_check_creation() {
+        let check = IntegrityCheck {
+            check_type: IntegrityViolation::CopiedCode {
+                similarity: 95.0,
+                source: "student_2".to_string(),
+            },
+            severity: ViolationSeverity::Critical,
+            evidence: "Identical variable names and structure".to_string(),
+        };
+
+        match check.check_type {
+            IntegrityViolation::CopiedCode { similarity, ref source } => {
+                assert_eq!(similarity, 95.0);
+                assert_eq!(source, "student_2");
+            }
+            _ => panic!("Expected CopiedCode violation"),
+        }
+        assert_eq!(check.severity, ViolationSeverity::Critical);
+    }
+
+    #[test]
+    fn test_grade_report_categories() {
+        let mut report = GradeReport::new("student_123".to_string());
+
+        let category = CategoryScore {
+            name: "Implementation".to_string(),
+            earned: 18.0,
+            total: 20.0,
+            feedback: vec!["Good recursion usage".to_string()],
+        };
+
+        report.add_category(category);
+        assert_eq!(report.categories.len(), 1);
+        assert_eq!(report.categories[0].earned, 18.0);
+    }
+
+    #[test]
+    fn test_submission_metadata() {
+        let metadata = SubmissionMetadata {
+            student_id: "s123456".to_string(),
+            assignment_id: "hw_final".to_string(),
+            timestamp: "2025-12-01T23:59:59Z".to_string(),
+            environment: SubmissionEnvironment {
+                ruchy_version: "1.30.0".to_string(),
+                runtime: "wasm".to_string(),
+                browser: Some("Chrome 120".to_string()),
+            },
+        };
+
+        assert_eq!(metadata.student_id, "s123456");
+        assert_eq!(metadata.assignment_id, "hw_final");
+        assert_eq!(metadata.environment.ruchy_version, "1.30.0");
+        assert!(metadata.environment.browser.is_some());
+    }
+
+    #[test]
+    fn test_auto_grader_initialization() {
+        let assignment = Assignment {
+            id: "test".to_string(),
+            title: "Test Assignment".to_string(),
+            description: String::new(),
+            setup: AssignmentSetup {
+                prelude_code: vec![],
+                provided_functions: HashMap::new(),
+                immutable_bindings: HashSet::new(),
+            },
+            tasks: vec![],
+            constraints: AssignmentConstraints {
+                max_time_ms: 5000,
+                max_memory_mb: 100,
+                allowed_imports: vec![],
+                forbidden_keywords: vec![],
+                performance: None,
+            },
+            rubric: GradingRubric {
+                categories: vec![],
+                late_penalty: LatePenalty::None,
+            },
+        };
+
+        let grader = AutoGrader::new(assignment);
+        assert!(grader.assignment.id == "test");
+    }
+
+    #[test]
+    fn test_late_penalty_variants() {
+        let penalties = vec![
+            LatePenalty::None,
+            LatePenalty::Fixed(10),
+            LatePenalty::Percent(15),
+            LatePenalty::PerDay {
+                points: 5,
+                max_days: 7,
+            },
+        ];
+
+        for penalty in penalties {
+            match penalty {
+                LatePenalty::None => {}
+                LatePenalty::Fixed(p) => assert!(p > 0),
+                LatePenalty::Percent(p) => assert!(p > 0 && p <= 100),
+                LatePenalty::PerDay { points, max_days } => {
+                    assert!(points > 0);
+                    assert!(max_days > 0);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_violation_severity_ordering() {
+        let severities = vec![
+            ViolationSeverity::Warning,
+            ViolationSeverity::Minor,
+            ViolationSeverity::Major,
+            ViolationSeverity::Critical,
+        ];
+
+        // Test that severities are distinct
+        for (i, sev1) in severities.iter().enumerate() {
+            for (j, sev2) in severities.iter().enumerate() {
+                if i == j {
+                    assert_eq!(sev1, sev2);
+                } else {
+                    assert_ne!(sev1, sev2);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_submission_environment() {
+        let env = SubmissionEnvironment {
+            ruchy_version: "1.25.0".to_string(),
+            runtime: "native".to_string(),
+            browser: None,
+        };
+
+        assert_eq!(env.ruchy_version, "1.25.0");
+        assert_eq!(env.runtime, "native");
+        assert!(env.browser.is_none());
+
+        let web_env = SubmissionEnvironment {
+            ruchy_version: "1.25.0".to_string(),
+            runtime: "wasm".to_string(),
+            browser: Some("Firefox 115".to_string()),
+        };
+
+        assert!(web_env.browser.is_some());
+    }
+
+    #[test]
+    fn test_criterion_with_partial_credit() {
+        let criterion = Criterion {
+            description: "Correct implementation".to_string(),
+            points: 25,
+            partial_credit: true,
+        };
+
+        assert_eq!(criterion.description, "Correct implementation");
+        assert_eq!(criterion.points, 25);
+        assert!(criterion.partial_credit);
+
+        let no_partial = Criterion {
+            description: "All or nothing".to_string(),
+            points: 10,
+            partial_credit: false,
+        };
+
+        assert!(!no_partial.partial_credit);
+    }
+
+    #[test]
+    fn test_academic_integrity_detector() {
+        let detector = AcademicIntegrityDetector::new();
+
+        // Mock session for testing
+        let session = ReplSession {
+            version: crate::runtime::replay::SemVer::new(1, 0, 0),
+            metadata: crate::runtime::replay::SessionMetadata {
+                session_id: "integrity_test".to_string(),
+                created_at: "2025-09-01T10:00:00Z".to_string(),
+                ruchy_version: "1.23.0".to_string(),
+                student_id: Some("student_test".to_string()),
+                assignment_id: Some("hw_test".to_string()),
+                tags: vec![],
+            },
+            environment: crate::runtime::replay::Environment {
+                seed: 12345,
+                feature_flags: vec![],
+                resource_limits: crate::runtime::replay::ResourceLimits {
+                    heap_mb: 50,
+                    stack_kb: 4096,
+                    cpu_ms: 2000,
+                },
+            },
+            timeline: vec![],
+            checkpoints: std::collections::BTreeMap::new(),
+        };
+
+        let violations = detector.analyze(&session);
+        // Empty session should have no violations
+        assert_eq!(violations.len(), 0);
+    }
+
+    #[test]
+    fn test_predicate_check() {
+        let predicate = PredicateCheck {
+            name: "is_prime".to_string(),
+            check_fn: "fn(n) { n > 1 && (2..n).all(|i| n % i != 0) }".to_string(),
+        };
+
+        assert_eq!(predicate.name, "is_prime");
+        assert!(!predicate.check_fn.is_empty());
+    }
+
+    #[test]
+    fn test_assignment_setup_with_immutable_bindings() {
+        let mut immutable = HashSet::new();
+        immutable.insert("PI".to_string());
+        immutable.insert("E".to_string());
+
+        let mut provided = HashMap::new();
+        provided.insert("helper".to_string(), "fn helper(x) { x * 2 }".to_string());
+
+        let setup = AssignmentSetup {
+            prelude_code: vec![
+                "let PI = 3.14159".to_string(),
+                "let E = 2.71828".to_string(),
+            ],
+            provided_functions: provided,
+            immutable_bindings: immutable,
+        };
+
+        assert_eq!(setup.prelude_code.len(), 2);
+        assert_eq!(setup.provided_functions.len(), 1);
+        assert_eq!(setup.immutable_bindings.len(), 2);
+        assert!(setup.immutable_bindings.contains("PI"));
+    }
+
+    #[test]
+    fn test_integrity_violation_types() {
+        let violations = vec![
+            IntegrityViolation::CopiedCode {
+                similarity: 85.5,
+                source: "github.com/example".to_string(),
+            },
+            IntegrityViolation::SuspiciousTiming {
+                avg_think_time_ms: 50,
+                variance: 0.1,
+            },
+            IntegrityViolation::ExternalAssistance {
+                indicators: vec!["clipboard_paste".to_string()],
+            },
+            IntegrityViolation::CodeInjection {
+                pattern: "eval(".to_string(),
+            },
+        ];
+
+        assert_eq!(violations.len(), 4);
+
+        for violation in violations {
+            match violation {
+                IntegrityViolation::CopiedCode { similarity, .. } => {
+                    assert!(similarity > 0.0 && similarity <= 100.0);
+                }
+                IntegrityViolation::SuspiciousTiming { avg_think_time_ms, .. } => {
+                    assert!(avg_think_time_ms >= 0);
+                }
+                IntegrityViolation::ExternalAssistance { indicators } => {
+                    assert!(!indicators.is_empty());
+                }
+                IntegrityViolation::CodeInjection { pattern } => {
+                    assert!(!pattern.is_empty());
+                }
+            }
+        }
+    }
 }
 #[cfg(test)]
 mod property_tests_assessment {
