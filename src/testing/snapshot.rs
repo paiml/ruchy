@@ -318,6 +318,282 @@ mod tests {
                 .unwrap();
         }
     }
+
+    #[test]
+    fn test_snapshot_config_default() {
+        let config = SnapshotConfig::default();
+        assert!(!config.auto_update);
+        assert_eq!(config.snapshot_dir, PathBuf::from("tests/snapshots"));
+        assert!(config.fail_on_missing);
+    }
+
+    #[test]
+    fn test_snapshot_config_custom() {
+        let config = SnapshotConfig {
+            auto_update: true,
+            snapshot_dir: PathBuf::from("custom/snapshots"),
+            fail_on_missing: false,
+        };
+        assert!(config.auto_update);
+        assert_eq!(config.snapshot_dir, PathBuf::from("custom/snapshots"));
+        assert!(!config.fail_on_missing);
+    }
+
+    #[test]
+    fn test_snapshot_metadata() {
+        let metadata = SnapshotMetadata {
+            created_at: "2023-01-01T00:00:00Z".to_string(),
+            updated_at: "2023-01-02T00:00:00Z".to_string(),
+            ruchy_version: "1.0.0".to_string(),
+            rustc_version: "1.75.0".to_string(),
+        };
+        assert_eq!(metadata.created_at, "2023-01-01T00:00:00Z");
+        assert_eq!(metadata.updated_at, "2023-01-02T00:00:00Z");
+        assert_eq!(metadata.ruchy_version, "1.0.0");
+        assert_eq!(metadata.rustc_version, "1.75.0");
+    }
+
+    #[test]
+    fn test_snapshot_test_structure() {
+        let test = SnapshotTest {
+            name: "test_basic".to_string(),
+            input: "1 + 1".to_string(),
+            output_hash: "abc123".to_string(),
+            rust_output: "1 + 1".to_string(),
+            metadata: SnapshotMetadata {
+                created_at: "2023-01-01T00:00:00Z".to_string(),
+                updated_at: "2023-01-01T00:00:00Z".to_string(),
+                ruchy_version: "1.0.0".to_string(),
+                rustc_version: "1.75.0".to_string(),
+            },
+        };
+        assert_eq!(test.name, "test_basic");
+        assert_eq!(test.input, "1 + 1");
+        assert_eq!(test.output_hash, "abc123");
+        assert_eq!(test.rust_output, "1 + 1");
+    }
+
+    #[test]
+    fn test_snapshot_suite_creation() {
+        let suite = SnapshotSuite {
+            tests: vec![],
+            config: SnapshotConfig::default(),
+        };
+        assert_eq!(suite.tests.len(), 0);
+        assert!(!suite.config.auto_update);
+    }
+
+    #[test]
+    fn test_hash_function() {
+        let hash1 = SnapshotRunner::hash("hello world");
+        let hash2 = SnapshotRunner::hash("hello world");
+        let hash3 = SnapshotRunner::hash("hello world!");
+
+        // Same input should produce same hash
+        assert_eq!(hash1, hash2);
+        // Different input should produce different hash
+        assert_ne!(hash1, hash3);
+
+        // Hash should be valid SHA256 (64 hex characters)
+        assert_eq!(hash1.len(), 64);
+        assert!(hash1.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn test_hash_consistency() {
+        // Test various inputs
+        let inputs = vec!["", "a", "hello", "hello world", "🦀"];
+        for input in inputs {
+            let hash1 = SnapshotRunner::hash(input);
+            let hash2 = SnapshotRunner::hash(input);
+            assert_eq!(hash1, hash2, "Hash inconsistency for input: {}", input);
+        }
+    }
+
+    #[test]
+    fn test_snapshot_load_empty() {
+        let config = SnapshotConfig {
+            auto_update: false,
+            snapshot_dir: PathBuf::from("target/test-snapshots-empty"),
+            fail_on_missing: false,
+        };
+
+        // Clean up any existing file
+        let _ = std::fs::remove_dir_all(&config.snapshot_dir);
+
+        let runner = SnapshotRunner::load(config).unwrap();
+        assert_eq!(runner.suite.tests.len(), 0);
+    }
+
+    #[test]
+    fn test_snapshot_auto_update_disabled() {
+        let config = SnapshotConfig {
+            auto_update: false,
+            snapshot_dir: PathBuf::from("target/test-snapshots-no-update"),
+            fail_on_missing: false,
+        };
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&config.snapshot_dir);
+
+        let mut runner = SnapshotRunner::load(config).unwrap();
+
+        // First test - creates snapshot
+        runner.test("test1", "input1", |_| Ok("output1".to_string())).unwrap();
+        assert_eq!(runner.suite.tests.len(), 1);
+
+        // Second test with different output - should fail because auto_update is false
+        let result = runner.test("test1", "input1", |_| Ok("output2".to_string()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_snapshot_auto_update_enabled() {
+        let config = SnapshotConfig {
+            auto_update: true,
+            snapshot_dir: PathBuf::from("target/test-snapshots-update"),
+            fail_on_missing: false,
+        };
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&config.snapshot_dir);
+
+        let mut runner = SnapshotRunner::load(config).unwrap();
+
+        // First test - creates snapshot
+        runner.test("test1", "input1", |_| Ok("output1".to_string())).unwrap();
+        let original_hash = runner.suite.tests[0].output_hash.clone();
+
+        // Second test with different output - should update because auto_update is true
+        runner.test("test1", "input1", |_| Ok("output2".to_string())).unwrap();
+        let new_hash = &runner.suite.tests[0].output_hash;
+
+        assert_ne!(original_hash, *new_hash);
+        assert_eq!(runner.suite.tests[0].rust_output, "output2");
+    }
+
+    #[test]
+    fn test_snapshot_fail_on_missing() {
+        let config = SnapshotConfig {
+            auto_update: false,
+            snapshot_dir: PathBuf::from("target/test-snapshots-fail-missing"),
+            fail_on_missing: true,
+        };
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&config.snapshot_dir);
+
+        let mut runner = SnapshotRunner::load(config).unwrap();
+
+        // Should fail because snapshot doesn't exist and fail_on_missing is true
+        let result = runner.test("missing_test", "input", |_| Ok("output".to_string()));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Missing snapshot"));
+    }
+
+    #[test]
+    fn test_snapshot_matching() {
+        let config = SnapshotConfig {
+            auto_update: false,
+            snapshot_dir: PathBuf::from("target/test-snapshots-match"),
+            fail_on_missing: false,
+        };
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&config.snapshot_dir);
+
+        let mut runner = SnapshotRunner::load(config).unwrap();
+
+        // Create initial snapshot
+        runner.test("match_test", "input", |_| Ok("consistent_output".to_string())).unwrap();
+
+        // Test with same output - should pass
+        runner.test("match_test", "input", |_| Ok("consistent_output".to_string())).unwrap();
+
+        assert_eq!(runner.suite.tests.len(), 1);
+    }
+
+    #[test]
+    fn test_run_all_snapshots() {
+        let config = SnapshotConfig {
+            auto_update: false,
+            snapshot_dir: PathBuf::from("target/test-snapshots-run-all"),
+            fail_on_missing: false,
+        };
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&config.snapshot_dir);
+
+        let mut runner = SnapshotRunner::load(config).unwrap();
+
+        // Add some test snapshots
+        runner.test("test1", "input1", |_| Ok("output1".to_string())).unwrap();
+        runner.test("test2", "input2", |_| Ok("output2".to_string())).unwrap();
+
+        // Run all tests with consistent transform
+        let result = runner.run_all(|input| {
+            match input {
+                "input1" => Ok("output1".to_string()),
+                "input2" => Ok("output2".to_string()),
+                _ => Ok("default".to_string()),
+            }
+        });
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_create_snapshot_with_metadata() {
+        let config = SnapshotConfig {
+            auto_update: false,
+            snapshot_dir: PathBuf::from("target/test-snapshots-metadata"),
+            fail_on_missing: false,
+        };
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&config.snapshot_dir);
+
+        let mut runner = SnapshotRunner::load(config).unwrap();
+
+        runner.test("metadata_test", "input", |_| Ok("output".to_string())).unwrap();
+
+        assert_eq!(runner.suite.tests.len(), 1);
+        let test = &runner.suite.tests[0];
+        assert_eq!(test.name, "metadata_test");
+        assert_eq!(test.input, "input");
+        assert_eq!(test.rust_output, "output");
+        assert!(!test.metadata.created_at.is_empty());
+        assert!(!test.metadata.updated_at.is_empty());
+        assert!(!test.metadata.ruchy_version.is_empty());
+        assert!(!test.metadata.rustc_version.is_empty());
+    }
+
+    #[test]
+    fn test_multiple_snapshots_same_runner() {
+        let config = SnapshotConfig {
+            auto_update: false,
+            snapshot_dir: PathBuf::from("target/test-snapshots-multiple"),
+            fail_on_missing: false,
+        };
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&config.snapshot_dir);
+
+        let mut runner = SnapshotRunner::load(config).unwrap();
+
+        // Create multiple snapshots
+        runner.test("test_a", "input_a", |_| Ok("output_a".to_string())).unwrap();
+        runner.test("test_b", "input_b", |_| Ok("output_b".to_string())).unwrap();
+        runner.test("test_c", "input_c", |_| Ok("output_c".to_string())).unwrap();
+
+        assert_eq!(runner.suite.tests.len(), 3);
+
+        // Verify all tests are distinct
+        let names: Vec<_> = runner.suite.tests.iter().map(|t| &t.name).collect();
+        assert!(names.contains(&&"test_a".to_string()));
+        assert!(names.contains(&&"test_b".to_string()));
+        assert!(names.contains(&&"test_c".to_string()));
+    }
 }
 #[cfg(test)]
 mod property_tests_snapshot {

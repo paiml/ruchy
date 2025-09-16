@@ -1410,6 +1410,150 @@ mod tests {
         let json = serde_json::to_string(&issues).unwrap();
         assert_eq!(json, "[]");
     }
+
+    #[test]
+    fn test_lint_rules_enum_coverage() {
+        // Test all LintRule variants can be created
+        let _unused_var = LintRule::UnusedVariable;
+        let _undefined_var = LintRule::UndefinedVariable;
+        let _variable_shadowing = LintRule::VariableShadowing;
+        let _unused_param = LintRule::UnusedParameter;
+        let _unused_loop_var = LintRule::UnusedLoopVariable;
+        let _unused_match_binding = LintRule::UnusedMatchBinding;
+        let _complexity_limit = LintRule::ComplexityLimit;
+        let _naming_convention = LintRule::NamingConvention;
+        let _style_violation = LintRule::StyleViolation;
+        let _security = LintRule::Security;
+        let _performance = LintRule::Performance;
+        assert!(true); // All variants created successfully
+    }
+
+    #[test]
+    fn test_var_type_enum_coverage() {
+        // Test all VarType variants can be created
+        let _local = VarType::Local;
+        let _parameter = VarType::Parameter;
+        let _loop_variable = VarType::LoopVariable;
+        let _match_binding = VarType::MatchBinding;
+        assert!(true); // All variants created successfully
+    }
+
+    #[test]
+    fn test_variable_info_structure() {
+        let var_info = VariableInfo {
+            defined_at: (1, 5),
+            used: false,
+            var_type: VarType::Local,
+        };
+        assert_eq!(var_info.defined_at, (1, 5));
+        assert!(!var_info.used);
+        assert!(matches!(var_info.var_type, VarType::Local));
+    }
+
+    #[test]
+    fn test_scope_creation() {
+        let scope = Scope {
+            variables: HashMap::new(),
+            parent: None,
+        };
+        assert_eq!(scope.variables.len(), 0);
+        assert!(scope.parent.is_none());
+    }
+
+    #[test]
+    fn test_lint_issue_serialization() {
+        let issue = LintIssue {
+            line: 10,
+            column: 5,
+            severity: "warning".to_string(),
+            rule: "unused-variable".to_string(),
+            message: "Variable 'x' is never used".to_string(),
+            suggestion: "Remove unused variable".to_string(),
+            issue_type: "unused".to_string(),
+            name: "x".to_string(),
+        };
+
+        let json = serde_json::to_string(&issue).unwrap();
+        assert!(json.contains("\"line\":10"));
+        assert!(json.contains("\"column\":5"));
+        assert!(json.contains("\"severity\":\"warning\""));
+        assert!(json.contains("\"rule\":\"unused-variable\""));
+        assert!(json.contains("\"type\":\"unused\""));
+
+        // Test deserialization
+        let deserialized: LintIssue = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.line, 10);
+        assert_eq!(deserialized.column, 5);
+        assert_eq!(deserialized.severity, "warning");
+        assert_eq!(deserialized.rule, "unused-variable");
+    }
+
+    #[test]
+    fn test_linter_with_all_rules() {
+        let mut linter = Linter::new();
+        linter.add_rule(LintRule::UnusedVariable);
+        linter.add_rule(LintRule::UndefinedVariable);
+        linter.add_rule(LintRule::VariableShadowing);
+        linter.add_rule(LintRule::UnusedParameter);
+        linter.add_rule(LintRule::UnusedLoopVariable);
+        linter.add_rule(LintRule::UnusedMatchBinding);
+        linter.add_rule(LintRule::ComplexityLimit);
+        linter.add_rule(LintRule::NamingConvention);
+        linter.add_rule(LintRule::StyleViolation);
+        linter.add_rule(LintRule::Security);
+        linter.add_rule(LintRule::Performance);
+
+        assert_eq!(linter.rules.len(), 11);
+    }
+
+    #[test]
+    fn test_lint_issue_debug_format() {
+        let issue = LintIssue {
+            line: 1,
+            column: 1,
+            severity: "error".to_string(),
+            rule: "test-rule".to_string(),
+            message: "Test message".to_string(),
+            suggestion: "Test suggestion".to_string(),
+            issue_type: "test".to_string(),
+            name: "test_name".to_string(),
+        };
+
+        let debug_str = format!("{:?}", issue);
+        assert!(debug_str.contains("LintIssue"));
+        assert!(debug_str.contains("line: 1"));
+        assert!(debug_str.contains("error"));
+        assert!(debug_str.contains("test-rule"));
+    }
+
+    #[test]
+    fn test_variable_info_debug_format() {
+        let var_info = VariableInfo {
+            defined_at: (5, 10),
+            used: true,
+            var_type: VarType::Parameter,
+        };
+
+        let debug_str = format!("{:?}", var_info);
+        assert!(debug_str.contains("VariableInfo"));
+        assert!(debug_str.contains("defined_at"));
+        assert!(debug_str.contains("used: true"));
+        assert!(debug_str.contains("Parameter"));
+    }
+
+    #[test]
+    fn test_lint_rules_debug_format() {
+        let rules = [
+            LintRule::UnusedVariable,
+            LintRule::UndefinedVariable,
+            LintRule::ComplexityLimit,
+        ];
+
+        for rule in rules {
+            let debug_str = format!("{:?}", rule);
+            assert!(!debug_str.is_empty());
+        }
+    }
 }
 #[cfg(test)]
 mod property_tests_linter {
