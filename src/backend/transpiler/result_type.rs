@@ -193,6 +193,20 @@ impl Transpiler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    fn make_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+
+    fn make_literal(lit: Literal) -> Expr {
+        Expr::new(ExprKind::Literal(lit), Span::new(0, 1))
+    }
+
+    fn make_ident(name: &str) -> Expr {
+        Expr::new(ExprKind::Identifier(name.to_string()), Span::new(0, 1))
+    }
+
     #[test]
     fn test_result_helpers_generation() {
         let helpers = Transpiler::generate_result_helpers();
@@ -203,6 +217,26 @@ mod tests {
         assert!(code.contains("and_then_with"));
         assert!(code.contains("or_else_with"));
     }
+
+    #[test]
+    fn test_result_ext_trait_implementation() {
+        let helpers = Transpiler::generate_result_helpers();
+        let code = helpers.to_string();
+
+        // Check trait definition
+        assert!(code.contains("trait ResultExt"));
+
+        // Check impl block
+        assert!(code.contains("impl < T , E > ResultExt"));
+        assert!(code.contains("for Result < T , E >"));
+
+        // Check each method implementation
+        assert!(code.contains("self . map_err"));
+        assert!(code.contains("self . unwrap_or_else"));
+        assert!(code.contains("self . and_then"));
+        assert!(code.contains("self . or_else"));
+    }
+
     #[test]
     fn test_transpile_error_type() {
         let transpiler = Transpiler::new();
@@ -222,6 +256,206 @@ mod tests {
         assert!(code.contains("derive") && code.contains("Debug") && code.contains("Clone"));
         assert!(code.contains("impl") && code.contains("std") && code.contains("fmt") && code.contains("Display"));
         assert!(code.contains("impl") && code.contains("std") && code.contains("error") && code.contains("Error"));
+    }
+
+    #[test]
+    fn test_transpile_error_type_empty() {
+        let transpiler = Transpiler::new();
+        let variants = vec![];
+        let error_type = transpiler.transpile_error_type("EmptyError", &variants);
+        let code = error_type.to_string();
+        assert!(code.contains("enum EmptyError"));
+        assert!(code.contains("Debug"));
+        assert!(code.contains("Clone"));
+    }
+
+    #[test]
+    fn test_transpile_error_type_single_variant() {
+        let transpiler = Transpiler::new();
+        let variants = vec![("GenericError".to_string(), None)];
+        let error_type = transpiler.transpile_error_type("SimpleError", &variants);
+        let code = error_type.to_string();
+        assert!(code.contains("enum SimpleError"));
+        assert!(code.contains("GenericError"));
+    }
+
+    #[test]
+    fn test_transpile_result_match_ok_err() {
+        let transpiler = make_transpiler();
+        let expr = make_ident("result");
+        let arms = vec![
+            ("Ok".to_string(), make_literal(Literal::Integer(42))),
+            ("Err".to_string(), make_literal(Literal::Integer(0))),
+        ];
+
+        let result = transpiler.transpile_result_match(&expr, &arms);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("match result"));
+        assert!(code.contains("Ok") && code.contains("value"));
+        assert!(code.contains("Err") && code.contains("error"));
+    }
+
+    #[test]
+    fn test_transpile_result_match_with_default() {
+        let transpiler = make_transpiler();
+        let expr = make_ident("result");
+        let arms = vec![
+            ("Ok".to_string(), make_ident("value")),
+            ("_".to_string(), make_literal(Literal::Unit)),
+        ];
+
+        let result = transpiler.transpile_result_match(&expr, &arms);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("Ok") && code.contains("value"));
+        assert!(code.contains("_"));
+    }
+
+    #[test]
+    fn test_transpile_result_chain_empty() {
+        let transpiler = make_transpiler();
+        let operations = vec![];
+
+        let result = transpiler.transpile_result_chain(&operations);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert_eq!(code, "Ok (())");
+    }
+
+    #[test]
+    fn test_transpile_result_chain_single() {
+        let transpiler = make_transpiler();
+        let operations = vec![make_ident("operation")];
+
+        let result = transpiler.transpile_result_chain(&operations);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert_eq!(code, "operation");
+    }
+
+    #[test]
+    fn test_transpile_result_chain_multiple() {
+        let transpiler = make_transpiler();
+        let operations = vec![
+            make_ident("op1"),
+            make_ident("op2"),
+            make_ident("op3"),
+        ];
+
+        let result = transpiler.transpile_result_chain(&operations);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("and_then"));
+        assert!(code.contains("op1"));
+        assert!(code.contains("op2"));
+        assert!(code.contains("op3"));
+    }
+
+    #[test]
+    fn test_transpile_result_unwrap_or() {
+        let transpiler = make_transpiler();
+        let result_expr = make_ident("my_result");
+        let default = make_literal(Literal::Integer(0));
+
+        let result = transpiler.transpile_result_unwrap_or(&result_expr, &default);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("my_result . unwrap_or"));
+        assert!(code.contains("0"));
+    }
+
+    #[test]
+    fn test_transpile_result_map() {
+        let transpiler = make_transpiler();
+        let result_expr = make_ident("my_result");
+        let mapper = make_ident("transform");
+
+        let result = transpiler.transpile_result_map(&result_expr, &mapper);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("my_result . map"));
+        assert!(code.contains("transform"));
+    }
+
+    #[test]
+    fn test_transpile_error_type_with_invalid_type() {
+        let transpiler = Transpiler::new();
+        let variants = vec![
+            ("BadInput".to_string(), Some("Invalid::Type::Syntax".to_string())),
+        ];
+        let error_type = transpiler.transpile_error_type("TestError", &variants);
+        let code = error_type.to_string();
+        // Should fall back to String for invalid types
+        assert!(code.contains("enum TestError"));
+        assert!(code.contains("BadInput"));
+    }
+
+    #[test]
+    fn test_transpile_error_type_complex_types() {
+        let transpiler = Transpiler::new();
+        let variants = vec![
+            ("IoError".to_string(), Some("std::io::Error".to_string())),
+            ("ParseError".to_string(), Some("std::num::ParseIntError".to_string())),
+            ("Custom".to_string(), Some("Box<dyn std::error::Error>".to_string())),
+        ];
+        let error_type = transpiler.transpile_error_type("ComplexError", &variants);
+        let code = error_type.to_string();
+        assert!(code.contains("enum ComplexError"));
+        assert!(code.contains("IoError"));
+        assert!(code.contains("ParseError"));
+        assert!(code.contains("Custom"));
+    }
+
+    #[test]
+    fn test_result_helpers_method_signatures() {
+        let helpers = Transpiler::generate_result_helpers();
+        let code = helpers.to_string();
+
+        // Check method signatures
+        assert!(code.contains("fn map_err_with"));
+        assert!(code.contains("FnOnce"));
+        assert!(code.contains("fn unwrap_or_else_with"));
+        assert!(code.contains("fn and_then_with"));
+        assert!(code.contains("Result"));
+        assert!(code.contains("fn or_else_with"));
+    }
+
+    #[test]
+    fn test_transpile_result_match_only_ok() {
+        let transpiler = make_transpiler();
+        let expr = make_ident("maybe_value");
+        let arms = vec![
+            ("Ok".to_string(), make_ident("value")),
+        ];
+
+        let result = transpiler.transpile_result_match(&expr, &arms);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("match maybe_value"));
+        assert!(code.contains("Ok") && code.contains("value"));
+    }
+
+    #[test]
+    fn test_transpile_result_chain_complex() {
+        let transpiler = make_transpiler();
+        let operations = vec![
+            make_ident("fetch_data"),
+            make_ident("parse_json"),
+            make_ident("validate"),
+            make_ident("save_to_db"),
+        ];
+
+        let result = transpiler.transpile_result_chain(&operations);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+
+        // Should chain all operations with and_then
+        assert!(code.contains("fetch_data"));
+        assert!(code.contains("and_then"));
+        assert!(code.contains("parse_json"));
+        assert!(code.contains("validate"));
+        assert!(code.contains("save_to_db"));
     }
 }
 #[cfg(test)]

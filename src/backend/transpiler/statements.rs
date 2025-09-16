@@ -2787,6 +2787,149 @@ mod tests {
         // Try-catch should transpile to match on Result
         assert!(rust_str.contains("match") || rust_str.contains("risky_operation"));
     }
+
+    #[test]
+    fn test_is_variable_mutated_extended() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        // Helper to create identifier
+        fn make_ident(name: &str) -> Expr {
+            Expr::new(ExprKind::Identifier(name.to_string()), Span::new(0, 1))
+        }
+
+        // Test direct assignment
+        let assign_expr = Expr::new(
+            ExprKind::Assign {
+                target: Box::new(make_ident("x")),
+                value: Box::new(make_ident("y")),
+            },
+            Span::new(0, 1)
+        );
+        assert!(Transpiler::is_variable_mutated("x", &assign_expr));
+        assert!(!Transpiler::is_variable_mutated("z", &assign_expr));
+
+        // Test compound assignment
+        let compound_expr = Expr::new(
+            ExprKind::CompoundAssign {
+                target: Box::new(make_ident("count")),
+                op: crate::frontend::ast::BinaryOp::Add,
+                value: Box::new(make_ident("1")),
+            },
+            Span::new(0, 1)
+        );
+        assert!(Transpiler::is_variable_mutated("count", &compound_expr));
+        assert!(!Transpiler::is_variable_mutated("other", &compound_expr));
+
+        // Test pre-increment
+        let pre_inc = Expr::new(
+            ExprKind::PreIncrement {
+                target: Box::new(make_ident("i")),
+            },
+            Span::new(0, 1)
+        );
+        assert!(Transpiler::is_variable_mutated("i", &pre_inc));
+
+        // Test post-increment
+        let post_inc = Expr::new(
+            ExprKind::PostIncrement {
+                target: Box::new(make_ident("j")),
+            },
+            Span::new(0, 1)
+        );
+        assert!(Transpiler::is_variable_mutated("j", &post_inc));
+
+        // Test in block
+        let block = Expr::new(
+            ExprKind::Block(vec![
+                assign_expr.clone(),
+                make_ident("other"),
+            ]),
+            Span::new(0, 1)
+        );
+        assert!(Transpiler::is_variable_mutated("x", &block));
+        assert!(!Transpiler::is_variable_mutated("other", &block));
+    }
+
+    #[test]
+    fn test_transpile_return() {
+        let transpiler = create_transpiler();
+        let code = "fun test() { return 42 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("return"));
+        assert!(rust_str.contains("42"));
+    }
+
+    #[test]
+    fn test_transpile_break_continue_extended() {
+        let transpiler = create_transpiler();
+
+        // Test break
+        let code = "while true { break }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("break"));
+
+        // Test continue
+        let code2 = "for x in [1,2,3] { continue }";
+        let mut parser2 = Parser::new(code2);
+        let ast2 = parser2.parse().expect("Failed to parse");
+        let result2 = transpiler.transpile(&ast2).unwrap();
+        let rust_str2 = result2.to_string();
+        assert!(rust_str2.contains("continue"));
+    }
+
+    #[test]
+    fn test_transpile_match() {
+        let transpiler = create_transpiler();
+        let code = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("match"));
+        assert!(rust_str.contains("=>"));
+        assert!(rust_str.contains("_"));
+    }
+
+    #[test]
+    fn test_transpile_pattern_matching() {
+        let transpiler = create_transpiler();
+
+        // Test tuple pattern
+        let code = "let (a, b) = (1, 2); a + b";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("let"));
+
+        // Test list pattern
+        let code2 = "match list { [] => 0, [x] => x, _ => -1 }";
+        let mut parser2 = Parser::new(code2);
+        if let Ok(ast2) = parser2.parse() {
+            let result2 = transpiler.transpile(&ast2).unwrap();
+            let rust_str2 = result2.to_string();
+            assert!(rust_str2.contains("match"));
+        }
+    }
+
+    #[test]
+    fn test_transpile_loop() {
+        let transpiler = create_transpiler();
+        let code = "loop { break }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        let result = transpiler.transpile(&ast).unwrap();
+        let rust_str = result.to_string();
+        assert!(rust_str.contains("loop"));
+        assert!(rust_str.contains("break"));
+    }
+
 }
 #[cfg(test)]
 mod property_tests_statements {

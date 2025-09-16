@@ -197,10 +197,304 @@ pub fn transpile_command(
     }
 }
 #[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Param, Pattern, Type, TypeKind, Span};
+
+    fn make_transpiler() -> Transpiler {
+        Transpiler::new()
+    }
+
+    fn make_literal(lit: Literal) -> Expr {
+        Expr::new(ExprKind::Literal(lit), Span::new(0, 1))
+    }
+
+    fn make_ident(name: &str) -> Expr {
+        Expr::new(ExprKind::Identifier(name.to_string()), Span::new(0, 1))
+    }
+
+    fn make_type(name: &str) -> Type {
+        Type {
+            kind: TypeKind::Named(name.to_string()),
+            span: Span::new(0, 1),
+        }
+    }
+
+    #[test]
+    fn test_transpile_simple_actor() {
+        let transpiler = make_transpiler();
+        let state = vec![];
+        let handlers = vec![];
+
+        let result = transpiler.transpile_actor("Counter", &state, &handlers);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("enum CounterMessage"));
+        assert!(tokens.contains("struct Counter"));
+    }
+
+    #[test]
+    fn test_actor_with_state() {
+        let transpiler = make_transpiler();
+        let state = vec![
+            StructField {
+                name: "count".to_string(),
+                ty: make_type("i32"),
+                is_pub: false,
+            },
+        ];
+        let handlers = vec![];
+
+        let result = transpiler.transpile_actor("Counter", &state, &handlers);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("count :"));
+    }
+
+    #[test]
+    fn test_actor_with_simple_handler() {
+        let transpiler = make_transpiler();
+        let state = vec![];
+        let handlers = vec![
+            ActorHandler {
+                message_type: "Reset".to_string(),
+                params: vec![],
+                body: Box::new(make_literal(Literal::Unit)),
+            },
+        ];
+
+        let result = transpiler.transpile_actor("Counter", &state, &handlers);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Reset"));
+        assert!(tokens.contains("CounterMessage :: Reset"));
+    }
+
+    #[test]
+    fn test_actor_with_parameterized_handler() {
+        let transpiler = make_transpiler();
+        let state = vec![];
+        let params = vec![
+            Param {
+                pattern: Pattern::Identifier("value".to_string()),
+                ty: make_type("i32"),
+                span: Span::new(0, 1),
+                is_mutable: false,
+                default_value: None,
+            },
+        ];
+        let handlers = vec![
+            ActorHandler {
+                message_type: "Add".to_string(),
+                params,
+                body: Box::new(make_ident("value")),
+            },
+        ];
+
+        let result = transpiler.transpile_actor("Counter", &state, &handlers);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Add"));
+    }
+
+    #[test]
+    fn test_actor_with_multiple_handlers() {
+        let transpiler = make_transpiler();
+        let state = vec![];
+        let handlers = vec![
+            ActorHandler {
+                message_type: "Increment".to_string(),
+                params: vec![],
+                body: Box::new(make_literal(Literal::Unit)),
+            },
+            ActorHandler {
+                message_type: "Decrement".to_string(),
+                params: vec![],
+                body: Box::new(make_literal(Literal::Unit)),
+            },
+            ActorHandler {
+                message_type: "Reset".to_string(),
+                params: vec![],
+                body: Box::new(make_literal(Literal::Unit)),
+            },
+        ];
+
+        let result = transpiler.transpile_actor("Counter", &state, &handlers);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Increment"));
+        assert!(tokens.contains("Decrement"));
+        assert!(tokens.contains("Reset"));
+    }
+
+    #[test]
+    fn test_transpile_send() {
+        let transpiler = make_transpiler();
+        let actor = make_ident("my_actor");
+        let message = make_ident("Message");
+
+        let result = transpiler.transpile_send(&actor, &message);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("my_actor . send"));
+        assert!(tokens.contains("await"));
+    }
+
+    #[test]
+    fn test_transpile_ask_with_timeout() {
+        let transpiler = make_transpiler();
+        let actor = make_ident("my_actor");
+        let message = make_ident("Query");
+        let timeout = Some(make_literal(Literal::Integer(10)));
+
+        let result = transpiler.transpile_ask(&actor, &message, timeout.as_ref());
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("my_actor . ask"));
+        assert!(tokens.contains("await"));
+    }
+
+    #[test]
+    fn test_transpile_ask_without_timeout() {
+        let transpiler = make_transpiler();
+        let actor = make_ident("my_actor");
+        let message = make_ident("Query");
+
+        let result = transpiler.transpile_ask(&actor, &message, None);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("my_actor . ask"));
+        assert!(tokens.contains("Duration :: from_secs"));
+        assert!(tokens.contains("await"));
+    }
+
+    #[test]
+    fn test_transpile_command() {
+        let transpiler = make_transpiler();
+        let program = "echo";
+        let args = vec!["hello".to_string(), "world".to_string()];
+        let env = vec![];
+        let working_dir = None;
+
+        let result = transpiler.transpile_command(program, &args, &env, &working_dir);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Command :: new"));
+        assert!(tokens.contains("echo"));
+        assert!(tokens.contains("hello"));
+        assert!(tokens.contains("world"));
+        assert!(tokens.contains("output"));
+    }
+
+    #[test]
+    fn test_transpile_command_no_args() {
+        let transpiler = make_transpiler();
+        let program = "ls";
+        let args = vec![];
+        let env = vec![];
+        let working_dir = None;
+
+        let result = transpiler.transpile_command(program, &args, &env, &working_dir);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Command :: new"));
+        assert!(tokens.contains("ls"));
+    }
+
+    #[test]
+    fn test_actor_with_multiple_params() {
+        let transpiler = make_transpiler();
+        let state = vec![];
+        let params = vec![
+            Param {
+                pattern: Pattern::Identifier("x".to_string()),
+                ty: make_type("i32"),
+                span: Span::new(0, 1),
+                is_mutable: false,
+                default_value: None,
+            },
+            Param {
+                pattern: Pattern::Identifier("y".to_string()),
+                ty: make_type("i32"),
+                span: Span::new(0, 1),
+                is_mutable: false,
+                default_value: None,
+            },
+        ];
+        let handlers = vec![
+            ActorHandler {
+                message_type: "Compute".to_string(),
+                params,
+                body: Box::new(make_ident("x")),
+            },
+        ];
+
+        let result = transpiler.transpile_actor("Calculator", &state, &handlers);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Compute"));
+    }
+
+    #[test]
+    fn test_actor_struct_generation() {
+        let transpiler = make_transpiler();
+        let state = vec![
+            StructField {
+                name: "value".to_string(),
+                ty: make_type("String"),
+                is_pub: false,
+            },
+            StructField {
+                name: "count".to_string(),
+                ty: make_type("usize"),
+                is_pub: false,
+            },
+        ];
+        let handlers = vec![];
+
+        let result = transpiler.transpile_actor("Storage", &state, &handlers);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("struct Storage"));
+        assert!(tokens.contains("value :"));
+        assert!(tokens.contains("count :"));
+        assert!(tokens.contains("receiver :"));
+        assert!(tokens.contains("sender :"));
+    }
+
+    #[test]
+    fn test_actor_async_methods() {
+        let transpiler = make_transpiler();
+        let state = vec![];
+        let handlers = vec![];
+
+        let result = transpiler.transpile_actor("Worker", &state, &handlers);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("async fn run"));
+        assert!(tokens.contains("async fn handle_message"));
+        assert!(tokens.contains("self . receiver . recv"));
+    }
+
+    #[test]
+    fn test_actor_channel_creation() {
+        let transpiler = make_transpiler();
+        let state = vec![];
+        let handlers = vec![];
+
+        let result = transpiler.transpile_actor("Service", &state, &handlers);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("fn new"));
+        assert!(tokens.contains("tokio :: sync :: mpsc :: channel"));
+        assert!(tokens.contains("fn sender"));
+    }
+}
+
+#[cfg(test)]
 mod property_tests_actors {
     use proptest::proptest;
-    
-    
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]
