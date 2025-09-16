@@ -239,4 +239,141 @@ mod tests {
         let suggestions = suggest_for_error(&error);
         assert!(!suggestions.is_empty());
     }
+
+    #[test]
+    fn test_diagnostic_with_filename() {
+        let error = ParseError::new(
+            "Test error".to_string(),
+            Span { start: 0, end: 5 },
+        );
+        let diag = Diagnostic::new(error, "test code".to_string())
+            .with_filename("test.ruchy".to_string());
+
+        assert_eq!(diag.filename, Some("test.ruchy".to_string()));
+    }
+
+    #[test]
+    fn test_add_suggestion() {
+        let error = ParseError::new(
+            "Error".to_string(),
+            Span { start: 0, end: 5 },
+        );
+        let mut diag = Diagnostic::new(error, "code".to_string());
+
+        let suggestion = Suggestion {
+            message: "Try this".to_string(),
+            replacement: Some("fixed".to_string()),
+            span: Span::new(0, 5),
+        };
+
+        diag.add_suggestion(suggestion);
+        assert_eq!(diag.suggestions.len(), 1);
+        assert_eq!(diag.suggestions[0].message, "Try this");
+    }
+
+    #[test]
+    fn test_error_severity_levels() {
+        let mut error = ParseError::new(
+            "Test".to_string(),
+            Span { start: 0, end: 5 },
+        );
+
+        error.severity = ErrorSeverity::Error;
+        assert!(matches!(error.severity, ErrorSeverity::Error));
+
+        error.severity = ErrorSeverity::Warning;
+        assert!(matches!(error.severity, ErrorSeverity::Warning));
+
+        error.severity = ErrorSeverity::Info;
+        assert!(matches!(error.severity, ErrorSeverity::Info));
+    }
+
+    #[test]
+    fn test_multiline_source_context() {
+        let error = ParseError::new(
+            "Error on second line".to_string(),
+            Span { start: 15, end: 20 },
+        );
+        let source = "first line\nsecond line\nthird line".to_string();
+        let diag = Diagnostic::new(error, source);
+
+        let (lines, line_num, _, _) = diag.get_source_context();
+        assert!(lines.len() > 0);
+        assert!(line_num > 0);
+    }
+
+    #[test]
+    fn test_diagnostic_display_with_suggestions() {
+        let error = ParseError::new(
+            "Missing semicolon".to_string(),
+            Span { start: 10, end: 10 },
+        );
+        let mut diag = Diagnostic::new(error, "let x = 5".to_string());
+
+        diag.add_suggestion(Suggestion {
+            message: "Add semicolon".to_string(),
+            replacement: Some(";".to_string()),
+            span: Span::new(10, 10),
+        });
+
+        let output = format!("{}", diag);
+        assert!(output.contains("Missing semicolon"));
+        assert!(output.contains("Add semicolon") || output.contains("help"));
+    }
+
+    #[test]
+    fn test_get_source_context_edge_cases() {
+        // Test with empty source
+        let error = ParseError::new(
+            "Error".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        let diag = Diagnostic::new(error, "".to_string());
+        let (lines, _, _, _) = diag.get_source_context();
+        assert!(lines.is_empty() || lines[0].is_empty());
+
+        // Test with single character source
+        let error2 = ParseError::new(
+            "Error".to_string(),
+            Span { start: 0, end: 1 },
+        );
+        let diag2 = Diagnostic::new(error2, "x".to_string());
+        let (lines2, _, _, _) = diag2.get_source_context();
+        assert_eq!(lines2[0], "x");
+    }
+
+    #[test]
+    fn test_suggest_for_error_various_tokens() {
+        // Test suggestion for unexpected token
+        let mut error = ParseError::new(
+            "unexpected ':'".to_string(),
+            Span { start: 5, end: 6 },
+        );
+        error.found = Some(crate::frontend::lexer::Token::Colon);
+        let suggestions = suggest_for_error(&error);
+        // Just check we get some suggestion for typos
+        assert!(suggestions.iter().any(|s| s.message.contains("typos") || s.message.contains("operators")));
+
+        // Test suggestion for unexpected arrow
+        let mut error2 = ParseError::new(
+            "unexpected '->'".to_string(),
+            Span { start: 10, end: 12 },
+        );
+        error2.found = Some(crate::frontend::lexer::Token::Arrow);
+        let suggestions2 = suggest_for_error(&error2);
+        assert!(!suggestions2.is_empty());
+    }
+
+    #[test]
+    fn test_parse_error_with_expected() {
+        let mut error = ParseError::new(
+            "Unexpected token".to_string(),
+            Span { start: 0, end: 5 },
+        );
+        error.expected = vec![crate::frontend::lexer::Token::LeftParen];
+        error.found = Some(crate::frontend::lexer::Token::RightParen);
+
+        assert!(!error.expected.is_empty());
+        assert!(error.found.is_some());
+    }
 }

@@ -504,8 +504,8 @@ impl Default for RuntimeConfig {
 #[cfg(test)]
 mod property_tests_deployment {
     use proptest::proptest;
-    
-    
+
+
     proptest! {
         /// Property: Function never panics on any input
         #[test]
@@ -518,5 +518,140 @@ mod property_tests_deployment {
                 // This is a template - adjust based on actual function signature
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_deployment_target_equality() {
+        assert_eq!(DeploymentTarget::CloudflareWorkers, DeploymentTarget::CloudflareWorkers);
+        assert_ne!(DeploymentTarget::CloudflareWorkers, DeploymentTarget::FastlyCompute);
+        assert_ne!(DeploymentTarget::Custom("a".to_string()), DeploymentTarget::Custom("b".to_string()));
+    }
+
+    #[test]
+    fn test_environment_equality() {
+        assert_eq!(Environment::Development, Environment::Development);
+        assert_ne!(Environment::Development, Environment::Production);
+        assert_eq!(Environment::Custom("test".to_string()), Environment::Custom("test".to_string()));
+    }
+
+    #[test]
+    fn test_credentials_default() {
+        let creds = Credentials::default();
+        assert!(creds.api_key.is_none());
+        assert!(creds.account_id.is_none());
+        assert!(creds.auth_token.is_none());
+        assert!(creds.custom.is_empty());
+    }
+
+    #[test]
+    fn test_deployment_config_default() {
+        let config = DeploymentConfig::default();
+        assert!(config.project_name.is_empty());
+        assert_eq!(config.environment, Environment::Development);
+        assert!(config.settings.is_empty());
+    }
+
+    #[test]
+    fn test_deployment_optimization_default() {
+        let opt = DeploymentOptimization::default();
+        assert!(opt.minify);
+        assert!(opt.compress);
+        assert!(opt.strip_debug);
+        assert!(opt.enable_cache);
+        assert_eq!(opt.cache_duration, Some(3600));
+    }
+
+    #[test]
+    fn test_runtime_config_default() {
+        let runtime = RuntimeConfig::default();
+        assert_eq!(runtime.memory_limit, Some(128));
+        assert_eq!(runtime.cpu_limit, Some(10000));
+        assert!(runtime.env_vars.is_empty());
+        assert!(runtime.runtime_version.is_none());
+    }
+
+    #[test]
+    fn test_deployer_new() {
+        let target = DeploymentTarget::CloudflareWorkers;
+        let config = DeploymentConfig::default();
+        let deployer = Deployer::new(target.clone(), config.clone());
+        assert_eq!(deployer.target, target);
+        assert_eq!(deployer.config.project_name, config.project_name);
+        assert!(deployer.artifacts.is_empty());
+    }
+
+    #[test]
+    fn test_add_artifact() {
+        let target = DeploymentTarget::Browser;
+        let config = DeploymentConfig::default();
+        let mut deployer = Deployer::new(target, config);
+
+        let artifact = DeploymentArtifact {
+            name: "test.wasm".to_string(),
+            artifact_type: ArtifactType::WasmModule,
+            content: vec![0x00, 0x61, 0x73, 0x6d],
+            metadata: HashMap::new(),
+        };
+
+        deployer.add_artifact(artifact.clone());
+        assert_eq!(deployer.artifacts.len(), 1);
+        assert_eq!(deployer.artifacts[0].name, "test.wasm");
+    }
+
+    #[test]
+    fn test_deployment_status_equality() {
+        assert_eq!(DeploymentStatus::Pending, DeploymentStatus::Pending);
+        assert_eq!(DeploymentStatus::Success, DeploymentStatus::Success);
+        assert_ne!(DeploymentStatus::Success, DeploymentStatus::InProgress);
+        assert_eq!(
+            DeploymentStatus::Failed("error".to_string()),
+            DeploymentStatus::Failed("error".to_string())
+        );
+    }
+
+    #[test]
+    fn test_artifact_type_equality() {
+        assert_eq!(ArtifactType::WasmModule, ArtifactType::WasmModule);
+        assert_ne!(ArtifactType::WasmModule, ArtifactType::JavaScript);
+        assert_eq!(
+            ArtifactType::Custom("test".to_string()),
+            ArtifactType::Custom("test".to_string())
+        );
+    }
+
+    #[test]
+    fn test_deployment_artifact_creation() {
+        let artifact = DeploymentArtifact {
+            name: "app.js".to_string(),
+            artifact_type: ArtifactType::JavaScript,
+            content: b"console.log('hello');".to_vec(),
+            metadata: HashMap::from([("version".to_string(), "1.0".to_string())]),
+        };
+
+        assert_eq!(artifact.name, "app.js");
+        assert_eq!(artifact.artifact_type, ArtifactType::JavaScript);
+        assert!(!artifact.content.is_empty());
+        assert_eq!(artifact.metadata.get("version"), Some(&"1.0".to_string()));
+    }
+
+    #[test]
+    fn test_deployment_result_creation() {
+        let result = DeploymentResult {
+            deployment_id: "test-123".to_string(),
+            url: Some("https://test.com".to_string()),
+            status: DeploymentStatus::Success,
+            timestamp: std::time::SystemTime::now(),
+            metadata: HashMap::new(),
+        };
+
+        assert_eq!(result.deployment_id, "test-123");
+        assert_eq!(result.url, Some("https://test.com".to_string()));
+        assert_eq!(result.status, DeploymentStatus::Success);
+        assert!(result.metadata.is_empty());
     }
 }
