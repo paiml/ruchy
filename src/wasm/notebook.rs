@@ -3745,28 +3745,281 @@ pub struct PluginInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Test 1: Notebook Creation and Initialization
     #[test]
     fn test_notebook_creation() {
         let runtime = NotebookRuntime::new();
         assert!(runtime.is_ok());
+
+        let runtime = runtime.unwrap();
+        assert_eq!(runtime.notebook.version, "2.0.0");
+        assert_eq!(runtime.notebook.metadata.kernel, "wasm");
+        assert_eq!(runtime.notebook.metadata.language, "ruchy");
+        assert_eq!(runtime.notebook.cells.len(), 0);
+        assert_eq!(runtime.execution_count, 0);
     }
+
+    // Test 2: Add Various Cell Types
     #[test]
-    fn test_add_cell() {
+    fn test_add_cell_types() {
         let mut runtime = NotebookRuntime::new().unwrap();
-        let id = runtime.add_cell("code", "let x = 42");
-        assert!(id.starts_with("cell-"));
-        assert_eq!(runtime.notebook.cells.len(), 1);
+
+        // Add code cell
+        let code_id = runtime.add_cell("code", "let x = 42");
+        assert!(code_id.starts_with("cell-"));
+
+        // Add markdown cell
+        let md_id = runtime.add_cell("markdown", "# Title");
+        assert!(md_id.starts_with("cell-"));
+
+        assert_eq!(runtime.notebook.cells.len(), 2);
+        assert!(matches!(runtime.notebook.cells[0].cell_type, CellType::Code));
+        assert!(matches!(runtime.notebook.cells[1].cell_type, CellType::Markdown));
     }
+
+    // Test 3: Cell Metadata Operations
+    #[test]
+    fn test_cell_metadata() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        let id = runtime.add_cell("code", "print('test')");
+
+        let cell = &runtime.notebook.cells[0];
+        assert!(!cell.metadata.collapsed);
+        assert!(cell.metadata.execution_time_ms.is_none());
+        assert_eq!(cell.metadata.tags.len(), 0);
+    }
+
+    // Test 4: Notebook Metadata
+    #[test]
+    fn test_notebook_metadata() {
+        let runtime = NotebookRuntime::new().unwrap();
+        let metadata = &runtime.notebook.metadata;
+
+        assert!(!metadata.created.is_empty());
+        assert!(!metadata.modified.is_empty());
+        assert_eq!(metadata.ruchy_version, env!("CARGO_PKG_VERSION"));
+    }
+
+    // Test 5: Session Operations
+    #[test]
+    fn test_session_operations() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+
+        // Initial state
+        assert_eq!(runtime.total_sessions, 1);
+        assert!(runtime.variables.is_empty());
+
+        // Restart session
+        runtime.restart_session();
+
+        // Session should be reset but counter incremented
+        assert_eq!(runtime.total_sessions, 2);
+        assert_eq!(runtime.execution_count, 0);
+    }
+
+    // Test 6: Export to JSON
+    #[test]
+    fn test_export_json() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "x = 1");
+        runtime.add_cell("markdown", "## Header");
+
+        let json = runtime.to_json();
+        assert!(json.contains("\"version\":\"2.0.0\""));
+        assert!(json.contains("\"cells\":["));
+        assert!(json.contains("x = 1"));
+        assert!(json.contains("## Header"));
+    }
+
+    // Test 7: Import from JSON
+    #[test]
+    fn test_import_json() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "original");
+
+        let json = runtime.to_json();
+
+        // Create new runtime and import
+        let mut new_runtime = NotebookRuntime::new().unwrap();
+        let result = new_runtime.from_json(&json);
+
+        assert!(result.is_ok());
+        assert_eq!(new_runtime.notebook.cells.len(), 1);
+        assert_eq!(new_runtime.notebook.cells[0].source, "original");
+    }
+
+    // Test 8: Get Cells Operation
+    #[test]
+    fn test_get_cells() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "a = 1");
+        runtime.add_cell("code", "b = 2");
+
+        let cells_json = runtime.get_cells();
+        assert!(cells_json.contains("a = 1"));
+        assert!(cells_json.contains("b = 2"));
+    }
+
+    // Test 9: Version Control - Branches
+    #[test]
+    fn test_version_control_branches() {
+        let runtime = NotebookRuntime::new().unwrap();
+
+        assert_eq!(runtime.current_branch, "main");
+        assert!(runtime.branches.contains_key("main"));
+        assert_eq!(runtime.branches.len(), 1);
+
+        let main_branch = runtime.branches.get("main").unwrap();
+        assert_eq!(main_branch.name, "main");
+        assert!(main_branch.notebook_state.is_none());
+    }
+
+    // Test 10: Performance Metrics Initialization
+    #[test]
+    fn test_performance_metrics() {
+        let runtime = NotebookRuntime::new().unwrap();
+
+        assert_eq!(runtime.performance_metrics.total_execution_time, 0.0);
+        assert_eq!(runtime.performance_metrics.peak_memory_usage, 0);
+        assert_eq!(runtime.performance_metrics.cpu_usage_percent, 0.0);
+        assert_eq!(runtime.performance_metrics.cache_hit_rate, 0.0);
+        assert_eq!(runtime.performance_metrics.parallel_efficiency, 0.0);
+    }
+
+    // Test 11: Cache Operations
+    #[test]
+    fn test_cache_initialization() {
+        let runtime = NotebookRuntime::new().unwrap();
+
+        assert!(runtime.cache.is_empty());
+        assert_eq!(runtime.cache_hits, 0);
+        assert_eq!(runtime.cache_misses, 0);
+        assert_eq!(runtime.cache_size_limit, 100_000_000);
+        assert_eq!(runtime.cache_policy, "lru");
+    }
+
+    // Test 12: Execution Mode Setting
+    #[test]
+    fn test_set_execution_mode() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+
+        // Test setting different modes
+        runtime.set_execution_mode("reactive");
+        runtime.set_execution_mode("sequential");
+        runtime.set_execution_mode("parallel");
+
+        // Mode setting should not panic
+        runtime.set_execution_mode("invalid_mode");
+    }
+
+    // Test 13: Export Functions
+    #[test]
+    fn test_export_markdown() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("markdown", "# Title");
+        runtime.add_cell("code", "x = 42");
+
+        let result = runtime.export_as_markdown();
+        assert!(result.is_ok());
+
+        let markdown = result.unwrap();
+        assert!(markdown.contains("# Title"));
+        assert!(markdown.contains("```ruchy"));
+        assert!(markdown.contains("x = 42"));
+    }
+
+    // Test 14: Export HTML
+    #[test]
+    fn test_export_html() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "print('hello')");
+
+        let result = runtime.export_as_html();
+        assert!(result.is_ok());
+
+        let html = result.unwrap();
+        assert!(html.contains("<!DOCTYPE html>"));
+        assert!(html.contains("<title>"));
+        assert!(html.contains("print('hello')"));
+    }
+
+    // Test 15: Worker Configuration
+    #[test]
+    fn test_worker_configuration() {
+        let runtime = NotebookRuntime::new().unwrap();
+
+        assert_eq!(runtime.max_workers, 1);
+        assert_eq!(runtime.initial_workers, 1);
+        assert!(!runtime.distributed_mode);
+        assert!(runtime.worker_nodes.is_empty());
+        assert!(!runtime.auto_scaling_enabled);
+        assert_eq!(runtime.scaling_policy, "adaptive");
+    }
+
+    // Test 16: Memory Management Settings
+    #[test]
+    fn test_memory_management() {
+        let runtime = NotebookRuntime::new().unwrap();
+
+        assert!(runtime.memory_limit.is_none());
+        assert!(!runtime.memory_optimization_enabled);
+        assert!(!runtime.streaming_mode);
+        assert_eq!(runtime.chunk_size, 1000);
+    }
+
+    // Test 17: Analytics Tracking
+    #[test]
+    fn test_analytics_initialization() {
+        let runtime = NotebookRuntime::new().unwrap();
+
+        assert!(runtime.cell_execution_counts.is_empty());
+        assert!(runtime.cell_execution_times.is_empty());
+        assert_eq!(runtime.cells_recomputed, 0);
+        assert_eq!(runtime.cells_skipped, 0);
+    }
+
+    // Test 18: Optimization Settings
+    #[test]
+    fn test_optimization_settings() {
+        let runtime = NotebookRuntime::new().unwrap();
+
+        assert!(!runtime.incremental_mode);
+        assert!(!runtime.profiling_enabled);
+        assert!(!runtime.query_optimization_enabled);
+        assert!(!runtime.intelligent_caching_enabled);
+        assert!(!runtime.predictive_prefetch_enabled);
+        assert!(!runtime.smart_dependencies_enabled);
+    }
+
+    // Test 19: Plugin and Template System
+    #[test]
+    fn test_plugin_template_system() {
+        let runtime = NotebookRuntime::new().unwrap();
+
+        assert!(runtime.enabled_plugins.is_empty());
+        assert!(runtime.templates.is_empty());
+        assert!(runtime.published_notebooks.is_empty());
+    }
+
+    // Test 20: Feature Parity Check
     #[test]
     fn test_feature_parity() {
         let features = FeatureParity::check_all();
         assert!(!features.is_empty());
+
         // Check that basic evaluation is supported in both
         let basic = features.iter()
             .find(|f| f.feature == "Basic Evaluation")
             .unwrap();
         assert!(basic.native_support);
         assert!(basic.wasm_support);
+
+        // Verify all features have proper structure
+        for feature in &features {
+            assert!(!feature.feature.is_empty());
+            assert!(!feature.notes.is_empty());
+        }
     }
 }
 #[cfg(test)]
