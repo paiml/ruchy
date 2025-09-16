@@ -713,21 +713,387 @@ impl Default for ComponentMetadata {
     }
 }
 #[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_component_builder_new() {
+        let builder = ComponentBuilder::new();
+        assert_eq!(builder.source_files.len(), 0);
+        assert!(!builder.include_debug_info);
+    }
+
+    #[test]
+    fn test_component_builder_new_with_config() {
+        let config = ComponentConfig::default();
+        let builder = ComponentBuilder::new_with_config(config.clone());
+        assert_eq!(builder.source_files.len(), 0);
+        assert_eq!(builder.config.memory.initial_pages, config.memory.initial_pages);
+    }
+
+    #[test]
+    fn test_component_builder_with_metadata() {
+        let builder = ComponentBuilder::new();
+        let metadata = ComponentMetadata {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            ..Default::default()
+        };
+        let updated = builder.with_metadata(metadata.clone());
+        assert_eq!(updated.metadata.name, "test");
+        assert_eq!(updated.metadata.version, "1.0.0");
+    }
+
+    #[test]
+    fn test_component_builder_with_optimization() {
+        let builder = ComponentBuilder::new();
+        let updated = builder.with_optimization(OptimizationLevel::Os);
+        assert_eq!(updated.optimization_level, OptimizationLevel::Os);
+    }
+
+    #[test]
+    fn test_component_builder_with_debug_info() {
+        let builder = ComponentBuilder::new();
+        let updated = builder.with_debug_info(true);
+        assert!(updated.include_debug_info);
+    }
+
+    #[test]
+    fn test_component_builder_with_config() {
+        let builder = ComponentBuilder::new();
+        let config = ComponentConfig {
+            memory: MemoryConfig {
+                initial_pages: 10,
+                maximum_pages: Some(100),
+                shared: false,
+                memory64: false,
+            },
+            ..Default::default()
+        };
+        let updated = builder.with_config(config.clone());
+        assert_eq!(updated.config.memory.initial_pages, 10);
+        assert_eq!(updated.config.memory.maximum_pages, Some(100));
+    }
+
+    #[test]
+    fn test_component_builder_with_source() {
+        let builder = ComponentBuilder::new();
+        let source = "fn main() {}".to_string();
+        let updated = builder.with_source(source);
+        // Just verify it doesn't panic and returns self
+        assert_eq!(updated.source_files.len(), 0); // Source string doesn't add files
+    }
+
+    #[test]
+    fn test_component_builder_set_name() {
+        let mut builder = ComponentBuilder::new();
+        builder.set_name("my-component".to_string());
+        assert_eq!(builder.metadata.name, "my-component");
+    }
+
+    #[test]
+    fn test_component_builder_set_version() {
+        let mut builder = ComponentBuilder::new();
+        builder.set_version("2.0.0".to_string());
+        assert_eq!(builder.metadata.version, "2.0.0");
+    }
+
+    #[test]
+    fn test_component_builder_add_source_nonexistent() {
+        let mut builder = ComponentBuilder::new();
+        let result = builder.add_source("/nonexistent/file.ruchy");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_component_builder_add_source_existing() {
+        let mut builder = ComponentBuilder::new();
+
+        // Create a temp file
+        let temp_dir = std::env::temp_dir();
+        let temp_file = temp_dir.join("test_component_source.ruchy");
+        fs::write(&temp_file, "fn main() {}").unwrap();
+
+        let result = builder.add_source(&temp_file);
+        assert!(result.is_ok());
+        assert_eq!(builder.source_files.len(), 1);
+
+        // Clean up
+        let _ = fs::remove_file(temp_file);
+    }
+
+    #[test]
+    fn test_wasm_component_save() {
+        let component = WasmComponent {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![0x00, 0x61, 0x73, 0x6d], // WASM magic bytes
+            metadata: ComponentMetadata::default(),
+            exports: vec![],
+            imports: vec![],
+            custom_sections: HashMap::new(),
+        };
+
+        let temp_dir = std::env::temp_dir();
+        let temp_file = temp_dir.join("test_component.wasm");
+
+        let result = component.save(&temp_file);
+        assert!(result.is_ok());
+
+        // Verify file was created
+        assert!(temp_file.exists());
+
+        // Clean up
+        let _ = fs::remove_file(temp_file);
+    }
+
+    #[test]
+    fn test_wasm_component_size() {
+        let component = WasmComponent {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![1, 2, 3, 4, 5],
+            metadata: ComponentMetadata::default(),
+            exports: vec![],
+            imports: vec![],
+            custom_sections: HashMap::new(),
+        };
+
+        assert_eq!(component.size(), 5);
+    }
+
+    #[test]
+    fn test_wasm_component_validate() {
+        let component = WasmComponent {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![0x00, 0x61, 0x73, 0x6d], // WASM magic bytes
+            metadata: ComponentMetadata::default(),
+            exports: vec![],
+            imports: vec![],
+            custom_sections: HashMap::new(),
+        };
+
+        let result = component.validate();
+        // Should not panic, actual validation depends on implementation
+        let _ = result;
+    }
+
+    #[test]
+    fn test_wasm_component_verify() {
+        let component = WasmComponent {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![],
+            metadata: ComponentMetadata::default(),
+            exports: vec![],
+            imports: vec![],
+            custom_sections: HashMap::new(),
+        };
+
+        let result = component.verify();
+        // Empty bytecode should fail verification
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_wasm_component_summary() {
+        let component = WasmComponent {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![1, 2, 3],
+            metadata: ComponentMetadata::default(),
+            exports: vec![
+                ExportDefinition {
+                    name: "func1".to_string(),
+                    export_type: ExportType::Function,
+                    signature: TypeSignature {
+                        params: vec![],
+                        results: vec![],
+                        metadata: HashMap::new(),
+                    },
+                    documentation: None,
+                }
+            ],
+            imports: vec![
+                ImportDefinition {
+                    module: "env".to_string(),
+                    name: "import1".to_string(),
+                    import_type: ImportType::Function,
+                    signature: TypeSignature {
+                        params: vec![],
+                        results: vec![],
+                        metadata: HashMap::new(),
+                    },
+                }
+            ],
+            custom_sections: HashMap::new(),
+        };
+
+        let summary = component.summary();
+        assert_eq!(summary.name, "test");
+        assert_eq!(summary.version, "1.0.0");
+        assert_eq!(summary.size, 3);
+        assert_eq!(summary.exports_count, 1);
+        assert_eq!(summary.imports_count, 1);
+    }
+
+    #[test]
+    fn test_component_config_default() {
+        let config = ComponentConfig::default();
+        assert_eq!(config.memory.initial_pages, 1);
+        assert_eq!(config.memory.maximum_pages, None);
+        // Just verify the fields exist, don't assume their default values
+        let _ = config.features.simd;
+        let _ = config.features.bulk_memory;
+    }
+
+    #[test]
+    fn test_component_metadata_default() {
+        let metadata = ComponentMetadata::default();
+        assert_eq!(metadata.name, "");
+        assert_eq!(metadata.version, "0.1.0");
+        assert_eq!(metadata.license, "MIT");
+        assert!(metadata.custom.is_empty());
+    }
+
+    #[test]
+    fn test_optimization_level_variants() {
+        let _none = OptimizationLevel::None;
+        let _o1 = OptimizationLevel::O1;
+        let _o2 = OptimizationLevel::O2;
+        let _o3 = OptimizationLevel::O3;
+        let _os = OptimizationLevel::Os;
+    }
+
+    #[test]
+    fn test_export_type_variants() {
+        let _func = ExportType::Function;
+        let _table = ExportType::Table;
+        let _memory = ExportType::Memory;
+        let _global = ExportType::Global;
+    }
+
+    #[test]
+    fn test_import_type_variants() {
+        let _func = ImportType::Function;
+        let _table = ImportType::Table;
+        let _memory = ImportType::Memory;
+        let _global = ImportType::Global;
+    }
+
+    #[test]
+    fn test_target_architecture_variants() {
+        let _wasm32 = TargetArchitecture::Wasm32;
+        let _wasm64 = TargetArchitecture::Wasm64;
+    }
+
+    #[test]
+    fn test_feature_flags() {
+        let flags = FeatureFlags {
+            simd: true,
+            bulk_memory: false,
+            reference_types: true,
+            multi_value: false,
+            tail_call: true,
+            threads: false,
+            exceptions: true,
+            component_model: false,
+        };
+
+        assert!(flags.simd);
+        assert!(!flags.bulk_memory);
+        assert!(flags.reference_types);
+        assert!(!flags.multi_value);
+        assert!(flags.tail_call);
+        assert!(!flags.threads);
+        assert!(flags.exceptions);
+        assert!(!flags.component_model);
+    }
+
+    #[test]
+    fn test_memory_config() {
+        let config = MemoryConfig {
+            initial_pages: 5,
+            maximum_pages: Some(10),
+            shared: false,
+            memory64: false,
+        };
+
+        assert_eq!(config.initial_pages, 5);
+        assert_eq!(config.maximum_pages, Some(10));
+    }
+
+    #[test]
+    fn test_linking_config() {
+        let config = LinkingConfig {
+            imports: vec!["env".to_string()],
+            export_all: false,
+            preserve_custom_sections: true,
+            generate_names: false,
+        };
+
+        assert_eq!(config.imports.len(), 1);
+        assert!(!config.export_all);
+        assert!(config.preserve_custom_sections);
+        assert!(!config.generate_names);
+    }
+
+    #[test]
+    fn test_optimization_config() {
+        let config = OptimizationConfig {
+            level: OptimizationLevel::O2,
+            optimize_size: false,
+            optimize_speed: true,
+            inline_threshold: 100,
+            unroll_loops: true,
+        };
+
+        assert_eq!(config.level, OptimizationLevel::O2);
+        assert!(!config.optimize_size);
+        assert!(config.optimize_speed);
+        assert_eq!(config.inline_threshold, 100);
+        assert!(config.unroll_loops);
+    }
+}
+
+#[cfg(test)]
 mod property_tests_component {
-    use proptest::proptest;
-    
-    
+    use super::*;
+    use proptest::prelude::*;
+
     proptest! {
-        /// Property: Function never panics on any input
         #[test]
-        fn test_new_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+        fn test_set_name_doesnt_panic(name in "\\PC*") {
+            let mut builder = ComponentBuilder::new();
+            builder.set_name(name.clone());
+            assert_eq!(builder.metadata.name, name);
+        }
+
+        #[test]
+        fn test_set_version_doesnt_panic(version in "\\PC*") {
+            let mut builder = ComponentBuilder::new();
+            builder.set_version(version.clone());
+            assert_eq!(builder.metadata.version, version);
+        }
+
+        #[test]
+        fn test_component_size_with_random_bytecode(
+            bytes in prop::collection::vec(any::<u8>(), 0..1000)
+        ) {
+            let component = WasmComponent {
+                name: "test".to_string(),
+                version: "1.0.0".to_string(),
+                bytecode: bytes.clone(),
+                metadata: ComponentMetadata::default(),
+                exports: vec![],
+                imports: vec![],
+                custom_sections: HashMap::new(),
+            };
+
+            assert_eq!(component.size(), bytes.len());
         }
     }
 }
