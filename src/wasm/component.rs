@@ -1057,6 +1057,427 @@ mod tests {
         assert_eq!(config.inline_threshold, 100);
         assert!(config.unroll_loops);
     }
+
+    #[test]
+    fn test_component_metadata_creation() {
+        let metadata = ComponentMetadata {
+            name: "my_component".to_string(),
+            version: "2.0.0".to_string(),
+            description: "Test component".to_string(),
+            author: "Test Author".to_string(),
+            license: "MIT".to_string(),
+            repository: Some("https://github.com/test/repo".to_string()),
+            build_time: std::time::SystemTime::now(),
+            custom: HashMap::new(),
+        };
+
+        assert_eq!(metadata.name, "my_component");
+        assert_eq!(metadata.version, "2.0.0");
+        assert_eq!(metadata.description, "Test component");
+        assert_eq!(metadata.author, "Test Author");
+        assert_eq!(metadata.license, "MIT");
+        assert!(metadata.repository.is_some());
+    }
+
+    #[test]
+    fn test_export_definition() {
+        let export = ExportDefinition {
+            name: "main".to_string(),
+            export_type: ExportType::Function,
+            signature: TypeSignature::Function {
+                params: vec![WasmType::I32, WasmType::I32],
+                results: vec![WasmType::I32],
+            },
+            documentation: Some("Main entry point".to_string()),
+        };
+
+        assert_eq!(export.name, "main");
+        assert_eq!(export.export_type, ExportType::Function);
+        assert!(export.documentation.is_some());
+    }
+
+    #[test]
+    fn test_import_definition() {
+        let import = ImportDefinition {
+            module: "env".to_string(),
+            name: "log".to_string(),
+            import_type: ImportType::Function,
+            signature: TypeSignature::Function {
+                params: vec![WasmType::I32],
+                results: vec![],
+            },
+        };
+
+        assert_eq!(import.module, "env");
+        assert_eq!(import.name, "log");
+        assert_eq!(import.import_type, ImportType::Function);
+    }
+
+    #[test]
+    fn test_wasm_component_with_custom_sections() {
+        let mut custom_sections = HashMap::new();
+        custom_sections.insert("debug".to_string(), vec![1, 2, 3, 4]);
+        custom_sections.insert("producers".to_string(), vec![5, 6, 7, 8]);
+
+        let component = WasmComponent {
+            name: "test".to_string(),
+            version: "1.0.0".to_string(),
+            bytecode: vec![0, 1, 2],
+            metadata: ComponentMetadata::default(),
+            exports: vec![],
+            imports: vec![],
+            custom_sections,
+        };
+
+        assert_eq!(component.custom_sections.len(), 2);
+        assert!(component.custom_sections.contains_key("debug"));
+        assert!(component.custom_sections.contains_key("producers"));
+    }
+
+    #[test]
+    fn test_builder_add_multiple_sources() {
+        let mut builder = ComponentBuilder::new();
+
+        builder.add_source_file("file1.ruchy");
+        builder.add_source_file("file2.ruchy");
+        builder.add_source_file("file3.ruchy");
+
+        assert_eq!(builder.source_files.len(), 3);
+        assert!(builder.source_files.contains(&PathBuf::from("file1.ruchy")));
+        assert!(builder.source_files.contains(&PathBuf::from("file2.ruchy")));
+        assert!(builder.source_files.contains(&PathBuf::from("file3.ruchy")));
+    }
+
+    #[test]
+    fn test_optimization_levels() {
+        let levels = vec![
+            OptimizationLevel::O0,
+            OptimizationLevel::O1,
+            OptimizationLevel::O2,
+            OptimizationLevel::O3,
+            OptimizationLevel::Os,
+            OptimizationLevel::Oz,
+        ];
+
+        for level in levels {
+            let mut builder = ComponentBuilder::new();
+            builder.set_optimization_level(level.clone());
+            assert_eq!(builder.optimization_level, level);
+        }
+    }
+
+    #[test]
+    fn test_target_architecture_variants() {
+        let targets = vec![
+            TargetArchitecture::Wasm32,
+            TargetArchitecture::Wasm64,
+        ];
+
+        for target in targets {
+            let config = ComponentConfig {
+                target: target.clone(),
+                memory: MemoryConfig::default(),
+                features: FeatureFlags::default(),
+                linking: LinkingConfig::default(),
+                optimization: OptimizationConfig::default(),
+            };
+
+            assert_eq!(config.target, target);
+        }
+    }
+
+    #[test]
+    fn test_type_signature_variants() {
+        let signatures = vec![
+            TypeSignature::Function {
+                params: vec![WasmType::I32],
+                results: vec![WasmType::I64],
+            },
+            TypeSignature::Global(WasmType::F32),
+            TypeSignature::Memory {
+                limits: MemoryLimits {
+                    initial: 1,
+                    maximum: Some(10),
+                },
+            },
+            TypeSignature::Table {
+                element_type: TableElementType::FuncRef,
+                limits: TableLimits {
+                    initial: 0,
+                    maximum: None,
+                },
+            },
+        ];
+
+        for sig in signatures {
+            match sig {
+                TypeSignature::Function { params, results } => {
+                    assert!(!params.is_empty() || !results.is_empty());
+                }
+                TypeSignature::Global(_) => {}
+                TypeSignature::Memory { .. } => {}
+                TypeSignature::Table { .. } => {}
+            }
+        }
+    }
+
+    #[test]
+    fn test_wasm_type_variants() {
+        let types = vec![
+            WasmType::I32,
+            WasmType::I64,
+            WasmType::F32,
+            WasmType::F64,
+            WasmType::V128,
+            WasmType::FuncRef,
+            WasmType::ExternRef,
+        ];
+
+        for wasm_type in types {
+            // Each type should be distinct
+            match wasm_type {
+                WasmType::I32 => assert_eq!(format!("{:?}", wasm_type), "I32"),
+                WasmType::I64 => assert_eq!(format!("{:?}", wasm_type), "I64"),
+                WasmType::F32 => assert_eq!(format!("{:?}", wasm_type), "F32"),
+                WasmType::F64 => assert_eq!(format!("{:?}", wasm_type), "F64"),
+                WasmType::V128 => assert_eq!(format!("{:?}", wasm_type), "V128"),
+                WasmType::FuncRef => assert_eq!(format!("{:?}", wasm_type), "FuncRef"),
+                WasmType::ExternRef => assert_eq!(format!("{:?}", wasm_type), "ExternRef"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_builder_with_debug_info() {
+        let mut builder = ComponentBuilder::new();
+
+        builder.enable_debug_info(true);
+        assert!(builder.include_debug_info);
+
+        builder.enable_debug_info(false);
+        assert!(!builder.include_debug_info);
+    }
+
+    #[test]
+    fn test_memory_config_with_limits() {
+        let config1 = MemoryConfig {
+            initial_pages: 1,
+            maximum_pages: None,
+            shared: false,
+            memory64: false,
+        };
+
+        let config2 = MemoryConfig {
+            initial_pages: 10,
+            maximum_pages: Some(100),
+            shared: true,
+            memory64: true,
+        };
+
+        assert_eq!(config1.initial_pages, 1);
+        assert!(config1.maximum_pages.is_none());
+        assert!(!config1.shared);
+        assert!(!config1.memory64);
+
+        assert_eq!(config2.initial_pages, 10);
+        assert_eq!(config2.maximum_pages, Some(100));
+        assert!(config2.shared);
+        assert!(config2.memory64);
+    }
+
+    #[test]
+    fn test_component_validation_interface() {
+        let component = WasmComponent {
+            name: "validator".to_string(),
+            version: "0.1.0".to_string(),
+            bytecode: vec![0x00, 0x61, 0x73, 0x6d], // WASM magic number
+            metadata: ComponentMetadata::default(),
+            exports: vec![
+                ExportDefinition {
+                    name: "validate".to_string(),
+                    export_type: ExportType::Function,
+                    signature: TypeSignature::Function {
+                        params: vec![WasmType::I32],
+                        results: vec![WasmType::I32],
+                    },
+                    documentation: None,
+                },
+            ],
+            imports: vec![],
+            custom_sections: HashMap::new(),
+        };
+
+        assert!(!component.name.is_empty());
+        assert!(!component.version.is_empty());
+        assert!(component.bytecode.len() >= 4);
+        assert_eq!(component.exports.len(), 1);
+    }
+
+    #[test]
+    fn test_feature_flags_combinations() {
+        let all_enabled = FeatureFlags {
+            simd: true,
+            bulk_memory: true,
+            reference_types: true,
+            multi_value: true,
+            tail_call: true,
+            threads: true,
+            exceptions: true,
+            component_model: true,
+        };
+
+        let all_disabled = FeatureFlags {
+            simd: false,
+            bulk_memory: false,
+            reference_types: false,
+            multi_value: false,
+            tail_call: false,
+            threads: false,
+            exceptions: false,
+            component_model: false,
+        };
+
+        // Test all enabled
+        assert!(all_enabled.simd && all_enabled.bulk_memory);
+        assert!(all_enabled.reference_types && all_enabled.multi_value);
+
+        // Test all disabled
+        assert!(!all_disabled.simd && !all_disabled.bulk_memory);
+        assert!(!all_disabled.reference_types && !all_disabled.multi_value);
+    }
+
+    #[test]
+    fn test_linking_config_with_multiple_imports() {
+        let config = LinkingConfig {
+            imports: vec![
+                "env".to_string(),
+                "wasi_snapshot_preview1".to_string(),
+                "custom_module".to_string(),
+            ],
+            export_all: true,
+            preserve_custom_sections: true,
+            generate_names: true,
+        };
+
+        assert_eq!(config.imports.len(), 3);
+        assert!(config.imports.contains(&"env".to_string()));
+        assert!(config.imports.contains(&"wasi_snapshot_preview1".to_string()));
+        assert!(config.export_all);
+        assert!(config.generate_names);
+    }
+
+    #[test]
+    fn test_custom_metadata_fields() {
+        let mut custom = HashMap::new();
+        custom.insert("compiler".to_string(), "ruchy".to_string());
+        custom.insert("target".to_string(), "browser".to_string());
+        custom.insert("optimization".to_string(), "size".to_string());
+
+        let metadata = ComponentMetadata {
+            name: "app".to_string(),
+            version: "1.0.0".to_string(),
+            description: String::new(),
+            author: String::new(),
+            license: String::new(),
+            repository: None,
+            build_time: std::time::SystemTime::now(),
+            custom,
+        };
+
+        assert_eq!(metadata.custom.len(), 3);
+        assert_eq!(metadata.custom.get("compiler"), Some(&"ruchy".to_string()));
+        assert_eq!(metadata.custom.get("target"), Some(&"browser".to_string()));
+    }
+
+    #[test]
+    fn test_table_limits() {
+        let table1 = TypeSignature::Table {
+            element_type: TableElementType::FuncRef,
+            limits: TableLimits {
+                initial: 10,
+                maximum: Some(100),
+            },
+        };
+
+        let table2 = TypeSignature::Table {
+            element_type: TableElementType::ExternRef,
+            limits: TableLimits {
+                initial: 0,
+                maximum: None,
+            },
+        };
+
+        if let TypeSignature::Table { element_type, limits } = table1 {
+            assert_eq!(element_type, TableElementType::FuncRef);
+            assert_eq!(limits.initial, 10);
+            assert_eq!(limits.maximum, Some(100));
+        }
+
+        if let TypeSignature::Table { element_type, limits } = table2 {
+            assert_eq!(element_type, TableElementType::ExternRef);
+            assert_eq!(limits.initial, 0);
+            assert!(limits.maximum.is_none());
+        }
+    }
+
+    #[test]
+    fn test_import_export_symmetry() {
+        let export = ExportDefinition {
+            name: "process".to_string(),
+            export_type: ExportType::Function,
+            signature: TypeSignature::Function {
+                params: vec![WasmType::I32, WasmType::F64],
+                results: vec![WasmType::I64],
+            },
+            documentation: Some("Process function".to_string()),
+        };
+
+        let import = ImportDefinition {
+            module: "host".to_string(),
+            name: "process".to_string(),
+            import_type: ImportType::Function,
+            signature: TypeSignature::Function {
+                params: vec![WasmType::I32, WasmType::F64],
+                results: vec![WasmType::I64],
+            },
+        };
+
+        // Import and export should have compatible signatures
+        assert_eq!(export.name, import.name);
+        match (&export.signature, &import.signature) {
+            (TypeSignature::Function { params: ep, results: er },
+             TypeSignature::Function { params: ip, results: ir }) => {
+                assert_eq!(ep, ip);
+                assert_eq!(er, ir);
+            }
+            _ => panic!("Expected function signatures"),
+        }
+    }
+
+    #[test]
+    fn test_optimization_size_vs_speed() {
+        let size_opt = OptimizationConfig {
+            level: OptimizationLevel::Os,
+            optimize_size: true,
+            optimize_speed: false,
+            inline_threshold: 10,
+            unroll_loops: false,
+        };
+
+        let speed_opt = OptimizationConfig {
+            level: OptimizationLevel::O3,
+            optimize_size: false,
+            optimize_speed: true,
+            inline_threshold: 1000,
+            unroll_loops: true,
+        };
+
+        // Size optimization should have different settings than speed
+        assert!(size_opt.optimize_size && !size_opt.optimize_speed);
+        assert!(!speed_opt.optimize_size && speed_opt.optimize_speed);
+        assert!(size_opt.inline_threshold < speed_opt.inline_threshold);
+        assert!(!size_opt.unroll_loops && speed_opt.unroll_loops);
+    }
 }
 
 #[cfg(test)]
