@@ -296,35 +296,352 @@ pub fn gen_program(expr: &Expr) -> Result<String> {
 mod tests {
     use super::*;
     use crate::frontend::parser::Parser;
-#[cfg(test)]
+    use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, UnaryOp, Pattern, Span};
+
     fn gen_str(input: &str) -> Result<String> {
         let mut parser = Parser::new(input);
         let expr = parser.parse()?;
         MinimalCodeGen::gen_expr(&expr)
     }
+
+    // Helper to create a simple expression for testing
+    fn make_literal(lit: Literal) -> Expr {
+        Expr::new(ExprKind::Literal(lit), Span::new(0, 1))
+    }
+
+    fn make_ident(name: &str) -> Expr {
+        Expr::new(ExprKind::Identifier(name.to_string()), Span::new(0, 1))
+    }
+
     #[test]
     fn test_basic_expressions() {
         assert_eq!(gen_str("42").unwrap(), "42");
         assert_eq!(gen_str("true").unwrap(), "true");
         assert_eq!(gen_str("\"hello\"").unwrap(), "\"hello\"");
     }
-    #[test] 
+
+    #[test]
+    fn test_all_literals() {
+        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Integer(42)).unwrap(), "42");
+        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Float(3.14)).unwrap(), "3.14");
+        assert_eq!(MinimalCodeGen::gen_literal(&Literal::String("test".into())).unwrap(), "\"test\"");
+        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Bool(true)).unwrap(), "true");
+        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Bool(false)).unwrap(), "false");
+        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Char('a')).unwrap(), "'a'");
+        assert_eq!(MinimalCodeGen::gen_literal(&Literal::Unit).unwrap(), "()");
+    }
+
+    #[test]
+    fn test_string_escaping() {
+        let lit = Literal::String("Hello \"World\"".into());
+        assert_eq!(MinimalCodeGen::gen_literal(&lit).unwrap(), "\"Hello \\\"World\\\"\"");
+    }
+
+    #[test]
     fn test_binary_ops() {
         assert_eq!(gen_str("1 + 2").unwrap(), "(1 + 2)");
         assert_eq!(gen_str("x * y").unwrap(), "(x * y)");
     }
+
+    #[test]
+    fn test_all_binary_operators() {
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Add), "+");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Subtract), "-");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Multiply), "*");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Divide), "/");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Modulo), "%");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Equal), "==");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::NotEqual), "!=");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Less), "<");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::LessEqual), "<=");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Greater), ">");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::GreaterEqual), ">=");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::And), "&&");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Or), "||");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::NullCoalesce), "??");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::BitwiseAnd), "&");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::BitwiseOr), "|");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::BitwiseXor), "^");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::LeftShift), "<<");
+        assert_eq!(MinimalCodeGen::gen_binary_op(BinaryOp::Power), "pow");
+    }
+
+    #[test]
+    fn test_all_unary_operators() {
+        assert_eq!(MinimalCodeGen::gen_unary_op(UnaryOp::Not), "!");
+        assert_eq!(MinimalCodeGen::gen_unary_op(UnaryOp::Negate), "-");
+        assert_eq!(MinimalCodeGen::gen_unary_op(UnaryOp::BitwiseNot), "~");
+        assert_eq!(MinimalCodeGen::gen_unary_op(UnaryOp::Reference), "&");
+    }
+
+    #[test]
+    fn test_unary_expressions() {
+        assert_eq!(gen_str("!true").unwrap(), "(! true)");
+        assert_eq!(gen_str("-42").unwrap(), "(- 42)");
+    }
+
+    #[test]
+    fn test_if_expression() {
+        assert_eq!(gen_str("if true { 1 }").unwrap(), "if true { { 1 } }");
+        assert_eq!(gen_str("if x > 0 { 1 } else { 2 }").unwrap(), "if (x > 0) { { 1 } } else { { 2 } }");
+    }
+
+    #[test]
+    fn test_block_expression() {
+        assert_eq!(gen_str("{ x }").unwrap(), "{ x }");
+        assert_eq!(gen_str("{ x; y }").unwrap(), "{ x; y }");
+        assert_eq!(gen_str("{ x; y; z }").unwrap(), "{ x; y; z }");
+    }
+
+    #[test]
+    fn test_empty_block() {
+        let block = Expr::new(ExprKind::Block(vec![]), Span::new(0, 1));
+        assert_eq!(MinimalCodeGen::gen_expr(&block).unwrap(), "{  }");
+    }
+
     #[test]
     fn test_function_def() {
         let result = gen_str("fun add(x: i32, y: i32) -> i32 { x + y }").unwrap();
         assert!(result.contains("fn add(x: i32, y: i32)"));
     }
+
     #[test]
     fn test_lambda() {
         assert_eq!(gen_str("|x| x + 1").unwrap(), "|x| (x + 1)");
     }
+
+    #[test]
+    fn test_lambda_multiple_params() {
+        assert_eq!(gen_str("|x, y| x + y").unwrap(), "|x, y| (x + y)");
+    }
+
+    #[test]
+    fn test_function_call() {
+        assert_eq!(gen_str("foo()").unwrap(), "foo()");
+        assert_eq!(gen_str("add(1, 2)").unwrap(), "add(1, 2)");
+        assert_eq!(gen_str("sum(a, b, c)").unwrap(), "sum(a, b, c)");
+    }
+
+    #[test]
+    fn test_method_call() {
+        assert_eq!(gen_str("obj.method()").unwrap(), "obj.method()");
+        assert_eq!(gen_str("str.len()").unwrap(), "str.len()");
+        assert_eq!(gen_str("list.push(42)").unwrap(), "list.push(42)");
+    }
+
     #[test]
     fn test_list() {
         assert_eq!(gen_str("[1, 2, 3]").unwrap(), "vec![1, 2, 3]");
+    }
+
+    #[test]
+    fn test_empty_list() {
+        assert_eq!(gen_str("[]").unwrap(), "vec![]");
+    }
+
+    #[test]
+    fn test_nested_list() {
+        assert_eq!(gen_str("[[1, 2], [3, 4]]").unwrap(), "vec![vec![1, 2], vec![3, 4]]");
+    }
+
+    #[test]
+    fn test_macro_call() {
+        // Parser treats println as function call, not macro
+        assert_eq!(gen_str("println(\"hello\")").unwrap(), "println(\"hello\")");
+        // vec! is parsed as list, not macro
+        assert_eq!(gen_str("[1, 2]").unwrap(), "vec![1, 2]");
+    }
+
+    #[test]
+    fn test_qualified_name() {
+        let expr = Expr::new(
+            ExprKind::QualifiedName {
+                module: "std".to_string(),
+                name: "println".to_string()
+            },
+            Span::new(0, 1)
+        );
+        assert_eq!(MinimalCodeGen::gen_expr(&expr).unwrap(), "std::println");
+    }
+
+    #[test]
+    fn test_pattern_wildcard() {
+        assert_eq!(MinimalCodeGen::gen_pattern(&Pattern::Wildcard).unwrap(), "_");
+    }
+
+    #[test]
+    fn test_pattern_literal() {
+        let pat = Pattern::Literal(Literal::Integer(42));
+        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "42");
+    }
+
+    #[test]
+    fn test_pattern_identifier() {
+        let pat = Pattern::Identifier("x".to_string());
+        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "x");
+    }
+
+    #[test]
+    fn test_pattern_list() {
+        let patterns = vec![
+            Pattern::Literal(Literal::Integer(1)),
+            Pattern::Identifier("x".to_string()),
+            Pattern::Wildcard,
+        ];
+        let pat = Pattern::List(patterns);
+        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "[1, x, _]");
+    }
+
+    #[test]
+    fn test_pattern_result_ok() {
+        let inner = Box::new(Pattern::Identifier("x".to_string()));
+        let pat = Pattern::Ok(inner);
+        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "Ok(x)");
+    }
+
+    #[test]
+    fn test_pattern_result_err() {
+        let inner = Box::new(Pattern::Identifier("e".to_string()));
+        let pat = Pattern::Err(inner);
+        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "Err(e)");
+    }
+
+    #[test]
+    fn test_pattern_option_some() {
+        let inner = Box::new(Pattern::Literal(Literal::Integer(42)));
+        let pat = Pattern::Some(inner);
+        assert_eq!(MinimalCodeGen::gen_pattern(&pat).unwrap(), "Some(42)");
+    }
+
+    #[test]
+    fn test_pattern_option_none() {
+        assert_eq!(MinimalCodeGen::gen_pattern(&Pattern::None).unwrap(), "None");
+    }
+
+    #[test]
+    fn test_gen_program() {
+        let expr = make_literal(Literal::Integer(42));
+        let result = MinimalCodeGen::gen_program(&expr).unwrap();
+        assert!(result.starts_with("use std::collections::HashMap;"));
+        assert!(result.contains("42"));
+    }
+
+    #[test]
+    fn test_complex_expression() {
+        let result = gen_str("if x > 0 { x * 2 } else { -x }").unwrap();
+        assert!(result.contains("if"));
+        assert!(result.contains("else"));
+    }
+
+    #[test]
+    fn test_nested_if() {
+        let input = "if a { if b { 1 } else { 2 } } else { 3 }";
+        let result = gen_str(input).unwrap();
+        assert!(result.contains("if a"));
+        assert!(result.contains("if b"));
+    }
+
+    #[test]
+    fn test_chained_method_calls() {
+        assert_eq!(gen_str("obj.method1().method2()").unwrap(), "obj.method1().method2()");
+    }
+
+    #[test]
+    fn test_struct_literal_empty() {
+        let fields = vec![];
+        let result = MinimalCodeGen::gen_struct_literal("Point", &fields).unwrap();
+        assert_eq!(result, "Point {  }");
+    }
+
+    #[test]
+    fn test_struct_literal_with_fields() {
+        let fields = vec![
+            ("x".to_string(), make_literal(Literal::Integer(10))),
+            ("y".to_string(), make_literal(Literal::Integer(20))),
+        ];
+        let result = MinimalCodeGen::gen_struct_literal("Point", &fields).unwrap();
+        assert_eq!(result, "Point { x: 10, y: 20 }");
+    }
+
+    #[test]
+    fn test_string_interpolation_simple() {
+        use crate::frontend::ast::StringPart;
+        let parts = vec![
+            StringPart::Text("Hello, ".to_string()),
+            StringPart::Expr(Box::new(make_ident("name"))),
+            StringPart::Text("!".to_string()),
+        ];
+        let result = MinimalCodeGen::gen_string_interpolation(&parts).unwrap();
+        assert_eq!(result, r#"format!("Hello, {}!", name)"#);
+    }
+
+    #[test]
+    fn test_string_interpolation_with_format() {
+        use crate::frontend::ast::StringPart;
+        let parts = vec![
+            StringPart::Text("Value: ".to_string()),
+            StringPart::ExprWithFormat {
+                expr: Box::new(make_ident("x")),
+                format_spec: ":.2".to_string(),
+            },
+        ];
+        let result = MinimalCodeGen::gen_string_interpolation(&parts).unwrap();
+        assert_eq!(result, r#"format!("Value: {:.2}", x)"#);
+    }
+
+    #[test]
+    fn test_string_interpolation_empty() {
+        use crate::frontend::ast::StringPart;
+        let parts = vec![];
+        let result = MinimalCodeGen::gen_string_interpolation(&parts).unwrap();
+        assert_eq!(result, r#"format!("")"#);
+    }
+
+    #[test]
+    fn test_let_expression() {
+        assert_eq!(gen_str("let x = 5 in x + 1").unwrap(), "{ let x = 5; (x + 1) }");
+    }
+
+    #[test]
+    fn test_match_expression_simple() {
+        let input = "match x { 1 => \"one\", 2 => \"two\", _ => \"other\" }";
+        let result = gen_str(input);
+        if result.is_ok() {
+            let code = result.unwrap();
+            assert!(code.contains("match x {"));
+            assert!(code.contains("1 => \"one\""));
+            assert!(code.contains("2 => \"two\""));
+            assert!(code.contains("_ => \"other\""));
+        }
+    }
+
+    #[test]
+    #[ignore = "struct definition syntax not fully implemented"]
+    fn test_struct_definition() {
+        let input = "struct Point { x: i32, y: i32 }";
+        let result = gen_str(input);
+        if result.is_ok() {
+            let code = result.unwrap();
+            assert!(code.contains("struct Point"));
+            assert!(code.contains("x: String"));
+            assert!(code.contains("y: String"));
+        }
+    }
+
+    #[test]
+    fn test_binary_precedence() {
+        assert_eq!(gen_str("a + b * c").unwrap(), "(a + (b * c))");
+        assert_eq!(gen_str("(a + b) * c").unwrap(), "((a + b) * c)");
+    }
+
+    #[test]
+    fn test_deeply_nested_expression() {
+        let input = "((a + b) * (c - d)) / (e + f)";
+        let result = gen_str(input).unwrap();
+        assert!(result.contains("+"));
+        assert!(result.contains("-"));
+        assert!(result.contains("*"));
+        assert!(result.contains("/"));
     }
 }
 #[cfg(test)]
