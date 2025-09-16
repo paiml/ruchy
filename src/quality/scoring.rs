@@ -1385,6 +1385,199 @@ fn count_lambda_usage(expr: &crate::frontend::ast::Expr, lambdas: &mut i32, tota
         _ => {}
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_grade_from_score() {
+        assert_eq!(Grade::from_score(1.0), Grade::APlus);
+        assert_eq!(Grade::from_score(0.97), Grade::APlus);
+        assert_eq!(Grade::from_score(0.95), Grade::A);
+        assert_eq!(Grade::from_score(0.93), Grade::A);
+        assert_eq!(Grade::from_score(0.91), Grade::AMinus);
+        assert_eq!(Grade::from_score(0.90), Grade::AMinus);
+        assert_eq!(Grade::from_score(0.88), Grade::BPlus);
+        assert_eq!(Grade::from_score(0.85), Grade::B);
+        assert_eq!(Grade::from_score(0.81), Grade::BMinus);
+        assert_eq!(Grade::from_score(0.78), Grade::CPlus);
+        assert_eq!(Grade::from_score(0.75), Grade::C);
+        assert_eq!(Grade::from_score(0.71), Grade::CMinus);
+        assert_eq!(Grade::from_score(0.65), Grade::D);
+        assert_eq!(Grade::from_score(0.5), Grade::F);
+        assert_eq!(Grade::from_score(0.0), Grade::F);
+    }
+
+    #[test]
+    fn test_grade_to_rank() {
+        assert_eq!(Grade::F.to_rank(), 0);
+        assert_eq!(Grade::D.to_rank(), 1);
+        assert_eq!(Grade::CMinus.to_rank(), 2);
+        assert_eq!(Grade::C.to_rank(), 3);
+        assert_eq!(Grade::CPlus.to_rank(), 4);
+        assert_eq!(Grade::BMinus.to_rank(), 5);
+        assert_eq!(Grade::B.to_rank(), 6);
+        assert_eq!(Grade::BPlus.to_rank(), 7);
+        assert_eq!(Grade::AMinus.to_rank(), 8);
+        assert_eq!(Grade::A.to_rank(), 9);
+        assert_eq!(Grade::APlus.to_rank(), 10);
+    }
+
+    #[test]
+    fn test_grade_display() {
+        assert_eq!(format!("{}", Grade::APlus), "A+");
+        assert_eq!(format!("{}", Grade::A), "A");
+        assert_eq!(format!("{}", Grade::AMinus), "A-");
+        assert_eq!(format!("{}", Grade::BPlus), "B+");
+        assert_eq!(format!("{}", Grade::B), "B");
+        assert_eq!(format!("{}", Grade::BMinus), "B-");
+        assert_eq!(format!("{}", Grade::CPlus), "C+");
+        assert_eq!(format!("{}", Grade::C), "C");
+        assert_eq!(format!("{}", Grade::CMinus), "C-");
+        assert_eq!(format!("{}", Grade::D), "D");
+        assert_eq!(format!("{}", Grade::F), "F");
+    }
+
+    #[test]
+    fn test_analysis_depth_equality() {
+        assert_eq!(AnalysisDepth::Shallow, AnalysisDepth::Shallow);
+        assert_eq!(AnalysisDepth::Standard, AnalysisDepth::Standard);
+        assert_eq!(AnalysisDepth::Deep, AnalysisDepth::Deep);
+        assert_ne!(AnalysisDepth::Shallow, AnalysisDepth::Deep);
+    }
+
+    #[test]
+    fn test_score_components_creation() {
+        let components = ScoreComponents {
+            correctness: 0.9,
+            performance: 0.85,
+            maintainability: 0.8,
+            safety: 0.95,
+            idiomaticity: 0.7,
+        };
+
+        assert_eq!(components.correctness, 0.9);
+        assert_eq!(components.performance, 0.85);
+        assert_eq!(components.maintainability, 0.8);
+        assert_eq!(components.safety, 0.95);
+        assert_eq!(components.idiomaticity, 0.7);
+    }
+
+    #[test]
+    fn test_quality_score_creation() {
+        let components = ScoreComponents {
+            correctness: 0.9,
+            performance: 0.85,
+            maintainability: 0.8,
+            safety: 0.95,
+            idiomaticity: 0.7,
+        };
+
+        let score = QualityScore {
+            value: 0.88,
+            components: components.clone(),
+            grade: Grade::BPlus,
+            confidence: 0.95,
+            cache_hit_rate: 0.2,
+        };
+
+        assert_eq!(score.value, 0.88);
+        assert_eq!(score.grade, Grade::BPlus);
+        assert_eq!(score.confidence, 0.95);
+        assert_eq!(score.cache_hit_rate, 0.2);
+        assert_eq!(score.components.correctness, 0.9);
+    }
+
+    #[test]
+    fn test_quality_score_confidence_levels() {
+        let mut score = QualityScore {
+            value: 0.85,
+            components: ScoreComponents {
+                correctness: 0.9,
+                performance: 0.8,
+                maintainability: 0.8,
+                safety: 0.9,
+                idiomaticity: 0.7,
+            },
+            grade: Grade::B,
+            confidence: 0.0,
+            cache_hit_rate: 0.0,
+        };
+
+        // Test different confidence levels
+        score.confidence = 0.0;
+        assert!(score.confidence < 0.5);
+
+        score.confidence = 0.5;
+        assert_eq!(score.confidence, 0.5);
+
+        score.confidence = 1.0;
+        assert_eq!(score.confidence, 1.0);
+    }
+
+    #[test]
+    fn test_quality_score_cache_hit_rate() {
+        let mut score = QualityScore {
+            value: 0.85,
+            components: ScoreComponents {
+                correctness: 0.9,
+                performance: 0.8,
+                maintainability: 0.8,
+                safety: 0.9,
+                idiomaticity: 0.7,
+            },
+            grade: Grade::B,
+            confidence: 0.9,
+            cache_hit_rate: 0.0,
+        };
+
+        // Test different cache hit rates
+        score.cache_hit_rate = 0.0;
+        assert_eq!(score.cache_hit_rate, 0.0);
+
+        score.cache_hit_rate = 0.5;
+        assert_eq!(score.cache_hit_rate, 0.5);
+
+        score.cache_hit_rate = 1.0;
+        assert_eq!(score.cache_hit_rate, 1.0);
+    }
+
+    #[test]
+    fn test_grade_edge_cases() {
+        // Test boundary values
+        assert_eq!(Grade::from_score(0.969999), Grade::A);
+        assert_eq!(Grade::from_score(0.97), Grade::APlus);
+        assert_eq!(Grade::from_score(0.929999), Grade::AMinus);
+        assert_eq!(Grade::from_score(0.93), Grade::A);
+        assert_eq!(Grade::from_score(0.599999), Grade::F);
+        assert_eq!(Grade::from_score(0.60), Grade::D);
+
+        // Test negative and > 1.0 values
+        assert_eq!(Grade::from_score(-0.1), Grade::F);
+        assert_eq!(Grade::from_score(1.1), Grade::APlus);
+    }
+
+    #[test]
+    fn test_analysis_depth_display() {
+        // Test that analysis depths have distinct values
+        let depths = vec![
+            AnalysisDepth::Shallow,
+            AnalysisDepth::Standard,
+            AnalysisDepth::Deep,
+        ];
+
+        for depth in &depths {
+            // Each depth should equal itself
+            assert_eq!(*depth, *depth);
+        }
+
+        // Different depths should not be equal
+        assert_ne!(AnalysisDepth::Shallow, AnalysisDepth::Standard);
+        assert_ne!(AnalysisDepth::Standard, AnalysisDepth::Deep);
+    }
+}
+
 #[cfg(test)]
 mod property_tests_scoring {
     use proptest::proptest;
