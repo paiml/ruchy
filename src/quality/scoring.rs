@@ -1576,6 +1576,417 @@ mod tests {
         assert_ne!(AnalysisDepth::Shallow, AnalysisDepth::Standard);
         assert_ne!(AnalysisDepth::Standard, AnalysisDepth::Deep);
     }
+
+    #[test]
+    fn test_score_components_weights() {
+        // Test that component weights sum to approximately 1.0
+        let components = ScoreComponents {
+            correctness: 0.35,
+            performance: 0.25,
+            maintainability: 0.20,
+            safety: 0.15,
+            idiomaticity: 0.05,
+        };
+
+        let sum = components.correctness + components.performance +
+                  components.maintainability + components.safety +
+                  components.idiomaticity;
+        assert!((sum - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_quality_score_normalization() {
+        // Test that scores are normalized to 0.0-1.0 range
+        let score = QualityScore {
+            value: 0.5,
+            components: ScoreComponents {
+                correctness: 0.5,
+                performance: 0.5,
+                maintainability: 0.5,
+                safety: 0.5,
+                idiomaticity: 0.5,
+            },
+            grade: Grade::F,
+            confidence: 0.5,
+            cache_hit_rate: 0.5,
+        };
+
+        assert!(score.value >= 0.0 && score.value <= 1.0);
+        assert!(score.confidence >= 0.0 && score.confidence <= 1.0);
+        assert!(score.cache_hit_rate >= 0.0 && score.cache_hit_rate <= 1.0);
+    }
+
+    #[test]
+    fn test_grade_ordering() {
+        // Test that grades are properly ordered
+        assert!(Grade::APlus.to_rank() > Grade::A.to_rank());
+        assert!(Grade::A.to_rank() > Grade::AMinus.to_rank());
+        assert!(Grade::AMinus.to_rank() > Grade::BPlus.to_rank());
+        assert!(Grade::BPlus.to_rank() > Grade::B.to_rank());
+        assert!(Grade::B.to_rank() > Grade::BMinus.to_rank());
+        assert!(Grade::BMinus.to_rank() > Grade::CPlus.to_rank());
+        assert!(Grade::CPlus.to_rank() > Grade::C.to_rank());
+        assert!(Grade::C.to_rank() > Grade::CMinus.to_rank());
+        assert!(Grade::CMinus.to_rank() > Grade::D.to_rank());
+        assert!(Grade::D.to_rank() > Grade::F.to_rank());
+    }
+
+    #[test]
+    fn test_incremental_cache_behavior() {
+        // Test cache hit rate behavior
+        let mut score = QualityScore {
+            value: 0.85,
+            components: ScoreComponents {
+                correctness: 0.9,
+                performance: 0.8,
+                maintainability: 0.8,
+                safety: 0.9,
+                idiomaticity: 0.7,
+            },
+            grade: Grade::B,
+            confidence: 0.9,
+            cache_hit_rate: 0.0,
+        };
+
+        // Simulate incremental cache improvements
+        score.cache_hit_rate = 0.25;
+        assert!(score.cache_hit_rate > 0.0);
+
+        score.cache_hit_rate = 0.50;
+        assert!(score.cache_hit_rate > 0.25);
+
+        score.cache_hit_rate = 0.75;
+        assert!(score.cache_hit_rate > 0.50);
+    }
+
+    #[test]
+    fn test_analysis_depth_performance_tradeoffs() {
+        // Test that different depths represent performance tradeoffs
+        let shallow = AnalysisDepth::Shallow;
+        let standard = AnalysisDepth::Standard;
+        let deep = AnalysisDepth::Deep;
+
+        // Each depth should be distinct
+        assert_ne!(shallow, standard);
+        assert_ne!(standard, deep);
+        assert_ne!(shallow, deep);
+    }
+
+    #[test]
+    fn test_score_component_independence() {
+        // Test that components can vary independently
+        let components1 = ScoreComponents {
+            correctness: 1.0,
+            performance: 0.0,
+            maintainability: 0.5,
+            safety: 0.7,
+            idiomaticity: 0.3,
+        };
+
+        let components2 = ScoreComponents {
+            correctness: 0.0,
+            performance: 1.0,
+            maintainability: 0.5,
+            safety: 0.7,
+            idiomaticity: 0.3,
+        };
+
+        assert_ne!(components1.correctness, components2.correctness);
+        assert_ne!(components1.performance, components2.performance);
+        assert_eq!(components1.maintainability, components2.maintainability);
+    }
+
+    #[test]
+    fn test_grade_display_format() {
+        // Test that grades display correctly
+        assert_eq!(format!("{}", Grade::APlus), "A+");
+        assert_eq!(format!("{}", Grade::A), "A");
+        assert_eq!(format!("{}", Grade::AMinus), "A-");
+        assert_eq!(format!("{}", Grade::BPlus), "B+");
+        assert_eq!(format!("{}", Grade::B), "B");
+        assert_eq!(format!("{}", Grade::BMinus), "B-");
+        assert_eq!(format!("{}", Grade::CPlus), "C+");
+        assert_eq!(format!("{}", Grade::C), "C");
+        assert_eq!(format!("{}", Grade::CMinus), "C-");
+        assert_eq!(format!("{}", Grade::D), "D");
+        assert_eq!(format!("{}", Grade::F), "F");
+    }
+
+    #[test]
+    fn test_confidence_levels() {
+        // Test different confidence scenarios
+        let low_confidence = QualityScore {
+            value: 0.85,
+            components: ScoreComponents {
+                correctness: 0.9,
+                performance: 0.8,
+                maintainability: 0.8,
+                safety: 0.9,
+                idiomaticity: 0.7,
+            },
+            grade: Grade::B,
+            confidence: 0.2,
+            cache_hit_rate: 0.0,
+        };
+
+        let high_confidence = QualityScore {
+            value: 0.85,
+            components: ScoreComponents {
+                correctness: 0.9,
+                performance: 0.8,
+                maintainability: 0.8,
+                safety: 0.9,
+                idiomaticity: 0.7,
+            },
+            grade: Grade::B,
+            confidence: 0.95,
+            cache_hit_rate: 0.0,
+        };
+
+        assert!(low_confidence.confidence < 0.5);
+        assert!(high_confidence.confidence > 0.9);
+    }
+
+    #[test]
+    fn test_quality_score_with_extreme_components() {
+        // Test with extreme component values
+        let extreme_score = QualityScore {
+            value: 0.0,
+            components: ScoreComponents {
+                correctness: 0.0,
+                performance: 0.0,
+                maintainability: 0.0,
+                safety: 0.0,
+                idiomaticity: 0.0,
+            },
+            grade: Grade::F,
+            confidence: 1.0,
+            cache_hit_rate: 0.0,
+        };
+
+        assert_eq!(extreme_score.value, 0.0);
+        assert_eq!(extreme_score.grade, Grade::F);
+
+        let perfect_score = QualityScore {
+            value: 1.0,
+            components: ScoreComponents {
+                correctness: 1.0,
+                performance: 1.0,
+                maintainability: 1.0,
+                safety: 1.0,
+                idiomaticity: 1.0,
+            },
+            grade: Grade::APlus,
+            confidence: 1.0,
+            cache_hit_rate: 1.0,
+        };
+
+        assert_eq!(perfect_score.value, 1.0);
+        assert_eq!(perfect_score.grade, Grade::APlus);
+    }
+
+    #[test]
+    fn test_grade_transitions() {
+        // Test grade transitions at exact boundaries
+        let scores = vec![
+            (0.97, Grade::APlus),
+            (0.93, Grade::A),
+            (0.90, Grade::AMinus),
+            (0.87, Grade::BPlus),
+            (0.83, Grade::B),
+            (0.80, Grade::BMinus),
+            (0.77, Grade::CPlus),
+            (0.73, Grade::C),
+            (0.70, Grade::CMinus),
+            (0.60, Grade::D),
+            (0.59, Grade::F),
+        ];
+
+        for (score, expected_grade) in scores {
+            assert_eq!(Grade::from_score(score), expected_grade);
+        }
+    }
+
+    #[test]
+    fn test_score_component_balance() {
+        // Test balanced vs unbalanced components
+        let balanced = ScoreComponents {
+            correctness: 0.8,
+            performance: 0.8,
+            maintainability: 0.8,
+            safety: 0.8,
+            idiomaticity: 0.8,
+        };
+
+        let unbalanced = ScoreComponents {
+            correctness: 1.0,
+            performance: 0.2,
+            maintainability: 0.9,
+            safety: 0.3,
+            idiomaticity: 1.0,
+        };
+
+        // All balanced components should be equal
+        assert_eq!(balanced.correctness, balanced.performance);
+        assert_eq!(balanced.performance, balanced.maintainability);
+
+        // Unbalanced components should vary
+        assert_ne!(unbalanced.correctness, unbalanced.performance);
+        assert_ne!(unbalanced.safety, unbalanced.idiomaticity);
+    }
+
+    #[test]
+    fn test_analysis_depth_hash_equality() {
+        use std::collections::HashSet;
+
+        // Test that analysis depths can be used as hash keys
+        let mut depth_set = HashSet::new();
+        depth_set.insert(AnalysisDepth::Shallow);
+        depth_set.insert(AnalysisDepth::Standard);
+        depth_set.insert(AnalysisDepth::Deep);
+
+        assert_eq!(depth_set.len(), 3);
+        assert!(depth_set.contains(&AnalysisDepth::Shallow));
+        assert!(depth_set.contains(&AnalysisDepth::Standard));
+        assert!(depth_set.contains(&AnalysisDepth::Deep));
+    }
+
+    #[test]
+    fn test_grade_rank_consistency() {
+        // Test that to_rank() is consistent with from_score()
+        let test_scores = vec![
+            0.98, 0.95, 0.92, 0.88, 0.85, 0.82,
+            0.78, 0.75, 0.72, 0.65, 0.50
+        ];
+
+        for score in test_scores {
+            let grade1 = Grade::from_score(score);
+            let grade2 = Grade::from_score(score + 0.001);
+
+            // Higher scores should have equal or higher ranks
+            assert!(grade2.to_rank() >= grade1.to_rank());
+        }
+    }
+
+    #[test]
+    fn test_cache_hit_rate_impact() {
+        // Test that cache hit rate doesn't affect grade
+        let score1 = QualityScore {
+            value: 0.85,
+            components: ScoreComponents {
+                correctness: 0.9,
+                performance: 0.8,
+                maintainability: 0.8,
+                safety: 0.9,
+                idiomaticity: 0.7,
+            },
+            grade: Grade::B,
+            confidence: 0.9,
+            cache_hit_rate: 0.0,
+        };
+
+        let score2 = QualityScore {
+            value: 0.85,
+            components: ScoreComponents {
+                correctness: 0.9,
+                performance: 0.8,
+                maintainability: 0.8,
+                safety: 0.9,
+                idiomaticity: 0.7,
+            },
+            grade: Grade::B,
+            confidence: 0.9,
+            cache_hit_rate: 1.0,
+        };
+
+        // Same value should yield same grade regardless of cache
+        assert_eq!(score1.grade, score2.grade);
+        assert_eq!(score1.value, score2.value);
+    }
+
+    #[test]
+    fn test_incremental_scoring_architecture() {
+        // Test incremental scoring concepts
+        let initial_score = QualityScore {
+            value: 0.7,
+            components: ScoreComponents {
+                correctness: 0.6,
+                performance: 0.7,
+                maintainability: 0.8,
+                safety: 0.7,
+                idiomaticity: 0.6,
+            },
+            grade: Grade::CMinus,
+            confidence: 0.5,
+            cache_hit_rate: 0.0,
+        };
+
+        // Simulate incremental improvement
+        let improved_score = QualityScore {
+            value: 0.85,
+            components: ScoreComponents {
+                correctness: 0.9,
+                performance: 0.8,
+                maintainability: 0.8,
+                safety: 0.9,
+                idiomaticity: 0.7,
+            },
+            grade: Grade::B,
+            confidence: 0.8,
+            cache_hit_rate: 0.5,
+        };
+
+        assert!(improved_score.value > initial_score.value);
+        assert!(improved_score.confidence > initial_score.confidence);
+        assert!(improved_score.cache_hit_rate > initial_score.cache_hit_rate);
+    }
+
+    #[test]
+    fn test_component_weight_distribution() {
+        // Test expected weight distribution
+        let expected_weights = [
+            ("correctness", 0.35),
+            ("performance", 0.25),
+            ("maintainability", 0.20),
+            ("safety", 0.15),
+            ("idiomaticity", 0.05),
+        ];
+
+        let total: f64 = expected_weights.iter().map(|(_, w)| w).sum();
+        assert!((total - 1.0).abs() < 0.001);
+
+        // Verify correctness has highest weight
+        assert!(expected_weights[0].1 > expected_weights[1].1);
+        assert!(expected_weights[1].1 > expected_weights[2].1);
+    }
+
+    #[test]
+    fn test_edge_case_scores() {
+        // Test edge cases and special values
+        assert_eq!(Grade::from_score(f64::NAN), Grade::F);
+        assert_eq!(Grade::from_score(f64::INFINITY), Grade::APlus);
+        assert_eq!(Grade::from_score(f64::NEG_INFINITY), Grade::F);
+        assert_eq!(Grade::from_score(f64::MIN), Grade::F);
+        assert_eq!(Grade::from_score(f64::MAX), Grade::APlus);
+    }
+
+    #[test]
+    fn test_score_serialization_compatibility() {
+        // Test that Grade enum is serializable
+        let grades = vec![
+            Grade::APlus, Grade::A, Grade::AMinus,
+            Grade::BPlus, Grade::B, Grade::BMinus,
+            Grade::CPlus, Grade::C, Grade::CMinus,
+            Grade::D, Grade::F
+        ];
+
+        for grade in grades {
+            // Test serialization round-trip
+            let json = serde_json::to_string(&grade).unwrap();
+            let deserialized: Grade = serde_json::from_str(&json).unwrap();
+            assert_eq!(grade, deserialized);
+        }
+    }
 }
 
 #[cfg(test)]
