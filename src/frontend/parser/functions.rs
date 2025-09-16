@@ -453,3 +453,224 @@ fn parse_optional_method_or_field_access(state: &mut ParserState, receiver: Expr
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::parser::Parser;
+
+    #[test]
+    fn test_parse_simple_function() {
+        let mut parser = Parser::new("fun add(x: i32, y: i32) -> i32 { x + y }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse simple function");
+    }
+
+    #[test]
+    fn test_parse_function_no_params() {
+        let mut parser = Parser::new("fun hello() { println(\"Hello\") }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function without parameters");
+    }
+
+    #[test]
+    fn test_parse_function_no_return_type() {
+        let mut parser = Parser::new("fun greet(name: String) { println(name) }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function without return type");
+    }
+
+    #[test]
+    fn test_parse_anonymous_function() {
+        let mut parser = Parser::new("fun (x: i32) -> i32 { x * 2 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse anonymous function");
+    }
+
+    #[test]
+    fn test_parse_generic_function() {
+        let mut parser = Parser::new("fun identity<T>(value: T) -> T { value }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse generic function");
+    }
+
+    #[test]
+    fn test_parse_function_multiple_params() {
+        let mut parser = Parser::new("fun sum(a: i32, b: i32, c: i32) -> i32 { a + b + c }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function with multiple parameters");
+    }
+
+    #[test]
+    fn test_parse_lambda_simple() {
+        let mut parser = Parser::new("|x| x + 1");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse simple lambda");
+    }
+
+    #[test]
+    fn test_parse_lambda_multiple_params() {
+        let mut parser = Parser::new("|x, y| x + y");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse lambda with multiple parameters");
+    }
+
+    #[test]
+    #[ignore = "typed lambda parameters not fully implemented"]
+    fn test_parse_lambda_with_types() {
+        let mut parser = Parser::new("|x: i32, y: i32| x + y");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse lambda with type annotations");
+    }
+
+    #[test]
+    fn test_parse_lambda_no_params() {
+        let mut parser = Parser::new("|| 42");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse lambda without parameters");
+    }
+
+    #[test]
+    fn test_parse_fat_arrow_lambda() {
+        let mut parser = Parser::new("x => x * 2");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse fat arrow lambda");
+    }
+
+    #[test]
+    #[ignore = "fat arrow lambda with parentheses not fully implemented"]
+    fn test_parse_fat_arrow_lambda_multiple() {
+        let mut parser = Parser::new("(x, y) => x + y");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse fat arrow lambda with multiple params");
+    }
+
+    #[test]
+    fn test_parse_function_call_no_args() {
+        let mut parser = Parser::new("print()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function call without arguments");
+    }
+
+    #[test]
+    fn test_parse_function_call_single_arg() {
+        let mut parser = Parser::new("sqrt(16)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function call with single argument");
+    }
+
+    #[test]
+    fn test_parse_function_call_multiple_args() {
+        let mut parser = Parser::new("max(1, 2, 3)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function call with multiple arguments");
+    }
+
+    #[test]
+    #[ignore = "named arguments not fully implemented"]
+    fn test_parse_function_call_named_args() {
+        let mut parser = Parser::new("create(name: \"test\", value: 42)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function call with named arguments");
+    }
+
+    #[test]
+    fn test_parse_method_call_no_args() {
+        let mut parser = Parser::new("obj.method()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse method call without arguments");
+    }
+
+    #[test]
+    fn test_parse_method_call_with_args() {
+        let mut parser = Parser::new("list.append(42)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse method call with arguments");
+    }
+
+    #[test]
+    fn test_parse_chained_method_calls() {
+        let mut parser = Parser::new("str.trim().to_uppercase().split(\",\")");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse chained method calls");
+    }
+
+    #[test]
+    fn test_parse_safe_navigation() {
+        let mut parser = Parser::new("obj?.method()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse safe navigation operator");
+    }
+
+    #[test]
+    fn test_parse_safe_navigation_chain() {
+        let mut parser = Parser::new("obj?.field?.method()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse chained safe navigation");
+    }
+
+    #[test]
+    fn test_parse_function_with_default_params() {
+        let mut parser = Parser::new("fun greet(name: String = \"World\") { println(name) }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function with default parameters");
+    }
+
+    #[test]
+    #[ignore = "rest parameters not fully implemented"]
+    fn test_parse_function_with_rest_params() {
+        let mut parser = Parser::new("fun sum(...numbers: [i32]) -> i32 { numbers.sum() }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function with rest parameters");
+    }
+
+    #[test]
+    fn test_parse_nested_function_calls() {
+        let mut parser = Parser::new("outer(inner(deep(42)))");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse nested function calls");
+    }
+
+    #[test]
+    fn test_parse_function_call_with_lambda() {
+        let mut parser = Parser::new("map(list, |x| x * 2)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function call with lambda argument");
+    }
+
+    #[test]
+    fn test_parse_function_with_block_body() {
+        let mut parser = Parser::new("fun complex(x: i32) -> i32 { let y = x + 1; y * 2 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function with block body");
+    }
+
+    #[test]
+    fn test_parse_recursive_function() {
+        let mut parser = Parser::new("fun factorial(n: i32) -> i32 { if n <= 1 { 1 } else { n * factorial(n - 1) } }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse recursive function");
+    }
+
+    #[test]
+    #[ignore = "function type syntax not fully implemented"]
+    fn test_parse_higher_order_function() {
+        let mut parser = Parser::new("fun apply(f: Fn(i32) -> i32, x: i32) -> i32 { f(x) }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse higher-order function");
+    }
+
+    #[test]
+    fn test_parse_closure_capture() {
+        let mut parser = Parser::new("{ let x = 10; |y| x + y }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse closure with capture");
+    }
+
+    #[test]
+    fn test_parse_iife() {
+        let mut parser = Parser::new("(|x| x * 2)(5)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse immediately invoked function expression");
+    }
+}

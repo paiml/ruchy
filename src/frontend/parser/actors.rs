@@ -227,4 +227,173 @@ mod tests {
         assert_eq!(field.ty.kind, TypeKind::Named("Int".to_string()));
         assert!(!field.is_pub);
     }
+
+    // Additional comprehensive parser tests
+
+    #[test]
+    fn test_parse_simple_actor() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new("actor Counter { count: i32 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse simple actor");
+    }
+
+    #[test]
+    #[ignore = "actor state block syntax not implemented"]
+    fn test_parse_actor_with_state_block() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new("actor User { state { name: String, age: i32 } }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse actor with state block");
+    }
+
+    #[test]
+    #[ignore = "actor receive syntax not implemented"]
+    fn test_parse_actor_with_receive() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new("actor Echo { receive msg -> println(msg) }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse actor with receive handler");
+    }
+
+    #[test]
+    #[ignore = "actor multiple handlers not implemented"]
+    fn test_parse_actor_with_multiple_handlers() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new(r#"
+            actor Calculator {
+                state { value: i32 }
+                receive {
+                    Add(n) => value + n,
+                    Sub(n) => value - n,
+                    Reset => 0
+                }
+            }
+        "#);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse actor with multiple handlers");
+    }
+
+    #[test]
+    fn test_parse_actor_empty() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new("actor Empty { }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse empty actor");
+    }
+
+    #[test]
+    fn test_parse_actor_with_inline_fields() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new("actor Point { x: f64, y: f64 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse actor with inline fields");
+    }
+
+    #[test]
+    fn test_parse_actor_with_complex_types() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new("actor Storage { data: HashMap<String, Vec<i32>> }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse actor with complex types");
+    }
+
+    #[test]
+    #[ignore = "actor handler params not implemented"]
+    fn test_parse_actor_with_handler_params() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new("actor Server { receive Request(url, method) -> Response }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse actor with handler parameters");
+    }
+
+    #[test]
+    #[ignore = "actor block handler not implemented"]
+    fn test_parse_actor_with_block_handler() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new(r#"
+            actor Logger {
+                receive Log(msg) => {
+                    let timestamp = now();
+                    println(timestamp, msg)
+                }
+            }
+        "#);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse actor with block handler");
+    }
+
+    #[test]
+    #[ignore = "actor mixed content not implemented"]
+    fn test_parse_actor_with_mixed_content() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new(r#"
+            actor Worker {
+                id: String
+                state {
+                    tasks: Vec<Task>,
+                    active: bool
+                }
+                receive Start => active = true
+                receive Stop => active = false
+                receive AddTask(task) => tasks.push(task)
+            }
+        "#);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse actor with mixed content");
+    }
+
+    #[test]
+    #[ignore = "nested actors not implemented"]
+    fn test_parse_nested_actors() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new(r#"
+            {
+                actor Parent {
+                    child: actor Child { value: i32 }
+                }
+            }
+        "#);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse nested actors");
+    }
+
+    #[test]
+    #[ignore = "actor generics not implemented"]
+    fn test_parse_actor_with_generics() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new("actor Container<T> { items: Vec<T> }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse actor with generic types");
+    }
+
+    #[test]
+    #[ignore = "spawn expression not implemented"]
+    fn test_parse_spawn_expression() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new("spawn actor Counter { count: 0 }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse spawn expression");
+    }
+
+    #[test]
+    fn test_parse_send_expression() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new("my_actor <- Message(data)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse send expression");
+    }
+
+    #[test]
+    #[ignore = "actor with await not implemented"]
+    fn test_parse_actor_with_await() {
+        use crate::frontend::parser::Parser;
+        let mut parser = Parser::new(r#"
+            actor AsyncWorker {
+                receive Fetch(url) => await http_get(url)
+            }
+        "#);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse actor with await");
+    }
 }
