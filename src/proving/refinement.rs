@@ -495,6 +495,7 @@ impl Default for LiquidTypeInference {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn test_refinement_type_display() {
         let ty = RefinementType::positive_int();
@@ -502,6 +503,7 @@ mod tests {
         let bounded = RefinementType::bounded_int(0, 100);
         assert_eq!(bounded.to_string(), "Int where (and (>= x 0) (<= x 100))");
     }
+
     #[test]
     fn test_base_type_display() {
         assert_eq!(BaseType::Int.to_string(), "Int");
@@ -511,6 +513,276 @@ mod tests {
             Box::new(BaseType::String)
         );
         assert_eq!(func.to_string(), "(Int, Bool) -> String");
+    }
+
+    #[test]
+    fn test_bounded_int_creation() {
+        let bounded = RefinementType::bounded_int(-10, 10);
+        assert_eq!(bounded.base, BaseType::Int);
+        assert!(bounded.predicate.is_some());
+        let pred = bounded.predicate.unwrap();
+        assert_eq!(pred.var, "x");
+        assert!(pred.expr.contains("-10"));
+        assert!(pred.expr.contains("10"));
+    }
+
+    #[test]
+    fn test_positive_int() {
+        let pos = RefinementType::positive_int();
+        assert_eq!(pos.base, BaseType::Int);
+        assert!(pos.predicate.is_some());
+        let pred = pos.predicate.unwrap();
+        assert_eq!(pred.var, "x");
+        assert_eq!(pred.expr, "(> x 0)");
+    }
+
+    #[test]
+    fn test_non_empty_array() {
+        let non_empty = RefinementType::non_empty_array(BaseType::String);
+        match &non_empty.base {
+            BaseType::Array(elem) => assert_eq!(**elem, BaseType::String),
+            _ => panic!("Expected array type"),
+        }
+        assert!(non_empty.predicate.is_some());
+        let pred = non_empty.predicate.unwrap();
+        assert_eq!(pred.var, "a");
+        assert!(pred.expr.contains("len"));
+    }
+
+    #[test]
+    fn test_sorted_array() {
+        let sorted = RefinementType::sorted_array(BaseType::Int);
+        match &sorted.base {
+            BaseType::Array(elem) => assert_eq!(**elem, BaseType::Int),
+            _ => panic!("Expected array type"),
+        }
+        assert!(sorted.predicate.is_some());
+        let pred = sorted.predicate.unwrap();
+        assert!(pred.expr.contains("sorted"));
+    }
+
+    #[test]
+    fn test_type_refinement_creation() {
+        let mut refinement = TypeRefinement::new("add", RefinementType::positive_int());
+        assert_eq!(refinement.name, "add");
+
+        refinement.add_arg("x", RefinementType::bounded_int(0, 10));
+        assert_eq!(refinement.args.len(), 1);
+        assert_eq!(refinement.args[0].0, "x");
+
+        refinement.add_precondition("x >= 0");
+        assert_eq!(refinement.preconditions.len(), 1);
+
+        refinement.add_postcondition("result > x");
+        assert_eq!(refinement.postconditions.len(), 1);
+
+        refinement.add_invariant("x >= 0");
+        assert_eq!(refinement.invariants.len(), 1);
+    }
+
+    #[test]
+    fn test_refinement_checker_new() {
+        let checker = RefinementChecker::new();
+        assert!(checker.env.is_empty());
+        assert!(checker.signatures.is_empty());
+    }
+
+    #[test]
+    fn test_refinement_checker_declare_var() {
+        let mut checker = RefinementChecker::new();
+        let ty = RefinementType::positive_int();
+
+        checker.declare_var("count", ty.clone());
+        assert!(checker.env.contains_key("count"));
+
+        let stored = &checker.env["count"];
+        assert_eq!(stored.base, BaseType::Int);
+    }
+
+    #[test]
+    fn test_refinement_checker_declare_function() {
+        let mut checker = RefinementChecker::new();
+        let refinement = TypeRefinement::new("increment", RefinementType::positive_int());
+
+        checker.declare_function("increment", refinement.clone());
+        assert!(checker.signatures.contains_key("increment"));
+
+        let stored = &checker.signatures["increment"];
+        assert_eq!(stored.name, "increment");
+    }
+
+    #[test]
+    fn test_is_subtype_same_base() {
+        let checker = RefinementChecker::new();
+
+        // Same base type with no predicates
+        let ty1 = RefinementType {
+            base: BaseType::Int,
+            predicate: None,
+            params: vec![],
+        };
+        let ty2 = ty1.clone();
+        assert!(checker.is_subtype(&ty1, &ty2).unwrap());
+    }
+
+    #[test]
+    fn test_is_subtype_different_base() {
+        let checker = RefinementChecker::new();
+
+        let int_ty = RefinementType {
+            base: BaseType::Int,
+            predicate: None,
+            params: vec![],
+        };
+        let bool_ty = RefinementType {
+            base: BaseType::Bool,
+            predicate: None,
+            params: vec![],
+        };
+
+        assert!(!checker.is_subtype(&int_ty, &bool_ty).unwrap());
+    }
+
+    #[test]
+    fn test_is_subtype_with_predicates() {
+        let checker = RefinementChecker::new();
+
+        // Positive int is subtype of int
+        let pos_int = RefinementType::positive_int();
+        let plain_int = RefinementType {
+            base: BaseType::Int,
+            predicate: None,
+            params: vec![],
+        };
+
+        assert!(checker.is_subtype(&pos_int, &plain_int).unwrap());
+
+        // Plain int is not subtype of positive int
+        // This would require SMT solver, so we'll just check it doesn't panic
+        let _ = checker.is_subtype(&plain_int, &pos_int);
+    }
+
+    #[test]
+    fn test_base_type_equality() {
+        assert_eq!(BaseType::Int, BaseType::Int);
+        assert_ne!(BaseType::Int, BaseType::Bool);
+        assert_eq!(BaseType::String, BaseType::String);
+        assert_ne!(BaseType::Float, BaseType::String);
+    }
+
+    #[test]
+    fn test_array_type() {
+        let array_int = BaseType::Array(Box::new(BaseType::Int));
+        let array_bool = BaseType::Array(Box::new(BaseType::Bool));
+
+        assert_ne!(array_int, array_bool);
+
+        match array_int {
+            BaseType::Array(elem) => assert_eq!(*elem, BaseType::Int),
+            _ => panic!("Expected array type"),
+        }
+    }
+
+    #[test]
+    fn test_tuple_type() {
+        let tuple = BaseType::Tuple(vec![BaseType::Int, BaseType::Bool, BaseType::String]);
+        match tuple {
+            BaseType::Tuple(elems) => {
+                assert_eq!(elems.len(), 3);
+                assert_eq!(elems[0], BaseType::Int);
+                assert_eq!(elems[1], BaseType::Bool);
+                assert_eq!(elems[2], BaseType::String);
+            },
+            _ => panic!("Expected tuple type"),
+        }
+    }
+
+    #[test]
+    fn test_function_type() {
+        let func = BaseType::Function(
+            vec![BaseType::Int, BaseType::Int],
+            Box::new(BaseType::Bool)
+        );
+
+        match func {
+            BaseType::Function(args, ret) => {
+                assert_eq!(args.len(), 2);
+                assert_eq!(args[0], BaseType::Int);
+                assert_eq!(*ret, BaseType::Bool);
+            },
+            _ => panic!("Expected function type"),
+        }
+    }
+
+    #[test]
+    fn test_custom_type() {
+        let custom = BaseType::Custom("MyType".to_string());
+        match custom {
+            BaseType::Custom(name) => assert_eq!(name, "MyType"),
+            _ => panic!("Expected custom type"),
+        }
+    }
+
+    #[test]
+    fn test_predicate_creation() {
+        let pred = Predicate {
+            var: "n".to_string(),
+            expr: "(>= n 0)".to_string(),
+        };
+        assert_eq!(pred.var, "n");
+        assert_eq!(pred.expr, "(>= n 0)");
+    }
+
+    #[test]
+    fn test_refinement_type_with_params() {
+        let ty = RefinementType {
+            base: BaseType::Custom("Map".to_string()),
+            predicate: None,
+            params: vec!["K".to_string(), "V".to_string()],
+        };
+
+        assert_eq!(ty.params.len(), 2);
+        assert_eq!(ty.params[0], "K");
+        assert_eq!(ty.params[1], "V");
+    }
+
+    #[test]
+    fn test_nested_array() {
+        let nested = BaseType::Array(Box::new(
+            BaseType::Array(Box::new(BaseType::Int))
+        ));
+
+        let formatted = nested.to_string();
+        assert_eq!(formatted, "[[Int]]");
+    }
+
+    #[test]
+    fn test_complex_function_type() {
+        let func = BaseType::Function(
+            vec![
+                BaseType::Array(Box::new(BaseType::Int)),
+                BaseType::Tuple(vec![BaseType::Bool, BaseType::String]),
+            ],
+            Box::new(BaseType::Float),
+        );
+
+        let formatted = func.to_string();
+        assert!(formatted.contains("Int"));
+        assert!(formatted.contains("Bool"));
+        assert!(formatted.contains("String"));
+        assert!(formatted.contains("Float"));
+    }
+
+    #[test]
+    fn test_refinement_checker_set_backend() {
+        let mut checker = RefinementChecker::new();
+
+        // Default should be Z3
+        checker.set_backend(SmtBackend::CVC5);
+        // We can't directly check the backend field as it's private,
+        // but we can verify the function doesn't panic
+
+        checker.set_backend(SmtBackend::Z3);
     }
 }
 #[cfg(test)]
