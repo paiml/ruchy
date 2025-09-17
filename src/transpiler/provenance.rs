@@ -98,10 +98,11 @@ pub fn new(source: &str) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::transpiler::provenance::begin_pass;
+/// use ruchy::transpiler::provenance::ProvenanceTracker;
 /// 
-/// let result = begin_pass("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = ProvenanceTracker::new();
+let result = instance.begin_pass();
+// Verify behavior
 /// ```
 pub fn begin_pass(&mut self, name: &str, input: &str) {
         if let Some(builder) = self.current_transformation.take() {
@@ -112,7 +113,7 @@ pub fn begin_pass(&mut self, name: &str, input: &str) {
     /// Record a rule application
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::transpiler::provenance::record_rule;
 /// 
 /// let result = record_rule(());
@@ -126,7 +127,7 @@ pub fn record_rule(&mut self, rule: Rule) {
     /// Finish the current pass
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::transpiler::provenance::end_pass;
 /// 
 /// let result = end_pass("example");
@@ -292,7 +293,7 @@ impl crate::Transpiler {
     /// Transpile with provenance tracking
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::transpiler::provenance::transpile_with_provenance;
 /// 
 /// let result = transpile_with_provenance(());

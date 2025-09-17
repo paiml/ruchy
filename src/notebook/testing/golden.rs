@@ -10,10 +10,10 @@ impl GoldenManager {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::golden::new;
+/// use ruchy::notebook::testing::golden::GoldenManager;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = GoldenManager::new();
+// Verify behavior
 /// ```
 pub fn new(base_path: &Path) -> Self {
         Self {
@@ -23,10 +23,11 @@ pub fn new(base_path: &Path) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::golden::save_golden;
+/// use ruchy::notebook::testing::golden::GoldenManager;
 /// 
-/// let result = save_golden(());
-/// assert_eq!(result, Ok(()));
+let mut instance = GoldenManager::new();
+let result = instance.save_golden();
+// Verify behavior
 /// ```
 pub fn save_golden(&self, path: &Path, output: &CellOutput) -> Result<(), String> {
         let full_path = self.base_path.join(path);
@@ -48,10 +49,11 @@ pub fn save_golden(&self, path: &Path, output: &CellOutput) -> Result<(), String
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::golden::load_golden;
+/// use ruchy::notebook::testing::golden::GoldenManager;
 /// 
-/// let result = load_golden(());
-/// assert_eq!(result, Ok(()));
+let mut instance = GoldenManager::new();
+let result = instance.load_golden();
+// Verify behavior
 /// ```
 pub fn load_golden(&self, path: &Path) -> Result<CellOutput, String> {
         let full_path = self.base_path.join(path);

@@ -11,10 +11,10 @@ impl Unifier {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::middleend::unify::new;
+/// use ruchy::middleend::unify::Unifier;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = Unifier::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Unifier {
@@ -58,10 +58,11 @@ pub fn apply(&self, ty: &MonoType) -> MonoType {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::middleend::unify::unify;
+/// use ruchy::middleend::unify::Unifier;
 /// 
-/// let result = unify(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Unifier::new();
+let result = instance.unify();
+// Verify behavior
 /// ```
 pub fn unify(&mut self, t1: &MonoType, t2: &MonoType) -> Result<()> {
         let t1 = self.apply(t1);

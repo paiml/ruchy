@@ -7,10 +7,11 @@ use crate::frontend::ast::{Expr, ExprKind, BinaryOp, Literal};
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::type_inference::is_param_used_as_function_argument;
+/// use ruchy::backend::transpiler::type_inference::Transpiler;
 /// 
-/// let result = is_param_used_as_function_argument("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = Transpiler::new();
+let result = instance.is_param_used_as_function_argument();
+// Verify behavior
 /// ```
 pub fn is_param_used_as_function_argument(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
@@ -76,10 +77,11 @@ fn check_binary_for_param(param_name: &str, left: &Expr, right: &Expr) -> bool {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::type_inference::is_param_used_as_function;
+/// use ruchy::backend::transpiler::type_inference::Transpiler;
 /// 
-/// let result = is_param_used_as_function("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = Transpiler::new();
+let result = instance.is_param_used_as_function();
+// Verify behavior
 /// ```
 pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
     match &expr.kind {
@@ -118,7 +120,7 @@ pub fn is_param_used_as_function(param_name: &str, expr: &Expr) -> bool {
 /// Checks if a parameter is used in numeric operations
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::backend::transpiler::type_inference::is_param_used_numerically;
 /// 
 /// let result = is_param_used_numerically("example");

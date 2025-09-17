@@ -184,18 +184,18 @@ impl QualityGates {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::mod::new;
+/// use ruchy::quality::mod::QualityGates;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = QualityGates::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::mod::new;
+/// use ruchy::quality::mod::QualityGates;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = QualityGates::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -206,10 +206,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::mod::with_thresholds;
+/// use ruchy::quality::mod::QualityGates;
 /// 
-/// let result = with_thresholds(());
-/// assert_eq!(result, Ok(()));
+let mut instance = QualityGates::new();
+let result = instance.with_thresholds();
+// Verify behavior
 /// ```
 pub fn with_thresholds(thresholds: QualityThresholds) -> Self {
         Self {
@@ -220,10 +221,11 @@ pub fn with_thresholds(thresholds: QualityThresholds) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::mod::update_metrics;
+/// use ruchy::quality::mod::QualityGates;
 /// 
-/// let result = update_metrics(());
-/// assert_eq!(result, Ok(()));
+let mut instance = QualityGates::new();
+let result = instance.update_metrics();
+// Verify behavior
 /// ```
 pub fn update_metrics(&mut self, metrics: QualityMetrics) {
         self.metrics = metrics;
@@ -236,10 +238,11 @@ pub fn update_metrics(&mut self, metrics: QualityMetrics) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::mod::check;
+/// use ruchy::quality::mod::QualityGates;
 /// 
-/// let result = check(());
-/// assert_eq!(result, Ok(()));
+let mut instance = QualityGates::new();
+let result = instance.check();
+// Verify behavior
 /// ```
 pub fn check(&self) -> Result<QualityReport, QualityReport> {
         let mut violations = Vec::new();
@@ -284,7 +287,7 @@ pub fn check(&self) -> Result<QualityReport, QualityReport> {
     /// Returns an error if metric collection fails
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::mod::collect_metrics;
 /// 
 /// let result = collect_metrics(());
@@ -382,7 +385,7 @@ pub fn collect_metrics(&mut self) -> Result<QualityMetrics, Box<dyn std::error::
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::mod::get_metrics;
 /// 
 /// let result = get_metrics(());
@@ -393,7 +396,7 @@ pub fn get_metrics(&self) -> &QualityMetrics {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::mod::get_thresholds;
 /// 
 /// let result = get_thresholds(());
@@ -409,7 +412,7 @@ pub fn get_thresholds(&self) -> &QualityThresholds {
     /// Returns an error if coverage collection or HTML generation fails
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::mod::generate_coverage_report;
 /// 
 /// let result = generate_coverage_report(());

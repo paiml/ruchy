@@ -12,10 +12,11 @@ impl Transpiler {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::dataframe::transpile_dataframe;
-/// 
-/// let result = transpile_dataframe(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+///
+/// let transpiler = Transpiler::new();
+/// let result = transpiler.transpile_dataframe(&[]);
+/// assert!(result.is_ok());
 /// ```
 pub fn transpile_dataframe(&self, columns: &[DataFrameColumn]) -> Result<TokenStream> {
         if columns.is_empty() {
@@ -56,10 +57,14 @@ pub fn transpile_dataframe(&self, columns: &[DataFrameColumn]) -> Result<TokenSt
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::dataframe::transpile_dataframe_operation;
-/// 
-/// let result = transpile_dataframe_operation(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// use ruchy::frontend::ast::Expr;
+///
+/// let transpiler = Transpiler::new();
+/// let df = Expr::literal(42.into());
+/// let operation = Expr::literal("filter".into());
+/// let result = transpiler.transpile_dataframe_operation(&df, &operation);
+/// assert!(result.is_ok());
 /// ```
 pub fn transpile_dataframe_operation(
         &self,
@@ -149,10 +154,15 @@ pub fn transpile_dataframe_operation(
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::dataframe::transpile_dataframe_method;
-/// 
-/// let result = transpile_dataframe_method("example");
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// use ruchy::frontend::ast::Expr;
+///
+/// let transpiler = Transpiler::new();
+/// let df_expr = Expr::literal(42.into());
+/// let method = "select";
+/// let args = vec![];
+/// let result = transpiler.transpile_dataframe_method(&df_expr, method, &args);
+/// assert!(result.is_ok());
 /// ```
 pub fn transpile_dataframe_method(
         &self,
@@ -300,10 +310,13 @@ pub fn transpile_dataframe_method(
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::dataframe::is_dataframe_expr;
-/// 
-/// let result = is_dataframe_expr(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// use ruchy::frontend::ast::Expr;
+///
+/// let transpiler = Transpiler::new();
+/// let expr = Expr::literal(42.into());
+/// let result = transpiler.is_dataframe_expr(&expr);
+/// // Returns boolean, not Result
 /// ```
 pub fn is_dataframe_expr(&self, expr: &Expr) -> bool {
         use crate::frontend::ast::ExprKind;

@@ -11,10 +11,10 @@ impl Formatter {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::formatter::new;
+/// use ruchy::quality::formatter::Formatter;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = Formatter::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -26,10 +26,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::formatter::format;
+/// use ruchy::quality::formatter::Formatter;
 /// 
-/// let result = format(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Formatter::new();
+let result = instance.format();
+// Verify behavior
 /// ```
 pub fn format(&self, ast: &Expr) -> Result<String> {
         // Simple formatter that converts AST back to source

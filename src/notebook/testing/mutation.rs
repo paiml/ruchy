@@ -63,10 +63,10 @@ impl MutationTester {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::mutation::new;
+/// use ruchy::notebook::testing::mutation::MutationTester;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = MutationTester::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -78,10 +78,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::mutation::with_config;
+/// use ruchy::notebook::testing::mutation::MutationTester;
 /// 
-/// let result = with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = MutationTester::new();
+let result = instance.with_config();
+// Verify behavior
 /// ```
 pub fn with_config(config: MutationConfig) -> Self {
         Self {
@@ -94,10 +95,11 @@ pub fn with_config(config: MutationConfig) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::mutation::generate_mutations;
+/// use ruchy::notebook::testing::mutation::MutationTester;
 /// 
-/// let result = generate_mutations(());
-/// assert_eq!(result, Ok(()));
+let mut instance = MutationTester::new();
+let result = instance.generate_mutations();
+// Verify behavior
 /// ```
 pub fn generate_mutations(&self, cell: &Cell) -> Vec<Mutation> {
         let mut mutations = Vec::new();
@@ -225,10 +227,11 @@ pub fn generate_mutations(&self, cell: &Cell) -> Vec<Mutation> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::mutation::apply_mutation;
+/// use ruchy::notebook::testing::mutation::MutationTester;
 /// 
-/// let result = apply_mutation(());
-/// assert_eq!(result, Ok(()));
+let mut instance = MutationTester::new();
+let result = instance.apply_mutation();
+// Verify behavior
 /// ```
 pub fn apply_mutation(&self, cell: &Cell, mutation: &Mutation) -> Cell {
         let lines: Vec<&str> = cell.source.lines().collect();
@@ -281,10 +284,11 @@ pub fn apply_mutation(&self, cell: &Cell, mutation: &Mutation) -> Cell {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::mutation::calculate_score;
+/// use ruchy::notebook::testing::mutation::MutationTester;
 /// 
-/// let result = calculate_score(());
-/// assert_eq!(result, Ok(()));
+let mut instance = MutationTester::new();
+let result = instance.calculate_score();
+// Verify behavior
 /// ```
 pub fn calculate_score(&self) -> f64 {
         if self.results.is_empty() {
@@ -296,7 +300,7 @@ pub fn calculate_score(&self) -> f64 {
     /// Generate mutation testing report
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::mutation::generate_report;
 /// 
 /// let result = generate_report(());

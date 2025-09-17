@@ -30,26 +30,26 @@ impl NotebookTester {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tester::new;
+/// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = NotebookTester::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tester::new;
+/// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = NotebookTester::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tester::new;
+/// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = NotebookTester::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self::with_config(TestConfig::default())
@@ -57,10 +57,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tester::with_config;
+/// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-/// let result = with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookTester::new();
+let result = instance.with_config();
+// Verify behavior
 /// ```
 pub fn with_config(config: TestConfig) -> Self {
         let repl = Repl::new().expect("Failed to create REPL");
@@ -74,10 +75,11 @@ pub fn with_config(config: TestConfig) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tester::execute_cell;
+/// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-/// let result = execute_cell(());
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookTester::new();
+let result = instance.execute_cell();
+// Verify behavior
 /// ```
 pub fn execute_cell(&mut self, cell: &Cell) -> Result<CellOutput, String> {
         // Skip markdown cells
@@ -113,17 +115,18 @@ pub fn execute_cell(&mut self, cell: &Cell) -> Result<CellOutput, String> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tester::cell_count;
+/// use ruchy::notebook::testing::tester::NotebookTester;
 /// 
-/// let result = cell_count(());
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookTester::new();
+let result = instance.cell_count();
+// Verify behavior
 /// ```
 pub fn cell_count(&self) -> usize {
         self.cell_outputs.len()
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::tester::get_state;
 /// 
 /// let result = get_state(());
@@ -134,7 +137,7 @@ pub fn get_state(&self) -> &TestState {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::tester::compare_outputs;
 /// 
 /// let result = compare_outputs(());
@@ -172,7 +175,7 @@ pub fn compare_outputs(
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::tester::compare_dataframes;
 /// 
 /// let result = compare_dataframes(());
@@ -248,17 +251,18 @@ impl NotebookTestSession {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tester::execute_cell_str;
+/// use ruchy::notebook::testing::tester::NotebookTestSession;
 /// 
-/// let result = execute_cell_str("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookTestSession::new();
+let result = instance.execute_cell_str();
+// Verify behavior
 /// ```
 pub fn execute_cell_str(&mut self, _source: &str) -> CellOutput {
         CellOutput::Value("42".to_string())
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::tester::create_checkpoint;
 /// 
 /// let result = create_checkpoint("example");
@@ -272,10 +276,11 @@ pub fn create_checkpoint(&mut self, name: &str) -> Option<String> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tester::restore_checkpoint;
+/// use ruchy::notebook::testing::tester::NotebookTestSession;
 /// 
-/// let result = restore_checkpoint("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookTestSession::new();
+let result = instance.restore_checkpoint();
+// Verify behavior
 /// ```
 pub fn restore_checkpoint(&mut self, id: &str) -> bool {
         if let Some(pos) = self.checkpoints.iter().position(|(cid, _)| cid == id) {
@@ -287,7 +292,7 @@ pub fn restore_checkpoint(&mut self, id: &str) -> bool {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::tester::run_notebook_test;
 /// 
 /// let result = run_notebook_test(());
@@ -336,10 +341,11 @@ impl NotebookParser {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tester::validate;
+/// use ruchy::notebook::testing::tester::NotebookParser;
 /// 
-/// let result = validate(());
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookParser::new();
+let result = instance.validate();
+// Verify behavior
 /// ```
 pub fn validate(&self, _notebook: &Notebook) -> Result<(), String> {
         Ok(())

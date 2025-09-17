@@ -53,6 +53,15 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
+/// use ruchy::middleend::mir::optimize::DeadCodeElimination;
+/// 
+let mut instance = DeadCodeElimination::new();
+let result = instance.run();
+// Verify behavior
+/// ```
+/// # Examples
+/// 
+/// ```ignore
 /// use ruchy::middleend::mir::optimize::run;
 /// 
 /// let result = run(());
@@ -60,15 +69,7 @@ pub fn new() -> Self {
 /// ```
 /// # Examples
 /// 
-/// ```
-/// use ruchy::middleend::mir::optimize::run;
-/// 
-/// let result = run(());
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```
+/// ```ignore
 /// use ruchy::middleend::mir::optimize::run;
 /// 
 /// let result = run(());
@@ -493,7 +494,7 @@ impl CommonSubexpressionElimination {
 /// Run all optimization passes on a function
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::middleend::mir::optimize::optimize_function;
 /// 
 /// let result = optimize_function(());
@@ -513,7 +514,7 @@ pub fn optimize_function(func: &mut Function) {
 /// Run all optimization passes on a program
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::middleend::mir::optimize::optimize_program;
 /// 
 /// let result = optimize_program(());

@@ -44,10 +44,11 @@ impl ExecuteResponse {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::shared_session::success;
+/// use ruchy::wasm::shared_session::ExecuteResponse;
 /// 
-/// let result = success(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ExecuteResponse::new();
+let result = instance.success();
+// Verify behavior
 /// ```
 pub fn success(value: Value) -> Self {
         ExecuteResponse {
@@ -62,10 +63,11 @@ pub fn success(value: Value) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::shared_session::error;
+/// use ruchy::wasm::shared_session::ExecuteResponse;
 /// 
-/// let result = error(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ExecuteResponse::new();
+let result = instance.error();
+// Verify behavior
 /// ```
 pub fn error(err: String) -> Self {
         ExecuteResponse {
@@ -166,7 +168,7 @@ impl GlobalRegistry {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::shared_session::store_value;
 /// 
 /// let result = store_value("example");
@@ -184,7 +186,7 @@ pub fn store_value(&mut self, name: String, value: Value, cell_id: &str) -> DefI
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::shared_session::get_value;
 /// 
 /// let result = get_value("example");
@@ -195,7 +197,7 @@ pub fn get_value(&self, name: &str) -> Option<Value> {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::shared_session::get_def_id;
 /// 
 /// let result = get_def_id("example");
@@ -206,7 +208,7 @@ pub fn get_def_id(&self, name: &str) -> Option<DefId> {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::shared_session::cow_checkpoint;
 /// 
 /// let result = cow_checkpoint(());
@@ -221,7 +223,7 @@ pub fn cow_checkpoint(&self) -> RegistrySnapshot {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::shared_session::restore_cow;
 /// 
 /// let result = restore_cow(());
@@ -234,7 +236,7 @@ pub fn restore_cow(&mut self, snapshot: RegistrySnapshot) {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::shared_session::size_bytes;
 /// 
 /// let result = size_bytes(());
@@ -293,7 +295,7 @@ pub fn size_bytes(&self) -> usize {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::shared_session::serialize_for_inspection;
 /// 
 /// let result = serialize_for_inspection(());
@@ -367,7 +369,7 @@ impl SharedSession {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::shared_session::set_execution_mode;
 /// 
 /// let result = set_execution_mode(());

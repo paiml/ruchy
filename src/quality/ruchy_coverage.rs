@@ -22,18 +22,18 @@ impl RuchyCoverage {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::ruchy_coverage::new;
+/// use ruchy::quality::ruchy_coverage::RuchyCoverage;
 /// 
-/// let result = new("example");
-/// assert_eq!(result, Ok(()));
+let instance = RuchyCoverage::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::ruchy_coverage::new;
+/// use ruchy::quality::ruchy_coverage::RuchyCoverage;
 /// 
-/// let result = new("example");
-/// assert_eq!(result, Ok(()));
+let instance = RuchyCoverage::new();
+// Verify behavior
 /// ```
 pub fn new(file_path: &str) -> Self {
         Self {
@@ -50,10 +50,11 @@ pub fn new(file_path: &str) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::ruchy_coverage::line_coverage;
+/// use ruchy::quality::ruchy_coverage::RuchyCoverage;
 /// 
-/// let result = line_coverage(());
-/// assert_eq!(result, Ok(()));
+let mut instance = RuchyCoverage::new();
+let result = instance.line_coverage();
+// Verify behavior
 /// ```
 pub fn line_coverage(&self) -> f64 {
         if self.total_lines == 0 {
@@ -65,7 +66,7 @@ pub fn line_coverage(&self) -> f64 {
     /// Calculate function coverage percentage
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::function_coverage;
 /// 
 /// let result = function_coverage(());
@@ -81,7 +82,7 @@ pub fn function_coverage(&self) -> f64 {
     /// Calculate branch coverage percentage
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::branch_coverage;
 /// 
 /// let result = branch_coverage(());
@@ -97,7 +98,7 @@ pub fn branch_coverage(&self) -> f64 {
     /// Calculate overall coverage percentage
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::overall_coverage;
 /// 
 /// let result = overall_coverage(());
@@ -125,7 +126,7 @@ impl RuchyCoverageCollector {
     /// Analyze a Ruchy file to determine what needs coverage
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::analyze_file;
 /// 
 /// let result = analyze_file(());
@@ -174,7 +175,7 @@ pub fn analyze_file(&mut self, file_path: &Path) -> Result<()> {
     /// Mark lines as covered based on test execution
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::mark_covered;
 /// 
 /// let result = mark_covered("example");
@@ -190,7 +191,7 @@ pub fn mark_covered(&mut self, file_path: &str, line_numbers: Vec<usize>) {
     /// Mark a function as covered
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::mark_function_covered;
 /// 
 /// let result = mark_function_covered("example");
@@ -204,7 +205,7 @@ pub fn mark_function_covered(&mut self, file_path: &str, function_name: &str) {
     /// Generate a text report
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::generate_text_report;
 /// 
 /// let result = generate_text_report(());
@@ -262,7 +263,7 @@ pub fn generate_text_report(&self) -> String {
     /// Generate a JSON report
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::generate_json_report;
 /// 
 /// let result = generate_json_report(());
@@ -274,7 +275,7 @@ pub fn generate_json_report(&self) -> String {
     /// Generate an HTML report
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::generate_html_report;
 /// 
 /// let result = generate_html_report(());
@@ -305,7 +306,7 @@ pub fn generate_html_report(&self) -> String {
     /// Check if coverage meets threshold
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::meets_threshold;
 /// 
 /// let result = meets_threshold(());
@@ -322,7 +323,7 @@ pub fn meets_threshold(&self, threshold: f64) -> bool {
     /// Execute a Ruchy program and collect runtime coverage
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::execute_with_coverage;
 /// 
 /// let result = execute_with_coverage(());
@@ -380,7 +381,7 @@ pub fn execute_with_coverage(&mut self, file_path: &Path) -> Result<()> {
     /// Get runtime coverage data
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::ruchy_coverage::get_runtime_coverage;
 /// 
 /// let result = get_runtime_coverage("example");

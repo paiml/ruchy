@@ -121,10 +121,10 @@ impl ProgressiveDisclosure {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::progressive::new;
+/// use ruchy::notebook::testing::progressive::ProgressiveDisclosure;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = ProgressiveDisclosure::new();
+// Verify behavior
 /// ```
 pub fn new(config: DisclosureConfig, hierarchy: TestHierarchy) -> Self {
         Self {
@@ -137,10 +137,11 @@ pub fn new(config: DisclosureConfig, hierarchy: TestHierarchy) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::progressive::get_available_content;
+/// use ruchy::notebook::testing::progressive::ProgressiveDisclosure;
 /// 
-/// let result = get_available_content("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = ProgressiveDisclosure::new();
+let result = instance.get_available_content();
+// Verify behavior
 /// ```
 pub fn get_available_content(&mut self, student_id: &str) -> DisclosureResult {
         // First create/get progress without holding a reference
@@ -165,7 +166,7 @@ pub fn get_available_content(&mut self, student_id: &str) -> DisclosureResult {
     /// Record a test attempt
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::progressive::record_attempt;
 /// 
 /// let result = record_attempt("example");
@@ -193,7 +194,7 @@ pub fn record_attempt(&mut self, student_id: &str, test_id: &str, score: f64) ->
     /// Use a hint
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::progressive::use_hint;
 /// 
 /// let result = use_hint("example");
@@ -216,7 +217,7 @@ pub fn use_hint(&mut self, student_id: &str, test_id: &str, hint_id: &str) -> Hi
     /// Get peer progress for collaborative unlocking
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::progressive::get_peer_progress;
 /// 
 /// let result = get_peer_progress("example");

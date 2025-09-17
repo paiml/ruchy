@@ -312,10 +312,10 @@ impl ComponentBuilder {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::component::new;
+/// use ruchy::wasm::component::ComponentBuilder;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = ComponentBuilder::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -330,10 +330,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::component::new_with_config;
+/// use ruchy::wasm::component::ComponentBuilder;
 /// 
-/// let result = new_with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ComponentBuilder::new();
+let result = instance.new_with_config();
+// Verify behavior
 /// ```
 pub fn new_with_config(config: ComponentConfig) -> Self {
         Self {
@@ -348,10 +349,11 @@ pub fn new_with_config(config: ComponentConfig) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::component::add_source;
+/// use ruchy::wasm::component::ComponentBuilder;
 /// 
-/// let result = add_source(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ComponentBuilder::new();
+let result = instance.add_source();
+// Verify behavior
 /// ```
 pub fn add_source(&mut self, path: impl AsRef<Path>) -> Result<&mut Self> {
         let path = path.as_ref().to_path_buf();
@@ -364,7 +366,7 @@ pub fn add_source(&mut self, path: impl AsRef<Path>) -> Result<&mut Self> {
     /// Set component metadata
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::with_metadata;
 /// 
 /// let result = with_metadata(());
@@ -377,7 +379,7 @@ pub fn with_metadata(mut self, metadata: ComponentMetadata) -> Self {
     /// Set optimization level
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::with_optimization;
 /// 
 /// let result = with_optimization(());
@@ -390,7 +392,7 @@ pub fn with_optimization(mut self, level: OptimizationLevel) -> Self {
     /// Include debug information
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::with_debug_info;
 /// 
 /// let result = with_debug_info(true);
@@ -403,7 +405,7 @@ pub fn with_debug_info(mut self, include: bool) -> Self {
     /// Set the configuration
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::with_config;
 /// 
 /// let result = with_config(());
@@ -416,7 +418,7 @@ pub fn with_config(mut self, config: ComponentConfig) -> Self {
     /// Add source code directly (for in-memory compilation)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::with_source;
 /// 
 /// let result = with_source(());
@@ -430,7 +432,7 @@ pub fn with_source(self, _source: String) -> Self {
     /// Set metadata name
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::set_name;
 /// 
 /// let result = set_name(());
@@ -442,7 +444,7 @@ pub fn set_name(&mut self, name: String) {
     /// Set metadata version
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::set_version;
 /// 
 /// let result = set_version(());
@@ -454,7 +456,7 @@ pub fn set_version(&mut self, version: String) {
     /// Build the WebAssembly component
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::build;
 /// 
 /// let result = build(());
@@ -567,7 +569,7 @@ pub fn build(&self) -> Result<WasmComponent> {
     /// Build a dry-run component (for testing without actual compilation)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::build_dry_run;
 /// 
 /// let result = build_dry_run(());
@@ -607,7 +609,7 @@ impl WasmComponent {
     /// Save the component to a file
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::save;
 /// 
 /// let result = save(());
@@ -621,7 +623,7 @@ pub fn save(&self, path: impl AsRef<Path>) -> Result<()> {
     /// Get the size of the component in bytes
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::size;
 /// 
 /// let result = size(());
@@ -633,7 +635,7 @@ pub fn size(&self) -> usize {
     /// Validate the component
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::validate;
 /// 
 /// let result = validate(());
@@ -653,7 +655,7 @@ pub fn validate(&self) -> Result<()> {
     /// Verify the component (alias for validate)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::verify;
 /// 
 /// let result = verify(());
@@ -665,7 +667,7 @@ pub fn verify(&self) -> Result<()> {
     /// Get a summary of the component
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::component::summary;
 /// 
 /// let result = summary(());

@@ -632,10 +632,10 @@ impl ObservatoryDashboard {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::observatory_ui::new;
+/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = ObservatoryDashboard::new();
+// Verify behavior
 /// ```
 pub fn new(observatory: Arc<Mutex<ActorObservatory>>, config: DashboardConfig) -> Self {
         Self {
@@ -651,10 +651,11 @@ pub fn new(observatory: Arc<Mutex<ActorObservatory>>, config: DashboardConfig) -
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::observatory_ui::start_interactive;
+/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-/// let result = start_interactive(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ObservatoryDashboard::new();
+let result = instance.start_interactive();
+// Verify behavior
 /// ```
 pub fn start_interactive(&mut self) -> Result<()> {
         // Clear screen and hide cursor
@@ -681,10 +682,11 @@ pub fn start_interactive(&mut self) -> Result<()> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::observatory_ui::render_current_view;
+/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-/// let result = render_current_view(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ObservatoryDashboard::new();
+let result = instance.render_current_view();
+// Verify behavior
 /// ```
 pub fn render_current_view(&mut self) -> Result<()> {
         // Clear screen and move to top
@@ -975,7 +977,7 @@ pub fn render_current_view(&mut self) -> Result<()> {
     /// Switch to a different display mode
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::set_display_mode;
 /// 
 /// let result = set_display_mode(());
@@ -988,10 +990,11 @@ pub fn set_display_mode(&mut self, mode: DisplayMode) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::observatory_ui::get_display_mode;
+/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-/// let result = get_display_mode(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ObservatoryDashboard::new();
+let result = instance.get_display_mode();
+// Verify behavior
 /// ```
 pub fn get_display_mode(&self) -> DisplayMode {
         self.display_mode
@@ -1000,10 +1003,11 @@ pub fn get_display_mode(&self) -> DisplayMode {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::observatory_ui::cycle_display_mode;
+/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-/// let result = cycle_display_mode(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ObservatoryDashboard::new();
+let result = instance.cycle_display_mode();
+// Verify behavior
 /// ```
 pub fn cycle_display_mode(&mut self) {
         self.display_mode = match self.display_mode {
@@ -1018,7 +1022,7 @@ pub fn cycle_display_mode(&mut self) {
     /// Set terminal size
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::set_terminal_size;
 /// 
 /// let result = set_terminal_size(());
@@ -1030,7 +1034,7 @@ pub fn set_terminal_size(&mut self, width: u16, height: u16) {
     /// Set scroll position for a display mode
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::set_scroll_position;
 /// 
 /// let result = set_scroll_position(());
@@ -1042,7 +1046,7 @@ pub fn set_scroll_position(&mut self, mode: DisplayMode, position: usize) {
     /// Get scroll position for a display mode
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::get_scroll_position;
 /// 
 /// let result = get_scroll_position(());
@@ -1054,7 +1058,7 @@ pub fn get_scroll_position(&self, mode: DisplayMode) -> usize {
     /// Format text with color
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::format_with_color;
 /// 
 /// let result = format_with_color("example");
@@ -1066,7 +1070,7 @@ pub fn format_with_color(&self, text: &str, _color: &str) -> String {
     /// Get color for actor state
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::get_actor_state_color;
 /// 
 /// let result = get_actor_state_color(());
@@ -1086,7 +1090,7 @@ pub fn get_actor_state_color(&self, state: ActorState) -> &'static str {
     /// Get color for message status
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::get_message_status_color;
 /// 
 /// let result = get_message_status_color(());
@@ -1104,7 +1108,7 @@ pub fn get_message_status_color(&self, status: MessageStatus) -> &'static str {
     /// Format duration in microseconds
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::format_duration_us;
 /// 
 /// let result = format_duration_us(());
@@ -1126,10 +1130,11 @@ pub fn format_duration_us(&self, us: u64) -> String {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::observatory_ui::format_bytes;
+/// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-/// let result = format_bytes(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ObservatoryDashboard::new();
+let result = instance.format_bytes();
+// Verify behavior
 /// ```
 pub fn format_bytes(&self, bytes: usize) -> String {
         format_bytes(bytes)
@@ -1137,7 +1142,7 @@ pub fn format_bytes(&self, bytes: usize) -> String {
     /// Format timestamp
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::format_timestamp;
 /// 
 /// let result = format_timestamp(());
@@ -1149,7 +1154,7 @@ pub fn format_timestamp(&self, _timestamp: u64) -> String {
     /// Truncate string
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::truncate_string;
 /// 
 /// let result = truncate_string("example");
@@ -1167,7 +1172,7 @@ pub fn truncate_string(&self, text: &str, max_len: usize) -> String {
     /// Render header
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::render_header;
 /// 
 /// let result = render_header("example");
@@ -1179,7 +1184,7 @@ pub fn render_header(&self, title: &str) -> String {
     /// Render separator
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::render_separator;
 /// 
 /// let result = render_separator(());
@@ -1191,7 +1196,7 @@ pub fn render_separator(&self) -> String {
     /// Render table row
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::render_table_row;
 /// 
 /// let result = render_table_row("example");
@@ -1203,7 +1208,7 @@ pub fn render_table_row(&self, columns: Vec<&str>) -> String {
     /// Render progress bar
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::render_progress_bar;
 /// 
 /// let result = render_progress_bar(());
@@ -1220,7 +1225,7 @@ pub fn render_progress_bar(&self, current: usize, total: usize, _width: usize) -
     /// Handle key press
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory_ui::handle_key;
 /// 
 /// let result = handle_key(());

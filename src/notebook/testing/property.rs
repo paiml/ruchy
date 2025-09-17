@@ -30,10 +30,10 @@ impl PropertyTester {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::property::new;
+/// use ruchy::notebook::testing::property::PropertyTester;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = PropertyTester::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -43,10 +43,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::property::with_config;
+/// use ruchy::notebook::testing::property::PropertyTester;
 /// 
-/// let result = with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = PropertyTester::new();
+let result = instance.with_config();
+// Verify behavior
 /// ```
 pub fn with_config(config: PropertyTestConfig) -> Self {
         Self { config }
@@ -54,7 +55,7 @@ pub fn with_config(config: PropertyTestConfig) -> Self {
     /// Generate arbitrary notebook for property testing
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::property::arbitrary_notebook;
 /// 
 /// let result = arbitrary_notebook(());

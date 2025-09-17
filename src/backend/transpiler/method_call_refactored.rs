@@ -10,10 +10,11 @@ impl Transpiler {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::method_call_refactored::transpile_method_call_refactored;
+/// use ruchy::backend::transpiler::method_call_refactored::Transpiler;
 /// 
-/// let result = transpile_method_call_refactored("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = Transpiler::new();
+let result = instance.transpile_method_call_refactored();
+// Verify behavior
 /// ```
 pub fn transpile_method_call_refactored(
         &self,

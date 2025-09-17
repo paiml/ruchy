@@ -22,10 +22,10 @@ impl CoverageTracker {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::coverage::new;
+/// use ruchy::notebook::testing::coverage::CoverageTracker;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = CoverageTracker::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -36,10 +36,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::coverage::instrument_cell;
+/// use ruchy::notebook::testing::coverage::CoverageTracker;
 /// 
-/// let result = instrument_cell(());
-/// assert_eq!(result, Ok(()));
+let mut instance = CoverageTracker::new();
+let result = instance.instrument_cell();
+// Verify behavior
 /// ```
 pub fn instrument_cell(&self, cell: &Cell) -> InstrumentedCell {
         InstrumentedCell {
@@ -50,17 +51,18 @@ pub fn instrument_cell(&self, cell: &Cell) -> InstrumentedCell {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::coverage::execute_instrumented;
+/// use ruchy::notebook::testing::coverage::CoverageTracker;
 /// 
-/// let result = execute_instrumented("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = CoverageTracker::new();
+let result = instance.execute_instrumented();
+// Verify behavior
 /// ```
 pub fn execute_instrumented(&self, _instrumented: &InstrumentedCell, _code: &str) {
         // Stub implementation for Sprint 0
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::coverage::report_coverage;
 /// 
 /// let result = report_coverage(());

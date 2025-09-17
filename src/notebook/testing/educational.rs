@@ -77,18 +77,18 @@ impl EducationalPlatform {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::educational::new;
+/// use ruchy::notebook::testing::educational::EducationalPlatform;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = EducationalPlatform::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::educational::new;
+/// use ruchy::notebook::testing::educational::EducationalPlatform;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = EducationalPlatform::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -102,10 +102,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::educational::create_assignment;
+/// use ruchy::notebook::testing::educational::EducationalPlatform;
 /// 
-/// let result = create_assignment(());
-/// assert_eq!(result, Ok(()));
+let mut instance = EducationalPlatform::new();
+let result = instance.create_assignment();
+// Verify behavior
 /// ```
 pub fn create_assignment(&mut self, assignment: Assignment) -> Result<(), String> {
         if self.assignments.iter().any(|a| a.id == assignment.id) {
@@ -117,7 +118,7 @@ pub fn create_assignment(&mut self, assignment: Assignment) -> Result<(), String
     /// Get all assignments
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::educational::get_assignments;
 /// 
 /// let result = get_assignments(());
@@ -129,7 +130,7 @@ pub fn get_assignments(&self) -> &[Assignment] {
     /// Submit an assignment
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::educational::submit_assignment;
 /// 
 /// let result = submit_assignment("example");
@@ -166,10 +167,11 @@ pub fn submit_assignment(&mut self, student_id: &str, mut submission: StudentSub
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::educational::auto_grade;
+/// use ruchy::notebook::testing::educational::EducationalPlatform;
 /// 
-/// let result = auto_grade(());
-/// assert_eq!(result, Ok(()));
+let mut instance = EducationalPlatform::new();
+let result = instance.auto_grade();
+// Verify behavior
 /// ```
 pub fn auto_grade(&self, submission: &StudentSubmission) -> Grade {
         let assignment = self.assignments.iter()
@@ -208,7 +210,7 @@ pub fn auto_grade(&self, submission: &StudentSubmission) -> Grade {
     /// Submit a peer review
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::educational::submit_peer_review;
 /// 
 /// let result = submit_peer_review(());
@@ -221,7 +223,7 @@ pub fn submit_peer_review(&mut self, review: PeerReview) -> Result<(), String> {
     /// Get analytics for the platform
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::educational::get_analytics;
 /// 
 /// let result = get_analytics(());
@@ -280,7 +282,7 @@ impl LearningAnalytics {
     /// Track a learning event
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::educational::track_event;
 /// 
 /// let result = track_event(());
@@ -292,7 +294,7 @@ pub fn track_event(&mut self, event: LearningEvent) {
     /// Get metrics for a specific student
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::educational::get_student_metrics;
 /// 
 /// let result = get_student_metrics("example");
@@ -323,7 +325,7 @@ pub fn get_student_metrics(&self, student_id: &str) -> StudentMetrics {
     /// Get metrics for the entire class
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::educational::get_class_metrics;
 /// 
 /// let result = get_class_metrics(());

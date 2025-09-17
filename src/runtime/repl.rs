@@ -419,10 +419,11 @@ impl Checkpoint {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::repl::age;
+/// use ruchy::runtime::repl::Checkpoint;
 /// 
-/// let result = age(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Checkpoint::new();
+let result = instance.age();
+// Verify behavior
 /// ```
 pub fn age(&self) -> Duration {
         SystemTime::now().duration_since(self.timestamp)

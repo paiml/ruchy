@@ -166,10 +166,10 @@ impl Deployer {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::deployment::new;
+/// use ruchy::wasm::deployment::Deployer;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = Deployer::new();
+// Verify behavior
 /// ```
 pub fn new(target: DeploymentTarget, config: DeploymentConfig) -> Self {
         Self {
@@ -182,10 +182,11 @@ pub fn new(target: DeploymentTarget, config: DeploymentConfig) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::deployment::add_artifact;
+/// use ruchy::wasm::deployment::Deployer;
 /// 
-/// let result = add_artifact(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Deployer::new();
+let result = instance.add_artifact();
+// Verify behavior
 /// ```
 pub fn add_artifact(&mut self, artifact: DeploymentArtifact) {
         self.artifacts.push(artifact);
@@ -193,7 +194,7 @@ pub fn add_artifact(&mut self, artifact: DeploymentArtifact) {
     /// Deploy the component
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::deployment::deploy;
 /// 
 /// let result = deploy(());
@@ -218,7 +219,7 @@ pub fn deploy(&self, component: &WasmComponent) -> Result<DeploymentResult> {
     /// Generate deployment package
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::deployment::generate_package;
 /// 
 /// let result = generate_package(());

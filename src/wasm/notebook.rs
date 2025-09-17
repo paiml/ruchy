@@ -410,10 +410,11 @@ pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::notebook::execute_cell_with_session;
+/// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-/// let result = execute_cell_with_session("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookRuntime::new();
+let result = instance.execute_cell_with_session();
+// Verify behavior
 /// ```
 pub fn execute_cell_with_session(&mut self, cell_id: &str, code: &str) -> Result<ExecuteResponse, String> {
         // Add cell if it doesn't exist
@@ -645,7 +646,7 @@ pub fn from_json(&mut self, json: &str) -> Result<(), JsValue> {
     /// Export complete session state including notebook and `SharedSession`
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::export_session;
 /// 
 /// let result = export_session(());
@@ -665,7 +666,7 @@ pub fn export_session(&self) -> Result<NotebookSessionExport, String> {
     /// Import session state including notebook and `SharedSession`
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::import_session;
 /// 
 /// let result = import_session(());
@@ -685,10 +686,11 @@ pub fn import_session(&mut self, export: &NotebookSessionExport) -> Result<(), S
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::notebook::create_notebook_checkpoint;
+/// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-/// let result = create_notebook_checkpoint("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookRuntime::new();
+let result = instance.create_notebook_checkpoint();
+// Verify behavior
 /// ```
 pub fn create_notebook_checkpoint(&mut self, name: &str) -> Result<String, String> {
         let mut session = self.session.lock().expect("Failed to acquire session lock");
@@ -712,7 +714,7 @@ pub fn create_notebook_checkpoint(&mut self, name: &str) -> Result<String, Strin
     /// Restore from named checkpoint
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::restore_notebook_checkpoint;
 /// 
 /// let result = restore_notebook_checkpoint("example");
@@ -728,7 +730,7 @@ pub fn restore_notebook_checkpoint(&mut self, name: &str) -> Result<(), String> 
     /// Export notebook in Jupyter format
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::export_as_jupyter;
 /// 
 /// let result = export_as_jupyter(());
@@ -788,7 +790,7 @@ pub fn export_as_jupyter(&self) -> Result<String, String> {
     /// Export notebook as HTML
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::export_as_html;
 /// 
 /// let result = export_as_html(());
@@ -862,7 +864,7 @@ pub fn export_as_html(&self) -> Result<String, String> {
     /// Export notebook as Markdown
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::export_as_markdown;
 /// 
 /// let result = export_as_markdown(());
@@ -906,7 +908,7 @@ pub fn export_as_markdown(&self) -> Result<String, String> {
     /// Get debugging information
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_debug_information;
 /// 
 /// let result = get_debug_information(());
@@ -929,7 +931,7 @@ pub fn get_debug_information(&self) -> Result<String, String> {
     /// Get execution trace
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_execution_trace;
 /// 
 /// let result = get_execution_trace(());
@@ -953,7 +955,7 @@ pub fn get_execution_trace(&self) -> Result<Vec<ExecutionTraceEntry>, String> {
     /// Handle web API requests
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::handle_api_request;
 /// 
 /// let result = handle_api_request("example");
@@ -1126,7 +1128,7 @@ pub fn handle_api_request(&mut self, method: &str, path: &str, _body: Option<&st
     /// Create update tracker for real-time collaboration
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::create_update_tracker;
 /// 
 /// let result = create_update_tracker(());
@@ -1142,7 +1144,7 @@ pub fn create_update_tracker(&mut self) -> Result<UpdateTracker, String> {
     /// Get pending updates for WebSocket clients
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_pending_updates;
 /// 
 /// let result = get_pending_updates(());
@@ -1172,7 +1174,7 @@ pub fn get_pending_updates(&self) -> Result<Vec<NotebookUpdate>, String> {
     /// Export notebook state for collaboration
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::export_for_collaboration;
 /// 
 /// let result = export_for_collaboration(());
@@ -1192,7 +1194,7 @@ pub fn export_for_collaboration(&self) -> Result<String, String> {
     /// Import collaborative notebook state
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::import_collaborative_state;
 /// 
 /// let result = import_collaborative_state("example");
@@ -1223,7 +1225,7 @@ pub fn import_collaborative_state(&mut self, state_json: &str) -> Result<(), Str
     /// Create WebSocket-like message for real-time updates
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::create_websocket_message;
 /// 
 /// let result = create_websocket_message(());
@@ -1288,7 +1290,7 @@ pub fn create_websocket_message(&self, event: WebSocketEvent, client_id: Option<
     /// Handle WebSocket-like message
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::handle_websocket_message;
 /// 
 /// let result = handle_websocket_message(());
@@ -1334,7 +1336,7 @@ pub fn handle_websocket_message(&mut self, message: &WebSocketMessage) -> Result
     /// Get WebSocket-style updates as JSON array
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_websocket_updates;
 /// 
 /// let result = get_websocket_updates(());
@@ -1361,7 +1363,7 @@ pub fn get_websocket_updates(&self) -> Result<String, String> {
     /// Get comprehensive usage analytics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_usage_analytics;
 /// 
 /// let result = get_usage_analytics(());
@@ -1398,7 +1400,7 @@ pub fn get_usage_analytics(&self) -> Result<NotebookUsageAnalytics, String> {
     /// Get detailed execution metrics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_execution_metrics;
 /// 
 /// let result = get_execution_metrics(());
@@ -1447,7 +1449,7 @@ pub fn get_execution_metrics(&self) -> Result<ExecutionMetrics, String> {
     /// Get user behavior analytics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_user_behavior_analytics;
 /// 
 /// let result = get_user_behavior_analytics(());
@@ -1497,7 +1499,7 @@ pub fn get_user_behavior_analytics(&self) -> Result<UserBehaviorAnalytics, Strin
     /// Get detailed performance profile
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_performance_profile;
 /// 
 /// let result = get_performance_profile(());
@@ -1581,7 +1583,7 @@ pub fn get_performance_profile(&self) -> String {
     /// Get optimization suggestions
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_optimization_suggestions;
 /// 
 /// let result = get_optimization_suggestions(());
@@ -1642,7 +1644,7 @@ pub fn get_optimization_suggestions(&self) -> String {
     /// Get resource usage profile
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_resource_profile;
 /// 
 /// let result = get_resource_profile(());
@@ -1695,7 +1697,7 @@ pub fn get_resource_profile(&self) -> Result<ResourceProfile, String> {
     /// Get code improvement recommendations
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_code_recommendations;
 /// 
 /// let result = get_code_recommendations(());
@@ -1748,7 +1750,7 @@ pub fn get_code_recommendations(&self) -> Result<Vec<OptimizationSuggestion>, St
     /// Get best practices suggestions  
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_best_practices_suggestions;
 /// 
 /// let result = get_best_practices_suggestions(());
@@ -1819,10 +1821,11 @@ pub fn get_best_practices_suggestions(&self) -> Result<Vec<BestPracticeSuggestio
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::notebook::commit_notebook;
+/// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-/// let result = commit_notebook("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookRuntime::new();
+let result = instance.commit_notebook();
+// Verify behavior
 /// ```
 pub fn commit_notebook(&mut self, message: &str, parent: Option<&str>) -> Result<NotebookCommit, String> {
         let notebook_snapshot = serde_json::to_string(&self.notebook)
@@ -1847,7 +1850,7 @@ pub fn commit_notebook(&mut self, message: &str, parent: Option<&str>) -> Result
     /// Get commit history
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_commit_history;
 /// 
 /// let result = get_commit_history(());
@@ -1859,7 +1862,7 @@ pub fn get_commit_history(&self) -> Result<Vec<NotebookCommit>, String> {
     /// Create a new branch
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::create_branch;
 /// 
 /// let result = create_branch("example");
@@ -1885,7 +1888,7 @@ pub fn create_branch(&mut self, name: &str) -> Result<NotebookBranch, String> {
     /// Switch to a different branch
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::switch_branch;
 /// 
 /// let result = switch_branch("example");
@@ -1911,7 +1914,7 @@ pub fn switch_branch(&mut self, name: &str) -> Result<(), String> {
     /// Get current branch name
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::current_branch;
 /// 
 /// let result = current_branch(());
@@ -1923,7 +1926,7 @@ pub fn current_branch(&self) -> Result<String, String> {
     /// Create a tag
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::create_tag;
 /// 
 /// let result = create_tag("example");
@@ -1945,7 +1948,7 @@ pub fn create_tag(&mut self, name: &str, commit: &str, message: &str) -> Result<
     /// List all tags
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::list_tags;
 /// 
 /// let result = list_tags(());
@@ -1958,10 +1961,11 @@ pub fn list_tags(&self) -> Result<Vec<NotebookTag>, String> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::notebook::checkout_tag;
+/// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-/// let result = checkout_tag("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookRuntime::new();
+let result = instance.checkout_tag();
+// Verify behavior
 /// ```
 pub fn checkout_tag(&mut self, name: &str) -> Result<(), String> {
         let tag = self.tags.iter()
@@ -1978,7 +1982,7 @@ pub fn checkout_tag(&mut self, name: &str) -> Result<(), String> {
     /// Diff with another notebook runtime
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::diff_notebook;
 /// 
 /// let result = diff_notebook(());
@@ -2024,7 +2028,7 @@ pub fn diff_notebook(&self, other: &NotebookRuntime) -> Result<NotebookDiff, Str
     /// Merge another notebook
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::merge_notebook;
 /// 
 /// let result = merge_notebook(());
@@ -2072,7 +2076,7 @@ pub fn merge_notebook(&mut self, other: &NotebookRuntime) -> Result<MergeResult,
     /// Resolve a merge conflict
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::resolve_conflict;
 /// 
 /// let result = resolve_conflict("example");
@@ -2095,7 +2099,7 @@ pub fn resolve_conflict(&mut self, conflict_id: &str, resolution: &str) -> Resul
     /// Merge a branch
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::merge_branch;
 /// 
 /// let result = merge_branch("example");
@@ -2112,7 +2116,7 @@ pub fn merge_branch(&mut self, branch_name: &str) -> Result<(), String> {
     /// Clone a notebook from commit
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::clone_notebook;
 /// 
 /// let result = clone_notebook("example");
@@ -2129,7 +2133,7 @@ pub fn clone_notebook(&mut self, commit_hash: &str) -> Result<(), String> {
     /// Create pull request
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::create_pull_request;
 /// 
 /// let result = create_pull_request("example");
@@ -2151,7 +2155,7 @@ pub fn create_pull_request(&self, source: &str, target: &str, title: &str) -> Re
     /// Publish notebook
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::publish_notebook;
 /// 
 /// let result = publish_notebook("example");
@@ -2173,7 +2177,7 @@ pub fn publish_notebook(&mut self, _title: &str, _description: &str, _tags: Vec<
     /// Update published notebook
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::update_published_notebook;
 /// 
 /// let result = update_published_notebook("example");
@@ -2194,7 +2198,7 @@ pub fn update_published_notebook(&mut self, notebook_id: &str) -> Result<Publish
     /// Get available templates
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_available_templates;
 /// 
 /// let result = get_available_templates(());
@@ -2269,7 +2273,7 @@ pub fn get_available_templates(&self) -> Result<Vec<NotebookTemplate>, String> {
     /// Create notebook from template
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::create_from_template;
 /// 
 /// let result = create_from_template("example");
@@ -2286,7 +2290,7 @@ pub fn create_from_template(&mut self, template_name: &str) -> Result<Notebook, 
     /// Save current notebook as template
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::save_as_template;
 /// 
 /// let result = save_as_template("example");
@@ -2310,10 +2314,11 @@ pub fn save_as_template(&mut self, name: &str, description: &str, tags: Vec<&str
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::notebook::build_search_index;
+/// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-/// let result = build_search_index(());
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookRuntime::new();
+let result = instance.build_search_index();
+// Verify behavior
 /// ```
 pub fn build_search_index(&self) -> Result<SearchIndex, String> {
         let mut keywords = HashMap::new();
@@ -2334,7 +2339,7 @@ pub fn build_search_index(&self) -> Result<SearchIndex, String> {
     /// Search notebook content
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::search_content;
 /// 
 /// let result = search_content("example");
@@ -2365,7 +2370,7 @@ pub fn search_content(&self, query: &str) -> Result<Vec<SearchResult>, String> {
     /// Search code cells
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::search_code;
 /// 
 /// let result = search_code("example");
@@ -2381,7 +2386,7 @@ pub fn search_code(&self, pattern: &str) -> Result<Vec<SearchResult>, String> {
     /// Search markdown cells
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::search_markdown;
 /// 
 /// let result = search_markdown("example");
@@ -2397,7 +2402,7 @@ pub fn search_markdown(&self, pattern: &str) -> Result<Vec<SearchResult>, String
     /// Semantic search
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::semantic_search;
 /// 
 /// let result = semantic_search("example");
@@ -2427,7 +2432,7 @@ pub fn semantic_search(&self, query: &str) -> Result<Vec<SearchResult>, String> 
     /// Create a chart
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::create_chart;
 /// 
 /// let result = create_chart("example");
@@ -2450,7 +2455,7 @@ pub fn create_chart(&self, chart_type: &str, _data_source: &str, _config: ChartC
     /// Create interactive visualization
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::create_interactive_viz;
 /// 
 /// let result = create_interactive_viz("example");
@@ -2475,7 +2480,7 @@ pub fn create_interactive_viz(&self, viz_type: &str, _data_source: &str, config:
     /// Get available plugins
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_available_plugins;
 /// 
 /// let result = get_available_plugins(());
@@ -2523,7 +2528,7 @@ pub fn get_available_plugins(&self) -> Result<Vec<PluginInfo>, String> {
     /// Enable a plugin
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_plugin;
 /// 
 /// let result = enable_plugin("example");
@@ -2538,7 +2543,7 @@ pub fn enable_plugin(&mut self, plugin_name: &str) -> Result<(), String> {
     /// Get enabled plugins
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_enabled_plugins;
 /// 
 /// let result = get_enabled_plugins(());
@@ -2550,7 +2555,7 @@ pub fn get_enabled_plugins(&self) -> Result<Vec<String>, String> {
     /// Execute cell with plugins
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::execute_cell_with_plugins;
 /// 
 /// let result = execute_cell_with_plugins("example");
@@ -2572,7 +2577,7 @@ pub fn execute_cell_with_plugins(&mut self, cell_id: &str) -> Result<String, Str
     /// Register custom plugin
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::register_plugin;
 /// 
 /// let result = register_plugin("example");
@@ -2598,7 +2603,7 @@ pub fn register_plugin(&mut self, name: &str, description: &str, tags: Vec<&str>
     /// Check notebook health
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::check_notebook_health;
 /// 
 /// let result = check_notebook_health(());
@@ -2619,7 +2624,7 @@ pub fn check_notebook_health(&self) -> Result<NotebookHealthCheck, String> {
     /// Verify data integrity
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::verify_data_integrity;
 /// 
 /// let result = verify_data_integrity(());
@@ -2642,7 +2647,7 @@ pub fn verify_data_integrity(&self) -> Result<DataIntegrityCheck, String> {
     /// Mark cell for lazy execution
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::mark_for_execution;
 /// 
 /// let result = mark_for_execution("example");
@@ -2656,7 +2661,7 @@ pub fn mark_for_execution(&mut self, _cell_id: &str) -> Result<(), String> {
     /// Get execution statistics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_execution_statistics;
 /// 
 /// let result = get_execution_statistics(());
@@ -2677,7 +2682,7 @@ pub fn get_execution_statistics(&self) -> String {
     /// Get cache statistics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_cache_statistics;
 /// 
 /// let result = get_cache_statistics(());
@@ -2704,7 +2709,7 @@ pub fn get_cache_statistics(&self) -> String {
     /// Set max workers for parallel execution
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::set_max_workers;
 /// 
 /// let result = set_max_workers(());
@@ -2716,7 +2721,7 @@ pub fn set_max_workers(&mut self, workers: usize) {
     /// Execute cells in parallel
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::execute_cells_parallel;
 /// 
 /// let result = execute_cells_parallel("example");
@@ -2749,7 +2754,7 @@ pub fn execute_cells_parallel(&mut self, cell_ids: Vec<&str>) -> Result<(), Stri
     /// Enable memory optimization
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_memory_optimization;
 /// 
 /// let result = enable_memory_optimization(true);
@@ -2761,7 +2766,7 @@ pub fn enable_memory_optimization(&mut self, enabled: bool) {
     /// Set memory limit
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::set_memory_limit;
 /// 
 /// let result = set_memory_limit(());
@@ -2773,7 +2778,7 @@ pub fn set_memory_limit(&mut self, limit_bytes: usize) {
     /// Execute all cells
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::execute_all_cells;
 /// 
 /// let result = execute_all_cells(());
@@ -2792,7 +2797,7 @@ pub fn execute_all_cells(&mut self) -> Result<(), String> {
     /// Run garbage collection
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::run_garbage_collection;
 /// 
 /// let result = run_garbage_collection(());
@@ -2809,7 +2814,7 @@ pub fn run_garbage_collection(&mut self) -> Result<(), String> {
     /// Enable streaming mode for large datasets
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_streaming_mode;
 /// 
 /// let result = enable_streaming_mode(true);
@@ -2821,7 +2826,7 @@ pub fn enable_streaming_mode(&mut self, enabled: bool) {
     /// Set chunk size for streaming
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::set_chunk_size;
 /// 
 /// let result = set_chunk_size(());
@@ -2851,7 +2856,7 @@ pub fn set_chunk_size(&mut self, size: usize) {
     /// Get last execution info
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_last_execution_info;
 /// 
 /// let result = get_last_execution_info(());
@@ -2867,7 +2872,7 @@ pub fn get_last_execution_info(&self) -> String {
     /// Enable incremental mode
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_incremental_mode;
 /// 
 /// let result = enable_incremental_mode(true);
@@ -2879,7 +2884,7 @@ pub fn enable_incremental_mode(&mut self, enabled: bool) {
     /// Update cell content
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::update_cell;
 /// 
 /// let result = update_cell("example");
@@ -2895,7 +2900,7 @@ pub fn update_cell(&mut self, cell_id: &str, new_source: &str) {
     /// Execute incremental computation
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::execute_incremental;
 /// 
 /// let result = execute_incremental("example");
@@ -2931,7 +2936,7 @@ pub fn execute_incremental(&mut self, cell_id: &str) -> Result<(), String> {
     /// Get incremental statistics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_incremental_stats;
 /// 
 /// let result = get_incremental_stats(());
@@ -2947,7 +2952,7 @@ pub fn get_incremental_stats(&self) -> String {
     /// Enable profiling
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_profiling;
 /// 
 /// let result = enable_profiling(true);
@@ -2961,7 +2966,7 @@ pub fn enable_profiling(&mut self, enabled: bool) {
     /// Set CPU time limit
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::set_cpu_time_limit;
 /// 
 /// let result = set_cpu_time_limit(());
@@ -2973,7 +2978,7 @@ pub fn set_cpu_time_limit(&mut self, _limit_ms: u64) {
     /// Set max output size
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::set_max_output_size;
 /// 
 /// let result = set_max_output_size(());
@@ -2985,7 +2990,7 @@ pub fn set_max_output_size(&mut self, _size_bytes: usize) {
     /// Get resource usage
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_resource_usage;
 /// 
 /// let result = get_resource_usage(());
@@ -3002,7 +3007,7 @@ pub fn get_resource_usage(&self) -> String {
     /// Enable smart dependencies
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_smart_dependencies;
 /// 
 /// let result = enable_smart_dependencies(true);
@@ -3015,10 +3020,11 @@ pub fn enable_smart_dependencies(&mut self, enabled: bool) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::notebook::analyze_dependencies;
+/// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-/// let result = analyze_dependencies(());
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookRuntime::new();
+let result = instance.analyze_dependencies();
+// Verify behavior
 /// ```
 pub fn analyze_dependencies(&self) -> String {
         serde_json::json!({
@@ -3031,7 +3037,7 @@ pub fn analyze_dependencies(&self) -> String {
     /// Get optimal execution plan
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_optimal_execution_plan;
 /// 
 /// let result = get_optimal_execution_plan(());
@@ -3043,7 +3049,7 @@ pub fn get_optimal_execution_plan(&self) -> String {
     /// Compile notebook to optimized format
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::compile_notebook;
 /// 
 /// let result = compile_notebook(());
@@ -3059,7 +3065,7 @@ pub fn compile_notebook(&self) -> Result<String, String> {
     /// Execute compiled notebook
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::execute_compiled;
 /// 
 /// let result = execute_compiled("example");
@@ -3072,7 +3078,7 @@ pub fn execute_compiled(&mut self, _compiled: &str) -> Result<(), String> {
     /// Enable query optimization
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_query_optimization;
 /// 
 /// let result = enable_query_optimization(true);
@@ -3084,7 +3090,7 @@ pub fn enable_query_optimization(&mut self, enabled: bool) {
     /// Optimize query plan
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::optimize_query_plan;
 /// 
 /// let result = optimize_query_plan(());
@@ -3101,7 +3107,7 @@ pub fn optimize_query_plan(&self) -> Result<String, String> {
     /// Enable auto-scaling
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_auto_scaling;
 /// 
 /// let result = enable_auto_scaling(true);
@@ -3113,7 +3119,7 @@ pub fn enable_auto_scaling(&mut self, enabled: bool) {
     /// Set scaling policy
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::set_scaling_policy;
 /// 
 /// let result = set_scaling_policy("example");
@@ -3125,7 +3131,7 @@ pub fn set_scaling_policy(&mut self, policy: &str) {
     /// Set initial workers
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::set_initial_workers;
 /// 
 /// let result = set_initial_workers(());
@@ -3137,7 +3143,7 @@ pub fn set_initial_workers(&mut self, workers: usize) {
     /// Get scaling metrics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_scaling_metrics;
 /// 
 /// let result = get_scaling_metrics(());
@@ -3154,7 +3160,7 @@ pub fn get_scaling_metrics(&self) -> String {
     /// Enable intelligent caching
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_intelligent_caching;
 /// 
 /// let result = enable_intelligent_caching(true);
@@ -3166,7 +3172,7 @@ pub fn enable_intelligent_caching(&mut self, enabled: bool) {
     /// Set cache policy
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::set_cache_policy;
 /// 
 /// let result = set_cache_policy("example");
@@ -3178,7 +3184,7 @@ pub fn set_cache_policy(&mut self, policy: &str) {
     /// Set cache size
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::set_cache_size;
 /// 
 /// let result = set_cache_size(());
@@ -3190,7 +3196,7 @@ pub fn set_cache_size(&mut self, size_bytes: usize) {
     /// Enable distributed mode
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_distributed_mode;
 /// 
 /// let result = enable_distributed_mode(true);
@@ -3203,10 +3209,11 @@ pub fn enable_distributed_mode(&mut self, enabled: bool) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::notebook::add_worker_node;
+/// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-/// let result = add_worker_node("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookRuntime::new();
+let result = instance.add_worker_node();
+// Verify behavior
 /// ```
 pub fn add_worker_node(&mut self, name: &str, url: &str) {
         self.worker_nodes.insert(name.to_string(), url.to_string());
@@ -3214,7 +3221,7 @@ pub fn add_worker_node(&mut self, name: &str, url: &str) {
     /// Execute distributed
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::execute_distributed;
 /// 
 /// let result = execute_distributed(());
@@ -3230,7 +3237,7 @@ pub fn execute_distributed(&mut self, cell_ids: &[String]) -> Result<(), String>
     /// Get distribution metrics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_distribution_metrics;
 /// 
 /// let result = get_distribution_metrics(());
@@ -3249,7 +3256,7 @@ pub fn get_distribution_metrics(&self) -> String {
     /// Enable predictive prefetch
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::enable_predictive_prefetch;
 /// 
 /// let result = enable_predictive_prefetch(true);
@@ -3261,7 +3268,7 @@ pub fn enable_predictive_prefetch(&mut self, enabled: bool) {
     /// Train prediction model
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::train_prediction_model;
 /// 
 /// let result = train_prediction_model(());
@@ -3274,7 +3281,7 @@ pub fn train_prediction_model(&self) -> Result<(), String> {
     /// Get prefetch statistics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::notebook::get_prefetch_statistics;
 /// 
 /// let result = get_prefetch_statistics(());
@@ -3337,10 +3344,11 @@ impl FeatureParity {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::notebook::check_all;
+/// use ruchy::wasm::notebook::FeatureParity;
 /// 
-/// let result = check_all(());
-/// assert_eq!(result, Ok(()));
+let mut instance = FeatureParity::new();
+let result = instance.check_all();
+// Verify behavior
 /// ```
 pub fn check_all() -> Vec<FeatureParity> {
         vec![

@@ -11,10 +11,12 @@ impl Transpiler {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::actors::transpile_actor;
-/// 
-/// let result = transpile_actor("example");
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// use ruchy::frontend::ast::StructField;
+///
+/// let transpiler = Transpiler::new();
+/// let result = transpiler.transpile_actor("TestActor", &[], &[]);
+/// assert!(result.is_ok());
 /// ```
 pub fn transpile_actor(
         &self,
@@ -129,10 +131,14 @@ pub fn transpile_actor(
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::actors::transpile_send;
-/// 
-/// let result = transpile_send(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// use ruchy::frontend::ast::Expr;
+///
+/// let transpiler = Transpiler::new();
+/// let actor = Expr::literal(42.into());
+/// let message = Expr::literal("hello".into());
+/// let result = transpiler.transpile_send(&actor, &message);
+/// assert!(result.is_ok());
 /// ```
 pub fn transpile_send(&self, actor: &Expr, message: &Expr) -> Result<TokenStream> {
         let actor_tokens = self.transpile_expr(actor)?;
@@ -145,10 +151,14 @@ pub fn transpile_send(&self, actor: &Expr, message: &Expr) -> Result<TokenStream
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::actors::transpile_ask;
-/// 
-/// let result = transpile_ask(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// use ruchy::frontend::ast::Expr;
+///
+/// let transpiler = Transpiler::new();
+/// let actor = Expr::literal(42.into());
+/// let message = Expr::literal("hello".into());
+/// let result = transpiler.transpile_ask(&actor, &message);
+/// assert!(result.is_ok());
 /// ```
 pub fn transpile_ask(
         &self,
@@ -174,10 +184,13 @@ pub fn transpile_ask(
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::actors::transpile_command;
-/// 
-/// let result = transpile_command("example");
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// use ruchy::frontend::ast::Expr;
+///
+/// let transpiler = Transpiler::new();
+/// let command = Expr::literal("test_command".into());
+/// let result = transpiler.transpile_command(&command);
+/// assert!(result.is_ok());
 /// ```
 pub fn transpile_command(
         &self,

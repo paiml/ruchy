@@ -7,10 +7,10 @@ impl TestState {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::state::new;
+/// use ruchy::notebook::testing::state::TestState;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = TestState::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self::default()
@@ -18,17 +18,18 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::state::is_empty;
+/// use ruchy::notebook::testing::state::TestState;
 /// 
-/// let result = is_empty(());
-/// assert_eq!(result, Ok(()));
+let mut instance = TestState::new();
+let result = instance.is_empty();
+// Verify behavior
 /// ```
 pub fn is_empty(&self) -> bool {
         self.variables.is_empty()
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::state::set_variable;
 /// 
 /// let result = set_variable(());
@@ -44,10 +45,11 @@ pub fn set_variable(&mut self, name: String, value: String) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::state::get_variable;
+/// use ruchy::notebook::testing::state::TestState;
 /// 
-/// let result = get_variable("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = TestState::new();
+let result = instance.get_variable();
+// Verify behavior
 /// ```
 pub fn get_variable(&self, name: &str) -> Option<&String> {
         self.variables

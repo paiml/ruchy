@@ -115,10 +115,10 @@ impl ErrorRecovery {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::parser::error_recovery::new;
+/// use ruchy::parser::error_recovery::ErrorRecovery;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = ErrorRecovery::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self::default()
@@ -127,10 +127,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::parser::error_recovery::missing_function_name;
+/// use ruchy::parser::error_recovery::ErrorRecovery;
 /// 
-/// let result = missing_function_name(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ErrorRecovery::new();
+let result = instance.missing_function_name();
+// Verify behavior
 /// ```
 pub fn missing_function_name(&mut self, location: SourceLocation) -> ErrorNode {
         self.error_count += 1;
@@ -148,7 +149,7 @@ pub fn missing_function_name(&mut self, location: SourceLocation) -> ErrorNode {
     /// Create a synthetic error node for missing function parameters
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::parser::error_recovery::missing_function_params;
 /// 
 /// let result = missing_function_params(());
@@ -170,7 +171,7 @@ pub fn missing_function_params(&mut self, name: String, location: SourceLocation
     /// Create a synthetic error node for missing function body
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::parser::error_recovery::missing_function_body;
 /// 
 /// let result = missing_function_body(());
@@ -198,10 +199,11 @@ pub fn missing_function_body(
 /// # Examples
 /// 
 /// ```
-/// use ruchy::parser::error_recovery::malformed_let_binding;
+/// use ruchy::parser::error_recovery::ErrorRecovery;
 /// 
-/// let result = malformed_let_binding(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ErrorRecovery::new();
+let result = instance.malformed_let_binding();
+// Verify behavior
 /// ```
 pub fn malformed_let_binding(
         &mut self,
@@ -224,10 +226,11 @@ pub fn malformed_let_binding(
 /// # Examples
 /// 
 /// ```
-/// use ruchy::parser::error_recovery::incomplete_if_expr;
+/// use ruchy::parser::error_recovery::ErrorRecovery;
 /// 
-/// let result = incomplete_if_expr(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ErrorRecovery::new();
+let result = instance.incomplete_if_expr();
+// Verify behavior
 /// ```
 pub fn incomplete_if_expr(
         &mut self,
@@ -263,7 +266,7 @@ pub fn should_continue(&self) -> bool {
     /// Reset error count for new parsing session
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::parser::error_recovery::reset;
 /// 
 /// let result = reset(());

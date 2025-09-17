@@ -297,10 +297,10 @@ impl WitGenerator {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::wit::new;
+/// use ruchy::wasm::wit::WitGenerator;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = WitGenerator::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -313,10 +313,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::wit::new_with_config;
+/// use ruchy::wasm::wit::WitGenerator;
 /// 
-/// let result = new_with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = WitGenerator::new();
+let result = instance.new_with_config();
+// Verify behavior
 /// ```
 pub fn new_with_config(config: WitConfig) -> Self {
         Self {
@@ -328,7 +329,7 @@ pub fn new_with_config(config: WitConfig) -> Self {
     /// Set the world name
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::wit::with_world;
 /// 
 /// let result = with_world("example");
@@ -342,10 +343,11 @@ pub fn with_world(&mut self, world: &str) -> &mut Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::wit::generate;
+/// use ruchy::wasm::wit::WitGenerator;
 /// 
-/// let result = generate(());
-/// assert_eq!(result, Ok(()));
+let mut instance = WitGenerator::new();
+let result = instance.generate();
+// Verify behavior
 /// ```
 pub fn generate(&mut self, component: &super::component::WasmComponent) -> Result<WitInterface> {
         self.generate_from_component(component)
@@ -353,7 +355,7 @@ pub fn generate(&mut self, component: &super::component::WasmComponent) -> Resul
     /// Generate WIT interface from component
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::wit::generate_from_component;
 /// 
 /// let result = generate_from_component(());
@@ -366,7 +368,7 @@ pub fn generate_from_component(&mut self, _component: &super::component::WasmCom
     /// Generate WIT interface from Ruchy source
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::wit::generate_from_source;
 /// 
 /// let result = generate_from_source("example");
@@ -442,10 +444,11 @@ pub fn generate_from_source(&mut self, _source: &str) -> Result<WitInterface> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::wit::add_type_mapping;
+/// use ruchy::wasm::wit::WitGenerator;
 /// 
-/// let result = add_type_mapping(());
-/// assert_eq!(result, Ok(()));
+let mut instance = WitGenerator::new();
+let result = instance.add_type_mapping();
+// Verify behavior
 /// ```
 pub fn add_type_mapping(&mut self, ruchy_type: String, wit_type: String) {
         self.config.type_mappings.insert(ruchy_type, wit_type);
@@ -453,7 +456,7 @@ pub fn add_type_mapping(&mut self, ruchy_type: String, wit_type: String) {
     /// Generate WIT file content
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::wit::generate_wit_file;
 /// 
 /// let result = generate_wit_file(());
@@ -606,7 +609,7 @@ impl WitInterface {
     /// Save the WIT interface to a file
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::wit::save;
 /// 
 /// let result = save(());

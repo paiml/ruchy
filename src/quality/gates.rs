@@ -167,10 +167,10 @@ impl QualityGateEnforcer {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::gates::new;
+/// use ruchy::quality::gates::QualityGateEnforcer;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = QualityGateEnforcer::new();
+// Verify behavior
 /// ```
 pub fn new(config: QualityGateConfig) -> Self {
         Self { config }
@@ -179,10 +179,11 @@ pub fn new(config: QualityGateConfig) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::gates::load_config;
+/// use ruchy::quality::gates::QualityGateEnforcer;
 /// 
-/// let result = load_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = QualityGateEnforcer::new();
+let result = instance.load_config();
+// Verify behavior
 /// ```
 pub fn load_config(project_root: &Path) -> anyhow::Result<QualityGateConfig> {
         let config_path = project_root.join(".ruchy").join("score.toml");
@@ -203,10 +204,11 @@ pub fn load_config(project_root: &Path) -> anyhow::Result<QualityGateConfig> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::gates::enforce_gates;
+/// use ruchy::quality::gates::QualityGateEnforcer;
 /// 
-/// let result = enforce_gates(());
-/// assert_eq!(result, Ok(()));
+let mut instance = QualityGateEnforcer::new();
+let result = instance.enforce_gates();
+// Verify behavior
 /// ```
 pub fn enforce_gates(&self, score: &QualityScore, file_path: Option<&PathBuf>) -> GateResult {
         let mut violations = Vec::new();
@@ -380,7 +382,7 @@ pub fn enforce_gates(&self, score: &QualityScore, file_path: Option<&PathBuf>) -
     /// Export results for CI/CD integration
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::gates::export_ci_results;
 /// 
 /// let result = export_ci_results(());

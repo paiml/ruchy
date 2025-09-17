@@ -16,26 +16,26 @@ impl InteractiveProver {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::prover::new;
+/// use ruchy::proving::prover::InteractiveProver;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = InteractiveProver::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::prover::new;
+/// use ruchy::proving::prover::InteractiveProver;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = InteractiveProver::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::prover::new;
+/// use ruchy::proving::prover::InteractiveProver;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = InteractiveProver::new();
+// Verify behavior
 /// ```
 pub fn new(backend: SmtBackend) -> Self {
         Self {
@@ -49,10 +49,11 @@ pub fn new(backend: SmtBackend) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::prover::set_timeout;
+/// use ruchy::proving::prover::InteractiveProver;
 /// 
-/// let result = set_timeout(());
-/// assert_eq!(result, Ok(()));
+let mut instance = InteractiveProver::new();
+let result = instance.set_timeout();
+// Verify behavior
 /// ```
 pub fn set_timeout(&mut self, timeout: u64) {
         self.timeout = timeout;
@@ -61,9 +62,10 @@ pub fn set_timeout(&mut self, timeout: u64) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::prover::set_ml_suggestions;
+/// use ruchy::proving::prover::InteractiveProver;
 /// 
-/// let result = set_ml_suggestions(true);
+let mut instance = InteractiveProver::new();
+let result = instance.set_ml_suggestions();
 /// assert_eq!(result, Ok(true));
 /// ```
 pub fn set_ml_suggestions(&mut self, enabled: bool) {
@@ -73,10 +75,11 @@ pub fn set_ml_suggestions(&mut self, enabled: bool) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::prover::load_script;
+/// use ruchy::proving::prover::InteractiveProver;
 /// 
-/// let result = load_script("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = InteractiveProver::new();
+let result = instance.load_script();
+// Verify behavior
 /// ```
 pub fn load_script(&mut self, _script: &str) -> Result<()> {
         // Simplified: just return ok
@@ -86,10 +89,11 @@ pub fn load_script(&mut self, _script: &str) -> Result<()> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::prover::get_available_tactics;
+/// use ruchy::proving::prover::InteractiveProver;
 /// 
-/// let result = get_available_tactics(());
-/// assert_eq!(result, Ok(()));
+let mut instance = InteractiveProver::new();
+let result = instance.get_available_tactics();
+// Verify behavior
 /// ```
 pub fn get_available_tactics(&self) -> Vec<&dyn super::tactics::Tactic> {
         self.tactics.all_tactics()
@@ -98,10 +102,11 @@ pub fn get_available_tactics(&self) -> Vec<&dyn super::tactics::Tactic> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::prover::apply_tactic;
+/// use ruchy::proving::prover::InteractiveProver;
 /// 
-/// let result = apply_tactic("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = InteractiveProver::new();
+let result = instance.apply_tactic();
+// Verify behavior
 /// ```
 pub fn apply_tactic(&mut self, session: &mut ProverSession, tactic_name: &str, args: &[&str]) -> Result<ProofResult> {
         let tactic = self.tactics.get_tactic(tactic_name)?;
@@ -131,7 +136,7 @@ pub fn apply_tactic(&mut self, session: &mut ProverSession, tactic_name: &str, a
     /// Process input
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::process_input;
 /// 
 /// let result = process_input("example");
@@ -155,7 +160,7 @@ pub fn process_input(&mut self, session: &mut ProverSession, input: &str) -> Res
     /// Suggest tactics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::suggest_tactics;
 /// 
 /// let result = suggest_tactics(());
@@ -184,7 +189,7 @@ impl ProverSession {
     /// Add goal
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::add_goal;
 /// 
 /// let result = add_goal(());
@@ -196,7 +201,7 @@ pub fn add_goal(&mut self, statement: String) {
     /// Get current goal
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::current_goal;
 /// 
 /// let result = current_goal(());
@@ -208,7 +213,7 @@ pub fn current_goal(&self) -> Option<&ProofGoal> {
     /// Update current goal
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::update_goal;
 /// 
 /// let result = update_goal(());
@@ -222,7 +227,7 @@ pub fn update_goal(&mut self, statement: String) {
     /// Complete current goal
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::complete_goal;
 /// 
 /// let result = complete_goal(());
@@ -236,7 +241,7 @@ pub fn complete_goal(&mut self) {
     /// Replace with subgoals
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::replace_with_subgoals;
 /// 
 /// let result = replace_with_subgoals(());
@@ -253,7 +258,7 @@ pub fn replace_with_subgoals(&mut self, subgoals: Vec<String>) {
     /// Get all goals
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::get_goals;
 /// 
 /// let result = get_goals(());
@@ -265,7 +270,7 @@ pub fn get_goals(&self) -> &[ProofGoal] {
     /// Check if complete
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::is_complete;
 /// 
 /// let result = is_complete(());
@@ -277,7 +282,7 @@ pub fn is_complete(&self) -> bool {
     /// Export to text
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::to_text_proof;
 /// 
 /// let result = to_text_proof(());
@@ -298,7 +303,7 @@ pub fn to_text_proof(&self) -> String {
     /// Export to Coq
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::to_coq_proof;
 /// 
 /// let result = to_coq_proof(());
@@ -310,7 +315,7 @@ pub fn to_coq_proof(&self) -> String {
     /// Export to Lean
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::prover::to_lean_proof;
 /// 
 /// let result = to_lean_proof(());

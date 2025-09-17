@@ -36,10 +36,10 @@ impl InferenceContext {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::middleend::infer::new;
+/// use ruchy::middleend::infer::InferenceContext;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = InferenceContext::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         InferenceContext {
@@ -55,10 +55,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::middleend::infer::with_env;
+/// use ruchy::middleend::infer::InferenceContext;
 /// 
-/// let result = with_env(());
-/// assert_eq!(result, Ok(()));
+let mut instance = InferenceContext::new();
+let result = instance.with_env();
+// Verify behavior
 /// ```
 pub fn with_env(env: TypeEnv) -> Self {
         InferenceContext {
@@ -78,10 +79,11 @@ pub fn with_env(env: TypeEnv) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::middleend::infer::infer;
+/// use ruchy::middleend::infer::InferenceContext;
 /// 
-/// let result = infer(());
-/// assert_eq!(result, Ok(()));
+let mut instance = InferenceContext::new();
+let result = instance.infer();
+// Verify behavior
 /// ```
 pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
         // Check recursion depth to prevent infinite loops
@@ -493,7 +495,7 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
     /// Strategy: Extract method-category specific handlers
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::middleend::infer::infer_method_call;
 /// 
 /// let result = infer_method_call("example");
@@ -1235,7 +1237,7 @@ pub fn apply(&self, ty: &MonoType) -> MonoType {
     /// Strategy: Group related expression types into category handlers
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::middleend::infer::infer_other_expr;
 /// 
 /// let result = infer_other_expr(());

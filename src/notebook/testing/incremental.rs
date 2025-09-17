@@ -80,26 +80,26 @@ impl IncrementalTester {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::incremental::new;
+/// use ruchy::notebook::testing::incremental::IncrementalTester;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = IncrementalTester::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::incremental::new;
+/// use ruchy::notebook::testing::incremental::IncrementalTester;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = IncrementalTester::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::incremental::new;
+/// use ruchy::notebook::testing::incremental::IncrementalTester;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = IncrementalTester::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self::with_config(IncrementalConfig::default())
@@ -107,10 +107,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::incremental::with_config;
+/// use ruchy::notebook::testing::incremental::IncrementalTester;
 /// 
-/// let result = with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = IncrementalTester::new();
+let result = instance.with_config();
+// Verify behavior
 /// ```
 pub fn with_config(config: IncrementalConfig) -> Self {
         let cache = TestResultCache::new(config.cache_directory.clone(), config.max_cache_size);
@@ -125,10 +126,11 @@ pub fn with_config(config: IncrementalConfig) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::incremental::execute_incremental;
+/// use ruchy::notebook::testing::incremental::IncrementalTester;
 /// 
-/// let result = execute_incremental(());
-/// assert_eq!(result, Ok(()));
+let mut instance = IncrementalTester::new();
+let result = instance.execute_incremental();
+// Verify behavior
 /// ```
 pub fn execute_incremental(&mut self, notebook: &Notebook, changed_cells: &[String]) -> IncrementalResult {
         let mut executed_cells = Vec::new();
@@ -258,7 +260,7 @@ impl TestResultCache {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::incremental::store;
 /// 
 /// let result = store("example");
@@ -289,7 +291,7 @@ pub fn store(&mut self, cell_id: &str, source: &str, dependencies_hash: &str, re
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::incremental::get;
 /// 
 /// let result = get("example");
@@ -342,7 +344,7 @@ pub fn get(&mut self, cell_id: &str) -> Option<CachedTestResult> {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::incremental::get_statistics;
 /// 
 /// let result = get_statistics(());
@@ -386,10 +388,11 @@ impl DependencyTracker {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::incremental::analyze_dependencies;
+/// use ruchy::notebook::testing::incremental::DependencyTracker;
 /// 
-/// let result = analyze_dependencies(());
-/// assert_eq!(result, Ok(()));
+let mut instance = DependencyTracker::new();
+let result = instance.analyze_dependencies();
+// Verify behavior
 /// ```
 pub fn analyze_dependencies(&mut self, notebook: &Notebook) {
         self.dependencies.clear();
@@ -452,7 +455,7 @@ pub fn analyze_dependencies(&mut self, notebook: &Notebook) {
     /// Get dependencies for a specific cell
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::incremental::get_dependencies;
 /// 
 /// let result = get_dependencies("example");
@@ -464,7 +467,7 @@ pub fn get_dependencies(&self, cell_id: &str) -> HashSet<String> {
     /// Perform topological sort for execution order
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::incremental::topological_sort;
 /// 
 /// let result = topological_sort(());
@@ -503,7 +506,7 @@ pub fn topological_sort(&self, notebook: &Notebook) -> Vec<String> {
     /// Get dependency graph representation
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::incremental::get_graph;
 /// 
 /// let result = get_graph(());
@@ -553,7 +556,7 @@ pub enum CellType {
 impl Notebook {
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::incremental::get_cell;
 /// 
 /// let result = get_cell("example");

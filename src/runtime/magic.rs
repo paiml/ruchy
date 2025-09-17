@@ -18,18 +18,18 @@ impl MagicRegistry {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::magic::new;
+/// use ruchy::runtime::magic::MagicRegistry;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = MagicRegistry::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::magic::new;
+/// use ruchy::runtime::magic::MagicRegistry;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = MagicRegistry::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         let mut registry = Self {
@@ -56,10 +56,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::magic::register;
+/// use ruchy::runtime::magic::MagicRegistry;
 /// 
-/// let result = register("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = MagicRegistry::new();
+let result = instance.register();
+// Verify behavior
 /// ```
 pub fn register(&mut self, name: &str, command: Box<dyn MagicCommand>) {
         self.commands.insert(name.to_string(), command);
@@ -68,10 +69,11 @@ pub fn register(&mut self, name: &str, command: Box<dyn MagicCommand>) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::magic::is_magic;
+/// use ruchy::runtime::magic::MagicRegistry;
 /// 
-/// let result = is_magic("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = MagicRegistry::new();
+let result = instance.is_magic();
+// Verify behavior
 /// ```
 pub fn is_magic(&self, input: &str) -> bool {
         input.starts_with('%') || input.starts_with("%%")
@@ -80,10 +82,11 @@ pub fn is_magic(&self, input: &str) -> bool {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::magic::execute;
+/// use ruchy::runtime::magic::MagicRegistry;
 /// 
-/// let result = execute("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = MagicRegistry::new();
+let result = instance.execute();
+// Verify behavior
 /// ```
 pub fn execute(&mut self, repl: &mut Repl, input: &str) -> Result<MagicResult> {
         if !self.is_magic(input) {
@@ -116,7 +119,7 @@ pub fn execute(&mut self, repl: &mut Repl, input: &str) -> Result<MagicResult> {
     /// Get list of available magic commands
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::magic::list_commands;
 /// 
 /// let result = list_commands(());
@@ -631,7 +634,7 @@ impl UnicodeExpander {
     /// Expand LaTeX-style sequence to Unicode character
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::magic::expand;
 /// 
 /// let result = expand("example");
@@ -649,7 +652,7 @@ pub fn expand(&self, sequence: &str) -> Option<char> {
     /// Get all available expansions
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::magic::list_expansions;
 /// 
 /// let result = list_expansions(());

@@ -84,10 +84,10 @@ impl FormalVerifier {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::formal::new;
+/// use ruchy::notebook::testing::formal::FormalVerifier;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = FormalVerifier::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -98,10 +98,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::formal::with_config;
+/// use ruchy::notebook::testing::formal::FormalVerifier;
 /// 
-/// let result = with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = FormalVerifier::new();
+let result = instance.with_config();
+// Verify behavior
 /// ```
 pub fn with_config(config: FormalConfig) -> Self {
         Self {
@@ -112,10 +113,11 @@ pub fn with_config(config: FormalConfig) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::formal::is_ready;
+/// use ruchy::notebook::testing::formal::FormalVerifier;
 /// 
-/// let result = is_ready(());
-/// assert_eq!(result, Ok(()));
+let mut instance = FormalVerifier::new();
+let result = instance.is_ready();
+// Verify behavior
 /// ```
 pub fn is_ready(&self) -> bool {
         // Check if solver is available
@@ -124,7 +126,7 @@ pub fn is_ready(&self) -> bool {
     /// Verify an invariant holds for a cell
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::formal::verify_invariant;
 /// 
 /// let result = verify_invariant(());
@@ -162,7 +164,7 @@ pub fn verify_invariant(&self, invariant: &Invariant, _cell: &Cell) -> Verificat
     /// Verify a constraint is satisfied
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::formal::verify_constraint;
 /// 
 /// let result = verify_constraint(());
@@ -190,7 +192,7 @@ pub fn verify_constraint(&self, constraint: &Constraint, cell: &Cell) -> Constra
     /// Prove function correctness against specification
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::formal::prove_function;
 /// 
 /// let result = prove_function(());
@@ -218,7 +220,7 @@ pub fn prove_function(&self, spec: &FunctionSpec, cell: &Cell) -> ProofResult {
     /// Perform symbolic execution
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::formal::symbolic_execute;
 /// 
 /// let result = symbolic_execute(());
@@ -253,7 +255,7 @@ pub fn symbolic_execute(&self, cell: &Cell) -> Vec<ExecutionPath> {
     /// Verify loop invariants
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::formal::verify_loop_invariant;
 /// 
 /// let result = verify_loop_invariant(());

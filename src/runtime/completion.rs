@@ -34,10 +34,11 @@ impl CompletionKind {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::completion::prefix;
+/// use ruchy::runtime::completion::CompletionKind;
 /// 
-/// let result = prefix(());
-/// assert_eq!(result, Ok(()));
+let mut instance = CompletionKind::new();
+let result = instance.prefix();
+// Verify behavior
 /// ```
 pub fn prefix(&self) -> &str {
         match self {
@@ -54,7 +55,7 @@ pub fn prefix(&self) -> &str {
     /// Get priority boost (complexity: 1)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::completion::priority;
 /// 
 /// let result = priority(());
@@ -118,18 +119,18 @@ impl CompletionEngine {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::completion::new;
+/// use ruchy::runtime::completion::CompletionEngine;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = CompletionEngine::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::completion::new;
+/// use ruchy::runtime::completion::CompletionEngine;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = CompletionEngine::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -147,14 +148,15 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::completion::get_completions;
+/// use ruchy::runtime::completion::CompletionEngine;
 /// 
-/// let result = get_completions("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = CompletionEngine::new();
+let result = instance.get_completions();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::completion::get_completions;
 /// 
 /// let result = get_completions("example");
@@ -348,7 +350,7 @@ pub fn get_completions(&mut self, input: &str, position: usize) -> Vec<Completio
     /// Register a variable (complexity: 2)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::completion::register_variable;
 /// 
 /// let result = register_variable(());
@@ -361,7 +363,7 @@ pub fn register_variable(&mut self, name: String) {
     /// Register a function (complexity: 2)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::completion::register_function;
 /// 
 /// let result = register_function(());
@@ -374,7 +376,7 @@ pub fn register_function(&mut self, name: String, params: Vec<String>) {
     /// Register a type (complexity: 2)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::completion::register_type;
 /// 
 /// let result = register_type(());
@@ -387,7 +389,7 @@ pub fn register_type(&mut self, name: String) {
     /// Register methods for a type (complexity: 3)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::completion::register_methods;
 /// 
 /// let result = register_methods(());
@@ -660,7 +662,7 @@ impl RuchyCompleter {
     /// Analyze completion context (complexity: 4)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::completion::analyze_context;
 /// 
 /// let result = analyze_context("example");

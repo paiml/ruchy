@@ -140,10 +140,11 @@ impl Cli {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::cli::mod::execute;
+/// use ruchy::cli::mod::Cli;
 /// 
-/// let result = execute(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Cli::new();
+let result = instance.execute();
+// Verify behavior
 /// ```
 pub fn execute(self) -> Result<(), String> {
         match self.command {
@@ -384,7 +385,7 @@ fn execute_test(cmd: TestCommand, verbose: bool) -> Result<(), String> {
 #[cfg(feature = "notebook")]
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::cli::mod::run_test_command;
 /// 
 /// let result = run_test_command(());

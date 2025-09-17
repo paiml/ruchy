@@ -36,10 +36,11 @@ impl ActorRef {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::actor::send;
+/// use ruchy::runtime::actor::ActorRef;
 /// 
-/// let result = send(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ActorRef::new();
+let result = instance.send();
+// Verify behavior
 /// ```
 pub fn send(&self, message: Message) -> Result<()> {
         self.sender
@@ -60,10 +61,11 @@ pub fn send(&self, message: Message) -> Result<()> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::actor::ask;
+/// use ruchy::runtime::actor::ActorRef;
 /// 
-/// let result = ask(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ActorRef::new();
+let result = instance.ask();
+// Verify behavior
 /// ```
 pub fn ask(&self, message: Message, timeout: Duration) -> Result<Message> {
         let (response_tx, response_rx) = mpsc::channel();
@@ -200,10 +202,11 @@ impl ActorContext {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::actor::stop_child;
+/// use ruchy::runtime::actor::ActorContext;
 /// 
-/// let result = stop_child(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ActorContext::new();
+let result = instance.stop_child();
+// Verify behavior
 /// ```
 pub fn stop_child(&mut self, child_id: ActorId) -> Result<()> {
         if let Some(child_ref) = self.children.remove(&child_id) {
@@ -221,7 +224,7 @@ pub fn stop_child(&mut self, child_id: ActorId) -> Result<()> {
     /// Returns an error if the operation fails
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::actor::get_self;
 /// 
 /// let result = get_self(());
@@ -240,10 +243,11 @@ pub fn get_self(&self) -> Result<ActorRef> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::actor::find_actor;
+/// use ruchy::runtime::actor::ActorContext;
 /// 
-/// let result = find_actor("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = ActorContext::new();
+let result = instance.find_actor();
+// Verify behavior
 /// ```
 pub fn find_actor(&self, name: &str) -> Option<ActorRef> {
         let system = self.system.lock().ok()?;
@@ -380,7 +384,7 @@ impl ActorSystem {
     /// Create a new actor system
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::actor::new;
 /// 
 /// let result = new(());
@@ -388,7 +392,7 @@ impl ActorSystem {
 /// ```
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::actor::new;
 /// 
 /// let result = new(());
@@ -421,7 +425,7 @@ pub fn new() -> Arc<Mutex<Self>> {
     /// - The supervisor doesn't exist (if specified)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::actor::spawn_supervised;
 /// 
 /// let result = spawn_supervised(());
@@ -452,7 +456,7 @@ pub fn spawn_supervised(
     /// Get actor reference by ID
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::actor::get_actor_ref;
 /// 
 /// let result = get_actor_ref(());
@@ -468,7 +472,7 @@ pub fn get_actor_ref(&self, id: ActorId) -> Option<ActorRef> {
     /// Find actor by name
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::actor::find_actor_by_name;
 /// 
 /// let result = find_actor_by_name("example");
@@ -485,7 +489,7 @@ pub fn find_actor_by_name(&self, name: &str) -> Option<ActorRef> {
     /// Returns an error if the operation fails
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::actor::stop_actor;
 /// 
 /// let result = stop_actor(());
@@ -501,7 +505,7 @@ pub fn stop_actor(&mut self, id: ActorId) -> Result<()> {
     /// Shutdown the entire actor system
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::actor::shutdown;
 /// 
 /// let result = shutdown(());

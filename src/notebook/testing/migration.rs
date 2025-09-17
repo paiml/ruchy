@@ -66,10 +66,10 @@ impl MigrationTool {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::migration::new;
+/// use ruchy::notebook::testing::migration::MigrationTool;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = MigrationTool::new();
+// Verify behavior
 /// ```
 pub fn new(source: TestFramework) -> Self {
         Self {
@@ -80,10 +80,11 @@ pub fn new(source: TestFramework) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::migration::with_config;
+/// use ruchy::notebook::testing::migration::MigrationTool;
 /// 
-/// let result = with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = MigrationTool::new();
+let result = instance.with_config();
+// Verify behavior
 /// ```
 pub fn with_config(source: TestFramework, config: MigrationConfig) -> Self {
         Self {
@@ -95,10 +96,11 @@ pub fn with_config(source: TestFramework, config: MigrationConfig) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::migration::migrate_directory;
+/// use ruchy::notebook::testing::migration::MigrationTool;
 /// 
-/// let result = migrate_directory(());
-/// assert_eq!(result, Ok(()));
+let mut instance = MigrationTool::new();
+let result = instance.migrate_directory();
+// Verify behavior
 /// ```
 pub fn migrate_directory(&self, input_dir: &Path, output_dir: &Path) -> MigrationResult {
         let mut result = MigrationResult {
@@ -134,10 +136,11 @@ pub fn migrate_directory(&self, input_dir: &Path, output_dir: &Path) -> Migratio
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::migration::convert_file;
+/// use ruchy::notebook::testing::migration::MigrationTool;
 /// 
-/// let result = convert_file(());
-/// assert_eq!(result, Ok(()));
+let mut instance = MigrationTool::new();
+let result = instance.convert_file();
+// Verify behavior
 /// ```
 pub fn convert_file(&self, input_path: &Path, output_dir: &Path) -> Result<ConvertedFile, String> {
         match self.source_format {

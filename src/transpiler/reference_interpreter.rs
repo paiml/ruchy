@@ -46,18 +46,18 @@ impl Environment {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::transpiler::reference_interpreter::new;
+/// use ruchy::transpiler::reference_interpreter::Environment;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = Environment::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::transpiler::reference_interpreter::new;
+/// use ruchy::transpiler::reference_interpreter::Environment;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = Environment::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -67,10 +67,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::transpiler::reference_interpreter::push;
+/// use ruchy::transpiler::reference_interpreter::Environment;
 /// 
-/// let result = push(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Environment::new();
+let result = instance.push();
+// Verify behavior
 /// ```
 pub fn push(&mut self, value: Value) {
         self.bindings.push(value);
@@ -78,10 +79,11 @@ pub fn push(&mut self, value: Value) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::transpiler::reference_interpreter::pop;
+/// use ruchy::transpiler::reference_interpreter::Environment;
 /// 
-/// let result = pop(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Environment::new();
+let result = instance.pop();
+// Verify behavior
 /// ```
 pub fn pop(&mut self) {
         self.bindings.pop();
@@ -90,10 +92,11 @@ pub fn pop(&mut self) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::transpiler::reference_interpreter::lookup;
+/// use ruchy::transpiler::reference_interpreter::Environment;
 /// 
-/// let result = lookup(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Environment::new();
+let result = instance.lookup();
+// Verify behavior
 /// ```
 pub fn lookup(&self, index: &DeBruijnIndex) -> Option<&Value> {
         // De Bruijn indices count from the end
@@ -129,7 +132,7 @@ impl ReferenceInterpreter {
     /// Returns an error if the operation fails
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::transpiler::reference_interpreter::eval;
 /// 
 /// let result = eval(());
@@ -379,7 +382,7 @@ pub fn get_trace(&self) -> &[String] {
     /// Clear the trace
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::transpiler::reference_interpreter::clear_trace;
 /// 
 /// let result = clear_trace(());

@@ -10,10 +10,12 @@ impl MinimalCodeGen {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::codegen_minimal::gen_expr;
-/// 
-/// let result = gen_expr(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::codegen_minimal::MinimalCodeGen;
+/// use ruchy::frontend::ast::Expr;
+///
+/// let expr = Expr::literal(42.into());
+/// let result = MinimalCodeGen::gen_expr(&expr);
+/// assert!(result.is_ok());
 /// ```
 pub fn gen_expr(expr: &Expr) -> Result<String> {
         use crate::frontend::ast::ExprKind;
@@ -280,10 +282,12 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::codegen_minimal::gen_program;
-/// 
-/// let result = gen_program(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::codegen_minimal::MinimalCodeGen;
+/// use ruchy::frontend::ast::Expr;
+///
+/// let expr = Expr::literal(42.into());
+/// let result = MinimalCodeGen::gen_program(&expr);
+/// assert!(result.is_ok());
 /// ```
 pub fn gen_program(expr: &Expr) -> Result<String> {
         let main_code = Self::gen_expr(expr)?;
