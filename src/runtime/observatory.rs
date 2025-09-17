@@ -583,22 +583,25 @@ mod tests {
         let request_ab = BlockedRequest {
             requester: ActorId(1),
             target: ActorId(2),
-            request_time: current_timestamp(),
-            timeout_ms: None,
+            timestamp: Instant::now(),
+            timeout: Duration::from_secs(5),
+            correlation_id: None,
         };
 
         let request_bc = BlockedRequest {
             requester: ActorId(2),
             target: ActorId(3),
-            request_time: current_timestamp(),
-            timeout_ms: None,
+            timestamp: Instant::now(),
+            timeout: Duration::from_secs(5),
+            correlation_id: None,
         };
 
         let request_ca = BlockedRequest {
             requester: ActorId(3),
             target: ActorId(1),
-            request_time: current_timestamp(),
-            timeout_ms: None,
+            timestamp: Instant::now(),
+            timeout: Duration::from_secs(5),
+            correlation_id: None,
         };
 
         detector.add_blocked_request(request_ab);
@@ -969,7 +972,7 @@ mod tests {
                 actor_id,
                 name: "monitored_actor".to_string(),
                 timestamp: base_time + (i * 10000), // 10 second intervals
-                state: if i == 5 { ActorState::Crashed } else { ActorState::Running },
+                state: if i == 5 { ActorState::Failed("Simulated crash".to_string()) } else { ActorState::Running },
                 mailbox_size: if i < 4 { i * 2 } else { 0 }, // Clears before crash
                 parent: None,
                 children: vec![],
@@ -987,7 +990,7 @@ mod tests {
 
         // Verify final state
         let final_snapshot = observatory.get_actor_snapshot(actor_id).unwrap().unwrap();
-        assert_eq!(final_snapshot.state, ActorState::Crashed);
+        assert!(matches!(final_snapshot.state, ActorState::Failed(_)));
         assert_eq!(final_snapshot.mailbox_size, 0);
         assert_eq!(final_snapshot.message_stats.total_failed, 5);
     }
@@ -1035,15 +1038,17 @@ mod tests {
         let request1 = BlockedRequest {
             requester: ActorId(1),
             target: ActorId(2),
-            request_time: current_timestamp(),
-            timeout_ms: Some(5000),
+            timestamp: Instant::now(),
+            timeout: Duration::from_millis(5000),
+            correlation_id: None,
         };
 
         let request2 = BlockedRequest {
             requester: ActorId(2),
             target: ActorId(1),
-            request_time: current_timestamp(),
-            timeout_ms: Some(5000),
+            timestamp: Instant::now(),
+            timeout: Duration::from_millis(5000),
+            correlation_id: None,
         };
 
         detector.add_blocked_request(request1);
@@ -1208,9 +1213,9 @@ mod tests {
         let states = vec![
             ActorState::Starting,
             ActorState::Running,
-            ActorState::Idle,
+            ActorState::Stopping,
             ActorState::Running,
-            ActorState::Crashed,
+            ActorState::Failed("Simulated failure".to_string()),
         ];
 
         let mut snapshots = observatory.actor_snapshots.lock().unwrap();
@@ -1220,7 +1225,7 @@ mod tests {
                 name: "transitioning_actor".to_string(),
                 timestamp: current_timestamp() + ((i + 1) * 1000) as u64,
                 state: state.clone(),
-                mailbox_size: if state == &ActorState::Crashed { 0 } else { 5 },
+                mailbox_size: if matches!(state, ActorState::Failed(_)) { 0 } else { 5 },
                 parent: None,
                 children: vec![],
                 message_stats: MessageStats::default(),
@@ -1232,7 +1237,7 @@ mod tests {
 
         // Verify final state
         let final_snapshot = observatory.get_actor_snapshot(actor_id).unwrap().unwrap();
-        assert_eq!(final_snapshot.state, ActorState::Crashed);
+        assert!(matches!(final_snapshot.state, ActorState::Failed(_)));
         assert_eq!(final_snapshot.mailbox_size, 0);
     }
 
