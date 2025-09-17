@@ -2,78 +2,87 @@
 
 // NOTE: Tests disabled due to API mismatch - the test expects types like MirModule
 // which don't exist in the current MIR implementation
-#[cfg(disabled)]
-mod disabled_tests {
+#[cfg(test)]
+mod enabled_tests {
 
-use ruchy::middleend::mir::{Function, Program, BasicBlock, Type, Statement};
+use ruchy::middleend::mir::{Function, Program, BasicBlock, Type, Statement, Local, BlockId, Terminator};
 use ruchy::middleend::mir::MirBuilder;
 
 #[test]
-fn test_mir_module_creation() {
-    let module = MirModule::new("test_module");
-    assert_eq!(module.name, "test_module");
-    assert!(module.functions.is_empty());
-    assert!(module.globals.is_empty());
+fn test_mir_program_creation() {
+    use std::collections::HashMap;
+    let program = Program {
+        functions: HashMap::new(),
+        entry: "main".to_string(),
+    };
+    assert_eq!(program.entry, "main");
+    assert!(program.functions.is_empty());
 }
 
 #[test]
 fn test_mir_function_creation() {
-    let func = MirFunction::new(
-        "test_func",
-        vec![MirType::I32, MirType::I32],
-        MirType::I32,
-    );
-    
+    let func = Function {
+        name: "test_func".to_string(),
+        params: vec![Local(0), Local(1)],
+        return_ty: Type::I32,
+        locals: vec![],
+        blocks: vec![],
+        entry_block: BlockId(0),
+    };
+
     assert_eq!(func.name, "test_func");
     assert_eq!(func.params.len(), 2);
-    assert!(matches!(func.params[0], MirType::I32));
-    assert!(matches!(func.params[1], MirType::I32));
-    assert!(matches!(func.return_type, MirType::I32));
+    assert_eq!(func.params[0], Local(0));
+    assert_eq!(func.params[1], Local(1));
+    assert!(matches!(func.return_ty, Type::I32));
 }
 
 #[test]
 fn test_mir_builder_new() {
-    let builder = MirBuilder::new();
-    assert!(builder.current_function.is_none());
-    assert!(builder.current_block.is_none());
+    let _builder = MirBuilder::new();
+    // Builder structure is private, so we can only test it creates without panic
+    // This is a minimal test to ensure construction works
+    assert!(true); // If we get here, construction succeeded
 }
 
 #[test]
 fn test_mir_types() {
-    let i32_type = MirType::I32;
-    let i64_type = MirType::I64;
-    let f32_type = MirType::F32;
-    let f64_type = MirType::F64;
-    let bool_type = MirType::Bool;
-    let void_type = MirType::Void;
-    
+    let i32_type = Type::I32;
+    let i64_type = Type::I64;
+    let f32_type = Type::F32;
+    let f64_type = Type::F64;
+    let bool_type = Type::Bool;
+    let unit_type = Type::Unit;
+
     assert_eq!(format!("{:?}", i32_type), "I32");
     assert_eq!(format!("{:?}", i64_type), "I64");
     assert_eq!(format!("{:?}", f32_type), "F32");
     assert_eq!(format!("{:?}", f64_type), "F64");
     assert_eq!(format!("{:?}", bool_type), "Bool");
-    assert_eq!(format!("{:?}", void_type), "Void");
+    assert_eq!(format!("{:?}", unit_type), "Unit");
 }
 
 #[test]
-fn test_mir_pointer_type() {
-    let ptr_type = MirType::Pointer(Box::new(MirType::I32));
-    
-    match ptr_type {
-        MirType::Pointer(inner) => {
-            assert!(matches!(*inner, MirType::I32));
+fn test_mir_ref_type() {
+    use ruchy::middleend::mir::Mutability;
+    let ref_type = Type::Ref(Box::new(Type::I32), Mutability::Immutable);
+
+    match ref_type {
+        Type::Ref(inner, mutability) => {
+            assert!(matches!(*inner, Type::I32));
+            assert_eq!(mutability, Mutability::Immutable);
         }
-        _ => panic!("Expected pointer type"),
+        _ => panic!("Expected reference type"),
     }
 }
 
 #[test]
 fn test_mir_array_type() {
-    let array_type = MirType::Array(Box::new(MirType::I32), 10);
-    
+    let array_type = Type::Array(Box::new(Type::I32), 10);
+
     match array_type {
-        MirType::Array(elem, size) => {
-            assert!(matches!(*elem, MirType::I32));
+        Type::Array(elem, size) => {
+            assert!(matches!(*elem, Type::I32));
             assert_eq!(size, 10);
         }
         _ => panic!("Expected array type"),
@@ -81,151 +90,118 @@ fn test_mir_array_type() {
 }
 
 #[test]
-fn test_mir_struct_type() {
-    let fields = vec![MirType::I32, MirType::Bool, MirType::F64];
-    let struct_type = MirType::Struct(fields);
-    
-    match struct_type {
-        MirType::Struct(f) => {
+fn test_mir_tuple_type() {
+    let fields = vec![Type::I32, Type::Bool, Type::F64];
+    let tuple_type = Type::Tuple(fields);
+
+    match tuple_type {
+        Type::Tuple(f) => {
             assert_eq!(f.len(), 3);
-            assert!(matches!(f[0], MirType::I32));
-            assert!(matches!(f[1], MirType::Bool));
-            assert!(matches!(f[2], MirType::F64));
+            assert!(matches!(f[0], Type::I32));
+            assert!(matches!(f[1], Type::Bool));
+            assert!(matches!(f[2], Type::F64));
         }
-        _ => panic!("Expected struct type"),
+        _ => panic!("Expected tuple type"),
     }
 }
 
 #[test]
 fn test_mir_basic_block() {
-    let mut block = MirBasicBlock::new("entry");
-    
-    assert_eq!(block.label, "entry");
-    assert!(block.instructions.is_empty());
-    assert!(block.terminator.is_none());
-    
-    // Add an instruction
-    block.instructions.push(MirInstruction::Nop);
-    assert_eq!(block.instructions.len(), 1);
+    let mut block = BasicBlock {
+        id: BlockId(0),
+        statements: vec![],
+        terminator: Terminator::Return(None),
+    };
+
+    assert_eq!(block.id, BlockId(0));
+    assert!(block.statements.is_empty());
+    assert!(matches!(block.terminator, Terminator::Return(None)));
+
+    // Add a statement
+    block.statements.push(Statement::Nop);
+    assert_eq!(block.statements.len(), 1);
 }
 
 #[test]
-fn test_mir_instructions() {
-    let nop = MirInstruction::Nop;
-    let const_i32 = MirInstruction::Const(42);
-    let add = MirInstruction::Add(0, 1);
-    let sub = MirInstruction::Sub(0, 1);
-    let mul = MirInstruction::Mul(0, 1);
-    let div = MirInstruction::Div(0, 1);
-    
-    assert!(matches!(nop, MirInstruction::Nop));
-    assert!(matches!(const_i32, MirInstruction::Const(42)));
-    assert!(matches!(add, MirInstruction::Add(0, 1)));
-    assert!(matches!(sub, MirInstruction::Sub(0, 1)));
-    assert!(matches!(mul, MirInstruction::Mul(0, 1)));
-    assert!(matches!(div, MirInstruction::Div(0, 1)));
+fn test_mir_statements() {
+    use ruchy::middleend::mir::{Place, Rvalue, Operand, Constant};
+
+    let nop = Statement::Nop;
+    let storage_live = Statement::StorageLive(Local(0));
+    let assign = Statement::Assign(
+        Place::Local(Local(0)),
+        Rvalue::Use(Operand::Constant(Constant::Int(42, Type::I32))),
+    );
+
+    assert!(matches!(nop, Statement::Nop));
+    assert!(matches!(storage_live, Statement::StorageLive(_)));
+    assert!(matches!(assign, Statement::Assign(_, _)));
 }
 
 #[test]
-fn test_mir_comparison_instructions() {
-    let eq = MirInstruction::Eq(0, 1);
-    let ne = MirInstruction::Ne(0, 1);
-    let lt = MirInstruction::Lt(0, 1);
-    let le = MirInstruction::Le(0, 1);
-    let gt = MirInstruction::Gt(0, 1);
-    let ge = MirInstruction::Ge(0, 1);
-    
-    assert!(matches!(eq, MirInstruction::Eq(0, 1)));
-    assert!(matches!(ne, MirInstruction::Ne(0, 1)));
-    assert!(matches!(lt, MirInstruction::Lt(0, 1)));
-    assert!(matches!(le, MirInstruction::Le(0, 1)));
-    assert!(matches!(gt, MirInstruction::Gt(0, 1)));
-    assert!(matches!(ge, MirInstruction::Ge(0, 1)));
+fn test_mir_binary_operations() {
+    use ruchy::middleend::mir::{BinOp, Rvalue, Operand, Constant};
+
+    let add = Rvalue::BinaryOp(
+        BinOp::Add,
+        Operand::Constant(Constant::Int(1, Type::I32)),
+        Operand::Constant(Constant::Int(2, Type::I32)),
+    );
+    let eq = Rvalue::BinaryOp(
+        BinOp::Eq,
+        Operand::Constant(Constant::Int(1, Type::I32)),
+        Operand::Constant(Constant::Int(1, Type::I32)),
+    );
+
+    assert!(matches!(add, Rvalue::BinaryOp(BinOp::Add, _, _)));
+    assert!(matches!(eq, Rvalue::BinaryOp(BinOp::Eq, _, _)));
 }
 
 #[test]
-fn test_mir_control_flow() {
-    let ret = MirInstruction::Return(Some(0));
-    let ret_void = MirInstruction::Return(None);
-    let br = MirInstruction::Branch("loop");
-    let br_cond = MirInstruction::BranchCond(0, "then", "else");
-    
-    assert!(matches!(ret, MirInstruction::Return(Some(0))));
-    assert!(matches!(ret_void, MirInstruction::Return(None)));
-    
-    match br {
-        MirInstruction::Branch(label) => assert_eq!(label, "loop"),
-        _ => panic!("Expected branch"),
-    }
-    
-    match br_cond {
-        MirInstruction::BranchCond(cond, then_label, else_label) => {
-            assert_eq!(cond, 0);
-            assert_eq!(then_label, "then");
-            assert_eq!(else_label, "else");
-        }
-        _ => panic!("Expected conditional branch"),
-    }
+fn test_mir_terminators() {
+    use ruchy::middleend::mir::{Operand, Constant};
+
+    let ret = Terminator::Return(Some(Operand::Constant(Constant::Int(42, Type::I32))));
+    let ret_void = Terminator::Return(None);
+    let goto = Terminator::Goto(BlockId(1));
+    let if_term = Terminator::If {
+        condition: Operand::Constant(Constant::Bool(true)),
+        then_block: BlockId(2),
+        else_block: BlockId(3),
+    };
+
+    assert!(matches!(ret, Terminator::Return(Some(_))));
+    assert!(matches!(ret_void, Terminator::Return(None)));
+    assert!(matches!(goto, Terminator::Goto(_)));
+    assert!(matches!(if_term, Terminator::If { .. }));
 }
 
 #[test]
-fn test_mir_memory_instructions() {
-    let alloca = MirInstruction::Alloca(MirType::I32);
-    let load = MirInstruction::Load(0);
-    let store = MirInstruction::Store(0, 1);
-    
-    match alloca {
-        MirInstruction::Alloca(ty) => assert!(matches!(ty, MirType::I32)),
-        _ => panic!("Expected alloca"),
-    }
-    
-    assert!(matches!(load, MirInstruction::Load(0)));
-    assert!(matches!(store, MirInstruction::Store(0, 1)));
+fn test_mir_constants() {
+    use ruchy::middleend::mir::Constant;
+
+    let int_const = Constant::Int(42, Type::I64);
+    let bool_const = Constant::Bool(true);
+    let string_const = Constant::String("hello".to_string());
+    let unit_const = Constant::Unit;
+
+    assert!(matches!(int_const, Constant::Int(42, Type::I64)));
+    assert!(matches!(bool_const, Constant::Bool(true)));
+    assert!(matches!(string_const, Constant::String(_)));
+    assert!(matches!(unit_const, Constant::Unit));
 }
 
 #[test]
-fn test_mir_call_instruction() {
-    let call = MirInstruction::Call("printf", vec![0, 1, 2]);
-    
-    match call {
-        MirInstruction::Call(name, args) => {
-            assert_eq!(name, "printf");
-            assert_eq!(args.len(), 3);
-            assert_eq!(args[0], 0);
-            assert_eq!(args[1], 1);
-            assert_eq!(args[2], 2);
-        }
-        _ => panic!("Expected call instruction"),
-    }
-}
+fn test_mir_places() {
+    use ruchy::middleend::mir::{Place, FieldIdx};
 
-#[test]
-fn test_mir_builder_operations() {
-    let mut builder = MirBuilder::new();
-    let mut module = MirModule::new("test");
-    
-    // Start a function
-    builder.start_function("add", vec![MirType::I32, MirType::I32], MirType::I32);
-    
-    // Create entry block
-    builder.start_block("entry");
-    
-    // Add instructions
-    let a = builder.emit_load(0);
-    let b = builder.emit_load(1);
-    let sum = builder.emit_add(a, b);
-    builder.emit_return(Some(sum));
-    
-    // Finish block and function
-    builder.finish_block();
-    let func = builder.finish_function();
-    
-    assert_eq!(func.name, "add");
-    assert_eq!(func.params.len(), 2);
-    assert_eq!(func.blocks.len(), 1);
-    
-    module.functions.push(func);
-    assert_eq!(module.functions.len(), 1);
+    let local_place = Place::Local(Local(0));
+    let field_place = Place::Field(Box::new(Place::Local(Local(0))), FieldIdx(1));
+    let deref_place = Place::Deref(Box::new(Place::Local(Local(0))));
+
+    assert!(matches!(local_place, Place::Local(_)));
+    assert!(matches!(field_place, Place::Field(_, _)));
+    assert!(matches!(deref_place, Place::Deref(_)));
 }
 
 // Property-based tests
@@ -233,35 +209,46 @@ fn test_mir_builder_operations() {
 mod property_tests {
     use super::*;
     use proptest::prelude::*;
-    
+    use std::collections::HashMap;
+
     proptest! {
         #[test]
-        fn prop_mir_module_name(name in "[a-zA-Z_][a-zA-Z0-9_]{0,20}") {
-            let module = MirModule::new(&name);
-            prop_assert_eq!(module.name, name);
+        fn prop_mir_program_entry(name in "[a-zA-Z_][a-zA-Z0-9_]{0,20}") {
+            let program = Program {
+                functions: HashMap::new(),
+                entry: name.clone(),
+            };
+            prop_assert_eq!(program.entry, name);
         }
-        
+
         #[test]
         fn prop_mir_function_params(count in 0usize..10) {
-            let params = vec![MirType::I32; count];
-            let func = MirFunction::new("test", params.clone(), MirType::Void);
-            
+            let params: Vec<Local> = (0..count).map(Local).collect();
+            let func = Function {
+                name: "test".to_string(),
+                params: params.clone(),
+                return_ty: Type::Unit,
+                locals: vec![],
+                blocks: vec![],
+                entry_block: BlockId(0),
+            };
+
             prop_assert_eq!(func.params.len(), count);
-            for param in func.params {
-                prop_assert!(matches!(param, MirType::I32));
+            for (i, param) in func.params.iter().enumerate() {
+                prop_assert_eq!(*param, Local(i));
             }
         }
-        
+
         #[test]
         fn prop_mir_array_size(size in 1usize..1000) {
-            let array_type = MirType::Array(Box::new(MirType::Bool), size);
-            
+            let array_type = Type::Array(Box::new(Type::Bool), size);
+
             match array_type {
-                MirType::Array(_, s) => prop_assert_eq!(s, size),
+                Type::Array(_, s) => prop_assert_eq!(s, size),
                 _ => prop_assert!(false, "Expected array type"),
             }
         }
     }
 }
 
-} // End disabled_tests module
+} // End enabled_tests module
