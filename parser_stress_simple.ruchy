@@ -1,0 +1,29 @@
+// Simple parser stress test - focus on parsing performance
+let x1 = 1 + 2 * 3 - 4 / 5;
+let x2 = (x1 + 10) * (x1 - 5) + (x1 * 2);
+let x3 = if x2 % 7 == 0 { x2 } else { x2 + 1 };
+let x4 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+let x5 = {a: 1, b: 2, c: 3, d: 4, e: 5};
+let x6 = x4[0] + x5.a + x4[1] + x5.b;
+let x7 = x6 > 10 && x6 < 20 || x6 == 15;
+let x8 = if !x7 { "false" } else { "true" };
+
+let y1 = 1 + 2 * 3 - 4 / 5;
+let y2 = (y1 + 10) * (y1 - 5) + (y1 * 2);
+let y3 = if y2 % 7 == 0 { y2 } else { y2 + 1 };
+let y4 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+let y5 = {a: 1, b: 2, c: 3, d: 4, e: 5};
+let y6 = y4[0] + y5.a + y4[1] + y5.b;
+let y7 = y6 > 10 && y6 < 20 || y6 == 15;
+let y8 = if !y7 { "false" } else { "true" };
+
+let z1 = 1 + 2 * 3 - 4 / 5;
+let z2 = (z1 + 10) * (z1 - 5) + (z1 * 2);
+let z3 = if z2 % 7 == 0 { z2 } else { z2 + 1 };
+let z4 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+let z5 = {a: 1, b: 2, c: 3, d: 4, e: 5};
+let z6 = z4[0] + z5.a + z4[1] + z5.b;
+let z7 = z6 > 10 && z6 < 20 || z6 == 15;
+let z8 = if !z7 { "false" } else { "true" };
+
+println("Completed parsing stress test");
