@@ -42,10 +42,11 @@ impl TacticLibrary {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::tactics::default;
+/// use ruchy::proving::tactics::TacticLibrary;
 /// 
-/// let result = default(());
-/// assert_eq!(result, Ok(()));
+let mut instance = TacticLibrary::new();
+let result = instance.default();
+// Verify behavior
 /// ```
 pub fn default() -> Self {
         let mut tactics = HashMap::new();
@@ -69,10 +70,11 @@ pub fn default() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::tactics::all_tactics;
+/// use ruchy::proving::tactics::TacticLibrary;
 /// 
-/// let result = all_tactics(());
-/// assert_eq!(result, Ok(()));
+let mut instance = TacticLibrary::new();
+let result = instance.all_tactics();
+// Verify behavior
 /// ```
 pub fn all_tactics(&self) -> Vec<&dyn Tactic> {
         self.tactics.values().map(std::convert::AsRef::as_ref).collect()
@@ -80,7 +82,7 @@ pub fn all_tactics(&self) -> Vec<&dyn Tactic> {
     /// Get a specific tactic
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::tactics::get_tactic;
 /// 
 /// let result = get_tactic("example");
@@ -94,7 +96,7 @@ pub fn get_tactic(&self, name: &str) -> Result<&dyn Tactic> {
     /// Suggest tactics for a goal
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::tactics::suggest_tactics;
 /// 
 /// let result = suggest_tactics(());

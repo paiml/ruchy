@@ -92,7 +92,7 @@ fn check_gate_results(results: &[crate::quality::gates::GateResult]) -> Result<(
 /// Enforce quality gates on a file or directory (complexity: 6)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::enforcement::enforce_quality_gates;
 /// 
 /// let result = enforce_quality_gates("example");

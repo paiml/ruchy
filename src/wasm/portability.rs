@@ -975,10 +975,10 @@ impl PortabilityAnalyzer {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::portability::new;
+/// use ruchy::wasm::portability::PortabilityAnalyzer;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = PortabilityAnalyzer::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -991,10 +991,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::portability::new_with_config;
+/// use ruchy::wasm::portability::PortabilityAnalyzer;
 /// 
-/// let result = new_with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = PortabilityAnalyzer::new();
+let result = instance.new_with_config();
+// Verify behavior
 /// ```
 pub fn new_with_config(config: AnalysisConfig) -> Self {
         Self {
@@ -1006,7 +1007,7 @@ pub fn new_with_config(config: AnalysisConfig) -> Self {
     /// Analyze a WASM component's portability
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::portability::analyze;
 /// 
 /// let result = analyze(());

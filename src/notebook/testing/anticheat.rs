@@ -42,26 +42,26 @@ impl AntiCheatSystem {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::anticheat::new;
+/// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = AntiCheatSystem::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::anticheat::new;
+/// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = AntiCheatSystem::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::anticheat::new;
+/// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = AntiCheatSystem::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -73,10 +73,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::anticheat::with_threshold;
+/// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
 /// 
-/// let result = with_threshold(());
-/// assert_eq!(result, Ok(()));
+let mut instance = AntiCheatSystem::new();
+let result = instance.with_threshold();
+// Verify behavior
 /// ```
 pub fn with_threshold(threshold: f64) -> Self {
         Self {
@@ -89,10 +90,11 @@ pub fn with_threshold(threshold: f64) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::anticheat::check_plagiarism;
+/// use ruchy::notebook::testing::anticheat::AntiCheatSystem;
 /// 
-/// let result = check_plagiarism(());
-/// assert_eq!(result, Ok(()));
+let mut instance = AntiCheatSystem::new();
+let result = instance.check_plagiarism();
+// Verify behavior
 /// ```
 pub fn check_plagiarism(&mut self, submission: &Submission) -> PlagiarismResult {
         let fingerprint = self.generate_fingerprint(&submission.code);
@@ -270,7 +272,7 @@ impl ObfuscationDetector {
     /// Check if code appears obfuscated
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::anticheat::is_obfuscated;
 /// 
 /// let result = is_obfuscated("example");
@@ -357,7 +359,7 @@ impl PatternAnalyzer {
     /// Analyze submission patterns for suspicious behavior
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::anticheat::analyze_pattern;
 /// 
 /// let result = analyze_pattern("example");

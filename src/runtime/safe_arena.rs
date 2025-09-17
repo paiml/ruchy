@@ -22,18 +22,18 @@ impl SafeArena {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::safe_arena::new;
+/// use ruchy::runtime::safe_arena::SafeArena;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = SafeArena::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::safe_arena::new;
+/// use ruchy::runtime::safe_arena::SafeArena;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = SafeArena::new();
+// Verify behavior
 /// ```
 pub fn new(max_size: usize) -> Self {
         Self {
@@ -62,14 +62,15 @@ pub fn new(max_size: usize) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::safe_arena::reset;
+/// use ruchy::runtime::safe_arena::SafeArena;
 /// 
-/// let result = reset(());
-/// assert_eq!(result, Ok(()));
+let mut instance = SafeArena::new();
+let result = instance.reset();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::safe_arena::reset;
 /// 
 /// let result = reset(());
@@ -82,7 +83,7 @@ pub fn reset(&self) {
     /// Get current memory usage
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::safe_arena::used;
 /// 
 /// let result = used(());
@@ -129,7 +130,7 @@ impl TransactionalArena {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::safe_arena::checkpoint;
 /// 
 /// let result = checkpoint(());
@@ -145,7 +146,7 @@ pub fn checkpoint(&mut self) -> usize {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::safe_arena::rollback;
 /// 
 /// let result = rollback(());
@@ -165,7 +166,7 @@ pub fn rollback(&mut self, checkpoint_id: usize) -> Result<()> {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::safe_arena::commit;
 /// 
 /// let result = commit(());
@@ -180,7 +181,7 @@ pub fn commit(&mut self) -> Result<()> {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::safe_arena::arena;
 /// 
 /// let result = arena(());

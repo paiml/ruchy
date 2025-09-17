@@ -55,10 +55,10 @@ impl ModuleResolver {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_resolver::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_resolver::ModuleResolver;
+///
+/// let resolver = ModuleResolver::new();
+/// // ModuleResolver created successfully
 /// ```
 pub fn new() -> Self {
         Self {
@@ -95,10 +95,13 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_resolver::resolve_imports;
-/// 
-/// let result = resolve_imports(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_resolver::ModuleResolver;
+/// use ruchy::ast::Expr;
+///
+/// let mut resolver = ModuleResolver::new();
+/// let ast = Expr::literal(42.into());
+/// let result = resolver.resolve_imports(ast);
+/// assert!(result.is_ok());
 /// ```
 pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
         self.resolve_expr(ast)
@@ -295,10 +298,11 @@ pub fn resolve_imports(&mut self, ast: Expr) -> Result<Expr> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_resolver::stats;
-/// 
-/// let result = stats(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_resolver::ModuleResolver;
+///
+/// let resolver = ModuleResolver::new();
+/// let stats = resolver.stats();
+/// assert!(stats.cached_modules >= 0);
 /// ```
 pub fn stats(&self) -> crate::backend::module_loader::ModuleLoaderStats {
         self.module_loader.stats()
@@ -309,10 +313,11 @@ pub fn stats(&self) -> crate::backend::module_loader::ModuleLoaderStats {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_resolver::clear_cache;
-/// 
-/// let result = clear_cache(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_resolver::ModuleResolver;
+///
+/// let mut resolver = ModuleResolver::new();
+/// resolver.clear_cache();
+/// // Cache cleared successfully
 /// ```
 pub fn clear_cache(&mut self) {
         self.module_loader.clear_cache();

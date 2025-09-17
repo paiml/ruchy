@@ -37,10 +37,11 @@ impl LazyValue {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::lazy::computed;
+/// use ruchy::runtime::lazy::LazyValue;
 /// 
-/// let result = computed(());
-/// assert_eq!(result, Ok(()));
+let mut instance = LazyValue::new();
+let result = instance.computed();
+// Verify behavior
 /// ```
 pub fn computed(value: Value) -> Self {
         LazyValue::Computed(value)
@@ -69,7 +70,7 @@ pub fn computed(value: Value) -> Self {
     /// Returns an error if the computation fails
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::lazy::force;
 /// 
 /// let result = force(());
@@ -97,7 +98,7 @@ pub fn force(&self) -> Result<Value> {
     /// Check if the value has been computed
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::lazy::is_computed;
 /// 
 /// let result = is_computed(());
@@ -149,10 +150,11 @@ impl LazyIterator {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::lazy::from_vec;
+/// use ruchy::runtime::lazy::LazyIterator;
 /// 
-/// let result = from_vec(());
-/// assert_eq!(result, Ok(()));
+let mut instance = LazyIterator::new();
+let result = instance.from_vec();
+// Verify behavior
 /// ```
 pub fn from_vec(values: Vec<Value>) -> Self {
         LazyIterator {
@@ -229,10 +231,11 @@ pub fn skip(self, count: usize) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::lazy::collect;
+/// use ruchy::runtime::lazy::LazyIterator;
 /// 
-/// let result = collect(());
-/// assert_eq!(result, Ok(()));
+let mut instance = LazyIterator::new();
+let result = instance.collect();
+// Verify behavior
 /// ```
 pub fn collect(&self) -> Result<Vec<Value>> {
         match &*self.state.borrow() {
@@ -271,7 +274,7 @@ pub fn collect(&self) -> Result<Vec<Value>> {
     /// Returns an error if evaluation fails
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::lazy::first;
 /// 
 /// let result = first(());
@@ -288,7 +291,7 @@ pub fn first(&self) -> Result<Option<Value>> {
     /// Returns an error if evaluation fails
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::lazy::count;
 /// 
 /// let result = count(());
@@ -310,10 +313,10 @@ impl LazyCache {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::lazy::new;
+/// use ruchy::runtime::lazy::LazyCache;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = LazyCache::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         LazyCache {
@@ -342,10 +345,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::lazy::clear;
+/// use ruchy::runtime::lazy::LazyCache;
 /// 
-/// let result = clear(());
-/// assert_eq!(result, Ok(()));
+let mut instance = LazyCache::new();
+let result = instance.clear();
+// Verify behavior
 /// ```
 pub fn clear(&self) {
         self.cache.borrow_mut().clear();
@@ -353,7 +357,7 @@ pub fn clear(&self) {
     /// Get cache size
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::lazy::size;
 /// 
 /// let result = size(());

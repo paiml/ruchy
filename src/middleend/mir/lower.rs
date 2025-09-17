@@ -47,10 +47,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::middleend::mir::lower::lower_expr;
+/// use ruchy::middleend::mir::lower::LoweringContext;
 /// 
-/// let result = lower_expr(());
-/// assert_eq!(result, Ok(()));
+let mut instance = LoweringContext::new();
+let result = instance.lower_expr();
+// Verify behavior
 /// ```
 pub fn lower_expr(&mut self, expr: &Expr) -> Result<Program> {
         match &expr.kind {

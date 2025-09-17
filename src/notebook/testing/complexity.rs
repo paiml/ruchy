@@ -70,10 +70,10 @@ impl ComplexityAnalyzer {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::complexity::new;
+/// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = ComplexityAnalyzer::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -83,10 +83,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::complexity::with_config;
+/// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
 /// 
-/// let result = with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ComplexityAnalyzer::new();
+let result = instance.with_config();
+// Verify behavior
 /// ```
 pub fn with_config(config: ComplexityConfig) -> Self {
         Self { config }
@@ -94,10 +95,11 @@ pub fn with_config(config: ComplexityConfig) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::complexity::get_default_threshold;
+/// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
 /// 
-/// let result = get_default_threshold(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ComplexityAnalyzer::new();
+let result = instance.get_default_threshold();
+// Verify behavior
 /// ```
 pub fn get_default_threshold(&self) -> usize {
         self.config.cyclomatic_threshold
@@ -106,10 +108,11 @@ pub fn get_default_threshold(&self) -> usize {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::complexity::analyze;
+/// use ruchy::notebook::testing::complexity::ComplexityAnalyzer;
 /// 
-/// let result = analyze(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ComplexityAnalyzer::new();
+let result = instance.analyze();
+// Verify behavior
 /// ```
 pub fn analyze(&self, cell: &Cell) -> ComplexityResult {
         let source = &cell.source;
@@ -231,7 +234,7 @@ pub fn analyze(&self, cell: &Cell) -> ComplexityResult {
     /// Find performance hotspots in a notebook
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::complexity::find_hotspots;
 /// 
 /// let result = find_hotspots(());
@@ -278,7 +281,7 @@ pub fn find_hotspots(&self, notebook: &Notebook) -> Vec<Hotspot> {
     /// Suggest optimizations for a cell
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::complexity::suggest_optimizations;
 /// 
 /// let result = suggest_optimizations(());

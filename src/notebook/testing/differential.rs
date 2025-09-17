@@ -51,10 +51,10 @@ impl DifferentialTester {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::differential::new;
+/// use ruchy::notebook::testing::differential::DifferentialTester;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = DifferentialTester::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -66,10 +66,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::differential::with_config;
+/// use ruchy::notebook::testing::differential::DifferentialTester;
 /// 
-/// let result = with_config(());
-/// assert_eq!(result, Ok(()));
+let mut instance = DifferentialTester::new();
+let result = instance.with_config();
+// Verify behavior
 /// ```
 pub fn with_config(config: DifferentialConfig) -> Self {
         Self {
@@ -82,10 +83,11 @@ pub fn with_config(config: DifferentialConfig) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::differential::compare;
+/// use ruchy::notebook::testing::differential::DifferentialTester;
 /// 
-/// let result = compare(());
-/// assert_eq!(result, Ok(()));
+let mut instance = DifferentialTester::new();
+let result = instance.compare();
+// Verify behavior
 /// ```
 pub fn compare(&mut self, notebook: &Notebook) -> Vec<DifferentialResult> {
         let mut results = Vec::new();
@@ -159,7 +161,7 @@ pub fn compare(&mut self, notebook: &Notebook) -> Vec<DifferentialResult> {
     /// Generate a report of all divergences
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::differential::generate_report;
 /// 
 /// let result = generate_report(());

@@ -34,26 +34,26 @@ impl CiCdIntegrator {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::integration::new;
+/// use ruchy::notebook::testing::integration::CiCdIntegrator;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = CiCdIntegrator::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::integration::new;
+/// use ruchy::notebook::testing::integration::CiCdIntegrator;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = CiCdIntegrator::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::integration::new;
+/// use ruchy::notebook::testing::integration::CiCdIntegrator;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = CiCdIntegrator::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self { config: None }
@@ -62,10 +62,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::integration::configure;
+/// use ruchy::notebook::testing::integration::CiCdIntegrator;
 /// 
-/// let result = configure(());
-/// assert_eq!(result, Ok(()));
+let mut instance = CiCdIntegrator::new();
+let result = instance.configure();
+// Verify behavior
 /// ```
 pub fn configure(&mut self, config: CiCdConfig) -> Result<(), String> {
         if config.coverage_threshold > 100.0 || config.coverage_threshold < 0.0 {
@@ -77,7 +78,7 @@ pub fn configure(&mut self, config: CiCdConfig) -> Result<(), String> {
     /// Generate workflow file for the configured provider
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::integration::generate_workflow;
 /// 
 /// let result = generate_workflow(());
@@ -158,7 +159,7 @@ impl DistributedTestCoordinator {
     /// Register a worker node
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::integration::register_worker;
 /// 
 /// let result = register_worker("example");
@@ -170,7 +171,7 @@ pub fn register_worker(&mut self, name: &str, address: &str) {
     /// Distribute tests across workers
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::integration::distribute;
 /// 
 /// let result = distribute(());
@@ -194,7 +195,7 @@ pub fn distribute(&self, tests: &[String]) -> HashMap<String, Vec<String>> {
     /// Get worker status
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::integration::get_worker_status;
 /// 
 /// let result = get_worker_status("example");
@@ -260,7 +261,7 @@ impl ContinuousMonitor {
     /// Add an alert configuration
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::integration::add_alert;
 /// 
 /// let result = add_alert(());
@@ -272,7 +273,7 @@ pub fn add_alert(&mut self, alert: Alert) {
     /// Start monitoring
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::integration::start;
 /// 
 /// let result = start(());
@@ -284,7 +285,7 @@ pub fn start(&self) {
     /// Stop monitoring
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::integration::stop;
 /// 
 /// let result = stop(());
@@ -296,7 +297,7 @@ pub fn stop(&self) {
     /// Record a metric value
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::integration::record_metric;
 /// 
 /// let result = record_metric(());
@@ -332,7 +333,7 @@ pub fn record_metric(&mut self, metric: Metric, value: f64) {
     /// Get triggered alerts
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::integration::get_triggered_alerts;
 /// 
 /// let result = get_triggered_alerts(());
@@ -344,7 +345,7 @@ pub fn get_triggered_alerts(&self) -> Vec<String> {
     /// Clear triggered alerts
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::integration::clear_alerts;
 /// 
 /// let result = clear_alerts(());

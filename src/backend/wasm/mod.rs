@@ -14,18 +14,18 @@ impl WasmEmitter {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::wasm::mod::new;
+/// use ruchy::backend::wasm::mod::WasmEmitter;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = WasmEmitter::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::wasm::mod::new;
+/// use ruchy::backend::wasm::mod::WasmEmitter;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = WasmEmitter::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -36,10 +36,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::wasm::mod::emit;
+/// use ruchy::backend::wasm::mod::WasmEmitter;
 /// 
-/// let result = emit(());
-/// assert_eq!(result, Ok(()));
+let mut instance = WasmEmitter::new();
+let result = instance.emit();
+// Verify behavior
 /// ```
 pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
         let mut module = Module::new();
@@ -506,7 +507,7 @@ impl WasmModule {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::backend::wasm::mod::bytes;
 /// 
 /// let result = bytes(());

@@ -60,10 +60,11 @@
 //!
 //! ```no_run
 //! use ruchy::backend::{compile_to_binary, CompileOptions};
+//! use std::path::Path;
 //!
 //! // Compile to executable binary
 //! let options = CompileOptions::default();
-//! let binary_path = compile_to_binary("main.ruchy", &options).unwrap();
+//! let binary_path = compile_to_binary(Path::new("main.ruchy"), &options).unwrap();
 //! println!("Binary created: {}", binary_path.display());
 //! ```
 pub mod compiler;

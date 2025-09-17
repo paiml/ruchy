@@ -59,12 +59,12 @@ impl ModuleLoader {
     /// - `./modules` (modules directory)
     #[must_use]
 /// # Examples
-/// 
+///
 /// ```
-/// use ruchy::backend::module_loader::new;
-/// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_loader::ModuleLoader;
+///
+/// let loader = ModuleLoader::new();
+/// assert_eq!(loader.stats().files_loaded, 0);
 /// ```
 pub fn new() -> Self {
         Self {
@@ -114,10 +114,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_loader::load_module;
-/// 
-/// let result = load_module("example");
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_loader::ModuleLoader;
+///
+/// let mut loader = ModuleLoader::new();
+/// // Loading a module would require actual module files
+/// // let module = loader.load_module("example");
 /// ```
 pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
         // Check circular dependencies first
@@ -248,10 +249,11 @@ pub fn load_module(&mut self, module_name: &str) -> Result<ParsedModule> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_loader::stats;
-/// 
-/// let result = stats(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_loader::{ModuleLoader, ModuleLoaderStats};
+///
+/// let loader = ModuleLoader::new();
+/// let stats = loader.stats();
+/// assert_eq!(stats.files_loaded, 0);
 /// ```
 pub fn stats(&self) -> ModuleLoaderStats {
         ModuleLoaderStats {
@@ -268,10 +270,11 @@ pub fn stats(&self) -> ModuleLoaderStats {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_loader::clear_cache;
-/// 
-/// let result = clear_cache(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_loader::ModuleLoader;
+///
+/// let mut loader = ModuleLoader::new();
+/// loader.clear_cache();
+/// assert_eq!(loader.stats().cached_modules, 0);
 /// ```
 pub fn clear_cache(&mut self) {
         self.cache.clear();
@@ -283,10 +286,10 @@ pub fn clear_cache(&mut self) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_loader::is_loading;
-/// 
-/// let result = is_loading("example");
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_loader::ModuleLoader;
+///
+/// let loader = ModuleLoader::new();
+/// assert_eq!(loader.is_loading("example"), false);
 /// ```
 pub fn is_loading(&self, module_name: &str) -> bool {
         self.loading_stack.contains(&module_name.to_string())
@@ -315,10 +318,18 @@ impl ParsedModule {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_loader::name;
-/// 
-/// let result = name(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_loader::ParsedModule;
+/// use ruchy::ast::Expr;
+/// use std::path::PathBuf;
+/// use std::time::SystemTime;
+///
+/// let module = ParsedModule {
+///     ast: Expr::literal(42.into()),
+///     file_path: PathBuf::from("test.ruchy"),
+///     dependencies: Vec::new(),
+///     last_modified: SystemTime::now(),
+/// };
+/// assert_eq!(module.name(), Some("test".to_string()));
 /// ```
 pub fn name(&self) -> Option<String> {
         self.file_path
@@ -331,10 +342,18 @@ pub fn name(&self) -> Option<String> {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_loader::has_dependencies;
-/// 
-/// let result = has_dependencies(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_loader::ParsedModule;
+/// use ruchy::ast::Expr;
+/// use std::path::PathBuf;
+/// use std::time::SystemTime;
+///
+/// let module = ParsedModule {
+///     ast: Expr::literal(42.into()),
+///     file_path: PathBuf::from("test.ruchy"),
+///     dependencies: Vec::new(),
+///     last_modified: SystemTime::now(),
+/// };
+/// assert_eq!(module.has_dependencies(), false);
 /// ```
 pub fn has_dependencies(&self) -> bool {
         !self.dependencies.is_empty()
@@ -358,10 +377,15 @@ impl ModuleLoaderStats {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::module_loader::cache_hit_ratio;
-/// 
-/// let result = cache_hit_ratio(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::module_loader::ModuleLoaderStats;
+///
+/// let stats = ModuleLoaderStats {
+///     cached_modules: 5,
+///     files_loaded: 10,
+///     cache_hits: 10,
+///     search_paths: 1,
+/// };
+/// assert_eq!(stats.cache_hit_ratio(), 50.0);
 /// ```
 pub fn cache_hit_ratio(&self) -> f64 {
         if self.files_loaded + self.cache_hits == 0 {

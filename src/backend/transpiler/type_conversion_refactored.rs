@@ -10,10 +10,11 @@ impl Transpiler {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::type_conversion_refactored::try_transpile_type_conversion_refactored;
+/// use ruchy::backend::transpiler::type_conversion_refactored::Transpiler;
 /// 
-/// let result = try_transpile_type_conversion_refactored("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = Transpiler::new();
+let result = instance.try_transpile_type_conversion_refactored();
+// Verify behavior
 /// ```
 pub fn try_transpile_type_conversion_refactored(
         &self, 

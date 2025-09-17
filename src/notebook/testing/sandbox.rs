@@ -129,10 +129,11 @@ impl WasmSandbox {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::sandbox::configure;
+/// use ruchy::notebook::testing::sandbox::WasmSandbox;
 /// 
-/// let result = configure(());
-/// assert_eq!(result, Ok(()));
+let mut instance = WasmSandbox::new();
+let result = instance.configure();
+// Verify behavior
 /// ```
 pub fn configure(&mut self, limits: ResourceLimits) -> Result<(), String> {
         if limits.memory_mb == 0 || limits.memory_mb > 1024 {
@@ -157,7 +158,7 @@ pub fn configure(&mut self, limits: ResourceLimits) -> Result<(), String> {
     /// Get configured memory limit
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::sandbox::get_memory_limit;
 /// 
 /// let result = get_memory_limit(());

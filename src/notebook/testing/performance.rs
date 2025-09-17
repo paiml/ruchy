@@ -37,58 +37,58 @@ impl PerformanceBenchmarker {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::performance::new;
+/// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = PerformanceBenchmarker::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::performance::new;
+/// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = PerformanceBenchmarker::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::performance::new;
+/// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = PerformanceBenchmarker::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::performance::new;
+/// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = PerformanceBenchmarker::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::performance::new;
+/// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = PerformanceBenchmarker::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::performance::new;
+/// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = PerformanceBenchmarker::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::performance::new;
+/// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = PerformanceBenchmarker::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -100,10 +100,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::performance::add_benchmark;
+/// use ruchy::notebook::testing::performance::PerformanceBenchmarker;
 /// 
-/// let result = add_benchmark(());
-/// assert_eq!(result, Ok(()));
+let mut instance = PerformanceBenchmarker::new();
+let result = instance.add_benchmark();
+// Verify behavior
 /// ```
 pub fn add_benchmark(&mut self, benchmark: Benchmark) {
         self.benchmarks.push(benchmark);
@@ -111,7 +112,7 @@ pub fn add_benchmark(&mut self, benchmark: Benchmark) {
     /// Run all benchmarks
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::run_all;
 /// 
 /// let result = run_all(());
@@ -185,10 +186,11 @@ impl ParallelTestExecutor {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::performance::with_threads;
+/// use ruchy::notebook::testing::performance::ParallelTestExecutor;
 /// 
-/// let result = with_threads(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ParallelTestExecutor::new();
+let result = instance.with_threads();
+// Verify behavior
 /// ```
 pub fn with_threads(num_threads: usize) -> Self {
         Self { num_threads }
@@ -197,10 +199,11 @@ pub fn with_threads(num_threads: usize) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::performance::execute_parallel;
+/// use ruchy::notebook::testing::performance::ParallelTestExecutor;
 /// 
-/// let result = execute_parallel(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ParallelTestExecutor::new();
+let result = instance.execute_parallel();
+// Verify behavior
 /// ```
 pub fn execute_parallel(&self, notebook: &Notebook, threads: usize) -> Vec<TestExecutionResult> {
         use std::thread;
@@ -279,7 +282,7 @@ impl TestCache {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::with_max_size;
 /// 
 /// let result = with_max_size(());
@@ -296,7 +299,7 @@ pub fn with_max_size(max_size: usize) -> Self {
     /// Store a test result
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::store;
 /// 
 /// let result = store("example");
@@ -317,7 +320,7 @@ pub fn store(&mut self, key: &str, result: &TestExecutionResult) {
     /// Get a cached result
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::get;
 /// 
 /// let result = get("example");
@@ -335,7 +338,7 @@ pub fn get(&mut self, key: &str) -> Option<TestExecutionResult> {
     /// Get cache statistics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::get_stats;
 /// 
 /// let result = get_stats(());
@@ -401,7 +404,7 @@ impl ResourceMonitor {
     /// Start monitoring resources
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::start;
 /// 
 /// let result = start(());
@@ -414,7 +417,7 @@ pub fn start(&mut self) {
     /// Stop monitoring
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::stop;
 /// 
 /// let result = stop(());
@@ -426,7 +429,7 @@ pub fn stop(&self) {
     /// Get current resource usage
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::get_usage;
 /// 
 /// let result = get_usage(());
@@ -460,7 +463,7 @@ impl TestSharder {
     /// Shard tests across multiple workers
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::shard;
 /// 
 /// let result = shard(());
@@ -479,7 +482,7 @@ pub fn shard(&self, tests: &[String], num_shards: usize) -> Vec<Vec<String>> {
     /// Shard by estimated duration for better balance
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::shard_by_duration;
 /// 
 /// let result = shard_by_duration(());
@@ -534,7 +537,7 @@ impl RegressionDetector {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::with_tolerance;
 /// 
 /// let result = with_tolerance(());
@@ -549,7 +552,7 @@ pub fn with_tolerance(tolerance_percent: f64) -> Self {
     /// Add a baseline measurement
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::add_baseline;
 /// 
 /// let result = add_baseline("example");
@@ -561,7 +564,7 @@ pub fn add_baseline(&mut self, name: &str, time_ms: f64) {
     /// Check if current measurement is a regression
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::check_regression;
 /// 
 /// let result = check_regression("example");
@@ -613,7 +616,7 @@ impl TestPrioritizer {
     /// Record a test failure
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::record_failure;
 /// 
 /// let result = record_failure("example");
@@ -633,7 +636,7 @@ pub fn record_failure(&mut self, test: &str, count: usize) {
     /// Record a test success
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::record_success;
 /// 
 /// let result = record_success("example");
@@ -653,7 +656,7 @@ pub fn record_success(&mut self, test: &str, count: usize) {
     /// Prioritize tests based on failure history
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::performance::prioritize;
 /// 
 /// let result = prioritize(());

@@ -11,10 +11,12 @@ impl Transpiler {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::expressions::transpile_literal;
-/// 
-/// let result = transpile_literal(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// use ruchy::frontend::ast::Literal;
+///
+/// let lit = Literal::Integer(42);
+/// let result = Transpiler::transpile_literal(&lit);
+/// // Returns TokenStream
 /// ```
 pub fn transpile_literal(lit: &Literal) -> TokenStream {
         match lit {
@@ -92,10 +94,14 @@ pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<Tok
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::expressions::transpile_binary;
-/// 
-/// let result = transpile_binary(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::backend::transpiler::Transpiler;
+/// use ruchy::frontend::ast::{Expr, BinaryOp};
+///
+/// let transpiler = Transpiler::new();
+/// let left = Expr::literal(1.into());
+/// let right = Expr::literal(2.into());
+/// let result = transpiler.transpile_binary(&left, BinaryOp::Add, &right);
+/// assert!(result.is_ok());
 /// ```
 pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Result<TokenStream> {
         // Special handling for string concatenation

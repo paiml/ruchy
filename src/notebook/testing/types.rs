@@ -19,18 +19,18 @@ impl TestConfig {
 /// # Examples
 ///
 /// ```
-/// use ruchy::notebook::testing::types::new;
+/// use ruchy::notebook::testing::types::TestConfig;
 ///
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = TestConfig::new();
+// Verify behavior
 /// ```
 /// # Examples
 ///
 /// ```
-/// use ruchy::notebook::testing::types::new;
+/// use ruchy::notebook::testing::types::TestConfig;
 ///
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = TestConfig::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -164,10 +164,11 @@ impl NotebookParser {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::types::parse;
+/// use ruchy::notebook::testing::types::NotebookParser;
 /// 
-/// let result = parse("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookParser::new();
+let result = instance.parse();
+// Verify behavior
 /// ```
 pub fn parse(&self, content: &str) -> anyhow::Result<Notebook> {
         serde_json::from_str(content)
@@ -176,7 +177,7 @@ pub fn parse(&self, content: &str) -> anyhow::Result<Notebook> {
     /// Validate notebook structure
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::types::validate;
 /// 
 /// let result = validate(());

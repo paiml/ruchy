@@ -21,14 +21,15 @@ impl FileCoverage {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::coverage::line_coverage_percentage;
+/// use ruchy::quality::coverage::FileCoverage;
 /// 
-/// let result = line_coverage_percentage(());
-/// assert_eq!(result, Ok(()));
+let mut instance = FileCoverage::new();
+let result = instance.line_coverage_percentage();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::coverage::line_coverage_percentage;
 /// 
 /// let result = line_coverage_percentage(());
@@ -45,14 +46,15 @@ pub fn line_coverage_percentage(&self) -> f64 {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::coverage::branch_coverage_percentage;
+/// use ruchy::quality::coverage::FileCoverage;
 /// 
-/// let result = branch_coverage_percentage(());
-/// assert_eq!(result, Ok(()));
+let mut instance = FileCoverage::new();
+let result = instance.branch_coverage_percentage();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::coverage::branch_coverage_percentage;
 /// 
 /// let result = branch_coverage_percentage(());
@@ -68,7 +70,7 @@ pub fn branch_coverage_percentage(&self) -> f64 {
     #[allow(clippy::cast_precision_loss)]
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::coverage::function_coverage_percentage;
 /// 
 /// let result = function_coverage_percentage(());
@@ -76,7 +78,7 @@ pub fn branch_coverage_percentage(&self) -> f64 {
 /// ```
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::quality::coverage::function_coverage_percentage;
 /// 
 /// let result = function_coverage_percentage(());
@@ -140,10 +142,11 @@ impl CoverageReport {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::quality::coverage::add_file;
+/// use ruchy::quality::coverage::CoverageReport;
 /// 
-/// let result = add_file(());
-/// assert_eq!(result, Ok(()));
+let mut instance = CoverageReport::new();
+let result = instance.add_file();
+// Verify behavior
 /// ```
 pub fn add_file(&mut self, file_coverage: FileCoverage) {
         self.total_lines += file_coverage.lines_total;

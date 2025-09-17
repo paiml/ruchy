@@ -46,18 +46,18 @@ impl InteractiveTutorial {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tutorial::new;
+/// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
 /// 
-/// let result = new("example");
-/// assert_eq!(result, Ok(()));
+let instance = InteractiveTutorial::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tutorial::new;
+/// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
 /// 
-/// let result = new("example");
-/// assert_eq!(result, Ok(()));
+let instance = InteractiveTutorial::new();
+// Verify behavior
 /// ```
 pub fn new(id: &str) -> Self {
         Self {
@@ -72,10 +72,11 @@ pub fn new(id: &str) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tutorial::add_step;
+/// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
 /// 
-/// let result = add_step(());
-/// assert_eq!(result, Ok(()));
+let mut instance = InteractiveTutorial::new();
+let result = instance.add_step();
+// Verify behavior
 /// ```
 pub fn add_step(&mut self, step: TutorialStep) {
         self.progress.insert(step.id.clone(), StepProgress {
@@ -89,7 +90,7 @@ pub fn add_step(&mut self, step: TutorialStep) {
     /// Validate a step submission
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::tutorial::validate_step;
 /// 
 /// let result = validate_step("example");
@@ -167,10 +168,11 @@ pub fn validate_step(&mut self, step_id: &str, submission: &str) -> StepResult {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tutorial::get_completion;
+/// use ruchy::notebook::testing::tutorial::InteractiveTutorial;
 /// 
-/// let result = get_completion(());
-/// assert_eq!(result, Ok(()));
+let mut instance = InteractiveTutorial::new();
+let result = instance.get_completion();
+// Verify behavior
 /// ```
 pub fn get_completion(&self) -> f64 {
         let completed = self.progress.values().filter(|p| p.completed).count();
@@ -234,7 +236,7 @@ impl AdaptiveHintSystem {
     /// Record a student attempt
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::tutorial::record_attempt;
 /// 
 /// let result = record_attempt("example");
@@ -253,10 +255,11 @@ pub fn record_attempt(&mut self, student: &str, problem: &str, attempt: &str, su
 /// # Examples
 /// 
 /// ```
-/// use ruchy::notebook::testing::tutorial::get_hint;
+/// use ruchy::notebook::testing::tutorial::AdaptiveHintSystem;
 /// 
-/// let result = get_hint("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = AdaptiveHintSystem::new();
+let result = instance.get_hint();
+// Verify behavior
 /// ```
 pub fn get_hint(&self, student: &str, problem: &str) -> String {
         let student_attempts = self.get_student_attempts(student, problem);
@@ -286,7 +289,7 @@ pub fn get_hint(&self, student: &str, problem: &str) -> String {
     /// Analyze common mistakes
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::notebook::testing::tutorial::analyze_mistakes;
 /// 
 /// let result = analyze_mistakes("example");

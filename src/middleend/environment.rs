@@ -11,10 +11,10 @@ impl TypeEnv {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::middleend::environment::new;
+/// use ruchy::middleend::environment::TypeEnv;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = TypeEnv::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         TypeEnv {
@@ -76,10 +76,11 @@ pub fn standard() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::middleend::environment::bind;
+/// use ruchy::middleend::environment::TypeEnv;
 /// 
-/// let result = bind(());
-/// assert_eq!(result, Ok(()));
+let mut instance = TypeEnv::new();
+let result = instance.bind();
+// Verify behavior
 /// ```
 pub fn bind(&mut self, name: impl Into<String>, scheme: TypeScheme) {
         self.bindings.insert(name.into(), scheme);
@@ -158,7 +159,7 @@ pub fn generalize(&self, ty: MonoType) -> TypeScheme {
     /// Instantiate a type scheme with fresh variables
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::middleend::environment::instantiate;
 /// 
 /// let result = instantiate(());

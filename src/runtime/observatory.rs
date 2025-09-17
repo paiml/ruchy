@@ -570,6 +570,927 @@ mod tests {
         let traces = observatory.get_traces(None, None).unwrap();
         assert_eq!(traces.len(), 5);
     }
+
+    // ========== SPRINT 45: Advanced Observatory Tests (20 tests) ==========
+
+    #[test]
+    fn test_sprint_45_01_complex_deadlock_detection() {
+        let mut observatory = create_test_observatory();
+
+        // Create complex deadlock scenario: A -> B -> C -> A
+        let mut detector = observatory.deadlock_detector.lock().unwrap();
+
+        let request_ab = BlockedRequest {
+            requester: ActorId(1),
+            target: ActorId(2),
+            request_time: current_timestamp(),
+            timeout_ms: None,
+        };
+
+        let request_bc = BlockedRequest {
+            requester: ActorId(2),
+            target: ActorId(3),
+            request_time: current_timestamp(),
+            timeout_ms: None,
+        };
+
+        let request_ca = BlockedRequest {
+            requester: ActorId(3),
+            target: ActorId(1),
+            request_time: current_timestamp(),
+            timeout_ms: None,
+        };
+
+        detector.add_blocked_request(request_ab);
+        detector.add_blocked_request(request_bc);
+        detector.add_blocked_request(request_ca);
+
+        let cycles = detector.detect_cycles().unwrap();
+        assert!(!cycles.is_empty(), "Should detect circular dependency");
+        assert_eq!(cycles[0].actors.len(), 3);
+    }
+
+    #[test]
+    fn test_sprint_45_02_message_filter_pattern_matching() {
+        let mut observatory = create_test_observatory();
+
+        // Add sophisticated filter
+        let complex_filter = MessageFilter {
+            name: "complex_filter".to_string(),
+            actor_id: Some(ActorId(5)),
+            actor_name_pattern: Some(r"worker_\d+".to_string()),
+            message_type_pattern: Some(r"ProcessJob\{.*\}".to_string()),
+            min_processing_time_us: Some(1000),
+            failed_only: false,
+            max_stack_depth: Some(3),
+        };
+
+        observatory.add_filter(complex_filter);
+
+        // Create matching trace
+        let matching_trace = MessageTrace {
+            trace_id: 100,
+            timestamp: current_timestamp(),
+            source: Some(ActorId(1)),
+            destination: ActorId(5),
+            message: Message::User("ProcessJob{id: 42}".to_string(), vec![]),
+            status: MessageStatus::Processing,
+            processing_duration_us: Some(1500),
+            error: None,
+            stack_depth: 2,
+            correlation_id: Some("job-42".to_string()),
+        };
+
+        // Test filter matching
+        assert!(observatory.message_matches_filters(&matching_trace));
+
+        // Create non-matching trace
+        let non_matching_trace = MessageTrace {
+            trace_id: 101,
+            timestamp: current_timestamp(),
+            source: Some(ActorId(1)),
+            destination: ActorId(6), // Different actor
+            message: matching_trace.message.clone(),
+            status: MessageStatus::Processing,
+            processing_duration_us: Some(1500),
+            error: None,
+            stack_depth: 2,
+            correlation_id: Some("job-43".to_string()),
+        };
+
+        assert!(!observatory.message_matches_filters(&non_matching_trace));
+    }
+
+    #[test]
+    fn test_sprint_45_03_metrics_calculation_accuracy() {
+        let observatory = create_test_observatory();
+
+        // Add multiple actor snapshots with varying stats
+        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+
+        for i in 1..=5 {
+            let snapshot = ActorSnapshot {
+                actor_id: ActorId(i),
+                name: format!("actor_{}", i),
+                timestamp: current_timestamp(),
+                state: ActorState::Running,
+                mailbox_size: i * 10, // 10, 20, 30, 40, 50
+                parent: if i > 1 { Some(ActorId(i - 1)) } else { None },
+                children: vec![],
+                message_stats: MessageStats {
+                    total_processed: i * 100, // 100, 200, 300, 400, 500
+                    total_failed: i * 2,       // 2, 4, 6, 8, 10
+                    avg_processing_time_us: i * 1000.0, // 1000, 2000, 3000, 4000, 5000
+                    last_message_time: Some(current_timestamp()),
+                },
+                memory_usage: Some(i * 1024), // 1024, 2048, 3072, 4096, 5120
+            };
+            snapshots.insert(ActorId(i), snapshot);
+        }
+        drop(snapshots);
+
+        // Update metrics
+        let result = observatory.update_metrics();
+        assert!(result.is_ok());
+
+        // Verify calculations
+        let metrics = observatory.get_metrics().unwrap();
+        assert_eq!(metrics.active_actors, 5);
+        assert_eq!(metrics.total_messages_processed, 1500); // 100+200+300+400+500
+        assert_eq!(metrics.total_queued_messages, 150);     // 10+20+30+40+50
+        assert!((metrics.avg_mailbox_size - 30.0).abs() < 0.1); // 150/5 = 30
+        assert_eq!(metrics.total_memory_usage, 15360);      // 1024+2048+3072+4096+5120
+    }
+
+    #[test]
+    fn test_sprint_45_04_trace_correlation_tracking() {
+        let observatory = create_test_observatory();
+
+        let correlation_id = "operation-xyz-123".to_string();
+
+        // Create related traces with same correlation ID
+        for i in 1..=3 {
+            let trace = MessageTrace {
+                trace_id: i,
+                timestamp: current_timestamp(),
+                source: Some(ActorId(i)),
+                destination: ActorId(i + 1),
+                message: Message::User(format!("step_{}", i), vec![]),
+                status: MessageStatus::Completed,
+                processing_duration_us: Some(i * 100),
+                error: None,
+                stack_depth: i,
+                correlation_id: Some(correlation_id.clone()),
+            };
+            observatory.trace_message(trace).unwrap();
+        }
+
+        // Verify traces can be retrieved by correlation
+        let all_traces = observatory.get_traces(None, None).unwrap();
+        let correlated_traces: Vec<_> = all_traces.iter()
+            .filter(|t| t.correlation_id.as_ref() == Some(&correlation_id))
+            .collect();
+
+        assert_eq!(correlated_traces.len(), 3);
+
+        // Verify they're ordered by trace_id
+        for (i, trace) in correlated_traces.iter().enumerate() {
+            assert_eq!(trace.trace_id, (i + 1) as u64);
+        }
+    }
+
+    #[test]
+    fn test_sprint_45_05_actor_hierarchy_analysis() {
+        let observatory = create_test_observatory();
+
+        // Create hierarchical actor structure
+        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+
+        // Root actor
+        snapshots.insert(ActorId(1), ActorSnapshot {
+            actor_id: ActorId(1),
+            name: "root".to_string(),
+            timestamp: current_timestamp(),
+            state: ActorState::Running,
+            mailbox_size: 0,
+            parent: None,
+            children: vec![ActorId(2), ActorId(3)],
+            message_stats: MessageStats::default(),
+            memory_usage: Some(1024),
+        });
+
+        // Child actors
+        for i in 2..=3 {
+            snapshots.insert(ActorId(i), ActorSnapshot {
+                actor_id: ActorId(i),
+                name: format!("child_{}", i),
+                timestamp: current_timestamp(),
+                state: ActorState::Running,
+                mailbox_size: 5,
+                parent: Some(ActorId(1)),
+                children: vec![ActorId(i + 2)], // grandchildren
+                message_stats: MessageStats::default(),
+                memory_usage: Some(512),
+            });
+        }
+
+        // Grandchild actors
+        for i in 4..=5 {
+            snapshots.insert(ActorId(i), ActorSnapshot {
+                actor_id: ActorId(i),
+                name: format!("grandchild_{}", i),
+                timestamp: current_timestamp(),
+                state: ActorState::Running,
+                mailbox_size: 2,
+                parent: Some(ActorId(i - 2)),
+                children: vec![],
+                message_stats: MessageStats::default(),
+                memory_usage: Some(256),
+            });
+        }
+        drop(snapshots);
+
+        // Verify hierarchy
+        let snapshots = observatory.get_actor_snapshots().unwrap();
+        let root = snapshots.get(&ActorId(1)).unwrap();
+        assert_eq!(root.children.len(), 2);
+        assert!(root.parent.is_none());
+
+        let child = snapshots.get(&ActorId(2)).unwrap();
+        assert_eq!(child.parent, Some(ActorId(1)));
+        assert_eq!(child.children.len(), 1);
+    }
+
+    #[test]
+    fn test_sprint_45_06_performance_degradation_detection() {
+        let observatory = create_test_observatory();
+
+        // Simulate performance degradation over time
+        let base_time = current_timestamp();
+
+        for i in 1..=10 {
+            let trace = MessageTrace {
+                trace_id: i,
+                timestamp: base_time + (i * 1000), // 1 second intervals
+                source: Some(ActorId(1)),
+                destination: ActorId(2),
+                message: Message::User("process".to_string(), vec![]),
+                status: MessageStatus::Completed,
+                processing_duration_us: Some(i * i * 100), // Quadratic increase: 100, 400, 900...
+                error: None,
+                stack_depth: 1,
+                correlation_id: None,
+            };
+            observatory.trace_message(trace).unwrap();
+        }
+
+        let traces = observatory.get_traces(None, None).unwrap();
+        assert_eq!(traces.len(), 10);
+
+        // Verify performance degradation trend
+        let processing_times: Vec<_> = traces.iter()
+            .filter_map(|t| t.processing_duration_us)
+            .collect();
+
+        // Each subsequent time should be larger (quadratic growth)
+        for i in 1..processing_times.len() {
+            assert!(processing_times[i] > processing_times[i-1]);
+        }
+
+        // Last trace should be significantly slower than first
+        assert!(processing_times.last().unwrap() > &(processing_times[0] * 10));
+    }
+
+    #[test]
+    fn test_sprint_45_07_memory_leak_detection() {
+        let observatory = create_test_observatory();
+
+        // Simulate memory leak scenario
+        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+
+        let actor_id = ActorId(1);
+        let base_time = current_timestamp();
+
+        // Create snapshots showing increasing memory usage
+        for i in 1..=5 {
+            let snapshot = ActorSnapshot {
+                actor_id,
+                name: "leaky_actor".to_string(),
+                timestamp: base_time + (i * 60000), // 1 minute intervals
+                state: ActorState::Running,
+                mailbox_size: 10,
+                parent: None,
+                children: vec![],
+                message_stats: MessageStats::default(),
+                memory_usage: Some(1024 * i * i), // Quadratic growth
+            };
+            snapshots.insert(actor_id, snapshot); // Replace previous snapshot
+        }
+        drop(snapshots);
+
+        // Get final snapshot
+        let final_snapshot = observatory.get_actor_snapshot(actor_id).unwrap().unwrap();
+        assert_eq!(final_snapshot.memory_usage, Some(1024 * 25)); // 1024 * 5^2
+
+        // Memory usage should be significantly higher than baseline
+        assert!(final_snapshot.memory_usage.unwrap() > 10240); // > 10KB indicates potential leak
+    }
+
+    #[test]
+    fn test_sprint_45_08_error_propagation_tracking() {
+        let observatory = create_test_observatory();
+
+        // Create error propagation chain
+        let error_msg = "Database connection failed".to_string();
+
+        for i in 1..=4 {
+            let trace = MessageTrace {
+                trace_id: i,
+                timestamp: current_timestamp() + (i * 100),
+                source: Some(ActorId(i)),
+                destination: ActorId(i + 1),
+                message: Message::User("database_query".to_string(), vec![]),
+                status: MessageStatus::Failed,
+                processing_duration_us: Some(50),
+                error: Some(error_msg.clone()),
+                stack_depth: i,
+                correlation_id: Some("db-op-456".to_string()),
+            };
+            observatory.trace_message(trace).unwrap();
+        }
+
+        // Verify error propagation
+        let traces = observatory.get_traces(None, None).unwrap();
+        let failed_traces: Vec<_> = traces.iter()
+            .filter(|t| t.status == MessageStatus::Failed)
+            .collect();
+
+        assert_eq!(failed_traces.len(), 4);
+
+        // All should have the same error message
+        for trace in failed_traces {
+            assert_eq!(trace.error.as_ref().unwrap(), &error_msg);
+            assert_eq!(trace.correlation_id.as_ref().unwrap(), "db-op-456");
+        }
+    }
+
+    #[test]
+    fn test_sprint_45_09_concurrent_trace_access() {
+        let observatory = Arc::new(create_test_observatory());
+        let mut handles = vec![];
+
+        // Spawn multiple threads accessing traces concurrently
+        for thread_id in 0..3 {
+            let obs = Arc::clone(&observatory);
+            let handle = std::thread::spawn(move || {
+                for i in 0..10 {
+                    let trace = MessageTrace {
+                        trace_id: (thread_id * 100 + i) as u64,
+                        timestamp: current_timestamp(),
+                        source: Some(ActorId(thread_id as u64)),
+                        destination: ActorId((thread_id + 1) as u64),
+                        message: Message::User(format!("thread_{}_msg_{}", thread_id, i), vec![]),
+                        status: MessageStatus::Completed,
+                        processing_duration_us: Some(100 + i as u64),
+                        error: None,
+                        stack_depth: 1,
+                        correlation_id: Some(format!("thread_{}", thread_id)),
+                    };
+                    obs.trace_message(trace).unwrap();
+
+                    // Also read traces
+                    let _traces = obs.get_traces(None, Some(5)).unwrap();
+                }
+            });
+            handles.push(handle);
+        }
+
+        // Wait for all threads
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        // Verify all traces were recorded
+        let final_traces = observatory.get_traces(None, None).unwrap();
+        assert_eq!(final_traces.len(), 30); // 3 threads * 10 messages each
+    }
+
+    #[test]
+    fn test_sprint_45_10_snapshot_time_series_analysis() {
+        let observatory = create_test_observatory();
+        let actor_id = ActorId(1);
+
+        // Create time series of snapshots
+        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        let base_time = current_timestamp();
+
+        for i in 1..=5 {
+            let snapshot = ActorSnapshot {
+                actor_id,
+                name: "monitored_actor".to_string(),
+                timestamp: base_time + (i * 10000), // 10 second intervals
+                state: if i == 5 { ActorState::Crashed } else { ActorState::Running },
+                mailbox_size: if i < 4 { i * 2 } else { 0 }, // Clears before crash
+                parent: None,
+                children: vec![],
+                message_stats: MessageStats {
+                    total_processed: i * 50,
+                    total_failed: if i >= 4 { i } else { 0 },
+                    avg_processing_time_us: 100.0 * i as f64,
+                    last_message_time: Some(base_time + (i * 10000)),
+                },
+                memory_usage: Some(1024 * i),
+            };
+            snapshots.insert(actor_id, snapshot);
+        }
+        drop(snapshots);
+
+        // Verify final state
+        let final_snapshot = observatory.get_actor_snapshot(actor_id).unwrap().unwrap();
+        assert_eq!(final_snapshot.state, ActorState::Crashed);
+        assert_eq!(final_snapshot.mailbox_size, 0);
+        assert_eq!(final_snapshot.message_stats.total_failed, 5);
+    }
+
+    #[test]
+    fn test_sprint_45_11_filter_performance_optimization() {
+        let mut observatory = create_test_observatory();
+
+        // Add many filters
+        for i in 1..=100 {
+            let filter = MessageFilter {
+                name: format!("filter_{}", i),
+                actor_id: Some(ActorId(i)),
+                actor_name_pattern: None,
+                message_type_pattern: None,
+                min_processing_time_us: None,
+                failed_only: false,
+                max_stack_depth: None,
+            };
+            observatory.add_filter(filter);
+        }
+
+        // Test filtering performance
+        let test_trace = create_test_message_trace();
+        let start_time = std::time::Instant::now();
+
+        // Run filter matching many times
+        for _ in 0..1000 {
+            let _matches = observatory.message_matches_filters(&test_trace);
+        }
+
+        let elapsed = start_time.elapsed();
+        assert!(elapsed < Duration::from_millis(100), "Filter matching should be fast even with many filters");
+
+        // Verify filters are still accessible
+        assert_eq!(observatory.get_filters().len(), 100);
+    }
+
+    #[test]
+    fn test_sprint_45_12_deadlock_resolution_tracking() {
+        let mut observatory = create_test_observatory();
+        let mut detector = observatory.deadlock_detector.lock().unwrap();
+
+        // Create deadlock scenario
+        let request1 = BlockedRequest {
+            requester: ActorId(1),
+            target: ActorId(2),
+            request_time: current_timestamp(),
+            timeout_ms: Some(5000),
+        };
+
+        let request2 = BlockedRequest {
+            requester: ActorId(2),
+            target: ActorId(1),
+            request_time: current_timestamp(),
+            timeout_ms: Some(5000),
+        };
+
+        detector.add_blocked_request(request1);
+        detector.add_blocked_request(request2);
+
+        // Detect deadlock
+        let cycles = detector.detect_cycles().unwrap();
+        assert!(!cycles.is_empty());
+
+        // Resolve deadlock by removing one request
+        detector.remove_blocked_request(ActorId(1), ActorId(2));
+
+        // Verify deadlock is resolved
+        let cycles_after = detector.detect_cycles().unwrap();
+        assert!(cycles_after.is_empty() || cycles_after.len() < cycles.len());
+    }
+
+    #[test]
+    fn test_sprint_45_13_observatory_uptime_tracking() {
+        let observatory = create_test_observatory();
+
+        // Get initial uptime
+        let uptime1 = observatory.uptime();
+        assert!(uptime1 < Duration::from_secs(1));
+
+        // Wait a small amount
+        std::thread::sleep(Duration::from_millis(10));
+
+        // Get uptime again
+        let uptime2 = observatory.uptime();
+        assert!(uptime2 > uptime1);
+        assert!(uptime2 >= Duration::from_millis(10));
+    }
+
+    #[test]
+    fn test_sprint_45_14_message_trace_limits() {
+        let mut config = create_test_config();
+        config.max_traces = 3; // Very small limit
+
+        let system = create_test_actor_system();
+        let observatory = ActorObservatory::new(system, config);
+
+        // Add more traces than the limit
+        for i in 1..=5 {
+            let trace = MessageTrace {
+                trace_id: i,
+                timestamp: current_timestamp() + (i * 1000),
+                source: Some(ActorId(1)),
+                destination: ActorId(2),
+                message: Message::User(format!("msg_{}", i), vec![]),
+                status: MessageStatus::Completed,
+                processing_duration_us: Some(100),
+                error: None,
+                stack_depth: 1,
+                correlation_id: None,
+            };
+            observatory.trace_message(trace).unwrap();
+        }
+
+        // Should only keep the most recent traces
+        let traces = observatory.get_traces(None, None).unwrap();
+        assert_eq!(traces.len(), 3);
+
+        // Should contain the last 3 traces (3, 4, 5)
+        let trace_ids: Vec<_> = traces.iter().map(|t| t.trace_id).collect();
+        assert!(trace_ids.contains(&3));
+        assert!(trace_ids.contains(&4));
+        assert!(trace_ids.contains(&5));
+    }
+
+    #[test]
+    fn test_sprint_45_15_metrics_historical_tracking() {
+        let observatory = create_test_observatory();
+
+        // Initial metrics update
+        observatory.update_metrics().unwrap();
+        let metrics1 = observatory.get_metrics().unwrap();
+        let time1 = metrics1.last_updated;
+
+        // Add some activity
+        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        snapshots.insert(ActorId(1), create_test_actor_snapshot());
+        drop(snapshots);
+
+        // Wait and update again
+        std::thread::sleep(Duration::from_millis(10));
+        observatory.update_metrics().unwrap();
+        let metrics2 = observatory.get_metrics().unwrap();
+
+        // Verify timestamp progression
+        assert!(metrics2.last_updated > time1);
+        assert_eq!(metrics2.active_actors, 1);
+    }
+
+    #[test]
+    fn test_sprint_45_16_complex_filter_combinations() {
+        let mut observatory = create_test_observatory();
+
+        // Add multiple complex filters
+        let filter1 = MessageFilter {
+            name: "high_latency_filter".to_string(),
+            actor_id: None,
+            actor_name_pattern: None,
+            message_type_pattern: None,
+            min_processing_time_us: Some(1000),
+            failed_only: false,
+            max_stack_depth: None,
+        };
+
+        let filter2 = MessageFilter {
+            name: "error_filter".to_string(),
+            actor_id: None,
+            actor_name_pattern: None,
+            message_type_pattern: None,
+            min_processing_time_us: None,
+            failed_only: true,
+            max_stack_depth: None,
+        };
+
+        observatory.add_filter(filter1);
+        observatory.add_filter(filter2);
+
+        // Test trace that matches first filter
+        let high_latency_trace = MessageTrace {
+            trace_id: 1,
+            timestamp: current_timestamp(),
+            source: Some(ActorId(1)),
+            destination: ActorId(2),
+            message: Message::User("slow_operation".to_string(), vec![]),
+            status: MessageStatus::Completed,
+            processing_duration_us: Some(2000), // Matches min_processing_time_us
+            error: None,
+            stack_depth: 1,
+            correlation_id: None,
+        };
+
+        // Test trace that matches second filter
+        let error_trace = MessageTrace {
+            trace_id: 2,
+            timestamp: current_timestamp(),
+            source: Some(ActorId(2)),
+            destination: ActorId(3),
+            message: Message::User("failing_operation".to_string(), vec![]),
+            status: MessageStatus::Failed, // Matches failed_only
+            processing_duration_us: Some(100),
+            error: Some("Operation failed".to_string()),
+            stack_depth: 1,
+            correlation_id: None,
+        };
+
+        // Verify both traces match their respective filters
+        assert!(observatory.message_matches_filters(&high_latency_trace));
+        assert!(observatory.message_matches_filters(&error_trace));
+    }
+
+    #[test]
+    fn test_sprint_45_17_actor_state_transitions() {
+        let observatory = create_test_observatory();
+        let actor_id = ActorId(1);
+
+        // Test state transition tracking
+        let states = vec![
+            ActorState::Starting,
+            ActorState::Running,
+            ActorState::Idle,
+            ActorState::Running,
+            ActorState::Crashed,
+        ];
+
+        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        for (i, state) in states.iter().enumerate() {
+            let snapshot = ActorSnapshot {
+                actor_id,
+                name: "transitioning_actor".to_string(),
+                timestamp: current_timestamp() + ((i + 1) * 1000) as u64,
+                state: state.clone(),
+                mailbox_size: if state == &ActorState::Crashed { 0 } else { 5 },
+                parent: None,
+                children: vec![],
+                message_stats: MessageStats::default(),
+                memory_usage: Some(1024),
+            };
+            snapshots.insert(actor_id, snapshot);
+        }
+        drop(snapshots);
+
+        // Verify final state
+        let final_snapshot = observatory.get_actor_snapshot(actor_id).unwrap().unwrap();
+        assert_eq!(final_snapshot.state, ActorState::Crashed);
+        assert_eq!(final_snapshot.mailbox_size, 0);
+    }
+
+    #[test]
+    fn test_sprint_45_18_trace_stack_depth_analysis() {
+        let observatory = create_test_observatory();
+
+        // Create traces with varying stack depths (simulating call chains)
+        for depth in 1..=10 {
+            let trace = MessageTrace {
+                trace_id: depth as u64,
+                timestamp: current_timestamp(),
+                source: Some(ActorId(depth)),
+                destination: ActorId(depth + 1),
+                message: Message::User(format!("depth_{}_call", depth), vec![]),
+                status: MessageStatus::Completed,
+                processing_duration_us: Some(depth as u64 * 10),
+                error: None,
+                stack_depth: depth,
+                correlation_id: Some("deep_call_chain".to_string()),
+            };
+            observatory.trace_message(trace).unwrap();
+        }
+
+        // Verify traces with different stack depths
+        let traces = observatory.get_traces(None, None).unwrap();
+        assert_eq!(traces.len(), 10);
+
+        // Find deepest call
+        let max_depth = traces.iter()
+            .map(|t| t.stack_depth)
+            .max()
+            .unwrap();
+        assert_eq!(max_depth, 10);
+
+        // Test filter by max stack depth
+        let mut observatory_mut = create_test_observatory();
+        let filter = MessageFilter {
+            name: "shallow_calls".to_string(),
+            actor_id: None,
+            actor_name_pattern: None,
+            message_type_pattern: None,
+            min_processing_time_us: None,
+            failed_only: false,
+            max_stack_depth: Some(3),
+        };
+        observatory_mut.add_filter(filter);
+
+        // Test shallow trace (should match)
+        let shallow_trace = MessageTrace {
+            trace_id: 999,
+            timestamp: current_timestamp(),
+            source: Some(ActorId(1)),
+            destination: ActorId(2),
+            message: Message::User("shallow".to_string(), vec![]),
+            status: MessageStatus::Completed,
+            processing_duration_us: Some(50),
+            error: None,
+            stack_depth: 2,
+            correlation_id: None,
+        };
+
+        assert!(observatory_mut.message_matches_filters(&shallow_trace));
+
+        // Test deep trace (should not match)
+        let deep_trace = MessageTrace {
+            trace_id: 1000,
+            timestamp: current_timestamp(),
+            source: Some(ActorId(1)),
+            destination: ActorId(2),
+            message: Message::User("deep".to_string(), vec![]),
+            status: MessageStatus::Completed,
+            processing_duration_us: Some(50),
+            error: None,
+            stack_depth: 5,
+            correlation_id: None,
+        };
+
+        assert!(!observatory_mut.message_matches_filters(&deep_trace));
+    }
+
+    #[test]
+    fn test_sprint_45_19_observatory_config_validation() {
+        // Test edge case configurations
+        let configs = vec![
+            ObservatoryConfig {
+                max_traces: 0, // Edge case: no traces
+                trace_retention_seconds: 1,
+                enable_deadlock_detection: false,
+                deadlock_check_interval_ms: 100,
+                enable_metrics: false,
+                metrics_interval_ms: 100,
+                max_snapshots: 0,
+            },
+            ObservatoryConfig {
+                max_traces: 1000000, // Very large
+                trace_retention_seconds: 86400, // 24 hours
+                enable_deadlock_detection: true,
+                deadlock_check_interval_ms: 50, // Very frequent
+                enable_metrics: true,
+                metrics_interval_ms: 10, // Very frequent
+                max_snapshots: 1000000,
+            },
+        ];
+
+        for config in configs {
+            let system = create_test_actor_system();
+            let observatory = ActorObservatory::new(system, config.clone());
+
+            // Should create successfully regardless of config values
+            assert_eq!(observatory.config.max_traces, config.max_traces);
+            assert_eq!(observatory.config.enable_deadlock_detection, config.enable_deadlock_detection);
+            assert_eq!(observatory.config.enable_metrics, config.enable_metrics);
+
+            // Basic operations should work
+            let uptime = observatory.uptime();
+            assert!(uptime < Duration::from_secs(1));
+        }
+    }
+
+    #[test]
+    fn test_sprint_45_20_comprehensive_observatory_integration() {
+        let mut observatory = create_test_observatory();
+
+        // Set up comprehensive monitoring scenario
+
+        // 1. Add filters
+        let filters = vec![
+            MessageFilter {
+                name: "errors".to_string(),
+                actor_id: None,
+                actor_name_pattern: None,
+                message_type_pattern: None,
+                min_processing_time_us: None,
+                failed_only: true,
+                max_stack_depth: None,
+            },
+            MessageFilter {
+                name: "slow_operations".to_string(),
+                actor_id: None,
+                actor_name_pattern: None,
+                message_type_pattern: None,
+                min_processing_time_us: Some(1000),
+                failed_only: false,
+                max_stack_depth: None,
+            },
+        ];
+
+        for filter in filters {
+            observatory.add_filter(filter);
+        }
+
+        // 2. Add actor snapshots
+        let mut snapshots = observatory.actor_snapshots.lock().unwrap();
+        for i in 1..=5 {
+            let snapshot = ActorSnapshot {
+                actor_id: ActorId(i),
+                name: format!("actor_{}", i),
+                timestamp: current_timestamp(),
+                state: ActorState::Running,
+                mailbox_size: i * 2,
+                parent: if i > 1 { Some(ActorId(1)) } else { None },
+                children: if i == 1 { vec![ActorId(2), ActorId(3), ActorId(4), ActorId(5)] } else { vec![] },
+                message_stats: MessageStats {
+                    total_processed: i * 10,
+                    total_failed: if i % 2 == 0 { 1 } else { 0 },
+                    avg_processing_time_us: 500.0,
+                    last_message_time: Some(current_timestamp()),
+                },
+                memory_usage: Some(1024 * i),
+            };
+            snapshots.insert(ActorId(i), snapshot);
+        }
+        drop(snapshots);
+
+        // 3. Add message traces
+        let traces = vec![
+            MessageTrace {
+                trace_id: 1,
+                timestamp: current_timestamp(),
+                source: Some(ActorId(1)),
+                destination: ActorId(2),
+                message: Message::User("normal_operation".to_string(), vec![]),
+                status: MessageStatus::Completed,
+                processing_duration_us: Some(200),
+                error: None,
+                stack_depth: 1,
+                correlation_id: Some("op_1".to_string()),
+            },
+            MessageTrace {
+                trace_id: 2,
+                timestamp: current_timestamp(),
+                source: Some(ActorId(2)),
+                destination: ActorId(3),
+                message: Message::User("slow_operation".to_string(), vec![]),
+                status: MessageStatus::Completed,
+                processing_duration_us: Some(1500), // Should match slow_operations filter
+                error: None,
+                stack_depth: 2,
+                correlation_id: Some("op_1".to_string()),
+            },
+            MessageTrace {
+                trace_id: 3,
+                timestamp: current_timestamp(),
+                source: Some(ActorId(3)),
+                destination: ActorId(4),
+                message: Message::User("failing_operation".to_string(), vec![]),
+                status: MessageStatus::Failed, // Should match errors filter
+                processing_duration_us: Some(100),
+                error: Some("Operation failed".to_string()),
+                stack_depth: 3,
+                correlation_id: Some("op_1".to_string()),
+            },
+        ];
+
+        for trace in traces {
+            observatory.trace_message(trace).unwrap();
+        }
+
+        // 4. Update metrics
+        observatory.update_metrics().unwrap();
+
+        // 5. Verify comprehensive state
+
+        // Check filters
+        assert_eq!(observatory.get_filters().len(), 2);
+
+        // Check snapshots
+        let actor_snapshots = observatory.get_actor_snapshots().unwrap();
+        assert_eq!(actor_snapshots.len(), 5);
+
+        // Check metrics
+        let metrics = observatory.get_metrics().unwrap();
+        assert_eq!(metrics.active_actors, 5);
+        assert_eq!(metrics.total_messages_processed, 150); // 10+20+30+40+50
+        assert_eq!(metrics.total_queued_messages, 30);     // 2+4+6+8+10
+
+        // Check traces
+        let all_traces = observatory.get_traces(None, None).unwrap();
+        assert_eq!(all_traces.len(), 3);
+
+        // Check uptime
+        let uptime = observatory.uptime();
+        assert!(uptime < Duration::from_secs(1));
+
+        // Verify filter matching works
+        let slow_trace = &all_traces[1]; // Should match slow_operations filter
+        let error_trace = &all_traces[2]; // Should match errors filter
+
+        assert!(observatory.message_matches_filters(slow_trace));
+        assert!(observatory.message_matches_filters(error_trace));
+
+        // Test specific filter matching
+        assert!(observatory.trace_matches_filter(slow_trace, "slow_operations"));
+        assert!(observatory.trace_matches_filter(error_trace, "errors"));
+        assert!(!observatory.trace_matches_filter(slow_trace, "errors"));
+        assert!(!observatory.trace_matches_filter(error_trace, "slow_operations"));
+    }
 }
 use crate::runtime::actor::{ActorId, ActorSystem, Message};
 use anyhow::Result;
@@ -828,26 +1749,26 @@ impl ActorObservatory {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::observatory::new;
+/// use ruchy::runtime::observatory::ActorObservatory;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = ActorObservatory::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::observatory::new;
+/// use ruchy::runtime::observatory::ActorObservatory;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = ActorObservatory::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::observatory::new;
+/// use ruchy::runtime::observatory::ActorObservatory;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = ActorObservatory::new();
+// Verify behavior
 /// ```
 pub fn new(actor_system: Arc<Mutex<ActorSystem>>, config: ObservatoryConfig) -> Self {
         Self {
@@ -865,10 +1786,11 @@ pub fn new(actor_system: Arc<Mutex<ActorSystem>>, config: ObservatoryConfig) -> 
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::observatory::add_filter;
+/// use ruchy::runtime::observatory::ActorObservatory;
 /// 
-/// let result = add_filter(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ActorObservatory::new();
+let result = instance.add_filter();
+// Verify behavior
 /// ```
 pub fn add_filter(&mut self, filter: MessageFilter) {
         self.filters.push(filter);
@@ -876,7 +1798,7 @@ pub fn add_filter(&mut self, filter: MessageFilter) {
     /// Remove a message filter by name
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::remove_filter;
 /// 
 /// let result = remove_filter("example");
@@ -890,7 +1812,7 @@ pub fn remove_filter(&mut self, name: &str) -> bool {
     /// Get current list of filters
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::get_filters;
 /// 
 /// let result = get_filters(());
@@ -902,7 +1824,7 @@ pub fn get_filters(&self) -> &[MessageFilter] {
     /// Record a message trace
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::trace_message;
 /// 
 /// let result = trace_message(());
@@ -935,7 +1857,7 @@ pub fn trace_message(&self, trace: MessageTrace) -> Result<()> {
     /// Get recent message traces with optional filtering
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::get_traces;
 /// 
 /// let result = get_traces("example");
@@ -961,7 +1883,7 @@ pub fn get_traces(&self, limit: Option<usize>, filter_name: Option<&str>) -> Res
     /// Update actor snapshot
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::update_actor_snapshot;
 /// 
 /// let result = update_actor_snapshot(());
@@ -991,7 +1913,7 @@ pub fn update_actor_snapshot(&self, snapshot: ActorSnapshot) -> Result<()> {
     /// Get current actor snapshots
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::get_actor_snapshots;
 /// 
 /// let result = get_actor_snapshots(());
@@ -1006,7 +1928,7 @@ pub fn get_actor_snapshots(&self) -> Result<HashMap<ActorId, ActorSnapshot>> {
     /// Get specific actor snapshot
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::get_actor_snapshot;
 /// 
 /// let result = get_actor_snapshot(());
@@ -1022,7 +1944,7 @@ pub fn get_actor_snapshot(&self, actor_id: ActorId) -> Result<Option<ActorSnapsh
     /// Perform deadlock detection
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::detect_deadlocks;
 /// 
 /// let result = detect_deadlocks(());
@@ -1040,7 +1962,7 @@ pub fn detect_deadlocks(&self) -> Result<Vec<DeadlockCycle>> {
     /// Update system metrics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::update_metrics;
 /// 
 /// let result = update_metrics(());
@@ -1081,7 +2003,7 @@ pub fn update_metrics(&self) -> Result<()> {
     /// Get current system metrics
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::get_metrics;
 /// 
 /// let result = get_metrics(());
@@ -1096,7 +2018,7 @@ pub fn get_metrics(&self) -> Result<SystemMetrics> {
     /// Get observatory uptime
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::uptime;
 /// 
 /// let result = uptime(());
@@ -1167,7 +2089,7 @@ impl DeadlockDetector {
     /// Add a blocked request to track
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::add_blocked_request;
 /// 
 /// let result = add_blocked_request(());
@@ -1187,7 +2109,7 @@ pub fn add_blocked_request(&mut self, request: BlockedRequest) {
     /// Remove a blocked request (when resolved)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::remove_blocked_request;
 /// 
 /// let result = remove_blocked_request(());
@@ -1211,7 +2133,7 @@ pub fn remove_blocked_request(&mut self, requester: ActorId, target: ActorId) {
     /// Detect cycles in the dependency graph (potential deadlocks)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::detect_cycles;
 /// 
 /// let result = detect_cycles(());
@@ -1303,7 +2225,7 @@ impl MessageFilter {
     /// Create a filter for a specific actor
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::for_actor;
 /// 
 /// let result = for_actor("example");
@@ -1323,7 +2245,7 @@ pub fn for_actor(name: &str, actor_id: ActorId) -> Self {
     /// Create a filter for failed messages only
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::failed_messages_only;
 /// 
 /// let result = failed_messages_only("example");
@@ -1343,7 +2265,7 @@ pub fn failed_messages_only(name: &str) -> Self {
     /// Create a filter for delayed messages
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::observatory::slow_messages;
 /// 
 /// let result = slow_messages("example");

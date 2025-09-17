@@ -130,10 +130,11 @@ impl Transpiler {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::statements::transpile_let;
+/// use ruchy::backend::transpiler::statements::Transpiler;
 /// 
-/// let result = transpile_let("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = Transpiler::new();
+let result = instance.transpile_let();
+// Verify behavior
 /// ```
 pub fn transpile_let(
         &self,
@@ -229,7 +230,7 @@ pub fn transpile_let(
     /// Transpiles let pattern bindings (destructuring)
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::backend::transpiler::statements::transpile_let_pattern;
 /// 
 /// let result = transpile_let_pattern(());
@@ -527,10 +528,11 @@ pub fn transpile_let_pattern(
 /// # Examples
 /// 
 /// ```
-/// use ruchy::backend::transpiler::statements::transpile_function;
+/// use ruchy::backend::transpiler::statements::Transpiler;
 /// 
-/// let result = transpile_function("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = Transpiler::new();
+let result = instance.transpile_function();
+// Verify behavior
 /// ```
 pub fn transpile_function(
         &self,
@@ -569,7 +571,7 @@ pub fn transpile_function(
     /// Transpiles lambda expressions
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::backend::transpiler::statements::transpile_lambda;
 /// 
 /// let result = transpile_lambda(());

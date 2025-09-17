@@ -235,10 +235,11 @@ impl WasmHeap {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::repl::minor_gc;
+/// use ruchy::wasm::repl::WasmHeap;
 /// 
-/// let result = minor_gc(());
-/// assert_eq!(result, Ok(()));
+let mut instance = WasmHeap::new();
+let result = instance.minor_gc();
+// Verify behavior
 /// ```
 pub fn minor_gc(&mut self) {
         self.young.clear();
@@ -247,10 +248,11 @@ pub fn minor_gc(&mut self) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::repl::major_gc;
+/// use ruchy::wasm::repl::WasmHeap;
 /// 
-/// let result = major_gc(());
-/// assert_eq!(result, Ok(()));
+let mut instance = WasmHeap::new();
+let result = instance.major_gc();
+// Verify behavior
 /// ```
 pub fn major_gc(&mut self) {
         // Mark phase

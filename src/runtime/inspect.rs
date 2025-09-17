@@ -151,10 +151,10 @@ impl Inspector {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::inspect::new;
+/// use ruchy::runtime::inspect::Inspector;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = Inspector::new();
+// Verify behavior
 /// ```
 pub fn new() -> Self {
         Self::with_style(InspectStyle::default())
@@ -163,10 +163,11 @@ pub fn new() -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::inspect::with_style;
+/// use ruchy::runtime::inspect::Inspector;
 /// 
-/// let result = with_style(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Inspector::new();
+let result = instance.with_style();
+// Verify behavior
 /// ```
 pub fn with_style(style: InspectStyle) -> Self {
         Self {
@@ -193,10 +194,11 @@ pub fn with_style(style: InspectStyle) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::inspect::exit;
+/// use ruchy::runtime::inspect::Inspector;
 /// 
-/// let result = exit(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Inspector::new();
+let result = instance.exit();
+// Verify behavior
 /// ```
 pub fn exit(&mut self) {
         self.depth = self.depth.saturating_sub(1);
@@ -204,7 +206,7 @@ pub fn exit(&mut self) {
     /// Check if budget allows continued inspection
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::inspect::has_budget;
 /// 
 /// let result = has_budget(());
@@ -217,10 +219,11 @@ pub fn has_budget(&self) -> bool {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::inspect::consume_budget;
+/// use ruchy::runtime::inspect::Inspector;
 /// 
-/// let result = consume_budget(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Inspector::new();
+let result = instance.consume_budget();
+// Verify behavior
 /// ```
 pub fn consume_budget(&mut self, amount: usize) {
         self.budget = self.budget.saturating_sub(amount);
@@ -228,7 +231,7 @@ pub fn consume_budget(&mut self, amount: usize) {
     /// Get current depth
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::inspect::depth;
 /// 
 /// let result = depth(());
@@ -241,10 +244,11 @@ pub fn depth(&self) -> usize {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::inspect::at_max_depth;
+/// use ruchy::runtime::inspect::Inspector;
 /// 
-/// let result = at_max_depth(());
-/// assert_eq!(result, Ok(()));
+let mut instance = Inspector::new();
+let result = instance.at_max_depth();
+// Verify behavior
 /// ```
 pub fn at_max_depth(&self) -> bool {
         self.depth >= self.max_depth

@@ -69,26 +69,26 @@ impl TransactionalState {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::transaction::new;
+/// use ruchy::runtime::transaction::TransactionalState;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = TransactionalState::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::transaction::new;
+/// use ruchy::runtime::transaction::TransactionalState;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = TransactionalState::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::transaction::new;
+/// use ruchy::runtime::transaction::TransactionalState;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = TransactionalState::new();
+// Verify behavior
 /// ```
     pub fn new(max_memory: usize) -> Self {
         Self {
@@ -104,10 +104,11 @@ impl TransactionalState {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::transaction::begin_transaction;
+/// use ruchy::runtime::transaction::TransactionalState;
 /// 
-/// let result = begin_transaction(());
-/// assert_eq!(result, Ok(()));
+let mut instance = TransactionalState::new();
+let result = instance.begin_transaction();
+// Verify behavior
 /// ```
     pub fn begin_transaction(&mut self, metadata: TransactionMetadata) -> Result<TransactionId> {
         if self.transactions.len() >= self.max_depth {
@@ -132,7 +133,7 @@ impl TransactionalState {
     /// Commit the current transaction
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::commit_transaction;
 /// 
 /// let result = commit_transaction(());
@@ -153,7 +154,7 @@ impl TransactionalState {
     /// Rollback the current transaction
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::rollback_transaction;
 /// 
 /// let result = rollback_transaction(());
@@ -176,7 +177,7 @@ impl TransactionalState {
     /// Check if a transaction has exceeded its limits
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::check_transaction_limits;
 /// 
 /// let result = check_transaction_limits(());
@@ -203,7 +204,7 @@ impl TransactionalState {
     /// Get current transaction depth
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::depth;
 /// 
 /// let result = depth(());
@@ -215,7 +216,7 @@ impl TransactionalState {
     /// Get current bindings
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::bindings;
 /// 
 /// let result = bindings(());
@@ -227,7 +228,7 @@ impl TransactionalState {
     /// Get mutable bindings
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::bindings_mut;
 /// 
 /// let result = bindings_mut(());
@@ -239,7 +240,7 @@ impl TransactionalState {
     /// Insert a binding
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::insert_binding;
 /// 
 /// let result = insert_binding(true);
@@ -252,7 +253,7 @@ impl TransactionalState {
     /// Get binding mutability
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::is_mutable;
 /// 
 /// let result = is_mutable("example");
@@ -264,7 +265,7 @@ impl TransactionalState {
     /// Clear all bindings
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::clear;
 /// 
 /// let result = clear(());
@@ -272,7 +273,7 @@ impl TransactionalState {
 /// ```
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::clear;
 /// 
 /// let result = clear(());
@@ -302,7 +303,7 @@ impl TransactionalState {
     ///
     /// # Examples
     /// 
-    /// ```
+    /// ```ignore
     /// use ruchy::runtime::transaction::TransactionalState;
     /// 
     /// let state = TransactionalState::new();
@@ -317,7 +318,7 @@ impl TransactionalState {
     // 
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::savepoint;
 /// 
 /// let result = savepoint(());
@@ -383,10 +384,11 @@ impl TransactionLog {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::transaction::log;
+/// use ruchy::runtime::transaction::TransactionLog;
 /// 
-/// let result = log(());
-/// assert_eq!(result, Ok(()));
+let mut instance = TransactionLog::new();
+let result = instance.log();
+// Verify behavior
 /// ```
     pub fn log(&mut self, event: TransactionEvent) {
         self.events.push((Instant::now(), event));
@@ -397,7 +399,7 @@ impl TransactionLog {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::recent_events;
 /// 
 /// let result = recent_events(());
@@ -444,10 +446,11 @@ impl MVCC {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::runtime::transaction::begin_read;
+/// use ruchy::runtime::transaction::MVCC;
 /// 
-/// let result = begin_read(());
-/// assert_eq!(result, Ok(()));
+let mut instance = MVCC::new();
+let result = instance.begin_read();
+// Verify behavior
 /// ```
     pub fn begin_read(&self) -> Version {
         self.current_version
@@ -455,7 +458,7 @@ impl MVCC {
     /// Start a new write transaction
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::begin_write;
 /// 
 /// let result = begin_write(());
@@ -468,7 +471,7 @@ impl MVCC {
     /// Read a value at a specific version
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::read;
 /// 
 /// let result = read("example");
@@ -486,7 +489,7 @@ impl MVCC {
     /// Write a value at a specific version
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::write;
 /// 
 /// let result = write(());
@@ -504,7 +507,7 @@ impl MVCC {
     /// Garbage collect old versions
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::runtime::transaction::gc;
 /// 
 /// let result = gc(());

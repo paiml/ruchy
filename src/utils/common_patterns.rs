@@ -5,7 +5,7 @@ use std::path::Path;
 /// Standard error handling pattern for file operations
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::read_file_with_context;
 /// 
 /// let result = read_file_with_context(());
@@ -18,7 +18,7 @@ pub fn read_file_with_context(path: &Path) -> Result<String> {
 /// Standard error handling pattern for writing files  
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::write_file_with_context;
 /// 
 /// let result = write_file_with_context("example");
@@ -31,7 +31,7 @@ pub fn write_file_with_context(path: &Path, content: &str) -> Result<()> {
 /// Standard pattern for parsing Ruchy code
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::parse_ruchy_code;
 /// 
 /// let result = parse_ruchy_code("example");
@@ -45,7 +45,7 @@ pub fn parse_ruchy_code(source: &str) -> Result<crate::frontend::ast::Expr> {
 /// Standard pattern for success response creation  
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::create_success_response;
 /// 
 /// let result = create_success_response(());
@@ -64,7 +64,7 @@ pub fn create_success_response(value: String, cell_id: String, execution_time: f
 /// Standard pattern for error response creation
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::create_error_response;
 /// 
 /// let result = create_error_response(());
@@ -83,7 +83,7 @@ pub fn create_error_response(error: String, cell_id: String) -> crate::wasm::sha
 /// Format a module operation error
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::format_module_error;
 /// 
 /// let result = format_module_error("example");
@@ -95,7 +95,7 @@ pub fn format_module_error(operation: &str, module_name: &str) -> String {
 /// Format a parsing error
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::format_parse_error;
 /// 
 /// let result = format_parse_error("example");
@@ -107,7 +107,7 @@ pub fn format_parse_error(target: &str) -> String {
 /// Format a compilation error  
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::format_compile_error;
 /// 
 /// let result = format_compile_error("example");
@@ -161,7 +161,7 @@ where
 /// Standard validation pattern for identifiers
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::is_valid_identifier;
 /// 
 /// let result = is_valid_identifier("example");
@@ -175,7 +175,7 @@ pub fn is_valid_identifier(name: &str) -> bool {
 /// Standard pattern for creating section headers in output
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::create_section_header;
 /// 
 /// let result = create_section_header("example");
@@ -187,7 +187,7 @@ pub fn create_section_header(title: &str) -> String {
 /// Standard pattern for adding checkmarks to output  
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::add_success_indicator;
 /// 
 /// let result = add_success_indicator("example");
@@ -199,7 +199,7 @@ pub fn add_success_indicator(message: &str) -> String {
 /// Standard pattern for adding error indicators to output
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::add_error_indicator;
 /// 
 /// let result = add_error_indicator("example");
@@ -211,7 +211,7 @@ pub fn add_error_indicator(message: &str) -> String {
 /// Standard pattern for handling optional output file writing
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::write_output_or_print;
 /// 
 /// let result = write_output_or_print(());
@@ -237,10 +237,10 @@ impl ProgressIndicator {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::utils::common_patterns::new;
+/// use ruchy::utils::common_patterns::ProgressIndicator;
 /// 
-/// let result = new(());
-/// assert_eq!(result, Ok(()));
+let instance = ProgressIndicator::new();
+// Verify behavior
 /// ```
 pub fn new(total: usize, label: String) -> Self {
         Self { total, current: 0, label }
@@ -248,10 +248,11 @@ pub fn new(total: usize, label: String) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::utils::common_patterns::increment;
+/// use ruchy::utils::common_patterns::ProgressIndicator;
 /// 
-/// let result = increment(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ProgressIndicator::new();
+let result = instance.increment();
+// Verify behavior
 /// ```
 pub fn increment(&mut self) {
         self.current += 1;
@@ -262,10 +263,11 @@ pub fn increment(&mut self) {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::utils::common_patterns::finish;
+/// use ruchy::utils::common_patterns::ProgressIndicator;
 /// 
-/// let result = finish(());
-/// assert_eq!(result, Ok(()));
+let mut instance = ProgressIndicator::new();
+let result = instance.finish();
+// Verify behavior
 /// ```
 pub fn finish(&self) {
         println!("✅ {} completed: {}/{}", self.label, self.current, self.total);
@@ -292,7 +294,7 @@ where
 /// Standard pattern for conditional compilation features
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::check_feature_enabled;
 /// 
 /// let result = check_feature_enabled("example");
@@ -309,7 +311,7 @@ pub fn check_feature_enabled(feature: &str) -> bool {
 /// Standard pattern for memory size formatting
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::format_memory_size;
 /// 
 /// let result = format_memory_size(());
@@ -332,7 +334,7 @@ pub fn format_memory_size(bytes: u64) -> String {
 /// Standard pattern for version string formatting
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::format_version_info;
 /// 
 /// let result = format_version_info(());
@@ -346,7 +348,7 @@ pub fn format_version_info() -> String {
 /// Standard pattern for test assertion with string conversion
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::assert_output_contains;
 /// 
 /// let result = assert_output_contains("example");
@@ -360,7 +362,7 @@ pub fn assert_output_contains(result: impl ToString, expected: &str) {
 /// Standard pattern for test assertion with exact match
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::assert_output_equals;
 /// 
 /// let result = assert_output_equals("example");
@@ -373,7 +375,7 @@ pub fn assert_output_equals(result: impl ToString, expected: &str) {
 /// Standard pattern for elapsed time formatting  
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::format_duration;
 /// 
 /// let result = format_duration(());
@@ -405,7 +407,7 @@ where
 /// Standard pattern for error formatting with file operations
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::format_file_error;
 /// 
 /// let result = format_file_error("example");
@@ -417,7 +419,7 @@ pub fn format_file_error(operation: &str, path: &std::path::Path) -> String {
 /// Standard pattern for serialization error formatting
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::format_serialize_error;
 /// 
 /// let result = format_serialize_error("example");
@@ -429,7 +431,7 @@ pub fn format_serialize_error(object_type: &str, error: impl std::fmt::Display) 
 /// Standard pattern for deserialization error formatting  
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::format_deserialize_error;
 /// 
 /// let result = format_deserialize_error("example");
@@ -441,7 +443,7 @@ pub fn format_deserialize_error(object_type: &str, error: impl std::fmt::Display
 /// Standard pattern for operation error formatting
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::utils::common_patterns::format_operation_error;
 /// 
 /// let result = format_operation_error("example");

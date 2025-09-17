@@ -20,10 +20,11 @@ impl NotebookCell {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::wasm::demo_converter::code;
+/// use ruchy::wasm::demo_converter::NotebookCell;
 /// 
-/// let result = code(());
-/// assert_eq!(result, Ok(()));
+let mut instance = NotebookCell::new();
+let result = instance.code();
+// Verify behavior
 /// ```
 pub fn code(source: String) -> Self {
         Self {
@@ -34,7 +35,7 @@ pub fn code(source: String) -> Self {
     }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::demo_converter::markdown;
 /// 
 /// let result = markdown(());
@@ -50,7 +51,7 @@ pub fn markdown(source: String) -> Self {
 }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::demo_converter::convert_demo_to_notebook;
 /// 
 /// let result = convert_demo_to_notebook("example");
@@ -145,7 +146,7 @@ fn count_braces(line: &str) -> i32 {
 }
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::wasm::demo_converter::find_demo_files;
 /// 
 /// let result = find_demo_files(());

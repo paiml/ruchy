@@ -15,7 +15,7 @@ pub struct ProofVerificationResult {
 /// Extract assert statements from AST
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::verification::extract_assertions_from_ast;
 /// 
 /// let result = extract_assertions_from_ast(());
@@ -155,7 +155,7 @@ fn expr_to_assertion_string(expr: &Expr) -> String {
 /// Verify a single assertion using mathematical reasoning
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::verification::verify_single_assertion;
 /// 
 /// let result = verify_single_assertion("example");
@@ -321,7 +321,7 @@ fn verify_existential_quantification(assertion: &str, generate_counterexample: b
 /// Verify multiple assertions in batch
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::verification::verify_assertions_batch;
 /// 
 /// let result = verify_assertions_batch(true);

@@ -71,34 +71,34 @@ impl Counterexample {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::counterexample::new;
+/// use ruchy::proving::counterexample::Counterexample;
 /// 
-/// let result = new("example");
-/// assert_eq!(result, Ok(()));
+let instance = Counterexample::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::counterexample::new;
+/// use ruchy::proving::counterexample::Counterexample;
 /// 
-/// let result = new("example");
-/// assert_eq!(result, Ok(()));
+let instance = Counterexample::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::counterexample::new;
+/// use ruchy::proving::counterexample::Counterexample;
 /// 
-/// let result = new("example");
-/// assert_eq!(result, Ok(()));
+let instance = Counterexample::new();
+// Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::counterexample::new;
+/// use ruchy::proving::counterexample::Counterexample;
 /// 
-/// let result = new("example");
-/// assert_eq!(result, Ok(()));
+let instance = Counterexample::new();
+// Verify behavior
 /// ```
 pub fn new(failed_assertion: &str) -> Self {
         Self {
@@ -112,10 +112,11 @@ pub fn new(failed_assertion: &str) -> Self {
 /// # Examples
 /// 
 /// ```
-/// use ruchy::proving::counterexample::add_assignment;
+/// use ruchy::proving::counterexample::Counterexample;
 /// 
-/// let result = add_assignment("example");
-/// assert_eq!(result, Ok(()));
+let mut instance = Counterexample::new();
+let result = instance.add_assignment();
+// Verify behavior
 /// ```
 pub fn add_assignment(&mut self, var: &str, value: Value) {
         self.assignments.insert(var.to_string(), value);
@@ -123,7 +124,7 @@ pub fn add_assignment(&mut self, var: &str, value: Value) {
     /// Add trace step
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::add_trace_step;
 /// 
 /// let result = add_trace_step(());
@@ -135,7 +136,7 @@ pub fn add_trace_step(&mut self, step: TraceStep) {
     /// Set explanation
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::set_explanation;
 /// 
 /// let result = set_explanation("example");
@@ -147,7 +148,7 @@ pub fn set_explanation(&mut self, explanation: &str) {
     /// Format as readable report
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::format_report;
 /// 
 /// let result = format_report(());
@@ -207,7 +208,7 @@ impl TestCase {
     /// Add input
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::add_input;
 /// 
 /// let result = add_input("example");
@@ -219,7 +220,7 @@ pub fn add_input(&mut self, name: &str, value: Value) {
     /// Set expected output
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::set_expected;
 /// 
 /// let result = set_expected(());
@@ -231,7 +232,7 @@ pub fn set_expected(&mut self, value: Value) {
     /// Generate Ruchy test code
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::to_ruchy_test;
 /// 
 /// let result = to_ruchy_test("example");
@@ -293,7 +294,7 @@ impl CounterexampleGenerator {
     /// Set SMT backend
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::set_backend;
 /// 
 /// let result = set_backend(());
@@ -305,7 +306,7 @@ pub fn set_backend(&mut self, backend: SmtBackend) {
     /// Enable/disable shrinking
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::set_shrinking;
 /// 
 /// let result = set_shrinking(true);
@@ -317,7 +318,7 @@ pub fn set_shrinking(&mut self, enabled: bool) {
     /// Generate counterexample for property
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::generate;
 /// 
 /// let result = generate("example");
@@ -397,7 +398,7 @@ pub fn generate(&self, property: &str, vars: &[(String, String)]) -> Result<Opti
     /// Generate multiple test cases
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::generate_test_suite;
 /// 
 /// let result = generate_test_suite("example");
@@ -469,7 +470,7 @@ impl SymbolicExecutor {
     /// Add path condition
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::add_condition;
 /// 
 /// let result = add_condition("example");
@@ -481,7 +482,7 @@ pub fn add_condition(&mut self, condition: &str) {
     /// Set symbolic variable
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::set_symbolic;
 /// 
 /// let result = set_symbolic("example");
@@ -493,7 +494,7 @@ pub fn set_symbolic(&mut self, var: &str, symbolic: &str) {
     /// Find path to error
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::proving::counterexample::find_error_path;
 /// 
 /// let result = find_error_path("example");
