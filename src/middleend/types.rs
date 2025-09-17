@@ -118,7 +118,7 @@ impl fmt::Display for MonoType {
     }
 }
 /// Polymorphic type scheme: ∀α₁...αₙ. τ
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TypeScheme {
     /// Quantified type variables
     pub vars: Vec<TyVar>,
@@ -171,6 +171,37 @@ impl TypeScheme {
                 .map(|v| (v.clone(), MonoType::Var(gen.fresh())))
                 .collect();
             self.ty.substitute(&subst)
+        }
+    }
+
+    /// Generalize a monomorphic type into a type scheme
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::types::{MonoType, TypeScheme, TyVar};
+    /// use ruchy::middleend::environment::TypeEnv;
+    ///
+    /// let var = TyVar(0);
+    /// let mono_type = MonoType::Function(
+    ///     Box::new(MonoType::Var(var.clone())),
+    ///     Box::new(MonoType::Var(var.clone()))
+    /// );
+    /// let env = TypeEnv::new();
+    /// let scheme = TypeScheme::generalize(&env, &mono_type);
+    /// assert_eq!(scheme.vars.len(), 1);
+    /// assert!(scheme.vars.contains(&var));
+    /// ```
+    pub fn generalize(env: &crate::middleend::environment::TypeEnv, ty: &MonoType) -> Self {
+        let env_vars = env.free_vars();
+        let ty_vars = ty.free_vars();
+        let generalized_vars: Vec<TyVar> = ty_vars
+            .into_iter()
+            .filter(|v| !env_vars.contains(v))
+            .collect();
+        TypeScheme {
+            vars: generalized_vars,
+            ty: ty.clone(),
         }
     }
 }

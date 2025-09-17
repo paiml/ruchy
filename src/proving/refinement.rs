@@ -153,10 +153,14 @@ impl fmt::Display for BaseType {
 /// Type refinement
 #[derive(Debug, Clone)]
 pub struct TypeRefinement {
+    /// Function name
+    pub name: String,
     /// Input type
     pub input: RefinementType,
     /// Output type
     pub output: RefinementType,
+    /// Function arguments
+    pub args: Vec<(String, RefinementType)>,
     /// Preconditions
     pub preconditions: Vec<String>,
     /// Postconditions
@@ -190,14 +194,21 @@ impl TypeRefinement {
 /// let result = new(());
 /// assert_eq!(result, Ok(()));
 /// ```
-pub fn new(input: RefinementType, output: RefinementType) -> Self {
+pub fn new(name: &str, input: RefinementType, output: RefinementType) -> Self {
         Self {
+            name: name.to_string(),
             input,
             output,
+            args: Vec::new(),
             preconditions: Vec::new(),
             postconditions: Vec::new(),
             invariants: Vec::new(),
         }
+    }
+
+    /// Add function argument
+    pub fn add_arg(&mut self, name: &str, ty: RefinementType) {
+        self.args.push((name.to_string(), ty));
     }
     /// Add precondition
 /// # Examples
@@ -557,7 +568,7 @@ mod tests {
 
     #[test]
     fn test_sorted_array() {
-        let sorted = RefinementType::sorted_array(BaseType::Int);
+        let sorted = RefinementType::sorted_array();
         match &sorted.base {
             BaseType::Array(elem) => assert_eq!(**elem, BaseType::Int),
             _ => panic!("Expected array type"),
@@ -569,7 +580,7 @@ mod tests {
 
     #[test]
     fn test_type_refinement_creation() {
-        let mut refinement = TypeRefinement::new("add", RefinementType::positive_int());
+        let mut refinement = TypeRefinement::new("add", RefinementType::positive_int(), RefinementType::positive_int());
         assert_eq!(refinement.name, "add");
 
         refinement.add_arg("x", RefinementType::bounded_int(0, 10));
@@ -608,7 +619,7 @@ mod tests {
     #[test]
     fn test_refinement_checker_declare_function() {
         let mut checker = RefinementChecker::new();
-        let refinement = TypeRefinement::new("increment", RefinementType::positive_int());
+        let refinement = TypeRefinement::new("increment", RefinementType::positive_int(), RefinementType::positive_int());
 
         checker.declare_function("increment", refinement.clone());
         assert!(checker.signatures.contains_key("increment"));

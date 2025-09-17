@@ -166,6 +166,7 @@ pub fn normalize(&mut self, expr: &Expr) -> CoreExpr {
                     BinaryOp::LessEqual => PrimOp::Le,
                     BinaryOp::Greater => PrimOp::Gt,
                     BinaryOp::GreaterEqual => PrimOp::Ge,
+                    BinaryOp::Gt => PrimOp::Gt, // Alias for Greater
                     BinaryOp::And => PrimOp::And,
                     BinaryOp::Or => PrimOp::Or,
                     BinaryOp::NullCoalesce => PrimOp::NullCoalesce,

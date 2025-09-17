@@ -173,7 +173,7 @@ fn test_parser_function_declaration() {
     let expr = result.unwrap();
     match &expr.kind {
         ExprKind::Function { name, params, .. } => {
-            assert_eq!(name.as_deref(), Some("add"));
+            assert_eq!(name.as_ref().map(String::as_str), Some("add"));
             assert_eq!(params.len(), 2);
         }
         _ => panic!("Expected function declaration"),
@@ -187,8 +187,8 @@ fn test_parser_function_call() {
     assert!(result.is_ok());
     let expr = result.unwrap();
     match &expr.kind {
-        ExprKind::Call { callee, args } => {
-            match &callee.kind {
+        ExprKind::Call { func, args } => {
+            match &func.kind {
                 ExprKind::Identifier(name) => assert_eq!(name, "print"),
                 _ => panic!("Expected identifier as callee"),
             }

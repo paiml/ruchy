@@ -1137,11 +1137,11 @@ mod tests {
     #[test]
     fn test_problem_template() {
         let template = ProblemTemplate {
-            name: "test_template".to_string(),
+            problem_type: "test_template".to_string(),
             parameter_ranges: vec![(1, 10), (5, 15)],
         };
 
-        assert_eq!(template.name, "test_template");
+        assert_eq!(template.problem_type, "test_template");
         assert_eq!(template.parameter_ranges.len(), 2);
         assert_eq!(template.parameter_ranges[0], (1, 10));
         assert_eq!(template.parameter_ranges[1], (5, 15));

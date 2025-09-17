@@ -23,6 +23,7 @@ pub fn evaluate_binary_op(op: &BinaryOp, lhs: &Value, rhs: &Value) -> Result<Val
         BinaryOp::LessEqual => evaluate_less_equal(lhs, rhs),
         BinaryOp::Greater => evaluate_greater(lhs, rhs),
         BinaryOp::GreaterEqual => evaluate_greater_equal(lhs, rhs),
+        BinaryOp::Gt => evaluate_greater(lhs, rhs), // Alias for Greater
         BinaryOp::And => evaluate_and(lhs, rhs),
         BinaryOp::Or => evaluate_or(lhs, rhs),
         BinaryOp::BitwiseAnd => evaluate_bitwise_and(lhs, rhs),

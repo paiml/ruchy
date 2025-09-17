@@ -226,6 +226,7 @@ pub fn gen_expr(expr: &Expr) -> Result<String> {
             BinaryOp::Less => "<",
             BinaryOp::LessEqual => "<=",
             BinaryOp::Greater => ">",
+            BinaryOp::Gt => ">", // Alias for Greater
             BinaryOp::GreaterEqual => ">=",
             BinaryOp::And => "&&",
             BinaryOp::Or => "||",

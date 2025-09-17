@@ -98,6 +98,28 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
         // Apply final substitutions
         Ok(self.unifier.apply(&inferred_type))
     }
+
+    /// Instantiate a type scheme with fresh type variables
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::middleend::infer::InferenceContext;
+    /// use ruchy::middleend::types::{TypeScheme, MonoType, TyVar};
+    ///
+    /// let mut ctx = InferenceContext::new();
+    /// let var = TyVar(0);
+    /// let scheme = TypeScheme {
+    ///     vars: vec![var.clone()],
+    ///     ty: MonoType::Var(var)
+    /// };
+    /// let instantiated = ctx.instantiate(&scheme);
+    /// assert!(matches!(instantiated, MonoType::Var(_)));
+    /// ```
+    pub fn instantiate(&mut self, scheme: &TypeScheme) -> MonoType {
+        scheme.instantiate(&mut self.gen)
+    }
+
     /// Solve all accumulated constraints (enhanced for self-hosting)
     fn solve_all_constraints(&mut self) -> Result<()> {
         // First solve simple variable constraints
@@ -273,7 +295,8 @@ pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
             | BinaryOp::Less
             | BinaryOp::LessEqual
             | BinaryOp::Greater
-            | BinaryOp::GreaterEqual => {
+            | BinaryOp::GreaterEqual
+            | BinaryOp::Gt => {
                 // Operands must have same type
                 self.unifier.unify(&left_ty, &right_ty)?;
                 Ok(MonoType::Bool)
@@ -1016,7 +1039,8 @@ pub fn infer_method_call(
             | BinaryOp::Less
             | BinaryOp::LessEqual
             | BinaryOp::Greater
-            | BinaryOp::GreaterEqual => {
+            | BinaryOp::GreaterEqual
+            | BinaryOp::Gt => {
                 // Comparison operations: operands must be same type, result is Bool
                 self.unifier.unify(left_ty, right_ty)?;
                 Ok(MonoType::Bool)
@@ -2272,7 +2296,7 @@ mod tests {
         ));
 
         // Should be able to process constraints
-        let result = ctx.solve_type_constraints();
+        let result = ctx.solve_all_constraints();
         assert!(result.is_ok());
     }
 }

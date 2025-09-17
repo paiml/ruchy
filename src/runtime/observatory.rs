@@ -682,9 +682,11 @@ mod tests {
                 children: vec![],
                 message_stats: MessageStats {
                     total_processed: i * 100, // 100, 200, 300, 400, 500
-                    total_failed: i * 2,       // 2, 4, 6, 8, 10
-                    avg_processing_time_us: i * 1000.0, // 1000, 2000, 3000, 4000, 5000
-                    last_message_time: Some(current_timestamp()),
+                    messages_per_second: i as f64 * 10.0, // 10.0, 20.0, 30.0, 40.0, 50.0
+                    avg_processing_time_us: i as f64 * 1000.0, // 1000, 2000, 3000, 4000, 5000
+                    max_processing_time_us: i * 2000, // 2000, 4000, 6000, 8000, 10000
+                    failed_messages: i * 2,       // 2, 4, 6, 8, 10
+                    last_processed: Some(current_timestamp()),
                 },
                 memory_usage: Some(i * 1024), // 1024, 2048, 3072, 4096, 5120
             };
@@ -978,9 +980,11 @@ mod tests {
                 children: vec![],
                 message_stats: MessageStats {
                     total_processed: i * 50,
-                    total_failed: if i >= 4 { i } else { 0 },
+                    messages_per_second: i as f64 * 5.0,
                     avg_processing_time_us: 100.0 * i as f64,
-                    last_message_time: Some(base_time + (i * 10000)),
+                    max_processing_time_us: i * 200,
+                    failed_messages: if i >= 4 { i } else { 0 },
+                    last_processed: Some(base_time + (i * 10000)),
                 },
                 memory_usage: Some(1024 * i),
             };
@@ -992,7 +996,7 @@ mod tests {
         let final_snapshot = observatory.get_actor_snapshot(actor_id).unwrap().unwrap();
         assert!(matches!(final_snapshot.state, ActorState::Failed(_)));
         assert_eq!(final_snapshot.mailbox_size, 0);
-        assert_eq!(final_snapshot.message_stats.total_failed, 5);
+        assert_eq!(final_snapshot.message_stats.failed_messages, 5);
     }
 
     #[test]
@@ -1403,9 +1407,11 @@ mod tests {
                 children: if i == 1 { vec![ActorId(2), ActorId(3), ActorId(4), ActorId(5)] } else { vec![] },
                 message_stats: MessageStats {
                     total_processed: i * 10,
-                    total_failed: if i % 2 == 0 { 1 } else { 0 },
+                    failed_messages: if i % 2 == 0 { 1 } else { 0 },
                     avg_processing_time_us: 500.0,
-                    last_message_time: Some(current_timestamp()),
+                    last_processed: Some(current_timestamp()),
+                    messages_per_second: 10.0,
+                    max_processing_time_us: 1000,
                 },
                 memory_usage: Some(1024 * i),
             };

@@ -532,15 +532,14 @@ mod tests {
             fields: vec![
                 StructPatternField {
                     name: "name".to_string(),
-                    pattern: Pattern::Identifier("person_name".to_string()),
-                    default_value: None,
+                    pattern: Some(Pattern::Identifier("person_name".to_string())),
                 },
                 StructPatternField {
                     name: "age".to_string(),
-                    pattern: Pattern::Identifier("person_age".to_string()),
-                    default_value: None,
+                    pattern: Some(Pattern::Identifier("person_age".to_string())),
                 }
-            ]
+            ],
+            has_rest: false,
         };
 
         let binding = match_pattern(&struct_pattern, &struct_value);

@@ -2247,7 +2247,7 @@ pub fn get_precedence(op: BinaryOp) -> i32 {
         BinaryOp::BitwiseXor => 5,
         BinaryOp::BitwiseAnd => 6,
         BinaryOp::Equal | BinaryOp::NotEqual => 7,
-        BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual => 8,
+        BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::Greater | BinaryOp::GreaterEqual | BinaryOp::Gt => 8,
         BinaryOp::LeftShift => 9,
         BinaryOp::Add | BinaryOp::Subtract => 10,
         BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 11,

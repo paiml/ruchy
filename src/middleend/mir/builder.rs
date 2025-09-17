@@ -60,13 +60,13 @@ pub fn start_function(&mut self, name: String, return_ty: Type) -> &mut Self {
         self
     }
     /// Add a parameter to the current function
-/// # Examples
-/// 
-/// ```ignore
-/// use ruchy::middleend::mir::builder::MirBuilder;
-/// let mut builder = MirBuilder::new();
-/// // add_param requires parameters
-/// ```
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::middleend::mir::builder::MirBuilder;
+    /// let mut builder = MirBuilder::new();
+    /// // add_param requires parameters
+    /// ```
 pub fn add_param(&mut self, name: String, ty: Type) -> Local {
         let local = self.alloc_local(ty, true, Some(name.clone()));
         if let Some(ref mut func) = self.current_function {
