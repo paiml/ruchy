@@ -111,12 +111,11 @@ impl Default for AstNormalizer {
 impl AstNormalizer {
     #[must_use]
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::transpiler::canonical_ast::AstNormalizer;
-/// 
-let instance = AstNormalizer::new();
-// Verify behavior
+///
+/// let normalizer = AstNormalizer::new();
 /// ```
 pub fn new() -> Self {
         Self {
@@ -129,9 +128,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::transpiler::canonical_ast::AstNormalizer;
 /// 
-let mut instance = AstNormalizer::new();
-let result = instance.normalize();
-// Verify behavior
+/// let mut instance = AstNormalizer::new();
+/// let result = instance.normalize();
+/// // Verify behavior
 /// ```
 pub fn normalize(&mut self, expr: &Expr) -> CoreExpr {
         self.desugar_and_convert(expr)

@@ -48,16 +48,16 @@ impl Environment {
 /// ```
 /// use ruchy::transpiler::reference_interpreter::Environment;
 /// 
-let instance = Environment::new();
-// Verify behavior
+/// let instance = Environment::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::transpiler::reference_interpreter::Environment;
 /// 
-let instance = Environment::new();
-// Verify behavior
+/// let instance = Environment::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -69,9 +69,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::transpiler::reference_interpreter::Environment;
 /// 
-let mut instance = Environment::new();
-let result = instance.push();
-// Verify behavior
+/// let mut instance = Environment::new();
+/// let result = instance.push();
+/// // Verify behavior
 /// ```
 pub fn push(&mut self, value: Value) {
         self.bindings.push(value);
@@ -81,9 +81,9 @@ pub fn push(&mut self, value: Value) {
 /// ```
 /// use ruchy::transpiler::reference_interpreter::Environment;
 /// 
-let mut instance = Environment::new();
-let result = instance.pop();
-// Verify behavior
+/// let mut instance = Environment::new();
+/// let result = instance.pop();
+/// // Verify behavior
 /// ```
 pub fn pop(&mut self) {
         self.bindings.pop();
@@ -94,9 +94,9 @@ pub fn pop(&mut self) {
 /// ```
 /// use ruchy::transpiler::reference_interpreter::Environment;
 /// 
-let mut instance = Environment::new();
-let result = instance.lookup();
-// Verify behavior
+/// let mut instance = Environment::new();
+/// let result = instance.lookup();
+/// // Verify behavior
 /// ```
 pub fn lookup(&self, index: &DeBruijnIndex) -> Option<&Value> {
         // De Bruijn indices count from the end

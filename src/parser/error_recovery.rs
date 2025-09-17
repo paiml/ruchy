@@ -113,12 +113,11 @@ impl Default for ErrorRecovery {
 impl ErrorRecovery {
     #[must_use]
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::parser::error_recovery::ErrorRecovery;
-/// 
-let instance = ErrorRecovery::new();
-// Verify behavior
+///
+/// let recovery = ErrorRecovery::new();
 /// ```
 pub fn new() -> Self {
         Self::default()
@@ -129,9 +128,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::parser::error_recovery::ErrorRecovery;
 /// 
-let mut instance = ErrorRecovery::new();
-let result = instance.missing_function_name();
-// Verify behavior
+/// let mut instance = ErrorRecovery::new();
+/// let result = instance.missing_function_name();
+/// // Verify behavior
 /// ```
 pub fn missing_function_name(&mut self, location: SourceLocation) -> ErrorNode {
         self.error_count += 1;
@@ -201,9 +200,9 @@ pub fn missing_function_body(
 /// ```
 /// use ruchy::parser::error_recovery::ErrorRecovery;
 /// 
-let mut instance = ErrorRecovery::new();
-let result = instance.malformed_let_binding();
-// Verify behavior
+/// let mut instance = ErrorRecovery::new();
+/// let result = instance.malformed_let_binding();
+/// // Verify behavior
 /// ```
 pub fn malformed_let_binding(
         &mut self,
@@ -228,9 +227,9 @@ pub fn malformed_let_binding(
 /// ```
 /// use ruchy::parser::error_recovery::ErrorRecovery;
 /// 
-let mut instance = ErrorRecovery::new();
-let result = instance.incomplete_if_expr();
-// Verify behavior
+/// let mut instance = ErrorRecovery::new();
+/// let result = instance.incomplete_if_expr();
+/// // Verify behavior
 /// ```
 pub fn incomplete_if_expr(
         &mut self,

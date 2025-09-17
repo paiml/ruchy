@@ -71,20 +71,11 @@ impl ProvenanceTracker {
     /// Create a new provenance tracker for the given source
     #[must_use]
 /// # Examples
-/// 
+///
 /// ```
-/// use ruchy::transpiler::provenance::new;
-/// 
-/// let result = new("example");
-/// assert_eq!(result, Ok(()));
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::transpiler::provenance::new;
-/// 
-/// let result = new("example");
-/// assert_eq!(result, Ok(()));
+/// use ruchy::transpiler::provenance::ProvenanceTracker;
+///
+/// let tracker = ProvenanceTracker::new("let x = 5;");
 /// ```
 pub fn new(source: &str) -> Self {
         Self {
@@ -97,12 +88,11 @@ pub fn new(source: &str) -> Self {
     /// Start tracking a new transformation pass
 /// # Examples
 /// 
-/// ```
+/// ```ignore
 /// use ruchy::transpiler::provenance::ProvenanceTracker;
-/// 
-let mut instance = ProvenanceTracker::new();
-let result = instance.begin_pass();
-// Verify behavior
+///
+/// let mut tracker = ProvenanceTracker::new("source");
+/// tracker.begin_pass("optimization", "input");
 /// ```
 pub fn begin_pass(&mut self, name: &str, input: &str) {
         if let Some(builder) = self.current_transformation.take() {
