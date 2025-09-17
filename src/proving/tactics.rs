@@ -336,21 +336,531 @@ impl Tactic for AssumptionTactic {
     }
 }
 #[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_test_goal(statement: &str) -> ProofGoal {
+        ProofGoal {
+            statement: statement.to_string(),
+        }
+    }
+
+    fn create_test_context() -> ProofContext {
+        let mut context = ProofContext::new();
+        context.assumptions.push("x > 0".to_string());
+        context.assumptions.push("y < 10".to_string());
+        context.definitions.insert("double".to_string(), "x * 2".to_string());
+        context
+    }
+
+    #[test]
+    fn test_tactic_library_default() {
+        let library = TacticLibrary::default();
+        assert!(library.tactics.len() >= 10); // Should have basic tactics
+        assert!(library.tactics.contains_key("intro"));
+        assert!(library.tactics.contains_key("split"));
+        assert!(library.tactics.contains_key("reflexivity"));
+    }
+
+    #[test]
+    fn test_tactic_library_all_tactics() {
+        let library = TacticLibrary::default();
+        let tactics = library.all_tactics();
+        assert!(tactics.len() >= 10);
+
+        let names: Vec<&str> = tactics.iter().map(|t| t.name()).collect();
+        assert!(names.contains(&"intro"));
+        assert!(names.contains(&"split"));
+        assert!(names.contains(&"assumption"));
+    }
+
+    #[test]
+    fn test_tactic_library_get_tactic() {
+        let library = TacticLibrary::default();
+
+        let intro = library.get_tactic("intro").unwrap();
+        assert_eq!(intro.name(), "intro");
+
+        let result = library.get_tactic("nonexistent");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_intro_tactic_applicable() {
+        let tactic = IntroTactic;
+        let goal = create_test_goal("A -> B");
+        let context = create_test_context();
+
+        assert!(tactic.is_applicable(&goal, &context));
+
+        let goal2 = create_test_goal("A && B");
+        assert!(!tactic.is_applicable(&goal2, &context));
+    }
+
+    #[test]
+    fn test_intro_tactic_apply() {
+        let tactic = IntroTactic;
+        let goal = create_test_goal("A -> B");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Simplified(s) => assert_eq!(s, "B"),
+            _ => panic!("Expected simplified result"),
+        }
+    }
+
+    #[test]
+    fn test_intro_tactic_fail() {
+        let tactic = IntroTactic;
+        let goal = create_test_goal("A && B");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Failed(_) => {},
+            _ => panic!("Expected failed result"),
+        }
+    }
+
+    #[test]
+    fn test_split_tactic_applicable() {
+        let tactic = SplitTactic;
+        let goal = create_test_goal("A && B");
+        let context = create_test_context();
+
+        assert!(tactic.is_applicable(&goal, &context));
+
+        let goal2 = create_test_goal("A -> B");
+        assert!(!tactic.is_applicable(&goal2, &context));
+    }
+
+    #[test]
+    fn test_split_tactic_apply() {
+        let tactic = SplitTactic;
+        let goal = create_test_goal("A && B");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Subgoals(subgoals) => {
+                assert_eq!(subgoals.len(), 2);
+                assert_eq!(subgoals[0], "A");
+                assert_eq!(subgoals[1], "B");
+            },
+            _ => panic!("Expected subgoals result"),
+        }
+    }
+
+    #[test]
+    fn test_split_tactic_multiple_conjunctions() {
+        let tactic = SplitTactic;
+        let goal = create_test_goal("A && B && C");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Subgoals(subgoals) => {
+                assert_eq!(subgoals.len(), 3);
+                assert_eq!(subgoals[0], "A");
+                assert_eq!(subgoals[1], "B");
+                assert_eq!(subgoals[2], "C");
+            },
+            _ => panic!("Expected subgoals result"),
+        }
+    }
+
+    #[test]
+    fn test_induction_tactic_applicable() {
+        let tactic = InductionTactic;
+        let goal1 = create_test_goal("forall n. P(n)");
+        let goal2 = create_test_goal("P(n) for all n");
+        let goal3 = create_test_goal("A && B");
+        let context = create_test_context();
+
+        assert!(tactic.is_applicable(&goal1, &context));
+        assert!(tactic.is_applicable(&goal2, &context));
+        assert!(!tactic.is_applicable(&goal3, &context));
+    }
+
+    #[test]
+    fn test_induction_tactic_apply_with_var() {
+        let tactic = InductionTactic;
+        let goal = create_test_goal("P(n)");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &["n"], &context).unwrap();
+        match result {
+            StepResult::Subgoals(subgoals) => {
+                assert_eq!(subgoals.len(), 2);
+                assert!(subgoals[0].contains("Base case"));
+                assert!(subgoals[1].contains("Inductive step"));
+            },
+            _ => panic!("Expected subgoals result"),
+        }
+    }
+
+    #[test]
+    fn test_induction_tactic_no_var() {
+        let tactic = InductionTactic;
+        let goal = create_test_goal("P(n)");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Failed(msg) => assert!(msg.contains("requires a variable")),
+            _ => panic!("Expected failed result"),
+        }
+    }
+
+    #[test]
+    fn test_contradiction_tactic_applicable() {
+        let tactic = ContradictionTactic;
+        let goal = create_test_goal("false");
+        let context = create_test_context();
+
+        assert!(tactic.is_applicable(&goal, &context));
+
+        let empty_context = ProofContext::new();
+        assert!(!tactic.is_applicable(&goal, &empty_context));
+    }
+
+    #[test]
+    fn test_contradiction_tactic_apply() {
+        let tactic = ContradictionTactic;
+        let goal = create_test_goal("false");
+        let mut context = ProofContext::new();
+        context.assumptions.push("A".to_string());
+        context.assumptions.push("!A".to_string());
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Solved => {},
+            _ => panic!("Expected solved result"),
+        }
+    }
+
+    #[test]
+    fn test_reflexivity_tactic_applicable() {
+        let tactic = ReflexivityTactic;
+        let goal1 = create_test_goal("x == x");
+        let goal2 = create_test_goal("A && B");
+        let context = create_test_context();
+
+        assert!(tactic.is_applicable(&goal1, &context));
+        assert!(!tactic.is_applicable(&goal2, &context));
+    }
+
+    #[test]
+    fn test_reflexivity_tactic_apply_success() {
+        let tactic = ReflexivityTactic;
+        let goal = create_test_goal("x == x");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Solved => {},
+            _ => panic!("Expected solved result"),
+        }
+    }
+
+    #[test]
+    fn test_reflexivity_tactic_apply_fail() {
+        let tactic = ReflexivityTactic;
+        let goal = create_test_goal("x == y");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Failed(_) => {},
+            _ => panic!("Expected failed result"),
+        }
+    }
+
+    #[test]
+    fn test_simplify_tactic_applicable() {
+        let tactic = SimplifyTactic;
+        let goal = create_test_goal("anything");
+        let context = create_test_context();
+
+        assert!(tactic.is_applicable(&goal, &context));
+    }
+
+    #[test]
+    fn test_simplify_tactic_true_and() {
+        let tactic = SimplifyTactic;
+        let goal = create_test_goal("true && A");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Simplified(s) => assert_eq!(s, "A"),
+            _ => panic!("Expected simplified result"),
+        }
+    }
+
+    #[test]
+    fn test_simplify_tactic_false_or() {
+        let tactic = SimplifyTactic;
+        let goal = create_test_goal("false || B");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Simplified(s) => assert_eq!(s, "B"),
+            _ => panic!("Expected simplified result"),
+        }
+    }
+
+    #[test]
+    fn test_simplify_tactic_double_negation() {
+        let tactic = SimplifyTactic;
+        let goal = create_test_goal("!!A");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Simplified(s) => assert_eq!(s, "A"),
+            _ => panic!("Expected simplified result"),
+        }
+    }
+
+    #[test]
+    fn test_simplify_tactic_no_change() {
+        let tactic = SimplifyTactic;
+        let goal = create_test_goal("A");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Failed(_) => {},
+            _ => panic!("Expected failed result when no simplification possible"),
+        }
+    }
+
+    #[test]
+    fn test_unfold_tactic_applicable() {
+        let tactic = UnfoldTactic;
+        let goal = create_test_goal("double(x)");
+        let context = create_test_context();
+
+        assert!(tactic.is_applicable(&goal, &context));
+
+        let empty_context = ProofContext::new();
+        assert!(!tactic.is_applicable(&goal, &empty_context));
+    }
+
+    #[test]
+    fn test_unfold_tactic_apply() {
+        let tactic = UnfoldTactic;
+        let goal = create_test_goal("double(x) > 0");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &["double"], &context).unwrap();
+        match result {
+            StepResult::Simplified(s) => assert_eq!(s, "x * 2(x) > 0"),
+            _ => panic!("Expected simplified result"),
+        }
+    }
+
+    #[test]
+    fn test_unfold_tactic_no_args() {
+        let tactic = UnfoldTactic;
+        let goal = create_test_goal("double(x)");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Failed(msg) => assert!(msg.contains("requires a definition name")),
+            _ => panic!("Expected failed result"),
+        }
+    }
+
+    #[test]
+    fn test_rewrite_tactic_applicable() {
+        let tactic = RewriteTactic;
+        let goal = create_test_goal("x + y");
+        let mut context = ProofContext::new();
+        context.assumptions.push("x == 5".to_string());
+
+        assert!(tactic.is_applicable(&goal, &context));
+
+        let empty_context = ProofContext::new();
+        assert!(!tactic.is_applicable(&goal, &empty_context));
+    }
+
+    #[test]
+    fn test_rewrite_tactic_apply() {
+        let tactic = RewriteTactic;
+        let goal = create_test_goal("x + y");
+        let mut context = ProofContext::new();
+        context.assumptions.push("x == 5".to_string());
+
+        let result = tactic.apply(&goal, &["x"], &context).unwrap();
+        match result {
+            StepResult::Simplified(s) => assert_eq!(s, "5 + y"),
+            _ => panic!("Expected simplified result"),
+        }
+    }
+
+    #[test]
+    fn test_apply_tactic_applicable() {
+        let tactic = ApplyTactic;
+        let goal = create_test_goal("P(x)");
+        let context = create_test_context();
+
+        assert!(tactic.is_applicable(&goal, &context));
+    }
+
+    #[test]
+    fn test_apply_tactic_no_args() {
+        let tactic = ApplyTactic;
+        let goal = create_test_goal("P(x)");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Failed(msg) => assert!(msg.contains("requires a theorem name")),
+            _ => panic!("Expected failed result"),
+        }
+    }
+
+    #[test]
+    fn test_assumption_tactic_applicable() {
+        let tactic = AssumptionTactic;
+        let goal = create_test_goal("x > 0");
+        let context = create_test_context();
+
+        assert!(tactic.is_applicable(&goal, &context));
+
+        let goal2 = create_test_goal("z < 0");
+        assert!(!tactic.is_applicable(&goal2, &context));
+    }
+
+    #[test]
+    fn test_assumption_tactic_apply_success() {
+        let tactic = AssumptionTactic;
+        let goal = create_test_goal("x > 0");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Solved => {},
+            _ => panic!("Expected solved result"),
+        }
+    }
+
+    #[test]
+    fn test_assumption_tactic_apply_fail() {
+        let tactic = AssumptionTactic;
+        let goal = create_test_goal("z < 0");
+        let context = create_test_context();
+
+        let result = tactic.apply(&goal, &[], &context).unwrap();
+        match result {
+            StepResult::Failed(_) => {},
+            _ => panic!("Expected failed result"),
+        }
+    }
+
+    #[test]
+    fn test_tactic_suggestion_creation() {
+        let suggestion = TacticSuggestion {
+            tactic_name: "intro".to_string(),
+            confidence: 0.8,
+            reason: Some("Pattern matches implication".to_string()),
+            arguments: vec!["arg1".to_string()],
+        };
+
+        assert_eq!(suggestion.tactic_name, "intro");
+        assert_eq!(suggestion.confidence, 0.8);
+        assert_eq!(suggestion.arguments.len(), 1);
+    }
+
+    #[test]
+    fn test_library_suggest_tactics() {
+        let library = TacticLibrary::default();
+        let goal = create_test_goal("A -> B");
+        let context = create_test_context();
+
+        let suggestions = library.suggest_tactics(&goal, &context).unwrap();
+        assert!(!suggestions.is_empty());
+
+        // Should suggest intro for implication
+        let intro_suggestion = suggestions.iter()
+            .find(|s| s.tactic_name == "intro");
+        assert!(intro_suggestion.is_some());
+    }
+
+    #[test]
+    fn test_library_suggest_tactics_sorting() {
+        let library = TacticLibrary::default();
+        let goal = create_test_goal("x == x");
+        let context = create_test_context();
+
+        let suggestions = library.suggest_tactics(&goal, &context).unwrap();
+
+        // Should be sorted by confidence (highest first)
+        for i in 1..suggestions.len() {
+            assert!(suggestions[i-1].confidence >= suggestions[i].confidence);
+        }
+    }
+
+    #[test]
+    fn test_calculate_confidence_patterns() {
+        let library = TacticLibrary::default();
+        let dummy_tactic = &IntroTactic as &dyn Tactic;
+
+        let goal1 = create_test_goal("A -> B");
+        let confidence1 = library.calculate_confidence(&goal1, dummy_tactic);
+        assert_eq!(confidence1, 0.8);
+
+        let goal2 = create_test_goal("A && B");
+        let confidence2 = library.calculate_confidence(&goal2, dummy_tactic);
+        assert_eq!(confidence2, 0.7);
+
+        let goal3 = create_test_goal("A == B");
+        let confidence3 = library.calculate_confidence(&goal3, dummy_tactic);
+        assert_eq!(confidence3, 0.9);
+    }
+}
+
+#[cfg(test)]
 mod property_tests_tactics {
+    use super::*;
     use proptest::proptest;
-    
-    
+
     proptest! {
-        /// Property: Function never panics on any input
+        /// Property: TacticLibrary::default never panics
         #[test]
-        fn test_default_never_panics(input: String) {
-            // Limit input size to avoid timeout
-            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
-            // Function should not panic on any input
-            let _ = std::panic::catch_unwind(|| {
-                // Call function with various inputs
-                // This is a template - adjust based on actual function signature
-            });
+        fn test_default_never_panics(_input: String) {
+            let _ = TacticLibrary::default();
+        }
+
+        /// Property: is_applicable never panics on any goal statement
+        #[test]
+        fn test_is_applicable_never_panics(statement: String) {
+            let goal = ProofGoal { statement };
+            let context = ProofContext::new();
+            let tactic = IntroTactic;
+
+            let _ = tactic.is_applicable(&goal, &context);
+        }
+
+        /// Property: Tactic names are consistent
+        #[test]
+        fn test_tactic_names_consistent(_input: String) {
+            let tactics = [
+                &IntroTactic as &dyn Tactic,
+                &SplitTactic as &dyn Tactic,
+                &ReflexivityTactic as &dyn Tactic,
+            ];
+
+            for tactic in &tactics {
+                let name = tactic.name();
+                assert!(!name.is_empty());
+                assert!(name.chars().all(|c| c.is_alphanumeric() || c == '_'));
+            }
         }
     }
 }

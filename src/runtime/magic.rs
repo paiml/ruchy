@@ -675,34 +675,470 @@ impl Default for UnicodeExpander {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::NamedTempFile;
+    use std::io::Write;
+
+    fn create_mock_repl() -> Repl {
+        // Create a minimal repl for testing
+        Repl::new().unwrap_or_else(|_| {
+            // Fallback if new() fails, create minimal instance
+            use crate::runtime::value::Value;
+            Repl {
+                evaluator: crate::runtime::evaluator::Evaluator::new(),
+                variables: std::collections::HashMap::new(),
+                history: Vec::new(),
+                last_error: None,
+                config: crate::runtime::repl::ReplConfig::default(),
+            }
+        })
+    }
+
     #[test]
-    fn test_magic_registry() {
+    fn test_magic_registry_creation() {
         let registry = MagicRegistry::new();
-        assert!(registry.is_magic("%time"));
-        assert!(registry.is_magic("%%time"));
-        assert!(!registry.is_magic("time"));
         let commands = registry.list_commands();
+
+        // Should have at least the basic magic commands
+        assert!(commands.len() >= 10);
         assert!(commands.contains(&"time".to_string()));
         assert!(commands.contains(&"debug".to_string()));
+        assert!(commands.contains(&"profile".to_string()));
     }
+
     #[test]
-    fn test_unicode_expander() {
-        let expander = UnicodeExpander::new();
-        assert_eq!(expander.expand("\\alpha"), Some('α'));
-        assert_eq!(expander.expand("alpha"), Some('α'));
-        assert_eq!(expander.expand("\\pi"), Some('π'));
-        assert_eq!(expander.expand("\\infty"), Some('∞'));
-        assert_eq!(expander.expand("\\unknown"), None);
+    fn test_magic_registry_default() {
+        let registry = MagicRegistry::default();
+        assert!(!registry.commands.is_empty());
     }
+
     #[test]
-    fn test_magic_result_display() {
-        let result = MagicResult::Text("Hello".to_string());
-        assert_eq!(format!("{result}"), "Hello");
+    fn test_magic_registry_register() {
+        let mut registry = MagicRegistry::new();
+        let initial_count = registry.commands.len();
+
+        registry.register("test", Box::new(TimeMagic));
+        assert_eq!(registry.commands.len(), initial_count + 1);
+        assert!(registry.commands.contains_key("test"));
+    }
+
+    #[test]
+    fn test_magic_registry_is_magic() {
+        let registry = MagicRegistry::new();
+
+        assert!(registry.is_magic("%time"));
+        assert!(registry.is_magic("%%time"));
+        assert!(registry.is_magic("%debug"));
+        assert!(registry.is_magic("%%cell"));
+
+        assert!(!registry.is_magic("time"));
+        assert!(!registry.is_magic("normal code"));
+        assert!(!registry.is_magic(""));
+    }
+
+    #[test]
+    fn test_magic_registry_list_commands() {
+        let registry = MagicRegistry::new();
+        let commands = registry.list_commands();
+
+        // Commands should be sorted
+        let mut sorted_commands = commands.clone();
+        sorted_commands.sort();
+        assert_eq!(commands, sorted_commands);
+
+        // Should contain basic commands
+        assert!(commands.contains(&"clear".to_string()));
+        assert!(commands.contains(&"history".to_string()));
+        assert!(commands.contains(&"load".to_string()));
+        assert!(commands.contains(&"save".to_string()));
+    }
+
+    #[test]
+    fn test_magic_result_text() {
+        let result = MagicResult::Text("Hello World".to_string());
+        assert_eq!(format!("{}", result), "Hello World");
+    }
+
+    #[test]
+    fn test_magic_result_timed() {
         let result = MagicResult::Timed {
             output: "42".to_string(),
             duration: Duration::from_millis(123),
         };
-        assert!(format!("{result}").contains("0.123s"));
+        let formatted = format!("{}", result);
+        assert!(formatted.contains("42"));
+        assert!(formatted.contains("0.123s"));
+        assert!(formatted.contains("Execution time"));
+    }
+
+    #[test]
+    fn test_magic_result_silent() {
+        let result = MagicResult::Silent;
+        assert_eq!(format!("{}", result), "");
+    }
+
+    #[test]
+    fn test_magic_result_profile() {
+        let profile_data = ProfileData {
+            total_time: Duration::from_millis(500),
+            function_times: std::collections::HashMap::new(),
+            memory_usage: 1024,
+        };
+        let result = MagicResult::Profile(profile_data);
+        let formatted = format!("{}", result);
+        assert!(formatted.contains("Total time"));
+    }
+
+    #[test]
+    fn test_time_magic_help() {
+        let time_magic = TimeMagic;
+        assert_eq!(time_magic.help(), "Time execution of a single expression");
+    }
+
+    #[test]
+    fn test_time_magic_empty_args() {
+        let time_magic = TimeMagic;
+        let mut repl = create_mock_repl();
+
+        let result = time_magic.execute_line(&mut repl, "");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Usage"));
+    }
+
+    #[test]
+    fn test_timeit_magic_default() {
+        let timeit = TimeitMagic::default();
+        assert_eq!(timeit.default_runs, 1000);
+    }
+
+    #[test]
+    fn test_timeit_magic_help() {
+        let timeit = TimeitMagic::default();
+        assert_eq!(timeit.help(), "Time execution with statistics over multiple runs");
+    }
+
+    #[test]
+    fn test_timeit_magic_empty_args() {
+        let timeit = TimeitMagic::default();
+        let mut repl = create_mock_repl();
+
+        let result = timeit.execute_line(&mut repl, "");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Usage"));
+    }
+
+    #[test]
+    fn test_run_magic_help() {
+        let run_magic = RunMagic;
+        assert_eq!(run_magic.help(), "Execute an external Ruchy script");
+    }
+
+    #[test]
+    fn test_run_magic_empty_args() {
+        let run_magic = RunMagic;
+        let mut repl = create_mock_repl();
+
+        let result = run_magic.execute_line(&mut repl, "");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Usage"));
+    }
+
+    #[test]
+    fn test_run_magic_nonexistent_file() {
+        let run_magic = RunMagic;
+        let mut repl = create_mock_repl();
+
+        let result = run_magic.execute_line(&mut repl, "nonexistent.ruchy");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Failed to read script"));
+    }
+
+    #[test]
+    fn test_debug_magic_help() {
+        let debug_magic = DebugMagic;
+        assert_eq!(debug_magic.help(), "Enter post-mortem debugging");
+    }
+
+    #[test]
+    fn test_clear_magic_help() {
+        let clear_magic = ClearMagic;
+        assert_eq!(clear_magic.help(), "Clear the screen output");
+    }
+
+    #[test]
+    fn test_reset_magic_help() {
+        let reset_magic = ResetMagic;
+        assert_eq!(reset_magic.help(), "Reset REPL state (clear all variables)");
+    }
+
+    #[test]
+    fn test_whos_magic_help() {
+        let whos_magic = WhosMagic;
+        assert_eq!(whos_magic.help(), "List all variables and their types");
+    }
+
+    #[test]
+    fn test_history_magic_help() {
+        let history_magic = HistoryMagic;
+        assert_eq!(history_magic.help(), "Show command history");
+    }
+
+    #[test]
+    fn test_save_magic_help() {
+        let save_magic = SaveMagic;
+        assert_eq!(save_magic.help(), "Save current session to file");
+    }
+
+    #[test]
+    fn test_save_magic_empty_args() {
+        let save_magic = SaveMagic;
+        let mut repl = create_mock_repl();
+
+        let result = save_magic.execute_line(&mut repl, "");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Usage"));
+    }
+
+    #[test]
+    fn test_load_magic_help() {
+        let load_magic = LoadMagic;
+        assert_eq!(load_magic.help(), "Load session from file");
+    }
+
+    #[test]
+    fn test_load_magic_empty_args() {
+        let load_magic = LoadMagic;
+        let mut repl = create_mock_repl();
+
+        let result = load_magic.execute_line(&mut repl, "");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Usage"));
+    }
+
+    #[test]
+    fn test_pwd_magic_help() {
+        let pwd_magic = PwdMagic;
+        assert_eq!(pwd_magic.help(), "Print current working directory");
+    }
+
+    #[test]
+    fn test_cd_magic_help() {
+        let cd_magic = CdMagic;
+        assert_eq!(cd_magic.help(), "Change current directory");
+    }
+
+    #[test]
+    fn test_cd_magic_empty_args() {
+        let cd_magic = CdMagic;
+        let mut repl = create_mock_repl();
+
+        let result = cd_magic.execute_line(&mut repl, "");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Usage"));
+    }
+
+    #[test]
+    fn test_ls_magic_help() {
+        let ls_magic = LsMagic;
+        assert_eq!(ls_magic.help(), "List directory contents");
+    }
+
+    #[test]
+    fn test_profile_magic_help() {
+        let profile_magic = ProfileMagic;
+        assert_eq!(profile_magic.help(), "Profile code execution");
+    }
+
+    #[test]
+    fn test_unicode_expander_new() {
+        let expander = UnicodeExpander::new();
+        assert!(!expander.mappings.is_empty());
+    }
+
+    #[test]
+    fn test_unicode_expander_default() {
+        let expander = UnicodeExpander::default();
+        assert!(!expander.mappings.is_empty());
+    }
+
+    #[test]
+    fn test_unicode_expander_basic_mappings() {
+        let expander = UnicodeExpander::new();
+
+        // Test with backslash
+        assert_eq!(expander.expand("\\alpha"), Some('α'));
+        assert_eq!(expander.expand("\\beta"), Some('β'));
+        assert_eq!(expander.expand("\\gamma"), Some('γ'));
+        assert_eq!(expander.expand("\\pi"), Some('π'));
+        assert_eq!(expander.expand("\\infty"), Some('∞'));
+
+        // Test without backslash
+        assert_eq!(expander.expand("alpha"), Some('α'));
+        assert_eq!(expander.expand("beta"), Some('β'));
+        assert_eq!(expander.expand("gamma"), Some('γ'));
+        assert_eq!(expander.expand("pi"), Some('π'));
+        assert_eq!(expander.expand("infty"), Some('∞'));
+    }
+
+    #[test]
+    fn test_unicode_expander_unknown() {
+        let expander = UnicodeExpander::new();
+
+        assert_eq!(expander.expand("\\unknown"), None);
+        assert_eq!(expander.expand("unknown"), None);
+        assert_eq!(expander.expand("\\nonexistent"), None);
+        assert_eq!(expander.expand(""), None);
+    }
+
+    #[test]
+    fn test_unicode_expander_case_sensitivity() {
+        let expander = UnicodeExpander::new();
+
+        // Should be case sensitive
+        assert_eq!(expander.expand("alpha"), Some('α'));
+        assert_eq!(expander.expand("ALPHA"), None);
+        assert_eq!(expander.expand("Alpha"), None);
+    }
+
+    #[test]
+    fn test_profile_data_creation() {
+        let mut function_times = std::collections::HashMap::new();
+        function_times.insert("main".to_string(), Duration::from_millis(100));
+        function_times.insert("helper".to_string(), Duration::from_millis(50));
+
+        let profile = ProfileData {
+            total_time: Duration::from_millis(150),
+            function_times,
+            memory_usage: 2048,
+        };
+
+        assert_eq!(profile.total_time, Duration::from_millis(150));
+        assert_eq!(profile.memory_usage, 2048);
+        assert_eq!(profile.function_times.len(), 2);
+    }
+
+    #[test]
+    fn test_profile_data_display() {
+        let mut function_times = std::collections::HashMap::new();
+        function_times.insert("test_func".to_string(), Duration::from_millis(75));
+
+        let profile = ProfileData {
+            total_time: Duration::from_millis(100),
+            function_times,
+            memory_usage: 1024,
+        };
+
+        let formatted = format!("{}", profile);
+        assert!(formatted.contains("Total time"));
+        assert!(formatted.contains("Memory usage"));
+        assert!(formatted.contains("Function breakdown"));
+        assert!(formatted.contains("test_func"));
+    }
+
+    #[test]
+    fn test_magic_command_default_cell_behavior() {
+        // Test that default cell magic behavior is same as line magic
+        let time_magic = TimeMagic;
+        let mut repl = create_mock_repl();
+
+        // Both should fail with empty args
+        let line_result = time_magic.execute_line(&mut repl, "");
+        let cell_result = time_magic.execute_cell(&mut repl, "");
+
+        assert!(line_result.is_err());
+        assert!(cell_result.is_err());
+
+        // Error messages should be similar
+        let line_err = line_result.unwrap_err().to_string();
+        let cell_err = cell_result.unwrap_err().to_string();
+        assert_eq!(line_err, cell_err);
+    }
+
+    #[test]
+    fn test_magic_registry_execute_unknown_command() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        let result = registry.execute(&mut repl, "%unknown_command arg1 arg2");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Unknown magic command"));
+    }
+
+    #[test]
+    fn test_magic_registry_execute_empty_command() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        let result = registry.execute(&mut repl, "%");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Empty magic command"));
+    }
+
+    #[test]
+    fn test_magic_registry_execute_not_magic() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        let result = registry.execute(&mut repl, "regular code");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Not a magic command"));
+    }
+
+    #[test]
+    fn test_magic_registry_parse_line_magic() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        // Test line magic parsing
+        let result = registry.execute(&mut repl, "%pwd");
+        // pwd should work (no args needed)
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_magic_registry_parse_cell_magic() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        // Test cell magic parsing
+        let result = registry.execute(&mut repl, "%%pwd");
+        // pwd should work (no args needed)
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_timeit_magic_parse_runs_flag() {
+        let timeit = TimeitMagic::default();
+        let mut repl = create_mock_repl();
+
+        // Test -n flag parsing with invalid number
+        let result = timeit.execute_line(&mut repl, "-n invalid_number 1+1");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid number"));
+
+        // Test incomplete -n flag
+        let result = timeit.execute_line(&mut repl, "-n");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid -n syntax"));
+    }
+
+    #[test]
+    fn test_magic_result_clone() {
+        let original = MagicResult::Text("test".to_string());
+        let cloned = original.clone();
+
+        match (original, cloned) {
+            (MagicResult::Text(orig), MagicResult::Text(clone)) => {
+                assert_eq!(orig, clone);
+            },
+            _ => panic!("Clone type mismatch"),
+        }
+    }
+
+    #[test]
+    fn test_magic_result_debug() {
+        let result = MagicResult::Silent;
+        let debug_str = format!("{:?}", result);
+        assert!(debug_str.contains("Silent"));
     }
 }
 #[cfg(test)]

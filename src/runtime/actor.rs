@@ -597,11 +597,25 @@ impl ActorBehavior for SupervisorActor {
 mod tests {
     use super::*;
     use std::time::Duration;
+
+    // Helper function for creating test context
+    fn create_test_context() -> ActorContext {
+        let system = ActorSystem::new();
+        ActorContext {
+            actor_id: ActorId(1),
+            actor_name: "test_actor".to_string(),
+            supervisor: None,
+            children: std::collections::HashMap::new(),
+            system,
+        }
+    }
+
     #[test]
     fn test_actor_system_creation() {
         let system = ActorSystem::new();
         assert!(system.lock().expect("Failed to acquire lock").actors.is_empty());
     }
+
     #[test]
     fn test_echo_actor() {
         let system = ActorSystem::new();
@@ -619,6 +633,7 @@ mod tests {
             _ => panic!("Unexpected response type"),
         }
     }
+
     #[test]
     fn test_supervisor_actor() {
         let system = ActorSystem::new();
@@ -635,6 +650,431 @@ mod tests {
         match response {
             Message::ChildRestarted(id) => assert_eq!(id, child_id),
             _ => panic!("Expected ChildRestarted message"),
+        }
+    }
+
+    #[test]
+    fn test_actor_id_display() {
+        let id = ActorId(42);
+        assert_eq!(format!("{}", id), "actor-42");
+    }
+
+    #[test]
+    fn test_actor_id_properties() {
+        let id1 = ActorId(1);
+        let id2 = ActorId(1);
+        let id3 = ActorId(2);
+
+        assert_eq!(id1, id2);
+        assert_ne!(id1, id3);
+        assert_eq!(id1.0, 1);
+    }
+
+    #[test]
+    fn test_message_value_types() {
+        let string_val = MessageValue::String("test".to_string());
+        let int_val = MessageValue::Integer(42);
+        let float_val = MessageValue::Float(3.14);
+        let bool_val = MessageValue::Bool(true);
+        let actor_ref_val = MessageValue::ActorRef(ActorId(123));
+
+        match string_val {
+            MessageValue::String(s) => assert_eq!(s, "test"),
+            _ => panic!("Expected string value"),
+        }
+
+        match int_val {
+            MessageValue::Integer(i) => assert_eq!(i, 42),
+            _ => panic!("Expected integer value"),
+        }
+
+        match actor_ref_val {
+            MessageValue::ActorRef(id) => assert_eq!(id, ActorId(123)),
+            _ => panic!("Expected actor ref value"),
+        }
+    }
+
+    #[test]
+    fn test_message_value_list() {
+        let list = MessageValue::List(vec![
+            MessageValue::Integer(1),
+            MessageValue::String("hello".to_string()),
+            MessageValue::Bool(false),
+        ]);
+
+        match list {
+            MessageValue::List(items) => {
+                assert_eq!(items.len(), 3);
+                match &items[0] {
+                    MessageValue::Integer(i) => assert_eq!(*i, 1),
+                    _ => panic!("Expected integer"),
+                }
+            },
+            _ => panic!("Expected list"),
+        }
+    }
+
+    #[test]
+    fn test_message_value_map() {
+        let mut map = std::collections::HashMap::new();
+        map.insert("key1".to_string(), MessageValue::Integer(10));
+        map.insert("key2".to_string(), MessageValue::String("value".to_string()));
+
+        let map_val = MessageValue::Map(map);
+        match map_val {
+            MessageValue::Map(m) => {
+                assert_eq!(m.len(), 2);
+                assert!(m.contains_key("key1"));
+                assert!(m.contains_key("key2"));
+            },
+            _ => panic!("Expected map"),
+        }
+    }
+
+    #[test]
+    fn test_system_messages() {
+        let start = Message::Start;
+        let stop = Message::Stop;
+        let restart = Message::Restart;
+
+        match start {
+            Message::Start => {},
+            _ => panic!("Expected Start message"),
+        }
+
+        match stop {
+            Message::Stop => {},
+            _ => panic!("Expected Stop message"),
+        }
+
+        match restart {
+            Message::Restart => {},
+            _ => panic!("Expected Restart message"),
+        }
+    }
+
+    #[test]
+    fn test_user_message() {
+        let message = Message::User(
+            "greet".to_string(),
+            vec![MessageValue::String("Alice".to_string())],
+        );
+
+        match message {
+            Message::User(msg_type, values) => {
+                assert_eq!(msg_type, "greet");
+                assert_eq!(values.len(), 1);
+            },
+            _ => panic!("Expected User message"),
+        }
+    }
+
+    #[test]
+    fn test_error_message() {
+        let message = Message::Error("Something went wrong".to_string());
+
+        match message {
+            Message::Error(err) => assert_eq!(err, "Something went wrong"),
+            _ => panic!("Expected Error message"),
+        }
+    }
+
+    #[test]
+    fn test_supervision_messages() {
+        let child_id = ActorId(456);
+        let child_failed = Message::ChildFailed(child_id, "Crash".to_string());
+        let child_restarted = Message::ChildRestarted(child_id);
+
+        match child_failed {
+            Message::ChildFailed(id, reason) => {
+                assert_eq!(id, child_id);
+                assert_eq!(reason, "Crash");
+            },
+            _ => panic!("Expected ChildFailed message"),
+        }
+
+        match child_restarted {
+            Message::ChildRestarted(id) => assert_eq!(id, child_id),
+            _ => panic!("Expected ChildRestarted message"),
+        }
+    }
+
+    #[test]
+    fn test_supervisor_directive() {
+        let restart = SupervisorDirective::Restart;
+        let stop = SupervisorDirective::Stop;
+        let escalate = SupervisorDirective::Escalate;
+        let resume = SupervisorDirective::Resume;
+
+        // Test cloning
+        let restart_clone = restart.clone();
+        match restart_clone {
+            SupervisorDirective::Restart => {},
+            _ => panic!("Expected Restart directive"),
+        }
+    }
+
+    #[test]
+    fn test_actor_system_default() {
+        let system = ActorSystem::default();
+        assert!(system.actors.is_empty());
+        assert!(system.actor_names.is_empty());
+        assert_eq!(system.next_id, 1);
+    }
+
+    #[test]
+    fn test_actor_system_clone() {
+        let mut system = ActorSystem::default();
+        system.actor_names.insert("test".to_string(), ActorId(1));
+        system.next_id = 5;
+
+        let cloned = system.clone();
+        assert_eq!(cloned.next_id, 5);
+        assert!(cloned.actor_names.contains_key("test"));
+        assert!(cloned.actors.is_empty()); // actors are not cloned
+    }
+
+    #[test]
+    fn test_supervisor_actor_new() {
+        let supervisor = SupervisorActor::new(5);
+        assert_eq!(supervisor.max_restarts, 5);
+        assert!(supervisor.restart_count.is_empty());
+    }
+
+    #[test]
+    fn test_supervisor_strategy() {
+        let mut supervisor = SupervisorActor::new(3);
+        let child_id = ActorId(100);
+
+        // First failure should restart
+        let strategy = supervisor.supervisor_strategy(child_id, "error");
+        match strategy {
+            SupervisorDirective::Restart => {},
+            _ => panic!("Expected Restart directive"),
+        }
+
+        // Add restart count and test again
+        supervisor.restart_count.insert(child_id, 3);
+        let strategy = supervisor.supervisor_strategy(child_id, "error");
+        match strategy {
+            SupervisorDirective::Stop => {},
+            _ => panic!("Expected Stop directive"),
+        }
+    }
+
+    #[test]
+    fn test_echo_actor_behavior() {
+        let mut echo = EchoActor;
+        let mut context = create_test_context();
+
+        let message = Message::User(
+            "hello".to_string(),
+            vec![MessageValue::String("world".to_string())],
+        );
+
+        let result = echo.receive(message, &mut context).unwrap();
+        match result {
+            Some(Message::User(msg, values)) => {
+                assert!(msg.contains("Echo: hello"));
+                assert_eq!(values.len(), 1);
+            },
+            _ => panic!("Expected echo response"),
+        }
+
+        // Test with non-user message
+        let start_message = Message::Start;
+        let result = echo.receive(start_message, &mut context).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_supervisor_child_failed_handling() {
+        let mut supervisor = SupervisorActor::new(2);
+        let mut context = create_test_context();
+        let child_id = ActorId(789);
+
+        let failed_message = Message::ChildFailed(child_id, "Test error".to_string());
+        let result = supervisor.receive(failed_message, &mut context).unwrap();
+
+        match result {
+            Some(Message::ChildRestarted(id)) => assert_eq!(id, child_id),
+            _ => panic!("Expected ChildRestarted response"),
+        }
+
+        // Check restart count
+        assert_eq!(supervisor.restart_count.get(&child_id), Some(&1));
+    }
+
+    #[test]
+    fn test_supervisor_max_restarts_exceeded() {
+        let mut supervisor = SupervisorActor::new(1);
+        let mut context = create_test_context();
+        let child_id = ActorId(999);
+
+        // First failure - should restart
+        let failed_message = Message::ChildFailed(child_id, "Error 1".to_string());
+        let result = supervisor.receive(failed_message, &mut context).unwrap();
+        assert!(matches!(result, Some(Message::ChildRestarted(_))));
+
+        // Second failure - should stop (exceeds max_restarts)
+        let failed_message2 = Message::ChildFailed(child_id, "Error 2".to_string());
+        let result = supervisor.receive(failed_message2, &mut context).unwrap();
+        assert!(result.is_none()); // No response when stopping
+    }
+
+    #[test]
+    fn test_supervisor_non_child_message() {
+        let mut supervisor = SupervisorActor::new(3);
+        let mut context = create_test_context();
+
+        let user_message = Message::User("hello".to_string(), vec![]);
+        let result = supervisor.receive(user_message, &mut context).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_actor_system_spawn_duplicate_name() {
+        let system = ActorSystem::new();
+        let mut sys = system.lock().unwrap();
+
+        // Spawn first actor
+        let result1 = sys.spawn("duplicate".to_string(), EchoActor);
+        assert!(result1.is_ok());
+
+        // Try to spawn another with same name
+        let result2 = sys.spawn("duplicate".to_string(), EchoActor);
+        assert!(result2.is_err());
+        assert!(result2.unwrap_err().to_string().contains("already exists"));
+    }
+
+    #[test]
+    fn test_actor_system_find_by_name() {
+        let system = ActorSystem::new();
+        let actor_ref = {
+            let mut sys = system.lock().unwrap();
+            sys.spawn("findme".to_string(), EchoActor).unwrap()
+        };
+
+        let sys = system.lock().unwrap();
+        let found = sys.find_actor_by_name("findme");
+        assert!(found.is_some());
+        assert_eq!(found.unwrap().id, actor_ref.id);
+
+        let not_found = sys.find_actor_by_name("nothere");
+        assert!(not_found.is_none());
+    }
+
+    #[test]
+    fn test_actor_system_get_actor_ref() {
+        let system = ActorSystem::new();
+        let actor_ref = {
+            let mut sys = system.lock().unwrap();
+            sys.spawn("getref".to_string(), EchoActor).unwrap()
+        };
+
+        let sys = system.lock().unwrap();
+        let found_ref = sys.get_actor_ref(actor_ref.id);
+        assert!(found_ref.is_some());
+        assert_eq!(found_ref.unwrap().id, actor_ref.id);
+
+        let not_found_ref = sys.get_actor_ref(ActorId(99999));
+        assert!(not_found_ref.is_none());
+    }
+
+    #[test]
+    fn test_actor_system_stop_actor() {
+        let system = ActorSystem::new();
+        let actor_ref = {
+            let mut sys = system.lock().unwrap();
+            sys.spawn("stopme".to_string(), EchoActor).unwrap()
+        };
+
+        // Stop the actor
+        {
+            let mut sys = system.lock().unwrap();
+            let result = sys.stop_actor(actor_ref.id);
+            assert!(result.is_ok());
+        }
+
+        // Verify actor is removed
+        let sys = system.lock().unwrap();
+        let found = sys.get_actor_ref(actor_ref.id);
+        assert!(found.is_none());
+    }
+
+    #[test]
+    fn test_actor_system_shutdown() {
+        let system = ActorSystem::new();
+        {
+            let mut sys = system.lock().unwrap();
+            sys.spawn("actor1".to_string(), EchoActor).unwrap();
+            sys.spawn("actor2".to_string(), EchoActor).unwrap();
+            assert_eq!(sys.actors.len(), 2);
+
+            sys.shutdown();
+            assert_eq!(sys.actors.len(), 0);
+            assert_eq!(sys.actor_names.len(), 0);
+        }
+    }
+
+    #[test]
+    fn test_actor_ref_send_message() {
+        let system = ActorSystem::new();
+        let actor_ref = {
+            let mut sys = system.lock().unwrap();
+            sys.spawn("sender_test".to_string(), EchoActor).unwrap()
+        };
+
+        let message = Message::User("ping".to_string(), vec![]);
+        let result = actor_ref.send(message);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_actor_context_find_actor() {
+        let system = ActorSystem::new();
+        let _actor_ref = {
+            let mut sys = system.lock().unwrap();
+            sys.spawn("findable".to_string(), EchoActor).unwrap()
+        };
+
+        let context = ActorContext {
+            actor_id: ActorId(2),
+            actor_name: "searcher".to_string(),
+            supervisor: None,
+            children: std::collections::HashMap::new(),
+            system: system.clone(),
+        };
+
+        let found = context.find_actor("findable");
+        assert!(found.is_some());
+
+        let not_found = context.find_actor("nonexistent");
+        assert!(not_found.is_none());
+    }
+
+    #[test]
+    fn test_message_value_float() {
+        let float_val = MessageValue::Float(3.14159);
+        match float_val {
+            MessageValue::Float(f) => assert!((f - 3.14159).abs() < 0.00001),
+            _ => panic!("Expected float value"),
+        }
+    }
+
+    #[test]
+    fn test_message_value_bool() {
+        let true_val = MessageValue::Bool(true);
+        let false_val = MessageValue::Bool(false);
+
+        match true_val {
+            MessageValue::Bool(b) => assert!(b),
+            _ => panic!("Expected bool value"),
+        }
+
+        match false_val {
+            MessageValue::Bool(b) => assert!(!b),
+            _ => panic!("Expected bool value"),
         }
     }
 }
