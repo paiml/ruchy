@@ -684,7 +684,7 @@ impl DataflowDebugger {
     /// Set a breakpoint at a specific stage
     pub fn set_breakpoint(&self, stage_id: String, condition: Option<BreakpointCondition>) -> Result<()> {
         let breakpoint = Breakpoint {
-            stage_id: stage_id.clone(),
+            stage_id,
             condition,
             active: true,
             hit_count: 0,
