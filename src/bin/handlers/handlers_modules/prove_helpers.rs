@@ -378,3 +378,386 @@ fn check_verification_failures(results: &[ruchy::proving::ProofVerificationResul
         std::process::exit(1);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+    use tempfile::NamedTempFile;
+    use std::fs;
+
+    #[test]
+    fn test_parse_smt_backend_z3() {
+        let backend = parse_smt_backend("z3", false);
+        assert_eq!(backend, SmtBackend::Z3);
+    }
+
+    #[test]
+    fn test_parse_smt_backend_cvc5() {
+        let backend = parse_smt_backend("cvc5", false);
+        assert_eq!(backend, SmtBackend::CVC5);
+    }
+
+    #[test]
+    fn test_parse_smt_backend_yices2() {
+        let backend = parse_smt_backend("yices2", false);
+        assert_eq!(backend, SmtBackend::Yices2);
+    }
+
+    #[test]
+    fn test_parse_smt_backend_case_insensitive() {
+        let backend = parse_smt_backend("Z3", false);
+        assert_eq!(backend, SmtBackend::Z3);
+
+        let backend = parse_smt_backend("CVC5", false);
+        assert_eq!(backend, SmtBackend::CVC5);
+
+        let backend = parse_smt_backend("YICES2", false);
+        assert_eq!(backend, SmtBackend::Yices2);
+    }
+
+    #[test]
+    fn test_parse_smt_backend_unknown_defaults_to_z3() {
+        let backend = parse_smt_backend("unknown", false);
+        assert_eq!(backend, SmtBackend::Z3);
+    }
+
+    #[test]
+    fn test_parse_smt_backend_empty_defaults_to_z3() {
+        let backend = parse_smt_backend("", false);
+        assert_eq!(backend, SmtBackend::Z3);
+    }
+
+    #[test]
+    fn test_parse_smt_backend_verbose_mode() {
+        let backend = parse_smt_backend("invalid", true);
+        assert_eq!(backend, SmtBackend::Z3);
+    }
+
+    #[test]
+    fn test_configure_prover_basic() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        configure_prover(&mut prover, 5000, false, false);
+    }
+
+    #[test]
+    fn test_configure_prover_with_ml_suggestions() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        configure_prover(&mut prover, 10000, true, false);
+    }
+
+    #[test]
+    fn test_configure_prover_verbose() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        configure_prover(&mut prover, 3000, true, true);
+    }
+
+    #[test]
+    fn test_load_proof_file_valid() {
+        let temp_file = NamedTempFile::new().unwrap();
+        fs::write(&temp_file, "let x = 42").unwrap();
+
+        let result = load_proof_file(temp_file.path(), false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_load_proof_file_nonexistent() {
+        let path = PathBuf::from("/nonexistent/file.ruchy");
+        let result = load_proof_file(&path, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_load_proof_file_verbose() {
+        let temp_file = NamedTempFile::new().unwrap();
+        fs::write(&temp_file, "let x = 42").unwrap();
+
+        let result = load_proof_file(temp_file.path(), true);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_load_proof_file_invalid_syntax() {
+        let temp_file = NamedTempFile::new().unwrap();
+        fs::write(&temp_file, "invalid syntax }}}}").unwrap();
+
+        let result = load_proof_file(temp_file.path(), false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_load_proof_script_valid() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let temp_file = NamedTempFile::new().unwrap();
+        fs::write(&temp_file, "goal x > 0 -> x + 1 > 1").unwrap();
+
+        let result = load_proof_script(&mut prover, temp_file.path(), false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_load_proof_script_nonexistent() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let path = PathBuf::from("/nonexistent/script.prove");
+
+        let result = load_proof_script(&mut prover, &path, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_load_proof_script_verbose() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let temp_file = NamedTempFile::new().unwrap();
+        fs::write(&temp_file, "goal x > 0").unwrap();
+
+        let result = load_proof_script(&mut prover, temp_file.path(), true);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_print_prover_help() {
+        // This function only prints, no return value to test
+        print_prover_help();
+    }
+
+    #[test]
+    fn test_handle_prover_command_quit() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut session = ProverSession::new();
+
+        let result = handle_prover_command("quit", &mut prover, &mut session, false);
+        assert!(result.is_ok());
+        assert!(result.unwrap()); // Should return true to exit
+    }
+
+    #[test]
+    fn test_handle_prover_command_exit() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut session = ProverSession::new();
+
+        let result = handle_prover_command("exit", &mut prover, &mut session, false);
+        assert!(result.is_ok());
+        assert!(result.unwrap()); // Should return true to exit
+    }
+
+    #[test]
+    fn test_handle_prover_command_help() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut session = ProverSession::new();
+
+        let result = handle_prover_command("help", &mut prover, &mut session, false);
+        assert!(result.is_ok());
+        assert!(!result.unwrap()); // Should return false to continue
+    }
+
+    #[test]
+    fn test_handle_prover_command_goals() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut session = ProverSession::new();
+
+        let result = handle_prover_command("goals", &mut prover, &mut session, false);
+        assert!(result.is_ok());
+        assert!(!result.unwrap()); // Should return false to continue
+    }
+
+    #[test]
+    fn test_handle_prover_command_tactics() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut session = ProverSession::new();
+
+        let result = handle_prover_command("tactics", &mut prover, &mut session, false);
+        assert!(result.is_ok());
+        assert!(!result.unwrap()); // Should return false to continue
+    }
+
+    #[test]
+    fn test_handle_prover_command_apply_tactic() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut session = ProverSession::new();
+        session.add_goal("x > 0".to_string());
+
+        let result = handle_prover_command("apply intro", &mut prover, &mut session, false);
+        assert!(result.is_ok());
+        assert!(!result.unwrap()); // Should return false to continue
+    }
+
+    #[test]
+    fn test_handle_prover_command_add_goal() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut session = ProverSession::new();
+
+        let result = handle_prover_command("goal x > 0", &mut prover, &mut session, false);
+        assert!(result.is_ok());
+        assert!(!result.unwrap()); // Should return false to continue
+    }
+
+    #[test]
+    fn test_handle_prover_command_general_input() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut session = ProverSession::new();
+
+        let result = handle_prover_command("some general input", &mut prover, &mut session, false);
+        assert!(result.is_ok());
+        assert!(!result.unwrap()); // Should return false to continue
+    }
+
+    #[test]
+    fn test_handle_prover_command_verbose() {
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut session = ProverSession::new();
+
+        let result = handle_prover_command("some input", &mut prover, &mut session, true);
+        assert!(result.is_ok());
+        assert!(!result.unwrap()); // Should return false to continue
+    }
+
+    #[test]
+    fn test_show_prover_state_complete() {
+        let mut session = ProverSession::new();
+        session.add_goal("x > 0".to_string());
+        session.mark_complete(); // Assume there's a method to mark completion
+
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        show_prover_state(&session, &mut prover, false);
+    }
+
+    #[test]
+    fn test_show_prover_state_with_current_goal() {
+        let mut session = ProverSession::new();
+        session.add_goal("x > 0".to_string());
+
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        show_prover_state(&session, &mut prover, false);
+    }
+
+    #[test]
+    fn test_show_prover_state_with_ml_suggestions() {
+        let mut session = ProverSession::new();
+        session.add_goal("x > 0".to_string());
+
+        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        show_prover_state(&session, &mut prover, true);
+    }
+
+    #[test]
+    fn test_export_proof_text_format() {
+        let session = ProverSession::new();
+        let temp_file = NamedTempFile::new().unwrap();
+
+        let result = export_proof(&session, temp_file.path(), "text", false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_export_proof_json_format() {
+        let session = ProverSession::new();
+        let temp_file = NamedTempFile::new().unwrap();
+
+        let result = export_proof(&session, temp_file.path(), "json", false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_export_proof_coq_format() {
+        let session = ProverSession::new();
+        let temp_file = NamedTempFile::new().unwrap();
+
+        let result = export_proof(&session, temp_file.path(), "coq", false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_export_proof_lean_format() {
+        let session = ProverSession::new();
+        let temp_file = NamedTempFile::new().unwrap();
+
+        let result = export_proof(&session, temp_file.path(), "lean", false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_export_proof_verbose() {
+        let session = ProverSession::new();
+        let temp_file = NamedTempFile::new().unwrap();
+
+        let result = export_proof(&session, temp_file.path(), "text", true);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_verify_proofs_from_ast() {
+        let temp_file = NamedTempFile::new().unwrap();
+        fs::write(&temp_file, "let x = 42").unwrap();
+
+        let ast = load_proof_file(temp_file.path(), false).unwrap();
+        let result = verify_proofs_from_ast(&ast, temp_file.path(), "text", false, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_verify_proofs_from_ast_json_format() {
+        let temp_file = NamedTempFile::new().unwrap();
+        fs::write(&temp_file, "let x = 42").unwrap();
+
+        let ast = load_proof_file(temp_file.path(), false).unwrap();
+        let result = verify_proofs_from_ast(&ast, temp_file.path(), "json", false, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_verify_proofs_from_ast_with_counterexample() {
+        let temp_file = NamedTempFile::new().unwrap();
+        fs::write(&temp_file, "let x = 42").unwrap();
+
+        let ast = load_proof_file(temp_file.path(), false).unwrap();
+        let result = verify_proofs_from_ast(&ast, temp_file.path(), "text", true, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_verify_proofs_from_ast_verbose() {
+        let temp_file = NamedTempFile::new().unwrap();
+        fs::write(&temp_file, "let x = 42").unwrap();
+
+        let ast = load_proof_file(temp_file.path(), false).unwrap();
+        let result = verify_proofs_from_ast(&ast, temp_file.path(), "text", false, true);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_no_assertions_text_format() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let result = handle_no_assertions(temp_file.path(), "text", false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_no_assertions_json_format() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let result = handle_no_assertions(temp_file.path(), "json", false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_no_assertions_verbose() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let result = handle_no_assertions(temp_file.path(), "text", true);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_print_assertions_empty() {
+        let assertions: Vec<String> = vec![];
+        print_assertions(&assertions);
+    }
+
+    #[test]
+    fn test_print_assertions_non_empty() {
+        let assertions = vec![
+            "x > 0".to_string(),
+            "x + 1 > 1".to_string(),
+        ];
+        print_assertions(&assertions);
+    }
+}

@@ -721,3 +721,513 @@ impl Exercise {
         (self.visible_tests.len(), self.hidden_tests.len())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_wasm_sandbox_creation() {
+        let sandbox = WasmSandbox::new();
+        assert!(sandbox.limits.is_none());
+    }
+
+    #[test]
+    fn test_wasm_sandbox_default() {
+        let sandbox = WasmSandbox::default();
+        assert!(sandbox.limits.is_none());
+    }
+
+    #[test]
+    fn test_resource_limits_valid() {
+        let mut sandbox = WasmSandbox::new();
+        let limits = ResourceLimits {
+            memory_mb: 128,
+            cpu_time_ms: 5000,
+            stack_size_kb: 1024,
+            heap_size_mb: 64,
+            file_access: false,
+            network_access: false,
+        };
+
+        let result = sandbox.configure(limits);
+        assert!(result.is_ok());
+        assert!(sandbox.limits.is_some());
+    }
+
+    #[test]
+    fn test_resource_limits_invalid_memory_zero() {
+        let mut sandbox = WasmSandbox::new();
+        let limits = ResourceLimits {
+            memory_mb: 0,
+            cpu_time_ms: 5000,
+            stack_size_kb: 1024,
+            heap_size_mb: 64,
+            file_access: false,
+            network_access: false,
+        };
+
+        let result = sandbox.configure(limits);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Memory limit must be between 1 and 1024 MB"));
+    }
+
+    #[test]
+    fn test_resource_limits_invalid_memory_too_large() {
+        let mut sandbox = WasmSandbox::new();
+        let limits = ResourceLimits {
+            memory_mb: 2048,
+            cpu_time_ms: 5000,
+            stack_size_kb: 1024,
+            heap_size_mb: 64,
+            file_access: false,
+            network_access: false,
+        };
+
+        let result = sandbox.configure(limits);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Memory limit must be between 1 and 1024 MB"));
+    }
+
+    #[test]
+    fn test_ruchy_function_creation() {
+        let function = RuchyFunction {
+            name: "test_func".to_string(),
+            parameters: vec![
+                RuchyParameter {
+                    name: "x".to_string(),
+                    param_type: WasmType::I32,
+                },
+                RuchyParameter {
+                    name: "y".to_string(),
+                    param_type: WasmType::F64,
+                },
+            ],
+            return_type: WasmType::I32,
+            body: vec![
+                RuchyStatement::Return(RuchyExpression::Literal(RuchyValue::Integer(42))),
+            ],
+        };
+
+        assert_eq!(function.name, "test_func");
+        assert_eq!(function.parameters.len(), 2);
+        assert_eq!(function.return_type, WasmType::I32);
+        assert_eq!(function.body.len(), 1);
+    }
+
+    #[test]
+    fn test_ruchy_constant_creation() {
+        let constant = RuchyConstant {
+            name: "PI".to_string(),
+            value: RuchyValue::Float(3.14159),
+            const_type: WasmType::F64,
+        };
+
+        assert_eq!(constant.name, "PI");
+        assert_eq!(constant.const_type, WasmType::F64);
+        if let RuchyValue::Float(value) = constant.value {
+            assert!((value - 3.14159).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected Float value");
+        }
+    }
+
+    #[test]
+    fn test_ruchy_values() {
+        let int_val = RuchyValue::Integer(42);
+        let float_val = RuchyValue::Float(3.14);
+        let string_val = RuchyValue::String("hello".to_string());
+        let bool_val = RuchyValue::Boolean(true);
+        let null_val = RuchyValue::Null;
+
+        match int_val {
+            RuchyValue::Integer(42) => (),
+            _ => panic!("Expected Integer(42)"),
+        }
+
+        match float_val {
+            RuchyValue::Float(f) if (f - 3.14).abs() < f64::EPSILON => (),
+            _ => panic!("Expected Float(3.14)"),
+        }
+
+        match string_val {
+            RuchyValue::String(ref s) if s == "hello" => (),
+            _ => panic!("Expected String(hello)"),
+        }
+
+        match bool_val {
+            RuchyValue::Boolean(true) => (),
+            _ => panic!("Expected Boolean(true)"),
+        }
+
+        match null_val {
+            RuchyValue::Null => (),
+            _ => panic!("Expected Null"),
+        }
+    }
+
+    #[test]
+    fn test_wasm_types() {
+        let types = vec![
+            WasmType::I32,
+            WasmType::I64,
+            WasmType::F32,
+            WasmType::F64,
+            WasmType::Void,
+        ];
+
+        assert_eq!(types.len(), 5);
+        assert_eq!(types[0], WasmType::I32);
+        assert_eq!(types[4], WasmType::Void);
+    }
+
+    #[test]
+    fn test_binary_operations() {
+        let ops = vec![
+            BinaryOp::Add,
+            BinaryOp::Sub,
+            BinaryOp::Mul,
+            BinaryOp::Div,
+            BinaryOp::Eq,
+            BinaryOp::Ne,
+            BinaryOp::Lt,
+            BinaryOp::Le,
+            BinaryOp::Gt,
+            BinaryOp::Ge,
+        ];
+
+        assert_eq!(ops.len(), 10);
+    }
+
+    #[test]
+    fn test_ruchy_statements() {
+        let return_stmt = RuchyStatement::Return(RuchyExpression::Literal(RuchyValue::Integer(42)));
+        let assignment_stmt = RuchyStatement::Assignment(
+            "x".to_string(),
+            RuchyExpression::Literal(RuchyValue::Integer(10)),
+        );
+        let expr_stmt = RuchyStatement::Expression(RuchyExpression::Variable("x".to_string()));
+
+        match return_stmt {
+            RuchyStatement::Return(_) => (),
+            _ => panic!("Expected Return statement"),
+        }
+
+        match assignment_stmt {
+            RuchyStatement::Assignment(ref var, _) if var == "x" => (),
+            _ => panic!("Expected Assignment to x"),
+        }
+
+        match expr_stmt {
+            RuchyStatement::Expression(_) => (),
+            _ => panic!("Expected Expression statement"),
+        }
+    }
+
+    #[test]
+    fn test_ruchy_expressions() {
+        let literal_expr = RuchyExpression::Literal(RuchyValue::Integer(42));
+        let variable_expr = RuchyExpression::Variable("x".to_string());
+        let binary_expr = RuchyExpression::Binary(
+            Box::new(RuchyExpression::Literal(RuchyValue::Integer(1))),
+            BinaryOp::Add,
+            Box::new(RuchyExpression::Literal(RuchyValue::Integer(2))),
+        );
+        let call_expr = RuchyExpression::Call(
+            "func".to_string(),
+            vec![RuchyExpression::Literal(RuchyValue::Integer(42))],
+        );
+
+        match literal_expr {
+            RuchyExpression::Literal(_) => (),
+            _ => panic!("Expected Literal expression"),
+        }
+
+        match variable_expr {
+            RuchyExpression::Variable(ref name) if name == "x" => (),
+            _ => panic!("Expected Variable(x) expression"),
+        }
+
+        match binary_expr {
+            RuchyExpression::Binary(_, BinaryOp::Add, _) => (),
+            _ => panic!("Expected Binary Add expression"),
+        }
+
+        match call_expr {
+            RuchyExpression::Call(ref name, ref args) if name == "func" && args.len() == 1 => (),
+            _ => panic!("Expected Call expression"),
+        }
+    }
+
+    #[test]
+    fn test_parsed_ruchy_code() {
+        let code = ParsedRuchyCode {
+            functions: vec![
+                RuchyFunction {
+                    name: "add".to_string(),
+                    parameters: vec![
+                        RuchyParameter {
+                            name: "a".to_string(),
+                            param_type: WasmType::I32,
+                        },
+                        RuchyParameter {
+                            name: "b".to_string(),
+                            param_type: WasmType::I32,
+                        },
+                    ],
+                    return_type: WasmType::I32,
+                    body: vec![RuchyStatement::Return(RuchyExpression::Binary(
+                        Box::new(RuchyExpression::Variable("a".to_string())),
+                        BinaryOp::Add,
+                        Box::new(RuchyExpression::Variable("b".to_string())),
+                    ))],
+                },
+            ],
+            main_function: None,
+            constants: vec![],
+        };
+
+        assert_eq!(code.functions.len(), 1);
+        assert!(code.main_function.is_none());
+        assert_eq!(code.constants.len(), 0);
+        assert_eq!(code.functions[0].name, "add");
+    }
+
+    #[test]
+    fn test_sandbox_errors() {
+        let errors = vec![
+            SandboxError::MemoryLimitExceeded,
+            SandboxError::Timeout,
+            SandboxError::PermissionDenied("file access".to_string()),
+            SandboxError::NetworkAccessDenied,
+            SandboxError::CompilationError("syntax error".to_string()),
+            SandboxError::RuntimeError("division by zero".to_string()),
+        ];
+
+        assert_eq!(errors.len(), 6);
+    }
+
+    #[test]
+    fn test_execution_result() {
+        let result = ExecutionResult {
+            output: "Hello, World!".to_string(),
+            memory_used: 1024,
+            cpu_time_ms: 150,
+            gas_used: 5000,
+        };
+
+        assert_eq!(result.output, "Hello, World!");
+        assert_eq!(result.memory_used, 1024);
+        assert_eq!(result.cpu_time_ms, 150);
+        assert_eq!(result.gas_used, 5000);
+    }
+
+    #[test]
+    fn test_problem_generator_creation() {
+        let generator = ProblemGenerator::new();
+        assert_eq!(generator.seed, 12345);
+        assert!(!generator.templates.is_empty());
+    }
+
+    #[test]
+    fn test_generate_for_student() {
+        let mut generator = ProblemGenerator::new();
+        let problem1 = generator.generate_for_student("student123", "array_sum");
+        let problem2 = generator.generate_for_student("student123", "array_sum");
+
+        // Same student should get same problem (deterministic)
+        assert_eq!(problem1.student_id, problem2.student_id);
+        assert_eq!(problem1.parameters, problem2.parameters);
+        assert_eq!(problem1.problem_type, "array_sum");
+    }
+
+    #[test]
+    fn test_generate_for_different_students() {
+        let mut generator = ProblemGenerator::new();
+        let problem1 = generator.generate_for_student("alice", "fibonacci");
+        let problem2 = generator.generate_for_student("bob", "fibonacci");
+
+        // Different students should get different problems
+        assert_ne!(problem1.parameters, problem2.parameters);
+        assert_eq!(problem1.problem_type, problem2.problem_type);
+        assert_ne!(problem1.student_id, problem2.student_id);
+    }
+
+    #[test]
+    fn test_exercise_creation() {
+        let exercise = Exercise::new("Basic Addition");
+        assert_eq!(exercise.name, "Basic Addition");
+        assert_eq!(exercise.get_test_stats(), (0, 0));
+    }
+
+    #[test]
+    fn test_exercise_add_visible_test() {
+        let mut exercise = Exercise::new("Test Exercise");
+        let test = TestCase {
+            input: "2 + 2".to_string(),
+            expected: "4".to_string(),
+            points: 10,
+        };
+
+        exercise.add_visible_test(test);
+        assert_eq!(exercise.get_test_stats(), (1, 0));
+
+        let visible_tests = exercise.get_visible_tests();
+        assert_eq!(visible_tests.len(), 1);
+        assert_eq!(visible_tests[0].input, "2 + 2");
+        assert_eq!(visible_tests[0].expected, "4");
+        assert_eq!(visible_tests[0].points, 10);
+    }
+
+    #[test]
+    fn test_exercise_add_hidden_test() {
+        let mut exercise = Exercise::new("Test Exercise");
+        let test = TestCase {
+            input: "5 * 6".to_string(),
+            expected: "30".to_string(),
+            points: 15,
+        };
+
+        exercise.add_hidden_test(test);
+        assert_eq!(exercise.get_test_stats(), (0, 1));
+    }
+
+    #[test]
+    fn test_exercise_mixed_tests() {
+        let mut exercise = Exercise::new("Mixed Tests");
+
+        let visible_test = TestCase {
+            input: "1 + 1".to_string(),
+            expected: "2".to_string(),
+            points: 5,
+        };
+
+        let hidden_test = TestCase {
+            input: "10 - 3".to_string(),
+            expected: "7".to_string(),
+            points: 10,
+        };
+
+        exercise.add_visible_test(visible_test);
+        exercise.add_hidden_test(hidden_test);
+
+        assert_eq!(exercise.get_test_stats(), (1, 1));
+
+        let all_tests = exercise.get_all_tests_for_grading();
+        assert_eq!(all_tests.len(), 2);
+
+        let visible_tests = exercise.get_visible_tests();
+        assert_eq!(visible_tests.len(), 1);
+    }
+
+    #[test]
+    fn test_test_case_clone() {
+        let test = TestCase {
+            input: "test input".to_string(),
+            expected: "test output".to_string(),
+            points: 20,
+        };
+
+        let cloned_test = test.clone();
+        assert_eq!(test.input, cloned_test.input);
+        assert_eq!(test.expected, cloned_test.expected);
+        assert_eq!(test.points, cloned_test.points);
+    }
+
+    #[test]
+    fn test_problem_template() {
+        let template = ProblemTemplate {
+            name: "test_template".to_string(),
+            parameter_ranges: vec![(1, 10), (5, 15)],
+        };
+
+        assert_eq!(template.name, "test_template");
+        assert_eq!(template.parameter_ranges.len(), 2);
+        assert_eq!(template.parameter_ranges[0], (1, 10));
+        assert_eq!(template.parameter_ranges[1], (5, 15));
+    }
+
+    #[test]
+    fn test_generated_problem() {
+        let problem = GeneratedProblem {
+            problem_type: "sorting".to_string(),
+            parameters: vec![5, 10, 15],
+            student_id: "student456".to_string(),
+            description: "Sort an array of integers".to_string(),
+        };
+
+        assert_eq!(problem.problem_type, "sorting");
+        assert_eq!(problem.parameters, vec![5, 10, 15]);
+        assert_eq!(problem.student_id, "student456");
+        assert_eq!(problem.description, "Sort an array of integers");
+    }
+
+    #[test]
+    fn test_complex_ruchy_if_statement() {
+        let if_stmt = RuchyStatement::If(
+            RuchyExpression::Binary(
+                Box::new(RuchyExpression::Variable("x".to_string())),
+                BinaryOp::Gt,
+                Box::new(RuchyExpression::Literal(RuchyValue::Integer(0))),
+            ),
+            vec![RuchyStatement::Return(RuchyExpression::Literal(RuchyValue::Boolean(true)))],
+            Some(vec![RuchyStatement::Return(RuchyExpression::Literal(RuchyValue::Boolean(false)))]),
+        );
+
+        match if_stmt {
+            RuchyStatement::If(_, then_branch, else_branch) => {
+                assert_eq!(then_branch.len(), 1);
+                assert!(else_branch.is_some());
+                assert_eq!(else_branch.unwrap().len(), 1);
+            },
+            _ => panic!("Expected If statement"),
+        }
+    }
+
+    #[test]
+    fn test_complex_ruchy_while_statement() {
+        let while_stmt = RuchyStatement::While(
+            RuchyExpression::Binary(
+                Box::new(RuchyExpression::Variable("i".to_string())),
+                BinaryOp::Lt,
+                Box::new(RuchyExpression::Literal(RuchyValue::Integer(10))),
+            ),
+            vec![
+                RuchyStatement::Assignment(
+                    "i".to_string(),
+                    RuchyExpression::Binary(
+                        Box::new(RuchyExpression::Variable("i".to_string())),
+                        BinaryOp::Add,
+                        Box::new(RuchyExpression::Literal(RuchyValue::Integer(1))),
+                    ),
+                ),
+            ],
+        );
+
+        match while_stmt {
+            RuchyStatement::While(_, body) => {
+                assert_eq!(body.len(), 1);
+            },
+            _ => panic!("Expected While statement"),
+        }
+    }
+
+    #[test]
+    fn test_resource_limits_with_access_permissions() {
+        let limits = ResourceLimits {
+            memory_mb: 256,
+            cpu_time_ms: 10000,
+            stack_size_kb: 2048,
+            heap_size_mb: 128,
+            file_access: true,
+            network_access: true,
+        };
+
+        assert!(limits.file_access);
+        assert!(limits.network_access);
+        assert_eq!(limits.memory_mb, 256);
+        assert_eq!(limits.cpu_time_ms, 10000);
+        assert_eq!(limits.stack_size_kb, 2048);
+        assert_eq!(limits.heap_size_mb, 128);
+    }
+}
