@@ -1167,7 +1167,7 @@ mod tests {
     }
 
     #[test]
-    fn test_target_architecture_variants() {
+    fn test_target_architecture_variants_comprehensive() {
         let targets = vec![
             TargetArchitecture::Wasm32,
             TargetArchitecture::Wasm64,

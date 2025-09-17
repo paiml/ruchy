@@ -2097,7 +2097,7 @@ mod tests {
 
     // Test 42: Type inference with constraints
     #[test]
-    fn test_constraint_solving() {
+    fn test_constraint_solving_comprehensive() {
         let mut ctx = InferenceContext::new();
 
         // Add some constraints
@@ -2181,7 +2181,7 @@ mod tests {
 
     // Test 49: Type environment operations
     #[test]
-    fn test_type_environment() {
+    fn test_type_environment_comprehensive() {
         let mut env = TypeEnv::new();
 
         // Add a binding
