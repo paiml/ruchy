@@ -339,7 +339,7 @@ mod tests {
         assert!(match_pattern(&Pattern::Wildcard, &Value::Unit).is_some());
 
         // Variable pattern should bind value
-        let binding = match_pattern(&Pattern::Variable("x".to_string()), &Value::Int(42));
+        let binding = match_pattern(&Pattern::Identifier("x".to_string()), &Value::Int(42));
         assert!(binding.is_some());
         let bindings = binding.unwrap();
         assert_eq!(bindings.len(), 1);
@@ -360,7 +360,7 @@ mod tests {
         // Exact tuple match
         let tuple_pattern = Pattern::Tuple(vec![
             Pattern::Literal(Literal::Integer(1)),
-            Pattern::Variable("s".to_string()),
+            Pattern::Identifier("s".to_string()),
             Pattern::Literal(Literal::Bool(true))
         ]);
 
@@ -374,14 +374,14 @@ mod tests {
         // Wrong tuple length should not match
         let wrong_pattern = Pattern::Tuple(vec![
             Pattern::Literal(Literal::Integer(1)),
-            Pattern::Variable("s".to_string())
+            Pattern::Identifier("s".to_string())
         ]);
         assert!(match_pattern(&wrong_pattern, &tuple_value).is_none());
 
         // Wrong element values should not match
         let mismatch_pattern = Pattern::Tuple(vec![
             Pattern::Literal(Literal::Integer(2)),
-            Pattern::Variable("s".to_string()),
+            Pattern::Identifier("s".to_string()),
             Pattern::Literal(Literal::Bool(true))
         ]);
         assert!(match_pattern(&mismatch_pattern, &tuple_value).is_none());
@@ -394,9 +394,9 @@ mod tests {
 
         // Exact list match with variables
         let list_pattern = Pattern::List(vec![
-            Pattern::Variable("first".to_string()),
+            Pattern::Identifier("first".to_string()),
             Pattern::Literal(Literal::Integer(2)),
-            Pattern::Variable("last".to_string())
+            Pattern::Identifier("last".to_string())
         ]);
 
         let binding = match_pattern(&list_pattern, &list_value);
@@ -416,7 +416,7 @@ mod tests {
         assert!(match_pattern(&empty_pattern, &list_value).is_none());
 
         // Wrong list length should not match
-        let short_pattern = Pattern::List(vec![Pattern::Variable("x".to_string())]);
+        let short_pattern = Pattern::List(vec![Pattern::Identifier("x".to_string())]);
         assert!(match_pattern(&short_pattern, &list_value).is_none());
     }
 
@@ -427,7 +427,7 @@ mod tests {
 
         // Rest pattern at end
         let rest_pattern = Pattern::List(vec![
-            Pattern::Variable("first".to_string()),
+            Pattern::Identifier("first".to_string()),
             Pattern::Rest
         ]);
 
@@ -440,9 +440,9 @@ mod tests {
 
         // Named rest pattern
         let named_rest_pattern = Pattern::List(vec![
-            Pattern::Variable("first".to_string()),
+            Pattern::Identifier("first".to_string()),
             Pattern::RestNamed("middle".to_string()),
-            Pattern::Variable("last".to_string())
+            Pattern::Identifier("last".to_string())
         ]);
 
         let binding = match_pattern(&named_rest_pattern, &list_value);
@@ -499,7 +499,7 @@ mod tests {
             map
         });
 
-        let some_pattern = Pattern::Some(Box::new(Pattern::Variable("value".to_string())));
+        let some_pattern = Pattern::Some(Box::new(Pattern::Identifier("value".to_string())));
         let binding = match_pattern(&some_pattern, &some_value);
         assert!(binding.is_some());
         let bindings = binding.unwrap();
@@ -532,12 +532,12 @@ mod tests {
             fields: vec![
                 StructPatternField {
                     name: "name".to_string(),
-                    pattern: Pattern::Variable("person_name".to_string()),
+                    pattern: Pattern::Identifier("person_name".to_string()),
                     default_value: None,
                 },
                 StructPatternField {
                     name: "age".to_string(),
-                    pattern: Pattern::Variable("person_age".to_string()),
+                    pattern: Pattern::Identifier("person_age".to_string()),
                     default_value: None,
                 }
             ]
@@ -596,14 +596,14 @@ mod tests {
         ]);
 
         let nested_pattern = Pattern::Tuple(vec![
-            Pattern::Variable("outer_str".to_string()),
+            Pattern::Identifier("outer_str".to_string()),
             Pattern::List(vec![
-                Pattern::Variable("first_int".to_string()),
-                Pattern::Variable("second_int".to_string())
+                Pattern::Identifier("first_int".to_string()),
+                Pattern::Identifier("second_int".to_string())
             ]),
             Pattern::Tuple(vec![
                 Pattern::Literal(Literal::Bool(true)),
-                Pattern::Variable("inner_char".to_string())
+                Pattern::Identifier("inner_char".to_string())
             ])
         ]);
 
@@ -627,18 +627,18 @@ mod tests {
     #[test]
     fn test_pattern_matching_failures() {
         // Type mismatch: expecting tuple, got integer
-        let tuple_pattern = Pattern::Tuple(vec![Pattern::Variable("x".to_string())]);
+        let tuple_pattern = Pattern::Tuple(vec![Pattern::Identifier("x".to_string())]);
         assert!(match_pattern(&tuple_pattern, &Value::Int(42)).is_none());
 
         // Type mismatch: expecting list, got string
-        let list_pattern = Pattern::List(vec![Pattern::Variable("x".to_string())]);
+        let list_pattern = Pattern::List(vec![Pattern::Identifier("x".to_string())]);
         assert!(match_pattern(&list_pattern, &Value::String("test".to_string())).is_none());
 
         // Length mismatch: pattern expects 3 elements, value has 2
         let long_pattern = Pattern::Tuple(vec![
-            Pattern::Variable("a".to_string()),
-            Pattern::Variable("b".to_string()),
-            Pattern::Variable("c".to_string())
+            Pattern::Identifier("a".to_string()),
+            Pattern::Identifier("b".to_string()),
+            Pattern::Identifier("c".to_string())
         ]);
         let short_tuple = Value::Tuple(vec![Value::Int(1), Value::Int(2)]);
         assert!(match_pattern(&long_pattern, &short_tuple).is_none());
