@@ -677,7 +677,7 @@ mod tests {
                 name: format!("actor_{}", i),
                 timestamp: current_timestamp(),
                 state: ActorState::Running,
-                mailbox_size: i * 10, // 10, 20, 30, 40, 50
+                mailbox_size: (i * 10) as usize, // 10, 20, 30, 40, 50
                 parent: if i > 1 { Some(ActorId(i - 1)) } else { None },
                 children: vec![],
                 message_stats: MessageStats {
@@ -688,7 +688,7 @@ mod tests {
                     failed_messages: i * 2,       // 2, 4, 6, 8, 10
                     last_processed: Some(current_timestamp()),
                 },
-                memory_usage: Some(i * 1024), // 1024, 2048, 3072, 4096, 5120
+                memory_usage: Some((i * 1024) as usize), // 1024, 2048, 3072, 4096, 5120
             };
             snapshots.insert(ActorId(i), snapshot);
         }
@@ -724,7 +724,7 @@ mod tests {
                 status: MessageStatus::Completed,
                 processing_duration_us: Some(i * 100),
                 error: None,
-                stack_depth: i,
+                stack_depth: i as usize,
                 correlation_id: Some(correlation_id.clone()),
             };
             observatory.trace_message(trace).unwrap();
@@ -867,7 +867,7 @@ mod tests {
                 parent: None,
                 children: vec![],
                 message_stats: MessageStats::default(),
-                memory_usage: Some(1024 * i * i), // Quadratic growth
+                memory_usage: Some((1024 * i * i) as usize), // Quadratic growth
             };
             snapshots.insert(actor_id, snapshot); // Replace previous snapshot
         }
@@ -898,7 +898,7 @@ mod tests {
                 status: MessageStatus::Failed,
                 processing_duration_us: Some(50),
                 error: Some(error_msg.clone()),
-                stack_depth: i,
+                stack_depth: i as usize,
                 correlation_id: Some("db-op-456".to_string()),
             };
             observatory.trace_message(trace).unwrap();
@@ -944,7 +944,7 @@ mod tests {
                     obs.trace_message(trace).unwrap();
 
                     // Also read traces
-                    let _traces = obs.get_traces(None, Some(5)).unwrap();
+                    let _traces = obs.get_traces(None, Some("5")).unwrap();
                 }
             });
             handles.push(handle);
@@ -975,7 +975,7 @@ mod tests {
                 name: "monitored_actor".to_string(),
                 timestamp: base_time + (i * 10000), // 10 second intervals
                 state: if i == 5 { ActorState::Failed("Simulated crash".to_string()) } else { ActorState::Running },
-                mailbox_size: if i < 4 { i * 2 } else { 0 }, // Clears before crash
+                mailbox_size: if i < 4 { (i * 2) as usize } else { 0 }, // Clears before crash
                 parent: None,
                 children: vec![],
                 message_stats: MessageStats {
@@ -986,7 +986,7 @@ mod tests {
                     failed_messages: if i >= 4 { i } else { 0 },
                     last_processed: Some(base_time + (i * 10000)),
                 },
-                memory_usage: Some(1024 * i),
+                memory_usage: Some((1024 * i) as usize),
             };
             snapshots.insert(actor_id, snapshot);
         }
@@ -1260,7 +1260,7 @@ mod tests {
                 status: MessageStatus::Completed,
                 processing_duration_us: Some(depth as u64 * 10),
                 error: None,
-                stack_depth: depth,
+                stack_depth: depth as usize,
                 correlation_id: Some("deep_call_chain".to_string()),
             };
             observatory.trace_message(trace).unwrap();
@@ -1402,7 +1402,7 @@ mod tests {
                 name: format!("actor_{}", i),
                 timestamp: current_timestamp(),
                 state: ActorState::Running,
-                mailbox_size: i * 2,
+                mailbox_size: (i * 2) as usize,
                 parent: if i > 1 { Some(ActorId(1)) } else { None },
                 children: if i == 1 { vec![ActorId(2), ActorId(3), ActorId(4), ActorId(5)] } else { vec![] },
                 message_stats: MessageStats {
@@ -1413,7 +1413,7 @@ mod tests {
                     messages_per_second: 10.0,
                     max_processing_time_us: 1000,
                 },
-                memory_usage: Some(1024 * i),
+                memory_usage: Some((1024 * i) as usize),
             };
             snapshots.insert(ActorId(i), snapshot);
         }

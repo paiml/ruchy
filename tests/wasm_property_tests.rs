@@ -751,10 +751,10 @@ proptest! {
         
         // Check valid types
         for param in &params {
-            assert!(["i32", "i64", "f32", "f64"].contains(&param.as_str()));
+            assert!(["i32", "i64", "f32", "f64"].contains(param));
         }
         for result in &results {
-            assert!(["i32", "i64", "f32", "f64"].contains(&result.as_str()));
+            assert!(["i32", "i64", "f32", "f64"].contains(result));
         }
     }
 }

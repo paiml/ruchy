@@ -25,7 +25,7 @@ pub fn dataframe_to_arrow(df: &polars::prelude::DataFrame) -> Result<RecordBatch
     let mut fields = Vec::new();
     let mut arrays: Vec<ArrayRef> = Vec::new();
     for column in df.get_columns() {
-        let field = Field::new(
+        let field = ArrowField::new(
             column.name().as_str(),
             polars_dtype_to_arrow(&column.dtype())?,
             column.has_nulls(),
@@ -34,7 +34,7 @@ pub fn dataframe_to_arrow(df: &polars::prelude::DataFrame) -> Result<RecordBatch
         let array = polars_series_to_arrow(column.as_materialized_series())?;
         arrays.push(array);
     }
-    let schema = Arc::new(Schema::new(fields));
+    let schema = Arc::new(ArrowArrowSchema::new(fields));
     RecordBatch::try_new(schema, arrays)
         .context("Failed to create Arrow RecordBatch from DataFrame")
 }
@@ -319,6 +319,9 @@ pub fn concat(dataframes: &[Self]) -> Result<Self> {
 mod tests {
     use super::*;
     use polars::prelude::*;
+    use polars::datatypes::DataType as PolarsDataType;
+    use arrow::datatypes::{DataType as ArrowDataType, Schema as ArrowSchema, Field as ArrowField};
+    use arrow::array::{ArrayRef, Int32Array};
     use polars::datatypes::PlSmallStr;
     #[test]
     fn test_dataframe_to_arrow_roundtrip() {
@@ -446,10 +449,10 @@ mod tests {
 
     #[test]
     fn test_arrow_dataframe_new() {
-        let schema = Arc::new(Schema::new(vec![
-            Field::new("col1", ArrowDataType::Int32, false),
+        let schema = Arc::new(ArrowArrowSchema::new(vec![
+            ArrowArrowField::new("col1", ArrowDataType::Int32, false),
         ]));
-        let array = Int64Array::from(vec![1, 2, 3]);
+        let array = Int32Array::from(vec![1, 2, 3]);
         let batch = RecordBatch::try_new(
             schema.clone(),
             vec![Arc::new(array) as ArrayRef]
@@ -462,10 +465,10 @@ mod tests {
 
     #[test]
     fn test_arrow_dataframe_num_columns() {
-        let schema = Arc::new(Schema::new(vec![
-            Field::new("col1", ArrowDataType::Int32, false),
-            Field::new("col2", ArrowDataType::Float64, false),
-            Field::new("col3", ArrowDataType::Utf8, false),
+        let schema = Arc::new(ArrowSchema::new(vec![
+            ArrowField::new("col1", ArrowDataType::Int32, false),
+            ArrowField::new("col2", ArrowDataType::Float64, false),
+            ArrowField::new("col3", ArrowDataType::Utf8, false),
         ]));
         let arrow_df = ArrowDataFrame::new(schema, Vec::new());
         assert_eq!(arrow_df.num_columns(), 3);
@@ -480,11 +483,11 @@ mod tests {
 
     #[test]
     fn test_arrow_dataframe_concat_mismatched_schemas() {
-        let schema1 = Arc::new(Schema::new(vec![
-            Field::new("col1", ArrowDataType::Int32, false),
+        let schema1 = Arc::new(ArrowSchema::new(vec![
+            ArrowField::new("col1", ArrowDataType::Int32, false),
         ]));
-        let schema2 = Arc::new(Schema::new(vec![
-            Field::new("col2", ArrowDataType::Float64, false),
+        let schema2 = Arc::new(ArrowSchema::new(vec![
+            ArrowField::new("col2", ArrowDataType::Float64, false),
         ]));
 
         let df1 = ArrowDataFrame::new(schema1, Vec::new());
@@ -497,8 +500,8 @@ mod tests {
 
     #[test]
     fn test_arrow_dataframe_slice_empty() {
-        let schema = Arc::new(Schema::new(vec![
-            Field::new("col1", ArrowDataType::Int32, false),
+        let schema = Arc::new(ArrowSchema::new(vec![
+            ArrowField::new("col1", ArrowDataType::Int32, false),
         ]));
         let arrow_df = ArrowDataFrame::new(schema, Vec::new());
 
@@ -593,6 +596,7 @@ mod property_tests_arrow_integration {
     use proptest::proptest;
     use super::*;
     use proptest::prelude::*;
+    use polars::df;
     proptest! {
         /// Property: Round-trip conversion preserves data shape
         #[test]
@@ -645,8 +649,8 @@ mod property_tests_arrow_integration {
         fn test_concat_preserves_row_count(
             sizes in prop::collection::vec(1..20usize, 1..5)
         ) {
-            let schema = Arc::new(Schema::new(vec![
-                Field::new("col", ArrowDataType::Int32, false),
+            let schema = Arc::new(ArrowSchema::new(vec![
+                ArrowField::new("col", ArrowDataType::Int32, false),
             ]));
 
             let mut dfs = Vec::new();

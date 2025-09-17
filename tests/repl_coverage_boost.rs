@@ -17,7 +17,7 @@ fn test_repl_creation() {
     let config = ReplConfig {
         max_memory: 10_000_000,
         timeout: Duration::from_millis(100),
-        max_depth: 1000,
+        maxdepth: 1000,
         debug: false,
     };
     let repl = Repl::with_config(config);

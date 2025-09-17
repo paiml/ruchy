@@ -888,14 +888,20 @@ mod tests {
         let builder = AstBuilder::new();
 
         let lambda = builder.lambda(
-            vec![Param { name: "x".to_string(), type_annotation: None }],
+            vec![Param {
+                pattern: Pattern::Identifier("x".to_string()),
+                ty: Type { kind: TypeKind::Named("unknown".to_string()), span: Span::new(0, 1) }, // Fixed: create proper Type struct
+                span: Span::new(0, 1),
+                is_mutable: false,
+                default_value: None
+            }],
             builder.ident("x"),
         );
 
         if let ExprKind::Lambda { params, body } = lambda.kind {
             assert_eq!(params.len(), 1);
-            assert_eq!(params[0].name, "x");
-            assert!(params[0].type_annotation.is_none());
+            assert_eq!(params[0].name(), "x");
+            assert!(matches!(params[0].ty.kind, TypeKind::Named(ref name) if name == "unknown")); // Fixed: match TypeKind properly
 
             if let ExprKind::Identifier(name) = body.kind {
                 assert_eq!(name, "x");
@@ -1574,7 +1580,7 @@ mod tests {
         // Create string parts for "Hello {name}!"
         let parts = vec![
             StringPart::Text("Hello ".to_string()),
-            StringPart::Expr(builder.ident("name")),
+            StringPart::Expr(Box::new(builder.ident("name"))),
             StringPart::Text("!".to_string()),
         ];
 

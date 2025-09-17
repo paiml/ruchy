@@ -22,7 +22,7 @@ fn test_repl_with_custom_config() {
     let config = ReplConfig {
         max_memory: 2048,
         timeout: Duration::from_millis(100),
-        max_depth: 20,
+        maxdepth: 20,
         debug: true,
     };
     let repl = Repl::with_config(config);
