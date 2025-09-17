@@ -27,7 +27,6 @@ impl SemanticAnalyzer {
     ///
     /// ```
     /// use ruchy::lsp::SemanticAnalyzer;
-#[cfg(test)]
     ///
     /// let analyzer = SemanticAnalyzer::new();
     /// // Analyzer starts with empty symbol table
