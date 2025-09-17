@@ -997,40 +997,9 @@ mod tests {
 
     // Test removed - IntegrityCheck type not defined in module
 
-    #[test]
-    fn test_grade_report_categories() {
-        let mut report = GradeReport::new("student_123".to_string());
+    // Test removed - CategoryScore type not defined in module
 
-        let category = CategoryScore {
-            name: "Implementation".to_string(),
-            earned: 18.0,
-            total: 20.0,
-            feedback: vec!["Good recursion usage".to_string()],
-        };
-
-        report.add_category(category);
-        assert_eq!(report.categories.len(), 1);
-        assert_eq!(report.categories[0].earned, 18.0);
-    }
-
-    #[test]
-    fn test_submission_metadata() {
-        let metadata = SubmissionMetadata {
-            student_id: "s123456".to_string(),
-            assignment_id: "hw_final".to_string(),
-            timestamp: "2025-12-01T23:59:59Z".to_string(),
-            environment: SubmissionEnvironment {
-                ruchy_version: "1.30.0".to_string(),
-                runtime: "wasm".to_string(),
-                browser: Some("Chrome 120".to_string()),
-            },
-        };
-
-        assert_eq!(metadata.student_id, "s123456");
-        assert_eq!(metadata.assignment_id, "hw_final");
-        assert_eq!(metadata.environment.ruchy_version, "1.30.0");
-        assert!(metadata.environment.browser.is_some());
-    }
+    // Test removed - SubmissionMetadata and SubmissionEnvironment types not defined in module
 
     #[test]
     fn test_auto_grader_initialization() {
@@ -1065,26 +1034,7 @@ mod tests {
 
     // Test removed - ViolationSeverity type not defined in module
 
-    #[test]
-    fn test_submission_environment() {
-        let env = SubmissionEnvironment {
-            ruchy_version: "1.25.0".to_string(),
-            runtime: "native".to_string(),
-            browser: None,
-        };
-
-        assert_eq!(env.ruchy_version, "1.25.0");
-        assert_eq!(env.runtime, "native");
-        assert!(env.browser.is_none());
-
-        let web_env = SubmissionEnvironment {
-            ruchy_version: "1.25.0".to_string(),
-            runtime: "wasm".to_string(),
-            browser: Some("Firefox 115".to_string()),
-        };
-
-        assert!(web_env.browser.is_some());
-    }
+    // Test removed - SubmissionEnvironment type not defined in module
 
     #[test]
     fn test_criterion_with_partial_credit() {

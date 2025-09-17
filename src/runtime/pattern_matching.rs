@@ -240,7 +240,7 @@ fn match_none_pattern_helper(value: &Value) -> Option<Vec<(String, Value)>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::{Literal, Pattern, StructPatternField, StructFieldValue};
+    use crate::frontend::ast::{Literal, Pattern, StructPatternField};
     use crate::runtime::Value;
     use std::collections::HashMap;
 
