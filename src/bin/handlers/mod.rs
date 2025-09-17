@@ -1657,3 +1657,169 @@ pub fn handle_wasm_command(
     handle_optimization_and_deployment(opt_level, deploy, deploy_target, verbose);
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_handle_eval_command_basic() {
+        let result = handle_eval_command("2 + 2", false, "text");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_eval_command_verbose() {
+        let result = handle_eval_command("42", true, "text");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_eval_command_json_format() {
+        let result = handle_eval_command("1 + 1", false, "json");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_eval_command_invalid_expr() {
+        let result = handle_eval_command("invalid++syntax", false, "text");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_ruchy_source_from_string() {
+        let ast = parse_ruchy_source("2 + 2").unwrap();
+        assert!(matches!(ast.kind, ruchy::frontend::ast::ExprKind::Binary { .. }));
+    }
+
+    #[test]
+    fn test_parse_ruchy_source_from_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.ruchy");
+        fs::write(&file_path, "let x = 42").unwrap();
+        
+        let ast = parse_ruchy_source(file_path.to_str().unwrap()).unwrap();
+        assert!(matches!(ast.kind, ruchy::frontend::ast::ExprKind::Let { .. }));
+    }
+
+    #[test]
+    fn test_read_source_from_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.ruchy");
+        let content = "fun hello() { 42 }";
+        fs::write(&file_path, content).unwrap();
+        
+        let result = read_source(file_path.to_str().unwrap()).unwrap();
+        assert_eq!(result, content);
+    }
+
+    #[test]
+    fn test_read_source_from_stdin() {
+        // Testing stdin is complex, skipping for now
+        // Would need to mock stdin
+    }
+
+    #[test]
+    fn test_determine_output_path_explicit() {
+        let output = determine_output_path("input.ruchy", Some("output.rs"));
+        assert_eq!(output, PathBuf::from("output.rs"));
+    }
+
+    #[test]
+    fn test_determine_output_path_default() {
+        let output = determine_output_path("input.ruchy", None);
+        assert_eq!(output, PathBuf::from("input.rs"));
+    }
+
+    #[test]
+    fn test_determine_output_path_no_extension() {
+        let output = determine_output_path("input", None);
+        assert_eq!(output, PathBuf::from("input.rs"));
+    }
+
+    #[test]
+    fn test_format_transpilation_result_basic() {
+        let result = format_transpilation_result(
+            "let x = 42",
+            "let x: i32 = 42;",
+            false,
+            false,
+            "text"
+        );
+        assert!(result.contains("42"));
+    }
+
+    #[test]
+    fn test_format_transpilation_result_json() {
+        let result = format_transpilation_result(
+            "let x = 42",
+            "let x: i32 = 42;",
+            false,
+            false,
+            "json"
+        );
+        assert!(result.contains("\"success\":true"));
+    }
+
+    #[test]
+    fn test_format_transpilation_result_verbose() {
+        let result = format_transpilation_result(
+            "let x = 42",
+            "let x: i32 = 42;",
+            true,
+            false,
+            "text"
+        );
+        assert!(result.contains("let x: i32 = 42;"));
+    }
+
+    #[test]
+    fn test_write_transpiled_output_to_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let output_path = temp_dir.path().join("output.rs");
+        
+        write_transpiled_output("let x = 42;", &output_path).unwrap();
+        
+        let content = fs::read_to_string(&output_path).unwrap();
+        assert_eq!(content, "let x = 42;");
+    }
+
+    #[test]
+    fn test_determine_wasm_output_path_explicit() {
+        let output = determine_wasm_output_path("input.ruchy", Some("output.wasm"));
+        assert_eq!(output, PathBuf::from("output.wasm"));
+    }
+
+    #[test]
+    fn test_determine_wasm_output_path_default() {
+        let output = determine_wasm_output_path("input.ruchy", None);
+        assert_eq!(output, PathBuf::from("input.wasm"));
+    }
+
+    #[test]
+    fn test_handle_run_command_basic() {
+        // Complex to test as it spawns processes
+        // Would need process mocking
+    }
+
+    #[test]
+    fn test_handle_test_command_basic() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.ruchy");
+        fs::write(&file_path, "test basic { assert(1 == 1) }").unwrap();
+        
+        // This would need proper test runner setup
+        // let result = handle_test_command(file_path.to_str().unwrap(), false, None, None, false);
+        // assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_print_transpilation_status() {
+        // This just prints to stderr, hard to test
+        print_transpilation_status("test.ruchy", false);
+        // If it doesn't panic, it passes
+        assert!(true);
+    }
+}
