@@ -52,7 +52,7 @@ pub fn format(&self, ast: &Expr) -> Result<String> {
             ExprKind::Literal(lit) => match lit {
                 crate::frontend::ast::Literal::Integer(n) => n.to_string(),
                 crate::frontend::ast::Literal::Float(f) => f.to_string(),
-                crate::frontend::ast::Literal::String(s) => format!("\"{}\"", s.replace("\"", "\\\"")),
+                crate::frontend::ast::Literal::String(s) => format!("\"{}\"", s.replace('"', "\\\"")),
                 crate::frontend::ast::Literal::Bool(b) => b.to_string(),
                 crate::frontend::ast::Literal::Char(c) => format!("'{c}'"),
                 crate::frontend::ast::Literal::Unit => "()".to_string(),
