@@ -778,3 +778,470 @@ impl fmt::Display for DataValue {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    fn create_test_config() -> DataflowConfig {
+        DataflowConfig {
+            max_rows_per_stage: 1000,
+            auto_materialize: true,
+            max_history_events: 100,
+            enable_profiling: true,
+            stage_timeout_ms: 30000,
+            track_memory: true,
+            compute_diffs: true,
+            sample_rate: 1.0,
+        }
+    }
+
+    fn create_test_schema() -> DataSchema {
+        DataSchema {
+            columns: vec![
+                ColumnDef {
+                    name: "id".to_string(),
+                    data_type: DataType::Integer,
+                    nullable: false,
+                },
+                ColumnDef {
+                    name: "name".to_string(),
+                    data_type: DataType::String,
+                    nullable: true,
+                },
+            ],
+            schema_hash: 12345,
+        }
+    }
+
+    #[test]
+    fn test_dataflow_debugger_creation() {
+        let config = create_test_config();
+        let debugger = DataflowDebugger::new(config);
+
+        assert_eq!(debugger.config.max_rows_per_stage, 1000);
+        assert!(debugger.config.auto_materialize);
+        assert!(debugger.config.enable_profiling);
+    }
+
+    #[test]
+    fn test_dataflow_config_default() {
+        let config = DataflowConfig::default();
+        assert_eq!(config.max_rows_per_stage, 1000);
+        assert!(!config.auto_materialize);
+        assert_eq!(config.max_history_events, 50);
+        assert!(!config.enable_profiling);
+        assert_eq!(config.stage_timeout_ms, 30000);
+        assert!(!config.track_memory);
+        assert!(!config.compute_diffs);
+        assert_eq!(config.sample_rate, 1.0);
+    }
+
+    #[test]
+    fn test_session_state_default() {
+        let state = SessionState::default();
+        assert!(!state.active);
+        assert!(state.current_stage.is_none());
+        assert_eq!(state.total_execution_time, Duration::from_secs(0));
+        assert_eq!(state.breakpoints_hit, 0);
+        assert!(state.metadata.is_empty());
+    }
+
+    #[test]
+    fn test_debugger_start_session() {
+        let config = create_test_config();
+        let debugger = DataflowDebugger::new(config);
+
+        let result = debugger.start_session();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_debugger_stop_session() {
+        let config = create_test_config();
+        let debugger = DataflowDebugger::new(config);
+
+        let _ = debugger.start_session();
+        let result = debugger.stop_session();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_debugger_add_stage() {
+        let config = create_test_config();
+        let debugger = DataflowDebugger::new(config);
+
+        let stage = PipelineStage {
+            stage_id: "stage_1".to_string(),
+            stage_name: "Filter Stage".to_string(),
+            stage_type: StageType::Filter,
+            status: StageStatus::Pending,
+            input_schema: Some(create_test_schema()),
+            output_schema: None,
+            execution_time: None,
+            memory_usage: None,
+            rows_processed: None,
+            metadata: HashMap::new(),
+        };
+
+        let result = debugger.add_stage(stage);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_debugger_set_breakpoint() {
+        let config = create_test_config();
+        let debugger = DataflowDebugger::new(config);
+
+        let breakpoint = Breakpoint {
+            stage_id: "stage_1".to_string(),
+            condition: Some(BreakpointCondition::Always),
+            active: true,
+            hit_count: 0,
+            actions: vec![BreakpointAction::Pause],
+        };
+
+        let result = debugger.set_breakpoint("stage_1".to_string(), breakpoint);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_debugger_remove_breakpoint() {
+        let config = create_test_config();
+        let debugger = DataflowDebugger::new(config);
+
+        let breakpoint = Breakpoint {
+            stage_id: "stage_1".to_string(),
+            condition: Some(BreakpointCondition::Always),
+            active: true,
+            hit_count: 0,
+            actions: vec![BreakpointAction::Pause],
+        };
+
+        let _ = debugger.set_breakpoint("stage_1".to_string(), breakpoint);
+        let result = debugger.remove_breakpoint("stage_1");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_stage_type_display() {
+        assert_eq!(format!("{}", StageType::Load), "Load");
+        assert_eq!(format!("{}", StageType::Filter), "Filter");
+        assert_eq!(format!("{}", StageType::Select), "Select");
+        assert_eq!(format!("{}", StageType::Map), "Map");
+        assert_eq!(format!("{}", StageType::GroupBy), "GroupBy");
+        assert_eq!(format!("{}", StageType::Aggregate), "Aggregate");
+        assert_eq!(format!("{}", StageType::Join), "Join");
+        assert_eq!(format!("{}", StageType::Sort), "Sort");
+        assert_eq!(format!("{}", StageType::Window), "Window");
+        assert_eq!(format!("{}", StageType::Union), "Union");
+        assert_eq!(format!("{}", StageType::Custom("test".to_string())), "Custom(test)");
+    }
+
+    #[test]
+    fn test_stage_status_display() {
+        assert_eq!(format!("{}", StageStatus::Pending), "Pending");
+        assert_eq!(format!("{}", StageStatus::Running), "Running");
+        assert_eq!(format!("{}", StageStatus::Completed), "Completed");
+        assert_eq!(format!("{}", StageStatus::Failed("error".to_string())), "Failed: error");
+        assert_eq!(format!("{}", StageStatus::Cancelled), "Cancelled");
+        assert_eq!(format!("{}", StageStatus::Paused), "Paused");
+    }
+
+    #[test]
+    fn test_data_type_display() {
+        assert_eq!(format!("{}", DataType::Boolean), "Boolean");
+        assert_eq!(format!("{}", DataType::Integer), "Integer");
+        assert_eq!(format!("{}", DataType::Float), "Float");
+        assert_eq!(format!("{}", DataType::String), "String");
+        assert_eq!(format!("{}", DataType::DateTime), "DateTime");
+        assert_eq!(format!("{}", DataType::Array(Box::new(DataType::Integer))), "Array<Integer>");
+
+        let struct_fields = vec![
+            ("id".to_string(), DataType::Integer),
+            ("name".to_string(), DataType::String),
+        ];
+        assert_eq!(format!("{}", DataType::Struct(struct_fields)), "Struct{id: Integer, name: String}");
+    }
+
+    #[test]
+    fn test_data_value_display() {
+        assert_eq!(format!("{}", DataValue::Boolean(true)), "true");
+        assert_eq!(format!("{}", DataValue::Integer(42)), "42");
+        assert_eq!(format!("{}", DataValue::Float(3.14)), "3.14");
+        assert_eq!(format!("{}", DataValue::String("hello".to_string())), "\"hello\"");
+        assert_eq!(format!("{}", DataValue::Null), "null");
+
+        let array_values = vec![DataValue::Integer(1), DataValue::Integer(2), DataValue::Integer(3)];
+        assert_eq!(format!("{}", DataValue::Array(array_values)), "[1, 2, 3]");
+    }
+
+    #[test]
+    fn test_breakpoint_condition_row_count() {
+        let condition = BreakpointCondition::RowCount {
+            operator: ComparisonOp::GreaterThan,
+            value: 1000,
+        };
+
+        let breakpoint = Breakpoint {
+            stage_id: "stage_1".to_string(),
+            condition: Some(condition),
+            active: true,
+            hit_count: 0,
+            actions: vec![BreakpointAction::Pause],
+        };
+
+        assert!(breakpoint.active);
+        assert_eq!(breakpoint.hit_count, 0);
+    }
+
+    #[test]
+    fn test_breakpoint_condition_execution_time() {
+        let condition = BreakpointCondition::ExecutionTime {
+            threshold_ms: 5000,
+        };
+
+        let breakpoint = Breakpoint {
+            stage_id: "stage_1".to_string(),
+            condition: Some(condition),
+            active: true,
+            hit_count: 0,
+            actions: vec![BreakpointAction::Print("Slow execution detected".to_string())],
+        };
+
+        assert_eq!(breakpoint.actions.len(), 1);
+    }
+
+    #[test]
+    fn test_breakpoint_condition_memory_usage() {
+        let condition = BreakpointCondition::MemoryUsage {
+            threshold_mb: 100,
+        };
+
+        let breakpoint = Breakpoint {
+            stage_id: "stage_1".to_string(),
+            condition: Some(condition),
+            active: true,
+            hit_count: 0,
+            actions: vec![BreakpointAction::Materialize],
+        };
+
+        assert!(breakpoint.active);
+    }
+
+    #[test]
+    fn test_breakpoint_condition_data_value() {
+        let condition = BreakpointCondition::DataValue {
+            column: "status".to_string(),
+            value: DataValue::String("error".to_string()),
+        };
+
+        let breakpoint = Breakpoint {
+            stage_id: "stage_1".to_string(),
+            condition: Some(condition),
+            active: true,
+            hit_count: 0,
+            actions: vec![BreakpointAction::ComputeDiff],
+        };
+
+        assert!(breakpoint.active);
+    }
+
+    #[test]
+    fn test_breakpoint_action_export() {
+        let action = BreakpointAction::Export {
+            format: ExportFormat::Json,
+            path: "/tmp/debug_data.json".to_string(),
+        };
+
+        let breakpoint = Breakpoint {
+            stage_id: "stage_1".to_string(),
+            condition: Some(BreakpointCondition::Always),
+            active: true,
+            hit_count: 0,
+            actions: vec![action],
+        };
+
+        assert_eq!(breakpoint.actions.len(), 1);
+    }
+
+    #[test]
+    fn test_materialized_frame_creation() {
+        let schema = create_test_schema();
+        let sample_data = vec![
+            DataRow {
+                values: vec![
+                    DataValue::Integer(1),
+                    DataValue::String("Alice".to_string()),
+                ],
+            },
+            DataRow {
+                values: vec![
+                    DataValue::Integer(2),
+                    DataValue::String("Bob".to_string()),
+                ],
+            },
+        ];
+
+        let materialized_frame = MaterializedFrame {
+            stage_id: "stage_1".to_string(),
+            schema,
+            sample_data,
+            total_rows: 1000,
+            timestamp: std::time::SystemTime::now(),
+            memory_size: 4096,
+        };
+
+        assert_eq!(materialized_frame.stage_id, "stage_1");
+        assert_eq!(materialized_frame.total_rows, 1000);
+        assert_eq!(materialized_frame.memory_size, 4096);
+    }
+
+    #[test]
+    fn test_stage_metrics_creation() {
+        let metrics = StageMetrics {
+            stage_id: "stage_1".to_string(),
+            execution_count: 1,
+            total_execution_time: Duration::from_millis(500),
+            average_execution_time: Duration::from_millis(500),
+            peak_memory_usage: 1024,
+            total_rows_processed: 10000,
+            error_count: 0,
+            last_execution: std::time::SystemTime::now(),
+        };
+
+        assert_eq!(metrics.stage_id, "stage_1");
+        assert_eq!(metrics.execution_count, 1);
+        assert_eq!(metrics.total_rows_processed, 10000);
+        assert_eq!(metrics.error_count, 0);
+    }
+
+    #[test]
+    fn test_execution_event_stage_start() {
+        let event = ExecutionEvent::StageStart {
+            stage_id: "stage_1".to_string(),
+            timestamp: std::time::SystemTime::now(),
+        };
+
+        if let ExecutionEvent::StageStart { stage_id, .. } = event {
+            assert_eq!(stage_id, "stage_1");
+        } else {
+            panic!("Expected StageStart event");
+        }
+    }
+
+    #[test]
+    fn test_execution_event_stage_complete() {
+        let event = ExecutionEvent::StageComplete {
+            stage_id: "stage_1".to_string(),
+            timestamp: std::time::SystemTime::now(),
+            execution_time: Duration::from_millis(100),
+            rows_processed: 1000,
+        };
+
+        if let ExecutionEvent::StageComplete { stage_id, rows_processed, .. } = event {
+            assert_eq!(stage_id, "stage_1");
+            assert_eq!(rows_processed, 1000);
+        } else {
+            panic!("Expected StageComplete event");
+        }
+    }
+
+    #[test]
+    fn test_execution_event_breakpoint_hit() {
+        let event = ExecutionEvent::BreakpointHit {
+            stage_id: "stage_1".to_string(),
+            breakpoint_id: "bp_1".to_string(),
+            timestamp: std::time::SystemTime::now(),
+        };
+
+        if let ExecutionEvent::BreakpointHit { stage_id, breakpoint_id, .. } = event {
+            assert_eq!(stage_id, "stage_1");
+            assert_eq!(breakpoint_id, "bp_1");
+        } else {
+            panic!("Expected BreakpointHit event");
+        }
+    }
+
+    #[test]
+    fn test_execution_event_error() {
+        let event = ExecutionEvent::Error {
+            stage_id: "stage_1".to_string(),
+            error_message: "Division by zero".to_string(),
+            timestamp: std::time::SystemTime::now(),
+        };
+
+        if let ExecutionEvent::Error { stage_id, error_message, .. } = event {
+            assert_eq!(stage_id, "stage_1");
+            assert_eq!(error_message, "Division by zero");
+        } else {
+            panic!("Expected Error event");
+        }
+    }
+
+    #[test]
+    fn test_comparison_operators() {
+        let operators = vec![
+            ComparisonOp::Equal,
+            ComparisonOp::NotEqual,
+            ComparisonOp::GreaterThan,
+            ComparisonOp::GreaterThanOrEqual,
+            ComparisonOp::LessThan,
+            ComparisonOp::LessThanOrEqual,
+        ];
+
+        assert_eq!(operators.len(), 6);
+    }
+
+    #[test]
+    fn test_export_formats() {
+        let formats = vec![
+            ExportFormat::Json,
+            ExportFormat::Csv,
+            ExportFormat::Parquet,
+            ExportFormat::Arrow,
+        ];
+
+        assert_eq!(formats.len(), 4);
+    }
+
+    #[test]
+    fn test_complex_data_type_struct() {
+        let fields = vec![
+            ("user_id".to_string(), DataType::Integer),
+            ("profile".to_string(), DataType::Struct(vec![
+                ("name".to_string(), DataType::String),
+                ("age".to_string(), DataType::Integer),
+            ])),
+        ];
+
+        let struct_type = DataType::Struct(fields);
+        let display_str = format!("{}", struct_type);
+        assert!(display_str.contains("user_id: Integer"));
+        assert!(display_str.contains("profile: Struct"));
+    }
+
+    #[test]
+    fn test_complex_data_value_nested_array() {
+        let nested_array = DataValue::Array(vec![
+            DataValue::Array(vec![DataValue::Integer(1), DataValue::Integer(2)]),
+            DataValue::Array(vec![DataValue::Integer(3), DataValue::Integer(4)]),
+        ]);
+
+        let display_str = format!("{}", nested_array);
+        assert_eq!(display_str, "[[1, 2], [3, 4]]");
+    }
+
+    #[test]
+    fn test_column_definition() {
+        let column = ColumnDef {
+            name: "test_column".to_string(),
+            data_type: DataType::String,
+            nullable: true,
+        };
+
+        assert_eq!(column.name, "test_column");
+        assert!(column.nullable);
+    }
+}
