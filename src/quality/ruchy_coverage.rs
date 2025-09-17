@@ -647,7 +647,7 @@ fn test_branches(x) {
         let coverage = collector.coverage_data.get("test.ruchy").unwrap();
         assert!(coverage.covered_functions.contains("main"));
         assert!(coverage.covered_functions.contains("helper"));
-        assert_eq!(coverage.function_coverage(), 66.66666666666667); // 2/3
+        assert!((coverage.function_coverage() - 66.66666666666667).abs() < 1e-10); // 2/3 with floating point tolerance
     }
 
     #[test]
@@ -729,11 +729,19 @@ fn test_branches(x) {
         let mut coverage = RuchyCoverage::new("test.ruchy");
         coverage.total_lines = 10;
         coverage.covered_lines.insert(1);
-        coverage.covered_lines.insert(2); // 20% coverage
+        coverage.covered_lines.insert(2); // 20% line coverage
+
+        // Set some functions and branches so they don't default to 100%
+        coverage.total_functions = 2; // 0% function coverage (0/2)
+        coverage.total_branches = 4; // 0% branch coverage (0/4)
+
         collector.coverage_data.insert("test.ruchy".to_string(), coverage);
 
+        // Overall = 20% * 0.6 + 0% * 0.3 + 0% * 0.1 = 12%
         assert!(!collector.meets_threshold(50.0));
         assert!(!collector.meets_threshold(25.0));
+        assert!(!collector.meets_threshold(15.0));
+        assert!(collector.meets_threshold(10.0));
     }
 
     #[test]

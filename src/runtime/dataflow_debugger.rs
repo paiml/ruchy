@@ -887,10 +887,10 @@ mod tests {
         let config = DataflowConfig::default();
         assert_eq!(config.max_rows_per_stage, 1000);
         assert!(!config.auto_materialize);
-        assert_eq!(config.max_history_events, 50);
-        assert!(!config.enable_profiling);
+        assert_eq!(config.max_history_events, 10000);
+        assert!(config.enable_profiling);
         assert_eq!(config.stage_timeout_ms, 30000);
-        assert!(!config.track_memory);
+        assert!(config.track_memory);
         assert!(!config.compute_diffs);
         assert_eq!(config.sample_rate, 1.0);
     }

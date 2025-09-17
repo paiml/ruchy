@@ -1060,6 +1060,14 @@ pub fn parse_export(state: &mut ParserState) -> Result<Expr> {
         // Single export: export item
         items.push(name.clone());
         state.tokens.advance();
+    } else if matches!(state.tokens.peek(), Some((Token::Fun, _))) {
+        // Export function declaration: export fun name() { ... }
+        let func_expr = super::functions::parse_function_with_visibility(state, true)?;
+        if let ExprKind::Function { name, .. } = &func_expr.kind {
+            items.push(name.clone());
+        }
+        // Return the function expression directly instead of just the export
+        return Ok(func_expr);
     } else {
         bail!("Expected export list or identifier after 'export'");
     }
@@ -1274,12 +1282,12 @@ mod tests {
         // Test with format specifier
         let (expr, fmt) = split_format_specifier("value:.2f");
         assert_eq!(expr, "value");
-        assert_eq!(fmt, Some(".2f"));
+        assert_eq!(fmt, Some(":.2f"));
 
         // Test complex expression with format
         let (expr, fmt) = split_format_specifier("obj.field:>10");
         assert_eq!(expr, "obj.field");
-        assert_eq!(fmt, Some(">10"));
+        assert_eq!(fmt, Some(":>10"));
     }
 
     #[test]
@@ -1367,7 +1375,7 @@ mod tests {
 
     #[test]
     fn test_parse_module_path_simple() {
-        let mut state = ParserState::new("std.collections");
+        let mut state = ParserState::new("std::collections");
         let result = parse_module_path(&mut state);
         assert!(result.is_ok());
         if let Ok(path) = result {
@@ -1518,7 +1526,8 @@ mod tests {
 
     #[test]
     fn test_parse_generic_type_nested() {
-        let mut state = ParserState::new("HashMap<String, Vec<Int>>");
+        // The parser state should be positioned at the '<' token
+        let mut state = ParserState::new("<str, Vec<int>>");
         let base = "HashMap".to_string();
         let span = Span { start: 0, end: 0 };
         let result = parse_generic_type(&mut state, base, span);

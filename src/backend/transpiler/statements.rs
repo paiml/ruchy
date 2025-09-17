@@ -3010,7 +3010,7 @@ mod tests {
     #[test]
     fn test_try_catch() {
         let transpiler = create_transpiler();
-        let code = "try { risky_op() } catch e { handle(e) }";
+        let code = "try { risky_op() } catch(e) { handle(e) }";
         let mut parser = Parser::new(code);
         let ast = parser.parse().expect("Failed to parse");
         let result = transpiler.transpile(&ast);

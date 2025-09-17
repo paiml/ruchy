@@ -2,8 +2,8 @@
 //! Coverage for completion, magic, transaction, and other modules
 
 use ruchy::runtime::{Repl, ReplConfig};
+use ruchy::runtime::repl::Value;
 use std::time::Duration;
-use std::collections::HashMap;
 
 // Transaction tests
 
@@ -105,7 +105,7 @@ fn test_custom_config_repl() {
     let config = ReplConfig {
         max_memory: 2048,
         timeout: Duration::from_millis(50),
-        max_depth: 10,
+        maxdepth: 10,
         debug: true,
     };
 
@@ -298,8 +298,8 @@ fn test_builtin_type_functions() {
 
     // Type checking functions
     let result = repl.eval("type_of(42)");
-    if result.is_ok() {
-        assert!(result.unwrap().contains("int") || result.unwrap().contains("Int"));
+    if let Ok(value) = result {
+        assert!(value.contains("int") || value.contains("Int"));
     }
 
     let result = repl.eval("is_int(42)");
@@ -394,13 +394,13 @@ fn test_exception_like_handling() {
     "#).unwrap();
 
     let result = repl.eval("safe_divide(10, 2)");
-    if result.is_ok() {
-        assert!(result.unwrap().contains("5") || result.unwrap().contains("Ok"));
+    if let Ok(value) = result {
+        assert!(value.contains("5") || value.contains("Ok"));
     }
 
     let result = repl.eval("safe_divide(10, 0)");
-    if result.is_ok() {
-        assert!(result.unwrap().contains("Division by zero") || result.unwrap().contains("Err"));
+    if let Ok(value) = result {
+        assert!(value.contains("Division by zero") || value.contains("Err"));
     }
 }
 

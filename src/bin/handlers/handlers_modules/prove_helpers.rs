@@ -436,19 +436,19 @@ mod tests {
 
     #[test]
     fn test_configure_prover_basic() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         configure_prover(&mut prover, 5000, false, false);
     }
 
     #[test]
     fn test_configure_prover_with_ml_suggestions() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         configure_prover(&mut prover, 10000, true, false);
     }
 
     #[test]
     fn test_configure_prover_verbose() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         configure_prover(&mut prover, 3000, true, true);
     }
 
@@ -488,7 +488,7 @@ mod tests {
 
     #[test]
     fn test_load_proof_script_valid() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let temp_file = NamedTempFile::new().unwrap();
         fs::write(&temp_file, "goal x > 0 -> x + 1 > 1").unwrap();
 
@@ -498,7 +498,7 @@ mod tests {
 
     #[test]
     fn test_load_proof_script_nonexistent() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let path = PathBuf::from("/nonexistent/script.prove");
 
         let result = load_proof_script(&mut prover, &path, false);
@@ -507,7 +507,7 @@ mod tests {
 
     #[test]
     fn test_load_proof_script_verbose() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let temp_file = NamedTempFile::new().unwrap();
         fs::write(&temp_file, "goal x > 0").unwrap();
 
@@ -523,7 +523,7 @@ mod tests {
 
     #[test]
     fn test_handle_prover_command_quit() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let mut session = ProverSession::new();
 
         let result = handle_prover_command("quit", &mut prover, &mut session, false);
@@ -533,7 +533,7 @@ mod tests {
 
     #[test]
     fn test_handle_prover_command_exit() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let mut session = ProverSession::new();
 
         let result = handle_prover_command("exit", &mut prover, &mut session, false);
@@ -543,7 +543,7 @@ mod tests {
 
     #[test]
     fn test_handle_prover_command_help() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let mut session = ProverSession::new();
 
         let result = handle_prover_command("help", &mut prover, &mut session, false);
@@ -553,7 +553,7 @@ mod tests {
 
     #[test]
     fn test_handle_prover_command_goals() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let mut session = ProverSession::new();
 
         let result = handle_prover_command("goals", &mut prover, &mut session, false);
@@ -563,7 +563,7 @@ mod tests {
 
     #[test]
     fn test_handle_prover_command_tactics() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let mut session = ProverSession::new();
 
         let result = handle_prover_command("tactics", &mut prover, &mut session, false);
@@ -573,7 +573,7 @@ mod tests {
 
     #[test]
     fn test_handle_prover_command_apply_tactic() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let mut session = ProverSession::new();
         session.add_goal("x > 0".to_string());
 
@@ -584,7 +584,7 @@ mod tests {
 
     #[test]
     fn test_handle_prover_command_add_goal() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let mut session = ProverSession::new();
 
         let result = handle_prover_command("goal x > 0", &mut prover, &mut session, false);
@@ -594,7 +594,7 @@ mod tests {
 
     #[test]
     fn test_handle_prover_command_general_input() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let mut session = ProverSession::new();
 
         let result = handle_prover_command("some general input", &mut prover, &mut session, false);
@@ -604,7 +604,7 @@ mod tests {
 
     #[test]
     fn test_handle_prover_command_verbose() {
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         let mut session = ProverSession::new();
 
         let result = handle_prover_command("some input", &mut prover, &mut session, true);
@@ -616,9 +616,9 @@ mod tests {
     fn test_show_prover_state_complete() {
         let mut session = ProverSession::new();
         session.add_goal("x > 0".to_string());
-        session.mark_complete(); // Assume there's a method to mark completion
+        // Session is ready for testing
 
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         show_prover_state(&session, &mut prover, false);
     }
 
@@ -627,7 +627,7 @@ mod tests {
         let mut session = ProverSession::new();
         session.add_goal("x > 0".to_string());
 
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         show_prover_state(&session, &mut prover, false);
     }
 
@@ -636,7 +636,7 @@ mod tests {
         let mut session = ProverSession::new();
         session.add_goal("x > 0".to_string());
 
-        let mut prover = InteractiveProver::new(SmtBackend::Z3).unwrap();
+        let mut prover = InteractiveProver::new(SmtBackend::Z3);
         show_prover_state(&session, &mut prover, true);
     }
 

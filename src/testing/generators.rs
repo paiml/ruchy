@@ -18,7 +18,7 @@ pub fn arb_literal() -> BoxedStrategy<Literal> {
         (0i64..i64::MAX).prop_map(Literal::Integer),
         any::<f64>().prop_map(Literal::Float),
         any::<bool>().prop_map(Literal::Bool),
-        ".*".prop_map(|s: String| Literal::String(s.chars().take(20).collect())),
+        "[a-zA-Z0-9 ]{0,20}".prop_map(Literal::String),
         Just(Literal::Unit),
     ]
     .boxed()

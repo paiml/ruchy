@@ -590,6 +590,7 @@ pub fn restart_session(&mut self) {
         *session = SharedSession::new();
         self.notebook.cells.clear();
         self.execution_count = 0;
+        self.total_sessions += 1;
     }
     /// Get all cells as JSON
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -3949,7 +3950,7 @@ mod tests {
         let html = result.unwrap();
         assert!(html.contains("<!DOCTYPE html>"));
         assert!(html.contains("<title>"));
-        assert!(html.contains("print('hello')"));
+        assert!(html.contains("print(&#x27;hello&#x27;)"));
     }
 
     // Test 15: Worker Configuration

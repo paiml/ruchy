@@ -97,7 +97,7 @@ fn test_transpile_binary_subtraction() {
     let transpiler = Transpiler::new();
     let left = create_literal_expr(Literal::Integer(5));
     let right = create_literal_expr(Literal::Integer(3));
-    let expr = create_binary_expr(left, BinaryOp::Sub, right);
+    let expr = create_binary_expr(left, BinaryOp::Subtract, right);
     
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
@@ -111,7 +111,7 @@ fn test_transpile_binary_multiplication() {
     let transpiler = Transpiler::new();
     let left = create_literal_expr(Literal::Integer(3));
     let right = create_literal_expr(Literal::Integer(4));
-    let expr = create_binary_expr(left, BinaryOp::Mul, right);
+    let expr = create_binary_expr(left, BinaryOp::Multiply, right);
     
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
@@ -125,7 +125,7 @@ fn test_transpile_binary_division() {
     let transpiler = Transpiler::new();
     let left = create_literal_expr(Literal::Integer(10));
     let right = create_literal_expr(Literal::Integer(2));
-    let expr = create_binary_expr(left, BinaryOp::Div, right);
+    let expr = create_binary_expr(left, BinaryOp::Divide, right);
     
     let result = transpiler.transpile_expr(&expr);
     assert!(result.is_ok());
@@ -184,7 +184,7 @@ fn test_transpile_unary_negation() {
     let inner = create_literal_expr(Literal::Integer(42));
     let expr = Expr {
         kind: ExprKind::Unary {
-            op: UnaryOp::Neg,
+            op: UnaryOp::Negate,
             operand: Box::new(inner),
         },
         span: Span::new(0, 3),
@@ -244,7 +244,7 @@ fn test_transpile_array_literal() {
         create_literal_expr(Literal::Integer(3)),
     ];
     let expr = Expr {
-        kind: ExprKind::Array(elements),
+        kind: ExprKind::List(elements),
         span: Span::new(0, 9),
         attributes: vec![],
     };
@@ -314,7 +314,7 @@ fn test_transpile_function_call() {
     
     let expr = Expr {
         kind: ExprKind::Call {
-            callee: Box::new(callee),
+            func: Box::new(callee),
             args,
         },
         span: Span::new(0, 15),
@@ -336,7 +336,8 @@ fn test_transpile_let_binding() {
     let expr = Expr {
         kind: ExprKind::Let {
             name: "x".to_string(),
-            value: Some(Box::new(value)),
+            value: Box::new(value),
+            body: Box::new(create_literal_expr(Literal::Integer(0))), // placeholder body
             type_annotation: None,
             is_mutable: false,
         },
@@ -405,7 +406,7 @@ fn test_transpile_return_statement() {
     let value = Some(Box::new(create_literal_expr(Literal::Integer(42))));
     
     let expr = Expr {
-        kind: ExprKind::Return(value),
+        kind: ExprKind::Return { value },
         span: Span::new(0, 10),
         attributes: vec![],
     };
@@ -421,7 +422,7 @@ fn test_transpile_return_statement() {
 fn test_transpile_break_statement() {
     let transpiler = Transpiler::new();
     let expr = Expr {
-        kind: ExprKind::Break,
+        kind: ExprKind::Break { label: None },
         span: Span::new(0, 5),
         attributes: vec![],
     };
@@ -437,7 +438,7 @@ fn test_transpile_break_statement() {
 fn test_transpile_continue_statement() {
     let transpiler = Transpiler::new();
     let expr = Expr {
-        kind: ExprKind::Continue,
+        kind: ExprKind::Continue { label: None },
         span: Span::new(0, 8),
         attributes: vec![],
     };

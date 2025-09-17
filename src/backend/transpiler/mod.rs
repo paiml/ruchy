@@ -824,7 +824,7 @@ impl Transpiler {
             "mod" | "move" | "mut" | "pub" | "ref" | "return" | "self" | "Self" |
             "static" | "struct" | "super" | "trait" | "true" | "type" | "unsafe" |
             "use" | "where" | "while" | "async" | "await" | "dyn" | "final" | "try" |
-            "abstract" | "become" | "box" | "do" | "override" | "priv" | "typeof" |
+            "abstract" | "become" | "box" | "do" | "macro" | "override" | "priv" | "typeof" |
             "unsized" | "virtual" | "yield"
         )
     }
@@ -835,9 +835,9 @@ impl Transpiler {
     /// Panics if label names cannot be parsed as valid Rust tokens
     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
         use ExprKind::{
-            Actor, ActorQuery, ActorSend, ArrayInit, Ask, Assign, AsyncBlock, Await, Binary, Call, Command, CompoundAssign, DataFrame, 
-            DataFrameOperation, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess, Lambda, 
-            List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None, ObjectLiteral, Ok, QualifiedName, 
+            Actor, ActorQuery, ActorSend, ArrayInit, Ask, Assign, AsyncBlock, Await, Binary, Call, Command, CompoundAssign, DataFrame,
+            DataFrameOperation, Err, FieldAccess, For, Function, Identifier, If, IfLet, IndexAccess, Lambda,
+            List, ListComprehension, Literal, Loop, Macro, Match, MethodCall, None, ObjectLiteral, Ok, PreDecrement, PreIncrement, PostDecrement, PostIncrement, QualifiedName,
             Range, Send, Slice, Some, StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, TypeCast,
             Tuple, Unary, While, WhileLet,
         };
@@ -852,6 +852,10 @@ impl Transpiler {
             | Unary { .. }
             | Assign { .. }
             | CompoundAssign { .. }
+            | PreIncrement { .. }
+            | PostIncrement { .. }
+            | PreDecrement { .. }
+            | PostDecrement { .. }
             | Await { .. }
             | AsyncBlock { .. }
             | If { .. }
