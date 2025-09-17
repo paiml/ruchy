@@ -1,6 +1,26 @@
-//! REPL implementation for interactive Ruchy development
+//! Read-Eval-Print Loop (REPL) implementation for interactive Ruchy development.
 //!
-//! Production-grade REPL with resource bounds, error recovery, and grammar coverage
+//! This module provides a production-grade REPL with comprehensive language support,
+//! resource bounds, error recovery, and advanced features like magic commands,
+//! tab completion, and transactional state management.
+//!
+//! # Architecture
+//!
+//! The REPL consists of several key components:
+//! - **Interpreter**: Core evaluation engine for Ruchy expressions
+//! - **Magic Commands**: Special commands prefixed with `:` for REPL control
+//! - **Tab Completion**: Context-aware code completion
+//! - **Transactional State**: Rollback capability for error recovery
+//! - **Unicode Expansion**: Mathematical symbol shortcuts
+//!
+//! # Features
+//!
+//! - Full Ruchy language support including all expressions and statements
+//! - Persistent history across sessions
+//! - Colorized output with syntax highlighting
+//! - Resource limits to prevent runaway computations
+//! - Import/export of sessions
+//! - Debugging and introspection capabilities
 #![allow(clippy::cast_sign_loss)]
 //!
 //! # Examples
@@ -57,45 +77,124 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{Duration, Instant, SystemTime};
-/// Runtime value for evaluation
+/// Runtime values produced by evaluating Ruchy expressions.
+///
+/// `Value` represents the dynamic type system of the Ruchy interpreter.
+/// All runtime values are tagged with their type and carry their data.
+/// This enum supports all Ruchy data types including primitives, collections,
+/// functions, and specialized types like `DataFrames`.
+///
+/// # Value Categories
+///
+/// ## Primitives
+/// - `Int`, `Float`: Numeric values
+/// - `String`, `Char`: Text values
+/// - `Bool`: Boolean values
+/// - `Unit`, `Nil`: Unit and null values
+///
+/// ## Collections
+/// - `List`: Dynamic arrays
+/// - `Tuple`: Fixed-size heterogeneous collections
+/// - `HashMap`, `HashSet`: Hash-based collections
+/// - `Range`: Numeric ranges
+///
+/// ## Functions
+/// - `Function`: Named functions with captured environment
+/// - `Lambda`: Anonymous functions
+///
+/// ## Advanced
+/// - `DataFrame`: Tabular data for analysis
+/// - `Object`: Key-value mappings
+/// - `EnumVariant`: Algebraic data type values
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::runtime::repl::Value;
+///
+/// let int_val = Value::Int(42);
+/// let str_val = Value::String("hello".to_string());
+/// let list_val = Value::List(vec![Value::Int(1), Value::Int(2)]);
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
+    /// A 64-bit signed integer.
     Int(i64),
+    /// A 64-bit floating-point number.
     Float(f64),
+    /// A UTF-8 string.
     String(String),
+    /// A boolean value.
     Bool(bool),
+    /// A Unicode character.
     Char(char),
+    /// A dynamically-sized list of values.
     List(Vec<Value>),
+    /// A fixed-size tuple of values.
     Tuple(Vec<Value>),
+    /// A named function with its definition.
     Function {
+        /// The function name.
         name: String,
+        /// Parameter names.
         params: Vec<String>,
+        /// The function body expression.
         body: Box<Expr>,
     },
+    /// An anonymous function (lambda/closure).
     Lambda {
+        /// Parameter names.
         params: Vec<String>,
+        /// The lambda body expression.
         body: Box<Expr>,
     },
+    /// A tabular data structure for data analysis.
     DataFrame {
+        /// The columns in this `DataFrame`.
         columns: Vec<DataFrameColumn>,
     },
+    /// An object with string keys and value fields.
     Object(HashMap<String, Value>),
+    /// A hash map with arbitrary key-value pairs.
     HashMap(HashMap<Value, Value>),
+    /// A hash set of unique values.
     HashSet(HashSet<Value>),
+    /// A numeric range.
     Range {
+        /// Starting value of the range.
         start: i64,
+        /// Ending value of the range.
         end: i64,
+        /// Whether the end is inclusive.
         inclusive: bool,
     },
+    /// An enum variant value.
     EnumVariant {
+        /// The enum type name.
         enum_name: String,
+        /// The variant name.
         variant_name: String,
+        /// Optional data associated with the variant.
         data: Option<Vec<Value>>,
     },
+    /// The unit value `()`.
     Unit,
+    /// The null/none value.
     Nil,
 }
-/// `DataFrame` column representation for pretty printing
+/// A column in a `DataFrame` with typed values.
+///
+/// `DataFrameColumns` store columnar data for efficient analysis
+/// and support operations like filtering, mapping, and aggregation.
+///
+/// # Examples
+///
+/// ```ignore
+/// let col = DataFrameColumn {
+///     name: "age".to_string(),
+///     values: vec![Value::Int(25), Value::Int(30), Value::Int(35)],
+/// };
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataFrameColumn {
     pub name: String,
@@ -460,7 +559,25 @@ impl ReplState {
         }
     }
 }
-/// REPL configuration  
+/// REPL configuration
+/// Configuration options for the REPL.
+///
+/// Controls resource limits, timeouts, and behavior of the REPL
+/// to ensure safe and responsive interactive sessions.
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::runtime::repl::ReplConfig;
+/// use std::time::Duration;
+///
+/// let config = ReplConfig {
+///     max_memory: 50 * 1024 * 1024,  // 50MB
+///     timeout: Duration::from_secs(1), // 1 second timeout
+///     maxdepth: 2000,                  // Deep recursion allowed
+///     debug: true,                     // Enable debug output
+/// };
+/// ```
 #[derive(Clone)]
 pub struct ReplConfig {
     /// Maximum memory for evaluation (default: 10MB)
@@ -548,7 +665,38 @@ impl MemoryTracker {
         self.current as f64 / self.max_size as f64
     }
 }
-/// REPL state management with resource bounds
+/// The main REPL structure managing interactive Ruchy sessions.
+///
+/// The `Repl` struct maintains all state necessary for an interactive
+/// Ruchy session, including variable bindings, function definitions,
+/// evaluation history, and resource tracking. It provides a safe,
+/// bounded environment for code execution with comprehensive language
+/// support.
+///
+/// # Architecture
+///
+/// - **Transactional State**: All operations can be rolled back on error
+/// - **Resource Bounds**: Memory and time limits prevent runaway computations
+/// - **Module System**: Import/export with O(1) cached module loading
+/// - **Magic Commands**: Special REPL commands for session management
+/// - **History Management**: Persistent history across sessions
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::runtime::Repl;
+///
+/// let mut repl = Repl::new().expect("Failed to initialize REPL");
+///
+/// // Evaluate expressions
+/// let result = repl.eval("2 + 2").expect("Evaluation failed");
+/// assert_eq!(result, "4");
+///
+/// // Define functions
+/// repl.eval("fn square(x) { x * x }").expect("Definition failed");
+/// let result = repl.eval("square(5)").expect("Call failed");
+/// assert_eq!(result, "25");
+/// ```
 pub struct Repl {
     /// History of successfully parsed expressions
     history: Vec<String>,
@@ -762,11 +910,39 @@ impl Repl {
     pub fn memory_pressure(&self) -> f64 {
         self.memory.memory_pressure()
     }
-    /// Check if REPL can accept new input (not at resource limits)
+    /// Checks if the REPL is ready to accept new input.
+    ///
+    /// Returns `true` if the REPL has sufficient memory resources
+    /// (less than 95% memory usage) to process new input safely.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let mut repl = Repl::new().unwrap();
+    /// if repl.can_accept_input() {
+    ///     repl.eval("let x = 42").unwrap();
+    /// }
+    /// ```
     pub fn can_accept_input(&self) -> bool {
         self.memory_pressure() < 0.95 // Less than 95% memory usage
     }
-    /// Validate that all bindings are still valid (no corruption)
+    /// Validates the internal consistency of variable bindings.
+    ///
+    /// Checks that the mutability tracking is synchronized with the
+    /// actual bindings, ensuring no corruption or orphaned entries.
+    /// This is primarily used for internal validation and testing.
+    ///
+    /// # Returns
+    ///
+    /// `true` if all bindings are consistent, `false` if corruption is detected.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let mut repl = Repl::new().unwrap();
+    /// repl.eval("let x = 10").unwrap();
+    /// assert!(repl.bindings_valid());
+    /// ```
     pub fn bindings_valid(&self) -> bool {
         // Check that mutability tracking doesn't have orphaned entries
         // (bindings without mutability entries are allowed - they default to immutable)
@@ -1345,7 +1521,51 @@ impl Repl {
             None
         }
     }
-    /// Main eval function with reduced complexity (complexity: 10)
+    /// Evaluates a line of Ruchy code and returns the result as a string.
+    ///
+    /// This is the main entry point for REPL evaluation. It handles:
+    /// - Magic commands (prefixed with `%`)
+    /// - REPL commands (prefixed with `:`)
+    /// - Shell commands (prefixed with `!`)
+    /// - Introspection (prefixed with `?` or `??`)
+    /// - Regular Ruchy expressions and statements
+    ///
+    /// # Arguments
+    ///
+    /// * `input` - The Ruchy code or command to evaluate
+    ///
+    /// # Returns
+    ///
+    /// The result of evaluation formatted as a string, or an error if
+    /// evaluation fails. Results are also stored in the result history
+    /// and can be accessed via `_` (last result) or `_n` (nth result).
+    ///
+    /// # Resource Bounds
+    ///
+    /// Evaluation is bounded by the REPL's configuration:
+    /// - Memory limit (default 10MB)
+    /// - Time limit (default 100ms)
+    /// - Stack depth limit (default 1000 frames)
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let mut repl = Repl::new().unwrap();
+    ///
+    /// // Evaluate an expression
+    /// let result = repl.eval("2 + 2").unwrap();
+    /// assert_eq!(result, "4");
+    ///
+    /// // Define a variable
+    /// repl.eval("let x = 10").unwrap();
+    ///
+    /// // Use the variable
+    /// let result = repl.eval("x * 2").unwrap();
+    /// assert_eq!(result, "20");
+    ///
+    /// // Magic command
+    /// let info = repl.eval("%timeit 2 + 2").unwrap();
+    /// ```
     pub fn eval(&mut self, input: &str) -> Result<String> {
         // Reset memory tracker for fresh evaluation
         self.memory.reset();

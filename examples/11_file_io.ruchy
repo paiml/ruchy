@@ -1,0 +1,175 @@
+// 11_file_io.ruchy - File input/output operations
+
+import std::fs
+
+fn main() {
+    println("=== File I/O Operations ===\n")
+
+    // Writing to a file
+    println("=== Writing Files ===")
+
+    let content = "Hello, Ruchy!
+This is a test file.
+Multiple lines are supported."
+
+    fs::write("test.txt", content)?
+    println("File 'test.txt' written successfully")
+
+    // Reading from a file
+    println("\n=== Reading Files ===")
+
+    let read_content = fs::read_to_string("test.txt")?
+    println("File contents:")
+    println(read_content)
+
+    // Appending to a file
+    println("\n=== Appending to Files ===")
+
+    fs::append("test.txt", "\nAppended line")?
+    println("Content appended")
+
+    let updated = fs::read_to_string("test.txt")?
+    println("Updated contents:")
+    println(updated)
+
+    // Reading lines
+    println("\n=== Reading Lines ===")
+
+    let lines = fs::read_lines("test.txt")?
+    println("File lines:")
+    for (i, line) in lines.enumerate() {
+        println(f"  Line {i + 1}: {line}")
+    }
+
+    // Checking file existence
+    println("\n=== File Existence ===")
+
+    if fs::exists("test.txt") {
+        println("test.txt exists")
+    }
+
+    if !fs::exists("nonexistent.txt") {
+        println("nonexistent.txt does not exist")
+    }
+
+    // File metadata
+    println("\n=== File Metadata ===")
+
+    let metadata = fs::metadata("test.txt")?
+    println(f"File size: {metadata.size} bytes")
+    println(f"Is directory: {metadata.is_dir}")
+    println(f"Is file: {metadata.is_file}")
+    println(f"Modified: {metadata.modified}")
+
+    // Working with directories
+    println("\n=== Directories ===")
+
+    // Create directory
+    fs::create_dir("test_dir")?
+    println("Directory created")
+
+    // Create nested directories
+    fs::create_dir_all("nested/dir/structure")?
+    println("Nested directories created")
+
+    // List directory contents
+    let entries = fs::read_dir(".")?
+    println("Current directory contents:")
+    for entry in entries {
+        println(f"  {entry.name}")
+    }
+
+    // Copy file
+    println("\n=== File Operations ===")
+
+    fs::copy("test.txt", "test_copy.txt")?
+    println("File copied")
+
+    // Move/rename file
+    fs::rename("test_copy.txt", "test_renamed.txt")?
+    println("File renamed")
+
+    // Delete file
+    fs::remove("test_renamed.txt")?
+    println("File deleted")
+
+    // Working with paths
+    println("\n=== Path Operations ===")
+
+    import std::path
+
+    let file_path = path::join("nested", "dir", "file.txt")
+    println(f"Joined path: {file_path}")
+
+    let abs_path = path::absolute("test.txt")?
+    println(f"Absolute path: {abs_path}")
+
+    let parent = path::parent("/home/user/file.txt")
+    println(f"Parent directory: {parent}")
+
+    let filename = path::filename("/home/user/document.pdf")
+    println(f"Filename: {filename}")
+
+    let extension = path::extension("document.pdf")
+    println(f"Extension: {extension}")
+
+    // Reading JSON
+    println("\n=== JSON Files ===")
+
+    let json_data = {
+        name: "Config",
+        version: "1.0",
+        settings: {
+            debug: true,
+            port: 8080
+        }
+    }
+
+    // Write JSON
+    let json_str = json_data.to_json()
+    fs::write("config.json", json_str)?
+    println("JSON written")
+
+    // Read and parse JSON
+    let json_content = fs::read_to_string("config.json")?
+    let parsed = parse_json(json_content)?
+    println(f"Parsed JSON: {parsed}")
+
+    // CSV handling
+    println("\n=== CSV Files ===")
+
+    let csv_content = "name,age,city
+Alice,30,NYC
+Bob,25,SF
+Charlie,35,LA"
+
+    fs::write("data.csv", csv_content)?
+
+    // Read CSV
+    let csv_data = fs::read_to_string("data.csv")?
+    let lines = csv_data.split("\n")
+    let headers = lines[0].split(",")
+    println(f"CSV Headers: {headers}")
+
+    // Binary files
+    println("\n=== Binary Files ===")
+
+    let bytes = [0x48, 0x65, 0x6C, 0x6C, 0x6F]  // "Hello" in bytes
+    fs::write_bytes("binary.dat", bytes)?
+    println("Binary file written")
+
+    let read_bytes = fs::read_bytes("binary.dat")?
+    println(f"Read bytes: {read_bytes}")
+
+    // Clean up test files
+    println("\n=== Cleanup ===")
+
+    fs::remove("test.txt")?
+    fs::remove("config.json")?
+    fs::remove("data.csv")?
+    fs::remove("binary.dat")?
+    fs::remove_dir_all("test_dir")?
+    fs::remove_dir_all("nested")?
+
+    println("Test files cleaned up")
+}

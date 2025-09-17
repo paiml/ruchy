@@ -1,0 +1,152 @@
+// 06_error_handling.ruchy - Error handling with Result and Option
+
+fn main() {
+    println("=== Error Handling ===\n")
+
+    // Using Option type
+    println("=== Option Type ===")
+
+    fn find_user(id) {
+        if id == 1 {
+            Some("Alice")
+        } else {
+            None
+        }
+    }
+
+    let user1 = find_user(1)
+    let user2 = find_user(999)
+
+    match user1 {
+        Some(name) => println(f"Found user: {name}"),
+        None => println("User not found")
+    }
+
+    // Using if-let with Option
+    if let Some(name) = user1 {
+        println(f"User exists: {name}")
+    }
+
+    // Using Result type
+    println("\n=== Result Type ===")
+
+    fn divide(a, b) {
+        if b == 0 {
+            Err("Division by zero")
+        } else {
+            Ok(a / b)
+        }
+    }
+
+    let result1 = divide(10, 2)
+    let result2 = divide(10, 0)
+
+    match result1 {
+        Ok(value) => println(f"10 / 2 = {value}"),
+        Err(msg) => println(f"Error: {msg}")
+    }
+
+    match result2 {
+        Ok(value) => println(f"Result: {value}"),
+        Err(msg) => println(f"Error: {msg}")
+    }
+
+    // Try-catch blocks
+    println("\n=== Try-Catch ===")
+
+    fn risky_operation(x) {
+        if x < 0 {
+            throw "Negative value not allowed"
+        }
+        x * 2
+    }
+
+    try {
+        let result = risky_operation(5)
+        println(f"Success: {result}")
+    } catch e {
+        println(f"Caught error: {e}")
+    }
+
+    try {
+        let result = risky_operation(-1)
+        println(f"Success: {result}")
+    } catch e {
+        println(f"Caught error: {e}")
+    }
+
+    // The ? operator for error propagation
+    println("\n=== Error Propagation with ? ===")
+
+    fn parse_and_double(s) -> Result {
+        let num = s.to_int()?
+        Ok(num * 2)
+    }
+
+    let good = parse_and_double("21")
+    let bad = parse_and_double("not a number")
+
+    match good {
+        Ok(v) => println(f"Parsed and doubled: {v}"),
+        Err(e) => println(f"Failed: {e}")
+    }
+
+    match bad {
+        Ok(v) => println(f"Parsed and doubled: {v}"),
+        Err(e) => println(f"Failed to parse")
+    }
+
+    // Custom error types
+    println("\n=== Custom Errors ===")
+
+    fn validate_age(age) {
+        if age < 0 {
+            Err("Age cannot be negative")
+        } else if age > 150 {
+            Err("Age seems unrealistic")
+        } else {
+            Ok(age)
+        }
+    }
+
+    let ages = [-5, 25, 200]
+    for age in ages {
+        match validate_age(age) {
+            Ok(a) => println(f"Valid age: {a}"),
+            Err(msg) => println(f"Invalid age {age}: {msg}")
+        }
+    }
+
+    // Chaining Result operations
+    println("\n=== Chaining Results ===")
+
+    fn step1(x) {
+        if x > 0 {
+            Ok(x * 2)
+        } else {
+            Err("Step 1 failed")
+        }
+    }
+
+    fn step2(x) {
+        if x < 100 {
+            Ok(x + 10)
+        } else {
+            Err("Step 2 failed")
+        }
+    }
+
+    fn process(input) {
+        match step1(input) {
+            Ok(v1) => match step2(v1) {
+                Ok(v2) => println(f"Final result: {v2}"),
+                Err(e) => println(f"Error in step 2: {e}")
+            },
+            Err(e) => println(f"Error in step 1: {e}")
+        }
+    }
+
+    process(10)
+    process(-5)
+    process(60)
+}

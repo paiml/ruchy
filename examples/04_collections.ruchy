@@ -1,0 +1,105 @@
+// 04_collections.ruchy - Working with lists, tuples, and objects
+
+fn main() {
+    println("=== Collections ===\n")
+
+    // Lists
+    println("=== Lists ===")
+    let numbers = [1, 2, 3, 4, 5]
+    println(f"Numbers: {numbers}")
+
+    // Accessing elements
+    println(f"First element: {numbers[0]}")
+    println(f"Last element: {numbers[numbers.len() - 1]}")
+
+    // List operations
+    let doubled = numbers.map(x => x * 2)
+    println(f"Doubled: {doubled}")
+
+    let filtered = numbers.filter(x => x % 2 == 0)
+    println(f"Even numbers: {filtered}")
+
+    let sum = numbers.reduce(0, (acc, x) => acc + x)
+    println(f"Sum: {sum}")
+
+    // List comprehensions
+    let squares = [x * x for x in 0..6]
+    println(f"Squares: {squares}")
+
+    let even_squares = [x * x for x in 0..10 if x % 2 == 0]
+    println(f"Even squares: {even_squares}")
+
+    // Tuples
+    println("\n=== Tuples ===")
+    let point = (10, 20)
+    let (x, y) = point
+    println(f"Point: x={x}, y={y}")
+
+    let person = ("Alice", 30, "Engineer")
+    let (name, age, job) = person
+    println(f"{name} is {age} years old and works as an {job}")
+
+    // Objects (HashMaps)
+    println("\n=== Objects ===")
+    let user = {
+        name: "Bob",
+        age: 25,
+        email: "bob@example.com",
+        active: true
+    }
+
+    println(f"User: {user}")
+    println(f"Name: {user.name}")
+    println(f"Email: {user.email}")
+
+    // Nested objects
+    let config = {
+        database: {
+            host: "localhost",
+            port: 5432,
+            name: "mydb"
+        },
+        server: {
+            port: 8080,
+            workers: 4
+        }
+    }
+
+    println(f"DB host: {config.database.host}")
+    println(f"Server port: {config.server.port}")
+
+    // List of objects
+    let users = [
+        { name: "Alice", age: 30 },
+        { name: "Bob", age: 25 },
+        { name: "Charlie", age: 35 }
+    ]
+
+    println("\nUsers over 25:")
+    let adults = users.filter(u => u.age > 25)
+    for user in adults {
+        println(f"  {user.name}: {user.age}")
+    }
+
+    // Ranges
+    println("\n=== Ranges ===")
+    let range1 = 0..5
+    println(f"Range 0..5: {range1}")
+
+    let range2 = 1..=5
+    println(f"Range 1..=5 (inclusive): {range2}")
+
+    // Using ranges in loops
+    for i in 10..15 {
+        println(f"  {i}")
+    }
+
+    // Destructuring with rest
+    println("\n=== Destructuring ===")
+    let [first, second, ..rest] = [1, 2, 3, 4, 5]
+    println(f"First: {first}, Second: {second}, Rest: {rest}")
+
+    // Object destructuring
+    let { name, age } = user
+    println(f"Destructured: name={name}, age={age}")
+}

@@ -1,0 +1,448 @@
+// 30_design_patterns.ruchy - Common design patterns implementation
+
+fn main() {
+    println("=== Design Patterns ===\n")
+
+    // Singleton Pattern
+    println("=== Singleton Pattern ===")
+
+    module Database {
+        let mut instance = None
+
+        pub fn get_instance() {
+            if instance == None {
+                instance = Some({
+                    connection: "Connected to DB",
+                    query: |sql| f"Executing: {sql}"
+                })
+            }
+            instance.unwrap()
+        }
+    }
+
+    let db1 = Database::get_instance()
+    let db2 = Database::get_instance()
+    println(f"Same instance: {db1 == db2}")
+
+    // Factory Pattern
+    println("\n=== Factory Pattern ===")
+
+    trait Animal {
+        fn speak(self)
+    }
+
+    struct Dog {
+        name: string
+    }
+
+    impl Animal for Dog {
+        fn speak(self) {
+            f"{self.name} says: Woof!"
+        }
+    }
+
+    struct Cat {
+        name: string
+    }
+
+    impl Animal for Cat {
+        fn speak(self) {
+            f"{self.name} says: Meow!"
+        }
+    }
+
+    fn animal_factory(type, name) {
+        match type {
+            "dog" => Dog { name: name },
+            "cat" => Cat { name: name },
+            _ => throw f"Unknown animal type: {type}"
+        }
+    }
+
+    let dog = animal_factory("dog", "Buddy")
+    let cat = animal_factory("cat", "Whiskers")
+    println(dog.speak())
+    println(cat.speak())
+
+    // Builder Pattern
+    println("\n=== Builder Pattern ===")
+
+    struct HttpRequestBuilder {
+        method: string = "GET",
+        url: string = "",
+        headers: map = {},
+        body: Option<string> = None,
+        timeout: int = 30000
+    }
+
+    impl HttpRequestBuilder {
+        fn new() {
+            HttpRequestBuilder {}
+        }
+
+        fn method(mut self, method) {
+            self.method = method
+            self
+        }
+
+        fn url(mut self, url) {
+            self.url = url
+            self
+        }
+
+        fn header(mut self, key, value) {
+            self.headers[key] = value
+            self
+        }
+
+        fn body(mut self, body) {
+            self.body = Some(body)
+            self
+        }
+
+        fn timeout(mut self, ms) {
+            self.timeout = ms
+            self
+        }
+
+        fn build(self) {
+            {
+                method: self.method,
+                url: self.url,
+                headers: self.headers,
+                body: self.body,
+                timeout: self.timeout
+            }
+        }
+    }
+
+    let request = HttpRequestBuilder::new()
+        .method("POST")
+        .url("https://api.example.com/users")
+        .header("Content-Type", "application/json")
+        .body('{"name": "John"}')
+        .timeout(5000)
+        .build()
+
+    println(f"Request: {request}")
+
+    // Observer Pattern
+    println("\n=== Observer Pattern ===")
+
+    struct Subject {
+        observers: list = [],
+        state: any = None
+    }
+
+    impl Subject {
+        fn attach(mut self, observer) {
+            self.observers.append(observer)
+        }
+
+        fn detach(mut self, observer) {
+            self.observers.remove(observer)
+        }
+
+        fn notify(self) {
+            for observer in self.observers {
+                observer.update(self.state)
+            }
+        }
+
+        fn set_state(mut self, state) {
+            self.state = state
+            self.notify()
+        }
+    }
+
+    struct Observer {
+        name: string,
+        update: fn(state)
+    }
+
+    let subject = Subject {}
+
+    let observer1 = Observer {
+        name: "Observer1",
+        update: |state| println(f"Observer1 received: {state}")
+    }
+
+    let observer2 = Observer {
+        name: "Observer2",
+        update: |state| println(f"Observer2 received: {state}")
+    }
+
+    subject.attach(observer1)
+    subject.attach(observer2)
+    subject.set_state("New State!")
+
+    // Strategy Pattern
+    println("\n=== Strategy Pattern ===")
+
+    trait SortStrategy {
+        fn sort(self, data)
+    }
+
+    struct BubbleSort {}
+    impl SortStrategy for BubbleSort {
+        fn sort(self, data) {
+            // Bubble sort implementation
+            println("Using bubble sort")
+            data.sorted()
+        }
+    }
+
+    struct QuickSort {}
+    impl SortStrategy for QuickSort {
+        fn sort(self, data) {
+            // Quick sort implementation
+            println("Using quick sort")
+            data.sorted()
+        }
+    }
+
+    struct Sorter {
+        strategy: SortStrategy
+    }
+
+    impl Sorter {
+        fn sort(self, data) {
+            self.strategy.sort(data)
+        }
+
+        fn set_strategy(mut self, strategy) {
+            self.strategy = strategy
+        }
+    }
+
+    let data = [3, 1, 4, 1, 5, 9, 2, 6]
+    let mut sorter = Sorter { strategy: BubbleSort {} }
+    sorter.sort(data)
+
+    sorter.set_strategy(QuickSort {})
+    sorter.sort(data)
+
+    // Decorator Pattern
+    println("\n=== Decorator Pattern ===")
+
+    trait Coffee {
+        fn cost(self) -> float
+        fn description(self) -> string
+    }
+
+    struct SimpleCoffee {}
+    impl Coffee for SimpleCoffee {
+        fn cost(self) { 2.0 }
+        fn description(self) { "Simple coffee" }
+    }
+
+    struct MilkDecorator {
+        coffee: Coffee
+    }
+    impl Coffee for MilkDecorator {
+        fn cost(self) {
+            self.coffee.cost() + 0.5
+        }
+        fn description(self) {
+            f"{self.coffee.description()} + milk"
+        }
+    }
+
+    struct SugarDecorator {
+        coffee: Coffee
+    }
+    impl Coffee for SugarDecorator {
+        fn cost(self) {
+            self.coffee.cost() + 0.2
+        }
+        fn description(self) {
+            f"{self.coffee.description()} + sugar"
+        }
+    }
+
+    let coffee = SimpleCoffee {}
+    let coffee_with_milk = MilkDecorator { coffee: coffee }
+    let fancy_coffee = SugarDecorator { coffee: coffee_with_milk }
+
+    println(f"{fancy_coffee.description()} costs ${fancy_coffee.cost()}")
+
+    // Chain of Responsibility
+    println("\n=== Chain of Responsibility ===")
+
+    trait Handler {
+        fn handle(self, request) -> Option<string>
+    }
+
+    struct AuthHandler {
+        next: Option<Handler>
+    }
+    impl Handler for AuthHandler {
+        fn handle(self, request) {
+            if !request.authenticated {
+                Some("Authentication required")
+            } else if self.next {
+                self.next.handle(request)
+            } else {
+                None
+            }
+        }
+    }
+
+    struct ValidationHandler {
+        next: Option<Handler>
+    }
+    impl Handler for ValidationHandler {
+        fn handle(self, request) {
+            if !request.valid {
+                Some("Invalid request")
+            } else if self.next {
+                self.next.handle(request)
+            } else {
+                None
+            }
+        }
+    }
+
+    // Command Pattern
+    println("\n=== Command Pattern ===")
+
+    trait Command {
+        fn execute(self)
+        fn undo(self)
+    }
+
+    struct Light {
+        is_on: bool = false
+    }
+
+    struct LightOnCommand {
+        light: Light
+    }
+    impl Command for LightOnCommand {
+        fn execute(self) {
+            self.light.is_on = true
+            println("Light turned on")
+        }
+        fn undo(self) {
+            self.light.is_on = false
+            println("Light turned off")
+        }
+    }
+
+    struct RemoteControl {
+        commands: list = [],
+        history: list = []
+    }
+
+    impl RemoteControl {
+        fn set_command(mut self, slot, command) {
+            self.commands[slot] = command
+        }
+
+        fn press_button(mut self, slot) {
+            if slot < self.commands.len() {
+                let command = self.commands[slot]
+                command.execute()
+                self.history.append(command)
+            }
+        }
+
+        fn undo(mut self) {
+            if self.history.len() > 0 {
+                let command = self.history.pop()
+                command.undo()
+            }
+        }
+    }
+
+    // Template Method Pattern
+    println("\n=== Template Method Pattern ===")
+
+    trait DataProcessor {
+        fn process(self, data) {
+            let validated = self.validate(data)
+            let transformed = self.transform(validated)
+            let result = self.save(transformed)
+            result
+        }
+
+        fn validate(self, data)
+        fn transform(self, data)
+        fn save(self, data)
+    }
+
+    struct CSVProcessor {}
+    impl DataProcessor for CSVProcessor {
+        fn validate(self, data) {
+            println("Validating CSV")
+            data
+        }
+        fn transform(self, data) {
+            println("Transforming CSV")
+            data
+        }
+        fn save(self, data) {
+            println("Saving CSV")
+            "CSV processed"
+        }
+    }
+
+    // Adapter Pattern
+    println("\n=== Adapter Pattern ===")
+
+    struct OldPrinter {
+        fn print_old_format(self, text) {
+            println(f"Old printer: {text}")
+        }
+    }
+
+    trait ModernPrinter {
+        fn print(self, document)
+    }
+
+    struct PrinterAdapter {
+        old_printer: OldPrinter
+    }
+
+    impl ModernPrinter for PrinterAdapter {
+        fn print(self, document) {
+            // Convert modern document to old format
+            let old_format = f"[LEGACY] {document.content}"
+            self.old_printer.print_old_format(old_format)
+        }
+    }
+
+    // Proxy Pattern
+    println("\n=== Proxy Pattern ===")
+
+    trait Image {
+        fn display(self)
+    }
+
+    struct RealImage {
+        filename: string
+    }
+    impl Image for RealImage {
+        fn display(self) {
+            println(f"Displaying {self.filename}")
+        }
+    }
+
+    struct ImageProxy {
+        filename: string,
+        real_image: Option<RealImage> = None
+    }
+    impl Image for ImageProxy {
+        fn display(mut self) {
+            if self.real_image == None {
+                println(f"Loading {self.filename}...")
+                self.real_image = Some(RealImage { filename: self.filename })
+            }
+            self.real_image.unwrap().display()
+        }
+    }
+
+    let image = ImageProxy { filename: "photo.jpg" }
+    image.display()  // Loads and displays
+    image.display()  // Just displays (already loaded)
+}

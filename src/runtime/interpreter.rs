@@ -26,8 +26,21 @@ pub struct DataFrameColumn {
     pub values: Vec<Value>,
 }
 
-/// Runtime value representation using safe enum approach
-/// Alternative to tagged pointers that respects project's `unsafe_code = "forbid"`
+/// Runtime value representation using safe enum approach.
+///
+/// `Value` represents all runtime values in the Ruchy interpreter. This is an
+/// enum-based approach that avoids unsafe code while maintaining good performance
+/// through strategic use of `Rc` for heap-allocated data.
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::runtime::interpreter::Value;
+///
+/// let int_val = Value::from_i64(42);
+/// let str_val = Value::from_string("hello".to_string());
+/// let arr_val = Value::from_array(vec![int_val.clone(), str_val]);
+/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     /// 64-bit signed integer
@@ -57,12 +70,30 @@ pub enum Value {
 }
 
 impl Value {
-    /// Create integer value
+    /// Create an integer value from an `i64`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::interpreter::Value;
+    ///
+    /// let val = Value::from_i64(42);
+    /// assert_eq!(val.as_i64().unwrap(), 42);
+    /// ```
     pub fn from_i64(i: i64) -> Self {
         Value::Integer(i)
     }
 
-    /// Create float value
+    /// Create a float value from an `f64`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::interpreter::Value;
+    ///
+    /// let val = Value::from_f64(3.14);
+    /// assert_eq!(val.as_f64().unwrap(), 3.14);
+    /// ```
     pub fn from_f64(f: f64) -> Self {
         Value::Float(f)
     }
@@ -92,7 +123,21 @@ impl Value {
         matches!(self, Value::Nil)
     }
 
-    /// Check if value is truthy (everything except false and nil)
+    /// Check if value is truthy.
+    ///
+    /// In Ruchy, only `false` and `nil` are falsy. All other values,
+    /// including `0` and empty strings, are truthy.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::interpreter::Value;
+    ///
+    /// assert!(Value::from_i64(0).is_truthy());
+    /// assert!(Value::from_string("".to_string()).is_truthy());
+    /// assert!(!Value::Bool(false).is_truthy());
+    /// assert!(!Value::Nil.is_truthy());
+    /// ```
     pub fn is_truthy(&self) -> bool {
         match self {
             Value::Bool(b) => *b,
@@ -159,7 +204,24 @@ impl Value {
 // Note: Complex object structures (ObjectHeader, Class, etc.) will be implemented
 // in Phase 1 of the interpreter spec when we add proper GC and method dispatch.
 
-/// Runtime interpreter state
+/// Runtime interpreter state.
+///
+/// The `Interpreter` manages the execution environment for Ruchy programs.
+/// It maintains:
+/// - A value stack for computation
+/// - Environment stack for lexical scoping
+/// - Inline caches for field/method optimization
+/// - Type feedback for future JIT compilation
+/// - Conservative garbage collection
+///
+/// # Implementation Strategy
+///
+/// This follows a two-tier execution model:
+/// - **Tier 0**: AST interpretation (current)
+/// - **Tier 1**: JIT compilation (future)
+///
+/// Type feedback and execution counts are collected for hot code
+/// identification and optimization.
 pub struct Interpreter {
     /// Tagged pointer values for fast operation
     stack: Vec<Value>,
@@ -210,7 +272,16 @@ pub enum InterpreterResult {
     Error(InterpreterError),
 }
 
-/// Interpreter errors
+/// Errors that can occur during interpretation.
+///
+/// # Examples
+///
+/// ```
+/// use ruchy::runtime::interpreter::InterpreterError;
+///
+/// let err = InterpreterError::TypeError("Expected integer".to_string());
+/// assert_eq!(err.to_string(), "Type error: Expected integer");
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum InterpreterError {
     TypeError(std::string::String),
@@ -400,7 +471,25 @@ impl Default for InlineCache {
     }
 }
 
-/// Type feedback collection for JIT compilation decisions
+/// Type feedback collection for JIT compilation decisions.
+///
+/// Collects runtime type information to guide optimization decisions in
+/// future JIT compilation tiers. This includes:
+///
+/// - Operation site type patterns (for inline caching)
+/// - Variable type stability (for specialization)
+/// - Call site patterns (for method inlining)
+///
+/// # Usage
+///
+/// The interpreter automatically collects type feedback during execution.
+/// When functions become "hot" (frequently executed), this data guides
+/// JIT compilation decisions.
+///
+/// # Statistics
+///
+/// Use `get_stats()` to retrieve feedback statistics for monitoring
+/// and debugging optimization decisions.
 #[derive(Clone, Debug)]
 pub struct TypeFeedback {
     /// Operation site feedback (indexed by AST node or bytecode offset)
@@ -744,8 +833,24 @@ pub struct TypeFeedbackStats {
     pub total_samples: u64,
 }
 
-/// Conservative garbage collector for heap-allocated objects
-/// Currently operates alongside Rc-based memory management
+/// Conservative garbage collector for heap-allocated objects.
+///
+/// This GC implementation uses conservative stack scanning and mark-and-sweep
+/// collection. It operates alongside Rust's `Rc` reference counting for a
+/// hybrid memory management approach.
+///
+/// # Features
+///
+/// - Conservative stack scanning (treats all stack values as potential pointers)
+/// - Mark-and-sweep collection algorithm
+/// - Automatic collection based on memory pressure
+/// - Collection statistics for performance monitoring
+///
+/// # Future Enhancements
+///
+/// - Generational collection for better performance
+/// - Precise stack maps for accurate root identification
+/// - Incremental collection to reduce pause times
 #[derive(Debug)]
 pub struct ConservativeGC {
     /// Objects currently tracked by the GC
@@ -1712,7 +1817,22 @@ impl Value {
 }
 
 impl Interpreter {
-    /// Create new interpreter instance
+    /// Create a new interpreter instance.
+    ///
+    /// Initializes the interpreter with:
+    /// - Pre-allocated stack for performance
+    /// - Global environment with builtin functions (max, min, floor, ceil, etc.)
+    /// - Type feedback collection for future JIT compilation
+    /// - Conservative garbage collector
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::interpreter::Interpreter;
+    ///
+    /// let mut interpreter = Interpreter::new();
+    /// // Interpreter is ready to evaluate expressions
+    /// ```
     pub fn new() -> Self {
         let mut global_env = HashMap::new();
         
@@ -1736,40 +1856,63 @@ impl Interpreter {
         }
     }
 
-    /// Evaluate an AST expression directly
-    /// 
+    /// Evaluate an AST expression directly.
+    ///
+    /// This is the main entry point for interpreting Ruchy expressions. It walks
+    /// the AST recursively, evaluating expressions and returning their values.
+    ///
     /// # Examples
+    ///
     /// ```
     /// use ruchy::runtime::interpreter::Interpreter;
     /// use ruchy::frontend::parser::Parser;
-    /// 
+    ///
     /// let mut interpreter = Interpreter::new();
     /// let mut parser = Parser::new("42");
     /// let expr = parser.parse().unwrap();
     /// let result = interpreter.eval_expr(&expr).unwrap();
     /// assert_eq!(result.to_string(), "42");
     /// ```
-    /// 
+    ///
     /// ```
     /// use ruchy::runtime::interpreter::Interpreter;
     /// use ruchy::frontend::parser::Parser;
-    /// 
+    ///
     /// let mut interpreter = Interpreter::new();
     /// let mut parser = Parser::new("2 + 3");
     /// let expr = parser.parse().unwrap();
     /// let result = interpreter.eval_expr(&expr).unwrap();
     /// assert_eq!(result.to_string(), "5");
     /// ```
-    /// 
+    ///
     /// # Errors
-    /// Returns error if evaluation fails (type errors, runtime errors, etc.)
+    ///
+    /// Returns an error when:
+    /// - Type error (e.g., adding string to number)
+    /// - Runtime error (e.g., undefined variable)
+    /// - Stack overflow/underflow
+    /// - Division by zero
     pub fn eval_expr(&mut self, expr: &Expr) -> Result<Value, InterpreterError> {
         self.eval_expr_kind(&expr.kind)
     }
 
-    /// Evaluate an expression kind directly (main AST walker)
+    /// Evaluate an expression kind directly.
+    ///
+    /// This is the core dispatch function for the interpreter. It pattern-matches
+    /// on the `ExprKind` and delegates to specialized evaluation functions.
+    ///
+    /// The function is organized into logical groups:
+    /// - Basic expressions (literals, identifiers)
+    /// - Operations (binary, unary, calls)
+    /// - Functions (definitions, lambdas)
+    /// - Control flow (if, for, while, match)
+    /// - Data structures (lists, tuples, arrays)
+    /// - Assignments
+    ///
     /// # Errors
-    /// Returns error if evaluation fails
+    ///
+    /// Returns an error if the expression evaluation fails or if the expression
+    /// type is not yet implemented.
     fn eval_expr_kind(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         match expr_kind {
             // Basic expressions
@@ -2192,7 +2335,19 @@ impl Interpreter {
         }
     }
 
-    /// Evaluate a binary operation from AST
+    /// Evaluate a binary operation from AST.
+    ///
+    /// Dispatches to specialized evaluation functions based on operator type:
+    /// - Arithmetic: `+`, `-`, `*`, `/`, `%`, `**`
+    /// - Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
+    /// - Logical: `&&`, `||`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Type mismatch (e.g., adding string to number)
+    /// - Division by zero
+    /// - Unsupported operator
     fn eval_binary_op(
         &self,
         op: AstBinaryOp,
@@ -2217,7 +2372,22 @@ impl Interpreter {
         }
     }
     
-    /// Handle arithmetic operations (Add, Subtract, Multiply, Divide, Modulo, Power)
+    /// Handle arithmetic operations.
+    ///
+    /// Supports numeric operations between integers and floats with automatic
+    /// type promotion when mixing types. String concatenation is supported
+    /// for the `+` operator.
+    ///
+    /// # Type Promotion Rules
+    ///
+    /// - `int + int -> int`
+    /// - `int + float -> float`
+    /// - `float + float -> float`
+    /// - `string + string -> string` (concatenation)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for type mismatches or division by zero.
     fn eval_arithmetic_op(
         &self,
         op: AstBinaryOp,
@@ -2235,7 +2405,23 @@ impl Interpreter {
         }
     }
     
-    /// Handle comparison operations (Equal, `NotEqual`, Less, Greater, `LessEqual`, `GreaterEqual`)
+    /// Handle comparison operations.
+    ///
+    /// Compares values of compatible types and returns a boolean result.
+    /// Supports comparisons between:
+    /// - Numbers (integers and floats)
+    /// - Strings (lexicographic comparison)
+    /// - Booleans
+    ///
+    /// # Equality
+    ///
+    /// - Values of different types are never equal
+    /// - NaN is not equal to itself (following IEEE 754)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when comparing incompatible types for ordering
+    /// operations (`<`, `>`, `<=`, `>=`).
     fn eval_comparison_op(
         &self,
         op: AstBinaryOp,
@@ -2490,6 +2676,24 @@ impl Interpreter {
     /// # Errors
     /// Returns error if parsing or evaluation fails
     #[cfg(test)]
+    /// Evaluate a string of Ruchy code.
+    ///
+    /// This convenience function parses and evaluates a string in one step.
+    /// It's useful for REPL implementations and testing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use ruchy::runtime::interpreter::Interpreter;
+    ///
+    /// let mut interpreter = Interpreter::new();
+    /// let result = interpreter.eval_string("2 * 21").unwrap();
+    /// assert_eq!(result.to_string(), "42");
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if parsing fails or if evaluation fails.
     pub fn eval_string(&mut self, input: &str) -> Result<Value, Box<dyn std::error::Error>> {
         use crate::frontend::parser::Parser;
 

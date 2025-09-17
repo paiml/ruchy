@@ -1,16 +1,48 @@
-//! Modular parser implementation for Ruchy
-#![allow(clippy::wildcard_imports)]
-#![allow(clippy::expect_used)]
+//! Recursive descent parser for the Ruchy programming language.
 //!
-//! The parser is split into logical modules to improve maintainability:
-//! - `core` - Main parser entry points and precedence handling
-//! - `expressions` - Basic expressions (literals, binary/unary ops)
-//! - `control_flow` - Control flow constructs (if, match, loops)
-//! - `functions` - Function definitions, lambdas, and calls
-//! - `types` - Type-related parsing (struct, trait, impl)
-//! - `collections` - Collections (lists, dataframes, comprehensions)
-//! - `actors` - Actor system constructs
-//! - `utils` - Parsing utilities and error recovery
+//! This module implements a hand-written recursive descent parser with Pratt precedence
+//! handling for operator expressions. The parser converts a stream of tokens from the
+//! lexer into an Abstract Syntax Tree (AST) that can be processed by subsequent
+//! compilation phases.
+//!
+//! # Architecture
+//!
+//! The parser is modularized for maintainability and complexity management:
+//!
+//! ## Core Modules
+//!
+//! - **`core`** - Main parser entry points and precedence handling
+//! - **`expressions`** - Basic expressions (literals, binary/unary ops, identifiers)
+//! - **`control_flow`** - Control structures (if/else, match, for/while loops)
+//! - **`functions`** - Function definitions, lambdas, method calls
+//! - **`types`** - Type system constructs (structs, traits, impls, generics)
+//! - **`collections`** - Collection literals and comprehensions
+//! - **`actors`** - Actor model constructs for concurrency
+//! - **`utils`** - Error recovery and parsing utilities
+//!
+//! ## Parsing Strategy
+//!
+//! The parser uses several key techniques:
+//!
+//! 1. **Pratt Parsing**: For handling operator precedence and associativity
+//! 2. **Recursive Descent**: For parsing nested structures and statements
+//! 3. **Error Recovery**: Continues parsing after errors for better diagnostics
+//! 4. **Arena Allocation**: Efficient memory management for AST nodes
+//! 5. **String Interning**: Deduplication of identifiers and strings
+//!
+//! # Examples
+//!
+//! ```ignore
+//! use ruchy::Parser;
+//!
+//! let mut parser = Parser::new("let x = 42");
+//! let ast = parser.parse().expect("Failed to parse");
+//! ```
+//!
+//! # Error Handling
+//!
+//! The parser attempts to recover from errors to provide multiple diagnostics
+//! in a single pass. Errors are collected and can be retrieved after parsing.
 mod actors;
 mod collections;
 mod core;
@@ -24,20 +56,33 @@ mod utils;
 pub use core::Parser;
 use crate::frontend::arena::{Arena, StringInterner};
 use crate::frontend::ast::{
-    ActorHandler, Attribute, BinaryOp, DataFrameColumn, EnumVariant, Expr, ExprKind, ImportItem, Literal, MatchArm, Param,
-    Pattern, PipelineStage, Span, StringPart, StructField, TraitMethod, Type, TypeKind, UnaryOp,
+    Attribute, BinaryOp, Expr, ExprKind, Literal, Param,
+    Pattern, PipelineStage, Span, Type, UnaryOp,
+    // Additional types for re-export to submodules
+    ActorHandler, DataFrameColumn, EnumVariant, ImportItem, MatchArm, StringPart, StructField, TraitMethod, TypeKind,
 };
 use crate::frontend::lexer::{Token, TokenStream};
 use crate::parser::error_recovery::ErrorNode;
 use anyhow::{bail, Result};
-/// Shared parser state and utilities
+/// Internal parser state containing tokens, errors, and memory management.
+///
+/// This structure maintains all mutable state during parsing including:
+/// - Token stream for lookahead and consumption
+/// - Error collection for diagnostics
+/// - Arena allocator for efficient AST allocation
+/// - String interner for identifier deduplication
+///
+/// The parser state is passed through all parsing functions to maintain
+/// consistency and enable error recovery.
 pub(crate) struct ParserState<'a> {
+    /// Token stream providing lookahead and token consumption.
     pub tokens: TokenStream<'a>,
+    /// Collection of parse errors for diagnostic reporting.
     pub errors: Vec<ErrorNode>,
-    /// Arena allocator for AST nodes
+    /// Arena allocator for efficient AST node allocation.
     #[allow(dead_code)]
     pub arena: Arena,
-    /// String interner for deduplicating identifiers
+    /// String interner for deduplicating identifiers and strings.
     #[allow(dead_code)]
     pub interner: StringInterner,
 }
@@ -66,7 +111,18 @@ impl<'a> ParserState<'a> {
         self.interner.stats()
     }
 }
-/// Forward declarations for recursive parsing
+/// Parses an expression using recursive descent.
+///
+/// This is the main entry point for expression parsing, starting with
+/// the lowest precedence level (0) to ensure proper operator binding.
+///
+/// # Arguments
+///
+/// * `state` - The current parser state
+///
+/// # Returns
+///
+/// The parsed expression or an error if parsing fails.
 pub(crate) fn parse_expr_recursive(state: &mut ParserState) -> Result<Expr> {
     parse_expr_with_precedence_recursive(state, 0)
 }
@@ -87,7 +143,21 @@ pub(crate) fn parse_expr_with_precedence_recursive(
     }
     Ok(left)
 }
-/// Try to handle any infix operator (complexity: 7)
+/// Attempts to parse infix operators at the current position.
+///
+/// This function tries various infix operator handlers in priority order,
+/// returning the first successful parse. The handlers are ordered to
+/// ensure correct precedence and avoid ambiguity.
+///
+/// # Arguments
+///
+/// * `state` - Current parser state
+/// * `left` - Left-hand side expression
+/// * `min_prec` - Minimum precedence level for binding
+///
+/// # Returns
+///
+/// `Some(expr)` if an infix operator was parsed, `None` otherwise.
 fn try_handle_infix_operators(
     state: &mut ParserState,
     left: Expr,

@@ -1,0 +1,348 @@
+// 23_networking.ruchy - Network programming and socket operations
+
+import std::net
+import std::socket
+
+fn main() {
+    println("=== Network Programming ===\n")
+
+    // TCP Server
+    println("=== TCP Server ===")
+
+    async fn tcp_server() {
+        let listener = net::TcpListener::bind("127.0.0.1:8080")
+        println("Server listening on 127.0.0.1:8080")
+
+        loop {
+            match await listener.accept() {
+                Ok((stream, addr)) => {
+                    println(f"New connection from {addr}")
+                    spawn handle_client(stream)
+                },
+                Err(e) => println(f"Accept error: {e}")
+            }
+        }
+    }
+
+    async fn handle_client(mut stream) {
+        let mut buffer = [0; 1024]
+
+        loop {
+            match await stream.read(buffer) {
+                Ok(0) => {
+                    println("Client disconnected")
+                    break
+                },
+                Ok(n) => {
+                    let message = String::from_utf8(buffer[0..n])
+                    println(f"Received: {message}")
+
+                    // Echo back
+                    await stream.write(f"Echo: {message}".as_bytes())
+                },
+                Err(e) => {
+                    println(f"Read error: {e}")
+                    break
+                }
+            }
+        }
+    }
+
+    // TCP Client
+    println("\n=== TCP Client ===")
+
+    async fn tcp_client() {
+        let mut stream = await net::TcpStream::connect("127.0.0.1:8080")
+        println("Connected to server")
+
+        // Send message
+        await stream.write("Hello, server!".as_bytes())
+
+        // Read response
+        let mut buffer = [0; 1024]
+        let n = await stream.read(buffer)
+        let response = String::from_utf8(buffer[0..n])
+        println(f"Server response: {response}")
+
+        stream.close()
+    }
+
+    // UDP Socket
+    println("\n=== UDP Socket ===")
+
+    fn udp_server() {
+        let socket = net::UdpSocket::bind("127.0.0.1:9000")
+        println("UDP server listening on 127.0.0.1:9000")
+
+        let mut buffer = [0; 1024]
+
+        loop {
+            match socket.recv_from(buffer) {
+                Ok((n, addr)) => {
+                    let message = String::from_utf8(buffer[0..n])
+                    println(f"UDP received from {addr}: {message}")
+
+                    // Send response
+                    socket.send_to(f"ACK: {message}".as_bytes(), addr)
+                },
+                Err(e) => println(f"UDP error: {e}")
+            }
+        }
+    }
+
+    fn udp_client() {
+        let socket = net::UdpSocket::bind("127.0.0.1:0")  // Random port
+
+        let server_addr = "127.0.0.1:9000"
+        socket.send_to("Hello UDP!".as_bytes(), server_addr)
+
+        let mut buffer = [0; 1024]
+        let (n, _) = socket.recv_from(buffer)
+        let response = String::from_utf8(buffer[0..n])
+        println(f"UDP response: {response}")
+    }
+
+    // HTTP Server
+    println("\n=== HTTP Server ===")
+
+    async fn http_server() {
+        let server = net::HttpServer::new("0.0.0.0:3000")
+
+        server.route("GET", "/", |req, res| {
+            res.status(200)
+               .header("Content-Type", "text/html")
+               .body("<h1>Welcome to Ruchy HTTP Server!</h1>")
+        })
+
+        server.route("GET", "/api/users", |req, res| {
+            let users = [
+                { id: 1, name: "Alice" },
+                { id: 2, name: "Bob" }
+            ]
+            res.json(users)
+        })
+
+        server.route("POST", "/api/users", |req, res| {
+            let body = req.json()
+            println(f"Creating user: {body}")
+
+            res.status(201)
+               .json({ id: 3, name: body.name })
+        })
+
+        server.middleware(|req, res, next| {
+            println(f"{req.method} {req.path}")
+            let start = now()
+            next()
+            let duration = now() - start
+            println(f"Request took {duration}ms")
+        })
+
+        println("HTTP server running on http://localhost:3000")
+        await server.listen()
+    }
+
+    // WebSocket Server
+    println("\n=== WebSocket Server ===")
+
+    async fn websocket_server() {
+        let server = net::WebSocketServer::new("127.0.0.1:8765")
+
+        server.on_connection(|ws, req| {
+            println(f"WebSocket connection from {req.remote_addr}")
+
+            ws.on_message(|msg| {
+                println(f"WS message: {msg}")
+
+                match msg.type {
+                    "text" => ws.send_text(f"Echo: {msg.data}"),
+                    "binary" => ws.send_binary(msg.data),
+                    "ping" => ws.pong(),
+                    _ => {}
+                }
+            })
+
+            ws.on_close(|code, reason| {
+                println(f"WS closed: {code} - {reason}")
+            })
+
+            ws.on_error(|error| {
+                println(f"WS error: {error}")
+            })
+        })
+
+        println("WebSocket server running on ws://localhost:8765")
+        await server.listen()
+    }
+
+    // WebSocket Client
+    async fn websocket_client() {
+        let ws = await net::WebSocket::connect("ws://localhost:8765")
+
+        ws.on_open(|| {
+            println("WebSocket connected")
+            ws.send_text("Hello from client!")
+        })
+
+        ws.on_message(|msg| {
+            println(f"Received: {msg.data}")
+        })
+
+        // Send periodic pings
+        spawn async {
+            loop {
+                await sleep(30000)
+                ws.ping()
+            }
+        }
+
+        await ws.wait()
+    }
+
+    // HTTP Client with retries
+    println("\n=== HTTP Client with Retries ===")
+
+    async fn http_client_with_retry(url, max_retries = 3, backoff = 1000) {
+        let mut retries = 0
+
+        while retries < max_retries {
+            try {
+                let response = await net::http::get(url)
+                if response.status == 200 {
+                    return Ok(response)
+                } else {
+                    throw f"HTTP {response.status}"
+                }
+            } catch e {
+                retries += 1
+                if retries < max_retries {
+                    println(f"Retry {retries}/{max_retries} after {backoff}ms")
+                    await sleep(backoff * retries)
+                } else {
+                    return Err(f"Failed after {max_retries} retries: {e}")
+                }
+            }
+        }
+    }
+
+    // Load balancer
+    println("\n=== Load Balancer ===")
+
+    struct LoadBalancer {
+        backends: list,
+        current: int = 0,
+        strategy: string = "round_robin"
+    }
+
+    impl LoadBalancer {
+        fn next_backend(mut self) {
+            match self.strategy {
+                "round_robin" => {
+                    let backend = self.backends[self.current]
+                    self.current = (self.current + 1) % self.backends.len()
+                    backend
+                },
+                "random" => {
+                    let index = rand_int(0, self.backends.len())
+                    self.backends[index]
+                },
+                "least_connections" => {
+                    // Find backend with least active connections
+                    self.backends.min_by(|b| b.active_connections)
+                },
+                _ => self.backends[0]
+            }
+        }
+
+        async fn forward_request(self, request) {
+            let backend = self.next_backend()
+            println(f"Forwarding to {backend.url}")
+
+            try {
+                let response = await net::http::forward(request, backend.url)
+                response
+            } catch e {
+                // Try another backend
+                println(f"Backend failed: {e}, trying another")
+                self.forward_request(request)
+            }
+        }
+    }
+
+    // Rate limiter
+    println("\n=== Rate Limiter ===")
+
+    struct RateLimiter {
+        max_requests: int,
+        window_ms: int,
+        requests: map = {}
+    }
+
+    impl RateLimiter {
+        fn allow(mut self, client_id) {
+            let now = current_time()
+            let window_start = now - self.window_ms
+
+            // Clean old entries
+            if client_id in self.requests {
+                self.requests[client_id] = self.requests[client_id]
+                    .filter(t => t > window_start)
+            } else {
+                self.requests[client_id] = []
+            }
+
+            // Check rate limit
+            if self.requests[client_id].len() >= self.max_requests {
+                false
+            } else {
+                self.requests[client_id].append(now)
+                true
+            }
+        }
+    }
+
+    // DNS lookup
+    println("\n=== DNS Operations ===")
+
+    let ip = net::dns::lookup("example.com")
+    println(f"example.com resolves to {ip}")
+
+    let hostname = net::dns::reverse_lookup("8.8.8.8")
+    println(f"8.8.8.8 is {hostname}")
+
+    // Network interface information
+    println("\n=== Network Interfaces ===")
+
+    let interfaces = net::get_interfaces()
+    for iface in interfaces {
+        println(f"Interface: {iface.name}")
+        println(f"  IP: {iface.ip}")
+        println(f"  MAC: {iface.mac}")
+        println(f"  Status: {iface.status}")
+    }
+
+    // Port scanning
+    async fn port_scan(host, start_port, end_port) {
+        println(f"Scanning {host} ports {start_port}-{end_port}")
+
+        let open_ports = []
+
+        for port in start_port..=end_port {
+            let result = await net::TcpStream::connect_timeout(
+                f"{host}:{port}",
+                100  // 100ms timeout
+            )
+
+            if result.is_ok() {
+                open_ports.append(port)
+                println(f"  Port {port}: OPEN")
+                result.unwrap().close()
+            }
+        }
+
+        open_ports
+    }
+
+    // Example usage (commented out for safety)
+    // await port_scan("localhost", 8000, 8100)
+}

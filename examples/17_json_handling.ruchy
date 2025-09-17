@@ -1,0 +1,262 @@
+// 17_json_handling.ruchy - Working with JSON data
+
+fn main() {
+    println("=== JSON Handling ===\n")
+
+    // Creating JSON from objects
+    println("=== Creating JSON ===")
+
+    let person = {
+        name: "Alice",
+        age: 30,
+        email: "alice@example.com",
+        active: true,
+        hobbies: ["reading", "coding", "hiking"],
+        address: {
+            street: "123 Main St",
+            city: "New York",
+            zip: "10001"
+        }
+    }
+
+    let json_str = person.to_json()
+    println("JSON string:")
+    println(json_str)
+
+    // Parsing JSON
+    println("\n=== Parsing JSON ===")
+
+    let json_data = '{
+        "name": "Bob",
+        "age": 25,
+        "skills": ["Python", "JavaScript", "Rust"],
+        "employed": true
+    }'
+
+    let parsed = parse_json(json_data)
+    println(f"Parsed object: {parsed}")
+    println(f"Name: {parsed.name}")
+    println(f"Age: {parsed.age}")
+    println(f"Skills: {parsed.skills}")
+
+    // Working with JSON arrays
+    println("\n=== JSON Arrays ===")
+
+    let users_json = '[
+        {"id": 1, "name": "Alice", "role": "admin"},
+        {"id": 2, "name": "Bob", "role": "user"},
+        {"id": 3, "name": "Charlie", "role": "moderator"}
+    ]'
+
+    let users = parse_json(users_json)
+    println("Users:")
+    for user in users {
+        println(f"  {user.name} ({user.role})")
+    }
+
+    // Nested JSON structures
+    println("\n=== Nested JSON ===")
+
+    let company = {
+        name: "Tech Corp",
+        founded: 2020,
+        employees: [
+            { name: "Alice", department: "Engineering", salary: 100000 },
+            { name: "Bob", department: "Sales", salary: 80000 },
+            { name: "Charlie", department: "Marketing", salary: 75000 }
+        ],
+        offices: {
+            headquarters: {
+                city: "San Francisco",
+                country: "USA",
+                employees: 50
+            },
+            branch: {
+                city: "London",
+                country: "UK",
+                employees: 25
+            }
+        }
+    }
+
+    let company_json = company.to_json()
+    println("Company JSON:")
+    println(company_json.pretty())  // Pretty-printed JSON
+
+    // JSON validation
+    println("\n=== JSON Validation ===")
+
+    fn validate_user(json_str) {
+        try {
+            let user = parse_json(json_str)
+
+            // Check required fields
+            if !user.has_key("name") {
+                return Err("Missing 'name' field")
+            }
+            if !user.has_key("age") {
+                return Err("Missing 'age' field")
+            }
+
+            // Type validation
+            if typeof(user.age) != "number" {
+                return Err("Age must be a number")
+            }
+            if user.age < 0 || user.age > 150 {
+                return Err("Invalid age range")
+            }
+
+            Ok(user)
+        } catch e {
+            Err(f"Invalid JSON: {e}")
+        }
+    }
+
+    let valid_json = '{"name": "David", "age": 28}'
+    let invalid_json = '{"name": "Eve"}'
+
+    match validate_user(valid_json) {
+        Ok(user) => println(f"Valid user: {user.name}"),
+        Err(msg) => println(f"Validation error: {msg}")
+    }
+
+    match validate_user(invalid_json) {
+        Ok(_) => println("Should not be valid"),
+        Err(msg) => println(f"Expected error: {msg}")
+    }
+
+    // JSON transformation
+    println("\n=== JSON Transformation ===")
+
+    let api_response = parse_json('{
+        "data": {
+            "users": [
+                {"id": 1, "firstName": "Alice", "lastName": "Smith"},
+                {"id": 2, "firstName": "Bob", "lastName": "Jones"}
+            ]
+        },
+        "meta": {
+            "total": 2,
+            "page": 1
+        }
+    }')
+
+    // Transform API response to simpler format
+    let transformed = {
+        users: api_response.data.users.map(u => {
+            id: u.id,
+            fullName: f"{u.firstName} {u.lastName}"
+        }),
+        total: api_response.meta.total
+    }
+
+    println(f"Transformed data: {transformed.to_json()}")
+
+    // JSON Path queries
+    println("\n=== JSON Path Queries ===")
+
+    fn json_path(obj, path) {
+        let parts = path.split(".")
+        let mut current = obj
+
+        for part in parts {
+            if part.contains("[") && part.contains("]") {
+                // Handle array index
+                let field = part.split("[")[0]
+                let index = part.split("[")[1].split("]")[0].to_int()
+                current = current[field][index]
+            } else {
+                current = current[part]
+            }
+        }
+        current
+    }
+
+    let complex_data = {
+        users: [
+            { name: "Alice", contacts: { email: "alice@example.com" } },
+            { name: "Bob", contacts: { email: "bob@example.com" } }
+        ]
+    }
+
+    let email = json_path(complex_data, "users[0].contacts.email")
+    println(f"First user's email: {email}")
+
+    // JSON Schema validation
+    println("\n=== JSON Schema ===")
+
+    let schema = {
+        type: "object",
+        required: ["name", "age"],
+        properties: {
+            name: { type: "string", minLength: 1 },
+            age: { type: "number", minimum: 0, maximum: 150 },
+            email: { type: "string", pattern: ".+@.+\\..+" }
+        }
+    }
+
+    fn validate_against_schema(data, schema) {
+        // Simplified schema validation
+        for field in schema.required {
+            if !data.has_key(field) {
+                return Err(f"Missing required field: {field}")
+            }
+        }
+
+        for (key, rules) in schema.properties {
+            if data.has_key(key) {
+                let value = data[key]
+                if rules.type == "string" && typeof(value) != "string" {
+                    return Err(f"Field '{key}' must be a string")
+                }
+                if rules.type == "number" && typeof(value) != "number" {
+                    return Err(f"Field '{key}' must be a number")
+                }
+            }
+        }
+
+        Ok(true)
+    }
+
+    // JSON Merge/Patch
+    println("\n=== JSON Merge ===")
+
+    let base_config = {
+        server: { port: 8080, host: "localhost" },
+        database: { name: "mydb", port: 5432 }
+    }
+
+    let override_config = {
+        server: { port: 9000 },
+        logging: { level: "debug" }
+    }
+
+    let merged = json_merge(base_config, override_config)
+    println(f"Merged config: {merged.to_json()}")
+
+    // JSON to CSV conversion
+    println("\n=== JSON to CSV ===")
+
+    let json_records = [
+        { name: "Alice", age: 30, city: "NYC" },
+        { name: "Bob", age: 25, city: "LA" },
+        { name: "Charlie", age: 35, city: "Chicago" }
+    ]
+
+    fn json_to_csv(records) {
+        if records.len() == 0 {
+            return ""
+        }
+
+        let headers = records[0].keys().join(",")
+        let rows = records.map(record =>
+            record.values().join(",")
+        ).join("\n")
+
+        f"{headers}\n{rows}"
+    }
+
+    let csv = json_to_csv(json_records)
+    println("CSV output:")
+    println(csv)
+}

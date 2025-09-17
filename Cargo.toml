@@ -320,6 +320,18 @@ harness = false
 name = "transpiler"
 harness = false
 
+[[bench]]
+name = "parser_benchmarks"
+harness = false
+
+[[bench]]
+name = "interpreter_benchmarks"
+harness = false
+
+[[bench]]
+name = "transpiler_benchmarks"
+harness = false
+
 # Commented out due to compilation errors
 # [[bench]]
 # name = "shared_session_performance"

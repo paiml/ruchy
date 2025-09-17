@@ -1,0 +1,277 @@
+// 25_regex_text.ruchy - Regular expressions and text processing
+
+import std::regex
+import std::text
+
+fn main() {
+    println("=== Regular Expressions & Text Processing ===\n")
+
+    // Basic regex matching
+    println("=== Basic Pattern Matching ===")
+
+    let pattern = regex::compile(r"\d{3}-\d{3}-\d{4}")
+    let text = "Call me at 555-123-4567 or 555-987-6543"
+
+    if pattern.matches(text) {
+        println("Found phone number(s) in text")
+    }
+
+    // Find all matches
+    let matches = pattern.find_all(text)
+    for match in matches {
+        println(f"Found: {match.text} at position {match.start}-{match.end}")
+    }
+
+    // Capturing groups
+    println("\n=== Capturing Groups ===")
+
+    let email_pattern = regex::compile(r"(\w+)@(\w+)\.(\w+)")
+    let email = "john.doe@example.com"
+
+    match email_pattern.match(email) {
+        Some(m) => {
+            println(f"Full match: {m.group(0)}")
+            println(f"Username: {m.group(1)}")
+            println(f"Domain: {m.group(2)}")
+            println(f"TLD: {m.group(3)}")
+        },
+        None => println("No match")
+    }
+
+    // Named groups
+    let date_pattern = regex::compile(
+        r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})"
+    )
+
+    let date_str = "2024-03-15"
+    let date_match = date_pattern.match(date_str)
+
+    println(f"Year: {date_match.group('year')}")
+    println(f"Month: {date_match.group('month')}")
+    println(f"Day: {date_match.group('day')}")
+
+    // Substitution
+    println("\n=== Pattern Substitution ===")
+
+    let html = "<b>Bold text</b> and <i>italic text</i>"
+    let tag_pattern = regex::compile(r"</?[^>]+>")
+    let plain_text = tag_pattern.replace_all(html, "")
+    println(f"Plain text: {plain_text}")
+
+    // Replace with callback
+    let price_text = "Item costs $50, discount $10, total $40"
+    let price_pattern = regex::compile(r"\$(\d+)")
+
+    let updated = price_pattern.replace_all(price_text, |m| {
+        let amount = m.group(1).to_int()
+        f"${amount * 1.1:.2f}"  // Add 10% tax
+    })
+    println(f"With tax: {updated}")
+
+    // Validation patterns
+    println("\n=== Validation Patterns ===")
+
+    fn validate_email(email) {
+        let pattern = regex::compile(
+            r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        )
+        pattern.matches(email)
+    }
+
+    fn validate_url(url) {
+        let pattern = regex::compile(
+            r"^https?://[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b"
+        )
+        pattern.matches(url)
+    }
+
+    fn validate_ipv4(ip) {
+        let pattern = regex::compile(
+            r"^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}" +
+            r"(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+        )
+        pattern.matches(ip)
+    }
+
+    println(f"valid@email.com: {validate_email('valid@email.com')}")
+    println(f"invalid-email: {validate_email('invalid-email')}")
+    println(f"https://example.com: {validate_url('https://example.com')}")
+    println(f"192.168.1.1: {validate_ipv4('192.168.1.1')}")
+
+    // Text tokenization
+    println("\n=== Text Tokenization ===")
+
+    let text = "The quick brown fox jumps over the lazy dog."
+
+    // Word tokenization
+    let word_pattern = regex::compile(r"\w+")
+    let words = word_pattern.find_all(text).map(m => m.text)
+    println(f"Words: {words}")
+
+    // Sentence tokenization
+    let sentence_pattern = regex::compile(r"[.!?]+\s*")
+    let sentences = sentence_pattern.split(text)
+    println(f"Sentences: {sentences}")
+
+    // Natural language processing
+    println("\n=== Text Analysis ===")
+
+    fn analyze_text(text) {
+        // Basic statistics
+        let words = text.split_whitespace()
+        let sentences = text.split_sentences()
+        let chars = text.chars()
+
+        let stats = {
+            word_count: words.len(),
+            sentence_count: sentences.len(),
+            char_count: chars.len(),
+            avg_word_length: chars.len() / words.len(),
+            avg_sentence_length: words.len() / sentences.len()
+        }
+
+        // Word frequency
+        let word_freq = {}
+        for word in words {
+            let w = word.lower().strip_punctuation()
+            word_freq[w] = word_freq.get(w, 0) + 1
+        }
+
+        // Most common words
+        let common_words = word_freq.items()
+            .sort_by(|(_, count)| -count)
+            .take(5)
+
+        stats.common_words = common_words
+        stats
+    }
+
+    let sample_text = "This is a sample text. This text is for analysis.
+                       The text contains multiple sentences. Analysis is important."
+
+    let analysis = analyze_text(sample_text)
+    println(f"Text analysis: {analysis}")
+
+    // Advanced text processing
+    println("\n=== Advanced Text Processing ===")
+
+    // Extract data from structured text
+    let log_entry = "2024-03-15 10:30:45 ERROR [UserService] Failed to authenticate user: john@example.com"
+
+    let log_pattern = regex::compile(
+        r"(?P<date>[\d-]+)\s+" +
+        r"(?P<time>[\d:]+)\s+" +
+        r"(?P<level>\w+)\s+" +
+        r"\[(?P<service>\w+)\]\s+" +
+        r"(?P<message>.*)"
+    )
+
+    let parsed = log_pattern.match(log_entry)
+    println("Parsed log entry:")
+    println(f"  Date: {parsed.group('date')}")
+    println(f"  Time: {parsed.group('time')}")
+    println(f"  Level: {parsed.group('level')}")
+    println(f"  Service: {parsed.group('service')}")
+    println(f"  Message: {parsed.group('message')}")
+
+    // Template substitution
+    println("\n=== Template Processing ===")
+
+    fn render_template(template, context) {
+        let pattern = regex::compile(r"\{\{(\w+)\}\}")
+
+        pattern.replace_all(template, |m| {
+            let key = m.group(1)
+            context.get(key, f"{{unknown: {key}}}")
+        })
+    }
+
+    let template = "Hello {{name}}, your order #{{order_id}} is {{status}}."
+    let context = {
+        name: "Alice",
+        order_id: "12345",
+        status: "shipped"
+    }
+
+    let rendered = render_template(template, context)
+    println(f"Rendered: {rendered}")
+
+    // Markdown to HTML conversion (simplified)
+    println("\n=== Markdown Processing ===")
+
+    fn markdown_to_html(markdown) {
+        let patterns = [
+            (r"^# (.+)$", "<h1>$1</h1>"),          // H1
+            (r"^## (.+)$", "<h2>$1</h2>"),         // H2
+            (r"\*\*(.+?)\*\*", "<strong>$1</strong>"), // Bold
+            (r"\*(.+?)\*", "<em>$1</em>"),         // Italic
+            (r"\[(.+?)\]\((.+?)\)", "<a href=\"$2\">$1</a>"), // Links
+            (r"`(.+?)`", "<code>$1</code>"),       // Code
+        ]
+
+        let mut html = markdown
+
+        for (pattern, replacement) in patterns {
+            let re = regex::compile(pattern)
+            html = re.replace_all(html, replacement)
+        }
+
+        html
+    }
+
+    let markdown = "# Title\nThis is **bold** and *italic* text with `code`."
+    let html = markdown_to_html(markdown)
+    println(f"HTML: {html}")
+
+    // CSV parsing with regex
+    println("\n=== CSV Parsing ===")
+
+    fn parse_csv_line(line) {
+        // Handle quoted fields with commas
+        let pattern = regex::compile(
+            r'(?:^|,)(?:"([^"]*(?:""[^"]*)*)"|([^",]*))'
+        )
+
+        let fields = []
+        for match in pattern.find_all(line) {
+            let field = match.group(1) || match.group(2)
+            fields.append(field.replace("\"\"", "\""))
+        }
+        fields
+    }
+
+    let csv_line = 'John,"Doe, Jr.",30,"New York, NY"'
+    let fields = parse_csv_line(csv_line)
+    println(f"CSV fields: {fields}")
+
+    // Code syntax highlighting
+    println("\n=== Syntax Highlighting ===")
+
+    fn highlight_code(code, language) {
+        let patterns = match language {
+            "ruchy" => [
+                (r"\b(fn|let|if|else|for|while|match|return)\b", "keyword"),
+                (r"\b(int|string|bool|float)\b", "type"),
+                (r'"[^"]*"', "string"),
+                (r'\b\d+\b', "number"),
+                (r'//.*$', "comment"),
+            ],
+            _ => []
+        }
+
+        let mut highlighted = code
+
+        for (pattern, class) in patterns {
+            let re = regex::compile(pattern)
+            highlighted = re.replace_all(highlighted, |m| {
+                f'<span class="{class}">{m.group(0)}</span>'
+            })
+        }
+
+        highlighted
+    }
+
+    let code = 'fn add(a: int, b: int) { return a + b } // Addition'
+    let highlighted = highlight_code(code, "ruchy")
+    println(f"Highlighted: {highlighted}")
+}

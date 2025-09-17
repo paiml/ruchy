@@ -1,0 +1,386 @@
+// 31_data_validation.ruchy - Data validation and sanitization
+
+fn main() {
+    println("=== Data Validation & Sanitization ===\n")
+
+    // Basic validators
+    println("=== Basic Validators ===")
+
+    struct Validator {
+        rules: list
+    }
+
+    impl Validator {
+        fn validate(self, value) {
+            let errors = []
+
+            for rule in self.rules {
+                match rule.check(value) {
+                    Err(msg) => errors.append(msg),
+                    Ok(_) => {}
+                }
+            }
+
+            if errors.len() > 0 {
+                Err(errors)
+            } else {
+                Ok(value)
+            }
+        }
+
+        fn required(mut self) {
+            self.rules.append(RequiredRule {})
+            self
+        }
+
+        fn min_length(mut self, min) {
+            self.rules.append(MinLengthRule { min: min })
+            self
+        }
+
+        fn max_length(mut self, max) {
+            self.rules.append(MaxLengthRule { max: max })
+            self
+        }
+
+        fn pattern(mut self, regex) {
+            self.rules.append(PatternRule { pattern: regex })
+            self
+        }
+
+        fn email(mut self) {
+            self.pattern(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+            self
+        }
+
+        fn range(mut self, min, max) {
+            self.rules.append(RangeRule { min: min, max: max })
+            self
+        }
+    }
+
+    // String validation
+    let name_validator = Validator { rules: [] }
+        .required()
+        .min_length(2)
+        .max_length(50)
+        .pattern(r"^[a-zA-Z\s]+$")
+
+    match name_validator.validate("John Doe") {
+        Ok(name) => println(f"Valid name: {name}"),
+        Err(errors) => println(f"Invalid name: {errors}")
+    }
+
+    // Email validation
+    let email_validator = Validator { rules: [] }
+        .required()
+        .email()
+
+    let test_emails = [
+        "valid@email.com",
+        "invalid.email",
+        "another@test.org"
+    ]
+
+    for email in test_emails {
+        match email_validator.validate(email) {
+            Ok(_) => println(f"✓ {email} is valid"),
+            Err(_) => println(f"✗ {email} is invalid")
+        }
+    }
+
+    // Number validation
+    println("\n=== Number Validation ===")
+
+    fn validate_age(age) {
+        if age < 0 {
+            Err("Age cannot be negative")
+        } else if age > 150 {
+            Err("Age seems unrealistic")
+        } else if age < 18 {
+            Err("Must be 18 or older")
+        } else {
+            Ok(age)
+        }
+    }
+
+    let ages = [-5, 16, 25, 200]
+    for age in ages {
+        match validate_age(age) {
+            Ok(a) => println(f"Age {a} is valid"),
+            Err(msg) => println(f"Age {age} invalid: {msg}")
+        }
+    }
+
+    // Schema validation
+    println("\n=== Schema Validation ===")
+
+    struct Schema {
+        fields: map
+    }
+
+    impl Schema {
+        fn validate(self, data) {
+            let errors = {}
+
+            for (field, validator) in self.fields {
+                if field in data {
+                    match validator.validate(data[field]) {
+                        Err(e) => errors[field] = e,
+                        Ok(_) => {}
+                    }
+                } else if validator.is_required() {
+                    errors[field] = ["Field is required"]
+                }
+            }
+
+            if errors.keys().len() > 0 {
+                Err(errors)
+            } else {
+                Ok(data)
+            }
+        }
+    }
+
+    let user_schema = Schema {
+        fields: {
+            "username": Validator {}.required().min_length(3).max_length(20),
+            "email": Validator {}.required().email(),
+            "age": Validator {}.required().range(18, 120),
+            "bio": Validator {}.max_length(500)  // Optional field
+        }
+    }
+
+    let user_data = {
+        username: "john_doe",
+        email: "john@example.com",
+        age: 25,
+        bio: "Software developer"
+    }
+
+    match user_schema.validate(user_data) {
+        Ok(_) => println("User data is valid"),
+        Err(errors) => {
+            println("Validation errors:")
+            for (field, messages) in errors {
+                println(f"  {field}: {messages}")
+            }
+        }
+    }
+
+    // Sanitization
+    println("\n=== Data Sanitization ===")
+
+    struct Sanitizer {
+        operations: list
+    }
+
+    impl Sanitizer {
+        fn sanitize(self, value) {
+            let mut result = value
+            for op in self.operations {
+                result = op.apply(result)
+            }
+            result
+        }
+
+        fn trim(mut self) {
+            self.operations.append(TrimOperation {})
+            self
+        }
+
+        fn lowercase(mut self) {
+            self.operations.append(LowercaseOperation {})
+            self
+        }
+
+        fn remove_html(mut self) {
+            self.operations.append(RemoveHtmlOperation {})
+            self
+        }
+
+        fn escape_sql(mut self) {
+            self.operations.append(EscapeSqlOperation {})
+            self
+        }
+
+        fn normalize_whitespace(mut self) {
+            self.operations.append(NormalizeWhitespaceOperation {})
+            self
+        }
+    }
+
+    // HTML sanitization
+    fn sanitize_html(html) {
+        let allowed_tags = ["p", "b", "i", "u", "a", "br"]
+        let pattern = regex::compile(r"</?([^>]+)>")
+
+        pattern.replace_all(html, |match| {
+            let tag = match.group(1).split(" ")[0].lower()
+            if allowed_tags.contains(tag) {
+                match.group(0)  // Keep allowed tags
+            } else {
+                ""  // Remove disallowed tags
+            }
+        })
+    }
+
+    let unsafe_html = "<script>alert('XSS')</script><b>Bold</b> text"
+    let safe_html = sanitize_html(unsafe_html)
+    println(f"Sanitized HTML: {safe_html}")
+
+    // SQL injection prevention
+    fn escape_sql_string(s) {
+        s.replace("'", "''")
+         .replace("\\", "\\\\")
+         .replace("\0", "\\0")
+         .replace("\n", "\\n")
+         .replace("\r", "\\r")
+    }
+
+    // Type coercion
+    println("\n=== Type Coercion ===")
+
+    fn coerce_to_int(value) {
+        match value {
+            Int(n) => Ok(n),
+            Float(f) => Ok(f.to_int()),
+            String(s) => s.parse_int(),
+            Bool(b) => Ok(if b { 1 } else { 0 }),
+            _ => Err("Cannot coerce to integer")
+        }
+    }
+
+    fn coerce_to_bool(value) {
+        match value {
+            Bool(b) => b,
+            Int(n) => n != 0,
+            Float(f) => f != 0.0,
+            String(s) => s != "" && s.lower() != "false",
+            Nil => false,
+            _ => true
+        }
+    }
+
+    // Custom validation rules
+    println("\n=== Custom Validation Rules ===")
+
+    fn validate_password(password) {
+        let rules = [
+            (password.len() >= 8, "Password must be at least 8 characters"),
+            (password.contains_uppercase(), "Must contain uppercase letter"),
+            (password.contains_lowercase(), "Must contain lowercase letter"),
+            (password.contains_digit(), "Must contain a number"),
+            (password.contains_special(), "Must contain special character"),
+            (!password.contains_spaces(), "Cannot contain spaces")
+        ]
+
+        let errors = []
+        for (valid, message) in rules {
+            if !valid {
+                errors.append(message)
+            }
+        }
+
+        if errors.len() > 0 {
+            Err(errors)
+        } else {
+            Ok(password)
+        }
+    }
+
+    let passwords = ["weak", "StrongPass123!", "NoSpecial123"]
+    for pwd in passwords {
+        match validate_password(pwd) {
+            Ok(_) => println(f"✓ Password '{pwd}' is strong"),
+            Err(errors) => {
+                println(f"✗ Password '{pwd}' is weak:")
+                for error in errors {
+                    println(f"  - {error}")
+                }
+            }
+        }
+    }
+
+    // Form validation
+    println("\n=== Form Validation ===")
+
+    struct FormValidator {
+        fields: map,
+        data: map,
+        errors: map = {}
+    }
+
+    impl FormValidator {
+        fn validate_field(mut self, field, value) {
+            if field in self.fields {
+                match self.fields[field].validate(value) {
+                    Ok(clean) => self.data[field] = clean,
+                    Err(e) => self.errors[field] = e
+                }
+            }
+        }
+
+        fn validate_all(mut self) {
+            for (field, value) in self.data {
+                self.validate_field(field, value)
+            }
+
+            if self.errors.len() > 0 {
+                Err(self.errors)
+            } else {
+                Ok(self.data)
+            }
+        }
+
+        fn is_valid(self) {
+            self.errors.len() == 0
+        }
+    }
+
+    // Credit card validation
+    fn validate_credit_card(number) {
+        // Remove spaces and dashes
+        let clean = number.replace(" ", "").replace("-", "")
+
+        // Check if all digits
+        if !clean.is_numeric() {
+            return Err("Invalid characters in card number")
+        }
+
+        // Check length
+        if clean.len() < 13 || clean.len() > 19 {
+            return Err("Invalid card number length")
+        }
+
+        // Luhn algorithm
+        let mut sum = 0
+        let mut alternate = false
+
+        for i in (clean.len() - 1)..=0.step_by(-1) {
+            let mut digit = clean[i].to_int()
+
+            if alternate {
+                digit *= 2
+                if digit > 9 {
+                    digit = digit - 9
+                }
+            }
+
+            sum += digit
+            alternate = !alternate
+        }
+
+        if sum % 10 == 0 {
+            Ok(clean)
+        } else {
+            Err("Invalid card number (Luhn check failed)")
+        }
+    }
+
+    let card = "4111 1111 1111 1111"  // Test Visa number
+    match validate_credit_card(card) {
+        Ok(_) => println(f"✓ Card number is valid"),
+        Err(e) => println(f"✗ Card invalid: {e}")
+    }
+}

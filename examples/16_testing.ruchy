@@ -1,0 +1,316 @@
+// 16_testing.ruchy - Writing tests in Ruchy
+
+// Module with functions to test
+module calculator {
+    pub fn add(a, b) {
+        a + b
+    }
+
+    pub fn subtract(a, b) {
+        a - b
+    }
+
+    pub fn multiply(a, b) {
+        a * b
+    }
+
+    pub fn divide(a, b) {
+        if b == 0 {
+            Err("Division by zero")
+        } else {
+            Ok(a / b)
+        }
+    }
+
+    pub fn factorial(n) {
+        if n < 0 {
+            Err("Negative input")
+        } else if n == 0 || n == 1 {
+            Ok(1)
+        } else {
+            let mut result = 1
+            for i in 2..=n {
+                result *= i
+            }
+            Ok(result)
+        }
+    }
+}
+
+// Test module
+#[cfg(test)]
+module tests {
+    use super::calculator
+
+    #[test]
+    fn test_addition() {
+        assert_eq!(calculator::add(2, 3), 5)
+        assert_eq!(calculator::add(-1, 1), 0)
+        assert_eq!(calculator::add(0, 0), 0)
+    }
+
+    #[test]
+    fn test_subtraction() {
+        assert_eq!(calculator::subtract(5, 3), 2)
+        assert_eq!(calculator::subtract(0, 5), -5)
+        assert_eq!(calculator::subtract(10, 10), 0)
+    }
+
+    #[test]
+    fn test_multiplication() {
+        assert_eq!(calculator::multiply(3, 4), 12)
+        assert_eq!(calculator::multiply(0, 100), 0)
+        assert_eq!(calculator::multiply(-2, 5), -10)
+    }
+
+    #[test]
+    fn test_division_success() {
+        match calculator::divide(10, 2) {
+            Ok(result) => assert_eq!(result, 5),
+            Err(msg) => panic!(f"Unexpected error: {msg}")
+        }
+
+        match calculator::divide(15, 3) {
+            Ok(result) => assert_eq!(result, 5),
+            Err(msg) => panic!(f"Unexpected error: {msg}")
+        }
+    }
+
+    #[test]
+    fn test_division_by_zero() {
+        match calculator::divide(10, 0) {
+            Ok(_) => panic!("Expected error but got success"),
+            Err(msg) => assert_eq!(msg, "Division by zero")
+        }
+    }
+
+    #[test]
+    fn test_factorial() {
+        match calculator::factorial(5) {
+            Ok(result) => assert_eq!(result, 120),
+            Err(msg) => panic!(f"Unexpected error: {msg}")
+        }
+
+        match calculator::factorial(0) {
+            Ok(result) => assert_eq!(result, 1),
+            Err(msg) => panic!(f"Unexpected error: {msg}")
+        }
+
+        match calculator::factorial(-1) {
+            Ok(_) => panic!("Expected error for negative input"),
+            Err(msg) => assert_eq!(msg, "Negative input")
+        }
+    }
+}
+
+// Test utilities
+module test_utils {
+    pub struct TestRunner {
+        passed: int,
+        failed: int,
+        tests: list
+    }
+
+    impl TestRunner {
+        pub fn new() {
+            TestRunner {
+                passed: 0,
+                failed: 0,
+                tests: []
+            }
+        }
+
+        pub fn add_test(mut self, name, test_fn) {
+            self.tests.append({ name: name, func: test_fn })
+        }
+
+        pub fn run(mut self) {
+            println("=== Running Tests ===\n")
+
+            for test in self.tests {
+                print(f"Running {test.name}... ")
+
+                try {
+                    test.func()
+                    self.passed += 1
+                    println("✅ PASSED")
+                } catch e {
+                    self.failed += 1
+                    println(f"❌ FAILED: {e}")
+                }
+            }
+
+            println(f"\n=== Test Results ===")
+            println(f"Passed: {self.passed}")
+            println(f"Failed: {self.failed}")
+            println(f"Total: {self.passed + self.failed}")
+
+            if self.failed == 0 {
+                println("\n🎉 All tests passed!")
+            } else {
+                println(f"\n⚠️ {self.failed} test(s) failed")
+            }
+        }
+    }
+
+    // Assertion helpers
+    pub fn assert(condition, message = "Assertion failed") {
+        if !condition {
+            throw message
+        }
+    }
+
+    pub fn assert_eq(actual, expected) {
+        if actual != expected {
+            throw f"Expected {expected}, got {actual}"
+        }
+    }
+
+    pub fn assert_ne(actual, not_expected) {
+        if actual == not_expected {
+            throw f"Expected value to not be {not_expected}"
+        }
+    }
+
+    pub fn assert_true(value) {
+        if !value {
+            throw "Expected true, got false"
+        }
+    }
+
+    pub fn assert_false(value) {
+        if value {
+            throw "Expected false, got true"
+        }
+    }
+
+    pub fn assert_throws(func, expected_error = None) {
+        try {
+            func()
+            throw "Expected function to throw but it didn't"
+        } catch e {
+            if expected_error != None && e != expected_error {
+                throw f"Expected error '{expected_error}', got '{e}'"
+            }
+            // Test passed - function threw as expected
+        }
+    }
+}
+
+// Property-based testing
+module property_testing {
+    pub fn check_property(property_fn, num_tests = 100) {
+        println(f"Running {num_tests} property tests...")
+
+        for i in 0..num_tests {
+            let input = generate_random_input()
+            if !property_fn(input) {
+                println(f"Property failed for input: {input}")
+                return false
+            }
+        }
+
+        println("All property tests passed!")
+        true
+    }
+
+    fn generate_random_input() {
+        // Generate random test data
+        rand_int(0, 1000)
+    }
+
+    // Example properties
+    pub fn test_commutative_property(add_fn) {
+        check_property(input => {
+            let a = input
+            let b = rand_int(0, 1000)
+            add_fn(a, b) == add_fn(b, a)
+        })
+    }
+
+    pub fn test_associative_property(add_fn) {
+        check_property(_ => {
+            let a = rand_int(0, 100)
+            let b = rand_int(0, 100)
+            let c = rand_int(0, 100)
+            add_fn(add_fn(a, b), c) == add_fn(a, add_fn(b, c))
+        })
+    }
+}
+
+fn main() {
+    use test_utils::{TestRunner, assert_eq, assert_true, assert_throws}
+
+    println("=== Testing Framework Demo ===\n")
+
+    // Create test runner
+    let mut runner = TestRunner::new()
+
+    // Add tests
+    runner.add_test("Basic Math", || {
+        assert_eq(2 + 2, 4)
+        assert_eq(10 - 5, 5)
+        assert_eq(3 * 4, 12)
+    })
+
+    runner.add_test("String Operations", || {
+        let s = "hello"
+        assert_eq(s.len(), 5)
+        assert_eq(s.upper(), "HELLO")
+        assert_true(s.contains("ell"))
+    })
+
+    runner.add_test("List Operations", || {
+        let list = [1, 2, 3]
+        assert_eq(list.len(), 3)
+        assert_eq(list[0], 1)
+        assert_eq(list.sum(), 6)
+    })
+
+    runner.add_test("Error Handling", || {
+        assert_throws(|| {
+            let x = 10
+            let y = 0
+            if y == 0 {
+                throw "Division by zero"
+            }
+            x / y
+        }, "Division by zero")
+    })
+
+    runner.add_test("Calculator Functions", || {
+        assert_eq(calculator::add(5, 3), 8)
+        assert_eq(calculator::multiply(4, 5), 20)
+
+        match calculator::divide(10, 2) {
+            Ok(result) => assert_eq(result, 5),
+            Err(_) => throw "Division should have succeeded"
+        }
+    })
+
+    // Run all tests
+    runner.run()
+
+    // Property-based testing demo
+    println("\n=== Property-Based Testing ===\n")
+
+    property_testing::test_commutative_property(calculator::add)
+    property_testing::test_associative_property(calculator::add)
+
+    // Benchmark testing
+    println("\n=== Benchmark Testing ===\n")
+
+    fn benchmark(name, func, iterations = 1000) {
+        let start = now()
+        for _ in 0..iterations {
+            func()
+        }
+        let elapsed = now() - start
+        let avg = elapsed / iterations
+        println(f"{name}: {avg}ms average ({iterations} iterations)")
+    }
+
+    benchmark("Addition", || calculator::add(100, 200))
+    benchmark("Factorial", || calculator::factorial(10))
+    benchmark("String concatenation", || "hello" + " " + "world")
+}

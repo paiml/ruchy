@@ -1,0 +1,263 @@
+// 26_crypto_security.ruchy - Cryptography and security operations
+
+import std::crypto
+import std::security
+
+fn main() {
+    println("=== Cryptography & Security ===\n")
+
+    // Hashing
+    println("=== Hashing ===")
+
+    let message = "Hello, Ruchy!"
+
+    let md5_hash = crypto::md5(message)
+    println(f"MD5: {md5_hash}")
+
+    let sha1_hash = crypto::sha1(message)
+    println(f"SHA1: {sha1_hash}")
+
+    let sha256_hash = crypto::sha256(message)
+    println(f"SHA256: {sha256_hash}")
+
+    let sha512_hash = crypto::sha512(message)
+    println(f"SHA512: {sha512_hash}")
+
+    // HMAC
+    println("\n=== HMAC ===")
+
+    let secret_key = "my-secret-key"
+    let data = "Important message"
+
+    let hmac_sha256 = crypto::hmac_sha256(secret_key, data)
+    println(f"HMAC-SHA256: {hmac_sha256}")
+
+    // Verify HMAC
+    let is_valid = crypto::verify_hmac_sha256(secret_key, data, hmac_sha256)
+    println(f"HMAC verification: {is_valid}")
+
+    // Password hashing
+    println("\n=== Password Hashing ===")
+
+    fn hash_password(password) {
+        // Use bcrypt with automatic salt generation
+        let salt_rounds = 12
+        crypto::bcrypt::hash(password, salt_rounds)
+    }
+
+    fn verify_password(password, hash) {
+        crypto::bcrypt::verify(password, hash)
+    }
+
+    let password = "SecurePass123!"
+    let hash = hash_password(password)
+    println(f"Bcrypt hash: {hash}")
+
+    let correct = verify_password(password, hash)
+    let incorrect = verify_password("wrongpass", hash)
+    println(f"Correct password: {correct}")
+    println(f"Incorrect password: {incorrect}")
+
+    // Alternative: Argon2 (more modern)
+    let argon2_hash = crypto::argon2::hash(password, {
+        memory_cost: 65536,
+        time_cost: 3,
+        parallelism: 4
+    })
+    println(f"Argon2 hash: {argon2_hash}")
+
+    // Symmetric encryption (AES)
+    println("\n=== Symmetric Encryption (AES) ===")
+
+    let plaintext = "Secret message that needs encryption"
+    let key = crypto::generate_key(256)  // 256-bit key
+    let iv = crypto::generate_iv()       // Initialization vector
+
+    // Encrypt
+    let ciphertext = crypto::aes::encrypt(plaintext, key, iv, "GCM")
+    println(f"Encrypted: {ciphertext.to_base64()}")
+
+    // Decrypt
+    let decrypted = crypto::aes::decrypt(ciphertext, key, iv, "GCM")
+    println(f"Decrypted: {decrypted}")
+
+    // Asymmetric encryption (RSA)
+    println("\n=== Asymmetric Encryption (RSA) ===")
+
+    // Generate key pair
+    let (public_key, private_key) = crypto::rsa::generate_keypair(2048)
+
+    println("RSA keys generated (2048-bit)")
+
+    // Encrypt with public key
+    let message = "Confidential data"
+    let encrypted = crypto::rsa::encrypt(message, public_key)
+    println(f"RSA encrypted: {encrypted.to_base64().slice(0, 50)}...")
+
+    // Decrypt with private key
+    let decrypted = crypto::rsa::decrypt(encrypted, private_key)
+    println(f"RSA decrypted: {decrypted}")
+
+    // Digital signatures
+    println("\n=== Digital Signatures ===")
+
+    let document = "This is an important document"
+
+    // Sign with private key
+    let signature = crypto::rsa::sign(document, private_key)
+    println(f"Signature: {signature.to_base64().slice(0, 50)}...")
+
+    // Verify with public key
+    let is_valid = crypto::rsa::verify(document, signature, public_key)
+    println(f"Signature valid: {is_valid}")
+
+    // Tampering test
+    let tampered = document + " (modified)"
+    let is_tampered = crypto::rsa::verify(tampered, signature, public_key)
+    println(f"Tampered document valid: {is_tampered}")
+
+    // Elliptic Curve Cryptography
+    println("\n=== Elliptic Curve Cryptography ===")
+
+    let (ecc_public, ecc_private) = crypto::ecc::generate_keypair("P-256")
+
+    // ECDH key agreement
+    let (alice_public, alice_private) = crypto::ecc::generate_keypair("P-256")
+    let (bob_public, bob_private) = crypto::ecc::generate_keypair("P-256")
+
+    let alice_shared = crypto::ecc::compute_shared_secret(alice_private, bob_public)
+    let bob_shared = crypto::ecc::compute_shared_secret(bob_private, alice_public)
+
+    println(f"Shared secrets match: {alice_shared == bob_shared}")
+
+    // JWT (JSON Web Tokens)
+    println("\n=== JWT Tokens ===")
+
+    fn create_jwt(payload, secret) {
+        let header = {
+            alg: "HS256",
+            typ: "JWT"
+        }
+
+        let token = crypto::jwt::encode(header, payload, secret)
+        token
+    }
+
+    fn verify_jwt(token, secret) {
+        crypto::jwt::decode(token, secret)
+    }
+
+    let jwt_payload = {
+        user_id: 123,
+        username: "alice",
+        exp: now() + 3600000,  // Expire in 1 hour
+        roles: ["user", "admin"]
+    }
+
+    let jwt_secret = "jwt-secret-key"
+    let token = create_jwt(jwt_payload, jwt_secret)
+    println(f"JWT: {token}")
+
+    match verify_jwt(token, jwt_secret) {
+        Ok(decoded) => println(f"JWT payload: {decoded}"),
+        Err(e) => println(f"JWT verification failed: {e}")
+    }
+
+    // Secure random generation
+    println("\n=== Secure Random ===")
+
+    let random_bytes = crypto::random_bytes(32)
+    println(f"Random bytes: {random_bytes.to_hex()}")
+
+    let random_int = crypto::random_int(1, 100)
+    println(f"Random integer (1-100): {random_int}")
+
+    let random_uuid = crypto::generate_uuid()
+    println(f"Random UUID: {random_uuid}")
+
+    // Key derivation
+    println("\n=== Key Derivation ===")
+
+    let password = "user-password"
+    let salt = crypto::random_bytes(16)
+
+    // PBKDF2
+    let derived_key = crypto::pbkdf2(password, salt, {
+        iterations: 100000,
+        key_length: 32,
+        hash: "SHA256"
+    })
+    println(f"PBKDF2 key: {derived_key.to_hex()}")
+
+    // Scrypt
+    let scrypt_key = crypto::scrypt(password, salt, {
+        N: 16384,  // CPU/memory cost
+        r: 8,      // Block size
+        p: 1,      // Parallelization
+        key_length: 32
+    })
+    println(f"Scrypt key: {scrypt_key.to_hex()}")
+
+    // Encryption with authentication (AEAD)
+    println("\n=== Authenticated Encryption ===")
+
+    let aead_key = crypto::generate_key(256)
+    let nonce = crypto::generate_nonce()
+    let associated_data = "metadata"
+
+    let sealed = crypto::aead::seal(
+        plaintext,
+        associated_data,
+        nonce,
+        aead_key
+    )
+
+    match crypto::aead::open(sealed, associated_data, nonce, aead_key) {
+        Ok(decrypted) => println(f"AEAD decrypted: {decrypted}"),
+        Err(_) => println("AEAD authentication failed")
+    }
+
+    // Security utilities
+    println("\n=== Security Utilities ===")
+
+    // Constant-time comparison (prevents timing attacks)
+    let hash1 = crypto::sha256("test1")
+    let hash2 = crypto::sha256("test2")
+    let equal = crypto::constant_time_compare(hash1, hash2)
+    println(f"Hashes equal (constant-time): {equal}")
+
+    // Secure string erasure
+    let sensitive = "sensitive-data"
+    let secure_string = security::SecureString::new(sensitive)
+    // secure_string.zeroize() when done  // Overwrites memory
+
+    // Input validation
+    fn validate_input(input) {
+        let validators = [
+            security::validate_no_sql_injection,
+            security::validate_no_xss,
+            security::validate_no_path_traversal
+        ]
+
+        for validator in validators {
+            if !validator(input) {
+                return Err("Input validation failed")
+            }
+        }
+        Ok(input)
+    }
+
+    // Rate limiting for security
+    let rate_limiter = security::RateLimiter::new({
+        max_requests: 100,
+        window_seconds: 60,
+        block_duration: 300
+    })
+
+    let client_id = "user123"
+    if rate_limiter.allow(client_id) {
+        println("Request allowed")
+    } else {
+        println("Rate limit exceeded")
+    }
+}

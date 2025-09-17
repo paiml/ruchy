@@ -1,17 +1,108 @@
-//! Abstract Syntax Tree definitions for Ruchy
+//! Abstract Syntax Tree (AST) definitions for the Ruchy programming language.
+//!
+//! This module contains the complete AST representation used by the Ruchy compiler.
+//! The AST is the primary intermediate representation produced by the parser and consumed
+//! by subsequent compilation phases including type checking, optimization, and code generation.
+//!
+//! # Architecture
+//!
+//! The AST follows a traditional expression-based design where most constructs are
+//! represented as expressions that can be composed. Key design principles:
+//!
+//! - **Location tracking**: Every AST node carries a `Span` for precise error reporting
+//! - **Attributes**: Nodes can be decorated with attributes for metadata and directives
+//! - **Pattern matching**: First-class support for destructuring and pattern matching
+//! - **Type annotations**: Optional type annotations for gradual typing
+//!
+//! # Example
+//!
+//! ```ignore
+//! use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
+//!
+//! // Create a simple literal expression
+//! let expr = Expr::new(
+//!     ExprKind::Literal(Literal::Integer(42)),
+//!     Span::new(0, 2)
+//! );
+//! ```
+
 use serde::{Deserialize, Serialize};
 use std::fmt;
-/// Source location tracking for error reporting
+
+/// Source location information for AST nodes.
+///
+/// A `Span` represents a contiguous range of characters in the source code,
+/// enabling precise error reporting and source mapping. All AST nodes carry
+/// span information to maintain the connection between the abstract representation
+/// and the original source text.
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::frontend::ast::Span;
+///
+/// // Create a span for characters 10-15 in the source
+/// let span = Span::new(10, 15);
+///
+/// // Merge two spans to get their combined range
+/// let span1 = Span::new(10, 20);
+/// let span2 = Span::new(15, 25);
+/// let merged = span1.merge(span2); // Span { start: 10, end: 25 }
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct Span {
+    /// The byte offset of the first character in this span.
     pub start: usize,
+    /// The byte offset one past the last character in this span.
     pub end: usize,
 }
 impl Span {
+    /// Creates a new span with the given start and end positions.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The byte offset of the first character
+    /// * `end` - The byte offset one past the last character
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::frontend::ast::Span;
+    ///
+    /// let span = Span::new(0, 10);
+    /// assert_eq!(span.start, 0);
+    /// assert_eq!(span.end, 10);
+    /// ```
     #[must_use]
     pub fn new(start: usize, end: usize) -> Self {
         Self { start, end }
     }
+    /// Merges two spans to create a new span covering both ranges.
+    ///
+    /// This is useful when combining multiple tokens or expressions into
+    /// a larger syntactic construct. The resulting span starts at the
+    /// minimum of both start positions and ends at the maximum of both
+    /// end positions.
+    ///
+    /// # Arguments
+    ///
+    /// * `other` - The span to merge with this one
+    ///
+    /// # Returns
+    ///
+    /// A new span covering the entire range of both input spans
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::frontend::ast::Span;
+    ///
+    /// let span1 = Span::new(10, 20);
+    /// let span2 = Span::new(15, 25);
+    /// let merged = span1.merge(span2);
+    /// assert_eq!(merged.start, 10);
+    /// assert_eq!(merged.end, 25);
+    /// ```
     #[must_use]
     pub fn merge(self, other: Self) -> Self {
         Self {
@@ -20,20 +111,91 @@ impl Span {
         }
     }
 }
-/// Catch clause in try-catch blocks
+/// A catch clause in a try-catch expression.
+///
+/// Catch clauses provide pattern-based error handling, allowing different
+/// error types or patterns to be handled with specific recovery logic.
+///
+/// # Examples
+///
+/// ```ignore
+/// // Catch a specific error pattern
+/// try {
+///     risky_operation()
+/// } catch IOError(msg) {
+///     println("IO error: {msg}")
+/// } catch e {
+///     println("Unknown error: {e}")
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CatchClause {
-    pub pattern: Pattern,  // The error pattern to match
-    pub body: Box<Expr>,    // The catch block body
+    /// The pattern to match against the caught error.
+    pub pattern: Pattern,
+    /// The expression to execute when this pattern matches.
+    pub body: Box<Expr>,
 }
-/// The main AST node type for expressions
+/// The primary AST node representing an expression in Ruchy.
+///
+/// `Expr` is the fundamental building block of Ruchy's AST. Nearly all language
+/// constructs are represented as expressions, including statements, declarations,
+/// and control flow. This expression-oriented design enables powerful composition
+/// and simplifies the language semantics.
+///
+/// Each expression consists of:
+/// - `kind`: The specific type of expression (literal, binary op, function, etc.)
+/// - `span`: Source location information for error reporting
+/// - `attributes`: Optional metadata and compiler directives
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::frontend::ast::{Expr, ExprKind, BinaryOp, Literal, Span};
+///
+/// // Create a binary expression: 2 + 3
+/// let left = Box::new(Expr::new(
+///     ExprKind::Literal(Literal::Integer(2)),
+///     Span::new(0, 1)
+/// ));
+/// let right = Box::new(Expr::new(
+///     ExprKind::Literal(Literal::Integer(3)),
+///     Span::new(4, 5)
+/// ));
+/// let expr = Expr::new(
+///     ExprKind::Binary { left, op: BinaryOp::Add, right },
+///     Span::new(0, 5)
+/// );
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Expr {
+    /// The specific type of expression.
     pub kind: ExprKind,
+    /// Source location information for this expression.
     pub span: Span,
+    /// Compiler attributes and metadata attached to this expression.
     pub attributes: Vec<Attribute>,
 }
 impl Expr {
+    /// Creates a new expression with the given kind and span.
+    ///
+    /// This is the primary constructor for building AST nodes. The expression
+    /// starts with no attributes; use `with_attributes` if attributes are needed.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The specific type of expression
+    /// * `span` - The source location of this expression
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
+    ///
+    /// let expr = Expr::new(
+    ///     ExprKind::Literal(Literal::Boolean(true)),
+    ///     Span::new(0, 4)
+    /// );
+    /// ```
     #[must_use]
     pub fn new(kind: ExprKind, span: Span) -> Self {
         Self {
@@ -42,6 +204,29 @@ impl Expr {
             attributes: Vec::new(),
         }
     }
+    /// Creates a new expression with attributes attached.
+    ///
+    /// Attributes provide metadata and compiler directives that modify
+    /// how an expression is processed. Common uses include optimization
+    /// hints, debugging information, and feature flags.
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The specific type of expression
+    /// * `span` - The source location of this expression
+    /// * `attributes` - Compiler attributes to attach
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Attribute, Literal, Span};
+    ///
+    /// let expr = Expr::with_attributes(
+    ///     ExprKind::Literal(Literal::Integer(42)),
+    ///     Span::new(0, 2),
+    ///     vec![Attribute::inline()]
+    /// );
+    /// ```
     #[must_use]
     pub fn with_attributes(kind: ExprKind, span: Span, attributes: Vec<Attribute>) -> Self {
         Self {
@@ -51,32 +236,86 @@ impl Expr {
         }
     }
 }
+/// The specific type of expression represented by an AST node.
+///
+/// `ExprKind` is a comprehensive enumeration of all expression types supported
+/// by the Ruchy language. This includes literals, operators, control flow,
+/// declarations, and advanced features like actors and dataframes.
+///
+/// # Expression Categories
+///
+/// ## Literals and Identifiers
+/// - `Literal`: Constant values (integers, strings, booleans, etc.)
+/// - `Identifier`: Variable references
+/// - `QualifiedName`: Module-qualified identifiers
+///
+/// ## Operations
+/// - `Binary`: Binary operations (arithmetic, logical, comparison)
+/// - `Unary`: Unary operations (negation, not)
+/// - `Pipeline`: Functional pipeline operations
+///
+/// ## Control Flow
+/// - `If`, `IfLet`: Conditional expressions
+/// - `Match`: Pattern matching
+/// - `For`, `While`, `Loop`: Iteration constructs
+/// - `TryCatch`, `Throw`: Exception handling
+///
+/// ## Declarations
+/// - `Let`, `LetPattern`: Variable bindings
+/// - `Function`, `Lambda`: Function definitions
+/// - `Struct`, `Enum`, `Trait`: Type definitions
+///
+/// ## Advanced Features
+/// - `Actor`: Actor model for concurrency
+/// - `DataFrame`: Tabular data operations
+/// - `Async`, `Await`: Asynchronous programming
+/// - `Command`: System command execution
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ExprKind {
+    /// A literal value (integer, string, boolean, etc.).
     Literal(Literal),
+    /// A simple identifier reference.
     Identifier(String),
+    /// A module-qualified identifier (e.g., `std::println`).
     QualifiedName {
+        /// The module path.
         module: String,
+        /// The identifier within the module.
         name: String,
     },
+    /// An interpolated string with embedded expressions.
     StringInterpolation {
+        /// The parts of the interpolated string.
         parts: Vec<StringPart>,
     },
+    /// A binary operation (e.g., `a + b`, `x && y`).
     Binary {
+        /// The left operand.
         left: Box<Expr>,
+        /// The binary operator.
         op: BinaryOp,
+        /// The right operand.
         right: Box<Expr>,
     },
+    /// A unary operation (e.g., `-x`, `!flag`).
     Unary {
+        /// The unary operator.
         op: UnaryOp,
+        /// The operand expression.
         operand: Box<Expr>,
     },
+    /// Throws an exception.
     Throw {
+        /// The exception value to throw.
         expr: Box<Expr>,
     },
+    /// Exception handling with pattern-based catch clauses.
     TryCatch {
+        /// The expression to try.
         try_block: Box<Expr>,
+        /// Pattern-based catch handlers.
         catch_clauses: Vec<CatchClause>,
+        /// Optional finally block executed regardless of success/failure.
         finally_block: Option<Box<Expr>>,
     },
     Ok {
@@ -337,13 +576,37 @@ pub enum ExprKind {
         methods: Vec<ImplMethod>,
     },
 }
+/// Literal values that can appear in the source code.
+///
+/// Literals represent compile-time constant values that are directly
+/// embedded in the program. These form the base values from which
+/// more complex expressions are constructed.
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::frontend::ast::Literal;
+///
+/// let int = Literal::Integer(42);
+/// let float = Literal::Float(3.14);
+/// let string = Literal::String("hello".to_string());
+/// let boolean = Literal::Bool(true);
+/// let character = Literal::Char('a');
+/// let unit = Literal::Unit;
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Literal {
+    /// A signed 64-bit integer literal.
     Integer(i64),
+    /// A 64-bit floating-point literal.
     Float(f64),
+    /// A string literal.
     String(String),
+    /// A boolean literal (`true` or `false`).
     Bool(bool),
+    /// A character literal.
     Char(char),
+    /// The unit value `()`.
     Unit,
 }
 impl Literal {
@@ -374,6 +637,26 @@ pub enum StringPart {
         format_spec: String,
     },
 }
+/// Binary operators for two-operand expressions.
+///
+/// These operators cover arithmetic, comparison, logical, and bitwise operations.
+/// Each operator has specific precedence and associativity rules defined in the parser.
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::frontend::ast::BinaryOp;
+///
+/// // Arithmetic: a + b * c
+/// let add = BinaryOp::Add;
+/// let mul = BinaryOp::Multiply;
+///
+/// // Comparison: x >= y
+/// let ge = BinaryOp::GreaterEqual;
+///
+/// // Logical: flag1 && flag2
+/// let and = BinaryOp::And;
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum BinaryOp {
     // Arithmetic
@@ -401,6 +684,25 @@ pub enum BinaryOp {
     BitwiseXor,
     LeftShift,
 }
+/// Unary operators for single-operand expressions.
+///
+/// These operators include logical negation, arithmetic negation,
+/// bitwise complement, and reference operations.
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::frontend::ast::UnaryOp;
+///
+/// // Logical negation: !flag
+/// let not = UnaryOp::Not;
+///
+/// // Arithmetic negation: -value
+/// let neg = UnaryOp::Negate;
+///
+/// // Bitwise complement: ~bits
+/// let complement = UnaryOp::BitwiseNot;
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum UnaryOp {
     Not,
@@ -408,12 +710,31 @@ pub enum UnaryOp {
     BitwiseNot,
     Reference,
 }
+/// A function or method parameter.
+///
+/// Parameters support pattern matching for destructuring, type annotations
+/// for type checking, default values for optional parameters, and mutability
+/// modifiers.
+///
+/// # Examples
+///
+/// ```ignore
+/// // Simple parameter: x: int
+/// // Pattern parameter: (a, b): (int, int)
+/// // Optional parameter: name: string = "default"
+/// // Mutable parameter: mut buffer: Vec<u8>
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Param {
+    /// The pattern for destructuring the parameter.
     pub pattern: Pattern,
+    /// The type annotation for this parameter.
     pub ty: Type,
+    /// Source location of this parameter.
     pub span: Span,
+    /// Whether this parameter is mutable.
     pub is_mutable: bool,
+    /// Optional default value for this parameter.
     pub default_value: Option<Box<Expr>>,
 }
 impl Param {
@@ -464,11 +785,43 @@ pub struct ActorHandler {
     pub params: Vec<Param>,
     pub body: Box<Expr>,
 }
+/// Type annotations in the AST.
+///
+/// Types provide static type information for type checking and code generation.
+/// Ruchy supports a rich type system including generics, optionals, references,
+/// and specialized types for dataframes and async operations.
+///
+/// # Examples
+///
+/// ```ignore
+/// use ruchy::frontend::ast::{Type, TypeKind, Span};
+///
+/// // Simple named type: int
+/// let int_type = Type {
+///     kind: TypeKind::Named("int".to_string()),
+///     span: Span::new(0, 3),
+/// };
+///
+/// // Generic type: Vec<string>
+/// let vec_type = Type {
+///     kind: TypeKind::Generic {
+///         base: "Vec".to_string(),
+///         params: vec![string_type],
+///     },
+///     span: Span::new(0, 11),
+/// };
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Type {
+    /// The specific type variant.
     pub kind: TypeKind,
+    /// Source location of this type annotation.
     pub span: Span,
 }
+/// Specific type variants supported by Ruchy.
+///
+/// This enumeration covers all type forms from simple named types
+/// to complex generic, functional, and structural types.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TypeKind {
     Named(String),
@@ -487,13 +840,60 @@ pub struct PipelineStage {
     pub op: Box<Expr>,
     pub span: Span,
 }
+/// An arm in a match expression.
+///
+/// Match arms consist of a pattern to match against, an optional guard
+/// condition for additional filtering, and a body expression to execute
+/// when the pattern matches.
+///
+/// # Examples
+///
+/// ```ignore
+/// match value {
+///     Some(x) if x > 0 => x * 2,  // Pattern with guard
+///     None => 0,                   // Simple pattern
+///     _ => -1,                     // Wildcard pattern
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MatchArm {
+    /// The pattern to match against.
     pub pattern: Pattern,
-    pub guard: Option<Box<Expr>>,  // Pattern guard: if condition
+    /// Optional guard condition that must be true for this arm to match.
+    pub guard: Option<Box<Expr>>,
+    /// The expression to execute when this arm matches.
     pub body: Box<Expr>,
+    /// Source location of this match arm.
     pub span: Span,
 }
+/// Patterns for destructuring and matching values.
+///
+/// Patterns are used in match expressions, let bindings, function parameters,
+/// and other contexts where values need to be destructured or tested against
+/// a structure. Ruchy supports a rich pattern language including literals,
+/// destructuring, ranges, and alternative patterns.
+///
+/// # Pattern Types
+///
+/// - **Wildcard**: `_` matches anything
+/// - **Literal**: Matches exact values
+/// - **Identifier**: Binds matched value to a name
+/// - **Tuple/List**: Destructures sequences
+/// - **Struct**: Destructures struct fields
+/// - **Or**: Matches any of several patterns
+/// - **Rest**: Captures remaining elements
+///
+/// # Examples
+///
+/// ```ignore
+/// match value {
+///     0 => "zero",                    // Literal pattern
+///     1..=10 => "small",              // Range pattern
+///     Some(x) => format!("value: {x}"), // Enum pattern
+///     [first, ..rest] => "list",     // List pattern with rest
+///     _ => "other",                   // Wildcard
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Pattern {
     Wildcard,
@@ -569,19 +969,60 @@ impl Pattern {
         }
     }
 }
+/// A field in a struct destructuring pattern.
+///
+/// Supports both explicit field patterns (`field: pattern`) and
+/// shorthand syntax (`field` as shorthand for `field: field`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StructPatternField {
+    /// The field name to match.
     pub name: String,
-    pub pattern: Option<Pattern>, // None for shorthand like { x } instead of { x: x }
+    /// The pattern for this field's value (None for shorthand syntax).
+    pub pattern: Option<Pattern>,
 }
-/// Custom error type definition
+/// Definition of a custom error type.
+///
+/// Custom error types allow defining domain-specific error structures
+/// with typed fields and optional inheritance from base error types.
+///
+/// # Examples
+///
+/// ```ignore
+/// error NetworkError {
+///     code: int,
+///     message: string,
+/// } extends IOError
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ErrorTypeDef {
+    /// The name of this error type.
     pub name: String,
+    /// Fields contained in this error type.
     pub fields: Vec<StructField>,
-    pub extends: Option<String>, // Parent error type
+    /// Optional parent error type to inherit from.
+    pub extends: Option<String>,
 }
-/// Attribute for annotating expressions (e.g., `#[property]`)
+/// Compiler attributes for annotating expressions.
+///
+/// Attributes provide metadata that influences compilation, optimization,
+/// and runtime behavior. They use the `#[name(args)]` syntax similar to Rust.
+///
+/// # Common Attributes
+///
+/// - `#[inline]`: Hint for function inlining
+/// - `#[test]`: Mark function as a test
+/// - `#[property]`: Mark as a property accessor
+/// - `#[deprecated("message")]`: Mark as deprecated
+///
+/// # Examples
+///
+/// ```ignore
+/// #[inline]
+/// #[property]
+/// fn get_value() -> int {
+///     self.value
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Attribute {
     pub name: String,
@@ -593,6 +1034,20 @@ pub struct DataFrameColumn {
     pub name: String,
     pub values: Vec<Expr>,
 }
+/// Operations on `DataFrame` values.
+///
+/// `DataFrames` are Ruchy's built-in tabular data structure, similar to
+/// pandas `DataFrames` or SQL tables. These operations provide a fluent
+/// API for data manipulation and analysis.
+///
+/// # Examples
+///
+/// ```ignore
+/// df.filter(x => x.age > 18)
+///   .select(["name", "email"])
+///   .sort(["name"])
+///   .limit(10)
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DataFrameOp {
     Filter(Box<Expr>),

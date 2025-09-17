@@ -1,0 +1,231 @@
+// 12_classes_structs.ruchy - Classes, structs, and object-oriented programming
+
+fn main() {
+    println("=== Classes and Structs ===\n")
+
+    // Basic struct definition
+    struct Point {
+        x: float,
+        y: float
+    }
+
+    // Creating struct instances
+    let p1 = Point { x: 3.0, y: 4.0 }
+    let p2 = Point { x: 1.0, y: 2.0 }
+
+    println(f"Point 1: ({p1.x}, {p1.y})")
+    println(f"Point 2: ({p2.x}, {p2.y})")
+
+    // Struct with methods (impl block)
+    impl Point {
+        // Constructor-like function
+        fn new(x, y) {
+            Point { x: x, y: y }
+        }
+
+        // Instance method
+        fn distance_from_origin(self) {
+            sqrt(self.x * self.x + self.y * self.y)
+        }
+
+        // Method that takes another Point
+        fn distance_to(self, other) {
+            let dx = self.x - other.x
+            let dy = self.y - other.y
+            sqrt(dx * dx + dy * dy)
+        }
+
+        // Mutating method
+        fn translate(mut self, dx, dy) {
+            self.x += dx
+            self.y += dy
+        }
+    }
+
+    let p3 = Point::new(5.0, 12.0)
+    println(f"Distance from origin: {p3.distance_from_origin()}")
+
+    let dist = p1.distance_to(p2)
+    println(f"Distance between points: {dist}")
+
+    // Class-like struct with private fields
+    struct BankAccount {
+        owner: string,
+        balance: float  // Would be private in full implementation
+    }
+
+    impl BankAccount {
+        fn new(owner, initial_balance) {
+            BankAccount {
+                owner: owner,
+                balance: initial_balance
+            }
+        }
+
+        fn deposit(mut self, amount) {
+            if amount > 0 {
+                self.balance += amount
+                println(f"Deposited ${amount}")
+            }
+        }
+
+        fn withdraw(mut self, amount) {
+            if amount > 0 && amount <= self.balance {
+                self.balance -= amount
+                println(f"Withdrew ${amount}")
+                true
+            } else {
+                println("Insufficient funds")
+                false
+            }
+        }
+
+        fn get_balance(self) {
+            self.balance
+        }
+
+        fn display(self) {
+            println(f"Account: {self.owner}, Balance: ${self.balance}")
+        }
+    }
+
+    println("\n=== Bank Account Example ===")
+
+    let mut account = BankAccount::new("Alice", 1000.0)
+    account.display()
+
+    account.deposit(500.0)
+    account.display()
+
+    account.withdraw(200.0)
+    account.display()
+
+    account.withdraw(2000.0)  // Should fail
+    account.display()
+
+    // Inheritance-like composition
+    struct Employee {
+        name: string,
+        id: int,
+        department: string
+    }
+
+    struct Manager {
+        employee: Employee,
+        team_size: int
+    }
+
+    impl Manager {
+        fn new(name, id, department, team_size) {
+            Manager {
+                employee: Employee {
+                    name: name,
+                    id: id,
+                    department: department
+                },
+                team_size: team_size
+            }
+        }
+
+        fn display(self) {
+            println(f"Manager: {self.employee.name}")
+            println(f"ID: {self.employee.id}")
+            println(f"Department: {self.employee.department}")
+            println(f"Team size: {self.team_size}")
+        }
+    }
+
+    println("\n=== Manager Example ===")
+
+    let manager = Manager::new("Bob", 12345, "Engineering", 10)
+    manager.display()
+
+    // Generic structs
+    struct Container<T> {
+        value: T
+    }
+
+    impl<T> Container<T> {
+        fn new(value) {
+            Container { value: value }
+        }
+
+        fn get(self) {
+            self.value
+        }
+
+        fn set(mut self, value) {
+            self.value = value
+        }
+    }
+
+    println("\n=== Generic Container ===")
+
+    let int_container = Container::new(42)
+    println(f"Integer container: {int_container.get()}")
+
+    let string_container = Container::new("Hello")
+    println(f"String container: {string_container.get()}")
+
+    // Enum with data
+    enum Shape {
+        Circle { radius: float },
+        Rectangle { width: float, height: float },
+        Triangle { base: float, height: float }
+    }
+
+    impl Shape {
+        fn area(self) {
+            match self {
+                Shape::Circle { radius } => 3.14159 * radius * radius,
+                Shape::Rectangle { width, height } => width * height,
+                Shape::Triangle { base, height } => 0.5 * base * height
+            }
+        }
+
+        fn describe(self) {
+            match self {
+                Shape::Circle { radius } => f"Circle with radius {radius}",
+                Shape::Rectangle { width, height } => f"Rectangle {width}x{height}",
+                Shape::Triangle { base, height } => f"Triangle with base {base} and height {height}"
+            }
+        }
+    }
+
+    println("\n=== Shapes Example ===")
+
+    let shapes = [
+        Shape::Circle { radius: 5.0 },
+        Shape::Rectangle { width: 10.0, height: 20.0 },
+        Shape::Triangle { base: 6.0, height: 8.0 }
+    ]
+
+    for shape in shapes {
+        println(f"{shape.describe()}: area = {shape.area()}")
+    }
+
+    // Trait-like interfaces
+    trait Drawable {
+        fn draw(self)
+    }
+
+    impl Drawable for Point {
+        fn draw(self) {
+            println(f"Drawing point at ({self.x}, {self.y})")
+        }
+    }
+
+    impl Drawable for Shape {
+        fn draw(self) {
+            println(f"Drawing {self.describe()}")
+        }
+    }
+
+    println("\n=== Drawable Trait ===")
+
+    let drawable_point = Point::new(10.0, 20.0)
+    drawable_point.draw()
+
+    let drawable_shape = Shape::Circle { radius: 3.0 }
+    drawable_shape.draw()
+}

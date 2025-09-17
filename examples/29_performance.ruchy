@@ -1,0 +1,392 @@
+// 29_performance.ruchy - Performance optimization and profiling
+
+import std::perf
+import std::profile
+import std::memory
+
+fn main() {
+    println("=== Performance Optimization ===\n")
+
+    // Benchmarking
+    println("=== Benchmarking ===")
+
+    fn benchmark(name, func, iterations = 1000) {
+        let times = []
+
+        // Warmup
+        for _ in 0..100 {
+            func()
+        }
+
+        // Actual benchmark
+        for _ in 0..iterations {
+            let start = perf::high_resolution_time()
+            func()
+            let end = perf::high_resolution_time()
+            times.append(end - start)
+        }
+
+        let avg = times.sum() / times.len()
+        let min = times.min()
+        let max = times.max()
+        let median = times.sorted()[times.len() / 2]
+
+        println(f"{name}:")
+        println(f"  Average: {avg:.3}ms")
+        println(f"  Median: {median:.3}ms")
+        println(f"  Min: {min:.3}ms")
+        println(f"  Max: {max:.3}ms")
+    }
+
+    // Compare different approaches
+    let data = [i for i in 0..10000]
+
+    benchmark("List comprehension", || {
+        [x * 2 for x in data if x % 2 == 0]
+    })
+
+    benchmark("Filter and map", || {
+        data.filter(x => x % 2 == 0).map(x => x * 2)
+    })
+
+    benchmark("Manual loop", || {
+        let result = []
+        for x in data {
+            if x % 2 == 0 {
+                result.append(x * 2)
+            }
+        }
+        result
+    })
+
+    // Memory profiling
+    println("\n=== Memory Profiling ===")
+
+    fn measure_memory(func) {
+        let before = memory::current_usage()
+        gc::collect()  // Force garbage collection
+
+        let result = func()
+
+        gc::collect()
+        let after = memory::current_usage()
+
+        println(f"Memory used: {(after - before) / 1024}KB")
+        result
+    }
+
+    measure_memory(|| {
+        let large_list = [0; 1000000]
+        large_list.len()
+    })
+
+    // CPU profiling
+    println("\n=== CPU Profiling ===")
+
+    let profiler = profile::CPUProfiler::new()
+    profiler.start()
+
+    // Code to profile
+    fn expensive_computation(n) {
+        let mut result = 0
+        for i in 0..n {
+            for j in 0..n {
+                result += i * j
+            }
+        }
+        result
+    }
+
+    expensive_computation(100)
+
+    let profile_data = profiler.stop()
+    println("Top functions by CPU time:")
+    for func in profile_data.top_functions(5) {
+        println(f"  {func.name}: {func.time_ms:.2}ms ({func.percentage:.1}%)")
+    }
+
+    // Caching and memoization
+    println("\n=== Caching ===")
+
+    struct Cache<K, V> {
+        data: map,
+        max_size: int,
+        eviction: string = "LRU"
+    }
+
+    impl<K, V> Cache<K, V> {
+        fn get(mut self, key) {
+            if key in self.data {
+                // Update access time for LRU
+                let value = self.data[key]
+                self.data.remove(key)
+                self.data[key] = value
+                Some(value)
+            } else {
+                None
+            }
+        }
+
+        fn put(mut self, key, value) {
+            if self.data.len() >= self.max_size {
+                // Evict based on policy
+                match self.eviction {
+                    "LRU" => {
+                        let oldest = self.data.keys()[0]
+                        self.data.remove(oldest)
+                    },
+                    "LFU" => {
+                        // Least frequently used
+                        // ... implementation
+                    },
+                    _ => {}
+                }
+            }
+            self.data[key] = value
+        }
+    }
+
+    fn memoized_fibonacci() {
+        let cache = Cache::new(max_size=100)
+
+        fn fib(n) {
+            if let Some(result) = cache.get(n) {
+                return result
+            }
+
+            let result = if n <= 1 {
+                n
+            } else {
+                fib(n - 1) + fib(n - 2)
+            }
+
+            cache.put(n, result)
+            result
+        }
+
+        fib
+    }
+
+    // Lazy evaluation
+    println("\n=== Lazy Evaluation ===")
+
+    struct LazyValue<T> {
+        computed: bool = false,
+        value: Option<T> = None,
+        compute_fn: fn() -> T
+    }
+
+    impl<T> LazyValue<T> {
+        fn get(mut self) {
+            if !self.computed {
+                self.value = Some(self.compute_fn())
+                self.computed = true
+            }
+            self.value.unwrap()
+        }
+    }
+
+    let expensive_value = LazyValue {
+        compute_fn: || {
+            println("Computing expensive value...")
+            sleep_ms(100)
+            42
+        }
+    }
+
+    println("Lazy value created")
+    println(f"Value: {expensive_value.get()}")  // Computed here
+    println(f"Value again: {expensive_value.get()}")  // Cached
+
+    // String optimization
+    println("\n=== String Optimization ===")
+
+    // String builder for concatenation
+    struct StringBuilder {
+        parts: list
+    }
+
+    impl StringBuilder {
+        fn append(mut self, s) {
+            self.parts.append(s)
+            self
+        }
+
+        fn build(self) {
+            self.parts.join("")
+        }
+    }
+
+    benchmark("String concatenation", || {
+        let mut s = ""
+        for i in 0..100 {
+            s = s + i.to_string()
+        }
+        s
+    })
+
+    benchmark("StringBuilder", || {
+        let sb = StringBuilder { parts: [] }
+        for i in 0..100 {
+            sb.append(i.to_string())
+        }
+        sb.build()
+    })
+
+    // Collection optimization
+    println("\n=== Collection Optimization ===")
+
+    // Pre-allocate capacity
+    benchmark("Dynamic growth", || {
+        let mut list = []
+        for i in 0..10000 {
+            list.append(i)
+        }
+    })
+
+    benchmark("Pre-allocated", || {
+        let mut list = Vec::with_capacity(10000)
+        for i in 0..10000 {
+            list.append(i)
+        }
+    })
+
+    // Algorithm optimization
+    println("\n=== Algorithm Optimization ===")
+
+    // O(n²) vs O(n log n)
+    fn find_duplicates_naive(arr) {
+        let duplicates = []
+        for i in 0..arr.len() {
+            for j in (i+1)..arr.len() {
+                if arr[i] == arr[j] && !duplicates.contains(arr[i]) {
+                    duplicates.append(arr[i])
+                }
+            }
+        }
+        duplicates
+    }
+
+    fn find_duplicates_optimized(arr) {
+        let seen = set()
+        let duplicates = set()
+
+        for item in arr {
+            if item in seen {
+                duplicates.add(item)
+            } else {
+                seen.add(item)
+            }
+        }
+        duplicates.to_list()
+    }
+
+    let test_data = [1, 2, 3, 2, 4, 3, 5, 1, 6, 4, 7, 8, 9, 1]
+
+    benchmark("Naive O(n²)", || find_duplicates_naive(test_data))
+    benchmark("Optimized O(n)", || find_duplicates_optimized(test_data))
+
+    // Parallel processing
+    println("\n=== Parallel Processing ===")
+
+    fn parallel_map(data, func, num_workers = 4) {
+        let chunk_size = data.len() / num_workers
+        let chunks = data.chunks(chunk_size)
+        let results = Channel::new(num_workers)
+
+        for chunk in chunks {
+            spawn async {
+                let processed = chunk.map(func)
+                results.send(processed)
+            }
+        }
+
+        let mut final_result = []
+        for _ in 0..chunks.len() {
+            final_result.extend(results.receive())
+        }
+        final_result
+    }
+
+    let large_dataset = [i for i in 0..100000]
+
+    benchmark("Sequential processing", || {
+        large_dataset.map(x => x * x + sqrt(x))
+    })
+
+    benchmark("Parallel processing", || {
+        parallel_map(large_dataset, x => x * x + sqrt(x))
+    })
+
+    // Memory pools
+    println("\n=== Memory Pools ===")
+
+    struct ObjectPool<T> {
+        available: list,
+        in_use: set,
+        factory: fn() -> T
+    }
+
+    impl<T> ObjectPool<T> {
+        fn acquire(mut self) {
+            let obj = if self.available.len() > 0 {
+                self.available.pop()
+            } else {
+                self.factory()
+            }
+            self.in_use.add(obj)
+            obj
+        }
+
+        fn release(mut self, obj) {
+            if obj in self.in_use {
+                self.in_use.remove(obj)
+                self.available.append(obj)
+            }
+        }
+    }
+
+    // Optimization hints
+    println("\n=== Optimization Hints ===")
+
+    #[inline]
+    fn hot_function(x) {
+        x * 2 + 1
+    }
+
+    #[cold]
+    fn error_handler(error) {
+        println(f"Error: {error}")
+    }
+
+    #[likely]
+    fn common_path(condition) {
+        if condition {  // This branch is likely
+            // Fast path
+            42
+        } else {
+            // Slow path
+            expensive_computation(100)
+        }
+    }
+
+    // Performance monitoring
+    println("\n=== Performance Monitoring ===")
+
+    let monitor = perf::Monitor::new()
+
+    monitor.track("database_queries")
+    monitor.track("api_calls")
+    monitor.track("cache_hits")
+
+    // Simulate operations
+    monitor.increment("database_queries", 5)
+    monitor.increment("api_calls", 10)
+    monitor.increment("cache_hits", 45)
+
+    let stats = monitor.get_stats()
+    println("Performance stats:")
+    for (metric, value) in stats {
+        println(f"  {metric}: {value}")
+    }
+}

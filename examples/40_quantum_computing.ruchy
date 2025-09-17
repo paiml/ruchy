@@ -1,0 +1,539 @@
+// 40_quantum_computing.ruchy - Quantum computing and quantum algorithms
+
+import std::quantum
+import std::complex
+import std::linalg
+
+fn main() {
+    println("=== Quantum Computing ===\n")
+
+    // Quantum states and qubits
+    println("=== Quantum States ===")
+
+    // Qubit representation as complex amplitudes
+    struct Qubit {
+        alpha: Complex,  // Amplitude for |0⟩
+        beta: Complex    // Amplitude for |1⟩
+    }
+
+    impl Qubit {
+        fn zero() -> Qubit {
+            Qubit { alpha: Complex::new(1.0, 0.0), beta: Complex::new(0.0, 0.0) }
+        }
+
+        fn one() -> Qubit {
+            Qubit { alpha: Complex::new(0.0, 0.0), beta: Complex::new(1.0, 0.0) }
+        }
+
+        fn plus() -> Qubit {
+            let inv_sqrt2 = 1.0 / sqrt(2.0)
+            Qubit {
+                alpha: Complex::new(inv_sqrt2, 0.0),
+                beta: Complex::new(inv_sqrt2, 0.0)
+            }
+        }
+
+        fn minus() -> Qubit {
+            let inv_sqrt2 = 1.0 / sqrt(2.0)
+            Qubit {
+                alpha: Complex::new(inv_sqrt2, 0.0),
+                beta: Complex::new(-inv_sqrt2, 0.0)
+            }
+        }
+
+        fn is_normalized(self) -> bool {
+            let prob_sum = self.alpha.norm_squared() + self.beta.norm_squared()
+            abs(prob_sum - 1.0) < 1e-10
+        }
+
+        fn normalize(mut self) {
+            let norm = sqrt(self.alpha.norm_squared() + self.beta.norm_squared())
+            self.alpha = self.alpha / norm
+            self.beta = self.beta / norm
+        }
+
+        fn measure(self) -> (int, float) {
+            let prob_0 = self.alpha.norm_squared()
+            let prob_1 = self.beta.norm_squared()
+
+            if random() < prob_0 {
+                (0, prob_0)
+            } else {
+                (1, prob_1)
+            }
+        }
+    }
+
+    // Multi-qubit quantum register
+    struct QuantumRegister {
+        n_qubits: int,
+        amplitudes: list<Complex>  // 2^n amplitudes
+    }
+
+    impl QuantumRegister {
+        fn new(n_qubits: int) -> QuantumRegister {
+            let size = 2.pow(n_qubits)
+            let mut amplitudes = vec![Complex::zero(); size]
+            amplitudes[0] = Complex::one()  // |00...0⟩ state
+
+            QuantumRegister { n_qubits, amplitudes }
+        }
+
+        fn from_state(state: int, n_qubits: int) -> QuantumRegister {
+            let size = 2.pow(n_qubits)
+            let mut amplitudes = vec![Complex::zero(); size]
+            amplitudes[state] = Complex::one()
+
+            QuantumRegister { n_qubits, amplitudes }
+        }
+
+        fn get_amplitude(self, state: int) -> Complex {
+            self.amplitudes[state]
+        }
+
+        fn set_amplitude(mut self, state: int, amplitude: Complex) {
+            self.amplitudes[state] = amplitude
+        }
+
+        fn probability(self, state: int) -> float {
+            self.amplitudes[state].norm_squared()
+        }
+
+        fn measure_all(self) -> (int, float) {
+            let mut cumulative_prob = 0.0
+            let rand_val = random()
+
+            for state in 0..self.amplitudes.len() {
+                cumulative_prob += self.probability(state)
+                if rand_val < cumulative_prob {
+                    return (state, self.probability(state))
+                }
+            }
+
+            // Fallback (shouldn't happen if normalized)
+            (self.amplitudes.len() - 1, self.probability(self.amplitudes.len() - 1))
+        }
+    }
+
+    // Quantum gates
+    println("\n=== Quantum Gates ===")
+
+    enum QuantumGate {
+        // Single-qubit gates
+        I,      // Identity
+        X,      // Pauli-X (NOT)
+        Y,      // Pauli-Y
+        Z,      // Pauli-Z
+        H,      // Hadamard
+        S,      // Phase
+        T,      // T-gate
+        RX(float),  // Rotation around X
+        RY(float),  // Rotation around Y
+        RZ(float),  // Rotation around Z
+
+        // Two-qubit gates
+        CNOT(int, int),    // Controlled-NOT
+        CZ(int, int),      // Controlled-Z
+        SWAP(int, int),    // SWAP
+
+        // Three-qubit gates
+        CCNOT(int, int, int),  // Toffoli (Controlled-Controlled-NOT)
+    }
+
+    impl QuantumGate {
+        fn matrix(self) -> Matrix<Complex> {
+            match self {
+                I => Matrix::from([
+                    [Complex::one(), Complex::zero()],
+                    [Complex::zero(), Complex::one()]
+                ]),
+                X => Matrix::from([
+                    [Complex::zero(), Complex::one()],
+                    [Complex::one(), Complex::zero()]
+                ]),
+                Y => Matrix::from([
+                    [Complex::zero(), Complex::new(0.0, -1.0)],
+                    [Complex::new(0.0, 1.0), Complex::zero()]
+                ]),
+                Z => Matrix::from([
+                    [Complex::one(), Complex::zero()],
+                    [Complex::zero(), Complex::new(-1.0, 0.0)]
+                ]),
+                H => {
+                    let inv_sqrt2 = Complex::new(1.0 / sqrt(2.0), 0.0)
+                    Matrix::from([
+                        [inv_sqrt2, inv_sqrt2],
+                        [inv_sqrt2, -inv_sqrt2]
+                    ])
+                },
+                RZ(theta) => {
+                    let half_theta = theta / 2.0
+                    Matrix::from([
+                        [Complex::from_polar(1.0, -half_theta), Complex::zero()],
+                        [Complex::zero(), Complex::from_polar(1.0, half_theta)]
+                    ])
+                },
+                _ => panic!("Gate matrix not implemented")
+            }
+        }
+
+        fn apply(self, register: QuantumRegister, target: int) -> QuantumRegister {
+            match self {
+                CNOT(control, target) => self.apply_cnot(register, control, target),
+                _ => self.apply_single_qubit(register, target)
+            }
+        }
+
+        fn apply_single_qubit(self, mut register: QuantumRegister, target: int) -> QuantumRegister {
+            let gate_matrix = self.matrix()
+            let n_states = register.amplitudes.len()
+
+            for state in 0..n_states {
+                let bit_value = (state >> target) & 1
+
+                if bit_value == 0 {
+                    let flipped_state = state | (1 << target)
+
+                    let amp0 = register.amplitudes[state]
+                    let amp1 = register.amplitudes[flipped_state]
+
+                    let new_amp0 = gate_matrix[0][0] * amp0 + gate_matrix[0][1] * amp1
+                    let new_amp1 = gate_matrix[1][0] * amp0 + gate_matrix[1][1] * amp1
+
+                    register.amplitudes[state] = new_amp0
+                    register.amplitudes[flipped_state] = new_amp1
+                }
+            }
+
+            register
+        }
+
+        fn apply_cnot(self, mut register: QuantumRegister, control: int, target: int) -> QuantumRegister {
+            let n_states = register.amplitudes.len()
+
+            for state in 0..n_states {
+                let control_bit = (state >> control) & 1
+                let target_bit = (state >> target) & 1
+
+                if control_bit == 1 {
+                    let flipped_state = state ^ (1 << target)
+
+                    // Swap amplitudes for controlled states
+                    let temp = register.amplitudes[state]
+                    register.amplitudes[state] = register.amplitudes[flipped_state]
+                    register.amplitudes[flipped_state] = temp
+                }
+            }
+
+            register
+        }
+    }
+
+    // Quantum circuit
+    println("\n=== Quantum Circuits ===")
+
+    struct QuantumCircuit {
+        n_qubits: int,
+        gates: list<(QuantumGate, list<int>)>
+    }
+
+    impl QuantumCircuit {
+        fn new(n_qubits: int) -> QuantumCircuit {
+            QuantumCircuit { n_qubits, gates: [] }
+        }
+
+        fn add_gate(mut self, gate: QuantumGate, qubits: list<int>) {
+            self.gates.append((gate, qubits))
+        }
+
+        fn h(mut self, qubit: int) {
+            self.add_gate(QuantumGate::H, [qubit])
+        }
+
+        fn x(mut self, qubit: int) {
+            self.add_gate(QuantumGate::X, [qubit])
+        }
+
+        fn cnot(mut self, control: int, target: int) {
+            self.add_gate(QuantumGate::CNOT(control, target), [control, target])
+        }
+
+        fn run(self, initial_state: QuantumRegister) -> QuantumRegister {
+            let mut state = initial_state
+
+            for (gate, qubits) in self.gates {
+                match gate {
+                    QuantumGate::CNOT(_, _) => {
+                        state = gate.apply(state, 0)  // CNOT handles both qubits
+                    },
+                    _ => {
+                        state = gate.apply(state, qubits[0])
+                    }
+                }
+            }
+
+            state
+        }
+    }
+
+    // Quantum algorithms
+    println("\n=== Quantum Algorithms ===")
+
+    // Deutsch-Jozsa algorithm
+    fn deutsch_jozsa(oracle: fn(QuantumRegister) -> QuantumRegister, n_bits: int) -> string {
+        let mut circuit = QuantumCircuit::new(n_bits + 1)
+
+        // Initialize ancilla qubit to |1⟩
+        circuit.x(n_bits)
+
+        // Apply Hadamard to all qubits
+        for i in 0..=n_bits {
+            circuit.h(i)
+        }
+
+        // Apply oracle (this would be problem-specific)
+        let mut state = QuantumRegister::new(n_bits + 1)
+        state = circuit.run(state)
+        state = oracle(state)
+
+        // Apply Hadamard to input qubits
+        for i in 0..n_bits {
+            circuit.h(i)
+        }
+
+        state = circuit.run(state)
+
+        // Measure input qubits
+        let (result, _) = state.measure_all()
+        let input_bits = result & ((1 << n_bits) - 1)
+
+        if input_bits == 0 {
+            "constant"
+        } else {
+            "balanced"
+        }
+    }
+
+    // Grover's search algorithm
+    fn grovers_search(oracle: fn(QuantumRegister) -> QuantumRegister, n_qubits: int) -> int {
+        let mut circuit = QuantumCircuit::new(n_qubits)
+        let iterations = (PI / 4.0 * sqrt(2.0.pow(n_qubits))).floor()
+
+        // Initialize superposition
+        for i in 0..n_qubits {
+            circuit.h(i)
+        }
+
+        let mut state = QuantumRegister::new(n_qubits)
+        state = circuit.run(state)
+
+        // Grover iterations
+        for _ in 0..iterations {
+            // Apply oracle
+            state = oracle(state)
+
+            // Apply diffusion operator
+            state = apply_diffusion_operator(state, n_qubits)
+        }
+
+        let (result, _) = state.measure_all()
+        result
+    }
+
+    fn apply_diffusion_operator(state: QuantumRegister, n_qubits: int) -> QuantumRegister {
+        let mut circuit = QuantumCircuit::new(n_qubits)
+
+        // H gates
+        for i in 0..n_qubits {
+            circuit.h(i)
+        }
+
+        // Conditional phase flip (around |00...0⟩)
+        // This is a simplified implementation
+
+        // H gates again
+        for i in 0..n_qubits {
+            circuit.h(i)
+        }
+
+        circuit.run(state)
+    }
+
+    // Quantum Fourier Transform
+    fn quantum_fourier_transform(mut state: QuantumRegister, n_qubits: int) -> QuantumRegister {
+        for i in 0..n_qubits {
+            // Apply Hadamard
+            state = QuantumGate::H.apply(state, i)
+
+            // Apply controlled phase rotations
+            for j in (i+1)..n_qubits {
+                let angle = 2.0 * PI / (2.0.pow(j - i + 1))
+                state = QuantumGate::RZ(angle).apply(state, j)
+            }
+        }
+
+        // Reverse the order of qubits
+        for i in 0..(n_qubits / 2) {
+            state = QuantumGate::SWAP(i, n_qubits - 1 - i).apply(state, 0)
+        }
+
+        state
+    }
+
+    // Shor's algorithm (simplified)
+    fn shors_algorithm(n: int) -> Option<int> {
+        // Classical preprocessing
+        if n % 2 == 0 { return Some(2) }
+
+        // Pick random a < n
+        let a = random_int(2, n - 1)
+        let gcd_val = gcd(a, n)
+        if gcd_val > 1 { return Some(gcd_val) }
+
+        // Quantum period finding
+        let r = quantum_period_finding(a, n)
+
+        if r % 2 == 0 {
+            let factor1 = gcd(a.pow(r / 2) - 1, n)
+            let factor2 = gcd(a.pow(r / 2) + 1, n)
+
+            if factor1 > 1 && factor1 < n { return Some(factor1) }
+            if factor2 > 1 && factor2 < n { return Some(factor2) }
+        }
+
+        None
+    }
+
+    fn quantum_period_finding(a: int, n: int) -> int {
+        // This is a simplified placeholder
+        // Real implementation would use QFT and modular exponentiation
+        let mut period = 1
+        let mut result = a % n
+
+        while result != 1 {
+            result = (result * a) % n
+            period += 1
+        }
+
+        period
+    }
+
+    // Quantum error correction
+    println("\n=== Quantum Error Correction ===")
+
+    struct BitFlipCode {
+        logical_qubit: QuantumRegister  // 3 physical qubits per logical qubit
+    }
+
+    impl BitFlipCode {
+        fn encode(logical_state: Qubit) -> BitFlipCode {
+            let mut register = QuantumRegister::new(3)
+
+            // Set first qubit to logical state
+            register.set_amplitude(0, logical_state.alpha)
+            register.set_amplitude(1, logical_state.beta)
+
+            // Apply CNOT gates to create redundancy
+            register = QuantumGate::CNOT(0, 1).apply(register, 0)
+            register = QuantumGate::CNOT(0, 2).apply(register, 0)
+
+            BitFlipCode { logical_qubit: register }
+        }
+
+        fn detect_and_correct(mut self) -> QuantumRegister {
+            // Measure syndrome qubits
+            let syndrome1 = self.measure_parity(0, 1)
+            let syndrome2 = self.measure_parity(0, 2)
+
+            match (syndrome1, syndrome2) {
+                (0, 0) => {}, // No error
+                (1, 1) => { // Error on qubit 0
+                    self.logical_qubit = QuantumGate::X.apply(self.logical_qubit, 0)
+                },
+                (1, 0) => { // Error on qubit 1
+                    self.logical_qubit = QuantumGate::X.apply(self.logical_qubit, 1)
+                },
+                (0, 1) => { // Error on qubit 2
+                    self.logical_qubit = QuantumGate::X.apply(self.logical_qubit, 2)
+                }
+            }
+
+            self.logical_qubit
+        }
+
+        fn measure_parity(self, qubit1: int, qubit2: int) -> int {
+            // Simplified parity measurement
+            let (state, _) = self.logical_qubit.measure_all()
+            let bit1 = (state >> qubit1) & 1
+            let bit2 = (state >> qubit2) & 1
+            bit1 ^ bit2
+        }
+    }
+
+    // Quantum simulation
+    println("\n=== Quantum Simulation ===")
+
+    // Simulate hydrogen atom (simplified)
+    struct HydrogenAtom {
+        hamiltonian: Matrix<Complex>
+    }
+
+    impl HydrogenAtom {
+        fn new() -> HydrogenAtom {
+            // Simplified 2-level system
+            let h = Matrix::from([
+                [Complex::new(-13.6, 0.0), Complex::new(0.1, 0.0)],
+                [Complex::new(0.1, 0.0), Complex::new(-3.4, 0.0)]
+            ])
+
+            HydrogenAtom { hamiltonian: h }
+        }
+
+        fn time_evolution(self, initial_state: Qubit, time: float) -> Qubit {
+            // Apply U = exp(-iHt/ℏ) using Trotter decomposition
+            let dt = 0.01
+            let steps = (time / dt).round()
+
+            let mut state = QuantumRegister::new(1)
+            state.set_amplitude(0, initial_state.alpha)
+            state.set_amplitude(1, initial_state.beta)
+
+            for _ in 0..steps {
+                // Apply small time evolution step
+                state = self.apply_time_step(state, dt)
+            }
+
+            Qubit {
+                alpha: state.get_amplitude(0),
+                beta: state.get_amplitude(1)
+            }
+        }
+
+        fn apply_time_step(self, state: QuantumRegister, dt: float) -> QuantumRegister {
+            // Simplified time evolution
+            let phase = Complex::from_polar(1.0, -dt)
+            let mut new_state = state.clone()
+
+            new_state.set_amplitude(0, state.get_amplitude(0) * phase)
+            new_state.set_amplitude(1, state.get_amplitude(1) * phase)
+
+            new_state
+        }
+    }
+
+    // Example usage
+    println("Creating Bell state...")
+    let mut circuit = QuantumCircuit::new(2)
+    circuit.h(0)
+    circuit.cnot(0, 1)
+
+    let initial = QuantumRegister::new(2)
+    let bell_state = circuit.run(initial)
+
+    println(f"Bell state amplitudes: |00⟩={bell_state.get_amplitude(0)}, |11⟩={bell_state.get_amplitude(3)}")
+
+    let (measurement, probability) = bell_state.measure_all()
+    println(f"Measurement result: {measurement:02b} with probability {probability:.3}")
+
+    println("Quantum computing examples complete!")
+}

@@ -1,0 +1,181 @@
+// 10_pattern_matching.ruchy - Advanced pattern matching techniques
+
+fn main() {
+    println("=== Pattern Matching ===\n")
+
+    // Basic patterns
+    println("=== Basic Patterns ===")
+
+    let value = 42
+    match value {
+        0 => println("Zero"),
+        1 => println("One"),
+        42 => println("The answer!"),
+        _ => println("Something else")
+    }
+
+    // Range patterns
+    println("\n=== Range Patterns ===")
+
+    let score = 85
+    let grade = match score {
+        0..=59 => "F",
+        60..=69 => "D",
+        70..=79 => "C",
+        80..=89 => "B",
+        90..=100 => "A",
+        _ => "Invalid"
+    }
+    println(f"Score {score} = Grade {grade}")
+
+    // Tuple patterns
+    println("\n=== Tuple Patterns ===")
+
+    let point = (3, 4)
+    match point {
+        (0, 0) => println("Origin"),
+        (x, 0) => println(f"On X-axis at {x}"),
+        (0, y) => println(f"On Y-axis at {y}"),
+        (x, y) => println(f"Point at ({x}, {y})")
+    }
+
+    // List patterns
+    println("\n=== List Patterns ===")
+
+    let numbers = [1, 2, 3]
+    match numbers {
+        [] => println("Empty list"),
+        [x] => println(f"Single element: {x}"),
+        [first, second] => println(f"Two elements: {first}, {second}"),
+        [first, ..rest] => println(f"First: {first}, Rest: {rest}"),
+        _ => println("Many elements")
+    }
+
+    // Struct/Object patterns
+    println("\n=== Object Patterns ===")
+
+    let person = {
+        name: "Alice",
+        age: 30,
+        city: "NYC"
+    }
+
+    match person {
+        { name: "Bob", .. } => println("It's Bob"),
+        { age: 30, name, .. } => println(f"30-year-old {name}"),
+        { city: "LA", .. } => println("From LA"),
+        _ => println("Someone else")
+    }
+
+    // Enum patterns
+    println("\n=== Enum Patterns ===")
+
+    let result = Ok(42)
+    match result {
+        Ok(value) => println(f"Success: {value}"),
+        Err(error) => println(f"Error: {error}")
+    }
+
+    let option = Some(10)
+    match option {
+        Some(x) if x > 5 => println(f"Large value: {x}"),
+        Some(x) => println(f"Small value: {x}"),
+        None => println("No value")
+    }
+
+    // Pattern guards
+    println("\n=== Pattern Guards ===")
+
+    let num = 15
+    match num {
+        x if x < 0 => println("Negative"),
+        x if x == 0 => println("Zero"),
+        x if x > 0 && x <= 10 => println("Small positive"),
+        x if x > 10 && x <= 100 => println("Medium positive"),
+        _ => println("Large positive")
+    }
+
+    // Or patterns
+    println("\n=== Or Patterns ===")
+
+    let day = "Saturday"
+    match day {
+        "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" => {
+            println("Weekday")
+        },
+        "Saturday" | "Sunday" => {
+            println("Weekend")
+        },
+        _ => println("Invalid day")
+    }
+
+    // Nested patterns
+    println("\n=== Nested Patterns ===")
+
+    let nested = Some((5, "hello"))
+    match nested {
+        Some((0, _)) => println("Zero with something"),
+        Some((n, "hello")) => println(f"Number {n} with hello"),
+        Some((n, s)) => println(f"Number {n} with {s}"),
+        None => println("Nothing")
+    }
+
+    // Destructuring in let
+    println("\n=== Destructuring in Let ===")
+
+    let (x, y, z) = (1, 2, 3)
+    println(f"x={x}, y={y}, z={z}")
+
+    let [first, second, ..rest] = [10, 20, 30, 40, 50]
+    println(f"first={first}, second={second}, rest={rest}")
+
+    let { name, age } = { name: "Bob", age: 25, city: "SF" }
+    println(f"name={name}, age={age}")
+
+    // If-let patterns
+    println("\n=== If-Let Patterns ===")
+
+    let some_value = Some(42)
+    if let Some(x) = some_value {
+        println(f"Found value: {x}")
+    } else {
+        println("No value")
+    }
+
+    // While-let patterns
+    println("\n=== While-Let Patterns ===")
+
+    let mut stack = [1, 2, 3, 4, 5]
+    let mut index = 0
+
+    while let Some(value) = if index < stack.len() { Some(stack[index]) } else { None } {
+        println(f"Processing: {value}")
+        index += 1
+        if index >= 3 {
+            break
+        }
+    }
+
+    // Complex pattern example
+    println("\n=== Complex Pattern Example ===")
+
+    let message = {
+        type: "user_action",
+        payload: {
+            user_id: 123,
+            action: "login",
+            timestamp: 1234567890
+        }
+    }
+
+    match message {
+        { type: "user_action", payload: { action: "login", user_id, .. } } => {
+            println(f"User {user_id} logged in")
+        },
+        { type: "user_action", payload: { action: "logout", user_id, .. } } => {
+            println(f"User {user_id} logged out")
+        },
+        { type: "system", .. } => println("System message"),
+        _ => println("Unknown message")
+    }
+}

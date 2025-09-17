@@ -1,0 +1,502 @@
+// 33_graphql_api.ruchy - Building GraphQL APIs
+
+import std::graphql
+import std::http
+
+fn main() {
+    println("=== GraphQL API Development ===\n")
+
+    // Define GraphQL schema
+    println("=== Schema Definition ===")
+
+    let schema = graphql::schema! {
+        type Query {
+            user(id: ID!): User
+            users(limit: Int = 10): [User!]!
+            post(id: ID!): Post
+            posts(authorId: ID, limit: Int = 20): [Post!]!
+            search(query: String!): SearchResult!
+        }
+
+        type Mutation {
+            createUser(input: CreateUserInput!): User!
+            updateUser(id: ID!, input: UpdateUserInput!): User!
+            deleteUser(id: ID!): Boolean!
+            createPost(input: CreatePostInput!): Post!
+            likePost(postId: ID!): Post!
+        }
+
+        type Subscription {
+            userCreated: User!
+            postCreated(authorId: ID): Post!
+            commentAdded(postId: ID!): Comment!
+        }
+
+        type User {
+            id: ID!
+            username: String!
+            email: String!
+            name: String
+            bio: String
+            avatar: String
+            posts: [Post!]!
+            followers: [User!]!
+            following: [User!]!
+            createdAt: DateTime!
+            updatedAt: DateTime!
+        }
+
+        type Post {
+            id: ID!
+            title: String!
+            content: String!
+            author: User!
+            tags: [String!]!
+            likes: Int!
+            comments: [Comment!]!
+            published: Boolean!
+            createdAt: DateTime!
+            updatedAt: DateTime!
+        }
+
+        type Comment {
+            id: ID!
+            content: String!
+            author: User!
+            post: Post!
+            createdAt: DateTime!
+        }
+
+        union SearchResult = User | Post | Comment
+
+        input CreateUserInput {
+            username: String!
+            email: String!
+            name: String
+            bio: String
+        }
+
+        input UpdateUserInput {
+            name: String
+            bio: String
+            avatar: String
+        }
+
+        input CreatePostInput {
+            title: String!
+            content: String!
+            tags: [String!]
+            published: Boolean = false
+        }
+
+        scalar DateTime
+    }
+
+    // Resolvers
+    println("\n=== Resolvers ===")
+
+    struct QueryResolver {}
+
+    impl QueryResolver {
+        fn user(self, ctx, args) {
+            let id = args.id
+            // Fetch from database
+            db::find_user(id)
+        }
+
+        fn users(self, ctx, args) {
+            let limit = args.limit || 10
+            db::list_users(limit)
+        }
+
+        fn post(self, ctx, args) {
+            let id = args.id
+            db::find_post(id)
+        }
+
+        fn posts(self, ctx, args) {
+            let author_id = args.author_id
+            let limit = args.limit || 20
+
+            if author_id {
+                db::find_posts_by_author(author_id, limit)
+            } else {
+                db::list_posts(limit)
+            }
+        }
+
+        fn search(self, ctx, args) {
+            let query = args.query
+            // Implement search logic
+            let results = []
+
+            // Search users
+            let users = db::search_users(query)
+            results.extend(users)
+
+            // Search posts
+            let posts = db::search_posts(query)
+            results.extend(posts)
+
+            // Search comments
+            let comments = db::search_comments(query)
+            results.extend(comments)
+
+            results
+        }
+    }
+
+    struct MutationResolver {}
+
+    impl MutationResolver {
+        fn create_user(self, ctx, args) {
+            let input = args.input
+
+            // Validate input
+            validate_email(input.email)?
+            validate_username(input.username)?
+
+            // Check uniqueness
+            if db::user_exists_by_email(input.email) {
+                throw graphql::Error("Email already exists")
+            }
+
+            // Create user
+            let user = User {
+                id: generate_id(),
+                username: input.username,
+                email: input.email,
+                name: input.name,
+                bio: input.bio,
+                created_at: datetime::now(),
+                updated_at: datetime::now()
+            }
+
+            db::insert_user(user)
+            user
+        }
+
+        fn update_user(self, ctx, args) {
+            let id = args.id
+            let input = args.input
+
+            // Check authorization
+            if ctx.user_id != id && !ctx.is_admin {
+                throw graphql::Error("Unauthorized")
+            }
+
+            let user = db::find_user(id)?
+
+            if input.name {
+                user.name = input.name
+            }
+            if input.bio {
+                user.bio = input.bio
+            }
+            if input.avatar {
+                user.avatar = input.avatar
+            }
+            user.updated_at = datetime::now()
+
+            db::update_user(user)
+            user
+        }
+
+        fn create_post(self, ctx, args) {
+            let input = args.input
+
+            let post = Post {
+                id: generate_id(),
+                title: input.title,
+                content: input.content,
+                author_id: ctx.user_id,
+                tags: input.tags || [],
+                published: input.published,
+                likes: 0,
+                created_at: datetime::now(),
+                updated_at: datetime::now()
+            }
+
+            db::insert_post(post)
+
+            // Trigger subscription
+            pubsub::publish("post_created", post)
+
+            post
+        }
+
+        fn like_post(self, ctx, args) {
+            let post_id = args.post_id
+            let user_id = ctx.user_id
+
+            // Check if already liked
+            if db::has_liked(user_id, post_id) {
+                throw graphql::Error("Already liked")
+            }
+
+            // Add like
+            db::add_like(user_id, post_id)
+
+            // Update post
+            let post = db::find_post(post_id)?
+            post.likes += 1
+            db::update_post(post)
+
+            post
+        }
+    }
+
+    // Subscriptions
+    println("\n=== Subscriptions ===")
+
+    struct SubscriptionResolver {
+        pubsub: PubSub
+    }
+
+    impl SubscriptionResolver {
+        fn user_created(self, ctx) {
+            self.pubsub.subscribe("user_created")
+        }
+
+        fn post_created(self, ctx, args) {
+            let author_id = args.author_id
+
+            self.pubsub.subscribe("post_created")
+                .filter(|post| {
+                    if author_id {
+                        post.author_id == author_id
+                    } else {
+                        true
+                    }
+                })
+        }
+
+        fn comment_added(self, ctx, args) {
+            let post_id = args.post_id
+            self.pubsub.subscribe(f"comment_added:{post_id}")
+        }
+    }
+
+    // Field resolvers
+    println("\n=== Field Resolvers ===")
+
+    impl User {
+        fn posts(self, ctx, args) {
+            db::find_posts_by_author(self.id)
+        }
+
+        fn followers(self, ctx, args) {
+            db::find_followers(self.id)
+        }
+
+        fn following(self, ctx, args) {
+            db::find_following(self.id)
+        }
+    }
+
+    impl Post {
+        fn author(self, ctx, args) {
+            db::find_user(self.author_id)
+        }
+
+        fn comments(self, ctx, args) {
+            db::find_comments_by_post(self.id)
+        }
+    }
+
+    // Context and authentication
+    println("\n=== Context & Auth ===")
+
+    fn create_context(request) {
+        let token = request.headers.get("Authorization")
+            .map(|h| h.replace("Bearer ", ""))
+
+        let user = if token {
+            auth::verify_token(token)?
+        } else {
+            None
+        }
+
+        GraphQLContext {
+            request: request,
+            user_id: user.map(|u| u.id),
+            is_admin: user.map(|u| u.is_admin).unwrap_or(false),
+            dataloader: DataLoader::new()
+        }
+    }
+
+    // DataLoader for N+1 query prevention
+    println("\n=== DataLoader ===")
+
+    struct DataLoader {
+        user_loader: Loader,
+        post_loader: Loader
+    }
+
+    impl DataLoader {
+        fn new() {
+            DataLoader {
+                user_loader: Loader::new(batch_load_users),
+                post_loader: Loader::new(batch_load_posts)
+            }
+        }
+    }
+
+    fn batch_load_users(ids) {
+        let users = db::find_users_by_ids(ids)
+        let user_map = {}
+        for user in users {
+            user_map[user.id] = user
+        }
+        ids.map(|id| user_map.get(id))
+    }
+
+    // Query complexity analysis
+    println("\n=== Query Complexity ===")
+
+    fn calculate_complexity(query) {
+        let ast = graphql::parse(query)
+        let mut complexity = 0
+
+        fn visit_field(field, depth) {
+            // Base complexity for field
+            complexity += 1
+
+            // Additional complexity for lists
+            if field.return_type.is_list() {
+                let limit = field.args.get("limit") || 10
+                complexity += limit
+            }
+
+            // Depth multiplier
+            complexity *= depth
+
+            // Recursively visit selections
+            for selection in field.selections {
+                visit_field(selection, depth + 1)
+            }
+        }
+
+        for field in ast.definitions[0].selections {
+            visit_field(field, 1)
+        }
+
+        complexity
+    }
+
+    // Rate limiting
+    println("\n=== Rate Limiting ===")
+
+    struct RateLimiter {
+        limits: map = {}
+    }
+
+    impl RateLimiter {
+        fn check(mut self, key, limit, window) {
+            let now = datetime::now().to_unix()
+            let window_start = now - window
+
+            if key not in self.limits {
+                self.limits[key] = []
+            }
+
+            // Remove old entries
+            self.limits[key] = self.limits[key]
+                .filter(|t| t > window_start)
+
+            // Check limit
+            if self.limits[key].len() >= limit {
+                throw graphql::Error("Rate limit exceeded")
+            }
+
+            // Add current request
+            self.limits[key].append(now)
+        }
+    }
+
+    // GraphQL server setup
+    println("\n=== Server Setup ===")
+
+    let server = graphql::Server::new(schema)
+        .with_query_resolver(QueryResolver {})
+        .with_mutation_resolver(MutationResolver {})
+        .with_subscription_resolver(SubscriptionResolver {
+            pubsub: PubSub::new()
+        })
+        .with_context_builder(create_context)
+        .with_complexity_limit(1000)
+        .with_depth_limit(10)
+        .with_introspection(true)  // Enable in dev
+        .with_playground(true)     // Enable GraphQL playground
+
+    // Middleware
+    server.use_middleware(|ctx, next| {
+        // Logging
+        log::info("GraphQL request", {
+            operation: ctx.operation_name,
+            variables: ctx.variables
+        })
+
+        let start = perf::now()
+        let result = next(ctx)
+        let duration = perf::now() - start
+
+        log::info("GraphQL response", {
+            duration: duration,
+            errors: result.errors
+        })
+
+        result
+    })
+
+    // Error handling
+    server.on_error(|error, ctx| {
+        log::error("GraphQL error", {
+            error: error,
+            user_id: ctx.user_id,
+            query: ctx.query
+        })
+
+        // Customize error response
+        match error.extensions.code {
+            "UNAUTHENTICATED" => {
+                status: 401,
+                message: "Authentication required"
+            },
+            "FORBIDDEN" => {
+                status: 403,
+                message: "Access denied"
+            },
+            _ => {
+                status: 500,
+                message: "Internal server error"
+            }
+        }
+    })
+
+    // Start server
+    server.listen(4000, || {
+        println("🚀 GraphQL server running at http://localhost:4000/graphql")
+        println("📊 GraphQL playground at http://localhost:4000/playground")
+    })
+
+    // Example queries
+    println("\n=== Example Queries ===")
+
+    let query = r#"
+        query GetUser($id: ID!) {
+            user(id: $id) {
+                id
+                username
+                posts(limit: 5) {
+                    title
+                    likes
+                }
+            }
+        }
+    "#
+
+    let variables = { id: "user123" }
+    let result = server.execute(query, variables)
+    println(f"Result: {result}")
+}

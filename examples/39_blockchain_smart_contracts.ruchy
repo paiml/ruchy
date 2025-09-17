@@ -1,0 +1,574 @@
+// 39_blockchain_smart_contracts.ruchy - Blockchain and smart contract development
+
+import std::blockchain
+import std::crypto
+import std::vm
+
+fn main() {
+    println("=== Blockchain & Smart Contracts ===\n")
+
+    // Block structure
+    println("=== Blockchain Basics ===")
+
+    struct Block {
+        index: int,
+        timestamp: DateTime,
+        data: string,
+        previous_hash: string,
+        hash: string,
+        nonce: int,
+        merkle_root: string
+    }
+
+    impl Block {
+        fn new(index: int, data: string, previous_hash: string) -> Block {
+            let timestamp = datetime::now()
+            let mut block = Block {
+                index: index,
+                timestamp: timestamp,
+                data: data,
+                previous_hash: previous_hash,
+                hash: "",
+                nonce: 0,
+                merkle_root: ""
+            }
+            block.hash = block.calculate_hash()
+            block
+        }
+
+        fn calculate_hash(self) -> string {
+            let data = f"{self.index}{self.timestamp}{self.data}{self.previous_hash}{self.nonce}"
+            crypto::sha256(data)
+        }
+
+        fn mine(mut self, difficulty: int) {
+            let target = "0" * difficulty
+
+            while !self.hash.starts_with(target) {
+                self.nonce += 1
+                self.hash = self.calculate_hash()
+            }
+
+            println(f"Block mined: {self.hash}")
+        }
+    }
+
+    struct Blockchain {
+        chain: list<Block>,
+        difficulty: int = 4,
+        pending_transactions: list<Transaction>,
+        mining_reward: float = 10.0
+    }
+
+    impl Blockchain {
+        fn new() -> Blockchain {
+            let genesis = Block::new(0, "Genesis Block", "0")
+            Blockchain {
+                chain: [genesis],
+                difficulty: 4,
+                pending_transactions: [],
+                mining_reward: 10.0
+            }
+        }
+
+        fn get_latest_block(self) -> Block {
+            self.chain[self.chain.len() - 1]
+        }
+
+        fn add_block(mut self, new_block: Block) {
+            new_block.previous_hash = self.get_latest_block().hash
+            new_block.mine(self.difficulty)
+            self.chain.append(new_block)
+        }
+
+        fn is_valid(self) -> bool {
+            for i in 1..self.chain.len() {
+                let current = self.chain[i]
+                let previous = self.chain[i - 1]
+
+                if current.hash != current.calculate_hash() {
+                    return false
+                }
+
+                if current.previous_hash != previous.hash {
+                    return false
+                }
+            }
+            true
+        }
+    }
+
+    // Create and mine blocks
+    let mut blockchain = Blockchain::new()
+
+    println("Mining block 1...")
+    blockchain.add_block(Block::new(1, "Transaction data 1", ""))
+
+    println("Mining block 2...")
+    blockchain.add_block(Block::new(2, "Transaction data 2", ""))
+
+    println(f"Blockchain valid: {blockchain.is_valid()}")
+
+    // Smart contracts
+    println("\n=== Smart Contracts ===")
+
+    struct SmartContract {
+        address: string,
+        code: string,
+        storage: map<string, any>,
+        owner: string
+    }
+
+    impl SmartContract {
+        fn new(code: string, owner: string) -> SmartContract {
+            SmartContract {
+                address: crypto::generate_address(),
+                code: code,
+                storage: {},
+                owner: owner
+            }
+        }
+
+        fn execute(mut self, function: string, args: list) -> Result<any, Error> {
+            let vm = VM::new()
+            vm.load_contract(self.code)
+            vm.call(function, args, self.storage)
+        }
+    }
+
+    // ERC-20 Token Contract
+    let token_code = r#"
+        contract ERC20Token {
+            name: string
+            symbol: string
+            total_supply: int
+            balances: map<string, int>
+            allowances: map<string, map<string, int>>
+
+            fn constructor(name: string, symbol: string, initial_supply: int) {
+                self.name = name
+                self.symbol = symbol
+                self.total_supply = initial_supply
+                self.balances[msg.sender] = initial_supply
+            }
+
+            fn balance_of(address: string) -> int {
+                self.balances.get(address, 0)
+            }
+
+            fn transfer(to: string, amount: int) -> bool {
+                require(self.balances[msg.sender] >= amount, "Insufficient balance")
+
+                self.balances[msg.sender] -= amount
+                self.balances[to] += amount
+
+                emit Transfer { from: msg.sender, to: to, amount: amount }
+                true
+            }
+
+            fn approve(spender: string, amount: int) -> bool {
+                self.allowances[msg.sender][spender] = amount
+                emit Approval { owner: msg.sender, spender: spender, amount: amount }
+                true
+            }
+
+            fn transfer_from(from: string, to: string, amount: int) -> bool {
+                require(self.balances[from] >= amount, "Insufficient balance")
+                require(self.allowances[from][msg.sender] >= amount, "Insufficient allowance")
+
+                self.balances[from] -= amount
+                self.balances[to] += amount
+                self.allowances[from][msg.sender] -= amount
+
+                emit Transfer { from: from, to: to, amount: amount }
+                true
+            }
+        }
+    "#
+
+    let token_contract = SmartContract::new(token_code, "0x1234...")
+
+    // Deploy and interact with contract
+    let deploy_result = token_contract.execute("constructor", [
+        "MyToken",
+        "MTK",
+        1000000
+    ])
+
+    let balance = token_contract.execute("balance_of", ["0x1234..."])
+    println(f"Token balance: {balance}")
+
+    // Multi-signature wallet
+    println("\n=== Multi-Signature Wallet ===")
+
+    let multisig_code = r#"
+        contract MultiSigWallet {
+            owners: list<string>
+            required_confirmations: int
+            transactions: list<Transaction>
+            confirmations: map<int, map<string, bool>>
+
+            struct Transaction {
+                to: string
+                value: int
+                data: bytes
+                executed: bool
+            }
+
+            fn constructor(owners: list<string>, required: int) {
+                require(owners.len() > 0, "Owners required")
+                require(required > 0 && required <= owners.len(), "Invalid required confirmations")
+
+                self.owners = owners
+                self.required_confirmations = required
+            }
+
+            fn submit_transaction(to: string, value: int, data: bytes) -> int {
+                require(self.is_owner(msg.sender), "Not an owner")
+
+                let tx_id = self.transactions.len()
+                self.transactions.append(Transaction {
+                    to: to,
+                    value: value,
+                    data: data,
+                    executed: false
+                })
+
+                emit TransactionSubmitted { tx_id: tx_id, owner: msg.sender }
+                tx_id
+            }
+
+            fn confirm_transaction(tx_id: int) {
+                require(self.is_owner(msg.sender), "Not an owner")
+                require(tx_id < self.transactions.len(), "Transaction does not exist")
+                require(!self.confirmations[tx_id][msg.sender], "Already confirmed")
+
+                self.confirmations[tx_id][msg.sender] = true
+                emit TransactionConfirmed { tx_id: tx_id, owner: msg.sender }
+
+                if self.is_confirmed(tx_id) {
+                    self.execute_transaction(tx_id)
+                }
+            }
+
+            fn execute_transaction(tx_id: int) {
+                require(self.is_confirmed(tx_id), "Not enough confirmations")
+
+                let tx = self.transactions[tx_id]
+                require(!tx.executed, "Already executed")
+
+                tx.executed = true
+
+                // Execute the transaction
+                let success = external_call(tx.to, tx.value, tx.data)
+                require(success, "Transaction failed")
+
+                emit TransactionExecuted { tx_id: tx_id }
+            }
+
+            fn is_owner(address: string) -> bool {
+                self.owners.contains(address)
+            }
+
+            fn is_confirmed(tx_id: int) -> bool {
+                let count = 0
+                for owner in self.owners {
+                    if self.confirmations[tx_id][owner] {
+                        count += 1
+                    }
+                }
+                count >= self.required_confirmations
+            }
+        }
+    "#
+
+    // NFT (Non-Fungible Token) Contract
+    println("\n=== NFT Contract ===")
+
+    let nft_code = r#"
+        contract NFT {
+            name: string
+            symbol: string
+            token_counter: int
+            token_owners: map<int, string>
+            token_approvals: map<int, string>
+            owner_tokens: map<string, list<int>>
+            token_metadata: map<int, TokenMetadata>
+
+            struct TokenMetadata {
+                name: string
+                description: string
+                image: string
+                attributes: map<string, string>
+            }
+
+            fn constructor(name: string, symbol: string) {
+                self.name = name
+                self.symbol = symbol
+                self.token_counter = 0
+            }
+
+            fn mint(to: string, metadata: TokenMetadata) -> int {
+                let token_id = self.token_counter
+                self.token_counter += 1
+
+                self.token_owners[token_id] = to
+                self.owner_tokens[to].append(token_id)
+                self.token_metadata[token_id] = metadata
+
+                emit Transfer { from: "", to: to, token_id: token_id }
+                token_id
+            }
+
+            fn owner_of(token_id: int) -> string {
+                require(self.token_exists(token_id), "Token does not exist")
+                self.token_owners[token_id]
+            }
+
+            fn transfer_from(from: string, to: string, token_id: int) {
+                require(self.is_approved_or_owner(msg.sender, token_id), "Not approved or owner")
+
+                self.token_owners[token_id] = to
+                self.owner_tokens[from].remove(token_id)
+                self.owner_tokens[to].append(token_id)
+
+                emit Transfer { from: from, to: to, token_id: token_id }
+            }
+
+            fn approve(to: string, token_id: int) {
+                require(msg.sender == self.owner_of(token_id), "Not the owner")
+                self.token_approvals[token_id] = to
+                emit Approval { owner: msg.sender, approved: to, token_id: token_id }
+            }
+
+            fn get_metadata(token_id: int) -> TokenMetadata {
+                require(self.token_exists(token_id), "Token does not exist")
+                self.token_metadata[token_id]
+            }
+        }
+    "#
+
+    // Decentralized Exchange (DEX)
+    println("\n=== Decentralized Exchange ===")
+
+    let dex_code = r#"
+        contract DEX {
+            fee_rate: float  // 0.3% = 0.003
+            liquidity_pools: map<string, LiquidityPool>
+            user_balances: map<string, map<string, int>>
+
+            struct LiquidityPool {
+                token_a: string
+                token_b: string
+                reserve_a: int
+                reserve_b: int
+                liquidity_token: string
+                total_liquidity: int
+            }
+
+            fn add_liquidity(token_a: string, token_b: string, amount_a: int, amount_b: int) {
+                let pool_id = get_pool_id(token_a, token_b)
+
+                if !self.liquidity_pools.contains_key(pool_id) {
+                    // Create new pool
+                    self.liquidity_pools[pool_id] = LiquidityPool {
+                        token_a: token_a,
+                        token_b: token_b,
+                        reserve_a: amount_a,
+                        reserve_b: amount_b,
+                        liquidity_token: f"LP-{token_a}-{token_b}",
+                        total_liquidity: sqrt(amount_a * amount_b)
+                    }
+                } else {
+                    // Add to existing pool
+                    let pool = self.liquidity_pools[pool_id]
+
+                    // Calculate optimal amounts
+                    let ratio = pool.reserve_b / pool.reserve_a
+                    let optimal_b = amount_a * ratio
+
+                    require(amount_b >= optimal_b, "Insufficient token B")
+
+                    pool.reserve_a += amount_a
+                    pool.reserve_b += optimal_b
+
+                    let liquidity = amount_a * pool.total_liquidity / pool.reserve_a
+                    pool.total_liquidity += liquidity
+                }
+
+                emit LiquidityAdded { token_a, token_b, amount_a, amount_b }
+            }
+
+            fn swap(token_in: string, token_out: string, amount_in: int) -> int {
+                let pool_id = get_pool_id(token_in, token_out)
+                require(self.liquidity_pools.contains_key(pool_id), "Pool does not exist")
+
+                let pool = self.liquidity_pools[pool_id]
+
+                let (reserve_in, reserve_out) = if token_in == pool.token_a {
+                    (pool.reserve_a, pool.reserve_b)
+                } else {
+                    (pool.reserve_b, pool.reserve_a)
+                }
+
+                // Apply fee
+                let amount_in_with_fee = amount_in * (1.0 - self.fee_rate)
+
+                // Calculate output using constant product formula: x * y = k
+                let amount_out = (amount_in_with_fee * reserve_out) / (reserve_in + amount_in_with_fee)
+
+                require(amount_out > 0, "Insufficient liquidity")
+
+                // Update reserves
+                if token_in == pool.token_a {
+                    pool.reserve_a += amount_in
+                    pool.reserve_b -= amount_out
+                } else {
+                    pool.reserve_b += amount_in
+                    pool.reserve_a -= amount_out
+                }
+
+                emit Swap { token_in, token_out, amount_in, amount_out, user: msg.sender }
+                amount_out
+            }
+        }
+    "#
+
+    // Oracle contract
+    println("\n=== Oracle Contract ===")
+
+    let oracle_code = r#"
+        contract PriceOracle {
+            authorized_feeders: set<string>
+            price_feeds: map<string, PriceFeed>
+
+            struct PriceFeed {
+                price: int  // Price in wei (18 decimals)
+                timestamp: DateTime
+                round: int
+                confidence: int  // Confidence score 0-100
+            }
+
+            fn constructor(feeders: list<string>) {
+                self.authorized_feeders = set(feeders)
+            }
+
+            fn update_price(asset: string, price: int, confidence: int) {
+                require(self.authorized_feeders.contains(msg.sender), "Unauthorized feeder")
+                require(confidence >= 50, "Low confidence data")
+
+                self.price_feeds[asset] = PriceFeed {
+                    price: price,
+                    timestamp: block.timestamp,
+                    round: self.get_round(asset) + 1,
+                    confidence: confidence
+                }
+
+                emit PriceUpdated { asset: asset, price: price, round: self.price_feeds[asset].round }
+            }
+
+            fn get_latest_price(asset: string) -> (int, DateTime) {
+                require(self.price_feeds.contains_key(asset), "Price feed not found")
+
+                let feed = self.price_feeds[asset]
+                require(block.timestamp - feed.timestamp < 3600, "Stale price data")
+
+                (feed.price, feed.timestamp)
+            }
+
+            fn get_historical_price(asset: string, timestamp: DateTime) -> Option<int> {
+                // Implementation would query historical data
+                None
+            }
+        }
+    "#
+
+    // Governance contract
+    println("\n=== Governance Contract ===")
+
+    let governance_code = r#"
+        contract Governance {
+            proposals: list<Proposal>
+            voting_power: map<string, int>
+            proposal_threshold: int
+            quorum: int
+
+            struct Proposal {
+                id: int
+                proposer: string
+                title: string
+                description: string
+                votes_for: int
+                votes_against: int
+                start_time: DateTime
+                end_time: DateTime
+                executed: bool
+                voters: set<string>
+            }
+
+            fn create_proposal(title: string, description: string, voting_period: int) -> int {
+                require(self.voting_power[msg.sender] >= self.proposal_threshold, "Insufficient voting power")
+
+                let proposal_id = self.proposals.len()
+                self.proposals.append(Proposal {
+                    id: proposal_id,
+                    proposer: msg.sender,
+                    title: title,
+                    description: description,
+                    votes_for: 0,
+                    votes_against: 0,
+                    start_time: block.timestamp,
+                    end_time: block.timestamp + voting_period,
+                    executed: false,
+                    voters: set()
+                })
+
+                emit ProposalCreated { id: proposal_id, proposer: msg.sender, title: title }
+                proposal_id
+            }
+
+            fn vote(proposal_id: int, support: bool) {
+                require(proposal_id < self.proposals.len(), "Proposal does not exist")
+
+                let proposal = self.proposals[proposal_id]
+                require(block.timestamp >= proposal.start_time, "Voting not started")
+                require(block.timestamp <= proposal.end_time, "Voting ended")
+                require(!proposal.voters.contains(msg.sender), "Already voted")
+
+                let power = self.voting_power[msg.sender]
+                require(power > 0, "No voting power")
+
+                proposal.voters.insert(msg.sender)
+
+                if support {
+                    proposal.votes_for += power
+                } else {
+                    proposal.votes_against += power
+                }
+
+                emit VoteCast { proposal_id: proposal_id, voter: msg.sender, support: support, power: power }
+            }
+
+            fn execute_proposal(proposal_id: int) {
+                require(proposal_id < self.proposals.len(), "Proposal does not exist")
+
+                let proposal = self.proposals[proposal_id]
+                require(block.timestamp > proposal.end_time, "Voting still active")
+                require(!proposal.executed, "Already executed")
+
+                let total_votes = proposal.votes_for + proposal.votes_against
+                require(total_votes >= self.quorum, "Quorum not reached")
+                require(proposal.votes_for > proposal.votes_against, "Proposal rejected")
+
+                proposal.executed = true
+
+                // Execute the proposal action
+                // This would contain the actual governance logic
+
+                emit ProposalExecuted { id: proposal_id }
+            }
+        }
+    "#
+
+    println("Smart contracts ready for deployment!")
+}

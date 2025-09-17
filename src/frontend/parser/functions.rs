@@ -1,5 +1,5 @@
 //! Function-related parsing (function definitions, lambdas, calls)
-use super::{ParserState, *};
+use super::{ParserState, bail, Result, Expr, Token, ExprKind, Span, Param, Type, TypeKind, utils};
 use crate::frontend::ast::{DataFrameOp, Literal, Pattern};
 /// # Errors
 ///

@@ -1,0 +1,365 @@
+// 28_configuration.ruchy - Configuration management and environment handling
+
+import std::config
+import std::env
+
+fn main() {
+    println("=== Configuration Management ===\n")
+
+    // Environment variables
+    println("=== Environment Variables ===")
+
+    // Get environment variable
+    let home = env::get("HOME")
+    println(f"HOME: {home}")
+
+    // Get with default
+    let port = env::get_or("PORT", "3000")
+    println(f"PORT: {port}")
+
+    // Set environment variable
+    env::set("MY_APP_VERSION", "1.0.0")
+    println(f"MY_APP_VERSION: {env::get('MY_APP_VERSION')}")
+
+    // Check if exists
+    if env::exists("PATH") {
+        println("PATH is set")
+    }
+
+    // Configuration file loading
+    println("\n=== Configuration Files ===")
+
+    // Load from JSON
+    let json_config = config::load_json("config.json")
+    println(f"JSON config: {json_config}")
+
+    // Load from YAML
+    let yaml_config = config::load_yaml("config.yaml")
+    println(f"YAML config: {yaml_config}")
+
+    // Load from TOML
+    let toml_config = config::load_toml("config.toml")
+    println(f"TOML config: {toml_config}")
+
+    // Load from environment-specific file
+    let env_name = env::get_or("APP_ENV", "development")
+    let config_file = f"config.{env_name}.json"
+    let env_config = config::load_json(config_file)
+
+    // Configuration builder pattern
+    println("\n=== Configuration Builder ===")
+
+    struct Config {
+        database: DatabaseConfig,
+        server: ServerConfig,
+        logging: LoggingConfig,
+        features: FeatureFlags
+    }
+
+    struct DatabaseConfig {
+        host: string,
+        port: int,
+        name: string,
+        user: string,
+        password: string,
+        pool_size: int = 10
+    }
+
+    struct ServerConfig {
+        host: string = "0.0.0.0",
+        port: int = 3000,
+        workers: int = 4,
+        timeout: int = 30000
+    }
+
+    struct LoggingConfig {
+        level: string = "info",
+        format: string = "json",
+        output: string = "stdout"
+    }
+
+    struct FeatureFlags {
+        new_ui: bool = false,
+        beta_features: bool = false,
+        debug_mode: bool = false
+    }
+
+    fn build_config() {
+        let mut config = Config {
+            database: DatabaseConfig {
+                host: env::get_or("DB_HOST", "localhost"),
+                port: env::get_or("DB_PORT", "5432").to_int(),
+                name: env::get_or("DB_NAME", "myapp"),
+                user: env::get_or("DB_USER", "postgres"),
+                password: env::get_or("DB_PASSWORD", ""),
+                pool_size: env::get_or("DB_POOL_SIZE", "10").to_int()
+            },
+            server: ServerConfig {
+                host: env::get_or("SERVER_HOST", "0.0.0.0"),
+                port: env::get_or("SERVER_PORT", "3000").to_int(),
+                workers: env::get_or("SERVER_WORKERS", "4").to_int(),
+                timeout: env::get_or("SERVER_TIMEOUT", "30000").to_int()
+            },
+            logging: LoggingConfig {
+                level: env::get_or("LOG_LEVEL", "info"),
+                format: env::get_or("LOG_FORMAT", "json"),
+                output: env::get_or("LOG_OUTPUT", "stdout")
+            },
+            features: FeatureFlags {
+                new_ui: env::get_or("FEATURE_NEW_UI", "false") == "true",
+                beta_features: env::get_or("FEATURE_BETA", "false") == "true",
+                debug_mode: env::get_or("DEBUG_MODE", "false") == "true"
+            }
+        }
+
+        config
+    }
+
+    let app_config = build_config()
+    println(f"App config: {app_config}")
+
+    // Configuration validation
+    println("\n=== Configuration Validation ===")
+
+    fn validate_config(config) {
+        let errors = []
+
+        // Validate database config
+        if config.database.host == "" {
+            errors.append("Database host is required")
+        }
+        if config.database.port < 1 || config.database.port > 65535 {
+            errors.append("Invalid database port")
+        }
+        if config.database.pool_size < 1 {
+            errors.append("Pool size must be at least 1")
+        }
+
+        // Validate server config
+        if config.server.port < 1 || config.server.port > 65535 {
+            errors.append("Invalid server port")
+        }
+        if config.server.workers < 1 {
+            errors.append("Must have at least 1 worker")
+        }
+
+        // Validate logging config
+        let valid_levels = ["trace", "debug", "info", "warn", "error"]
+        if !valid_levels.contains(config.logging.level) {
+            errors.append(f"Invalid log level: {config.logging.level}")
+        }
+
+        if errors.len() > 0 {
+            Err(errors)
+        } else {
+            Ok(config)
+        }
+    }
+
+    match validate_config(app_config) {
+        Ok(_) => println("Configuration is valid"),
+        Err(errors) => {
+            println("Configuration errors:")
+            for error in errors {
+                println(f"  - {error}")
+            }
+        }
+    }
+
+    // Hierarchical configuration
+    println("\n=== Hierarchical Configuration ===")
+
+    struct ConfigManager {
+        sources: list,
+        cache: map
+    }
+
+    impl ConfigManager {
+        fn new() {
+            ConfigManager {
+                sources: [],
+                cache: {}
+            }
+        }
+
+        fn add_source(mut self, source) {
+            self.sources.append(source)
+        }
+
+        fn get(self, key, default = None) {
+            // Check cache first
+            if key in self.cache {
+                return self.cache[key]
+            }
+
+            // Check sources in order
+            for source in self.sources {
+                if let Some(value) = source.get(key) {
+                    self.cache[key] = value
+                    return value
+                }
+            }
+
+            default
+        }
+
+        fn reload(mut self) {
+            self.cache.clear()
+            for source in self.sources {
+                source.reload()
+            }
+        }
+    }
+
+    let config_manager = ConfigManager::new()
+    config_manager.add_source(EnvSource::new())
+    config_manager.add_source(FileSource::new("config.json"))
+    config_manager.add_source(DefaultsSource::new())
+
+    // Secret management
+    println("\n=== Secret Management ===")
+
+    struct SecretManager {
+        provider: string
+    }
+
+    impl SecretManager {
+        fn get_secret(self, key) {
+            match self.provider {
+                "env" => env::get(key),
+                "file" => {
+                    let secrets_file = f".secrets/{key}"
+                    fs::read_to_string(secrets_file).trim()
+                },
+                "vault" => {
+                    // HashiCorp Vault integration
+                    vault::get_secret(key)
+                },
+                "aws" => {
+                    // AWS Secrets Manager
+                    aws::secrets_manager::get_secret(key)
+                },
+                _ => None
+            }
+        }
+
+        fn rotate_secret(self, key) {
+            println(f"Rotating secret: {key}")
+            // Implementation depends on provider
+        }
+    }
+
+    // Feature flags
+    println("\n=== Feature Flags ===")
+
+    struct FeatureManager {
+        flags: map,
+        user_overrides: map
+    }
+
+    impl FeatureManager {
+        fn is_enabled(self, feature, user_id = None) {
+            // Check user-specific override
+            if user_id && user_id in self.user_overrides {
+                if feature in self.user_overrides[user_id] {
+                    return self.user_overrides[user_id][feature]
+                }
+            }
+
+            // Check global flag
+            self.flags.get(feature, false)
+        }
+
+        fn enable(mut self, feature) {
+            self.flags[feature] = true
+        }
+
+        fn disable(mut self, feature) {
+            self.flags[feature] = false
+        }
+
+        fn set_user_override(mut self, user_id, feature, enabled) {
+            if user_id not in self.user_overrides {
+                self.user_overrides[user_id] = {}
+            }
+            self.user_overrides[user_id][feature] = enabled
+        }
+    }
+
+    let features = FeatureManager {
+        flags: {
+            "new_dashboard": true,
+            "dark_mode": true,
+            "beta_api": false
+        },
+        user_overrides: {}
+    }
+
+    // Configuration hot reload
+    println("\n=== Hot Reload ===")
+
+    fn watch_config(file_path, callback) {
+        let watcher = fs::watch(file_path)
+
+        watcher.on_change(|| {
+            println(f"Config file changed: {file_path}")
+            let new_config = config::load_json(file_path)
+            callback(new_config)
+        })
+
+        watcher
+    }
+
+    // Profile-based configuration
+    println("\n=== Profiles ===")
+
+    let profiles = {
+        "development": {
+            debug: true,
+            log_level: "debug",
+            database: "dev.db",
+            cache: false
+        },
+        "staging": {
+            debug: false,
+            log_level: "info",
+            database: "staging.db",
+            cache: true
+        },
+        "production": {
+            debug: false,
+            log_level: "warn",
+            database: "prod.db",
+            cache: true,
+            monitoring: true
+        }
+    }
+
+    let active_profile = env::get_or("PROFILE", "development")
+    let profile_config = profiles[active_profile]
+    println(f"Active profile: {active_profile}")
+    println(f"Profile config: {profile_config}")
+
+    // Configuration export
+    println("\n=== Configuration Export ===")
+
+    fn export_config(config, format) {
+        match format {
+            "json" => config.to_json(),
+            "yaml" => config.to_yaml(),
+            "toml" => config.to_toml(),
+            "env" => {
+                let lines = []
+                for (key, value) in config.flatten() {
+                    lines.append(f"{key.upper()}={value}")
+                }
+                lines.join("\n")
+            },
+            _ => config.to_string()
+        }
+    }
+
+    let exported = export_config(app_config, "env")
+    println("Exported as env vars:")
+    println(exported)
+}

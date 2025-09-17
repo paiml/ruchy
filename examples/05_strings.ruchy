@@ -1,0 +1,105 @@
+// 05_strings.ruchy - String manipulation and formatting
+
+fn main() {
+    println("=== String Operations ===\n")
+
+    // String creation and concatenation
+    let hello = "Hello"
+    let world = "World"
+    let greeting = f"{hello}, {world}!"
+    println(greeting)
+
+    // String interpolation
+    let name = "Alice"
+    let age = 30
+    let info = f"{name} is {age} years old"
+    println(info)
+
+    // Expression interpolation
+    let x = 10
+    let y = 20
+    println(f"The sum of {x} and {y} is {x + y}")
+
+    // String methods
+    println("\n=== String Methods ===")
+    let text = "Hello, Ruchy World!"
+
+    println(f"Original: '{text}'")
+    println(f"Length: {text.len()}")
+    println(f"Uppercase: '{text.upper()}'")
+    println(f"Lowercase: '{text.lower()}'")
+
+    // String searching
+    println(f"Contains 'Ruchy': {text.contains('Ruchy')}")
+    println(f"Starts with 'Hello': {text.starts_with('Hello')}")
+    println(f"Ends with 'World!': {text.ends_with('World!')}")
+
+    // String splitting
+    println("\n=== String Splitting ===")
+    let csv = "apple,banana,orange,grape"
+    let fruits = csv.split(",")
+    println(f"Split CSV: {fruits}")
+
+    let sentence = "The quick brown fox"
+    let words = sentence.split(" ")
+    println(f"Words: {words}")
+
+    // String replacing
+    println("\n=== String Replacement ===")
+    let original = "Hello, World!"
+    let replaced = original.replace("World", "Ruchy")
+    println(f"Original: '{original}'")
+    println(f"Replaced: '{replaced}'")
+
+    // String trimming
+    let padded = "  Hello, Ruchy!  "
+    let trimmed = padded.trim()
+    println(f"Padded: '{padded}'")
+    println(f"Trimmed: '{trimmed}'")
+
+    // Character operations
+    println("\n=== Character Operations ===")
+    let chars = text.chars()
+    println(f"Characters: {chars}")
+
+    // String slicing
+    let substring = text.slice(0, 5)
+    println(f"Substring [0:5]: '{substring}'")
+
+    // Multiline strings
+    println("\n=== Multiline Strings ===")
+    let poem = "Roses are red,
+Violets are blue,
+Ruchy is awesome,
+And so are you!"
+    println(poem)
+
+    // String formatting
+    println("\n=== Formatting ===")
+    let pi = 3.14159265359
+    println(f"Pi to 2 decimals: {pi:.2}")
+
+    let large = 1234567
+    println(f"Large number: {large:,}")
+
+    // String joining
+    println("\n=== String Joining ===")
+    let parts = ["one", "two", "three"]
+    let joined = parts.join("-")
+    println(f"Joined with '-': {joined}")
+
+    // String repetition
+    let star = "*"
+    let stars = star.repeat(10)
+    println(f"Stars: {stars}")
+
+    // Checking string properties
+    println("\n=== String Properties ===")
+    let numeric = "12345"
+    let alpha = "abcde"
+    let alphanumeric = "abc123"
+
+    println(f"'{numeric}' is numeric: {numeric.is_numeric()}")
+    println(f"'{alpha}' is alphabetic: {alpha.is_alphabetic()}")
+    println(f"'{alphanumeric}' is alphanumeric: {alphanumeric.is_alphanumeric()}")
+}

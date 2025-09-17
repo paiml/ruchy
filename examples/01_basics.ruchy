@@ -1,0 +1,57 @@
+// 01_basics.ruchy - Basic Ruchy syntax and operations
+
+fn main() {
+    // Variables and basic types
+    let x = 42
+    let pi = 3.14159
+    let message = "Hello, Ruchy!"
+    let flag = true
+
+    println("=== Basic Variables ===")
+    println(f"Integer: {x}")
+    println(f"Float: {pi}")
+    println(f"String: {message}")
+    println(f"Boolean: {flag}")
+
+    // Arithmetic operations
+    println("\n=== Arithmetic ===")
+    let sum = x + 8
+    let product = x * 2
+    let quotient = x / 6
+    let remainder = x % 5
+
+    println(f"{x} + 8 = {sum}")
+    println(f"{x} * 2 = {product}")
+    println(f"{x} / 6 = {quotient}")
+    println(f"{x} % 5 = {remainder}")
+
+    // String operations
+    println("\n=== Strings ===")
+    let first = "Hello"
+    let second = "World"
+    let combined = f"{first}, {second}!"
+    println(combined)
+
+    // String methods
+    println(f"Uppercase: {combined.upper()}")
+    println(f"Lowercase: {combined.lower()}")
+    println(f"Length: {combined.len()}")
+
+    // Type conversions
+    println("\n=== Type Conversions ===")
+    let num_str = "123"
+    let num = num_str.to_int()
+    println(f"String '{num_str}' to int: {num}")
+
+    let float_val = 3.7
+    let int_val = float_val.to_int()
+    println(f"Float {float_val} to int: {int_val}")
+
+    // Mutability
+    println("\n=== Mutability ===")
+    let mut counter = 0
+    println(f"Initial counter: {counter}")
+    counter = counter + 1
+    counter += 1
+    println(f"After increments: {counter}")
+}
