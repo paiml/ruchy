@@ -54,9 +54,9 @@ impl Grade {
 /// ```
 /// use ruchy::quality::scoring::Grade;
 /// 
-let mut instance = Grade::new();
-let result = instance.from_score();
-// Verify behavior
+/// let mut instance = Grade::new();
+/// let result = instance.from_score();
+/// // Verify behavior
 /// ```
 pub fn from_score(value: f64) -> Self {
         match value {
@@ -163,16 +163,16 @@ impl DependencyTracker {
 /// ```
 /// use ruchy::quality::scoring::DependencyTracker;
 /// 
-let instance = DependencyTracker::new();
-// Verify behavior
+/// let instance = DependencyTracker::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::quality::scoring::DependencyTracker;
 /// 
-let instance = DependencyTracker::new();
-// Verify behavior
+/// let instance = DependencyTracker::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -196,9 +196,9 @@ pub fn track_dependency(&mut self, file: PathBuf, dependency: PathBuf) {
 /// ```
 /// use ruchy::quality::scoring::DependencyTracker;
 /// 
-let mut instance = DependencyTracker::new();
-let result = instance.is_stale();
-// Verify behavior
+/// let mut instance = DependencyTracker::new();
+/// let result = instance.is_stale();
+/// // Verify behavior
 /// ```
 pub fn is_stale(&self, file: &PathBuf) -> bool {
         if let Some(dependencies) = self.dependencies.get(file) {

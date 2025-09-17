@@ -36,9 +36,9 @@ impl CompletionKind {
 /// ```
 /// use ruchy::runtime::completion::CompletionKind;
 /// 
-let mut instance = CompletionKind::new();
-let result = instance.prefix();
-// Verify behavior
+/// let mut instance = CompletionKind::new();
+/// let result = instance.prefix();
+/// // Verify behavior
 /// ```
 pub fn prefix(&self) -> &str {
         match self {
@@ -121,16 +121,16 @@ impl CompletionEngine {
 /// ```
 /// use ruchy::runtime::completion::CompletionEngine;
 /// 
-let instance = CompletionEngine::new();
-// Verify behavior
+/// let instance = CompletionEngine::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::runtime::completion::CompletionEngine;
 /// 
-let instance = CompletionEngine::new();
-// Verify behavior
+/// let instance = CompletionEngine::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -150,9 +150,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::runtime::completion::CompletionEngine;
 /// 
-let mut instance = CompletionEngine::new();
-let result = instance.get_completions();
-// Verify behavior
+/// let mut instance = CompletionEngine::new();
+/// let result = instance.get_completions();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 

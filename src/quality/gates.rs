@@ -169,8 +169,8 @@ impl QualityGateEnforcer {
 /// ```
 /// use ruchy::quality::gates::QualityGateEnforcer;
 /// 
-let instance = QualityGateEnforcer::new();
-// Verify behavior
+/// let instance = QualityGateEnforcer::new();
+/// // Verify behavior
 /// ```
 pub fn new(config: QualityGateConfig) -> Self {
         Self { config }
@@ -181,9 +181,9 @@ pub fn new(config: QualityGateConfig) -> Self {
 /// ```
 /// use ruchy::quality::gates::QualityGateEnforcer;
 /// 
-let mut instance = QualityGateEnforcer::new();
-let result = instance.load_config();
-// Verify behavior
+/// let mut instance = QualityGateEnforcer::new();
+/// let result = instance.load_config();
+/// // Verify behavior
 /// ```
 pub fn load_config(project_root: &Path) -> anyhow::Result<QualityGateConfig> {
         let config_path = project_root.join(".ruchy").join("score.toml");
@@ -206,9 +206,9 @@ pub fn load_config(project_root: &Path) -> anyhow::Result<QualityGateConfig> {
 /// ```
 /// use ruchy::quality::gates::QualityGateEnforcer;
 /// 
-let mut instance = QualityGateEnforcer::new();
-let result = instance.enforce_gates();
-// Verify behavior
+/// let mut instance = QualityGateEnforcer::new();
+/// let result = instance.enforce_gates();
+/// // Verify behavior
 /// ```
 pub fn enforce_gates(&self, score: &QualityScore, file_path: Option<&PathBuf>) -> GateResult {
         let mut violations = Vec::new();

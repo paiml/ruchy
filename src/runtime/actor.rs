@@ -38,9 +38,9 @@ impl ActorRef {
 /// ```
 /// use ruchy::runtime::actor::ActorRef;
 /// 
-let mut instance = ActorRef::new();
-let result = instance.send();
-// Verify behavior
+/// let mut instance = ActorRef::new();
+/// let result = instance.send();
+/// // Verify behavior
 /// ```
 pub fn send(&self, message: Message) -> Result<()> {
         self.sender
@@ -63,9 +63,9 @@ pub fn send(&self, message: Message) -> Result<()> {
 /// ```
 /// use ruchy::runtime::actor::ActorRef;
 /// 
-let mut instance = ActorRef::new();
-let result = instance.ask();
-// Verify behavior
+/// let mut instance = ActorRef::new();
+/// let result = instance.ask();
+/// // Verify behavior
 /// ```
 pub fn ask(&self, message: Message, timeout: Duration) -> Result<Message> {
         let (response_tx, response_rx) = mpsc::channel();
@@ -204,9 +204,9 @@ impl ActorContext {
 /// ```
 /// use ruchy::runtime::actor::ActorContext;
 /// 
-let mut instance = ActorContext::new();
-let result = instance.stop_child();
-// Verify behavior
+/// let mut instance = ActorContext::new();
+/// let result = instance.stop_child();
+/// // Verify behavior
 /// ```
 pub fn stop_child(&mut self, child_id: ActorId) -> Result<()> {
         if let Some(child_ref) = self.children.remove(&child_id) {
@@ -245,9 +245,9 @@ pub fn get_self(&self) -> Result<ActorRef> {
 /// ```
 /// use ruchy::runtime::actor::ActorContext;
 /// 
-let mut instance = ActorContext::new();
-let result = instance.find_actor();
-// Verify behavior
+/// let mut instance = ActorContext::new();
+/// let result = instance.find_actor();
+/// // Verify behavior
 /// ```
 pub fn find_actor(&self, name: &str) -> Option<ActorRef> {
         let system = self.system.lock().ok()?;

@@ -13,8 +13,8 @@ impl Formatter {
 /// ```
 /// use ruchy::quality::formatter::Formatter;
 /// 
-let instance = Formatter::new();
-// Verify behavior
+/// let instance = Formatter::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -28,9 +28,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::quality::formatter::Formatter;
 /// 
-let mut instance = Formatter::new();
-let result = instance.format();
-// Verify behavior
+/// let mut instance = Formatter::new();
+/// let result = instance.format();
+/// // Verify behavior
 /// ```
 pub fn format(&self, ast: &Expr) -> Result<String> {
         // Simple formatter that converts AST back to source

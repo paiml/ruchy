@@ -421,9 +421,9 @@ impl Checkpoint {
 /// ```
 /// use ruchy::runtime::repl::Checkpoint;
 /// 
-let mut instance = Checkpoint::new();
-let result = instance.age();
-// Verify behavior
+/// let mut instance = Checkpoint::new();
+/// let result = instance.age();
+/// // Verify behavior
 /// ```
 pub fn age(&self) -> Duration {
         SystemTime::now().duration_since(self.timestamp)

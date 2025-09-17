@@ -73,32 +73,32 @@ impl Counterexample {
 /// ```
 /// use ruchy::proving::counterexample::Counterexample;
 /// 
-let instance = Counterexample::new();
-// Verify behavior
+/// let instance = Counterexample::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::proving::counterexample::Counterexample;
 /// 
-let instance = Counterexample::new();
-// Verify behavior
+/// let instance = Counterexample::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::proving::counterexample::Counterexample;
 /// 
-let instance = Counterexample::new();
-// Verify behavior
+/// let instance = Counterexample::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::proving::counterexample::Counterexample;
 /// 
-let instance = Counterexample::new();
-// Verify behavior
+/// let instance = Counterexample::new();
+/// // Verify behavior
 /// ```
 pub fn new(failed_assertion: &str) -> Self {
         Self {
@@ -114,9 +114,9 @@ pub fn new(failed_assertion: &str) -> Self {
 /// ```
 /// use ruchy::proving::counterexample::Counterexample;
 /// 
-let mut instance = Counterexample::new();
-let result = instance.add_assignment();
-// Verify behavior
+/// let mut instance = Counterexample::new();
+/// let result = instance.add_assignment();
+/// // Verify behavior
 /// ```
 pub fn add_assignment(&mut self, var: &str, value: Value) {
         self.assignments.insert(var.to_string(), value);

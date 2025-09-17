@@ -189,7 +189,7 @@ impl QualityGates {
 /// use ruchy::quality::QualityGates;
 /// let gates = QualityGates::new();
 /// ```
-// Verify behavior
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -202,9 +202,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::quality::mod::QualityGates;
 /// 
-let mut instance = QualityGates::new();
-let result = instance.with_thresholds();
-// Verify behavior
+/// let mut instance = QualityGates::new();
+/// let result = instance.with_thresholds();
+/// // Verify behavior
 /// ```
 pub fn with_thresholds(thresholds: QualityThresholds) -> Self {
         Self {
@@ -217,9 +217,9 @@ pub fn with_thresholds(thresholds: QualityThresholds) -> Self {
 /// ```
 /// use ruchy::quality::mod::QualityGates;
 /// 
-let mut instance = QualityGates::new();
-let result = instance.update_metrics();
-// Verify behavior
+/// let mut instance = QualityGates::new();
+/// let result = instance.update_metrics();
+/// // Verify behavior
 /// ```
 pub fn update_metrics(&mut self, metrics: QualityMetrics) {
         self.metrics = metrics;
@@ -234,9 +234,9 @@ pub fn update_metrics(&mut self, metrics: QualityMetrics) {
 /// ```
 /// use ruchy::quality::mod::QualityGates;
 /// 
-let mut instance = QualityGates::new();
-let result = instance.check();
-// Verify behavior
+/// let mut instance = QualityGates::new();
+/// let result = instance.check();
+/// // Verify behavior
 /// ```
 pub fn check(&self) -> Result<QualityReport, QualityReport> {
         let mut violations = Vec::new();

@@ -33,8 +33,6 @@ use anyhow::{bail, Result};
 /// Shared parser state and utilities
 pub(crate) struct ParserState<'a> {
     pub tokens: TokenStream<'a>,
-    #[allow(dead_code)]
-    pub error_recovery: ErrorRecovery,
     pub errors: Vec<ErrorNode>,
     /// Arena allocator for AST nodes
     #[allow(dead_code)]
@@ -48,7 +46,6 @@ impl<'a> ParserState<'a> {
     pub fn new(input: &'a str) -> Self {
         Self {
             tokens: TokenStream::new(input),
-            error_recovery: ErrorRecovery::new(),
             errors: Vec::new(),
             arena: Arena::new(),
             interner: StringInterner::new(),
