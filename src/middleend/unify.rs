@@ -60,9 +60,9 @@ pub fn apply(&self, ty: &MonoType) -> MonoType {
 /// ```
 /// use ruchy::middleend::unify::Unifier;
 /// 
-let mut instance = Unifier::new();
-let result = instance.unify();
-// Verify behavior
+/// let mut instance = Unifier::new();
+/// let result = instance.unify();
+/// // Verify behavior
 /// ```
 pub fn unify(&mut self, t1: &MonoType, t2: &MonoType) -> Result<()> {
         let t1 = self.apply(t1);

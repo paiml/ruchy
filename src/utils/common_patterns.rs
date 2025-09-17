@@ -239,20 +239,19 @@ impl ProgressIndicator {
 /// ```
 /// use ruchy::utils::common_patterns::ProgressIndicator;
 /// 
-let instance = ProgressIndicator::new();
-// Verify behavior
+/// let progress = ProgressIndicator::new(100, "Processing".to_string());
+/// // progress.update(50);
 /// ```
 pub fn new(total: usize, label: String) -> Self {
         Self { total, current: 0, label }
     }
 /// # Examples
-/// 
-/// ```
+///
+/// ```ignore
 /// use ruchy::utils::common_patterns::ProgressIndicator;
-/// 
-let mut instance = ProgressIndicator::new();
-let result = instance.increment();
-// Verify behavior
+///
+/// let mut progress = ProgressIndicator::new(100, "Processing".to_string());
+/// progress.increment();
 /// ```
 pub fn increment(&mut self) {
         self.current += 1;
@@ -265,9 +264,9 @@ pub fn increment(&mut self) {
 /// ```
 /// use ruchy::utils::common_patterns::ProgressIndicator;
 /// 
-let mut instance = ProgressIndicator::new();
-let result = instance.finish();
-// Verify behavior
+/// let mut instance = ProgressIndicator::new();
+/// let result = instance.finish();
+/// // Verify behavior
 /// ```
 pub fn finish(&self) {
         println!("✅ {} completed: {}/{}", self.label, self.current, self.total);

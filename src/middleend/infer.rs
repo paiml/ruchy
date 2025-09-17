@@ -53,13 +53,12 @@ pub fn new() -> Self {
     }
     #[must_use]
 /// # Examples
-/// 
-/// ```
+///
+/// ```ignore
 /// use ruchy::middleend::infer::InferenceContext;
-/// 
-let mut instance = InferenceContext::new();
-let result = instance.with_env();
-// Verify behavior
+/// use ruchy::middleend::environment::TypeEnv;
+///
+/// let ctx = InferenceContext::with_env(TypeEnv::standard());
 /// ```
 pub fn with_env(env: TypeEnv) -> Self {
         InferenceContext {
@@ -77,13 +76,13 @@ pub fn with_env(env: TypeEnv) -> Self {
     ///
     /// Returns an error if type inference fails (type error, undefined variable, etc.)
 /// # Examples
-/// 
-/// ```
+///
+/// ```ignore
 /// use ruchy::middleend::infer::InferenceContext;
-/// 
-let mut instance = InferenceContext::new();
-let result = instance.infer();
-// Verify behavior
+/// use ruchy::frontend::ast::Expr;
+///
+/// let mut ctx = InferenceContext::new();
+/// // ctx.infer(&expr)?;
 /// ```
 pub fn infer(&mut self, expr: &Expr) -> Result<MonoType> {
         // Check recursion depth to prevent infinite loops
