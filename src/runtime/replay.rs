@@ -419,8 +419,9 @@ mod tests {
     }
 
     // NOTE: Tests disabled due to struct field mismatches with current API
-    #[cfg(disabled)]
-    mod disabled_tests {
+    #[cfg(test)]
+    mod enabled_tests {
+        use super::*;
 
     // Test 1: SemVer Creation and Equality
     #[test]
@@ -464,8 +465,8 @@ mod tests {
     fn test_environment() {
         let environment = create_test_environment();
         assert_eq!(environment.seed, 12345);
-        assert!(environment.config.is_empty());
-        assert!(environment.global_imports.is_empty());
+        assert!(environment.feature_flags.is_empty());
+        assert_eq!(environment.resource_limits.heap_mb, 1024);
 
         // Test serialization
         let json = serde_json::to_string(&environment).unwrap();
@@ -722,14 +723,11 @@ mod tests {
 
         // Add divergences
         let divergence1 = Divergence::Output {
-            event_id: EventId(1),
             expected: "42".to_string(),
             actual: "43".to_string(),
         };
 
         let divergence2 = Divergence::State {
-            event_id: EventId(2),
-            field: "variable_count".to_string(),
             expected_hash: "abc123".to_string(),
             actual_hash: "def456".to_string(),
         };
@@ -738,8 +736,8 @@ mod tests {
         report.add_divergence(EventId(2), divergence2);
 
         assert_eq!(report.divergences.len(), 2);
-        assert!(report.divergences.contains_key(&EventId(1)));
-        assert!(report.divergences.contains_key(&EventId(2)));
+        assert!(report.divergences.iter().any(|(id, _)| *id == EventId(1)));
+        assert!(report.divergences.iter().any(|(id, _)| *id == EventId(2)));
     }
 
     // Test 14: Complex Session with Error Handling
@@ -766,10 +764,10 @@ mod tests {
         // Verify error is recorded properly in timeline
         let error_output = &session.timeline[3]; // Second output (index 3)
         match &error_output.event {
-            Event::Output { result } => {
+            Event::Output { result, .. } => {
                 match result {
-                    Err(_) => {}, // Expected error
-                    Ok(_) => panic!("Expected error result"),
+                    EvalResult::Error { .. } => {}, // Expected error
+                    _ => panic!("Expected error result"),
                 }
             },
             _ => panic!("Expected output event"),
@@ -782,20 +780,17 @@ mod tests {
         let tolerance = ResourceTolerance::default();
 
         // Default values should be reasonable
-        assert!(tolerance.memory_bytes > 0);
-        assert!(tolerance.cpu_ns > 0);
-        assert!(tolerance.stack_depth > 0);
+        assert!(tolerance.heap_bytes_percent > 0.0);
+        assert!(tolerance.cpu_ns_percent > 0.0);
 
         // Create custom tolerance
         let custom_tolerance = ResourceTolerance {
-            memory_bytes: 1024,
-            cpu_ns: 1000000,
-            stack_depth: 10,
+            heap_bytes_percent: 15.0,
+            cpu_ns_percent: 25.0,
         };
 
-        assert_eq!(custom_tolerance.memory_bytes, 1024);
-        assert_eq!(custom_tolerance.cpu_ns, 1000000);
-        assert_eq!(custom_tolerance.stack_depth, 10);
+        assert_eq!(custom_tolerance.heap_bytes_percent, 15.0);
+        assert_eq!(custom_tolerance.cpu_ns_percent, 25.0);
     }
 
     // Test 16: Complete Session Serialization
@@ -824,5 +819,5 @@ mod tests {
         assert_eq!(session.version, deserialized.version);
     }
 
-    } // End disabled_tests module
+    } // End enabled_tests module
 }
