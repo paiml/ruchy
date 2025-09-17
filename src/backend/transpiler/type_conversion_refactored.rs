@@ -9,12 +9,10 @@ impl Transpiler {
     /// Main dispatcher for type conversion (complexity: ~8)
 /// # Examples
 /// 
-/// ```
-/// use ruchy::backend::transpiler::type_conversion_refactored::Transpiler;
-/// 
-let mut instance = Transpiler::new();
-let result = instance.try_transpile_type_conversion_refactored();
-// Verify behavior
+/// ```ignore
+/// use ruchy::backend::Transpiler;
+/// let transpiler = Transpiler::new();
+/// // Type conversion is handled internally
 /// ```
 pub fn try_transpile_type_conversion_refactored(
         &self, 

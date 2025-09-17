@@ -8,13 +8,13 @@ pub struct Unifier {
 }
 impl Unifier {
     #[must_use]
+/// Create a new unifier
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::middleend::unify::Unifier;
-/// 
-let instance = Unifier::new();
-// Verify behavior
+/// let unifier = Unifier::new();
 /// ```
 pub fn new() -> Self {
         Unifier {

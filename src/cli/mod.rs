@@ -137,14 +137,14 @@ pub enum TestCommand {
 }
 // Implementation functions with complexity <10
 impl Cli {
+/// Execute the CLI command
+///
 /// # Examples
-/// 
-/// ```
-/// use ruchy::cli::mod::Cli;
-/// 
-let mut instance = Cli::new();
-let result = instance.execute();
-// Verify behavior
+///
+/// ```ignore
+/// use ruchy::cli::Cli;
+/// let cli = Cli::new();
+/// cli.execute().expect("Failed to execute");
 /// ```
 pub fn execute(self) -> Result<(), String> {
         match self.command {

@@ -8,13 +8,13 @@ pub struct TypeEnv {
 }
 impl TypeEnv {
     #[must_use]
+/// Create a new empty type environment
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::middleend::environment::TypeEnv;
-/// 
-let instance = TypeEnv::new();
-// Verify behavior
+/// let env = TypeEnv::new();
 /// ```
 pub fn new() -> Self {
         TypeEnv {
@@ -23,13 +23,13 @@ pub fn new() -> Self {
     }
     /// Create a standard environment with built-in functions
     #[must_use]
+/// Create a standard type environment with built-in functions
+///
 /// # Examples
-/// 
+///
 /// ```
-/// use ruchy::middleend::environment::standard;
-/// 
-/// let result = standard(());
-/// assert_eq!(result, Ok(()));
+/// use ruchy::middleend::environment::TypeEnv;
+/// let env = TypeEnv::standard();
 /// ```
 pub fn standard() -> Self {
         let mut env = Self::new();
@@ -73,14 +73,15 @@ pub fn standard() -> Self {
         env
     }
     /// Bind a name to a type scheme
+/// Bind a name to a type scheme in the environment
+///
 /// # Examples
-/// 
+///
 /// ```
-/// use ruchy::middleend::environment::TypeEnv;
-/// 
-let mut instance = TypeEnv::new();
-let result = instance.bind();
-// Verify behavior
+/// use ruchy::middleend::environment::{TypeEnv, TypeScheme};
+/// use ruchy::middleend::types::MonoType;
+/// let mut env = TypeEnv::new();
+/// env.bind("x", TypeScheme::mono(MonoType::Int));
 /// ```
 pub fn bind(&mut self, name: impl Into<String>, scheme: TypeScheme) {
         self.bindings.insert(name.into(), scheme);

@@ -13,19 +13,9 @@ pub struct WasmEmitter {
 impl WasmEmitter {
 /// # Examples
 /// 
-/// ```
-/// use ruchy::backend::wasm::mod::WasmEmitter;
-/// 
-let instance = WasmEmitter::new();
-// Verify behavior
-/// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::backend::wasm::mod::WasmEmitter;
-/// 
-let instance = WasmEmitter::new();
-// Verify behavior
+/// ```ignore
+/// use ruchy::backend::wasm::WasmEmitter;
+/// let instance = WasmEmitter::new();
 /// ```
 pub fn new() -> Self {
         Self {
@@ -35,12 +25,12 @@ pub fn new() -> Self {
     /// Emit a complete WASM module from a Ruchy AST expression
 /// # Examples
 /// 
-/// ```
-/// use ruchy::backend::wasm::mod::WasmEmitter;
-/// 
-let mut instance = WasmEmitter::new();
-let result = instance.emit();
-// Verify behavior
+/// ```ignore
+/// use ruchy::backend::wasm::WasmEmitter;
+/// use ruchy::frontend::ast::{Expr, ExprKind};
+/// let instance = WasmEmitter::new();
+/// let expr = Expr::new(ExprKind::Block(vec![]), Default::default());
+/// let result = instance.emit(&expr);
 /// ```
 pub fn emit(&self, expr: &Expr) -> Result<Vec<u8>, String> {
         let mut module = Module::new();

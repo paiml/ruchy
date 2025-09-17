@@ -181,20 +181,14 @@ pub enum QualityReport {
     Fail { violations: Vec<Violation> },
 }
 impl QualityGates {
+/// Create new quality gates
+///
 /// # Examples
-/// 
+///
 /// ```
-/// use ruchy::quality::mod::QualityGates;
-/// 
-let instance = QualityGates::new();
-// Verify behavior
+/// use ruchy::quality::QualityGates;
+/// let gates = QualityGates::new();
 /// ```
-/// # Examples
-/// 
-/// ```
-/// use ruchy::quality::mod::QualityGates;
-/// 
-let instance = QualityGates::new();
 // Verify behavior
 /// ```
 pub fn new() -> Self {

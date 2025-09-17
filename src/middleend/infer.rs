@@ -33,13 +33,13 @@ pub enum TypeConstraint {
 }
 impl InferenceContext {
     #[must_use]
+/// Create a new inference context
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use ruchy::middleend::infer::InferenceContext;
-/// 
-let instance = InferenceContext::new();
-// Verify behavior
+/// let ctx = InferenceContext::new();
 /// ```
 pub fn new() -> Self {
         InferenceContext {
