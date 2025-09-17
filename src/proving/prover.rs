@@ -18,24 +18,24 @@ impl InteractiveProver {
 /// ```
 /// use ruchy::proving::prover::InteractiveProver;
 /// 
-let instance = InteractiveProver::new();
-// Verify behavior
+/// let instance = InteractiveProver::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::proving::prover::InteractiveProver;
 /// 
-let instance = InteractiveProver::new();
-// Verify behavior
+/// let instance = InteractiveProver::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::proving::prover::InteractiveProver;
 /// 
-let instance = InteractiveProver::new();
-// Verify behavior
+/// let instance = InteractiveProver::new();
+/// // Verify behavior
 /// ```
 pub fn new(backend: SmtBackend) -> Self {
         Self {
@@ -51,9 +51,9 @@ pub fn new(backend: SmtBackend) -> Self {
 /// ```
 /// use ruchy::proving::prover::InteractiveProver;
 /// 
-let mut instance = InteractiveProver::new();
-let result = instance.set_timeout();
-// Verify behavior
+/// let mut instance = InteractiveProver::new();
+/// let result = instance.set_timeout();
+/// // Verify behavior
 /// ```
 pub fn set_timeout(&mut self, timeout: u64) {
         self.timeout = timeout;
@@ -64,8 +64,8 @@ pub fn set_timeout(&mut self, timeout: u64) {
 /// ```
 /// use ruchy::proving::prover::InteractiveProver;
 /// 
-let mut instance = InteractiveProver::new();
-let result = instance.set_ml_suggestions();
+/// let mut instance = InteractiveProver::new();
+/// let result = instance.set_ml_suggestions();
 /// assert_eq!(result, Ok(true));
 /// ```
 pub fn set_ml_suggestions(&mut self, enabled: bool) {
@@ -77,9 +77,9 @@ pub fn set_ml_suggestions(&mut self, enabled: bool) {
 /// ```
 /// use ruchy::proving::prover::InteractiveProver;
 /// 
-let mut instance = InteractiveProver::new();
-let result = instance.load_script();
-// Verify behavior
+/// let mut instance = InteractiveProver::new();
+/// let result = instance.load_script();
+/// // Verify behavior
 /// ```
 pub fn load_script(&mut self, _script: &str) -> Result<()> {
         // Simplified: just return ok
@@ -91,9 +91,9 @@ pub fn load_script(&mut self, _script: &str) -> Result<()> {
 /// ```
 /// use ruchy::proving::prover::InteractiveProver;
 /// 
-let mut instance = InteractiveProver::new();
-let result = instance.get_available_tactics();
-// Verify behavior
+/// let mut instance = InteractiveProver::new();
+/// let result = instance.get_available_tactics();
+/// // Verify behavior
 /// ```
 pub fn get_available_tactics(&self) -> Vec<&dyn super::tactics::Tactic> {
         self.tactics.all_tactics()
@@ -104,9 +104,9 @@ pub fn get_available_tactics(&self) -> Vec<&dyn super::tactics::Tactic> {
 /// ```
 /// use ruchy::proving::prover::InteractiveProver;
 /// 
-let mut instance = InteractiveProver::new();
-let result = instance.apply_tactic();
-// Verify behavior
+/// let mut instance = InteractiveProver::new();
+/// let result = instance.apply_tactic();
+/// // Verify behavior
 /// ```
 pub fn apply_tactic(&mut self, session: &mut ProverSession, tactic_name: &str, args: &[&str]) -> Result<ProofResult> {
         let tactic = self.tactics.get_tactic(tactic_name)?;

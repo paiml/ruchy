@@ -314,8 +314,8 @@ impl ComponentBuilder {
 /// ```
 /// use ruchy::wasm::component::ComponentBuilder;
 /// 
-let instance = ComponentBuilder::new();
-// Verify behavior
+/// let instance = ComponentBuilder::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -332,9 +332,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::wasm::component::ComponentBuilder;
 /// 
-let mut instance = ComponentBuilder::new();
-let result = instance.new_with_config();
-// Verify behavior
+/// let mut instance = ComponentBuilder::new();
+/// let result = instance.new_with_config();
+/// // Verify behavior
 /// ```
 pub fn new_with_config(config: ComponentConfig) -> Self {
         Self {
@@ -351,9 +351,9 @@ pub fn new_with_config(config: ComponentConfig) -> Self {
 /// ```
 /// use ruchy::wasm::component::ComponentBuilder;
 /// 
-let mut instance = ComponentBuilder::new();
-let result = instance.add_source();
-// Verify behavior
+/// let mut instance = ComponentBuilder::new();
+/// let result = instance.add_source();
+/// // Verify behavior
 /// ```
 pub fn add_source(&mut self, path: impl AsRef<Path>) -> Result<&mut Self> {
         let path = path.as_ref().to_path_buf();

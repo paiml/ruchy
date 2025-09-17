@@ -153,8 +153,8 @@ impl Inspector {
 /// ```
 /// use ruchy::runtime::inspect::Inspector;
 /// 
-let instance = Inspector::new();
-// Verify behavior
+/// let instance = Inspector::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self::with_style(InspectStyle::default())
@@ -165,9 +165,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::runtime::inspect::Inspector;
 /// 
-let mut instance = Inspector::new();
-let result = instance.with_style();
-// Verify behavior
+/// let mut instance = Inspector::new();
+/// let result = instance.with_style();
+/// // Verify behavior
 /// ```
 pub fn with_style(style: InspectStyle) -> Self {
         Self {
@@ -196,9 +196,9 @@ pub fn with_style(style: InspectStyle) -> Self {
 /// ```
 /// use ruchy::runtime::inspect::Inspector;
 /// 
-let mut instance = Inspector::new();
-let result = instance.exit();
-// Verify behavior
+/// let mut instance = Inspector::new();
+/// let result = instance.exit();
+/// // Verify behavior
 /// ```
 pub fn exit(&mut self) {
         self.depth = self.depth.saturating_sub(1);
@@ -221,9 +221,9 @@ pub fn has_budget(&self) -> bool {
 /// ```
 /// use ruchy::runtime::inspect::Inspector;
 /// 
-let mut instance = Inspector::new();
-let result = instance.consume_budget();
-// Verify behavior
+/// let mut instance = Inspector::new();
+/// let result = instance.consume_budget();
+/// // Verify behavior
 /// ```
 pub fn consume_budget(&mut self, amount: usize) {
         self.budget = self.budget.saturating_sub(amount);
@@ -246,9 +246,9 @@ pub fn depth(&self) -> usize {
 /// ```
 /// use ruchy::runtime::inspect::Inspector;
 /// 
-let mut instance = Inspector::new();
-let result = instance.at_max_depth();
-// Verify behavior
+/// let mut instance = Inspector::new();
+/// let result = instance.at_max_depth();
+/// // Verify behavior
 /// ```
 pub fn at_max_depth(&self) -> bool {
         self.depth >= self.max_depth

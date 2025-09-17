@@ -46,9 +46,9 @@ impl ExecuteResponse {
 /// ```
 /// use ruchy::wasm::shared_session::ExecuteResponse;
 /// 
-let mut instance = ExecuteResponse::new();
-let result = instance.success();
-// Verify behavior
+/// let mut instance = ExecuteResponse::new();
+/// let result = instance.success();
+/// // Verify behavior
 /// ```
 pub fn success(value: Value) -> Self {
         ExecuteResponse {
@@ -65,9 +65,9 @@ pub fn success(value: Value) -> Self {
 /// ```
 /// use ruchy::wasm::shared_session::ExecuteResponse;
 /// 
-let mut instance = ExecuteResponse::new();
-let result = instance.error();
-// Verify behavior
+/// let mut instance = ExecuteResponse::new();
+/// let result = instance.error();
+/// // Verify behavior
 /// ```
 pub fn error(err: String) -> Self {
         ExecuteResponse {

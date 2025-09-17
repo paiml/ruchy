@@ -24,16 +24,16 @@ impl SafeArena {
 /// ```
 /// use ruchy::runtime::safe_arena::SafeArena;
 /// 
-let instance = SafeArena::new();
-// Verify behavior
+/// let instance = SafeArena::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::runtime::safe_arena::SafeArena;
 /// 
-let instance = SafeArena::new();
-// Verify behavior
+/// let instance = SafeArena::new();
+/// // Verify behavior
 /// ```
 pub fn new(max_size: usize) -> Self {
         Self {
@@ -64,9 +64,9 @@ pub fn new(max_size: usize) -> Self {
 /// ```
 /// use ruchy::runtime::safe_arena::SafeArena;
 /// 
-let mut instance = SafeArena::new();
-let result = instance.reset();
-// Verify behavior
+/// let mut instance = SafeArena::new();
+/// let result = instance.reset();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 

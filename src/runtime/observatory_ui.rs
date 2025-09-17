@@ -634,8 +634,8 @@ impl ObservatoryDashboard {
 /// ```
 /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-let instance = ObservatoryDashboard::new();
-// Verify behavior
+/// let instance = ObservatoryDashboard::new();
+/// // Verify behavior
 /// ```
 pub fn new(observatory: Arc<Mutex<ActorObservatory>>, config: DashboardConfig) -> Self {
         Self {
@@ -653,9 +653,9 @@ pub fn new(observatory: Arc<Mutex<ActorObservatory>>, config: DashboardConfig) -
 /// ```
 /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-let mut instance = ObservatoryDashboard::new();
-let result = instance.start_interactive();
-// Verify behavior
+/// let mut instance = ObservatoryDashboard::new();
+/// let result = instance.start_interactive();
+/// // Verify behavior
 /// ```
 pub fn start_interactive(&mut self) -> Result<()> {
         // Clear screen and hide cursor
@@ -684,9 +684,9 @@ pub fn start_interactive(&mut self) -> Result<()> {
 /// ```
 /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-let mut instance = ObservatoryDashboard::new();
-let result = instance.render_current_view();
-// Verify behavior
+/// let mut instance = ObservatoryDashboard::new();
+/// let result = instance.render_current_view();
+/// // Verify behavior
 /// ```
 pub fn render_current_view(&mut self) -> Result<()> {
         // Clear screen and move to top
@@ -992,9 +992,9 @@ pub fn set_display_mode(&mut self, mode: DisplayMode) {
 /// ```
 /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-let mut instance = ObservatoryDashboard::new();
-let result = instance.get_display_mode();
-// Verify behavior
+/// let mut instance = ObservatoryDashboard::new();
+/// let result = instance.get_display_mode();
+/// // Verify behavior
 /// ```
 pub fn get_display_mode(&self) -> DisplayMode {
         self.display_mode
@@ -1005,9 +1005,9 @@ pub fn get_display_mode(&self) -> DisplayMode {
 /// ```
 /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-let mut instance = ObservatoryDashboard::new();
-let result = instance.cycle_display_mode();
-// Verify behavior
+/// let mut instance = ObservatoryDashboard::new();
+/// let result = instance.cycle_display_mode();
+/// // Verify behavior
 /// ```
 pub fn cycle_display_mode(&mut self) {
         self.display_mode = match self.display_mode {
@@ -1132,9 +1132,9 @@ pub fn format_duration_us(&self, us: u64) -> String {
 /// ```
 /// use ruchy::runtime::observatory_ui::ObservatoryDashboard;
 /// 
-let mut instance = ObservatoryDashboard::new();
-let result = instance.format_bytes();
-// Verify behavior
+/// let mut instance = ObservatoryDashboard::new();
+/// let result = instance.format_bytes();
+/// // Verify behavior
 /// ```
 pub fn format_bytes(&self, bytes: usize) -> String {
         format_bytes(bytes)

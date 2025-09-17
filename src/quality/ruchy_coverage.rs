@@ -24,16 +24,16 @@ impl RuchyCoverage {
 /// ```
 /// use ruchy::quality::ruchy_coverage::RuchyCoverage;
 /// 
-let instance = RuchyCoverage::new();
-// Verify behavior
+/// let instance = RuchyCoverage::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::quality::ruchy_coverage::RuchyCoverage;
 /// 
-let instance = RuchyCoverage::new();
-// Verify behavior
+/// let instance = RuchyCoverage::new();
+/// // Verify behavior
 /// ```
 pub fn new(file_path: &str) -> Self {
         Self {
@@ -52,9 +52,9 @@ pub fn new(file_path: &str) -> Self {
 /// ```
 /// use ruchy::quality::ruchy_coverage::RuchyCoverage;
 /// 
-let mut instance = RuchyCoverage::new();
-let result = instance.line_coverage();
-// Verify behavior
+/// let mut instance = RuchyCoverage::new();
+/// let result = instance.line_coverage();
+/// // Verify behavior
 /// ```
 pub fn line_coverage(&self) -> f64 {
         if self.total_lines == 0 {

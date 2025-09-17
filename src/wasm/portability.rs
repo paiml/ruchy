@@ -977,8 +977,8 @@ impl PortabilityAnalyzer {
 /// ```
 /// use ruchy::wasm::portability::PortabilityAnalyzer;
 /// 
-let instance = PortabilityAnalyzer::new();
-// Verify behavior
+/// let instance = PortabilityAnalyzer::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -993,9 +993,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::wasm::portability::PortabilityAnalyzer;
 /// 
-let mut instance = PortabilityAnalyzer::new();
-let result = instance.new_with_config();
-// Verify behavior
+/// let mut instance = PortabilityAnalyzer::new();
+/// let result = instance.new_with_config();
+/// // Verify behavior
 /// ```
 pub fn new_with_config(config: AnalysisConfig) -> Self {
         Self {

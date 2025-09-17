@@ -1751,24 +1751,24 @@ impl ActorObservatory {
 /// ```
 /// use ruchy::runtime::observatory::ActorObservatory;
 /// 
-let instance = ActorObservatory::new();
-// Verify behavior
+/// let instance = ActorObservatory::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::runtime::observatory::ActorObservatory;
 /// 
-let instance = ActorObservatory::new();
-// Verify behavior
+/// let instance = ActorObservatory::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::runtime::observatory::ActorObservatory;
 /// 
-let instance = ActorObservatory::new();
-// Verify behavior
+/// let instance = ActorObservatory::new();
+/// // Verify behavior
 /// ```
 pub fn new(actor_system: Arc<Mutex<ActorSystem>>, config: ObservatoryConfig) -> Self {
         Self {
@@ -1788,9 +1788,9 @@ pub fn new(actor_system: Arc<Mutex<ActorSystem>>, config: ObservatoryConfig) -> 
 /// ```
 /// use ruchy::runtime::observatory::ActorObservatory;
 /// 
-let mut instance = ActorObservatory::new();
-let result = instance.add_filter();
-// Verify behavior
+/// let mut instance = ActorObservatory::new();
+/// let result = instance.add_filter();
+/// // Verify behavior
 /// ```
 pub fn add_filter(&mut self, filter: MessageFilter) {
         self.filters.push(filter);

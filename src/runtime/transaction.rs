@@ -71,24 +71,24 @@ impl TransactionalState {
 /// ```
 /// use ruchy::runtime::transaction::TransactionalState;
 /// 
-let instance = TransactionalState::new();
-// Verify behavior
+/// let instance = TransactionalState::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::runtime::transaction::TransactionalState;
 /// 
-let instance = TransactionalState::new();
-// Verify behavior
+/// let instance = TransactionalState::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::runtime::transaction::TransactionalState;
 /// 
-let instance = TransactionalState::new();
-// Verify behavior
+/// let instance = TransactionalState::new();
+/// // Verify behavior
 /// ```
     pub fn new(max_memory: usize) -> Self {
         Self {
@@ -106,9 +106,9 @@ let instance = TransactionalState::new();
 /// ```
 /// use ruchy::runtime::transaction::TransactionalState;
 /// 
-let mut instance = TransactionalState::new();
-let result = instance.begin_transaction();
-// Verify behavior
+/// let mut instance = TransactionalState::new();
+/// let result = instance.begin_transaction();
+/// // Verify behavior
 /// ```
     pub fn begin_transaction(&mut self, metadata: TransactionMetadata) -> Result<TransactionId> {
         if self.transactions.len() >= self.max_depth {
@@ -386,9 +386,9 @@ impl TransactionLog {
 /// ```
 /// use ruchy::runtime::transaction::TransactionLog;
 /// 
-let mut instance = TransactionLog::new();
-let result = instance.log();
-// Verify behavior
+/// let mut instance = TransactionLog::new();
+/// let result = instance.log();
+/// // Verify behavior
 /// ```
     pub fn log(&mut self, event: TransactionEvent) {
         self.events.push((Instant::now(), event));
@@ -448,9 +448,9 @@ impl MVCC {
 /// ```
 /// use ruchy::runtime::transaction::MVCC;
 /// 
-let mut instance = MVCC::new();
-let result = instance.begin_read();
-// Verify behavior
+/// let mut instance = MVCC::new();
+/// let result = instance.begin_read();
+/// // Verify behavior
 /// ```
     pub fn begin_read(&self) -> Version {
         self.current_version

@@ -44,9 +44,9 @@ impl TacticLibrary {
 /// ```
 /// use ruchy::proving::tactics::TacticLibrary;
 /// 
-let mut instance = TacticLibrary::new();
-let result = instance.default();
-// Verify behavior
+/// let mut instance = TacticLibrary::new();
+/// let result = instance.default();
+/// // Verify behavior
 /// ```
 pub fn default() -> Self {
         let mut tactics = HashMap::new();
@@ -72,9 +72,9 @@ pub fn default() -> Self {
 /// ```
 /// use ruchy::proving::tactics::TacticLibrary;
 /// 
-let mut instance = TacticLibrary::new();
-let result = instance.all_tactics();
-// Verify behavior
+/// let mut instance = TacticLibrary::new();
+/// let result = instance.all_tactics();
+/// // Verify behavior
 /// ```
 pub fn all_tactics(&self) -> Vec<&dyn Tactic> {
         self.tactics.values().map(std::convert::AsRef::as_ref).collect()

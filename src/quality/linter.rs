@@ -97,8 +97,8 @@ impl Linter {
 /// ```
 /// use ruchy::quality::linter::Linter;
 /// 
-let instance = Linter::new();
-// Verify behavior
+/// let instance = Linter::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -121,9 +121,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::quality::linter::Linter;
 /// 
-let mut instance = Linter::new();
-let result = instance.set_rules();
-// Verify behavior
+/// let mut instance = Linter::new();
+/// let result = instance.set_rules();
+/// // Verify behavior
 /// ```
 pub fn set_rules(&mut self, rule_filter: &str) {
         self.rules.clear();
@@ -161,9 +161,9 @@ pub fn set_strict_mode(&mut self, strict: bool) {
 /// ```
 /// use ruchy::quality::linter::Linter;
 /// 
-let mut instance = Linter::new();
-let result = instance.lint();
-// Verify behavior
+/// let mut instance = Linter::new();
+/// let result = instance.lint();
+/// // Verify behavior
 /// ```
 pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
@@ -549,9 +549,9 @@ pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
 /// ```
 /// use ruchy::quality::linter::Linter;
 /// 
-let mut instance = Linter::new();
-let result = instance.auto_fix();
-// Verify behavior
+/// let mut instance = Linter::new();
+/// let result = instance.auto_fix();
+/// // Verify behavior
 /// ```
 pub fn auto_fix(&self, source: &str, issues: &[LintIssue]) -> Result<String> {
         // Simple auto-fix implementation

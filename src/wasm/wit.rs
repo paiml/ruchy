@@ -299,8 +299,8 @@ impl WitGenerator {
 /// ```
 /// use ruchy::wasm::wit::WitGenerator;
 /// 
-let instance = WitGenerator::new();
-// Verify behavior
+/// let instance = WitGenerator::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -315,9 +315,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::wasm::wit::WitGenerator;
 /// 
-let mut instance = WitGenerator::new();
-let result = instance.new_with_config();
-// Verify behavior
+/// let mut instance = WitGenerator::new();
+/// let result = instance.new_with_config();
+/// // Verify behavior
 /// ```
 pub fn new_with_config(config: WitConfig) -> Self {
         Self {
@@ -345,9 +345,9 @@ pub fn with_world(&mut self, world: &str) -> &mut Self {
 /// ```
 /// use ruchy::wasm::wit::WitGenerator;
 /// 
-let mut instance = WitGenerator::new();
-let result = instance.generate();
-// Verify behavior
+/// let mut instance = WitGenerator::new();
+/// let result = instance.generate();
+/// // Verify behavior
 /// ```
 pub fn generate(&mut self, component: &super::component::WasmComponent) -> Result<WitInterface> {
         self.generate_from_component(component)
@@ -446,9 +446,9 @@ pub fn generate_from_source(&mut self, _source: &str) -> Result<WitInterface> {
 /// ```
 /// use ruchy::wasm::wit::WitGenerator;
 /// 
-let mut instance = WitGenerator::new();
-let result = instance.add_type_mapping();
-// Verify behavior
+/// let mut instance = WitGenerator::new();
+/// let result = instance.add_type_mapping();
+/// // Verify behavior
 /// ```
 pub fn add_type_mapping(&mut self, ruchy_type: String, wit_type: String) {
         self.config.type_mappings.insert(ruchy_type, wit_type);

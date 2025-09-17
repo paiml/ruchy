@@ -22,9 +22,9 @@ impl NotebookCell {
 /// ```
 /// use ruchy::wasm::demo_converter::NotebookCell;
 /// 
-let mut instance = NotebookCell::new();
-let result = instance.code();
-// Verify behavior
+/// let mut instance = NotebookCell::new();
+/// let result = instance.code();
+/// // Verify behavior
 /// ```
 pub fn code(source: String) -> Self {
         Self {

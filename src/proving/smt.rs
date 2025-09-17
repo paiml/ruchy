@@ -46,24 +46,24 @@ impl SmtSolver {
 /// ```
 /// use ruchy::proving::smt::SmtSolver;
 /// 
-let instance = SmtSolver::new();
-// Verify behavior
+/// let instance = SmtSolver::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::proving::smt::SmtSolver;
 /// 
-let instance = SmtSolver::new();
-// Verify behavior
+/// let instance = SmtSolver::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::proving::smt::SmtSolver;
 /// 
-let instance = SmtSolver::new();
-// Verify behavior
+/// let instance = SmtSolver::new();
+/// // Verify behavior
 /// ```
 pub fn new(backend: SmtBackend) -> Self {
         Self {
@@ -79,9 +79,9 @@ pub fn new(backend: SmtBackend) -> Self {
 /// ```
 /// use ruchy::proving::smt::SmtSolver;
 /// 
-let mut instance = SmtSolver::new();
-let result = instance.set_timeout();
-// Verify behavior
+/// let mut instance = SmtSolver::new();
+/// let result = instance.set_timeout();
+/// // Verify behavior
 /// ```
 pub fn set_timeout(&mut self, timeout_ms: u64) {
         self.timeout_ms = timeout_ms;
@@ -92,9 +92,9 @@ pub fn set_timeout(&mut self, timeout_ms: u64) {
 /// ```
 /// use ruchy::proving::smt::SmtSolver;
 /// 
-let mut instance = SmtSolver::new();
-let result = instance.declare_var();
-// Verify behavior
+/// let mut instance = SmtSolver::new();
+/// let result = instance.declare_var();
+/// // Verify behavior
 /// ```
 pub fn declare_var(&mut self, name: &str, sort: &str) {
         self.declarations.insert(
@@ -108,9 +108,9 @@ pub fn declare_var(&mut self, name: &str, sort: &str) {
 /// ```
 /// use ruchy::proving::smt::SmtSolver;
 /// 
-let mut instance = SmtSolver::new();
-let result = instance.declare_fun();
-// Verify behavior
+/// let mut instance = SmtSolver::new();
+/// let result = instance.declare_fun();
+/// // Verify behavior
 /// ```
 pub fn declare_fun(&mut self, name: &str, params: &[&str], ret: &str) {
         let params_str = params.join(" ");
@@ -125,9 +125,9 @@ pub fn declare_fun(&mut self, name: &str, params: &[&str], ret: &str) {
 /// ```
 /// use ruchy::proving::smt::SmtSolver;
 /// 
-let mut instance = SmtSolver::new();
-let result = instance.assert();
-// Verify behavior
+/// let mut instance = SmtSolver::new();
+/// let result = instance.assert();
+/// // Verify behavior
 /// ```
 pub fn assert(&mut self, expr: &str) {
         self.assertions.push(format!("(assert {expr})"));
@@ -265,9 +265,9 @@ impl SmtQuery {
 /// ```
 /// use ruchy::proving::smt::SmtQuery;
 /// 
-let mut instance = SmtQuery::new();
-let result = instance.add_var();
-// Verify behavior
+/// let mut instance = SmtQuery::new();
+/// let result = instance.add_var();
+/// // Verify behavior
 /// ```
 pub fn add_var(&mut self, name: &str, sort: &str) {
         self.variables.push((name.to_string(), sort.to_string()));
@@ -278,9 +278,9 @@ pub fn add_var(&mut self, name: &str, sort: &str) {
 /// ```
 /// use ruchy::proving::smt::SmtQuery;
 /// 
-let mut instance = SmtQuery::new();
-let result = instance.add_assumption();
-// Verify behavior
+/// let mut instance = SmtQuery::new();
+/// let result = instance.add_assumption();
+/// // Verify behavior
 /// ```
 pub fn add_assumption(&mut self, expr: &str) {
         self.assumptions.push(expr.to_string());
@@ -369,9 +369,9 @@ impl ProofAutomation {
 /// ```
 /// use ruchy::proving::smt::ProofAutomation;
 /// 
-let mut instance = ProofAutomation::new();
-let result = instance.prove_implication();
-// Verify behavior
+/// let mut instance = ProofAutomation::new();
+/// let result = instance.prove_implication();
+/// // Verify behavior
 /// ```
 pub fn prove_implication(&mut self, antecedent: &str, consequent: &str) -> Result<SmtResult> {
         let formula = format!("(=> {antecedent} {consequent})");
@@ -383,9 +383,9 @@ pub fn prove_implication(&mut self, antecedent: &str, consequent: &str) -> Resul
 /// ```
 /// use ruchy::proving::smt::ProofAutomation;
 /// 
-let mut instance = ProofAutomation::new();
-let result = instance.prove_equivalence();
-// Verify behavior
+/// let mut instance = ProofAutomation::new();
+/// let result = instance.prove_equivalence();
+/// // Verify behavior
 /// ```
 pub fn prove_equivalence(&mut self, left: &str, right: &str) -> Result<SmtResult> {
         let formula = format!("(= {left} {right})");

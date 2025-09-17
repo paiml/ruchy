@@ -23,9 +23,9 @@ impl FileCoverage {
 /// ```
 /// use ruchy::quality::coverage::FileCoverage;
 /// 
-let mut instance = FileCoverage::new();
-let result = instance.line_coverage_percentage();
-// Verify behavior
+/// let mut instance = FileCoverage::new();
+/// let result = instance.line_coverage_percentage();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
@@ -48,9 +48,9 @@ pub fn line_coverage_percentage(&self) -> f64 {
 /// ```
 /// use ruchy::quality::coverage::FileCoverage;
 /// 
-let mut instance = FileCoverage::new();
-let result = instance.branch_coverage_percentage();
-// Verify behavior
+/// let mut instance = FileCoverage::new();
+/// let result = instance.branch_coverage_percentage();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
@@ -144,9 +144,9 @@ impl CoverageReport {
 /// ```
 /// use ruchy::quality::coverage::CoverageReport;
 /// 
-let mut instance = CoverageReport::new();
-let result = instance.add_file();
-// Verify behavior
+/// let mut instance = CoverageReport::new();
+/// let result = instance.add_file();
+/// // Verify behavior
 /// ```
 pub fn add_file(&mut self, file_coverage: FileCoverage) {
         self.total_lines += file_coverage.lines_total;

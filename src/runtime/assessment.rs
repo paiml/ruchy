@@ -174,40 +174,40 @@ impl GradingEngine {
 /// ```
 /// use ruchy::runtime::assessment::GradingEngine;
 /// 
-let instance = GradingEngine::new();
-// Verify behavior
+/// let instance = GradingEngine::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::runtime::assessment::GradingEngine;
 /// 
-let instance = GradingEngine::new();
-// Verify behavior
+/// let instance = GradingEngine::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::runtime::assessment::GradingEngine;
 /// 
-let instance = GradingEngine::new();
-// Verify behavior
+/// let instance = GradingEngine::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::runtime::assessment::GradingEngine;
 /// 
-let instance = GradingEngine::new();
-// Verify behavior
+/// let instance = GradingEngine::new();
+/// // Verify behavior
 /// ```
 /// # Examples
 /// 
 /// ```
 /// use ruchy::runtime::assessment::GradingEngine;
 /// 
-let instance = GradingEngine::new();
-// Verify behavior
+/// let instance = GradingEngine::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         Self {
@@ -222,9 +222,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::runtime::assessment::GradingEngine;
 /// 
-let mut instance = GradingEngine::new();
-let result = instance.grade_submission();
-// Verify behavior
+/// let mut instance = GradingEngine::new();
+/// let result = instance.grade_submission();
+/// // Verify behavior
 /// ```
 pub fn grade_submission(
         &mut self,
@@ -656,9 +656,9 @@ impl GradeReport {
 /// ```
 /// use ruchy::runtime::assessment::GradeReport;
 /// 
-let mut instance = GradeReport::new();
-let result = instance.mark_invalid();
-// Verify behavior
+/// let mut instance = GradeReport::new();
+/// let result = instance.mark_invalid();
+/// // Verify behavior
 /// ```
 pub fn mark_invalid(&mut self, reason: &str) {
         self.is_valid = false;
@@ -670,9 +670,9 @@ pub fn mark_invalid(&mut self, reason: &str) {
 /// ```
 /// use ruchy::runtime::assessment::GradeReport;
 /// 
-let mut instance = GradeReport::new();
-let result = instance.add_task_grade();
-// Verify behavior
+/// let mut instance = GradeReport::new();
+/// let result = instance.add_task_grade();
+/// // Verify behavior
 /// ```
 pub fn add_task_grade(&mut self, grade: TaskGrade) {
         self.task_grades.push(grade);

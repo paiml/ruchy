@@ -39,9 +39,9 @@ impl LazyValue {
 /// ```
 /// use ruchy::runtime::lazy::LazyValue;
 /// 
-let mut instance = LazyValue::new();
-let result = instance.computed();
-// Verify behavior
+/// let mut instance = LazyValue::new();
+/// let result = instance.computed();
+/// // Verify behavior
 /// ```
 pub fn computed(value: Value) -> Self {
         LazyValue::Computed(value)
@@ -152,9 +152,9 @@ impl LazyIterator {
 /// ```
 /// use ruchy::runtime::lazy::LazyIterator;
 /// 
-let mut instance = LazyIterator::new();
-let result = instance.from_vec();
-// Verify behavior
+/// let mut instance = LazyIterator::new();
+/// let result = instance.from_vec();
+/// // Verify behavior
 /// ```
 pub fn from_vec(values: Vec<Value>) -> Self {
         LazyIterator {
@@ -233,9 +233,9 @@ pub fn skip(self, count: usize) -> Self {
 /// ```
 /// use ruchy::runtime::lazy::LazyIterator;
 /// 
-let mut instance = LazyIterator::new();
-let result = instance.collect();
-// Verify behavior
+/// let mut instance = LazyIterator::new();
+/// let result = instance.collect();
+/// // Verify behavior
 /// ```
 pub fn collect(&self) -> Result<Vec<Value>> {
         match &*self.state.borrow() {
@@ -315,8 +315,8 @@ impl LazyCache {
 /// ```
 /// use ruchy::runtime::lazy::LazyCache;
 /// 
-let instance = LazyCache::new();
-// Verify behavior
+/// let instance = LazyCache::new();
+/// // Verify behavior
 /// ```
 pub fn new() -> Self {
         LazyCache {
@@ -347,9 +347,9 @@ pub fn new() -> Self {
 /// ```
 /// use ruchy::runtime::lazy::LazyCache;
 /// 
-let mut instance = LazyCache::new();
-let result = instance.clear();
-// Verify behavior
+/// let mut instance = LazyCache::new();
+/// let result = instance.clear();
+/// // Verify behavior
 /// ```
 pub fn clear(&self) {
         self.cache.borrow_mut().clear();

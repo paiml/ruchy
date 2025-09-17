@@ -412,9 +412,9 @@ pub fn execute_cell(&mut self, cell_id: &str) -> Result<String, JsValue> {
 /// ```
 /// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-let mut instance = NotebookRuntime::new();
-let result = instance.execute_cell_with_session();
-// Verify behavior
+/// let mut instance = NotebookRuntime::new();
+/// let result = instance.execute_cell_with_session();
+/// // Verify behavior
 /// ```
 pub fn execute_cell_with_session(&mut self, cell_id: &str, code: &str) -> Result<ExecuteResponse, String> {
         // Add cell if it doesn't exist
@@ -688,9 +688,9 @@ pub fn import_session(&mut self, export: &NotebookSessionExport) -> Result<(), S
 /// ```
 /// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-let mut instance = NotebookRuntime::new();
-let result = instance.create_notebook_checkpoint();
-// Verify behavior
+/// let mut instance = NotebookRuntime::new();
+/// let result = instance.create_notebook_checkpoint();
+/// // Verify behavior
 /// ```
 pub fn create_notebook_checkpoint(&mut self, name: &str) -> Result<String, String> {
         let mut session = self.session.lock().expect("Failed to acquire session lock");
@@ -1823,9 +1823,9 @@ pub fn get_best_practices_suggestions(&self) -> Result<Vec<BestPracticeSuggestio
 /// ```
 /// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-let mut instance = NotebookRuntime::new();
-let result = instance.commit_notebook();
-// Verify behavior
+/// let mut instance = NotebookRuntime::new();
+/// let result = instance.commit_notebook();
+/// // Verify behavior
 /// ```
 pub fn commit_notebook(&mut self, message: &str, parent: Option<&str>) -> Result<NotebookCommit, String> {
         let notebook_snapshot = serde_json::to_string(&self.notebook)
@@ -1963,9 +1963,9 @@ pub fn list_tags(&self) -> Result<Vec<NotebookTag>, String> {
 /// ```
 /// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-let mut instance = NotebookRuntime::new();
-let result = instance.checkout_tag();
-// Verify behavior
+/// let mut instance = NotebookRuntime::new();
+/// let result = instance.checkout_tag();
+/// // Verify behavior
 /// ```
 pub fn checkout_tag(&mut self, name: &str) -> Result<(), String> {
         let tag = self.tags.iter()
@@ -2316,9 +2316,9 @@ pub fn save_as_template(&mut self, name: &str, description: &str, tags: Vec<&str
 /// ```
 /// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-let mut instance = NotebookRuntime::new();
-let result = instance.build_search_index();
-// Verify behavior
+/// let mut instance = NotebookRuntime::new();
+/// let result = instance.build_search_index();
+/// // Verify behavior
 /// ```
 pub fn build_search_index(&self) -> Result<SearchIndex, String> {
         let mut keywords = HashMap::new();
@@ -3022,9 +3022,9 @@ pub fn enable_smart_dependencies(&mut self, enabled: bool) {
 /// ```
 /// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-let mut instance = NotebookRuntime::new();
-let result = instance.analyze_dependencies();
-// Verify behavior
+/// let mut instance = NotebookRuntime::new();
+/// let result = instance.analyze_dependencies();
+/// // Verify behavior
 /// ```
 pub fn analyze_dependencies(&self) -> String {
         serde_json::json!({
@@ -3211,9 +3211,9 @@ pub fn enable_distributed_mode(&mut self, enabled: bool) {
 /// ```
 /// use ruchy::wasm::notebook::NotebookRuntime;
 /// 
-let mut instance = NotebookRuntime::new();
-let result = instance.add_worker_node();
-// Verify behavior
+/// let mut instance = NotebookRuntime::new();
+/// let result = instance.add_worker_node();
+/// // Verify behavior
 /// ```
 pub fn add_worker_node(&mut self, name: &str, url: &str) {
         self.worker_nodes.insert(name.to_string(), url.to_string());
@@ -3346,9 +3346,9 @@ impl FeatureParity {
 /// ```
 /// use ruchy::wasm::notebook::FeatureParity;
 /// 
-let mut instance = FeatureParity::new();
-let result = instance.check_all();
-// Verify behavior
+/// let mut instance = FeatureParity::new();
+/// let result = instance.check_all();
+/// // Verify behavior
 /// ```
 pub fn check_all() -> Vec<FeatureParity> {
         vec![

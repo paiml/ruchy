@@ -41,8 +41,8 @@ impl RefinementType {
 /// ```
 /// use ruchy::proving::refinement::RefinementType;
 /// 
-let mut instance = RefinementType::new();
-let result = instance.bounded_int();
+/// let mut instance = RefinementType::new();
+/// let result = instance.bounded_int();
 /// assert_eq!(result, Ok(42));
 /// ```
 pub fn bounded_int(min: i64, max: i64) -> Self {
@@ -260,9 +260,9 @@ impl RefinementChecker {
 /// ```
 /// use ruchy::proving::refinement::RefinementChecker;
 /// 
-let mut instance = RefinementChecker::new();
-let result = instance.set_backend();
-// Verify behavior
+/// let mut instance = RefinementChecker::new();
+/// let result = instance.set_backend();
+/// // Verify behavior
 /// ```
 pub fn set_backend(&mut self, backend: SmtBackend) {
         self.backend = backend;
@@ -273,9 +273,9 @@ pub fn set_backend(&mut self, backend: SmtBackend) {
 /// ```
 /// use ruchy::proving::refinement::RefinementChecker;
 /// 
-let mut instance = RefinementChecker::new();
-let result = instance.declare_var();
-// Verify behavior
+/// let mut instance = RefinementChecker::new();
+/// let result = instance.declare_var();
+/// // Verify behavior
 /// ```
 pub fn declare_var(&mut self, name: &str, ty: RefinementType) {
         self.env.insert(name.to_string(), ty);
@@ -356,9 +356,9 @@ pub fn verify_function(&self, name: &str, body: &str) -> Result<VerificationResu
 /// ```
 /// use ruchy::proving::refinement::RefinementChecker;
 /// 
-let mut instance = RefinementChecker::new();
-let result = instance.check_invariant();
-// Verify behavior
+/// let mut instance = RefinementChecker::new();
+/// let result = instance.check_invariant();
+/// // Verify behavior
 /// ```
 pub fn check_invariant(&self, invariant: &str, body: &str) -> Result<bool> {
         let mut solver = SmtSolver::new(self.backend);
@@ -431,9 +431,9 @@ impl LiquidTypeInference {
 /// ```
 /// use ruchy::proving::refinement::LiquidTypeInference;
 /// 
-let mut instance = LiquidTypeInference::new();
-let result = instance.infer();
-// Verify behavior
+/// let mut instance = LiquidTypeInference::new();
+/// let result = instance.infer();
+/// // Verify behavior
 /// ```
 pub fn infer(&mut self, expr: &str) -> Result<RefinementType> {
         match expr {
@@ -466,9 +466,9 @@ pub fn infer(&mut self, expr: &str) -> Result<RefinementType> {
 /// ```
 /// use ruchy::proving::refinement::LiquidTypeInference;
 /// 
-let mut instance = LiquidTypeInference::new();
-let result = instance.add_constraint();
-// Verify behavior
+/// let mut instance = LiquidTypeInference::new();
+/// let result = instance.add_constraint();
+/// // Verify behavior
 /// ```
 pub fn add_constraint(&mut self, constraint: &str) {
         self.constraints.push(constraint.to_string());
