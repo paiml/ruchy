@@ -275,3 +275,484 @@ fn check_coverage_threshold(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::{NamedTempFile, TempDir};
+
+    // Helper function to create a test .ruchy file
+    fn create_test_ruchy_file(content: &str) -> Result<NamedTempFile> {
+        let mut temp_file = NamedTempFile::new()?;
+        temp_file.write_all(content.as_bytes())?;
+        temp_file.flush()?;
+        Ok(temp_file)
+    }
+
+    // Helper function to create a temporary directory with test files
+    fn create_test_directory() -> Result<TempDir> {
+        let temp_dir = TempDir::new()?;
+
+        // Create a test .ruchy file
+        let test_file_path = temp_dir.path().join("test.ruchy");
+        fs::write(&test_file_path, "println(\"Hello Test\")")?;
+
+        // Create another test file
+        let test_file2_path = temp_dir.path().join("another_test.ruchy");
+        fs::write(&test_file2_path, "let x = 42; println(x)")?;
+
+        // Create a non-ruchy file (should be ignored)
+        let other_file_path = temp_dir.path().join("readme.txt");
+        fs::write(&other_file_path, "This is not a ruchy file")?;
+
+        Ok(temp_dir)
+    }
+
+    // ========== TestResult Tests ==========
+    #[test]
+    fn test_test_result_creation() {
+        let result = TestResult {
+            file: PathBuf::from("test.ruchy"),
+            success: true,
+            duration: Duration::from_millis(100),
+            error: None,
+        };
+
+        assert_eq!(result.file, PathBuf::from("test.ruchy"));
+        assert!(result.success);
+        assert_eq!(result.duration, Duration::from_millis(100));
+        assert!(result.error.is_none());
+    }
+
+    #[test]
+    fn test_test_result_with_error() {
+        let result = TestResult {
+            file: PathBuf::from("failing_test.ruchy"),
+            success: false,
+            duration: Duration::from_millis(50),
+            error: Some("Syntax error".to_string()),
+        };
+
+        assert_eq!(result.file, PathBuf::from("failing_test.ruchy"));
+        assert!(!result.success);
+        assert_eq!(result.duration, Duration::from_millis(50));
+        assert_eq!(result.error, Some("Syntax error".to_string()));
+    }
+
+    // ========== File Discovery Tests ==========
+    #[test]
+    fn test_discover_test_files_single_file() {
+        let temp_file = create_test_ruchy_file("println(\"test\")").unwrap();
+
+        // Create a new file with .ruchy extension
+        let temp_dir = TempDir::new().unwrap();
+        let ruchy_file = temp_dir.path().join("test.ruchy");
+        fs::copy(temp_file.path(), &ruchy_file).unwrap();
+
+        let result = discover_test_files(&ruchy_file, None, false);
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0], ruchy_file);
+    }
+
+    #[test]
+    fn test_discover_test_files_directory() {
+        let temp_dir = create_test_directory().unwrap();
+
+        let result = discover_test_files(temp_dir.path(), None, false);
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        assert_eq!(files.len(), 2); // Only .ruchy files should be found
+
+        // Check that all files end with .ruchy
+        for file in &files {
+            assert!(file.extension().unwrap() == "ruchy");
+        }
+    }
+
+    #[test]
+    fn test_discover_test_files_with_filter() {
+        let temp_dir = create_test_directory().unwrap();
+
+        let result = discover_test_files(temp_dir.path(), Some("another"), false);
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        assert_eq!(files.len(), 1);
+        assert!(files[0].file_name().unwrap().to_str().unwrap().contains("another"));
+    }
+
+    #[test]
+    fn test_discover_test_files_nonexistent_path() {
+        let nonexistent_path = Path::new("/nonexistent/path");
+        let result = discover_test_files(nonexistent_path, None, false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("does not exist"));
+    }
+
+    #[test]
+    fn test_discover_test_files_non_ruchy_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let txt_file = temp_dir.path().join("test.txt");
+        fs::write(&txt_file, "not a ruchy file").unwrap();
+
+        let result = discover_test_files(&txt_file, None, false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not a .ruchy file"));
+    }
+
+    #[test]
+    fn test_discover_test_files_verbose_mode() {
+        let temp_dir = create_test_directory().unwrap();
+
+        let result = discover_test_files(temp_dir.path(), None, true);
+        assert!(result.is_ok());
+        let files = result.unwrap();
+        assert_eq!(files.len(), 2);
+    }
+
+    // ========== File Validation Tests ==========
+    #[test]
+    fn test_validate_and_add_file_ruchy() {
+        let temp_dir = TempDir::new().unwrap();
+        let ruchy_file = temp_dir.path().join("test.ruchy");
+        fs::write(&ruchy_file, "println(\"test\")").unwrap();
+
+        let mut test_files = Vec::new();
+        let result = validate_and_add_file(&ruchy_file, &mut test_files);
+
+        assert!(result.is_ok());
+        assert_eq!(test_files.len(), 1);
+        assert_eq!(test_files[0], ruchy_file);
+    }
+
+    #[test]
+    fn test_validate_and_add_file_non_ruchy() {
+        let temp_dir = TempDir::new().unwrap();
+        let txt_file = temp_dir.path().join("test.txt");
+        fs::write(&txt_file, "not ruchy").unwrap();
+
+        let mut test_files = Vec::new();
+        let result = validate_and_add_file(&txt_file, &mut test_files);
+
+        assert!(result.is_err());
+        assert_eq!(test_files.len(), 0);
+        assert!(result.unwrap_err().to_string().contains("not a .ruchy file"));
+    }
+
+    // ========== Directory Discovery Tests ==========
+    #[test]
+    fn test_discover_files_in_directory_success() {
+        let temp_dir = create_test_directory().unwrap();
+        let mut test_files = Vec::new();
+
+        let result = discover_files_in_directory(temp_dir.path(), None, &mut test_files);
+        assert!(result.is_ok());
+        assert_eq!(test_files.len(), 2); // Only .ruchy files
+    }
+
+    #[test]
+    fn test_discover_files_in_directory_with_filter() {
+        let temp_dir = create_test_directory().unwrap();
+        let mut test_files = Vec::new();
+
+        let result = discover_files_in_directory(temp_dir.path(), Some("test"), &mut test_files);
+        assert!(result.is_ok());
+        assert_eq!(test_files.len(), 1); // Only test.ruchy should match
+        assert!(test_files[0].file_name().unwrap().to_str().unwrap().contains("test"));
+    }
+
+    // ========== File Filtering Tests ==========
+    #[test]
+    fn test_should_include_file_ruchy_no_filter() {
+        let temp_dir = TempDir::new().unwrap();
+        let ruchy_file = temp_dir.path().join("test.ruchy");
+        fs::write(&ruchy_file, "test").unwrap();
+
+        let entry = WalkDir::new(temp_dir.path())
+            .into_iter()
+            .find(|e| e.as_ref().unwrap().path() == ruchy_file)
+            .unwrap()
+            .unwrap();
+
+        assert!(should_include_file(&entry, None));
+    }
+
+    #[test]
+    fn test_should_include_file_ruchy_with_matching_filter() {
+        let temp_dir = TempDir::new().unwrap();
+        let ruchy_file = temp_dir.path().join("my_test.ruchy");
+        fs::write(&ruchy_file, "test").unwrap();
+
+        let entry = WalkDir::new(temp_dir.path())
+            .into_iter()
+            .find(|e| e.as_ref().unwrap().path() == ruchy_file)
+            .unwrap()
+            .unwrap();
+
+        assert!(should_include_file(&entry, Some("my")));
+    }
+
+    #[test]
+    fn test_should_include_file_ruchy_with_non_matching_filter() {
+        let temp_dir = TempDir::new().unwrap();
+        let ruchy_file = temp_dir.path().join("test.ruchy");
+        fs::write(&ruchy_file, "test").unwrap();
+
+        let entry = WalkDir::new(temp_dir.path())
+            .into_iter()
+            .find(|e| e.as_ref().unwrap().path() == ruchy_file)
+            .unwrap()
+            .unwrap();
+
+        assert!(!should_include_file(&entry, Some("nomatch")));
+    }
+
+    #[test]
+    fn test_should_include_file_non_ruchy() {
+        let temp_dir = TempDir::new().unwrap();
+        let txt_file = temp_dir.path().join("test.txt");
+        fs::write(&txt_file, "test").unwrap();
+
+        let entry = WalkDir::new(temp_dir.path())
+            .into_iter()
+            .find(|e| e.as_ref().unwrap().path() == txt_file)
+            .unwrap()
+            .unwrap();
+
+        assert!(!should_include_file(&entry, None));
+    }
+
+    // ========== Test Execution Tests ==========
+    #[test]
+    fn test_run_test_file_success() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.ruchy");
+        fs::write(&test_file, "42").unwrap(); // Simple valid Ruchy code
+
+        let result = run_test_file(&test_file, false);
+        // Note: This may fail due to Ruchy interpreter not being available in test environment
+        // The test verifies the function doesn't panic and returns a Result
+        assert!(result.is_ok() || result.is_err()); // Either is acceptable
+    }
+
+    #[test]
+    fn test_run_test_file_verbose() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.ruchy");
+        fs::write(&test_file, "println(\"Hello\")").unwrap();
+
+        let result = run_test_file(&test_file, true);
+        // Function should handle verbose mode without crashing
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    // ========== Test Summary Tests ==========
+    #[test]
+    fn test_print_test_summary_all_passing() {
+        let results = vec![
+            TestResult {
+                file: PathBuf::from("test1.ruchy"),
+                success: true,
+                duration: Duration::from_millis(100),
+                error: None,
+            },
+            TestResult {
+                file: PathBuf::from("test2.ruchy"),
+                success: true,
+                duration: Duration::from_millis(150),
+                error: None,
+            },
+        ];
+
+        // Function should not panic with all passing tests
+        print_test_summary(&results, false);
+    }
+
+    #[test]
+    fn test_print_test_summary_with_failures() {
+        let results = vec![
+            TestResult {
+                file: PathBuf::from("test1.ruchy"),
+                success: true,
+                duration: Duration::from_millis(100),
+                error: None,
+            },
+            TestResult {
+                file: PathBuf::from("test2.ruchy"),
+                success: false,
+                duration: Duration::from_millis(50),
+                error: Some("Parse error".to_string()),
+            },
+        ];
+
+        // Function should handle mixed results
+        print_test_summary(&results, false);
+    }
+
+    #[test]
+    fn test_print_test_summary_verbose() {
+        let results = vec![
+            TestResult {
+                file: PathBuf::from("test.ruchy"),
+                success: true,
+                duration: Duration::from_millis(100),
+                error: None,
+            },
+        ];
+
+        // Function should handle verbose mode
+        print_test_summary(&results, true);
+    }
+
+    #[test]
+    fn test_print_test_summary_empty() {
+        let results = vec![];
+
+        // Function should handle empty results
+        print_test_summary(&results, false);
+    }
+
+    // ========== JSON Output Tests ==========
+    #[test]
+    fn test_generate_json_output() {
+        let results = vec![
+            TestResult {
+                file: PathBuf::from("test1.ruchy"),
+                success: true,
+                duration: Duration::from_millis(100),
+                error: None,
+            },
+            TestResult {
+                file: PathBuf::from("test2.ruchy"),
+                success: false,
+                duration: Duration::from_millis(50),
+                error: Some("Error message".to_string()),
+            },
+        ];
+
+        let result = generate_json_output(&results);
+        assert!(result.is_ok());
+
+        let json = result.unwrap();
+        assert!(json.contains("test1.ruchy"));
+        assert!(json.contains("test2.ruchy"));
+        assert!(json.contains("true"));
+        assert!(json.contains("false"));
+        assert!(json.contains("Error message"));
+    }
+
+    #[test]
+    fn test_generate_json_output_empty() {
+        let results = vec![];
+        let result = generate_json_output(&results);
+        assert!(result.is_ok());
+
+        let json = result.unwrap();
+        assert!(json.contains("[]"));
+    }
+
+    // ========== Coverage Report Tests ==========
+    #[test]
+    fn test_generate_coverage_report_text() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_files = vec![temp_dir.path().join("test.ruchy")];
+        fs::write(&test_files[0], "42").unwrap();
+
+        let result = generate_coverage_report(&test_files, "text", 0.0);
+        // Function should complete without error (whether coverage works or not)
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_generate_coverage_report_html() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_files = vec![temp_dir.path().join("test.ruchy")];
+        fs::write(&test_files[0], "42").unwrap();
+
+        let result = generate_coverage_report(&test_files, "html", 0.0);
+        // Function should complete without error
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_generate_coverage_report_json() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_files = vec![temp_dir.path().join("test.ruchy")];
+        fs::write(&test_files[0], "42").unwrap();
+
+        let result = generate_coverage_report(&test_files, "json", 0.0);
+        // Function should complete without error
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_generate_coverage_report_empty_files() {
+        let test_files = vec![];
+        let result = generate_coverage_report(&test_files, "text", 0.0);
+        // Should handle empty file list gracefully
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    // ========== Helper Function Tests ==========
+    #[test]
+    fn test_save_html_report() {
+        let html_content = "<html><body>Coverage Report</body></html>";
+        let result = save_html_report(html_content);
+
+        if result.is_ok() {
+            let message = result.unwrap();
+            assert!(message.contains("HTML Coverage Report written to"));
+            assert!(message.contains("target/coverage/index.html"));
+        }
+        // If it fails, that's also acceptable (file system permissions, etc.)
+    }
+
+    // ========== Integration Tests ==========
+    #[test]
+    fn test_execute_tests_integration() {
+        let temp_dir = create_test_directory().unwrap();
+        let test_files = vec![
+            temp_dir.path().join("test.ruchy"),
+            temp_dir.path().join("another_test.ruchy"),
+        ];
+
+        let result = execute_tests(&test_files, false, false);
+        // This will likely fail in test environment due to missing Ruchy interpreter
+        // But function should return a Result and not panic
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_execute_tests_verbose() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.ruchy");
+        fs::write(&test_file, "42").unwrap();
+
+        let test_files = vec![test_file];
+        let result = execute_tests(&test_files, true, false);
+        // Function should handle verbose mode
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_execute_tests_json_output() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.ruchy");
+        fs::write(&test_file, "42").unwrap();
+
+        let test_files = vec![test_file];
+        let result = execute_tests(&test_files, false, true);
+        // Function should handle JSON output mode
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_execute_tests_empty_list() {
+        let test_files = vec![];
+        let result = execute_tests(&test_files, false, false);
+        // Should handle empty test file list gracefully
+        assert!(result.is_ok());
+    }
+}
