@@ -4,78 +4,11 @@ pub fn parse_prefix(state: &mut ParserState) -> Result<Expr> {
     let Some((token, span)) = state.tokens.peek() else {
         bail!("Unexpected end of input - expected expression");
     };
-    let token_clone = token.clone();
-    let span_clone = *span;
-    match token_clone {
-        // Literal tokens - delegated to focused helper
-        Token::Integer(_) | Token::Float(_) | Token::String(_) | 
-        Token::FString(_) | Token::Char(_) | Token::Bool(_) => {
-            parse_literal_token(state, token_clone, span_clone)
-        }
-        // Identifier tokens - delegated to focused helper
-        Token::Identifier(_) | Token::Underscore => {
-            parse_identifier_token(state, token_clone, span_clone)
-        }
-        // Unary operator tokens - delegated to focused helper
-        Token::Minus | Token::Bang | Token::Await => {
-            parse_unary_operator_token(state, token_clone, span_clone)
-        }
-        // Function/block tokens - delegated to focused helper
-        Token::Fun | Token::Fn | Token::LeftBrace => {
-            parse_function_block_token(state, token_clone)
-        }
-        // Variable declaration tokens - delegated to focused helper
-        Token::Let | Token::Var => {
-            parse_variable_declaration_token(state, token_clone)
-        }
-        // Control flow tokens - delegated to focused helper
-        Token::If | Token::Match | Token::While | Token::For | Token::Try | Token::Loop => {
-            parse_control_flow_token(state, token_clone)
-        }
-        // Module declaration token
-        Token::Mod => {
-            parse_module_declaration(state)
-        }
-        // Lambda expression tokens - delegated to focused helper
-        Token::Pipe | Token::OrOr | Token::Backslash => {
-            parse_lambda_token(state, token_clone)
-        }
-        // Parentheses tokens - delegated to focused helper (unit, grouping, tuples, lambdas)
-        Token::LeftParen => {
-            parse_parentheses_token(state, span_clone)
-        }
-        // Data structure definition tokens - delegated to focused helper
-        Token::Struct | Token::Trait | Token::Impl => {
-            parse_data_structure_token(state, token_clone)
-        }
-        // Import/module tokens - delegated to focused helper
-        Token::Import | Token::Use => {
-            parse_import_token(state, token_clone)
-        }
-        // Special definition tokens - delegated to focused helper
-        Token::DataFrame | Token::Actor => {
-            parse_special_definition_token(state, token_clone)
-        }
-        // Control statement tokens - delegated to focused helper
-        Token::Pub | Token::Break | Token::Continue | Token::Return | Token::Throw |
-        Token::Export | Token::Async | Token::Increment | Token::Decrement => {
-            parse_control_statement_token(state, token_clone, span_clone)
-        }
-        // Collection/enum definition tokens - delegated to focused helper
-        Token::LeftBracket | Token::Enum => {
-            parse_collection_enum_token(state, token_clone)
-        }
-        // Constructor tokens - delegated to focused helper
-        Token::Some | Token::None | Token::Ok | Token::Err | Token::Result | Token::Option => {
-            parse_constructor_token(state, token_clone, span_clone)
-        }
-        _ => bail!("Unexpected token: {:?}", token_clone),
-    }
-}
-/// Parse literal tokens (Integer, Float, String, Char, Bool, `FString`)
-/// Extracted from `parse_prefix` to reduce complexity
-fn parse_literal_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+    // Optimize: Clone once and match on owned token for better cache locality
+    let token = token.clone();
+    let span = *span;
     match token {
+        // Literal tokens - inlined for performance
         Token::Integer(value) => {
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Integer(value)), span))
@@ -102,18 +35,128 @@ fn parse_literal_token(state: &mut ParserState, token: Token, span: Span) -> Res
             state.tokens.advance();
             Ok(Expr::new(ExprKind::Literal(Literal::Bool(value)), span))
         }
+        // Identifier tokens - delegated to focused helper
+        Token::Identifier(_) | Token::Underscore => {
+            parse_identifier_token(state, &token, span)
+        }
+        // Unary operator tokens - inlined for performance
+        Token::Minus => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?; // High precedence for unary
+            Ok(Expr::new(ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(expr)
+            }, span))
+        }
+        Token::Bang => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+            Ok(Expr::new(ExprKind::Unary {
+                op: UnaryOp::Not,
+                operand: Box::new(expr)
+            }, span))
+        }
+        Token::Await => {
+            state.tokens.advance();
+            let expr = super::parse_expr_with_precedence_recursive(state, 13)?;
+            Ok(Expr::new(ExprKind::Await {
+                expr: Box::new(expr)
+            }, span))
+        }
+        // Function/block tokens - delegated to focused helper
+        Token::Fun | Token::Fn | Token::LeftBrace => {
+            parse_function_block_token(state, token)
+        }
+        // Variable declaration tokens - delegated to focused helper
+        Token::Let | Token::Var => {
+            parse_variable_declaration_token(state, token)
+        }
+        // Control flow tokens - delegated to focused helper
+        Token::If | Token::Match | Token::While | Token::For | Token::Try | Token::Loop => {
+            parse_control_flow_token(state, token)
+        }
+        // Module declaration token
+        Token::Mod => {
+            parse_module_declaration(state)
+        }
+        // Lambda expression tokens - delegated to focused helper
+        Token::Pipe | Token::OrOr | Token::Backslash => {
+            parse_lambda_token(state, token)
+        }
+        // Parentheses tokens - delegated to focused helper (unit, grouping, tuples, lambdas)
+        Token::LeftParen => {
+            parse_parentheses_token(state, span)
+        }
+        // Data structure definition tokens - delegated to focused helper
+        Token::Struct | Token::Trait | Token::Impl => {
+            parse_data_structure_token(state, token)
+        }
+        // Import/module tokens - delegated to focused helper
+        Token::Import | Token::Use => {
+            parse_import_token(state, token)
+        }
+        // Special definition tokens - delegated to focused helper
+        Token::DataFrame | Token::Actor => {
+            parse_special_definition_token(state, token)
+        }
+        // Control statement tokens - delegated to focused helper
+        Token::Pub | Token::Break | Token::Continue | Token::Return | Token::Throw |
+        Token::Export | Token::Async | Token::Increment | Token::Decrement => {
+            parse_control_statement_token(state, token, span)
+        }
+        // Collection/enum definition tokens - delegated to focused helper
+        Token::LeftBracket | Token::Enum => {
+            parse_collection_enum_token(state, token)
+        }
+        // Constructor tokens - delegated to focused helper
+        Token::Some | Token::None | Token::Ok | Token::Err | Token::Result | Token::Option => {
+            parse_constructor_token(state, token, span)
+        }
+        _ => bail!("Unexpected token: {:?}", token),
+    }
+}
+/// Parse literal tokens (Integer, Float, String, Char, Bool, `FString`)
+/// Extracted from `parse_prefix` to reduce complexity
+fn parse_literal_token(state: &mut ParserState, token: &Token, span: Span) -> Result<Expr> {
+    match token {
+        Token::Integer(value) => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Literal(Literal::Integer(*value)), span))
+        }
+        Token::Float(value) => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Literal(Literal::Float(*value)), span))
+        }
+        Token::String(value) => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Literal(Literal::String(value.clone())), span))
+        }
+        Token::FString(template) => {
+            state.tokens.advance();
+            // Parse f-string template into parts with proper interpolation
+            let parts = parse_fstring_into_parts(template)?;
+            Ok(Expr::new(ExprKind::StringInterpolation { parts }, span))
+        }
+        Token::Char(value) => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Literal(Literal::Char(*value)), span))
+        }
+        Token::Bool(value) => {
+            state.tokens.advance();
+            Ok(Expr::new(ExprKind::Literal(Literal::Bool(*value)), span))
+        }
         _ => bail!("Expected literal token, got: {:?}", token),
     }
 }
 /// Parse identifier tokens (Identifier, Underscore, fat arrow lambdas)
 /// Extracted from `parse_prefix` to reduce complexity
-fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+fn parse_identifier_token(state: &mut ParserState, token: &Token, span: Span) -> Result<Expr> {
     match token {
         Token::Identifier(name) => {
             state.tokens.advance();
             // Check for module path: math::add
             if matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
-                let mut path = vec![name];
+                let mut path = vec![name.clone()];
                 while matches!(state.tokens.peek(), Some((Token::ColonColon, _))) {
                     state.tokens.advance(); // consume ::
                     if let Some((Token::Identifier(segment), _)) = state.tokens.peek() {
@@ -132,7 +175,7 @@ fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> 
                 state.tokens.advance(); // consume =>
                 let body = Box::new(super::parse_expr_recursive(state)?);
                 let params = vec![Param {
-                    pattern: Pattern::Identifier(name),
+                    pattern: Pattern::Identifier(name.clone()),
                     ty: Type {
                         kind: TypeKind::Named("_".to_string()),
                         span,
@@ -148,9 +191,9 @@ fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> 
                 state.tokens.advance(); // consume !
                 // Convert macro syntax to regular function call
                 // println! -> println, assert! -> assert, etc.
-                Ok(Expr::new(ExprKind::Identifier(name), span))
+                Ok(Expr::new(ExprKind::Identifier(name.clone()), span))
             } else {
-                Ok(Expr::new(ExprKind::Identifier(name), span))
+                Ok(Expr::new(ExprKind::Identifier(name.clone()), span))
             }
         }
         Token::Underscore => {
@@ -162,7 +205,7 @@ fn parse_identifier_token(state: &mut ParserState, token: Token, span: Span) -> 
 }
 /// Parse unary operator tokens (Minus, Bang)
 /// Extracted from `parse_prefix` to reduce complexity
-fn parse_unary_operator_token(state: &mut ParserState, token: Token, span: Span) -> Result<Expr> {
+fn parse_unary_operator_token(state: &mut ParserState, token: &Token, span: Span) -> Result<Expr> {
     match token {
         Token::Minus => {
             state.tokens.advance();

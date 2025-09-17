@@ -1915,8 +1915,13 @@ impl Interpreter {
     /// type is not yet implemented.
     fn eval_expr_kind(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
         match expr_kind {
-            // Basic expressions
-            ExprKind::Literal(lit) => Ok(self.eval_literal(lit)),
+            // Basic expressions - inlined for performance
+            ExprKind::Literal(Literal::Integer(i)) => Ok(Value::from_i64(*i)),
+            ExprKind::Literal(Literal::Float(f)) => Ok(Value::from_f64(*f)),
+            ExprKind::Literal(Literal::String(s)) => Ok(Value::from_string(s.clone())),
+            ExprKind::Literal(Literal::Bool(b)) => Ok(Value::from_bool(*b)),
+            ExprKind::Literal(Literal::Char(c)) => Ok(Value::from_string(c.to_string())),
+            ExprKind::Literal(Literal::Unit) => Ok(Value::nil()),
             ExprKind::Identifier(name) => self.lookup_variable(name),
             
             // Operations and calls
